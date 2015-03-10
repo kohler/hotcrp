@@ -1511,13 +1511,13 @@ $blind\n";
 
         // administrator?
         if ($rrow && !$Me->is_my_review($rrow) && $admin)
-            echo "<div class=\"xinfo\">This isn’t your review, but as an administrator you can still make changes.</div>\n";
+            echo "<div class=\"xmsg xinfo\">This isn’t your review, but as an administrator you can still make changes.</div>\n";
 
         // delegate?
         if ($rrow && !$rrow->reviewSubmitted
             && $rrow->contactId == $Me->contactId
             && $rrow->reviewType == REVIEW_SECONDARY) {
-            echo "<div class=\"xinfo\">";
+            echo "<div class=\"xmsg xinfo\">";
 
             $ndelegated = 0;
             foreach ($rrows as $rr)

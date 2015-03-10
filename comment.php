@@ -96,12 +96,12 @@ function save_comment($text, $is_response, $roundnum) {
             $cinfo = new CommentInfo($cur_response, $prow);
             $ok = true;
         } else
-            $confirm = '<div class="xmerror">A response was entered concurrently by another user. Reload to see it.</div>';
+            $confirm = '<div class="xmsg xmerror">A response was entered concurrently by another user. Reload to see it.</div>';
     }
     if (!$ok)
         /* nada */;
     else if ($is_response && (!$cinfo->commentId || ($cinfo->commentType & COMMENTTYPE_DRAFT))) {
-        $confirm = '<div class="xwarning">';
+        $confirm = '<div class="xmsg xwarning">';
         if ($cinfo->commentId)
             $confirm .= 'Response saved. <strong>This draft response will not be shown to reviewers.</strong>';
         else
@@ -112,11 +112,11 @@ function save_comment($text, $is_response, $roundnum) {
         $confirm .= '</div>';
     } else if ($is_response) {
         $rname = $Conf->resp_round_text($roundnum);
-        $confirm = '<div class="xconfirm">' . ($rname ? "$rname response" : "Response") . ' submitted.</div>';
+        $confirm = '<div class="xmsg xconfirm">' . ($rname ? "$rname response" : "Response") . ' submitted.</div>';
     } else if ($cinfo->commentId)
-        $confirm = '<div class="xconfirm">Comment saved.</div>';
+        $confirm = '<div class="xmsg xconfirm">Comment saved.</div>';
     else
-        $confirm = '<div class="xconfirm">Comment deleted.</div>';
+        $confirm = '<div class="xmsg xconfirm">Comment deleted.</div>';
 
     $j = array("ok" => $ok);
     if ($cinfo->commentId)

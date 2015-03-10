@@ -1673,7 +1673,7 @@ function save_editor(elt, action, really) {
         if (data.ok && (x.is_new || (data.cmt && data.cmt.is_new)))
             x.j.closest(".cmtid")[0].id = "comment" + data.cmt.cid;
         if (!data.ok)
-            x.j.find(".cmtmsg").html(data.error ? '<div class="xmerror">' + data.error + '</div>' : data.msg);
+            x.j.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror">' + data.error + '</div>' : data.msg);
         else if (data.cmt)
             fill(x.j, data.cmt, editing_response, data.msg);
         else
@@ -1752,15 +1752,15 @@ function fill(j, cj, editing, msg) {
     if (msg)
         hc.push(msg);
     else if (cj.response && cj.draft && cj.text)
-        hc.push('<div class="xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
+        hc.push('<div class="xmsg xwarning">This is a draft response. Reviewers won’t see it until you submit.</div>');
     hc.pop();
     if (cj.response && editing && resp_rounds[cj.response].instrux)
-        hc.push('<div class="xinfo">' + resp_rounds[cj.response].instrux + '</div>');
+        hc.push('<div class="xmsg xinfo">' + resp_rounds[cj.response].instrux + '</div>');
     if (cj.response && editing && papercomment.nonauthor)
-        hc.push('<div class="xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
+        hc.push('<div class="xmsg xinfo">Although you aren’t a contact for this paper, as an administrator you can edit the authors’ response.</div>');
     else if (!cj.response && editing && cj.author_email && hotcrp_user.email
              && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase())
-        hc.push('<div class="xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
+        hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
     if (editing)
         fill_editing(hc, cj);
     else
@@ -3229,7 +3229,7 @@ function save_tags() {
             fold("tags", true);
             save_tags.success(rv);
         } else
-            jQuery("#papstriptagsedit").prepend('<div class="xmerror">' + rv.error + "</div>");
+            jQuery("#papstriptagsedit").prepend('<div class="xmsg xmerror">' + rv.error + "</div>");
     });
 }
 save_tags.success = function (data) {
@@ -3264,7 +3264,7 @@ function save_tag_index(e) {
                 save_tags.success(data);
                 foldup(j[0]);
             } else
-                jQuery('<div class="xmerror"></div>').html(data.error).prependTo(j);
+                jQuery('<div class="xmsg xmerror"></div>').html(data.error).prependTo(j);
         }
     });
     return false;

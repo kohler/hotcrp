@@ -2463,13 +2463,10 @@ div.cmtadminvis, div.cmtcolor {
 	margin: 0 -5px;
 	padding: 2px 5px;
 }
-div.cmtauvis {
+div.cmtauvis .cmtv {
 	padding-left: 24px;
 }
-div.cmtauvis.cmtcolor {
-	padding-left: 29px;
-}
-div.cmtauvis .cmtt {
+div.cmtauvis .cmtv div.aahc {
 	margin-left: -24px;
 }
 div.cmtadminvis {
@@ -2492,12 +2489,14 @@ div.cmtt:after {
 div.cmtt div.floatright {
 	padding-left: 0.5em;
 }
-div.revcard_body div.xinfo,
-div.cmtg div.xinfo, div.cmtg div.xconfirm, div.cmtg div.xwarning, div.cmtg div.xmerror {
+div.revcard_body div.xmsg, div.cmtg div.xmsg {
 	margin: 3px -12px 6px;
 	padding: 5px 12px;
 	font-size: smaller;
 	border: 0;
+}
+div.cmtg div.cmtauvis div.xmsg {
+	margin-left: -36px;
 }
 div.revcard_body div.xinfo, div.cmtg div.xinfo {
 	background: #eeeeff;

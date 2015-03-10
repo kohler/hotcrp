@@ -1929,6 +1929,8 @@ class Conference {
                      || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
         } else {
+            if ($type[0] == "x")
+                $type = "xmsg $type";
             $text = "<div class=\"$type\">$text</div>\n";
             if ($this->save_messages) {
                 ensure_session();
@@ -2235,8 +2237,10 @@ class Conference {
             if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\z|', $msg, $m)) {
                 if ($m[1] == "merror" && !isset($values["error"]))
                     $values["error"] = $m[2];
-                if ($div)
-                    $t .= "<div class=\"x$m[1]\">$m[2]</div>\n";
+                if ($div && $m[1][0] == "x")
+                    $t .= "<div class=\"$m[1]\">$m[2]</div>\n";
+                else if ($div)
+                    $t .= "<div class=\"xmsg x$m[1]\">$m[2]</div>\n";
                 else
                     $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
             }

@@ -429,7 +429,7 @@ class PaperTable {
 
         if ($prow && $storageId > 1 && $banal
             && defval($prow, "mimetype", "application/pdf") == "application/pdf") {
-            echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+            echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xmsg xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
             $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType"), array("id" => "checkformatform$documentType", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('checkformatform$documentType')"))
                               . Ht::hidden("checkformat", 1)
                               . "</div></form>");
@@ -1319,17 +1319,17 @@ class PaperTable {
                 // uneditable
                 echo '<div class="fn">';
                 if ($treport->warnings)
-                    echo '<div class="xwarning">', join("<br>", $treport->warnings), '</div>';
+                    echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
                 echo ($tx == "" ? "None" : $tx), '</div>';
 
                 echo "<div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
                 if ($treport->warnings)
-                    echo '<div class="xwarning">', join("<br>", $treport->warnings), '</div>';
+                    echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
                 if ($treport->messages)
-                    echo '<div class="xinfo">', join("<br>", $treport->messages), '</div>';
+                    echo '<div class="xmsg xinfo">', join("<br>", $treport->messages), '</div>';
                 echo "</div>";
                 if (isset($Error["tags"]))
-                    echo "<div class='xmerror'>", $Error["tags"], "</div>";
+                    echo '<div class="xmsg xmerror">', $Error["tags"], "</div>";
                 $editable = $tags;
                 if ($this->prow)
                     $editable = $tagger->paper_editable($this->prow);
@@ -1518,16 +1518,16 @@ class PaperTable {
                 $this->quit = true;
                 return '<div class="merror">' . $msg . '</div>';
             }
-            $msg = '<div class="xinfo">' . $msg . '</div>';
+            $msg = '<div class="xmsg xinfo">' . $msg . '</div>';
         }
-        $msg .= '<div class="xinfo">Enter information about your paper. ';
+        $msg .= '<div class="xmsg xinfo">Enter information about your paper. ';
         if ($startDeadline && !$Conf->setting("sub_freeze"))
             $msg .= "You can make changes until the deadline, but thereafter ";
         else
             $msg .= "You don’t have to upload the paper itself right away, but ";
         $msg .= "incomplete submissions will not be considered.$startDeadline</div>";
         if (($v = $Conf->message_html("submit")))
-            $msg .= '<div class="xinfo">' . $v . '</div>';
+            $msg .= '<div class="xmsg xinfo">' . $v . '</div>';
         return $msg;
     }
 
@@ -1539,13 +1539,13 @@ class PaperTable {
         $m = "";
         $has_author = $prow->has_author($Me);
         if ($has_author && $prow->outcome < 0 && $Conf->timeAuthorViewDecision())
-            $m .= '<div class="xwarning">This paper was not accepted.</div>';
+            $m .= '<div class="xmsg xwarning">This paper was not accepted.</div>';
         else if ($has_author && $prow->timeWithdrawn > 0) {
             if ($Me->can_revive_paper($prow))
-                $m .= '<div class="xwarning">This paper has been withdrawn, but you can still revive it.' . $this->deadlineSettingIs("sub_update") . '</div>';
+                $m .= '<div class="xmsg xwarning">This paper has been withdrawn, but you can still revive it.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author && $prow->timeSubmitted <= 0) {
             if ($Me->can_update_paper($prow)) {
-                $m .= '<div class="xwarning">';
+                $m .= '<div class="xmsg xwarning">';
                 if ($Conf->setting("sub_freeze"))
                     $m .= "A final version of this paper must be submitted before it can be reviewed.";
                 else if ($prow->paperStorageId <= 1)
@@ -1554,34 +1554,34 @@ class PaperTable {
                     $m .= "The paper is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
                 $m .= $this->deadlineSettingIs("sub_update") . "</div>";
             } else if ($Me->can_finalize_paper($prow))
-                $m .= '<div class="xwarning">Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
+                $m .= '<div class="xmsg xwarning">Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
             else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
-                $m .= '<div class="xwarning">The site is not open for submission updates at the moment.' . $this->_override_message() . '</div>';
+                $m .= '<div class="xmsg xwarning">The site is not open for submission updates at the moment.' . $this->_override_message() . '</div>';
             else
-                $m .= '<div class="xwarning">The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
+                $m .= '<div class="xmsg xwarning">The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
         } else if ($has_author && $Me->can_update_paper($prow)) {
             if ($this->mode == "pe")
-                $m .= '<div class="xconfirm">This paper is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
+                $m .= '<div class="xmsg xconfirm">This paper is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author
                    && $prow->outcome > 0
                    && $Conf->timeSubmitFinalPaper()
                    && ($t = $Conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
-            $m .= "<div class='xinfo'>" . $t . "</div>";
+            $m .= '<div class="xmsg xinfo">' . $t . "</div>";
         else if ($has_author) {
             $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
             if ($this->mode == "pe") {
-                $m .= '<div class="xinfo">This paper is under review and can’t be changed, but you can change its contacts';
+                $m .= '<div class="xmsg xinfo">This paper is under review and can’t be changed, but you can change its contacts';
                 if ($Me->can_withdraw_paper($prow))
                     $m .= ' or withdraw it from consideration';
                 $m .= ".$override2</div>";
             }
         } else if ($prow->outcome > 0 && !$Conf->timeAuthorViewDecision()
                    && $Conf->collectFinalPapers())
-            $m .= "<div class='xinfo'>This paper was accepted, but authors can’t view paper decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.</div>";
+            $m .= '<div class="xmsg xinfo">This paper was accepted, but authors can’t view paper decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.</div>';
         else
-            $m .= '<div class="xinfo">You aren’t a contact for this paper, but as an administrator you can still make changes.</div>';
+            $m .= '<div class="xmsg xinfo">You aren’t a contact for this paper, but as an administrator you can still make changes.</div>';
         if ($Me->can_update_paper($prow, true) && ($v = $Conf->message_html("submit")))
-            $m .= '<div class="xinfo">' . $v . '</div>';
+            $m .= '<div class="xmsg xinfo">' . $v . '</div>';
         return $m;
     }
 
