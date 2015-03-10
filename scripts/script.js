@@ -1717,7 +1717,7 @@ function fill(j, cj, editing, msg) {
 
     // opener
     t = [];
-    if (cj.visibility)
+    if (cj.visibility && !cj.response)
         t.push("cmt" + cj.visibility + "vis");
     if (cj.color_classes)
         t.push("cmtcolor " + cj.color_classes);

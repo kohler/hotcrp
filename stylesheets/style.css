@@ -2435,7 +2435,7 @@ div.cmtcard_head {
 }
 div.cmtcard_body {
 	background: #ffffff;
-	padding: 6px 12px 12px;
+	padding: 8px 12px 12px;
 	border-radius: 2px;
 }
 div.cmtcard h3 {
@@ -2447,7 +2447,7 @@ div.cmtcard_head span.cmtfn {
 }
 div.cmtg {
 	border-top: 1px solid #f7f1df;
-	padding: 8px 0;
+	padding: 10px 0;
 }
 div.cmtg:first-child {
 	border-top: 0 none;
@@ -2464,10 +2464,13 @@ div.cmtadminvis, div.cmtcolor {
 	padding: 2px 5px;
 }
 div.cmtauvis .cmtv {
-	padding-left: 24px;
+	padding-left: 34px;
 }
 div.cmtauvis .cmtv div.aahc {
-	margin-left: -24px;
+	margin-left: -34px;
+}
+div.cmtauvis .cmtnumhead {
+	text-decoration: underline;
 }
 div.cmtadminvis {
 	background: #f3f3f3;
@@ -2494,9 +2497,6 @@ div.revcard_body div.xmsg, div.cmtg div.xmsg {
 	padding: 5px 12px;
 	font-size: smaller;
 	border: 0;
-}
-div.cmtg div.cmtauvis div.xmsg {
-	margin-left: -36px;
 }
 div.revcard_body div.xinfo, div.cmtg div.xinfo {
 	background: #eeeeff;
