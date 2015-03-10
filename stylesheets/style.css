@@ -2466,7 +2466,8 @@ div.cmtadminvis, div.cmtcolor {
 div.cmtauvis .cmtv {
 	padding-left: 34px;
 }
-div.cmtauvis .cmtv div.aahc {
+div.cmtauvis .cmtv div.aahc,
+div.cmtauvis .cmtv .cmtmsg {
 	margin-left: -34px;
 }
 div.cmtauvis .cmtnumhead {
