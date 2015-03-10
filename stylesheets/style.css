@@ -2289,7 +2289,7 @@ div.papcard_sep {
 	margin: 8px -12px;
 }
 div.pedcard_head {
-	padding: 3px 12px 4px 12px;
+	padding: 3px 12px 4px;
 }
 div.pedcard_head h2 {
 	display: inline;
@@ -2320,7 +2320,7 @@ body#offline div.revcard {
 	margin: 16px 7em;
 }
 div.revcard_head {
-	padding: 3px 12px 4px 12px;
+	padding: 3px 12px 4px;
 }
 div.revcard_body {
 	background: #ffffff;
@@ -2431,11 +2431,11 @@ div.cmtcard.response {
 	background: #ffddc1;
 }
 div.cmtcard_head {
-	padding: 3px 12px 4px 12px;
+	padding: 3px 12px 4px;
 }
 div.cmtcard_body {
 	background: #ffffff;
-	padding: 6px 12px 3px;
+	padding: 6px 12px 12px;
 	border-radius: 2px;
 }
 div.cmtcard h3 {
@@ -2462,6 +2462,15 @@ span.cmtfn > span.barsep {
 div.cmtadminvis, div.cmtcolor {
 	margin: 0 -5px;
 	padding: 2px 5px;
+}
+div.cmtauvis {
+	padding-left: 24px;
+}
+div.cmtauvis.cmtcolor {
+	padding-left: 29px;
+}
+div.cmtauvis .cmtt {
+	margin-left: -24px;
 }
 div.cmtadminvis {
 	background: #f3f3f3;
@@ -2530,8 +2539,8 @@ div.revtext, div.cmttext {
 	max-width: 42em;
 	line-height: 125%;
 }
-div#foldaddcomment div.cmtv {
-	padding-bottom: 0;
+div#commentnew:last-child {
+	margin-bottom: -8px;
 }
 .cmtnumhead {
 	display: inline-block;

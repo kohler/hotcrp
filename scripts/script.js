@@ -1716,10 +1716,13 @@ function fill(j, cj, editing, msg) {
     }
 
     // opener
-    if (cj.visibility == "admin")
-        hc.push('<div class="cmtadminvis">', '</div>');
-    else if (cj.color_classes)
-        hc.push('<div class="cmtcolor ' + cj.color_classes + '">', '</div>');
+    t = [];
+    if (cj.visibility)
+        t.push("cmt" + cj.visibility + "vis");
+    if (cj.color_classes)
+        t.push("cmtcolor " + cj.color_classes);
+    if (t.length)
+        hc.push('<div class="' + t.join(" ") + '">', '</div>');
 
     // header
     hc.push('<div class="cmtt">', '</div>');
