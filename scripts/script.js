@@ -2191,11 +2191,28 @@ return function () {
 })();
 
 
-function make_bubble(content, bubclass) {
-    bubclass = bubclass ? " " + bubclass : "";
-    var bubdiv = $('<div class="bubble' + bubclass + '"><div class="bubtail0 dir1' + bubclass + '"></div><div class="bubcontent"></div><div class="bubtail1 dir1' + bubclass + '"></div></div>')[0],
+var make_bubble = (function () {
+var capdir = ["Top", "Right", "Bottom", "Left"],
+    lcdir = ["top", "right", "bottom", "left"];
+
+function cssbc(dir) {
+    return "border" + capdir[dir] + "Color";
+}
+
+function cssbw(dir) {
+    return "border" + capdir[dir] + "Width";
+}
+
+return function (content, bubopt) {
+    if (!bubopt)
+        bubopt = {c: false};
+    else if (typeof bubopt === "string")
+        bubopt = {c: bubopt};
+    bubopt.cc = bubopt.c ? " " + bubopt.c : "";
+    bubopt.sz = bubopt.sz || 10;
+    var bubdiv = $('<div class="bubble' + bubopt.cc + '"><div class="bubtail0 dir1' + bubopt.cc + '"></div><div class="bubcontent"></div><div class="bubtail1 dir1' + bubopt.cc + '"></div></div>')[0],
         bubch = bubdiv.childNodes,
-        dir = 1;
+        dir = null;
     $("body")[0].appendChild(bubdiv);
 
     function to_rgba(c) {
@@ -2212,31 +2229,45 @@ function make_bubble(content, bubclass) {
         yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
             return (0.75 * p1 + 0.25) + ")";
         });
-        var m = ["Top", "Right", "Bottom", "Left"];
-        bubch[0].style["border" + m[dir ^ 2] + "Color"] = $(bubdiv).css("border" + m[dir] + "Color");
-        bubch[2].style["border" + m[dir ^ 2] + "Color"] = yc;
+        bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
+        bubch[2].style[cssbc(dir^2)] = yc;
     }
-    recolor();
 
     function position_tail() {
-        var x, y, pos = $(bubdiv).geometry(true), tailpos = $(bubch[0]).geometry(true);
-        if (dir & 1)
-            y = Math.floor((pos.height - tailpos.height) / 2);
-        else
-            x = Math.floor((pos.width - tailpos.width) / 2);
-        bubch[0].style.left = bubch[2].style.left = (x == null ? "" : x + "px");
-        bubch[0].style.top = bubch[2].style.top = (y == null ? "" : y + "px");
+        var x, y, pos = $(bubdiv).geometry(true);
+        if (dir & 1) {
+            y = Math.floor((pos.height - bubopt.sz) / 2);
+            bubch[0].style.top = bubch[2].style.top = y + "px";
+        } else {
+            x = Math.floor((pos.width - bubopt.sz) / 2);
+            bubch[0].style.left = bubch[2].style.left = x + "px";
+        }
     }
 
     function set_direction(xdir) {
+        var i;
         xdir = {"0": 0, "1": 1, "2": 2, "3": 3, "t": 0, "l": 3, "r": 1, "b": 2}[xdir];
         if (dir != xdir) {
             dir = xdir;
-            bubch[0].className = "bubtail0 dir" + dir + bubclass;
-            bubch[2].className = "bubtail1 dir" + dir + bubclass;
+            bubch[0].className = "bubtail0 dir" + dir + bubopt.cc;
+            bubch[2].className = "bubtail1 dir" + dir + bubopt.cc;
+
+            var bw = [0, 0, 0, 0];
+            bw[dir^1] = bw[dir^3] = (bubopt.sz/2) + "px";
+            bw[dir^2] = (bubopt.sz-1) + "px";
+            bubch[0].style.borderWidth = bw.join(" ");
+            bw[dir^2] = (bubopt.sz-2) + "px";
+            bubch[2].style.borderWidth = bw.join(" ");
+
+            for (i = 1; i <= 3; ++i)
+                bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
+            bubch[0].style[lcdir[dir]] = (-bubopt.sz) + "px";
+            bubch[2].style[lcdir[dir]] = (-bubopt.sz + 2) + "px";
+
             recolor();
         }
     }
+    set_direction(1);
 
     var bubble = {
         show: function (x, y) {
@@ -2282,9 +2313,9 @@ function make_bubble(content, bubclass) {
         },
         color: function (color) {
             color = (color ? " " + color : "");
-            bubdiv.className = "bubble" + bubclass + color;
-            bubch[0].className = "bubtail0 dir" + dir + bubclass + color;
-            bubch[2].className = "bubtail1 dir" + dir + bubclass + color;
+            bubdiv.className = "bubble" + bubopt.cc + color;
+            bubch[0].className = "bubtail0 dir" + dir + bubopt.cc + color;
+            bubch[2].className = "bubtail1 dir" + dir + bubopt.cc + color;
             recolor();
         },
         content: function (content) {
@@ -2303,7 +2334,8 @@ function make_bubble(content, bubclass) {
 
     bubble.content(content);
     return bubble;
-}
+};
+})();
 
 
 window.add_edittag_ajax = (function () {
