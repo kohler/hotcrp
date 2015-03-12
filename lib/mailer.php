@@ -403,7 +403,7 @@ class Mailer {
     }
 
     function make_preparation($template, $rest = array()) {
-        global $Conf;
+        global $Conf, $Opt;
 
         // look up template
         if (is_string($template) && $template[0] == "@")
@@ -433,19 +433,21 @@ class Mailer {
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
-        $headers = array("mime-version" => "MIME-Version: 1.0" . MAILER_EOL,
-                         "content-type" => "Content-Type: text/plain; charset=utf-8" . MAILER_EOL);
+        if (!@$Opt["emailFromHeader"])
+            $Opt["emailFromHeader"] = MimeText::encode_email_header("From: ", $Opt["emailFrom"]);
+        $prep->headers = array("from" => $Opt["emailFromHeader"] . MAILER_EOL, "to" => "");
         foreach (self::$email_fields as $lcfield => $field)
             if (($text = (string) @$m[$lcfield]) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
-                    $headers[$lcfield] = $hdr . MAILER_EOL;
+                    $prep->headers[$lcfield] = $hdr . MAILER_EOL;
                 else {
                     $prep->errors[$lcfield] = $text;
                     if (!@$rest["no_error_quit"])
                         $Conf->errorMsg("$field destination “<tt>" . htmlspecialchars($text) . "</tt>” isn't a valid email list.");
                 }
             }
-        $prep->headers = $headers;
+        $prep->headers["mime-version"] = "MIME-Version: 1.0" . MAILER_EOL;
+        $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . MAILER_EOL;
 
         if (@$prep->errors && !@$rest["no_error_quit"])
             return false;
@@ -455,9 +457,9 @@ class Mailer {
 
     static function send_preparation($prep) {
         global $Conf, $Opt;
-
-        // create a valid To: header
         $headers = $prep->headers;
+
+        // create valid To: header
         $to = $prep->to;
         if (is_array($to))
             $to = join(", ", $to);
@@ -478,15 +480,17 @@ class Mailer {
                 if (!isset($Opt["sendmailParam"]))
                     $extra = "-f" . escapeshellarg($Opt["emailSender"]);
             }
-            if (!@$Opt["emailFromHeader"])
-                $Opt["emailFromHeader"] = MimeText::encode_email_header("From: ", $Opt["emailFrom"]);
-            return mail($to, $prep->subject, $prep->body, join("", $headers) . $Opt["emailFromHeader"], $extra);
+            $headers = join("", $headers);
+            if (str_ends_with($headers, MAILER_EOL))
+                $headers = substr($headers, 0, strlen($headers) - strlen(MAILER_EOL));
+            return mail($to, $prep->subject, $prep->body, $headers, $extra);
 
         } else if (!$Opt["sendEmail"]
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
-            $text = ($to ? "To: $to\r\n" : "") . join("", $headers)
-                . "Subject: $prep->subject\r\n\r\n" . $prep->body;
+            $text = ($to ? "To: $to\r\n" : "")
+                . "Subject: $prep->subject\r\n"
+                . join("", $headers) . "\r\n" . $prep->body;
             return $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
         }
     }
