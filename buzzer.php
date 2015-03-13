@@ -66,7 +66,7 @@ function trackertable_paper_row(hc, idx, paper) {
 }
 function trackertable() {
     var dl = hotcrp_status, hc = new HtmlCollector;
-    if (!dl.tracker)
+    if (!dl.tracker || !dl.tracker.papers)
         hc.push("<h2>No discussion<\h2>");
     else {
         hc.push("<table>", "<\/table>");
