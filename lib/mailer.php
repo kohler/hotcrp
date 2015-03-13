@@ -416,7 +416,8 @@ class Mailer {
         // expand the template
         $m = $this->expand($template);
         $prep = (object) array();
-        $prep->subject = substr(MimeText::encode_header("Subject: ", $m["subject"]), 9);
+        $subject = MimeText::encode_header("Subject: ", $m["subject"]);
+        $prep->subject = substr($subject, 9);
         $prep->body = $m["body"];
 
         // look up recipient; use preferredEmail if set
@@ -435,7 +436,7 @@ class Mailer {
         // parse headers
         if (!@$Opt["emailFromHeader"])
             $Opt["emailFromHeader"] = MimeText::encode_email_header("From: ", $Opt["emailFrom"]);
-        $prep->headers = array("from" => $Opt["emailFromHeader"] . MAILER_EOL, "to" => "");
+        $prep->headers = array("from" => $Opt["emailFromHeader"] . MAILER_EOL, "subject" => $subject . MAILER_EOL, "to" => "");
         foreach (self::$email_fields as $lcfield => $field)
             if (($text = (string) @$m[$lcfield]) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
@@ -457,6 +458,8 @@ class Mailer {
 
     static function send_preparation($prep) {
         global $Conf, $Opt;
+        if (!isset($Opt["internalMailer"]))
+            $Opt["internalMailer"] = strncasecmp(PHP_OS, "WIN", 3) != 0;
         $headers = $prep->headers;
 
         // create valid To: header
@@ -464,33 +467,44 @@ class Mailer {
         if (is_array($to))
             $to = join(", ", $to);
         $to = MimeText::encode_email_header("To: ", $to);
-        if (strpos($to, MAILER_EOL) === false) {
-            unset($headers["to"]);
-            $to = substr($to, 4); // skip "To: "
-        } else {
-            $headers["to"] = $to . MAILER_EOL;
-            $to = "";
+        $headers["to"] = $to . MAILER_EOL;
+
+        // set sendmail parameters
+        $extra = defval($Opt, "sendmailParam", "");
+        if (isset($Opt["emailSender"])) {
+            @ini_set("sendmail_from", $Opt["emailSender"]);
+            if (!isset($Opt["sendmailParam"]))
+                $extra = "-f" . escapeshellarg($Opt["emailSender"]);
+        }
+
+        if ($prep->sendable && $Opt["internalMailer"]
+            && ($sendmail = ini_get("sendmail_path"))) {
+            $htext = join("", $headers);
+            $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
+            fwrite($f, $htext . MAILER_EOL . $prep->body);
+            $status = pclose($f);
+            if (pcntl_wifexited($status) && pcntl_wexitstatus($status) == 0)
+                return true;
+            else {
+                $Opt["internalMailer"] = false;
+                error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
+            }
         }
 
         if ($prep->sendable) {
-            // set sendmail parameters
-            $extra = defval($Opt, "sendmailParam", "");
-            if (isset($Opt["emailSender"])) {
-                @ini_set("sendmail_from", $Opt["emailSender"]);
-                if (!isset($Opt["sendmailParam"]))
-                    $extra = "-f" . escapeshellarg($Opt["emailSender"]);
-            }
-            $headers = join("", $headers);
-            if (str_ends_with($headers, MAILER_EOL))
-                $headers = substr($headers, 0, strlen($headers) - strlen(MAILER_EOL));
-            return mail($to, $prep->subject, $prep->body, $headers, $extra);
+            if (strpos($to, MAILER_EOL) === false) {
+                unset($headers["to"]);
+                $to = substr($to, 4); // skip "To: "
+            } else
+                $to = "";
+            unset($headers["subject"]);
+            $htext = substr(join("", $headers), 0, -2);
+            return mail($to, $prep->subject, $prep->body, $htext, $extra);
 
         } else if (!$Opt["sendEmail"]
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
-            $text = ($to ? "To: $to\r\n" : "")
-                . "Subject: $prep->subject\r\n"
-                . join("", $headers) . "\r\n" . $prep->body;
+            $text = join("", $headers) . MAILER_EOL . $prep->body;
             return $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
         }
     }

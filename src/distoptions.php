@@ -63,9 +63,15 @@ $Opt["dbName"] = "FIXME";
 //                   default Cc is $Opt["contactEmail"].
 //   emailReplyTo    If set, default "Reply-To:" address for email sent by
 //                   HotCRP.
-//   sendmailParam   Extra parameters to be passed to PHP's mail() function.
-//                   If your system's mailer is not sendmail, you may need to
-//                   change the default value; see src/mailer.php.
+//   sendmailParam   Extra parameters to be passed to your mailer. The default
+//                   is derived from $Opt["emailSender"]. If your system's
+//                   mailer is not sendmail, you may need to change the
+//                   default value; see src/mailer.php.
+//   internalMailer  Set to true to use HotCRP's replacement for PHP's weirdo
+//                   mail() function, false to use PHP's mail() function.
+//                   Defaults to false on Windows, true elsewhere. A
+//                   replacement for PHP's mail() is desired because of PHP
+//                   mail()'s confused handling of CRLF issues.
 //   postfixMailer   Set to true if your system mailer is UNIX Postfix and
 //                   HotCRP mail has garbled headers, particularly for long or
 //                   non-ASCII subject lines. (The symptom is that some mail
