@@ -396,6 +396,7 @@ class ReviewForm {
     }
 
     static function make_abbreviation($name, $abbrdetail, $abbrtype) {
+        $name = str_replace("'", "", $name);
         if ($abbrdetail == 0)
             $name = preg_replace('/\(.*?\)/', ' ', $name);
 
@@ -405,7 +406,7 @@ class ReviewForm {
             $name = $xname ? : $name;
         }
 
-        $a = preg_split("/[-\s,.?!'()\[\]]+/", ucwords($name));
+        $a = preg_split("/[-\s,.?!()\[\]]+/", ucwords($name));
 
         // truncate
         array_splice($a, min(max(3, $abbrdetail), count($a)));
