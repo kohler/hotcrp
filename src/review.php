@@ -118,7 +118,7 @@ class ReviewField {
 
     public function analyze() {
         if (!$this->analyzed) {
-            $this->abbreviation1 = ReviewForm::abbreviation($this->name, 0, 1);
+            $this->abbreviation1 = ReviewForm::make_abbreviation($this->name, 0, 1);
             if ($this->has_options) {
                 $scores = array_keys($this->options);
                 if (count($scores) == 1) {
@@ -350,7 +350,7 @@ class ReviewForm {
         for ($abbrdetail = 0; $abbrdetail < 5 && count($fdupes); ++$abbrdetail) {
             $fmap = array();
             foreach ($fdupes as $f) {
-                $f->abbreviation = self::abbreviation($f->name, $abbrdetail, 0);
+                $f->abbreviation = self::make_abbreviation($f->name, $abbrdetail, 0);
                 $fmap[$f->abbreviation][] = $f;
             }
             $fdupes = array();
@@ -395,17 +395,17 @@ class ReviewForm {
         return $x;
     }
 
-    static function abbreviation($name, $abbrdetail, $abbrtype) {
+    static function make_abbreviation($name, $abbrdetail, $abbrtype) {
         if ($abbrdetail == 0)
             $name = preg_replace('/\(.*?\)/', ' ', $name);
 
         // try to filter out noninteresting words
         if ($abbrdetail < 2) {
-            $xname = trim(preg_replace('/\b(?:a|an|be|for|in|of|the|to)\b/i', '', $name));
+            $xname = trim(preg_replace('/\b(?:a|an|be|for|in|of|the|to|with)\b/i', '', $name));
             $name = $xname ? : $name;
         }
 
-        $a = preg_split("/[-\s,.()\[\]]+/", ucwords($name));
+        $a = preg_split("/[-\s,.?!()\[\]]+/", ucwords($name));
 
         // truncate
         array_splice($a, min(max(3, $abbrdetail), count($a)));
