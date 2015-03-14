@@ -1151,11 +1151,19 @@ class PaperSearch {
             $compar = array(null);
         }
 
-        $xtags = $this->_expand_tag($tagword, $keyword == "tag");
-        foreach ($xtags as $tag)
-            $this->_search_one_tag($tag, $keyword, $compar, $qt);
-        if (count($xtags) == 0)
-            $qt[] = new SearchTerm("f");
+        $negated = false;
+        if (substr($tagword, 0, 1) === "-" && $keyword == "tag") {
+            $negated = true;
+            $tagword = ltrim(substr($tagword, 1));
+        }
+
+        $qx = array();
+        foreach ($this->_expand_tag($tagword, $keyword == "tag") as $tag)
+            $this->_search_one_tag($tag, $keyword, $compar, $qx);
+        $qx = SearchTerm::combine("or", $qx);
+        if ($qx && $negated)
+            $qx = SearchTerm::negate($qx);
+        $qt[] = $qx ? : new SearchTerm("f");
     }
 
     function _search_options($word, &$qt, $report_error) {
@@ -1437,13 +1445,9 @@ class PaperSearch {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
             return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
         } else if (substr($word, 0, 1) == "#") {
-            $re = '/\A#' . ($this->privChair ? '(?:[\w@.]+~)?' : '')
-                . TAG_REGEX_OPTVALUE . '(?:[-#=!<>\d.]|≠|≤|≥)*\z/';
-            if (preg_match($re, $word, $m)) {
-                $qe = $this->_searchQueryWord("tag:" . $word, false);
-                if (!$qe->isfalse())
-                    return $qe;
-            }
+            $qe = $this->_searchQueryWord("tag:" . $word, false);
+            if (!$qe->isfalse())
+                return $qe;
         }
 
         // Allow searches like "ovemer>2"; parse as "ovemer:>2".
