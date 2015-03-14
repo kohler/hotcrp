@@ -2193,7 +2193,13 @@ return function () {
 
 var make_bubble = (function () {
 var capdir = ["Top", "Right", "Bottom", "Left"],
-    lcdir = ["top", "right", "bottom", "left"];
+    lcdir = ["top", "right", "bottom", "left"],
+    dir_to_taildir = {
+        "0": 0, "1": 1, "2": 2, "3": 3,
+        "t": 0, "r": 1, "b": 2, "l": 3,
+        "n": 0, "e": 1, "s": 2, "w": 3
+    },
+    SPACE = 8;
 
 function cssbc(dir) {
     return "border" + capdir[dir] + "Color";
@@ -2203,25 +2209,47 @@ function cssbw(dir) {
     return "border" + capdir[dir] + "Width";
 }
 
+var roundpixel = Math.floor;
+if (window.devicePixelRatio && window.devicePixelRatio > 1)
+    roundpixel = function (x) {
+        return Math.floor(x * window.devicePixelRatio) / window.devicePixelRatio;
+    };
+
 return function (content, bubopt) {
-    if (!bubopt)
-        bubopt = {c: false};
+    if (!bubopt && content && typeof content === "object") {
+        bubopt = content;
+        content = null;
+    } else if (!bubopt)
+        bubopt = {};
     else if (typeof bubopt === "string")
-        bubopt = {c: bubopt};
-    bubopt.cc = bubopt.c ? " " + bubopt.c : "";
-    bubopt.sz = bubopt.sz || 10;
-    var bubdiv = $('<div class="bubble' + bubopt.cc + '"><div class="bubtail0' + bubopt.cc + '"></div><div class="bubcontent"></div><div class="bubtail1' + bubopt.cc + '"></div></div>')[0],
-        bubch = bubdiv.childNodes,
-        dir = null;
+        bubopt = {color: bubopt};
+
+    var nearpos = null, dirspec = bubopt.dir || "r", dir = null,
+        color = bubopt.color ? " " + bubopt.color : "", size = bubopt.size || 8;
+
+    var bubdiv = $('<div class="bubble' + color + '"><div class="bubtail0' + color + '"></div><div class="bubcontent"></div><div class="bubtail1' + color + '"></div></div>')[0];
     $("body")[0].appendChild(bubdiv);
+    var bubch = bubdiv.childNodes;
 
     function to_rgba(c) {
         var m = c.match(/^rgb\((.*)\)$/);
         return m ? "rgba(" + m[1] + ", 1)" : c;
     }
 
-    function recolor() {
-        var yc, i;
+    function change_tail_direction() {
+        var divbw = bubdiv.style[cssbw(dir)], bw = [0, 0, 0, 0];
+        bw[dir^1] = bw[dir^3] = (size/2) + "px";
+        bw[dir^2] = (size - divbw) + "px";
+        bubch[0].style.borderWidth = bw.join(" ");
+        bw[dir^2] = (size - 2*divbw) + "px";
+        bubch[2].style.borderWidth = bw.join(" ");
+
+        var i, yc;
+        for (i = 1; i <= 3; ++i)
+            bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
+        bubch[0].style[lcdir[dir]] = (-size) + "px";
+        bubch[2].style[lcdir[dir]] = (-size + 2*divbw) + "px";
+
         for (i = 0; i < 3; i += 2)
             bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
             bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
@@ -2233,77 +2261,82 @@ return function (content, bubopt) {
         bubch[2].style[cssbc(dir^2)] = yc;
     }
 
-    function position_tail() {
-        var x, y, pos = $(bubdiv).geometry(true);
+    function constrain(za, z0, z1, bdim, noconstrain) {
+        var z = za - bdim / 2;
+        if (!noconstrain && z < z0 + SPACE)
+            z = Math.min(za - size, z0 + SPACE);
+        else if (!noconstrain && z + bdim > z1 - SPACE)
+            z = Math.max(za + size - bdim, z1 - SPACE - bdim);
+        return z;
+    }
+
+    function show() {
+        var noflip = /!/.test(dirspec), noconstrain = /\*/.test(dirspec),
+            ds = dirspec.replace(/[!*]/g, "");
+        if (dir_to_taildir[ds] != null)
+            ds = dir_to_taildir[ds];
+        var bpos = $(bubdiv).geometry(true), wpos = $(window).geometry();
+        var bw = bpos.width + size, bh = bpos.height + size;
+
+        if (ds === "a" || ds === "") {
+            if (bh > Math.max(nearpos.top - wpos.top, wpos.bottom - nearpos.bottom))
+                ds = "h";
+            else
+                ds = "v";
+        }
+        if ((ds === "v" && nearpos.bottom + bh > wpos.bottom - 3*SPACE
+             && nearpos.top - bh > wpos.top + 3*SPACE)
+            || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom))
+            ds = 2;
+        else if (ds === "v"
+                 || (ds === 2 && !noflip && nearpos.top - bh < wpos.top))
+            ds = 0;
+        else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
+                  && nearpos.right + bw < wpos.right - 3*SPACE)
+                 || (ds === 1 && !noflip && nearpos.left - bw < wpos.left))
+            ds = 3;
+        else
+            ds = 1;
+
+        if (ds !== dir) {
+            dir = ds;
+            change_tail_direction();
+        }
+
+        var x, y, xa, ya, d;
         if (dir & 1) {
-            y = Math.floor((pos.height - bubopt.sz) / 2);
-            bubch[0].style.top = bubch[2].style.top = y + "px";
+            ya = (nearpos.top + nearpos.bottom) / 2;
+            y = constrain(ya, wpos.top, wpos.bottom, bh - size, noconstrain);
+            d = roundpixel(ya - y - size / 2);
+            bubch[0].style.top = bubch[2].style.top = d + "px";
+
+            x = dir == 1 ? nearpos.left - bw : nearpos.right;
         } else {
-            x = Math.floor((pos.width - bubopt.sz) / 2);
-            bubch[0].style.left = bubch[2].style.left = x + "px";
+            xa = (nearpos.left + nearpos.right) / 2;
+            x = constrain(xa, wpos.left, wpos.right, bw - size, noconstrain);
+            d = roundpixel(xa - x - size / 2);
+            bubch[0].style.left = bubch[2].style.left = d + "px";
+
+            y = dir == 0 ? nearpos.bottom : nearpos.top - bh;
         }
+
+        bubdiv.style.left = roundpixel(x) + "px";
+        bubdiv.style.top = roundpixel(y) + "px";
+        bubdiv.style.visibility = "visible";
     }
-
-    function set_direction(xdir) {
-        var i;
-        xdir = {"0": 0, "1": 1, "2": 2, "3": 3, "t": 0, "l": 3, "r": 1, "b": 2}[xdir];
-        if (dir != xdir) {
-            dir = xdir;
-
-            var bw = [0, 0, 0, 0];
-            bw[dir^1] = bw[dir^3] = (bubopt.sz/2) + "px";
-            bw[dir^2] = (bubopt.sz-1) + "px";
-            bubch[0].style.borderWidth = bw.join(" ");
-            bw[dir^2] = (bubopt.sz-2) + "px";
-            bubch[2].style.borderWidth = bw.join(" ");
-
-            for (i = 1; i <= 3; ++i)
-                bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
-            bubch[0].style[lcdir[dir]] = (-bubopt.sz) + "px";
-            bubch[2].style[lcdir[dir]] = (-bubopt.sz + 2) + "px";
-
-            recolor();
-        }
-    }
-    set_direction(1);
 
     var bubble = {
-        show: function (x, y) {
-            var pos = $(bubdiv).geometry(true);
-            if (dir & 1)
-                y -= pos.height / 2;
-            else
-                x -= pos.width / 2;
-            if (dir == 1)
-                x -= pos.width;
-            if (dir == 2)
-                y -= pos.height;
-            bubdiv.style.left = Math.floor(x) + "px";
-            bubdiv.style.top = Math.floor(y) + "px";
-            position_tail();
-            bubdiv.style.visibility = "visible";
+        near: function (epos, dir) {
+            if (epos.tagName === "string" || epos.jquery)
+                epos = $(epos).geometry(true);
+            nearpos = epos;
+            if (dir != null)
+                dirspec = dir;
+            show();
             return bubble;
         },
-        near: function (elt, dir) {
-            var epos = $(elt).geometry(true),
-                bpos = $(bubdiv).geometry(true),
-                wpos = $(window).geometry();
-            if (dir == null) {
-                if (wpos.right - epos.right > epos.left - wpos.left)
-                    dir = 3;
-                else
-                    dir = 1;
-            }
-            set_direction(dir);
-            if (dir == 3)
-                bubble.show(epos.right + 6, (epos.top + epos.bottom) / 2);
-            else if (dir == 1)
-                bubble.show(epos.left - 6, (epos.top + epos.bottom) / 2);
-            else if (dir == 0)
-                bubble.show((epos.left + epos.right) / 2, epos.bottom + 6);
-            else
-                bubble.show((epos.left + epos.right) / 2, epos.top - 6);
-            return bubble;
+        show: function (x, y) {
+            return bubble.near({top: y, right: x, bottom: y, left: x});
         },
         remove: function () {
             if (bubdiv) {
@@ -2311,12 +2344,16 @@ return function (content, bubopt) {
                 bubdiv = null;
             }
         },
-        color: function (color) {
-            color = (color ? " " + color : "");
-            bubdiv.className = "bubble" + bubopt.cc + color;
-            bubch[0].className = "bubtail0" + bubopt.cc + color;
-            bubch[2].className = "bubtail1" + bubopt.cc + color;
-            recolor();
+        color: function (newcolor) {
+            newcolor = newcolor ? " " + newcolor : "";
+            if (color !== newcolor) {
+                color = newcolor;
+                bubdiv.className = "bubble" + color;
+                bubch[0].className = "bubtail0" + color;
+                bubch[2].className = "bubtail1" + color;
+                dir = null;
+                nearpos && show();
+            }
             return bubble;
         },
         content: function (content) {
@@ -2329,7 +2366,7 @@ return function (content, bubopt) {
                 if (content)
                     n.appendChild(content);
             }
-            position_tail();
+            nearpos && show();
             return bubble;
         },
         hover: function (enter, leave) {
@@ -2344,7 +2381,7 @@ return function (content, bubopt) {
 
 
 function tooltip(elt, content) {
-    var bub = make_bubble(content, {c: "tooltip", sz: 6}), to = null, refcount = 0;
+    var bub = make_bubble(content, {color: "tooltip", size: 6}), to = null, refcount = 0;
     function erase() {
         to = clearTimeout(to);
         bub.remove();
@@ -2565,21 +2602,27 @@ function tag_mousemove(evt) {
 
     // create dragger
     if (!dragger)
-        dragger = make_bubble();
+        dragger = make_bubble({color: "edittagbubble", dir: "1!*"});
 
     // set dragger content and show it
     m = "#" + rowanal[srcindex].id;
     if (rowanal[srcindex].titlehint)
-        m += " " + rowanal[srcindex].titlehint;
+        m += " &nbsp;" + rowanal[srcindex].titlehint;
+    var v;
     if (srcindex != dragindex) {
         a = calculate_shift(srcindex, dragindex);
-        if (a[srcindex].newvalue !== false)
-            m += " <span class='dim'> &rarr; " + dragtag + "#" + a[srcindex].newvalue + "</span>";
+        v = a[srcindex].newvalue;
+    } else
+        v = rowanal[srcindex].tagvalue;
+    if (v !== false) {
+        m += '<span style="padding-left:2em';
+        if (srcindex !== dragindex)
+            m += ';font-weight:bold';
+        m += '">#' + dragtag + '#' + v + '</span>';
     }
-    dragger.content(m);
-    dragger.color(dragindex == srcindex && dragwander ? "gray" : "");
-    dragger.show(Math.min($(rowanal[srcindex].entry).offset().left - 30,
-                          evt.clientX - 20), y);
+
+    dragger.content(m).show($(rowanal[srcindex].entry).offset().left - 14, y)
+        .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
 
     event_stop(evt);
 }

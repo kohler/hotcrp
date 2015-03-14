@@ -2123,13 +2123,22 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	z-index: 1000;
 	display: table-cell;
 	padding: 2px 8px;
-	border-radius: 5px;
+	border-radius: 4px;
 	background-color: rgba(246, 244, 189, 0.88);
 	border: 1px solid #b8af25;
 }
 .bubble.gray {
 	background-color: rgba(246, 246, 246, 0.88);
 	border: 1px solid #b8b8b8;
+}
+.bubble.edittagbubble {
+	background-color: #222233;
+	border-width: 0;
+	color: white;
+	font-size: smaller;
+}
+.bubble.edittagbubble.sametag {
+	background-color: #444466;
 }
 .bubble.errorbubble {
 	max-width: 20em;
@@ -2149,6 +2158,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .bubtail0, .bubtail1 {
 	position: absolute;
 	border-style: solid;
+	border-width: 0;
 	width: 0;
 	height: 0;
 }
