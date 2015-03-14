@@ -578,7 +578,7 @@ function display_tracker() {
     mytracker = dl.tracker && (i = window_trackerstate())
         && dl.tracker.trackerid == i[1];
     if ((e = $$("trackerconnectbtn")))
-        e.className = (mytracker ? "btn btn-danger" : "btn btn-default");
+        e.className = "btn " + (mytracker ? "btn-danger" : "btn-default") + " hottooltip";
 
     if (!dl.tracker) {
         if (mne)
@@ -613,7 +613,7 @@ function display_tracker() {
 
     t += '<div id="trackerlogo"></div>';
     if (dl.is_admin)
-        t += '<div style="float:right"><a class="btn btn-transparent btn-closer" href="#" onclick="return hotcrp_deadlines.tracker(-1)" title="Stop meeting tracker">x</a></div>';
+        t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" hottooltip="Stop meeting tracker">x</a></div>';
     if (dl.tracker && dl.tracker.position_at)
         t += '<div style="float:right" id="trackerelapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {
@@ -626,6 +626,7 @@ function display_tracker() {
         t += "</tr></tbody></table>";
     }
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
+    jQuery(mne).find(".hottooltip").each(add_tooltip);
     if (dl.tracker && dl.tracker.position_at)
         tracker_show_elapsed();
     mnspace.style.height = mne.offsetHeight + "px";
@@ -636,6 +637,8 @@ function display_tracker() {
 
 function tracker(start) {
     var trackerstate, list = "";
+    if (window.global_tooltip)
+        window.global_tooltip.erase();
     if (start < 0) {
         Miniajax.post(hoturl_post("api", "fn=track&track=stop"), load, 10000);
         if (tracker_refresher) {
@@ -2286,10 +2289,10 @@ return function (content, bubopt) {
         }
         if ((ds === "v" && nearpos.bottom + bh > wpos.bottom - 3*SPACE
              && nearpos.top - bh > wpos.top + 3*SPACE)
-            || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom))
+            || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom)
+            || (ds === 2 && (noflip || nearpos.top - bh >= wpos.top + SPACE)))
             ds = 2;
-        else if (ds === "v"
-                 || (ds === 2 && !noflip && nearpos.top - bh < wpos.top))
+        else if (ds === "v" || ds === 2)
             ds = 0;
         else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
                   && nearpos.right + bw < wpos.right - 3*SPACE)
@@ -2310,14 +2313,14 @@ return function (content, bubopt) {
             d = roundpixel(ya - y - size / 2);
             bubch[0].style.top = bubch[2].style.top = d + "px";
 
-            x = dir == 1 ? nearpos.left - bw : nearpos.right;
+            x = dir == 1 ? nearpos.left - bw : nearpos.right + size;
         } else {
             xa = (nearpos.left + nearpos.right) / 2;
             x = constrain(xa, wpos.left, wpos.right, bw - size, noconstrain);
             d = roundpixel(xa - x - size / 2);
             bubch[0].style.left = bubch[2].style.left = d + "px";
 
-            y = dir == 0 ? nearpos.bottom : nearpos.top - bh;
+            y = dir == 0 ? nearpos.bottom + size : nearpos.top - bh;
         }
 
         bubdiv.style.left = roundpixel(x) + "px";
@@ -2357,8 +2360,10 @@ return function (content, bubopt) {
             return bubble;
         },
         content: function (content) {
-            var n = bubdiv.childNodes[1];
-            if (typeof content == "string")
+            var n = bubch[1];
+            if (content === undefined)
+                return n.innerHTML;
+            else if (typeof content == "string")
                 n.innerHTML = content;
             else {
                 while (n.childNodes.length)
@@ -2380,14 +2385,25 @@ return function (content, bubopt) {
 })();
 
 
-function tooltip(elt, content) {
-    var bub = make_bubble(content, {color: "tooltip", size: 6}), to = null, refcount = 0;
+function tooltip(elt, content, dir, isglobal) {
+    var tt;
+    if (isglobal && (tt = window.global_tooltip)) {
+        if (tt.elt !== elt || tt.content !== content)
+            tt.erase();
+        else
+            return tt;
+    }
+
+    var bub = make_bubble(content, {color: "tooltip", size: 6, dir: dir || "v"}),
+        to = null, refcount = 0;
     function erase() {
         to = clearTimeout(to);
         bub.remove();
         jQuery(elt).removeData("hotcrp_tooltip");
+        if (window.global_tooltip === tt)
+            delete window.global_tooltip;
     }
-    var tt = {
+    tt = {
         enter: function () {
             to = clearTimeout(to);
             ++refcount;
@@ -2397,18 +2413,23 @@ function tooltip(elt, content) {
             if (--refcount == 0)
                 to = setTimeout(erase, 200);
         },
-        erase: erase
+        erase: erase, elt: elt, content: content
     };
     jQuery(elt).data("hotcrp_tooltip", tt);
     bub.near(elt).hover(tt.enter, tt.exit);
+    if (isglobal)
+        window.global_tooltip = tt;
     return tt;
 }
 
 function tooltip_enter(evt) {
-    var j = jQuery(this), tt;
-    if (!(tt = j.data("hotcrp_tooltip")))
-        tt = tooltip(this, "TOOLTIP");
-    tt.enter();
+    var j = jQuery(this), tt, text;
+    if (!(tt = j.data("hotcrp_tooltip"))
+        && !window.disable_tooltip
+        && (text = j.attr("hottooltip")))
+        tt = tooltip(this, text, j.attr("hottooltipdir"), true);
+    if (tt)
+        tt.enter();
 }
 
 function tooltip_leave(evt) {
@@ -2416,6 +2437,12 @@ function tooltip_leave(evt) {
     if ((tt = j.data("hotcrp_tooltip")))
         tt.exit();
 }
+
+function add_tooltip() {
+    jQuery(this).hover(tooltip_enter, tooltip_leave);
+}
+
+jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });
 
 
 window.add_edittag_ajax = (function () {
@@ -2601,8 +2628,10 @@ function tag_mousemove(evt) {
     dragwander = dragwander || dragindex != srcindex;
 
     // create dragger
-    if (!dragger)
+    if (!dragger) {
         dragger = make_bubble({color: "edittagbubble", dir: "1!*"});
+        window.disable_tooltip = true;
+    }
 
     // set dragger content and show it
     m = "#" + rowanal[srcindex].id;
@@ -2621,7 +2650,7 @@ function tag_mousemove(evt) {
         m += '">#' + dragtag + '#' + v + '</span>';
     }
 
-    dragger.content(m).show($(rowanal[srcindex].entry).offset().left - 14, y)
+    dragger.content(m).show($(rowanal[srcindex].entry).offset().left - 6, y)
         .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
 
     event_stop(evt);
@@ -2762,8 +2791,10 @@ function tag_mouseup(evt) {
         dragging.detachEvent("onmousecapture", tag_mouseup);
         dragging.releaseCapture();
     }
-    if (dragger)
+    if (dragger) {
         dragger = dragger.remove();
+        delete window.disable_tooltip;
+    }
     if (scroller)
         scroller = (clearInterval(scroller), null);
 

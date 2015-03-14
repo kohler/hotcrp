@@ -195,7 +195,7 @@ class PaperTable {
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
-                $c .= "<a class=\"q fn\" title=\"Edit\" "
+                $c .= "<a class=\"q fn hottooltip\" hottooltip=\"Edit\" "
                     . "href=\"" . selfHref(array("atab" => $what))
                     . "\" onclick=\"return foldup(this,event$foldnumarg)\">"
                     . $n . "</a><span class=\"fx\">" . $n . "</span>";
@@ -218,8 +218,8 @@ class PaperTable {
         $c .= "</span>";
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
-                . "<a class=\"xx\" href=\"" . selfHref(array("atab" => $what))
-                . "\" onclick=\"return foldup(this,event$foldnumarg)\" title=\"Edit\">"
+                . "<a class=\"xx hottooltip\" href=\"" . selfHref(array("atab" => $what))
+                . "\" onclick=\"return foldup(this,event$foldnumarg)\" hottooltip=\"Edit\">"
                 . "<span style='display:inline-block;position:relative;width:15px'>"
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
@@ -281,10 +281,10 @@ class PaperTable {
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
-            $t[] = "<span class='nowrap' title='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12", "title" => "Time of most recent update")) . " " . $Conf->printableTimestamp($tm) . "</span>";
+            $t[] = "<span class='nowrap hottooltip' hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->printableTimestamp($tm) . "</span>";
         $sha1 = defval($data, "sha1");
         if ($sha1)
-            $t[] = "<span class='nowrap' title='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12", "title" => "SHA-1 checksum")) . " " . bin2hex($sha1) . "</span>";
+            $t[] = "<span class='nowrap hottooltip' hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
         if (count($t) > 0)
             return "<span class='hint'>" . join(" <span class='barsep'>·</span> ", $t) . "</span>";
         else

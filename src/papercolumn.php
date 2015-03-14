@@ -249,7 +249,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     public function header($pl, $row, $ordinal) {
-        return "<span class='hastitle' title='\"1/2\" means 1 complete review out of 2 assigned reviews'>#&nbsp;Reviews</span>";
+        return '<span class="hottooltip" hottooltip="# completed reviews / # assigned reviews" hottooltipdir="b">#&nbsp;Reviews</span>';
     }
     public function col() {
         return "<col width='0*' />";
@@ -1150,7 +1150,7 @@ class FormulaPaperColumn extends PaperColumn {
         $x = $this->formula->column_header();
         if ($this->formula->headingTitle
             && $this->formula->headingTitle != $x)
-            return "<span class=\"hastitle\" title=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
+            return "<span class=\"hottooltip\" hottooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
         else
             return htmlspecialchars($x);
     }

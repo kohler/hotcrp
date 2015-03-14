@@ -1155,7 +1155,7 @@ class PaperList extends BaseList {
             if ($this->sortable && $url) {
                 global $ConfSiteBase;
                 $sortUrl = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-                $q = '<a class="pl_sort" rel="nofollow" title="Change sort" href="' . $sortUrl;
+                $q = '<a class="pl_sort hottooltip" rel="nofollow" hottooltipdir="b" href="' . $sortUrl;
             } else
                 $sortUrl = false;
 
@@ -1178,20 +1178,27 @@ class PaperList extends BaseList {
                 else
                     $defsortname = null;
 
-                if ($defsortname == "tagordersort")
-                    $ftext = '<span class="hastitle" title="Sort by tag order">#</span>';
-                else if ($defsortname == "searchsort")
-                    $ftext = '<span class="hastitle" title="Sort by search term order">#</span>';
+                $tooltip = "";
+                if ($defsortname == "tagordersort") {
+                    $tooltip = "Sort by tag order";
+                    $ftext = "#";
+                } else if ($defsortname == "searchsort") {
+                    $tooltip = "Sort by search term order";
+                    $ftext = "#";
+                }
+                if ($tooltip && strpos($ftext, "hottooltip") !== false)
+                    $tooltip = "";
                 if (count($this->sorters)
                     && ((($fdef->name == $this->sorters[0]->type
                           || $fdef->name == "edit" . $this->sorters[0]->type)
                          && $sortUrl)
-                        || $defsortname == $this->sorters[0]->type))
-                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . '" rel="nofollow" title="Reverse sort" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
-                else if ($fdef->sorter && $sortUrl)
-                    $colhead .= $q . urlencode($fdef->name) . "\">" . $ftext . "</a>";
+                        || $defsortname == $this->sorters[0]->type)) {
+                    $tooltip = $this->sorters[0]->reverse ? "Forward sort" : "Reverse sort";
+                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" hottooltip="' . $tooltip . '" hottooltipdir="b" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
+                } else if ($fdef->sorter && $sortUrl)
+                    $colhead .= $q . urlencode($fdef->name) . "\" hottooltip=\"$tooltip\">" . $ftext . "</a>";
                 else if ($defsortname)
-                    $colhead .= $q . urlencode($defsortname) . "\">" . $ftext . "</a>";
+                    $colhead .= $q . urlencode($defsortname) . "\" hottooltip=\"$tooltip\">" . $ftext . "</a>";
                 else
                     $colhead .= $ftext;
                 if ($titleextra && $fdef->cssname == "title") {
