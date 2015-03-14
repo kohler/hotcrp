@@ -2327,7 +2327,7 @@ return function (content, bubopt) {
 
     var bubble = {
         near: function (epos, dir) {
-            if (epos.tagName === "string" || epos.jquery)
+            if (epos.tagName || epos.jquery)
                 epos = $(epos).geometry(true);
             nearpos = epos;
             if (dir != null)
