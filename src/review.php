@@ -401,11 +401,11 @@ class ReviewForm {
 
         // try to filter out noninteresting words
         if ($abbrdetail < 2) {
-            $xname = trim(preg_replace('/\b(?:a|an|be|for|in|of|the|to|with)\b/i', '', $name));
+            $xname = trim(preg_replace('/\b(?:a|an|be|for|in|of|the|this|to|with)\b/i', '', $name));
             $name = $xname ? : $name;
         }
 
-        $a = preg_split("/[-\s,.?!()\[\]]+/", ucwords($name));
+        $a = preg_split("/[-\s,.?!'()\[\]]+/", ucwords($name));
 
         // truncate
         array_splice($a, min(max(3, $abbrdetail), count($a)));
