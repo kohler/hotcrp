@@ -44,7 +44,6 @@ class ReviewField {
     public function assign($j) {
         $this->name = (@$j->name ? $j->name : "<None>");
         $this->name_html = htmlspecialchars($this->name);
-        $this->abbreviation = ReviewForm::abbreviateField($this->name);
         $this->description = (@$j->description ? $j->description : "");
         $this->display_space = (int) @$j->display_space;
         if (!$this->has_options && $this->display_space < 3)
@@ -119,7 +118,7 @@ class ReviewField {
 
     public function analyze() {
         if (!$this->analyzed) {
-            $this->abbreviation1 = ReviewForm::abbreviateField($this->name, 1);
+            $this->abbreviation1 = ReviewForm::abbreviation($this->name, 0, 1);
             if ($this->has_options) {
                 $scores = array_keys($this->options);
                 if (count($scores) == 1) {
@@ -345,6 +344,20 @@ class ReviewForm {
         ksort($forder);
         foreach ($forder as $f)
             $this->forder[$f->id] = $f;
+
+        // set field abbreviations; try to ensure uniqueness
+        $fdupes = $forder;
+        for ($abbrdetail = 0; $abbrdetail < 5 && count($fdupes); ++$abbrdetail) {
+            $fmap = array();
+            foreach ($fdupes as $f) {
+                $f->abbreviation = self::abbreviation($f->name, $abbrdetail, 0);
+                $fmap[$f->abbreviation][] = $f;
+            }
+            $fdupes = array();
+            foreach ($fmap as $fs)
+                if (count($fs) > 1)
+                    array_splice($fdupes, count($fdupes), 0, $fs);
+        }
     }
 
     private function get_deprecated($table, $element) {
@@ -382,27 +395,29 @@ class ReviewForm {
         return $x;
     }
 
-    static function abbreviateField($name, $type = 0) {
-        $a = preg_split("/\s+/", ucwords($name));
+    static function abbreviation($name, $abbrdetail, $abbrtype) {
+        if ($abbrdetail == 0)
+            $name = preg_replace('/\(.*?\)/', ' ', $name);
 
         // try to filter out noninteresting words
-        $b = array();
-        foreach ($a as $w)
-            if ($w != "Be" && $w != "The" && $w != "A" && $w != "An" && $w != "For" && $w != "To" && $w != "Of")
-                $b[] = $w;
-        if (count($b) == 0)
-            $b = $a;
-
-        array_splice($b, min(3, count($a)));
-        $x = "";
-        if ($type == 1) {
-            foreach ($b as $w)
-                $x .= ($x == "" ? "" : "-") . strtolower($w);
-        } else {
-            foreach ($b as $w)
-                $x .= substr($w, 0, 3);
+        if ($abbrdetail < 2) {
+            $xname = trim(preg_replace('/\b(?:a|an|be|for|in|of|the|to)\b/i', '', $name));
+            $name = $xname ? : $name;
         }
-        return $x;
+
+        $a = preg_split("/[-\s,.()\[\]]+/", ucwords($name));
+
+        // truncate
+        array_splice($a, min(max(3, $abbrdetail), count($a)));
+
+        // abbreviate
+        if ($abbrtype == 1)
+            return strtolower(join("-", $a));
+        else {
+            foreach ($a as &$w)
+                $w = substr($w, 0, 3);
+            return join("", $a);
+        }
     }
 
     function unabbreviateField($name) {
