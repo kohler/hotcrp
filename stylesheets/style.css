@@ -2137,6 +2137,12 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	border: 2px solid red;
 	font-size: smaller;
 }
+.bubble.tooltip {
+	background-color: rgba(0, 0, 0, 0.75);
+	color: #ffffff;
+	border: 0 none;
+	font-size: 75%;
+}
 .bubble > .bubcontent {
 	margin: 2px 0;
 }

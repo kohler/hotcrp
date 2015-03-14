@@ -2210,7 +2210,7 @@ return function (content, bubopt) {
         bubopt = {c: bubopt};
     bubopt.cc = bubopt.c ? " " + bubopt.c : "";
     bubopt.sz = bubopt.sz || 10;
-    var bubdiv = $('<div class="bubble' + bubopt.cc + '"><div class="bubtail0 dir1' + bubopt.cc + '"></div><div class="bubcontent"></div><div class="bubtail1 dir1' + bubopt.cc + '"></div></div>')[0],
+    var bubdiv = $('<div class="bubble' + bubopt.cc + '"><div class="bubtail0' + bubopt.cc + '"></div><div class="bubcontent"></div><div class="bubtail1' + bubopt.cc + '"></div></div>')[0],
         bubch = bubdiv.childNodes,
         dir = null;
     $("body")[0].appendChild(bubdiv);
@@ -2249,8 +2249,6 @@ return function (content, bubopt) {
         xdir = {"0": 0, "1": 1, "2": 2, "3": 3, "t": 0, "l": 3, "r": 1, "b": 2}[xdir];
         if (dir != xdir) {
             dir = xdir;
-            bubch[0].className = "bubtail0 dir" + dir + bubopt.cc;
-            bubch[2].className = "bubtail1 dir" + dir + bubopt.cc;
 
             var bw = [0, 0, 0, 0];
             bw[dir^1] = bw[dir^3] = (bubopt.sz/2) + "px";
@@ -2284,6 +2282,7 @@ return function (content, bubopt) {
             bubdiv.style.top = Math.floor(y) + "px";
             position_tail();
             bubdiv.style.visibility = "visible";
+            return bubble;
         },
         near: function (elt, dir) {
             var epos = $(elt).geometry(true),
@@ -2304,6 +2303,7 @@ return function (content, bubopt) {
                 bubble.show((epos.left + epos.right) / 2, epos.bottom + 6);
             else
                 bubble.show((epos.left + epos.right) / 2, epos.top - 6);
+            return bubble;
         },
         remove: function () {
             if (bubdiv) {
@@ -2314,9 +2314,10 @@ return function (content, bubopt) {
         color: function (color) {
             color = (color ? " " + color : "");
             bubdiv.className = "bubble" + bubopt.cc + color;
-            bubch[0].className = "bubtail0 dir" + dir + bubopt.cc + color;
-            bubch[2].className = "bubtail1 dir" + dir + bubopt.cc + color;
+            bubch[0].className = "bubtail0" + bubopt.cc + color;
+            bubch[2].className = "bubtail1" + bubopt.cc + color;
             recolor();
+            return bubble;
         },
         content: function (content) {
             var n = bubdiv.childNodes[1];
@@ -2329,13 +2330,55 @@ return function (content, bubopt) {
                     n.appendChild(content);
             }
             position_tail();
+            return bubble;
+        },
+        hover: function (enter, leave) {
+            jQuery(bubdiv).hover(enter, leave);
+            return bubble;
         }
     };
 
-    bubble.content(content);
-    return bubble;
+    return bubble.content(content);
 };
 })();
+
+
+function tooltip(elt, content) {
+    var bub = make_bubble(content, {c: "tooltip", sz: 6}), to = null, refcount = 0;
+    function erase() {
+        to = clearTimeout(to);
+        bub.remove();
+        jQuery(elt).removeData("hotcrp_tooltip");
+    }
+    var tt = {
+        enter: function () {
+            to = clearTimeout(to);
+            ++refcount;
+        },
+        exit: function () {
+            to = clearTimeout(to);
+            if (--refcount == 0)
+                to = setTimeout(erase, 200);
+        },
+        erase: erase
+    };
+    jQuery(elt).data("hotcrp_tooltip", tt);
+    bub.near(elt).hover(tt.enter, tt.exit);
+    return tt;
+}
+
+function tooltip_enter(evt) {
+    var j = jQuery(this), tt;
+    if (!(tt = j.data("hotcrp_tooltip")))
+        tt = tooltip(this, "TOOLTIP");
+    tt.enter();
+}
+
+function tooltip_leave(evt) {
+    var j = jQuery(this), tt;
+    if ((tt = j.data("hotcrp_tooltip")))
+        tt.exit();
+}
 
 
 window.add_edittag_ajax = (function () {
