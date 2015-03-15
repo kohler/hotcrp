@@ -330,8 +330,12 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                         $n = "<i>Response</i>$n";
                 }
                 $tclass = "cmtlink";
-                if ($cr->commentTags && ($color = TagInfo::color_classes($cr->commentTags)))
-                    $tclass .= " cmtlinkcolor $color";
+                if ($cr->commentTags
+                    && ($color = TagInfo::color_classes($cr->commentTags))) {
+                    if (TagInfo::classes_have_colors($color))
+                        $tclass .= " cmtlinkcolor";
+                    $tclass .= " $color";
+                }
                 $cnames[] = '<a class="' . $tclass . '" href="#comment' . $cr->commentId . '">' . $n . '</a>';
             }
         if (count($cids) > 0)
