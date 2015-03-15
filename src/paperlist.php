@@ -995,10 +995,9 @@ class PaperList extends BaseList {
             $this->default_sort_column = PaperColumn::lookup("id");
         $this->sorters[0]->field = null;
 
-        if ($this->viewmap->sort) {
-            $sort_texts = is_array($this->viewmap->sort) ? $this->viewmap->sort : array($this->viewmap->sort);
+        if ($this->search->sorters) {
             $last_sorter = null;
-            foreach ($sort_texts as $sorter)
+            foreach ($this->search->sorters as $sorter)
                 if (($s = BaseList::parse_sorter($sorter))) {
                     if ($s->type
                         && ($c = PaperColumn::lookup($s->type))

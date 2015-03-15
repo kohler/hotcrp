@@ -75,9 +75,17 @@ class SearchTerm {
     }
     static function merge_float(&$float1, $float2) {
         if (!$float1 || !$float2)
-            return $float1 ? $float1 : $float2;
-        else
-            return array_replace_recursive($float1, $float2);
+            return $float1 ? : $float2;
+        else {
+            foreach ($float2 as $k => $v)
+                if ($k === "sort" && isset($float1["sort"]))
+                    array_splice($float1["sort"], count($float1["sort"]), 0, $v);
+                else if (isset($float1[$k]))
+                    $float1[$k] = array_replace_recursive($float1[$k], $v);
+                else
+                    $float1[$k] = $v;
+            return $float1;
+        }
     }
     static function extract_float(&$float, $qe) {
         if (!isset($float))
@@ -459,7 +467,8 @@ class PaperSearch {
     private $_ssRecursion = array();
     var $thenmap = null;
     var $headingmap = null;
-    var $viewmap;
+    public $viewmap;
+    public $sorters;
 
     private $_matches = null;
 
@@ -1386,11 +1395,12 @@ class PaperSearch {
         $words = array();
         $bypos = false;
         while ($text !== "") {
-            if (substr($text, 0, 1) === "(") {
-                $pos = self::find_end_balanced_parens($text);
-                $m = array("", substr($text, 0, $pos), substr($text, $pos));
-            } else
-                preg_match(',\A([^\s\(]+)(.*)\z,s', $text, $m);
+            preg_match(',\A([^\s\(]*)(.*)\z,s', $text, $m);
+            if (substr($m[2], 0, 1) === "(") {
+                $pos = self::find_end_balanced_parens($m[2]);
+                $m[1] .= substr($m[2], 0, $pos);
+                $m[2] = substr($m[2], $pos);
+            }
             $words[] = $m[1];
             $text = ltrim($m[2]);
             if ($m[1] == "by" && $bypos === false)
@@ -1610,9 +1620,10 @@ class PaperSearch {
             }
             if ($wtype != "" && $keyword != "sort")
                 $views[$wtype] = $a;
+            $f = array("view" => $views);
             if ($sorting)
-                $views["sort"] = $word;
-            $qt[] = SearchTerm::make_float(array("view" => $views));
+                $f["sort"] = array($word);
+            $qt[] = SearchTerm::make_float($f);
         }
 
         // Finally, look for a review field.
@@ -1662,7 +1673,8 @@ class PaperSearch {
         }
 
         // "show:" may be followed by a parenthesized expression
-        if ($keyword && substr($str, 0, 1) === "("
+        if ($keyword
+            && (substr($str, 0, 1) === "(" || substr($str, 0, 2) === "-(")
             && substr($word, $colon + 1, 1) !== "\""
             && ($keyword === "show" || $keyword === "showsort"
                 || $keyword === "sort" || $keyword === "formula")) {
@@ -2874,6 +2886,7 @@ class PaperSearch {
             while (($row = $result->fetch_object()))
                 $this->_matches[] = (int) $row->paperId;
         $this->viewmap = $qe->get_float("view", array());
+        $this->sorters = $qe->get_float("sort", array());
         Dbl::free($result);
 
         // extract regular expressions and set _reviewer if the query is
@@ -3001,7 +3014,7 @@ class PaperSearch {
     function has_sort() {
         return count($this->orderTags)
             || $this->numbered_papers() !== null
-            || @$this->viewmap["sort"];
+            || @$this->sorters;
     }
 
     function paperList() {
