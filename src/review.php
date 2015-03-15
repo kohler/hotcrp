@@ -140,8 +140,8 @@ class ReviewField {
     }
 
     public function web_abbreviation() {
-        return "<span class='hastitle' title=\"$this->name_html\">"
-            . htmlspecialchars($this->abbreviation) . "</span>";
+        return '<span class="hottooltip" hottooltip="' . $this->name_html
+            . '" hottooltipdir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
     }
 
     public function value_class($value) {

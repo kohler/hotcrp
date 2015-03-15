@@ -1679,20 +1679,21 @@ td.setrev_shortName input {
 	font-weight: bold;
 }
 
-a.pl_sort {
+a.pl_sort, a.pl_sort_def, a.pl_sort_def_rev {
+	text-decoration: none;
+	color: #444488;
+}
+a.pl_sort:hover, a.pl_sort_def:hover, a.pl_sort_def_rev:hover {
+	text-decoration: underline;
 	color: black;
 }
-a.pl_sort_def, a.pl_sort_def_rev {
-	padding-right: 11px;
-	margin-right: 0.4em;
-	text-decoration: none;
-	color: #660000;
+a.pl_sort_def:after {
+	content: "\25bc";
+	font-size: 90%;
 }
-a.pl_sort_def {
-	background: url(../images/sortdown.png) 100% 75% no-repeat;
-}
-a.pl_sort_def_rev {
-	background: url(../images/sortup.png) 100% 75% no-repeat;
+a.pl_sort_def_rev:after {
+	content: "\25b2";
+	font-size: 90%;
 }
 
 tbody.pltable_colored > tr.pl {

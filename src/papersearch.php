@@ -1401,7 +1401,7 @@ class PaperSearch {
         $next_words = array();
         for ($i = 0; $i != count($words); ++$i) {
             $w = $words[$i];
-            if (($bypos === false || $pos > $bypos)
+            if (($bypos === false || $i > $bypos)
                 && isset(self::$_sort_keywords[$w])) {
                 $x = self::$_sort_keywords[$w];
                 if ($x === "up")
@@ -1410,7 +1410,7 @@ class PaperSearch {
                     $sort->reverse = true;
                 else if (ctype_upper($x))
                     $sort->score = $x;
-            } else if ($bypos === false || $pos < $bypos)
+            } else if ($bypos === false || $i < $bypos)
                 $next_words[] = $w;
         }
 
