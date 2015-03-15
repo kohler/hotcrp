@@ -2788,7 +2788,7 @@ div.popupc, div.popupo {
 	background: #fff2f2;
 	position: absolute;
 	min-width: 15em;
-	max-width: 30em;
+	max-width: 32em;
 	z-index: 6;
 }
 div.popupc {
@@ -2799,6 +2799,9 @@ div.popupc p:first-child, div.popupo p:first-child {
 }
 div.popup_actions {
 	text-align: right;
+}
+div.popup_actions button, div.popup_actions input {
+	margin-left: 1em;
 }
 
 /* scores */

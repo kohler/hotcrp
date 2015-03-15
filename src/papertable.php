@@ -1656,7 +1656,7 @@ class PaperTable {
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . Ht::js_button("Cancel", "popup(null,'w',1)")
-    . " &nbsp;" . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
+    . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
     . "</div></div></form></div>");
             $Conf->footerScript("mktemptext('withdrawreason','Optional explanation')");
         }
@@ -1683,7 +1683,6 @@ class PaperTable {
                 Ht::hidden("doemail", 1, array("class" => "popup_populate"))
                     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
                     . Ht::js_button("Cancel", "popup(null,'delp',1)")
-                    . " &nbsp;"
                     . Ht::submit("delete", "Delete paper", array("class" => "bb")));
         }
 

@@ -25,8 +25,8 @@ if ($_GET["fn"] == "trackerstatus") { // used by hotcrp-comet
 if ($_GET["fn"] == "deadlines" && !$Me->has_database_account()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 604800) {
-        if ($kiosks->$key->update_at < $Now - 86400) {
+    if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 172800) {
+        if ($kiosks->$key->update_at < $Now - 3600) {
             $kiosks->$key->update_at = $Now;
             $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
         }

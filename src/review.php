@@ -1381,7 +1381,7 @@ $blind\n";
     . "<textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
     <div class='popup_actions'>"
     . Ht::js_button("Cancel", "popup(null,'ref',1)")
-    . " &nbsp;" . Ht::submit("Decline review", array("class" => "bb"))
+    . Ht::submit("Decline review", array("class" => "bb"))
     . "</div></div></form></div>", "declinereviewform");
             $Conf->footerScript("mktemptext('refusereviewreason','Optional explanation')", "declinereviewform_temptext");
             $buttons[] = "";
@@ -1412,7 +1412,7 @@ $blind\n";
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
   " . Ht::form_div($reviewPostLink, array("divclass" => "popup_actions"))
-    . Ht::js_button("Cancel", "popup(null,'d',1)") . " &nbsp;"
+    . Ht::js_button("Cancel", "popup(null,'d',1)")
     . Ht::submit("deletereview", "Delete review", array("class" => "bb"))
     . "</div></form></div>");
         }

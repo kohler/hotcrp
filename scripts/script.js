@@ -2965,7 +2965,7 @@ function override_deadlines(elt, callback) {
                      + (ejq.attr("hotoverridetext") || "")
                      + " Are you sure you want to override the deadline?</p>"
                      + '<form><div class="popup_actions">'
-                     + '<button type="button" name="cancel">Cancel</button> &nbsp;'
+                     + '<button type="button" name="cancel">Cancel</button>'
                      + '<button type="button" name="submit">Save changes</button>'
                      + '</div></form></div>');
     djq.find("button[name=cancel]").on("click", function () {

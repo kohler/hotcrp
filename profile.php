@@ -810,7 +810,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   <form method='post' action=\"" . hoturl_post("profile", "u=" . urlencode($Acct->email)) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
     <div class='popup_actions'>"
       . Ht::js_button("Cancel", "popup(null,'d',1)")
-      . " &nbsp;" . Ht::submit("delete", "Delete user", array("class" => "bb"))
+      . Ht::submit("delete", "Delete user", array("class" => "bb"))
       . "</div></form></div>");
     }
 }

@@ -8,30 +8,54 @@ require_once("src/initweb.php");
 $show_papers = true;
 
 // kiosk mode
-if ($Me->privChair && isset($_POST["signout_to_kiosk"]) && check_post()) {
-    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    $key = Contact::random_password();
-    $kiosks->$key = (object) array("update_at" => $Now, "show_papers" => !!@$_POST["buzzer_showpapers"]);
+if ($Me->privChair) {
+    $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
+    uasort($kiosks, create_function('$a, $b', 'return $a->update_at - $b->update_at;'));
+    $kchange = false;
     // delete old kiosks
-    $old_kiosks = array();
-    foreach ((array) $kiosks as $k => $kv)
-        $old_kiosks[$k] = $kv->update_at;
-    asort($old_kiosks);
-    foreach ($old_kiosks as $k => $update_at)
-        if ($update_at < $Now - 604800 || count((array) $kiosks) > 12)
-            unset($kiosks->$k);
-    $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
+    while (count($kiosks)
+           && (count($kiosks) > 12 || current($kiosks)->update_at <= $Now - 172800)) {
+        array_shift($kiosks);
+        $kchange = true;
+        reset($kiosks);
+    }
+    // look for new kiosks
+    $kiosk_keys = array(null, null);
+    foreach ($kiosks as $k => $kj)
+        if ($kj->update_at >= $Now - 7200)
+            $kiosk_keys[$kj->show_papers ? 1 : 0] = $k;
+    for ($show_papers = 0; $show_papers <= 1; ++$show_papers)
+        if (!$kiosk_keys[$show_papers]) {
+            $key = Contact::random_password();
+            $kiosks[$key] = $kiosk_keys[$show_papers] = (object) array("update_at" => $Now, "show_papers" => !!$show_papers);
+            $kchange = true;
+        }
+    // save kiosks
+    if ($kchange)
+        $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
+}
+
+if ($Me->privChair && isset($_POST["signout_to_kiosk"]) && check_post()) {
     LoginHelper::logout(false);
-    $Me->change_capability("tracker_kiosk", $key);
-    redirectSelf();
+    $Me->change_capability("tracker_kiosk", $kiosk_keys[@$_POST["buzzer_showpapers"] ? 1 : 0]);
+    redirectSelf(); // array("__PATH__" => $key));
+}
+
+function kiosk_lookup($key) {
+    global $Conf, $Now;
+    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
+    if (@$kiosks->$key && $kiosks->$key->update_at >= $Now - 604800)
+        return $kiosks->$key;
+    return null;
 }
 
 $kiosk = null;
-if (($key = $Me->capability("tracker_kiosk"))) {
-    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    if (@$kiosks->$key && $kiosks->$key->update_at >= $Now - 604800)
-        $kiosk = $kiosks->$key;
-}
+if (!$Me->has_email() && !$Me->capability("tracker_kiosk")
+    && ($key = Navigation::path_component(0))
+    && ($kiosk = kiosk_lookup($key)))
+    $Me->change_capability("tracker_kiosk", $key);
+else if (($key = $Me->capability("tracker_kiosk")))
+    $kiosk = kiosk_lookup($key);
 
 if ($kiosk) {
     $Me->is_tracker_kiosk = true;
@@ -145,10 +169,29 @@ if ($Me->has_database_account()) {
 }
 
 // kiosk mode
-if ($Me->privChair)
+if ($Me->privChair) {
     echo '<td style="padding-left:2em">',
-        Ht::submit("signout_to_kiosk", "Kiosk"),
+        Ht::js_button("Kiosk mode", "popup(this,'kiosk',0,true)"),
         '</td>';
+    $Conf->footerHtml('<div id="popup_kiosk" class="popupc">
+<p>Kiosk mode is a discussion status page with no
+other site privileges. It’s safe to leave a browser in kiosk mode
+open in the hallway.</p>
+<p><b>Kiosk mode will sign you out of the site.</b>
+Do not use kiosk mode on your main browser. Instead, sign in to
+another browser and navigate to this page.
+Or use these URLs, which open a kiosk-mode status page directly:</p>
+<p><table><tr><td class="lcaption nw">With papers</td>
+<td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[1])) . '</td></tr>
+<tr><td class="lcaption nw">Conflicts only</td>
+<td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[0])) . '</td></tr></table></p>'
+    . Ht::form_div(hoturl_post("buzzer"))
+    . '<div class="popup_actions">'
+    . Ht::hidden("buzzer_showpapers", 1, array("class" => "popup_populate"))
+    . Ht::js_button("Cancel", "popup(null,'kiosk',1)")
+    . Ht::submit("signout_to_kiosk", "Enter kiosk mode", array("class" => "bb"))
+    . '</div></div></form>');
+}
 
 echo "</tr></table></form>\n";
 $Conf->footer();
