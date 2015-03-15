@@ -857,7 +857,7 @@ class PaperSearch {
         }
     }
 
-    function _searchReviewerConflict($word, &$qt, $quoted) {
+    private function _searchReviewerConflict($word, &$qt, $quoted) {
         $args = array();
         while (preg_match('/\A\s*#?(\d+)(?:-#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
             $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
@@ -885,7 +885,7 @@ class PaperSearch {
         $qt[] = $term;
     }
 
-    function _search_comment($word, $ctype, &$qt, $quoted) {
+    private function _search_comment($word, $ctype, &$qt, $quoted) {
         global $Conf;
         $m = self::_matchCompar($word, $quoted);
         if (($type = self::_comparTautology($m))) {
@@ -1809,7 +1809,7 @@ class PaperSearch {
         return $curqe;
     }
 
-    static function _canonicalizePopStack($curqe, &$stack) {
+    static private function _canonicalizePopStack($curqe, &$stack) {
         $x = array_pop($stack);
         if ($curqe)
             $x->qe[] = $curqe;
@@ -1832,7 +1832,7 @@ class PaperSearch {
             return "(" . join(strtoupper(" " . $x->op->op . " "), $x->qe) . ")";
     }
 
-    static function _canonicalizeQueryType($str, $type) {
+    static private function _canonicalizeQueryType($str, $type) {
         $stack = array();
         $parens = 0;
         $defaultop = ($type == "all" ? "XAND" : "XOR");
@@ -1884,7 +1884,7 @@ class PaperSearch {
         return $curqe;
     }
 
-    static function canonicalizeQuery($qa, $qo = null, $qx = null) {
+    static function canonical_query($qa, $qo = null, $qx = null) {
         $x = array();
         if ($qa && ($qa = self::_canonicalizeQueryType(trim($qa), "all")))
             $x[] = $qa;

@@ -39,7 +39,7 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
 if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
     && !isset($_REQUEST["q"])) {
     $_REQUEST["qa"] = defval($_REQUEST, "qa", "");
-    $_REQUEST["q"] = PaperSearch::canonicalizeQuery($_REQUEST["qa"], defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
+    $_REQUEST["q"] = PaperSearch::canonical_query($_REQUEST["qa"], defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
 } else {
     unset($_REQUEST["qa"]);
     unset($_REQUEST["qo"]);
