@@ -577,8 +577,15 @@ function display_tracker() {
 
     mytracker = dl.tracker && (i = window_trackerstate())
         && dl.tracker.trackerid == i[1];
-    if ((e = $$("trackerconnectbtn")))
-        e.className = "btn " + (mytracker ? "btn-danger" : "btn-default") + " hottooltip";
+    if ((e = $$("trackerconnectbtn"))) {
+        if (mytracker) {
+            e.className = "btn btn-danger hottooltip";
+            e.setAttribute("hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
+        } else {
+            e.className = "btn btn-default hottooltip";
+            e.setAttribute("hottooltip", "Start meeting tracker");
+        }
+    }
 
     if (!dl.tracker) {
         if (mne)
@@ -611,9 +618,11 @@ function display_tracker() {
     else
         mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
 
-    t += '<div id="trackerlogo"></div>';
-    if (dl.is_admin)
+    if (dl.is_admin) {
+        t += '<div class="hottooltip" id="trackerlogo" hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
         t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" hottooltip="Stop meeting tracker">x</a></div>';
+    } else
+        t += '<div id="trackerlogo"></div>';
     if (dl.tracker && dl.tracker.position_at)
         t += '<div style="float:right" id="trackerelapsed"></div>';
     if (!dl.tracker.papers || !dl.tracker.papers[0]) {

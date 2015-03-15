@@ -2148,7 +2148,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	font-size: smaller;
 }
 .bubble.tooltip {
-	background-color: rgba(0, 0, 0, 0.75);
+	background-color: rgba(44, 44, 66, 0.95);
 	color: #ffffff;
 	border: 0 none;
 	font-size: 75%;
@@ -2162,6 +2162,13 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	border-width: 0;
 	width: 0;
 	height: 0;
+}
+
+div.tooltipmenu > div {
+	margin: 4px 0;
+}
+div.tooltipmenu a.ttmenu {
+	color: white;
 }
 
 /* ranks */

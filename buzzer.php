@@ -38,14 +38,14 @@ if ($Me->privChair) {
 if ($Me->privChair && isset($_POST["signout_to_kiosk"]) && check_post()) {
     LoginHelper::logout(false);
     $Me->change_capability("tracker_kiosk", $kiosk_keys[@$_POST["buzzer_showpapers"] ? 1 : 0]);
-    redirectSelf(); // array("__PATH__" => $key));
+    redirectSelf();
 }
 
 function kiosk_lookup($key) {
     global $Conf, $Now;
-    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    if (@$kiosks->$key && $kiosks->$key->update_at >= $Now - 604800)
-        return $kiosks->$key;
+    $kiosks = (array) ($Conf->setting_json("__tracker_kiosk") ? : array());
+    if (@$kiosks[$key] && $kiosks[$key]->update_at >= $Now - 604800)
+        return $kiosks[$key];
     return null;
 }
 
