@@ -335,7 +335,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 $cnames[] = '<a class="' . $tclass . '" href="#comment' . $cr->commentId . '">' . $n . '</a>';
             }
         if (count($cids) > 0)
-            $pret = '<div class="revnotes"><a href="#comment' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . "</strong></a>: " . join(", ", $cnames) . "</div>";
+            $pret = '<div class="revnotes"><a href="#comment' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nw">' . join(',</span> <span class="nw">', $cnames) . "</span></div>";
     }
 
     $t = "";
