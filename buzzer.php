@@ -67,7 +67,7 @@ if (!$Me->isPC && !$Me->is_tracker_kiosk)
     $Me->escape();
 
 // header and script
-Ht::stash_script('var buzzer_status = "off", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
+Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
 function trackertable_paper_row(hc, idx, paper) {
     hc.push("<tr class=\"trackertable" + idx + "\">", "<\/tr>");
     hc.push("<td class=\"trackertable trackerdesc\">", "<\/td>");
@@ -111,7 +111,7 @@ function trackertable() {
     jQuery("#trackertable").html(hc.render());
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
-    if (buzzer_status != "off" && (dl.tracker_status || "off") != "off"
+    if (buzzer_status != "open" && (dl.tracker_status || "off") != "off"
         && buzzer_status != dl.tracker_status && !buzzer_muted) {
         var sound = jQuery("#buzzer")[0];
         sound.pause();
