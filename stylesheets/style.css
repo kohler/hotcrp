@@ -2280,7 +2280,7 @@ div.pedcard_head h2 {
 
 /* paper notes */
 div.notecard {
-	margin: 16px 0 0 14em;
+	margin: 16px 0 -8px 14em;
 	padding: 0 5px 0 5px;
 	position: relative;
 }
@@ -2290,7 +2290,7 @@ div.notecard_body {
 
 /* reviews */
 div.revcard {
-	margin: 16px 0 0 14em;
+	margin: 24px 0 0 14em;
 	padding: 0 5px 8px 5px;
 	background: #fad5d5;
 	position: relative;
@@ -2401,7 +2401,7 @@ span.rev_rating_summary {
 
 /* comments */
 div.cmtcard {
-	margin: 16px 0 0 14em;
+	margin: 24px 0 0 14em;
 	padding: 0 5px 8px 5px;
 	background: #e6e1cf;
 	position: relative;
