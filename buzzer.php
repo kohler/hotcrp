@@ -183,7 +183,7 @@ open in the hallway.</p>
 <p><b>Kiosk mode will sign you out of the site.</b>
 Do not use kiosk mode on your main browser. Instead, sign in to
 another browser and navigate to this page.
-Or use these URLs, which open a kiosk-mode status page directly:</p>
+Or use these URLs:</p>
 <p><table><tr><td class="lcaption nw">With papers</td>
 <td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[1])) . '</td></tr>
 <tr><td class="lcaption nw">Conflicts only</td>

@@ -1275,10 +1275,10 @@ manager’s identity.</p>");
 
 <li><p>The <b>meeting tracker</b> can keep PC members coordinated.
   Search for a discussion order, navigate to the first paper in that
-  order, and activate the tracker on that tab using the “&#9759;”
+  order, and activate the tracker using the “&#9759;”
   button. From that point on, the paper being viewed by that tab
   is broadcast to all logged-in PC members, along with the next papers
-  in the current discussion order. You can also view the discussion
+  in the discussion order. You can also view the discussion
   status on the <a href=\"" . hoturl("buzzer") . "\">discussion
   status page</a>.</p></li>
 
