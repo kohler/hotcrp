@@ -27,8 +27,8 @@ if ($Me->privChair) {
     for ($show_papers = 0; $show_papers <= 1; ++$show_papers)
         if (!$kiosk_keys[$show_papers]) {
             $key = Contact::random_password();
-            $kiosks[$key] = $kiosk_keys[$show_papers] = (object) array("update_at" => $Now, "show_papers" => !!$show_papers);
-            $kchange = true;
+            $kiosks[$key] = (object) array("update_at" => $Now, "show_papers" => !!$show_papers);
+            $kiosk_keys[$show_papers] = $kchange = $key;
         }
     // save kiosks
     if ($kchange)
@@ -67,6 +67,9 @@ if (!$Me->isPC && !$Me->is_tracker_kiosk)
     $Me->escape();
 
 // header and script
+$no_discussion = '<h2>No discussion<\/h2>';
+if ($Me->privChair)
+    $no_discussion .= '<p>To start a discussion, <a href=\\"' . hoturl("search") . '\\">search<\/a> for a list, go to a paper in that list, and use the “&#9759;” button.<\/p>';
 Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
 function trackertable_paper_row(hc, idx, paper) {
     hc.push("<tr class=\"trackertable" + idx + "\">", "<\/tr>");
@@ -85,13 +88,13 @@ function trackertable_paper_row(hc, idx, paper) {
     }
     hc.pop();
     if (idx == 0)
-        hc.push("<td id=\"trackerelapsed\"></td>");
+        hc.push("<td id=\"trackerelapsed\"><\/td>");
     hc.pop();
 }
 function trackertable() {
     var dl = hotcrp_status, hc = new HtmlCollector;
     if (!dl.tracker || !dl.tracker.papers)
-        hc.push("<h2>No discussion<\h2>");
+        hc.push("' . $no_discussion . '");
     else {
         hc.push("<table>", "<\/table>");
 
