@@ -4,12 +4,10 @@
 
 - [ ] Use capabilities for accept/decline review links
 - [ ] Right now “Decline review” requires confirmation; it would be better to make it HAPPEN when you click the link and then be undoable
-- [ ] Contact::valid() rechecks capabilities too often
 
 ## Comments ##
 
 - [ ] Allow attachments on comments and reviews
-- [ ] Show response word count overages to viewers, not just editors
 - [ ] Comment notification emails should include opt-out links
 
 ## Paper options ##
@@ -24,10 +22,6 @@
 
 - [ ] Add a “cancel” button on paper submission
 - [ ] Submission history
-
-## Conflicts ##
-
-- [ ] A meeting mode where PC members can see conflicts
 
 ## Schema ##
 
@@ -76,14 +70,7 @@
 
 ## Old TODO ##
 
-- If paper managers, chair can infer who reviewed what using review
-  counts on autoassign screen
-
 - Re-assign the review round in bulk
-
-- Some sort of display that is linked with whatever paper the chair's
-  currently on, to maybe display in the hallway for conflicts or
-  something [Garth Gibson]
 
 - When reviewers update their reviews, all we get is an email that the
   review was updated. But there's no indication how it changed: did the
@@ -94,24 +81,6 @@
   new review (plus scores) as plain text, and include a diff(1) output of
   the old vs. new reviews along with the email that notifies the chairs of
   the review change? [Erez Zadok/Dan Tsafrir]
-
-- We attempted to load balance the reviews among the PC members, such that
-each had 14 papers to review. Suppose now that a PC member submitted to the
-conference paper #1. Then, they could recognize from the statistics page
-the reviewers of his paper as those having reviewed only 13 papers. We feel
-this could be corrected by adding an option to disable the statistics page
-view for users without chair rights. [Giuliano Casale, Martin Arlitt]
-
-- During the PC meeting, we were highlighting the current paper for the
-benefit of the members (i.e., so they could more easily follow along as we
-discussed papers). Basically, this amounted to adding a red tag and
-deleting it from the previously considered paper. It seems a quick action
-to do, but while listening to the PC members, marking the decisions (in
-HotCRP as well as on paper), discussing the merits of a paper with the PC
-members, etc., we struggled to keep the appropriate paper tagged as
-“current”. We’re not sure if this would be a feasible extension, but
-perhaps having a button to color/uncolor the current selection would have
-made our life easier. [Giuliano Casale, Martin Arlitt]
 
 - http://harvesthq.github.com/chosen/ [Tom Limoncelli]
 
@@ -192,9 +161,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   approved/acknowledge it to be correct.  (If we could do this for ITs
   and Gurus, this could produce the entire program) [Tony Limoncelli]
 
-- A way to easily see the list of papers assigned to a user and which reviews
-  are complete would be really useful! [Doug Hughes]
-
 - Feature 1: Multi-paper discussion.  A few times per conference, I want to
   write on a review "This paper is better/worse than paper X because ..."
   or similar. The problem is that such comments are hard to do without
@@ -233,19 +199,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   #97 during lunch".  So if we don't get automated support from HotCRP, we
   will try to do it by hand. [Jeff Mogul]
 
-- HTTPS-only redirect: [Jeff Chase]
-
-  RewriteEngine on
-  RewriteCond %{HTTPS} !=on
-  RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
-
-- Send Mail semantics: When sending an e-mail to contact authors X, Y, and
-  Z of a paper P, the current HotCRP behavior is to send three separate
-  emails to each respective author rather than one where all recipients are
-  visible on the "To:" line.  The latter seems more natural to me and gives
-  contact authors an explicit hint that only 3 of the 10 authors received
-  this Accept/Reject notification, for example. [John Byers]
-
 - Can we save the review forms from this offering of the WQE for use in the
   next offering of the WQE?  Since the WQE is not an actual conference, the
   standard conference-style review forms are less useful, so it would be
@@ -267,12 +220,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
 
 - PC members can use mail tool to send mail to authors
 
-- What we would like is the option of sending a single message to all
-  authors of a paper at once. [Jeff Mogul]
-
-- Code/createdb: Support creating a database that runs on a remote machine
-  [Manolis Stamatogiannakis]
-
 - Add "Full author info" checkbox to manual assignment page [Jeff Mogul]
 
 - Do people who've submitted only abstracts get email in the rebuttal period?
@@ -282,29 +229,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
 - It would have been useful to have a "mail reviewer" link on the
   reviews page for communicating with individual reviewers about
   specific papers. [Stephanie Weirich]
-
-- For chair conflicts I used the review tokens (managed by a third
-  party) to create anonymous reviews for my conflicts. This worked
-  well, for the most part. Except:
-    o I've learned to prepend all searches with "-conflict:weirich" to
-    avoid information leakage from searching. For example, "ovemer:AB"
-    returns a conflicted paper, carefully hiding its score, but I have
-    a good idea what the score is now. Seems like the default should
-    be to exclude conflicted papers from searches, unless I
-    specifically override.
-    o Also, cutting and pasting search results reveals information. I
-    wanted to send a list of my conflicts to another PC member who was
-    helping me out (b/c he couldn't search for them). So I selected the
-    search result and sent him an email. But the extracted text had
-    more information than was shown on the screen.
-    o The default comment notification is PC+externals, but that is a
-    little dangerous because of the tendency to compare papers in
-    comments ("this paper is much better than paper 32!"), and the
-    nontrivial likelihood that an external reviewers would be an
-    author of paper 32. I'd like to be able to change this default to
-    "PC only" (still leaving the option to include externals for each
-    particular message) to be just a little more paranoid.
-  [Stephanie Weirich]
 
 - a way to see the distribution of topics for
   submitted/selected/accepted papers. I computed this information
@@ -415,9 +339,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   option of being notified when new reviews (for my assigned papers, or
   others) are input in the system -- there is the option of being notified
   of the comments, but not the reviews. [Carmela Troncoso]
-
-- generic (no names, passwords) emails to contact authors should be grouped
-  by paper and sent To: all authors of a paper at once [Chris Frost]
 
 - Chair searches do not display chair scores by default [Jane-Ellen Long]
 
@@ -538,13 +459,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   information and allowing papers to be reassigned at will. [Benjamin
   Pierce]
 
-* There should be a bulk *download* option -- this would allow you to save
-  away the current assignment and restore it later if you messed things up.
-  (This would require the bulk upload feature to be able to delete
-  assignments as well as add them -- and/or to be able to say "these are
-  exactly the reviewers for this paper".  This would be useful more
-  generally.) [Benjamin Pierce]
-
 * How about cc'ing the requesting PC member on the invitation request
   email? [Benjamin Pierce] -- won't cc, but maybe resend mail
 
@@ -592,9 +506,6 @@ made our life easier. [Giuliano Casale, Martin Arlitt]
   that they don't have a copy of the email in their files, so they can't do
   things like forward it with "PING" added to the subject line... :-)
   [Benjamin Pierce]
-
-* Ability to search accepted papers for those that have / have not
-  submitted final copies of their paper [Mark Gebhart, MICRO 41]
 
 * Here are some policy decisions that we changed by editing the code:
 
@@ -681,7 +592,6 @@ Format checker: This worked really nicely.  But ...
 - static HTML snapshot
 
 - entry to identify presenting author
-- Matthew Frank: five values for reviewer topic interest
 - Matthew Frank: local hill climbing for auto assignment
 
 Minor features
@@ -690,9 +600,3 @@ Minor features
 - when email off: do not show authors to PC members, do not show reviewers
   to authors
 - scrub author information from PDFs
-
-## Done ##
-
-- [X] Get rid of contactauthors.php
-- [X] Add buttons on Edit screen to make a particular author a contact
-- [X] Use capabilities when a user changes their email address
