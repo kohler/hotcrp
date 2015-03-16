@@ -1,5 +1,24 @@
 HotCRP NEWS
 
+Version 2.94   15.Mar.2015
+
+* Add buzzer, a discussion status page based on the tracker. Many
+  tracker stability improvements.
+
+* Support multiple response rounds.
+
+* Support massive bulk assignments.
+
+* Formulas can refer to both preferences and reviews, e.g.,
+  `any(pref>0 && ovemer=2)`.
+
+* Hundreds of bug fixes and minor improvements.
+
+* Thanks to Nickolai Zeldovich, Stephen Murdoch, Umut Acar, Jan Vitek,
+  John Tang Boyland, Sandhya Dwarkadas, Steve Blackburn, Erez Zadok,
+  Dan Tsafrir, Peter Sewell, Gail Murphy, George Candea, and others.
+
+
 Version 2.93   2.Oct.2014
 
 * Improve autoassigner to spread out user unhappiness.

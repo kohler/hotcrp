@@ -1,4 +1,4 @@
-export VERSION=2.93
+export VERSION=2.94
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*, *//;s/[;)].*//'`
@@ -50,6 +50,7 @@ api.php
 assign.php
 autoassign.php
 bulkassign.php
+buzzer.php
 cacheable.php
 checkupdates.php
 comment.php
@@ -110,6 +111,7 @@ lib/redirect.php
 lib/restoredb.sh
 lib/runsql.sh
 lib/s3document.php
+lib/scoreinfo.php
 lib/tagger.php
 lib/text.php
 lib/unicodehelper.php
@@ -173,6 +175,7 @@ images/allreviews24.png
 images/assign18.png
 images/assign24.png
 images/bendulft.png
+images/buzzer.mp3
 images/check.png
 images/checksum12.png
 images/comment24.png
