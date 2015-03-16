@@ -44,9 +44,14 @@ function confHeader() {
 
 function errorMsgExit($msg) {
     global $Conf;
-    confHeader();
-    $Conf->footerScript("shortcut().add()");
-    $Conf->errorMsgExit($msg);
+    if (@$_REQUEST["ajax"]) {
+        $Conf->errorMsg($msg);
+        $Conf->ajaxExit(array("ok" => false));
+    } else {
+        confHeader();
+        $Conf->footerScript("shortcut().add()");
+        $Conf->errorMsgExit($msg);
+    }
 }
 
 
