@@ -12,6 +12,7 @@ class Conference {
     var $sversion;
     private $_pc_seeall_cache = null;
     private $_round0_defined_cache = null;
+    private $_pc_see_pdf = null;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -142,7 +143,7 @@ class Conference {
     }
 
     private function crosscheck_settings() {
-        global $Opt;
+        global $Opt, $Now;
 
         // enforce invariants
         foreach (array("pcrev_any", "extrev_view") as $x)
@@ -202,6 +203,13 @@ class Conference {
         $this->_decisions = null;
         $this->_pc_seeall_cache = null;
         $this->_round0_defined_cache = null;
+        $this->_pc_see_pdf = true;
+        if (+@$this->settings["sub_freeze"] <= 0
+            && ($so = +@$this->settings["sub_open"]) > 0
+            && $so < $Now
+            && ($ss = +@$this->settings["sub_sub"]) > 0
+            && $ss > $Now)
+            $this->_pc_see_pdf = false;
     }
 
     private function crosscheck_track_settings($j) {
@@ -1043,7 +1051,7 @@ class Conference {
         if ($prow->timeWithdrawn > 0)
             return false;
         else if ($prow->timeSubmitted > 0)
-            return true;
+            return !$pdf || $this->_pc_see_pdf;
         else
             return !$pdf && $this->can_pc_see_all_submissions();
     }
