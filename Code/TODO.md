@@ -70,8 +70,6 @@
 
 ## Old TODO ##
 
-- Re-assign the review round in bulk
-
 - When reviewers update their reviews, all we get is an email that the
   review was updated. But there's no indication how it changed: did the
   reviewer update the text? Did they raise/lower any score? Ideally, we'd
@@ -138,14 +136,6 @@
   then a way to format the entire program, with session titles, session
   chairs, papers in the right order, author names and affiliations, and the
   speaker's name in bold. [Jeff Mogul]
-
-- We didn't use HotCRP for sending the acceptance letter.  The chairs have
-  been passing down a bunch of shell scripts through the years that
-  generate the accept/reject emails and it would be much nicer if hotcrp
-  could do the process for us.  The hotcrp formletter system can't insert
-  the day and time of the session the paper will be presented in.  In
-  hindsight, we should have used HotCRP anyway: it would have been less
-  work over-all even if we had to forgo the day/time info. [Tony Limoncelli]
 
 - Two questions we got constantly were ... "how do I get back to the main
   menu?" (click the name of the conference in the upper left corner).  Both
@@ -256,45 +246,7 @@
   if i receive an email and respond to it, the response will have the same
   level of distribution as the message to which one is responding. [Randy Bush]
 
--  1) discussion list during the PC meeting
-
-  we created a separate page for the paper discussion list for the meeting,
-  which looked something like:
-
-  http://cseweb.ucsd.edu/~voelker/sigcomm10/example/
-
-  we displayed the page on the room projection screen so it was visible to
-  all PC members.  many people loaded it on their laptops to use the links
-  to jump to papers.  during the meeting we moved papers among the various
-  categories as we went through the papers.  the page auto-reloaded to keep
-  it up-to-date.
-
-  we thought having a similar feature in HotCRP would be useful, and I
-  think it can almost be emulated in HotCRP as is.  a discussion page would
-  be defined by a list of ordered tags, and the discussion list would be
-  broken up into groups according to the tags.  moving a paper from one
-  list to another would just require retagging.  two possible extensions
-  are a feature for auto-reloading the page, and a visual separation
-  between tag groups (perhaps with a sub-header based on the tag name) to
-  keep the groups straight.  adding per-group colored tags might do the
-  trick, although moving a paper from one category to another would require
-  adjusting multiple tags and might be prone to error.
-
-  there is also the question of whether conflicted papers should be shown
-  or not.  when it gets to the discussion list at PC meeting time, we
-  preferred to have everyone see the same list.  Jeff's idea of a
-  discussion timer would naturally fold in with this.
-
-  2) chair-specific tags: similar to personal tags, but visible and
-  changeable across all PC chairs.  there were times when one of us wanted
-  to define a group that only we could see and change; we wanted them to be
-  used by more than one person, but not to the entire PC.
-
-  3) more examples of complex searches (e.g., when narrowing papers down
-  between an upper range and a lower range).  after experimentation we got
-  the hang of it.
-
-  4) partition papers into sub-groups and then sorting the sub-groups based
+- 4) partition papers into sub-groups and then sorting the sub-groups based
   on some criteria.  this comes from when we were formulating the
   discussion order by first separating papers into different groups, and
   then sorting the papers within the group.  we did this by first tagging
@@ -473,12 +425,6 @@
 * Similarly, when an external reviewer goes to the website to decline (or
   confirm!) a review, it should be more obvious who will see the
   message. [Benjamin Pierce]
-
-* The Comments section could be a little more self-documenting -- e.g.,
-  there could be a note someplace saying that anyone who has written a
-  review for a given paper will be notified by default when there are new
-  comments.  (Or do I mean: anyone who has written OR IS SIGNED UP TO BE
-  WRITING a review for a given paper...?) [Benjamin Pierce]
 
 * As a PC member, I might be interested in discussions even if I am not a
   reviewer who is emailed a comment by default.  It would be nice if we
