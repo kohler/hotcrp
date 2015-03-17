@@ -1593,11 +1593,11 @@ class PaperTable {
         // Withdrawn papers can be revived
         if ($prow && $prow->timeWithdrawn > 0) {
             $revivable = $Conf->timeFinalizePaper($prow);
-            if ($revivable || $this->admin) {
+            if ($revivable)
                 $b = Ht::submit("revive", "Revive paper");
-                if (!$revivable)
-                    $b = array($b, "(admin only)");
-            } else
+            else if ($this->admin)
+                $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", array("hotoverridetext" => whyNotText($whyNot, "revive"), "hotoverridesubmit" => "revive")), "(admin only)");
+            else
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn papers has passed.";
             return array($b);
         }
