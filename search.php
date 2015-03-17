@@ -124,7 +124,7 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
             }
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $text .= prefix_word_wrap("Topics: ", substr($tt, 2), 14) . "\n";
+                $text .= prefix_word_wrap("Topics: ", $tt, 14) . "\n";
             }
             if ($l != strlen($text))
                 $text .= "---------------------------------------------------------------------------\n";
@@ -690,7 +690,7 @@ function downloadRevpref($extended) {
             $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ") . "\n";
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $t .= prefix_word_wrap("#   Topics: ", substr($tt, 2), "#           ") . "\n";
+                $t .= prefix_word_wrap("#   Topics: ", $tt, "#           ") . "\n";
             }
             $t .= "\n";
         }
