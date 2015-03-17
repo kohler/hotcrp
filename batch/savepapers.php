@@ -31,8 +31,8 @@ foreach ($jp as $j) {
     $ps = new PaperStatus(array("no_email" => true,
                                 "allow_error" => array("topics", "options")));
     $res = $ps->save($j);
-    foreach ($ps->error_messages() as $msg)
-        fwrite(STDERR, ($j->id ? "#$j->id: " : "paper: ") . $msg . "\n");
+    foreach ($ps->error_html() as $msg)
+        fwrite(STDERR, ($j->id ? "#$j->id: " : "paper: ") . htmlspecialchars_decode($msg) . "\n");
     if (!$res)
         exit(1);
 }

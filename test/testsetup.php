@@ -35,7 +35,7 @@ foreach ($json->contacts as $c) {
 foreach ($json->papers as $p) {
     $ps = new PaperStatus;
     if (!$ps->save($p))
-        die("* failed to create paper $p->title:\n" . join("\n", $ps->error_messages()) . "\n");
+        die("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->error_html())) . "\n");
 }
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse($json->assignments_1, null, null);

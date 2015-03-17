@@ -197,7 +197,7 @@ class PaperStatus {
         return $pj;
     }
 
-    private function set_error($field, $html) {
+    public function set_error_html($field, $html) {
         if ($field)
             $this->errf[$field] = true;
         $this->errmsg[] = $html;
@@ -207,7 +207,7 @@ class PaperStatus {
             ++$this->nerrors;
     }
 
-    private function set_warning($field, $html) {
+    public function set_warning_html($field, $html) {
         if ($field)
             $this->errf[$field] = true;
         $this->errmsg[] = $html;
@@ -264,8 +264,8 @@ class PaperStatus {
         } else {
             $opt = PaperOption::find_document($dtype);
             $docj->docid = 1;
-            $this->set_error($opt->abbr, htmlspecialchars($opt->name) . ": "
-                             . ($upload ? $upload->error_html : "empty document"));
+            $this->set_error_html($opt->abbr, htmlspecialchars($opt->name) . ": "
+                                  . ($upload ? $upload->error_html : "empty document"));
         }
     }
 
@@ -274,7 +274,7 @@ class PaperStatus {
             if (is_string($pj->$k))
                 $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
             else {
-                $this->set_error($k, "Format error [$k]");
+                $this->set_error_html($k, "Format error [$k]");
                 unset($pj, $k);
             }
     }
@@ -289,7 +289,7 @@ class PaperStatus {
                 if ($v && (is_int($v) || is_string($v)))
                     $new_topics->$v = true;
                 else if ($v)
-                    $this->set_error("topics", "Format error [topics]");
+                    $this->set_error_html("topics", "Format error [topics]");
             $topics = $new_topics;
         }
         if (is_object($topics)) {
@@ -305,7 +305,7 @@ class PaperStatus {
                 else
                     $pj->bad_topics[] = $k;
         } else if ($topics)
-            $this->set_error("topics", "Format error [topics]");
+            $this->set_error_html("topics", "Format error [topics]");
     }
 
     private function normalize_options($pj) {
@@ -328,7 +328,7 @@ class PaperStatus {
             $o = $option_list[$id];
             if ($o->type == "checkbox") {
                 if (!is_bool($oa))
-                    $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option should be “true” or “false”.");
+                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be “true” or “false”.");
             } else if ($o->has_selector()) {
                 if (is_int($oa) && isset($o->selectors[$oa]))
                     /* OK */;
@@ -336,23 +336,23 @@ class PaperStatus {
                          && ($ov = array_search($oa, $o->selectors)))
                     $pj->options->$id = $ov;
                 else
-                    $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option doesn’t match any of the selectors.");
+                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option doesn’t match any of the selectors.");
             } else if ($o->type == "numeric") {
                 if (!is_int($oa))
-                    $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option should be an integer.");
+                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be an integer.");
             } else if ($o->type == "text") {
                 if (!is_string($oa))
-                    $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option should be a text string.");
+                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be a text string.");
             } else if ($o->has_document()) {
                 if ($o->is_document() && !is_object($oa))
                     $oa = null;
                 $oa = $oa && !is_array($oa) ? array($oa) : $oa;
                 if (!is_array($oa))
-                    $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option format error.");
+                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option format error.");
                 else
                     foreach ($oa as $ov)
                         if (!is_object($ov))
-                            $this->set_error("opt$id", htmlspecialchars($o->name) . ": Option format error.");
+                            $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option format error.");
             } else
                 unset($pj->options->$id);
         }
@@ -373,7 +373,7 @@ class PaperStatus {
             if (!($pccid = pcByEmail($email)))
                 $pj->bad_pc_conflicts->$email = true;
             else if (!is_int($ct) && !is_string($ct) && $ct !== true)
-                $this->set_error("pc_conflicts", "Format error [PC conflicts]");
+                $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
             else {
                 if (is_int($ct) && isset(Conflict::$type_names[$ct]))
                     $ctn = $ct;
@@ -401,7 +401,7 @@ class PaperStatus {
         $pj->bad_authors = array();
         if (@$pj->authors !== null) {
             if (!is_array($pj->authors))
-                $this->set_error("author", "Format error [authors]");
+                $this->set_error_html("author", "Format error [authors]");
             $curau = is_array($pj->authors) ? $pj->authors : array();
             $pj->authors = array();
             foreach ($curau as $k => $au)
@@ -420,7 +420,7 @@ class PaperStatus {
                     if (is_object($au) && @$au->contact)
                         $aux->contact = true;
                 } else
-                    $this->set_error("author", "Format error [authors]");
+                    $this->set_error_html("author", "Format error [authors]");
         }
 
         // Status
@@ -448,7 +448,7 @@ class PaperStatus {
         else if (@$pj->options === false)
             $pj->options = (object) array();
         else if (@$pj->options !== null)
-            $this->set_error("options", "Format error [options]");
+            $this->set_error_html("options", "Format error [options]");
 
         // PC conflicts
         $pj->bad_pc_conflicts = (object) array();
@@ -457,7 +457,7 @@ class PaperStatus {
         else if (@$pj->pc_conflicts === false)
             $pj->pc_conflicts = (object) array();
         else if (@$pj->pc_conflicts !== null)
-            $this->set_error("pc_conflicts", "Format error [PC conflicts]");
+            $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
 
         // Contacts
         $old_contacts = $old_pj ? $old_pj->contacts : array();
@@ -470,7 +470,7 @@ class PaperStatus {
         else if (@$pj->contacts === null)
             $contacts = $old_contacts;
         else
-            $this->set_error("contacts", "Format error [contacts]");
+            $this->set_error_html("contacts", "Format error [contacts]");
         $pj->contacts = array();
         $pj->bad_contacts = array();
         // 1. authors who are contacts
@@ -506,7 +506,7 @@ class PaperStatus {
                 else
                     $pj->contacts[$email] = (object) array_merge((array) $pj->contacts[$email], (array) $v);
             } else
-                $this->set_error("contacts", "Format error [contacts]");
+                $this->set_error_html("contacts", "Format error [contacts]");
         }
         $pj->contacts = (object) $pj->contacts;
     }
@@ -515,24 +515,24 @@ class PaperStatus {
         // Errors don't prevent saving
         if (@$pj->title === ""
             || (@$pj->title === null && (!$old_pj || !$old_pj->title)))
-            $this->set_error("title", "Each paper must have a title.");
+            $this->set_error_html("title", "Each paper must have a title.");
         if (@$pj->abstract === ""
             || (@$pj->abstract === null && (!$old_pj || !$old_pj->abstract)))
-            $this->set_error("abstract", "Each paper must have an abstract.");
+            $this->set_error_html("abstract", "Each paper must have an abstract.");
         if ((is_array(@$pj->authors) && !count($pj->authors))
             || (@$pj->authors === null && (!$old_pj || !count($old_pj->authors))))
-            $this->set_error("author", "Each paper must have at least one author.");
+            $this->set_error_html("author", "Each paper must have at least one author.");
         if (count($pj->bad_authors))
-            $this->set_error("author", "Some authors ignored.");
+            $this->set_error_html("author", "Some authors ignored.");
         foreach ($pj->bad_contacts as $reg)
             if (!isset($reg->email))
-                $this->set_error("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
+                $this->set_error_html("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
             else
-                $this->set_error("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
+                $this->set_error_html("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
         if (count($pj->bad_topics))
-            $this->set_warning("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
+            $this->set_warning_html("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
         if (count($pj->bad_options))
-            $this->set_warning("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
+            $this->set_warning_html("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
     }
 
     static function author_information($pj) {
@@ -621,7 +621,7 @@ class PaperStatus {
         if (!@$pj->id)
             $pj->id = $old_pj ? $old_pj->id : 0;
         if ($pj && $old_pj && $pj->id != $old_pj->id) {
-            $this->set_error("id", "Saving paper with different ID");
+            $this->set_error_html("id", "Saving paper with different ID");
             return false;
         }
 
@@ -651,7 +651,7 @@ class PaperStatus {
         if (@$pj->contacts)
             foreach ($pj->contacts as $email => $c)
                 if (!Contact::find_by_email($c->email, $c, !$this->no_email))
-                    $this->set_error("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
+                    $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
 
         // catch errors
         if ($this->nerrors)
@@ -760,7 +760,7 @@ class PaperStatus {
                 $result = Dbl::qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
                     || !($pj->id = $result->insert_id))
-                    return $this->set_error(false, "Could not create paper.");
+                    return $this->set_error_html(false, "Could not create paper.");
                 if (count($this->uploaded_documents))
                     $Conf->qe("update PaperStorage set paperId=$pj->id where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
             }
@@ -816,8 +816,12 @@ class PaperStatus {
         return $pj->id;
     }
 
-    function error_messages() {
+    function error_html() {
         return $this->errmsg;
+    }
+
+    function error_fields() {
+        return $this->errf;
     }
 
 }
