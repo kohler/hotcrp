@@ -547,7 +547,7 @@ class PaperStatus {
 
     static function topics_sql($pj) {
         $x = array();
-        foreach (($pj ? $pj->topics : array()) as $id => $v)
+        foreach (($pj ? (array) $pj->topics : array()) as $id => $v)
             $x[] = "($id,$pj->id)";
         sort($x);
         return join(",", $x);
