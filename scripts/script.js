@@ -2985,7 +2985,7 @@ function override_deadlines(elt, callback) {
             callback();
         else {
             var fjq = ejq.closest("form");
-            fjq.children("div").append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+            fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
             fjq[0].submit();
         }
         djq.remove();
