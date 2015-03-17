@@ -34,10 +34,10 @@ function confHeader() {
         $mode = $paperTable->mode;
     else
         $mode = "p";
-    if ($paperId <= 0)
+    if (!$prow)
         $title = ($newPaper ? "New Paper" : "Paper View");
     else
-        $title = "Paper #$paperId";
+        $title = "Paper #$prow->paperId";
 
     $Conf->header($title, "paper_" . ($mode == "pe" ? "edit" : "view"), actionBar($mode, $prow), false);
 }
@@ -130,8 +130,8 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         $reason = defval($_REQUEST, "reason", "");
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
-        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$paperId", $reason != "" ? $reason : null);
-        $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$paperId");
+        Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
+        $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId");
         $numreviews = $result ? $result->affected_rows : false;
         $Conf->updatePapersubSetting(false);
         loadRows();
@@ -154,20 +154,20 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
         }
 
-        $Me->log_activity("Withdrew", $paperId);
+        $Me->log_activity("Withdrew", $prow->paperId);
         redirectSelf();
     } else
         $Conf->errorMsg(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
-        Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$paperId");
-        $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$paperId and reviewSubmitted is null");
-        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
-        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
+        Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$prow->paperId");
+        $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$prow->paperId and reviewSubmitted is null");
+        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
+        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
         $Conf->updatePapersubSetting(true);
         loadRows();
-        $Me->log_activity("Revived", $paperId);
+        $Me->log_activity("Revived", $prow->paperId);
         redirectSelf();
     } else
         $Conf->errorMsg(whyNotText($whyNot, "revive"));
@@ -739,9 +739,9 @@ function update_paper($Me, $isSubmit, $isSubmitFinal, $diffs) {
 
     // HTML confirmation
     if ($prow->$submitkey > 0)
-        $Conf->confirmMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
+        $Conf->confirmMsg($actiontext . " paper #$prow->paperId. " . $notes . $webnotes);
     else
-        $Conf->warnMsg($actiontext . " paper #$paperId. " . $notes . $webnotes);
+        $Conf->warnMsg($actiontext . " paper #$prow->paperId. " . $notes . $webnotes);
 
     // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
@@ -830,15 +830,15 @@ if (isset($_REQUEST["delete"]) && check_post()) {
         $error = false;
         $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
         foreach ($tables as $table) {
-            $result = $Conf->qe("delete from $table where paperId=$paperId");
+            $result = $Conf->qe("delete from $table where paperId=$prow->paperId");
             $error |= ($result == false);
         }
         if (!$error) {
-            $Conf->confirmMsg("Paper #$paperId deleted.");
+            $Conf->confirmMsg("Paper #$prow->paperId deleted.");
             $Conf->updatePapersubSetting(false);
             if ($prow->outcome > 0)
                 $Conf->updatePaperaccSetting(false);
-            $Me->log_activity("Deleted", $paperId);
+            $Me->log_activity("Deleted", $prow->paperId);
         }
 
         $prow = null;
