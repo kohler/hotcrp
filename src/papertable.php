@@ -1706,7 +1706,6 @@ class PaperTable {
                 "<input id='emailNote' type='text' class='temptext' name='emailNote' size='30' value=\"",
                 htmlspecialchars($v == "" ? "Optional explanation" : $v),
                 "\" />",
-                Ht::hidden("override", 1),
                 "</td></tr>\n  </table>\n";
             $Conf->footerScript("mktemptext('emailNote','Optional explanation')");
         }
