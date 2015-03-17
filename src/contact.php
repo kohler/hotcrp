@@ -1365,8 +1365,9 @@ class Contact {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
-            && ($prow->outcome >= 0 || !$Conf->timeAuthorViewDecision())
-            && ($Conf->timeUpdatePaper($prow) || $this->override_deadlines($rights, $override));
+            && ((($prow->outcome >= 0 || !$Conf->timeAuthorViewDecision())
+                 && $Conf->timeUpdatePaper($prow))
+                || $this->override_deadlines($rights, $override));
     }
 
     function perm_update_paper($prow, $override = null) {
