@@ -14,7 +14,7 @@ $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "other_contact" => $Me /* backwards compat */,
                                                   "reason" => "",
                                                   "width" => false));
-$Error = $Warning = array();
+$Error = array();
 
 
 function assignment_defaults() {

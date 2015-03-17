@@ -9,7 +9,7 @@ require_once("src/mailclasses.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 $checkReviewNeedsSubmit = false;
-$Error = $Warning = array();
+$Error = array();
 
 // load mail from log
 if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])

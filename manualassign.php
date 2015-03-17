@@ -39,7 +39,7 @@ if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->setting_data("rev_roundtag");
 else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
     $rev_roundtag = "";
-$Error = $Warning = array();
+$Error = array();
 if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
     $Error["rev_roundtag"] = true;
     $Conf->errorMsg("The review round must contain only letters and numbers.");

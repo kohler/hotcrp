@@ -157,12 +157,12 @@ class PaperTable {
     }
 
     private function editable_papt($what, $name, $extra = array()) {
-        global $Error, $Warning;
+        global $Error;
         $c = '<div ';
         if (@$extra["id"])
             $c .= 'id="' . $extra["id"] . '" ';
         $c .= 'class="papt';
-        if (isset($Error[$what]) || isset($Warning[$what]))
+        if (isset($Error[$what]))
             $c .= " error";
         return $c . '"><span class="papfn">' . $name
             . '</span><hr class="c" /></div>';

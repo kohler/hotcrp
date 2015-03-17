@@ -110,7 +110,7 @@ if ($scoreselector["+overAllMerit"] === "")
     unset($scoreselector["+overAllMerit"], $scoreselector["-overAllMerit"]);
 $scoreselector["x"] = "(no score preference)";
 
-$Error = $Warning = array();
+$Error = array();
 
 if (!function_exists("array_fill_keys")) {
     function array_fill_keys($a, $v) {

@@ -9,7 +9,7 @@ require_once("src/reviewtable.php");
 if ($Me->is_empty())
     $Me->escape();
 $_REQUEST["forceShow"] = 1;
-$Error = $Warning = array();
+$Error = array();
 // ensure site contact exists before locking tables
 Contact::site_contact();
 
