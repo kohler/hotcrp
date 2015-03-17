@@ -874,7 +874,7 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
 // download status JSON for selected papers
 if ($getaction == "json" && SearchActions::any() && $Me->privChair) {
     $pj = array();
-    $ps = new PaperStatus(array("contact" => $Me, "forceShow" => true));
+    $ps = new PaperStatus(array("view_contact" => $Me, "forceShow" => true));
     foreach (SearchActions::selection() as $pid)
         $pj[] = $ps->load($pid);
     if (count($pj) == 1)
