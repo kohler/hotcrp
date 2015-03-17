@@ -566,7 +566,7 @@ class PaperStatus {
                 $oa = is_array($oa) ? $oa : array($oa);
                 foreach ($oa as $ord => $ov)
                     $x[] = "($pj->id,$o->id,$ov->docid,'" . ($ord + 1) . "')";
-            } else
+            } else if ($o->type != "checkbox" || $oa)
                 $x[] = "($pj->id,$o->id,$oa,null)";
         }
         sort($x);
