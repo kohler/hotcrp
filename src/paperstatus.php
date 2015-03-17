@@ -377,11 +377,11 @@ class PaperStatus {
             else {
                 if (is_int($ct) && isset(Conflict::$type_names[$ct]))
                     $ctn = $ct;
-                else if (($ctn = array_search($ct, Conflict::$type_names)) !== false)
+                else if (($ctn = array_search($ct, Conflict::$type_names, true)) !== false)
                     /* OK */;
                 else {
                     $pj->bad_pc_conflicts->$email = $ct;
-                    $ctn = array_search("other", Conflict::$type_names);
+                    $ctn = array_search("other", Conflict::$type_names, true);
                 }
                 $pj->pc_conflicts->$email = $ctn;
             }
