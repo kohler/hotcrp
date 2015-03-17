@@ -519,25 +519,30 @@ class PaperTable {
             "<div class='papv'><table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
 
         $blankAu = array("", "", "", "");
-        if ($this->useRequest && isset($_REQUEST["authorTable"]))
-            $authorTable = $_REQUEST["authorTable"];
-        else
-            $authorTable = ($this->prow ? $this->prow->authorTable : array());
-        for ($n = 1; $n <= 25; $n++) {
-            $au = ($n <= count($authorTable) ? $authorTable[$n - 1] : $blankAu);
-            if ($au[0] && $au[1] && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
-                $auname = $au[1] . ", " . $au[0];
-            else if ($au[0] && $au[1])
-                $auname = $au[0] . " " . $au[1];
-            else
-                $auname = $au[0] . $au[1];
+        $authorTable = $this->prow ? $this->prow->authorTable : array();
+        $nauthors = max(25, count($authorTable));
+        if ($this->useRequest && isset($_POST["aueditcount"]))
+            $nauthors = max(25, (int) $_POST["aueditcount"]);
+        for ($n = 1; $n <= $nauthors; $n++) {
+            if ($this->useRequest) {
+                $auname = (string) @$_POST["auname$n"];
+                $au = array(0, 0, (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
+            } else {
+                $au = @$authorTable[$n - 1] ? : $blankAu;
+                if ($au[0] && $au[1] && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
+                    $auname = $au[1] . ", " . $au[0];
+                else if ($au[0] && $au[1])
+                    $auname = $au[0] . " " . $au[1];
+                else
+                    $auname = $au[0] . $au[1];
+            }
             echo "<tr id='auedit$n' class='auedito'><td class='rxcaption'>", $n, ".</td>",
                 "<td class='lentry'>", Ht::entry("auname$n", $auname, array("size" => "35", "onchange" => "hiliter(this)")), "</td>",
                 "<td class='lentry'>", Ht::entry("auemail$n", $au[2], array("size" => "30", "onchange" => "hiliter(this)")), "</td>",
                 "<td class='lentry'>", Ht::entry("auaff$n", $au[3], array("size" => "32", "onchange" => "hiliter(this)")), "</td>",
                 "</tr>\n";
         }
-        echo "</table>", Ht::hidden("aueditcount", "25", array("id" => "aueditcount")), "</div>\n\n";
+        echo "</table>", Ht::hidden("aueditcount", $nauthors, array("id" => "aueditcount")), "</div>\n\n";
         $Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
     }
 
@@ -857,9 +862,9 @@ class PaperTable {
         $paperId = $this->prow->paperId;
         list($autable, $contacts) = $this->_analyze_authors();
 
-        $open = @$Error["contactAuthor"]
-            || ($this->useRequest && @$_REQUEST["setcontacts"] == 2)
-            || $always_unfold;
+        $cerror = @$Error["contactAuthor"] || @$Error["contacts"];
+        $open = $cerror || $always_unfold
+            || ($this->useRequest && @$_REQUEST["setcontacts"] == 2);
         echo '<div id="foldcontactauthors" class="',
             ($open ? "foldo" : "foldc"),
             '"><div class="papt childfold fn0" ',
@@ -868,7 +873,7 @@ class PaperTable {
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
             ' title="Edit contacts">', expander(true), 'Contacts</a></span><hr class="c" /></div>',
             '<div class="papt fx0',
-            (@$Error["contactAuthor"] ? " error" : ""),
+            ($cerror ? " error" : ""),
             '"><span class="papfn">',
             ($always_unfold ? "" : expander(false)),
             'Contacts</span><hr class="c" /></div>';
@@ -1024,8 +1029,11 @@ class PaperTable {
         $topicMode = (int) $this->useRequest;
         if (($topicTable = topicTable($this->prow, $topicMode))) {
             echo $this->editable_papt("topics", "Topics"),
-                "<div class='paphint'>Select any topics that apply to your paper.</div>",
-                "<div class='papv'>", $topicTable, "</div>\n\n";
+                '<div class="paphint">Select any topics that apply to your paper.</div>',
+                '<div class="papv">',
+                Ht::hidden("has_topics", 1),
+                $topicTable,
+                "</div>\n\n";
         }
     }
 
@@ -1034,7 +1042,7 @@ class PaperTable {
                                   . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
         if ($o->description)
             echo "<div class='paphint'>", $o->description, "</div>";
-        echo "<div class='papv'>";
+        echo "<div class='papv'>", Ht::hidden("has_opt$o->id", 1);
         if (($prow = $this->prow) && ($optx = $prow->option($o->id))) {
             $docclass = new HotCRPDocument($o->id, $o);
             foreach ($optx->values as $docid)
@@ -1080,6 +1088,7 @@ class PaperTable {
                 $myval = $optx->data;
             else
                 $myval = $optx->value;
+            echo Ht::hidden("has_$optid", 1);
 
             if ($o->type == "checkbox") {
                 echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)),
@@ -1195,7 +1204,8 @@ class PaperTable {
 
         echo $this->editable_papt("pcconf", "PC conflicts"),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
-            "<div class='papv'", $tclass, "><tr>", $topen;
+            "<div class='papv'", $tclass, "><tr>", $topen,
+            Ht::hidden("has_pcconf", 1);
         $n = ($selectors
               ? intval((count($pcconfs) + 1) / 2)
               : intval((count($pcconfs) + 2) / 3));
