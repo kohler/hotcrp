@@ -1694,6 +1694,11 @@ class Contact {
                         && ($rights->allow_pc
                             || $Conf->settings["extrev_view"] >= 1)
                         && $viewscore >= VIEWSCORE_PC)
+                    || ($rights->allow_pc
+                        && !$rights->view_conflict_type
+                        && $rrowSubmitted
+                        && $prow->leadContactId == $this->contactId
+                        && $viewscore >= VIEWSCORE_PC)
                     || ($rrow
                         && $rrow->paperId == $prow->paperId
                         && $this->is_my_review($rrow)
@@ -2083,7 +2088,8 @@ class Contact {
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_review($prow, null, $forceShow)
                 && (($rights->allow_pc
-                     && !$Conf->setting("pc_seeblindrev"))
+                     && (!$Conf->setting("pc_seeblindrev")
+                         || $prow->leadContactId == $this->contactId))
                     || $prow->review_not_incomplete($this))
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
