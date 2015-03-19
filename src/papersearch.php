@@ -227,10 +227,12 @@ class SearchQueryInfo {
         assert(!isset($this->columns[$name]) || $this->columns[$name] == $expr);
         $this->columns[$name] = $expr;
     }
-    public function add_manager_column() {
+    public function add_rights_columns() {
         global $Conf;
         if (!isset($this->columns["managerContactId"]))
             $this->columns["managerContactId"] = "Paper.managerContactId";
+        if (!isset($this->columns["leadContactId"]))
+            $this->columns["leadContactId"] = "Paper.leadContactId";
     }
 }
 
@@ -2138,7 +2140,7 @@ class PaperSearch {
             $q[] = "MyReview.reviewNeedsSubmit=0";
         if ($flags & self::F_XVIEW) {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
-            $sqi->add_manager_column();
+            $sqi->add_rights_columns();
         }
         if (($flags & self::F_FALSE)
             || ($sqi->negated && ($flags & self::F_XVIEW)))
@@ -2799,7 +2801,7 @@ class PaperSearch {
                         || $qe->get_float("heading")
                         || $limit == "rable");
         if ($need_filter) {
-            $sqi->add_manager_column();
+            $sqi->add_rights_columns();
             if ($Conf->setting("sub_blind") == Conference::BLIND_OPTIONAL)
                 $sqi->add_column("paperBlind", "Paper.blind");
         }
