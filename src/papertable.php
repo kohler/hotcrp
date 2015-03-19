@@ -1605,10 +1605,11 @@ class PaperTable {
             $revivable = $Conf->timeFinalizePaper($prow);
             if ($revivable)
                 $b = Ht::submit("revive", "Revive paper");
-            else if ($this->admin)
-                $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", array("hotoverridetext" => whyNotText($whyNot, "revive"), "hotoverridesubmit" => "revive")), "(admin only)");
-            else
+            else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn papers has passed.";
+                if ($this->admin)
+                    $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", array("hotoverridetext" => $b, "hotoverridesubmit" => "revive")), "(admin only)");
+            }
             return array($b);
         }
 
