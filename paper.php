@@ -463,7 +463,7 @@ function update_paper($pj, $opj, $action, $diffs) {
     }
     $notes = join(" ", $notes);
 
-    $webnotes = join(array_keys($diffs), ",") . "";
+    $webnotes = "";
     if (count($ps->error_html()))
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>";
 
