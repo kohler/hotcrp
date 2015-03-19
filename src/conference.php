@@ -2311,14 +2311,15 @@ class Conference {
         }
 
         if (count($ps) == 0)
-            $ps = "null";
+            $ps = null;
         else if (count($ps) == 1)
             $ps = $ps[0];
         else {
             $text .= " (papers " . join(", ", $ps) . ")";
-            $ps = "null";
+            $ps = null;
         }
-        $this->q("insert into ActionLog (ipaddr, contactId, paperId, action) values ('" . sqlq(@$_SERVER["REMOTE_ADDR"]) . "', " . (int) $who . ", $ps, '" . sqlq(substr($text, 0, 4096)) . "')");
+        $result = Dbl::q("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", @$_SERVER["REMOTE_ADDR"], (int) $who, $ps, substr($text, 0, 4096));
+        Dbl::free($result);
     }
 
 
