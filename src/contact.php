@@ -798,7 +798,7 @@ class Contact {
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
         // Maybe add to contact db
-        if (@$Opt["contactdb_dsn"] && $sreg->contactDbId)
+        if (@$Opt["contactdb_dsn"] && @$sreg->contactDbId)
             $this->contactdb_update();
 
         return true;
