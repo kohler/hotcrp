@@ -218,9 +218,9 @@ function request_to_json($opj, $action) {
     // Paper upload
     if (fileUploaded($_FILES["paperUpload"])) {
         if ($action === "final")
-            $pj->final = DocumentHelper::file_upload_json($_FILES["paperUpload"]);
+            $pj->final = DocumentHelper::file_upload_json("paperUpload");
         else if ($action === "update" || $action === "submit")
-            $pj->submission = DocumentHelper::file_upload_json($_FILES["paperUpload"]);
+            $pj->submission = DocumentHelper::file_upload_json("paperUpload");
     }
 
     // Blindness

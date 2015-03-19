@@ -351,28 +351,29 @@ class DocumentHelper {
         return $doc;
     }
 
-    static function file_upload_json($uploadId) {
+    static function file_upload_json($upload) {
         global $Now;
         $doc = (object) array();
 
-        if (!$uploadId
-            || !fileUploaded($_FILES[$uploadId])
-            || !isset($_FILES[$uploadId]["tmp_name"]))
+        if (is_string($upload) && $upload)
+            $upload = $_FILES[$upload];
+        if (!$upload || !is_array($upload) || !fileUploaded($upload)
+            || !isset($upload["tmp_name"]))
             return set_error_html($doc, "Upload error. Please try again.");
 
         // prepare document
-        $doc->content = file_get_contents($_FILES[$uploadId]["tmp_name"]);
+        $doc->content = file_get_contents($upload["tmp_name"]);
         if ($doc->content === false || strlen($doc->content) == 0)
             return set_error_html($doc, "The uploaded file was empty. Please try again.");
 
-        if (isset($_FILES[$uploadId]["name"])
-            && strlen($_FILES[$uploadId]["name"]) <= 255
-            && is_valid_utf8($_FILES[$uploadId]["name"]))
-            $doc->filename = $_FILES[$uploadId]["name"];
+        if (isset($upload["name"])
+            && strlen($upload["name"]) <= 255
+            && is_valid_utf8($upload["name"]))
+            $doc->filename = $upload["name"];
         else
             $doc->filename = null;
 
-        $doc->mimetype = Mimetype::type(defval($_FILES[$uploadId], "type", "application/octet-stream"));
+        $doc->mimetype = Mimetype::type(defval($upload, "type", "application/octet-stream"));
 
         $doc->timestamp = time();
         return $doc;
