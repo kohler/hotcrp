@@ -695,57 +695,66 @@ class Contact {
 
     private function load_by_query($where) {
         $result = Dbl::q("select ContactInfo.* from ContactInfo where $where");
-        if ($result && ($row = $result->fetch_object())) {
+        if (($row = $result ? $result->fetch_object() : null))
             $this->merge($row);
-            return true;
-        } else
-            return false;
+        Dbl::free($result);
+        return !!$row;
     }
 
     static function find_by_id($cid) {
         $result = Dbl::qe("select ContactInfo.* from ContactInfo where contactId=?", $cid);
-        return $result ? $result->fetch_object("Contact") : null;
+        $c = $result ? $result->fetch_object("Contact") : null;
+        Dbl::free($result);
+        return $c;
     }
 
     static function safe_registration($reg) {
         $safereg = array();
         foreach (array("firstName", "lastName", "name", "preferredEmail",
-                       "affiliation", "collaborators", "voicePhoneNumber")
-                 as $k)
+                       "affiliation", "collaborators", "voicePhoneNumber",
+                       "unaccentedName") as $k)
             if (isset($reg[$k]))
                 $safereg[$k] = $reg[$k];
         return $safereg;
     }
 
-    private function register_by_email($email, $reg) {
+    static private function safe_registration_with_contactdb($email, $reg) {
+        $reg = (object) ($reg === true ? array() : $reg);
+        $sreg = (object) array("email" => $email);
+
+        $name = Text::analyze_name($reg);
+        foreach (array("firstName", "lastName", "unaccentedName") as $k)
+            $sreg->$k = $name->$k;
+
+        foreach (array("affiliation", "collaborators", "voicePhoneNumber",
+                       "preferredEmail", "password", "country") as $k)
+            if (is_string(@$reg->$k) && $reg->$k)
+                $sreg->$k = $reg->$k;
+
+        if (@$Opt["contactdb_dsn"]
+            && ($cdb_user = self::contactdb_find_by_email($email))) {
+            $sreg->contactDbId = $cdb_user->contactDbId;
+            foreach (array("firstName", "lastName", "unaccentedName",
+                           "affiliation", "collaborators", "voicePhoneNumber",
+                           "preferredEmail", "country") as $k)
+                if (!@$sreg->$k && $cdb_user->$k)
+                    $sreg->$k = $cdb_user->$k;
+            if (!@$sreg->password && $cdb_user->password
+                && !$cdb_user->disable_shared_password)
+                $sreg->encoded_password = $cdb_user->password;
+        }
+
+        return $sreg;
+    }
+
+    private function register_by_email($sreg) {
         // For more complicated registrations, use UserStatus
         global $Conf, $Opt, $Now;
-        $reg = (object) ($reg === true ? array() : $reg);
-        $reg_keys = array("firstName", "lastName", "affiliation", "collaborators",
-                          "voicePhoneNumber", "preferredEmail");
-        if ($Conf->sversion >= 90)
-            $reg_keys[] = "unaccentedName";
 
-        // Set up registration
-        $name = Text::analyze_name($reg);
-        $reg->firstName = $name->firstName;
-        $reg->lastName = $name->lastName;
-        $reg->unaccentedName = $name->unaccentedName;
-
-        // Combine with information from contact database
-        $cdb_user = null;
-        if (@$Opt["contactdb_dsn"])
-            $cdb_user = self::contactdb_find_by_email($email);
-        if ($cdb_user)
-            foreach ($reg_keys as $k)
-                if (@$cdb_user->$k && !@$reg->$k)
-                    $reg->$k = $cdb_user->$k;
-
-        if (($password = @trim($reg->password)) !== "")
-            $this->change_password($password, false);
-        else if ($cdb_user && $cdb_user->password
-                 && !$cdb_user->disable_shared_password)
-            $this->set_encoded_password($cdb_user->password);
+        if (@$sreg->password)
+            $this->change_password($sreg->password, false);
+        else if (@$sreg->encoded_password)
+            $this->set_encoded_password($sreg->encoded_password);
         else
             // Always store initial, randomly-generated user passwords in
             // plaintext. The first time a user logs in, we will encrypt
@@ -758,16 +767,20 @@ class Contact {
             // again, the password will be visible in both emails.
             $this->set_encoded_password(self::random_password());
 
-        $best_email = @$reg->preferredEmail ? $reg->preferredEmail : $email;
-        $authored_papers = Contact::email_authored_papers($best_email, $reg);
+        $best_email = @$sreg->preferredEmail ? : $sreg->email;
+        $authored_papers = Contact::email_authored_papers($best_email, $sreg);
 
         // Insert
         $qf = array("email=?, password=?, creationTime=$Now");
-        $qv = array($email, $this->password);
+        $qv = array($sreg->email, $this->password);
+        $reg_keys = array("firstName", "lastName", "affiliation", "collaborators",
+                          "voicePhoneNumber", "preferredEmail");
+        if ($Conf->sversion >= 90)
+            $reg_keys[] = "unaccentedName";
         foreach ($reg_keys as $k)
-            if (isset($reg->$k)) {
+            if (isset($sreg->$k)) {
                 $qf[] = "$k=?";
-                $qv[] = $reg->$k;
+                $qv[] = $sreg->$k;
             }
         $result = Dbl::ql_apply("insert into ContactInfo set " . join(", ", $qf), $qv);
         if (!$result)
@@ -775,6 +788,7 @@ class Contact {
         $cid = (int) $result->insert_id;
         if (!$cid)
             return false;
+        Dbl::free($result);
 
         // Having added, load it
         if (!$this->load_by_query("ContactInfo.contactId=$cid"))
@@ -784,7 +798,7 @@ class Contact {
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
         // Maybe add to contact db
-        if (@$Opt["contactdb_dsn"] && !$cdb_user)
+        if (@$Opt["contactdb_dsn"] && $sreg->contactDbId)
             $this->contactdb_update();
 
         return true;
@@ -794,18 +808,26 @@ class Contact {
         global $Conf, $Me;
 
         // Lookup by email
-        $email = trim($email ? $email : "");
+        $email = trim((string) $email);
         if ($email != "") {
             $result = Dbl::qe("select ContactInfo.* from ContactInfo where email=?", $email);
-            if (($acct = $result ? $result->fetch_object("Contact") : null))
+            $acct = $result ? $result->fetch_object("Contact") : null;
+            Dbl::free($result);
+            if ($acct)
                 return $acct;
         }
 
         // Not found: register
         if (!$reg || !validate_email($email))
             return null;
+
+        $sreg = self::safe_registration_with_contactdb($email, $reg);
+        if (is_object($reg) && @$reg->only_if_contactdb
+            && !@$sreg->contactDbId)
+            return null;
+
         $acct = new Contact;
-        $ok = $acct->register_by_email($email, $reg);
+        $ok = $acct->register_by_email($sreg);
 
         // Log
         if ($ok)

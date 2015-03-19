@@ -96,9 +96,9 @@ class PaperStatus {
         $can_view_authors = !$this->view_contact
             || $this->view_contact->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
-            $contacts = array();
-            foreach ($prow->contacts(true) as $id => $conf)
-                $contacts[$conf->email] = true;
+            $conflicts = array();
+            foreach ($prow->conflicts(true) as $conf)
+                $conflicts[strtolower($conf->email)] = $conf;
 
             $pj->authors = array();
             cleanAuthor($prow);
@@ -112,11 +112,19 @@ class PaperStatus {
                     $aux->last = $au[1];
                 if ($au[3])
                     $aux->affiliation = $au[3];
-                if (@$aux->email && @$contacts[$aux->email])
+                if (@$aux->email
+                    && ($conf = @$conflicts[strtolower($aux->email)])
+                    && $conf->conflictType >= CONFLICT_AUTHOR)
                     $aux->contact = true;
                 $pj->authors[] = $aux;
             }
+
             $pj->contacts = (object) $contacts;
+            foreach ($conflicts as $conf)
+                if ($conf->conflictType >= CONFLICT_CONTACTAUTHOR) {
+                    $e = $conf->email;
+                    $pj->contacts->$e = true;
+                }
         }
 
         if ($Conf->submission_blindness() == Conference::BLIND_OPTIONAL)
@@ -398,6 +406,7 @@ class PaperStatus {
         $this->normalize_string($pj, "collaborators", false);
 
         // Authors
+        $au_by_email = array();
         $pj->bad_authors = array();
         if (@$pj->authors !== null) {
             if (!is_array($pj->authors))
@@ -419,6 +428,8 @@ class PaperStatus {
                     $aux->index = count($pj->authors) + count($pj->bad_authors);
                     if (is_object($au) && @$au->contact)
                         $aux->contact = true;
+                    if (@$aux->email)
+                        $au_by_email[strtolower($aux->email)] = $aux;
                 } else
                     $this->set_error_html("author", "Format error [authors]");
         }
@@ -459,30 +470,38 @@ class PaperStatus {
         else if (@$pj->pc_conflicts !== null)
             $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
 
+        // Old contacts (to avoid validate_email errors on unchanged contacts)
+        $old_contacts = array();
+        if ($old_pj && @$old_pj->authors)
+            foreach ($old_pj->authors as $au)
+                if (@$au->contact)
+                    $old_contacts[strtolower($au->email)] = true;
+        if ($old_pj && @$old_pj->contacts)
+            foreach ((array) $old_pj->contacts as $e => $ctype)
+                $old_contacts[strtolower($e)] = true;
+
         // Contacts
-        $old_contacts = $old_pj ? $old_pj->contacts : array();
-        if (is_object($old_contacts))
-            $old_contacts = (array) $old_contacts;
-        if (is_object(@$pj->contacts))
-            $contacts = (array) $pj->contacts;
-        else if (is_array(@$pj->contacts))
-            $contacts = $pj->contacts;
-        else if (@$pj->contacts === null)
-            $contacts = $old_contacts;
-        else
+        $contacts = @$pj->contacts;
+        if ($contacts === null)
+            $contacts = $old_pj ? @$old_pj->contacts : null;
+        if ($contacts === null)
+            $contacts = array();
+        else if (is_object($contacts) || is_array($contacts))
+            $contacts = (array) $contacts;
+        else {
             $this->set_error_html("contacts", "Format error [contacts]");
+            $contacts = array();
+        }
         $pj->contacts = array();
         $pj->bad_contacts = array();
-        // 1. authors who are contacts
-        if (@$pj->authors)
-            foreach ($pj->authors as $au)
-                if (@$au->contact) {
-                    if (@$au->email && validate_email($au->email))
-                        $pj->contacts[strtolower($au->email)] = $au;
-                    else
-                        $pj->bad_contacts[] = $au;
-                }
-        // 2. named contacts
+        // verify emails on authors marked as contacts
+        foreach (@$pj->authors ? : array() as $au)
+            if (@$au->contact
+                && (!@$au->email
+                    || (!@$old_contacts[strtolower($au->email)]
+                        && !validate_email($au->email))))
+                $pj->bad_contacts[] = $au;
+        // verify emails on explicitly named contacts
         foreach ($contacts as $k => $v) {
             if (!$v)
                 continue;
@@ -495,16 +514,14 @@ class PaperStatus {
                 else
                     $v = Text::analyze_name($v);
             }
-            if (is_object($v)) {
-                if (!@$v->email && is_string($k))
-                    $v->email = $k;
-                $email = strtolower($v->email);
-                if (!validate_email($email) && !@$old_contacts[$email])
-                    $pj->bad_contacts[] = $v;
-                else if (!@$pj->contacts[$email])
-                    $pj->contacts[$email] = $v;
+            if (is_object($v) && !@$v->email && is_string($k))
+                $v->email = $k;
+            if (is_object($v) && @$v->email) {
+                $lemail = strtolower($v->email);
+                if (validate_email($lemail) || @$old_contacts[$lemail])
+                    $pj->contacts[$lemail] = (object) array_merge((array) @$au_by_email[$lemail], (array) $v);
                 else
-                    $pj->contacts[$email] = (object) array_merge((array) $pj->contacts[$email], (array) $v);
+                    $pj->bad_contacts[] = $v;
             } else
                 $this->set_error_html("contacts", "Format error [contacts]");
         }
@@ -573,6 +590,22 @@ class PaperStatus {
         return join(",", $x);
     }
 
+    static private function contacts_array($pj) {
+        $contacts = array();
+        foreach (@$pj->authors ? : array() as $au)
+            if (@$au->email && validate_email($au->email)) {
+                $c = clone $au;
+                unset($c->explicit);
+                $contacts[strtolower($c->email)] = $c;
+            }
+        foreach ((array) (@$pj->contacts ? : array()) as $lemail => $v) {
+            $c = (object) array_merge((array) @$contacts[$lemail], (array) $v);
+            $c->explicit = true;
+            $contacts[$lemail] = $c;
+        }
+        return $contacts;
+    }
+
     static function conflicts_array($pj, $old_pj) {
         $x = array();
 
@@ -580,7 +613,7 @@ class PaperStatus {
             $c = $pj->pc_conflicts;
         else
             $c = ($old_pj ? @$old_pj->pc_conflicts : null) ? : array();
-        foreach ($c as $email => $type)
+        foreach ((array) $c as $email => $type)
             $x[strtolower($email)] = $type;
 
         if ($pj && @$pj->authors !== null)
@@ -595,7 +628,7 @@ class PaperStatus {
             $c = $pj->contacts;
         else
             $c = $old_pj ? $old_pj->contacts : array();
-        foreach ($c as $email => $crap) {
+        foreach ((array) $c as $email => $crap) {
             $email = strtolower($email);
             if (!@$x[$email] || $x[$email] < CONFLICT_CONTACTAUTHOR)
                 $x[$email] = CONFLICT_CONTACTAUTHOR;
@@ -605,7 +638,7 @@ class PaperStatus {
             foreach ($old_pj->pc_conflicts as $email => $type)
                 if ($type == CONFLICT_CHAIRMARK) {
                     $email = strtolower($email);
-                    if (@($x[$email] < CONFLICT_CHAIRMARK))
+                    if (@+$x[$email] < CONFLICT_CHAIRMARK)
                         $x[$email] = CONFLICT_CHAIRMARK;
                 }
 
@@ -648,10 +681,14 @@ class PaperStatus {
                 }
             }
         }
-        if (@$pj->contacts)
-            foreach ($pj->contacts as $email => $c)
-                if (!Contact::find_by_email($c->email, $c, !$this->no_email))
-                    $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
+
+        // create contacts
+        foreach (self::contacts_array($pj) as $c) {
+            $c->only_if_contactdb = !@$c->explicit;
+            if (!Contact::find_by_email($c->email, $c, !$this->no_email)
+                && @$c->explicit)
+                $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
+        }
 
         // catch errors
         if ($this->nerrors)
