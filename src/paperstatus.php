@@ -119,7 +119,7 @@ class PaperStatus {
                 $pj->authors[] = $aux;
             }
 
-            $pj->contacts = (object) $contacts;
+            $pj->contacts = (object) array();
             foreach ($conflicts as $conf)
                 if ($conf->conflictType >= CONFLICT_CONTACTAUTHOR) {
                     $e = $conf->email;
