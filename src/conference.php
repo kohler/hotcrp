@@ -1787,6 +1787,7 @@ class Conference {
                 Paper.blind as paperBlind,
                 Paper.outcome,
                 Paper.managerContactId,
+                Paper.leadContactId,
                 ContactInfo.firstName as reviewFirstName,
                 ContactInfo.lastName as reviewLastName,
                 ContactInfo.email as reviewEmail,
