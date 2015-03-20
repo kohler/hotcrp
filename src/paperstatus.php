@@ -573,7 +573,7 @@ class PaperStatus {
     static function options_sql($pj) {
         $x = array();
         $option_list = PaperOption::option_list();
-        foreach (($pj ? $pj->options : array()) as $id => $oa) {
+        foreach ((array) ($pj ? @$pj->options : null) as $id => $oa) {
             $o = $option_list[$id];
             if ($o->type == "text")
                 $x[] = "($pj->id,$o->id,1,'" . sqlq($oa) . "')";
