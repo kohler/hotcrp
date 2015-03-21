@@ -358,7 +358,8 @@ class PaperList extends BaseList {
         }
         if ($this->contact->privChair) {
             $sel_opt["acmcms"] = "ACM CMS report";
-            $sel_opt["json"] = "JSON report";
+            $sel_opt["json"] = "JSON";
+            $sel_opt["jsonattach"] = "JSON with attachments";
         }
         $t .= Ht::select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
                           array("id" => "plact${nlll}_d", "tabindex" => 6))

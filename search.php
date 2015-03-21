@@ -876,12 +876,42 @@ if ($getaction == "json" && SearchActions::any() && $Me->privChair) {
     $pj = array();
     $ps = new PaperStatus(array("view_contact" => $Me, "forceShow" => true));
     foreach (SearchActions::selection() as $pid)
-        $pj[] = $ps->load($pid);
+        if (($j = $ps->load($pid)))
+            $pj[] = $j;
     if (count($pj) == 1)
         $pj = $pj[0];
     header("Content-Type: application/json");
-    header("Content-Disposition: attachment; filename=" . mime_quote_string($Opt["downloadPrefix"] . (is_array($pj) ? "papers" : "paper" . SearchActions::selection_at(0)) . ".json"));
+    header("Content-Disposition: attachment; filename=" . mime_quote_string($Opt["downloadPrefix"] . (is_array($pj) ? "" : "paper" . SearchActions::selection_at(0) . "-") . "data.json"));
     echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+    exit;
+}
+
+
+// download status JSON plus documents for selected papers
+function jsonattach_document($dj, $prow, $dtype, $drow) {
+    global $jsonattach_zip;
+    if (DocumentHelper::load($drow->docclass, $drow)) {
+        $dj->content_file = HotCRPDocument::filename($drow);
+        $jsonattach_zip->add_as($drow->content, $dj->content_file);
+    }
+}
+
+if ($getaction == "jsonattach" && SearchActions::any() && $Me->privChair) {
+    global $jsonattach_zip;
+    $jsonattach_zip = new ZipDocument($Opt["downloadPrefix"] . "data.zip");
+    $pj = array();
+    $ps = new PaperStatus(array("view_contact" => $Me, "forceShow" => true));
+    $ps->add_document_callback("jsonattach_document");
+    foreach (SearchActions::selection() as $pid)
+        if (($j = $ps->load($pid)))
+            $pj[] = $j;
+        else
+            $jsonattach_zip->warnings[] = "#$pid: No such paper";
+    if (count($pj) == 1)
+        $pj = $pj[0];
+    $jsonattach_zip->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNCODE) . "\n",
+                         $Opt["downloadPrefix"] . (is_array($pj) ? "" : "paper" . SearchActions::selection_at(0) . "-") . "data.json");
+    $result = $jsonattach_zip->download();
     exit;
 }
 

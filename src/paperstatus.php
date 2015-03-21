@@ -14,11 +14,15 @@ class PaperStatus {
     private $view_contact = null;
     private $forceShow = null;
     private $export_ids = false;
+    private $export_docids = false;
     private $export_content = false;
+    private $disable_users = false;
+    private $document_callbacks = array();
 
     function __construct($options = array()) {
         foreach (array("no_email", "allow_error", "view_contact",
-                       "forceShow", "export_ids", "export_content") as $k)
+                       "forceShow", "export_ids", "export_docids",
+                       "export_content", "disable_users") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         $this->clear();
@@ -29,6 +33,10 @@ class PaperStatus {
         $this->errf = array();
         $this->errmsg = array();
         $this->nerrors = 0;
+    }
+
+    function add_document_callback($cb) {
+        $this->document_callbacks[] = $cb;
     }
 
     function load($pid, $args = array()) {
@@ -42,7 +50,7 @@ class PaperStatus {
     private function document_to_json($prow, $dtype, $docid, $args) {
         global $Conf;
         $d = (object) array();
-        if (@$args["docids"])
+        if (@$args["docids"] || $this->export_docids)
             $d->docid = $docid;
         $dresult = $Conf->document_result($prow, $dtype, $docid);
         if (($drow = $Conf->document_row($dresult, $dtype))) {
@@ -61,6 +69,9 @@ class PaperStatus {
                 && DocumentHelper::load($drow->docclass, $drow))
                 $d->content_base64 = base64_encode($drow->content);
         }
+        foreach ($this->document_callbacks as $cb)
+            call_user_func($cb, $d, $prow, $dtype, $drow);
+        Dbl::free($dresult);
         return count(get_object_vars($d)) ? $d : null;
     }
 
@@ -595,12 +606,11 @@ class PaperStatus {
         foreach (@$pj->authors ? : array() as $au)
             if (@$au->email && validate_email($au->email)) {
                 $c = clone $au;
-                unset($c->explicit);
                 $contacts[strtolower($c->email)] = $c;
             }
         foreach ((array) (@$pj->contacts ? : array()) as $lemail => $v) {
             $c = (object) array_merge((array) @$contacts[$lemail], (array) $v);
-            $c->explicit = true;
+            $c->contact = true;
             $contacts[$lemail] = $c;
         }
         return $contacts;
@@ -684,9 +694,10 @@ class PaperStatus {
 
         // create contacts
         foreach (self::contacts_array($pj) as $c) {
-            $c->only_if_contactdb = !@$c->explicit;
+            $c->only_if_contactdb = !@$c->contact;
+            $c->disabled = !!@$this->disable_users;
             if (!Contact::find_by_email($c->email, $c, !$this->no_email)
-                && @$c->explicit)
+                && @$c->contact)
                 $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
         }
 
