@@ -218,6 +218,10 @@ class S3Document {
 
     public function load($filename) {
         $this->run($filename, "GET", array());
+        if ($this->status == 404 || $this->status == 500)
+            return null;
+        if ($this->status != 200)
+            trigger_error("S3 warning: GET $filename: status $this->status", E_USER_WARNING);
         return @$this->response_headers["content"];
     }
 
