@@ -106,7 +106,7 @@ class PaperOption {
         $abbr = strtolower(UnicodeHelper::deaccent($name));
         $abbr = preg_replace('/[^a-z_0-9]+/', "-", $abbr);
         $abbr = preg_replace('/^-+|-+$/', "", $abbr);
-        if (preg_match('/\A(?:|submission|paper|final|opt\d+|\d+)\z/', $abbr))
+        if (preg_match('/\A(?:|p(?:aper)?\d*|submission|final|opt\d*|\d.*)\z/', $abbr))
             $abbr = "opt$id";
         return $abbr;
     }
