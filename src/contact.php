@@ -744,6 +744,9 @@ class Contact {
                 $sreg->encoded_password = $cdb_user->password;
         }
 
+        if (@$reg->disabled)
+            $sreg->disabled = 1;
+
         return $sreg;
     }
 
@@ -774,7 +777,7 @@ class Contact {
         $qf = array("email=?, password=?, creationTime=$Now");
         $qv = array($sreg->email, $this->password);
         $reg_keys = array("firstName", "lastName", "affiliation", "collaborators",
-                          "voicePhoneNumber", "preferredEmail");
+                          "voicePhoneNumber", "preferredEmail", "disabled");
         if ($Conf->sversion >= 90)
             $reg_keys[] = "unaccentedName";
         foreach ($reg_keys as $k)
@@ -840,14 +843,15 @@ class Contact {
 
     function mark_create($send_email, $message_chair) {
         global $Conf, $Me;
+        $account = $this->disabled ? "disabled account" : "account";
         if ($Me && $Me->privChair && $message_chair)
-            $Conf->infoMsg("Created account for <a href=\"" . hoturl("profile", "u=" . urlencode($this->email)) . "\">" . Text::user_html_nolink($this) . "</a>.");
-        if ($send_email)
+            $Conf->infoMsg("Created $account for <a href=\"" . hoturl("profile", "u=" . urlencode($this->email)) . "\">" . Text::user_html_nolink($this) . "</a>.");
+        if ($send_email && !$this->disabled)
             $this->sendAccountInfo("create", false);
         if ($Me && $Me->has_email() && $Me->email !== $this->email)
-            $Conf->log("Created account ($Me->email)", $this);
+            $Conf->log("Created $account ($Me->email)", $this);
         else
-            $Conf->log("Created account", $this);
+            $Conf->log("Created $account", $this);
     }
 
     static function id_by_email($email) {
