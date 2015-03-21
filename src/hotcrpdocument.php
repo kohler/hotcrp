@@ -61,7 +61,7 @@ class HotCRPDocument {
             $o = PaperOption::find($doc->documentType);
             if ($o && $o->type == "attachments" && $doc->filename)
                 // do not decorate with MIME type suffix
-                return $fn . "p" . $doc->paperId . "/" . $o->abbr . "/" . $doc->filename;
+                return $fn . "paper" . $doc->paperId . "-" . $o->abbr . "/" . $doc->filename;
             else if ($o && $o->is_document())
                 $fn .= "paper" . $doc->paperId . "-" . $o->abbr;
             else
