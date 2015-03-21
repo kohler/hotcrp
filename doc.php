@@ -32,9 +32,9 @@ else {
         else if (preg_match(',\A([^/]+)/+(.*)\z,', $m[2], $mm))
             list($dtype, $attachment_filename) = array($m[1], $m[2]);
     } else if (preg_match(',\A(?:paper)?(\d+)-?([-A-Za-z0-9_]*)(?:\.[^/]+|/+(.*))\z,', $s, $m))
-        list($paperId, $dtname, $attachment_filename) = array(intval($m[1]), $m[2], $m[3]);
+        list($paperId, $dtname, $attachment_filename) = array(intval($m[1]), $m[2], @$m[3]);
     else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:\.[^/]+|/+(.*))\z,', $s, $m))
-        list($paperId, $dtname, $attachment_filename) = array(intval($m[2]), $m[1], $m[3]);
+        list($paperId, $dtname, $attachment_filename) = array(intval($m[2]), $m[1], @$m[3]);
     if ($dtname !== null)
         $documentType = HotCRPDocument::parse_dtype($dtname ? : "paper");
     if ($documentType !== null && $attachment_filename) {
