@@ -1,5 +1,6 @@
 <?php
-require_once("src/init.php");
+$ConfSiteBase = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once("$ConfSiteBase/src/init.php");
 
 $arg = getopt("hn:", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])) {

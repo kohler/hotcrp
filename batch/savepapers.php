@@ -1,6 +1,7 @@
 <?php
-require_once("src/init.php");
-require_once("lib/getopt.php");
+$ConfSiteBase = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once("$ConfSiteBase/src/init.php");
+require_once("$ConfSiteBase/lib/getopt.php");
 
 $arg = getopt_rest($argv, "hn:", array("help", "name:"));
 if (isset($arg["h"]) || isset($arg["help"])
