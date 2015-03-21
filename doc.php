@@ -34,7 +34,7 @@ else {
             if ($documentType
                 && ($o = PaperOption::find($documentType))
                 && $o->type == "attachments") {
-                $need_docid = false;
+                $need_docid = true;
                 $result = $Conf->q("select o.value from PaperOption o join PaperStorage s on (s.paperStorageId=o.value) where o.paperId=$paperId and o.optionId=$documentType and s.filename='" . sqlq($m[2]) . "'", "while searching for attachment");
                 if (($row = edb_row($result)))
                     $docid = $row[0];
