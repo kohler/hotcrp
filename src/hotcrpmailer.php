@@ -110,8 +110,7 @@ class HotCRPMailer extends Mailer {
             return "";
 
         // save old au_seerev setting, and reset it so authors can see them.
-        $old_au_seerev = $Conf->setting("au_seerev");
-        $Conf->settings["au_seerev"] = AU_SEEREV_ALWAYS;
+        $old_au_seerev = $Conf->au_seerev_setting(AU_SEEREV_ALWAYS);
 
         $text = "";
         foreach ($crows as $crow)
@@ -119,7 +118,7 @@ class HotCRPMailer extends Mailer {
                 && $this->permissionContact->can_view_comment($this->row, $crow, false))
                 $text .= $crow->unparse_text($this->permissionContact) . "\n";
 
-        $Conf->settings["au_seerev"] = $old_au_seerev;
+        $Conf->au_seerev_setting($old_au_seerev);
         return $text;
     }
 

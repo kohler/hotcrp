@@ -1104,10 +1104,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
     }
 
     // warn on other relationships
-    if (value("resp_open") > 0
-        && value("au_seerev", -1) <= 0
-        && value("resp_done", $Now + 1) > $Now)
-        $Warning[] = "The site will collect responses once you allow authors to see the reviews.";
     if (value("sub_freeze", -1) == 0
         && value("sub_open") > 0
         && value("sub_sub") <= 0)
@@ -2096,7 +2092,11 @@ function doDecGroup() {
     global $Conf, $Highlight, $Error;
 
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
-    doRadio("au_seerev", array(AU_SEEREV_NO => "No", AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they’ve completed any requested reviews"));
+    $no_text = "No, unless responses are open";
+    if (!$Conf->setting("au_seerev", 0)
+        && $Conf->timeAuthorViewReviews())
+        $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
+    doRadio("au_seerev", array(AU_SEEREV_NO => $no_text, AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they’ve completed any requested reviews"));
 
     // Authors' response
     echo '<div class="g"></div><table id="foldauresp" class="fold2o">';

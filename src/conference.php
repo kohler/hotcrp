@@ -13,6 +13,7 @@ class Conference {
     private $_pc_seeall_cache = null;
     private $_round0_defined_cache = null;
     private $_pc_see_pdf = null;
+    private $_au_seerev;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -203,6 +204,7 @@ class Conference {
         $this->_decisions = null;
         $this->_pc_seeall_cache = null;
         $this->_round0_defined_cache = null;
+        // digested settings
         $this->_pc_see_pdf = true;
         if (+@$this->settings["sub_freeze"] <= 0
             && ($so = +@$this->settings["sub_open"]) > 0
@@ -210,6 +212,10 @@ class Conference {
             && ($ss = +@$this->settings["sub_sub"]) > 0
             && $ss > $Now)
             $this->_pc_see_pdf = false;
+
+        $this->_au_seerev = @+$this->settings["au_seerev"];
+        if (!$this->_au_seerev && $this->time_author_respond_all_rounds())
+            $this->_au_seerev = AU_SEEREV_ALWAYS;
     }
 
     private function crosscheck_track_settings($j) {
@@ -971,24 +977,32 @@ class Conference {
         return $this->timeAuthorViewDecision()
             && $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
+    function au_seerev_setting($au_seerev = null) {
+        $x = $this->_au_seerev;
+        if ($au_seerev !== null)
+            $this->_au_seerev = $au_seerev;
+        return $x;
+    }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
         // also used to determine when authors can see review counts
         // and comments.  see also mailtemplate.php and genericWatch
-        $s = $this->setting("au_seerev");
-        return $s == AU_SEEREV_ALWAYS || ($s > 0 && !$reviewsOutstanding);
+        return $this->_au_seerev == AU_SEEREV_ALWAYS
+            || ($this->_au_seerev > 0 && !$reviewsOutstanding);
+    }
+    private function time_author_respond_all_rounds() {
+        $allowed = array();
+        foreach ($this->resp_round_list() as $i => $rname) {
+            $isuf = $i ? "_$i" : "";
+            if ($this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf"))
+                $allowed[$i] = $rname;
+        }
+        return $allowed;
     }
     function time_author_respond($round = null) {
         if (!$this->timeAuthorViewReviews() || !$this->setting("resp_active"))
             return $round === null ? array() : false;
-        if ($round === null) {
-            $allowed = array();
-            foreach ($this->resp_round_list() as $i => $rname) {
-                $isuf = $i ? "_$i" : "";
-                if ($this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf"))
-                    $allowed[$i] = $rname;
-            }
-            return $allowed;
-        }
+        if ($round === null)
+            return $this->time_author_respond_all_rounds();
         $isuf = $round ? "_$round" : "";
         return $this->deadlinesBetween("resp_open$isuf", "resp_done$isuf", "resp_grace$isuf");
     }

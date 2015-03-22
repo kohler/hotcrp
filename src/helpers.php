@@ -980,7 +980,7 @@ function whyNotText($whyNot, $action) {
                 $text .= "The deadline to $action $thisPaper has passed. ";
             $text .= "It was " . $Conf->printableTime($end, "span") . ". ";
         } else if ($dname == "au_seerev") {
-            if ($Conf->setting("au_seerev") == AU_SEEREV_YES)
+            if ($Conf->au_seerev_setting() == AU_SEEREV_YES)
                 $text .= "Authors who are also reviewers can’t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own. ";
             else
                 $text .= "Authors can’t view paper reviews at the moment. ";
