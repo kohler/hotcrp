@@ -9,7 +9,7 @@ class Conference {
 
     var $settings;
     var $settingTexts;
-    var $sversion;
+    public $sversion;
     private $_pc_seeall_cache = null;
     private $_round0_defined_cache = null;
     private $_pc_see_pdf = null;

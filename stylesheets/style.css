@@ -2462,7 +2462,7 @@ div.cmtauvis .cmtv .cmtmsg {
 	margin-left: -34px;
 }
 div.cmtauvis .cmtnumhead {
-	text-decoration: underline;
+	font-weight: bold;
 }
 div.cmtadminvis {
 	background: #f3f3f3;

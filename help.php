@@ -102,7 +102,7 @@ function search() {
 <p>All HotCRP paper lists are obtained through search, search syntax is flexible,
 and it’s possible to download all matching papers and/or reviews at once.</p>
 
-<p>Some useful hints for PC members and chairs:</p>
+<p>Some hints for PC members and chairs:</p>
 
 <ul class='compact'>
 <li><div style='display:inline-block'>" . _searchForm("") . "</div>&nbsp; finds all papers.  (Leave the search field blank.)</li>
