@@ -1693,6 +1693,7 @@ class Contact {
             $rrow = null;
         } else
             $viewscore = VIEWSCORE_AUTHOR;
+        assert(!$rrow || ($prow && $prow->paperId == $rrow->paperId));
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $rights = $this->rights($prow, $forceShow);
@@ -1706,25 +1707,21 @@ class Contact {
                      && $viewscore >= VIEWSCORE_AUTHOR)
                     || ($rights->allow_pc
                         && $rrowSubmitted
+                        && $viewscore >= VIEWSCORE_PC
                         && $pc_seeallrev > 0 // see also timePCViewAllReviews()
                         && ($pc_seeallrev != Conference::PCSEEREV_UNLESSANYINCOMPLETE
                             || !$this->has_outstanding_review())
                         && ($pc_seeallrev != Conference::PCSEEREV_UNLESSINCOMPLETE
                             || !$rights->review_type)
-                        && $Conf->check_tracks($prow, $this, "viewrev")
-                        && $viewscore >= VIEWSCORE_PC)
+                        && $Conf->check_tracks($prow, $this, "viewrev"))
                     || ($rights->review_type
                         && !$rights->view_conflict_type
                         && $rrowSubmitted
-                        && $prow->review_not_incomplete($this)
-                        && ($rights->allow_pc
-                            || $Conf->settings["extrev_view"] >= 1)
-                        && $viewscore >= VIEWSCORE_PC)
-                    || ($rights->allow_pc
-                        && !$rights->view_conflict_type
-                        && $rrowSubmitted
-                        && $prow->leadContactId == $this->contactId
-                        && $viewscore >= VIEWSCORE_PC)
+                        && $viewscore >= VIEWSCORE_PC
+                        && (($prow->review_not_incomplete($this)
+                             && ($rights->allow_pc
+                                 || $Conf->settings["extrev_view"] >= 1))
+                            || $prow->leadContactId == $this->contactId))
                     || ($rrow
                         && $rrow->paperId == $prow->paperId
                         && $this->is_my_review($rrow)
