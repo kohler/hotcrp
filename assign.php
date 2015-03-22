@@ -39,10 +39,9 @@ function loadRows() {
         errorMsgExit(whyNotText($whyNot, "view"));
     if (($whyNot = $Me->perm_request_review($prow, false))) {
         $wnt = whyNotText($whyNot, "request reviews for");
-        if (!$Conf->headerPrinted)
-            error_go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])), $wnt);
-        else
-            errorMsgExit($wnt);
+        if ($Conf->headerPrinted)
+            error_log("assign:headerPrinted: " . json_encode($_REQUEST));
+        error_go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])), $wnt);
     }
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
