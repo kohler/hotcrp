@@ -80,7 +80,7 @@ class SearchTerm {
             foreach ($float2 as $k => $v)
                 if ($k === "sort" && isset($float1["sort"]))
                     array_splice($float1["sort"], count($float1["sort"]), 0, $v);
-                else if (isset($float1[$k]))
+                else if (is_array(@$float1[$k]) && is_array($v))
                     $float1[$k] = array_replace_recursive($float1[$k], $v);
                 else
                     $float1[$k] = $v;
