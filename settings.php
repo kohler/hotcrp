@@ -2092,7 +2092,10 @@ function doDecGroup() {
     global $Conf, $Highlight, $Error;
 
     echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
-    $no_text = "No, unless responses are open";
+    if ($Conf->setting("resp_active"))
+        $no_text = "No, unless responses are open";
+    else
+        $no_text = "No";
     if (!$Conf->setting("au_seerev", 0)
         && $Conf->timeAuthorViewReviews())
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';

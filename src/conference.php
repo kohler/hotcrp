@@ -214,7 +214,9 @@ class Conference {
             $this->_pc_see_pdf = false;
 
         $this->_au_seerev = @+$this->settings["au_seerev"];
-        if (!$this->_au_seerev && $this->time_author_respond_all_rounds())
+        if (!$this->_au_seerev
+            && @+$this->settings["resp_active"] > 0
+            && $this->time_author_respond_all_rounds())
             $this->_au_seerev = AU_SEEREV_ALWAYS;
     }
 
@@ -971,7 +973,7 @@ class Conference {
             && (!$prow || $prow->timeSubmitted <= 0 || $this->setting('sub_freeze') <= 0);
     }
     function collectFinalPapers() {
-        return $this->setting('final_open') > 0;
+        return $this->setting("final_open") > 0;
     }
     function timeSubmitFinalPaper() {
         return $this->timeAuthorViewDecision()
