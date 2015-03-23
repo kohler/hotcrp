@@ -909,7 +909,7 @@ if ($getaction == "jsonattach" && SearchActions::any() && $Me->privChair) {
             $jsonattach_zip->warnings[] = "#$pid: No such paper";
     if (count($pj) == 1)
         $pj = $pj[0];
-    $jsonattach_zip->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNCODE) . "\n",
+    $jsonattach_zip->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n",
                          $Opt["downloadPrefix"] . (is_array($pj) ? "" : "paper" . SearchActions::selection_at(0) . "-") . "data.json");
     $result = $jsonattach_zip->download();
     exit;
