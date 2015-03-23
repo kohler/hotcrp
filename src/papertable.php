@@ -2038,7 +2038,7 @@ class PaperTable {
             if ($Me->can_comment($prow, null))
                 $s .= "papercomment.add({is_new:true,editable:true});\n";
             foreach ($needresp as $i => $rname)
-                $s .= "papercomment.add({is_new:true,editable:true,response:" . ($i ? json_encode($rname) : 1) . "},true);\n";
+                $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode($rname) . "},true);\n";
             echo '<div id="cmtcontainer"></div>';
             CommentInfo::echo_script($prow);
             $Conf->echoScript($s);
