@@ -2000,7 +2000,7 @@ function getcb(v) {
 return function (callback) {
     if (!status && hotcrp_user.is_pclike) {
         status = 1;
-        Miniajax.get(hoturl("search", "alltags=1"), getcb);
+        Miniajax.get(hoturl("search", "alltags=1&ajax=1"), getcb);
     }
     if (status == 1)
         cb = add_callback(cb, callback);
