@@ -412,8 +412,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
             else
                 $x = '<a href="#' . $cid[0]
                     . '" onclick="return papercomment.edit_response('
-                    . ($i ? "'$rname'" : "")
-                    . ')"';
+                    . json_encode($rname) . ')"';
             $x .= ' class="xx">'
                 . Ht::img("comment24.png", "[$cid[1] response]", "dlimg") . "&nbsp;"
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
