@@ -2318,9 +2318,10 @@ class Contact {
         if (@$set["resp_active"] > 0) {
             $dl->resp = (object) array("rounds" => array(), "roundsuf" => array());
             foreach ($Conf->resp_round_list() as $i => $rname) {
-                $dl->resp->rounds[] = $i ? $rname : 1;
-                $dl->resp->roundsuf[] = $i ? ".$rname" : "";
-                $k = "resp" . ($i ? ".$rname" : "");
+                $osuf = $rname != "1" ? ".$rname" : "";
+                $dl->resp->rounds[] = $rname;
+                $dl->resp->roundsuf[] = $osuf;
+                $k = "resp" . $osuf;
                 $dlresp = $dl->$k = @$dl->$k ? : (object) array();
                 $isuf = $i ? "_$i" : "";
                 $dlresp->open = @+$set["resp_open$isuf"];
@@ -2434,7 +2435,7 @@ class Contact {
                 if (@$dl->resp)
                     foreach ($Conf->resp_round_list() as $i => $rname) {
                         $crow = (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i);
-                        $k = "can_respond" . ($i ? ".$rname" : "");
+                        $k = "can_respond" . ($rname == "1" ? "" : ".$rname");
                         if ($this->can_respond($prow, $crow, true))
                             $perm->$k = true;
                         else if ($admin && $this->can_respond($prow, $crow, false))
