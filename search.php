@@ -892,7 +892,7 @@ function jsonattach_document($dj, $prow, $dtype, $drow) {
     global $jsonattach_zip;
     if (DocumentHelper::load($drow->docclass, $drow)) {
         $dj->content_file = HotCRPDocument::filename($drow);
-        $jsonattach_zip->add_as($drow->content, $dj->content_file);
+        $jsonattach_zip->add_as($drow, $dj->content_file);
     }
 }
 
