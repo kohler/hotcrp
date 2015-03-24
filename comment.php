@@ -11,20 +11,11 @@ if ($Me->is_empty())
 
 
 // header
-function confHeader() {
-    global $prow, $mode, $Conf;
-    if ($prow)
-        $title = "Paper #$prow->paperId";
-    else
-        $title = "Paper Comments";
-    $Conf->header($title, "comment", actionBar(null, $prow), false);
-}
-
-function errorMsgExit($msg) {
-    global $Conf;
-    confHeader();
-    $Conf->footerScript("shortcut().add()");
-    $Conf->errorMsgExit($msg);
+function exit_to_paper() {
+    global $prow;
+    go(hoturl("paper", array("p" => $prow ? $prow->paperId : @$_REQUEST["p"],
+                             "c" => @$_REQUEST["c"],
+                             "ls" => @$_REQUEST["ls"])));
 }
 
 
@@ -33,7 +24,7 @@ function loadRows() {
     global $Conf, $Me, $CurrentProw, $prow, $paperTable, $crow, $Error;
     $CurrentProw = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, "view"));
+        exit_to_paper();
     $paperTable = new PaperTable($prow);
     $paperTable->resolveReview();
     $paperTable->resolveComments();
@@ -47,8 +38,10 @@ function loadRows() {
     }
     if (!$crow && $cid != "xxx" && $cid != "new"
         /* following are obsolete */
-        && $cid != "response" && $cid != "newresponse")
-        errorMsgExit("That comment does not exist.");
+        && $cid != "response" && $cid != "newresponse") {
+        $Conf->errorMsg("No such comment.");
+        $Conf->ajaxExit(array("ok" => false));
+    }
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
         $Error = array();
 }
