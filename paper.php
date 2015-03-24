@@ -362,7 +362,7 @@ function request_authors_differ($pj, $opj) {
         || count($pj->authors) != count($opj->authors))
         return true;
     for ($i = 0; $i < count($pj->authors); ++$i)
-        if ($pj->authors[$i]->email !== $opj->authors[$i]->email
+        if (@$pj->authors[$i]->email !== @$opj->authors[$i]->email
             || (string) @$pj->authors[$i]->affiliation !== (string) @$opj->authors[$i]->affiliation
             || Text::name_text($pj->authors[$i]) !== Text::name_text($opj->authors[$i]))
             return true;
