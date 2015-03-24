@@ -883,8 +883,8 @@ div.helppage_topic {
 div.helppage_topic_on {
 	font-weight: bold;
 	background: #e6e1cf;
-	background: linear-gradient(to bottom, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 50%, transparent 50%),
-		linear-gradient(to top, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 51%, transparent 51%),
+		linear-gradient(to top, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 51%, transparent 51%);
 	padding: 4px 8px 4px 16px;
 }
 div.helppage_content {
