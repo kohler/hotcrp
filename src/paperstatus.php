@@ -708,7 +708,7 @@ class PaperStatus {
         // update Paper table
         $q = array();
         foreach (array("title", "abstract", "collaborators") as $k)
-            if (!$old_pj || (@$pj->$k !== null && $old_pj->$k != $pj->$k))
+            if (!$old_pj || (@$pj->$k !== null && @$old_pj->$k != $pj->$k))
                 $q[] = "$k='" . sqlq((string) @$pj->$k) . "'";
 
         if (!$old_pj || @$pj->authors !== null) {
