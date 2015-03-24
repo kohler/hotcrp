@@ -212,8 +212,10 @@ function request_to_json($opj, $action) {
     // Status
     if ($action === "submit")
         $pj->submitted = true;
-    if ($action === "final")
+    else if ($action === "final")
         $pj->final_submitted = true;
+    else
+        $pj->submitted = false;
 
     // Paper upload
     if (fileUploaded($_FILES["paperUpload"])) {
