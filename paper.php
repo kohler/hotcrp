@@ -208,6 +208,8 @@ function request_to_json($opj, $action) {
     // Contacts
     if (@$_POST["setcontacts"] || @$_POST["has_contacts"])
         request_contacts_to_json($pj);
+    else if (!$opj)
+        $pj->contacts = (object) array($Me->email => true);
 
     // Status
     if ($action === "submit")
