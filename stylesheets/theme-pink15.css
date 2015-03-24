@@ -1,12 +1,7 @@
 /* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
 
-body {
+body, body.paper {
 	background-color: #dce4e8;
-}
-body#paper_view, body#paper_edit,
-body#review, body#comment,
-body#assign {
-       background: #dce4e8;
 }
 
 #header {
@@ -34,14 +29,10 @@ div.body {
 	margin: 0 20px;
 }
 
-body#paper_view div.body, body#paper_edit div.body,
-body#review div.body, body#comment div.body,
-body#assign div.body, body#offline div.body {
+body.paper div.body {
 	margin: 0 22px 0 20px;
 }
-body#paper_view div#prebody, body#paper_edit div#prebody,
-body#review div#prebody, body#comment div#prebody,
-body#assign div#prebody {
+body.paper div#prebody {
 	background: none;
 }
 

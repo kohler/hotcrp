@@ -2117,7 +2117,11 @@ class Conference {
         $this->header_head($title);
 
         // <body>
-        echo "<body", ($id ? " id=\"$id\"" : ""), ">\n";
+        echo "<body", ($id ? " id=\"$id\"" : "");
+        if ($id === "paper_view" || $id === "paper_edit"
+            || $id === "review" || $id === "assign")
+            echo ' class="paper"';
+        echo ">\n";
 
         // on load of script.js
         $this->scriptStuff .= Ht::take_stash() . "<script>";
