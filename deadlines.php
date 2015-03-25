@@ -52,11 +52,12 @@ if (@$dl->sub->sub)
                   "Papers must be submitted by this deadline to be reviewed.");
 
 if (@$dl->resp)
-    foreach ($dl->resp->rounds as $rname) {
-        $rkey = "resp" . ($rname === 1 ? "" : ".$rname");
+    foreach ($dl->resp->roundsuf as $i => $rsuf) {
+        $rkey = "resp" . $rsuf;
         $dlr = $dl->$rkey;
         if ($dlr && @$dlr->open && $dlr->open <= $Now && @$dlr->done) {
-            if ($rname === 1)
+            $rname = $dl->resp->rounds[$i];
+            if ($rname == 1)
                 printDeadline($dl, $dlr->done, "Response deadline",
                               "You can submit responses to the reviews until this deadline.");
             else
