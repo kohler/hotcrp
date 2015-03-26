@@ -627,8 +627,8 @@ For example, when
 the “PC members can review <strong>any</strong> submitted paper”
 setting is off, <em>no</em> PC member can enter an unassigned review,
 no matter what the track settings say.
-It can be useful to “act as” a member of the PC to check what permissions
-are actually live.</p>");
+It can be useful to “act as” a member of the PC to check which permissions
+are actually in effect.</p>");
     _subhead_contain(true);
 }
 
@@ -1124,6 +1124,11 @@ function chair() {
   policies and deadlines</a></strong>, including reviewing deadlines, whether
   review is blind, and whether PC members may review any paper
   (usually “yes” is the right answer).</p></li>
+
+<li><p><strong><a href='" . hoturl("help", "t=tracks") . "'>Prepare tracks
+  (optional).</a></strong> Some conferences subdivide the PC so that different
+  sub-PCs have different permissions, or so that groups of papers are assigned
+  to different sub-PCs for review.</li>
 
 <li><p><strong><a href='" . hoturl("reviewprefs") . "'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
