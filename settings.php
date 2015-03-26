@@ -2091,7 +2091,7 @@ function doTagsGroup() {
 function doDecGroup() {
     global $Conf, $Highlight, $Error;
 
-    echo "Can <b>authors see reviews and comments</b> for their papers?<br />";
+    echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
     if ($Conf->setting("resp_active"))
         $no_text = "No, unless responses are open";
     else
