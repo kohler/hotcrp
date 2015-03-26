@@ -227,7 +227,7 @@ Sign in to submit or review papers.";
             "&nbsp;", Ht::label("I’m a new user and want to create an account");
         echo "\n</div>\n";
         $Conf->footerScript("function login_type() {
-    var act = jQuery(\"#homeacct input[name=action]:checked\")[0] || jQuery(\"#signin_action_login\");
+    var act = jQuery(\"#homeacct input[name=action]:checked\")[0] || jQuery(\"#signin_action_login\")[0];
     fold(\"homeacct\", act.value != \"login\");
     var felt = act.value != \"login\" || !jQuery(\"#signin_email\").val().length;
     jQuery(\"#signin_\" + (felt ? \"email\" : \"password\"))[0].focus();
