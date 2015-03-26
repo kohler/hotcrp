@@ -8,7 +8,7 @@ class UserStatus {
     private $errf;
     private $errmsg;
     public $nerrors;
-    private $no_email = false;
+    private $send_email = null;
     private $allow_error = array();
 
     static private $field_synonym_map = array("preferredEmail" => "preferred_email",
@@ -19,7 +19,7 @@ class UserStatus {
                        "contactTags" => "tags", "uemail" => "email");
 
     function __construct($options = array()) {
-        foreach (array("no_email", "allow_error") as $k)
+        foreach (array("send_email", "allow_error") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         $this->clear();
@@ -308,11 +308,13 @@ class UserStatus {
             $this->set_error("id", "Saving user with different ID");
             return false;
         }
+        $no_old_db_account = !$old_user || !$old_user->has_database_account();
         if (!$old_user && is_string(@$cj->email) && $cj->email) {
             $old_user = Contact::contactdb_find_by_email($cj->email);
             if ($old_user && @$old_user->disable_shared_password)
                 unset($old_user->password);
         }
+        $no_old_account = !$old_user || !$old_user->has_database_account();
 
         $this->normalize($cj, $old_user);
         if ($this->nerrors)
@@ -400,8 +402,11 @@ class UserStatus {
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
             $Conf->invalidateCaches(array("pc" => 1));
 
-        if (!$old_user || !$old_user->has_database_account())
-            $user->mark_create(!$this->no_email, false);
+        if ($no_old_db_account) {
+            if (($send_email = $this->send_email) === null)
+                $send_email = $no_old_account;
+            $user->mark_create($send_email, false);
+        }
         $actor = $actor ? : $Me;
         if ($actor && $user->contactId == $actor->contactId)
             $user->mark_activity();
