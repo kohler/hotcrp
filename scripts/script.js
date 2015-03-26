@@ -2410,7 +2410,7 @@ function tooltip(elt, content, dir, isglobal) {
         bub.remove();
         jQuery(elt).removeData("hotcrp_tooltip");
         if (window.global_tooltip === tt)
-            delete window.global_tooltip;
+            window.global_tooltip = null;
     }
     tt = {
         enter: function () {
