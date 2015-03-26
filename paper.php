@@ -541,7 +541,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
             $adescription = "submit final version for";
         else
             $adescription = $prow ? "update" : "register";
-        $Conf->errorMsg(whyNotText($whyNot, $description));
+        $Conf->errorMsg(whyNotText($whyNot, $adescription));
     }
 
     // If we get here, we failed to update.
