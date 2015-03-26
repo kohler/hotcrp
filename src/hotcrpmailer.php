@@ -344,7 +344,8 @@ class HotCRPMailer extends Mailer {
         global $Conf, $Me;
 
         $result = $Conf->qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password, roles, disabled,
+                firstName, lastName, email, preferredEmail, password,
+                roles, disabled, contactTags,
                 conflictType, 0 myReviewType
                 from ContactInfo join PaperConflict using (contactId)
                 where paperId=$row->paperId and conflictType>=" . CONFLICT_AUTHOR . "
@@ -376,7 +377,8 @@ class HotCRPMailer extends Mailer {
         global $Conf, $Me, $Opt;
 
         $result = $Conf->qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password, roles, disabled,
+                firstName, lastName, email, preferredEmail, password,
+                roles, disabled, contactTags,
                 conflictType, reviewType myReviewType
                 from ContactInfo
                 join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$row->paperId)
