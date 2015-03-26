@@ -547,7 +547,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
     // If we get here, we failed to update.
     // Use the request unless the request failed because updates
     // aren't allowed.
-    $useRequest = !$whyNot
+    $useRequest = !$whyNot || !$prow
         || !($action != "final" && !$Me->can_update_paper($prow)
              && $Me->can_finalize_paper($prow));
 }
