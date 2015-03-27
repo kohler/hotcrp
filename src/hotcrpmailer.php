@@ -334,13 +334,45 @@ class HotCRPMailer extends Mailer {
         return $e;
     }
 
+    function decorate_preparation($prep) {
+        $prep->paperId = -1;
+        if ($this->row && defval($this->row, "paperId") > 0)
+            $prep->paperId = $this->row->paperId;
+    }
 
-    static function send_to($recipient, $template, $row, $rest = array()) {
+    static function preparation_differs($prep1, $prep2) {
+        return parent::preparation_differs($prep1, $prep2)
+            || ($prep1->paperId != $prep2->paperId
+                && (count($prep1->to) != 1 || count($prep2->to) != 1
+                    || $prep1->to[0] !== $prep2->to[0]));
+    }
+
+
+    static function prepare_to($recipient, $template, $row, $rest = array()) {
         if (!defval($recipient, "disabled")) {
             $mailer = new HotCRPMailer($recipient, $row, $rest);
-            if (($prep = $mailer->make_preparation($template, $rest)))
-                self::send_preparation($prep);
-        }
+            return $mailer->make_preparation($template, $rest);
+        } else
+            return null;
+    }
+
+    static function send_to($recipient, $template, $row, $rest = array()) {
+        if (($prep = self::prepare_to($recipient, $template, $row, $rest)))
+            self::send_preparation($prep);
+    }
+
+    static function send_combined_preparations($preps) {
+        $last_p = null;
+        foreach ($preps as $p)
+            if ($last_p && !self::preparation_differs($last_p, $p))
+                self::merge_preparation_to($last_p, $p);
+            else {
+                if ($last_p)
+                    self::send_preparation($last_p);
+                $last_p = $p;
+            }
+        if ($last_p)
+            self::send_preparation($last_p);
     }
 
     static function send_contacts($template, $row, $rest = array()) {
@@ -357,12 +389,15 @@ class HotCRPMailer extends Mailer {
         // must set the current conflict type in $row for each contact
         $contact_info_map = $row->replace_contact_info_map(null);
 
-        $contacts = array();
+        $preps = $contacts = array();
         while (($contact = edb_orow($result))) {
             $row->assign_contact_info($contact, $contact->contactId);
-            self::send_to(Contact::make($contact), $template, $row, $rest);
-            $contacts[] = Text::user_html($contact);
+            if (($p = self::prepare_to(Contact::make($contact), $template, $row, $rest))) {
+                $preps[] = $p;
+                $contacts[] = Text::user_html($contact);
+            }
         }
+        self::send_combined_preparations($preps);
 
         $row->replace_contact_info_map($contact_info_map);
         if ($Me->allow_administer($row) && !$row->has_author($Me)
@@ -396,12 +431,15 @@ class HotCRPMailer extends Mailer {
         // must set the current conflict type in $row for each contact
         $contact_info_map = $row->replace_contact_info_map(null);
 
-        $contacts = array();
+        $preps = $contacts = array();
         while (($contact = edb_orow($result))) {
             $row->assign_contact_info($contact, $contact->contactId);
-            self::send_to(Contact::make($contact), $template, $row, $rest);
-            $contacts[] = Text::user_html($contact);
+            if (($p = self::prepare_to(Contact::make($contact), $template, $row, $rest))) {
+                $preps[] = $p;
+                $contacts[] = Text::user_html($contact);
+            }
         }
+        self::send_combined_preparations($preps);
 
         $row->replace_contact_info_map($contact_info_map);
         if ($Me->allow_administer($row) && !$row->has_author($Me)

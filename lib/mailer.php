@@ -432,7 +432,8 @@ class Mailer {
                 if (@$this->recipient->$k)
                     $recipient->$k = $this->recipient->$k;
         }
-        $prep->to = $m["to"] = Text::user_email_to($recipient);
+        $prep->to = array(Text::user_email_to($recipient));
+        $m["to"] = $prep->to[0];
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
@@ -454,8 +455,25 @@ class Mailer {
 
         if (@$prep->errors && !@$rest["no_error_quit"])
             return false;
-        else
+        else {
+            $this->decorate_preparation($prep);
             return $prep;
+        }
+    }
+
+    static function preparation_differs($prep1, $prep2) {
+        return $prep1->subject != $prep2->subject
+            || $prep1->body != $prep2->body
+            || @$prep1->headers["cc"] != @$prep2->headers["cc"]
+            || @$prep1->headers["reply-to"] != @$prep2->headers["reply-to"];
+    }
+
+    static function merge_preparation_to($prep, $to) {
+        if (is_object($to) && isset($to->to))
+            $to = $to->to;
+        if (count($to) != 1 || count($prep->to) == 0
+            || $prep->to[count($prep->to) - 1] != $to[0])
+            $prep->to = array_merge($prep->to, $to);
     }
 
     static function send_preparation($prep) {

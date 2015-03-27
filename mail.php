@@ -250,13 +250,7 @@ class MailSender {
         // Don't combine senders if anything differs. Also, don't combine
         // mails from different papers, unless those mails are to the same
         // person.
-        $mail_differs = $prep->subject != $last_prep->subject
-            || $prep->body != $last_prep->body
-            || @$prep->headers["cc"] != @$last_prep->headers["cc"]
-            || @$prep->headers["reply-to"] != @$last_prep->headers["reply-to"]
-            || ($row->paperId != $last_prep->paperId
-                && (count($last_prep->contacts) != 1
-                    || $last_prep->to[0] !== $prep->to));
+        $mail_differs = HotCRPMailer::preparation_differs($prep, $last_prep);
         $prep_to = $prep->to;
 
         if ($mail_differs) {
@@ -270,11 +264,12 @@ class MailSender {
 
         if (@$prep->fake || isset($last_prep->contacts[$row->contactId]))
             return false;
-
-        $last_prep->contacts[$row->contactId] = $row->contactId;
-        $this->mrecipients[$row->contactId] = true;
-        $last_prep->to[] = $prep_to;
-        return true;
+        else {
+            $last_prep->contacts[$row->contactId] = $row->contactId;
+            $this->mrecipients[$row->contactId] = true;
+            HotCRPMailer::merge_preparation_to($last_prep, $prep_to);
+            return true;
+        }
     }
 
     private function run() {
