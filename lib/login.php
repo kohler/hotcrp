@@ -240,13 +240,16 @@ class LoginHelper {
         global $Conf, $Opt, $email_class;
 
         // check for errors
-        if (($user && $user->has_database_account() && $user->activity_at > 0)
-            || ($cdb_user && $cdb_user->activity_at > 0)) {
+        if ($user && $user->has_database_account() && $user->activity_at > 0) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
+        } else if ($cdb_user && $cdb_user->activity_at > 0) {
+            $desc = @$Opt["contactdb_description"] ? : "HotCRP";
+            $email_class = " error";
+            return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “I forgot my password.”");
         } else if (!validate_email($_REQUEST["email"])) {
             $email_class = " error";
-            return $Conf->errorMsg("&ldquo;" . htmlspecialchars($_REQUEST["email"]) . "&rdquo; is not a valid email address.");
+            return $Conf->errorMsg("“" . htmlspecialchars($_REQUEST["email"]) . "” is not a valid email address.");
         }
 
         // create database account
