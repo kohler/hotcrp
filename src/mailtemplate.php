@@ -23,7 +23,29 @@ If you already have an account under a different email address, you may merge th
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
+
+     "activateaccount" =>
+     array("subject" => "[%CONFSHORTNAME%] Account information",
+           "body" => "Greetings,
+
+Your %CONTACTDBDESCRIPTION% account has been activated for the %CONFNAME% submissions site.
+
+        Site: %URL%/
+       Email: %EMAIL%
+    Password: %OPT(PASSWORD)%
+
+%IF(PASSWORD)%Use the link below to sign in.
+
+%LOGINURL%
+
+%ELSE%Use the link below to sign in with your %CONTACTDBDESCRIPTION% password or to reset your password.
+
+%LOGINURL%
+
+%ENDIF%Contact %ADMIN% with any questions or concerns.
+
+%SIGNATURE%\n"),
 
      "accountinfo" =>
      array("subject" => "[%CONFSHORTNAME%] Account information",

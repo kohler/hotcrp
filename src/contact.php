@@ -329,7 +329,7 @@ class Contact {
 
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
-            && ($result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email))
+            && ($result = Dbl::ql($cdb, "select *, password contactdb_password from ContactInfo where email=?", $email))
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
@@ -337,7 +337,7 @@ class Contact {
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
-            && ($result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid))
+            && ($result = Dbl::ql($cdb, "select *, password contactdb_password from ContactInfo where contactDbId=?", $cid))
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
@@ -801,8 +801,11 @@ class Contact {
         if (count($authored_papers))
             $this->save_authored_papers($authored_papers);
         // Maybe add to contact db
-        if (@$Opt["contactdb_dsn"] && @$sreg->contactDbId)
+        if (@$Opt["contactdb_dsn"] && @$sreg->contactDbId) {
             $this->contactdb_update();
+            $this->contactDbId = $sreg->contactDbId;
+            $this->contactdb_password = @$sreg->encoded_password;
+        }
 
         return true;
     }
@@ -1007,7 +1010,10 @@ class Contact {
     function sendAccountInfo($sendtype, $sensitive) {
         global $Conf, $Opt;
         $rest = array();
-        if ($sendtype == "create")
+        if ($sendtype == "create" && $this->password
+            && @$this->contactdb_password === $this->password)
+            $template = "@activateaccount";
+        else if ($sendtype == "create")
             $template = "@createaccount";
         else if ($this->password_type == 0
                  && (!@$Opt["safePasswords"]

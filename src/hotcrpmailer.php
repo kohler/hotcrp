@@ -197,6 +197,9 @@ class HotCRPMailer extends Mailer {
         if ($what == "%NUMACCEPTED%")
             return $this->_statistics[1];
 
+        if ($what == "%CONTACTDBDESCRIPTION%")
+            return @$Opt["contactdb_description"] ? : "HotCRP";
+
         if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             if ($m[1] === "REVIEWER") {
                 $x = $this->_expand_reviewer($m[2], $isbool);
