@@ -544,6 +544,7 @@ class Contact {
     }
 
     function merge_and_save_data($data) {
+        $this->activate_database_account();
         $this->make_data();
         $old = $this->encode_data();
         object_replace_recursive($this->data_, array_to_object_recursive($data));
