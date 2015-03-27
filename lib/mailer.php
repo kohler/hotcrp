@@ -137,6 +137,8 @@ class Mailer {
             return $Opt["shortName"];
         if ($what == "%CONFLONGNAME%")
             return $Opt["longName"];
+        if ($what == "%SIGNATURE%")
+            return @$Opt["emailSignature"] ? : "- " . $Opt["shortName"] . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
             return $this->expand_user(Contact::site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")

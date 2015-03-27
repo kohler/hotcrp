@@ -41,7 +41,7 @@ Use the link below to sign in directly.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "resetpassword" =>
      array("subject" => "[%CONFSHORTNAME%] Password reset request",
@@ -55,7 +55,7 @@ If you did not make this request, it's safe to ignore this email.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "changeemail" =>
      array("subject" => "[%CONFSHORTNAME%] Email change request",
@@ -69,7 +69,7 @@ If you did not make this request, please ignore this email.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "mergeaccount" =>
      array("subject" => "[%CONFSHORTNAME%] Merged account",
@@ -79,7 +79,7 @@ Your account at the %CONFSHORTNAME% submissions site has been merged with the ac
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "requestreview" =>
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER%",
@@ -111,7 +111,7 @@ Once you've decided, please take a moment to accept or decline this review reque
 Contact %ADMIN% with any questions or concerns.
 
 Thank you for your help -- we appreciate that reviewing is hard work.
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "retractrequest" =>
      array("subject" => "[%CONFSHORTNAME%] Retracting review request for paper #%NUMBER%",
@@ -125,7 +125,7 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 Contact %ADMIN% with any questions or concerns.
 
 Thank you,
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "proposereview" =>
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER%",
@@ -139,7 +139,7 @@ Visit the assignment page to approve or deny the request.
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(assign, p=%NUMBER%)%
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "denyreviewrequest" =>
      array("subject" => "[%CONFSHORTNAME%] Proposed reviewer for paper #%NUMBER% denied",
@@ -154,7 +154,7 @@ Your proposal that %REVIEWERCONTACT% review %CONFNAME% paper #%NUMBER% has been 
 Contact %ADMIN% with any questions or concerns.
 
 Thank you,
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "refusereviewrequest" =>
      array("subject" => "[%CONFSHORTNAME%] Review request for paper #%NUMBER% declined",
@@ -166,7 +166,7 @@ Thank you,
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "authorwithdraw" =>
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
@@ -181,7 +181,7 @@ An author of %CONFNAME% paper #%NUMBER% has withdrawn the paper from considerati
 Contact %ADMIN% with any questions or concerns.
 
 Thank you,
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "adminwithdraw" =>
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
@@ -198,7 +198,7 @@ Thank you,
 Contact %ADMIN% with any questions or concerns.
 
 Thank you,
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "withdrawreviewer" =>
      array("subject" => "[%CONFSHORTNAME%] Withdrawn paper #%NUMBER% %TITLEHINT%",
@@ -216,7 +216,7 @@ You are not expected to complete your review (and the system will not allow it u
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "deletepaper" =>
      array("subject" => "[%CONFSHORTNAME%] Deleted paper #%NUMBER% %TITLEHINT%",
@@ -229,7 +229,7 @@ Your %CONFNAME% paper #%NUMBER% has been removed from the submission database by
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "reviewsubmit" =>
      array("subject" => "[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
@@ -246,7 +246,7 @@ For the most up-to-date reviews and comments, or to unsubscribe from email notif
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "reviewupdate" =>
      array("subject" => "[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
@@ -263,7 +263,7 @@ For the most up-to-date reviews and comments, or to unsubscribe from email notif
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "acceptnotify" =>
      array("mailtool_name" => "Accept notification",
@@ -284,7 +284,7 @@ Reviews and comments on your paper are appended to this email. The submissions s
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions
+%SIGNATURE%
 
 %REVIEWS%
 %COMMENTS%\n"),
@@ -308,7 +308,7 @@ Reviews and comments on your paper are appended to this email. The submissions s
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions
+%SIGNATURE%
 
 %REVIEWS%
 %COMMENTS%\n"),
@@ -321,7 +321,7 @@ Contact %ADMIN% with any questions or concerns.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions
+%SIGNATURE%
 
 %COMMENTS%\n"),
 
@@ -333,7 +333,7 @@ Contact %ADMIN% with any questions or concerns.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions
+%SIGNATURE%
 
 %COMMENTS%\n"),
 
@@ -345,7 +345,7 @@ Contact %ADMIN% with any questions or concerns.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions
+%SIGNATURE%
 
 %COMMENTS%\n"),
 
@@ -357,7 +357,7 @@ Contact %ADMIN% with any questions or concerns.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "genericmailtool" =>
      array("mailtool_name" => "Generic",
@@ -378,7 +378,7 @@ Use the link below to sign in to the submissions site.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "reviewremind" =>
      array("mailtool_name" => "Review reminder",
@@ -402,7 +402,7 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "myreviewremind" =>
      array("mailtool_name" => "Personalized review reminder",
@@ -427,7 +427,7 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "newpcrev" =>
      array("mailtool_name" => "Review assignment notification",
@@ -445,7 +445,7 @@ Thank you for your help -- we appreciate that reviewing is hard work.
 
 Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "registerpaper" =>
      array("subject" => "[%CONFSHORTNAME%] Registered paper #%NUMBER% %TITLEHINT%",
@@ -461,7 +461,7 @@ Contact %ADMIN% with any questions or concerns.
 
 %ENDIF%Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "updatepaper" =>
      array("subject" => "[%CONFSHORTNAME%] Updated paper #%NUMBER% %TITLEHINT%",
@@ -477,7 +477,7 @@ Contact %ADMIN% with any questions or concerns.
 
 %ENDIF%Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "submitpaper" =>
      array("subject" => "[%CONFSHORTNAME%] Submitted paper #%NUMBER% %TITLEHINT%",
@@ -493,7 +493,7 @@ Contact %ADMIN% with any questions or concerns.
 
 %ENDIF%Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n"),
+%SIGNATURE%\n"),
 
      "submitfinalpaper" =>
      array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
@@ -509,6 +509,6 @@ Contact %ADMIN% with any questions or concerns.
 
 %ENDIF%Contact %ADMIN% with any questions or concerns.
 
-- %CONFSHORTNAME% Submissions\n")
+%SIGNATURE%\n")
 
 );
