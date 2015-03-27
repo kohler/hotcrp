@@ -165,7 +165,7 @@ class UserStatus {
         // ID
         if (@$cj->id === "new") {
             if (@$cj->email && Contact::id_by_email($cj->email)) {
-                $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use for another account.");
+                $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
                 $this->errf["email_inuse"] = true;
             }
         } else {
@@ -176,7 +176,7 @@ class UserStatus {
             if ($old_user && @$cj->email
                 && strtolower($old_user->email) !== strtolower($cj->email)
                 && Contact::id_by_email($cj->email))
-                $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use for another account. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+                $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 
         // Preferred email

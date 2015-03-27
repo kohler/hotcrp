@@ -18,7 +18,7 @@ function change_email_by_capability() {
     if (!$Acct)
         error_go(false, "No such account.");
     if (Contact::id_by_email($capdata->data->uemail))
-        error_go(false, "Email address " . htmlspecialchars($capdata->data->uemail) . " is already in use for another account. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+        error_go(false, "Email address " . htmlspecialchars($capdata->data->uemail) . " is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
 
     $Acct->email = $capdata->data->uemail;
     $aupapers = Contact::email_authored_papers($Acct->email, $Acct);
