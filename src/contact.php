@@ -719,6 +719,7 @@ class Contact {
     }
 
     static private function safe_registration_with_contactdb($email, $reg) {
+        global $Opt;
         $reg = (object) ($reg === true ? array() : $reg);
         $sreg = (object) array("email" => $email);
 
