@@ -312,9 +312,17 @@ class Contact {
     }
 
     public function activate_database_account() {
-        assert(!$this->has_database_account() && $this->has_email());
-        $contact = self::find_by_email($this->email, $_SESSION["trueuser"], false);
-        return $contact ? $contact->activate() : $this;
+        assert($this->has_email());
+        if (!$this->has_database_account()) {
+            $reg = $_SESSION["trueuser"];
+            if (strcasecmp($reg->email, $this->email) != 0)
+                $reg = true;
+            if (($c = self::find_by_email($this->email, $reg, false))) {
+                $this->load_by_id($c->contactId);
+                $this->activate();
+            }
+        }
+        return $this;
     }
 
     static public function contactdb() {
@@ -693,8 +701,8 @@ class Contact {
         return $old_roles != $new_roles;
     }
 
-    private function load_by_query($where) {
-        $result = Dbl::q("select ContactInfo.* from ContactInfo where $where");
+    private function load_by_id($cid) {
+        $result = Dbl::q("select ContactInfo.* from ContactInfo where contactId=?", $cid);
         if (($row = $result ? $result->fetch_object() : null))
             $this->merge($row);
         Dbl::free($result);
@@ -795,7 +803,7 @@ class Contact {
         Dbl::free($result);
 
         // Having added, load it
-        if (!$this->load_by_query("ContactInfo.contactId=$cid"))
+        if (!$this->load_by_id($cid))
             return false;
 
         // Success! Save newly authored papers
