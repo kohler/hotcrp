@@ -1649,10 +1649,11 @@ class PaperSearch {
         return $negated ? SearchTerm::negate($qe) : $qe;
     }
 
-    static function _searchPopWord(&$str) {
-        $wordre = '/\A"[^"]*"?|\A[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|\A[^"\s()]+/s';
+    static public function pop_word(&$str) {
+        $wordre = '/\A\s*(?:"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|[^"\s()]+)/s';
 
-        preg_match($wordre, $str, $m);
+        if (!preg_match($wordre, $str, $m))
+            return ($str = "");
         $str = substr($str, strlen($m[0]));
         $word = $m[0];
 
@@ -1733,7 +1734,7 @@ class PaperSearch {
             }
 
             if ($opstr === null) {
-                $word = self::_searchPopWord($nextstr);
+                $word = self::pop_word($nextstr);
                 // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
                     && (!count($stack) || $stack[count($stack) - 1]->op->op == "then")
@@ -1854,7 +1855,7 @@ class PaperSearch {
             }
 
             if ($opstr === null) {
-                $curqe = self::_searchPopWord($nextstr);
+                $curqe = self::pop_word($nextstr);
             } else if ($opstr == ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op != "(")

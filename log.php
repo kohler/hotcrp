@@ -36,45 +36,54 @@ $_REQUEST["acct"] = trim(defval($_REQUEST, "acct", ""));
 $_REQUEST["n"] = trim(defval($_REQUEST, "n", "$DEFAULT_COUNT"));
 $_REQUEST["date"] = trim(defval($_REQUEST, "date", "now"));
 
-if ($_REQUEST["pap"] && !preg_match('/\A(?:#?\d+(?:-#?\d+)?[\s,]+)+\z/', $_REQUEST["pap"] . " ")) {
-    $Conf->errorMsg("The \"Concerning paper(s)\" field requires space-separated paper numbers.");
-    $Eclass["pap"] = " error";
-} else if ($_REQUEST["pap"]) {
+if ($_REQUEST["pap"]) {
+    $Search = new PaperSearch($Me, array("t" => "all", "q" => $_REQUEST["pap"],
+                                         "allow_deleted" => true));
+    if (count($Search->warnings))
+        $Conf->warnMsg(join("<br />\n", $Search->warnings));
+    $pl = $Search->paperList();
+    if (count($pl)) {
+        $where = array();
+        foreach ($pl as $p) {
+            $where[] = "paperId=$p";
+            $where[] = "action like '%(papers% $p,%'";
+            $where[] = "action like '%(papers% $p)%'";
+        }
+        $wheres[] = "(" . join(" or ", $where) . ")";
+    } else {
+        if (!count($Search->warnings))
+            $Conf->warnMsg("No papers match that search.");
+        $wheres[] = "false";
+    }
+}
+
+if ($_REQUEST["acct"]) {
+    $ids = array();
+    $accts = $_REQUEST["acct"];
+    while (($word = PaperSearch::pop_word($accts))) {
+        $flags = ContactSearch::F_TAG;
+        if (substr($word, 0, 1) === "\"") {
+            $flags |= ContactSearch::F_QUOTED;
+            $word = preg_replace(',(?:\A"|"\z),', "", $word);
+        }
+        $Search = new ContactSearch($flags, $word, $Me);
+        foreach ($Search->ids as $id)
+            $ids[$id] = $id;
+    }
     $where = array();
-    foreach (preg_split('/[\s,]+/', $_REQUEST["pap"]) as $term) {
-        if (preg_match('/\A#?(\d+)(?:-#?(\d+))?\z/', $term, $m)) {
-            $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-            foreach (range($m[1], $m[2]) as $pap) {
-                $where[] = "paperId=$pap";
-                $where[] = "action like '%(papers% $pap,%'";
-                $where[] = "action like '%(papers% $pap)%'";
-            }
+    if (count($ids)) {
+        $result = Dbl::qe("select contactId, email from ContactInfo where contactId ?a", $ids);
+        while (($row = edb_row($result))) {
+            $where[] = "contactId=$row[0]";
+            $where[] = "action like '%" . sqlq_for_like($row[1]) . "%' collate utf8_general_ci";
         }
     }
     if (count($where))
         $wheres[] = "(" . join(" or ", $where) . ")";
-}
-
-if ($_REQUEST["acct"]) {
-    $where = array();
-    foreach (preg_split('/\s+/', $_REQUEST["acct"]) as $acct) {
-        if (strpos($acct, "@") === false) {
-            $where[] = "firstName like '%" . sqlq_for_like($acct) . "%'";
-            $where[] = "lastName like '%" . sqlq_for_like($acct) . "%'";
-        }
-        $where[] = "email like '%" . sqlq_for_like($acct) . "%'";
-    }
-    $result = $Conf->qe("select contactId, email from ContactInfo where " . join(" or ", $where));
-    $where = array();
-    while (($row = edb_row($result))) {
-        $where[] = "contactId=$row[0]";
-        $where[] = "action like '%" . sqlq_for_like($row[1]) . "%'";
-    }
-    if (count($where) == 0) {
-        $Conf->infoMsg("No accounts match '" . htmlspecialchars($_REQUEST["acct"]) . "'.");
+    else {
+        $Conf->infoMsg("No accounts match “" . htmlspecialchars($_REQUEST["acct"]) . "”.");
         $wheres[] = "false";
-    } else
-        $wheres[] = "(" . join(" or ", $where) . ")";
+    }
 }
 
 if (($str = $_REQUEST["q"])) {
