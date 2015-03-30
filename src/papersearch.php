@@ -1655,7 +1655,7 @@ class PaperSearch {
         if (!preg_match($wordre, $str, $m))
             return ($str = "");
         $str = substr($str, strlen($m[0]));
-        $word = $m[0];
+        $word = ltrim($m[0]);
 
         // commas in paper number strings turn into separate words
         if (preg_match('/\A(#?\d+(?:-#?\d+)?),((?:#?\d+(?:-#?\d+)?,?)*)\z/', $word, $m)) {
