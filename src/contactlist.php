@@ -479,7 +479,7 @@ class ContactList extends BaseList {
         if ($this->count == 0)
             return "";
 
-        $t = "  <tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
+        $t = "  <tfoot class=\"pltable\"><tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
             . Ht::img("_.gif", "^^", array("class" => "placthook")) . "</td>\n";
         $t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
@@ -504,7 +504,7 @@ class ContactList extends BaseList {
                 . "&nbsp; " . Ht::submit("modifygo", "Go", array("class" => "bsm")) . "</span>";
         }
 
-        return $t . "</td></tr>\n";
+        return $t . "</td></tr></tfoot>\n";
     }
 
     function _rows($queryOptions) {
@@ -754,7 +754,7 @@ class ContactList extends BaseList {
             foreach ($fieldDef as $fieldId => $fdef)
                 if ($fdef[1] == 1) {
                     $c = $this->content($fieldId, $row);
-                    $t .= "    <td class=\"pl_$fdef[0]\"";
+                    $t .= "    <td class=\"pl pl_$fdef[0]\"";
                     if ($n >= $lastcallout && $tt != "")
                         $t .= " rowspan=\"2\"";
                     $t .= ">" . $c . "</td>\n";
@@ -774,7 +774,7 @@ class ContactList extends BaseList {
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
 
-        $x = "<table id=\"foldppl\" class=\"ppltable plt_" . htmlspecialchars($listname);
+        $x = "<table id=\"foldppl\" class=\"pltable plt_" . htmlspecialchars($listname);
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
         if ($foldclasses && $foldsession)
@@ -782,7 +782,7 @@ class ContactList extends BaseList {
         $x .= "\">\n";
 
         if ($this->showHeader) {
-            $x .= "  <tr class=\"pl_headrow\">\n";
+            $x .= "  <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
             $ord = 0;
 
             if ($this->sortable && $url) {
@@ -817,17 +817,14 @@ class ContactList extends BaseList {
                         $x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
             }
 
-            $x .= "  </tr>\n";
-            $x .= "  <tr><td class='pl_headgap' colspan='$ncol'></td></tr>\n";
+            $x .= "  </tr></thead>\n";
         }
-
-        $x .= $body;
 
         reset($fieldDef);
         if (key($fieldDef) == self::FIELD_SELECTOR)
             $x .= $this->footer($ncol);
 
-        $x .= "</table>";
+        $x .= "<tbody class=\"pltable\">" . $body . "</tbody></table>";
 
         if ($this->listNumber) {
             $l = SessionList::create("u/" . $this->limit, $ids,
@@ -863,8 +860,8 @@ class ContactList extends BaseList {
 
 global $contactListFields;
 $contactListFields = array(
-        ContactList::FIELD_SELECTOR => array('selector', 1, 0),
-        ContactList::FIELD_SELECTOR_ON => array('selector', 1, 0),
+        ContactList::FIELD_SELECTOR => array('sel', 1, 0),
+        ContactList::FIELD_SELECTOR_ON => array('sel', 1, 0),
         ContactList::FIELD_NAME => array('name', 1, 1),
         ContactList::FIELD_EMAIL => array('email', 1, 1),
         ContactList::FIELD_AFFILIATION => array('affiliation', 1, 1),
@@ -876,7 +873,7 @@ $contactListFields = array(
         ContactList::FIELD_REVIEW_RATINGS => array('revstat', 1, 1),
         ContactList::FIELD_PAPERS => array('papers', 1, 1),
         ContactList::FIELD_REVIEW_PAPERS => array('papers', 1, 1),
-        ContactList::FIELD_SCORE => array('score', 1, 1),
+        ContactList::FIELD_SCORE => array('uscores', 1, 1),
         ContactList::FIELD_LEADS => array('revstat', 1, 1),
         ContactList::FIELD_SHEPHERDS => array('revstat', 1, 1),
         ContactList::FIELD_TAGS => array('tags', 5, 0),

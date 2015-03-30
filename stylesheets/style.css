@@ -465,16 +465,6 @@ span.topic4, span.topic3, span.topic2, span.topic1 {
 span.topic-2, span.topic-1, span.topic0, span.topic1, span.topic2, span.topic3, span.topic4 {
 	white-space: nowrap;
 }
-table.ppltable td.pl_topics span.topic-2,
-table.ppltable td.pl_topics span.topic-1,
-table.ppltable td.pl_topics span.topic1,
-table.ppltable td.pl_topics span.topic2,
-table.ppltable td.pl_topics span.topic3,
-table.ppltable td.pl_topics span.topic4 {
-	color: black;
-	text-decoration: none;
-	font-weight: normal;
-}
 span.optvalue {
 	color: #555555;
 }
@@ -490,7 +480,7 @@ table.center {
 table.pltable {
 	line-height: 125%;
 }
-body#revpref table.pltable, body#accounts table.ppltable {
+body#revpref table.pltable, body#accounts table.pltable {
 	margin: 0 auto;
 }
 
@@ -1334,12 +1324,13 @@ table.altable {
 	padding-left: 1em;
 	float: right;
 }
-table.ppltable th, table.setreviewform th, table.auedittable th {
+table.setreviewform th, table.auedittable th {
 	text-align: left;
 	padding-right: 0.125em;
 	vertical-align: bottom;
 }
-.pl_name, .pl_email, .pl_affiliation {
+.pl_name, .pl_email, .pl_affiliation, .pl_lastvisit, .pl_papers {
+	text-align: left;
 	padding-right: 1em;
 }
 .pl_activityicon {
@@ -1357,7 +1348,6 @@ table.ppltable th, table.setreviewform th, table.auedittable th {
 	font-size: 90%;
 	white-space: nowrap;
 }
-.pl_score, table.ppltable th.pl_score,
 table.altable th.pl_id {
 	text-align: center;
 	white-space: nowrap;
@@ -1370,9 +1360,6 @@ tr.pl_footrow > td.pl_footselector {
 	vertical-align: top;
 	padding-top: 0;
 	padding-right: 4px;
-}
-table.ppltable td.pl_sel {
-	padding-right: 3px;
 }
 img.b {
 	vertical-align: text-bottom;
@@ -1395,9 +1382,9 @@ td.pl_name,
 td.al_name {
 	white-space: nowrap;
 }
-table.ppltable td.pl_score {
-	vertical-align: top;
+td.pl_uscores {
 	font-size: smaller;
+	line-height: 100%;
 	padding-left: 0.2em;
 	padding-right: 0.2em;
 }
@@ -1515,7 +1502,7 @@ div.pl_revtype_round {
 
 th.plc, th.pl_id, th.pl_sel, th.pl_confselector,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
-th.pl_score, th.pl_tag, th.pl_tagval, th.pl_formula {
+th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
 }
 
@@ -1529,13 +1516,15 @@ td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;
 }
 
-td.plc, td.pl_revtype, td.pl_revstat, td.pl_confselector, td.pl_score {
+td.plc, td.pl_revtype, td.pl_revstat, td.pl_confselector, td.pl_score,
+td.pl_uscores {
 	text-align: center;
 }
 
 td.pl_id, td.pl_sel, td.pl_confselector,
 td.pl_revtype, td.pl_assrev, td.pl_editrevpref,
-td.pl_score, td.pl_tag, td.pl_tagval, td.pl_edittagval, td.pl_formula {
+td.pl_score, td.pl_uscores, td.pl_formula,
+td.pl_tag, td.pl_tagval, td.pl_edittagval {
 	white-space: nowrap;
 }
 
