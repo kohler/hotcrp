@@ -467,6 +467,7 @@ class PaperSearch {
     private $_reviewAdjustError = false;
     private $_thenError = false;
     private $_ssRecursion = array();
+    private $_allow_deleted = false;
     var $thenmap = null;
     var $headingmap = null;
     public $viewmap;
@@ -625,6 +626,8 @@ class PaperSearch {
 
         $this->_reviewer = defval($opt, "reviewer", false);
         $this->_reviewer_fixed = !!$this->_reviewer;
+
+        $this->_allow_deleted = defval($opt, "allow_deleted", false);
     }
 
     // begin changing contactId to cid
@@ -2677,6 +2680,17 @@ class PaperSearch {
         }
     }
 
+    private function _add_deleted_papers($qe) {
+        if ($qe->type == "or" || $qe->type == "then") {
+            foreach ($qe->value as $subt)
+                $this->_add_deleted_papers($subt);
+        } else if ($qe->type == "pn") {
+            foreach ($qe->value[0] as $p)
+                if (array_search($p, $this->_matches) === false)
+                    $this->_matches[] = $p;
+        }
+    }
+
 
     // BASIC QUERY FUNCTION
 
@@ -2890,6 +2904,10 @@ class PaperSearch {
         $this->viewmap = $qe->get_float("view", array());
         $this->sorters = $qe->get_float("sort", array());
         Dbl::free($result);
+
+        // add deleted papers explicitly listed by number (e.g. action log)
+        if ($this->_allow_deleted)
+            $this->_add_deleted_papers($qe);
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions
