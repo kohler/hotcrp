@@ -1311,10 +1311,6 @@ div.aabutsep {
 }
 
 /* other list tables */
-table.altable {
-	width: 100%;
-	position: relative;
-}
 #plact {
 	margin-top: 2px;
 	float: left;
@@ -1348,10 +1344,6 @@ table.setreviewform th, table.auedittable th {
 	font-size: 90%;
 	white-space: nowrap;
 }
-table.altable th.pl_id {
-	text-align: center;
-	white-space: nowrap;
-}
 .pl_footselector {
 	text-align: right;
 	white-space: nowrap;
@@ -1373,13 +1365,12 @@ img.bmabs {
 	position: absolute;
 	bottom: -2px;
 }
-td.pl_lastvisit, td.al_time {
+td.pl_lastvisit, td.pl_time {
 	padding-right: 1.25em;
 	font-size: smaller;
 	white-space: nowrap;
 }
-td.pl_name,
-td.al_name {
+td.pl_name {
 	white-space: nowrap;
 }
 td.pl_uscores {
@@ -1392,22 +1383,13 @@ span.pcrole {
 	font-weight: bold;
 	font-size: smaller;
 }
-tr.al td {
-	padding-top: 2px;
-	padding-bottom: 2px;
-}
-tr.al td, tr.al_headrow th {
-	padding-left: 3px;
+th.pl.pl_logid, td.pl.pl_logid {
 	padding-right: 12px;
 }
-tr.al_headrow th {
-	text-align: left;
-	vertical-align: bottom;
-}
-tr.al_headrow th, table.setreviewform th {
+table.setreviewform th {
 	border-bottom: 1px solid #999999;
 }
-tr.al_headrow th, table.setreviewform th, table.auedittable th {
+table.setreviewform th, table.auedittable th {
 	font-size: smaller;
 }
 
@@ -1500,7 +1482,11 @@ div.pl_revtype_round {
 	margin-right: -1.2em;
 }
 
-th.plc, th.pl_id, th.pl_sel, th.pl_confselector,
+th.pll {
+	text-align: left;
+}
+
+th.plc, th.pl_id, th.pl_logid, th.pl_sel, th.pl_confselector,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
@@ -1510,7 +1496,7 @@ th.plr {
 	text-align: right;
 }
 
-td.plr, td.pl_id, td.pl_sel,
+td.plr, td.pl_id, td.pl_logid, td.pl_sel,
 td.pl_revpref, td.pl_topicscore, td.pl_desirability,
 td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;

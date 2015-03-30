@@ -216,10 +216,10 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     }
 
     $act = $row->action;
-    $t = "<td class='pl_id'>" . htmlspecialchars($row->logId) . "</td>"
-        . "<td class='al_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
-        . "<td class='al_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
-        . "<td class='pl_name'>";
+    $t = "<td class='pl pl_logid'>" . htmlspecialchars($row->logId) . "</td>"
+        . "<td class='pl pl_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
+        . "<td class='pl pl_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
+        . "<td class='pl pl_name'>";
     if ($row->email) {
         $t .= "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email)) . "\">"
             . Text::user_html_nolink($row) . "</a>";
@@ -236,7 +236,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
         } else
             $t .= "[None]";
     }
-    $t .= "</td><td class=\"al_act\">";
+    $t .= "</td><td class=\"pl pl_act\">";
 
     if (preg_match('/^Review (\d+)/', $act, $m)) {
         $t .= "<a href=\"" . hoturl("review", "r=$m[1]") . "\">Review " . $m[1] . "</a>";
@@ -264,18 +264,17 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
 
 searchbar();
 if (count($trs)) {
-    echo "<table class='altable'>
-  <col width='0*' /><col width='0*' /><col width='0*' /><col width='0*' />
-  <thead><tr class='al_headrow'>
-    <th class='pl_id'>#</th>
-    <th class='al_time'>Time</th>
-    <th class='al_ip'>IP</th>
-    <th class='pl_name'>Account</th>
-    <th class='al_act'>Action</th>
+    echo "<table class='pltable pltable_full'>
+  <thead><tr class='pl_headrow'>
+    <th class='pll pl_logid'>#</th>
+    <th class='pll pl_time'>Time</th>
+    <th class='pll pl_ip'>IP</th>
+    <th class='pll pl_name'>Account</th>
+    <th class='pll pl_act'>Action</th>
   </tr></thead>
-  <tbody>\n";
+  <tbody class='pltable'>\n";
     for ($i = 0; $i < count($trs); ++$i)
-        echo "    <tr class='k", $i % 2, " al'>", $trs[$i], "</tr>\n";
+        echo "    <tr class='k", $i % 2, " pl'>", $trs[$i], "</tr>\n";
     echo "</tbody></table>\n";
 } else
     echo "No records\n";
