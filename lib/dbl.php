@@ -150,9 +150,10 @@ class Dbl {
                     }
                 if (count($arg) === 0)
                     $arg = ($nextch === "a" ? "=NULL" : " IS NOT NULL");
-                else if (count($arg) === 1)
-                    $arg = ($nextch === "a" ? "=" : "!=") . $arg[0];
-                else
+                else if (count($arg) === 1) {
+                    reset($arg);
+                    $arg = ($nextch === "a" ? "=" : "!=") . current($arg);
+                } else
                     $arg = ($nextch === "a" ? " IN (" : " NOT IN (") . join(",", $arg) . ")";
                 ++$nextpos;
             } else if ($nextch === "s") {
