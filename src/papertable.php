@@ -93,8 +93,8 @@ class PaperTable {
             if (!$Conf->session("foldpaper$k", 1))
                 $this->foldState &= ~(1 << $v);
 
-        $this->allFolded = ($this->mode == "re" || $this->mode == "assign"
-                            || ($this->mode != "pe" && (count($this->rrows) || count($this->crows))));
+        $this->allFolded = $this->mode == "re" || $this->mode == "assign"
+            || ($this->mode != "pe" && (count($this->rrows) || count($this->crows)));
 
         $this->matchPreg = array();
         $matcher = array();
@@ -496,7 +496,7 @@ class PaperTable {
                                       "foldtitle" => "Toggle full abstract")),
                     '<div class="pavb abstract">',
                     '<div class="fn6">', $shortdata,
-                    " <a class='fn6' href='#' onclick='return fold(\"paper\",0,6)'>[more]</a>",
+                    ' <a class="fn6" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a>',
                     '</div><div class="fx6">', $data,
                     "</div></div></div>\n\n";
                 return;
