@@ -212,7 +212,7 @@ class TagInfo {
 
     public static function color_regex() {
         if (!self::$colorre) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|big|small";
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|underline|strikethrough|big|small";
             foreach (self::defined_tags() as $v)
                 if ($v->colors)
                     $re .= "|" . $v->tag;
@@ -240,7 +240,7 @@ class TagInfo {
     }
 
     public static function classes_have_colors($classes) {
-        return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white|dim)tag(?:\z|\s)_', $classes);
+        return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white)tag(?:\z|\s)_', $classes);
     }
 
 

@@ -1748,6 +1748,18 @@ tr.pl.boldtag, tr.plx.boldtag {
 tr.pl.italictag, tr.plx.italictag {
 	font-style: inherit;
 }
+.underlinetag, tr.pl.underlinetag > td.pl_id, tr.pl.underlinetag > td.pl_title {
+	text-decoration: underline;
+}
+tr.pl.underlinetag, tr.plx.underlinetag {
+	text-decoration: inherit;
+}
+.strikethroughtag, tr.pl.strikethroughtag > td.pl_id, tr.pl.strikethroughtag > td.pl_title {
+	text-decoration: line-through;
+}
+tr.pl.strikethroughtag, tr.plx.strikethroughtag {
+	text-decoration: inherit;
+}
 .bigtag, tr.pl.bigtag > td.pl_id, tr.pl.bigtag > td.pl_title {
 	font-size: 140%;
 }

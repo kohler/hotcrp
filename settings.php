@@ -16,7 +16,7 @@ $Highlight = $Conf->session("settings_highlight", array());
 $Conf->save_session("settings_highlight", null);
 $Error = $Warning = $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
-$TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|big|small|dim";
+$TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|underline|strikethrough|big|small|dim";
 
 // read setting information
 $SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"), true);
@@ -337,7 +337,7 @@ function save_tags($set, $what) {
                     if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
                         $vs[] = $t . "=" . $k;
                     else if ($t !== "") {
-                        $Error[] = ucfirst($k) . " color tag: " . $tagger->error_html;
+                        $Error[] = ucfirst($k) . " style tag: " . $tagger->error_html;
                         $Highlight["tag_color_" . $k] = true;
                     }
             }
@@ -1809,7 +1809,7 @@ function echo_round($rnum, $nameval, $review_count, $deletable) {
 }
 
 function doRevGroup() {
-    global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
+    global $Conf, $Error, $Highlight, $DateExplanation;
 
     doCheckbox("rev_open", "<b>Open site for reviewing</b>");
     doCheckbox("cmt_always", "Allow comments even if reviewing is closed");
