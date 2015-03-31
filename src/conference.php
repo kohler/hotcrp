@@ -1994,7 +1994,7 @@ class Conference {
     // Conference header, footer
     //
 
-    function make_css_link($url) {
+    function make_css_link($url, $media = null) {
         global $ConfSitePATH, $Opt;
         $t = '<link rel="stylesheet" type="text/css" href="';
         if (str_starts_with($url, "stylesheets/")
@@ -2003,6 +2003,8 @@ class Conference {
         $t .= $url;
         if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
             $t .= "?mtime=$mtime";
+        if ($media)
+            $t .= '" media="' . $media;
         return $t . '" />';
     }
 
@@ -2041,6 +2043,10 @@ class Conference {
             echo $Opt["fontScript"];
 
         echo $this->make_css_link("stylesheets/style.css"), "\n";
+        if (@$Opt["mobileStylesheet"]) {
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
+            echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 768px)"), "\n";
+        }
         if (isset($Opt["stylesheets"]))
             foreach ($Opt["stylesheets"] as $css)
                 echo $this->make_css_link($css), "\n";

@@ -1,0 +1,12 @@
+body.paper div.body {
+        margin: 0 12px;
+}
+div.pspcard_container {
+        float: none;
+        position: static;
+        width: auto;
+        margin-left: 0;
+}
+div.papcard, div.pedcard, div.notecard, div.revcard, div.cmtcard {
+        margin-left: 0;
+}
