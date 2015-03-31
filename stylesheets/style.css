@@ -2786,6 +2786,7 @@ div.scorechart, div.inb {
 }
 div.sc {
 	font-size: smaller;
+	padding-bottom: 2px;
 }
 span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
 span.sc6, span.sc7, span.sc8, span.sc9 {
