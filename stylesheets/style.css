@@ -1938,25 +1938,19 @@ div.pban {
 	padding: 0 22px 0 12px;
 	z-index: 5;
 }
-table.pban {
-	position: relative;
-	width: 100%;
+div.paptitle {
+	margin-left: 14em;
+	padding: 8px 0;
 }
-td.pboxi div.papnum {
-	width: 14em;
+h2.paptitle {
+	text-indent: -124px;
+	margin: 0;
 }
-td.pboxi h2 {
+span.paptitlenum {
+	display: inline-block;
+	width: 104px;
+	padding-right: 20px;
 	text-align: right;
-	padding: 8px;
-}
-td.pboxt h2 {
-	padding: 8px 0.5em;
-}
-
-div.pbanb {
-	padding: 0 14px 0 12px;
-	/*box-shadow: inset 0 2px 3px #6e629a;
-	-moz-box-shadow: inset 0 2px 3px 2px #6e629a;*/
 }
 
 /* reviews and comments */

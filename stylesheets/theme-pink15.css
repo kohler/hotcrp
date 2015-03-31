@@ -56,8 +56,8 @@ div.pban {
 	margin: 0 -22px 0 -20px;
 	padding: 0 22px 0 20px;
 }
-td.pboxi div.papnum, td.pboxi {
-	width: 13.3em;
+div.paptitle {
+	margin-left: 13.3em;
 }
 div.pspcard_container {
 	margin-left: 0;
@@ -70,4 +70,16 @@ div.papcard, div.pedcard {
 }
 div.notecard, div.revcard, div.cmtcard {
 	margin: 16px 0 0 13.3em;
+}
+
+@media only screen and (max-width: 768px) {
+div.paptitle {
+	margin-left: 0;
+}
+div.papcard, div.pedcard, div.notecard, div.revcard, div.cmtcard {
+	margin-left: 0;
+}
+body.paper div.body {
+	margin: 0 12px;
+}
 }

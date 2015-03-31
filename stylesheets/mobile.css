@@ -1,12 +1,29 @@
+/* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
+/* mobile.css -- HotCRP mobile CSS styles */
+/* HotCRP is Copyright (c) 2006-2015 Eddie Kohler and others */
+/* Distributed under an MIT-like license; see LICENSE */
+
 body.paper div.body {
-        margin: 0 12px;
+	margin: 0 12px;
+}
+div.paptitle {
+	margin-left: 0;
+}
+h2.paptitle {
+	text-indent: -1.5em;
+	margin-left: 1.5em;
+}
+span.paptitlenum {
+	display: inline;
+	padding-right: 0.5em;
+	text-align: inherit;
 }
 div.pspcard_container {
-        float: none;
-        position: static;
-        width: auto;
-        margin-left: 0;
+	float: none;
+	position: static;
+	width: auto;
+	margin-left: 0;
 }
 div.papcard, div.pedcard, div.notecard, div.revcard, div.cmtcard {
-        margin-left: 0;
+	margin-left: 0;
 }

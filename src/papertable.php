@@ -1792,16 +1792,9 @@ class PaperTable {
 
         // paper number
         $pa = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="q">';
-        echo '<table class="pban"><tr>
-    <td class="pboxi"><div class="papnum">',
-            "<h2 class=\"pnum\">", $pa, "#", $prow->paperId, "</a></h2></div></td>\n";
-
-        // paper title
-        echo '    <td class="pboxt"><h2 class="ptitle">', $pa;
+        echo '<div class="paptitle"><h2 class="paptitle">', $pa, '<span class="paptitlenum">#', $prow->paperId, '&nbsp;</span>';
         $this->echoTitle();
-        echo "</a></h2></td>
-    <td class='pboxj'></td>
-</tr></table>\n";
+        echo '</a></h2></div>';
 
         echo "</div>\n";
     }
