@@ -140,7 +140,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
             if ($allow_admin)
                 $n .= _review_table_actas($rr);
-            $t .= "<td>" . $n . ($rtype ? " $rtype" : "") . "</td>";
+            $t .= '<td class="rl rl_name">' . $n . ($rtype ? " $rtype" : "") . "</td>";
             if ($show_colors && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
                 if (($color = TagInfo::color_classes($tags)))
@@ -268,7 +268,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= '<tr><td class="empty" colspan="2"></td>'
                 . join("", $score_header) . "</tr>\n";
         foreach (array_merge($subrev, $nonsubrev) as $r) {
-            $t .= '<tr' . ($r[0] ? " class=\"$r[0]\"" : "") . '>' . $r[1];
+            $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (@$r[2]) {
                 foreach ($score_header as $fid => $header_needed)
                     if ($header_needed) {

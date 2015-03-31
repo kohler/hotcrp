@@ -1378,6 +1378,7 @@ td.pl_uscores {
 	line-height: 100%;
 	padding-left: 0.2em;
 	padding-right: 0.2em;
+	vertical-align: top;
 }
 span.pcrole {
 	font-weight: bold;
@@ -1736,46 +1737,52 @@ tr.bluetag > td, tr.purpletag > td, tr.graytag > td, tr.whitetag > td {
 .whitetag div.pst, .whitetag div.pst {
 	background-color: #f8f8f8;
 }
-.boldtag, tr.pl.boldtag > td.pl_id, tr.pl.boldtag > td.pl_title {
+.boldtag, tr.pl.boldtag > td.pl_id, tr.pl.boldtag > td.pl_title,
+tr.pl.boldtag > td.pl_name, tr.rl.boldtag > td.rl_name {
 	font-weight: bold;
 }
-tr.pl.boldtag, tr.plx.boldtag {
+tr.pl.boldtag, tr.plx.boldtag, tr.rl.boldtag {
 	font-weight: inherit;
 }
-.italictag, tr.pl.italictag > td.pl_id, tr.pl.italictag > td.pl_title {
+.italictag, tr.pl.italictag > td.pl_id, tr.pl.italictag > td.pl_title,
+tr.pl.italictag > td.pl_name, tr.rl.italictag > td.rl_name {
 	font-style: italic;
 }
-tr.pl.italictag, tr.plx.italictag {
+tr.pl.italictag, tr.plx.italictag, tr.rl.italictag {
 	font-style: inherit;
 }
-.underlinetag, tr.pl.underlinetag > td.pl_id, tr.pl.underlinetag > td.pl_title {
+.underlinetag, tr.pl.underlinetag > td.pl_id, tr.pl.underlinetag > td.pl_title,
+tr.pl.underlinetag > td.pl_name, tr.rl.underlinetag > td.rl_name {
 	text-decoration: underline;
 }
-tr.pl.underlinetag, tr.plx.underlinetag {
+tr.pl.underlinetag, tr.plx.underlinetag, tr.rl.underlinetag {
 	text-decoration: inherit;
 }
-.strikethroughtag, tr.pl.strikethroughtag > td.pl_id, tr.pl.strikethroughtag > td.pl_title {
+.strikethroughtag, tr.pl.strikethroughtag > td.pl_id, tr.pl.strikethroughtag > td.pl_title,
+tr.pl.strikethroughtag > td.pl_name, tr.rl.strikethroughtag > td.rl_name {
 	text-decoration: line-through;
 }
-tr.pl.strikethroughtag, tr.plx.strikethroughtag {
+tr.pl.strikethroughtag, tr.plx.strikethroughtag, tr.rl.strikethroughtag {
 	text-decoration: inherit;
 }
-.bigtag, tr.pl.bigtag > td.pl_id, tr.pl.bigtag > td.pl_title {
+.bigtag, tr.pl.bigtag > td.pl_id, tr.pl.bigtag > td.pl_title,
+tr.pl.bigtag > td.pl_name, tr.rl.bigtag > td.rl_name {
 	font-size: 140%;
 }
 .bigtag .pst {
 	font-size: 71.4%;
 }
-tr.pl.bigtag, tr.plx.bigtag {
+tr.pl.bigtag, tr.plx.bigtag, tr.rl.bigtag {
 	font-size: inherit;
 }
-.smalltag, tr.pl.smalltag > td.pl_id, tr.pl.smalltag > td.pl_title {
+.smalltag, tr.pl.smalltag > td.pl_id, tr.pl.smalltag > td.pl_title,
+tr.pl.smalltag > td.pl_name, tr.rl.smalltag > td.rl_name {
 	font-size: 80%;
 }
 .smalltag .pst {
 	font-size: 125%;
 }
-tr.pl.smalltag, tr.plx.smalltag {
+tr.pl.smalltag, tr.plx.smalltag, tr.rl.smalltag {
 	font-size: inherit;
 }
 .dimtag, .dimtag a {
