@@ -1685,10 +1685,6 @@ tr.redtag, tr.orangetag, tr.yellowtag, tr.greentag, tr.bluetag,
 tr.purpletag, tr.graytag, tr.whitetag {
 	background-attachment: fixed;
 }
-tr.redtag > td, tr.orangetag > td, tr.yellowtag > td, tr.greentag > td,
-tr.bluetag > td, tr.purpletag > td, tr.graytag > td, tr.whitetag > td {
-	background-color: inherit;
-}
 .redtag, .redtag.psc {
 	background-color: #ffd8d8;
 }
@@ -1789,117 +1785,47 @@ tr.pl.smalltag, tr.plx.smalltag, tr.rl.smalltag {
 	color: gray;
 }
 
-.redtag.orangetag, .redtag.orangetag.psc {
-	background-image: url(../images/tag_red_orange.png);
-	background-color: transparent;
-}
-.redtag.yellowtag, .redtag.yellowtag.psc {
-	background-image: url(../images/tag_red_yellow.png);
-	background-color: transparent;
-}
-.redtag.greentag, .redtag.greentag.psc {
-	background-image: url(../images/tag_red_green.png);
-	background-color: transparent;
-}
-.redtag.bluetag, .redtag.bluetag.psc {
-	background-image: url(../images/tag_red_blue.png);
-	background-color: transparent;
-}
-.redtag.purpletag, .redtag.purpletag.psc {
-	background-image: url(../images/tag_red_purple.png);
-	background-color: transparent;
-}
-.redtag.graytag, .redtag.graytag.psc {
-	background-image: url(../images/tag_red_gray.png);
-	background-color: transparent;
-}
+.redtag.orangetag, .redtag.orangetag.psc,
+.redtag.yellowtag, .redtag.yellowtag.psc,
+.redtag.greentag, .redtag.greentag.psc,
+.redtag.bluetag, .redtag.bluetag.psc,
+.redtag.purpletag, .redtag.purpletag.psc,
+.redtag.graytag, .redtag.graytag.psc,
 .redtag.whitetag, .redtag.whitetag.psc {
-	background-image: url(../images/tag_red_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2ZmZDhkOCIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2ZmZDhkOCIgLz48L3N2Zz4=);
 }
-.orangetag.yellowtag, .orangetag.yellowtag.psc {
-	background-image: url(../images/tag_orange_yellow.png);
-	background-color: transparent;
-}
-.orangetag.greentag, .orangetag.greentag.psc {
-	background-image: url(../images/tag_orange_green.png);
-	background-color: transparent;
-}
-.orangetag.bluetag, .orangetag.bluetag.psc {
-	background-image: url(../images/tag_orange_blue.png);
-	background-color: transparent;
-}
-.orangetag.purpletag, .orangetag.purpletag.psc {
-	background-image: url(../images/tag_orange_purple.png);
-	background-color: transparent;
-}
-.orangetag.graytag, .orangetag.graytag.psc {
-	background-image: url(../images/tag_orange_gray.png);
-	background-color: transparent;
-}
+.orangetag.yellowtag, .orangetag.yellowtag.psc,
+.orangetag.greentag, .orangetag.greentag.psc,
+.orangetag.bluetag, .orangetag.bluetag.psc,
+.orangetag.purpletag, .orangetag.purpletag.psc,
+.orangetag.graytag, .orangetag.graytag.psc,
 .orangetag.whitetag, .orangetag.whitetag.psc {
-	background-image: url(../images/tag_orange_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2ZkZWJjYyIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2ZkZWJjYyIgLz48L3N2Zz4=);
 }
-.yellowtag.greentag, .yellowtag.greentag.psc {
-	background-image: url(../images/tag_yellow_green.png);
-	background-color: transparent;
-}
-.yellowtag.bluetag, .yellowtag.bluetag.psc {
-	background-image: url(../images/tag_yellow_blue.png);
-	background-color: transparent;
-}
-.yellowtag.purpletag, .yellowtag.purpletag.psc {
-	background-image: url(../images/tag_yellow_purple.png);
-	background-color: transparent;
-}
-.yellowtag.graytag, .yellowtag.graytag.psc {
-	background-image: url(../images/tag_yellow_gray.png);
-	background-color: transparent;
-}
+.yellowtag.greentag, .yellowtag.greentag.psc,
+.yellowtag.bluetag, .yellowtag.bluetag.psc,
+.yellowtag.purpletag, .yellowtag.purpletag.psc,
+.yellowtag.graytag, .yellowtag.graytag.psc,
 .yellowtag.whitetag, .yellowtag.whitetag.psc {
-	background-image: url(../images/tag_yellow_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2ZkZmZjYiIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2ZkZmZjYiIgLz48L3N2Zz4=);
 }
-.greentag.bluetag, .greentag.bluetag.psc {
-	background-image: url(../images/tag_green_blue.png);
-	background-color: transparent;
-}
-.greentag.purpletag, .greentag.purpletag.psc {
-	background-image: url(../images/tag_green_purple.png);
-	background-color: transparent;
-}
-.greentag.graytag, .greentag.graytag.psc {
-	background-image: url(../images/tag_green_gray.png);
-	background-color: transparent;
-}
+.greentag.bluetag, .greentag.bluetag.psc,
+.greentag.purpletag, .greentag.purpletag.psc,
+.greentag.graytag, .greentag.graytag.psc,
 .greentag.whitetag, .greentag.whitetag.psc {
-	background-image: url(../images/tag_green_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2Q4ZmZkOCIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2Q4ZmZkOCIgLz48L3N2Zz4=);
 }
-.bluetag.purpletag, .bluetag.purpletag.psc {
-	background-image: url(../images/tag_blue_purple.png);
-	background-color: transparent;
-}
-.bluetag.graytag, .bluetag.graytag.psc {
-	background-image: url(../images/tag_blue_gray.png);
-	background-color: transparent;
-}
+.bluetag.purpletag, .bluetag.purpletag.psc,
+.bluetag.graytag, .bluetag.graytag.psc,
 .bluetag.whitetag, .bluetag.whitetag.psc {
-	background-image: url(../images/tag_blue_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2Q4ZDhmZiIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2Q4ZDhmZiIgLz48L3N2Zz4=);
 }
-.purpletag.graytag, .purpletag.graytag.psc {
-	background-image: url(../images/tag_purple_gray.png);
-	background-color: transparent;
-}
+.purpletag.graytag, .purpletag.graytag.psc,
 .purpletag.whitetag, .purpletag.whitetag.psc {
-	background-image: url(../images/tag_purple_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2YyZDhmOCIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2YyZDhmOCIgLz48L3N2Zz4=);
 }
 .graytag.whitetag, .graytag.whitetag.psc {
-	background-image: url(../images/tag_gray_white.png);
-	background-color: transparent;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2UyZTJlMiIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2UyZTJlMiIgLz48L3N2Zz4=);
 }
 
 .graytext {
