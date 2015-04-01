@@ -2805,31 +2805,31 @@ span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
 span.sc6, span.sc7, span.sc8, span.sc9 {
 	font-weight: bold;
 }
-span.sc1, span.rev_num.sc1 {
+span.sc1 {
         color: #9c3131;
 }
-span.sc2, span.rev_num.sc2 {
+span.sc2 {
         color: #89442b;
 }
-span.sc3, span.rev_num.sc3 {
+span.sc3 {
         color: #755825;
 }
-span.sc4, span.rev_num.sc4 {
+span.sc4 {
         color: #626b1f;
 }
-span.sc5, span.rev_num.sc5 {
+span.sc5 {
         color: #4e7f19;
 }
-span.sc6, span.rev_num.sc6 {
+span.sc6 {
         color: #3b9212;
 }
-span.sc7, span.rev_num.sc7 {
+span.sc7 {
         color: #27a50c;
 }
-span.sc8, span.rev_num.sc8 {
+span.sc8 {
         color: #14b906;
 }
-span.sc9, span.rev_num.sc9 {
+span.sc9 {
         color: #00cc00;
 }
 span.sc_sum {

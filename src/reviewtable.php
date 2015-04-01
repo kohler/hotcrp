@@ -186,7 +186,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     if (!@$score_header[$fid])
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
                     $scores[$fid] = '<td class="revscore rs_' . $fid . '">'
-                        . $f->unparse_value($rr->$fid, true)
+                        . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 } else if (@$score_header[$fid] === null)
                     $score_header[$fid] = "";

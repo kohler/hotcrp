@@ -12,6 +12,10 @@ global $scoreHelps;
 $scoreHelps = array();
 
 class ReviewField {
+    const VALUE_NONE = 0;
+    const VALUE_SC = 1;
+    const VALUE_REV_NUM = 2;
+
     public $id;
     public $name;
     public $name_html;
@@ -163,11 +167,13 @@ class ReviewField {
             $value = $this->option_letter - ord($value);
             $x = chr($this->option_letter - $value);
         }
-        if ($scclass) {
-            $class = ($scclass === true ? "" : "$scclass ") . $this->value_class($value);
-            return "<span class='$class'>$x</span>";
-        } else
+        if (!$scclass)
             return $x;
+        $vc = $this->value_class($value);
+        if ($scclass == self::VALUE_REV_NUM)
+            return "<span class=\"rev_num $vc\">$x.</span>";
+        else
+            return "<span class=\"$vc\">$x</span>";
     }
 
     static public function unparse_letter($option_letter, $value) {
@@ -1219,7 +1225,7 @@ $blind\n";
                     $scoreHelps[$field] = 1;
                     $help = "<div class='scorehelpc' id='scorehelp_$field'><strong>$n</strong> choices are:<br /><span class='rev_$field'>";
                     foreach ($f->options as $val => $text)
-                        $help .= "<span class='rev_num'>$val.</span>&nbsp;" . htmlspecialchars($text) . "<br />";
+                        $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM) . "&nbsp;" . htmlspecialchars($text) . "<br />";
                     $help .= "</span></div>";
                     $Conf->footerHtml($help);
                 }
@@ -1251,12 +1257,11 @@ $blind\n";
             if ($f->has_options) {
                 if (!$fval || !isset($f->options[$fval]))
                     $x .= "<span class='rev_${field} rev_unknown'>Unknown</span>";
-                else {
-                    $xfval = substr($f->unparse_value($fval, "rev_num"), 0, -7);
-                    $x .= "<span class='rev_${field}'>" . $xfval . ".</span> "
-                        . htmlspecialchars($f->options[$fval])
+                else
+                    $x .= "<span class='rev_${field}'>"
+                        . $f->unparse_value($fval, ReviewField::VALUE_REV_NUM)
+                        . " " . htmlspecialchars($f->options[$fval])
                         . "</span>";
-                }
             } else
                 $x .= '<div class="revtext">' . Ht::link_urls(htmlspecialchars($fval)) . '</div>';
             $x .= "</div></div></div>";
@@ -1289,7 +1294,7 @@ $blind\n";
             if ($f->has_options) {
                 $x .= "<div class='rev_options'>Choices are:";
                 foreach ($f->options as $num => $val)
-                    $x .= "<br />\n<span class='rev_num'>$num.</span> " . htmlspecialchars($val);
+                    $x .= "<br />\n" . $f->unparse_value($num, ReviewField::VALUE_REV_NUM) . " " . htmlspecialchars($val);
                 $x .= "</div>";
             }
 
@@ -1617,7 +1622,7 @@ $blind\n";
             if ($f->view_score > $revViewScore && $f->has_options
                 && $rrow->$field) {
                 $t .= $xbarsep . $f->name_html . "&nbsp;"
-                    . $f->unparse_value($rrow->$field, true);
+                    . $f->unparse_value($rrow->$field, ReviewField::VALUE_SC);
                 $xbarsep = $barsep;
             }
 
