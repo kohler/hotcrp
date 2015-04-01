@@ -592,7 +592,7 @@ if ($getaction == "pcassignments" && $Me->privChair && SearchActions::any()) {
             $rtypes = explode(",", $prow->assignmentReviewTypes);
             $rrounds = explode(",", $prow->assignmentReviewRounds);
             for ($i = 0; $i < count($cids); ++$i)
-                if (($pc = $pcm[$cids[$i]]) && $rtypes[$i] >= REVIEW_PC) {
+                if (($pc = @$pcm[$cids[$i]]) && $rtypes[$i] >= REVIEW_PC) {
                     $round = (int) $rrounds[$i];
                     $round_name = $round ? $round_list[$round] : "none";
                     $any_round = $any_round || $round != 0;
