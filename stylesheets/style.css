@@ -489,8 +489,8 @@ body#revpref table.pltable, body#accounts table.pltable {
 div.homegrp {
 	margin: 0.8em 0 0;
 }
-div#homelist h4, div#homemgmt h4, div#homerev h4, div#homeau h4,
-div#homeacct h4, div#homeinfo h4, div#homeactivity h4 {
+div#homelist h4, div#homerev h4, div#homeau h4,
+div#homeacct h4, div#homeactivity h4 {
 	display: inline;
 }
 div#homelist h4 {
@@ -501,9 +501,6 @@ div#homerev h4, div#homeactivity h4, a.homeactivity {
 }
 div#homeau h4 {
 	color: #823e78;
-}
-div#homeinfo h4 {
-	color: #555555;
 }
 div.homeside {
 	float: right;
@@ -516,12 +513,12 @@ div.homeinside {
 	padding: 0.5em 1em 0.75em 0.75em;
 	margin: 0 0 0.5em 1em;
 }
+div.homeinside h4 {
+	display: inline;
+	color: #555555;
+}
 div#homeacct {
 	margin: 1em 0 0;
-}
-div#homemgmt {
-	background-color: #ffffdd;
-	/*border: 1px solid #b2a584;*/
 }
 div.homeside ul {
 	margin: 0;

@@ -126,23 +126,21 @@ echo "<noscript><div class='homeinside'>",
     "Many features will work without Javascript, but not all.<br />",
     "<a style='font-size:smaller' href='http://read.seas.harvard.edu/~kohler/hotcrp/'>Report bad compatibility problems</a></div></noscript>";
 
-// Conference management
+// Conference management and information sidebar
+echo '<div class="homeinside">';
 if ($Me->privChair) {
-    echo "<div id='homemgmt' class='homeinside'>
-  <h4>Administration</h4>
-  <ul>
+    echo "<h4>Administration</h4>
+  <ul style=\"margin-bottom:0.75em\">
     <li><a href='", hoturl("settings"), "'>Settings</a></li>
     <li><a href='", hoturl("users", "t=all"), "'>Users</a></li>
     <li><a href='", hoturl("autoassign"), "'>Assign reviews</a></li>
     <li><a href='", hoturl("mail"), "'>Send mail</a></li>
     <li><a href='", hoturl("log"), "'>Action log</a></li>
-  </ul>
-</div>\n";
+  </ul>\n";
 }
 
 // Conference info sidebar
-echo "<div class='homeinside'><div id='homeinfo'>
-  <h4>Conference information</h4>
+echo "<h4>Conference information</h4>
   <ul>\n";
 // Any deadlines set?
 $sep = "";
@@ -164,7 +162,7 @@ if ($Conf->timeAuthorViewDecision()) {
 }
 echo "  </ul>\n</div>\n";
 
-echo "</div></div>\n\n";
+echo "</div>\n\n";
 // End sidebar
 
 
