@@ -8,6 +8,7 @@ class FormulaCompileState {
     public $gtmp = array();
     public $gstmt = array();
     public $lstmt = array();
+    public $ismy = false;
     private $lprefix = 0;
     private $maxlprefix = 0;
     public $indent = 2;
@@ -29,14 +30,15 @@ class FormulaCompileState {
         return $tname;
     }
     function _push() {
-        $this->_stack[] = array($this->lprefix, $this->lstmt);
+        $this->_stack[] = array($this->lprefix, $this->lstmt, $this->ismy);
         $this->lprefix = ++$this->maxlprefix;
         $this->lstmt = array();
+        $this->ismy = false;
         $this->indent += 2;
         return $this->lprefix;
     }
     function _pop($content) {
-        list($this->lprefix, $this->lstmt) = array_pop($this->_stack);
+        list($this->lprefix, $this->lstmt, $this->ismy) = array_pop($this->_stack);
         $this->indent -= 2;
         $this->lstmt[] = $content;
     }
@@ -46,6 +48,13 @@ class FormulaCompileState {
         $tname = "\$t" . $this->lprefix . "_" . count($this->lstmt);
         $this->lstmt[] = "$tname = $expr;";
         return $tname;
+    }
+    function _join_lstmt($isblock) {
+        $indent = "\n" . str_pad("", $this->indent);
+        if ($isblock)
+            return "{" . $indent . join($indent, $this->lstmt) . substr($indent, 0, $this->indent - 1) . "}";
+        else
+            return join($indent, $this->lstmt);
     }
     function _add_submitted_reviewers() {
         if (!isset($this->gtmp["submitted_reviewers"])) {
@@ -331,7 +340,7 @@ class Formula {
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = FormulaExpr::make("tagval", $m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A(all|any|avg|count|min|max|std(?:dev(?:_pop|_samp)?)?|sum|var(?:iance|_pop|_samp)?|wavg)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(my|all|any|avg|count|min|max|std(?:dev(?:_pop|_samp)?)?|sum|var(?:iance|_pop|_samp)?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
@@ -342,13 +351,12 @@ class Formula {
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = FormulaExpr::make("", "null");
             $t = $m[1];
-        } else if (preg_match('/\A(ispri(?:mary)?|issec(?:ondary)?|(?:is)?ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
-            if ($m[1] == "ispri" || $m[1] == "isprimary")
+        } else if (preg_match('/\A(?:is)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
+            if ($m[1] == "pri" || $m[1] == "primary")
                 $rt = REVIEW_PRIMARY;
-            else if ($m[1] == "issec" || $m[1] == "issecondary")
+            else if ($m[1] == "sec" || $m[1] == "secondary")
                 $rt = REVIEW_SECONDARY;
-            else if ($m[1] == "ext" || $m[1] == "external"
-                     || $m[1] == "isext" || $m[1] == "isexternal")
+            else if ($m[1] == "ext" || $m[1] == "external")
                 $rt = REVIEW_EXTERNAL;
             $e = FormulaExpr::make_aggt("revtype", FormulaExpr::AREV, $rt);
             $t = $m[2];
@@ -418,7 +426,6 @@ class Formula {
         $state->lstmt[] = "$t_result = $combiner;";
 
         $t_looper = "\$i$p";
-        $indent = "\n" . str_pad("", $state->indent);
         if ($aggt === (FormulaExpr::AREV | FormulaExpr::APREF)) {
             $g = $state->_addgtemp("rev_and_pref_cids", $state->_add_review_prefs() . " + array_flip(" . $state->_add_submitted_reviewers() . ")");
             $loop = "foreach ($g as \$i$p => \$v$p)";
@@ -426,13 +433,21 @@ class Formula {
             $loop = "foreach (" . $state->_add_submitted_reviewers() . " as \$i$p)";
         else
             $loop = "foreach (" . $state->_add_review_prefs() . " as \$i$p => \$v$p)";
-        $loop .= " {" . $indent . join($indent, $state->lstmt) . "\n" . str_pad("", $state->indent - 2) . "}";
+        $loop .= " " . $state->_join_lstmt(true);
         if ($aggt == FormulaExpr::APREF)
             $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
         $loop = str_replace("~i~", "\$i$p", $loop);
 
         $state->_pop($loop);
         return $t_result;
+    }
+
+    private static function _compile_my($state, $e) {
+        $p = $state->_push();
+        $state->ismy = true;
+        $t = $state->_addltemp(self::_compile($state, $e));
+        $state->_pop($state->_join_lstmt(false));
+        return $t;
     }
 
     private static function _cast_bool($t) {
@@ -458,34 +473,46 @@ class Formula {
         }
 
         if ($op == "revtype") {
-            $view_score = $state->contact->viewReviewFieldsScore(null, true);
-            if (VIEWSCORE_PC <= $view_score)
-                $t_f = "null";
+            if ($state->ismy)
+                $rt = $state->_addgtemp("myrevtype", "\$prow->review_type(\$contact)");
             else {
+                $view_score = $state->contact->viewReviewFieldsScore(null, true);
+                if (VIEWSCORE_PC <= $view_score)
+                    return "null";
                 $state->queryOptions["reviewTypes"] = true;
-                $t_f = "(" . $state->_addgtemp("revtypes", "\$prow->submitted_review_types()") . "[~i~]==" . $e->args[0] . ")";
+                $rt = $state->_addgtemp("revtypes", "\$prow->submitted_review_types()") . "[~i~]";
             }
-            return $t_f;
+            return "({$rt}==" . $e->args[0] . ")";
         }
 
         if ($op == "rf") {
             $f = $e->args[0];
-            $view_score = $state->contact->viewReviewFieldsScore(null, true);
-            if ($f->view_score <= $view_score)
-                return "null";
+            if ($state->ismy)
+                $fidx = "[\$contact->contactId]";
+            else {
+                $view_score = $state->contact->viewReviewFieldsScore(null, true);
+                if ($f->view_score <= $view_score)
+                    return "null";
+                $fidx = "[~i~]";
+            }
             if (!isset($state->queryOptions["scores"]))
                 $state->queryOptions["scores"] = array();
             $state->queryOptions["scores"][$f->id] = $f->id;
-            $t_f = $state->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")") . "[~i~]";
-            return "((int) @$t_f ? : null)";
+            $t_f = $state->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")");
+            return "((int) @$t_f$fidx ? : null)";
         }
 
         if ($op == "revpref" || $op == "revprefexp") {
-            $view_score = $state->contact->viewReviewFieldsScore(null, true);
-            if (VIEWSCORE_PC <= $view_score)
-                return "null";
+            if ($state->ismy)
+                $fidx = "[\$contact->contactId]";
+            else {
+                $view_score = $state->contact->viewReviewFieldsScore(null, true);
+                if (VIEWSCORE_PC <= $view_score)
+                    return "null";
+                $fidx = "[~i~]";
+            }
             $state->queryOptions["allReviewerPreference"] = true;
-            return "@" . $state->_add_review_prefs() . "[~i~][" . ($op == "revpref" ? 0 : 1) . "]";
+            return "@" . $state->_add_review_prefs() . $fidx . "[" . ($op == "revpref" ? 0 : 1) . "]";
         }
 
         if ($op == "?:") {
@@ -513,6 +540,9 @@ class Formula {
             else
                 return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
         }
+
+        if (count($e->args) == 1 && $op == "my")
+            return self::_compile_my($state, $e->args[0]);
 
         if (count($e->args) == 1 && $op == "all") {
             $t = self::_compile_loop($state, "null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $e);

@@ -1006,13 +1006,15 @@ value based on all of a paper’s submitted reviews and/or review preferences.
 For instance, “max(OveMer)” would return the maximum Overall merit score
 assigned to a paper.</p>
 
-<p>An aggregate function’s argument is calculated once per visible review.
+<p>An aggregate function’s argument is calculated once per visible review
+or preference.
 For instance, “max(OveMer/RevExp)” calculates the maximum value of
 “OveMer/RevExp” for any review, whereas
 “max(OveMer)/max(RevExp)” divides the maximum overall merit by the
 maximum reviewer expertise.</p>
 
-<p>The top-level value of a formula expression cannot be a raw review score.
+<p>The top-level value of a formula expression cannot be a raw review score
+or preference.
 Use an aggregate function to calculate a property over all review scores.</p>");
     echo "<table class=\"helppage\">";
     $rowidx = null;
@@ -1026,6 +1028,7 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "stddev_pop(<em>e</em>), var_pop(<em>e</em>)", "Population standard deviation, population variance");
     _alternateRow("", "any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
     _alternateRow("", "all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
+    _alternateRow("", "my(<em>e</em>)", "Calculate <em>e</em> for your review");
     echo "</table>\n";
 
     _subhead_contain(true);
