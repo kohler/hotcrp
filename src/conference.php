@@ -25,6 +25,7 @@ class Conference {
     private $rounds = null;
     private $tracks = null;
     private $_track_tags = null;
+    private $_track_review_sensitivity = false;
     private $_decisions = null;
     public $dsn = null;
 
@@ -197,6 +198,7 @@ class Conference {
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
+        $this->_track_review_sensitivity = false;
         if (@($j = $this->settingTexts["tracks"]))
             $this->crosscheck_track_settings($j);
 
@@ -230,6 +232,8 @@ class Conference {
                 $this->_track_tags[] = $k;
             if (!isset($v->viewpdf) && isset($v->view))
                 $v->viewpdf = $v->view;
+            if (@$v->unassrev || @$v->assrev)
+                $this->_track_review_sensitivity = true;
         }
     }
 
@@ -469,6 +473,18 @@ class Conference {
                         return false;
                 }
         return true;
+    }
+
+    function check_track_sensitivity($type) {
+        if ($this->tracks)
+            foreach ($this->tracks as $k => $v)
+                if (@($perm = $v->$type) !== null)
+                    return true;
+        return false;
+    }
+
+    function check_track_review_sensitivity() {
+        return $this->_track_review_sensitivity;
     }
 
 

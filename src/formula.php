@@ -56,6 +56,13 @@ class FormulaCompileState {
         else
             return join($indent, $this->lstmt);
     }
+    function _add_pc_can_review() {
+        if (!isset($this->gtmp["pc_can_review"])) {
+            $this->gtmp["pc_can_review"] = "\$pc_can_review";
+            $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
+        }
+        return "\$pc_can_review";
+    }
     function _add_submitted_reviewers() {
         if (!isset($this->gtmp["submitted_reviewers"])) {
             $this->queryOptions["reviewContactIds"] = true;
@@ -80,8 +87,9 @@ class FormulaExpr {
     public $text;
     public $format = null;
 
-    const AREV = 1;
+    const ASUBREV = 1;
     const APREF = 2;
+    const APCCANREV = 4;
 
     public function __construct($op, $aggt = 0) {
         $this->op = $op;
@@ -358,8 +366,11 @@ class Formula {
                 $rt = REVIEW_SECONDARY;
             else if ($m[1] == "ext" || $m[1] == "external")
                 $rt = REVIEW_EXTERNAL;
-            $e = FormulaExpr::make_aggt("revtype", FormulaExpr::AREV, $rt);
+            $e = FormulaExpr::make_aggt("revtype", FormulaExpr::ASUBREV, $rt);
             $t = $m[2];
+        } else if (preg_match('/\Atopicscore\b(.*)\z/s', $t, $m)) {
+            $e = FormulaExpr::make_aggt("topicscore", FormulaExpr::APCCANREV);
+            $t = $m[1];
         } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/s', $t, $m)) {
             $e = FormulaExpr::make_aggt("revpref", FormulaExpr::APREF);
             $t = $m[1];
@@ -374,7 +385,7 @@ class Formula {
                 $field = substr($field, 1, strlen($field) - 2);
             $rf = reviewForm();
             if (($fid = $rf->unabbreviateField($field)))
-                $e = FormulaExpr::make_aggt("rf", FormulaExpr::AREV, $rf->field($fid));
+                $e = FormulaExpr::make_aggt("rf", FormulaExpr::ASUBREV, $rf->field($fid));
             else if (!$quoted && strlen($field) === 1 && ctype_alpha($field))
                 $e = FormulaExpr::make_aggt("??", 0, strtoupper($field));
             else
@@ -426,10 +437,16 @@ class Formula {
         $state->lstmt[] = "$t_result = $combiner;";
 
         $t_looper = "\$i$p";
-        if ($aggt === (FormulaExpr::AREV | FormulaExpr::APREF)) {
+
+        if ($aggt & FormulaExpr::APCCANREV) {
+            $g = $state->_add_pc_can_review();
+            if ($aggt & FormulaExpr::ASUBREV)
+                $g = $state->_addgtemp("rev_and_pc_can_review", "$g + array_flip(" . $state->_add_submitted_reviewers() . ")");
+            $loop = "foreach ($g as \$i$p => \$v$p)";
+        } else if ($aggt === (FormulaExpr::ASUBREV | FormulaExpr::APREF)) {
             $g = $state->_addgtemp("rev_and_pref_cids", $state->_add_review_prefs() . " + array_flip(" . $state->_add_submitted_reviewers() . ")");
             $loop = "foreach ($g as \$i$p => \$v$p)";
-        } else if ($aggt === FormulaExpr::AREV)
+        } else if ($aggt === FormulaExpr::ASUBREV)
             $loop = "foreach (" . $state->_add_submitted_reviewers() . " as \$i$p)";
         else
             $loop = "foreach (" . $state->_add_review_prefs() . " as \$i$p => \$v$p)";
@@ -514,6 +531,15 @@ class Formula {
             $state->queryOptions["allReviewerPreference"] = true;
             return "@" . $state->_add_review_prefs() . $fidx . "[" . ($op == "revpref" ? 0 : 1) . "]";
         }
+
+        if ($op == "topicscore") {
+            $state->queryOptions["topics"] = true;
+            if ($state->ismy)
+                return $state->_addgtemp("mytopicscore", "\$prow->topic_interest_score(\$contact)");
+            else
+                return "\$prow->topic_interest_score(~i~)";
+        }
+
 
         if ($op == "?:") {
             $t = $state->_addltemp(self::_compile($state, $e->args[0]));

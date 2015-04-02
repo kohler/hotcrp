@@ -9,6 +9,7 @@ class PaperContactInfo {
     public $review_submitted = null;
     public $review_needs_submit = 1;
     public $review_token_cid = null;
+    public $topic_interest_score = null;
 
     function __construct() {
     }
@@ -168,6 +169,19 @@ class PaperInfo {
         return $ci && $ci->review_type > 0 && $ci->review_submitted > 0;
     }
 
+    public function pc_can_become_reviewer() {
+        global $Conf;
+        if (!$Conf->check_track_review_sensitivity())
+            return pcMembers();
+        else {
+            $pcm = array();
+            foreach (pcMembers() as $cid => $pc)
+                if ($pc->can_become_reviewer_ignore_conflict($this))
+                    $pcm[$cid] = $pc;
+            return $pcm;
+        }
+    }
+
     public function load_tags() {
         $result = Dbl::qe_raw("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
         $this->paperTags = "";
@@ -234,6 +248,18 @@ class PaperInfo {
                 . "</span>";
         ksort($out);
         return array_values($out);
+    }
+
+    public function topic_interest_score($contact) {
+        if (is_int($contact)) {
+            $pcm = pcMembers();
+            $contact = @$pcm[$contact] ? : Contact::find_by_id($contact);
+        }
+        $interests = $contact->topic_interest_map();
+        $score = 0;
+        foreach ($this->topics() as $t)
+            $score += (int) @$interests[$t];
+        return $score;
     }
 
     public function conflicts($email = false) {

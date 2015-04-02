@@ -25,6 +25,7 @@ class Contact {
     public $disabled = false;
     public $activity_at = false;
     private $data_ = null;
+    private $topic_interests_ = null;
     var $defaultWatch = WATCH_COMMENT;
 
     // Roles
@@ -1228,6 +1229,18 @@ class Contact {
     }
 
 
+    // topic interests
+
+    function topic_interest_map() {
+        if ($this->topic_interest_map_ !== null)
+            return $this->topic_interest_map_;
+        else if ($this->contactId <= 0)
+            return array();
+        $result = Dbl::qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
+        return ($this->topic_interest_map_ = edb_map($result));
+    }
+
+
     // permissions policies
 
     private function rights($prow, $forceShow = null) {
@@ -1876,6 +1889,20 @@ class Contact {
             return $Conf->time_review(null, true, true);
         else
             return false;
+    }
+
+    function can_become_reviewer_ignore_conflict($prow) {
+        global $Conf;
+        if (!$prow)
+            return $this->isPC
+                && ($Conf->check_all_tracks($this, "assrev")
+                    || $Conf->check_all_tracks($this, "unassrev"));
+        $rights = $this->rights($prow);
+        return $rights->allow_pc_broad
+            && ($rights->review_type > 0
+                || $rights->allow_administer
+                || $Conf->check_tracks($prow, $this, "assrev")
+                || $Conf->check_tracks($prow, $this, "unassrev"));
     }
 
     function can_accept_review_assignment_ignore_conflict($prow) {
