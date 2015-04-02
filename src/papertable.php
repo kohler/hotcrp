@@ -1909,13 +1909,13 @@ class PaperTable {
             if ($this->mode == "pe" && ($m = $this->editMessage()))
                 echo $m, "<div class='g'></div>\n";
             $this->paptabDownload();
-            echo "<table class='paptab'><tr><td class='paple'><div class='paple'>";
+            echo '<div class="paptab"><div class="paptab_abstract">';
             $this->paptabAbstract();
-            echo "</div></td><td class='papre'><div class='papre'>";
+            echo '</div></div><div class="paptab"><div class="paptab_authors">';
             $this->paptabAuthors(!$this->editable && $this->mode == "pe"
                                  && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions($Me->can_administer($prow));
-            echo "</div></td></tr></table>";
+            echo '</div></div><hr class="c" />';
         }
         $this->echoDivExit();
 

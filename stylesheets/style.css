@@ -2097,22 +2097,15 @@ div.rankctx_h {
 }
 
 /* paper */
-table.paptab {
-	width: 100%;
-}
-td.papbe {
-	padding-bottom: 0.5em;
-}
-td.paple, td.papre {
+div.paptab {
 	width: 50%;
-	vertical-align: top;
+	float: left;
+}
+div.paptab_abstract {
+	padding-right: 1.5em;
+}
+div.paptab div.pavt {
 	font-size: smaller;
-}
-div.paple {
-	padding-right: 0.75em;
-}
-div.papre {
-	padding-left: 0.75em;
 }
 div.papt {
 	padding: 0.25em 1em 0.25em 8px;

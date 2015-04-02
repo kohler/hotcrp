@@ -24,6 +24,16 @@ div.pspcard_container {
 	width: auto;
 	margin-left: 0;
 }
+div.paptab {
+	float: none;
+	width: 100%;
+}
+div.paptab_abstract {
+	padding-right: 0;
+}
+div.paptab_authors {
+	padding-top: 1em;
+}
 div.papcard, div.pedcard, div.notecard, div.revcard, div.cmtcard {
 	margin-left: 0;
 }
