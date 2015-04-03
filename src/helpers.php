@@ -534,8 +534,10 @@ class SessionList {
         $l = self::lookup($idx) ? : (object) array();
         foreach ($delta as $k => $v)
             $l->$k = $v;
-        if (isset($l->ids) && !is_string($l->ids))
+        if (isset($l->ids) && !is_string($l->ids)) {
+            $l = clone $l;
             $l->ids = json_encode($l->ids);
+        }
         $Conf->save_session_array("l", $idx, $l);
     }
     static function allocate($listid) {
