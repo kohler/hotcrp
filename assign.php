@@ -46,14 +46,6 @@ function loadRows() {
     $rrows = $Conf->reviewRow(array('paperId' => $prow->paperId, 'array' => 1), $whyNot);
 }
 
-function rrow_by_contactid($contactId) {
-    global $rrows;
-    foreach ($rrows as $rr)
-        if ($rr->contactId == $contactId)
-            return $rr;
-    return null;
-}
-
 function rrow_by_reviewid($rid) {
     global $rrows;
     foreach ($rrows as $rr)
@@ -197,7 +189,7 @@ function pcAssignments() {
                 || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
             && ($pctype == 0
                 || $pcm[$row->contactId]->can_accept_review_assignment($prow)))
-            $Me->assign_review($prow->paperId, $row, $row->contactId, $pctype);
+            $Me->assign_review($prow->paperId, $row->contactId, $pctype);
     }
 }
 
@@ -282,7 +274,7 @@ function requestReview($email) {
     }
 
     // store the review request
-    $Me->assign_review($prow->paperId, null, $Them->contactId,
+    $Me->assign_review($prow->paperId, $Them->contactId,
                        REVIEW_EXTERNAL, array("mark_notify" => true));
 
     // mark secondary as delegated
@@ -371,7 +363,7 @@ function createAnonymousReview() {
     }
 
     // store the review request
-    $reviewId = $Me->assign_review($prow->paperId, null, $reqId, REVIEW_EXTERNAL,
+    $reviewId = $Me->assign_review($prow->paperId, $reqId, REVIEW_EXTERNAL,
                                    array("mark_notify" => true, "token" => true));
     if ($reviewId) {
         $result = Dbl::ql("select reviewToken from PaperReview where reviewId=$reviewId");
@@ -447,7 +439,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
         $Conf->errorMsg("Enter a PC member.");
     else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
-        $Me->assign_review($prow->paperId, rrow_by_contactid($pcid), $pcid, $pctype);
+        $Me->assign_review($prow->paperId, $pcid, $pctype);
         $Conf->updateRevTokensSetting(false);
     }
     loadRows();

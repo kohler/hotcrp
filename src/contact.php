@@ -2558,8 +2558,11 @@ class Contact {
         }
     }
 
-    function assign_review($pid, $rrow, $reviewer_cid, $type, $extra = array()) {
+    function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now, $reviewTypeName;
+        $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $rrow = edb_orow($result);
+        Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
 
         // can't delete a review that's in progress

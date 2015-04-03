@@ -975,7 +975,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
             else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
                 $assigned[] = $row->paperId;
             else {
-                $Me->assign_review($row->paperId, $row, $pc->contactId, $asstype);
+                $Me->assign_review($row->paperId, $pc->contactId, $asstype);
                 $nworked++;
             }
         }
