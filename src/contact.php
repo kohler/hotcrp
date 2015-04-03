@@ -251,7 +251,6 @@ class Contact {
                     || (($truecontact = self::find_by_email($trueuser->email))
                         && $truecontact->privChair))
                 && ($actascontact = self::find_by_email($actasemail))) {
-                $Conf->save_session("l", null);
                 if ($actascontact->email !== $trueuser->email) {
                     hoturl_defaults(array("actas" => $actascontact->email));
                     $_SESSION["last_actas"] = $actascontact->email;

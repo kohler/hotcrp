@@ -519,26 +519,29 @@ function decorateNumber($n) {
 
 class SessionList {
     static function lookup($idx) {
-        global $Conf;
+        global $Conf, $Me;
         $lists = $Conf->session("l", array());
         $x = @($lists[$idx]);
-        return $x ? (object) $x : null;
+        if ($x && $x->cid == ($Me ? $Me->contactId : 0))
+            return $x;
+        else
+            return null;
     }
     static function change($idx, $delta) {
         global $Conf;
-        $l = self::lookup($idx);
-        $l = $l ? $l : (object) array();
+        $l = self::lookup($idx) ? : (object) array();
         foreach ($delta as $k => $v)
             $l->$k = $v;
         $Conf->save_session_array("l", $idx, $l);
     }
     static function allocate($listid) {
-        global $Conf;
+        global $Conf, $Me;
         $lists = $Conf->session("l", array());
+        $cid = $Me ? $Me->contactId : 0;
         $oldest = $empty = 0;
         for ($i = 1; $i <= 8; ++$i)
-            if (($l = self::lookup($i))) {
-                if ($listid && @($l->listid == $listid))
+            if (($l = @$lists[$i])) {
+                if ($listid && @($l->listid == $listid) && $l->cid == $cid)
                     return $i;
                 else if (!$oldest || @($lists[$oldest]->timestamp < $l->timestamp))
                     $oldest = $i;
