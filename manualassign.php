@@ -11,10 +11,12 @@ if (!$Me->is_manager())
 // paper selection
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
-if (!isset($_REQUEST["t"]) && $Me->privChair)
-    $_REQUEST["t"] = ($Conf->has_managed_submissions() ? "manager" : "s");
-else if (!isset($_REQUEST["t"]))
-    $_REQUEST["t"] = "manager";
+
+$tOpt = PaperSearch::manager_search_types($Me);
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
+    reset($tOpt);
+    $_REQUEST["t"] = key($tOpt);
+}
 
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
@@ -178,12 +180,6 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
-$tOpt = PaperSearch::manager_search_types($Me);
-if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
-    reset($tOpt);
-    $_REQUEST["t"] = key($tOpt);
-}
-
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
 echo "<tr><td>Paper selection: &nbsp;</td>",
     "<td><input id='manualassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";

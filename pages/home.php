@@ -128,15 +128,19 @@ echo "<noscript><div class='homeinside'>",
 
 // Conference management and information sidebar
 echo '<div class="homeinside">';
-if ($Me->privChair) {
-    echo "<h4>Administration</h4>
-  <ul style=\"margin-bottom:0.75em\">
-    <li><a href='", hoturl("settings"), "'>Settings</a></li>
-    <li><a href='", hoturl("users", "t=all"), "'>Users</a></li>
-    <li><a href='", hoturl("autoassign"), "'>Assign reviews</a></li>
-    <li><a href='", hoturl("mail"), "'>Send mail</a></li>
-    <li><a href='", hoturl("log"), "'>Action log</a></li>
-  </ul>\n";
+if ($Me->is_manager()) {
+    $links = array();
+    if ($Me->privChair) {
+        $links[] = '<a href="' . hoturl("settings") . '">Settings</a>';
+        $links[] = '<a href="' . hoturl("users", "t=all") . '">Users</a>';
+    }
+    $links[] = '<a href="' . hoturl("autoassign") . '">Assign reviews</a>';
+    if ($Me->privChair) {
+        $links[] = '<a href="' . hoturl("mail") . '">Send mail</a>';
+        $links[] = '<a href="' . hoturl("log") . '">Action log</a>';
+    }
+    echo "<h4>Administration</h4>\n  <ul style=\"margin-bottom:0.75em\">\n    <li>",
+        join("</li>\n    <li>", $links), "</li>\n  </ul>\n";
 }
 
 // Conference info sidebar
