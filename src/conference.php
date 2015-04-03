@@ -1437,7 +1437,9 @@ class Conference {
 
         // submitted reviews
         $j = "select paperId, count(*) count";
-        $cols[] = "coalesce(R_submitted.count,0) reviewCount";
+        $before_ncols = count($cols);
+        if (@$options["startedReviewCount"])
+            $cols[] = "coalesce(R_submitted.count,0) reviewCount";
         if (@$options["scores"])
             foreach ($options["scores"] as $fid) {
                 $cols[] = "R_submitted.{$fid}Scores";
@@ -1453,7 +1455,8 @@ class Conference {
             $cols[] = "R_submitted.reviewContactIds";
             $j .= ", group_concat(contactId order by reviewId) reviewContactIds";
         }
-        $joins[] = "left join ($j from PaperReview where {$papersel}reviewSubmitted>0 group by paperId) R_submitted on (R_submitted.paperId=Paper.paperId)";
+        if (count($cols) != $before_ncols)
+            $joins[] = "left join ($j from PaperReview where {$papersel}reviewSubmitted>0 group by paperId) R_submitted on (R_submitted.paperId=Paper.paperId)";
 
         // assignments
         if (@$options["assignments"]) {
