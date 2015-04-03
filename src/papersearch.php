@@ -3142,7 +3142,7 @@ class PaperSearch {
                                                  null, $sort);
     }
 
-    static function searchTypes($me) {
+    static function search_types($me) {
         global $Conf;
         $tOpt = array();
         if ($me->isPC && $Conf->can_pc_see_all_submissions())
@@ -3171,6 +3171,23 @@ class PaperSearch {
             $tOpt["manager"] = "Papers you administer";
         if ($me->is_author())
             $tOpt["a"] = "Your submissions";
+        return $tOpt;
+    }
+
+    static function manager_search_types($me) {
+        global $Conf;
+        if ($me->privChair) {
+            if ($Conf->has_managed_submissions())
+                $tOpt = array("manager" => "Papers you administer",
+                              "unm" => "Unmanaged submissions",
+                              "s" => "All submissions");
+            else
+                $tOpt = array("s" => "Submitted papers");
+            $tOpt["acc"] = "Accepted papers";
+            $tOpt["und"] = "Undecided papers";
+            $tOpt["all"] = "All papers";
+        } else
+            $tOpt = array("manager" => "Papers you administer");
         return $tOpt;
     }
 

@@ -250,7 +250,7 @@ if ($homelist) {
     // Lists
     echo "<table><tr><td><h4>Search: &nbsp;&nbsp;</h4></td>\n";
 
-    $tOpt = PaperSearch::searchTypes($Me);
+    $tOpt = PaperSearch::search_types($Me);
     $q = defval($_REQUEST, "q", "(All)");
     echo "  <td>", Ht::form_div(hoturl("search"), array("method" => "get")),
         "<input id='homeq' class='",

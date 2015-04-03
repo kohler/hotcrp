@@ -20,7 +20,7 @@ else if (isset($_REQUEST["default"]))
     $_REQUEST["download"] = true;
 
 // paper group
-$tOpt = PaperSearch::searchTypes($Me);
+$tOpt = PaperSearch::search_types($Me);
 if (count($tOpt) == 0) {
     $Conf->header("Search", "search", actionBar());
     $Conf->errorMsg("You are not allowed to search for papers.");

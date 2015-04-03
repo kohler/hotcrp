@@ -178,20 +178,12 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
-if ($Me->privChair) {
-    if ($Conf->has_managed_submissions())
-        $tOpt = array("manager" => "Papers you administer",
-                      "unm" => "Unmanaged submissions",
-                      "s" => "All submissions");
-    else
-        $tOpt = array("s" => "Submitted papers");
-    $tOpt["acc"] = "Accepted papers";
-    $tOpt["und"] = "Undecided papers";
-    $tOpt["all"] = "All papers";
-} else
-    $tOpt = array("manager" => "Papers you administer");
-if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
-    $_REQUEST["t"] = "s";
+$tOpt = PaperSearch::manager_search_types($Me);
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
+    reset($tOpt);
+    $_REQUEST["t"] = key($tOpt);
+}
+
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
 echo "<tr><td>Paper selection: &nbsp;</td>",
     "<td><input id='manualassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";
