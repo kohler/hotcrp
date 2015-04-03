@@ -2764,6 +2764,7 @@ class PaperSearch {
                 $filters[] = "(Paper.managerContactId=" . $this->cid . " or Paper.managerContactId=0)";
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
+            $filters[] = "Paper.timeSubmitted>0";
         }
 
         // decision limitation parts
