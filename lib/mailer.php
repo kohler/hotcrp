@@ -525,7 +525,7 @@ class Mailer {
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
             $text = join("", $headers) . MAILER_EOL . $prep->body;
-            if (PHP_SAPI == "cli")
+            if (PHP_SAPI == "cli" && !@$Opt["disablePrintEmail"])
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             else
                 $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");

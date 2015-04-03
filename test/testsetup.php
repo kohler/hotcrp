@@ -8,6 +8,7 @@ $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 define("HOTCRP_OPTIONS", "$ConfSitePATH/test/testoptions.php");
 define("HOTCRP_TESTHARNESS", true);
 require_once("$ConfSitePATH/src/init.php");
+$Opt["disablePrintEmail"] = true;
 
 // Initialize from an empty database.
 if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql")))
