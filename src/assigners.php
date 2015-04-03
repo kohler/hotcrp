@@ -267,7 +267,7 @@ class Assigner {
         return @self::$assigners[$n];
     }
     function check_paper($user, $prow, $state) {
-        if (!$user->privChair)
+        if (!$user->can_administer($prow) && !$user->privChair)
             return "Permission error.";
         else if ($prow->timeWithdrawn > 0)
             return "Paper $prow->paperId has been withdrawn.";

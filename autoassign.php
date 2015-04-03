@@ -6,7 +6,7 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 require_once("src/assigners.php");
-if (!$Me->privChair)
+if (!$Me->is_manager())
     $Me->escape();
 
 // paper selection
@@ -21,13 +21,17 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
             $pcsel[$p] = 1;
 } else
     $pcsel = pcMembers();
-if (defval($_REQUEST, "a") == "prefconflict" && !isset($_REQUEST["t"])
+
+$tOpt = PaperSearch::manager_search_types($Me);
+if ($Me->privChair && !isset($_REQUEST["t"])
+    && defval($_REQUEST, "a") == "prefconflict"
     && $Conf->can_pc_see_all_submissions())
     $_REQUEST["t"] = "all";
-else if ($Conf->has_managed_submissions())
-    $_REQUEST["t"] = defval($_REQUEST, "t", "unm");
-else
-    $_REQUEST["t"] = defval($_REQUEST, "t", "s");
+if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
+    reset($tOpt);
+    $_REQUEST["t"] = key($tOpt);
+}
+
 if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
     $_REQUEST["p"] = $_REQUEST["pap"];
 if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
@@ -43,6 +47,7 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && !isset($_REQUEST["reque
     $papersel = $search->paperList();
 }
 sort($papersel);
+
 if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] != $_REQUEST["t"])
     || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] != $_REQUEST["q"])) {
     if (isset($_REQUEST["p"]) && isset($_REQUEST["assign"]))
@@ -604,20 +609,13 @@ echo "<form method='post' action='", hoturl_post("autoassign"), "' accept-charse
 echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
-if ($Conf->has_managed_submissions())
-    $tOpt = array("unm" => "Unmanaged submissions",
-                  "s" => "All submissions");
-else
-    $tOpt = array("s" => "Submitted papers");
-$tOpt["acc"] = "Accepted papers";
-$tOpt["und"] = "Undecided papers";
-$tOpt["all"] = "All papers";
-if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
-    $_REQUEST["t"] = "s";
 $q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
-echo "<input id='autoassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
-    Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")")),
-    " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
+echo "<input id='autoassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";
+if (count($tOpt) > 1)
+    echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")"));
+else
+    echo join("", $tOpt);
+echo " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
 $Conf->footerScript("mktemptext('autoassignq','(All)')");
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
