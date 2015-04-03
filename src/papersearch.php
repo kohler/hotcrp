@@ -3162,7 +3162,7 @@ class PaperSearch {
             && $me->is_discussion_lead())
             $tOpt["lead"] = "Your discussion leads";
         if ($me->isPC && $Conf->setting("papermanager") > 0
-            && ($me->is_manager() || $me->privChair))
+            && ($me->privChair || $me->is_manager()))
             $tOpt["manager"] = "Papers you administer";
         if ($me->is_author())
             $tOpt["a"] = "Your submissions";
