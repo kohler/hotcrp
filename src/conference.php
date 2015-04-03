@@ -1763,7 +1763,7 @@ class Conference {
         }
 
         $q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
-                order by " . join(", ", $order) . ", reviewOrdinal, reviewType desc, reviewId";
+                order by " . join(", ", $order) . ", reviewOrdinal, timeRequested, reviewType desc, reviewId";
 
         $result = $this->q($q);
         if (!$result) {
