@@ -153,7 +153,7 @@ else
 echo "<table><tr><td><div class='aahc assignpc_pcsel'>",
     Ht::form_div(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 
-$result = $Conf->qe("select ContactInfo.contactId, count(reviewId) as reviewCount
+$result = $Conf->qe("select ContactInfo.contactId, count(reviewId)
                 from ContactInfo
                 left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
                 where (roles&" . Contact::ROLE_PC . ")!=0
