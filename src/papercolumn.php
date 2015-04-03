@@ -240,8 +240,8 @@ class ReviewStatusPaperColumn extends PaperColumn {
             $row->_review_status_sort_info = !$this->content_empty($pl, $row);
     }
     public function review_status_sorter($a, $b) {
-        $av = ($a->_review_status_sort_info ? $a->reviewCount : 2147483647);
-        $bv = ($b->_review_status_sort_info ? $b->reviewCount : 2147483647);
+        $av = ($a->_review_status_sort_info ? $a->num_reviews_submitted() : 2147483647);
+        $bv = ($b->_review_status_sort_info ? $b->num_reviews_submitted() : 2147483647);
         if ($av == $bv) {
             $av = ($a->_review_status_sort_info ? $a->num_reviews_started() : 2147483647);
             $bv = ($b->_review_status_sort_info ? $b->num_reviews_started() : 2147483647);
@@ -261,12 +261,12 @@ class ReviewStatusPaperColumn extends PaperColumn {
                  || ($row->conflictType >= CONFLICT_AUTHOR && $this->auview));
     }
     public function content($pl, $row) {
-        $done = $row->reviewCount;
+        $done = $row->num_reviews_submitted();
         $started = $row->num_reviews_started();
         return "<b>$done</b>" . ($done == $started ? "" : "/$started");
     }
     public function text($pl, $row) {
-        $done = $row->reviewCount;
+        $done = $row->num_reviews_submitted();
         $started = $row->num_reviews_started();
         return $done . ($done == $started ? "" : "/$started");
     }
