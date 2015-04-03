@@ -521,10 +521,12 @@ class SessionList {
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
-        $x = @($lists[$idx]);
-        if ($x && $x->cid == ($Me ? $Me->contactId : 0))
-            return $x;
-        else
+        $l = @($lists[$idx]);
+        if ($l && $l->cid == ($Me ? $Me->contactId : 0)) {
+            if (is_string(@$l->ids))
+                $l->ids = json_decode($l->ids);
+            return $l;
+        } else
             return null;
     }
     static function change($idx, $delta) {
@@ -532,6 +534,8 @@ class SessionList {
         $l = self::lookup($idx) ? : (object) array();
         foreach ($delta as $k => $v)
             $l->$k = $v;
+        if (isset($l->ids) && !is_string($l->ids))
+            $l->ids = json_encode($l->ids);
         $Conf->save_session_array("l", $idx, $l);
     }
     static function allocate($listid) {
