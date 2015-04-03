@@ -564,13 +564,14 @@ function _tryNewList($opt, $listtype, $sort = null) {
     global $Conf, $Me;
     if ($listtype == "u" && $Me->privChair) {
         $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
-        $q = "select email from ContactInfo";
+        $q = "select contactId from ContactInfo";
         if ($searchtype == "pc")
             $q .= " where (roles&" . Contact::ROLE_PC . ")!=0";
-        $result = $Conf->ql("$q order by lastName, firstName, email");
+        $result = Dbl::ql("$q order by lastName, firstName, email");
         $a = array();
         while (($row = edb_row($result)))
-            $a[] = $row[0];
+            $a[] = (int) $row[0];
+        Dbl::free($result);
         return SessionList::create("u/" . $searchtype, $a,
                                    ($searchtype == "pc" ? "Program committee" : "Users"),
                                    hoturl_site_relative_raw("users", "t=$searchtype"));
@@ -588,8 +589,9 @@ function _tryNewList($opt, $listtype, $sort = null) {
 function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
     global $Conf;
     if ($listtype == "u") {
-        $result = $Conf->ql("select email from ContactInfo where email='" . sqlq($id) . "'");
+        $result = Dbl::ql("select email from ContactInfo where contactId=?", $id);
         $row = edb_row($result);
+        Dbl::free($result);
         $paperText = htmlspecialchars($row ? $row[0] : $id);
         $urlrest = "u=" . urlencode($id) . $urlrest;
     } else {
@@ -1059,7 +1061,7 @@ function actionBar($mode = null, $prow = null) {
     $listarg = $forceShow;
     $quicklinks_txt = "";
     if ($prow) {
-        $id = ($listtype === "u" ? $prow->email : $prow->paperId);
+        $id = ($listtype === "u" ? $prow->contactId : $prow->paperId);
         $quicklinks_txt = quicklinks($id, $goBase, $xmode, $listtype);
         if (isset($CurrentList) && $CurrentList > 0)
             $listarg .= "&amp;ls=$CurrentList";

@@ -680,7 +680,7 @@ class ContactList extends BaseList {
 
         // list number
         if ($this->listNumber === true) {
-            $this->listNumber = SessionList::allocate("u:" . $this->limit . "::");
+            $this->listNumber = SessionList::allocate("u/" . $this->limit);
             $this->contactLinkArgs .= "&amp;ls=" . $this->listNumber;
         }
 
@@ -725,7 +725,7 @@ class ContactList extends BaseList {
             if ($row->disabled)
                 $trclass .= " graytext";
             $this->count++;
-            $ids[] = $row->email;
+            $ids[] = (int) $row->contactId;
 
             // First create the expanded callout row
             $tt = "";
