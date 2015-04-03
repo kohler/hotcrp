@@ -567,7 +567,7 @@ if ($getaction == "contact" && $Me->privChair && SearchActions::any()) {
 
 
 // download current assignments
-if ($getaction == "pcassignments" && $Me->privChair && SearchActions::any()) {
+if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) {
     // Note that this is chair only
     $pcm = pcMembers();
     $round_list = $Conf->round_list();

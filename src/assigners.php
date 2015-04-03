@@ -268,11 +268,11 @@ class Assigner {
     }
     function check_paper($user, $prow, $state) {
         if (!$user->can_administer($prow) && !$user->privChair)
-            return "Permission error.";
+            return "You can’t administer paper #{$prow->paperId}.";
         else if ($prow->timeWithdrawn > 0)
-            return "Paper $prow->paperId has been withdrawn.";
+            return "Paper #$prow->paperId has been withdrawn.";
         else if ($prow->timeSubmitted <= 0)
-            return "Paper $prow->paperId is not submitted.";
+            return "Paper #$prow->paperId is not submitted.";
         else
             return true;
     }
@@ -1246,7 +1246,7 @@ class AssignmentSet {
                     && !$this->astate->override
                     && $prow->has_conflict($contact)
                     && !$assigner->allow_special_contact("conflict", $prow, $contact))
-                    $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p");
+                    $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p.");
                 else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                     $this->error($err);
                 else

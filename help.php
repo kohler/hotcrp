@@ -1190,8 +1190,7 @@ discussion process for the relevant papers. This PC member is called the
 <a href='" . hoturl("assign") . "'>paper assignment pages</a> to enter paper administrators. (You may need to
 “Override conflicts” to access the assignment page.)
 A paper’s administrators have full privilege to assign and view reviews
-for that paper, although they cannot change conference settings or
-use the auto-assignment or mail tools.</p>
+for that paper, although they cannot change conference settings.</p>
 
 <p>The presence of a paper administrator changes conflicted chairs’
 access rights. Normally, a conflicted chair can easily override
@@ -1214,10 +1213,10 @@ enter it on HotCRP’s home page, after which the system lets them
 view the paper and anonymously modify the corresponding “Jane Q. Public”
 review. True reviewer identities will not appear in HotCRP’s
 database or its logs.
-For even more privacy, a trusted manager can collect
+For even more privacy, the paper administrator could collect
 offline review forms via email and upload them using
 review tokens; then even web server access logs store only the
-manager’s identity.</p>");
+administrator’s identity.</p>");
 
     _subhead("Before the meeting", "
 <ol>

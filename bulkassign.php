@@ -6,7 +6,7 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 require_once("src/assigners.php");
-if (!$Me->privChair)
+if (!$Me->is_manager())
     $Me->escape();
 if (check_post())
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
@@ -205,7 +205,7 @@ if (count($Conf->round_list()) > 1 || $rev_roundtag)
 
 echo '<div class="g"></div>', Ht::submit("Upload"), "</div>";
 
-echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=s&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
+echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=manager&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
 
 echo "</div></form>
 
