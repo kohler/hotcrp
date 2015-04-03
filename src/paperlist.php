@@ -18,7 +18,7 @@ class PaperList extends BaseList {
     public $scoresOk = false;
     public $search;
     public $tagger;
-    public $reviewer;
+    private $_reviewer = null;
     public $review_list;
 
     private $sortable;
@@ -66,8 +66,13 @@ class PaperList extends BaseList {
             $svar = defval($args, "foldtype", "pl") . "display";
             $this->display = $Conf->session($svar, "");
         }
-        if (isset($args["reviewer"]))
-            $this->reviewer = $args["reviewer"];
+        if (($r = @$args["reviewer"])) {
+            if (!is_object($r)) {
+                error_log(caller_landmark() . ": warning: 'reviewer' not an object");
+                $r = Contact::find_by_id($r);
+            }
+            $this->_reviewer = $r;
+        }
         $this->atab = defval($_REQUEST, "atab", "");
         unset($_REQUEST["atab"]);
     }
@@ -199,7 +204,11 @@ class PaperList extends BaseList {
     }
 
     public function reviewer_cid() {
-        return $this->reviewer ? : $this->contact->contactId;
+        return $this->_reviewer ? $this->_reviewer->contactId : $this->contact->contactId;
+    }
+
+    public function reviewer_contact() {
+        return $this->_reviewer ? : $this->contact;
     }
 
     public function maybeConflict($row, $text, $visible) {

@@ -314,7 +314,7 @@ if ($reviewer > 0) {
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
                                          "q" => $_REQUEST["q"],
                                          "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
-    $paperList = new PaperList($search, array("sort" => true, "list" => true, "reviewer" => $reviewer));
+    $paperList = new PaperList($search, array("sort" => true, "list" => true, "reviewer" => $pcm[$reviewer]));
     $paperList->display .= " topics ";
     if ($kind != "c")
         $paperList->display .= "reviewers ";

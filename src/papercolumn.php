@@ -676,8 +676,8 @@ class PreferencePaperColumn extends PaperColumn {
         $queryOptions["reviewer"] = $pl->reviewer_cid();
         if ($this->editable && $visible > 0) {
             $arg = "ajax=1&amp;setrevpref=1";
-            if ($pl->contact->privChair && $pl->reviewer)
-                $arg .= "&amp;reviewer=" . $pl->reviewer;
+            if ($pl->contact->privChair && $pl->reviewer_cid())
+                $arg .= "&amp;reviewer=" . $pl->reviewer_cid();
             $Conf->footerScript("add_revpref_ajax('" . hoturl_post_raw("paper", $arg) . "')");
         }
         return true;
@@ -694,8 +694,8 @@ class PreferencePaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $pref = unparse_preference($row);
-        if ($pl->reviewer
-            && $pl->reviewer != $pl->contact->contactId
+        if ($pl->reviewer_cid()
+            && $pl->reviewer_cid() != $pl->contact->contactId
             && !$pl->contact->allow_administer($row))
             return "N/A";
         else if (!$this->editable)

@@ -9,27 +9,25 @@ if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 
 // set reviewer
-$reviewer = $Me->contactId;
-$reviewer_name = $Me->email;
+$reviewer_contact = $Me;
 $incorrect_reviewer = false;
 if (@$_REQUEST["reviewer"] && $Me->privChair
     && $_REQUEST["reviewer"] !== $Me->email
     && $_REQUEST["reviewer"] !== $Me->contactId) {
     $incorrect_reviewer = true;
     foreach (pcMembers() as $pcm)
-        if ($pcm->email === $_REQUEST["reviewer"]
+        if (strcasecmp($pcm->email, $_REQUEST["reviewer"]) == 0
             || (string) $pcm->contactId === $_REQUEST["reviewer"]) {
-            $reviewer = $pcm->contactId;
-            $reviewer_name = $pcm->email;
+            $reviewer_contact = $pcm;
             $incorrect_reviewer = false;
         }
 } else if (!@$_REQUEST["reviewer"] && !($Me->roles & Contact::ROLE_PC)) {
     foreach (pcMembers() as $pcm) {
-        $reviewer = $pcm->contactId;
-        $reviewer_name = $pcm->email;
+        $reviewer_contact = $pcm;
         break;
     }
 }
+$reviewer = $reviewer_contact->contactId;
 if ($incorrect_reviewer)
     $Conf->errorMsg("Reviewer " . htmlspecialchars($_REQUEST["reviewer"]) . " is not on the PC.");
 
@@ -195,7 +193,7 @@ $search = new PaperSearch($Me, array("t" => "rable",
                                      "urlbase" => hoturl_site_relative_raw("reviewprefs", "reviewer=$reviewer"),
                                      "q" => defval($_REQUEST, "q", ""),
                                      "reviewer" => $reviewer));
-$pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer));
+$pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer_contact));
 $pl_text = $pl->text("editReviewPreference",
                      array("class" => "pltable_full",
                            "attributes" => array("hotcrp_foldsession" => "pfdisplay.$"),
@@ -226,10 +224,10 @@ if ($Me->privChair) {
     foreach (pcMembers() as $pcm)
         if (!@$prefcount[$pcm->contactId])
             $revopt[htmlspecialchars($pcm->email)] .= " (no preferences)";
-    if (!isset($revopt[htmlspecialchars($reviewer_name)]))
-        $revopt[htmlspecialchars($reviewer_name)] = Text::name_html($Me) . " (not on PC)";
+    if (!isset($revopt[htmlspecialchars($reviewer_contact->email)]))
+        $revopt[htmlspecialchars($reviewer_contact->email)] = Text::name_html($Me) . " (not on PC)";
 
-    echo Ht::select("reviewer", $revopt, htmlspecialchars($reviewer_name),
+    echo Ht::select("reviewer", $revopt, htmlspecialchars($reviewer_contact->email),
                     array("onchange" => "\$\$(\"redisplayform\").submit()")),
         "<div class='g'></div></td></tr>\n";
 }
