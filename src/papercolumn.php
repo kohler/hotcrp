@@ -572,7 +572,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
-        if (!$pl->contact->privChair)
+        if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0)
             $Conf->footerScript("add_assrev_ajax()");

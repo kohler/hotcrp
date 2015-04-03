@@ -5,14 +5,16 @@
 
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
-if (!$Me->privChair)
+if (!$Me->is_manager())
     $Me->escape();
 
 // paper selection
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
-if (!isset($_REQUEST["t"]))
-    $_REQUEST["t"] = ($Conf->has_managed_submissions() ? "unm" : "s");
+if (!isset($_REQUEST["t"]) && $Me->privChair)
+    $_REQUEST["t"] = ($Conf->has_managed_submissions() ? "manager" : "s");
+else if (!isset($_REQUEST["t"]))
+    $_REQUEST["t"] = "manager";
 
 $kind = defval($_REQUEST, "kind", "a");
 if ($kind != "a" && $kind != "c")
@@ -58,9 +60,6 @@ $abar .= actionTab("Upload", hoturl("bulkassign"), false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
 
-$Conf->header("Review Assignments", "assignpc", $abar);
-
-
 $pcm = pcMembers();
 $reviewer = cvtint(@$_REQUEST["reviewer"]);
 if ($reviewer <= 0)
@@ -70,34 +69,36 @@ if ($reviewer <= 0 || !@$pcm[$reviewer])
 
 
 function saveAssignments($reviewer) {
-    global $Conf, $Me, $Now, $kind;
+    global $Conf, $Me, $Now, $kind, $pcm;
+    $reviewer_contact = $pcm[$reviewer];
 
-    $result = $Conf->qe("lock tables Paper read, PaperReview write, PaperReviewRefused write, PaperConflict write, Settings write");
-    if (!$result)
-        return $result;
+    $pids = array();
+    foreach ($_POST as $k => $v)
+        if (substr($k, 0, 6) === "assrev"
+            && ctype_digit(substr($k, 6))
+            && ($p = (int) substr($k, 6)) > 0)
+            $pids[] = $p;
+    if (!count($pids))
+        return;
 
-    $result = $Conf->qe("select Paper.paperId, PaperConflict.conflictType,
-        reviewId, reviewType, reviewModified
-        from Paper
-        left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=$reviewer)
-        left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=$reviewer)
-        where timeSubmitted>0
-        order by paperId asc, reviewId asc");
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $pids, "reviewer" => $reviewer)));
 
     $lastPaperId = -1;
     $del = $ins = "";
-    while (($row = edb_orow($result))) {
+    while (($row = PaperInfo::fetch($result, $Me))) {
         if ($row->paperId == $lastPaperId
-            || $row->conflictType >= CONFLICT_AUTHOR
+            || !$Me->can_administer($row)
+            || $row->reviewerConflictType >= CONFLICT_AUTHOR
             || !isset($_REQUEST["assrev$row->paperId"]))
             continue;
         $lastPaperId = $row->paperId;
         $type = cvtint($_REQUEST["assrev$row->paperId"], 0);
-        if ($type >= 0 && $row->conflictType > 0 && $row->conflictType < CONFLICT_AUTHOR)
+        if ($type >= 0 && $row->reviewerConflictType > 0 && $row->reviewerConflictType < CONFLICT_AUTHOR)
             $del .= " or paperId=$row->paperId";
-        if ($type < 0 && $row->conflictType < CONFLICT_CHAIRMARK)
+        if ($type < 0 && $row->reviewerConflictType < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
-        if ($kind == "a")
+        if ($kind == "a" && $type != $row->reviewerReviewType
+            && ($type <= 0 || $reviewer_contact->can_accept_review_assignment_ignore_conflict($row)))
             $Me->assign_review($row->paperId, $reviewer, $type);
     }
 
@@ -106,11 +107,11 @@ function saveAssignments($reviewer) {
     if ($del)
         $Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")");
 
-    $Conf->qe("unlock tables");
     $Conf->updateRevTokensSetting(false);
 
     if ($Conf->setting("pcrev_assigntime") == $Now)
         $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+    redirectSelf();
 }
 
 
@@ -118,6 +119,9 @@ if (isset($_REQUEST["update"]) && $reviewer > 0 && check_post())
     saveAssignments($reviewer);
 else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You need to select a reviewer.");
+
+
+$Conf->header("Review Assignments", "assignpc", $abar);
 
 
 // Help list
@@ -174,21 +178,28 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
-if ($Conf->has_managed_submissions())
-    $tOpt = array("unm" => "Unmanaged submissions",
-                  "s" => "All submissions");
-else
-    $tOpt = array("s" => "Submitted papers");
-$tOpt["acc"] = "Accepted papers";
-$tOpt["und"] = "Undecided papers";
-$tOpt["all"] = "All papers";
+if ($Me->privChair) {
+    if ($Conf->has_managed_submissions())
+        $tOpt = array("manager" => "Papers you administer",
+                      "unm" => "Unmanaged submissions",
+                      "s" => "All submissions");
+    else
+        $tOpt = array("s" => "Submitted papers");
+    $tOpt["acc"] = "Accepted papers";
+    $tOpt["und"] = "Undecided papers";
+    $tOpt["all"] = "All papers";
+} else
+    $tOpt = array("manager" => "Papers you administer");
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = "s";
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
 echo "<tr><td>Paper selection: &nbsp;</td>",
-    "<td><input id='manualassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;",
-    Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)")),
-    "</td></tr>\n",
+    "<td><input id='manualassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";
+if (count($tOpt) > 1)
+    echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)"));
+else
+    echo join("", $tOpt);
+echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 $Conf->footerScript("mktemptext('manualassignq','(All)')");
 
