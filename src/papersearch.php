@@ -2991,6 +2991,10 @@ class PaperSearch {
             $queryOptions["myLead"] = 1;
         else if ($limit == "unm")
             $queryOptions["finalized"] = $queryOptions["unmanaged"] = 1;
+        else if ($limit == "all")
+            /* no limit */;
+        else
+            return true; /* don't understand limit */
         return false;
     }
 
