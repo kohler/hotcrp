@@ -590,14 +590,18 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     }
     public function content($pl, $row) {
         if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
-            return "<span class='author'>Author</span>";
+            return '<span class="author">Author</span>';
         $rt = ($row->reviewerConflictType > 0 ? -1 : min(max($row->reviewerReviewType, 0), REVIEW_PRIMARY));
-        return Ht::select("assrev$row->paperId",
-                           array(0 => "None",
-                                 REVIEW_PRIMARY => "Primary",
-                                 REVIEW_SECONDARY => "Secondary",
-                                 REVIEW_PC => "Optional",
-                                 -1 => "Conflict"), $rt,
+        if ($pl->reviewer_contact()->can_accept_review_assignment_ignore_conflict($row)
+            || $rt > 0)
+            $options = array(0 => "None",
+                             REVIEW_PRIMARY => "Primary",
+                             REVIEW_SECONDARY => "Secondary",
+                             REVIEW_PC => "Optional",
+                             -1 => "Conflict");
+        else
+            $options = array(0 => "None", -1 => "Conflict");
+        return Ht::select("assrev$row->paperId", $options, $rt,
                            array("tabindex" => 3,
                                  "onchange" => "hiliter(this)"));
     }
