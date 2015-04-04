@@ -1531,6 +1531,9 @@ span.pl_rownum {
 	font-size: smaller;
 	color: #333333;
 }
+table.pltable_full > tbody > tr > td.pl_title {
+	width: 100%;
+}
 td.pl_title img {
 	vertical-align: text-bottom;
 }
