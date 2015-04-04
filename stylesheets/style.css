@@ -2059,14 +2059,18 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	font-size: 75%;
 }
 .bubble > .bubcontent {
-	margin: 2px 0;
+	margin: 4px 0;
 }
-.bubtail0, .bubtail1 {
+.bubtail {
 	position: absolute;
 	border-style: solid;
 	border-width: 0;
-	width: 0;
-	height: 0;
+	width: 12px;
+	height: 6px;
+}
+.bubtail.tooltip {
+	width: 8px;
+	height: 4px;
 }
 
 div.tooltipmenu > div {
