@@ -208,7 +208,7 @@ function downloadReviews(&$texts, &$errors) {
         } else if (count($warnings))
             $text .= join("\n", $warnings) . "\n\n";
         $text .= join("", $texts);
-        downloadText($text, $rfname . ".txt");
+        downloadText($text, $rfname);
         exit;
     } else {
         $zip = new ZipDocument($Opt["downloadPrefix"] . "reviews.zip");
