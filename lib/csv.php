@@ -242,14 +242,12 @@ class CsvGenerator {
     const TYPE_TAB = 2;
 
     private $type;
-    private $lines;
-    private $header;
-    private $selection;
+    private $lines = array();
+    private $header = false;
+    private $selection = null;
 
     function __construct($type = self::TYPE_COMMA) {
         $this->type = $type;
-        $this->lines = array();
-        $this->header = $this->selection = false;
     }
 
     static function quote($text, $quote_empty = false) {
@@ -320,6 +318,8 @@ class CsvGenerator {
         $this->add($header);
         if ($this->type == self::TYPE_TAB && $comment)
             $this->lines[0] = "#" . $this->lines[0];
+        if ($this->selection === null && is_associative_array($header))
+            $this->selection = array_keys($header);
         $this->header = true;
     }
 
@@ -339,6 +339,10 @@ class CsvGenerator {
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
+    }
+
+    function unparse() {
+        return join("", $this->lines);
     }
 
     function download() {

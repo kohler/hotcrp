@@ -1143,10 +1143,9 @@ function downloadText($text, $filename, $inline = false) {
     global $Opt;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
     $csvg->download_headers($Opt["downloadPrefix"] . $filename, !$inline);
-    if ($text !== false) {
+    if ($text !== false)
         $csvg->add($text);
-        $csvg->download();
-    }
+    $csvg->download();
 }
 
 function parse_preference($n) {
