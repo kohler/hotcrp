@@ -237,21 +237,23 @@ function downloadForm($editable) {
     global $rf, $Conf, $Me, $prow, $paperTable, $Opt;
     $explicit = true;
     if ($paperTable->rrow)
-        $downrrows = array($paperTable->rrow);
+        $rrows = array($paperTable->rrow);
     else if ($editable)
-        $downrrows = array();
+        $rrows = array();
     else {
-        $downrrows = $paperTable->rrows;
+        $rrows = $paperTable->rrows;
         $explicit = false;
     }
+    $downrrows = array();
+    foreach ($rrows as $rr)
+        if ($Me->can_view_review($prow, $rr, null))
+            $downrrows[] = $rr;
     $text = "";
     foreach ($downrrows as $rr)
-        if ($rr->reviewSubmitted
-            && $Me->can_view_review($prow, $rr, null))
+        if ($rr->reviewSubmitted)
             $text .= downloadView($prow, $rr, $editable);
     foreach ($downrrows as $rr)
         if (!$rr->reviewSubmitted
-            && $Me->can_view_review($prow, $rr, null)
             && ($explicit || $rr->reviewModified))
             $text .= downloadView($prow, $rr, $editable);
     if (count($downrrows) == 0)
@@ -268,7 +270,10 @@ function downloadForm($editable) {
     }
     if ($editable)
         $text = ReviewForm::textFormHeader(count($downrrows) > 1, $Me->viewReviewFieldsScore($prow, null)) . $text;
-    downloadText($text, "review-" . $prow->paperId, !$editable);
+    $filename = (count($downrrows) > 1 ? "reviews" : "review") . "-" . $prow->paperId;
+    if (count($downrrows) == 1 && $downrrows[0]->reviewSubmitted)
+        $filename .= unparseReviewOrdinal($downrrows[0]->reviewOrdinal);
+    downloadText($text, $filename, !$editable);
     exit;
 }
 if (isset($_REQUEST["downloadForm"]))
