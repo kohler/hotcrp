@@ -2041,9 +2041,18 @@ class PaperTable {
     function paptabEndWithReviewMessage() {
         global $Conf, $Me;
 
+        $m = array();
         if ($this->rrows
             && ($whyNot = $Me->perm_view_review($this->prow, null, null)))
-            $this->_paptabSepContaining("You can’t see the reviews for this paper. " . whyNotText($whyNot, "review"));
+            $m[] = "You can’t see the reviews for this paper. " . whyNotText($whyNot, "review");
+        if ($this->prow->reviewType && !$Conf->time_review_open()) {
+            if ($this->rrow)
+                $m[] = "You can’t edit your review because the site is not open for reviewing.";
+            else
+                $m[] = "You can’t begin your assigned review because the site is not open for reviewing.";
+        }
+        if (count($m))
+            $this->_paptabSepContaining(join("<br />", $m));
 
         if ($this->mode != "pe")
             $this->_paptabReviewLinks(false, null, "");
