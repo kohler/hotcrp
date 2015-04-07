@@ -2227,6 +2227,32 @@ if (window.devicePixelRatio && window.devicePixelRatio > 1)
         return Math.round(x * window.devicePixelRatio) / window.devicePixelRatio;
     };
 
+function to_rgba(c) {
+    var m = c.match(/^rgb\((.*)\)$/);
+    return m ? "rgba(" + m[1] + ", 1)" : c;
+}
+
+function make_model(color) {
+    return $('<div style="display:none" class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo("body");
+}
+
+function calculate_sizes(color) {
+    var j = make_model(color), tail = j.children();
+    var sizes = [tail.width(), tail.height()];
+    j.remove();
+    return sizes;
+}
+
+function expand_near(epos, color) {
+    var dir, x, j = make_model(color);
+    epos = jQuery.extend({}, epos);
+    for (dir = 0; dir < 4; ++dir)
+        if ((x = j.css("margin" + capdir[dir])) && (x = parseFloat(x)))
+            epos[lcdir[dir]] += (dir == 0 || dir == 3 ? -x : x);
+    j.remove();
+    return epos;
+}
+
 return function (content, bubopt) {
     if (!bubopt && content && typeof content === "object") {
         bubopt = content;
@@ -2239,16 +2265,10 @@ return function (content, bubopt) {
     var nearpos = null, dirspec = bubopt.dir || "r", dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
-    var bubdiv = $('<div class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '"></div></div>')[0];
+    var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
     $("body")[0].appendChild(bubdiv);
     var bubch = bubdiv.childNodes;
-    var sizes = [jQuery(bubch[0]).width(), jQuery(bubch[0]).height()];
-    bubch[0].style.width = bubch[2].style.width = bubch[0].style.height = bubch[2].style.height = "0";
-
-    function to_rgba(c) {
-        var m = c.match(/^rgb\((.*)\)$/);
-        return m ? "rgba(" + m[1] + ", 1)" : c;
-    }
+    var sizes = null;
 
     function change_tail_direction() {
         var divbw = bubdiv.style[cssbw(dir)], bw = [0, 0, 0, 0];
@@ -2289,6 +2309,8 @@ return function (content, bubopt) {
             ds = dirspec.replace(/[!*]/g, "");
         if (dir_to_taildir[ds] != null)
             ds = dir_to_taildir[ds];
+        if (!sizes)
+            sizes = calculate_sizes(color);
         var bpos = $(bubdiv).geometry(true), wpos = $(window).geometry();
         var size = sizes[0];
         var bw = bpos.width + size, bh = bpos.height + size;
@@ -2308,7 +2330,8 @@ return function (content, bubopt) {
             ds = 0;
         else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
                   && nearpos.right + bw < wpos.right - 3*SPACE)
-                 || (ds === 1 && !noflip && nearpos.left - bw < wpos.left))
+                 || (ds === 1 && !noflip && nearpos.left - bw < wpos.left)
+                 || (ds === 3 && (noflip || nearpos.right + bw <= wpos.right - SPACE)))
             ds = 3;
         else
             ds = 1;
@@ -2350,6 +2373,8 @@ return function (content, bubopt) {
         near: function (epos, dir) {
             if (epos.tagName || epos.jquery)
                 epos = $(epos).geometry(true);
+            if (!epos.exact)
+                epos = expand_near(epos, color);
             nearpos = epos;
             if (dir != null)
                 dirspec = dir;
@@ -2357,7 +2382,7 @@ return function (content, bubopt) {
             return bubble;
         },
         show: function (x, y) {
-            return bubble.near({top: y, right: x, bottom: y, left: x});
+            return bubble.near({top: y, right: x, bottom: y, left: x, exact: true});
         },
         remove: function () {
             if (bubdiv) {
@@ -2372,7 +2397,7 @@ return function (content, bubopt) {
                 bubdiv.className = "bubble" + color;
                 bubch[0].className = "bubtail bubtail0" + color;
                 bubch[2].className = "bubtail bubtail1" + color;
-                dir = null;
+                dir = sizes = null;
                 nearpos && show();
             }
             return bubble;
@@ -2441,11 +2466,17 @@ function tooltip(elt, content, dir, isglobal) {
 }
 
 function tooltip_enter(evt) {
-    var j = jQuery(this), tt, text;
-    if (!(tt = j.data("hotcrp_tooltip"))
-        && !window.disable_tooltip
-        && (text = j.attr("hottooltip")))
-        tt = tooltip(this, text, j.attr("hottooltipdir"), true);
+    var j = jQuery(this), x, text;
+    var tt = j.data("hotcrp_tooltip");
+    if (!tt && !window.disable_tooltip) {
+        if ((x = j.attr("hottooltip")))
+            text = x;
+        else if ((x = j.attr("hottooltipcontent"))
+                 && (x = jQuery(x)) && x.length)
+            text = x.html();
+        if (text)
+            tt = tooltip(this, text, j.attr("hottooltipdir"), true);
+    }
     if (tt)
         tt.enter();
 }

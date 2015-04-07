@@ -2060,6 +2060,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	color: #ffffff;
 	border: 0 none;
 	font-size: 75%;
+	margin: 0 8px;
 }
 .bubble > .bubcontent {
 	margin: 4px 0;
