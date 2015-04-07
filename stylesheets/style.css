@@ -7,7 +7,7 @@
 body {
 	font-family: "Helvetica Neue", Helvetica, Arial, verdana, tahoma, sans-serif;
 	font-size: 11pt; /* grep MAINSIZE */
-	color: black;
+	color: #333333;
 	background-color: white;
 	margin: 0;
 }
@@ -1952,11 +1952,9 @@ div.pscopen div.pst {
 	margin: 0 -2px;
 	padding: 0 2px;
 }
-span.pavfn, span.psfn {
-	color: #555555;
-}
+span.pavfn, span.psfn, div.rv span.revfn,
 span.pavfn a.q, span.psfn a.q {
-	color: #555555;
+	color: #666666;
 }
 div.pst span.hint {
 	padding-left: 1em;
@@ -2121,7 +2119,6 @@ div.pavt {
 	padding: 0.25em 5px;
 }
 span.papfn, span.pavfn, span.psfn, span.revfn {
-	font-variant: small-caps;
 	font-weight: bold;
 }
 div.papt span.papfn, div.pavt span.pavfn {
@@ -2285,9 +2282,6 @@ div.rv div.revt {
 	background: none; /* #ffe6f8; */
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
-}
-div.rv span.revfn {
-	color: #555555;
 }
 div.rv div.revv {
 	padding: 0;
