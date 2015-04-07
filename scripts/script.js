@@ -2903,38 +2903,6 @@ return function (active_dragtag) {
 })();
 
 
-// score help
-function makescorehelp(anchor, which, dofold) {
-    return function () {
-        var elt = $$("scorehelp_" + which);
-        if (elt && dofold)
-            elt.className = "scorehelpc";
-        else if (elt) {
-            var anchorPos = $(anchor).geometry();
-            var wg = $(window).geometry();
-            elt.className = "scorehelpo";
-            elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, anchorPos.left)) + "px";
-            if (anchorPos.bottom + 8 + elt.offsetHeight >= wg.bottom)
-                elt.style.top = Math.max(wg.top, anchorPos.top - 2 - elt.offsetHeight) + "px";
-            else
-                elt.style.top = (anchorPos.bottom + 8) + "px";
-        }
-    };
-}
-
-function addScoreHelp() {
-    var anchors = document.getElementsByTagName("a"), href, pos;
-    for (var i = 0; i < anchors.length; i++)
-        if (anchors[i].className.match(/^scorehelp(?: |$)/)
-            && (href = anchors[i].getAttribute('href'))
-            && (pos = href.indexOf("f=")) >= 0) {
-            var whichscore = href.substr(pos + 2);
-            anchors[i].onmouseover = makescorehelp(anchors[i], whichscore, 0);
-            anchors[i].onmouseout = makescorehelp(anchors[i], whichscore, 1);
-        }
-}
-
-
 // review ratings
 function makeratingajax(form, id) {
     var selects;

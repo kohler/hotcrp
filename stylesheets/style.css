@@ -2664,34 +2664,11 @@ td.mhcb {
 }
 
 /* score help */
-a.scorehelp {
-	font-weight: normal;
-	position: relative;
-	text-decoration: none;
-}
 a.help {
 	font-size: smaller;
 	font-weight: normal;
 	position: relative;
 	bottom: 0.5em;
-}
-div.scorehelpc, div.scorehelpo {
-	font-size: smaller;
-	font-weight: normal;
-	color: black;
-	text-align: left;
-	border: 3px solid #9999cc;
-	padding: 0.5em;
-	background: #f8f8ff;
-	position: absolute;
-	min-width: 15em;
-	z-index: 6;
-}
-div.scorehelpc, tr.aueditc td {
-	display: none;
-}
-div.scorehelpc span.rev_num, div.scorehelpo span.rev_num {
-	font-size: larger;
 }
 
 /* popup dialogs */

@@ -1216,21 +1216,24 @@ $blind\n";
             if (preg_match("/\\A\\S+\\s+\\S+\\z/", $n))
                 $n = preg_replace("/\\s+/", "&nbsp;", $n);
 
-            $c = "<span class='revfn'>" . $n;
-            if ($f->has_options) {
-                $c .= " <a class='scorehelp' href='" . hoturl("scorehelp", "f=$field") . "'>(?)</a>";
-                if (count($scoreHelps) == 0)
-                    $Conf->footerScript("addScoreHelp()");
+            if ($f->has_options || $f->description) {
+                $c = '<span class="revfn hottooltip" hottooltipdir="l" hottooltipcontent="#scorehelp_' . $field . '">' . $n . '</span>';
                 if (!isset($scoreHelps[$field])) {
-                    $scoreHelps[$field] = 1;
-                    $help = "<div class='scorehelpc' id='scorehelp_$field'><strong>$n</strong> choices are:<br /><span class='rev_$field'>";
-                    foreach ($f->options as $val => $text)
-                        $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM) . "&nbsp;" . htmlspecialchars($text) . "<br />";
-                    $help .= "</span></div>";
-                    $Conf->footerHtml($help);
+                    $scoreHelps[$field] = true;
+                    $help = '<div id="scorehelp_' . $field . '" style="display:none">';
+                    if ($f->description)
+                        $help .= $f->description;
+                    if ($f->description && $f->has_options)
+                        $help .= '<br />';
+                    if ($f->has_options) {
+                        $help .= 'Choices are:<br />';
+                        foreach ($f->options as $val => $text)
+                            $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM) . '&nbsp;' . htmlspecialchars($text) . '<br />';
+                    }
+                    $Conf->footerHtml($help . '</div>');
                 }
-            }
-            $c .= "</span>";
+            } else
+                $c = '<span class="revfn">' . $n . '</span>';
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
                 $c .= "<span class='revvis'>(secret)</span>";
             else if ($f->view_score < VIEWSCORE_PC)
