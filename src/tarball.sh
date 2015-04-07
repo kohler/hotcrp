@@ -69,7 +69,6 @@ resetpassword.php
 review.php
 reviewprefs.php
 scorechart.php
-scorehelp.php
 search.php
 sessionvar.php
 settings.php
