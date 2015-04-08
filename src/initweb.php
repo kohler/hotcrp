@@ -75,6 +75,17 @@ function initialize_user() {
         }
         unset($_SESSION["login_bounce"]);
     }
+
+    // set $_SESSION["addrs"]
+    if ($_SERVER["REMOTE_ADDR"]
+        && (!is_array(@$_SESSION["addrs"]) || @$_SESSION["ips"][0] !== $_SERVER["REMOTE_ADDR"])) {
+        $as = array($_SERVER["REMOTE_ADDR"]);
+        if (is_array(@$_SESSION["addrs"]))
+            foreach ($_SESSION["addrs"] as $a)
+                if ($a !== $_SERVER["REMOTE_ADDR"] && count($as) < 5)
+                    $as[] = $a;
+        $_SESSION["addrs"] = $as;
+    }
 }
 
 global $Me;
