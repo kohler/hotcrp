@@ -164,6 +164,7 @@ function __autoload($class_name) {
                                "PaperTable" => "src/papertable.php",
                                "Qobject" => "lib/qobject.php",
                                "ReviewForm" => "src/review.php",
+                               "ReviewTimes" => "src/reviewtimes.php",
                                "S3Document" => "lib/s3document.php",
                                "ScoreInfo" => "lib/scoreinfo.php",
                                "SearchActions" => "src/searchactions.php",

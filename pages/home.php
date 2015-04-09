@@ -310,6 +310,15 @@ function reviewTokenGroup($non_reviews) {
 }
 
 
+// Review times report (experimental)
+if (@$_REQUEST["reviewtimes"] && ($Me->privChair || @$Me->trueuser_privChair)) {
+    $rt = new ReviewTimes;
+    echo '<div class="homegrp" id="reviewtimes"></div>';
+    $Conf->echoScript("");
+    echo $Conf->make_script_file("scripts/d3.min.js", true);
+    $Conf->echoScript("review_times('#reviewtimes', " . json_encode($rt->json()) . ")");
+}
+
 // Review assignment
 if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";

@@ -2758,3 +2758,23 @@ table.lognav td#older div, table.lognav td#oldest div {
 table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	text-align: right;
 }
+
+/* graphs */
+.axis path, .axis line {
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
+}
+
+.revtimel, .revtimel_all, .revtimel_hilite {
+	fill: none;
+	stroke: rgba(70, 130, 180, 0.5);
+	stroke-width: 1.5px;
+}
+.revtimel_all {
+	stroke: red;
+	stroke-width: 2.5px;
+}
+.revtimel_hilite {
+	stroke: black;
+}

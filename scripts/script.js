@@ -3601,6 +3601,87 @@ return function (j) {
 })(jQuery);
 
 
+// review times chart
+var review_times = (function ($) {
+
+function numcmp(x, y) {
+    return x - y;
+}
+
+function submission_delay_seq(ri) {
+    var seq = [], i;
+    for (i in ri)
+        seq[i] = (ri[i][1] - ri[i][0]) / 86400;
+    seq.sort(numcmp);
+    return seq;
+}
+
+function seq_to_cdf(seq) {
+    var cdf = [], i;
+    for (i = 0; i <= seq.length; ++i) {
+        if (i != 0 && (i == seq.length || seq[i-1] != seq[i]))
+            cdf.push([seq[i-1], i/seq.length]);
+        if (i != seq.length && (i == 0 || seq[i-1] != seq[i]))
+            cdf.push([seq[i], i/seq.length]);
+    }
+    return cdf;
+}
+
+return function (selector, revdata) {
+    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var x = d3.scale.linear().range([0, width]);
+    var y = d3.scale.linear().range([height, 0]);
+
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var line = d3.svg.line().x(function (d) {return x(d[0]);})
+        .y(function (d) {return y(d[1]);});
+
+    var svg = d3.select(selector).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var data = {all: []};
+    var cid;
+    for (cid in revdata.reviews) {
+        data[cid] = seq_to_cdf(submission_delay_seq(revdata.reviews[cid]));
+        Array.prototype.push.apply(data.all, revdata.reviews[cid]);
+    }
+    data.all = seq_to_cdf(submission_delay_seq(data.all));
+
+    x.domain(d3.extent(data.all, function (d) { return d[0]; }));
+    y.domain([0, 1]);
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Price ($)");
+
+    for (cid in data)
+        svg.append("path")
+            .datum(data[cid])
+            .attr("class", cid == "all" ? "revtimel_all" : (cid == hotcrp_user.cid ? "revtimel_hilite" : "revtimel"))
+            .attr("d", line);
+    console.log(data);
+};
+})(jQuery);
+
+
 // autogrowing text areas; based on https://github.com/jaz303/jquery-grab-bag
 (function ($) {
     $.fn.autogrow = function (options)
