@@ -21,8 +21,10 @@ class ReviewTimes {
         while (($row = edb_row($result)))
             $this->r[(int) $row[0]][] = array((int) $row[1], (int) $row[2], (int) $row[3]);
         Dbl::free($result);
-        foreach ($Conf->round_list() as $rn => $r)
-            $this->dl[$rn] = $Conf->review_deadline($rn, true, false);
+        foreach ($Conf->round_list() as $rn => $r) {
+            $dl = $Conf->review_deadline($rn, true, false);
+            $this->dl[$rn] = +$Conf->setting($dl);
+        }
     }
 
     public function json() {

@@ -3604,15 +3604,19 @@ return function (j) {
 // review times chart
 var review_times = (function ($) {
 
-function numcmp(x, y) {
-    return x - y;
-}
-
 function submission_delay_seq(ri) {
     var seq = [], i;
     for (i in ri)
         seq[i] = (ri[i][1] - ri[i][0]) / 86400;
-    seq.sort(numcmp);
+    seq.sort(d3.ascending);
+    return seq;
+}
+
+function procrastination_seq(ri, dl) {
+    var seq = [], i;
+    for (i in ri)
+        seq[i] = (ri[i][1] - dl[ri[i][2]]) / 86400;
+    seq.sort(d3.ascending);
     return seq;
 }
 
@@ -3646,13 +3650,30 @@ return function (selector, revdata) {
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var data = {all: []};
-    var cid;
+    // collect data
+    var data = {all: []}, i, cid, dlf = procrastination_seq;
     for (cid in revdata.reviews) {
-        data[cid] = seq_to_cdf(submission_delay_seq(revdata.reviews[cid]));
-        Array.prototype.push.apply(data.all, revdata.reviews[cid]);
+        data[cid] = revdata.reviews[cid];
+        Array.prototype.push.apply(data.all, data[cid]);
     }
-    data.all = seq_to_cdf(submission_delay_seq(data.all));
+    // infer deadlines when not set
+    if (dlf == procrastination_seq) {
+        for (i in revdata.deadlines)
+            if (!revdata.deadlines[i]) {
+                var subat = data.all.filter(function (d) { return d[2] == i; })
+                    .map(function (d) { return d[0]; });
+                subat.sort(d3.ascending);
+                revdata.deadlines[i] = d3.quantile(subat, 0.8);
+            }
+    }
+    // make cdfs
+    for (cid in data)
+        data[cid] = seq_to_cdf(dlf(data[cid], revdata.deadlines));
+    // append last point
+    var lastx = data.all[data.all.length - 1][0];
+    for (cid in data)
+        if (cid !== "all" && data[cid][data[cid].length - 1][0] != lastx)
+            data[cid].push([lastx, 1]);
 
     x.domain(d3.extent(data.all, function (d) { return d[0]; }));
     y.domain([0, 1]);
@@ -3665,19 +3686,18 @@ return function (selector, revdata) {
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis)
-      .append("text")
+      /*.append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6)
         .attr("dy", ".71em")
         .style("text-anchor", "end")
-        .text("Price ($)");
+        .text("Price ($)")*/;
 
     for (cid in data)
         svg.append("path")
             .datum(data[cid])
             .attr("class", cid == "all" ? "revtimel_all" : (cid == hotcrp_user.cid ? "revtimel_hilite" : "revtimel"))
             .attr("d", line);
-    console.log(data);
 };
 })(jQuery);
 
