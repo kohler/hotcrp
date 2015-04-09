@@ -2185,8 +2185,9 @@ class Conference {
             }
 
             // "act as" link
-            if (($actas = @$_SESSION["last_actas"]) && @$_SESSION["trueuser"]) {
-                // Become true user if not currently chair.
+            if (($actas = @$_SESSION["last_actas"]) && @$_SESSION["trueuser"]
+                && ($Me->privChair || @$Me->trueuser_privChair)) {
+                // Link becomes true user if not currently chair.
                 if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0)
                     $actas = $_SESSION["trueuser"]->email;
                 if (strcasecmp($Me->email, $actas) != 0)

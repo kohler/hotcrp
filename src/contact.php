@@ -234,6 +234,7 @@ class Contact {
         global $Conf, $Opt, $Now;
         $this->activated_ = true;
         $trueuser = @$_SESSION["trueuser"];
+        $truecontact = null;
 
         // Handle actas requests
         if (isset($_REQUEST["actas"]) && $trueuser) {
@@ -255,6 +256,8 @@ class Contact {
                     hoturl_defaults(array("actas" => $actascontact->email));
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
+                if ($this->privChair || ($truecontact && $truecontact->privChair))
+                    $actascontact->trueuser_privChair = true;
                 return $actascontact->activate();
             }
         }
