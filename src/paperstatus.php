@@ -349,10 +349,10 @@ class PaperStatus {
                 if (!is_bool($oa))
                     $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be “true” or “false”.");
             } else if ($o->has_selector()) {
-                if (is_int($oa) && isset($o->selectors[$oa]))
+                if (is_int($oa) && isset($o->selector[$oa]))
                     /* OK */;
                 else if (is_string($oa)
-                         && ($ov = array_search($oa, $o->selectors)))
+                         && ($ov = array_search($oa, $o->selector)))
                     $pj->options->$id = $ov;
                 else
                     $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option doesn’t match any of the selectors.");
