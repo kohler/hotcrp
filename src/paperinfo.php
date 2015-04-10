@@ -126,7 +126,7 @@ class PaperInfo {
         $n = "Paper #{$this->paperId}: ";
         $vistitle = UnicodeHelper::deaccent($this->title);
         $l = (int) (($width + 0.5 - strlen($vistitle) - strlen($n)) / 2);
-        return max(14, $l + strlen($n));
+        return strlen($n) + max(0, $l);
     }
 
     public function pretty_text_title($width = 75) {
