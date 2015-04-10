@@ -28,7 +28,12 @@ class ReviewTimes {
     }
 
     public function json() {
-        return (object) array("reviews" => $this->r, "deadlines" => $this->dl);
+        $users = array();
+        $pcm = pcMembers();
+        foreach ($this->r as $cid => $x)
+            if (($p = $pcm[$cid]))
+                $users[$cid] = $p->email;
+        return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
     }
 
 }

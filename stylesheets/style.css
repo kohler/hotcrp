@@ -2779,3 +2779,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 .revtimel_hilite {
 	stroke: black;
 }
+.revtimel_hover {
+	stroke: yellow;
+	stroke-width: 2px;
+}

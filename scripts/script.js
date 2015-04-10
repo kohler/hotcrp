@@ -2402,7 +2402,7 @@ return function (content, bubopt) {
             }
             return bubble;
         },
-        content: function (content) {
+        html: function (content) {
             var n = bubch[1];
             if (content === undefined)
                 return n.innerHTML;
@@ -2417,13 +2417,16 @@ return function (content, bubopt) {
             nearpos && show();
             return bubble;
         },
+        text: function (text) {
+            return bubble.html(text ? text_to_html(text) : text);
+        },
         hover: function (enter, leave) {
             jQuery(bubdiv).hover(enter, leave);
             return bubble;
         }
     };
 
-    return bubble.content(content);
+    return bubble.html(content);
 };
 })();
 
@@ -2699,7 +2702,7 @@ function tag_mousemove(evt) {
         m += '">#' + dragtag + '#' + v + '</span>';
     }
 
-    dragger.content(m).show($(rowanal[srcindex].entry).offset().left - 6, y)
+    dragger.html(m).show($(rowanal[srcindex].entry).offset().left - 6, y)
         .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
 
     event_stop(evt);
@@ -3602,6 +3605,87 @@ return function (j) {
 
 
 // review times chart
+function pathNodeMayBeNearer(pathNode, point, dist) {
+    function oob(l, t, r, b) {
+        return l - point[0] >= dist || point[0] - r >= dist
+            || t - point[1] >= dist || point[1] - b >= dist;
+    }
+    if ("clientX" in point) {
+        var bounds = pathNode.getBoundingClientRect();
+        var dx = point[0] - point.clientX, dy = point[1] - point.clientY;
+        if (oob(bounds.left + dx, bounds.top + dy,
+                bounds.right + dx, bounds.bottom + dy))
+            return false;
+    }
+    var npsl = pathNode.normalizedPathSegList || pathNode.pathSegList;
+    var xo, yo, x0, y0, x, y, l, t, r, b, found;
+    for (var i = 0; i < npsl.numberOfItems && !found; ++i) {
+        var item = npsl.getItem(i);
+        if (item.pathSegType == 1)
+            x = xo, y = yo;
+        else
+            x = item.x, y = item.y;
+        if (item.pathSegType == 2) {
+            xo = l = r = x;
+            yo = t = b = y;
+        } else if (item.pathSegType == 6) {
+            l = Math.min(x0, x, item.x1, item.x2);
+            t = Math.min(y0, y, item.y1, item.y2);
+            r = Math.max(x0, x, item.x1, item.x2);
+            b = Math.max(y0, y, item.y1, item.y2);
+        } else if (item.pathSegType == 1 || item.pathSegType == 4) {
+            l = Math.min(x0, x);
+            t = Math.min(y0, y);
+            r = Math.max(x0, x);
+            b = Math.max(y0, y);
+        } else
+            return true;
+        if (!oob(l, t, r, b))
+            return true;
+        x0 = x, y0 = y;
+    }
+    return false;
+}
+
+function closestPoint(pathNode, point, inbest) {
+    // originally from Mike Bostock http://bl.ocks.org/mbostock/8027637
+    var pathLength = pathNode.getTotalLength(),
+        precision = pathLength / pathNode.pathSegList.numberOfItems * .125,
+        best, bestLength, bestDistance2 = Infinity;
+
+    if (inbest && !pathNodeMayBeNearer(pathNode, point, inbest.distance))
+        return inbest;
+
+    function check(pLength) {
+        var p = pathNode.getPointAtLength(pLength);
+        var dx = point[0] - p.x, dy = point[1] - p.y, d2 = dx * dx + dy * dy;
+        if (d2 < bestDistance2) {
+            best = [p.x, p.y];
+            best.pathNode = pathNode;
+            bestLength = pLength;
+            bestDistance2 = d2;
+            return true;
+        } else
+            return false;
+    }
+
+    // linear scan for coarse approximation
+    var sl;
+    for (sl = 0; sl <= pathLength; sl += precision)
+        check(sl);
+
+    // binary search for precise estimate
+    precision *= .5;
+    while (precision > .5) {
+        if (!((sl = bestLength - precision) >= 0 && check(sl))
+            && !((sl = bestLength + precision) <= pathLength && check(sl)))
+            precision *= .5;
+    }
+
+    best.distance = Math.sqrt(bestDistance2);
+    return inbest && inbest.distance < best.distance + 0.01 ? inbest : best;
+}
+
 var review_times = (function ($) {
 
 function submission_delay_seq(ri) {
@@ -3694,10 +3778,47 @@ return function (selector, revdata) {
         .text("Price ($)")*/;
 
     for (cid in data)
-        svg.append("path")
+        svg.append("path").attr("cid", cid)
             .datum(data[cid])
-            .attr("class", cid == "all" ? "revtimel_all" : (cid == hotcrp_user.cid ? "revtimel_hilite" : "revtimel"))
+            .attr("class", "revtimel" + (cid == "all" ? " revtimel_all" : (cid == hotcrp_user.cid ? " revtimel_hilite" : "")))
             .attr("d", line);
+
+    var hovered = svg.append("path").attr("class", "revtimel revtimel_hover");
+
+    svg.append("rect").attr("width", width).attr("height", height)
+        .style({"fill": "none", "pointer-events": "all"})
+        .on("mouseover", mousemoved).on("mousemove", mousemoved)
+        .on("mouseout", mouseout);
+
+    var hovered_path, hubble;
+    function mousemoved() {
+        var m = d3.mouse(this), p = {distance: 10};
+        m.clientX = d3.event.clientX;
+        m.clientY = d3.event.clientY;
+        for (cid in data)
+            if (cid != "all")
+                p = closestPoint(svg.select("[cid='" + cid + "']").node(), m, p);
+        if (p.pathNode != hovered_path) {
+            if (p.pathNode)
+                hovered.datum(data[p.pathNode.getAttribute("cid")])
+                    .attr("d", line).style("display", null);
+            else
+                hovered.style("display", "none");
+            hovered_path = p.pathNode;
+        }
+        if (p.pathNode) {
+            hubble = hubble || make_bubble("", {color: "tooltip"});
+            hubble.text(revdata.users[p.pathNode.getAttribute("cid")])
+                .show(p[0] + (d3.event.pageX - m[0]), p[1] + (d3.event.pageY - m[1]));
+        } else if (hubble)
+            hubble = hubble.remove() && null;
+    }
+
+    function mouseout() {
+        hovered.style("display", "none");
+        hubble && hubble.remove();
+        hovered_path = hubble = null;
+    }
 };
 })(jQuery);
 
