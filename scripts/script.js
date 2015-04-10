@@ -3782,11 +3782,12 @@ return function (selector, revdata) {
         data[cid] = seq_to_cdf(dlf(data[cid], revdata.deadlines));
     // append last point
     var lastx = data.all[data.all.length - 1][0];
-    for (cid in data) {
-        i = data[cid][data[cid].length - 1];
-        if (cid !== "all" && i[0] != lastx)
-            data[cid].push([lastx, i[1]]);
-    }
+    for (cid in data)
+        if (cid !== "all" && data[cid].length) {
+            i = data[cid][data[cid].length - 1];
+            if (i[0] != lastx)
+                data[cid].push([lastx, i[1]]);
+        }
 
     x.domain(d3.extent(data.all, function (d) { return d[0]; }));
     y.domain([0, 1]);
