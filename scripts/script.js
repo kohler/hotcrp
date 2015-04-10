@@ -3717,7 +3717,8 @@ function submission_delay_seq(ri) {
         if (ri[i][1] > 0)
             seq.push((ri[i][1] - ri[i][0]) / 86400);
     seq.sort(d3.ascending);
-    seq.ntotal = ri.length;
+    if (!ri.no_ntotal)
+        seq.ntotal = ri.length;
     return seq;
 }
 
@@ -3727,7 +3728,8 @@ function procrastination_seq(ri, dl) {
         if (ri[i][1] > 0)
             seq.push((ri[i][1] - dl[ri[i][2]]) / 86400);
     seq.sort(d3.ascending);
-    seq.ntotal = ri.length;
+    if (!ri.no_ntotal)
+        seq.ntotal = ri.length;
     return seq;
 }
 
@@ -3778,6 +3780,7 @@ return function (selector, revdata) {
             }
     }
     // make cdfs
+    data.all.no_ntotal = true;
     for (cid in data)
         data[cid] = seq_to_cdf(dlf(data[cid], revdata.deadlines));
     // append last point
