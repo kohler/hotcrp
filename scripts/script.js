@@ -2223,9 +2223,9 @@ function cssbw(dir) {
 
 var roundpixel = Math.round;
 if (window.devicePixelRatio && window.devicePixelRatio > 1)
-    roundpixel = function (x) {
-        return Math.round(x * window.devicePixelRatio) / window.devicePixelRatio;
-    };
+    roundpixel = (function (dpr) {
+        return function (x) { return Math.round(x * dpr) / dpr; };
+    })(window.devicePixelRatio);
 
 function to_rgba(c) {
     var m = c.match(/^rgb\((.*)\)$/);
@@ -2351,7 +2351,7 @@ return function (content, bubopt) {
             bubch[0].style.top = bubch[2].style.top = d + "px";
 
             if (dir == 1)
-                x = nearpos.left - bpos.width - sizes[1];
+                x = nearpos.left - bpos.width - sizes[1] - 1;
             else
                 x = nearpos.right + sizes[1];
         } else {
@@ -2363,7 +2363,7 @@ return function (content, bubopt) {
             if (dir == 0)
                 y = nearpos.bottom + sizes[1];
             else
-                y = nearpos.top - bpos.height - sizes[1];
+                y = nearpos.top - bpos.height - sizes[1] - 1;
         }
 
         bubdiv.style.left = roundpixel(x) + "px";
@@ -2383,7 +2383,16 @@ return function (content, bubopt) {
             show();
             return bubble;
         },
-        show: function (x, y) {
+        direction: function (dir) {
+            dirspec = dir;
+            return bubble;
+        },
+        show: function (x, y, reference) {
+            if (reference && (reference = $(reference)) && reference.length
+                && reference[0] != window) {
+                var off = reference.offset();
+                x += off.left, y += off.top;
+            }
             return bubble.near({top: y, right: x, bottom: y, left: x, exact: true});
         },
         remove: function () {
@@ -3612,6 +3621,7 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
         return l - point[0] >= dist || point[0] - r >= dist
             || t - point[1] >= dist || point[1] - b >= dist;
     }
+    // check bounding rectangle of path
     if ("clientX" in point) {
         var bounds = pathNode.getBoundingClientRect();
         var dx = point[0] - point.clientX, dy = point[1] - point.clientY;
@@ -3619,6 +3629,7 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
                 bounds.right + dx, bounds.bottom + dy))
             return false;
     }
+    // check path
     var npsl = pathNode.normalizedPathSegList || pathNode.pathSegList;
     var xo, yo, x0, y0, x, y, l, t, r, b, found;
     for (var i = 0; i < npsl.numberOfItems && !found; ++i) {
@@ -3685,7 +3696,17 @@ function closestPoint(pathNode, point, inbest) {
     }
 
     best.distance = Math.sqrt(bestDistance2);
+    best.pathLength = bestLength;
     return inbest && inbest.distance < best.distance + 0.01 ? inbest : best;
+}
+
+function tangentAngle(pathNode, length) {
+    var length0 = Math.max(0, length - 0.25);
+    if (length0 == length)
+        length += 0.25;
+    var p0 = pathNode.getPointAtLength(length0),
+        p1 = pathNode.getPointAtLength(length);
+    return Math.atan2(p1.y - p0.y, p1.x - p0.x);
 }
 
 var review_times = (function ($) {
@@ -3764,6 +3785,17 @@ return function (selector, revdata) {
     x.domain(d3.extent(data.all, function (d) { return d[0]; }));
     y.domain([0, 1]);
 
+    for (cid in data)
+        svg.append("path").attr("cid", cid)
+            .datum(data[cid])
+            .attr("class", "revtimel" + (cid == "all" ? " revtimel_all" : (cid == hotcrp_user.cid ? " revtimel_hilite" : "")))
+            .attr("d", line);
+
+    svg.append("path").attr("class", "revtimel revtimel_hover0");
+    svg.append("path").attr("class", "revtimel revtimel_hover1");
+    var hovers = svg.selectAll(".revtimel_hover0, .revtimel_hover1");
+    hovers.style("display", "none");
+
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
@@ -3779,14 +3811,6 @@ return function (selector, revdata) {
         .style("text-anchor", "end")
         .text("Price ($)")*/;
 
-    for (cid in data)
-        svg.append("path").attr("cid", cid)
-            .datum(data[cid])
-            .attr("class", "revtimel" + (cid == "all" ? " revtimel_all" : (cid == hotcrp_user.cid ? " revtimel_hilite" : "")))
-            .attr("d", line);
-
-    var hovered = svg.append("path").attr("class", "revtimel revtimel_hover");
-
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
@@ -3794,7 +3818,7 @@ return function (selector, revdata) {
 
     var hovered_path, hubble;
     function mousemoved() {
-        var m = d3.mouse(this), p = {distance: 10};
+        var m = d3.mouse(this), p = {distance: 16};
         m.clientX = d3.event.clientX;
         m.clientY = d3.event.clientY;
         for (cid in data)
@@ -3802,22 +3826,24 @@ return function (selector, revdata) {
                 p = closestPoint(svg.select("[cid='" + cid + "']").node(), m, p);
         if (p.pathNode != hovered_path) {
             if (p.pathNode)
-                hovered.datum(data[p.pathNode.getAttribute("cid")])
+                hovers.datum(data[p.pathNode.getAttribute("cid")])
                     .attr("d", line).style("display", null);
             else
-                hovered.style("display", "none");
+                hovers.style("display", "none");
             hovered_path = p.pathNode;
         }
         if (p.pathNode) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             hubble.text(revdata.users[p.pathNode.getAttribute("cid")])
-                .show(p[0] + (d3.event.pageX - m[0]), p[1] + (d3.event.pageY - m[1]));
+                .direction(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
+                .show(p[0], p[1], this);
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
 
     function mouseout() {
-        hovered.style("display", "none");
+        hovers.style("display", "none");
         hubble && hubble.remove();
         hovered_path = hubble = null;
     }
