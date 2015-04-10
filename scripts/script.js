@@ -3714,26 +3714,30 @@ var review_times = (function ($) {
 function submission_delay_seq(ri) {
     var seq = [], i;
     for (i in ri)
-        seq[i] = (ri[i][1] - ri[i][0]) / 86400;
+        if (ri[i][1] > 0)
+            seq.push((ri[i][1] - ri[i][0]) / 86400);
     seq.sort(d3.ascending);
+    seq.ntotal = ri.length;
     return seq;
 }
 
 function procrastination_seq(ri, dl) {
     var seq = [], i;
     for (i in ri)
-        seq[i] = (ri[i][1] - dl[ri[i][2]]) / 86400;
+        if (ri[i][1] > 0)
+            seq.push((ri[i][1] - dl[ri[i][2]]) / 86400);
     seq.sort(d3.ascending);
+    seq.ntotal = ri.length;
     return seq;
 }
 
 function seq_to_cdf(seq) {
-    var cdf = [], i;
+    var cdf = [], i, n = seq.ntotal || seq.length;
     for (i = 0; i <= seq.length; ++i) {
         if (i != 0 && (i == seq.length || seq[i-1] != seq[i]))
-            cdf.push([seq[i-1], i/seq.length]);
+            cdf.push([seq[i-1], i/n]);
         if (i != seq.length && (i == 0 || seq[i-1] != seq[i]))
-            cdf.push([seq[i], i/seq.length]);
+            cdf.push([seq[i], i/n]);
     }
     return cdf;
 }
@@ -3778,12 +3782,16 @@ return function (selector, revdata) {
         data[cid] = seq_to_cdf(dlf(data[cid], revdata.deadlines));
     // append last point
     var lastx = data.all[data.all.length - 1][0];
-    for (cid in data)
-        if (cid !== "all" && data[cid][data[cid].length - 1][0] != lastx)
-            data[cid].push([lastx, 1]);
+    for (cid in data) {
+        i = data[cid][data[cid].length - 1];
+        if (cid !== "all" && i[0] != lastx)
+            data[cid].push([lastx, i[1]]);
+    }
 
     x.domain(d3.extent(data.all, function (d) { return d[0]; }));
     y.domain([0, 1]);
+    if (dlf == procrastination_seq)
+        xAxis.tickFormat(function (d) { return -d; });
 
     for (cid in data)
         svg.append("path").attr("cid", cid)
@@ -3804,12 +3812,20 @@ return function (selector, revdata) {
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis)
-      /*.append("text")
+      .append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6)
         .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("Price ($)")*/;
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text("Fraction of assignments completed");
+    svg.append("text")
+        .attr("x", width)
+        .attr("y", height)
+        .attr("dy", "-.5em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(dlf == submission_delay_seq
+              ? "Days after assignment"
+              : "Days until deadline");
 
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})

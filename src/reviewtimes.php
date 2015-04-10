@@ -11,7 +11,7 @@ class ReviewTimes {
     public function __construct($rounds = null) {
         global $Conf;
         $qp = "select contactId, timeRequested, reviewSubmitted, reviewRound
-                from PaperReview where timeRequested>0 and reviewSubmitted>0 and reviewType>=" . REVIEW_PC;
+                from PaperReview where timeRequested>0 and reviewType>=" . REVIEW_PC;
         $qa = array();
         if ($rounds) {
             $qp .= " and reviewRound ?a";
@@ -32,7 +32,7 @@ class ReviewTimes {
         $pcm = pcMembers();
         foreach ($this->r as $cid => $x)
             if (($p = $pcm[$cid]))
-                $users[$cid] = $p->email;
+                $users[$cid] = Text::name_text($p);
         return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
     }
 
