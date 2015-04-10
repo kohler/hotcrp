@@ -666,4 +666,10 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 89
         && update_schema_unaccented_name($Conf))
         update_schema_version($Conf, 90);
+    if ($Conf->settings["allowPaperOption"] == 90
+        && $Conf->ql("alter table PaperReview add `reviewAuthorSeen` int(11) DEFAULT NULL"))
+        update_schema_version($Conf, 91);
+    if ($Conf->settings["allowPaperOption"] == 91
+        && $Conf->ql("alter table PaperReviewArchive add `reviewAuthorSeen` int(11) DEFAULT NULL"))
+        update_schema_version($Conf, 92);
 }

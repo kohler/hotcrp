@@ -230,7 +230,7 @@ function downloadView($prow, $rr, $editable) {
     else if ($editable)
         return $rf->textForm($prow, $rr, $Me, null, true) . "\n";
     else
-        return $rf->prettyTextForm($prow, $rr, $Me, false) . "\n";
+        return $rf->pretty_text($prow, $rr, $Me) . "\n";
 }
 
 function downloadForm($editable) {

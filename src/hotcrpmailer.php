@@ -14,6 +14,7 @@ class HotCRPMailer extends Mailer {
     protected $comment_row = null;
     protected $hideReviews = false;
     protected $newrev_since = false;
+    protected $no_send = false;
 
     protected $_tagger = null;
     protected $_statistics = null;
@@ -42,7 +43,9 @@ class HotCRPMailer extends Mailer {
             $this->$k = @$rest[$k];
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
-        // Infer reviewer contac from rrow/comment_row
+        if (@$rest["no_send"])
+            $this->no_send = true;
+        // Infer reviewer contact from rrow/comment_row
         if (!@$this->contacts["reviewer"] && $this->rrow && @$this->rrow->reviewEmail)
             $this->contacts["reviewer"] = self::make_reviewer_contact($this->rrow);
         else if (!@$this->contacts["reviewer"] && $this->comment_row && @$this->comment_row->reviewEmail)
@@ -87,7 +90,7 @@ class HotCRPMailer extends Mailer {
         if ($this->hideReviews)
             return "[Reviews are hidden since you have incomplete reviews of your own.]";
 
-        $result = $Conf->qe("select PaperReview.*,
+        $result = Dbl::qe("select PaperReview.*,
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
                 from PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
@@ -96,8 +99,9 @@ class HotCRPMailer extends Mailer {
         while (($row = edb_orow($result)))
             if ($row->reviewSubmitted) {
                 $rf = ReviewForm::get($row);
-                $text .= $rf->prettyTextForm($this->row, $row, $this->permissionContact, true) . "\n";
+                $text .= $rf->pretty_author_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
             }
+        Dbl::free($result);
         return $text;
     }
 

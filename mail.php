@@ -308,7 +308,8 @@ class MailSender {
             if (($log_result = Dbl::query_raw("insert into MailLog set $q")))
                 $this->mailid_text = " #" . $log_result->insert_id;
             $Me->log_activity("Sending mail$this->mailid_text \"$subject\"");
-        }
+        } else
+            $rest["no_send"] = true;
 
         $mailer = new HotCRPMailer;
         $fake_prep = (object) array("subject" => "", "body" => "", "to" => array(),

@@ -88,7 +88,7 @@ class Conference {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 90) {
+        if ($this->settings["allowPaperOption"] < 92) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);

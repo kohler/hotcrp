@@ -270,7 +270,7 @@ if (($getaction == "rev" || $getaction == "revz") && SearchActions::any()) {
             $errors[whyNotText($whyNot, "view review")] = true;
         else if ($row->reviewSubmitted) {
             $rf = ReviewForm::get($row);
-            defappend($texts[$row->paperId], $rf->prettyTextForm($row, $row, $Me, false) . "\n");
+            defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $Me) . "\n");
         }
     }
 

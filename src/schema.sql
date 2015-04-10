@@ -245,6 +245,7 @@ CREATE TABLE `PaperReview` (
   `reviewSubmitted` int(1) DEFAULT NULL,
   `reviewNotified` int(1) DEFAULT NULL,
   `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0',
+  `reviewAuthorSeen` int(1) DEFAULT NULL,
   `reviewOrdinal` int(1) DEFAULT NULL,
   `reviewEditVersion` int(1) NOT NULL DEFAULT '0',
   `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
@@ -301,6 +302,7 @@ CREATE TABLE `PaperReviewArchive` (
   `reviewSubmitted` int(1) DEFAULT NULL,
   `reviewNotified` int(1) DEFAULT NULL,
   `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0',
+  `reviewAuthorSeen` int(1) DEFAULT NULL,
   `reviewOrdinal` int(1) DEFAULT NULL,
   `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
   `overAllMerit` tinyint(1) NOT NULL DEFAULT '0',
@@ -514,7 +516,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 90);
+insert into Settings (name, value) values ('allowPaperOption', 92);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

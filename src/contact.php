@@ -377,6 +377,12 @@ class Contact {
             return false;
     }
 
+    public function is_actas_user() {
+        return $this->activated_
+            && ($trueuser = @$_SESSION["trueuser"])
+            && strcasecmp($trueuser->email, $this->email) != 0;
+    }
+
     public function update_trueuser($always) {
         if (($trueuser = @$_SESSION["trueuser"])
             && strcasecmp($trueuser->email, $this->email) == 0) {
@@ -1843,6 +1849,13 @@ class Contact {
         return $rights->can_administer
             || $rights->allow_pc
             || $rights->allow_review;
+    }
+
+    function can_view_review_time($prow, $rrow, $forceShow = null) {
+        $rights = $this->rights($prow, $forceShow);
+        return !$rights->act_author_view
+            || ($rrow && @$rrow->reviewAuthorSeen
+                && $rrow->reviewAuthorSeen <= $rrow->reviewModified);
     }
 
     function can_request_review($prow, $check_time) {

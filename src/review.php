@@ -272,6 +272,7 @@ class ReviewForm {
                                         -2 => "not constructive",
                                         -3 => "not correct");
     static private $cache = array();
+    static private $review_author_seen = null;
 
     static public function get($round = 0) {
         global $Conf;
@@ -462,11 +463,14 @@ class ReviewForm {
     static public function reviewArchiveFields() {
         global $Conf;
         $rf = self::get(0);
-        return "reviewId, paperId, contactId, reviewType, requestedBy,
+        $x = "reviewId, paperId, contactId, reviewType, requestedBy,
                 reviewModified, reviewSubmitted, reviewNeedsSubmit, "
             . join(", ", array_keys($rf->fmap))
             . ", reviewRound, reviewNotified, timeRequested, timeRequestNotified,
             reviewToken, reviewAuthorNotified";
+        if ($Conf->sversion >= 92)
+            $x .= ", reviewAuthorSeen";
+        return $x;
     }
 
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
@@ -806,6 +810,30 @@ class ReviewForm {
         return html_entity_decode($d, ENT_QUOTES, "UTF-8");
     }
 
+    static function update_review_author_seen() {
+        global $Conf, $Now;
+        if (self::$review_author_seen && $Conf->sversion >= 92) {
+            Dbl::qe("update PaperReview set reviewAuthorSeen=coalesce(reviewAuthorSeen,$Now) where reviewId ?a", self::$review_author_seen);
+            self::$review_author_seen = null;
+        }
+    }
+
+    static private function check_review_author_seen($prow, $rrow, $contact,
+                                                     $no_update = false) {
+        global $Now;
+        if ($rrow && !@$rrow->reviewAuthorSeen && $contact->actAuthorView($prow)
+            && !$contact->is_actas_user()) {
+            $rrow->reviewAuthorSeen = $Now;
+            if (!$no_update) {
+                if (!self::$review_author_seen) {
+                    register_shutdown_function("ReviewForm::update_review_author_seen");
+                    self::$review_author_seen = array();
+                }
+                self::$review_author_seen[] = $rrow->reviewId;
+            }
+        }
+    }
+
     function textForm($prow, $rrow, $contact, $req = null, $alwaysMyReview = false) {
         global $Conf, $Opt;
 
@@ -817,6 +845,7 @@ class ReviewForm {
         $myReview = $alwaysMyReview
             || (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
         $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        self::check_review_author_seen($prow, $rrow, $contact);
 
         $x = "==+== =====================================================================\n";
         //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
@@ -839,7 +868,7 @@ class ReviewForm {
             else if ($myReview)
                 $x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
         }
-        if ($rrow && $rrow->reviewModified)
+        if ($rrow && $rrow->reviewModified && $contact->can_view_review_time($prow, $rrow))
             $x .= "==-== Updated " . $Conf->printableTime($rrow->reviewModified) . "\n";
 
         if ($myReview) {
@@ -922,7 +951,16 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    function prettyTextForm($prow, $rrow, $contact, $alwaysAuthorView = true) {
+    function pretty_text($prow, $rrow, $contact) {
+        return $this->prettyTextForm($prow, $rrow, $contact, false, false);
+    }
+
+    function pretty_author_text($prow, $rrow, $contact, $no_update = false) {
+        return $this->prettyTextForm($prow, $rrow, $contact, true, $no_update);
+    }
+
+    private function prettyTextForm($prow, $rrow, $contact, $alwaysAuthorView = true,
+                                    $no_update_review_author_seen = false) {
         global $Conf, $Opt;
 
         $rrow_contactId = 0;
@@ -934,13 +972,14 @@ $blind\n";
             $revViewScore = VIEWSCORE_AUTHOR - 1;
         else
             $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";
         $n = $Opt["shortName"] . " Review";
         if ($rrow && isset($rrow->reviewOrdinal))
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
-        if ($rrow && $rrow->reviewModified) {
+        if ($rrow && $rrow->reviewModified && $contact->can_view_review_time($prow, $rrow)) {
             $n = "Updated " . $Conf->printableTime($rrow->reviewModified);
             $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
         }
@@ -952,8 +991,9 @@ $blind\n";
             else if (isset($rrow->lastName))
                 $n = Text::user_text($rrow);
             else
-                continue;
-            $x .= prefix_word_wrap("Reviewer: ", $n, $prow->pretty_text_title_indent()) . "\n";
+                $n = null;
+            if ($n)
+                $x .= prefix_word_wrap("Reviewer: ", $n, $prow->pretty_text_title_indent()) . "\n";
         }
         $x .= "---------------------------------------------------------------------------\n\n";
 
@@ -1172,8 +1212,9 @@ $blind\n";
             $Conf->msg("<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>", $nconfirm ? "confirm" : "warning");
     }
 
-    function webDisplayRows($rrow, $revViewScore) {
+    private function webDisplayRows($prow, $rrow, $contact) {
         global $ReviewFormError, $scoreHelps, $Conf;
+        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
 
         // Which fields are options?
         $fshow = array();
@@ -1367,7 +1408,7 @@ $blind\n";
             echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
 
         echo '<hr class="c" /></div><div class="revcard_body">',
-            $this->webDisplayRows($rrow, $Me->viewReviewFieldsScore($prow, $rrow)),
+            $this->webDisplayRows($prow, $rrow, $Me),
             "</div></div>\n\n";
     }
 
@@ -1440,6 +1481,7 @@ $blind\n";
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
         $admin = $Me->allow_administer($prow);
+        self::check_review_author_seen($prow, $rrow, $Me);
 
         if ($editmode) {
             echo Ht::form($reviewPostLink, array("class" => "revcard")),
@@ -1498,8 +1540,8 @@ $blind\n";
             echo $sep, "Review token ", encode_token((int) $rrow->reviewToken);
             $sep = $xsep;
         }
-        if ($rrow && $rrow->reviewModified > 0) {
-            echo $sep, "Modified ", $Conf->printableTime($rrow->reviewModified);
+        if ($rrow && $rrow->reviewModified > 0 && $Me->can_view_review_time($prow, $rrow)) {
+            echo $sep, "Updated ", $Conf->printableTime($rrow->reviewModified);
             $sep = $xsep;
         }
         if ($sep != $open)
