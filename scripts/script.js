@@ -3797,11 +3797,19 @@ return function (selector, revdata) {
     if (dlf == procrastination_seq)
         xAxis.tickFormat(function (d) { return -d; });
 
-    for (cid in data)
+    for (cid in data) {
+        var u = revdata.users[cid], klass = "revtimel";
+        if (cid == "all")
+            klass += " revtimel_all";
+        else if (cid == hotcrp_user.cid)
+            klass += " revtimel_hilite";
+        else if (u && u.light)
+            klass += " revtimel_light";
         svg.append("path").attr("cid", cid)
             .datum(data[cid])
-            .attr("class", "revtimel" + (cid == "all" ? " revtimel_all" : (cid == hotcrp_user.cid ? " revtimel_hilite" : "")))
+            .attr("class", klass)
             .attr("d", line);
+    }
 
     svg.append("path").attr("class", "revtimel revtimel_hover0");
     svg.append("path").attr("class", "revtimel revtimel_hover1");
@@ -3852,10 +3860,11 @@ return function (selector, revdata) {
                 hovers.style("display", "none");
             hovered_path = p.pathNode;
         }
-        if (p.pathNode) {
+        var u = p.pathNode ? revdata.users[p.pathNode.getAttribute("cid")] : null;
+        if (u && u.name) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
-            hubble.text(revdata.users[p.pathNode.getAttribute("cid")])
+            hubble.text(u.name)
                 .direction(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
                 .show(p[0], p[1], this);
         } else if (hubble)

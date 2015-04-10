@@ -2767,7 +2767,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	shape-rendering: crispEdges;
 }
 
-.revtimel, .revtimel_all, .revtimel_hilite {
+.revtimel {
 	fill: none;
 	stroke: rgba(70, 130, 180, 0.5);
 	stroke-width: 1.5px;
@@ -2778,6 +2778,9 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 }
 .revtimel_hilite {
 	stroke: black;
+}
+.revtimel.revtimel_light {
+	stroke-width: 0.5px;
 }
 .revtimel_hover0 {
 	stroke: rgba(70, 0, 0, 0.5);

@@ -28,11 +28,24 @@ class ReviewTimes {
     }
 
     public function json() {
+        // find out who is light and who is heavy
+        // (light => less than 0.66 * (80th percentile))
+        $nass = array();
+        foreach ($this->r as $cid => $x)
+            $nass[] = count($x);
+        sort($nass);
+        $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
+
         $users = array();
         $pcm = pcMembers();
-        foreach ($this->r as $cid => $x)
+        foreach ($this->r as $cid => $x) {
+            $users[$cid] = $u = (object) array();
             if (($p = $pcm[$cid]))
-                $users[$cid] = Text::name_text($p);
+                $u->name = Text::name_text($p);
+            if (count($x) < $heavy_boundary)
+                $u->light = true;
+        }
+
         return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
     }
 
