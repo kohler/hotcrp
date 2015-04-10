@@ -2267,6 +2267,8 @@ return function (content, bubopt) {
 
     var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
     $("body")[0].appendChild(bubdiv);
+    if (bubopt["pointer-events"])
+        $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
     var bubch = bubdiv.childNodes;
     var sizes = null;
 
@@ -3807,7 +3809,7 @@ return function (selector, revdata) {
             hovered_path = p.pathNode;
         }
         if (p.pathNode) {
-            hubble = hubble || make_bubble("", {color: "tooltip"});
+            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             hubble.text(revdata.users[p.pathNode.getAttribute("cid")])
                 .show(p[0] + (d3.event.pageX - m[0]), p[1] + (d3.event.pageY - m[1]));
         } else if (hubble)
