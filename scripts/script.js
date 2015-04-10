@@ -3789,6 +3789,7 @@ return function (selector, revdata) {
         data[cid] = revdata.reviews[cid];
         Array.prototype.push.apply(data.all, data[cid]);
     }
+    delete data.conflicts;
     // infer deadlines when not set
     if (dlf == procrastination_seq) {
         for (i in revdata.deadlines)

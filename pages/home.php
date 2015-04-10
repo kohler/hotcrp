@@ -311,7 +311,7 @@ function reviewTokenGroup($non_reviews) {
 
 
 // Review times report (experimental)
-if (@$_REQUEST["reviewtimes"] && ($Me->privChair || @$Me->trueuser_privChair)) {
+if (@$_REQUEST["reviewtimes"] && $Me->isPC) {
     $rt = new ReviewTimes;
     echo '<div class="homegrp" id="reviewtimes"></div>';
     $Conf->echoScript("");

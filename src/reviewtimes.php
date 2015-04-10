@@ -9,17 +9,23 @@ class ReviewTimes {
     private $dl = array();
 
     public function __construct($rounds = null) {
-        global $Conf;
-        $qp = "select contactId, timeRequested, reviewSubmitted, reviewRound
-                from PaperReview where timeRequested>0 and reviewType>=" . REVIEW_PC . " and (reviewType>" . REVIEW_PC . " or reviewSubmitted>0)";
+        global $Conf, $Me;
+        $qp = "select PaperReview.contactId, timeRequested, reviewSubmitted, reviewRound";
+        if (!$Me->privChair)
+            $qp .= ", conflictType from PaperReview left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$Me->contactId)";
+        else
+            $qp .= ", 0 conflictType from PaperReview";
+        $qp .= " where timeRequested>0 and reviewType>=" . REVIEW_PC . " and (reviewType>" . REVIEW_PC . " or reviewSubmitted>0)";
         $qa = array();
         if ($rounds) {
             $qp .= " and reviewRound ?a";
             $qa[] = $rounds;
         }
         $result = Dbl::qe_apply($qp, $qa);
-        while (($row = edb_row($result)))
-            $this->r[(int) $row[0]][] = array((int) $row[1], (int) $row[2], (int) $row[3]);
+        while (($row = edb_row($result))) {
+            $cid = $row[4] ? "conflicts" : (int) $row[0];
+            $this->r[$cid][] = array((int) $row[1], (int) $row[2], (int) $row[3]);
+        }
         Dbl::free($result);
         foreach ($Conf->round_list() as $rn => $r) {
             $dl = $Conf->review_deadline($rn, true, false);
@@ -38,13 +44,14 @@ class ReviewTimes {
 
         $users = array();
         $pcm = pcMembers();
-        foreach ($this->r as $cid => $x) {
-            $users[$cid] = $u = (object) array();
-            if (($p = $pcm[$cid]))
-                $u->name = Text::name_text($p);
-            if (count($x) < $heavy_boundary)
-                $u->light = true;
-        }
+        foreach ($this->r as $cid => $x)
+            if ($cid != "conflicts") {
+                $users[$cid] = $u = (object) array();
+                if (($p = $pcm[$cid]))
+                    $u->name = Text::name_text($p);
+                if (count($x) < $heavy_boundary)
+                    $u->light = true;
+            }
 
         return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
     }
