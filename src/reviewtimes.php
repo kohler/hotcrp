@@ -11,7 +11,7 @@ class ReviewTimes {
     public function __construct($rounds = null) {
         global $Conf;
         $qp = "select contactId, timeRequested, reviewSubmitted, reviewRound
-                from PaperReview where timeRequested>0 and reviewType>=" . REVIEW_PC;
+                from PaperReview where timeRequested>0 and reviewType>=" . REVIEW_PC . " and (reviewType>" . REVIEW_PC . " or reviewSubmitted>0)";
         $qa = array();
         if ($rounds) {
             $qp .= " and reviewRound ?a";
