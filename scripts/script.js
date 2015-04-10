@@ -3711,27 +3711,47 @@ function tangentAngle(pathNode, length) {
 
 var review_times = (function ($) {
 
-function submission_delay_seq(ri) {
-    var seq = [], i;
-    for (i in ri)
-        if (ri[i][1] > 0)
-            seq.push((ri[i][1] - ri[i][0]) / 86400);
+function finish_seq(seq, ri) {
     seq.sort(d3.ascending);
     if (!ri.no_ntotal)
         seq.ntotal = ri.length;
     return seq;
 }
 
+function submission_delay_seq(ri) {
+    var seq = [], i;
+    for (i in ri)
+        if (ri[i][1] > 0)
+            seq.push((ri[i][1] - ri[i][0]) / 86400);
+    return finish_seq(seq, ri);
+}
+submission_delay_seq.label = function (dl) {
+    return "Days after assignment";
+};
+
 function procrastination_seq(ri, dl) {
     var seq = [], i;
     for (i in ri)
         if (ri[i][1] > 0)
             seq.push((ri[i][1] - dl[ri[i][2]]) / 86400);
-    seq.sort(d3.ascending);
-    if (!ri.no_ntotal)
-        seq.ntotal = ri.length;
-    return seq;
+    return finish_seq(seq, ri);
 }
+procrastination_seq.label = function (dl) {
+    return dl.length > 1 ? "Days until round deadline" : "Days until deadline";
+};
+
+function max_procrastination_seq(ri, dl) {
+    var seq = [], i, dlx = Math.max.apply(null, dl);
+    for (i in ri)
+        if (ri[i][1] > 0)
+            seq.push((ri[i][1] - dlx) / 86400);
+    return finish_seq(seq, ri);
+}
+max_procrastination_seq.label = function (dl) {
+    return dl.length > 1 ? "Days until maximum deadline" : "Days until deadline";
+};
+procrastination_seq.tick_format = max_procrastination_seq.tick_format =
+    function (x) { return -x; };
 
 function seq_to_cdf(seq) {
     var cdf = [], i, n = seq.ntotal || seq.length;
@@ -3794,8 +3814,8 @@ return function (selector, revdata) {
 
     x.domain(d3.extent(data.all, function (d) { return d[0]; }));
     y.domain([0, 1]);
-    if (dlf == procrastination_seq)
-        xAxis.tickFormat(function (d) { return -d; });
+    if (dlf.tick_format)
+        xAxis.tickFormat(dlf.tick_format);
 
     for (cid in data) {
         var u = revdata.users[cid], klass = "revtimel";
@@ -3835,9 +3855,7 @@ return function (selector, revdata) {
         .attr("y", height)
         .attr("dy", "-.5em")
         .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(dlf == submission_delay_seq
-              ? "Days after assignment"
-              : "Days until deadline");
+        .text(dlf.label(revdata.deadlines));
 
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})
