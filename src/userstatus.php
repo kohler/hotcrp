@@ -311,7 +311,8 @@ class UserStatus {
         $no_old_db_account = !$old_user || !$old_user->has_database_account();
         if (!$old_user && is_string(@$cj->email) && $cj->email) {
             $old_user = Contact::contactdb_find_by_email($cj->email);
-            if ($old_user && @$old_user->disable_shared_password)
+            // ensure we don't use contactdb password if disabled
+            if ($old_user && !$old_user->contactdb_allow_password())
                 unset($old_user->password);
         }
         $no_old_account = !$old_user || !$old_user->has_database_account();

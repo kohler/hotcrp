@@ -354,6 +354,11 @@ class Contact {
         return null;
     }
 
+    public function contactdb_allow_password() {
+        global $Opt;
+        return !$this->disable_shared_password && !@$Opt["contactdb_noPasswords"];
+    }
+
     public function contactdb_update() {
         global $Opt, $Now;
         if (!($dblink = self::contactdb()) || !$this->has_database_account())
@@ -649,8 +654,7 @@ class Contact {
             if ($this->password_plaintext
                 && ($cdb_user = self::contactdb_find_by_email($this->email))
                 && !$cdb_user->password
-                && !$cdb_user->disable_shared_password
-                && !@$Opt["contactdb_noPasswords"])
+                && $cdb_user->contactdb_allow_password())
                 $cdb_user->change_password($this->password_plaintext, true);
         }
 
@@ -759,7 +763,7 @@ class Contact {
                 if (!@$sreg->$k && $cdb_user->$k)
                     $sreg->$k = $cdb_user->$k;
             if (!@$sreg->password && $cdb_user->password
-                && !$cdb_user->disable_shared_password)
+                && $cdb_user->contactdb_allow_password())
                 $sreg->encoded_password = $cdb_user->password;
         }
 

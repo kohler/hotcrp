@@ -142,7 +142,7 @@ class LoginHelper {
 
         // if no user found, then fail
         $user_password = $user ? $user->password : "";
-        $cdb_password = $cdb_user && !$cdb_user->disable_shared_password ? $cdb_user->password : "";
+        $cdb_password = $cdb_user && $cdb_user->contactdb_allow_password() ? $cdb_user->password : "";
         if (!$user && !$cdb_password) {
             $email_class = " error";
             return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . ". Did you enter the correct email address?");
@@ -182,7 +182,7 @@ class LoginHelper {
             // maybe update database passwords
             if ($user && $user_match && $user->check_password_encryption(false))
                 $user->change_password($password, true);
-            if ($cdb_user && !$cdb_user->disable_shared_password
+            if ($cdb_user && $cdb_user->contactdb_allow_password()
                 && ($cdb_match ? $cdb_user->check_password_encryption(false) : $cdb_password === ""))
                 $cdb_user->change_password($password, true);
         }
@@ -243,7 +243,7 @@ class LoginHelper {
         if ($user && $user->has_database_account() && $user->activity_at > 0) {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
-        } else if ($cdb_user && !$cdb_user->disable_shared_password
+        } else if ($cdb_user && $cdb_user->contactdb_allow_password()
                    && $cdb_user->password && $cdb_user->activity_at > 0) {
             $desc = @$Opt["contactdb_description"] ? : "HotCRP";
             $email_class = " error";
