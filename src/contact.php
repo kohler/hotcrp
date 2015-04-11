@@ -340,7 +340,7 @@ class Contact {
 
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
-            && ($result = Dbl::ql($cdb, "select *, password contactdb_password from ContactInfo where email=?", $email))
+            && ($result = Dbl::ql($cdb, "select *, password contactdb_encoded_password from ContactInfo where email=?", $email))
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
@@ -348,7 +348,7 @@ class Contact {
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
-            && ($result = Dbl::ql($cdb, "select *, password contactdb_password from ContactInfo where contactDbId=?", $cid))
+            && ($result = Dbl::ql($cdb, "select *, password contactdb_encoded_password from ContactInfo where contactDbId=?", $cid))
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
@@ -823,7 +823,7 @@ class Contact {
         if (@$Opt["contactdb_dsn"] && @$sreg->contactDbId) {
             $this->contactdb_update();
             $this->contactDbId = $sreg->contactDbId;
-            $this->contactdb_password = @$sreg->encoded_password;
+            $this->contactdb_encoded_password = @$sreg->encoded_password;
         }
 
         return true;
@@ -1030,7 +1030,7 @@ class Contact {
         global $Conf, $Opt;
         $rest = array();
         if ($sendtype == "create" && $this->password
-            && @$this->contactdb_password === $this->password)
+            && @$this->contactdb_encoded_password === $this->password)
             $template = "@activateaccount";
         else if ($sendtype == "create")
             $template = "@createaccount";
