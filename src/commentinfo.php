@@ -165,16 +165,16 @@ class CommentInfo {
         $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#comment$crow->commentId") . "\"";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
             . Ht::img("comment24.png", "[Comment]", "dlimg")
-            . "</a></td><td class='pl_activityid pnum'>"
+            . '</a></td><td class="pl_activityid pnum">'
             . $a . ">#$crow->paperId</a></td><td class='pl_activitymain'><small>"
             . $a . " class=\"ptitle\">" . htmlspecialchars($crow->shortTitle);
         if (strlen($crow->shortTitle) != strlen($crow->title))
             $t .= "...";
         $t .= "</a>";
         if ($contact->can_view_comment_identity($crow, $crow, false))
-            $t .= " <span class='barsep'>·</span> <span class='hint'>comment by</span> " . Text::user_html(self::_user($crow));
-        $t .= " <span class='barsep'>·</span> <span class='hint'>posted</span> " . $Conf->parseableTime($crow->timeModified, false);
-        $t .= "</small><br /><a class='q'" . substr($a, 3)
+            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
+        $t .= ' <span class="barsep">·</span> <span class="hint">posted</span> ' . $Conf->parseableTime($crow->timeModified, false);
+        $t .= '</small><br /><a class="q" ' . substr($a, 3)
             . ">" . htmlspecialchars($crow->shortComment);
         if (strlen($crow->shortComment) < strlen($crow->comment))
             $t .= "...";
