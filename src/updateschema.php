@@ -455,7 +455,7 @@ function updateSchema($Conf) {
             $Conf->settings["allowPaperOption"] = $new_sversion;
     }
     if ($Conf->settings["allowPaperOption"] < 53)
-        $Conf->ql("alter table PaperComment drop column `commentType`");
+        $Conf->qx("alter table PaperComment drop column `commentType`");
     $Conf->ql("unlock tables");
     if ($Conf->settings["allowPaperOption"] == 53
         && $Conf->ql("alter table PaperComment drop column `forReviewers`")
