@@ -3797,7 +3797,7 @@ return function (selector, revdata) {
                 var subat = data.all.filter(function (d) { return d[2] == i; })
                     .map(function (d) { return d[0]; });
                 subat.sort(d3.ascending);
-                revdata.deadlines[i] = d3.quantile(subat, 0.8);
+                revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
             }
     }
     // make cdfs
