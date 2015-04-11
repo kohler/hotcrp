@@ -16,6 +16,8 @@ class ReviewTimes {
         else
             $qp .= ", 0 conflictType from PaperReview";
         $qp .= " where timeRequested>0 and reviewType>=" . REVIEW_PC . " and (reviewType>" . REVIEW_PC . " or reviewSubmitted>0)";
+        if (!$Me->privChair)
+            $qp .= " and coalesce(conflictType,0)=0";
         $qa = array();
         if ($rounds) {
             $qp .= " and reviewRound ?a";
