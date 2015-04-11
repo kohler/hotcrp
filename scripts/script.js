@@ -3784,14 +3784,14 @@ return function (selector, revdata) {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // collect data
-    var data = {all: []}, i, cid, dlf = procrastination_seq;
+    var data = {all: []}, i, cid, dlf = max_procrastination_seq;
     for (cid in revdata.reviews) {
         data[cid] = revdata.reviews[cid];
         Array.prototype.push.apply(data.all, data[cid]);
     }
     delete data.conflicts;
     // infer deadlines when not set
-    if (dlf == procrastination_seq) {
+    if (dlf != submission_delay_seq) {
         for (i in revdata.deadlines)
             if (!revdata.deadlines[i]) {
                 var subat = data.all.filter(function (d) { return d[2] == i; })
@@ -3805,7 +3805,7 @@ return function (selector, revdata) {
     for (cid in data)
         data[cid] = seq_to_cdf(dlf(data[cid], revdata.deadlines));
     // append last point
-    var lastx = data.all[data.all.length - 1][0];
+    var lastx = data.all.length ? data.all[data.all.length - 1][0] : 0;
     for (cid in data)
         if (cid !== "all" && data[cid].length) {
             i = data[cid][data[cid].length - 1];

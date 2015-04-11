@@ -15,7 +15,7 @@ class ReviewTimes {
             $qp .= ", conflictType from PaperReview left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$Me->contactId)";
         else
             $qp .= ", 0 conflictType from PaperReview";
-        $qp .= " where timeRequested>0 and reviewType>=" . REVIEW_PC . " and (reviewType>" . REVIEW_PC . " or reviewSubmitted>0)";
+        $qp .= " where reviewType>" . REVIEW_PC . " or (reviewType=" . REVIEW_PC . " and timeRequested>0 and reviewSubmitted>0)";
         if (!$Me->privChair)
             $qp .= " and coalesce(conflictType,0)=0";
         $qa = array();
@@ -25,7 +25,7 @@ class ReviewTimes {
         }
         $result = Dbl::qe_apply($qp, $qa);
         while (($row = edb_row($result))) {
-            $cid = $row[4] ? "conflicts" : (int) $row[0];
+            $cid = (int) $row[4] ? "conflicts" : (int) $row[0];
             $this->r[$cid][] = array((int) $row[1], (int) $row[2], (int) $row[3]);
         }
         Dbl::free($result);
@@ -42,7 +42,9 @@ class ReviewTimes {
         foreach ($this->r as $cid => $x)
             $nass[] = count($x);
         sort($nass);
-        $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
+        $heavy_boundary = 0;
+        if (count($nass))
+            $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
 
         $users = array();
         $pcm = pcMembers();
