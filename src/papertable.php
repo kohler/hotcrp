@@ -324,7 +324,7 @@ class PaperTable {
                     && ($oa = $prow->option($id))) {
                     foreach ($oa->values as $docid)
                         if ($docid > 1 && ($d = paperDocumentData($prow, $id, $docid))) {
-                            $name = '<span class="papfn">' . htmlspecialchars($o->name) . '</span>';
+                            $name = '<span class="pavfn">' . htmlspecialchars($o->name) . '</span>';
                             if ($o->type == "attachments")
                                 $name .= "/" . htmlspecialchars($d->filename);
                             $pdfs[] = documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg", $name);
@@ -383,7 +383,7 @@ class PaperTable {
         } else {
             $accepts = $docclass->mimetypes();
             if (count($accepts))
-                echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . " <span class='papfnh'>(" . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
+                echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
         }
         if (@$opt->description)
             echo "<div class='paphint'>", $opt->description, "</div>";
@@ -765,7 +765,7 @@ class PaperTable {
             $folded = $showAllOptions && !$Me->can_view_paper_option($this->prow, $o, false);
             if (@$o->highlight || @$o->near_submission) {
                 $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
-                    . '<div class="pavt"><span class="papfn">'
+                    . '<div class="pavt"><span class="pavfn">'
                     . ($show_on ? $on : $ox) . "</span>"
                     . '<hr class="c" /></div>';
                 if ($show_on && $ox !== true)
