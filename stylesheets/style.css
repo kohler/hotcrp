@@ -2711,31 +2711,55 @@ span.sc6, span.sc7, span.sc8, span.sc9 {
 	font-weight: bold;
 }
 span.sc1 {
-        color: #9c3131;
+	color: #9c3131;
 }
 span.sc2 {
-        color: #89442b;
+	color: #a83f22;
 }
 span.sc3 {
-        color: #755825;
+	color: #af500a;
 }
 span.sc4 {
-        color: #626b1f;
+	color: #b06400;
 }
 span.sc5 {
-        color: #4e7f19;
+	color: #aa7a00;
 }
 span.sc6 {
-        color: #3b9212;
+	color: #9d8f00;
 }
 span.sc7 {
-        color: #27a50c;
+	color: #88a400;
 }
 span.sc8 {
-        color: #14b906;
+	color: #66b800;
 }
 span.sc9 {
-        color: #00cc00;
+	color: #00cc00;
+}
+span.sc1.dark {
+	color: #dd3131;
+}
+span.sc2.dark {
+	color: #dd4914;
+}
+span.sc3.dark {
+	color: #d76000;
+}
+span.sc4.dark {
+	color: #cd7600;
+}
+span.sc5.dark {
+	color: #bc8a00;
+}
+span.sc6.dark {
+	color: #a79d00;
+}
+span.sc7.dark {
+	color: #8bae00;
+}
+span.sc8.dark {
+	color: #65be00;
 }
 span.sc_sum {
 	font-size: smaller;

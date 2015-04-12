@@ -15,6 +15,7 @@ class ReviewField {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
+    const VALUE_REV_NUM_DARK = 3;
 
     public $id;
     public $name;
@@ -170,7 +171,9 @@ class ReviewField {
         if (!$scclass)
             return $x;
         $vc = $this->value_class($value);
-        if ($scclass == self::VALUE_REV_NUM)
+        if ($scclass == self::VALUE_REV_NUM_DARK)
+            return "<span class=\"rev_num $vc dark\">$x.</span>";
+        else if ($scclass == self::VALUE_REV_NUM)
             return "<span class=\"rev_num $vc\">$x.</span>";
         else
             return "<span class=\"$vc\">$x</span>";
@@ -225,12 +228,12 @@ class ReviewField {
                 . "<br />";
             if ($this->option_letter) {
                 for ($key = $max; $key >= 1; $key--)
-                    $retstr .= ($key < $max ? " " : "") . "<span class='" . $this->value_class($key) . "'>" . $v->v[$key] . "</span>";
+                    $retstr .= ($key < $max ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $v->v[$key] . "</span>";
             } else {
                 for ($key = 1; $key <= $max; $key++)
-                    $retstr .= ($key > 1 ? " " : "") . "<span class='" . $this->value_class($key) . "'>" . $v->v[$key] . "</span>";
+                    $retstr .= ($key > 1 ? " " : "") . '<span class="' . $this->value_class($key) . '">' . $v->v[$key] . "</span>";
             }
-            $retstr .= "<br /><span class='sc_sum'>" . $avgtext . "</span></div>";
+            $retstr .= '<br /><span class="sc_sum">' . $avgtext . "</span></div>";
         }
         $Conf->footerScript("scorechart()", "scorechart");
 
@@ -1267,7 +1270,7 @@ $blind\n";
                     if ($f->has_options) {
                         $help .= '<p>Choices are:<br />';
                         foreach ($f->options as $val => $text)
-                            $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM) . '&nbsp;' . htmlspecialchars($text) . '<br />';
+                            $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM_DARK) . '&nbsp;' . htmlspecialchars($text) . '<br />';
                         $help .= '</p>';
                     }
                     $Conf->footerHtml($help . '</div>');
