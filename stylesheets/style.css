@@ -2074,6 +2074,15 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	width: 8px;
 	height: 4px;
 }
+.bubcontent > p {
+	max-width: 240px;
+}
+.bubcontent > p:first-child {
+	margin-top: 0;
+}
+.bubcontent > p:last-child {
+	margin-bottom: 0;
+}
 
 div.tooltipmenu > div {
 	margin: 4px 0;

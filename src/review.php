@@ -1263,13 +1263,12 @@ $blind\n";
                     $scoreHelps[$field] = true;
                     $help = '<div id="scorehelp_' . $field . '" style="display:none">';
                     if ($f->description)
-                        $help .= $f->description;
-                    if ($f->description && $f->has_options)
-                        $help .= '<br />';
+                        $help .= '<p>' . $f->description . '</p>';
                     if ($f->has_options) {
-                        $help .= 'Choices are:<br />';
+                        $help .= '<p>Choices are:<br />';
                         foreach ($f->options as $val => $text)
                             $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM) . '&nbsp;' . htmlspecialchars($text) . '<br />';
+                        $help .= '</p>';
                     }
                     $Conf->footerHtml($help . '</div>');
                 }
