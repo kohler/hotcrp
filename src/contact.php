@@ -1734,7 +1734,10 @@ class Contact {
 
     public static function can_some_author_view_submitted_review($prow) {
         global $Conf;
-        return $Conf->au_seerev != 0;
+        if ($Conf->au_seerev == Conference::AUSEEREV_TAGS)
+            return $prow->has_any_tag($Conf->tag_au_seerev);
+        else
+            return $Conf->au_seerev != 0;
     }
 
     public function can_author_view_submitted_review($prow) {
@@ -1742,7 +1745,9 @@ class Contact {
         return $Conf->au_seerev == Conference::AUSEEREV_YES
             || ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
                 && (!$this->has_review()
-                    || !$this->has_outstanding_review()));
+                    || !$this->has_outstanding_review()))
+            || ($Conf->au_seerev == Conference::AUSEEREV_TAGS
+                && $prow->has_any_tag($Conf->tag_au_seerev));
     }
 
     public function can_view_review($prow, $rrow, $forceShow) {

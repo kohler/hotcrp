@@ -190,6 +190,10 @@ class MailRecipients {
             }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
+            if ($Conf->au_seerev == Conference::AUSEEREV_TAGS) {
+                $joins[] = "left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)";
+                $cols[] = "PaperTags.paperTags";
+            }
         }
 
         // reviewer match

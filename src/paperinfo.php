@@ -199,6 +199,15 @@ class PaperInfo {
             && stripos($this->paperTags, " $tag#") !== false;
     }
 
+    public function has_any_tag($tags) {
+        if (!property_exists($this, "paperTags"))
+            $this->load_tags();
+        foreach ($tags as $tag)
+            if (stripos($this->paperTags, " $tag#") !== false)
+                return true;
+        return false;
+    }
+
     public function tag_value($tag) {
         if (!property_exists($this, "paperTags"))
             $this->load_tags();

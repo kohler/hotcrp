@@ -14,6 +14,7 @@ class Conference {
     private $_round0_defined_cache = null;
     private $_pc_see_pdf = null;
     public $au_seerev;
+    public $tag_au_seerev;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -42,6 +43,7 @@ class Conference {
     const AUSEEREV_NO = 0;
     const AUSEEREV_UNLESSINCOMPLETE = 1;
     const AUSEEREV_YES = 2;
+    const AUSEEREV_TAGS = 3;
 
     const PCSEEREV_IFCOMPLETE = 0;
     const PCSEEREV_YES = 1;
@@ -224,6 +226,9 @@ class Conference {
             && @+$this->settings["resp_active"] > 0
             && $this->time_author_respond_all_rounds())
             $this->au_seerev = self::AUSEEREV_YES;
+        $this->tag_au_seerev = null;
+        if ($this->au_seerev == self::AUSEEREV_TAGS)
+            $this->tag_au_seerev = explode(" ", (string) @$this->settingTexts["tag_au_seerev"]);
     }
 
     private function crosscheck_track_settings($j) {

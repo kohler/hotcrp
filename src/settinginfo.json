@@ -1,6 +1,6 @@
 {
     "acct_addr": {"type": "checkbox", "name": "Collect addresses"},
-    "au_seerev": {"type": "radio", "values": [0, 1, 2], "name": "Authors can see reviews"},
+    "au_seerev": {"type": "radio", "values": [0, 1, 2, 3], "name": "Authors can see reviews"},
     "banal": {"type": "special", "nodb": true},
     "cmt_always": {"type": "checkbox", "name": "Allow comments even if reviewing is closed"},
     "decisions": {"type": "special", "nodb": true},
@@ -58,6 +58,7 @@
     "sub_pcconfsel": {"type": "checkbox", "name": "Collect PC conflict types"},
     "sub_reg": {"type": "date", "name": "Submission registration deadline"},
     "sub_sub": {"type": "date", "name": "Submission deadline"},
+    "tag_au_seerev": {"type": "special", "name": "Review visibility tags"},
     "tag_chair": {"type": "special", "name": "Chair-only tags"},
     "tag_color": {"type": "special", "name": "Tag colors"},
     "tag_rank": {"type": "special", "name": "Ranking tags"},

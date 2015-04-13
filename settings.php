@@ -229,7 +229,7 @@ function parse_value($name, $info) {
 }
 
 function save_tags($set, $what) {
-    global $Conf, $Values, $Error, $Highlight, $TagStyles;
+    global $Conf, $Values, $Error, $Warning, $Highlight, $TagStyles;
     $tagger = new Tagger;
 
     if (!$set && $what == "tag_chair" && isset($_POST["tag_chair"])) {
@@ -344,6 +344,27 @@ function save_tags($set, $what) {
         $v = array(1, join(" ", $vs));
         if ($any_set && $Conf->setting_data("tag_color") !== $v[1])
             $Values["tag_color"] = $v;
+    }
+
+    if (!$set && $what == "tag_au_seerev" && isset($_POST["tag_au_seerev"])) {
+        $vs = array();
+        $chair_tags = array_flip(explode(" ", value_or_setting_data("tag_chair")));
+        foreach (preg_split('/,*\s+/', $_POST["tag_au_seerev"]) as $t)
+            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
+                $vs[] = $t;
+                if (!isset($chair_tags[$t])) {
+                    $Warning[] = "Review visibility tag “" . htmlspecialchars($t) . "” isn’t a <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only tag</a>, which means PC members can change it. You usually want these tags under chair control.";
+                    $Highlight["tag_au_seerev"] = true;
+                }
+            } else if ($t !== "") {
+                $Error[] = "Review visibility tag: " . $tagger->error_html;
+                $Highlight["tag_au_seerev"] = true;
+            }
+        $v = array(1, join(" ", $vs));
+        if ($v[1] === "")
+            $Values["tag_au_seerev"] = null;
+        else if ($Conf->setting_data("tag_au_seerev") !== $v[1])
+            $Values["tag_au_seerev"] = $v;
     }
 
     if ($set)
@@ -970,7 +991,8 @@ function save_resp_rounds($set) {
 function doSpecial($name, $set) {
     global $Values;
     if ($name == "tag_chair" || $name == "tag_vote"
-        || $name == "tag_rank" || $name == "tag_color")
+        || $name == "tag_rank" || $name == "tag_color"
+        || $name == "tag_au_seerev")
         save_tags($set, $name);
     else if ($name == "topics")
         save_topics($set);
@@ -1122,6 +1144,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             break;
         }
     if (value_or_setting("au_seerev") != Conference::AUSEEREV_NO
+        && value_or_setting("au_seerev") != Conference::AUSEEREV_TAGS
         && $Conf->setting("pcrev_soft") > 0
         && $Now < $Conf->setting("pcrev_soft")
         && count($Error) == 0)
@@ -1135,6 +1158,12 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Warning[] = "Authors can see decisions, but not reviews. This is sometimes unintentional.";
     if (has_value("msg.clickthrough_submit"))
         $Values["clickthrough_submit"] = null;
+    if (value_or_setting("au_seerev") == Conference::AUSEEREV_TAGS
+        && !value_or_setting_data("tag_au_seerev")
+        && !@$Highlight["tag_au_seerev"]) {
+        $Warning[] = "You haven’t set any review visibility tags.";
+        $Highlight["tag_au_seerev"] = true;
+    }
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
@@ -2099,7 +2128,11 @@ function doDecGroup() {
     if (!$Conf->setting("au_seerev", 0)
         && $Conf->timeAuthorViewReviews())
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
-    doRadio("au_seerev", array(Conference::AUSEEREV_NO => $no_text, Conference::AUSEEREV_YES => "Yes", Conference::AUSEEREV_UNLESSINCOMPLETE => "Yes, once they’ve completed any requested reviews"));
+    doRadio("au_seerev", array(Conference::AUSEEREV_NO => $no_text,
+                Conference::AUSEEREV_YES => "Yes",
+                Conference::AUSEEREV_UNLESSINCOMPLETE => "Yes, once they’ve completed any requested reviews",
+                Conference::AUSEEREV_TAGS => "Yes, for papers with any of these tags: " . render_entry("tag_au_seerev", setting_data("tag_au_seerev"), 24)));
+    echo Ht::hidden("has_tag_au_seerev", 1);
 
     // Authors' response
     echo '<div class="g"></div><table id="foldauresp" class="fold2o">';
@@ -2225,8 +2258,7 @@ $Conf->header("Settings", "settings", actionBar());
 $Conf->echoScript(""); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
-echo Ht::form(hoturl_post("settings"), array("id" => "settingsform")), "<div>",
-    Ht::hidden("group", $Group);
+echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform")), "<div>";
 
 echo "<table class='settings'><tr><td class='caption initial final'>";
 echo "<table class='lhsel'>";
