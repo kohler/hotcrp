@@ -1009,7 +1009,7 @@ $blind\n";
         $x .= "---------------------------------------------------------------------------\n\n";
 
         $i = 0;
-        $lastNumeric = true;
+        $lastNumeric = null;
         foreach ($this->forder as $field => $f) {
             $i++;
             if ($f->view_score <= $revViewScore)
@@ -1038,7 +1038,9 @@ $blind\n";
                 $lastNumeric = true;
             } else {
                 $n = "===== " . $f->name . " =====";
-                $x .= "\n" . str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+                if ($lastNumeric !== null)
+                    $x .= "\n";
+                $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
                 $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
                 $lastNumeric = false;
             }
