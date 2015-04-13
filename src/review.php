@@ -611,9 +611,9 @@ class ReviewForm {
     function review_watch_callback($prow, $minic) {
         if ($minic->can_view_review($prow, $this->mailer_info["diff_view_score"], false)
             && ($p = HotCRPMailer::prepare_to($minic, $this->mailer_info["template"], $prow, $this->mailer_info))) {
-            // XXX Worried about reviewer name exposure policies, so only combine
-            // preparations for authors
-            if (!$prow->has_author($minic))
+            // Don't combine preparations unless you can see all submitted
+            // reviewer identities
+            if (!$minic->can_view_review_identity($prow, null, false))
                 $p->unique_preparation = true;
             $this->mailer_preps[] = $p;
         }
