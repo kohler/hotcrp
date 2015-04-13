@@ -137,6 +137,7 @@ class ZipDocument {
         if (count($this->warnings))
             $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
+        set_time_limit(60);
         $out = system("cd $this->tmpdir; $zipcmd $opts _hotcrp.zip '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
         if ($status != 0)
             return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
