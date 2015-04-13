@@ -5,7 +5,8 @@
 
 global $review_form_setting_prefixes;
 $review_form_setting_prefixes = array("shortName_", "description_",
-                                      "order_", "authorView_", "options_");
+                                      "order_", "authorView_", "options_",
+                                      "option_class_prefix_");
 
 function rf_check_options($fid, $fj) {
     global $Conf;
@@ -109,7 +110,13 @@ function rf_update() {
             $fj->options = array_values($f->options); // default
             if (!rf_check_options($fid, $fj) && $pos > 0)
                 $optionError = $Error["options_$fid"] = true;
+            $sv = defval($_REQUEST, "option_class_prefix_$fid", "sv");
+            if (array_search($sv, array("sv", "svr", "sv-blpu", "sv-publ")) === false)
+                $sv = "sv";
+            if ($sv !== "sv")
+                $fj->option_class_prefix = $sv;
         }
+        error_log(json_encode($fj));
     }
 
     if ($shortNameError)
@@ -172,6 +179,9 @@ function rf_show() {
          . '</div><div class="f-ix">'
          .   '<div class="f-c">Visibility</div>'
          .   Ht::select('authorView_$', array("author" => "Authors &amp; reviewers", "pc" => "Reviewers only", "admin" => "Administrators only"), array("class" => "reviewfield_authorView", "id" => 'authorView_$'))
+         . '</div><div class="f-ix reviewrow_options">'
+         .   '<div class="f-c">Colors</div>'
+         .   Ht::select('option_class_prefix_$', array("sv" => "Red to green", "svr" => "Green to red", "sv-blpu" => "Blue to purple", "sv-publ" => "Purple to blue"), array("class" => "reviewfield_option_class_prefix", "id" => 'option_class_prefix_$'))
          . '</div><hr class="c" /></div>'
          . '<div class="f-i errloc_description_$ fx">'
          .   '<div class="f-c">Description</div>'

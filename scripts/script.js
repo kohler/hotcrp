@@ -3495,9 +3495,9 @@ function make_sc_fm(nv) {
 }
 
 function analyze_sc(sc) {
-    var anal = {v: [], max: 0, h: 0, c: 0, sum: 0}, m, i, vs, x;
+    var anal = {v: [], max: 0, h: 0, c: 0, sum: 0, sv: "sv"}, m, i, vs, x;
 
-    m = /(?:^|&)v=(.*?)(?:&|$)/.exec(sc);
+    m = /(?:^|[&;])v=(.*?)(?:[&;]|$)/.exec(sc);
     vs = m[1].split(/,/);
     for (i = 0; i < vs.length; ++i) {
         if (/^\d+$/.test(vs[i]))
@@ -3509,26 +3509,29 @@ function analyze_sc(sc) {
         anal.sum += x;
     }
 
-    if ((m = /(?:^|&)h=(\d+)(?:&|$)/.exec(sc)))
+    if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
         anal.h = parseInt(m[1], 10);
 
-    if ((m = /(?:^|&)c=([A-Z])(?:&|$)/.exec(sc)))
+    if ((m = /(?:^|[&;])c=([A-Z])(?:[&;]|$)/.exec(sc)))
         anal.c = m[1].charCodeAt(0);
+
+    if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
+        anal.sv = decodeURIComponent(m[1]);
 
     anal.fm = make_sc_fm(vs.length);
     return anal;
 }
 
-function sc_interp(f) {
-    f = Math.floor(f * 8.99) + 1;
-    if (!sccolor[f]) {
-        var j = $('<span style="display:none" class="sc' + f + '"></span>').appendTo("body"), m;
-        sccolor[f] = [0, 0, 0];
+function sc_interp(anal, val) {
+    var sv = anal.sv + (Math.floor(anal.fm(val) * 8.99) + 1);
+    if (!sccolor[sv]) {
+        var j = $('<span style="display:none" class="svb ' + sv + '"></span>').appendTo("body"), m;
+        sccolor[sv] = [0, 0, 0];
         if ((m = /^rgba?\((\d+),(\d+),(\d+)[,)]/.exec(j.css("color").replace(/\s+/g, ""))))
-            sccolor[f] = [+m[1], +m[2], +m[3]];
+            sccolor[sv] = [+m[1], +m[2], +m[3]];
         j.remove();
     }
-    return sccolor[f];
+    return sccolor[sv];
 }
 
 function rgb_interp(a, b, f) {
@@ -3572,7 +3575,7 @@ function scorechart1_s1(sc, parent) {
         vindex = anal.c ? anal.v.length - x : x;
         if (!anal.v[vindex])
             continue;
-        color = sc_interp(anal.fm(vindex));
+        color = sc_interp(anal, vindex);
         for (h = 1; h <= anal.v[vindex]; ++h) {
             if (vindex == anal.h && h == 1)
                 ctx.fillStyle = color_unparse(rgb_interp(blackcolor, color, 0.5));
@@ -3597,7 +3600,7 @@ function scorechart1_s2(sc, parent) {
         vindex = anal.c ? anal.v.length - x : x;
         if (!anal.v[vindex])
             continue;
-        ctx.fillStyle = color_unparse(sc_interp(anal.fm(vindex)));
+        ctx.fillStyle = color_unparse(sc_interp(anal, vindex));
         pos += anal.v[vindex];
         x2 = Math.round((cwidth + 1) * pos / anal.sum);
         if (x2 > x1)

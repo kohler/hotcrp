@@ -23,13 +23,14 @@ class ReviewField {
     public $description;
     public $abbreviation;
     public $has_options;
-    public $options;
-    public $option_letter;
+    public $options = array();
+    public $option_letter = false;
     public $display_space;
     public $view_score;
-    public $displayed;
+    public $displayed = false;
     public $display_order;
-    private $analyzed;
+    public $option_class_prefix = "sv";
+    private $analyzed = false;
 
     static private $view_score_map = array("secret" => VIEWSCORE_ADMINONLY,
                                            "admin" => VIEWSCORE_REVIEWERONLY,
@@ -40,10 +41,6 @@ class ReviewField {
     public function __construct($rf, $id, $has_options) {
         $this->id = $id;
         $this->has_options = $has_options;
-        $this->options = array();
-        $this->option_letter = false;
-        $this->analyzed = false;
-        $this->displayed = false;
     }
 
     public function assign($j) {
@@ -83,6 +80,8 @@ class ReviewField {
                 foreach ($options as $i => $n)
                     $this->options[$i + 1] = $n;
             }
+            if (@$j->option_class_prefix)
+                $this->option_class_prefix = $j->option_class_prefix;
         }
         $this->analyzed = false;
     }
@@ -104,6 +103,8 @@ class ReviewField {
                 $j->options = array_reverse($j->options);
                 $j->option_letter = chr($this->option_letter - count($j->options));
             }
+            if ($this->option_class_prefix !== "sv")
+                $j->option_class_prefix = $this->option_class_prefix;
         }
         return $j;
     }
@@ -150,7 +151,8 @@ class ReviewField {
     }
 
     public function value_class($value) {
-        return "sc" . (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
+        $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
+        return "sv " . $this->option_class_prefix . $n;
     }
 
     public function unparse_value($value, $scclass = false) {
@@ -217,6 +219,8 @@ class ReviewField {
             $args .= "&amp;h=$myscore";
         if ($this->option_letter)
             $args .= "&amp;c=" . chr($this->option_letter - 1);
+        if ($this->option_class_prefix !== "sv")
+            $args .= "&amp;sv=" . urlencode($this->option_class_prefix);
 
         if ($style == 1) {
             $width = 5 * $max + 3;
@@ -1278,11 +1282,11 @@ $blind\n";
             } else
                 $c = '<span class="revfn">' . $n . '</span>';
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                $c .= "<span class='revvis'>(secret)</span>";
+                $c .= '<span class="revvis">(secret)</span>';
             else if ($f->view_score < VIEWSCORE_PC)
-                $c .= "<span class='revvis'>(shown only to chairs)</span>";
+                $c .= '<span class="revvis">(shown only to chairs)</span>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
-                $c .= "<span class='revvis'>(hidden from authors)</span>";
+                $c .= '<span class="revvis">(hidden from authors)</span>';
 
             if (!($disp & self::WEB_RIGHT)) {
                 if ($x == "")

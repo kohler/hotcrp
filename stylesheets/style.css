@@ -2706,61 +2706,35 @@ div.sc {
 	font-size: smaller;
 	padding-bottom: 2px;
 }
-span.sc1, span.sc2, span.sc3, span.sc4, span.sc5,
-span.sc6, span.sc7, span.sc8, span.sc9 {
+span.sv {
 	font-weight: bold;
 }
-span.sc1 {
-	color: #9c3131;
-}
-span.sc2 {
-	color: #a04b00;
-}
-span.sc3 {
-	color: #a26300;
-}
-span.sc4 {
-	color: #a17900;
-}
-span.sc5 {
-	color: #9d8f00;
-}
-span.sc6 {
-	color: #929e00;
-}
-span.sc7 {
-	color: #7fad00;
-}
-span.sc8 {
-	color: #5fbd00;
-}
-span.sc9 {
-	color: #00cc00;
-}
-span.sc1.dark {
-	color: #dd3131;
-}
-span.sc2.dark {
-	color: #d75517;
-}
-span.sc3.dark {
-	color: #cb7100;
-}
-span.sc4.dark {
-	color: #ba8800;
-}
-span.sc5.dark {
-	color: #a79d00;
-}
-span.sc6.dark {
-	color: #98a900;
-}
-span.sc7.dark {
-	color: #81b500;
-}
-span.sc8.dark {
-	color: #5fc100;
-}
+span.sv1, span.svr9 { color: #9c3131; }
+span.sv2, span.svr8 { color: #a04b00; }
+span.sv3, span.svr7 { color: #a26300; }
+span.sv4, span.svr6 { color: #a17900; }
+span.sv5, span.svr5 { color: #9d8f00; }
+span.sv6, span.svr4 { color: #929e00; }
+span.sv7, span.svr3 { color: #7fad00; }
+span.sv8, span.svr2 { color: #5fbd00; }
+span.sv9, span.svr1 { color: #00cc00; }
+span.sv1.dark, span.svr9.dark { color: #dd3131; }
+span.sv2.dark, span.svr8.dark { color: #d75517; }
+span.sv3.dark, span.svr7.dark { color: #cb7100; }
+span.sv4.dark, span.svr6.dark { color: #ba8800; }
+span.sv5.dark, span.svr5.dark { color: #a79d00; }
+span.sv6.dark, span.svr4.dark { color: #98a900; }
+span.sv7.dark, span.svr3.dark { color: #81b500; }
+span.sv8.dark, span.svr2.dark { color: #5fc100; }
+span.sv-blpu1, span.sv-publ9 { color: #4b8bc1; }
+span.sv-blpu2, span.sv-publ8 { color: #4181be; }
+span.sv-blpu3, span.sv-publ7 { color: #3b76bb; }
+span.sv-blpu4, span.sv-publ6 { color: #396bb7; }
+span.sv-blpu5, span.sv-publ5 { color: #3b5fb2; }
+span.sv-blpu6, span.sv-publ4 { color: #4053ab; }
+span.sv-blpu7, span.sv-publ3 { color: #4646a3; }
+span.sv-blpu8, span.sv-publ2 { color: #4d389a; }
+span.sv-blpu9, span.sv-publ1 { color: #54278f; }
 span.sc_sum {
 	font-size: smaller;
 }

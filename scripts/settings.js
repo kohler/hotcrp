@@ -109,13 +109,15 @@ function set_position(fid, pos) {
 }
 
 function check_change(fid) {
-    var fieldj = original[fid] || {},
+    var fieldj = original[fid] || {}, j,
         removed = $("#removed_" + fid).val() != "0";
     if ($.trim($("#shortName_" + fid).val()) != fieldj.name
         || $("#order_" + fid).val() != (fieldj.position || 0)
         || $("#description_" + fid).val() != (fieldj.description || "")
         || $("#authorView_" + fid).val() != (fieldj.view_score || "pc")
         || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
+        || ((j = $("#option_class_prefix_" + fid)) && j.length
+            && j.val() != (fieldj.option_class_prefix || "sv"))
         || removed) {
         $("#revfield_" + fid + " .revfield_revert").show();
         hiliter("reviewform_container");
@@ -138,6 +140,13 @@ function fill_field(fid, fieldj) {
     $("#description_" + fid).val(fieldj.description || "");
     $("#authorView_" + fid).val(fieldj.view_score || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
+    $("#option_class_prefix_" + fid).val(fieldj.option_class_prefix || "sv");
+    if (fieldj.options && fieldj.option_letter)
+        $("#option_class_prefix_" + fid + " option").each(function () {
+            var m = /^(.*) to (.)(.*)$/.exec($(this).text().toLowerCase());
+            if (m)
+                $(this).text(m[2].toUpperCase() + m[3] + " to " + m[1]);
+        });
     if (!fieldj.selector)
         $("#removed_" + fid).val(fieldj.position ? 0 : 1);
     check_change(fid);
