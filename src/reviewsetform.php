@@ -136,7 +136,6 @@ function rf_update() {
             foreach ($review_form_setting_prefixes as $fx)
                 unset($_REQUEST["$fx$fid"]);
         }
-        $Conf->confirmMsg("Review form updated.");
         if (count($scoreModified))
             $Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
     }
