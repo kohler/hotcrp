@@ -1183,7 +1183,7 @@ $blind\n";
     function textFormMessages(&$tf) {
         global $Conf;
 
-        if (count($tf["err"]) > 0) {
+        if (isset($tf["err"]) && count($tf["err"]) > 0) {
             $Conf->msg("There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>",
                        defval($tf, 'anyErrors') ? "merror" : "warning");
         }
