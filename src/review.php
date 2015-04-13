@@ -688,6 +688,8 @@ class ReviewForm {
             && isset($req["version"]) && ctype_digit($req["version"])
             && $req["version"] > defval($rrow, "reviewEditVersion"))
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
+
+        // notification
         $notify = $notify_author = false;
         if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
             $q[] = "reviewModified=" . $now;
@@ -698,7 +700,8 @@ class ReviewForm {
                     $q[] = $notify = "reviewNotified=" . $now;
                 if ((!$rrow || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified + 10800 < $now)
-                    && $diff_view_score >= VIEWSCORE_AUTHOR)
+                    && $diff_view_score >= VIEWSCORE_AUTHOR
+                    && $Conf->timeAuthorViewReviews())
                     $q[] = $notify_author = "reviewAuthorNotified=" . $now;
             }
         }
@@ -769,7 +772,7 @@ class ReviewForm {
                 genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
                 unset($this->mailer_info);
             }
-            if ($Conf->timeAuthorViewReviews() && $notify_author) {
+            if ($notify_author) {
                 $rest["infoMsg"] = "since a review was updated during the response period.";
                 if ($Conf->is_review_blind($fake_rrow)) {
                     $rest["infoMsg"] .= " Reviewer anonymity was preserved.";
