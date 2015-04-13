@@ -1728,6 +1728,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->allow_pc
+            || $rights->review_type
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 

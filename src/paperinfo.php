@@ -339,15 +339,34 @@ class PaperInfo {
             $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted>0"));
             $this->reviewCount = @$rows[0][0];
         }
-        return $this->reviewCount;
+        return (int) $this->reviewCount;
     }
 
-    public function num_reviews_started() {
+    public function num_reviews_assigned() {
         if (!property_exists($this, "startedReviewCount")) {
             $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted or reviewNeedsSubmit>0)"));
             $this->startedReviewCount = @$rows[0][0];
         }
-        return $this->startedReviewCount;
+        return (int) $this->startedReviewCount;
+    }
+
+    public function num_reviews_in_progress() {
+        if (!property_exists($this, "inProgressReviewCount")) {
+            if (@$this->reviewCount !== null && $this->reviewCount === @$this->startedReviewCount)
+                $this->inProgressReviewCount = $this->reviewCount;
+            else {
+                $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted or reviewNeedsSubmit>0) and reviewModified>0"));
+                $this->inProgressReviewCount = @$rows[0][0];
+            }
+        }
+        return (int) $this->inProgressReviewCount;
+    }
+
+    public function num_reviews_started($user) {
+        if ($user->privChair || !$this->conflict_type($user))
+            return $this->num_reviews_assigned();
+        else
+            return $this->num_reviews_in_progress();
     }
 
     static public function score_aggregate_field($fid) {

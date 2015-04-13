@@ -220,15 +220,14 @@ class StatusPaperColumn extends PaperColumn {
 }
 
 class ReviewStatusPaperColumn extends PaperColumn {
-    private $auview;
     public function __construct() {
-        global $Conf;
         parent::__construct("revstat", Column::VIEW_COLUMN,
                             array("sorter" => "review_status_sorter"));
-        $this->auview = $Conf->timeAuthorViewReviews();
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if ($pl->contact->is_reviewer() || $this->auview
+        global $Conf;
+        if ($pl->contact->is_reviewer()
+            || $Conf->timeAuthorViewReviews()
             || $pl->contact->privChair) {
             $queryOptions["startedReviewCount"] = true;
             return true;
@@ -236,16 +235,17 @@ class ReviewStatusPaperColumn extends PaperColumn {
             return false;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
-        foreach ($rows as $row)
-            $row->_review_status_sort_info = !$this->content_empty($pl, $row);
+        foreach ($rows as $row) {
+            if (!$pl->contact->can_count_review($row, null, null))
+                $row->_review_status_sort_info = 2147483647;
+            else
+                $row->_review_status_sort_info = $row->num_reviews_submitted()
+                    + $row->num_reviews_started($pl->contact) / 1000.0;
+        }
     }
     public function review_status_sorter($a, $b) {
-        $av = ($a->_review_status_sort_info ? $a->num_reviews_submitted() : 2147483647);
-        $bv = ($b->_review_status_sort_info ? $b->num_reviews_submitted() : 2147483647);
-        if ($av == $bv) {
-            $av = ($a->_review_status_sort_info ? $a->num_reviews_started() : 2147483647);
-            $bv = ($b->_review_status_sort_info ? $b->num_reviews_started() : 2147483647);
-        }
+        $av = $a->_review_status_sort_info;
+        $bv = $b->_review_status_sort_info;
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     public function header($pl, $row, $ordinal) {
@@ -255,19 +255,16 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
-        return !($pl->contact->allow_administer($row)
-                 || ($pl->contact->isPC && ($row->conflictType == 0 || $this->auview))
-                 || $row->reviewType > 0
-                 || ($row->conflictType >= CONFLICT_AUTHOR && $this->auview));
+        return !$pl->contact->can_count_review($row, null, null);
     }
     public function content($pl, $row) {
         $done = $row->num_reviews_submitted();
-        $started = $row->num_reviews_started();
+        $started = $row->num_reviews_started($pl->contact);
         return "<b>$done</b>" . ($done == $started ? "" : "/$started");
     }
     public function text($pl, $row) {
         $done = $row->num_reviews_submitted();
-        $started = $row->num_reviews_started();
+        $started = $row->num_reviews_started($pl->contact);
         return $done . ($done == $started ? "" : "/$started");
     }
 }
