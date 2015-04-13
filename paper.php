@@ -191,18 +191,17 @@ function request_to_json($opj, $action) {
             $pj->$k = $_POST[$k];
 
     // Authors
-    if (isset($_POST["auname1"]) || isset($_POST["auemail1"])
-        || isset($_POST["aueditcount"])) {
-        $pj->authors = array();
-        $nauthors = (int) @$_REQUEST["aueditcount"] ? : 100;
-        for ($i = 1; $i == 1 || $i <= $nauthors; ++$i) {
-            $au = (object) array();
-            $au->name = simplify_whitespace((string) @$_POST["auname$i"]);
-            $au->email = simplify_whitespace((string) @$_POST["auemail$i"]);
-            $au->affiliation = simplify_whitespace((string) @$_POST["auaff$i"]);
-            if ($au->name !== "" || $au->email !== "")
-                $pj->authors[] = $au;
+    $authors = array();
+    foreach ($_POST as $k => $v)
+        if (preg_match('/^au(name|email|aff)(\d+)$/', $k, $m)
+            && ($v = simplify_whitespace($v)) !== "") {
+            $au = $authors[$m[2]] = $authors[$m[2]] ? : (object) array();
+            $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
+            $au->$x = $v;
         }
+    if (count($authors)) {
+        ksort($authors, SORT_NUMERIC);
+        $pj->authors = array_values($authors);
     }
 
     // Contacts

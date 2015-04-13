@@ -507,43 +507,50 @@ class PaperTable {
             '<div class="pavb abstract">', $data, "</div></div>\n\n";
     }
 
+    private static function echo_editable_authors_tr($tr, $n, $name, $email, $aff) {
+        echo '<tr', $tr, '>',
+            '<td class="rxcaption">', $n, ".</td>",
+            '<td class="lentry">', Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)")), "</td>",
+            '<td class="lentry">', Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)")), "</td>",
+            '<td class="lentry">', Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)")), "</td>",
+            '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change.delta(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change.delta(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change.delta(this,Infinity)" tabindex="-1">x</a></td></tr>';
+    }
+
     private function editable_authors() {
         global $Conf;
         cleanAuthor($this->prow);
 
-        echo $this->editable_papt("authorInformation", "Authors <span class='papfnh'>(<a href='#' onclick='return authorfold(\"auedit\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"auedit\",1,-1)'>Fewer</a>)</span>"),
-            "<div class='paphint'>List the paper’s authors one per line, including their email addresses and affiliations.";
+        echo $this->editable_papt("authorInformation", "Authors"),
+            "<div class='paphint'>List the paper’s authors one per line, including email addresses and affiliations.";
         if ($Conf->submission_blindness() == Conference::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo "  Any author with an account on this site can edit the paper.</div>",
-            "<div class='papv'><table id='auedittable' class='auedittable'><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th></tr>\n";
+            '<div class="papv"><table id="auedittable" class="auedittable">',
+            '<thead><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th><th style="width:100%"></th></tr></thead>',
+            '<tbody>';
+        self::echo_editable_authors_tr(' style="display:none"', '$', "", "", "");
 
         $blankAu = array("", "", "", "");
-        $authorTable = $this->prow ? $this->prow->authorTable : array();
-        $nauthors = max(25, count($authorTable));
-        if ($this->useRequest && isset($_POST["aueditcount"]))
-            $nauthors = max(25, (int) $_POST["aueditcount"]);
-        for ($n = 1; $n <= $nauthors; $n++) {
-            if ($this->useRequest) {
-                $auname = (string) @$_POST["auname$n"];
-                $au = array(0, 0, (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
-            } else {
-                $au = @$authorTable[$n - 1] ? : $blankAu;
+        if ($this->useRequest) {
+            for ($n = 1; @$_POST["auname$n"] || @$_POST["auemail$n"] || @$_POST["auaff$n"]; ++$n)
+                self::echo_editable_authors_tr("", $n, (string) @$_POST["auname$n"], (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
+        } else {
+            $authorTable = $this->prow ? $this->prow->authorTable : array();
+            for ($n = 1; $n <= count($authorTable); ++$n) {
+                $au = $authorTable[$n - 1];
                 if ($au[0] && $au[1] && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
                     $auname = $au[1] . ", " . $au[0];
                 else if ($au[0] && $au[1])
                     $auname = $au[0] . " " . $au[1];
                 else
                     $auname = $au[0] . $au[1];
+                self::echo_editable_authors_tr("", $n, $auname, $au[2], $au[3]);
             }
-            echo "<tr id='auedit$n' class='auedito'><td class='rxcaption'>", $n, ".</td>",
-                "<td class='lentry'>", Ht::entry("auname$n", $auname, array("size" => "35", "onchange" => "hiliter(this)")), "</td>",
-                "<td class='lentry'>", Ht::entry("auemail$n", $au[2], array("size" => "30", "onchange" => "hiliter(this)")), "</td>",
-                "<td class='lentry'>", Ht::entry("auaff$n", $au[3], array("size" => "32", "onchange" => "hiliter(this)")), "</td>",
-                "</tr>\n";
         }
-        echo "</table>", Ht::hidden("aueditcount", $nauthors, array("id" => "aueditcount")), "</div>\n\n";
-        $Conf->echoScript("authorfold(\"auedit\",0," . max(count($authorTable) + 1, 5) . ")");
+        do {
+            self::echo_editable_authors_tr("", $n, "", "", "");
+        } while (++$n <= 5);
+        echo "</tbody></table></div>\n\n";
     }
 
     private function authorData($table, $type, $viewAs = null, $prefix = "") {

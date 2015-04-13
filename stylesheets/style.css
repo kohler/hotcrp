@@ -1387,8 +1387,25 @@ th.pl.pl_logid, td.pl.pl_logid {
 table.setreviewform th {
 	border-bottom: 1px solid #999999;
 }
+table.auedittable {
+	width: 100%;
+}
 table.setreviewform th, table.auedittable th {
 	font-size: smaller;
+}
+a.row_up, a.row_down, a.row_kill {
+	display: inline-block;
+	visibility: hidden;
+	color: #aaaacc;
+}
+a.row_up:hover, a.row_down:hover, a.row_kill:hover {
+	color: black;
+}
+a.row_kill {
+	padding-left: 0.2em;
+}
+tr:hover > td > a.row_up, tr:hover > td > a.row_down, tr:hover > td > a.row_kill {
+	visibility: visible;
 }
 
 /* paper list tables geometry */

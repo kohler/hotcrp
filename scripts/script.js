@@ -1296,6 +1296,47 @@ function authorfold(prefix, relative, n) {
     return false;
 }
 
+function author_change(e, force) {
+    var j = $(e), tr = j.closest("tr");
+    if (force || $.trim(j.val()) != "") {
+        if (tr[0].nextSibling == null) {
+            var n = tr.siblings().length;
+            var h = tr.siblings().first().html().replace(/\$/g, n + 1);
+            tr.after("<tr>" + h + "</tr>");
+        } else if (tr[0].nextSibling.className == "aueditc")
+            tr[0].nextSibling.className = "auedito";
+    }
+    hiliter(e);
+}
+
+author_change.delta = function (e, delta) {
+    var tr = $(e).closest("tr")[0], ini, inj, k,
+        link = (delta < 0 ? "previous" : "next") + "Sibling";
+    while (delta) {
+        var sib = tr[link];
+        if (delta < 0 && !sib[link])
+            break;
+        hiliter(tr);
+        if (!sib && delta != Infinity)
+            sib = tr.nextSibling;
+        else if (!sib) {
+            sib = tr.previousSibling;
+            $(tr).remove();
+            $(sib).find("input").each(function () {author_change(this);});
+            break;
+        }
+        ini = $(tr).find("input"), inj = $(sib).find("input");
+        for (k = 0; k != ini.length; ++k) {
+            var v = $(ini[k]).val();
+            $(ini[k]).val($(inj[k]).val());
+            $(inj[k]).val(v);
+        }
+        tr = sib;
+        delta += delta < 0 ? 1 : -1;
+    }
+    return false;
+};
+
 
 function staged_foreach(a, f, backwards) {
     var i = (backwards ? a.length - 1 : 0);
