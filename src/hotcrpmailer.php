@@ -119,7 +119,7 @@ class HotCRPMailer extends Mailer {
             return "";
 
         // save old au_seerev setting, and reset it so authors can see them.
-        $old_au_seerev = $Conf->au_seerev_setting(AU_SEEREV_ALWAYS);
+        $old_au_seerev = $Conf->au_seerev_setting(Conference::AUSEEREV_YES);
 
         $text = "";
         foreach ($crows as $crow)

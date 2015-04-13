@@ -150,7 +150,7 @@ $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => 
 assert($c1ok);
 assert(!$user_van->can_view_comment($paper1, $comment1, false));
 assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
-$Conf->save_setting("au_seerev", AU_SEEREV_ALWAYS);
+$Conf->save_setting("au_seerev", Conference::AUSEEREV_YES);
 assert($user_van->can_view_comment($paper1, $comment1, false));
 assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", Conference::BLIND_OPTIONAL);
@@ -161,7 +161,7 @@ assert($c1ok);
 assert($user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", null);
 assert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
-$Conf->save_setting("au_seerev", AU_SEEREV_NO);
+$Conf->save_setting("au_seerev", Conference::AUSEEREV_NO);
 
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);

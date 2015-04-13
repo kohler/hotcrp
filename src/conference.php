@@ -39,6 +39,10 @@ class Conference {
     const SEEDEC_ALL = 2;
     const SEEDEC_NCREV = 3;
 
+    const AUSEEREV_NO = 0;
+    const AUSEEREV_UNLESSINCOMPLETE = 1;
+    const AUSEEREV_YES = 2;
+
     const PCSEEREV_IFCOMPLETE = 0;
     const PCSEEREV_YES = 1;
     const PCSEEREV_UNLESSINCOMPLETE = 3;
@@ -219,7 +223,7 @@ class Conference {
         if (!$this->_au_seerev
             && @+$this->settings["resp_active"] > 0
             && $this->time_author_respond_all_rounds())
-            $this->_au_seerev = AU_SEEREV_ALWAYS;
+            $this->_au_seerev = self::AUSEEREV_YES;
     }
 
     private function crosscheck_track_settings($j) {
@@ -1004,8 +1008,8 @@ class Conference {
     function timeAuthorViewReviews($reviewsOutstanding = false) {
         // also used to determine when authors can see review counts
         // and comments.  see also mailtemplate.php and genericWatch
-        return $this->_au_seerev == AU_SEEREV_ALWAYS
-            || ($this->_au_seerev > 0 && !$reviewsOutstanding);
+        return $this->_au_seerev > 0
+            && ($this->_au_seerev != self::AUSEEREV_UNLESSINCOMPLETE || !$reviewsOutstanding);
     }
     private function time_author_respond_all_rounds() {
         $allowed = array();

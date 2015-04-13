@@ -1121,7 +1121,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $Highlight["rev_open"] = true;
             break;
         }
-    if (value_or_setting("au_seerev") != AU_SEEREV_NO
+    if (value_or_setting("au_seerev") != Conference::AUSEEREV_NO
         && $Conf->setting("pcrev_soft") > 0
         && $Now < $Conf->setting("pcrev_soft")
         && count($Error) == 0)
@@ -1131,7 +1131,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         && value_or_setting("seedec") != Conference::SEEDEC_ALL)
         $Warning[] = "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”";
     if (value("seedec") == Conference::SEEDEC_ALL
-        && value_or_setting("au_seerev") == AU_SEEREV_NO)
+        && value_or_setting("au_seerev") == Conference::AUSEEREV_NO)
         $Warning[] = "Authors can see decisions, but not reviews. This is sometimes unintentional.";
     if (has_value("msg.clickthrough_submit"))
         $Values["clickthrough_submit"] = null;
@@ -2099,7 +2099,7 @@ function doDecGroup() {
     if (!$Conf->setting("au_seerev", 0)
         && $Conf->timeAuthorViewReviews())
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
-    doRadio("au_seerev", array(AU_SEEREV_NO => $no_text, AU_SEEREV_ALWAYS => "Yes", AU_SEEREV_YES => "Yes, once they’ve completed any requested reviews"));
+    doRadio("au_seerev", array(Conference::AUSEEREV_NO => $no_text, Conference::AUSEEREV_YES => "Yes", Conference::AUSEEREV_UNLESSINCOMPLETE => "Yes, once they’ve completed any requested reviews"));
 
     // Authors' response
     echo '<div class="g"></div><table id="foldauresp" class="fold2o">';
