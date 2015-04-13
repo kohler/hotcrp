@@ -195,7 +195,7 @@ function request_to_json($opj, $action) {
     foreach ($_POST as $k => $v)
         if (preg_match('/^au(name|email|aff)(\d+)$/', $k, $m)
             && ($v = simplify_whitespace($v)) !== "") {
-            $au = $authors[$m[2]] = $authors[$m[2]] ? : (object) array();
+            $au = $authors[$m[2]] = (@$authors[$m[2]] ? : (object) array());
             $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
             $au->$x = $v;
         }
