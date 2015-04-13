@@ -116,7 +116,6 @@ function rf_update() {
             if ($sv !== "sv")
                 $fj->option_class_prefix = $sv;
         }
-        error_log(json_encode($fj));
     }
 
     if ($shortNameError)
