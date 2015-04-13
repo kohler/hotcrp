@@ -124,7 +124,7 @@ class MailRecipients {
     }
 
     function query($paper_sensitive) {
-        global $Conf, $checkReviewNeedsSubmit;
+        global $Conf;
         $cols = array();
         $where = array("email not regexp '^anonymous[0-9]*\$'");
         $joins = array("ContactInfo");
@@ -183,10 +183,10 @@ class MailRecipients {
         } else {
             $needpaper = $needconflict = true;
             $needreview = false;
-            if (!$Conf->timeAuthorViewReviews(true) && $Conf->timeAuthorViewReviews()) {
-                $cols[] = "reviewNeedsSubmit";
-                $joins[] = "left join (select contactId, max(reviewNeedsSubmit) as reviewNeedsSubmit from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
-                $checkReviewNeedsSubmit = true;
+            if ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE) {
+                $cols[] = "(coalesce(PaperReview.contactId,0)!=0) has_review";
+                $cols[] = "coalesce(PaperReview.has_outstanding_review,0) has_outstanding_review";
+                $joins[] = "left join (select contactId, max(reviewNeedsSubmit) has_outstanding_review from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
             }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;

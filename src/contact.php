@@ -1732,6 +1732,19 @@ class Contact {
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
+    public static function can_some_author_view_submitted_review($prow) {
+        global $Conf;
+        return $Conf->au_seerev != 0;
+    }
+
+    public function can_author_view_submitted_review($prow) {
+        global $Conf;
+        return $Conf->au_seerev == Conference::AUSEEREV_YES
+            || ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
+                && (!$this->has_review()
+                    || !$this->has_outstanding_review()));
+    }
+
     public function can_view_review($prow, $rrow, $forceShow) {
         global $Conf;
         if (is_int($rrow)) {
@@ -1739,7 +1752,7 @@ class Contact {
             $rrow = null;
         } else
             $viewscore = VIEWSCORE_AUTHOR;
-        assert(!$rrow || ($prow && $prow->paperId == $rrow->paperId));
+        assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $rights = $this->rights($prow, $forceShow);
@@ -1748,9 +1761,9 @@ class Contact {
                  || $rights->review_type
                  || $rights->allow_administer)
                 && (($rights->act_author_view
-                     && $Conf->timeAuthorViewReviews($this->has_outstanding_review() && $this->has_review())
                      && $rrowSubmitted
-                     && $viewscore >= VIEWSCORE_AUTHOR)
+                     && $viewscore >= VIEWSCORE_AUTHOR
+                     && $this->can_author_view_submitted_review($prow))
                     || ($rights->allow_pc
                         && $rrowSubmitted
                         && $viewscore >= VIEWSCORE_PC
@@ -1791,7 +1804,7 @@ class Contact {
                  && !$rights->review_type)
             $whyNot["permission"] = 1;
         else if ($rights->act_author_view
-                 && $Conf->timeAuthorViewReviews()
+                 && $Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
                  && $this->has_outstanding_review()
                  && $this->has_review())
             $whyNot["reviewsOutstanding"] = 1;
@@ -2172,8 +2185,8 @@ class Contact {
             || ($rights->act_author_view
                 && $ctype >= COMMENTTYPE_AUTHOR
                 && (($ctype & COMMENTTYPE_RESPONSE)    // author's response
-                    || ($Conf->timeAuthorViewReviews() // author-visible cmt
-                        && !($ctype & COMMENTTYPE_DRAFT))))
+                    || (!($ctype & COMMENTTYPE_DRAFT)  // author-visible cmt
+                        && $this->can_author_view_submitted_review($prow))))
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_review($prow, null, $forceShow)
@@ -2450,7 +2463,7 @@ class Contact {
             else if ($rb === Conference::BLIND_OPTIONAL)
                 $dl->rev->blind = "optional";
             // can authors see reviews?
-            if ($Conf->timeAuthorViewReviews())
+            if ($Conf->au_seerev)
                 $dl->au_allowseerev = true;
         }
 

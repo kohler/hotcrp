@@ -8,7 +8,6 @@ require_once("src/papersearch.php");
 require_once("src/mailclasses.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
-$checkReviewNeedsSubmit = false;
 $Error = array();
 
 // load mail from log
@@ -273,8 +272,7 @@ class MailSender {
     }
 
     private function run() {
-        global $Conf, $Opt, $Me, $Error, $subjectPrefix,
-            $checkReviewNeedsSubmit, $mailer_options;
+        global $Conf, $Opt, $Me, $Error, $subjectPrefix, $mailer_options;
 
         $subject = trim(defval($_REQUEST, "subject", ""));
         if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
@@ -324,7 +322,6 @@ class MailSender {
             ++$nrows_done;
 
             $contact = Contact::make($row);
-            $rest["hideReviews"] = $checkReviewNeedsSubmit && $row->reviewNeedsSubmit;
             $rest["newrev_since"] = $this->recip->newrev_since;
             $mailer->reset($contact, $row, $rest);
             $prep = $mailer->make_preparation($template, $rest);

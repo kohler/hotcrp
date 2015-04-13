@@ -13,7 +13,7 @@ class Conference {
     private $_pc_seeall_cache = null;
     private $_round0_defined_cache = null;
     private $_pc_see_pdf = null;
-    private $_au_seerev;
+    public $au_seerev;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -219,11 +219,11 @@ class Conference {
             && $ss > $Now)
             $this->_pc_see_pdf = false;
 
-        $this->_au_seerev = @+$this->settings["au_seerev"];
-        if (!$this->_au_seerev
+        $this->au_seerev = @+$this->settings["au_seerev"];
+        if (!$this->au_seerev
             && @+$this->settings["resp_active"] > 0
             && $this->time_author_respond_all_rounds())
-            $this->_au_seerev = self::AUSEEREV_YES;
+            $this->au_seerev = self::AUSEEREV_YES;
     }
 
     private function crosscheck_track_settings($j) {
@@ -999,17 +999,11 @@ class Conference {
         return $this->timeAuthorViewDecision()
             && $this->deadlinesBetween("final_open", "final_done", "final_grace");
     }
-    function au_seerev_setting($au_seerev = null) {
-        $x = $this->_au_seerev;
-        if ($au_seerev !== null)
-            $this->_au_seerev = $au_seerev;
-        return $x;
-    }
     function timeAuthorViewReviews($reviewsOutstanding = false) {
         // also used to determine when authors can see review counts
         // and comments.  see also mailtemplate.php and genericWatch
-        return $this->_au_seerev > 0
-            && ($this->_au_seerev != self::AUSEEREV_UNLESSINCOMPLETE || !$reviewsOutstanding);
+        return $this->au_seerev > 0
+            && ($this->au_seerev != self::AUSEEREV_UNLESSINCOMPLETE || !$reviewsOutstanding);
     }
     private function time_author_respond_all_rounds() {
         $allowed = array();
@@ -1021,7 +1015,7 @@ class Conference {
         return $allowed;
     }
     function time_author_respond($round = null) {
-        if (!$this->timeAuthorViewReviews() || !$this->setting("resp_active"))
+        if (!$this->au_seerev || !$this->setting("resp_active"))
             return $round === null ? array() : false;
         if ($round === null)
             return $this->time_author_respond_all_rounds();

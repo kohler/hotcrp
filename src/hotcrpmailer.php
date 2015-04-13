@@ -12,7 +12,6 @@ class HotCRPMailer extends Mailer {
     protected $rrow = null;
     protected $reviewNumber = "";
     protected $comment_row = null;
-    protected $hideReviews = false;
     protected $newrev_since = false;
     protected $no_send = false;
 
@@ -38,8 +37,7 @@ class HotCRPMailer extends Mailer {
             if (($v = @$rest[$k . "_contact"]))
                 $this->contacts[$k] = $v;
         $this->row = $row;
-        foreach (array("rrow", "reviewNumber", "comment_row", "hideReviews",
-                       "newrev_since") as $k)
+        foreach (array("rrow", "reviewNumber", "comment_row", "newrev_since") as $k)
             $this->$k = @$rest[$k];
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
@@ -87,9 +85,6 @@ class HotCRPMailer extends Mailer {
 
     private function get_reviews() {
         global $Conf;
-        if ($this->hideReviews)
-            return "[Reviews are hidden since you have incomplete reviews of your own.]";
-
         if ($this->rrow)
             $rrows = array($this->rrow);
         else {
@@ -101,25 +96,32 @@ class HotCRPMailer extends Mailer {
             $rrows = edb_orows($result);
         }
 
+        // save old au_seerev setting, and reset it so authors can see them.
+        if (!($au_seerev = $Conf->au_seerev))
+            $Conf->au_seerev = Conference::AUSEEREV_YES;
+
         $text = "";
         foreach ($rrows as $row)
-            if ($row->reviewSubmitted) {
+            if ($row->reviewSubmitted
+                && $this->permissionContact->can_view_review($this->row, $row, false)) {
                 $rf = ReviewForm::get($row);
                 $text .= $rf->pretty_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
             }
+
+        $Conf->au_seerev = $au_seerev;
+        if ($text === "" && $au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
+            && count($rrows))
+            $text = "[Reviews are hidden since you have incomplete reviews of your own.]\n";
         return $text;
     }
 
     private function get_comments($tag) {
         global $Conf;
-        if ($this->hideReviews)
-            return "";
         $crows = $this->comment_row ? array($this->comment_row) : $this->row->all_comments();
-        if (!count($crows))
-            return "";
 
         // save old au_seerev setting, and reset it so authors can see them.
-        $old_au_seerev = $Conf->au_seerev_setting(Conference::AUSEEREV_YES);
+        if (!($au_seerev = $Conf->au_seerev))
+            $Conf->au_seerev = Conference::AUSEEREV_YES;
 
         $text = "";
         foreach ($crows as $crow)
@@ -127,7 +129,7 @@ class HotCRPMailer extends Mailer {
                 && $this->permissionContact->can_view_comment($this->row, $crow, false))
                 $text .= $crow->unparse_text($this->permissionContact) . "\n";
 
-        $Conf->au_seerev_setting($old_au_seerev);
+        $Conf->au_seerev = $au_seerev;
         return $text;
     }
 

@@ -708,7 +708,7 @@ class ReviewForm {
                 if ((!$rrow || !$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified + 10800 < $now)
                     && $diff_view_score >= VIEWSCORE_AUTHOR
-                    && $Conf->timeAuthorViewReviews())
+                    && Contact::can_some_author_view_submitted_review($prow))
                     $q[] = $notify_author = "reviewAuthorNotified=" . $now;
             }
         }
