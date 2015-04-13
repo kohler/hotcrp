@@ -465,7 +465,8 @@ class Mailer {
         return $prep1->subject != $prep2->subject
             || $prep1->body != $prep2->body
             || @$prep1->headers["cc"] != @$prep2->headers["cc"]
-            || @$prep1->headers["reply-to"] != @$prep2->headers["reply-to"];
+            || @$prep1->headers["reply-to"] != @$prep2->headers["reply-to"]
+            || @$prep1->unique_preparation || @$prep2->unique_preparation;
     }
 
     static function merge_preparation_to($prep, $to) {

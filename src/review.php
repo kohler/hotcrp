@@ -270,6 +270,8 @@ class ReviewForm {
     public $fmap;
     public $forder;
     public $fieldName;
+    private $mailer_info;
+    private $mailer_preps;
 
     static public $rating_types = array("n" => "average",
                                         1 => "very helpful",
@@ -607,9 +609,14 @@ class ReviewForm {
     }
 
     function review_watch_callback($prow, $minic) {
-        if ($prow->conflictType == 0)
-            HotCRPMailer::send_to($minic, $this->mailer_info["template"], $prow,
-                                  $this->mailer_info);
+        if ($minic->can_view_review($prow, $this->mailer_info["diff_view_score"], false)
+            && ($p = HotCRPMailer::prepare_to($minic, $this->mailer_info["template"], $prow, $this->mailer_info))) {
+            // XXX Worried about reviewer name exposure policies, so only combine
+            // preparations for authors
+            if (!$prow->has_author($minic))
+                $p->unique_preparation = true;
+            $this->mailer_preps[] = $p;
+        }
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
@@ -738,45 +745,28 @@ class ReviewForm {
         }
 
         // potentially email chair, reviewers, and authors
-        $notify_rrow = null;
-        if ($submit && ($notify || $notify_author)) {
-            if ($rrow && $rrow->reviewSubmitted)
-                $notify_rrow = $rrow;
-            else
-                $notify_rrow = $Conf->reviewRow(array("reviewId" => $reviewId));
-        }
-        if ($notify_rrow) {
-            // need an up-to-date review row to send email successfully
-            $fake_rrow = (object) array("paperId" => $prow->paperId,
-                 "reviewId" => $reviewId, "contactId" => $contactId,
-                 "reviewType" => $notify_rrow->reviewType,
-                 "requestedBy" => $notify_rrow->requestedBy,
-                 "reviewBlind" => $reviewBlind,
-                 "reviewSubmitted" => $notify_rrow->reviewSubmitted);
-
-            $tmpl = ($rrow && $rrow->reviewSubmitted ? "@reviewupdate" : "@reviewsubmit");
+        if ($submit
+            && ($notify || $notify_author)
+            && ($notify_rrow = $Conf->reviewRow(array("reviewId" => $reviewId)))) {
+            $tmpl = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $submitter = $contact;
             if ($contactId != $submitter->contactId)
                 $submitter = Contact::find_by_id($contactId);
 
             // construct mail
-            $this->mailer_info = array("template" => $tmpl, "rrow" => $fake_rrow,
+            $this->mailer_info = array("template" => $tmpl,
+                    "rrow" => $notify_rrow,
                     "reviewer_contact" => $submitter,
                     "reviewNumber" => $prow->paperId . unparseReviewOrdinal($notify_rrow->reviewOrdinal),
-                    "check_function" => "HotCRPMailer::check_can_view_review");
+                    "check_function" => "HotCRPMailer::check_can_view_review",
+                    "diff_view_score" => $diff_view_score);
+            $this->mailer_preps = array();
             if ($Conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($tmpl, $prow, $this->mailer_info);
-            if ($diff_view_score >= VIEWSCORE_PC)
-                genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
-            if ($notify_author) {
-                $rest["infoMsg"] = "since a review was updated during the response period.";
-                if ($Conf->is_review_blind($fake_rrow)) {
-                    $rest["infoMsg"] .= " Reviewer anonymity was preserved.";
-                    unset($rest["reviewer_contact"]);
-                }
-                $notify_author = HotCRPMailer::send_contacts($tmpl, $prow, $this->mailer_info);
-            }
-            unset($this->mailer_info);
+            genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
+            if (count($this->mailer_preps))
+                HotCRPMailer::send_combined_preparations($this->mailer_preps);
+            unset($this->mailer_info, $this->mailer_preps);
         }
 
         // if external, forgive the requestor from finishing their review
@@ -962,16 +952,7 @@ $blind\n";
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
     }
 
-    function pretty_text($prow, $rrow, $contact) {
-        return $this->prettyTextForm($prow, $rrow, $contact, false, false);
-    }
-
-    function pretty_author_text($prow, $rrow, $contact, $no_update = false) {
-        return $this->prettyTextForm($prow, $rrow, $contact, true, $no_update);
-    }
-
-    private function prettyTextForm($prow, $rrow, $contact, $alwaysAuthorView = true,
-                                    $no_update_review_author_seen = false) {
+    function pretty_text($prow, $rrow, $contact, $no_update_review_author_seen = false) {
         global $Conf, $Opt;
 
         $rrow_contactId = 0;
@@ -979,10 +960,7 @@ $blind\n";
             $rrow_contactId = $rrow->reviewContactId;
         else if (isset($rrow) && isset($rrow->contactId))
             $rrow_contactId = $rrow->contactId;
-        if ($alwaysAuthorView)
-            $revViewScore = VIEWSCORE_AUTHOR - 1;
-        else
-            $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";

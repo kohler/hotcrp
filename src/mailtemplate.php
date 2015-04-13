@@ -255,7 +255,7 @@ Contact %ADMIN% with any questions or concerns.
 
      "reviewsubmit" =>
      array("subject" => "[%CONFSHORTNAME%] Submitted review #%REVIEWNUMBER% %TITLEHINT%",
-           "body" => "Dear %NAME%,
+           "body" => "Greetings,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been submitted. The review is available at the paper site.
 
@@ -268,11 +268,13 @@ For the most up-to-date reviews and comments, or to unsubscribe from email notif
 
 Contact %ADMIN% with any questions or concerns.
 
-%SIGNATURE%\n"),
+%SIGNATURE%
+
+%REVIEWS%\n"),
 
      "reviewupdate" =>
      array("subject" => "[%CONFSHORTNAME%] Updated review #%REVIEWNUMBER% %TITLEHINT%",
-           "body" => "Dear %NAME%,
+           "body" => "Greetings,
 
 Review #%REVIEWNUMBER% for %CONFNAME% paper #%NUMBER% has been updated. The review is available at the paper site.
 
@@ -285,7 +287,9 @@ For the most up-to-date reviews and comments, or to unsubscribe from email notif
 
 Contact %ADMIN% with any questions or concerns.
 
-%SIGNATURE%\n"),
+%SIGNATURE%
+
+%REVIEWS%\n"),
 
      "acceptnotify" =>
      array("mailtool_name" => "Accept notification",

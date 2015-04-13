@@ -90,18 +90,23 @@ class HotCRPMailer extends Mailer {
         if ($this->hideReviews)
             return "[Reviews are hidden since you have incomplete reviews of your own.]";
 
-        $result = Dbl::qe("select PaperReview.*,
+        if ($this->rrow)
+            $rrows = array($this->rrow);
+        else {
+            $result = Dbl::qe("select PaperReview.*,
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email
                 from PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
                 where PaperReview.paperId=" . $this->row->paperId . " order by reviewOrdinal");
+            $rrows = edb_orows($result);
+        }
+
         $text = "";
-        while (($row = edb_orow($result)))
+        foreach ($rrows as $row)
             if ($row->reviewSubmitted) {
                 $rf = ReviewForm::get($row);
-                $text .= $rf->pretty_author_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
+                $text .= $rf->pretty_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
             }
-        Dbl::free($result);
         return $text;
     }
 
@@ -244,7 +249,7 @@ class HotCRPMailer extends Mailer {
             return $this->reviewNumber;
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
             if (!@$this->permissionContact->is_site_contact
-                && !$this->permissionContact->actAuthorView($this->row)
+                && !$this->row->has_author($this->permissionContact)
                 && !$this->permissionContact->can_view_authors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
             cleanAuthor($this->row);
@@ -340,15 +345,19 @@ class HotCRPMailer extends Mailer {
 
     function decorate_preparation($prep) {
         $prep->paperId = -1;
-        if ($this->row && defval($this->row, "paperId") > 0)
+        $prep->conflictType = false;
+        if ($this->row && defval($this->row, "paperId") > 0) {
             $prep->paperId = $this->row->paperId;
+            $prep->conflictType = $this->row->has_author($this->recipient);
+        }
     }
 
     static function preparation_differs($prep1, $prep2) {
         return parent::preparation_differs($prep1, $prep2)
             || ($prep1->paperId != $prep2->paperId
                 && (count($prep1->to) != 1 || count($prep2->to) != 1
-                    || $prep1->to[0] !== $prep2->to[0]));
+                    || $prep1->to[0] !== $prep2->to[0]))
+            || ($prep1->conflictType != $prep2->conflictType);
     }
 
 

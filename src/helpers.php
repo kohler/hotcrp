@@ -779,6 +779,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
         or (defaultWatch & " . ($watchtype << WATCHSHIFT_ALL) . ")!=0";
     if ($prow->managerContactId > 0)
         $q .= " or ContactInfo.contactId=" . $prow->managerContactId;
+    $q .= " order by conflictType";
 
     $result = $Conf->qe($q);
     $watchers = array();
@@ -819,7 +820,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
 
     // save my current contact info map -- we are replacing it with another
     // map that lacks review token information and so forth
-    $cimap = $prow->replace_contact_info_map(array());
+    $cimap = $prow->replace_contact_info_map(null);
 
     foreach ($watchers as $row) {
         $minic = Contact::make($row);
