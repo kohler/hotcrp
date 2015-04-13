@@ -6,8 +6,11 @@
 class MeetingTracker {
 
     static function lookup() {
-        global $Conf;
-        return $Conf->setting_json("tracker");
+        global $Conf, $Now;
+        $tracker = $Conf->setting_json("tracker");
+        if ($tracker && $tracker->update_at >= $Now - 150)
+            return $tracker;
+        return null;
     }
 
     static function clear() {
@@ -34,10 +37,9 @@ class MeetingTracker {
                                   "owner" => $Me->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
-        $old_tracker = $Conf->setting_json("tracker");
+        $old_tracker = self::lookup();
         if ($old_tracker
-            && $old_tracker->trackerid == $tracker->trackerid
-            && $old_tracker->update_at >= $Now - 150) {
+            && $old_tracker->trackerid == $tracker->trackerid) {
             $tracker->start_at = $old_tracker->start_at;
             if ($old_tracker->listid == $tracker->listid
                 && $old_tracker->position == $tracker->position)
@@ -147,9 +149,8 @@ class MeetingTracker {
 
     static function status($acct) {
         global $Conf, $Opt, $Now;
-        $tracker = $Conf->setting_json("tracker");
-        if (!$tracker || $tracker->update_at < $Now - 150
-            || (!$acct->isPC && !@$acct->is_tracker_kiosk))
+        $tracker = self::lookup();
+        if (!$tracker || (!$acct->isPC && !@$acct->is_tracker_kiosk))
             return false;
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
