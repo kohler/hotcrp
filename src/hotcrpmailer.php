@@ -352,12 +352,18 @@ class HotCRPMailer extends Mailer {
     }
 
 
+    static function check_can_view_review($recipient, $prow, $rrow) {
+        return $recipient->can_view_review($prow, $rrow, false);
+    }
+
     static function prepare_to($recipient, $template, $row, $rest = array()) {
-        if (!defval($recipient, "disabled")) {
-            $mailer = new HotCRPMailer($recipient, $row, $rest);
-            return $mailer->make_preparation($template, $rest);
-        } else
+        if (defval($recipient, "disabled"))
             return null;
+        $mailer = new HotCRPMailer($recipient, $row, $rest);
+        if (($checkf = @$rest["check_function"])
+            && !call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
+            return null;
+        return $mailer->make_preparation($template, $rest);
     }
 
     static function send_to($recipient, $template, $row, $rest = array()) {
@@ -413,6 +419,7 @@ class HotCRPMailer extends Mailer {
                 $contactsmsg = "contact(s)";
             $Conf->infoMsg("Sent email to paper #{$row->paperId}’s $contactsmsg$endmsg");
         }
+        return count($contacts) > 0;
     }
 
     static function send_reviewers($template, $row, $rest = array()) {

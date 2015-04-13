@@ -102,11 +102,9 @@ if (isset($_REQUEST["uploadForm"])
     else if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
         $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
-        $req['paperId'] = $prow->paperId;
-        if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf)) {
-            if ($rf->save_review($req, $paperTable->editrrow, $prow, $Me))
-                $tf['confirm'][] = "Uploaded review for paper #$prow->paperId.";
-        }
+        $req["paperId"] = $prow->paperId;
+        if ($rf->checkRequestFields($req, $paperTable->editrrow, $tf))
+            $rf->save_review($req, $paperTable->editrrow, $prow, $Me, $tf);
     }
 
     if (count($tf['err']) == 0 && $rf->parseTextForm($tf))
@@ -175,12 +173,9 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->errorMsg(whyNotText($whyNot, "review"));
         $useRequest = true;
     } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
-        if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me)) {
-            if ((@$_REQUEST["ready"] && !@$_REQUEST["unready"])
-                || ($paperTable->editrrow && $paperTable->editrrow->reviewSubmitted))
-                $Conf->confirmMsg("Review submitted.");
-            else
-                $Conf->confirmMsg("Review saved.  However, this version is marked as not ready for others to see.  Please finish the review and submit again.");
+        $tf = array("singlePaper" => true);
+        if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me, $tf)) {
+            $rf->textFormMessages($tf);
             redirectSelf();             // normally does not return
             loadRows();
         } else
