@@ -12,6 +12,7 @@ class ZipDocument {
     private $downloadname;
     private $mimetype;
     private $headers;
+    private $start_time;
 
     function __construct($downloadname, $mimetype = "application/zip") {
         $this->tmpdir = null;
@@ -29,6 +30,7 @@ class ZipDocument {
         $this->warnings = array();
         $this->recurse = false;
         $this->headers = false;
+        $this->start_time = time();
     }
 
     static private function _add_done($doc, $result) {
@@ -102,6 +104,13 @@ class ZipDocument {
             $this->recurse = true;
         }
         $this->files[$zip_filename] = true;
+        if (time() - $this->start_time >= 0) {
+            set_time_limit(30);
+            if (!$this->headers) {
+                $this->download_headers();
+                DocumentHelper::hyperflush();
+            }
+        }
         return self::_add_done($doc, true);
     }
 
@@ -141,12 +150,10 @@ class ZipDocument {
         $result = $this->create();
         if (is_string($result)) {
             $this->download_headers();
-            if (!$zlib_output_compression)
+            if (!$zlib_output_compression && !headers_sent())
                 header("Content-Length: " . filesize($result));
             // flush all output buffers to avoid holding large files in memory
-            flush();
-            while (@ob_end_flush())
-                /* do nothing */;
+            DocumentHelper::hyperflush();
             readfile($result);
             $result = (object) array("error" => false);
         }
@@ -438,6 +445,12 @@ class DocumentHelper {
         return true;
     }
 
+    static function hyperflush() {
+        flush();
+        while (@ob_end_flush())
+            /* do nothing */;
+    }
+
     static function download($doc, $downloadname = null, $attachment = null) {
         global $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {
@@ -472,9 +485,7 @@ class DocumentHelper {
         if (isset($doc->filestore)) {
             if (!$zlib_output_compression)
                 header("Content-Length: " . filesize($doc->filestore));
-            flush();
-            while (@ob_end_flush())
-                /* do nothing */;
+            self::hyperflush();
             readfile($doc->filestore);
         } else {
             if (!$zlib_output_compression)
