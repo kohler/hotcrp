@@ -44,7 +44,8 @@ class PaperTable {
         }
 
         $ms = array();
-        if ($Me->can_view_review($prow, null, null))
+        if ($Me->can_view_review($prow, null, null)
+            || ($prow && $prow->review_submitted($Me)))
             $ms["r"] = true;
         if ($Me->can_review($prow, null))
             $ms["re"] = true;
@@ -2004,7 +2005,8 @@ class PaperTable {
 
         $opt = array("edit" => false);
         foreach ($this->rrows as $rr)
-            if ($rr->reviewSubmitted) {
+            if ($rr->reviewSubmitted
+                && $Me->can_view_review($prow, $rr, null)) {
                 $rf = ReviewForm::get($rr);
                 $rf->show($prow, $this->rrows, $rr, $opt);
             }
