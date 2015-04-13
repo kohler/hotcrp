@@ -1089,7 +1089,7 @@ class PaperList extends BaseList {
         if (@$options["idarray"]) {
             $idarray = array();
             foreach ($rows as $row)
-                $idarray[] = $row->paperId;
+                $idarray[] = (int) $row->paperId;
             return $idarray;
         } else if (count($rows) == 0) {
             if (($altq = $this->search->alternate_query())) {

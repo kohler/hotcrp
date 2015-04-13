@@ -69,6 +69,8 @@ class PaperInfo {
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
+        if (isset($this->paperId))
+            $this->paperId = (int) $this->paperId;
         if ($contact && (property_exists($this, "conflictType")
                          || property_exists($this, "myReviewType"))) {
             if ($contact === true)
