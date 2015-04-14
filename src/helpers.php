@@ -199,6 +199,8 @@ function hoturl_site_relative($page, $options = null) {
                        && preg_match($are . 't=(\w+)' . $zre, $options, $m))
                    || ($page == "settings"
                        && preg_match($are . 'group=(\w+)' . $zre, $options, $m))
+                   || ($page == "graph"
+                       && preg_match($are . 'g=([^&?]+)' . $zre, $options, $m))
                    || ($page == "doc"
                        && preg_match($are . 'file=([^&]+)' . $zre, $options, $m))
                    || preg_match($are . '__PATH__=([^&]+)' . $zre, $options, $m)) {

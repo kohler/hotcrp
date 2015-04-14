@@ -56,6 +56,7 @@ checkupdates.php
 comment.php
 deadlines.php
 doc.php
+graph.php
 help.php
 index.php
 log.php
@@ -222,6 +223,8 @@ images/view24.png
 images/viewas.png
 
 scripts/.htaccess
+scripts/d3.min.js
+scripts/graph.js
 scripts/jquery-1.11.2.min.js
 scripts/jquery-1.11.2.min.map
 scripts/script.js

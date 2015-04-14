@@ -311,15 +311,6 @@ function reviewTokenGroup($non_reviews) {
 }
 
 
-// Review times report (experimental)
-if (@$_REQUEST["reviewtimes"] && $Me->isPC) {
-    $rt = new ReviewTimes;
-    echo '<div class="homegrp" id="reviewtimes"></div>';
-    $Conf->echoScript("");
-    echo $Conf->make_script_file("scripts/d3.min.js", true);
-    $Conf->echoScript("review_times('#reviewtimes', " . json_encode($rt->json()) . ")");
-}
-
 // Review assignment
 if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     echo "<div class='homegrp' id='homerev'>\n";
@@ -380,7 +371,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($sumpcScore / $npcScore);
         echo ".";
         if ($Me->isPC || $Me->privChair)
-            echo "&nbsp; <small>(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">Details</a>)</small>";
+            echo "&nbsp; <small>(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a> <span class='barsep'>·</span> <a href=\"", hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
         echo "<br />\n";
     }
     if ($myrow && $myrow->num_submitted < $myrow->num_needs_submit
