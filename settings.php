@@ -1326,7 +1326,7 @@ function doRadio($name, $varr) {
     $x = setting($name);
     if ($x === null || !isset($varr[$x]))
         $x = 0;
-    echo "<table>\n";
+    echo "<table style=\"margin-top:0.25em\">\n";
     foreach ($varr as $k => $text) {
         echo '<tr><td class="nw">', Ht::radio($name, $k, $k == $x, setting_js($name, array("id" => "{$name}_{$k}"))),
             "&nbsp;</td><td>";
@@ -2118,7 +2118,7 @@ function doTagsGroup() {
 
 // Responses and decisions
 function doDecGroup() {
-    global $Conf, $Highlight, $Error;
+    global $Conf, $Highlight, $Error, $Opt;
 
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
     if ($Conf->setting("resp_active"))
@@ -2128,10 +2128,15 @@ function doDecGroup() {
     if (!$Conf->setting("au_seerev", 0)
         && $Conf->timeAuthorViewReviews())
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
-    doRadio("au_seerev", array(Conference::AUSEEREV_NO => $no_text,
-                Conference::AUSEEREV_YES => "Yes",
-                Conference::AUSEEREV_UNLESSINCOMPLETE => "Yes, once they’ve completed any requested reviews",
-                Conference::AUSEEREV_TAGS => "Yes, for papers with any of these tags: " . render_entry("tag_au_seerev", setting_data("tag_au_seerev"), 24)));
+    $opts = array(Conference::AUSEEREV_NO => $no_text,
+                  Conference::AUSEEREV_YES => "Yes");
+    if (value("au_seerev") == Conference::AUSEEREV_UNLESSINCOMPLETE
+        && !@$Opt["allow_auseerev_unlessincomplete"])
+        $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
+    if (@$Opt["allow_auseerev_unlessincomplete"])
+        $opts[Conference::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
+    $opts[Conference::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", setting_data("tag_au_seerev"), 24);
+    doRadio("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
     // Authors' response
