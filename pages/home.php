@@ -153,7 +153,8 @@ if ($Me->has_reportable_deadline())
 echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>\n";
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
-if ($Conf->timeAuthorViewDecision()) {
+if ($Conf->au_seerev == Conference::AUSEEREV_YES
+    || $Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE) {
     $dlt = max(@$Conf->setting("sub_sub"), @$Conf->setting("sub_close"));
     $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
     $n = $nyes = 0;
