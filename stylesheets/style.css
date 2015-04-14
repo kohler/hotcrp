@@ -2093,6 +2093,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 }
 .bubcontent > p {
 	max-width: 240px;
+	overflow-x: scroll;
 }
 .bubcontent > p:first-child {
 	margin-top: 0;
