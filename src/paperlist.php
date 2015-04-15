@@ -1146,14 +1146,8 @@ class PaperList extends BaseList {
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
         }
 
-        // columns
-        $colhead = "";
-        foreach ($fieldDef as $fdef) {
-            if ($fdef->view == Column::VIEW_COLUMN)
-                $colhead .= $fdef->col();
-        }
-
         // header cells
+        $colhead = "";
         $url = $this->search->url_site_relative_raw();
         if (!defval($options, "noheader")) {
             $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";

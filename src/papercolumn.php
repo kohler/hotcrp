@@ -72,10 +72,6 @@ class PaperColumn extends Column {
         return "&lt;" . htmlspecialchars($this->name) . "&gt;";
     }
 
-    public function col() {
-        return "<col />";
-    }
-
     public function content_empty($pl, $row) {
         return false;
     }
@@ -95,9 +91,6 @@ class IdPaperColumn extends PaperColumn {
     }
     public function header($pl, $row, $ordinal) {
         return "ID";
-    }
-    public function col() {
-        return "<col width='0*' />";
     }
     public function content($pl, $row) {
         $href = $pl->_paperLink($row);
@@ -128,9 +121,6 @@ class SelectorPaperColumn extends PaperColumn {
             return "Conflict?";
         else
             return ($ordinal ? "&nbsp;" : "");
-    }
-    public function col() {
-        return "<col width='0*' />";
     }
     private function checked($pl, $row) {
         $def = ($this->name == "selon"
@@ -250,9 +240,6 @@ class ReviewStatusPaperColumn extends PaperColumn {
     }
     public function header($pl, $row, $ordinal) {
         return '<span class="hottooltip" hottooltip="# completed reviews / # assigned reviews" hottooltipdir="b">#&nbsp;Reviews</span>';
-    }
-    public function col() {
-        return "<col width='0*' />";
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_count_review($row, null, null);
@@ -480,9 +467,6 @@ class ReviewerTypePaperColumn extends PaperColumn {
         else
             return "Review";
     }
-    public function col() {
-        return "<col width='0*' />";
-    }
     public function content($pl, $row) {
         global $Conf;
         if ($this->xreviewer && !isset($row->_xreviewer))
@@ -621,9 +605,6 @@ class DesirabilityPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Desirability";
     }
-    public function col() {
-        return "<col width='0*' />";
-    }
     public function content($pl, $row) {
         return htmlspecialchars(@($row->desirability + 0));
     }
@@ -650,9 +631,6 @@ class TopicScorePaperColumn extends PaperColumn {
     }
     public function header($pl, $row, $ordinal) {
         return "Topic<br/>score";
-    }
-    public function col() {
-        return "<col width='0*' />";
     }
     public function content($pl, $row) {
         return htmlspecialchars($row->topicInterestScore + 0);
@@ -689,9 +667,6 @@ class PreferencePaperColumn extends PaperColumn {
     }
     public function header($pl, $row, $ordinal) {
         return "Preference";
-    }
-    public function col() {
-        return "<col width='0*' />";
     }
     public function content($pl, $row) {
         $pref = unparse_preference($row);
@@ -1068,9 +1043,6 @@ class ScorePaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return $this->form_field->web_abbreviation();
     }
-    public function col() {
-        return "<col width='0*' />";
-    }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_review($row, $this->form_field->view_score, true);
     }
@@ -1154,9 +1126,6 @@ class FormulaPaperColumn extends PaperColumn {
             return "<span class=\"hottooltip\" hottooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
         else
             return htmlspecialchars($x);
-    }
-    public function col() {
-        return "<col width='0*' />";
     }
     public function content($pl, $row) {
         $formulaf = $this->formula_function;
