@@ -68,7 +68,7 @@ class FormulaCompileState {
         if (!isset($this->gtmp["submitted_reviewers"])) {
             $this->queryOptions["reviewContactIds"] = true;
             $this->gtmp["submitted_reviewers"] = "\$submitted_reviewers";
-            $this->gstmt[] = "\$submitted_reviewers = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->submitted_reviewers() : array());";
+            $this->gstmt[] = "\$submitted_reviewers = \$prow->viewable_submitted_reviewers(\$contact, \$forceShow);";
         }
         return "\$submitted_reviewers";
     }

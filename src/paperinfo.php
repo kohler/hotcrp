@@ -408,6 +408,18 @@ class PaperInfo {
         return $this->reviewContactIds ? explode(",", $this->reviewContactIds) : array();
     }
 
+    public function viewable_submitted_reviewers($contact, $forceShow) {
+        if (!property_exists($this, "reviewContactIds"))
+            $this->load_scores("contactId");
+        if ($this->reviewContactIds) {
+            if ($contact->can_view_review($this, null, $forceShow))
+                return explode(",", $this->reviewContactIds);
+            else if ($this->review_type($contact))
+                return array($contact->contactId);
+        }
+        return array();
+    }
+
     public function submitted_review_types() {
         if (!property_exists($this, "reviewTypes"))
             $this->load_scores(array("reviewType", "contactId"));
@@ -426,6 +438,16 @@ class PaperInfo {
     public function score($fid, $cid) {
         $s = $this->scores($fid);
         return $s[$cid];
+    }
+
+    public function viewable_scores($field, $contact, $forceShow) {
+        if ($contact->can_view_review($this, $field->view_score, $forceShow))
+            return $this->scores($field->id);
+        else if ($this->review_type($contact)
+                 && $field->view_score > $contact->viewReviewFieldsScore(null, true)
+                 && ($s = $this->score($field->id, $contact->contactId)) !== null)
+            return array($contact->contactId => $s);
+        return null;
     }
 
     public function fetch_comments($where) {

@@ -1012,14 +1012,13 @@ class ScorePaperColumn extends PaperColumn {
         return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
-        $scoreName = $this->score . "Scores";
-        $view_score = $this->form_field->view_score;
         $this->_sortinfo = $sortinfo = "_score_sort_info." . $this->score . $sorter->score;
         $this->_avginfo = $avginfo = "_score_sort_avg." . $this->score;
         $reviewer = $pl->reviewer_cid();
+        $field = $this->form_field;
         foreach ($rows as $row)
-            if ($pl->contact->can_view_review($row, $view_score, null)) {
-                $scoreinfo = new ScoreInfo($row->scores($this->score));
+            if (($scores = $row->viewable_scores($field, $pl->contact, null)) !== null) {
+                $scoreinfo = new ScoreInfo($scores);
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
                 $row->$avginfo = $scoreinfo->average();
             } else {
@@ -1044,19 +1043,20 @@ class ScorePaperColumn extends PaperColumn {
         return $this->form_field->web_abbreviation();
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->can_view_review($row, $this->form_field->view_score, true);
+        return $row->viewable_scores($this->form_field, $pl->contact, true) === null;
     }
     public function content($pl, $row) {
-        $allowed = $pl->contact->can_view_review($row, $this->form_field->view_score, false);
-        $fname = $this->score . "Scores";
-        if (($allowed || $pl->contact->allow_administer($row))
-            && $row->$fname) {
-            $t = $this->form_field->unparse_graph($row->$fname, 1, defval($row, $this->score));
-            if (!$allowed)
-                $t = "<span class='fx5'>$t</span>";
-            return $t;
-        } else
-            return "";
+        $wrap_conflict = false;
+        $scores = $row->viewable_scores($this->form_field, $pl->contact, false);
+        if ($scores === null && $pl->contact->allow_administer($row)) {
+            $wrap_conflict = true;
+            $scores = $row->viewable_scores($this->form_field, $pl->contact, true);
+        }
+        if ($scores) {
+            $t = $this->form_field->unparse_graph($scores, 1, defval($row, $this->score));
+            return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
+        }
+        return "";
     }
 }
 

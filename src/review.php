@@ -205,7 +205,7 @@ class ReviewField {
         assert($this->has_options);
         $max = count($this->options);
 
-        if (is_string($v))
+        if (!is_object($v))
             $v = scoreCounts($v, $max);
 
         $avgtext = $this->unparse_average($v->avg);
