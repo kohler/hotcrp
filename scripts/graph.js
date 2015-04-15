@@ -153,7 +153,7 @@ function seq_to_cdf(seq) {
 
 
 /* perturbations */
-function quantize(data, ex, ey, xs, ys) {
+function quantize(data, xs, ys) {
     var q = d3.geom.quadtree().extent([[xs.range()[0], ys.range()[1]],
                                        [xs.range()[1], ys.range()[0]]])([]),
         d, nd = [], vp, vd, dx, dy;
@@ -324,7 +324,7 @@ hotcrp_graphs.scatter = function (selector, data) {
         ye = d3.extent(data, function (d) { return d[1]; }),
         x = d3.scale.linear().range([0, width]).domain([xe[0] - 0.3, xe[1] + 0.3]),
         y = d3.scale.linear().range([height, 0]).domain([ye[0] - 0.3, ye[1] + 0.3]);
-    data = quantize(data, xe, ye, x, y);
+    data = quantize(data, x, y);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
     var yAxis = d3.svg.axis().scale(y).orient("left");
