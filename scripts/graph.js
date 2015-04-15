@@ -2,6 +2,8 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+var hotcrp_graphs = (function ($, d3) {
+
 function pathNodeMayBeNearer(pathNode, point, dist) {
     function oob(l, t, r, b) {
         return l - point[0] >= dist || point[0] - r >= dist
@@ -96,10 +98,7 @@ function tangentAngle(pathNode, length) {
 }
 
 
-var hotcrp_graphs = {};
-
-hotcrp_graphs.procrastination = (function ($) {
-
+/* CDF functions */
 function finish_seq(seq, ri) {
     seq.sort(d3.ascending);
     seq.ntotal = ri.length;
@@ -152,7 +151,11 @@ function seq_to_cdf(seq) {
     return cdf;
 }
 
-return function (selector, revdata) {
+
+/* actual graphs */
+var hotcrp_graphs = {};
+
+hotcrp_graphs.procrastination = function (selector, revdata) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = $(selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom;
@@ -229,7 +232,13 @@ return function (selector, revdata) {
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+        .call(xAxis)
+      .append("text")
+        .attr("x", width)
+        .attr("y", 0)
+        .attr("dy", "-.5em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(dlf.label(revdata.deadlines));
 
     svg.append("g")
         .attr("class", "y axis")
@@ -240,12 +249,6 @@ return function (selector, revdata) {
         .attr("dy", ".71em")
         .style({"text-anchor": "end", "font-size": "smaller"})
         .text("Fraction of assignments completed");
-    svg.append("text")
-        .attr("x", width)
-        .attr("y", height)
-        .attr("dy", "-.5em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(dlf.label(revdata.deadlines));
 
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})
@@ -285,4 +288,57 @@ return function (selector, revdata) {
         hovered_path = hubble = null;
     }
 };
-})(jQuery);
+
+hotcrp_graphs.scatter = function (selector, data) {
+    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = $(selector).width() - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var x = d3.scale.linear().range([0, width]);
+    var y = d3.scale.linear().range([height, 0]);
+
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+
+    var svg = d3.select(selector).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    x.domain(d3.extent(data, function (d) { return d[1]; }));
+    y.domain(d3.extent(data, function (d) { return d[2]; }));
+
+    svg.selectAll(".dot")
+        .data(data)
+      .enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 4)
+        .attr("cx", function (d) { return x(d[1]); })
+        .attr("cy", function (d) { return y(d[2]); })
+        .style("stroke", function (d) { return "1px black"; });
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+
+    svg.append("rect").attr("width", width).attr("height", height)
+        .style({"fill": "none", "pointer-events": "all"})
+        .on("mouseover", mousemoved).on("mousemove", mousemoved)
+        .on("mouseout", mouseout);
+
+    var hovered_path, hubble;
+    function mousemoved() {
+    }
+
+    function mouseout() {
+    }
+};
+
+return hotcrp_graphs;
+})(jQuery, d3);
