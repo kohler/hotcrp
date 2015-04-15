@@ -47,8 +47,8 @@ if ($Graph == "procrastination") {
 
 // Formula experiment
 if ($Graph == "derp") {
-    $fx = new Formula("ovemer", true);
-    $fy = new Formula("avg(ovemer)", true);
+    $fx = new Formula("max(ovemer)", true);
+    $fy = new Formula("min(ovemer)", true);
     $fxf = $fx->compile_function($Me);
     $fyf = $fy->compile_function($Me);
     $needs_review = $fx->needs_review() || $fy->needs_review();
@@ -63,9 +63,9 @@ if ($Graph == "derp") {
         if ($Me->can_view_paper($prow)) {
             if ($needs_review) {
                 foreach ($prow->viewable_submitted_reviewers($Me, null) as $rcid)
-                    $data[] = array($prow->paperId, $fxf($prow, $rcid, $Me), $fyf($prow, $rcid, $Me));
+                    $data[] = array($fxf($prow, $rcid, $Me), $fyf($prow, $rcid, $Me), $prow->paperId);
             } else
-                $data[] = array($prow->paperId, $fxf($prow, null, $Me), $fyf($prow, null, $Me));
+                $data[] = array($fxf($prow, null, $Me), $fyf($prow, null, $Me), $prow->paperId);
         }
     Dbl::free($result);
     $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter("#hotgraph",' . json_encode($data) . '); })');

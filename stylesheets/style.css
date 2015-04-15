@@ -2807,11 +2807,17 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 .revtimel.revtimel_light {
 	stroke-width: 0.5px;
 }
-.revtimel_hover0 {
+
+.gdot {
+	stroke: rgba(70, 130, 180, 0.8);
+	fill: none;
+}
+
+.revtimel_hover0, .gdot_hover0 {
 	stroke: rgba(70, 0, 0, 0.5);
 	stroke-width: 3px;
 }
-.revtimel_hover1 {
+.revtimel_hover1, .gdot_hover1 {
 	stroke: yellow;
 	stroke-width: 2px;
 }

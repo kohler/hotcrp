@@ -152,6 +152,32 @@ function seq_to_cdf(seq) {
 }
 
 
+/* perturbations */
+function quantize(data, ex, ey, xs, ys) {
+    var q = d3.geom.quadtree().extent([[xs.range()[0], ys.range()[1]],
+                                       [xs.range()[1], ys.range()[0]]])([]),
+        d, nd = [], vp, vd, dx, dy;
+    for (var i = 0; (d = data[i]); ++i) {
+        if (d[0] == null || d[1] == null)
+            continue;
+        vd = [xs(d[0]), ys(d[1]), [d[2]], d[3]];
+        if ((vp = q.find(vd)) && vp[3] == vd[3]) {
+            dx = Math.abs(vp[0] - vd[0]);
+            dy = Math.abs(vp[1] - vd[1]);
+            if (dx <= 2 && dy <= 2 && dx * dx + dy * dy <= 4) {
+                vp[2].push(d[2]);
+                vp.n += 1;
+                vp.r = Math.sqrt(vp.n);
+                continue;
+            }
+        }
+        vd.r = vd.n = 1;
+        nd.push(vd);
+        q.add(vd);
+    }
+    return {data: nd, quadtree: q};
+}
+
 /* actual graphs */
 var hotcrp_graphs = {};
 
@@ -294,8 +320,11 @@ hotcrp_graphs.scatter = function (selector, data) {
         width = $(selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom;
 
-    var x = d3.scale.linear().range([0, width]);
-    var y = d3.scale.linear().range([height, 0]);
+    var xe = d3.extent(data, function (d) { return d[0]; }),
+        ye = d3.extent(data, function (d) { return d[1]; }),
+        x = d3.scale.linear().range([0, width]).domain([xe[0] - 0.3, xe[1] + 0.3]),
+        y = d3.scale.linear().range([height, 0]).domain([ye[0] - 0.3, ye[1] + 0.3]);
+    data = quantize(data, xe, ye, x, y);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
     var yAxis = d3.svg.axis().scale(y).orient("left");
@@ -306,17 +335,18 @@ hotcrp_graphs.scatter = function (selector, data) {
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    x.domain(d3.extent(data, function (d) { return d[1]; }));
-    y.domain(d3.extent(data, function (d) { return d[2]; }));
+    function place(sel) {
+        return sel.attr("r", function (d) { return 4 * d.r; })
+            .attr("cx", function (d) { return d[0]; })
+            .attr("cy", function (d) { return d[1]; });
+    }
 
-    svg.selectAll(".dot")
-        .data(data)
-      .enter().append("circle")
-        .attr("class", "dot")
-        .attr("r", 4)
-        .attr("cx", function (d) { return x(d[1]); })
-        .attr("cy", function (d) { return y(d[2]); })
-        .style("stroke", function (d) { return "1px black"; });
+    place(svg.selectAll(".dot").data(data.data)
+            .enter().append("circle").attr("class", "gdot"));
+
+    svg.append("circle").attr("class", "gdot gdot_hover0");
+    svg.append("circle").attr("class", "gdot gdot_hover1");
+    var hovers = svg.selectAll(".gdot_hover0, .gdot_hover1").style("display", "none");
 
     svg.append("g")
         .attr("class", "x axis")
@@ -330,13 +360,44 @@ hotcrp_graphs.scatter = function (selector, data) {
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
-        .on("mouseout", mouseout);
+        .on("mouseout", mouseout).on("click", mouseclick);
 
-    var hovered_path, hubble;
+    var hovered_data, hubble;
     function mousemoved() {
+        var m = d3.mouse(this), p = data.quadtree.find(m);
+        m.clientX = d3.event.clientX;
+        m.clientY = d3.event.clientY;
+        if (p) {
+            var dx = p[0] - m[0], dy = p[1] - m[1];
+            if (dx * dx + dy * dy > (4 * p.r + 4) * (4 * p.r + 4))
+                p = null;
+        }
+        if (p != hovered_data) {
+            if (p)
+                place(hovers.datum(p)).style("display", null);
+            else
+                hovers.style("display", "none");
+            hovered_data = p;
+        }
+        if (p) {
+            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            hubble.html("<p>#" + p[2].join(", #") + "</p>")
+                .direction("b").show(p[0], p[1] - 4 * p.r + 4, this);
+        } else if (hubble)
+            hubble = hubble.remove() && null;
     }
 
     function mouseout() {
+        hovers.style("display", "none");
+        hubble && hubble.remove();
+        hovered_data = hubble = null;
+    }
+
+    function mouseclick() {
+        if (hovered_data && hovered_data[2].length > 1)
+            window.location = hoturl("search", {q: hovered_data[2].join(" ")});
+        else if (hovered_data)
+            window.location = hoturl("paper", {p: hovered_data[2][0]});
     }
 };
 
