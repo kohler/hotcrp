@@ -2658,7 +2658,7 @@ class PaperSearch {
             }
         } else if ($tt == "formula") {
             $formulaf = $t->link;
-            return !!$formulaf($row, $this->contact);
+            return !!$formulaf($row, null, $this->contact);
         } else if ($tt == "not") {
             return !$this->_clauseTermCheck($t->value, $row);
         } else if ($tt == "and" || $tt == "and2") {

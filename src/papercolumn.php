@@ -1112,7 +1112,7 @@ class FormulaPaperColumn extends PaperColumn {
         $formulaf = $this->formula_function;
         $this->formula_sorter = $sorter = "_formula_sort_info." . $this->formula->name;
         foreach ($rows as $row)
-            $row->$sorter = $formulaf($row, $pl->contact, "s");
+            $row->$sorter = $formulaf($row, null, $pl->contact, "s");
     }
     public function formula_sorter($a, $b) {
         $sorter = $this->formula_sorter;
@@ -1129,10 +1129,10 @@ class FormulaPaperColumn extends PaperColumn {
     }
     public function content($pl, $row) {
         $formulaf = $this->formula_function;
-        $t = $formulaf($row, $pl->contact, "h");
+        $t = $formulaf($row, null, $pl->contact, "h");
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
             return "<span class='fn5'>$t</span><span class='fx5'>"
-                . $formulaf($row, $pl->contact, "h", true) . "</span>";
+                . $formulaf($row, null, $pl->contact, "h", true) . "</span>";
         else
             return $t;
     }

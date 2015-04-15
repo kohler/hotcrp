@@ -8,12 +8,16 @@ class FormulaCompileState {
     public $gtmp = array();
     public $gstmt = array();
     public $lstmt = array();
-    public $ismy = false;
+    public $aggt = 0;
     private $lprefix = 0;
     private $maxlprefix = 0;
     public $indent = 2;
     public $queryOptions = array();
     private $_stack = array();
+
+    const AGG_NO = 0;
+    const AGG_MY = 1;
+    const AGG_LOOP = 2;
 
     function __construct($contact) {
         $this->contact = $contact;
@@ -31,15 +35,15 @@ class FormulaCompileState {
         return $tname;
     }
     private function _push() {
-        $this->_stack[] = array($this->lprefix, $this->lstmt, $this->ismy);
+        $this->_stack[] = array($this->lprefix, $this->lstmt, $this->aggt);
         $this->lprefix = ++$this->maxlprefix;
         $this->lstmt = array();
-        $this->ismy = false;
+        $this->aggt = self::AGG_NO;
         $this->indent += 2;
         return $this->lprefix;
     }
     private function _pop($content) {
-        list($this->lprefix, $this->lstmt, $this->ismy) = array_pop($this->_stack);
+        list($this->lprefix, $this->lstmt, $this->aggt) = array_pop($this->_stack);
         $this->indent -= 2;
         $this->lstmt[] = $content;
     }
@@ -85,6 +89,7 @@ class FormulaCompileState {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
+        $this->aggt = self::AGG_LOOP;
 
         $aggt = 0;
         foreach ($e->args as $i => $ee) {
@@ -119,7 +124,7 @@ class FormulaCompileState {
 
     private function _compile_my($e) {
         $p = $this->_push();
-        $this->ismy = true;
+        $this->aggt = self::AGG_MY;
         $t = $this->_addltemp($this->compile($e));
         $this->_pop($this->_join_lstmt(false));
         return $t;
@@ -148,21 +153,30 @@ class FormulaCompileState {
         }
 
         if ($op == "revtype") {
-            if ($this->ismy)
+            if ($this->aggt == self::AGG_MY)
                 $rt = $this->_addgtemp("myrevtype", "\$prow->review_type(\$contact)");
             else {
                 $view_score = $this->contact->viewReviewFieldsScore(null, true);
                 if (VIEWSCORE_PC <= $view_score)
                     return "null";
                 $this->queryOptions["reviewTypes"] = true;
-                $rt = $this->_addgtemp("revtypes", "\$prow->submitted_review_types()") . "[~i~]";
+                $rt = $this->_addgtemp("revtypes", "\$prow->submitted_review_types()");
+                if ($this->aggt == self::AGG_NO)
+                    $rt .= "[\$rrow_cid]";
+                else
+                    $rt .= "[~i~]";
             }
             return "({$rt}==" . $e->args[0] . ")";
         }
 
         if ($op == "rf") {
             $f = $e->args[0];
-            if ($this->ismy)
+            if (!isset($this->queryOptions["scores"]))
+                $this->queryOptions["scores"] = array();
+            $this->queryOptions["scores"][$f->id] = $f->id;
+            if ($this->aggt == self::AGG_NO)
+                $fidx = "[\$rrow_cid]";
+            else if ($this->aggt == self::AGG_MY)
                 $fidx = "[\$contact->contactId]";
             else {
                 $view_score = $this->contact->viewReviewFieldsScore(null, true);
@@ -170,15 +184,14 @@ class FormulaCompileState {
                     return "null";
                 $fidx = "[~i~]";
             }
-            if (!isset($this->queryOptions["scores"]))
-                $this->queryOptions["scores"] = array();
-            $this->queryOptions["scores"][$f->id] = $f->id;
-            $t_f = $this->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")");
-            return "((int) @$t_f$fidx ? : null)";
+            $t_f = $this->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")") . $fidx;
+            return "((int) @$t_f ? : null)";
         }
 
         if ($op == "revpref" || $op == "revprefexp") {
-            if ($this->ismy)
+            if ($this->aggt == self::AGG_NO)
+                return "null";
+            else if ($this->aggt == self::AGG_MY)
                 $fidx = "[\$contact->contactId]";
             else {
                 $view_score = $this->contact->viewReviewFieldsScore(null, true);
@@ -192,7 +205,9 @@ class FormulaCompileState {
 
         if ($op == "topicscore") {
             $this->queryOptions["topics"] = true;
-            if ($this->ismy)
+            if ($this->aggt == self::AGG_NO)
+                return "null";
+            else if ($this->aggt == self::AGG_MY)
                 return $this->_addgtemp("mytopicscore", "\$prow->topic_interest_score(\$contact)");
             else
                 return "\$prow->topic_interest_score(~i~)";
@@ -384,6 +399,8 @@ class Formula {
     public $headingTitle = "";
     public $expression = null;
     public $authorView = null;
+    public $allowReview = false;
+    private $needsReview = false;
     public $createdBy = 0;
     public $timeModified = 0;
 
@@ -418,13 +435,15 @@ class Formula {
     );
 
 
-    public function __construct(/* $fexpr */) {
+    public function __construct(/* $fobj OR $expression, [$allowReview] */) {
         $args = func_get_args();
         if (is_object(@$args[0])) {
             foreach ($args[0] as $k => $v)
                 $this->$k = $v;
-        } else if (is_string(@$args[0]))
+        } else if (is_string(@$args[0])) {
             $this->expression = $args[0];
+            $this->allowReview = !!@$args[1];
+        }
     }
 
 
@@ -441,12 +460,13 @@ class Formula {
         else if ($t !== "" || !$e) {
             $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
             $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "<span style='color:red;text-decoration:underline'>" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "</span>”.";
-        } else if ($e->aggt)
+        } else if ($e->aggt && !$this->allowReview)
             $this->_error_html = "Illegal formula: can’t return a raw score, use an aggregate function.";
         else if (($x = $e->resolve_scores()))
             $this->_error_html = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
         else {
             $e->text = $this->expression;
+            $this->needsReview = !!$e->aggt;
             $e->set_format();
         }
         $this->_parse = (count($this->_error_html) ? false : $e);
@@ -617,7 +637,7 @@ class Formula {
     }
 
 
-    public function compile_function_body($contact) {
+    public function compile_function($contact) {
         global $Conf;
         $this->check();
         $state = new FormulaCompileState($contact);
@@ -650,12 +670,10 @@ class Formula {
     return ($x === true ? 1 : $x);
   else
     return $x;' . "\n";
-        //$Conf->infoMsg(Ht::pre_text("function (\$prow, \$contact, \$format = null, \$forceShow = false) {\n  /* $this->expression */\n  $t}\n"));
-        return $t;
-    }
 
-    public function compile_function($contact) {
-        return create_function("\$prow, \$contact, \$format = null, \$forceShow = false", $this->compile_function_body($contact));
+        $args = '$prow, $rrow_cid, $contact, $format = null, $forceShow = false';
+        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  /* $this->expression */\n  $t}\n"));
+        return create_function($args, $t);
     }
 
     public function add_query_options(&$queryOptions, $contact) {
@@ -710,4 +728,8 @@ class Formula {
         return $this->heading ? : ($this->name ? : $this->expression);
     }
 
+    public function needs_review() {
+        $this->check();
+        return $this->needsReview;
+    }
 }
