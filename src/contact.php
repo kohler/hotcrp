@@ -1758,38 +1758,38 @@ class Contact {
         } else
             $viewscore = VIEWSCORE_AUTHOR;
         assert(!$rrow || $prow->paperId == $rrow->paperId);
+        $rights = $this->rights($prow, $forceShow);
+        if ($rights->can_administer)
+            return true;
+        if (!($prow->timeSubmitted > 0 || $rights->review_type || $rights->allow_administer))
+            return false;
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
-        $rights = $this->rights($prow, $forceShow);
-        return $rights->can_administer
-            || (($prow->timeSubmitted > 0
-                 || $rights->review_type
-                 || $rights->allow_administer)
-                && (($rights->act_author_view
-                     && $rrowSubmitted
-                     && $viewscore >= VIEWSCORE_AUTHOR
-                     && $this->can_author_view_submitted_review($prow))
-                    || ($rights->allow_pc
-                        && $rrowSubmitted
-                        && $viewscore >= VIEWSCORE_PC
-                        && $pc_seeallrev > 0 // see also timePCViewAllReviews()
-                        && ($pc_seeallrev != Conference::PCSEEREV_UNLESSANYINCOMPLETE
-                            || !$this->has_outstanding_review())
-                        && ($pc_seeallrev != Conference::PCSEEREV_UNLESSINCOMPLETE
-                            || !$rights->review_type)
-                        && $Conf->check_tracks($prow, $this, "viewrev"))
-                    || ($rights->review_type
-                        && !$rights->view_conflict_type
-                        && $rrowSubmitted
-                        && $viewscore >= VIEWSCORE_PC
-                        && (($prow->review_not_incomplete($this)
-                             && ($rights->allow_pc
-                                 || $Conf->settings["extrev_view"] >= 1))
-                            || $prow->leadContactId == $this->contactId))
-                    || ($rrow
-                        && $rrow->paperId == $prow->paperId
-                        && $this->is_my_review($rrow)
-                        && $viewscore >= VIEWSCORE_REVIEWERONLY)));
+        $pc_trackok = $rights->allow_pc && $Conf->check_tracks($prow, $this, "viewrev");
+        return ($rights->act_author_view
+                && $rrowSubmitted
+                && $viewscore >= VIEWSCORE_AUTHOR
+                && $this->can_author_view_submitted_review($prow))
+            || ($rights->allow_pc
+                && $rrowSubmitted
+                && $viewscore >= VIEWSCORE_PC
+                && $pc_seeallrev > 0 // see also timePCViewAllReviews()
+                && ($pc_seeallrev != Conference::PCSEEREV_UNLESSANYINCOMPLETE
+                    || !$this->has_outstanding_review())
+                && ($pc_seeallrev != Conference::PCSEEREV_UNLESSINCOMPLETE
+                    || !$rights->review_type)
+                && $pc_trackok)
+            || ($rights->review_type
+                && !$rights->view_conflict_type
+                && $rrowSubmitted
+                && $viewscore >= VIEWSCORE_PC
+                && (($prow->review_not_incomplete($this)
+                     && ($Conf->settings["extrev_view"] >= 1 || $pc_trackok))
+                    || $prow->leadContactId == $this->contactId))
+            || ($rrow
+                && $rrow->paperId == $prow->paperId
+                && $this->is_my_review($rrow)
+                && $viewscore >= VIEWSCORE_REVIEWERONLY);
     }
 
     function perm_view_review($prow, $rrow, $forceShow) {
