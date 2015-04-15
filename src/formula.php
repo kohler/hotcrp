@@ -18,7 +18,8 @@ class FormulaCompileState {
     function __construct($contact) {
         $this->contact = $contact;
     }
-    function _addgtemp($name, $expr) {
+
+    private function _addgtemp($name, $expr) {
         if (($tname = @$this->gtmp[$name]) === null) {
             if (preg_match('/\A\w+\z/', $name))
                 $tname = "\$$name";
@@ -29,7 +30,7 @@ class FormulaCompileState {
         }
         return $tname;
     }
-    function _push() {
+    private function _push() {
         $this->_stack[] = array($this->lprefix, $this->lstmt, $this->ismy);
         $this->lprefix = ++$this->maxlprefix;
         $this->lstmt = array();
@@ -37,33 +38,33 @@ class FormulaCompileState {
         $this->indent += 2;
         return $this->lprefix;
     }
-    function _pop($content) {
+    private function _pop($content) {
         list($this->lprefix, $this->lstmt, $this->ismy) = array_pop($this->_stack);
         $this->indent -= 2;
         $this->lstmt[] = $content;
     }
-    function _addltemp($expr = "null", $always_var = false) {
+    private function _addltemp($expr = "null", $always_var = false) {
         if (!$always_var && preg_match('/\A(?:[\d.]+|\$\w+|null)\z/', $expr))
             return $expr;
         $tname = "\$t" . $this->lprefix . "_" . count($this->lstmt);
         $this->lstmt[] = "$tname = $expr;";
         return $tname;
     }
-    function _join_lstmt($isblock) {
+    private function _join_lstmt($isblock) {
         $indent = "\n" . str_pad("", $this->indent);
         if ($isblock)
             return "{" . $indent . join($indent, $this->lstmt) . substr($indent, 0, $this->indent - 1) . "}";
         else
             return join($indent, $this->lstmt);
     }
-    function _add_pc_can_review() {
+    private function _add_pc_can_review() {
         if (!isset($this->gtmp["pc_can_review"])) {
             $this->gtmp["pc_can_review"] = "\$pc_can_review";
             $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
         }
         return "\$pc_can_review";
     }
-    function _add_submitted_reviewers() {
+    private function _add_submitted_reviewers() {
         if (!isset($this->gtmp["submitted_reviewers"])) {
             $this->queryOptions["reviewContactIds"] = true;
             $this->gtmp["submitted_reviewers"] = "\$submitted_reviewers";
@@ -71,12 +72,207 @@ class FormulaCompileState {
         }
         return "\$submitted_reviewers";
     }
-    function _add_review_prefs() {
+    private function _add_review_prefs() {
         if (!isset($this->gtmp["allrevprefs"])) {
             $this->gtmp["allrevprefs"] = "\$allrevprefs";
             $this->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
         }
         return "\$allrevprefs";
+    }
+
+
+    private function _compile_loop($initial_value, $combiner, $e) {
+        $t_result = $this->_addltemp($initial_value, true);
+        $combiner = str_replace("~r~", $t_result, $combiner);
+        $p = $this->_push();
+
+        $aggt = 0;
+        foreach ($e->args as $i => $ee) {
+            $t = $this->_addltemp($this->compile($ee));
+            $combiner = str_replace("~l" . ($i ? : "") . "~", $t, $combiner);
+            $aggt |= $ee->aggt;
+        }
+        $this->lstmt[] = "$t_result = $combiner;";
+
+        $t_looper = "\$i$p";
+
+        if ($aggt & FormulaExpr::APCCANREV) {
+            $g = $this->_add_pc_can_review();
+            if ($aggt & FormulaExpr::ASUBREV)
+                $g = $this->_addgtemp("rev_and_pc_can_review", "$g + array_flip(" . $this->_add_submitted_reviewers() . ")");
+            $loop = "foreach ($g as \$i$p => \$v$p)";
+        } else if ($aggt === (FormulaExpr::ASUBREV | FormulaExpr::APREF)) {
+            $g = $this->_addgtemp("rev_and_pref_cids", $this->_add_review_prefs() . " + array_flip(" . $this->_add_submitted_reviewers() . ")");
+            $loop = "foreach ($g as \$i$p => \$v$p)";
+        } else if ($aggt === FormulaExpr::ASUBREV)
+            $loop = "foreach (" . $this->_add_submitted_reviewers() . " as \$i$p)";
+        else
+            $loop = "foreach (" . $this->_add_review_prefs() . " as \$i$p => \$v$p)";
+        $loop .= " " . $this->_join_lstmt(true);
+        if ($aggt == FormulaExpr::APREF)
+            $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
+        $loop = str_replace("~i~", "\$i$p", $loop);
+
+        $this->_pop($loop);
+        return $t_result;
+    }
+
+    private function _compile_my($e) {
+        $p = $this->_push();
+        $this->ismy = true;
+        $t = $this->_addltemp($this->compile($e));
+        $this->_pop($this->_join_lstmt(false));
+        return $t;
+    }
+
+    private static function _cast_bool($t) {
+        return "($t !== null ? (bool) $t : null)";
+    }
+
+    public function compile($e) {
+        $op = $e->op;
+        if ($op == "")
+            return $e->args[0];
+
+        if ($op == "tag" || $op == "tagval") {
+            $this->queryOptions["tags"] = true;
+            $tagger = new Tagger($this->contact);
+            $e_tag = $tagger->check($e->args[0]);
+            $t_tags = $this->_addgtemp("tags", "(\$forceShow || \$contact->can_view_tags(\$prow, true) ? \$prow->all_tags_text() : '')");
+            $t_tagpos = $this->_addgtemp("tagpos {$e->args[0]}", "stripos($t_tags, \" $e_tag#\")");
+            $t_tagval = $this->_addgtemp("tagval {$e->args[0]}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
+            if ($op == "tag")
+                return "($t_tagval !== 0 ? $t_tagval : true)";
+            else
+                return $t_tagval;
+        }
+
+        if ($op == "revtype") {
+            if ($this->ismy)
+                $rt = $this->_addgtemp("myrevtype", "\$prow->review_type(\$contact)");
+            else {
+                $view_score = $this->contact->viewReviewFieldsScore(null, true);
+                if (VIEWSCORE_PC <= $view_score)
+                    return "null";
+                $this->queryOptions["reviewTypes"] = true;
+                $rt = $this->_addgtemp("revtypes", "\$prow->submitted_review_types()") . "[~i~]";
+            }
+            return "({$rt}==" . $e->args[0] . ")";
+        }
+
+        if ($op == "rf") {
+            $f = $e->args[0];
+            if ($this->ismy)
+                $fidx = "[\$contact->contactId]";
+            else {
+                $view_score = $this->contact->viewReviewFieldsScore(null, true);
+                if ($f->view_score <= $view_score)
+                    return "null";
+                $fidx = "[~i~]";
+            }
+            if (!isset($this->queryOptions["scores"]))
+                $this->queryOptions["scores"] = array();
+            $this->queryOptions["scores"][$f->id] = $f->id;
+            $t_f = $this->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")");
+            return "((int) @$t_f$fidx ? : null)";
+        }
+
+        if ($op == "revpref" || $op == "revprefexp") {
+            if ($this->ismy)
+                $fidx = "[\$contact->contactId]";
+            else {
+                $view_score = $this->contact->viewReviewFieldsScore(null, true);
+                if (VIEWSCORE_PC <= $view_score)
+                    return "null";
+                $fidx = "[~i~]";
+            }
+            $this->queryOptions["allReviewerPreference"] = true;
+            return "@" . $this->_add_review_prefs() . $fidx . "[" . ($op == "revpref" ? 0 : 1) . "]";
+        }
+
+        if ($op == "topicscore") {
+            $this->queryOptions["topics"] = true;
+            if ($this->ismy)
+                return $this->_addgtemp("mytopicscore", "\$prow->topic_interest_score(\$contact)");
+            else
+                return "\$prow->topic_interest_score(~i~)";
+        }
+
+
+        if ($op == "?:") {
+            $t = $this->_addltemp($this->compile($e->args[0]));
+            $tt = $this->_addltemp($this->compile($e->args[1]));
+            $tf = $this->_addltemp($this->compile($e->args[2]));
+            return "($t ? $tt : $tf)";
+        }
+
+        if (count($e->args) == 1 && isset(Formula::$opprec["u$op"])) {
+            $t = $this->_addltemp($this->compile($e->args[0]));
+            if ($op == "!")
+                return "$op$t";
+            else
+                return "($t === null ? $t : $op$t)";
+        }
+
+        if (count($e->args) == 2 && isset(Formula::$opprec[$op])) {
+            $t1 = $this->_addltemp($this->compile($e->args[0]));
+            $t2 = $this->_addltemp($this->compile($e->args[1]));
+            if ($op == "&&")
+                return "($t1 ? $t2 : $t1)";
+            else if ($op == "||")
+                return "($t1 ? : $t2)";
+            else
+                return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
+        }
+
+        if (count($e->args) == 1 && $op == "my")
+            return $this->_compile_my($e->args[0]);
+
+        if (count($e->args) == 1 && $op == "all") {
+            $t = $this->_compile_loop("null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $e);
+            return self::_cast_bool($t);
+        }
+
+        if (count($e->args) == 1 && $op == "any") {
+            $t = $this->_compile_loop("null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", $e);
+            return self::_cast_bool($t);
+        }
+
+        if (count($e->args) == 1 && $op == "min")
+            return $this->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ < ~r~) ? ~l~ : ~r~)", $e);
+
+        if (count($e->args) == 1 && $op == "max")
+            return $this->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ > ~r~) ? ~l~ : ~r~)", $e);
+
+        if (count($e->args) == 1 && $op == "count")
+            return $this->_compile_loop("0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $e);
+
+        if (count($e->args) == 1 && $op == "sum")
+            return $this->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)", $e);
+
+        if (count($e->args) == 1 && ($op == "avg" || $op == "wavg")) {
+            $t = $this->_compile_loop("array(0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~, ~r~[1] + 1) : ~r~)", $e);
+            return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
+        }
+
+        if (count($e->args) == 2 && $op == "wavg") {
+            $t = $this->_compile_loop("array(0, 0)", "(~l~ !== null && ~l1~ !== null ? array(~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~) : ~r~)", $e);
+            return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
+        }
+
+        if (count($e->args) == 1 && ($op == "variance" || $op == "var" || $op == "var_pop" || $op == "var_samp" || $op == "std" || $op == "stddev" || $op == "stddev_pop" || $op == "stddev_samp")) {
+            $t = $this->_compile_loop("array(0, 0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1) : ~r~)", $e);
+            if ($op == "variance" || $op == "var" || $op == "var_samp")
+                return "(${t}[2] > 1 ? ${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1)) : (${t}[2] ? 0 : null))";
+            else if ($op == "var_pop")
+                return "(${t}[2] ? ${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2]) : null)";
+            else if ($op == "std" || $op == "stddev" || $op == "stddev_samp")
+                return "(${t}[2] > 1 ? sqrt(${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1))) : (${t}[2] ? 0 : null))";
+            else if ($op == "stddev_pop")
+                return "(${t}[2] ? sqrt(${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2])) : null)";
+        }
+
+        return "null";
     }
 }
 
@@ -196,7 +392,7 @@ class Formula {
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
-    private static $_opprec = array(
+    public static $opprec = array(
         "**" => 13,
         "u+" => 12, "u-" => 12, "u!" => 12,
         "*" => 11, "/" => 11, "%" => 11,
@@ -301,7 +497,7 @@ class Formula {
                     return null;
             }
             $t = substr($t, 1);
-        } else if (($e2 = $this->_parse_expr($t, self::$_opprec["u+"], false)))
+        } else if (($e2 = $this->_parse_expr($t, self::$opprec["u+"], false)))
             $e->add($e2);
         else
             return null;
@@ -326,12 +522,12 @@ class Formula {
         } else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
             $op = $t[0];
             $t = substr($t, 1);
-            if (!($e = $this->_parse_expr($t, self::$_opprec["u$op"], $in_qc)))
+            if (!($e = $this->_parse_expr($t, self::$opprec["u$op"], $in_qc)))
                 return null;
             $e = FormulaExpr::make($op, $e);
         } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
             $t = $m[2];
-            if (!($e = $this->_parse_expr($t, self::$_opprec["u!"], $in_qc)))
+            if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
                 return null;
             $e = FormulaExpr::make("!", $e);
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
@@ -408,7 +604,7 @@ class Formula {
             } else
                 return $e;
 
-            $opprec = self::$_opprec[$op];
+            $opprec = self::$opprec[$op];
             if ($opprec < $level)
                 return $e;
 
@@ -421,207 +617,11 @@ class Formula {
     }
 
 
-    /* compilation */
-
-    private static function _compile_loop($state, $initial_value, $combiner, $e) {
-        $t_result = $state->_addltemp($initial_value, true);
-        $combiner = str_replace("~r~", $t_result, $combiner);
-        $p = $state->_push();
-
-        $aggt = 0;
-        foreach ($e->args as $i => $ee) {
-            $t = $state->_addltemp(self::_compile($state, $ee));
-            $combiner = str_replace("~l" . ($i ? : "") . "~", $t, $combiner);
-            $aggt |= $ee->aggt;
-        }
-        $state->lstmt[] = "$t_result = $combiner;";
-
-        $t_looper = "\$i$p";
-
-        if ($aggt & FormulaExpr::APCCANREV) {
-            $g = $state->_add_pc_can_review();
-            if ($aggt & FormulaExpr::ASUBREV)
-                $g = $state->_addgtemp("rev_and_pc_can_review", "$g + array_flip(" . $state->_add_submitted_reviewers() . ")");
-            $loop = "foreach ($g as \$i$p => \$v$p)";
-        } else if ($aggt === (FormulaExpr::ASUBREV | FormulaExpr::APREF)) {
-            $g = $state->_addgtemp("rev_and_pref_cids", $state->_add_review_prefs() . " + array_flip(" . $state->_add_submitted_reviewers() . ")");
-            $loop = "foreach ($g as \$i$p => \$v$p)";
-        } else if ($aggt === FormulaExpr::ASUBREV)
-            $loop = "foreach (" . $state->_add_submitted_reviewers() . " as \$i$p)";
-        else
-            $loop = "foreach (" . $state->_add_review_prefs() . " as \$i$p => \$v$p)";
-        $loop .= " " . $state->_join_lstmt(true);
-        if ($aggt == FormulaExpr::APREF)
-            $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
-        $loop = str_replace("~i~", "\$i$p", $loop);
-
-        $state->_pop($loop);
-        return $t_result;
-    }
-
-    private static function _compile_my($state, $e) {
-        $p = $state->_push();
-        $state->ismy = true;
-        $t = $state->_addltemp(self::_compile($state, $e));
-        $state->_pop($state->_join_lstmt(false));
-        return $t;
-    }
-
-    private static function _cast_bool($t) {
-        return "($t !== null ? (bool) $t : null)";
-    }
-
-    private static function _compile($state, $e) {
-        $op = $e->op;
-        if ($op == "")
-            return $e->args[0];
-
-        if ($op == "tag" || $op == "tagval") {
-            $state->queryOptions["tags"] = true;
-            $tagger = new Tagger($state->contact);
-            $e_tag = $tagger->check($e->args[0]);
-            $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->can_view_tags(\$prow, true) ? \$prow->all_tags_text() : '')");
-            $t_tagpos = $state->_addgtemp("tagpos {$e->args[0]}", "stripos($t_tags, \" $e_tag#\")");
-            $t_tagval = $state->_addgtemp("tagval {$e->args[0]}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
-            if ($op == "tag")
-                return "($t_tagval !== 0 ? $t_tagval : true)";
-            else
-                return $t_tagval;
-        }
-
-        if ($op == "revtype") {
-            if ($state->ismy)
-                $rt = $state->_addgtemp("myrevtype", "\$prow->review_type(\$contact)");
-            else {
-                $view_score = $state->contact->viewReviewFieldsScore(null, true);
-                if (VIEWSCORE_PC <= $view_score)
-                    return "null";
-                $state->queryOptions["reviewTypes"] = true;
-                $rt = $state->_addgtemp("revtypes", "\$prow->submitted_review_types()") . "[~i~]";
-            }
-            return "({$rt}==" . $e->args[0] . ")";
-        }
-
-        if ($op == "rf") {
-            $f = $e->args[0];
-            if ($state->ismy)
-                $fidx = "[\$contact->contactId]";
-            else {
-                $view_score = $state->contact->viewReviewFieldsScore(null, true);
-                if ($f->view_score <= $view_score)
-                    return "null";
-                $fidx = "[~i~]";
-            }
-            if (!isset($state->queryOptions["scores"]))
-                $state->queryOptions["scores"] = array();
-            $state->queryOptions["scores"][$f->id] = $f->id;
-            $t_f = $state->_addgtemp($f->id, "\$prow->scores(\"{$f->id}\")");
-            return "((int) @$t_f$fidx ? : null)";
-        }
-
-        if ($op == "revpref" || $op == "revprefexp") {
-            if ($state->ismy)
-                $fidx = "[\$contact->contactId]";
-            else {
-                $view_score = $state->contact->viewReviewFieldsScore(null, true);
-                if (VIEWSCORE_PC <= $view_score)
-                    return "null";
-                $fidx = "[~i~]";
-            }
-            $state->queryOptions["allReviewerPreference"] = true;
-            return "@" . $state->_add_review_prefs() . $fidx . "[" . ($op == "revpref" ? 0 : 1) . "]";
-        }
-
-        if ($op == "topicscore") {
-            $state->queryOptions["topics"] = true;
-            if ($state->ismy)
-                return $state->_addgtemp("mytopicscore", "\$prow->topic_interest_score(\$contact)");
-            else
-                return "\$prow->topic_interest_score(~i~)";
-        }
-
-
-        if ($op == "?:") {
-            $t = $state->_addltemp(self::_compile($state, $e->args[0]));
-            $tt = $state->_addltemp(self::_compile($state, $e->args[1]));
-            $tf = $state->_addltemp(self::_compile($state, $e->args[2]));
-            return "($t ? $tt : $tf)";
-        }
-
-        if (count($e->args) == 1 && isset(self::$_opprec["u$op"])) {
-            $t = $state->_addltemp(self::_compile($state, $e->args[0]));
-            if ($op == "!")
-                return "$op$t";
-            else
-                return "($t === null ? $t : $op$t)";
-        }
-
-        if (count($e->args) == 2 && isset(self::$_opprec[$op])) {
-            $t1 = $state->_addltemp(self::_compile($state, $e->args[0]));
-            $t2 = $state->_addltemp(self::_compile($state, $e->args[1]));
-            if ($op == "&&")
-                return "($t1 ? $t2 : $t1)";
-            else if ($op == "||")
-                return "($t1 ? : $t2)";
-            else
-                return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
-        }
-
-        if (count($e->args) == 1 && $op == "my")
-            return self::_compile_my($state, $e->args[0]);
-
-        if (count($e->args) == 1 && $op == "all") {
-            $t = self::_compile_loop($state, "null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $e);
-            return self::_cast_bool($t);
-        }
-
-        if (count($e->args) == 1 && $op == "any") {
-            $t = self::_compile_loop($state, "null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", $e);
-            return self::_cast_bool($t);
-        }
-
-        if (count($e->args) == 1 && $op == "min")
-            return self::_compile_loop($state, "null", "(~l~ !== null && (~r~ === null || ~l~ < ~r~) ? ~l~ : ~r~)", $e);
-
-        if (count($e->args) == 1 && $op == "max")
-            return self::_compile_loop($state, "null", "(~l~ !== null && (~r~ === null || ~l~ > ~r~) ? ~l~ : ~r~)", $e);
-
-        if (count($e->args) == 1 && $op == "count")
-            return self::_compile_loop($state, "0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $e);
-
-        if (count($e->args) == 1 && $op == "sum")
-            return self::_compile_loop($state, "null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)", $e);
-
-        if (count($e->args) == 1 && ($op == "avg" || $op == "wavg")) {
-            $t = self::_compile_loop($state, "array(0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~, ~r~[1] + 1) : ~r~)", $e);
-            return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
-        }
-
-        if (count($e->args) == 2 && $op == "wavg") {
-            $t = self::_compile_loop($state, "array(0, 0)", "(~l~ !== null && ~l1~ !== null ? array(~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~) : ~r~)", $e);
-            return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
-        }
-
-        if (count($e->args) == 1 && ($op == "variance" || $op == "var" || $op == "var_pop" || $op == "var_samp" || $op == "std" || $op == "stddev" || $op == "stddev_pop" || $op == "stddev_samp")) {
-            $t = self::_compile_loop($state, "array(0, 0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1) : ~r~)", $e);
-            if ($op == "variance" || $op == "var" || $op == "var_samp")
-                return "(${t}[2] > 1 ? ${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1)) : (${t}[2] ? 0 : null))";
-            else if ($op == "var_pop")
-                return "(${t}[2] ? ${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2]) : null)";
-            else if ($op == "std" || $op == "stddev" || $op == "stddev_samp")
-                return "(${t}[2] > 1 ? sqrt(${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1))) : (${t}[2] ? 0 : null))";
-            else if ($op == "stddev_pop")
-                return "(${t}[2] ? sqrt(${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2])) : null)";
-        }
-
-        return "null";
-    }
-
     public function compile_function_body($contact) {
         global $Conf;
         $this->check();
         $state = new FormulaCompileState($contact);
-        $expr = self::_compile($state, $this->_parse);
+        $expr = $state->compile($this->_parse);
 
         $t = join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
@@ -662,7 +662,7 @@ class Formula {
         $this->check();
         $state = new FormulaCompileState($contact);
         $state->queryOptions =& $queryOptions;
-        self::_compile($state, $this->_parse);
+        $state->compile($this->_parse);
     }
 
     private static function expression_view_score($e, $contact) {
