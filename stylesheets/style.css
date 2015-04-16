@@ -2810,7 +2810,11 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 
 .gdot {
 	stroke: rgba(70, 130, 180, 0.8);
-	fill: none;
+	fill: rgba(70, 130, 180, 0.2);
+}
+.gdot.redtag {
+	stroke: rgba(245, 51, 51, 0.8);
+	fill: rgba(245, 51, 51, 0.2);
 }
 
 .revtimel_hover0, .gdot_hover0 {

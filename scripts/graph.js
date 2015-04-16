@@ -161,22 +161,27 @@ function quantize(data, xs, ys) {
         if (d[0] == null || d[1] == null)
             continue;
         vd = [xs(d[0]), ys(d[1]), [d[2]], d[3]];
-        if ((vp = q.find(vd)) && vp[3] == vd[3]) {
+        if ((vp = q.find(vd))) {
             dx = Math.abs(vp[0] - vd[0]);
             dy = Math.abs(vp[1] - vd[1]);
-            if (dx <= 2 && dy <= 2 && dx * dx + dy * dy <= 4) {
-                vp[2].push(d[2]);
-                vp.n += 1;
-                vp.r = Math.sqrt(vp.n);
-                continue;
-            }
+            if (dx > 2 || dy > 2 || dx * dx + dy * dy > 4)
+                vp = null;
         }
-        vd.r = vd.n = 1;
-        nd.push(vd);
-        q.add(vd);
+        while (vp && vp[3] != vd[3] && vp.next)
+            vp = vp.next;
+        if (vp && vp[3] == vd[3]) {
+            vp[2].push(d[2]);
+            vp.n += 1;
+            vp.r = Math.sqrt(vp.n);
+        } else {
+            vp ? vp.next = vd : q.add(vd);
+            vd.r = vd.n = 1;
+            nd.push(vd);
+        }
     }
     return {data: nd, quadtree: q};
 }
+
 
 /* actual graphs */
 var hotcrp_graphs = {};
@@ -260,9 +265,7 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
       .append("text")
-        .attr("x", width)
-        .attr("y", 0)
-        .attr("dy", "-.5em")
+        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
         .style({"text-anchor": "end", "font-size": "smaller"})
         .text(dlf.label(revdata.deadlines));
 
@@ -271,8 +274,7 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
         .call(yAxis)
       .append("text")
         .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
+        .attr("y", 6).attr("dy", ".71em")
         .style({"text-anchor": "end", "font-size": "smaller"})
         .text("Fraction of assignments completed");
 
@@ -315,7 +317,7 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
     }
 };
 
-hotcrp_graphs.scatter = function (selector, data) {
+hotcrp_graphs.scatter = function (selector, data, info) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = $(selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom;
@@ -323,7 +325,8 @@ hotcrp_graphs.scatter = function (selector, data) {
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = d3.extent(data, function (d) { return d[1]; }),
         x = d3.scale.linear().range([0, width]).domain([xe[0] - 0.3, xe[1] + 0.3]),
-        y = d3.scale.linear().range([height, 0]).domain([ye[0] - 0.3, ye[1] + 0.3]);
+        y = d3.scale.linear().range([height, 0]).domain([ye[0] - 0.3, ye[1] + 0.3]),
+        rf = function (d) { return 4 * d.r; };
     data = quantize(data, x, y);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
@@ -336,13 +339,16 @@ hotcrp_graphs.scatter = function (selector, data) {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     function place(sel) {
-        return sel.attr("r", function (d) { return 4 * d.r; })
+        return sel.attr("r", rf)
             .attr("cx", function (d) { return d[0]; })
             .attr("cy", function (d) { return d[1]; });
     }
 
     place(svg.selectAll(".dot").data(data.data)
-            .enter().append("circle").attr("class", "gdot"));
+          .enter().append("circle")
+            .attr("class", function (d) {
+                return d[3] ? "gdot " + d[3] : "gdot";
+            }));
 
     svg.append("circle").attr("class", "gdot gdot_hover0");
     svg.append("circle").attr("class", "gdot gdot_hover1");
@@ -351,11 +357,20 @@ hotcrp_graphs.scatter = function (selector, data) {
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
+        .call(xAxis)
+      .append("text")
+        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(info.xlabel || "");
 
     svg.append("g")
         .attr("class", "y axis")
-        .call(yAxis);
+        .call(yAxis)
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6).attr("dy", ".71em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(info.ylabel || "");
 
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})
@@ -368,8 +383,13 @@ hotcrp_graphs.scatter = function (selector, data) {
         m.clientX = d3.event.clientX;
         m.clientY = d3.event.clientY;
         if (p) {
-            var dx = p[0] - m[0], dy = p[1] - m[1];
-            if (dx * dx + dy * dy > (4 * p.r + 4) * (4 * p.r + 4))
+            var dx = p[0] - m[0], dy = p[1] - m[1],
+                d = Math.sqrt(dx * dx + dy * dy);
+            if (d <= rf(p) + 4) {
+                for (var pp = p.next; pp; pp = pp.next)
+                    if (rf(pp) >= d && rf(pp) < rf(p))
+                        p = pp;
+            } else
                 p = null;
         }
         if (p != hovered_data) {
@@ -382,7 +402,7 @@ hotcrp_graphs.scatter = function (selector, data) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             hubble.html("<p>#" + p[2].join(", #") + "</p>")
-                .direction("b").show(p[0], p[1] - 4 * p.r + 4, this);
+                .direction("b").show(p[0], p[1] - rf(p) + 4, this);
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
