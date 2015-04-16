@@ -33,6 +33,22 @@ class ReviewTimes {
             $dl = $Conf->review_deadline($rn, true, false);
             $this->dl[$rn] = +$Conf->setting($dl);
         }
+
+        // maybe hide who's who
+        if (!$Me->can_view_aggregated_review_identity()) {
+            $who = $r = array();
+            foreach ($this->r as $cid => $data)
+                if ($cid === "conflicts" || $cid == $Me->contactId)
+                    $r[$cid] = $data;
+                else {
+                    do {
+                        $ncid = mt_rand(1, 2 * count(pcMembers()));
+                    } while (isset($who[$ncid]));
+                    $who[$ncid] = true;
+                    $r["x" . $ncid] = $data;
+                }
+            $this->r = $r;
+        }
     }
 
     public function json() {

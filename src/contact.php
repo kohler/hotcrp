@@ -1867,6 +1867,13 @@ class Contact {
             || !$Conf->is_review_blind($rrow);
     }
 
+    function can_view_aggregated_review_identity() {
+        global $Conf;
+        return $this->privChair
+            || ($this->isPC
+                && (!$Conf->setting("pc_seeblindrev") || !$Conf->is_review_blind(null)));
+    }
+
     function can_view_review_round($prow, $rrow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer

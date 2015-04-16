@@ -108,7 +108,8 @@ class ContactList extends BaseList {
             $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
             $revViewScore = $this->contact->viewReviewFieldsScore(null, true);
             $f = $this->rf->field($score);
-            if ($f->view_score <= $revViewScore)
+            if ($f->view_score <= $revViewScore
+                || !$this->contact->can_view_aggregated_review_identity())
                 return false;
             if (!isset($queryOptions['scores']))
                 $queryOptions['scores'] = array();

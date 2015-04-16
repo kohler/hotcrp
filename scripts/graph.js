@@ -179,7 +179,14 @@ function hotcrp_graphs_cdf(args) {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // massage data
-    var series = d3.values(args.series).filter(function (d) {
+    var series = args.series;
+    if (!series.length) {
+        series = d3.values(series);
+        series.sort(function (a, b) {
+            return d3.ascending(a.priority || 0, b.priority || 0);
+        });
+    }
+    series = series.filter(function (d) {
         return (d.d ? d.d : d).length > 0;
     });
     var data = series.map(function (d) {
@@ -188,11 +195,12 @@ function hotcrp_graphs_cdf(args) {
     });
 
     // axis domains
-    x.domain(data.reduce(function (e, d) {
-        e[0] = Math.min(e[0], d[0][0] - 0.1);
-        e[1] = Math.max(e[1], d[d.length - 1][0] + 0.1);
+    var i = data.reduce(function (e, d) {
+        e[0] = Math.min(e[0], d[0][0]);
+        e[1] = Math.max(e[1], d[d.length - 1][0]);
         return e;
-    }, [Infinity, -Infinity]));
+    }, [Infinity, -Infinity]);
+    x.domain([i[0] - (i[1] - i[0])/32, i[1] + (i[1] - i[0])/32]);
     var i = d3.max(data, function (d) { return d[d.length - 1][1]; });
     y.domain([0, Math.ceil(i * 10) / 10]);
 
@@ -275,7 +283,7 @@ hotcrp_graphs.cdf = hotcrp_graphs_cdf;
 
 
 hotcrp_graphs.procrastination = function (selector, revdata) {
-    var args = {selector: selector, series: []};
+    var args = {selector: selector, series: {}};
 
     // collect data
     var alldata = [], d, i, l, cid, u;
@@ -283,15 +291,16 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
         var d = {d: revdata.reviews[cid]};
         if ((u = revdata.users[cid]) && u.name)
             d.label = u.name;
-        if (cid == hotcrp_user)
+        if (cid && cid == hotcrp_user.cid) {
             d.className = "revtimel_hilite";
-        else if (u && u.light)
+            d.priority = 1;
+        } else if (u && u.light)
             d.className = "revtimel_light";
         Array.prototype.push.apply(alldata, d.d);
         if (cid !== "conflicts")
             args.series[cid] = d;
     }
-    args.series.all = {d: alldata, className: "revtimel_all"};
+    args.series.all = {d: alldata, className: "revtimel_all", priority: 2};
 
     var dlf = max_procrastination_seq;
 
