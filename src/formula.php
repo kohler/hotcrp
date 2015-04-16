@@ -117,7 +117,7 @@ class FormulaCompileState {
         $t_looper = "\$i$p";
 
         $g = $this->loop_variable($aggt);
-        $loop = "foreach ($g[0] as \$i$p" . ($g ? " => \$v$p" : "") . ") "
+        $loop = "foreach ($g[0] as \$i$p" . ($g[1] ? " => \$v$p" : "") . ") "
             . $this->_join_lstmt(true);
         if ($aggt == FormulaExpr::APREF)
             $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
