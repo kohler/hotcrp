@@ -78,6 +78,7 @@ class FormulaCompileState {
     }
     private function _add_review_prefs() {
         if (!isset($this->gtmp["allrevprefs"])) {
+            $this->queryOptions["allReviewerPreference"] = true;
             $this->gtmp["allrevprefs"] = "\$allrevprefs";
             $this->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
         }
@@ -85,6 +86,20 @@ class FormulaCompileState {
     }
 
 
+    public function loop_variable($aggt) {
+        if ($aggt & FormulaExpr::APCCANREV) {
+            $g = $this->_add_pc_can_review();
+            if ($aggt & FormulaExpr::ASUBREV)
+                $g = $this->_addgtemp("rev_and_pc_can_review", "$g + array_flip(" . $this->_add_submitted_reviewers() . ")");
+            return array($g, true);
+        } else if ($aggt === (FormulaExpr::ASUBREV | FormulaExpr::APREF)) {
+            $g = $this->_addgtemp("rev_and_pref_cids", $this->_add_review_prefs() . " + array_flip(" . $this->_add_submitted_reviewers() . ")");
+            return array($g, true);
+        } else if ($aggt === FormulaExpr::ASUBREV)
+            return array($this->_add_submitted_reviewers(), false);
+        else
+            return array($this->_add_review_prefs(), true);
+    }
     private function _compile_loop($initial_value, $combiner, $e) {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
@@ -101,19 +116,9 @@ class FormulaCompileState {
 
         $t_looper = "\$i$p";
 
-        if ($aggt & FormulaExpr::APCCANREV) {
-            $g = $this->_add_pc_can_review();
-            if ($aggt & FormulaExpr::ASUBREV)
-                $g = $this->_addgtemp("rev_and_pc_can_review", "$g + array_flip(" . $this->_add_submitted_reviewers() . ")");
-            $loop = "foreach ($g as \$i$p => \$v$p)";
-        } else if ($aggt === (FormulaExpr::ASUBREV | FormulaExpr::APREF)) {
-            $g = $this->_addgtemp("rev_and_pref_cids", $this->_add_review_prefs() . " + array_flip(" . $this->_add_submitted_reviewers() . ")");
-            $loop = "foreach ($g as \$i$p => \$v$p)";
-        } else if ($aggt === FormulaExpr::ASUBREV)
-            $loop = "foreach (" . $this->_add_submitted_reviewers() . " as \$i$p)";
-        else
-            $loop = "foreach (" . $this->_add_review_prefs() . " as \$i$p => \$v$p)";
-        $loop .= " " . $this->_join_lstmt(true);
+        $g = $this->loop_variable($aggt);
+        $loop = "foreach ($g[0] as \$i$p" . ($g ? " => \$v$p" : "") . ") "
+            . $this->_join_lstmt(true);
         if ($aggt == FormulaExpr::APREF)
             $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
         $loop = str_replace("~i~", "\$i$p", $loop);
@@ -193,7 +198,7 @@ class FormulaCompileState {
 
         if ($op == "revpref" || $op == "revprefexp") {
             if ($this->aggt == self::AGG_NO)
-                return "null";
+                $fidx = "[\$rrow_cid]";
             else if ($this->aggt == self::AGG_MY)
                 $fidx = "[\$contact->contactId]";
             else {
@@ -649,9 +654,16 @@ class Formula {
         $state = new FormulaCompileState($contact);
         $expr = $state->compile($this->_parse);
 
+        $loop = "";
+        if ($this->needsReview) {
+            $g = $state->loop_variable($expr->aggt);
+            $loop = "\n  if (\$format == \"loop\")
+    return " . ($g[1] ? "array_keys($g[0])" : $g[0]) . ";\n";
+        }
+
         $t = join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
-            . join("\n  ", $state->lstmt) . "\n"
+            . $loop . join("\n  ", $state->lstmt) . "\n"
             . "  \$x = $expr;\n\n"
             . '  if ($format == "h") {
     if ($x === null || $x === false)
@@ -687,6 +699,8 @@ class Formula {
         $state = new FormulaCompileState($contact);
         $state->queryOptions =& $queryOptions;
         $state->compile($this->_parse);
+        if ($this->needsReview)
+            $state->loop_variable($this->_parse->aggt);
     }
 
     private static function expression_view_score($e, $contact) {

@@ -145,9 +145,12 @@ if ($Graph == "formula") {
         $data = array();
         while (($prow = PaperInfo::fetch($result, $Me)))
             if ($Me->can_view_paper($prow)) {
-                if ($needs_review)
-                    $revs = $prow->viewable_submitted_reviewers($Me, null);
-                else
+                if ($needs_review) {
+                    if ($fx->needs_review())
+                        $revs = $fxf($prow, null, $Me, "loop");
+                    else
+                        $revs = $fyf($prow, null, $Me, "loop");
+                } else
                     $revs = array(null);
                 $d = array(0, 0, $prow->paperId);
                 $style = (int) @$psearch->thenmap[$prow->paperId];
