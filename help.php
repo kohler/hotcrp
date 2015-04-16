@@ -947,6 +947,7 @@ merit among reviewers with high Reviewer expertise.</p>
 <p>To display a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=show%3avar%28OveMer%29") . "\">show:var(OveMer)</a>” (show
 the variance in Overall merit scores).
+You can also <a href=\"" . hoturl("graph", "g=formula") . "\">graph formulas</a>.
 To search for a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=formula%3avar%28OveMer%29%3e0.5") . "\">formula:var(OveMer)>0.5</a>”
 (select papers with variance in Overall merit greater than 0.5).

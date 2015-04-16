@@ -60,6 +60,16 @@ function formulas_qrow($i, $q, $s) {
     return $t;
 }
 
+function formula_axis_info_json($f, $type) {
+    $t = "," . $type . "label:" . json_encode($f->expression);
+    if (($ffield = $f->field_type()) && $ffield->option_letter) {
+        $t .= "," . $type . "flip:true"
+            . "," . $type . "ticks:hotcrp_graphs.option_letter_ticks("
+                . count($ffield->options) . ",\"" . chr($ffield->option_letter - 1) . "\")";
+    }
+    return $t;
+}
+
 if ($Graph == "formula") {
     $fx = $fy = null;
     $cdf = false;
@@ -170,6 +180,7 @@ if ($Graph == "formula") {
                 }
             }
         Dbl::free($result);
+
         if ($cdf) {
             foreach ($data as $style => &$d) {
                 $d = (object) array("d" => $d);
@@ -182,9 +193,9 @@ if ($Graph == "formula") {
                 }
             }
             unset($d);
-            $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . ',xlabel:' . json_encode($fx->expression) . ',ylabel:"CDF"}); })');
+            $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . formula_axis_info_json($fx, "x") . ',ylabel:"CDF"}); })');
         } else
-            $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter("#hotgraph",' . json_encode($data) . ',{xlabel:' . json_encode($fx->expression) . ',ylabel:' . json_encode($cdf ? "fraction of papers" : $fy->expression) . '}); })');
+            $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter({selector:"#hotgraph",data:' . json_encode($data) . formula_axis_info_json($fx, "x") . formula_axis_info_json($fy, "y") . '}); })');
     } else
         echo "<h2>Formulas</h2>\n";
 

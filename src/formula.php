@@ -752,4 +752,11 @@ class Formula {
         $this->check();
         return $this->needsReview;
     }
+
+    public function field_type() {
+        $this->check();
+        if ($this->_parse && $this->_parse->format instanceof ReviewField)
+            return $this->_parse->format;
+        return null;
+    }
 }

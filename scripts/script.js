@@ -3521,6 +3521,77 @@ function setmailpsel(sel) {
 }
 
 
+// score information
+var make_score_info = (function ($) {
+var sccolor = {}, info = {};
+
+function make_fm(n) {
+    if (n <= 1)
+        return function (i) { return 1; };
+    else {
+        n = 1 / (n - 1);
+        return function (i) { return (i - 1) * n; };
+    }
+}
+
+function numeric_unparser(val) {
+    return val.toFixed(val == Math.round(val) ? 0 : 2);
+}
+
+function make_letter_unparser(n, c) {
+    return function (val, count) {
+        if (val < 0.8 || val > n + 0.2)
+            return val.toFixed(2);
+        var ord1 = c.charCodeAt(0) - Math.ceil(val - 0.2) + 1;
+        var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
+        count = count || 2;
+        val = Math.trunc(count * val + 0.5) - count * Math.trunc(val);
+        if (val == 0 || val == count)
+            return val ? ch2 : ch1;
+        else if (val == count / 2)
+            return ch1 + ch2;
+        else {
+            for (var i = 0, s = ""; i < count; ++i)
+                s += i < val ? ch1 : ch2;
+            return s;
+        }
+    };
+}
+
+function make_info(n, c, sv) {
+    var fm = make_fm(n);
+    function rgb_array(val) {
+        var svx = sv + (Math.floor(fm(val) * 8.99) + 1);
+        if (!sccolor[svx]) {
+            var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo("body"), m;
+            sccolor[sv] = [0, 0, 0];
+            if ((m = /^rgba?\((\d+),(\d+),(\d+)[,)]/.exec(j.css("color").replace(/\s+/g, ""))))
+                sccolor[sv] = [+m[1], +m[2], +m[3]];
+            j.remove();
+        }
+        return sccolor[sv];
+    }
+    return {
+        fm: fm,
+        rgb_array: rgb_array,
+        rgb: function (val) {
+            var x = rgb_array(val);
+            return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
+        },
+        unparse: c ? make_letter_unparser(n, c) : numeric_unparser
+    };
+}
+
+return function (n, c, sv) {
+    var name = n + "/" + (c || "") + "/" + (sv || "sv");
+    if (!info[name])
+        info[name] = make_info(n, c || "", sv || "sv");
+    return info[name];
+};
+
+})(jQuery);
+
+
 // score charts
 var scorechart = (function ($) {
 var has_canvas = (function () {
@@ -3548,15 +3619,6 @@ function setup_canvas(canvas, w, h) {
     return ctx;
 }
 
-function make_sc_fm(nv) {
-    if (nv <= 1)
-        return function (i) { return 1; };
-    else {
-        nv = 1 / (nv - 1);
-        return function (i) { return (i - 1) * nv; };
-    }
-}
-
 function analyze_sc(sc) {
     var anal = {v: [], max: 0, h: 0, c: 0, sum: 0, sv: "sv"}, m, i, vs, x;
 
@@ -3581,20 +3643,8 @@ function analyze_sc(sc) {
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
         anal.sv = decodeURIComponent(m[1]);
 
-    anal.fm = make_sc_fm(vs.length);
+    anal.fx = make_score_info(vs.length, anal.c, anal.sv);
     return anal;
-}
-
-function sc_interp(anal, val) {
-    var sv = anal.sv + (Math.floor(anal.fm(val) * 8.99) + 1);
-    if (!sccolor[sv]) {
-        var j = $('<span style="display:none" class="svb ' + sv + '"></span>').appendTo("body"), m;
-        sccolor[sv] = [0, 0, 0];
-        if ((m = /^rgba?\((\d+),(\d+),(\d+)[,)]/.exec(j.css("color").replace(/\s+/g, ""))))
-            sccolor[sv] = [+m[1], +m[2], +m[3]];
-        j.remove();
-    }
-    return sccolor[sv];
 }
 
 function rgb_interp(a, b, f) {
@@ -3638,7 +3688,7 @@ function scorechart1_s1(sc, parent) {
         vindex = anal.c ? anal.v.length - x : x;
         if (!anal.v[vindex])
             continue;
-        color = sc_interp(anal, vindex);
+        color = anal.fx.rgb_array(vindex);
         for (h = 1; h <= anal.v[vindex]; ++h) {
             if (vindex == anal.h && h == 1)
                 ctx.fillStyle = color_unparse(rgb_interp(blackcolor, color, 0.5));
@@ -3663,7 +3713,7 @@ function scorechart1_s2(sc, parent) {
         vindex = anal.c ? anal.v.length - x : x;
         if (!anal.v[vindex])
             continue;
-        ctx.fillStyle = color_unparse(sc_interp(anal, vindex));
+        ctx.fillStyle = color_unparse(anal.fx.rgb_array(vindex));
         pos += anal.v[vindex];
         x2 = Math.round((cwidth + 1) * pos / anal.sum);
         if (x2 > x1)

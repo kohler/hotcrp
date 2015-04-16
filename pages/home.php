@@ -371,7 +371,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             echo " with an average $merit_field->name_html score of ", $merit_field->unparse_average($sumpcScore / $npcScore);
         echo ".";
         if ($Me->isPC || $Me->privChair)
-            echo "&nbsp; <small>(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a> <span class='barsep'>·</span> <a href=\"", hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
+            echo "&nbsp; <small class=\"nw\">(<a href=\"", hoturl("users", "t=pc&amp;score%5B%5D=0"), "\">details</a><span class='barsep'>·</span><a href=\"", hoturl("graph", "g=procrastination"), "\">graphs</a>)</small>";
         echo "<br />\n";
     }
     if ($myrow && $myrow->num_submitted < $myrow->num_needs_submit

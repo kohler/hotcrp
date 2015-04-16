@@ -381,8 +381,12 @@ function grouped_quadtree_gfind(point, min_distance) {
 }
 
 function grouped_quadtree(data, xs, ys, rf) {
-    var q = d3.geom.quadtree().extent([[xs.range()[0], ys.range()[1]],
-                                       [xs.range()[1], ys.range()[0]]])([]),
+    function make_extent() {
+        var xe = xs.range(), ye = ys.range();
+        return [[Math.min(xe[0], xe[1]), Math.min(ye[0], ye[1])],
+                [Math.max(xe[0], xe[1]), Math.max(ye[0], ye[1])]];
+    }
+    var q = d3.geom.quadtree().extent(make_extent())([]),
         d, nd = [], vp, vd, dx, dy;
     if (rf == null)
         rf = function (n) { return Math.sqrt(n); };
@@ -419,22 +423,27 @@ function grouped_quadtree(data, xs, ys, rf) {
     return {data: nd, quadtree: q};
 }
 
-hotcrp_graphs.scatter = function (selector, data, info) {
+hotcrp_graphs.scatter = function (args) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
-        width = $(selector).width() - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+        width = $(args.selector).width() - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom,
+        data = args.data;
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = d3.extent(data, function (d) { return d[1]; }),
-        x = d3.scale.linear().range([0, width]).domain([xe[0] - 0.3, xe[1] + 0.3]),
-        y = d3.scale.linear().range([height, 0]).domain([ye[0] - 0.3, ye[1] + 0.3]),
+        x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
+                .domain([xe[0] - 0.3, xe[1] + 0.3]),
+        y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
+                .domain([ye[0] - 0.3, ye[1] + 0.3]),
         rf = function (d) { return d.r - 1; };
     data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    args.xticks && args.xticks(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
+    args.yticks && args.yticks(yAxis, ye);
 
-    var svg = d3.select(selector).append("svg")
+    var svg = d3.select(args.selector).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
@@ -463,7 +472,7 @@ hotcrp_graphs.scatter = function (selector, data, info) {
       .append("text")
         .attr("x", width).attr("y", 0).attr("dy", "-.5em")
         .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(info.xlabel || "");
+        .text(args.xlabel || "");
 
     svg.append("g")
         .attr("class", "y axis")
@@ -472,7 +481,7 @@ hotcrp_graphs.scatter = function (selector, data, info) {
         .attr("transform", "rotate(-90)")
         .attr("y", 6).attr("dy", ".71em")
         .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(info.ylabel || "");
+        .text(args.ylabel || "");
 
     svg.append("rect").attr("width", width).attr("height", height)
         .style({"fill": "none", "pointer-events": "all"})
@@ -542,6 +551,16 @@ hotcrp_graphs.formulas_add_qrow = function () {
     j = $(hotcrp_graphs.formulas_qrow.replace(/\$/g, i)).appendTo("#qcontainer");
     hiliter_children(j);
     j.find("input[hottemptext]").each(mktemptext);
+};
+
+hotcrp_graphs.option_letter_ticks = function (n, c) {
+    return function (axis, extent) {
+        var de = extent[1] - extent[0], count = de < 4 ? 4 : 2,
+            info = make_score_info(n, c);
+        axis.ticks(Math.trunc(de * 2)).tickFormat(function (value) {
+            return info.unparse(value, count);
+        });
+    };
 };
 
 return hotcrp_graphs;
