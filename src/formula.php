@@ -656,7 +656,7 @@ class Formula {
 
         $loop = "";
         if ($this->needsReview) {
-            $g = $state->loop_variable($expr->aggt);
+            $g = $state->loop_variable($this->_parse->aggt);
             $loop = "\n  if (\$format == \"loop\")
     return " . ($g[1] ? "array_keys($g[0])" : $g[0]) . ";\n";
         }
