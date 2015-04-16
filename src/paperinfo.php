@@ -442,7 +442,7 @@ class PaperInfo {
 
     public function review_ordinal($cid) {
         $o = $this->review_ordinals();
-        return $o[$cid];
+        return @$o[$cid];
     }
 
     public function submitted_review_types() {
@@ -455,7 +455,7 @@ class PaperInfo {
 
     public function score($fid, $cid) {
         $s = $this->scores($fid);
-        return $s[$cid];
+        return @$s[$cid];
     }
 
     public function viewable_scores($field, $contact, $forceShow) {
