@@ -64,6 +64,7 @@ class PaperInfo {
     private $_contact_info = array();
     private $_score_array = array();
     private $_score_info = array();
+    private $_prefs_array = null;
 
     function __construct($p = null, $contact = null) {
         if ($p)
@@ -311,24 +312,28 @@ class PaperInfo {
 
     private function load_reviewer_preferences() {
         global $Conf;
-        $result = $Conf->qe("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
+        $result = Dbl::qe("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $row = edb_row($result);
         $this->allReviewerPreference = $row ? $row[0] : null;
+        unset($this->_prefs_array);
     }
 
     public function reviewer_preferences() {
         if (!property_exists($this, "allReviewerPreference"))
             $this->load_reviewer_preferences();
-        $x = array();
-        if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
-            $p = preg_split('/[ ,]/', $this->allReviewerPreference);
-            for ($i = 0; $i < count($p); $i += 3) {
-                if (@$p[$i+1] != "0" || @$p[$i+2] != ".")
-                    $x[(int) $p[$i]] = array((int) @$p[$i+1],
-                                             @$p[$i+2] == "." ? null : (int) @$p[$i+2]);
+        if ($this->_prefs_array === null) {
+            $x = array();
+            if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
+                $p = preg_split('/[ ,]/', $this->allReviewerPreference);
+                for ($i = 0; $i < count($p); $i += 3) {
+                    if (@$p[$i+1] != "0" || @$p[$i+2] != ".")
+                        $x[(int) $p[$i]] = array((int) @$p[$i+1],
+                                                 @$p[$i+2] == "." ? null : (int) @$p[$i+2]);
+                }
             }
+            $this->_prefs_array = $x;
         }
-        return $x;
+        return $this->_prefs_array;
     }
 
     public function options() {
