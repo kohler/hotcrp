@@ -163,8 +163,14 @@ jQuery.fn.extend({
         else
             x = this.offset();
         if (x) {
-            x.width = outer ? this.outerWidth() : this.width();
-            x.height = outer ? this.outerHeight() : this.height();
+            if (this.length == 1 && this[0].getBBox) {
+                var s = this[0].getBBox();
+                x.width = s.width;
+                x.height = s.height;
+            } else {
+                x.width = outer ? this.outerWidth() : this.width();
+                x.height = outer ? this.outerHeight() : this.height();
+            }
             x.right = x.left + x.width;
             x.bottom = x.top + x.height;
         }
@@ -1310,26 +1316,28 @@ function author_change(e, force) {
 }
 
 author_change.delta = function (e, delta) {
-    var tr = $(e).closest("tr")[0], ini, inj, k,
+    var $ = jQuery, tr = $(e).closest("tr")[0], ini, inj, k,
         link = (delta < 0 ? "previous" : "next") + "Sibling";
     while (delta) {
         var sib = tr[link];
-        if (delta < 0 && !sib[link])
+        if (delta < 0 && (!sib || (!sib[link] && !$(sib).is(":visible"))))
             break;
         hiliter(tr);
         if (!sib && delta != Infinity)
             sib = tr.nextSibling;
         else if (!sib) {
-            sib = tr.previousSibling;
-            $(tr).remove();
-            $(sib).find("input").each(function () {author_change(this);});
+            if ((sib = tr.previousSibling)) {
+                $(tr).remove();
+                if ($(sib).siblings().first().is("[hotautemplate]"))
+                    $(sib).find("input").each(function () {author_change(this);});
+            }
             break;
         }
-        ini = $(tr).find("input"), inj = $(sib).find("input");
+        ini = $(tr).find("input, select"), inj = $(sib).find("input, select");
         for (k = 0; k != ini.length; ++k) {
             var v = $(ini[k]).val();
-            $(ini[k]).val($(inj[k]).val());
-            $(inj[k]).val(v);
+            $(ini[k]).val($(inj[k]).val()).change();
+            $(inj[k]).val(v).change();
         }
         tr = sib;
         delta += delta < 0 ? 1 : -1;
@@ -1381,6 +1389,9 @@ return function (e, text) {
         }
         onblur.call(this, evt);
     };
+    jQuery(e).on("change", function () {
+        setclass(this, this.value == "" || this.value == text);
+    });
     if (e.value == "")
         e.value = text;
     setclass(e, e.value == text);

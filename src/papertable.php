@@ -529,7 +529,7 @@ class PaperTable {
             '<div class="papv"><table id="auedittable" class="auedittable">',
             '<thead><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th><th style="width:100%"></th></tr></thead>',
             '<tbody>';
-        self::echo_editable_authors_tr(' style="display:none"', '$', "", "", "");
+        self::echo_editable_authors_tr(' hotautemplate="true" style="display:none"', '$', "", "", "");
 
         $blankAu = array("", "", "", "");
         if ($this->useRequest) {

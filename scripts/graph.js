@@ -380,16 +380,15 @@ hotcrp_graphs.scatter = function (selector, data, info) {
     var hovered_data, hubble;
     function mousemoved() {
         var m = d3.mouse(this), p = data.quadtree.find(m);
-        m.clientX = d3.event.clientX;
-        m.clientY = d3.event.clientY;
         if (p) {
             var dx = p[0] - m[0], dy = p[1] - m[1],
-                d = Math.sqrt(dx * dx + dy * dy);
-            if (d <= rf(p) + 4) {
-                for (var pp = p.next; pp; pp = pp.next)
-                    if (rf(pp) >= d && rf(pp) < rf(p))
-                        p = pp;
-            } else
+                d = Math.sqrt(dx * dx + dy * dy), rfp = rf(p);
+            for (var pp = p.next; pp; pp = pp.next) {
+                var rfpp = rf(pp);
+                if (rfpp < rfp ? d <= rfpp : d > rfp)
+                    p = pp, rfp = rfpp;
+            }
+            if (d > rfp + 4)
                 p = null;
         }
         if (p != hovered_data) {
@@ -402,7 +401,7 @@ hotcrp_graphs.scatter = function (selector, data, info) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             hubble.html("<p>#" + p[2].join(", #") + "</p>")
-                .direction("b").show(p[0], p[1] - rf(p) + 4, this);
+                .direction("b").near(hovers.node());
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
@@ -419,6 +418,15 @@ hotcrp_graphs.scatter = function (selector, data, info) {
         else if (hovered_data)
             window.location = hoturl("paper", {p: hovered_data[2][0]});
     }
+};
+
+hotcrp_graphs.formulas_add_qrow = function () {
+    var i, h, j;
+    for (i = 0; $("#q" + i).length; ++i)
+        /* do nothing */;
+    j = $(hotcrp_graphs.formulas_qrow.replace(/\$/g, i)).appendTo("#qcontainer");
+    hiliter_children(j);
+    j.find("input[hottemptext]").each(mktemptext);
 };
 
 return hotcrp_graphs;
