@@ -47,7 +47,7 @@ if ($Graph == "procrastination") {
 
 // Formula experiment
 if ($Graph == "derp") {
-    $fx = new Formula("avg(ovemer)", true);
+    $fx = new Formula("pid", true);
     $fy = new Formula("avg(revexp)", true);
     $fxf = $fx->compile_function($Me);
     $fyf = $fy->compile_function($Me);

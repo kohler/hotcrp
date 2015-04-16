@@ -139,6 +139,9 @@ class FormulaCompileState {
         if ($op == "")
             return $e->args[0];
 
+        if ($op == "pid")
+            return "\$prow->paperId";
+
         if ($op == "tag" || $op == "tagval") {
             $this->queryOptions["tags"] = true;
             $tagger = new Tagger($this->contact);
@@ -553,8 +556,11 @@ class Formula {
         } else if (preg_match('/\A(\d+\.?\d*|\.\d+)(.*)\z/s', $t, $m)) {
             $e = FormulaExpr::make("", $m[1] + 0.0);
             $t = $m[2];
-        } else if (preg_match('/\A(false|true)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
             $e = FormulaExpr::make("", $m[1]);
+            $t = $m[2];
+        } else if (preg_match('/\A(pid|paperid)\b(.*)\z/si', $t, $m)) {
+            $e = FormulaExpr::make("pid", $m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
