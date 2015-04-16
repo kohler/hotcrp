@@ -1454,7 +1454,11 @@ class Conference {
             $cols[] = "R_submitted.reviewTypes";
             $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
         }
-        if (@$options["reviewTypes"] || @$options["scores"] || @$options["reviewContactIds"]) {
+        if (@$options["reviewOrdinals"]) {
+            $cols[] = "R_submitted.reviewOrdinals";
+            $j .= ", group_concat(reviewOrdinal order by reviewId) reviewOrdinals";
+        }
+        if (@$options["reviewTypes"] || @$options["scores"] || @$options["reviewContactIds"] || @$options["reviewOrdinals"]) {
             $cols[] = "R_submitted.reviewContactIds";
             $j .= ", group_concat(contactId order by reviewId) reviewContactIds";
         }

@@ -19,7 +19,7 @@ if (!$Subgraph
 $Graphs = array();
 if ($Me->isPC) {
     $Graphs["procrastination"] = "Procrastination";
-    $Graphs["formulas"] = "Formulas";
+    $Graphs["formula"] = "Formula";
 }
 if (!count($Graphs))
     $Me->escape();
@@ -55,13 +55,15 @@ function formulas_qrow($i, $q, $s) {
     if ($q === "" || $q === "all")
         $q = "(All)";
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "id" => "q$i", "hottemptext" => "(All)"));
-    $t .= " &nbsp;" . Ht::select("s$i", array("plain" => "plain", "redtag" => "red", "greentag" => "green"), $s !== "" ? $s : "plain", array("id" => "s$i"));
+    $t .= " &nbsp;" . Ht::select("s$i", array("default" => "default", "redtag" => "red", "greentag" => "green"), $s !== "" ? $s : "default", array("id" => "s$i"));
     $t .= '</td><td class="nw"><a href="#" class="qx row_up" onclick="return author_change.delta(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change.delta(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change.delta(this,Infinity)" tabindex="-1">x</a></td></tr>';
     return $t;
 }
 
-if ($Graph == "formulas") {
+if ($Graph == "formula") {
     $fx = $fy = null;
+    $cdf = false;
+    $errs = array();
 
     // derive a sample graph
     if (!isset($_REQUEST["fx"]) || !isset($_REQUEST["fy"])) {
@@ -84,13 +86,15 @@ if ($Graph == "formulas") {
 
     if (@$_REQUEST["fx"] && @$_REQUEST["fy"]) {
         $fx = new Formula($_REQUEST["fx"], true);
-        $fy = new Formula($_REQUEST["fy"], true);
+        if (strcasecmp(trim(@$_REQUEST["fy"]), "cdf") == 0)
+            $cdf = $fy = new Formula("1", true);
+        else
+            $fy = new Formula($_REQUEST["fy"], true);
 
-        $errs = array();
         if ($fx->error_html())
-            $errs[] = "X axis formula: " . $fx->error_html();
+            $errs["fx"] = "X axis formula: " . $fx->error_html();
         if ($fy->error_html())
-            $errs[] = "Y axis formula: " . $fy->error_html();
+            $errs["fy"] = "Y axis formula: " . $fy->error_html();
         if (count($errs)) {
             $Conf->errorMsg(join("<br>", $errs));
             $fx = $fy = null;
@@ -122,14 +126,19 @@ if ($Graph == "formulas") {
         $fyf = $fy->compile_function($Me);
         $needs_review = $fx->needs_review() || $fy->needs_review();
 
-        $psearch = new PaperSearch($Me, array("q" => join(" THEN ", $queries)));
+        $psearch = new PaperSearch($Me, array("q" => "(" . join(") THEN (", $queries) . ")"));
         $psearch->paperList();
 
-        echo "<h2>", htmlspecialchars($fy->expression), " vs. ", htmlspecialchars($fx->expression), "</h2>\n";
+        if ($cdf)
+            echo "<h2>", htmlspecialchars($fx->expression), " CDF</h2>\n";
+        else
+            echo "<h2>", htmlspecialchars($fy->expression), " vs. ", htmlspecialchars($fx->expression), "</h2>\n";
         echo_graph();
 
         // load data
         $queryOptions = array("paperId" => $psearch->paperList());
+        if ($needs_review)
+            $queryOptions["reviewOrdinals"] = true;
         $fx->add_query_options($queryOptions, $Me);
         $fy->add_query_options($queryOptions, $Me);
         $result = Dbl::qe_raw($Conf->paperQuery($Me, $queryOptions));
@@ -141,26 +150,45 @@ if ($Graph == "formulas") {
                 else
                     $revs = array(null);
                 $d = array(0, 0, $prow->paperId);
-                if (($style = @$psearch->thenmap[$prow->paperId]) !== null
-                    && @$styles[$style])
+                $style = (int) @$psearch->thenmap[$prow->paperId];
+                if (@$styles[$style])
                     $d[] = $styles[$style];
                 foreach ($revs as $rcid) {
                     $d[0] = $fxf($prow, $rcid, $Me);
                     $d[1] = $fyf($prow, $rcid, $Me);
-                    $data[] = $d;
+                    if ($needs_review)
+                        $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
+                    if ($cdf)
+                        $data[$style][] = $d[0];
+                    else
+                        $data[] = $d;
                 }
             }
         Dbl::free($result);
-        $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter("#hotgraph",' . json_encode($data) . ',{xlabel:' . json_encode($fx->expression) . ',ylabel:' . json_encode($fy->expression) . '}); })');
+        if ($cdf) {
+            foreach ($data as $style => &$d) {
+                $d = (object) array("d" => $d);
+                if (@$styles[$style])
+                    $d->className = $styles[$style];
+                if (@$queries[$style]) {
+                    $d->label = $queries[$style];
+                    if ($style > 0)
+                        $d->label .= " AND NOT (" . join(" OR ", array_slice($queries, 0, $style)) . ")";
+                }
+            }
+            unset($d);
+            $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . ',xlabel:' . json_encode($fx->expression) . ',ylabel:"CDF"}); })');
+        } else
+            $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter("#hotgraph",' . json_encode($data) . ',{xlabel:' . json_encode($fx->expression) . ',ylabel:' . json_encode($cdf ? "fraction of papers" : $fy->expression) . '}); })');
     } else
         echo "<h2>Formulas</h2>\n";
 
-    echo Ht::form_div(hoturl("graph", "g=formulas"), array("method" => "GET"));
+    echo Ht::form_div(hoturl("graph", "g=formula"), array("method" => "GET"));
     echo '<table>',
         '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
-        '<td class="lentry">', Ht::entry("fx", (string) @$_REQUEST["fx"] !== "" ? $_REQUEST["fx"] : "", array("id" => "fx", "size" => 32)), '</td></tr>',
+        '<td class="lentry">', Ht::entry("fx", (string) @$_REQUEST["fx"] !== "" ? $_REQUEST["fx"] : "", array("id" => "fx", "size" => 32, "class" => @$errs["fx"] ? "setting_error" : "")), '</td></tr>',
         '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
-        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32)), '</td></tr>',
+        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32, "class" => @$errs["fy"] ? "setting_error" : "")), '</td></tr>',
         '<tr><td class="lcaption"><label for="q">Show</label></td>',
         '<td class="lentry"><table><tbody id="qcontainer">';
     for ($i = 0; $i < count($styles); ++$i)
@@ -176,6 +204,12 @@ if ($Graph == "formulas") {
     $Conf->echoScript("hotcrp_graphs.formulas_qrow=" . json_encode(formulas_qrow('$', "", "plain")));
 }
 
+
+echo '<div style="margin:2em 0"><strong>More graphs:</strong>&nbsp; ';
+$ghtml = array();
+foreach ($Graphs as $g => $gname)
+    $ghtml[] = '<a' . ($g == $Graph ? ' class="q"' : '') . ' href="' . hoturl("graph", "g=$g") . '">' . htmlspecialchars($gname) . '</a>';
+echo join(' <span class="barsep">·</span> ', $ghtml), '</div>';
 
 echo "<hr class=\"c\" />\n";
 $Conf->footer();

@@ -99,18 +99,13 @@ function tangentAngle(pathNode, length) {
 
 
 /* CDF functions */
-function finish_seq(seq, ri) {
-    seq.sort(d3.ascending);
-    seq.ntotal = ri.length;
-    return seq;
-}
-
 function submission_delay_seq(ri) {
     var seq = [], i;
     for (i in ri)
         if (ri[i][1] > 0)
             seq.push((ri[i][1] - ri[i][0]) / 86400);
-    return finish_seq(seq, ri);
+    seq.ntotal = ri.length;
+    return seq;
 }
 submission_delay_seq.label = function (dl) {
     return "Days after assignment";
@@ -121,7 +116,8 @@ function procrastination_seq(ri, dl) {
     for (i in ri)
         if (ri[i][1] > 0)
             seq.push((ri[i][1] - dl[ri[i][2]]) / 86400);
-    return finish_seq(seq, ri);
+    seq.ntotal = ri.length;
+    return seq;
 }
 procrastination_seq.label = function (dl) {
     return dl.length > 1 ? "Days until round deadline" : "Days until deadline";
@@ -132,7 +128,8 @@ function max_procrastination_seq(ri, dl) {
     for (i in ri)
         if (ri[i][1] > 0)
             seq.push((ri[i][1] - dlx) / 86400);
-    return finish_seq(seq, ri);
+    seq.ntotal = ri.length;
+    return seq;
 }
 max_procrastination_seq.label = function (dl) {
     return dl.length > 1 ? "Days until maximum deadline" : "Days until deadline";
@@ -142,21 +139,248 @@ procrastination_seq.tick_format = max_procrastination_seq.tick_format =
 
 function seq_to_cdf(seq) {
     var cdf = [], i, n = seq.ntotal || seq.length;
+    seq.sort(d3.ascending);
     for (i = 0; i <= seq.length; ++i) {
         if (i != 0 && (i == seq.length || seq[i-1] != seq[i]))
             cdf.push([seq[i-1], i/n]);
         if (i != seq.length && (i == 0 || seq[i-1] != seq[i]))
             cdf.push([seq[i], i/n]);
     }
+    cdf.cdf = true;
     return cdf;
 }
 
 
-/* perturbations */
-function quantize(data, xs, ys) {
+/* actual graphs */
+var hotcrp_graphs = {};
+
+// args: {selector: JQUERYSELECTOR,
+//        series: [{d: [ARRAY], label: STRING, className: STRING}],
+//        xlabel: STRING, ylabel: STRING, tick_format: STRING}
+function hotcrp_graphs_cdf(args) {
+    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = $(args.selector).width() - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var x = d3.scale.linear().range([0, width]);
+    var y = d3.scale.linear().range([height, 0]);
+
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    if (args.tick_format)
+        xAxis.tickFormat(args.tick_format);
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var line = d3.svg.line().x(function (d) {return x(d[0]);})
+        .y(function (d) {return y(d[1]);});
+
+    var svg = d3.select(args.selector).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // massage data
+    var series = d3.values(args.series).filter(function (d) {
+        return (d.d ? d.d : d).length > 0;
+    });
+    var data = series.map(function (d) {
+        d = d.d ? d.d : d;
+        return d.cdf ? d : seq_to_cdf(d);
+    });
+
+    // axis domains
+    x.domain(data.reduce(function (e, d) {
+        e[0] = Math.min(e[0], d[0][0] - 0.1);
+        e[1] = Math.max(e[1], d[d.length - 1][0] + 0.1);
+        return e;
+    }, [Infinity, -Infinity]));
+    var i = d3.max(data, function (d) { return d[d.length - 1][1]; });
+    y.domain([0, Math.ceil(i * 10) / 10]);
+
+    // CDF lines
+    var xmax = x.domain()[1];
+    data.forEach(function (d, i) {
+        var klass = "gcdf";
+        if (series[i].className)
+            klass += " " + series[i].className;
+        if (d[d.length - 1][0] != xmax)
+            d.push([xmax, d[d.length - 1][1]]);
+        svg.append("path").attr("dataindex", i)
+            .datum(d)
+            .attr("class", klass)
+            .attr("d", line);
+    });
+
+    svg.append("path").attr("class", "gcdf gcdf_hover0");
+    svg.append("path").attr("class", "gcdf gcdf_hover1");
+    var hovers = svg.selectAll(".gcdf_hover0, .gcdf_hover1");
+    hovers.style("display", "none");
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+      .append("text")
+        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(args.xlabel || "");
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6).attr("dy", ".71em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(args.ylabel || "");
+
+    svg.append("rect").attr("width", width).attr("height", height)
+        .style({"fill": "none", "pointer-events": "all"})
+        .on("mouseover", mousemoved).on("mousemove", mousemoved)
+        .on("mouseout", mouseout);
+
+    var hovered_path, hubble;
+    function mousemoved() {
+        var m = d3.mouse(this), p = {distance: 16};
+        m.clientX = d3.event.clientX;
+        m.clientY = d3.event.clientY;
+        for (i in data)
+            if (series[i].label)
+                p = closestPoint(svg.select("[dataindex='" + i + "']").node(), m, p);
+        if (p.pathNode != hovered_path) {
+            if (p.pathNode)
+                hovers.datum(data[p.pathNode.getAttribute("dataindex")])
+                    .attr("d", line).style("display", null);
+            else
+                hovers.style("display", "none");
+            hovered_path = p.pathNode;
+        }
+        var u = p.pathNode ? series[p.pathNode.getAttribute("dataindex")] : null;
+        if (u && u.label) {
+            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
+            hubble.text(u.label)
+                .direction(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
+                .show(p[0], p[1], this);
+        } else if (hubble)
+            hubble = hubble.remove() && null;
+    }
+
+    function mouseout() {
+        hovers.style("display", "none");
+        hubble && hubble.remove();
+        hovered_path = hubble = null;
+    }
+};
+hotcrp_graphs.cdf = hotcrp_graphs_cdf;
+
+
+hotcrp_graphs.procrastination = function (selector, revdata) {
+    var args = {selector: selector, series: []};
+
+    // collect data
+    var alldata = [], d, i, l, cid, u;
+    for (cid in revdata.reviews) {
+        var d = {d: revdata.reviews[cid]};
+        if ((u = revdata.users[cid]) && u.name)
+            d.label = u.name;
+        if (cid == hotcrp_user)
+            d.className = "revtimel_hilite";
+        else if (u && u.light)
+            d.className = "revtimel_light";
+        Array.prototype.push.apply(alldata, d.d);
+        if (cid !== "conflicts")
+            args.series[cid] = d;
+    }
+    args.series.all = {d: alldata, className: "revtimel_all"};
+
+    var dlf = max_procrastination_seq;
+
+    // infer deadlines when not set
+    if (dlf != submission_delay_seq) {
+        for (i in revdata.deadlines)
+            if (!revdata.deadlines[i]) {
+                var subat = alldata.filter(function (d) { return d[2] == i; })
+                    .map(function (d) { return d[0]; });
+                subat.sort(d3.ascending);
+                revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
+            }
+    }
+    // make cdfs
+    for (i in args.series)
+        args.series[i].d = seq_to_cdf(dlf(args.series[i].d, revdata.deadlines));
+
+    if (dlf.tick_format)
+        args.tick_format = dlf.tick_format;
+    args.xlabel = dlf.label(revdata.deadlines);
+    args.ylabel = "Fraction of assignments completed";
+
+    hotcrp_graphs_cdf(args);
+};
+
+
+/* grouped quadtree */
+// mark bounds of each node
+function grouped_quadtree_mark_bounds(q, ordinal) {
+    var b = [Infinity, -Infinity, -Infinity, Infinity], p, i;
+    ordinal = ordinal || (function () { var m = 0; return function () { return ++m; }; })();
+    q.ordinal = ordinal();
+    for (p = q.point; p; p = p.next)
+        if (q.point.maxr == null || p.r > q.point.maxr) {
+            b[0] = Math.min(b[0], p[1] - p.r);
+            b[1] = Math.max(b[1], p[0] + p.r);
+            b[2] = Math.max(b[2], p[1] + p.r);
+            b[3] = Math.min(b[3], p[0] - p.r);
+            q.point.maxr = p.r;
+        }
+    for (i = 0; i < 4; ++i)
+        if ((p = q.nodes[i])) {
+            grouped_quadtree_mark_bounds(p, ordinal);
+            b[0] = Math.min(b[0], p.bounds[0]);
+            b[1] = Math.max(b[1], p.bounds[1]);
+            b[2] = Math.max(b[2], p.bounds[2]);
+            b[3] = Math.min(b[3], p.bounds[3]);
+        }
+    q.bounds = b;
+}
+
+function grouped_quadtree_gfind(point, min_distance) {
+    var q = this, closest = null;
+    if (min_distance == null)
+        min_distance = Infinity;
+    function visitor(node) {
+        var p;
+        if (node.bounds[0] > point[1] + min_distance
+            || node.bounds[1] < point[0] - min_distance
+            || node.bounds[2] < point[1] - min_distance
+            || node.bounds[3] > point[0] + min_distance)
+            return true;
+        if (!(p = node.point))
+            return;
+        var dx = p[0] - point[0], dy = p[1] - point[1];
+        if (Math.abs(dx) - p.maxr < min_distance
+            || Math.abs(dy) - p.maxr < min_distance) {
+            var dd = Math.sqrt(dx * dx + dy * dy);
+            for (; p; p = p.next) {
+                var d = Math.max(dd - p.r, 0);
+                if (d < min_distance || (d == 0 && p.r < closest.r))
+                    closest = p, min_distance = d;
+            }
+        }
+    }
+    this.visit(visitor);
+    return closest;
+}
+
+function grouped_quadtree(data, xs, ys, rf) {
     var q = d3.geom.quadtree().extent([[xs.range()[0], ys.range()[1]],
                                        [xs.range()[1], ys.range()[0]]])([]),
         d, nd = [], vp, vd, dx, dy;
+    if (rf == null)
+        rf = function (n) { return Math.sqrt(n); };
+    else if (typeof rf === "number")
+        rf = (function (f) {
+            return function (n) { return Math.sqrt(n) * f; };
+        })(rf);
     for (var i = 0; (d = data[i]); ++i) {
         if (d[0] == null || d[1] == null)
             continue;
@@ -172,150 +396,19 @@ function quantize(data, xs, ys) {
         if (vp && vp[3] == vd[3]) {
             vp[2].push(d[2]);
             vp.n += 1;
-            vp.r = Math.sqrt(vp.n);
+            vp.r = rf(vp.n);
         } else {
             vp ? vp.next = vd : q.add(vd);
-            vd.r = vd.n = 1;
+            vd.n = 1;
             nd.push(vd);
+            vd.r = rf(vd.n);
         }
     }
+    grouped_quadtree_mark_bounds(q);
+    delete q.add;
+    q.gfind = grouped_quadtree_gfind;
     return {data: nd, quadtree: q};
 }
-
-
-/* actual graphs */
-var hotcrp_graphs = {};
-
-hotcrp_graphs.procrastination = function (selector, revdata) {
-    var margin = {top: 20, right: 20, bottom: 30, left: 50},
-        width = $(selector).width() - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
-
-    var x = d3.scale.linear().range([0, width]);
-    var y = d3.scale.linear().range([height, 0]);
-
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    var yAxis = d3.svg.axis().scale(y).orient("left");
-    var line = d3.svg.line().x(function (d) {return x(d[0]);})
-        .y(function (d) {return y(d[1]);});
-
-    var svg = d3.select(selector).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    // collect data
-    var data = {all: []}, i, cid, dlf = max_procrastination_seq;
-    for (cid in revdata.reviews) {
-        data[cid] = revdata.reviews[cid];
-        Array.prototype.push.apply(data.all, data[cid]);
-    }
-    delete data.conflicts;
-    // infer deadlines when not set
-    if (dlf != submission_delay_seq) {
-        for (i in revdata.deadlines)
-            if (!revdata.deadlines[i]) {
-                var subat = data.all.filter(function (d) { return d[2] == i; })
-                    .map(function (d) { return d[0]; });
-                subat.sort(d3.ascending);
-                revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
-            }
-    }
-    // make cdfs
-    data.all.no_ntotal = true;
-    for (cid in data)
-        data[cid] = seq_to_cdf(dlf(data[cid], revdata.deadlines));
-    // append last point
-    var lastx = data.all.length ? data.all[data.all.length - 1][0] : 0;
-    for (cid in data)
-        if (cid !== "all" && data[cid].length) {
-            i = data[cid][data[cid].length - 1];
-            if (i[0] != lastx)
-                data[cid].push([lastx, i[1]]);
-        }
-
-    x.domain(d3.extent(data.all, function (d) { return d[0]; }));
-    i = d3.max(d3.values(data), function (d) { return d.length ? d[d.length - 1][1] : 0; });
-    y.domain([0, Math.ceil(i * 10) / 10]);
-    if (dlf.tick_format)
-        xAxis.tickFormat(dlf.tick_format);
-
-    for (cid in data) {
-        var u = revdata.users[cid], klass = "revtimel";
-        if (cid == "all")
-            klass += " revtimel_all";
-        else if (cid == hotcrp_user.cid)
-            klass += " revtimel_hilite";
-        else if (u && u.light)
-            klass += " revtimel_light";
-        svg.append("path").attr("cid", cid)
-            .datum(data[cid])
-            .attr("class", klass)
-            .attr("d", line);
-    }
-
-    svg.append("path").attr("class", "revtimel revtimel_hover0");
-    svg.append("path").attr("class", "revtimel revtimel_hover1");
-    var hovers = svg.selectAll(".revtimel_hover0, .revtimel_hover1");
-    hovers.style("display", "none");
-
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-      .append("text")
-        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(dlf.label(revdata.deadlines));
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6).attr("dy", ".71em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text("Fraction of assignments completed");
-
-    svg.append("rect").attr("width", width).attr("height", height)
-        .style({"fill": "none", "pointer-events": "all"})
-        .on("mouseover", mousemoved).on("mousemove", mousemoved)
-        .on("mouseout", mouseout);
-
-    var hovered_path, hubble;
-    function mousemoved() {
-        var m = d3.mouse(this), p = {distance: 16};
-        m.clientX = d3.event.clientX;
-        m.clientY = d3.event.clientY;
-        for (cid in data)
-            if (cid != "all")
-                p = closestPoint(svg.select("[cid='" + cid + "']").node(), m, p);
-        if (p.pathNode != hovered_path) {
-            if (p.pathNode)
-                hovers.datum(data[p.pathNode.getAttribute("cid")])
-                    .attr("d", line).style("display", null);
-            else
-                hovers.style("display", "none");
-            hovered_path = p.pathNode;
-        }
-        var u = p.pathNode ? revdata.users[p.pathNode.getAttribute("cid")] : null;
-        if (u && u.name) {
-            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
-            var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
-            hubble.text(u.name)
-                .direction(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
-                .show(p[0], p[1], this);
-        } else if (hubble)
-            hubble = hubble.remove() && null;
-    }
-
-    function mouseout() {
-        hovers.style("display", "none");
-        hubble && hubble.remove();
-        hovered_path = hubble = null;
-    }
-};
 
 hotcrp_graphs.scatter = function (selector, data, info) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
@@ -326,8 +419,8 @@ hotcrp_graphs.scatter = function (selector, data, info) {
         ye = d3.extent(data, function (d) { return d[1]; }),
         x = d3.scale.linear().range([0, width]).domain([xe[0] - 0.3, xe[1] + 0.3]),
         y = d3.scale.linear().range([height, 0]).domain([ye[0] - 0.3, ye[1] + 0.3]),
-        rf = function (d) { return 4 * d.r; };
-    data = quantize(data, x, y);
+        rf = function (d) { return d.r - 1; };
+    data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
     var yAxis = d3.svg.axis().scale(y).orient("left");
@@ -379,27 +472,26 @@ hotcrp_graphs.scatter = function (selector, data, info) {
 
     var hovered_data, hubble;
     function mousemoved() {
-        var m = d3.mouse(this), p = data.quadtree.find(m);
-        if (p) {
-            var dx = p[0] - m[0], dy = p[1] - m[1],
-                d = Math.sqrt(dx * dx + dy * dy), rfp = rf(p);
-            for (var pp = p.next; pp; pp = pp.next) {
-                var rfpp = rf(pp);
-                if (rfpp < rfp ? d <= rfpp : d > rfp)
-                    p = pp, rfp = rfpp;
-            }
-            if (d > rfp + 4)
-                p = null;
-        }
+        var m = d3.mouse(this), p = data.quadtree.gfind(m, 4);
         if (p != hovered_data) {
             if (p)
                 place(hovers.datum(p)).style("display", null);
             else
                 hovers.style("display", "none");
+            svg.style("cursor", p ? "pointer" : null);
             hovered_data = p;
         }
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            if (!p.sorted) {
+                p[2].sort(function (a, b) {
+                    var an = parseInt(a, 10), bn = parseInt(b, 10);
+                    if (an == bn)
+                        an = a, bn = b;
+                    return an < bn ? -1 : an == bn ? 0 : 1;
+                });
+                p.sorted = true;
+            }
             hubble.html("<p>#" + p[2].join(", #") + "</p>")
                 .direction("b").near(hovers.node());
         } else if (hubble)
@@ -413,10 +505,24 @@ hotcrp_graphs.scatter = function (selector, data, info) {
     }
 
     function mouseclick() {
-        if (hovered_data && hovered_data[2].length > 1)
-            window.location = hoturl("search", {q: hovered_data[2].join(" ")});
-        else if (hovered_data)
-            window.location = hoturl("paper", {p: hovered_data[2][0]});
+        var pids = hovered_data ? hovered_data[2] : null, m, x, i, url;
+        if (!pids)
+            return;
+        for (i = 0, x = []; i < pids.length; ++i) {
+            m = parseInt(pids[i], 10);
+            if (!x.length || x[x.length - 1] != m)
+                x.push(m);
+        }
+        if (x.length == 1 && pids.length == 1 && /[A-Z]$/.test(pids[0]))
+            url = hoturl("paper", {p: x[0], anchor: "review" + pids[0]});
+        else if (x.length == 1)
+            url = hoturl("paper", {p: x[0]});
+        else
+            url = hoturl("search", {q: x.join(" ")});
+        if (d3.event.metaKey)
+            window.open(url, "_blank");
+        else
+            window.location = url;
     }
 };
 

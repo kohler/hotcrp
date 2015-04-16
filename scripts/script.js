@@ -270,7 +270,7 @@ event_modkey.ALT = 4;
 event_modkey.META = 8;
 
 function sprintf(fmt) {
-    var words = fmt.split(/(%(?:%|-?\d*(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
+    var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
         arg, argno, conv, pad, t = "";
     for (wordno = 0, argno = 1; wordno != words.length; ++wordno) {
         word = words[wordno];
@@ -281,7 +281,12 @@ function sprintf(fmt) {
         else {
             arg = arguments[argno];
             ++argno;
-            conv = word.match(/^%(-?)(\d*)(?:|[.](\d*))(\w)/);
+            conv = word.match(/^%(-?)(\d*|\*?)(?:|[.](\d*))(\w)/);
+            if (conv[2] == "*") {
+                conv[2] = arg.toString();
+                arg = arguments[argno];
+                ++argno;
+            }
             if (conv[4] >= "e" && conv[4] <= "g" && conv[3] == null)
                 conv[3] = 6;
             if (conv[4] == "g") {
@@ -2375,6 +2380,12 @@ return function (content, bubopt) {
             else
                 ds = "v";
         }
+        if ((ds === "v" || ds === 0 || ds === 2) && !noflip
+            && nearpos.bottom + bh > wpos.bottom - 3*SPACE
+            && nearpos.top - bh < wpos.top + 3*SPACE
+            && (nearpos.left - bw >= wpos.left + 3*SPACE
+                || nearpos.right + bw <= wpos.right - 3*SPACE))
+            ds = "h";
         if ((ds === "v" && nearpos.bottom + bh > wpos.bottom - 3*SPACE
              && nearpos.top - bh > wpos.top + 3*SPACE)
             || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom)

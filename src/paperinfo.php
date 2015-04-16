@@ -383,6 +383,8 @@ class PaperInfo {
             return "reviewContactIds";
         else if ($fid === "reviewType")
             return "reviewTypes";
+        else if ($fid === "reviewOrdinal")
+            return "reviewOrdinals";
         else
             return "{$fid}Scores";
     }
@@ -420,19 +422,30 @@ class PaperInfo {
         return array();
     }
 
+    private function review_cid_array($k, $basek) {
+        if (!property_exists($this, $k) || !property_exists($this, "reviewContactIds"))
+            $this->load_scores(array($basek, "contactId"));
+        if ($this->$k)
+            return array_combine(explode(",", $this->reviewContactIds),
+                                 explode(",", $this->$k));
+        return array();
+    }
+
+    public function review_ordinals() {
+        return $this->review_cid_array("reviewOrdinals", "reviewOrdinal");
+    }
+
+    public function review_ordinal($cid) {
+        $o = $this->review_ordinals();
+        return $o[$cid];
+    }
+
     public function submitted_review_types() {
-        if (!property_exists($this, "reviewTypes"))
-            $this->load_scores(array("reviewType", "contactId"));
-        return $this->reviewTypes ? array_combine(explode(",", $this->reviewContactIds),
-                                                  explode(",", $this->reviewTypes)) : array();
+        return $this->review_cid_array("reviewTypes", "reviewType");
     }
 
     public function scores($fid) {
-        $fname = "{$fid}Scores";
-        if (!property_exists($this, $fname) || !property_exists($this, "reviewContactIds"))
-            $this->load_scores(array($fid, "contactId"));
-        return $this->$fname ? array_combine(explode(",", $this->reviewContactIds),
-                                             explode(",", $this->$fname)) : array();
+        return $this->review_cid_array("{$fid}Scores", $fid);
     }
 
     public function score($fid, $cid) {

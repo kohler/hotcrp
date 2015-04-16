@@ -2792,7 +2792,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	shape-rendering: crispEdges;
 }
 
-.revtimel {
+.gcdf {
 	fill: none;
 	stroke: rgba(70, 130, 180, 0.5);
 	stroke-width: 1.5px;
@@ -2804,7 +2804,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 .revtimel_hilite {
 	stroke: black;
 }
-.revtimel.revtimel_light {
+.gcdf.revtimel_light {
 	stroke-width: 0.5px;
 }
 
@@ -2812,20 +2812,24 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	stroke: rgba(70, 130, 180, 0.8);
 	fill: rgba(70, 130, 180, 0.2);
 }
-.gdot.redtag {
+.gcdf.redtag, .gdot.redtag {
 	stroke: rgba(245, 51, 51, 0.8);
+}
+.gdot.redtag {
 	fill: rgba(245, 51, 51, 0.2);
 }
-.gdot.greentag {
+.gcdf.greentag, .gdot.greentag {
 	stroke: rgba(13, 215, 13, 0.8);
+}
+.gdot.greentag {
 	fill: rgba(13, 225, 13, 0.2);
 }
 
-.revtimel_hover0, .gdot_hover0 {
+.gcdf_hover0, .gdot_hover0 {
 	stroke: rgba(70, 0, 0, 0.5);
 	stroke-width: 3px;
 }
-.revtimel_hover1, .gdot_hover1 {
+.gcdf_hover1, .gdot_hover1 {
 	stroke: yellow;
 	stroke-width: 2px;
 }
