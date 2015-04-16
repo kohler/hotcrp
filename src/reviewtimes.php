@@ -67,7 +67,7 @@ class ReviewTimes {
         foreach ($this->r as $cid => $x)
             if ($cid != "conflicts") {
                 $users[$cid] = $u = (object) array();
-                if (($p = $pcm[$cid]))
+                if (($p = @$pcm[$cid]))
                     $u->name = Text::name_text($p);
                 if (count($x) < $heavy_boundary)
                     $u->light = true;

@@ -55,7 +55,7 @@ function formulas_qrow($i, $q, $s) {
     if ($q === "" || $q === "all")
         $q = "(All)";
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "id" => "q$i", "hottemptext" => "(All)"));
-    $t .= " &nbsp;" . Ht::select("s$i", array("default" => "default", "redtag" => "red", "greentag" => "green"), $s !== "" ? $s : "default", array("id" => "s$i"));
+    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "redtag" => "red", "greentag" => "green"), $s !== "" ? $s : "default", array("id" => "s$i"));
     $t .= '</td><td class="nw"><a href="#" class="qx row_up" onclick="return author_change.delta(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change.delta(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change.delta(this,Infinity)" tabindex="-1">x</a></td></tr>';
     return $t;
 }
@@ -184,12 +184,19 @@ if ($Graph == "formula") {
         echo "<h2>Formulas</h2>\n";
 
     echo Ht::form_div(hoturl("graph", "g=formula"), array("method" => "GET"));
-    echo '<table>',
-        '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
-        '<td class="lentry">', Ht::entry("fx", (string) @$_REQUEST["fx"] !== "" ? $_REQUEST["fx"] : "", array("id" => "fx", "size" => 32, "class" => @$errs["fx"] ? "setting_error" : "")), '</td></tr>',
-        '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
-        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32, "class" => @$errs["fy"] ? "setting_error" : "")), '</td></tr>',
-        '<tr><td class="lcaption"><label for="q">Show</label></td>',
+    echo '<table>';
+    // X axis
+    echo '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
+        '<td class="lentry">', Ht::entry("fx", (string) @$_REQUEST["fx"] !== "" ? $_REQUEST["fx"] : "", array("id" => "fx", "size" => 32, "class" => @$errs["fx"] ? "setting_error" : "")),
+        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a></span>',
+        '</td></tr>';
+    // Y axis
+    echo '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
+        '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32, "class" => @$errs["fy"] ? "setting_error" : "")),
+        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”</span>',
+        '</td></tr>';
+    // Series
+    echo '<tr><td class="lcaption"><label for="q">Show</label></td>',
         '<td class="lentry"><table><tbody id="qcontainer">';
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i, $queries[$i], $styles[$i]);
