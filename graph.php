@@ -154,7 +154,7 @@ if ($Graph == "formula") {
                     $revs = array(null);
                 $d = array(0, 0, $prow->paperId);
                 $style = (int) @$psearch->thenmap[$prow->paperId];
-                if (@$styles[$style])
+                if (@$styles[$style] && $styles[$style] !== "default")
                     $d[] = $styles[$style];
                 foreach ($revs as $rcid) {
                     $d[0] = $fxf($prow, $rcid, $Me);
@@ -213,7 +213,7 @@ if ($Graph == "formula") {
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");
     echo '</div></form>';
-    $Conf->echoScript("hotcrp_graphs.formulas_qrow=" . json_encode(formulas_qrow('$', "", "plain")));
+    $Conf->echoScript("hotcrp_graphs.formulas_qrow=" . json_encode(formulas_qrow('$', "", "default")));
 }
 
 
