@@ -158,7 +158,9 @@ if ($Graph == "formula") {
                     $d[1] = $fyf($prow, $rcid, $Me);
                     if ($needs_review)
                         $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
-                    if ($cdf)
+                    if ($d[0] === null || $d[1] === null)
+                        /* skip */;
+                    else if ($cdf)
                         $data[$style][] = $d[0];
                     else
                         $data[] = $d;
