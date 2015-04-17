@@ -357,8 +357,7 @@ class FormulaExpr {
                 else
                     $this->format = null;
             }
-            if ($this->format === false)
-                $this->format = null;
+            $this->format = $this->format ? : null;
         } else
             $this->format = null;
     }
@@ -396,6 +395,39 @@ class FormulaExpr {
             if ($a instanceof FormulaExpr && ($x = $a->resolve_scores()))
                 return $x;
         return false;
+    }
+    public function view_score($contact) {
+        $op = $this->op;
+        if ($op == "" || $op == "pid")
+            return VIEWSCORE_AUTHOR;
+
+        if ($op == "tag" || $op == "tagval") {
+            $tagger = new Tagger($contact);
+            $e_tag = $tagger->check($this->args[0]);
+            return $tagger->view_score($e_tag, $contact);
+        }
+
+        if ($op == "rf")
+            return $this->args[0]->view_score;
+
+        if ($op == "revtype" || $op == "revpref" || $op == "revprefexp"
+            || $op == "topicscore")
+            return VIEWSCORE_PC;
+
+        if ($op == "?:") {
+            $t = $this->args[0]->view_score($contact);
+            $tt = $this->args[1]->view_score($contact);
+            $tf = $this->args[2]->view_score($contact);
+            return min($t, max($tt, $tf));
+        }
+
+        // Robustness: return VIEWSCORE_FALSE if this function
+        // doesn't understand this expression type
+        $score = 1000;
+        foreach ($this->args as $e)
+            if ($e instanceof FormulaExpr)
+                $score = min($score, $e->view_score($contact));
+        return $score === 1000 ? VIEWSCORE_FALSE : $score;
     }
 }
 
@@ -479,11 +511,8 @@ class Formula {
         }
         $this->_parse = (count($this->_error_html) ? false : $e);
         if ($this->authorView === null) {
-            if ($this->_parse) {
-                global $Me;
-                $this->authorView = $this->view_score($Me);
-            } else
-                $this->authorView = VIEWSCORE_FALSE;
+            global $Me;
+            $this->authorView = $this->view_score($Me);
         }
         return !!$this->_parse;
     }
@@ -703,46 +732,13 @@ class Formula {
             $state->loop_variable($this->_parse->aggt);
     }
 
-    private static function expression_view_score($e, $contact) {
-        $op = $e->op;
-        if ($op == "" || $op == "pid")
-            return VIEWSCORE_AUTHOR;
-
-        if ($op == "tag" || $op == "tagval") {
-            $tagger = new Tagger($contact);
-            $e_tag = $tagger->check($e->args[0]);
-            return $tagger->view_score($e_tag, $contact);
-        }
-
-        if ($op == "rf")
-            return $e->args[0]->view_score;
-
-        if ($op == "revtype" || $op == "revpref" || $op == "revprefexp"
-            || $op == "topicscore")
-            return VIEWSCORE_PC;
-
-        if ($op == "?:") {
-            $t = self::expression_view_score($e->args[0], $contact);
-            $tt = self::expression_view_score($e->args[1], $contact);
-            $tf = self::expression_view_score($e->args[2], $contact);
-            return min($t, max($tt, $tf));
-        }
-
-        $score = 1;
-        for ($i = 0; $i < count($e->args); ++$i)
-            $score = min($score, self::expression_view_score($e->args[$i], $contact));
-        return $score;
-    }
-
     public function base_view_score() {
-        if ($this->authorView === null)
-            $this->check();
+        $this->check();
         return $this->authorView;
     }
 
     public function view_score($contact) {
-        $this->check();
-        return self::expression_view_score($this->_parse, $contact);
+        return $this->check() ? $this->_parse->view_score($contact) : VIEWSCORE_FALSE;
     }
 
     public function column_header() {
