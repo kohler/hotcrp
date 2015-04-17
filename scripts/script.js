@@ -2505,21 +2505,37 @@ return function (content, bubopt) {
 })();
 
 
-function tooltip(elt, content, dir, isglobal) {
-    var tt;
-    if (isglobal && (tt = window.global_tooltip)) {
+function tooltip(elt) {
+    var j = $(elt), near, tt;
+
+    function jqnear(attr) {
+        var x = j.attr(attr);
+        if (x && x.charAt(0) == ">")
+            return j.find(x.substr(1));
+        else if (x)
+            return $(x);
+        else
+            return $();
+    }
+
+    var content = j.attr("hottooltip") || jqnear("hottooltipcontent").html();
+    if (!content)
+        return null;
+
+    if ((tt = window.global_tooltip)) {
         if (tt.elt !== elt || tt.content !== content)
             tt.erase();
         else
             return tt;
     }
 
-    var bub = make_bubble(content, {color: "tooltip", dir: dir || "v"}),
+    var dir = j.attr("hottooltipdir") || "v",
+        bub = make_bubble(content, {color: "tooltip", dir: dir}),
         to = null, refcount = 0;
     function erase() {
         to = clearTimeout(to);
         bub.remove();
-        jQuery(elt).removeData("hotcrp_tooltip");
+        j.removeData("hotcrp_tooltip");
         if (window.global_tooltip === tt)
             window.global_tooltip = null;
     }
@@ -2535,31 +2551,23 @@ function tooltip(elt, content, dir, isglobal) {
         },
         erase: erase, elt: elt, content: content
     };
-    jQuery(elt).data("hotcrp_tooltip", tt);
-    bub.near(elt).hover(tt.enter, tt.exit);
-    if (isglobal)
-        window.global_tooltip = tt;
-    return tt;
+    j.data("hotcrp_tooltip", tt);
+    near = jqnear("hottooltipnear")[0] || elt;
+    bub.near(near).hover(tt.enter, tt.exit);
+    return window.global_tooltip = tt;
 }
 
 function tooltip_enter(evt) {
-    var j = jQuery(this), x, text;
+    var j = $(this), x, text;
     var tt = j.data("hotcrp_tooltip");
-    if (!tt && !window.disable_tooltip) {
-        if ((x = j.attr("hottooltip")))
-            text = x;
-        else if ((x = j.attr("hottooltipcontent"))
-                 && (x = jQuery(x)) && x.length)
-            text = x.html();
-        if (text)
-            tt = tooltip(this, text, j.attr("hottooltipdir"), true);
-    }
+    if (!tt && !window.disable_tooltip)
+        tt = tooltip(this);
     if (tt)
         tt.enter();
 }
 
 function tooltip_leave(evt) {
-    var j = jQuery(this), tt;
+    var j = $(this), tt;
     if ((tt = j.data("hotcrp_tooltip")))
         tt.exit();
 }

@@ -2077,6 +2077,9 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	font-size: 75%;
 	margin: 0 8px;
 }
+.hottooltip {
+	cursor: default;
+}
 .bubble > .bubcontent {
 	margin: 4px 0;
 }

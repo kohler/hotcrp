@@ -15,7 +15,8 @@ class ReviewField {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
-    const VALUE_REV_NUM_DARK = 3;
+    const VALUE_DARK = 4;
+    const VALUE_TOOLTIP = 8;
 
     public $id;
     public $name;
@@ -173,12 +174,18 @@ class ReviewField {
         if (!$scclass)
             return $x;
         $vc = $this->value_class($value);
-        if ($scclass == self::VALUE_REV_NUM_DARK)
-            return "<span class=\"rev_num $vc dark\">$x.</span>";
-        else if ($scclass == self::VALUE_REV_NUM)
-            return "<span class=\"rev_num $vc\">$x.</span>";
-        else
-            return "<span class=\"$vc\">$x</span>";
+        $klass = $vc;
+        if ($scclass & self::VALUE_REV_NUM) {
+            $klass = "rev_num $klass";
+            $x .= ".";
+        }
+        if ($scclass & self::VALUE_DARK)
+            $klass .= " dark";
+        if ($scclass & self::VALUE_TOOLTIP) {
+            $klass .= " hottooltip";
+            $attr = ' hottooltip="' . htmlspecialchars($this->options[$value]) . '" hottooltipdir="l"';
+        }
+        return "<span class=\"$klass\"$attr>$x</span>";
     }
 
     static public function unparse_letter($option_letter, $value) {
@@ -1269,7 +1276,7 @@ $blind\n";
                     if ($f->has_options) {
                         $help .= '<p>Choices are:<br />';
                         foreach ($f->options as $val => $text)
-                            $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM_DARK) . '&nbsp;' . htmlspecialchars($text) . '<br />';
+                            $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM | ReviewField::VALUE_DARK) . '&nbsp;' . htmlspecialchars($text) . '<br />';
                         $help .= '</p>';
                     }
                     $Conf->footerHtml($help . '</div>');
