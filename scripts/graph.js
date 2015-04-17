@@ -156,7 +156,7 @@ var hotcrp_graphs = {};
 
 // args: {selector: JQUERYSELECTOR,
 //        series: [{d: [ARRAY], label: STRING, className: STRING}],
-//        xlabel: STRING, ylabel: STRING, tick_format: STRING}
+//        xlabel: STRING, ylabel: STRING, xtick_format: STRING}
 function hotcrp_graphs_cdf(args) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
@@ -164,13 +164,6 @@ function hotcrp_graphs_cdf(args) {
 
     var x = d3.scale.linear().range([0, width]);
     var y = d3.scale.linear().range([height, 0]);
-
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    if (args.tick_format)
-        xAxis.tickFormat(args.tick_format);
-    var yAxis = d3.svg.axis().scale(y).orient("left");
-    var line = d3.svg.line().x(function (d) {return x(d[0]);})
-        .y(function (d) {return y(d[1]);});
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -203,6 +196,14 @@ function hotcrp_graphs_cdf(args) {
     x.domain([i[0] - (i[1] - i[0])/32, i[1] + (i[1] - i[0])/32]);
     var i = d3.max(data, function (d) { return d[d.length - 1][1]; });
     y.domain([0, Math.ceil(i * 10) / 10]);
+
+    // axes
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    args.xtick_setup && args.xtick_setup(xAxis, x.domain());
+    args.xtick_format && xAxis.tickFormat(args.xtick_format);
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var line = d3.svg.line().x(function (d) {return x(d[0]);})
+        .y(function (d) {return y(d[1]);});
 
     // CDF lines
     var xmax = x.domain()[1];
@@ -319,7 +320,7 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
         args.series[i].d = seq_to_cdf(dlf(args.series[i].d, revdata.deadlines));
 
     if (dlf.tick_format)
-        args.tick_format = dlf.tick_format;
+        args.xtick_format = dlf.tick_format;
     args.xlabel = dlf.label(revdata.deadlines);
     args.ylabel = "Fraction of assignments completed";
 
@@ -439,9 +440,9 @@ hotcrp_graphs.scatter = function (args) {
     data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks && args.xticks(xAxis, xe);
+    args.xtick_setup && args.xtick_setup(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks && args.yticks(yAxis, ye);
+    args.ytick_setup && args.ytick_setup(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", width + margin.left + margin.right)

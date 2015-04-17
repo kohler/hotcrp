@@ -64,7 +64,7 @@ function formula_axis_info_json($f, $type) {
     $t = "," . $type . "label:" . json_encode($f->expression);
     if (($ffield = $f->field_type()) && $ffield->option_letter) {
         $t .= "," . $type . "flip:true"
-            . "," . $type . "ticks:hotcrp_graphs.option_letter_ticks("
+            . "," . $type . "tick_setup:hotcrp_graphs.option_letter_ticks("
                 . count($ffield->options) . ",\"" . chr($ffield->option_letter - 1) . "\")";
     }
     return $t;
