@@ -555,10 +555,13 @@ hotcrp_graphs.formulas_add_qrow = function () {
 
 hotcrp_graphs.option_letter_ticks = function (n, c) {
     return function (axis, extent) {
-        var de = extent[1] - extent[0], count = de < 4 ? 4 : 2,
+        var split = 2,
+            count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1,
             info = make_score_info(n, c);
-        axis.ticks(Math.round(de) * count).tickFormat(function (value) {
-            return info.unparse(value, count);
+        if (count > 11)
+            split = 1, count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
+        axis.ticks(count).tickFormat(function (value) {
+            return info.unparse(value, split);
         });
     };
 };

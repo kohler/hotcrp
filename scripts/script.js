@@ -3550,7 +3550,7 @@ function make_letter_unparser(n, c) {
     return function (val, count) {
         if (val < 0.8 || val > n + 0.2)
             return val.toFixed(2);
-        var ord1 = c.charCodeAt(0) - Math.ceil(val - 0.2) + 1;
+        var ord1 = c.charCodeAt(0) - Math.ceil(val) + 1;
         var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
         count = count || 2;
         val = Math.trunc(count * val + 0.5) - count * Math.trunc(val);
