@@ -1286,6 +1286,10 @@ class PaperSearch {
             $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
         else if (preg_match('/\A[ci]?(?:re|pri|sec|ext)\z/', $word))
             $this->_searchReviewer(">0", $word, $qt, $quoted);
+        else if (strcasecmp($word, "lead") == 0)
+            $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
+        else if (strcasecmp($word, "shep") == 0 || strcasecmp($word, "shepherd") == 0)
+            $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
         else if (preg_match('/\A\w+\z/', $word) && $this->_search_options("$word:yes", $qt, false))
             /* OK */;
         else {
