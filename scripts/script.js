@@ -1537,7 +1537,7 @@ HtmlCollector.prototype.clear = function () {
     this.html = "";
 };
 
-window.papercomment = (function () {
+window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
               pc: "shown only to PC reviewers",
               admin: "shown only to administrators"};
@@ -1643,7 +1643,7 @@ function fill_editing(hc, cj) {
 }
 
 function visibility_change() {
-    var j = jQuery(this).closest(".cmtvistable"),
+    var j = $(this).closest(".cmtvistable"),
         dofold = !j.find("input[name=visibility][value=au]").is(":checked");
     fold(j[0], dofold, 2);
 }
@@ -1697,9 +1697,9 @@ function activate_editing(j, cj) {
 }
 
 function analyze(e) {
-    var j = jQuery(e).closest(".cmtg"), cid;
+    var j = $(e).closest(".cmtg"), cid;
     if (!j.length)
-        j = jQuery(e).closest(".cmtcard").find(".cmtg");
+        j = $(e).closest(".cmtcard").find(".cmtg");
     cid = j.closest(".cmtid")[0].id.substr(7);
     if (/^\d+$/.test(cid))
         return {j: j, cid: +cid, cj: cmts[cid]};
@@ -1732,7 +1732,8 @@ function save_editor(elt, action, really) {
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + ctype);
-    jQuery.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
+    x.j.find("button").prop("disabled", true);
+    $.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
         var editing_response = x.cj.response && edit_allowed(x.cj);
         if (data.ok && !data.cmt && !x.is_new)
             delete cmts[x.cid];
@@ -1805,7 +1806,7 @@ function fill(j, cj, editing, msg) {
         hc.push('<h3>Add Comment</h3>');
     else if (cj.editable && !editing) {
         t = '<div class="cmtinfo floatright"><a href="#" class="xx editor cmteditor"><u>Edit</u></a></div>';
-        cj.response ? jQuery(t).prependTo(chead) : hc.push(t);
+        cj.response ? $(t).prependTo(chead) : hc.push(t);
     }
     t = comment_identity_time(cj);
     if (cj.response) {
@@ -1858,7 +1859,7 @@ function fill(j, cj, editing, msg) {
 }
 
 function add(cj, editing) {
-    var cid = cj_cid(cj), j = jQuery("#comment" + cid);
+    var cid = cj_cid(cj), j = $("#comment" + cid);
     if (!j.length) {
         if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
             if (cj.response)
@@ -1869,13 +1870,13 @@ function add(cj, editing) {
                     '</h3></div>';
             else
                 cmtcontainer = '<div class="cmtcard"><div class="cmtcard_head"><h3>Comments</h3></div>';
-            cmtcontainer = jQuery(cmtcontainer + '<div class="cmtcard_body"></div></div>');
+            cmtcontainer = $(cmtcontainer + '<div class="cmtcard_body"></div></div>');
             cmtcontainer.appendTo("#cmtcontainer");
         }
         if (cj.response)
-            j = jQuery('<div class="cmtg"></div>');
+            j = $('<div class="cmtg"></div>');
         else
-            j = jQuery('<div id="comment' + cid + '" class="cmtg cmtid"></div>');
+            j = $('<div id="comment' + cid + '" class="cmtg cmtid"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
@@ -1885,11 +1886,11 @@ function add(cj, editing) {
 
 function edit_response(respround) {
     respround = respround || 1;
-    var j = jQuery(".responseround_" + respround + " a.cmteditor");
+    var j = $(".responseround_" + respround + " a.cmteditor");
     if (j.length)
         j[0].click();
     else {
-        j = jQuery(".responseround_" + respround + " textarea[name=comment]");
+        j = $(".responseround_" + respround + " textarea[name=comment]");
         if (j.length) {
             j[0].focus();
             location.hash = "#" + j.closest("div.cmtid")[0].id;
@@ -1906,7 +1907,7 @@ function set_resp_round(rname, rinfo) {
 }
 
 return {add: add, edit_response: edit_response, set_resp_round: set_resp_round};
-})();
+})(jQuery);
 
 
 // quicklink shortcuts
