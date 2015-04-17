@@ -2818,11 +2818,41 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 .gdot.redtag {
 	fill: rgba(245, 51, 51, 0.2);
 }
+.gcdf.orangetag, .gdot.orangetag {
+	stroke: rgba(214, 136, 0, 0.8);
+}
+.gdot.orangetag {
+	fill: rgba(214, 136, 0, 0.2);
+}
+.gcdf.yellowtag, .gdot.yellowtag {
+	stroke: rgba(191, 186, 38, 0.8);
+}
+.gdot.yellowtag {
+	fill: rgba(221, 216, 85, 0.3);
+}
 .gcdf.greentag, .gdot.greentag {
-	stroke: rgba(13, 215, 13, 0.8);
+	stroke: rgba(13, 185, 13, 0.8);
 }
 .gdot.greentag {
-	fill: rgba(13, 225, 13, 0.2);
+	fill: rgba(13, 195, 13, 0.2);
+}
+.gcdf.bluetag, .gdot.bluetag {
+	stroke: rgba(47, 47, 202, 0.8);
+}
+.gdot.bluetag {
+	fill: rgba(47, 47, 202, 0.2);
+}
+.gcdf.purpletag, .gdot.purpletag {
+	stroke: rgba(150, 44, 186, 0.8);
+}
+.gdot.purpletag {
+	fill: rgba(150, 44, 186, 0.2);
+}
+.gcdf.graytag, .gdot.graytag {
+	stroke: rgba(120, 120, 120, 0.8);
+}
+.gdot.graytag {
+	fill: rgba(120, 120, 120, 0.2);
 }
 
 .gcdf_hover0, .gdot_hover0 {

@@ -221,7 +221,7 @@ class TagInfo {
         return self::$colorre;
     }
 
-    public static function color_classes($tags) {
+    public static function color_classes($tags, $colors_only = false) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " ")
@@ -236,6 +236,8 @@ class TagInfo {
                     $classes[] = $k . "tag";
             } else
                 $classes[] = self::canonical_color($tag) . "tag";
+        if ($colors_only)
+            $classes = array_filter($classes, "TagInfo::classes_have_colors");
         return join(" ", $classes);
     }
 

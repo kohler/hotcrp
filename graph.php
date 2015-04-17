@@ -55,7 +55,7 @@ function formulas_qrow($i, $q, $s) {
     if ($q === "" || $q === "all")
         $q = "(All)";
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "id" => "q$i", "hottemptext" => "(All)"));
-    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "redtag" => "red", "greentag" => "green"), $s !== "" ? $s : "default", array("id" => "s$i"));
+    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("default" => "default", "plain" => "plain", null, "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "default", array("id" => "s$i"));
     $t .= '</td><td class="nw"><a href="#" class="qx row_up" onclick="return author_change.delta(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change.delta(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change.delta(this,Infinity)" tabindex="-1">x</a></td></tr>';
     return $t;
 }
@@ -136,8 +136,20 @@ if ($Graph == "formula") {
         $fyf = $fy->compile_function($Me);
         $needs_review = $fx->needs_review() || $fy->needs_review();
 
-        $psearch = new PaperSearch($Me, array("q" => "(" . join(") THEN (", $queries) . ")"));
-        $psearch->paperList();
+        if ($cdf) {
+            $stylemap = array();
+            for ($i = 0; $i != count($queries); ++$i) {
+                $psearch = new PaperSearch($Me, array("q" => $queries[$i]));
+                foreach ($psearch->paperList() as $pid)
+                    $stylemap[$pid][] = $i;
+            }
+            $defaultstyles = array();
+            $paperIds = array_keys($stylemap);
+        } else {
+            $psearch = new PaperSearch($Me, array("q" => "(" . join(") THEN (", $queries) . ")"));
+            $paperIds = $psearch->paperList();
+            $stylemap = $psearch->thenmap;
+        }
 
         if ($cdf)
             echo "<h2>", htmlspecialchars($fx->expression), " CDF</h2>\n";
@@ -146,7 +158,7 @@ if ($Graph == "formula") {
         echo_graph();
 
         // load data
-        $queryOptions = array("paperId" => $psearch->paperList());
+        $queryOptions = array("paperId" => $paperIds, "tags" => true);
         if ($needs_review)
             $queryOptions["reviewOrdinals"] = true;
         $fx->add_query_options($queryOptions, $Me);
@@ -163,9 +175,26 @@ if ($Graph == "formula") {
                 } else
                     $revs = array(null);
                 $d = array(0, 0, $prow->paperId);
-                $style = (int) @$psearch->thenmap[$prow->paperId];
-                if (@$styles[$style] && $styles[$style] !== "default")
-                    $d[] = $styles[$style];
+                $style = @$stylemap[$prow->paperId];
+                if ($cdf) {
+                    foreach ($style as $s)
+                        if (@$defaultstyles[$s] !== "") {
+                            $c = "";
+                            if (@$prow->paperTags && $Me->can_view_tags($prow))
+                                $c = TagInfo::color_classes($prow->paperTags, true);
+                            if ($c !== "" && (@$defaultstyles[$s] ? : $c) !== $c)
+                                $c = "";
+                            $defaultstyles[$s] = $c;
+                        }
+                } else {
+                    $s = @$styles[(int) $style];
+                    if ($s && $s !== "default" && $s !== "plain")
+                        $d[] = $s;
+                    else if ($s !== "plain"
+                             && @$prow->paperTags && $Me->can_view_tags($prow)
+                             && ($color = TagInfo::color_classes($prow->paperTags, true)))
+                        $d[] = $color;
+                }
                 foreach ($revs as $rcid) {
                     $d[0] = $fxf($prow, $rcid, $Me);
                     $d[1] = $fyf($prow, $rcid, $Me);
@@ -173,9 +202,10 @@ if ($Graph == "formula") {
                         $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
                     if ($d[0] === null || $d[1] === null)
                         /* skip */;
-                    else if ($cdf)
-                        $data[$style][] = $d[0];
-                    else
+                    else if ($cdf) {
+                        foreach ($style as $s)
+                            $data[$s][] = $d[0];
+                    } else
                         $data[] = $d;
                 }
             }
@@ -184,13 +214,13 @@ if ($Graph == "formula") {
         if ($cdf) {
             foreach ($data as $style => &$d) {
                 $d = (object) array("d" => $d);
-                if (@$styles[$style])
+                $s = @$styles[$style];
+                if ($s && $s !== "default" && $s !== "plain")
                     $d->className = $styles[$style];
-                if (@$queries[$style]) {
+                else if ($s && @$defaultstyles[$style])
+                    $d->className = $defaultstyles[$style];
+                if (@$queries[$style])
                     $d->label = $queries[$style];
-                    if ($style > 0)
-                        $d->label .= " AND NOT (" . join(" OR ", array_slice($queries, 0, $style)) . ")";
-                }
             }
             unset($d);
             $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . formula_axis_info_json($fx, "x") . ',ylabel:"CDF"}); })');
