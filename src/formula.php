@@ -378,7 +378,7 @@ class FormulaExpr {
             else if ($this->args[3] === "")
                 $this->format = $this->args[0];
             else
-                $this->format = null;
+                $this->format = "bool";
         } else if ($this->op === "rf")
             $this->format = $this->args[0];
         else if (($this->op === "max" || $this->op === "min"
@@ -398,7 +398,9 @@ class FormulaExpr {
                     $this->format = null;
             }
             $this->format = $this->format ? : null;
-        } else
+        } else if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠|u!)\z,', $this->op))
+            $this->format = "bool";
+        else
             $this->format = null;
     }
     private function _resolve_using($e) {
