@@ -1259,7 +1259,8 @@ class PaperSearch {
         $qz = array();
         foreach ($os->os as $o) {
             $cmp = ctype_alpha($o[1][0]) ? " $o[1] " : $o[1];
-            $qz[] = new SearchTerm("option", self::F_XVIEW, array($o[0], $o[1] . $o[2]));
+            $value = is_array($o[2]) ? "(" . join(",", $o[2]) . ")" : $o[2];
+            $qz[] = new SearchTerm("option", self::F_XVIEW, array($o[0], $cmp . $value));
         }
         if ($os->negate)
             $qz = array(SearchTerm::negate(SearchTerm::combine("or", $qz)));
