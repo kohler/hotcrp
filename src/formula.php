@@ -705,7 +705,7 @@ class Formula {
 
     private static function expression_view_score($e, $contact) {
         $op = $e->op;
-        if ($op == "")
+        if ($op == "" || $op == "pid")
             return VIEWSCORE_AUTHOR;
 
         if ($op == "tag" || $op == "tagval") {
@@ -717,7 +717,8 @@ class Formula {
         if ($op == "rf")
             return $e->args[0]->view_score;
 
-        if ($op == "revtype" || $op == "revpref" || $op == "revprefexp")
+        if ($op == "revtype" || $op == "revpref" || $op == "revprefexp"
+            || $op == "topicscore")
             return VIEWSCORE_PC;
 
         if ($op == "?:") {
