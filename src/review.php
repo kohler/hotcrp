@@ -181,6 +181,7 @@ class ReviewField {
         }
         if ($scclass & self::VALUE_DARK)
             $klass .= " dark";
+        $attr = "";
         if ($scclass & self::VALUE_TOOLTIP) {
             $klass .= " hottooltip";
             $attr = ' hottooltip="' . htmlspecialchars($this->options[$value]) . '" hottooltipdir="l"';
