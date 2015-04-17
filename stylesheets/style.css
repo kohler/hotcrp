@@ -2753,6 +2753,14 @@ span.sv-blpu6, span.sv-publ4 { color: #4053ab; }
 span.sv-blpu7, span.sv-publ3 { color: #4646a3; }
 span.sv-blpu8, span.sv-publ2 { color: #4d389a; }
 span.sv-blpu9, span.sv-publ1 { color: #54278f; }
+span.sv-blpu2.dark, span.sv-publ8.dark { color: #4b89c7; }
+span.sv-blpu3.dark, span.sv-publ7.dark { color: #4e86cd; }
+span.sv-blpu4.dark, span.sv-publ6.dark { color: #5582d1; }
+span.sv-blpu5.dark, span.sv-publ5.dark { color: #5f7ed5; }
+span.sv-blpu6.dark, span.sv-publ4.dark { color: #6b79d7; }
+span.sv-blpu7.dark, span.sv-publ3.dark { color: #7873d8; }
+span.sv-blpu8.dark, span.sv-publ2.dark { color: #866dd7; }
+span.sv-blpu9.dark, span.sv-publ1.dark { color: #9565d5; }
 span.sc_sum {
 	font-size: smaller;
 }
