@@ -74,6 +74,8 @@ function formula_axis_info_json($f, $type) {
                 . json_encode($Conf->decision_map()) . ")" . $rticks;
     else if ($format === "bool")
         $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
+    else if ($format instanceof PaperOption && $format->has_selector())
+        $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
     return $t;
 }
 

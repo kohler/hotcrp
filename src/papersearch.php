@@ -1215,15 +1215,23 @@ class PaperSearch {
                     else
                         $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
                 } else if ($o->has_selector()) {
-                    $xval = matchValue($o->selector, $oval !== "" ? $oval : "yes");
+                    $xval = array();
+                    if ($oval === "") {
+                        foreach ($o->selector as $k => $v)
+                            if (strcasecmp($v, "yes") == 0)
+                                $xval[] = $k;
+                        if (count($xval) == 0)
+                            $xval = array_keys($o->selector);
+                    } else
+                        $xval = matchValue($o->selector, $oval);
                     if (count($xval) == 0)
-                        continue;
+                        $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any opt:" . htmlspecialchars($oname) . " values.";
                     else if (count($xval) == 1)
-                        $qo[] = array($o, $ocompar, $xval[0]);
+                        $qo[] = array($o, $ocompar, $xval[0], $oval);
                     else if ($ocompar != "=" && $ocompar != "!=")
                         $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
                     else
-                        $qo[] = array($o, $ocompar == "=" ? "in" : "not in", $xval);
+                        $qo[] = array($o, $ocompar == "=" ? "in" : "not in", $xval, $oval);
                 } else {
                     if ($oval === "" || $oval === "yes")
                         $qo[] = array($o, "!=", 0, $oval);
