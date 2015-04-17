@@ -142,14 +142,18 @@ if ($Graph == "formula") {
                 $psearch = new PaperSearch($Me, array("q" => $queries[$i]));
                 foreach ($psearch->paperList() as $pid)
                     $stylemap[$pid][] = $i;
+                $errs = array_merge($errs, $psearch->warnings);
             }
             $defaultstyles = array();
             $paperIds = array_keys($stylemap);
         } else {
-            $psearch = new PaperSearch($Me, array("q" => "(" . join(") THEN (", $queries) . ")"));
+            $psearch = new PaperSearch($Me, array("q" => count($queries) > 1 ? "(" . join(") THEN (", $queries) . ")" : $queries[0]));
             $paperIds = $psearch->paperList();
             $stylemap = $psearch->thenmap;
+            $errs = array_merge($errs, $psearch->warnings);
         }
+        if (count($errs))
+            $Conf->warnMsg(join("<br>", $errs));
 
         if ($cdf)
             echo "<h2>", htmlspecialchars($fx->expression), " CDF</h2>\n";
