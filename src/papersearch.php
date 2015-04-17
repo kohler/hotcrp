@@ -1372,8 +1372,11 @@ class PaperSearch {
                 $quote = 1;
             else if ($ch === "(" || $ch === "[" || $ch === "{")
                 ++$pcount;
-            else if ($ch === ")" || $ch === "]" || $ch === "}")
+            else if ($ch === ")" || $ch === "]" || $ch === "}") {
+                if (!$pcount)
+                    break;
                 --$pcount;
+            }
         }
         return $pos;
     }
