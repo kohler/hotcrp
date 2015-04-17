@@ -62,8 +62,6 @@ class PaperContactInfo {
 
 class PaperInfo {
     private $_contact_info = array();
-    private $_score_array = array();
-    private $_score_info = array();
     private $_prefs_array = null;
 
     function __construct($p = null, $contact = null) {
@@ -383,41 +381,27 @@ class PaperInfo {
             return $this->num_reviews_in_progress();
     }
 
-    static public function score_aggregate_field($fid) {
-        if ($fid === "contactId")
-            return "reviewContactIds";
-        else if ($fid === "reviewType")
-            return "reviewTypes";
-        else if ($fid === "reviewOrdinal")
-            return "reviewOrdinals";
-        else
-            return "{$fid}Scores";
-    }
-
-    public function load_scores($fids) {
-        $fids = mkarray($fids);
+    private function load_scores(/* args */) {
+        $args = func_get_args();
         $req = array();
-        foreach ($fids as $fid)
-            $req[] = "group_concat($fid order by reviewId) " . self::score_aggregate_field($fid);
+        for ($i = 0; $i < count($args); $i += 2)
+            $req[] = "group_concat(" . $args[$i] . " order by reviewId) " . $args[$i + 1];
         $result = Dbl::qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
-        $row = $result ? $result->fetch_row() : null;
-        $row = $row ? : array();
-        foreach ($fids as $i => $fid) {
-            $k = self::score_aggregate_field($fid);
-            $this->$k = @$row[$i];
-        }
+        $row = $result ? $result->fetch_assoc() : null;
+        foreach ($row ? : array() as $k => $v)
+            $this->$k = $v;
         Dbl::free($result);
     }
 
     public function submitted_reviewers() {
         if (!property_exists($this, "reviewContactIds"))
-            $this->load_scores("contactId");
+            $this->load_scores("contactId", "reviewContactIds");
         return $this->reviewContactIds ? explode(",", $this->reviewContactIds) : array();
     }
 
     public function viewable_submitted_reviewers($contact, $forceShow) {
         if (!property_exists($this, "reviewContactIds"))
-            $this->load_scores("contactId");
+            $this->load_scores("contactId", "reviewContactIds");
         if ($this->reviewContactIds) {
             if ($contact->can_view_review($this, null, $forceShow))
                 return explode(",", $this->reviewContactIds);
@@ -427,9 +411,9 @@ class PaperInfo {
         return array();
     }
 
-    private function review_cid_array($k, $basek) {
+    private function review_cid_array($basek, $k) {
         if (!property_exists($this, $k) || !property_exists($this, "reviewContactIds"))
-            $this->load_scores(array($basek, "contactId"));
+            $this->load_scores($basek, $k, "contactId", "reviewContactIds");
         if ($this->$k)
             return array_combine(explode(",", $this->reviewContactIds),
                                  explode(",", $this->$k));
@@ -437,7 +421,7 @@ class PaperInfo {
     }
 
     public function review_ordinals() {
-        return $this->review_cid_array("reviewOrdinals", "reviewOrdinal");
+        return $this->review_cid_array("reviewOrdinal", "reviewOrdinals");
     }
 
     public function review_ordinal($cid) {
@@ -446,11 +430,11 @@ class PaperInfo {
     }
 
     public function submitted_review_types() {
-        return $this->review_cid_array("reviewTypes", "reviewType");
+        return $this->review_cid_array("reviewType", "reviewTypes");
     }
 
     public function scores($fid) {
-        return $this->review_cid_array("{$fid}Scores", $fid);
+        return $this->review_cid_array($fid, "{$fid}Scores");
     }
 
     public function score($fid, $cid) {
