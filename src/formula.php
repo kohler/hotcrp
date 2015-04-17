@@ -91,7 +91,15 @@ class FormulaCompileState {
         }
         return "\$decision";
     }
-
+    private function _add_paper_option($id) {
+        if (!isset($this->gtmp["opt$id"])) {
+            $this->queryOptions["options"] = true;
+            $this->gtmp["opt$id"] = "\$opt$id";
+            $this->gstmt[] = "\$opt$id = (\$contact->can_view_paper_option(\$prow, $id, \$forceShow) ? \$prow->option($id) : null);";
+            $this->gstmt[] = "\$opt$id = (\$opt$id ? \$opt{$id}->value : null);";
+        }
+        return "\$opt$id";
+    }
 
     public function loop_variable($aggt) {
         if ($aggt & FormulaExpr::APCCANREV) {
@@ -170,6 +178,24 @@ class FormulaCompileState {
                 return $t_tagval;
         }
 
+        if ($op == "opt") {
+            $this->queryOptions["options"] = true;
+            $opt = $this->_add_paper_option($e->args[0]->id);
+            if ($e->args[3] === "") {
+                if ($e->args[0]->type == "checkbox")
+                    return "!!$opt";
+                else
+                    return $opt;
+            } else if ($e->args[1] === "=")
+                return "($opt == " . $e->args[2] . ")";
+            else if ($e->args[1] === "in")
+                return "(array_search($opt, array(" . join(", ", $e->args[2]) . ")) !== false)";
+            else if ($e->args[1] === "not in")
+                return "(array_search($opt, array(" . join(", ", $e->args[2]) . ")) === false)";
+            else
+                return "($opt " . $e->args[1] . " " . $e->args[2] . ")";
+        }
+
         if ($op == "revtype") {
             if ($this->aggt == self::AGG_MY)
                 $rt = $this->_addgtemp("myrevtype", "\$prow->review_type(\$contact)");
@@ -241,10 +267,7 @@ class FormulaCompileState {
 
         if (count($e->args) == 1 && isset(Formula::$opprec["u$op"])) {
             $t = $this->_addltemp($this->compile($e->args[0]));
-            if ($op == "!")
-                return "$op$t";
-            else
-                return "($t === null ? $t : $op$t)";
+            return "$op$t";
         }
 
         if (count($e->args) == 2 && isset(Formula::$opprec[$op])) {
@@ -349,7 +372,14 @@ class FormulaExpr {
                 $a->set_format();
         if ($this->op === "revprefexp" || $this->op === "dec")
             $this->format = $this->op;
-        else if ($this->op === "rf")
+        else if ($this->op === "opt") {
+            if ($this->args[3] === "" && $this->args[0]->type === "checkbox")
+                $this->format = "bool";
+            else if ($this->args[3] === "")
+                $this->format = $this->args[0];
+            else
+                $this->format = null;
+        } else if ($this->op === "rf")
             $this->format = $this->args[0];
         else if (($this->op === "max" || $this->op === "min"
                   || $this->op === "avg" || $this->op === "wavg")
@@ -357,7 +387,7 @@ class FormulaExpr {
                  && $this->args[0] instanceof FormulaExpr)
             $this->format = $this->args[0]->format;
         else if ($this->op === "greatest" || $this->op === "least"
-                 || $this->op === "?:") {
+                 || $this->op === "?:" || $this->op === "&&" || $this->op === "||") {
             $this->format = false;
             for ($i = ($this->op === "?:" ? 1 : 0); $i < count($this->args); ++$i) {
                 $a = $this->args[$i];
@@ -408,7 +438,7 @@ class FormulaExpr {
     }
     public function view_score($contact) {
         $op = $this->op;
-        if ($op == "" || $op == "pid")
+        if ($op == "" || $op == "pid" || $op == "opt")
             return VIEWSCORE_AUTHOR;
 
         if ($op == "tag" || $op == "tagval") {
@@ -455,7 +485,7 @@ class Formula {
     public $timeModified = 0;
 
     private $_parse = null;
-    private $_error_html = null;
+    private $_error_html = array();
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
@@ -506,14 +536,14 @@ class Formula {
         $t = $this->expression;
         $e = $this->_parse_ternary($t, false);
         if ((string) $this->expression === "")
-            $this->_error_html = "Empty formula.";
+            $this->_error_html[] = "Empty formula.";
         else if ($t !== "" || !$e) {
             $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
-            $this->_error_html = "Parse error in formula “" . htmlspecialchars($prefix) . "<span style='color:red;text-decoration:underline'>" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "</span>”.";
+            $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($prefix) . "<span style='color:red;text-decoration:underline'>" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "</span>”.";
         } else if ($e->aggt && !$this->allowReview)
-            $this->_error_html = "Illegal formula: can’t return a raw score, use an aggregate function.";
+            $this->_error_html[] = "Illegal formula: can’t return a raw score, use an aggregate function.";
         else if (($x = $e->resolve_scores()))
-            $this->_error_html = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
+            $this->_error_html[] = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
         else {
             $e->text = $this->expression;
             $this->needsReview = !!$e->aggt;
@@ -529,7 +559,7 @@ class Formula {
 
     public function error_html() {
         $this->check();
-        return $this->_error_html;
+        return join("<br/>", $this->_error_html);
     }
 
     private function _parse_ternary(&$t, $in_qc) {
@@ -575,6 +605,13 @@ class Formula {
         return $e;
     }
 
+    static private function _pop_argument($t) {
+        if (preg_match(',\s*((?:"[^"]*(?:"|\z)|[^\s()]*)*)(.*)\z,s', $t, $m) && $m[1] !== "")
+            return $m;
+        else
+            return array($t, "", $t);
+    }
+
     private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "")
             return null;
@@ -583,7 +620,7 @@ class Formula {
             $t = substr($t, 1);
             $e = $this->_parse_ternary($t, false);
             $t = ltrim($t);
-            if (!$e || $t[0] !== ")")
+            if (!$e || @$t[0] !== ")")
                 return null;
             $t = substr($t, 1);
         } else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
@@ -592,6 +629,23 @@ class Formula {
             if (!($e = $this->_parse_expr($t, self::$opprec["u$op"], $in_qc)))
                 return null;
             $e = FormulaExpr::make($op, $e);
+        } else if (preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
+            $rest = self::_pop_argument($m[1]);
+            $os = PaperSearch::analyze_option_search($rest[1]);
+            foreach ($os->warn as $w)
+                $this->_error_html[] = $w;
+            if (!count($os->os) && !count($os->warn))
+                $this->_error_html[] = "“" . htmlspecialchars($rest[1]) . "” doesn’t match a submission option.";
+            if (!count($os->os))
+                return null;
+            $e = null;
+            foreach ($os->os as $o) {
+                $ex = FormulaExpr::make("opt", $o[0], $o[1], $o[2], @$o[3]);
+                $e = $e ? FormulaExpr::make("||", $e, $ex) : $ex;
+            }
+            if ($os->negate)
+                $e = FormulaExpr::make("!", $e);
+            $t = $rest[2];
         } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
@@ -764,7 +818,6 @@ class Formula {
     }
 
     public function result_format() {
-        error_log(var_export($this->_parse, true));
         return $this->check() ? $this->_parse->format : null;
     }
 }

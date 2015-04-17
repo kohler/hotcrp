@@ -1082,11 +1082,11 @@ class FormulaPaperColumn extends PaperColumn {
         foreach (self::$registered as $col)
             if (strcasecmp($col->formula->name, $name) == 0)
                 return $col;
-        if (strpos($name, "(") === false || substr($name, 0, 4) === "edit")
+        if (substr($name, 0, 4) === "edit")
             return null;
         $formula = new Formula($name);
         if (!$formula->check()) {
-            if ($errors)
+            if ($errors && strpos($name, "(") !== false)
                 $errors->add($formula->error_html(), 1);
             return null;
         }

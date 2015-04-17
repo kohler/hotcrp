@@ -1180,7 +1180,7 @@ class PaperSearch {
         $qt[] = $qx ? : new SearchTerm("f");
     }
 
-    function _search_options($word, &$qt, $report_error) {
+    static public function analyze_option_search($word) {
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
             if ($m[2][0] == ":" || $m[2][0] == "#")
@@ -1195,8 +1195,7 @@ class PaperSearch {
         $oname = strtolower(simplify_whitespace($oname));
 
         // match all options
-        $qo = array();
-        $qxo = array();
+        $qo = $warn = array();
         $option_failure = false;
         if ($oname == "none" || $oname == "any")
             $omatches = PaperOption::option_list();
@@ -1208,63 +1207,61 @@ class PaperSearch {
                 // find the relevant values
                 if ($o->type == "numeric") {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-                        $xval = $ocompar . $m[1];
+                        $qo[] = array($o, $ocompar, $m[1]);
                     else if ($oval === "" || $oval === "yes")
-                        $xval = "!=0";
+                        $qo[] = array($o, "!=", 0, $oval);
                     else if ($oval === "no")
-                        $xval = "=0";
-                    else {
-                        $this->warn("Submission option “" . htmlspecialchars($o->name) . "” takes integer values.");
-                        $option_failure = true;
-                        continue;
-                    }
+                        $qo[] = array($o, "=", 0);
+                    else
+                        $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
                 } else if ($o->has_selector()) {
                     $xval = matchValue($o->selector, $oval !== "" ? $oval : "yes");
                     if (count($xval) == 0)
                         continue;
                     else if (count($xval) == 1)
-                        $xval = $ocompar . $xval[0];
-                    else if ($ocompar != "=" && $ocompar != "!=") {
-                        $this->warn("Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".");
-                        $option_failure = true;
-                        continue;
-                    } else
-                        $xval = ($ocompar == "!=" ? " not in " : " in ")
-                            . "(" . join(",", $xval) . ")";
+                        $qo[] = array($o, $ocompar, $xval[0]);
+                    else if ($ocompar != "=" && $ocompar != "!=")
+                        $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
+                    else
+                        $qo[] = array($o, $ocompar == "=" ? "in" : "not in", $xval);
                 } else {
                     if ($oval === "" || $oval === "yes")
-                        $xval = "!=0";
+                        $qo[] = array($o, "!=", 0, $oval);
                     else if ($oval === "no")
-                        $xval = "=0";
+                        $qo[] = array($o, "=", 0);
                     else
                         continue;
                 }
-                $qo[] = array($o, $xval);
             }
-        } else
+        } else if (($ocompar == "=" || $ocompar == "!=") && $oval == "")
             foreach (PaperOption::option_list() as $oid => $o)
-                if ($o->has_selector()
-                    && ($ocompar == "=" || $ocompar == "!=")
-                    && $oval == "") {
+                if ($o->has_selector()) {
                     foreach (matchValue($o->selector, $oname) as $xval)
-                        $qxo[] = array($o, $ocompar . $xval);
+                        $qo[] = array($o, $ocompar, $xval);
                 }
 
-        // report failure
-        if (count($qo) == 0 && count($qxo) == 0) {
-            if ($option_failure || $report_error) {
+        return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname == "none");
+    }
+
+    function _search_options($word, &$qt, $report_error) {
+        $os = self::analyze_option_search($word);
+        foreach ($os->warn as $w)
+            $this->warn($w);
+        if (!count($os->os)) {
+            if ($report_error && !count($os->warn))
+                $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
+            if ($report_error || count($os->warn))
                 $qt[] = new SearchTerm("f");
-                if (!$option_failure)
-                    $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a submission option.");
-            }
             return false;
         }
 
         // add expressions
         $qz = array();
-        foreach ((count($qo) ? $qo : $qxo) as $o)
-            $qz[] = new SearchTerm("option", self::F_XVIEW, $o);
-        if ($oname === "none")
+        foreach ($os->os as $o) {
+            $cmp = ctype_alpha($o[1][0]) ? " $o[1] " : $o[1];
+            $qz[] = new SearchTerm("option", self::F_XVIEW, array($o[0], $o[1] . $o[2]));
+        }
+        if ($os->negate)
             $qz = array(SearchTerm::negate(SearchTerm::combine("or", $qz)));
         $qt = array_merge($qt, $qz);
         return true;

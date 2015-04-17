@@ -64,16 +64,16 @@ function formula_axis_info_json($f, $type) {
     global $Conf;
     $t = "," . $type . "label:" . json_encode($f->expression);
     $format = $f->result_format();
+    $rticks = ($type == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
     if ($format instanceof ReviewField && $format->option_letter) {
         $t .= "," . $type . "flip:true"
             . "," . $type . "tick_setup:hotcrp_graphs.option_letter_ticks("
                 . count($format->options) . ",\"" . chr($format->option_letter - 1) . "\")";
-    } else if ($format === "dec") {
+    } else if ($format === "dec")
         $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks("
-                . json_encode($Conf->decision_map()) . ")";
-        if ($type == "y")
-            $t .= "," . $type . "axis_setup:hotcrp_graphs.rotate_ticks(-90)";
-    }
+                . json_encode($Conf->decision_map()) . ")" . $rticks;
+    else if ($format === "bool")
+        $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
     return $t;
 }
 

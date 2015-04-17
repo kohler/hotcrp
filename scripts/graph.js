@@ -152,7 +152,7 @@ function seq_to_cdf(seq) {
 
 
 function expand_extent(e, delta) {
-    return [e[0] - (e[0] ? delta : 0), e[1] + delta];
+    return [e[0] - delta, e[1] + delta];
 }
 
 /* actual graphs */
