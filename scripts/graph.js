@@ -151,6 +151,10 @@ function seq_to_cdf(seq) {
 }
 
 
+function expand_extent(e, delta) {
+    return [e[0] - (e[0] ? delta : 0), e[1] + delta];
+}
+
 /* actual graphs */
 var hotcrp_graphs = {};
 
@@ -242,7 +246,8 @@ function hotcrp_graphs_cdf(args) {
         .style({"text-anchor": "end", "font-size": "smaller"})
         .text(args.ylabel || "");
 
-    svg.append("rect").attr("width", width).attr("height", height)
+    svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
+        .attr("height", height + margin.bottom)
         .style({"fill": "none", "pointer-events": "all"})
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout);
@@ -433,9 +438,9 @@ hotcrp_graphs.scatter = function (args) {
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = d3.extent(data, function (d) { return d[1]; }),
         x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
-                .domain([xe[0] - 0.3, xe[1] + 0.3]),
+                .domain(expand_extent(xe, xe[1] - xe[0] < 10 ? 0.3 : 0)),
         y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
-                .domain([ye[0] - 0.3, ye[1] + 0.3]),
+                .domain(expand_extent(ye, ye[1] - ye[0] < 10 ? 0.3 : 0)),
         rf = function (d) { return d.r - 1; };
     data = grouped_quadtree(data, x, y, 4);
 
@@ -484,7 +489,8 @@ hotcrp_graphs.scatter = function (args) {
         .style({"text-anchor": "end", "font-size": "smaller"})
         .text(args.ylabel || "");
 
-    svg.append("rect").attr("width", width).attr("height", height)
+    svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
+        .attr("height", height + margin.bottom)
         .style({"fill": "none", "pointer-events": "all"})
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout).on("click", mouseclick);

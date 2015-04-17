@@ -84,6 +84,13 @@ class FormulaCompileState {
         }
         return "\$allrevprefs";
     }
+    private function _add_decision() {
+        if (!isset($this->gtmp["decision"])) {
+            $this->gtmp["decision"] = "\$decision";
+            $this->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? \$prow->outcome : 0;";
+        }
+        return "\$decision";
+    }
 
 
     public function loop_variable($aggt) {
@@ -146,6 +153,9 @@ class FormulaCompileState {
 
         if ($op == "pid")
             return "\$prow->paperId";
+
+        if ($op == "dec")
+            return $this->_add_decision();
 
         if ($op == "tag" || $op == "tagval") {
             $this->queryOptions["tags"] = true;
@@ -595,6 +605,9 @@ class Formula {
             $t = $m[2];
         } else if (preg_match('/\A(pid|paperid)\b(.*)\z/si', $t, $m)) {
             $e = FormulaExpr::make("pid", $m[1]);
+            $t = $m[2];
+        } else if (preg_match('/\A(dec|decision)\b(.*)\z/si', $t, $m)) {
+            $e = FormulaExpr::make("dec", $m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
