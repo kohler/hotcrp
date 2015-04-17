@@ -2083,6 +2083,9 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .bubble > .bubcontent {
 	margin: 4px 0;
 }
+.bubble.tooltip > .bubcontent {
+	max-width: 560px;
+}
 .bubtail {
 	position: absolute;
 	border-style: solid;
@@ -2095,7 +2098,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	height: 4px;
 }
 .bubcontent > p {
-	max-width: 240px;
+	max-width: 280px;
 	overflow-x: scroll;
 }
 .bubcontent > p:first-child {

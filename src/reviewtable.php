@@ -185,7 +185,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 else if ($rr->$fid) {
                     if (!@$score_header[$fid])
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore rs_' . $fid . ' hottooltip" hottooltip="' . htmlspecialchars($f->options[$rr->$fid]) . '" hottooltipdir="l" hottooltipnear=">span">'
+                    $scores[$fid] = '<td class="revscore rs_' . $fid . ' hottooltip" hottooltip="' . htmlspecialchars($f->value_description($rr->$fid)) . '" hottooltipdir="l" hottooltipnear=">span">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 } else if (@$score_header[$fid] === null)

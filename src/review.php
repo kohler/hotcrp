@@ -189,6 +189,18 @@ class ReviewField {
         return "<span class=\"$klass\"$attr>$x</span>";
     }
 
+    public function value_description($value) {
+        if (is_object($value))
+            $value = defval($value, $this->id);
+        if (!$this->has_options)
+            return null;
+        else if (!$value)
+            return "";
+        else if ($this->option_letter && (is_int($value) || ctype_digit($value)))
+            $value = chr($this->option_letter - (int) $value);
+        return $this->options[$value];
+    }
+
     static public function unparse_letter($option_letter, $value) {
         $ivalue = (int) $value;
         $ch = $option_letter - $ivalue;
