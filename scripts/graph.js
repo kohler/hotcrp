@@ -475,6 +475,7 @@ hotcrp_graphs.scatter = function (args) {
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
+        .call(args.xaxis_setup || function () {})
       .append("text")
         .attr("x", width).attr("y", 0).attr("dy", "-.5em")
         .style({"text-anchor": "end", "font-size": "smaller"})
@@ -483,6 +484,7 @@ hotcrp_graphs.scatter = function (args) {
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis)
+        .call(args.yaxis_setup || function () {})
       .append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6).attr("dy", ".71em")
@@ -570,6 +572,24 @@ hotcrp_graphs.option_letter_ticks = function (n, c) {
         axis.ticks(count).tickFormat(function (value) {
             return info.unparse(value, split);
         });
+    };
+};
+
+hotcrp_graphs.named_integer_ticks = function (map) {
+    return function (axis, extent) {
+        var count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
+        axis.ticks(count).tickFormat(function (value) {
+            return map[value];
+        });
+    };
+};
+
+hotcrp_graphs.rotate_ticks = function (angle) {
+    return function (axis) {
+        axis.selectAll("text")
+            .attr("x", 0).attr("y", 0).attr("dy", "-.71em")
+            .attr("transform", "rotate(" + angle + ")")
+            .style("text-anchor", "middle");
     };
 };
 

@@ -61,11 +61,18 @@ function formulas_qrow($i, $q, $s) {
 }
 
 function formula_axis_info_json($f, $type) {
+    global $Conf;
     $t = "," . $type . "label:" . json_encode($f->expression);
-    if (($ffield = $f->field_type()) && $ffield->option_letter) {
+    $format = $f->result_format();
+    if ($format instanceof ReviewField && $format->option_letter) {
         $t .= "," . $type . "flip:true"
             . "," . $type . "tick_setup:hotcrp_graphs.option_letter_ticks("
-                . count($ffield->options) . ",\"" . chr($ffield->option_letter - 1) . "\")";
+                . count($format->options) . ",\"" . chr($format->option_letter - 1) . "\")";
+    } else if ($format === "dec") {
+        $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks("
+                . json_encode($Conf->decision_map()) . ")";
+        if ($type == "y")
+            $t .= "," . $type . "axis_setup:hotcrp_graphs.rotate_ticks(-90)";
     }
     return $t;
 }

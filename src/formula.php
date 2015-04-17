@@ -87,7 +87,7 @@ class FormulaCompileState {
     private function _add_decision() {
         if (!isset($this->gtmp["decision"])) {
             $this->gtmp["decision"] = "\$decision";
-            $this->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? \$prow->outcome : 0;";
+            $this->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
         }
         return "\$decision";
     }
@@ -347,8 +347,8 @@ class FormulaExpr {
         foreach ($this->args as $a)
             if ($a instanceof FormulaExpr)
                 $a->set_format();
-        if ($this->op === "revprefexp")
-            $this->format = "revprefexp";
+        if ($this->op === "revprefexp" || $this->op === "dec")
+            $this->format = $this->op;
         else if ($this->op === "rf")
             $this->format = $this->args[0];
         else if (($this->op === "max" || $this->op === "min"
@@ -763,10 +763,8 @@ class Formula {
         return $this->needsReview;
     }
 
-    public function field_type() {
-        $this->check();
-        if ($this->_parse && $this->_parse->format instanceof ReviewField)
-            return $this->_parse->format;
-        return null;
+    public function result_format() {
+        error_log(var_export($this->_parse, true));
+        return $this->check() ? $this->_parse->format : null;
     }
 }
