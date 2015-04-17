@@ -1766,6 +1766,7 @@ class Contact {
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $pc_trackok = $rights->allow_pc && $Conf->check_tracks($prow, $this, "viewrev");
+        // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_AUTHOR
@@ -1852,6 +1853,7 @@ class Contact {
                        "paperId" => 1, "timeSubmitted" => 1,
                        "paperBlind" => false, "outcome" => 1), $this);
         $rights = $this->rights($prow, $forceShow);
+        // See also PaperInfo::can_view_review_identity_of.
         return $rights->can_administer
             || ($rrow && ($this->is_my_review($rrow)
                           || ($rights->allow_pc

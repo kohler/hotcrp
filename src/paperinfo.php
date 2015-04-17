@@ -63,6 +63,7 @@ class PaperContactInfo {
 class PaperInfo {
     private $_contact_info = array();
     private $_prefs_array = null;
+    private $_review_id_array = null;
 
     function __construct($p = null, $contact = null) {
         if ($p)
@@ -383,6 +384,7 @@ class PaperInfo {
 
     private function load_scores(/* args */) {
         $args = func_get_args();
+        $args = (count($args) == 1 ? $args[0] : $args);
         $req = array();
         for ($i = 0; $i < count($args); $i += 2)
             $req[] = "group_concat(" . $args[$i] . " order by reviewId) " . $args[$i + 1];
@@ -450,6 +452,45 @@ class PaperInfo {
                  && ($s = $this->score($field->id, $contact->contactId)) !== null)
             return array($contact->contactId => $s);
         return null;
+    }
+
+    public function can_view_review_identity_of($cid, $contact, $forceShow = null) {
+        global $Conf;
+        if ($contact->can_administer($this, $forceShow)
+            || $cid == $contact->contactId)
+            return true;
+        // load information needed to make the call
+        if ($this->_review_id_array === null
+            || ($contact->review_tokens() && !property_exists($this, "reviewTokens"))) {
+            $need = array("contactId", "reviewContactIds",
+                          "requestedBy", "reviewRequestedBys",
+                          "reviewType", "reviewTypes");
+            if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL)
+                array_push($need, "reviewBlind", "reviewBlinds");
+            if ($contact->review_tokens())
+                array_push($need, "reviewToken", "reviewTokens");
+            for ($i = 1; $i < count($need); $i += 2)
+                if (!property_exists($this, $need[$i])) {
+                    $this->load_scores($need);
+                    break;
+                }
+            for ($i = 0; $i < count($need); $i += 2) {
+                $k = $need[$i + 1];
+                $need[$i + 1] = explode(",", $this->$k);
+            }
+            $this->_review_id_array = array();
+            for ($n = 0; $n < count($need[1]); ++$n) {
+                $rrow = (object) array("reviewSubmitted" => 1);
+                for ($i = 0; $i < count($need); $i += 2) {
+                    $k = $need[$i];
+                    $rrow->$k = $need[$i + 1][$n];
+                }
+                $this->_review_id_array[(int) $rrow->contactId] = $rrow;
+            }
+        }
+        // call contact
+        return ($rrow = @$this->_review_id_array[$cid])
+            && $contact->can_view_review_identity($this, $rrow, $forceShow);
     }
 
     public function fetch_comments($where) {
