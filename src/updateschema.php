@@ -672,4 +672,13 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 91
         && $Conf->ql("alter table PaperReviewArchive add `reviewAuthorSeen` int(11) DEFAULT NULL"))
         update_schema_version($Conf, 92);
+    if ($Conf->settings["allowPaperOption"] == 92
+        && $Conf->ql("alter table Paper drop key `titleAbstractText`")
+        && $Conf->ql("alter table Paper drop key `allText`")
+        && $Conf->ql("alter table Paper drop key `authorText`")
+        && $Conf->ql("alter table Paper modify `authorInformation` varbinary(8192) DEFAULT NULL")
+        && $Conf->ql("alter table Paper modify `abstract` varbinary(16384) DEFAULT NULL")
+        && $Conf->ql("alter table Paper modify `collaborators` varbinary(8192) DEFAULT NULL")
+        && $Conf->ql("alter table Paper modify `withdrawReason` varbinary(1024) DEFAULT NULL"))
+        update_schema_version($Conf, 93);
 }

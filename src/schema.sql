@@ -134,9 +134,9 @@ DROP TABLE IF EXISTS `Paper`;
 CREATE TABLE `Paper` (
   `paperId` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(200) DEFAULT NULL,
-  `authorInformation` mediumtext,
-  `abstract` mediumtext,
-  `collaborators` mediumtext,
+  `authorInformation` varbinary(8192) DEFAULT NULL,
+  `abstract` varbinary(16384) DEFAULT NULL,
+  `collaborators` varbinary(8192) DEFAULT NULL,
   `timeSubmitted` int(11) NOT NULL DEFAULT '0',
   `timeWithdrawn` int(11) NOT NULL DEFAULT '0',
   `timeFinalSubmitted` int(11) NOT NULL DEFAULT '0',
@@ -153,13 +153,10 @@ CREATE TABLE `Paper` (
   `size` int(11) NOT NULL DEFAULT '0',
   `mimetype` varchar(80) NOT NULL DEFAULT '',
   `timestamp` int(11) NOT NULL DEFAULT '0',
-  `withdrawReason` text,
+  `withdrawReason` varbinary(1024) DEFAULT NULL,
   PRIMARY KEY (`paperId`),
   UNIQUE KEY `paperId` (`paperId`),
   KEY `title` (`title`),
-  FULLTEXT KEY `titleAbstractText` (`title`,`abstract`),
-  FULLTEXT KEY `allText` (`title`,`abstract`,`authorInformation`,`collaborators`),
-  FULLTEXT KEY `authorText` (`authorInformation`,`collaborators`),
   KEY `timeSubmitted` (`timeSubmitted`),
   KEY `leadContactId` (`leadContactId`),
   KEY `shepherdContactId` (`shepherdContactId`)
@@ -516,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 92);
+insert into Settings (name, value) values ('allowPaperOption', 93);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
