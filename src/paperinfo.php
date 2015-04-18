@@ -64,6 +64,8 @@ class PaperInfo {
     private $_contact_info = array();
     private $_prefs_array = null;
     private $_review_id_array = null;
+    private $_conflicts;
+    private $_conflicts_email;
 
     function __construct($p = null, $contact = null) {
         if ($p)
@@ -274,8 +276,8 @@ class PaperInfo {
     }
 
     public function conflicts($email = false) {
-        if ($email ? !@$this->conflicts_email_ : !isset($this->conflicts_)) {
-            $this->conflicts_ = array();
+        if ($email ? !@$this->_conflicts_email : !isset($this->_conflicts)) {
+            $this->_conflicts = array();
             if (!$email && isset($this->allConflictType)) {
                 $vals = array();
                 foreach (explode(",", $this->allConflictType) as $x)
@@ -284,17 +286,17 @@ class PaperInfo {
                 $vals = edb_rows(Dbl::qe("select contactId, conflictType from PaperConflict where paperId=$this->paperId"));
             else {
                 $vals = edb_rows(Dbl::qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId"));
-                $this->conflicts_email_ = true;
+                $this->_conflicts_email = true;
             }
             foreach ($vals as $v)
                 if ($v[1] > 0) {
                     $row = (object) array("contactId" => (int) $v[0], "conflictType" => (int) $v[1]);
                     if (@$v[2])
                         $row->email = $v[2];
-                    $this->conflicts_[$row->contactId] = $row;
+                    $this->_conflicts[$row->contactId] = $row;
                 }
         }
-        return $this->conflicts_;
+        return $this->_conflicts;
     }
 
     public function pc_conflicts($email = false) {
