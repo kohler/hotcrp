@@ -67,12 +67,15 @@ class Fexpr {
             $tt = $this->args[1]->view_score($contact);
             $tf = $this->args[2]->view_score($contact);
             return min($t, max($tt, $tf));
+        } else if ($this->op == "||")
+            return $this->args[0]->view_score($contact);
+        else {
+            $score = VIEWSCORE_AUTHOR;
+            foreach ($this->args as $e)
+                if ($e instanceof Fexpr)
+                    $score = min($score, $e->view_score($contact));
+            return $score;
         }
-        $score = VIEWSCORE_AUTHOR;
-        foreach ($this->args as $e)
-            if ($e instanceof Fexpr)
-                $score = min($score, $e->view_score($contact));
-        return $score;
     }
 
 
@@ -189,6 +192,34 @@ class ConstantFexpr extends Fexpr {
     }
 }
 
+class NegateFexpr extends Fexpr {
+    public function __construct($e) {
+        parent::__construct("!", $e);
+    }
+    public function format() {
+        return "bool";
+    }
+    public function compile($state) {
+        $t = $state->_addltemp($this->args[0]->compile($state));
+        return "!$t";
+    }
+}
+
+class InFexpr extends Fexpr {
+    private $values;
+    public function __construct($e, $values) {
+        parent::__construct("in", $e);
+        $this->values = $values;
+    }
+    public function format() {
+        return "bool";
+    }
+    public function compile($state) {
+        $t = $state->_addltemp($this->args[0]->compile($state));
+        return "(array_search($t, array(" . join(", ", $this->values) . ")) !== false)";
+    }
+}
+
 class ScoreFexpr extends Fexpr {
     private $field;
     public function __construct($field) {
@@ -234,6 +265,7 @@ class PrefFexpr extends Fexpr {
         return VIEWSCORE_PC;
     }
     public function compile($state) {
+        $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
         if ($state->looptype == self::LNONE)
             $fidx = "[\$rrow_cid]";
@@ -245,7 +277,6 @@ class PrefFexpr extends Fexpr {
                 return "null";
             $fidx = "[~i~]";
         }
-        $state->queryOptions["allReviewerPreference"] = true;
         return "@" . $state->_add_review_prefs() . $fidx . "[" . ($this->isexpertise ? 1 : 0) . "]";
     }
 }
@@ -269,7 +300,7 @@ class TagFexpr extends Fexpr {
         $state->queryOptions["tags"] = true;
         $tagger = new Tagger($state->contact);
         $e_tag = $tagger->check($this->tag);
-        $t_tags = $state->_addgtemp("tags", "(\$forceShow || \$contact->can_view_tags(\$prow, true) ? \$prow->all_tags_text() : '')");
+        $t_tags = $state->_addgtemp("tags", "\$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\"");
         $t_tagpos = $state->_addgtemp("tagpos {$this->tag}", "stripos($t_tags, \" $e_tag#\")");
         $t_tagval = $state->_addgtemp("tagval {$this->tag}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
         if ($this->isvalue)
@@ -345,39 +376,11 @@ class RevtypeFexpr extends Fexpr {
             $state->queryOptions["reviewTypes"] = true;
             $rt = $state->_addgtemp("revtypes", "\$prow->submitted_review_types()");
             if ($state->looptype == self::LNONE)
-                $rt .= "[\$rrow_cid]";
+                $rt = "@{$rt}[\$rrow_cid]";
             else
-                $rt .= "[~i~]";
+                $rt = "@{$rt}[~i~]";
         }
         return $rt;
-    }
-}
-
-class NegateFexpr extends Fexpr {
-    public function __construct($e) {
-        parent::__construct("!", $e);
-    }
-    public function format() {
-        return "bool";
-    }
-    public function compile($state) {
-        $t = $state->_addltemp($this->args[0]->compile($state));
-        return "!$t";
-    }
-}
-
-class InFexpr extends Fexpr {
-    private $values;
-    public function __construct($e, $values) {
-        parent::__construct("in", $e);
-        $this->values = $values;
-    }
-    public function format() {
-        return "bool";
-    }
-    public function compile($state) {
-        $t = $state->_addltemp($this->args[0]->compile($state));
-        return "(array_search($t, array(" . join(", ", $this->values) . ")) !== false)";
     }
 }
 
@@ -456,7 +459,7 @@ class FormulaCompileState {
         if (!isset($this->gtmp["allrevprefs"])) {
             $this->queryOptions["allReviewerPreference"] = true;
             $this->gtmp["allrevprefs"] = "\$allrevprefs";
-            $this->gstmt[] = "\$allrevprefs = (\$forceShow || \$contact->can_view_review(\$prow, null, false) ? \$prow->reviewer_preferences() : array());";
+            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : array();";
         }
         return "\$allrevprefs";
     }
@@ -471,8 +474,8 @@ class FormulaCompileState {
         if (!isset($this->gtmp["opt$id"])) {
             $this->queryOptions["options"] = true;
             $this->gtmp["opt$id"] = "\$opt$id";
-            $this->gstmt[] = "\$opt$id = (\$contact->can_view_paper_option(\$prow, $id, \$forceShow) ? \$prow->option($id) : null);";
-            $this->gstmt[] = "\$opt$id = (\$opt$id ? \$opt{$id}->value : null);";
+            $this->gstmt[] = "\$opt$id = \$contact->can_view_paper_option(\$prow, $id, \$forceShow) ? \$prow->option($id) : null;";
+            $this->gstmt[] = "\$opt$id = \$opt$id ? \$opt{$id}->value : null;";
         }
         return "\$opt$id";
     }
@@ -527,7 +530,6 @@ class FormulaCompileState {
 }
 
 class Formula {
-
     public $formulaId = null;
     public $name = null;
     public $heading = "";
@@ -819,7 +821,8 @@ class Formula {
     return " . ($g[1] ? "array_keys($g[0])" : $g[0]) . ";\n";
         }
 
-        $t = join("\n  ", $state->gstmt)
+        $t = "assert(\$contact->contactId == $contact->contactId);\n"
+            . join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . $loop . join("\n  ", $state->lstmt) . "\n"
             . "  \$x = $expr;\n\n"
