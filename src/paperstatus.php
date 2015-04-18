@@ -352,10 +352,10 @@ class PaperStatus {
                 if (is_int($oa) && isset($o->selector[$oa]))
                     /* OK */;
                 else if (is_string($oa)
-                         && ($ov = array_search($oa, $o->selector)))
+                         && ($ov = array_search($oa, $o->selector)) !== false)
                     $pj->options->$id = $ov;
                 else
-                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option doesn’t match any of the selectors.");
+                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option " . htmlspecialchars(json_encode($oa)) . " doesn’t match any of the selectors.");
             } else if ($o->type == "numeric") {
                 if (!is_int($oa))
                     $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be an integer.");
