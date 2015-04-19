@@ -2182,7 +2182,7 @@ class PaperSearch {
         else {
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
-            $q[] = "Paper.$field like '%$v%'";
+            $q[] = "convert(Paper.$field using utf8) like '%$v%'";
             $f[] = "(" . join(" and ", $q) . ")";
         }
         $t->link = $field;
