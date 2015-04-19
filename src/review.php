@@ -39,7 +39,7 @@ class ReviewField {
                                            "author" => VIEWSCORE_AUTHOR);
     static private $view_score_rmap = null;
 
-    public function __construct($rf, $id, $has_options) {
+    public function __construct($id, $has_options) {
         $this->id = $id;
         $this->has_options = $has_options;
     }
@@ -290,9 +290,11 @@ class ReviewForm {
     public $fmap;
     public $forder;
     public $fieldName;
+    private $all_forder;
     private $mailer_info;
     private $mailer_preps;
 
+    // XXX all negative ratings should have negative numbers
     static public $rating_types = array("n" => "average",
                                         1 => "very helpful",
                                         0 => "too short",
@@ -309,52 +311,44 @@ class ReviewForm {
             $round = $round->reviewRound;
         else if ($round === null)
             $round = 0;
+        if (!($rf0 = @self::$cache[0]))
+            self::$cache[0] = new ReviewForm(0);
         if (($rf = @self::$cache[$round]))
             return $rf;
-        if (!@self::$cache[0])
-            self::$cache[0] = new ReviewForm(0);
-        if ($round && $Conf->review_form_json($round))
-            return self::$cache[$round] = new ReviewForm($round);
-        else if ($round)
-            return self::$cache[$round] = self::$cache[0];
         else
-            return self::$cache[0];
+            return self::$cache[$round] = new ReviewForm($round, $rf0);
     }
 
     static public function clear_cache() {
         self::$cache = array();
     }
 
-    static public function field_list_all_rounds() {
-        global $Conf;
-        $fields = array();
-        foreach ($Conf->round_list() as $i => $rn) {
-            $rf = self::get($i);
-            if ($rf->round == $i) {
-                foreach ($rf->forder as $f)
-                    if (!@$fields[$f->id])
-                        $fields[$f->id] = $f;
-            }
-        }
-        return $fields;
+    static public function fmap_sorter($a, $b) {
+        if ($a->displayed != $b->displayed)
+            return $a->displayed ? -1 : 1;
+        else if ($a->displayed)
+            return $a->display_order - $b->display_order;
+        else
+            return strcmp($a->id, $b->id);
     }
 
-    function __construct($round) {
+    private function create_fmap() {
         global $Conf;
 
-        $this->round = $round;
-        $this->fmap = array();
+        // prototype fields
+        $fmap = array();
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
                        "commentsToAddress", "weaknessOfPaper",
                        "strengthOfPaper", "textField7", "textField8") as $fid)
-            $this->fmap[$fid] = new ReviewField($this, $fid, false);
+            $this->fmap[$fid] = new ReviewField($fid, false);
         foreach (array("potential", "fixability", "overAllMerit",
                        "reviewerQualification", "novelty", "technicalMerit",
                        "interestToCommunity", "longevity", "grammar",
                        "likelyPresentation", "suitableForShort") as $fid)
-            $this->fmap[$fid] = new ReviewField($this, $fid, true);
+            $this->fmap[$fid] = new ReviewField($fid, true);
 
-        $rfj = $Conf->review_form_json($round);
+        // parse JSON
+        $rfj = $Conf->review_form_json();
         if (!$rfj)
             $rfj = json_decode('{
 "overAllMerit":{"name":"Overall merit","position":1,"view_score":1,
@@ -369,8 +363,8 @@ class ReviewForm {
             if (@($f = $this->fmap[$fname]))
                 $f->assign($j);
 
+        // assign field order
         $forder = array();
-        $this->forder = array();
         $this->fieldName = array();
         foreach ($this->fmap as $fid => $f) {
             $this->fieldName[strtolower($f->name)] = $fid;
@@ -378,8 +372,13 @@ class ReviewForm {
                 $forder[sprintf("%03d.%s", $f->display_order, $fid)] = $f;
         }
         ksort($forder);
-        foreach ($forder as $f)
-            $this->forder[$f->id] = $f;
+        foreach ($forder as $i => $f)
+            $f->display_order = $i + 1;
+        uasort($this->fmap, "ReviewForm::fmap_sorter");
+        $this->all_forder = array();
+        foreach ($this->fmap as $f)
+            if ($f->displayed)
+                $this->all_forder[$f->id] = $f;
 
         // set field abbreviations; try to ensure uniqueness
         $fdupes = $forder;
@@ -392,7 +391,61 @@ class ReviewForm {
             $fdupes = array();
             foreach ($fmap as $fs)
                 if (count($fs) > 1)
-                    array_splice($fdupes, count($fdupes), 0, $fs);
+                    $fdupes = array_merge($fdupes, $fs);
+        }
+    }
+
+    static public function all_fields() {
+        $rf = self::get(0);
+        return $rf->all_forder;
+    }
+
+    static public function field($fid) {
+        $rf = self::get(0);
+        $f = @$rf->fmap[$fid];
+        return $f && $f->displayed ? $f : null;
+    }
+
+    static public function field_search($name) {
+        $rf = self::get(0);
+        $f = @$rf->fmap[$name];
+        if ($f && $f->displayed)
+            return $f;
+        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        for ($i = 0; $i < count($a); ++$i)
+            $a[$i] = preg_quote($a[$i], "/");
+        $field = null;
+        foreach ($rf->all_forder as $f) {
+            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
+                return $f;
+            for ($i = 0; $i < count($a); ++$i)
+                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
+                    && !preg_match("{\\b$a[$i]}i", $f->name))
+                    break;
+            if ($i == count($a))
+                $field = ($field === null ? $f : false);
+        }
+        return $field;
+    }
+
+    function __construct($round, $fmap_cache = null) {
+        global $Conf;
+        $this->round = $round;
+        if ($fmap_cache) {
+            $this->fmap = $fmap_cache->fmap;
+            $this->fieldName = $fmap_cache->fieldName;
+        } else
+            $this->create_fmap();
+
+        $this->forder = array();
+        if (($j = $Conf->review_form_order_json($round))) {
+            foreach ($j as $fid)
+                if (($f = @$this->fmap[$fid]))
+                    $this->forder[$f->id] = $f;
+        } else {
+            foreach ($this->fmap as $f)
+                if ($f->displayed)
+                    $this->forder[$f->id] = $f;
         }
     }
 
@@ -457,31 +510,6 @@ class ReviewForm {
         }
     }
 
-    function unabbreviateField($name) {
-        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-        for ($i = 0; $i < count($a); ++$i)
-            $a[$i] = preg_quote($a[$i], "/");
-        $field = null;
-        foreach ($this->forder as $f) {
-            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
-                return $f->id;
-            for ($i = 0; $i < count($a); ++$i)
-                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
-                    && !preg_match("{\\b$a[$i]}i", $f->name))
-                    break;
-            if ($i == count($a))
-                $field = ($field === null ? $f->id : false);
-        }
-        return $field;
-    }
-
-    public function field($id) {
-        if (isset($this->fmap[$id]))
-            return $this->fmap[$id];
-        else
-            return null;
-    }
-
     public function unparse_json() {
         $fmap = array();
         foreach ($this->fmap as $fid => $f)
@@ -504,7 +532,7 @@ class ReviewForm {
 
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
         global $ReviewFormError, $Conf;
-        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
         foreach ($this->forder as $field => $f) {
             if ($f->view_score <= $revViewScore)
                 continue;
@@ -810,17 +838,12 @@ class ReviewForm {
     }
 
 
-    static function textFormHeader($type, $editable) {
-        global $Conf, $Opt;
-
-        $x = "==+== " . $Opt["shortName"] . " Paper Review";
-        if ($editable) {
-            $x .= " Form" . ($type === true ? "s" : "") . "\n";
-            $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
+    static function textFormHeader($type) {
+        global $Opt;
+        $x = "==+== " . $Opt["shortName"] . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
+        $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
 ==-== " . hoturl_absolute_raw("offline") . "\n\n";
-        } else
-            $x .= ($type === true ? "s\n\n" : "\n\n");
         return $x;
     }
 
@@ -865,7 +888,7 @@ class ReviewForm {
             $rrow_contactId = $rrow->contactId;
         $myReview = $alwaysMyReview
             || (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
-        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact);
 
         $x = "==+== =====================================================================\n";
@@ -980,7 +1003,7 @@ $blind\n";
             $rrow_contactId = $rrow->reviewContactId;
         else if (isset($rrow) && isset($rrow->contactId))
             $rrow_contactId = $rrow->contactId;
-        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";
@@ -1235,8 +1258,8 @@ $blind\n";
     }
 
     private function webDisplayRows($prow, $rrow, $contact) {
-        global $ReviewFormError, $scoreHelps, $Conf;
-        $revViewScore = $contact->viewReviewFieldsScore($prow, $rrow);
+        global $scoreHelps, $Conf;
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
 
         // Which fields are options?
         $fshow = array();
@@ -1340,9 +1363,7 @@ $blind\n";
     }
 
     function webGuidanceRows($revViewScore, $extraclass="") {
-        global $ReviewFormError;
         $x = '';
-        $needRow = 1;
 
         foreach ($this->forder as $field => $f) {
             if ($f->view_score <= $revViewScore
@@ -1652,13 +1673,6 @@ $blind\n";
         Ht::stash_script('hiliter_children("form.revcard")', "form_revcard");
     }
 
-    function maxNumericScore($field) {
-        if (($f = $this->field($field)) && $f->has_options)
-            return count($f->options);
-        else
-            return 0;
-    }
-
 
     function reviewFlowEntry($contact, $rrow, $trclass) {
         // See also CommentInfo::unparse_flow_entry
@@ -1678,7 +1692,7 @@ $blind\n";
         $t .= $barsep . "<span class='hint'>submitted</span> " . $Conf->parseableTime($rrow->reviewSubmitted, false);
         $t .= "</small><br /><a class='q'" . substr($a, 3) . ">";
 
-        $revViewScore = $contact->viewReviewFieldsScore($rrow, $rrow);
+        $revViewScore = $contact->view_score_bound($rrow, $rrow);
         if ($rrow->reviewSubmitted) {
             $t .= "Review #" . unparseReviewOrdinal($rrow) . " submitted";
             $xbarsep = $barsep;

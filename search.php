@@ -195,7 +195,7 @@ function downloadReviews(&$texts, &$errors) {
         $rfname .= $papersel[key($texts)];
 
     if ($getforms)
-        $header = ReviewForm::textFormHeader(count($texts) > 1 && $gettext, true);
+        $header = ReviewForm::textFormHeader(count($texts) > 1 && $gettext);
     else
         $header = "";
 
@@ -227,8 +227,7 @@ function downloadReviews(&$texts, &$errors) {
 if (($getaction == "revform" || $getaction == "revformz")
     && !SearchActions::any()) {
     $rf = reviewForm();
-    $text = $rf->textFormHeader("blank", true)
-        . $rf->textForm(null, null, $Me, null) . "\n";
+    $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
@@ -613,48 +612,47 @@ if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) 
 
 // download scores and, maybe, anonymity for selected papers
 if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
-    $rf = reviewForm();
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviewScores" => 1, "reviewerName" => 1)));
 
-    // compose scores
-    $score_fields = array();
-    $revViewScore = $Me->viewReviewFieldsScore(null, true);
-    foreach ($rf->forder as $f)
-        if ($f->view_score > $revViewScore && $f->has_options)
-            $score_fields[$f->id] = $f;
-
-    $header = array("paper", "title");
-    if ($Conf->subBlindOptional())
-        $header[] = "blind";
-    $header[] = "decision";
-    foreach ($score_fields as $f)
-        $header[] = $f->abbreviation;
-    $header[] = "revieweremail";
-    $header[] = "reviewername";
-
+    // compose scores; NB chair is always forceShow
     $errors = array();
-    if ($Me->privChair)
-        $_REQUEST["forceShow"] = 1;
-    $texts = array();
+    $texts = $any_scores = array();
+    $any_decision = $any_reviewer_identity = false;
     while (($row = PaperInfo::fetch($result, $Me))) {
-        if (($whyNot = $Me->perm_view_review($row, null, null)))
+        if (!$row->reviewSubmitted)
+            /* skip */;
+        else if (($whyNot = $Me->perm_view_review($row, null, true)))
             $errors[] = whyNotText($whyNot, "view review") . "<br />";
-        else if ($row->reviewSubmitted) {
-            $a = array($row->paperId, $row->title);
-            if ($Conf->subBlindOptional())
-                $a[] = $row->blind;
-            $a[] = $row->outcome;
-            foreach ($score_fields as $field => $f)
-                $a[] = $f->unparse_value($row->$field);
-            if ($Me->can_view_review_identity($row, $row, null)) {
-                $a[] = $row->reviewEmail;
-                $a[] = trim($row->reviewFirstName . " " . $row->reviewLastName);
+        else {
+            $a = array("paper" => $row->paperId, "title" => $row->title, "blind" => $row->blind);
+            if ($row->outcome && $Me->can_view_decision($row, true))
+                $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
+            $rf = ReviewForm::get($row);
+            $view_bound = $Me->view_score_bound($row, $row, true);
+            $my_scores = false;
+            foreach ($rf->forder as $field => $f)
+                if ($f->view_score > $view_bound && $f->has_options)
+                    $a[$f->abbreviation] = $any_scores[$f->abbreviation] =
+                        $my_scores = $f->unparse_value($row->$field);
+            if ($Me->can_view_review_identity($row, $row, true)) {
+                $any_reviewer_identity = true;
+                $a["revieweremail"] = $row->reviewEmail;
+                $a["reviewername"] = trim($row->reviewFirstName . " " . $row->reviewLastName);
             }
-            arrayappend($texts[$row->paperId], $a);
+            if ($my_scores)
+                arrayappend($texts[$row->paperId], $a);
         }
     }
 
     if (count($texts)) {
+        $header = array("paper", "title");
+        if ($Conf->subBlindOptional())
+            $header[] = "blind";
+        if ($any_decision)
+            $header[] = "decision";
+        $header = array_merge($header, array_keys($any_scores));
+        if ($any_reviewer_identity)
+            array_push($header, "revieweremail", "reviewername");
         downloadCSV(SearchActions::reorder($texts), $header, "scores");
         exit;
     } else
@@ -1058,7 +1056,6 @@ function saveformulas() {
     global $Conf, $Me, $OK;
 
     // parse names and expressions
-    $revViewScore = $Me->viewReviewFieldsScore(null, true);
     $ok = true;
     $changes = array();
     $names = array();
@@ -1069,7 +1066,7 @@ function saveformulas() {
 
         if ($name != "" && $expr != "") {
             if (isset($names[$name]))
-                $ok = $Conf->errorMsg("You have two formulas with the same name, &ldquo;" . htmlspecialchars($name) . ".&rdquo;  Please change one of the names.");
+                $ok = $Conf->errorMsg("You have two formulas named “" . htmlspecialchars($name) . "”.  Please change one of the names.");
             $names[$name] = true;
         }
 
@@ -1089,8 +1086,8 @@ function saveformulas() {
                 $ok = $Conf->errorMsg($formula->error_html());
             else {
                 $exprViewScore = $formula->view_score($Me);
-                if ($exprViewScore <= $Me->viewReviewFieldsScore(null, true))
-                    $ok = $Conf->errorMsg("The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view.  Please define a different expression.");
+                if ($exprViewScore <= $Me->permissive_view_score_bound())
+                    $ok = $Conf->errorMsg("The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view. Please define a different expression.");
                 else if ($fdef->formulaId == "n") {
                     $changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
                     if (!$Conf->setting("formulas"))
@@ -1148,7 +1145,6 @@ function savesearch() {
 
     // clean display settings
     if ($Conf->session("pldisplay")) {
-        global $reviewScoreNames;
         $acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
                             "rownum" => 1, "reviewers" => 1,
                             "pcconf" => 1, "lead" => 1, "shepherd" => 1);
@@ -1156,8 +1152,8 @@ function savesearch() {
             $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
         if ($Me->privChair && !$Conf->subBlindNever())
             $acceptable["anonau"] = 1;
-        foreach ($reviewScoreNames as $x)
-            $acceptable[$x] = 1;
+        foreach (ReviewForm::all_fields() as $f)
+            $acceptable[$f->id] = 1;
         foreach (FormulaPaperColumn::$list as $x)
             $acceptable["formula" . $x->formulaId] = 1;
         $display = array();
@@ -1355,7 +1351,7 @@ if ($pl) {
     if ($pl->scoresOk == "present") {
         $rf = reviewForm();
         if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
-            $revViewScore = $Me->viewReviewFieldsScore(null, true);
+            $revViewScore = $Me->permissive_view_score_bound();
         else
             $revViewScore = VIEWSCORE_AUTHOR - 1;
         $n = count($displayOptions);

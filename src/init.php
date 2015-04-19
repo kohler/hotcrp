@@ -62,6 +62,7 @@ define("VIEWSCORE_ADMINONLY", -2);
 define("VIEWSCORE_REVIEWERONLY", -1);
 define("VIEWSCORE_PC", 0);
 define("VIEWSCORE_AUTHOR", 1);
+define("VIEWSCORE_MAX", 2);
 
 define("COMMENTTYPE_DRAFT", 1);
 define("COMMENTTYPE_BLIND", 2);

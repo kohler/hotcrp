@@ -41,7 +41,6 @@ class ContactList extends BaseList {
     var $scoreMax;
     var $limit;
     public $have_folds = array();
-    var $rf;
     var $listNumber;
     var $contactLinkArgs;
 
@@ -59,7 +58,6 @@ class ContactList extends BaseList {
         else
             $this->sortField = null;
         $this->sortable = $sortable;
-        $this->rf = reviewForm();
 
         $this->contact = $contact;
         $this->contactLinkArgs = "";
@@ -106,16 +104,17 @@ class ContactList extends BaseList {
         if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
             // XXX scoresOk
             $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-            $revViewScore = $this->contact->viewReviewFieldsScore(null, true);
-            $f = $this->rf->field($score);
+            $revViewScore = $this->contact->aggregated_view_score_bound();
+            $f = ReviewForm::field($score);
             if ($f->view_score <= $revViewScore
+                || !$f->has_options
                 || !$this->contact->can_view_aggregated_review_identity())
                 return false;
-            if (!isset($queryOptions['scores']))
-                $queryOptions['scores'] = array();
             $queryOptions["reviews"] = true;
-            $queryOptions['scores'][] = $score;
-            $this->scoreMax[$score] = $this->rf->maxNumericScore($score);
+            if (!isset($queryOptions["scores"]))
+                $queryOptions["scores"] = array();
+            $queryOptions["scores"][] = $score;
+            $this->scoreMax[$score] = count($f->options);
         }
         return true;
     }
@@ -262,7 +261,7 @@ class ContactList extends BaseList {
             return "Collaborators";
         case self::FIELD_SCORE: {
             $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
-            return $this->rf->field($scoreName)->web_abbreviation();
+            return ReviewForm::field($scoreName)->web_abbreviation();
         }
         default:
             return "&lt;$fieldId&gt;?";
@@ -428,7 +427,7 @@ class ContactList extends BaseList {
             $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
             $m = "";
             if ($v->n > 0)
-                $m = $this->rf->field($scoreName)->unparse_graph($v, 2, 0);
+                $m = ReviewForm::field($scoreName)->unparse_graph($v, 2, 0);
             return $m;
         default:
             return "";

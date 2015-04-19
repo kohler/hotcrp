@@ -106,7 +106,7 @@ if (isset($_REQUEST["badpairs"]))
 
 // score selector
 $scoreselector = array("+overAllMerit" => "", "-overAllMerit" => "");
-foreach (ReviewForm::field_list_all_rounds() as $f)
+foreach (ReviewForm::all_fields() as $f)
     if ($f->has_options) {
         $scoreselector["+" . $f->id] = "high $f->name_html scores";
         $scoreselector["-" . $f->id] = "low $f->name_html scores";

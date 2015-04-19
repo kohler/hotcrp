@@ -438,6 +438,7 @@ class PaperInfo {
     }
 
     public function scores($fid) {
+        $fid = is_object($fid) ? $fid->id : $fid;
         return $this->review_cid_array($fid, "{$fid}Scores");
     }
 
@@ -447,12 +448,15 @@ class PaperInfo {
     }
 
     public function viewable_scores($field, $contact, $forceShow) {
-        if ($contact->can_view_review($this, $field->view_score, $forceShow))
-            return $this->scores($field->id);
-        else if ($this->review_type($contact)
-                 && $field->view_score > $contact->viewReviewFieldsScore(null, true)
-                 && ($s = $this->score($field->id, $contact->contactId)) !== null)
-            return array($contact->contactId => $s);
+        $field = is_object($field) ? $field : ReviewForm::field($field);
+        $view = $contact->can_view_review($this, $field->view_score, $forceShow);
+        if ($view || $this->review_type($contact)) {
+            $s = $this->scores($field->id);
+            if ($view)
+                return $s;
+            else if (($my_score = @$s[$contact->contactId]) !== null)
+                return array($contact->contactId => $my_score);
+        }
         return null;
     }
 

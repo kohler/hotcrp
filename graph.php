@@ -86,7 +86,7 @@ if ($Graph == "formula") {
 
     // derive a sample graph
     if (!isset($_REQUEST["fx"]) || !isset($_REQUEST["fy"])) {
-        $all_review_fields = ReviewForm::field_list_all_rounds();
+        $all_review_fields = ReviewForm::all_fields();
         $field1 = @$all_review_fields["overAllMerit"];
         $field2 = null;
         foreach ($all_review_fields as $f)

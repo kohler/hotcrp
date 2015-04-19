@@ -987,23 +987,17 @@ class ScorePaperColumn extends PaperColumn {
         }
     }
     public function make_field($name, $errors) {
-        $rf = reviewForm();
-        if ((($f = $rf->field($name))
-             || (($name = $rf->unabbreviateField($name))
-                 && ($f = $rf->field($name))))
-            && $f->has_options)
-            return parent::lookup_local($name);
+        if (($f = ReviewForm::field_search($name)) && $f->has_options)
+            return parent::lookup_local($f->id);
         return null;
     }
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->scoresOk)
             return false;
-        $rf = reviewForm();
-        $this->form_field = $rf->field($this->score);
+        $this->form_field = ReviewForm::field($this->score);
+        if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
+            return false;
         if ($visible) {
-            $auview = $pl->contact->viewReviewFieldsScore(null, true);
-            if ($this->form_field->view_score <= $auview)
-                return false;
             if (!isset($queryOptions["scores"]))
                 $queryOptions["scores"] = array();
             $queryOptions["scores"][$this->score] = true;
@@ -1096,13 +1090,12 @@ class FormulaPaperColumn extends PaperColumn {
     }
     public function prepare($pl, &$queryOptions, $visible) {
         global $ConfSitePATH;
-        $revView = 0;
-        if ($pl->contact->is_reviewer()
-            && $pl->search->limitName != "a")
-            $revView = $pl->contact->viewReviewFieldsScore(null, true);
+        $view_bound = $pl->contact->permissive_view_score_bound();
+        if ($pl->search->limitName == "a")
+            $view_bound = max($view_bound, VIEWSCORE_AUTHOR - 1);
         if (!$pl->scoresOk
             || !$this->formula->check()
-            || $this->formula->base_view_score() <= $revView)
+            || $this->formula->base_view_score() <= $view_bound)
             return false;
         $this->formula_function = $this->formula->compile_function($pl->contact);
         $this->formula->add_query_options($queryOptions, $pl->contact);
@@ -1320,7 +1313,7 @@ class FoldAllPaperColumn extends PaperColumn {
 }
 
 function initialize_paper_columns() {
-    global $reviewScoreNames, $Conf;
+    global $Conf;
 
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")));
@@ -1367,13 +1360,12 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
 
-    $rf = reviewForm();
     $score = null;
-    foreach ($reviewScoreNames as $n) {
-        $score = new ScorePaperColumn($n);
-        $f = $rf->field($n);
-        ScorePaperColumn::register_score($score, $f->display_order);
-    }
+    foreach (ReviewForm::all_fields() as $f)
+        if ($f->has_options) {
+            $score = new ScorePaperColumn($f->id);
+            ScorePaperColumn::register_score($score, $f->display_order);
+        }
     if ($score)
         PaperColumn::register_factory("", $score);
 

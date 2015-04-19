@@ -16,8 +16,7 @@ if (defval($_REQUEST, "post") && !count($_POST))
 
 // download blank review form action
 if (isset($_REQUEST["downloadForm"])) {
-    $text = ReviewForm::textFormHeader("blank", true)
-	. $rf->textForm(null, null, $Me, null) . "\n";
+    $text = ReviewForm::textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
     exit;
 }
@@ -236,7 +235,7 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
 echo "</table>\n";
 
 
-if (($text = $rf->webGuidanceRows($Me->viewReviewFieldsScore(null, null),
+if (($text = $rf->webGuidanceRows($Me->permissive_view_score_bound(),
 				  " initial")))
     echo "<div class='g'></div>
 

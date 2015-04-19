@@ -23,6 +23,7 @@ class Fexpr {
     public function add($x) {
         $this->args[] = $x;
     }
+
     public function format() {
         if (($this->op === "max" || $this->op === "min"
              || $this->op === "avg" || $this->op === "wavg")
@@ -46,6 +47,7 @@ class Fexpr {
         else
             return null;
     }
+
     public function resolve_constants() {
         // comparison operators help us resolve
         if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
@@ -61,6 +63,7 @@ class Fexpr {
                 return $x;
         return false;
     }
+
     public function view_score($contact) {
         if ($this->op == "?:") {
             $t = $this->args[0]->view_score($contact);
@@ -77,7 +80,6 @@ class Fexpr {
             return $score;
         }
     }
-
 
     public static function cast_bool($t) {
         return "($t !== null ? (bool) $t : null)";
@@ -233,23 +235,21 @@ class ScoreFexpr extends Fexpr {
         return $this->field->view_score;
     }
     public function compile($state) {
+        if ($this->field->view_score <= $state->contact->permissive_view_score_bound())
+            return "null";
+        $fid = $this->field->id;
         if (!isset($state->queryOptions["scores"]))
             $state->queryOptions["scores"] = array();
-        $fid = $this->field->id;
         $state->queryOptions["scores"][$fid] = $fid;
         $state->datatype |= Fexpr::ASUBREV;
+        $scores = $state->define_gvar($fid, "\$prow->viewable_scores(\"$fid\", \$contact, \$forceShow)");
         if ($state->looptype == self::LNONE)
             $fidx = "[\$rrow_cid]";
         else if ($state->looptype == self::LMY)
             $fidx = "[\$contact->contactId]";
-        else {
-            $view_score = $state->contact->viewReviewFieldsScore(null, true);
-            if ($this->field->view_score <= $view_score)
-                return "null";
+        else
             $fidx = "[~i~]";
-        }
-        $t_f = $state->_addgtemp($fid, "\$prow->scores(\"$fid\")") . $fidx;
-        return "((int) @$t_f ? : null)";
+        return "((int) @{$scores}$fidx ? : null)";
     }
 }
 
@@ -265,18 +265,16 @@ class PrefFexpr extends Fexpr {
         return VIEWSCORE_PC;
     }
     public function compile($state) {
+        if (!$state->contact->is_reviewer())
+            return "null";
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
         if ($state->looptype == self::LNONE)
             $fidx = "[\$rrow_cid]";
         else if ($state->looptype == self::LMY)
             $fidx = "[\$contact->contactId]";
-        else {
-            $view_score = $state->contact->viewReviewFieldsScore(null, true);
-            if (VIEWSCORE_PC <= $view_score)
-                return "null";
+        else
             $fidx = "[~i~]";
-        }
         return "@" . $state->_add_review_prefs() . $fidx . "[" . ($this->isexpertise ? 1 : 0) . "]";
     }
 }
@@ -300,9 +298,9 @@ class TagFexpr extends Fexpr {
         $state->queryOptions["tags"] = true;
         $tagger = new Tagger($state->contact);
         $e_tag = $tagger->check($this->tag);
-        $t_tags = $state->_addgtemp("tags", "\$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\"");
-        $t_tagpos = $state->_addgtemp("tagpos {$this->tag}", "stripos($t_tags, \" $e_tag#\")");
-        $t_tagval = $state->_addgtemp("tagval {$this->tag}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
+        $t_tags = $state->define_gvar("tags", "\$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\"");
+        $t_tagpos = $state->define_gvar("tagpos {$this->tag}", "stripos($t_tags, \" $e_tag#\")");
+        $t_tagval = $state->define_gvar("tagval {$this->tag}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
         if ($this->isvalue)
             return $t_tagval;
         else
@@ -319,12 +317,19 @@ class OptionFexpr extends Fexpr {
         return $this->option->type === "checkbox" ? "bool" : $this->option;
     }
     public function compile($state) {
-        $state->queryOptions["options"] = true;
-        $ovar = $state->_add_paper_option($this->option->id);
-        if ($this->option->type == "checkbox")
-            return "(!!$ovar)";
-        else
-            return $ovar;
+        $id = $this->option->id;
+        $ovar = "\$opt$id";
+        if ($state->check_gvar($ovar)) {
+            $state->queryOptions["options"] = true;
+            $state->gstmt[] = "if (\$contact->can_view_paper_option(\$prow, $id, \$forceShow)) {";
+            $state->gstmt[] = "  $ovar = \$prow->option($id);";
+            if ($this->option->type == "checkbox")
+                $state->gstmt[] = "  $ovar = !!($ovar && {$ovar}->value);";
+            else
+                $state->gstmt[] = "  $ovar = $ovar ? {$ovar}->value : null;";
+            $state->gstmt[] = "} else\n    $ovar = null;";
+        }
+        return $ovar;
     }
 }
 
@@ -338,7 +343,9 @@ class DecisionFexpr extends Fexpr {
             $Conf->timePCViewDecision(false) ? VIEWSCORE_PC : VIEWSCORE_ADMINONLY;
     }
     public function compile($state) {
-        return $state->_add_decision();
+        if ($state->check_gvar('$decision'))
+            $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
+        return '$decision';
     }
 }
 
@@ -352,7 +359,7 @@ class TopicScoreFexpr extends Fexpr {
         if ($state->looptype == self::LNONE)
             return "\$prow->topic_interest_score(\$rrow_cid)";
         else if ($state->looptype == self::LMY)
-            return $state->_addgtemp("mytopicscore", "\$prow->topic_interest_score(\$contact)");
+            return $state->define_gvar("mytopicscore", "\$prow->topic_interest_score(\$contact)");
         else
             return "\$prow->topic_interest_score(~i~)";
     }
@@ -368,13 +375,13 @@ class RevtypeFexpr extends Fexpr {
     public function compile($state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
-            $rt = $state->_addgtemp("myrevtype", "\$prow->review_type(\$contact)");
+            $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
         else {
-            $view_score = $state->contact->viewReviewFieldsScore(null, true);
+            $view_score = $state->contact->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
                 return "null";
             $state->queryOptions["reviewTypes"] = true;
-            $rt = $state->_addgtemp("revtypes", "\$prow->submitted_review_types()");
+            $rt = $state->define_gvar("revtypes", "\$prow->submitted_review_types()");
             if ($state->looptype == self::LNONE)
                 $rt = "@{$rt}[\$rrow_cid]";
             else
@@ -386,7 +393,7 @@ class RevtypeFexpr extends Fexpr {
 
 class FormulaCompileState {
     public $contact;
-    public $gtmp = array();
+    private $gvar = array();
     public $gstmt = array();
     public $lstmt = array();
     public $looptype = 0;
@@ -401,17 +408,45 @@ class FormulaCompileState {
         $this->contact = $contact;
     }
 
-    public function _addgtemp($name, $expr) {
-        if (($tname = @$this->gtmp[$name]) === null) {
-            if (preg_match('/\A\w+\z/', $name))
-                $tname = "\$$name";
-            else
-                $tname = "\$g" . count($this->gtmp);
-            $this->gstmt[] = "$tname = $expr;";
-            $this->gtmp[$name] = $tname;
+    public function check_gvar($gvar) {
+        if (@$this->gvar[$gvar])
+            return false;
+        else {
+            $this->gvar[$gvar] = $gvar;
+            return true;
         }
-        return $tname;
     }
+    public function define_gvar($name, $expr) {
+        if (preg_match(',\A\$?(.*[^A-Ya-z0-9_])\z,', $name, $m))
+            $name = '$' . preg_replace_callback(',[^A-Ya-z0-9_],', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
+        else
+            $name = $name[0] == "$" ? $name : '$' . $name;
+        if (@$this->gvar[$name] === null) {
+            $this->gstmt[] = "$name = $expr;";
+            $this->gvar[$name] = $name;
+        }
+        return $name;
+    }
+    public function _add_pc_can_review() {
+        if ($this->check_gvar('$pc_can_review'))
+            $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
+        return "\$pc_can_review";
+    }
+    public function _add_submitted_reviewers() {
+        if ($this->check_gvar('$submitted_reviewers')) {
+            $this->queryOptions["reviewContactIds"] = true;
+            $this->gstmt[] = "\$submitted_reviewers = \$prow->viewable_submitted_reviewers(\$contact, \$forceShow);";
+        }
+        return "\$submitted_reviewers";
+    }
+    public function _add_review_prefs() {
+        if ($this->check_gvar('$allrevprefs')) {
+            $this->queryOptions["allReviewerPreference"] = true;
+            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : array();";
+        }
+        return "\$allrevprefs";
+    }
+
     private function _push() {
         $this->_stack[] = array($this->lprefix, $this->lstmt, $this->looptype, $this->datatype);
         $this->lprefix = ++$this->maxlprefix;
@@ -433,61 +468,22 @@ class FormulaCompileState {
         $this->lstmt[] = "$tname = $expr;";
         return $tname;
     }
-    public function _join_lstmt($isblock) {
+    private function _join_lstmt($isblock) {
         $indent = "\n" . str_pad("", $this->indent);
         if ($isblock)
             return "{" . $indent . join($indent, $this->lstmt) . substr($indent, 0, $this->indent - 1) . "}";
         else
             return join($indent, $this->lstmt);
     }
-    public function _add_pc_can_review() {
-        if (!isset($this->gtmp["pc_can_review"])) {
-            $this->gtmp["pc_can_review"] = "\$pc_can_review";
-            $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
-        }
-        return "\$pc_can_review";
-    }
-    public function _add_submitted_reviewers() {
-        if (!isset($this->gtmp["submitted_reviewers"])) {
-            $this->queryOptions["reviewContactIds"] = true;
-            $this->gtmp["submitted_reviewers"] = "\$submitted_reviewers";
-            $this->gstmt[] = "\$submitted_reviewers = \$prow->viewable_submitted_reviewers(\$contact, \$forceShow);";
-        }
-        return "\$submitted_reviewers";
-    }
-    public function _add_review_prefs() {
-        if (!isset($this->gtmp["allrevprefs"])) {
-            $this->queryOptions["allReviewerPreference"] = true;
-            $this->gtmp["allrevprefs"] = "\$allrevprefs";
-            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : array();";
-        }
-        return "\$allrevprefs";
-    }
-    public function _add_decision() {
-        if (!isset($this->gtmp["decision"])) {
-            $this->gtmp["decision"] = "\$decision";
-            $this->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
-        }
-        return "\$decision";
-    }
-    public function _add_paper_option($id) {
-        if (!isset($this->gtmp["opt$id"])) {
-            $this->queryOptions["options"] = true;
-            $this->gtmp["opt$id"] = "\$opt$id";
-            $this->gstmt[] = "\$opt$id = \$contact->can_view_paper_option(\$prow, $id, \$forceShow) ? \$prow->option($id) : null;";
-            $this->gstmt[] = "\$opt$id = \$opt$id ? \$opt{$id}->value : null;";
-        }
-        return "\$opt$id";
-    }
 
     public function loop_variable() {
         if ($this->datatype & Fexpr::APCCANREV) {
             $g = $this->_add_pc_can_review();
             if ($this->datatype & Fexpr::ASUBREV)
-                $g = $this->_addgtemp("rev_and_pc_can_review", "$g + array_flip(" . $this->_add_submitted_reviewers() . ")");
+                $g = $this->define_gvar("rev_and_pc_can_review", "$g + array_flip(" . $this->_add_submitted_reviewers() . ")");
             return array($g, true);
         } else if ($this->datatype === (Fexpr::ASUBREV | Fexpr::APREF)) {
-            $g = $this->_addgtemp("rev_and_pref_cids", $this->_add_review_prefs() . " + array_flip(" . $this->_add_submitted_reviewers() . ")");
+            $g = $this->define_gvar("rev_and_pref_cids", $this->_add_review_prefs() . " + array_flip(" . $this->_add_submitted_reviewers() . ")");
             return array($g, true);
         } else if ($this->datatype === Fexpr::ASUBREV)
             return array($this->_add_submitted_reviewers(), false);
@@ -770,9 +766,9 @@ class Formula {
             $t = $m[2];
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
-            $rf = reviewForm();
-            if (($fid = $rf->unabbreviateField($field)))
-                $e = new ScoreFexpr($rf->field($fid));
+            if (($f = ReviewForm::field_search($field))
+                && $f->has_options)
+                $e = new ScoreFexpr($f);
             else if (!$quoted && strlen($field) === 1 && ctype_alpha($field))
                 $e = new ConstantFexpr(strtoupper($field), false);
             else
@@ -821,7 +817,7 @@ class Formula {
     return " . ($g[1] ? "array_keys($g[0])" : $g[0]) . ";\n";
         }
 
-        $t = "assert(\$contact->contactId == $contact->contactId);\n"
+        $t = "assert(\$contact->contactId == $contact->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . $loop . join("\n  ", $state->lstmt) . "\n"
@@ -851,7 +847,7 @@ class Formula {
     return $x;' . "\n";
 
         $args = '$prow, $rrow_cid, $contact, $format = null, $forceShow = false';
-        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  /* $this->expression */\n  $t}\n"));
+        $Conf->infoMsg(Ht::pre_text("function ($args) {\n  /* $this->expression */\n  $t}\n"));
         return create_function($args, $t);
     }
 

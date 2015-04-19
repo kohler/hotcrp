@@ -1759,7 +1759,9 @@ class Contact {
             $viewscore = VIEWSCORE_AUTHOR;
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer)
+        if ($rights->can_administer
+            || ($rrow && $this->is_my_review($rrow)
+                && $viewscore >= VIEWSCORE_REVIEWERONLY))
             return true;
         if (!($prow->timeSubmitted > 0 || $rights->review_type || $rights->allow_administer))
             return false;
@@ -1786,11 +1788,7 @@ class Contact {
                 && $viewscore >= VIEWSCORE_PC
                 && (($prow->review_not_incomplete($this)
                      && ($Conf->settings["extrev_view"] >= 1 || $pc_trackok))
-                    || $prow->leadContactId == $this->contactId))
-            || ($rrow
-                && $rrow->paperId == $prow->paperId
-                && $this->is_my_review($rrow)
-                && $viewscore >= VIEWSCORE_REVIEWERONLY);
+                    || $prow->leadContactId == $this->contactId));
     }
 
     function perm_view_review($prow, $rrow, $forceShow) {
@@ -2259,7 +2257,8 @@ class Contact {
         return $this->can_administer($prow);
     }
 
-    function viewReviewFieldsScore($prow, $rrow) {
+    // A review field is visible only if viewScore > view_score_bound.
+    function view_score_bound($prow, $rrow, $forceShow = null) {
         // Returns the maximum authorView score for an invisible review
         // field.  Values for authorView are:
         //   VIEWSCORE_ADMINONLY     -2   admin can view
@@ -2268,17 +2267,57 @@ class Contact {
         //   VIEWSCORE_AUTHOR         1   admin and PC/any reviewer and author can view
         // So returning -3 means all scores are visible.
         // Deadlines are not considered.
+        $rights = $this->rights($prow, $forceShow);
+        if ($rights->can_administer)
+            return VIEWSCORE_ADMINONLY - 1;
+        else if ($rrow && $this->is_my_review($rrow))
+            return VIEWSCORE_REVIEWERONLY - 1;
+        else if (!$this->can_view_review($prow, $rrow, $forceShow))
+            return VIEWSCORE_MAX + 1;
+        else if ($rights->act_author_view)
+            return VIEWSCORE_AUTHOR - 1;
+        else
+            return VIEWSCORE_PC - 1;
+    }
+
+    function permissive_view_score_bound() {
+        if ($this->is_manager())
+            return VIEWSCORE_ADMINONLY - 1;
+        else if ($this->is_reviewer())
+            return VIEWSCORE_REVIEWERONLY - 1;
+        else if ($this->is_author() && $Conf->timeAuthorViewReviews())
+            return VIEWSCORE_AUTHOR - 1;
+        else
+            return VIEWSCORE_MAX + 1;
+    }
+
+    function aggregated_view_score_bound() {
+        // XXX Every time this function is used it represents a problem.
+        // For instance, privChair users can view admin-only scores for
+        // papers that have explicit administrators.
+        // Should use permissive_view_score_bound() and then restrict
+        // what is actually visible based on per-review view_score_bound.
+        if ($this->privChair)
+            return VIEWSCORE_ADMINONLY - 1;
+        else if ($this->isPC)
+            return VIEWSCORE_PC - 1;
+        else
+            return VIEWSCORE_MAX + 1;
+    }
+
+    function viewReviewFieldsScore($prow, $rrow) {
         // (!$prow && !$rrow) ==> return best case scores that can be seen.
         // (!$prow &&  $rrow) ==> return worst case scores that can be seen.
         // ** See also can_view_review.
-        if ($prow && $rrow && $this->is_my_review($rrow))
-            return VIEWSCORE_REVIEWERONLY - 1;
-
         $rights = $prow ? $this->rights($prow) : null;
 
         // chair can see everything
         if ($rights ? $rights->can_administer : $this->privChair)
             return VIEWSCORE_ADMINONLY - 1;
+
+        // reviewer can see their review contents
+        if ($prow && $rrow && $this->is_my_review($rrow))
+            return VIEWSCORE_REVIEWERONLY - 1;
 
         // author can see author information
         if ($rights ? $rights->act_author_view : !$this->is_reviewer())

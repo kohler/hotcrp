@@ -951,13 +951,12 @@ class PaperSearch {
         $qt[] = $term;
     }
 
-    function _searchReviews($word, $rf, $field, &$qt, $quoted,
-                            $noswitch = false) {
+    function _searchReviews($word, $f, &$qt, $quoted, $noswitch = false) {
         global $Opt;
         $countexpr = ">0";
         $contacts = null;
         $contactword = "";
-        $f = $rf->field($field);
+        $field = $f->id;
 
         if (preg_match('/\A(.+?[^:=<>!])([:=<>!]|≠|≤|≥)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
@@ -1012,15 +1011,15 @@ class PaperSearch {
                        : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
                 $qo = array();
                 if ($m[2] == "-" || $m[2] == "") {
-                    $this->_searchReviews($contactword . $m[1], $rf, $field, $qo, $quoted);
-                    $this->_searchReviews($contactword . $m[3], $rf, $field, $qo, $quoted);
+                    $this->_searchReviews($contactword . $m[1], $f, $qo, $quoted);
+                    $this->_searchReviews($contactword . $m[3], $f, $qo, $quoted);
                 } else
-                    $this->_searchReviews($contactword . ">=" . $m[1], $rf, $field, $qo, $quoted, true);
-                if ($this->_searchReviews($contactword . "<" . $m[1], $rf, $field, $qo, $quoted, true))
+                    $this->_searchReviews($contactword . ">=" . $m[1], $f, $qo, $quoted, true);
+                if ($this->_searchReviews($contactword . "<" . $m[1], $f, $qo, $quoted, true))
                     $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
                 else
                     array_pop($qo);
-                if ($this->_searchReviews($contactword . ">" . $m[3], $rf, $field, $qo, $quoted, true))
+                if ($this->_searchReviews($contactword . ">" . $m[3], $f, $qo, $quoted, true))
                     $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
                 else
                     array_pop($qo);
@@ -1646,9 +1645,8 @@ class PaperSearch {
 
         // Finally, look for a review field.
         if ($keyword && !isset(self::$_keywords[$keyword]) && count($qt) == 0) {
-            $rf = reviewForm();
-            if (($field = $rf->unabbreviateField($keyword)))
-                $this->_searchReviews($word, $rf, $field, $qt, $quoted);
+            if (($field = ReviewForm::field_search($keyword)))
+                $this->_searchReviews($word, $field, $qt, $quoted);
             else if (!$this->_search_options("$keyword:$word", $qt, false)
                      && $report_error)
                 $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
@@ -2557,7 +2555,7 @@ class PaperSearch {
                             && (!$t->value->contactsql
                                 || $this->contact->can_view_review_identity($row, $rrow, true))
                             && (!isset($t->value->view_score)
-                                || $t->value->view_score > $this->contact->viewReviewFieldsScore($row, $rrow)))
+                                || $t->value->view_score > $this->contact->view_score_bound($row, $rrow)))
                             ++$row->$fieldname;
                     }
             }

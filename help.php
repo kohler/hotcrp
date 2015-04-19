@@ -318,7 +318,7 @@ function searchQuickref() {
 
     // find names of review fields to demonstrate syntax
     $farr = array(array(), array());
-    foreach (ReviewForm::field_list_all_rounds() as $f) {
+    foreach (ReviewForm::all_fields() as $f) {
         $fx = ($f->has_options ? 0 : 1);
         $farr[$fx][] = $f->analyze();
     }

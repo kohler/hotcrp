@@ -417,12 +417,19 @@ class Conference {
 
 
 
-    function review_form_json($round) {
-        $key = $round ? "review_form.$round" : "review_form";
+    function review_form_json() {
+        $x = @$this->settingTexts["review_form"];
+        if (is_string($x))
+            $x = $this->settingTexts["review_form"] = json_decode($x);
+        return is_object($x) ? $x : null;
+    }
+
+    function review_form_order_json($round) {
+        $key = $round ? "review_form_order.$round" : "review_form_order";
         $x = @$this->settingTexts[$key];
         if (is_string($x))
             $x = $this->settingTexts[$key] = json_decode($x);
-        return is_object($x) ? $x : null;
+        return is_array($x) ? $x : null;
     }
 
 
@@ -1491,7 +1498,7 @@ class Conference {
 
         if ($reviewerQuery || $scoresQuery) {
             $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
-            foreach (ReviewForm::field_list_all_rounds() as $f)
+            foreach (ReviewForm::all_fields() as $f)
                 if ($reviewerQuery || $f->has_options)
                     $cols[] = "PaperReview.$f->id as $f->id";
         }
