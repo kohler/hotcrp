@@ -2546,9 +2546,10 @@ function tooltip(elt) {
             ++refcount;
         },
         exit: function () {
+            var delay = j.attr("hottooltiptype") == "focus" ? 0 : 200;
             to = clearTimeout(to);
             if (--refcount == 0)
-                to = setTimeout(erase, 200);
+                to = setTimeout(erase, delay);
         },
         erase: erase, elt: elt, content: content
     };
@@ -2574,7 +2575,11 @@ function tooltip_leave(evt) {
 }
 
 function add_tooltip() {
-    jQuery(this).hover(tooltip_enter, tooltip_leave);
+    var j = jQuery(this);
+    if (j.attr("hottooltiptype") == "focus")
+        j.on("focus", tooltip_enter).on("blur", tooltip_leave);
+    else
+        j.hover(tooltip_enter, tooltip_leave);
 }
 
 jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });

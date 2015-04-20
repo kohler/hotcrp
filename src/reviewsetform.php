@@ -153,7 +153,7 @@ function rf_getField($f, $formname, $fname, $backup = null) {
 }
 
 function rf_show() {
-    global $Conf, $ConfSitePATH, $Error, $captions, $review_form_setting_prefixes;
+    global $Conf, $ConfSitePATH, $Error, $review_form_setting_prefixes;
 
     $rf = reviewForm();
     $fmap = array();
@@ -183,11 +183,11 @@ function rf_show() {
          . '</div><hr class="c" /></div>'
          . '<div class="f-i errloc_description_$ fx">'
          .   '<div class="f-c">Description</div>'
-         .   Ht::textarea('description_$', null, array("class" => "reviewtext", "rows" => 6, "id" => 'description_$'))
+         .   Ht::textarea('description_$', null, array("class" => "reviewtext hottooltip", "rows" => 6, "id" => 'description_$', "hottooltipcontent" => "#review_form_caption_description", "hottooltipdir" => "l", "hottooltiptype" => "focus"))
          . '</div>'
          . '<div class="f-i errloc_options_$ fx reviewrow_options">'
          .   '<div class="f-c">Options</div>'
-         .   Ht::textarea('options_$', null, array("class" => "reviewtext", "rows" => 6, "id" => 'options_$'))
+         .   Ht::textarea('options_$', null, array("class" => "reviewtext hottooltip", "rows" => 6, "id" => 'options_$', "hottooltipcontent" => "#review_form_caption_options", "hottooltipdir" => "l", "hottooltiptype" => "focus"))
          . '</div>'
          . '<div class="f-i">'
          .   Ht::select('samples_$', array(), array("class" => "revfield_samples fx", "id" => 'samples_$'))
@@ -206,22 +206,25 @@ function rf_show() {
                     $req["$fx$fid"] = $_REQUEST["$fx$fid"];
         }
 
+    $Conf->footerHtml('<div id="review_form_caption_description">'
+      . '<p>Enter an HTML description for the review form.
+Include any guidance you’d like to provide for reviewers.
+Note that complex HTML will not appear on offline review forms.</p></div>'
+      . '<div id="review_form_caption_options">'
+      . '<p>Enter one option per line, numbered starting from 1 (higher numbers
+are better). For example:</p>
+<pre class="entryexample dark">1. Reject
+2. Weak reject
+3. Weak accept
+4. Accept</pre>
+<p>Or use consecutive capital letters (lower letters are better).</p></div>');
+
     $Conf->footerScript("review_form_settings("
                         . json_encode($fmap) . ","
                         . json_encode($rf->unparse_json()) . ","
                         . json_encode($samples) . ","
                         . json_encode($Error) . ","
                         . json_encode($req) . ")");
-
-    $captions = array
-        ("description" => "Enter an HTML description for the review field here,
-        including any guidance you’d like to provide to reviewers and authors.
-        (Note that complex HTML will not appear on offline review forms.)",
-         "options" => "Enter one option per line, numbered starting from 1 (higher numbers are better).  For example:
-        <pre class='entryexample'>1. Reject
-2. Weak reject
-3. Weak accept
-4. Accept</pre> Or use consecutive capital letters (lower letters are better).");
 
     echo "<div id=\"reviewform_container\">",
         Ht::hidden("has_reviewform", 1),

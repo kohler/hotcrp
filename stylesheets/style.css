@@ -1072,6 +1072,9 @@ pre.entryexample {
 	background: #eeeeee;
 	display: table-cell;
 }
+pre.entryexample.dark {
+	background: rgba(66, 66, 88, 0.95);
+}
 pre.email {
 	margin: 0;
 }
