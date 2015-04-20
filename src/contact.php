@@ -2281,6 +2281,7 @@ class Contact {
     }
 
     function permissive_view_score_bound() {
+        global $Conf;
         if ($this->is_manager())
             return VIEWSCORE_ADMINONLY - 1;
         else if ($this->is_reviewer())
