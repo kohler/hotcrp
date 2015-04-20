@@ -364,18 +364,17 @@ class Contact {
         if (!($dblink = self::contactdb()) || !$this->has_database_account())
             return false;
         $idquery = Dbl::format_query($dblink, "select ContactInfo.contactDbId, Conferences.confid, roles
-            from ContactInfo join Conferences
+            from ContactInfo
+            left join Conferences on (Conferences.`dbname`=?)
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
-            where email=? and `dbname`=?", $this->email, $Opt["dbName"]);
-        $result = $dblink->query($idquery);
-        $row = edb_row($result);
+            where email=?", $Opt["dbName"], $this->email);
+        $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
         if (!$row) {
-            $result = Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
-            $result = $dblink->query($idquery);
-            $row = edb_row($result);
+            Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
+            $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
         }
 
-        if ($row && (int) $row[2] != $this->all_roles()) {
+        if ($row && $row[1] && (int) $row[2] != $this->all_roles()) {
             $result = Dbl::ql($dblink, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
             return !!$result;
         } else

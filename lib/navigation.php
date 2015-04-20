@@ -93,6 +93,10 @@ class Navigation {
             self::$php_suffix = "";
     }
 
+    public static function self() {
+        return self::$server . self::$sitedir . self::$page . self::$path . self::$query;
+    }
+
     public static function host() {
         return @$_SERVER["HTTP_HOST"];
     }

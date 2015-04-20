@@ -13,6 +13,8 @@ class Dbl {
     static public $logged_errors = 0;
     static public $default_dblink;
     static private $error_handler = "Dbl::default_error_handler";
+    static private $log_queries = false;
+    static private $log_queries_limit = 0;
     static public $check_warnings = true;
 
     static function make_dsn($opt) {
@@ -94,7 +96,7 @@ class Dbl {
         trigger_error("$landmark: database error: $dblink->error in $query");
     }
 
-    static private function query_args($args, $flags) {
+    static private function query_args($args, $flags, $log_location) {
         $argpos = is_string($args[0]) ? 0 : 1;
         $dblink = $argpos ? $args[0] : self::$default_dblink;
         if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
@@ -102,6 +104,12 @@ class Dbl {
             trigger_error(caller_landmark(1, "/^Dbl::/") . ": wrong number of arguments");
         else if (($flags & self::F_APPLY) && @$args[$argpos + 1] && !is_array($args[$argpos + 1]))
             trigger_error(caller_landmark(1, "/^Dbl::/") . ": argument is not array");
+        if ($log_location && self::$log_queries !== false) {
+            $location = caller_landmark(1, "/^Dbl::/");
+            if (!@self::$log_queries[$location])
+                self::$log_queries[$location] = array(substr(simplify_whitespace($args[$argpos]), 0, 80), 0);
+            ++self::$log_queries[$location][1];
+        }
         if (count($args) === $argpos + 1)
             return array($dblink, $args[$argpos], array());
         else if ($flags & self::F_APPLY)
@@ -178,17 +186,17 @@ class Dbl {
     }
 
     static function format_query(/* [$dblink,] $qstr, ... */) {
-        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), 0);
+        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), 0, false);
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
     static function format_query_apply(/* [$dblink,] $qstr, [$argv] */) {
-        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), self::F_APPLY);
+        list($dblink, $qstr, $argv) = self::query_args(func_get_args(), self::F_APPLY, false);
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
     static private function do_query($args, $flags) {
-        list($dblink, $qstr, $argv) = self::query_args($args, $flags);
+        list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
         $result = $dblink->query($qstr);
@@ -199,13 +207,13 @@ class Dbl {
             if ($flags & self::F_ERROR)
                 call_user_func(self::$error_handler, $dblink, $qstr);
             else
-                error_log(caller_landmark() . ": database error: " . $dblink->error . " in $qstr");
+                error_log(caller_landmark(1, "/^Dbl::/") . ": database error: " . $dblink->error . " in $qstr");
         }
         if (self::$check_warnings && !($flags & self::F_ALLOWERROR)
             && $dblink->warning_count) {
             $wresult = $dblink->query("show warnings");
             while ($wresult && ($wrow = $wresult->fetch_row()))
-                error_log(caller_landmark() . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
+                error_log(caller_landmark(1, "/^Dbl::/") . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
             $wresult && $wresult->close();
         }
         return $result;
@@ -281,11 +289,44 @@ class Dbl {
         $x = array();
         while ($result && ($row = $result->fetch_row()))
             $x[] = $row[0];
-        if ($result)
-            $result->close();
+        $result && $result->close();
         return $x;
     }
 
+    static function fetch_first_row($result) {
+        $x = $result ? $result->fetch_row() : null;
+        $result && $result->close();
+        return $x;
+    }
+
+    static function log_queries($limit) {
+        if (!$limit)
+            self::$log_queries = false;
+        else if (self::$log_queries === false) {
+            register_shutdown_function("Dbl::shutdown");
+            self::$log_queries = array();
+            self::$log_queries_limit = $limit;
+        }
+    }
+
+    static function shutdown() {
+        if (self::$log_queries) {
+            uasort(self::$log_queries, function ($a, $b) {
+                return $a[1] - $b[1];
+            });
+            $msg = true;
+            foreach (self::$log_queries as $where => $what) {
+                if (self::$log_queries_limit > $what[1])
+                    break;
+                if ($msg) {
+                    error_log("Query log for " . Navigation::self());
+                    $msg = false;
+                }
+                error_log("  $where: #$what[1]: $what[0]");
+            }
+        }
+        self::$log_queries = false;
+    }
 }
 
 // number of rows returned by a select query, or 'false' if result is an error
