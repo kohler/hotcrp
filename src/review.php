@@ -372,8 +372,9 @@ class ReviewForm {
                 $forder[sprintf("%03d.%s", $f->display_order, $fid)] = $f;
         }
         ksort($forder);
-        foreach ($forder as $i => $f)
-            $f->display_order = $i + 1;
+        $n = 0;
+        foreach ($forder as $f)
+            $f->display_order = ++$n;
         uasort($this->fmap, "ReviewForm::fmap_sorter");
         $this->all_forder = array();
         foreach ($this->fmap as $f)
