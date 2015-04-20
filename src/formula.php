@@ -847,7 +847,7 @@ class Formula {
     return $x;' . "\n";
 
         $args = '$prow, $rrow_cid, $contact, $format = null, $forceShow = false';
-        $Conf->infoMsg(Ht::pre_text("function ($args) {\n  /* $this->expression */\n  $t}\n"));
+        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  /* $this->expression */\n  $t}\n"));
         return create_function($args, $t);
     }
 
