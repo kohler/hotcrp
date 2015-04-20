@@ -19,7 +19,7 @@ function admin_home_messages() {
         $m[] = "PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.";
     if (!function_exists("imagecreate"))
         $m[] = $errmarker . "This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts (as backup for browsers that don’t support &lt;canvas&gt;). You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php5-gd</code> package.";
-    $result = $Conf->qx("show variables like 'max_allowed_packet'");
+    $result = Dbl::qx_raw("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result))
         && $row[1] < $max_file_size
@@ -37,7 +37,7 @@ function admin_home_messages() {
     if (@$Conf->setting_data("clickthrough_submit")) // delete 12/2014
         $m[] = "You need to recreate the <a href=\"" . hoturl("settings", "group=msg") . "\">clickthrough submission terms</a>.";
     // Any -100 preferences around?
-    $result = $Conf->ql($Conf->preferenceConflictQuery(false, "limit 1"));
+    $result = Dbl::ql_raw($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))
         $m[] = "PC members have indicated paper conflicts (using review preferences of &#8722;100 or less) that aren’t yet confirmed. <a href='" . hoturl_post("autoassign", "a=prefconflict&amp;assign=1") . "' class='nowrap'>Confirm these conflicts</a>";
     // Weird URLs?
@@ -50,7 +50,7 @@ function admin_home_messages() {
     // Unnotified reviews?
     if ($Conf->setting("pcrev_assigntime", 0) > $Conf->setting("pcrev_informtime", 0)) {
         $assigntime = $Conf->setting("pcrev_assigntime");
-        $result = $Conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
+        $result = Dbl::qe_raw("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
         if (edb_nrows($result))
             $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">Mark as notified</a>";
         else

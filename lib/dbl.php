@@ -1,11 +1,14 @@
 <?php
+// dbl.php -- database interface layer
+// HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
 
 class Dbl {
-
     const F_RAW = 1;
     const F_APPLY = 2;
     const F_LOG = 4;
     const F_ERROR = 8;
+    const F_ALLOWERROR = 16;
 
     static public $logged_errors = 0;
     static public $default_dblink;
@@ -222,6 +225,18 @@ class Dbl {
 
     static function q_apply(/* [$dblink,] $qstr, [$argv] */) {
         return self::do_query(func_get_args(), self::F_APPLY);
+    }
+
+    static function qx(/* [$dblink,] $qstr, ... */) {
+        return self::do_query(func_get_args(), self::F_ALLOWERROR);
+    }
+
+    static function qx_raw(/* [$dblink,] $qstr */) {
+        return self::do_query(func_get_args(), self::F_RAW | self::F_ALLOWERROR);
+    }
+
+    static function qx_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_query(func_get_args(), self::F_APPLY | self::F_ALLOWERROR);
     }
 
     static function ql(/* [$dblink,] $qstr, ... */) {

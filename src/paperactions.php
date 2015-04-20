@@ -12,7 +12,7 @@ class PaperActions {
             $dnum = cvtint(@$_REQUEST["decision"]);
             $decs = $Conf->decision_map();
             if (isset($decs[$dnum])) {
-                $result = $Conf->qe("update Paper set outcome=$dnum where paperId=$prow->paperId");
+                $result = Dbl::qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
                 if ($result && $ajax)
                     $Conf->confirmMsg("Saved");
                 else if ($result)
@@ -36,12 +36,12 @@ class PaperActions {
             foreach ($prefarray as $p)
                 $q[] = "($p[0],$p[1],$p[2]," . ($p[3] === null ? "NULL" : $p[3]) . ")";
             if (count($q))
-                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)");
+                return Dbl::qe_raw("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)");
         } else {
             foreach ($prefarray as $p)
                 $q[] = "($p[0],$p[1],$p[2])";
             if (count($q))
-                return $Conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values " . join(",", $q) . " on duplicate key update preference=values(preference)");
+                return Dbl::qe_raw("insert into PaperReviewPreference (paperId,contactId,preference) values " . join(",", $q) . " on duplicate key update preference=values(preference)");
         }
         return true;
     }
@@ -76,7 +76,7 @@ class PaperActions {
             $Conf->errorMsg("You don’t have permission to rank this paper.");
             $Error["rank"] = true;
         } else {
-            $result = $Conf->qe("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId");
+            $result = Dbl::qe_raw("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId");
             $x = array();
             $prowIndex = -1;
             while (($row = edb_row($result))) {
@@ -255,7 +255,7 @@ class PaperActions {
         if (count($where))
             $q .= " where " . join(" and ", $where);
         $tags = array();
-        $result = $Conf->qe($q);
+        $result = Dbl::qe_raw($q);
         while (($row = edb_row($result))) {
             $twiddle = strpos($row[0], "~");
             if ($twiddle === false

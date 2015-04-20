@@ -120,17 +120,17 @@ if (isset($_REQUEST["uploadForm"])
 if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     && $paperTable->editrrow->reviewSubmitted && $Me->can_administer($prow)
     && check_post()) {
-    $Conf->qe("lock tables PaperReview write");
+    Dbl::qe_raw("lock tables PaperReview write");
     $needsSubmit = 1;
     if ($paperTable->editrrow->reviewType == REVIEW_SECONDARY) {
-        $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType=" . REVIEW_EXTERNAL);
+        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType=" . REVIEW_EXTERNAL);
         if (($row = edb_row($result)) && $row[0])
             $needsSubmit = 0;
         else if ($row && $row[1])
             $needsSubmit = -1;
     }
     $result = Dbl::qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId);
-    $Conf->qe("unlock tables");
+    Dbl::qe_raw("unlock tables");
     if ($result) {
         $Me->log_activity("$editRrowLogname unsubmitted", $prow);
         $Conf->confirmMsg("Unsubmitted review.");
@@ -150,9 +150,9 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
         $Conf->errorMsg("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
-        $Conf->qe("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId");
+        Dbl::qe_raw("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId");
     else
-        $Conf->qe("insert into ReviewRating (reviewId, contactId, rating) values (" . $paperTable->rrow->reviewId . ", $Me->contactId, " . $_REQUEST["rating"] . ") on duplicate key update rating=" . $_REQUEST["rating"]);
+        Dbl::qe_raw("insert into ReviewRating (reviewId, contactId, rating) values (" . $paperTable->rrow->reviewId . ", $Me->contactId, " . $_REQUEST["rating"] . ") on duplicate key update rating=" . $_REQUEST["rating"]);
     if (defval($_REQUEST, "ajax", 0))
         if ($OK)
             $Conf->ajaxExit(array("ok" => 1, "result" => "Thanks! Your feedback has been recorded."));
@@ -192,7 +192,7 @@ if (isset($_REQUEST["deletereview"]) && check_post()
         $Conf->errorMsg("No review to delete.");
     else {
         archiveReview($paperTable->editrrow);
-        $result = $Conf->qe("delete from PaperReview where reviewId=" . $paperTable->editrrow->reviewId);
+        $result = Dbl::qe_raw("delete from PaperReview where reviewId=" . $paperTable->editrrow->reviewId);
         if ($result) {
             $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
@@ -201,9 +201,9 @@ if (isset($_REQUEST["deletereview"]) && check_post()
 
             // perhaps a delegatee needs to redelegate
             if ($paperTable->editrrow->reviewType == REVIEW_EXTERNAL && $paperTable->editrrow->requestedBy > 0) {
-                $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=" . $paperTable->editrrow->paperId . " and requestedBy=" . $paperTable->editrrow->requestedBy . " and reviewType=" . REVIEW_EXTERNAL);
+                $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=" . $paperTable->editrrow->paperId . " and requestedBy=" . $paperTable->editrrow->requestedBy . " and reviewType=" . REVIEW_EXTERNAL);
                 if (!($row = edb_row($result)) || $row[0] == 0)
-                    $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=" . $paperTable->editrrow->paperId . " and contactId=" . $paperTable->editrrow->requestedBy . " and reviewSubmitted is null");
+                    Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=" . $paperTable->editrrow->paperId . " and contactId=" . $paperTable->editrrow->requestedBy . " and reviewSubmitted is null");
             }
 
             unset($_REQUEST["reviewId"]);
@@ -281,37 +281,37 @@ else if (isset($_REQUEST["text"]))
 function archiveReview($rrow) {
     global $Conf;
     $fields = ReviewForm::reviewArchiveFields();
-    $Conf->qe("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId");
+    Dbl::qe_raw("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId");
 }
 
 function refuseReview() {
     global $Conf, $Opt, $Me, $prow, $paperTable;
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write");
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write");
 
     $rrow = $paperTable->editrrow;
     if ($rrow->reviewModified > 0)
         archiveReview($rrow);
     $hadToken = defval($rrow, "reviewToken", 0) != 0;
 
-    $result = $Conf->qe("delete from PaperReview where reviewId=$rrow->reviewId");
+    $result = Dbl::qe_raw("delete from PaperReview where reviewId=$rrow->reviewId");
     if (!$result)
         return;
     $reason = defval($_REQUEST, "reason", "");
     if ($reason == "Optional explanation")
         $reason = "";
-    $result = $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlq(trim($reason)) . "')");
+    $result = Dbl::qe_raw("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlq(trim($reason)) . "')");
     if (!$result)
         return;
 
     // now the requester must potentially complete their review
     if ($rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy > 0) {
-        $result = $Conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->requestedBy and reviewType=" . REVIEW_EXTERNAL);
+        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->requestedBy and reviewType=" . REVIEW_EXTERNAL);
         if (!($row = edb_row($result)) || $row[0] == 0)
-            $Conf->qe("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null");
+            Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null");
     }
 
-    $Conf->qe("unlock tables");
+    Dbl::qe_raw("unlock tables");
 
     // send confirmation email
     $Requester = Contact::find_by_id($rrow->requestedBy);
@@ -349,7 +349,7 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
                           . "</div></form>");
     } else {
         refuseReview();
-        $Conf->qe("unlock tables");
+        Dbl::qe_raw("unlock tables");
         loadRows();
     }
 }
@@ -360,7 +360,7 @@ if (isset($_REQUEST["accept"])) {
         $Conf->errorMsg("This review was not assigned to you, so you cannot confirm your intention to write it.");
     else {
         if ($paperTable->editrrow->reviewModified <= 0)
-            $Conf->qe("update PaperReview set reviewModified=1 where reviewId=" . $paperTable->editrrow->reviewId . " and coalesce(reviewModified,0)<=0");
+            Dbl::qe_raw("update PaperReview set reviewModified=1 where reviewId=" . $paperTable->editrrow->reviewId . " and coalesce(reviewModified,0)<=0");
         $Conf->confirmMsg("Thank you for confirming your intention to finish this review.  You can download the paper and review form below.");
         loadRows();
     }

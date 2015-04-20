@@ -422,7 +422,7 @@ function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorag
         && ($doc->documentType != $documentType
             || $paperStorageId != $doc->paperStorageId)) {
         $size = $Conf->sversion >= 74 ? "size" : "length(paper) as size";
-        $result = $Conf->qe("select paperStorageId, paperId, $size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId");
+        $result = Dbl::qe("select paperStorageId, paperId, $size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId");
         $doc = edb_orow($result);
     }
 
@@ -452,7 +452,7 @@ function topicTable($prow, $active = 0) {
     $paperTopic = array();
     $tmap = $Conf->topic_map();
     if ($paperId > 0) {
-        $result = $Conf->q("select topicId from PaperTopic where paperId=$paperId");
+        $result = Dbl::q("select topicId from PaperTopic where paperId=$paperId");
         while ($row = edb_row($result))
             $paperTopic[$row[0]] = $tmap[$row[0]];
     }
@@ -755,7 +755,7 @@ function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
     $explicit = ($watchtype << WATCHSHIFT_EXPLICIT);
     $selected = ($watchtype << WATCHSHIFT_NORMAL);
     $onvalue = $explicit | ($on ? $selected : 0);
-    $Conf->qe("insert into PaperWatch (paperId, contactId, watch)
+    Dbl::qe("insert into PaperWatch (paperId, contactId, watch)
                 values ($paperId, $contactId, $onvalue)
                 on duplicate key update watch = (watch & ~" . ($explicit | $selected) . ") | $onvalue");
     return $OK;
@@ -783,7 +783,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
         $q .= " or ContactInfo.contactId=" . $prow->managerContactId;
     $q .= " order by conflictType";
 
-    $result = $Conf->qe($q);
+    $result = Dbl::qe_raw($q);
     $watchers = array();
     $lastContactId = 0;
     while (($row = edb_orow($result))) {
@@ -810,7 +810,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
     if (count($watchers)
         && (($Conf->timePCViewAllReviews(false, false) && !$Conf->timePCViewAllReviews(false, true))
             || $Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE)) {
-        $result = $Conf->qe("select ContactInfo.contactId, PaperReview.contactId, max(reviewNeedsSubmit) from ContactInfo
+        $result = Dbl::qe("select ContactInfo.contactId, PaperReview.contactId, max(reviewNeedsSubmit) from ContactInfo
                 left join PaperReview on (PaperReview.contactId=ContactInfo.contactId)
                 where ContactInfo.contactId in (" . join(",", array_keys($watchers)) . ")
                 group by ContactInfo.contactId");
@@ -1238,7 +1238,7 @@ function pcMembers() {
         || $PcMembersCache[0] < $Conf->setting("pc")
         || $PcMembersCache[1] != @$Opt["sortByLastName"]) {
         $pc = array();
-        $result = $Conf->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
+        $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
         $by_name_text = array();
         $pctags = array("pc" => "pc");
         while ($result && ($row = $result->fetch_object("Contact"))) {

@@ -435,7 +435,7 @@ class FormulaCompileState {
     public function _add_submitted_reviewers() {
         if ($this->check_gvar('$submitted_reviewers')) {
             $this->queryOptions["reviewContactIds"] = true;
-            $this->gstmt[] = "\$submitted_reviewers = \$prow->viewable_submitted_reviewers(\$contact, \$forceShow);";
+            $this->gstmt[] = "\$submitted_reviewers = array_flip(\$prow->viewable_submitted_reviewers(\$contact, \$forceShow));";
         }
         return "\$submitted_reviewers";
     }
@@ -480,15 +480,15 @@ class FormulaCompileState {
         if ($this->datatype & Fexpr::APCCANREV) {
             $g = $this->_add_pc_can_review();
             if ($this->datatype & Fexpr::ASUBREV)
-                $g = $this->define_gvar("rev_and_pc_can_review", "$g + array_flip(" . $this->_add_submitted_reviewers() . ")");
-            return array($g, true);
+                $g = $this->define_gvar("rev_and_pc_can_review", "$g + " . $this->_add_submitted_reviewers());
+            return $g;
         } else if ($this->datatype === (Fexpr::ASUBREV | Fexpr::APREF)) {
-            $g = $this->define_gvar("rev_and_pref_cids", $this->_add_review_prefs() . " + array_flip(" . $this->_add_submitted_reviewers() . ")");
-            return array($g, true);
+            $g = $this->define_gvar("rev_and_pref_cids", $this->_add_review_prefs() . " + " . $this->_add_submitted_reviewers());
+            return $g;
         } else if ($this->datatype === Fexpr::ASUBREV)
-            return array($this->_add_submitted_reviewers(), false);
+            return $this->_add_submitted_reviewers();
         else
-            return array($this->_add_review_prefs(), true);
+            return $this->_add_review_prefs();
     }
     public function _compile_loop($initial_value, $combiner, $e) {
         $t_result = $this->_addltemp($initial_value, true);
@@ -506,8 +506,7 @@ class FormulaCompileState {
         $t_looper = "\$i$p";
 
         $g = $this->loop_variable();
-        $loop = "foreach ($g[0] as \$i$p" . ($g[1] ? " => \$v$p" : "") . ") "
-            . $this->_join_lstmt(true);
+        $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
         if ($this->datatype == Fexpr::APREF)
             $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
         $loop = str_replace("~i~", "\$i$p", $loop);
@@ -814,7 +813,7 @@ class Formula {
         if ($this->needsReview) {
             $g = $state->loop_variable();
             $loop = "\n  if (\$format == \"loop\")
-    return " . ($g[1] ? "array_keys($g[0])" : $g[0]) . ";\n";
+    return array_keys($g);\n";
         }
 
         $t = "assert(\$contact->contactId == $contact->contactId);\n  "
@@ -847,7 +846,7 @@ class Formula {
     return $x;' . "\n";
 
         $args = '$prow, $rrow_cid, $contact, $format = null, $forceShow = false';
-        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  /* $this->expression */\n  $t}\n"));
+        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
         return create_function($args, $t);
     }
 

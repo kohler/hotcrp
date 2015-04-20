@@ -72,7 +72,7 @@ if (($getaction == "paper" || $getaction == "final"
      || substr($getaction, 0, 4) == "opt-")
     && SearchActions::any()
     && ($dt = HotCRPDocument::parse_dtype($getaction)) !== null) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (($whyNot = $Me->perm_view_paper($row, true)))
@@ -105,7 +105,7 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 } else if ($getaction == "abstract" && SearchActions::any()) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "topics" => 1)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "topics" => 1)));
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Me)) {
@@ -231,7 +231,7 @@ if (($getaction == "revform" || $getaction == "revformz")
     downloadText($text, "review");
     exit;
 } else if ($getaction == "revform" || $getaction == "revformz") {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "myReviewsOpt" => 1)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "myReviewsOpt" => 1)));
 
     $texts = array();
     $errors = array();
@@ -258,7 +258,7 @@ if (($getaction == "revform" || $getaction == "revformz")
 
 // download all reviews for selected papers
 if (($getaction == "rev" || $getaction == "revz") && SearchActions::any()) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviews" => 1, "reviewerName" => 1)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviews" => 1, "reviewerName" => 1)));
 
     $texts = array();
     $errors = array();
@@ -377,7 +377,7 @@ if ($getaction == "votes" && SearchActions::any() && defval($_REQUEST, "tag")
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
         $showtag = trim($_REQUEST["tag"]); // no "23~" prefix
-        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "tagIndex" => $tag)));
+        $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "tagIndex" => $tag)));
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
             if ($Me->can_view_tags($row, true))
@@ -395,7 +395,7 @@ if ($getaction == "rank" && SearchActions::any() && defval($_REQUEST, "tag")
     && ($Me->isPC || ($Me->is_reviewer() && $settingrank))) {
     $tagger = new Tagger;
     if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
-        $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
+        $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
         $real = "";
         $null = "\n";
         while (($row = PaperInfo::fetch($result, $Me)))
@@ -436,7 +436,7 @@ if ($getaction == "authors" && SearchActions::any()
     // first fetch contacts if chair
     $contactline = array();
     if ($Me->privChair) {
-        $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where Paper.paperId" . SearchActions::sql_predicate());
+        $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where Paper.paperId" . SearchActions::sql_predicate());
         while (($row = edb_orow($result))) {
             $key = $row->paperId . " " . $row->email;
             if ($row->firstName && $row->lastName)
@@ -447,7 +447,7 @@ if ($getaction == "authors" && SearchActions::any()
         }
     }
 
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
     $texts = array();
     while (($prow = PaperInfo::fetch($result, $Me))) {
         if (!$Me->can_view_authors($prow, true))
@@ -490,7 +490,7 @@ if ($getaction == "authors" && SearchActions::any()
 
 // download text PC conflict information for selected papers
 if ($getaction == "pcconf" && SearchActions::any() && $Me->privChair) {
-    $result = $Conf->qe("select Paper.paperId, title, group_concat(concat(PaperConflict.contactId, ':', conflictType) separator ' ')
+    $result = Dbl::qe_raw("select Paper.paperId, title, group_concat(concat(PaperConflict.contactId, ':', conflictType) separator ' ')
                 from Paper
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
                 where Paper.paperId" . SearchActions::sql_predicate() . "
@@ -530,7 +530,7 @@ if ($getaction == "pcconf" && SearchActions::any() && $Me->privChair) {
 // download text lead or shepherd information for selected papers
 if (($getaction == "lead" || $getaction == "shepherd")
     && SearchActions::any() && $Me->isPC) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "reviewerName" => $getaction)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "reviewerName" => $getaction)));
     $shep = $getaction == "shepherd";
     if ($result) {
         $texts = array();
@@ -549,7 +549,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 // download text contact author information, with email, for selected papers
 if ($getaction == "contact" && $Me->privChair && SearchActions::any()) {
     // Note that this is chair only
-    $result = $Conf->qe("select Paper.paperId, title, firstName, lastName, email
+    $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email
 	from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
 	join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId)
 	where Paper.paperId" . SearchActions::sql_predicate() . " order by Paper.paperId");
@@ -573,7 +573,7 @@ if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) 
     $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
     $any_round = false;
     $texts = array();
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "assignments" => 1)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "assignments" => 1)));
     while (($prow = PaperInfo::fetch($result, $Me)))
         if (!$Me->allow_administer($prow)) {
             $texts[] = array();
@@ -612,7 +612,7 @@ if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) 
 
 // download scores and, maybe, anonymity for selected papers
 if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviewScores" => 1, "reviewerName" => 1)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviewScores" => 1, "reviewerName" => 1)));
 
     // compose scores; NB chair is always forceShow
     $errors = array();
@@ -670,7 +670,7 @@ function downloadRevpref($extended) {
             return $Conf->errorMsg("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => SearchActions::selection(), "topics" => 1, "reviewerPreference" => 1));
-    $result = $Conf->qe($q);
+    $result = Dbl::qe_raw($q);
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Rev)) {
@@ -711,7 +711,7 @@ function downloadAllRevpref() {
     global $Conf, $Me, $Opt;
     // maybe download preferences for someone else
     $q = $Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviewerPreference" => 1, "allConflictType" => 1));
-    $result = $Conf->qe($q);
+    $result = Dbl::qe_raw($q);
     $texts = array();
     $pc = pcMembers();
     $has_conflict = false;
@@ -745,7 +745,7 @@ if ($getaction == "allrevpref" && $Me->privChair && SearchActions::any())
 
 // download topics for selected papers
 if ($getaction == "topics" && SearchActions::any()) {
-    $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "topics" => 1)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "topics" => 1)));
 
     $texts = array();
     $tmap = $Conf->topic_map();
@@ -779,7 +779,7 @@ if ($getaction == "topics" && SearchActions::any()) {
 
 // download format checker reports for selected papers
 if ($getaction == "checkformat" && $Me->privChair && SearchActions::any()) {
-    $result = $Conf->qe("select paperId, title, mimetype from Paper where paperId" . SearchActions::sql_predicate() . " order by paperId");
+    $result = Dbl::qe_raw("select paperId, title, mimetype from Paper where paperId" . SearchActions::sql_predicate() . " order by paperId");
     $format = $Conf->setting_data("sub_banal", "");
 
     // generate output gradually since this takes so long
@@ -825,7 +825,7 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
 
     // analyze paper page counts
     $pagecount = array();
-    $result = $Conf->qe("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq");
+    $result = Dbl::qe_raw("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq");
     while (($row = edb_row($result)))
         if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))
             $pagecount[$row[0]] = $j->npages;
@@ -836,7 +836,7 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
         }
 
     // generate report
-    $result = $Conf->qe("select Paper.paperId, title, authorInformation from Paper where $idq");
+    $result = Dbl::qe_raw("select Paper.paperId, title, authorInformation from Paper where $idq");
     $texts = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
         $x = array("pid" => $Opt["downloadPrefix"] . $row->paperId,
@@ -923,7 +923,7 @@ if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
         $o = cvtint(@$_REQUEST["decision"]);
         $decision_map = $Conf->decision_map();
         if (isset($decision_map[$o])) {
-            $Conf->qe("update Paper set outcome=$o where paperId" . SearchActions::sql_predicate());
+            Dbl::qe_raw("update Paper set outcome=$o where paperId" . SearchActions::sql_predicate());
             $Conf->updatePaperaccSetting($o > 0);
             redirectSelf(array("atab" => "decide", "decision" => $o));
             // normally does not return
@@ -962,8 +962,8 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
         }
     } else if (substr($mt, 0, 6) == "assign"
                && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
-        $Conf->qe("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write, Settings write");
-        $result = $Conf->qe("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where Paper.paperId" . SearchActions::sql_predicate());
+        Dbl::qe_raw("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write, Settings write");
+        $result = Dbl::qe_raw("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where Paper.paperId" . SearchActions::sql_predicate());
         $conflicts = array();
         $assigned = array();
         $nworked = 0;
@@ -983,7 +983,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
             $Conf->errorMsg("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
         if ($nworked)
             $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
-        $Conf->qe("unlock tables");
+        Dbl::qe_raw("unlock tables");
         $Conf->updateRevTokensSetting(false);
     }
 }
@@ -1030,13 +1030,13 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
         sort($pldisplay);
         $pldisplay = " " . simplify_whitespace(join(" ", $pldisplay)) . " ";
         $Conf->save_session("pldisplay", $pldisplay);
-        $Conf->qe("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($pldisplay) . "') on duplicate key update data=values(data)");
+        Dbl::qe_raw("insert into Settings (name, value, data) values ('pldisplay_default', 1, '" . sqlq($pldisplay) . "') on duplicate key update data=values(data)");
     } else
-        $Conf->qe("delete from Settings where name='pldisplay_default'");
+        Dbl::qe_raw("delete from Settings where name='pldisplay_default'");
     if ($Conf->session("scoresort") != "C")
-        $Conf->qe("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)");
+        Dbl::qe_raw("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)");
     else
-        $Conf->qe("delete from Settings where name='scoresort_default'");
+        Dbl::qe_raw("delete from Settings where name='scoresort_default'");
     if ($OK && defval($_REQUEST, "ajax"))
         $Conf->ajaxExit(array("ok" => 1));
     else if ($OK)
@@ -1101,7 +1101,7 @@ function saveformulas() {
     $_REQUEST["tab"] = "formulas";
     if ($ok) {
         foreach ($changes as $change)
-            $Conf->qe($change);
+            Dbl::qe_raw($change);
         if ($OK) {
             $Conf->confirmMsg("Formulas saved.");
             redirectSelf();
@@ -1165,10 +1165,10 @@ function savesearch() {
     }
 
     if (isset($_REQUEST["deletesearch"])) {
-        $Conf->qe("delete from Settings where name='ss:" . sqlq($name) . "'");
+        Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
         redirectSelf();
     } else {
-        $Conf->qe("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)");
+        Dbl::qe_raw("insert into Settings (name, value, data) values ('ss:" . sqlq($name) . "', " . $Me->contactId . ", '" . sqlq(json_encode($arr)) . "') on duplicate key update value=values(value), data=values(data)");
         redirectSelf(array("q" => "ss:" . $name, "qa" => null, "qo" => null, "qx" => null));
     }
 }

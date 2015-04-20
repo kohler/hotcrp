@@ -341,7 +341,7 @@ class CheckFormat {
         if ($limit > 0 && $n > $limit)
             return $this->msg("error", "Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
         if ($limit > 0)
-            $Conf->q("insert into Settings (name,value,data) values ('banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
+            Dbl::q("insert into Settings (name,value,data) values ('banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
         $tmpdir = null;
         $status = $this->_analyzePaper($paperId, $documentType, $spec, $tmpdir);
@@ -349,7 +349,7 @@ class CheckFormat {
             exec("/bin/rm -rf $tmpdir");
 
         if ($limit > 0)
-            $Conf->q("update Settings set value=value-1 where name='banal_count' and data='$t'");
+            Dbl::q("update Settings set value=value-1 where name='banal_count' and data='$t'");
         return $status;
     }
 

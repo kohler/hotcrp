@@ -425,7 +425,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $by_pid = array();
             foreach ($rows as $row)
                 $by_pid[$row->paperId] = $row;
-            $result = $Conf->qe("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $pl->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $pl->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
+            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $pl->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $pl->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
                 if ($pl->contact->allow_administer($prow)
@@ -1371,7 +1371,7 @@ function initialize_paper_columns() {
 
     $formula = null;
     if ($Conf && $Conf->setting("formulas")) {
-        $result = $Conf->q("select * from Formula order by lower(name)");
+        $result = Dbl::q("select * from Formula order by lower(name)");
         while ($result && ($row = $result->fetch_object("Formula"))) {
             $fid = $row->formulaId;
             $formula = new FormulaPaperColumn("formula$fid", $row);

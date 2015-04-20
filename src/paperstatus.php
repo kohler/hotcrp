@@ -802,15 +802,15 @@ class PaperStatus {
                 $result = Dbl::qe_raw("update Paper set " . join(",", $q) . " where paperId=$pj->id");
                 if ($result
                     && $result->affected_rows === 0
-                    && edb_nrows($Conf->qe("select paperId from Paper where paperId=$pj->id")) === 0)
-                    $result = $Conf->qe("insert into Paper set paperId=$pj->id, " . join(",", $q));
+                    && edb_nrows(Dbl::qe_raw("select paperId from Paper where paperId=$pj->id")) === 0)
+                    $result = Dbl::qe_raw("insert into Paper set paperId=$pj->id, " . join(",", $q));
             } else {
                 $result = Dbl::qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
                     || !($pj->id = $result->insert_id))
                     return $this->set_error_html(false, "Could not create paper.");
                 if (count($this->uploaded_documents))
-                    $Conf->qe("update PaperStorage set paperId=$pj->id where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
+                    Dbl::qe_raw("update PaperStorage set paperId=$pj->id where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
             }
 
             // maybe update `papersub` settings
@@ -825,9 +825,9 @@ class PaperStatus {
             $topics = self::topics_sql($pj);
             $old_topics = self::topics_sql($old_pj);
             if ($topics != $old_topics) {
-                $result = $Conf->qe("delete from PaperTopic where paperId=$pj->id");
+                $result = Dbl::qe_raw("delete from PaperTopic where paperId=$pj->id");
                 if ($topics)
-                    $result = $Conf->qe("insert into PaperTopic (topicId,paperId) values $topics");
+                    $result = Dbl::qe_raw("insert into PaperTopic (topicId,paperId) values $topics");
             }
         }
 
@@ -836,9 +836,9 @@ class PaperStatus {
             $options = self::options_sql($pj);
             $old_options = self::options_sql($old_pj);
             if ($options != $old_options) {
-                $result = $Conf->qe("delete from PaperOption where paperId=$pj->id");
+                $result = Dbl::qe_raw("delete from PaperOption where paperId=$pj->id");
                 if ($options)
-                    $result = $Conf->qe("insert into PaperOption (paperId,optionId,value,data) values $options");
+                    $result = Dbl::qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
             }
         }
 
@@ -852,13 +852,13 @@ class PaperStatus {
                 $q[] = "'" . sqlq($email) . "'";
             $ins = array();
             if (count($q)) {
-                $result = $Conf->qe("select contactId, email from ContactInfo where email in (" . join(",", $q) . ")");
+                $result = Dbl::qe_raw("select contactId, email from ContactInfo where email in (" . join(",", $q) . ")");
                 while (($row = edb_row($result)))
                     $ins[] = "($pj->id,$row[0]," . $conflict[strtolower($row[1])] . ")";
             }
-            $result = $Conf->qe("delete from PaperConflict where paperId=$pj->id");
+            $result = Dbl::qe_raw("delete from PaperConflict where paperId=$pj->id");
             if (count($ins))
-                $result = $Conf->qe("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
+                $result = Dbl::qe_raw("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
         }
 
         return $pj->id;

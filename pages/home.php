@@ -83,7 +83,7 @@ function change_review_tokens() {
         else if ($Conf->session("rev_token_fail", 0) >= 5)
             $Conf->errorMsg("Too many failed attempts to use a review token.  <a href='" . hoturl("index", "signout=1") . "'>Sign out</a> and in to try again.");
         else {
-            $result = $Conf->qe("select paperId from PaperReview where reviewToken=" . $token);
+            $result = Dbl::qe("select paperId from PaperReview where reviewToken=" . $token);
             if (($row = edb_row($result))) {
                 $tokeninfo[] = "Review token “" . htmlspecialchars($x) . "” lets you review <a href='" . hoturl("paper", "p=$row[0]") . "'>paper #" . $row[0] . "</a>.";
                 $Me->change_review_token($token, true);
@@ -156,7 +156,7 @@ if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite']
 if ($Conf->au_seerev == Conference::AUSEEREV_YES
     || $Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE) {
     $dlt = max(@$Conf->setting("sub_sub"), @$Conf->setting("sub_close"));
-    $result = $Conf->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
+    $result = Dbl::qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
     $n = $nyes = 0;
     while (($row = edb_row($result))) {
         $n += $row[1];
@@ -324,7 +324,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         $where[] = "PaperReview.contactId=" . $Me->contactId;
     if (($tokens = $Me->review_tokens()))
         $where[] = "reviewToken in (" . join(",", $tokens) . ")";
-    $result = $Conf->qe("select count(reviewSubmitted) num_submitted,
+    $result = Dbl::qe_raw("select count(reviewSubmitted) num_submitted,
 	count(if(reviewNeedsSubmit=0,reviewSubmitted,1)) num_needs_submit,
 	group_concat(if(reviewSubmitted is not null,overAllMerit,null)) scores,
 	group_concat(distinct if(reviewNeedsSubmit=1 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds
@@ -337,7 +337,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     // Information about PC reviews
     $npc = $sumpcSubmit = $npcScore = $sumpcScore = 0;
     if ($Me->isPC || $Me->privChair) {
-        $result = $Conf->qe("select count(reviewId) num_submitted,
+        $result = Dbl::qe_raw("select count(reviewId) num_submitted,
 	group_concat(overAllMerit) scores
 	from ContactInfo
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
@@ -440,7 +440,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
         $badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);
         $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-        $result = $Conf->qe("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
+        $result = Dbl::qe_raw("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
         if (edb_nrows($result)) {
             $a = array();
             while (($row = edb_row($result)))

@@ -767,10 +767,6 @@ class Conference {
         return $ok;
     }
 
-    function qx($query) {
-        return $this->dblink->query($query);
-    }
-
     function ql($query) {
         $result = $this->dblink->query($query);
         if (!$result)

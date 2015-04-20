@@ -71,20 +71,20 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST)
 function retractRequest($email, $prow, $confirm = true) {
     global $Conf, $Me;
 
-    $Conf->qe("lock tables PaperReview write, ReviewRequest write, ContactInfo read, PaperConflict read");
+    Dbl::qe_raw("lock tables PaperReview write, ReviewRequest write, ContactInfo read, PaperConflict read");
     $email = trim($email);
     // NB caller unlocks tables
 
     // check for outstanding review
     $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail";
-    $result = $Conf->qe("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
+    $result = Dbl::qe_raw("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
                 from ContactInfo
                 join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
                 where ContactInfo.email='" . sqlq($email) . "'");
     $row = edb_orow($result);
 
     // check for outstanding review request
-    $result2 = $Conf->qe("select name, email, requestedBy
+    $result2 = Dbl::qe_raw("select name, email, requestedBy
                 from ReviewRequest
                 where paperId=$prow->paperId and email='" . sqlq($email) . "'");
     $row2 = edb_orow($result2);
@@ -101,9 +101,9 @@ function retractRequest($email, $prow, $confirm = true) {
 
     // at this point, success; remove the review request
     if ($row)
-        $Conf->qe("delete from PaperReview where reviewId=$row->reviewId");
+        Dbl::qe_raw("delete from PaperReview where reviewId=$row->reviewId");
     if ($row2)
-        $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'");
+        Dbl::qe_raw("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'");
 
     if (defval($row, "reviewToken", 0) != 0)
         $Conf->settings["rev_tokens"] = -1;
@@ -122,7 +122,7 @@ function retractRequest($email, $prow, $confirm = true) {
 
 if (isset($_REQUEST["retract"]) && check_post()) {
     retractRequest($_REQUEST["retract"], $prow);
-    $Conf->qe("unlock tables");
+    Dbl::qe_raw("unlock tables");
     $Conf->updateRevTokensSetting(false);
     redirectSelf();
     loadRows();
@@ -162,10 +162,10 @@ function pcAssignments() {
     if (@$_REQUEST["reviewer"] && isset($pcm[$_REQUEST["reviewer"]]))
         $where[] = "ContactInfo.contactId='" . $_REQUEST["reviewer"] . "'";
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, ContactInfo read, ActionLog write, Settings write");
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, PaperConflict write, ContactInfo read, ActionLog write, Settings write");
 
     // don't record separate PC conflicts on author conflicts
-    $result = $Conf->qe("select ContactInfo.contactId,
+    $result = Dbl::qe_raw("select ContactInfo.contactId,
         PaperConflict.conflictType, reviewType, reviewModified, reviewId
         from ContactInfo
         left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
@@ -178,9 +178,9 @@ function pcAssignments() {
 
         // manage conflicts
         if ($row->conflictType && $pctype >= 0)
-            $Conf->qe("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->contactId");
+            Dbl::qe_raw("delete from PaperConflict where paperId=$prow->paperId and contactId=$row->contactId");
         else if (!$row->conflictType && $pctype < 0)
-            $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")");
+            Dbl::qe_raw("insert into PaperConflict (paperId, contactId, conflictType) values ($prow->paperId, $row->contactId, " . CONFLICT_CHAIRMARK . ")");
 
         // manage assignments
         $pctype = max($pctype, 0);
@@ -195,7 +195,7 @@ function pcAssignments() {
 
 if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post()) {
     pcAssignments();
-    $Conf->qe("unlock tables");
+    Dbl::qe_raw("unlock tables");
     $Conf->updateRevTokensSetting(false);
     if ($OK)
         $Conf->confirmMsg("Assignments saved.");
@@ -217,21 +217,21 @@ function requestReviewChecks($themHtml, $reqId) {
     global $Conf, $Me, $Opt, $prow;
 
     // check for outstanding review request
-    $result = $Conf->qe("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId");
+    $result = Dbl::qe_raw("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId");
     if (!$result)
         return false;
     else if (($row = edb_orow($result)))
         return $Conf->errorMsg(Text::user_html($row) . " has already requested a review from $themHtml.");
 
     // check for outstanding refusal to review
-    $result = $Conf->qe("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
+    $result = Dbl::qe_raw("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
     if (edb_nrows($result) > 0) {
         $row = edb_row($result);
         if ($row[1] == "<conflict>")
             return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
         else if ($Me->override_deadlines($prow)) {
             $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : ""));
-            $Conf->qe("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
+            Dbl::qe_raw("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
         } else
             return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? " (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : "") . ($Me->allow_administer($prow) ? " As an administrator, you can override this refusal with the “Override...” checkbox." : ""));
     }
@@ -255,7 +255,7 @@ function requestReview($email) {
     $reason = trim(defval($_REQUEST, "reason", ""));
 
     $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read, ActionLog write" . $otherTables);
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read, ActionLog write" . $otherTables);
     // NB caller unlocks tables on error
 
     // check for outstanding review request
@@ -266,10 +266,10 @@ function requestReview($email) {
     // potentially send the email from the requester
     $Requester = $Me;
     if ($Conf->setting("extrev_chairreq")) {
-        $result = $Conf->qe("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
+        $result = Dbl::qe_raw("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
         if (($row = edb_orow($result))) {
             $Requester = Contact::make($row);
-            $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
+            Dbl::qe_raw("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
         }
     }
 
@@ -278,7 +278,7 @@ function requestReview($email) {
                        REVIEW_EXTERNAL, array("mark_notify" => true));
 
     // mark secondary as delegated
-    $Conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
+    Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
 
     // send confirmation email
     HotCRPMailer::send_to($Them, "@requestreview", $prow,
@@ -288,7 +288,7 @@ function requestReview($email) {
 
     // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
-    $Conf->qx("unlock tables");
+    Dbl::qx_raw("unlock tables");
     return true;
 }
 
@@ -300,7 +300,7 @@ function proposeReview($email) {
     $reason = trim(defval($_REQUEST, "reason", ""));
     $reqId = Contact::id_by_email($email);
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read");
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read");
     // NB caller unlocks tables on error
 
     if ($reqId > 0
@@ -308,7 +308,7 @@ function proposeReview($email) {
         return $result;
 
     // check for outstanding review request
-    $result = $Conf->qe("insert into ReviewRequest (paperId, name, email, requestedBy, reason)
+    $result = Dbl::qe_raw("insert into ReviewRequest (paperId, name, email, requestedBy, reason)
         values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId");
 
     // send confirmation email
@@ -321,7 +321,7 @@ function proposeReview($email) {
 
     // confirmation message
     $Conf->confirmMsg("Proposed that " . htmlspecialchars("$name <$email>") . " review paper #$prow->paperId.  The chair must approve this proposal for it to take effect.");
-    $Conf->qx("unlock tables");
+    Dbl::qx_raw("unlock tables");
     $Me->log_activity("Logged proposal for $email to review", $prow);
     return true;
 }
@@ -346,11 +346,11 @@ function unassignedAnonymousContact() {
 function createAnonymousReview() {
     global $Conf, $Me, $Now, $Opt, $prow, $rrows;
 
-    $Conf->qe("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read, ActionLog write");
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read, ActionLog write");
 
     // find an unassigned anonymous review contact
     $contactemail = unassignedAnonymousContact();
-    $result = $Conf->qe("select contactId from ContactInfo where email='" . sqlq($contactemail) . "'");
+    $result = Dbl::qe_raw("select contactId from ContactInfo where email='" . sqlq($contactemail) . "'");
     if (edb_nrows($result) == 1) {
         $row = edb_row($result);
         $reqId = $row[0];
@@ -371,7 +371,7 @@ function createAnonymousReview() {
         $Conf->confirmMsg("Created a new anonymous review for paper #$prow->paperId. The review token is " . encode_token((int) $row[0]) . ".");
     }
 
-    $Conf->qx("unlock tables");
+    Dbl::qx_raw("unlock tables");
     $Conf->updateRevTokensSetting(true);
     return true;
 }
@@ -384,7 +384,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
     else if (trim($_REQUEST["email"]) == "" && trim($_REQUEST["name"]) == ""
              && $Me->allow_administer($prow)) {
         if (!createAnonymousReview())
-            $Conf->qx("unlock tables");
+            Dbl::qx_raw("unlock tables");
         unset($_REQUEST["reason"]);
         loadRows();
     } else if (trim($_REQUEST["email"]) == "")
@@ -400,7 +400,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
             unset($_REQUEST["reason"]);
             redirectSelf();
         } else
-            $Conf->qx("unlock tables");
+            Dbl::qx_raw("unlock tables");
         loadRows();
     }
 }
@@ -409,16 +409,16 @@ if (isset($_REQUEST["add"]) && check_post()) {
 // deny review request
 if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
     && ($email = trim(defval($_REQUEST, "email", "")))) {
-    $Conf->qe("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
+    Dbl::qe_raw("lock tables ReviewRequest write, ContactInfo read, PaperConflict read, PaperReview read, PaperReviewRefused write");
     // Need to be careful and not expose inappropriate information:
     // this email comes from the chair, who can see all, but goes to a PC
     // member, who can see less.
-    $result = $Conf->qe("select requestedBy from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'");
+    $result = Dbl::qe_raw("select requestedBy from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'");
     if (($row = edb_row($result))) {
         $Requester = Contact::find_by_id($row[0]);
-        $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'");
+        Dbl::qe_raw("delete from ReviewRequest where paperId=$prow->paperId and email='" . sqlq($email) . "'");
         if (($reqId = Contact::id_by_email($email)) > 0)
-            $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')");
+            Dbl::qe_raw("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')");
 
         // send anticonfirmation email
         HotCRPMailer::send_to($Requester, "@denyreviewrequest", $prow,
@@ -427,7 +427,7 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
         $Conf->confirmMsg("Proposed reviewer denied.");
     } else
         $Conf->errorMsg("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
-    $Conf->qx("unlock tables");
+    Dbl::qx_raw("unlock tables");
     unset($_REQUEST['email']);
     unset($_REQUEST['name']);
 }
@@ -475,7 +475,7 @@ if ($Conf->setting("extrev_chairreq")) {
         $q = "";
     else
         $q = " and requestedBy=$Me->contactId";
-    $result = $Conf->qe("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId" . $q);
+    $result = Dbl::qe_raw("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId" . $q);
     $proposals = edb_orows($result);
 }
 $t = reviewTable($prow, $rrows, null, null, "assign", $proposals);
@@ -487,7 +487,7 @@ if ($t != "")
 // PC assignments
 if ($Me->can_administer($prow)) {
     $expertise = $Conf->sversion >= 69 ? "expertise" : "NULL";
-    $result = $Conf->qe("select ContactInfo.contactId,
+    $result = Dbl::qe_raw("select ContactInfo.contactId,
         PaperConflict.conflictType,
         PaperReview.reviewType,
         coalesce(preference, 0) as reviewerPreference,

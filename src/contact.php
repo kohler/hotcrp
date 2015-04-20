@@ -515,7 +515,7 @@ class Contact {
     function apply_capability_text($text) {
         global $Conf;
         if (preg_match(',\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z,', $text, $m)
-            && ($result = $Conf->ql("select paperId, capVersion from Paper where paperId=$m[2]"))
+            && ($result = Dbl::ql("select paperId, capVersion from Paper where paperId=$m[2]"))
             && ($row = edb_orow($result))) {
             $rowcap = $Conf->capability_text($row, $m[3]);
             $text = substr($text, strlen($m[1]));

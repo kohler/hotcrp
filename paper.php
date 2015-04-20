@@ -148,7 +148,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
             $q = array();
             foreach (TagInfo::vote_tags() as $t => $v)
                 $q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
-            $Conf->qe("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
+            Dbl::qe_raw("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
         }
 
         $Me->log_activity("Withdrew", $prow->paperId);
@@ -159,9 +159,9 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$prow->paperId");
-        $Conf->qe("update PaperReview set reviewNeedsSubmit=1 where paperId=$prow->paperId and reviewSubmitted is null");
-        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
-        $Conf->qe("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
+        Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=1 where paperId=$prow->paperId and reviewSubmitted is null");
+        Dbl::qe_raw("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
+        Dbl::qe_raw("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
         $Conf->updatePapersubSetting(true);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
@@ -586,7 +586,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
         $error = false;
         $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
         foreach ($tables as $table) {
-            $result = $Conf->qe("delete from $table where paperId=$prow->paperId");
+            $result = Dbl::qe_raw("delete from $table where paperId=$prow->paperId");
             $error |= ($result == false);
         }
         if (!$error) {

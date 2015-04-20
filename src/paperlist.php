@@ -631,7 +631,7 @@ class PaperList extends BaseList {
         // prepare review query (see also search > getaction == "reviewers")
         $this->review_list = array();
         if (isset($this->query_options["reviewList"])) {
-            $result = $Conf->qe("select Paper.paperId, reviewId, reviewType,
+            $result = Dbl::qe_raw("select Paper.paperId, reviewId, reviewType,
                 reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
                 reviewOrdinal,
                 PaperReview.contactId, lastName, firstName, email
@@ -652,8 +652,8 @@ class PaperList extends BaseList {
                 $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
                 $pc->topicInterest = array();
             }
-            $result = $Conf->qe("select contactId, topicId, " . $Conf->query_topic_interest()
-                                . " from TopicInterest");
+            $result = Dbl::qe_raw("select contactId, topicId, " . $Conf->query_topic_interest()
+                                  . " from TopicInterest");
             while (($row = edb_row($result)))
                 $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
         }
@@ -665,7 +665,7 @@ class PaperList extends BaseList {
         $pq = $Conf->paperQuery($this->contact, $this->query_options);
 
         // make query
-        $result = $Conf->qe($pq);
+        $result = Dbl::qe_raw($pq);
         if (!$result)
             return null;
 
@@ -1021,7 +1021,7 @@ class PaperList extends BaseList {
                         if ($this->contact->can_view_tags(null)
                             && ($tagger = new Tagger)
                             && ($tag = $tagger->check($s->type))
-                            && ($result = $Conf->qe("select paperId from PaperTag where tag='" . sqlq($tag) . "' limit 1"))
+                            && ($result = Dbl::qe("select paperId from PaperTag where tag=? limit 1", $tag))
                             && edb_nrows($result))
                             $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”. Did you mean “sort:#" . htmlspecialchars($s->type) . "”?");
                         else
