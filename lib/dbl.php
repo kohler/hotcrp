@@ -13,6 +13,7 @@ class Dbl {
     static public $logged_errors = 0;
     static public $default_dblink;
     static private $error_handler = "Dbl::default_error_handler";
+    static public $check_warnings = true;
 
     static function make_dsn($opt) {
         if (isset($opt["dsn"])) {
@@ -199,6 +200,13 @@ class Dbl {
                 call_user_func(self::$error_handler, $dblink, $qstr);
             else
                 error_log(caller_landmark() . ": database error: " . $dblink->error . " in $qstr");
+        }
+        if (self::$check_warnings && !($flags & self::F_ALLOWERROR)
+            && $dblink->warning_count) {
+            $wresult = $dblink->query("show warnings");
+            while ($wresult && ($wrow = $wresult->fetch_row()))
+                error_log(caller_landmark() . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
+            $wresult && $wresult->close();
         }
         return $result;
     }
