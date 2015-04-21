@@ -2,11 +2,9 @@ language: php
 before_script:
   - lib/createdb.sh -u root -c test/options.php --batch
 php:
-  - 5.3
   - 5.4
   - 5.5
   - 5.6
-  - hhvm
 script:
   - php -d error_reporting=E_ALL test/test01.php
   - php -d error_reporting=E_ALL test/test02.php
