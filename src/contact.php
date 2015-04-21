@@ -1580,7 +1580,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_paper($prow, $pdf = false) {
+    function can_view_paper(PaperInfo $prow, $pdf = false) {
         global $Conf;
         $rights = $this->rights($prow, "any");
         return $this->privChair
@@ -1592,7 +1592,7 @@ class Contact {
                 && (!$pdf || $Conf->check_tracks($prow, $this, "viewpdf")));
     }
 
-    function perm_view_paper($prow, $pdf = false) {
+    function perm_view_paper(PaperInfo $prow, $pdf = false) {
         global $Conf;
         if ($this->can_view_paper($prow, $pdf))
             return null;
@@ -1619,15 +1619,15 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_pdf($prow) {
+    function can_view_pdf(PaperInfo $prow) {
         return $this->can_view_paper($prow, true);
     }
 
-    function perm_view_pdf($prow) {
+    function perm_view_pdf(PaperInfo $prow) {
         return $this->perm_view_paper($prow, true);
     }
 
-    function can_view_paper_manager($prow) {
+    function can_view_paper_manager(PaperInfo $prow) {
         global $Opt;
         if ($this->privChair)
             return true;
@@ -1638,7 +1638,7 @@ class Contact {
             || ($rights->potential_reviewer && !@$Opt["hideManager"]);
     }
 
-    function can_view_lead($prow, $forceShow = null) {
+    function can_view_lead(PaperInfo $prow, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer
@@ -1649,13 +1649,13 @@ class Contact {
             return $this->privChair || $this->isPC;
     }
 
-    function can_view_shepherd($prow, $forceShow = null) {
+    function can_view_shepherd(PaperInfo $prow, $forceShow = null) {
         return $this->act_pc($prow, $forceShow)
             || $this->can_view_decision($prow, $forceShow);
     }
 
     /* NB caller must check can_view_paper() */
-    function can_view_authors($prow, $forceShow = null) {
+    function can_view_authors(PaperInfo $prow, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
         return ($rights->nonblind
@@ -1672,7 +1672,7 @@ class Contact {
                 : $rights->act_author_view);
     }
 
-    function can_view_pc_conflicts($prow, $forceShow = null) {
+    function can_view_pc_conflicts(PaperInfo $prow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->act_author_view
@@ -1680,7 +1680,7 @@ class Contact {
                 && $this->can_view_authors($prow, $forceShow));
     }
 
-    function can_view_paper_option($prow, $opt, $forceShow = null) {
+    function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         global $Conf;
         if (!is_object($opt) && !($opt = PaperOption::find($opt)))
             return false;
@@ -1720,7 +1720,7 @@ class Contact {
                 && $Conf->setting("pcrev_editdelegate"));
     }
 
-    public function can_count_review($prow, $rrow, $forceShow) {
+    public function can_count_review(PaperInfo $prow, $rrow, $forceShow) {
         if ($rrow && $rrow->reviewNeedsSubmit <= 0
             && $rrow->reviewSubmitted <= 0)
             return false;
@@ -1731,7 +1731,7 @@ class Contact {
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
-    public static function can_some_author_view_submitted_review($prow) {
+    public static function can_some_author_view_submitted_review(PaperInfo $prow) {
         global $Conf;
         if ($Conf->au_seerev == Conference::AUSEEREV_TAGS)
             return $prow->has_any_tag($Conf->tag_au_seerev);
@@ -1739,7 +1739,7 @@ class Contact {
             return $Conf->au_seerev != 0;
     }
 
-    public function can_author_view_submitted_review($prow) {
+    public function can_author_view_submitted_review(PaperInfo $prow) {
         global $Conf;
         return $Conf->au_seerev == Conference::AUSEEREV_YES
             || ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
@@ -1749,7 +1749,7 @@ class Contact {
                 && $prow->has_any_tag($Conf->tag_au_seerev));
     }
 
-    public function can_view_review($prow, $rrow, $forceShow) {
+    public function can_view_review(PaperInfo $prow, $rrow, $forceShow) {
         global $Conf;
         if (is_int($rrow)) {
             $viewscore = $rrow;
@@ -1790,7 +1790,7 @@ class Contact {
                     || $prow->leadContactId == $this->contactId));
     }
 
-    function perm_view_review($prow, $rrow, $forceShow) {
+    function perm_view_review(PaperInfo $prow, $rrow, $forceShow) {
         global $Conf;
         if ($this->can_view_review($prow, $rrow, $forceShow))
             return null;
@@ -1836,7 +1836,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_review_identity($prow, $rrow, $forceShow = null) {
+    function can_view_review_identity(PaperInfo $prow, $rrow, $forceShow = null) {
         global $Conf;
         // If $prow === true or null, be permissive: return true
         // iff there could exist a paper for which can_view_review_identity
@@ -1873,21 +1873,21 @@ class Contact {
                 && (!$Conf->setting("pc_seeblindrev") || !$Conf->is_review_blind(null)));
     }
 
-    function can_view_review_round($prow, $rrow, $forceShow = null) {
+    function can_view_review_round(PaperInfo $prow, $rrow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
             || $rights->allow_pc
             || $rights->allow_review;
     }
 
-    function can_view_review_time($prow, $rrow, $forceShow = null) {
+    function can_view_review_time(PaperInfo $prow, $rrow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return !$rights->act_author_view
             || ($rrow && @$rrow->reviewAuthorSeen
                 && $rrow->reviewAuthorSeen <= $rrow->reviewModified);
     }
 
-    function can_request_review($prow, $check_time) {
+    function can_request_review(PaperInfo $prow, $check_time) {
         global $Conf;
         $rights = $this->rights($prow);
         return ($rights->review_type >= REVIEW_PC
@@ -1897,7 +1897,7 @@ class Contact {
                 || $this->override_deadlines($rights));
     }
 
-    function perm_request_review($prow, $check_time) {
+    function perm_request_review(PaperInfo $prow, $check_time) {
         global $Conf;
         if ($this->can_request_review($prow, $check_time))
             return null;
@@ -1921,7 +1921,7 @@ class Contact {
             && $Conf->check_any_tracks($this, "unassrev");
     }
 
-    function timeReview($prow, $rrow) {
+    function timeReview(PaperInfo $prow, $rrow) {
         global $Conf;
         $rights = $this->rights($prow);
         if ($rights->review_type > 0
@@ -1939,7 +1939,7 @@ class Contact {
             return false;
     }
 
-    function can_become_reviewer_ignore_conflict($prow) {
+    function can_become_reviewer_ignore_conflict(PaperInfo $prow) {
         global $Conf;
         if (!$prow)
             return $this->isPC
@@ -1953,7 +1953,7 @@ class Contact {
                 || $Conf->check_tracks($prow, $this, "unassrev"));
     }
 
-    function can_accept_review_assignment_ignore_conflict($prow) {
+    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow) {
         global $Conf;
         if (!$prow)
             return $this->isPC && $Conf->check_all_tracks($this, "assrev");
@@ -1964,7 +1964,7 @@ class Contact {
                 || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
-    function can_accept_review_assignment($prow) {
+    function can_accept_review_assignment(PaperInfo $prow) {
         global $Conf;
         $rights = $this->rights($prow);
         return $rights->allow_pc
@@ -1973,7 +1973,7 @@ class Contact {
                 || $Conf->check_tracks($prow, $this, "assrev"));
     }
 
-    private function review_rights($prow, $rrow) {
+    private function review_rights(PaperInfo $prow, $rrow) {
         $rights = $this->rights($prow);
         $rrow_cid = 0;
         if ($rrow) {
@@ -1994,7 +1994,7 @@ class Contact {
             return $rights->review_type > 0;
     }
 
-    function can_review($prow, $rrow, $submit = false) {
+    function can_review(PaperInfo $prow, $rrow, $submit = false) {
         global $Conf;
         assert(!$rrow || $rrow->paperId == $prow->paperId);
         $rights = $this->rights($prow);
@@ -2012,7 +2012,7 @@ class Contact {
                 && (!$submit || $this->override_deadlines($rights)));
     }
 
-    function perm_review($prow, $rrow, $submit = false) {
+    function perm_review(PaperInfo $prow, $rrow, $submit = false) {
         if ($this->can_review($prow, $rrow, $submit))
             return null;
         $rights = $this->rights($prow);
@@ -2053,7 +2053,7 @@ class Contact {
         return $whyNot;
     }
 
-    function perm_submit_review($prow, $rrow) {
+    function perm_submit_review(PaperInfo $prow, $rrow) {
         return $this->perm_review($prow, $rrow, true);
     }
 
@@ -2067,7 +2067,7 @@ class Contact {
             return true;
     }
 
-    function can_view_review_ratings($prow, $rrow) {
+    function can_view_review_ratings(PaperInfo $prow, $rrow) {
         global $Conf;
         $rs = $Conf->setting("rev_ratings");
         if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
@@ -2077,13 +2077,13 @@ class Contact {
             && ($rights->allow_pc || $rights->allow_review);
     }
 
-    function can_rate_review($prow, $rrow) {
+    function can_rate_review(PaperInfo $prow, $rrow) {
         return $this->can_view_review_ratings($prow, $rrow)
             && !$this->is_my_review($rrow);
     }
 
 
-    function can_comment($prow, $crow, $submit = false) {
+    function can_comment(PaperInfo $prow, $crow, $submit = false) {
         global $Conf;
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->can_respond($prow, $crow, $submit);
@@ -2103,11 +2103,11 @@ class Contact {
                 || $rights->allow_administer);
     }
 
-    function can_submit_comment($prow, $crow) {
+    function can_submit_comment(PaperInfo $prow, $crow) {
         return $this->can_comment($prow, $crow, true);
     }
 
-    function perm_comment($prow, $crow, $submit = false) {
+    function perm_comment(PaperInfo $prow, $crow, $submit = false) {
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->perm_respond($prow, $crow, $submit);
         if ($this->can_comment($prow, $crow, $submit))
@@ -2136,11 +2136,11 @@ class Contact {
         return $whyNot;
     }
 
-    function perm_submit_comment($prow, $crow) {
+    function perm_submit_comment(PaperInfo $prow, $crow) {
         return $this->perm_comment($prow, $crow, true);
     }
 
-    function can_respond($prow, $crow, $submit = false) {
+    function can_respond(PaperInfo $prow, $crow, $submit = false) {
         global $Conf;
         $rights = $this->rights($prow);
         return $prow->timeSubmitted > 0
@@ -2153,7 +2153,7 @@ class Contact {
                 || $Conf->time_author_respond($crow ? (int) $crow->commentRound : null));
     }
 
-    function perm_respond($prow, $crow, $submit = false) {
+    function perm_respond(PaperInfo $prow, $crow, $submit = false) {
         if ($this->can_respond($prow, $crow, $submit))
             return null;
         $rights = $this->rights($prow);
@@ -2177,7 +2177,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_comment($prow, $crow, $forceShow) {
+    function can_view_comment(PaperInfo $prow, $crow, $forceShow) {
         global $Conf;
         $ctype = $crow ? $crow->commentType : COMMENTTYPE_AUTHOR;
         $crow_contactId = 0;
@@ -2220,7 +2220,7 @@ class Contact {
                          . " or MyPaperReview.reviewId is not null)");
     }
 
-    function can_view_comment_identity($prow, $crow, $forceShow) {
+    function can_view_comment_identity(PaperInfo $prow, $crow, $forceShow) {
         global $Conf;
         if ($crow && ($crow->commentType & COMMENTTYPE_RESPONSE))
             return $this->can_view_authors($prow, $forceShow);
@@ -2239,7 +2239,7 @@ class Contact {
     }
 
 
-    function can_view_decision($prow, $forceShow = null) {
+    function can_view_decision(PaperInfo $prow, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
         return $rights->can_administer
@@ -2252,12 +2252,12 @@ class Contact {
                 && $Conf->timeReviewerViewDecision());
     }
 
-    function can_set_decision($prow) {
+    function can_set_decision(PaperInfo $prow) {
         return $this->can_administer($prow);
     }
 
     // A review field is visible only if viewScore > view_score_bound.
-    function view_score_bound($prow, $rrow, $forceShow = null) {
+    function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
         // Returns the maximum authorView score for an invisible review
         // field.  Values for authorView are:
         //   VIEWSCORE_ADMINONLY     -2   admin can view
@@ -2305,37 +2305,7 @@ class Contact {
             return VIEWSCORE_MAX + 1;
     }
 
-    function viewReviewFieldsScore($prow, $rrow) {
-        // (!$prow && !$rrow) ==> return best case scores that can be seen.
-        // (!$prow &&  $rrow) ==> return worst case scores that can be seen.
-        // ** See also can_view_review.
-        $rights = $prow ? $this->rights($prow) : null;
-
-        // chair can see everything
-        if ($rights ? $rights->can_administer : $this->privChair)
-            return VIEWSCORE_ADMINONLY - 1;
-
-        // reviewer can see their review contents
-        if ($prow && $rrow && $this->is_my_review($rrow))
-            return VIEWSCORE_REVIEWERONLY - 1;
-
-        // author can see author information
-        if ($rights ? $rights->act_author_view : !$this->is_reviewer())
-            return VIEWSCORE_AUTHOR - 1;
-
-        // if you can't review this paper you can't see anything
-        if ($rights && !$rights->allow_review)
-            return 10000;
-
-        // in general, can see information visible for all reviewers
-        // but !$rrow => return best case: all information they entered
-        if ($rrow)
-            return VIEWSCORE_PC - 1;
-        else
-            return VIEWSCORE_REVIEWERONLY - 1;
-    }
-
-    function can_view_tags($prow, $forceShow = null) {
+    function can_view_tags(PaperInfo $prow = null, $forceShow = null) {
         // see also PaperActions::all_tags
         global $Conf;
         if (!$prow)
@@ -2345,7 +2315,7 @@ class Contact {
             || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
     }
 
-    function can_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
+    function can_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer || $forceShow === ALWAYS_OVERRIDE)
@@ -2369,7 +2339,7 @@ class Contact {
         }
     }
 
-    function perm_change_tag($prow, $tag, $previndex, $index, $forceShow = null) {
+    function perm_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
         global $Conf;
         if ($this->can_change_tag($prow, $tag, $previndex, $index, $forceShow))
             return null;
@@ -2405,15 +2375,15 @@ class Contact {
         return $whyNot;
     }
 
-    function can_change_some_tag($prow, $forceShow = null) {
+    function can_change_some_tag(PaperInfo $prow, $forceShow = null) {
         return $this->can_change_tag($prow, null, null, null, $forceShow);
     }
 
-    function perm_change_some_tag($prow, $forceShow = null) {
+    function perm_change_some_tag(PaperInfo $prow, $forceShow = null) {
         return $this->perm_change_tag($prow, null, null, null, $forceShow);
     }
 
-    function can_view_reviewer_tags($prow) {
+    function can_view_reviewer_tags(PaperInfo $prow) {
         return $this->act_pc($prow);
     }
 
