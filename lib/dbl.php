@@ -40,7 +40,7 @@ class Dbl {
     static function connect_dsn($dsn) {
         global $Opt;
 
-        $dbhost = $dbuser = $dbpass = $dbname = $dbport = $dbsocket = null;
+        $dbhost = $dbuser = $dbpass = $dbname = $dbport = null;
         if ($dsn && preg_match('|^mysql://([^:@/]*)/(.*)|', $dsn, $m)) {
             $dbhost = urldecode($m[1]);
             $dbname = urldecode($m[2]);
@@ -57,23 +57,22 @@ class Dbl {
         if (!$dbname || $dbname == "mysql" || substr($dbname, -7) === "_schema")
             return array(null, null);
 
-        if ($dbhost === null)
-            $dbhost = ini_get("mysqli.default_host");
-        if ($dbuser === null)
-            $dbuser = ini_get("mysqli.default_user");
+        $dbsock = @$Opt["dbSocket"];
+        if ($dbsock && $dbport === null)
+            $dbport = ini_get("mysqli.default_port");
         if ($dbpass === null)
             $dbpass = ini_get("mysqli.default_pw");
-        if ($dbport === null)
-            $dbport = ini_get("mysqli.default_port");
-        if ($dbsocket === null && @$Opt["dbSocket"])
-            $dbsocket = $Opt["dbSocket"];
-        else if ($dbsocket === null)
-            $dbsocket = ini_get("mysqli.default_socket");
+        if ($dbuser === null)
+            $dbuser = ini_get("mysqli.default_user");
+        if ($dbhost === null)
+            $dbhost = ini_get("mysqli.default_host");
 
-        if ($dbsocket)
-            $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsocket);
-        else
+        if ($dbsock)
+            $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsock);
+        else if ($dbport !== null)
             $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport);
+        else
+            $dblink = new mysqli($dbhost, $dbuser, $dbpass);
 
         if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname)) {
             $dblink->set_charset("utf8");
