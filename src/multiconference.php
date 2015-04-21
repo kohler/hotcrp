@@ -97,6 +97,7 @@ class Multiconference {
     }
 
     static function fail_bad_database() {
+        global $Conf;
         $errors = array();
         if (@$Opt["multiconference"] && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
