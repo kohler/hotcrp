@@ -6,7 +6,7 @@
 global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 
-require_once("$ConfSitePATH/test/testsetup.php");
+require_once("$ConfSitePATH/test/setup.php");
 
 $s3d = new S3Document(array("key" => "AKIAIOSFODNN7EXAMPLE",
                             "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",

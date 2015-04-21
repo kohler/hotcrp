@@ -107,7 +107,7 @@ class Multiconference {
             $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
             $errors[] = "Error: Unable to connect to database " . Dbl::sanitize_dsn($Conf->dsn);
             if (defined("HOTCRP_TESTHARNESS"))
-                $errors[] = "You may need to run `lib/createdb.sh -c test/testoptions.php` to create the database.";
+                $errors[] = "You may need to run `lib/createdb.sh -c test/options.php` to create the database.";
         }
         self::fail_message($errors);
     }

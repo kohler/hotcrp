@@ -1,5 +1,5 @@
 <?php
-// testoptions.php -- HotCRP conference options for test databases
+// test/options.php -- HotCRP conference options for test databases
 
 global $Opt;
 $Opt["dbName"] = "hotcrp_testdb";

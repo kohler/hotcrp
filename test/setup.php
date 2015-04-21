@@ -1,11 +1,11 @@
 <?php
-// testsetup.php -- HotCRP helper file to initialize tests
+// test/setup.php -- HotCRP helper file to initialize tests
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
-define("HOTCRP_OPTIONS", "$ConfSitePATH/test/testoptions.php");
+define("HOTCRP_OPTIONS", "$ConfSitePATH/test/options.php");
 define("HOTCRP_TESTHARNESS", true);
 require_once("$ConfSitePATH/src/init.php");
 $Opt["disablePrintEmail"] = true;
@@ -25,7 +25,7 @@ $Admin = Contact::find_by_email("chair@_.com", array("name" => "Jane Chair",
 $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
 // Load data.
-$json = json_decode(file_get_contents("$ConfSitePATH/test/testdb.json"));
+$json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
 if (!$json)
     die("* test/testdb.json error: " . json_last_error_msg() . "\n");
 foreach ($json->contacts as $c) {

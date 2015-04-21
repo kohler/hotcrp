@@ -1,6 +1,6 @@
 language: php
 before_script:
-  - lib/createdb.sh -u root -c test/testoptions.php --batch
+  - lib/createdb.sh -u root -c test/options.php --batch
 php:
   - 5.3
   - 5.4
