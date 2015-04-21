@@ -1,3 +1,4 @@
+language: php
 before_script:
   - lib/createdb.sh -u root -c test/testoptions.php --batch
 php:
