@@ -70,7 +70,11 @@ class Dbl {
         else if ($dbsocket === null)
             $dbsocket = ini_get("mysqli.default_socket");
 
-        $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsocket);
+        if ($dbsocket)
+            $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport, $dbsocket);
+        else
+            $dblink = new mysqli($dbhost, $dbuser, $dbpass, "", $dbport);
+
         if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname)) {
             $dblink->set_charset("utf8");
             // The necessity of the following line is explosively terrible
