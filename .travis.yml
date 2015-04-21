@@ -7,4 +7,6 @@ php:
   - 5.5
   - 5.6
   - hhvm
-script: for i in test/test??.php; do php $i; done
+script:
+  - php -d error_reporting=E_ALL test/test01.php
+  - php -d error_reporting=E_ALL test/test02.php

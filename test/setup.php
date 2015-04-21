@@ -42,20 +42,69 @@ $assignset = new AssignmentSet($Admin, true);
 $assignset->parse($json->assignments_1, null, null);
 $assignset->execute();
 
+class Xassert {
+    static public $n = 0;
+    static public $nsuccess = 0;
+    static public $nerror = 0;
+    static public $emap = array(E_ERROR => "PHP Fatal Error",
+                                E_WARNING => "PHP Warning",
+                                E_NOTICE => "PHP Notice",
+                                E_USER_ERROR => "PHP Error",
+                                E_USER_WARNING => "PHP Warning",
+                                E_USER_NOTICE => "PHP Notice");
+}
+
+function xassert_error_handler($errno, $emsg, $file, $line) {
+    if (error_reporting() || $errno != E_NOTICE) {
+        if (@Xassert::$emap[$errno])
+            $emsg = Xassert::$emap[$errno] . ":  $emsg";
+        else
+            $emsg = "PHP Message $errno:  $emsg";
+        fwrite(STDERR, "$emsg in $file on line $line\n");
+        ++Xassert::$nerror;
+    }
+}
+
+set_error_handler("xassert_error_handler");
+
 function assert_location() {
-    return caller_landmark(",^assert,");
+    return caller_landmark(",^x?assert,");
+}
+
+function xassert($x, $description = "") {
+    ++Xassert::$n;
+    if (!$x)
+        trigger_error("Assertion" . ($description ? " " . $description : "") . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    else
+        ++Xassert::$nsuccess;
+}
+
+function xassert_exit() {
+    $ok = Xassert::$nsuccess && Xassert::$nsuccess == Xassert::$n
+        && !Xassert::$nerror;
+    echo ($ok ? "* " : "! "), plural(Xassert::$nsuccess, "test"), " succeeded out of ", Xassert::$n, " tried.\n";
+    if (Xassert::$nerror
+        && ($nerror = Xassert::$nerror - (Xassert::$n - Xassert::$nsuccess)))
+        echo "! ", plural($nerror, "other error"), ".\n";
+    exit($ok ? 0 : 1);
 }
 
 function assert_eqq($a, $b) {
+    ++Xassert::$n;
     if ($a !== $b)
         trigger_error("Assertion " . var_export($a, true) . " === " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    else
+        ++Xassert::$nsuccess;
 }
 
 function assert_neqq($a, $b) {
+    ++Xassert::$n;
     if ($a === $b)
         trigger_error("Assertion " . var_export($a, true) . " !== " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
+    else
+        ++Xassert::$nsuccess;
 }
 
 function search_json($user, $text, $cols = "id") {
