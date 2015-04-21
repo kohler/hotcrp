@@ -1,0 +1,9 @@
+before_script:
+  - lib/createdb.sh -u root -c test/testoptions.php --batch
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+  - hhvm
+script: for i in test/test??.php; do php $i; done
