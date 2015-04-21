@@ -1,4 +1,4 @@
-HotCRP Conference Review Software
+HotCRP Conference Review Software [![Build Status](https://travis-ci.org/kohler/hotcrp.svg?branch=master)](https://travis-ci.org/kohler/hotcrp)
 =================================
 
 HotCRP is the best available software for managing the conference
