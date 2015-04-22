@@ -160,17 +160,13 @@ jQuery.fn.extend({
         var x;
         if (this[0] == window)
             x = {left: this.scrollLeft(), top: this.scrollTop()};
+        else if (this.length == 1 && this[0].getBoundingClientRect)
+            return this[0].getBoundingClientRect();
         else
             x = this.offset();
         if (x) {
-            if (this.length == 1 && this[0].getBBox) {
-                var s = this[0].getBBox();
-                x.width = s.width;
-                x.height = s.height;
-            } else {
-                x.width = outer ? this.outerWidth() : this.width();
-                x.height = outer ? this.outerHeight() : this.height();
-            }
+            x.width = outer ? this.outerWidth() : this.width();
+            x.height = outer ? this.outerHeight() : this.height();
             x.right = x.left + x.width;
             x.bottom = x.top + x.height;
         }
@@ -2454,7 +2450,7 @@ return function (content, bubopt) {
         show: function (x, y, reference) {
             if (reference && (reference = $(reference)) && reference.length
                 && reference[0] != window) {
-                var off = reference.offset();
+                var off = reference.geometry();
                 x += off.left, y += off.top;
             }
             return bubble.near({top: y, right: x, bottom: y, left: x, exact: true});

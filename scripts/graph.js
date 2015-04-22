@@ -274,7 +274,7 @@ function hotcrp_graphs_cdf(args) {
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             hubble.text(u.label)
                 .direction(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
-                .show(p[0], p[1], this);
+                .show(p[0] + margin.left, p[1], this);
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
