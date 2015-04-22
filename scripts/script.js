@@ -157,12 +157,17 @@ function log_jserror(errormsg, error, noconsole) {
 
 jQuery.fn.extend({
     geometry: function (outer) {
-        var x;
+        var x, d;
         if (this[0] == window)
             x = {left: this.scrollLeft(), top: this.scrollTop()};
-        else if (this.length == 1 && this[0].getBoundingClientRect)
-            return this[0].getBoundingClientRect();
-        else
+        else if (this.length == 1 && this[0].getBoundingClientRect) {
+            x = jQuery.extend({}, this[0].getBoundingClientRect());
+            if ((d = window.pageXOffset))
+                x.left += d, x.right += d;
+            if ((d = window.pageYOffset))
+                x.top += d, x.bottom += d;
+            return x;
+        } else
             x = this.offset();
         if (x) {
             x.width = outer ? this.outerWidth() : this.width();
@@ -210,23 +215,6 @@ function ordinal(n) {
         return n + ["st", "nd", "rd"][Math.floor(n - 1)];
     else
         return n + "th";
-}
-
-function eltPos(e) {
-    if (typeof e == "string")
-        e = $$(e);
-    var pos = {
-        top: 0, left: 0, width: e.offsetWidth, height: e.offsetHeight,
-        right: e.offsetWidth, bottom: e.offsetHeight
-    };
-    while (e) {
-        pos.left += e.offsetLeft;
-        pos.top += e.offsetTop;
-        pos.right += e.offsetLeft;
-        pos.bottom += e.offsetTop;
-        e = e.offsetParent;
-    }
-    return pos;
 }
 
 function event_stop(evt) {
