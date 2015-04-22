@@ -1836,7 +1836,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_view_review_identity(PaperInfo $prow, $rrow, $forceShow = null) {
+    function can_view_review_identity($prow, $rrow, $forceShow = null) {
         global $Conf;
         // If $prow === true or null, be permissive: return true
         // iff there could exist a paper for which can_view_review_identity
