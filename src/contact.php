@@ -1258,7 +1258,7 @@ class Contact {
 
     // permissions policies
 
-    private function rights($prow, $forceShow = null) {
+    private function rights(PaperInfo $prow, $forceShow = null) {
         global $Conf;
         $ci = $prow->contact_info($this);
 
@@ -1358,7 +1358,7 @@ class Contact {
             return isset($_REQUEST["override"]) && $_REQUEST["override"] > 0;
     }
 
-    public function allow_administer($prow) {
+    public function allow_administer(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_administer;
@@ -1376,7 +1376,7 @@ class Contact {
                 || ($acct && $this->contactId > 0 && $this->contactId == $acct->contactId);
     }
 
-    public function can_administer($prow, $forceShow = null) {
+    public function can_administer(PaperInfo $prow = null, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer;
@@ -1384,7 +1384,7 @@ class Contact {
             return $this->privChair;
     }
 
-    public function act_pc($prow, $forceShow = null) {
+    public function act_pc(PaperInfo $prow = null, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->allow_pc;
@@ -1392,12 +1392,12 @@ class Contact {
             return $this->privChair || $this->isPC;
     }
 
-    public function view_conflict_type($prow) {
+    public function view_conflict_type(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->view_conflict_type;
     }
 
-    public function actAuthorView($prow) {
+    public function actAuthorView(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->act_author_view;
     }
@@ -1425,12 +1425,12 @@ class Contact {
         return array("deadline" => "sub_reg", "override" => $this->privChair);
     }
 
-    function can_edit_paper($prow) {
+    function can_edit_paper(PaperInfo $prow) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_administer || $prow->has_author($this);
     }
 
-    function can_update_paper($prow, $override = null) {
+    function can_update_paper(PaperInfo $prow, $override = null) {
         global $Conf;
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
@@ -1440,7 +1440,7 @@ class Contact {
                 || $this->override_deadlines($rights, $override));
     }
 
-    function perm_update_paper($prow, $override = null) {
+    function perm_update_paper(PaperInfo $prow, $override = null) {
         global $Conf;
         if ($this->can_update_paper($prow, $override))
             return null;
@@ -1463,7 +1463,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_finalize_paper($prow) {
+    function can_finalize_paper(PaperInfo $prow) {
         global $Conf;
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
@@ -1471,7 +1471,7 @@ class Contact {
             && ($Conf->timeFinalizePaper($prow) || $this->override_deadlines($rights));
     }
 
-    function perm_finalize_paper($prow) {
+    function perm_finalize_paper(PaperInfo $prow) {
         global $Conf;
         if ($this->can_finalize_paper($prow))
             return null;
@@ -1492,14 +1492,14 @@ class Contact {
         return $whyNot;
     }
 
-    function can_withdraw_paper($prow, $override = null) {
+    function can_withdraw_paper(PaperInfo $prow, $override = null) {
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
             && $prow->timeWithdrawn <= 0
             && ($prow->outcome == 0 || $this->override_deadlines($rights, $override));
     }
 
-    function perm_withdraw_paper($prow, $override = null) {
+    function perm_withdraw_paper(PaperInfo $prow, $override = null) {
         if ($this->can_withdraw_paper($prow, $override))
             return null;
         $rights = $this->rights($prow, "any");
@@ -1517,7 +1517,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_revive_paper($prow) {
+    function can_revive_paper(PaperInfo $prow) {
         global $Conf;
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
@@ -1525,7 +1525,7 @@ class Contact {
             && ($Conf->timeUpdatePaper($prow) || $this->override_deadlines($rights));
     }
 
-    function perm_revive_paper($prow) {
+    function perm_revive_paper(PaperInfo $prow) {
         global $Conf;
         if ($this->can_revive_paper($prow))
             return null;
@@ -1544,7 +1544,7 @@ class Contact {
         return $whyNot;
     }
 
-    function can_submit_final_paper($prow, $override = null) {
+    function can_submit_final_paper(PaperInfo $prow, $override = null) {
         global $Conf;
         $rights = $this->rights($prow, "any");
         return $rights->allow_author
@@ -1555,7 +1555,7 @@ class Contact {
             && ($Conf->timeSubmitFinalPaper() || $this->override_deadlines($rights, $override));
     }
 
-    function perm_submit_final_paper($prow, $override = null) {
+    function perm_submit_final_paper(PaperInfo $prow, $override = null) {
         global $Conf;
         if ($this->can_submit_final_paper($prow, $override))
             return null;
@@ -1627,7 +1627,7 @@ class Contact {
         return $this->perm_view_paper($prow, true);
     }
 
-    function can_view_paper_manager(PaperInfo $prow) {
+    function can_view_paper_manager(PaperInfo $prow = null) {
         global $Opt;
         if ($this->privChair)
             return true;
@@ -1638,7 +1638,7 @@ class Contact {
             || ($rights->potential_reviewer && !@$Opt["hideManager"]);
     }
 
-    function can_view_lead(PaperInfo $prow, $forceShow = null) {
+    function can_view_lead(PaperInfo $prow = null, $forceShow = null) {
         if ($prow) {
             $rights = $this->rights($prow, $forceShow);
             return $rights->can_administer
@@ -1838,17 +1838,6 @@ class Contact {
 
     function can_view_review_identity($prow, $rrow, $forceShow = null) {
         global $Conf;
-        // If $prow === true or null, be permissive: return true
-        // iff there could exist a paper for which can_view_review_identity
-        // is true.
-        if (!$prow || $prow === true)
-            $prow = new PaperInfo
-                (array("conflictType" => 0, "managerContactId" => 0,
-                       "myReviewType" => ($this->is_reviewer() ? 1 : 0),
-                       "myReviewSubmitted" => 1,
-                       "myReviewNeedsSubmit" => 0,
-                       "paperId" => 1, "timeSubmitted" => 1,
-                       "paperBlind" => false, "outcome" => 1), $this);
         $rights = $this->rights($prow, $forceShow);
         // See also PaperInfo::can_view_review_identity_of.
         return $rights->can_administer
@@ -1864,6 +1853,17 @@ class Contact {
                 && ($rights->allow_pc
                     || $Conf->settings["extrev_view"] >= 2))
             || !$Conf->is_review_blind($rrow);
+    }
+
+    function can_view_some_review_identity($forceShow = null) {
+        $prow = new PaperInfo
+            (array("conflictType" => 0, "managerContactId" => 0,
+                   "myReviewType" => ($this->is_reviewer() ? 1 : 0),
+                   "myReviewSubmitted" => 1,
+                   "myReviewNeedsSubmit" => 0,
+                   "paperId" => 1, "timeSubmitted" => 1,
+                   "paperBlind" => false, "outcome" => 1), $this);
+        return $this->can_view_review_identity($prow, null, $forceShow);
     }
 
     function can_view_aggregated_review_identity() {

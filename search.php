@@ -1335,7 +1335,7 @@ if ($pl) {
         displayOptionCheckbox("rownum", 1, "Row numbers", array("onchange" => "fold('pl',!this.checked,'rownum')"));
 
     // Reviewers group
-    if ($Me->can_view_review_identity(true, null, null))
+    if ($Me->can_view_some_review_identity(true))
         displayOptionCheckbox("reviewers", 2, "Reviewers");
     if ($Me->privChair) {
         displayOptionCheckbox("allrevpref", 2, "Review preferences");

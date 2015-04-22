@@ -724,7 +724,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        if (!$pl->contact->can_view_review_identity(true, null, null))
+        if (!$pl->contact->can_view_some_review_identity(null))
             return false;
         if ($visible) {
             $queryOptions["reviewList"] = 1;
@@ -1263,7 +1263,7 @@ class LeadPaperColumn extends PaperColumn {
         parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
-        return $pl->contact->can_view_review_identity(true, null, true);
+        return $pl->contact->can_view_lead(null, true);
     }
     public function header($pl, $row, $ordinal) {
         return "Discussion lead";
