@@ -64,7 +64,7 @@ class Fexpr {
         return false;
     }
 
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         if ($this->op == "?:") {
             $t = $this->args[0]->view_score($contact);
             $tt = $this->args[1]->view_score($contact);
@@ -85,7 +85,7 @@ class Fexpr {
         return "($t !== null ? (bool) $t : null)";
     }
 
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $op = $this->op;
         if ($op == "?:") {
             $t = $state->_addltemp($this->args[0]->compile($state));
@@ -189,19 +189,19 @@ class ConstantFexpr extends Fexpr {
             $this->format = $format;
         }
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         return $this->x;
     }
 }
 
 class NegateFexpr extends Fexpr {
-    public function __construct($e) {
+    public function __construct(Fexpr $e) {
         parent::__construct("!", $e);
     }
     public function format() {
         return "bool";
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
         return "!$t";
     }
@@ -209,14 +209,14 @@ class NegateFexpr extends Fexpr {
 
 class InFexpr extends Fexpr {
     private $values;
-    public function __construct($e, $values) {
+    public function __construct(Fexpr $e, array $values) {
         parent::__construct("in", $e);
         $this->values = $values;
     }
     public function format() {
         return "bool";
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
         return "(array_search($t, array(" . join(", ", $this->values) . ")) !== false)";
     }
@@ -224,17 +224,17 @@ class InFexpr extends Fexpr {
 
 class ScoreFexpr extends Fexpr {
     private $field;
-    public function __construct($field) {
+    public function __construct(ReviewField $field) {
         parent::__construct("rf");
         $this->field = $field;
     }
     public function format() {
         return $this->field;
     }
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         return $this->field->view_score;
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         if ($this->field->view_score <= $state->contact->permissive_view_score_bound())
             return "null";
         $fid = $this->field->id;
@@ -261,10 +261,10 @@ class PrefFexpr extends Fexpr {
     public function format() {
         return $this->isexprtise ? "revprefexp" : null;
     }
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         if (!$state->contact->is_reviewer())
             return "null";
         $state->queryOptions["allReviewerPreference"] = true;
@@ -289,12 +289,12 @@ class TagFexpr extends Fexpr {
     public function format() {
         return $this->isvalue ? null : "bool";
     }
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         $tagger = new Tagger($contact);
         $e_tag = $tagger->check($this->tag);
         return $tagger->view_score($e_tag, $contact);
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $state->queryOptions["tags"] = true;
         $tagger = new Tagger($state->contact);
         $e_tag = $tagger->check($this->tag);
@@ -310,13 +310,13 @@ class TagFexpr extends Fexpr {
 
 class OptionFexpr extends Fexpr {
     private $option;
-    public function __construct($option) {
+    public function __construct(PaperOption $option) {
         $this->option = $option;
     }
     public function format() {
         return $this->option->type === "checkbox" ? "bool" : $this->option;
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $id = $this->option->id;
         $ovar = "\$opt$id";
         if ($state->check_gvar($ovar)) {
@@ -342,7 +342,7 @@ class DecisionFexpr extends Fexpr {
         return $Conf->timeAuthorViewDecision() ? VIEWSCORE_AUTHOR :
             $Conf->timePCViewDecision(false) ? VIEWSCORE_PC : VIEWSCORE_ADMINONLY;
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         if ($state->check_gvar('$decision'))
             $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
         return '$decision';
@@ -350,10 +350,10 @@ class DecisionFexpr extends Fexpr {
 }
 
 class TopicScoreFexpr extends Fexpr {
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $state->datatype |= Fexpr::APCCANREV;
         $state->queryOptions["topics"] = true;
         if ($state->looptype == self::LNONE)
@@ -369,10 +369,10 @@ class RevtypeFexpr extends Fexpr {
     public function format() {
         return "revtype";
     }
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
     }
-    public function compile($state) {
+    public function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
             $rt = $state->define_gvar("myrevtype", "\$prow->review_type(\$contact)");
@@ -391,7 +391,7 @@ class RevtypeFexpr extends Fexpr {
     }
 }
 
-class FormulaCompileState {
+class FormulaCompiler {
     public $contact;
     private $gvar = array();
     public $gstmt = array();
@@ -404,7 +404,7 @@ class FormulaCompileState {
     public $queryOptions = array();
     private $_stack = array();
 
-    function __construct($contact) {
+    function __construct(Contact $contact) {
         $this->contact = $contact;
     }
 
@@ -490,7 +490,7 @@ class FormulaCompileState {
         else
             return $this->_add_review_prefs();
     }
-    public function _compile_loop($initial_value, $combiner, $e) {
+    public function _compile_loop($initial_value, $combiner, Fexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
@@ -515,7 +515,7 @@ class FormulaCompileState {
         return $t_result;
     }
 
-    public function _compile_my($e) {
+    public function _compile_my(Fexpr $e) {
         $p = $this->_push();
         $this->looptype = Fexpr::LMY;
         $t = $this->_addltemp($e->compile($this));
@@ -597,7 +597,7 @@ class Formula {
         } else if (($x = $e->resolve_constants()))
             $this->_error_html[] = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
         else {
-            $state = new FormulaCompileState($Me);
+            $state = new FormulaCompiler($Me);
             $e->compile($state);
             if ($state->datatype && !$this->allowReview)
                 $this->_error_html[] = "Illegal formula: can’t return a raw score, use an aggregate function.";
@@ -803,10 +803,10 @@ class Formula {
     }
 
 
-    public function compile_function($contact) {
+    public function compile_function(Contact $contact) {
         global $Conf;
         $this->check();
-        $state = new FormulaCompileState($contact);
+        $state = new FormulaCompiler($contact);
         $expr = $this->_parse->compile($state);
 
         $loop = "";
@@ -852,7 +852,7 @@ class Formula {
 
     public function add_query_options(&$queryOptions, $contact) {
         $this->check();
-        $state = new FormulaCompileState($contact);
+        $state = new FormulaCompiler($contact);
         $state->queryOptions =& $queryOptions;
         $this->_parse->compile($state);
         if ($this->needsReview)
@@ -864,7 +864,7 @@ class Formula {
         return $this->authorView;
     }
 
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         return $this->check() ? $this->_parse->view_score($contact) : VIEWSCORE_FALSE;
     }
 
