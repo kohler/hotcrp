@@ -746,16 +746,17 @@ class ReviewForm {
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
 
         // notification
+        $notification_bound = $now - 10800;
         $notify = $notify_author = false;
         if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
             $q[] = "reviewModified=" . $now;
             // do not notify on updates within 3 hours
             if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
                 if (!$rrow || !$rrow->reviewNotified
-                    || $rrow->reviewNotified + 10800 < $now)
+                    || $rrow->reviewNotified < $notification_bound)
                     $q[] = $notify = "reviewNotified=" . $now;
                 if ((!$rrow || !$rrow->reviewAuthorNotified
-                     || $rrow->reviewAuthorNotified + 10800 < $now)
+                     || $rrow->reviewAuthorNotified < $notification_bound)
                     && $diff_view_score >= VIEWSCORE_AUTHOR
                     && Contact::can_some_author_view_submitted_review($prow))
                     $q[] = $notify_author = "reviewAuthorNotified=" . $now;
