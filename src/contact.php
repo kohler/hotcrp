@@ -1939,7 +1939,7 @@ class Contact {
             return false;
     }
 
-    function can_become_reviewer_ignore_conflict(PaperInfo $prow) {
+    function can_become_reviewer_ignore_conflict(PaperInfo $prow = null) {
         global $Conf;
         if (!$prow)
             return $this->isPC
@@ -1953,7 +1953,7 @@ class Contact {
                 || $Conf->check_tracks($prow, $this, "unassrev"));
     }
 
-    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow) {
+    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
         global $Conf;
         if (!$prow)
             return $this->isPC && $Conf->check_all_tracks($this, "assrev");
