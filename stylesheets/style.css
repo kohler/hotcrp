@@ -2825,50 +2825,56 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	stroke-width: 0.5px;
 }
 
-.gdot {
+.gdot, .gbar {
 	stroke: rgba(70, 130, 180, 0.8);
 	fill: rgba(70, 130, 180, 0.2);
 }
-.gcdf.redtag, .gdot.redtag {
+.gcdf.whitetag, .gdot.whitetag, .gbar.whitetag {
+	stroke: rgba(255, 255, 255, 0.8);
+}
+.gdot.whitetag, .gbar.whitetag {
+	fill: rgba(255, 255, 255, 0.2);
+}
+.gcdf.redtag, .gdot.redtag, .gbar.redtag {
 	stroke: rgba(245, 51, 51, 0.8);
 }
-.gdot.redtag {
+.gdot.redtag, .gbar.redtag {
 	fill: rgba(245, 51, 51, 0.2);
 }
-.gcdf.orangetag, .gdot.orangetag {
+.gcdf.orangetag, .gdot.orangetag, .gbar.orangetag {
 	stroke: rgba(214, 136, 0, 0.8);
 }
-.gdot.orangetag {
+.gdot.orangetag, .gbar.orangetag {
 	fill: rgba(214, 136, 0, 0.2);
 }
-.gcdf.yellowtag, .gdot.yellowtag {
+.gcdf.yellowtag, .gdot.yellowtag, .gbar.yellowtag {
 	stroke: rgba(191, 186, 38, 0.8);
 }
-.gdot.yellowtag {
+.gdot.yellowtag, .gbar.yellowtag {
 	fill: rgba(221, 216, 85, 0.3);
 }
-.gcdf.greentag, .gdot.greentag {
+.gcdf.greentag, .gdot.greentag, .gbar.greentag {
 	stroke: rgba(13, 185, 13, 0.8);
 }
-.gdot.greentag {
+.gdot.greentag, .gbar.greentag {
 	fill: rgba(13, 195, 13, 0.2);
 }
-.gcdf.bluetag, .gdot.bluetag {
+.gcdf.bluetag, .gdot.bluetag, .gbar.bluetag {
 	stroke: rgba(47, 47, 202, 0.8);
 }
-.gdot.bluetag {
+.gdot.bluetag, .gbar.bluetag {
 	fill: rgba(47, 47, 202, 0.2);
 }
-.gcdf.purpletag, .gdot.purpletag {
+.gcdf.purpletag, .gdot.purpletag, .gbar.purpletag {
 	stroke: rgba(150, 44, 186, 0.8);
 }
-.gdot.purpletag {
+.gdot.purpletag, .gbar.purpletag {
 	fill: rgba(150, 44, 186, 0.2);
 }
-.gcdf.graytag, .gdot.graytag {
+.gcdf.graytag, .gdot.graytag, .gbar.graytag {
 	stroke: rgba(120, 120, 120, 0.8);
 }
-.gdot.graytag {
+.gdot.graytag, .gbar.graytag {
 	fill: rgba(120, 120, 120, 0.2);
 }
 

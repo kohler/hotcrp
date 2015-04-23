@@ -62,9 +62,9 @@ class FormulaGraph {
         global $Conf, $Me;
         $fxf = $this->fx->compile_function($Me);
         $fyf = $this->fy->compile_function($Me);
-        if ($this->fx->needs_review)
+        if ($this->fx->needs_review())
             $reviewf = $this->fx;
-        else if ($this->fy->needs_review)
+        else if ($this->fy->needs_review())
             $reviewf = $this->fy;
         else
             $reviewf = null;
@@ -148,18 +148,18 @@ class FormulaGraph {
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = "{$axis}label:" . json_encode($f->expression);
         $format = $f->result_format();
-        $rticks = ($type == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
+        $rticks = ($axis == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($format instanceof ReviewField && $format->option_letter) {
-            $t .= "," . $type . "flip:true"
-                . "," . $type . "tick_setup:hotcrp_graphs.option_letter_ticks("
+            $t .= "," . $axis . "flip:true"
+                . "," . $axis . "tick_setup:hotcrp_graphs.option_letter_ticks("
                     . count($format->options) . ",\"" . chr($format->option_letter - 1) . "\")";
         } else if ($format === "dec")
-            $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks("
+            $t .= "," . $axis . "tick_setup:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;
         else if ($format === "bool")
-            $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
+            $t .= "," . $axis . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
-            $t .= "," . $type . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
+            $t .= "," . $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
         return $t;
     }
 }

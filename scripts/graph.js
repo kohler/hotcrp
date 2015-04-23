@@ -98,6 +98,40 @@ function tangentAngle(pathNode, length) {
 }
 
 
+/* pattern fill functions */
+var pattern_fill = null, pattern_fills = {};
+function make_pattern_fill(classes) {
+    if (!classes || classes.indexOf(" ") < 0)
+        return null;
+    if (!pattern_fills[classes]) {
+        pattern_fill = pattern_fill || d3.select("body").append("svg")
+            .attr("width", 0).attr("height", 0)
+            .append("defs");
+        var id = "svgpat__" + classes.replace(/\s+/g, "__"),
+            tags = classes.split(/\s+/),
+            size = 12 + Math.max(0, tags.length - 2) * 3,
+            sw = size / tags.length,
+            pattern = pattern_fill.append("pattern")
+                .attr("id", id).attr("patternUnits", "userSpaceOnUse")
+                .attr("width", size).attr("height", size);
+        for (var i = 0; i < tags.length; ++i) {
+            var x = pattern.append("rect").attr("class", "gdot " + tags[i]);
+            tags[i] = x.style("fill");
+            x.remove();
+
+            pattern.append("path")
+                .attr("d", ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size, "Z"].join(" "))
+                .attr("fill", tags[i]);
+            pattern.append("path")
+                .attr("d", ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size, "Z"].join(" "))
+                .attr("fill", tags[i]);
+        }
+        pattern_fills[classes] = "url(#" + id + ")";
+    }
+    return pattern_fills[classes];
+}
+
+
 /* CDF functions */
 function submission_delay_seq(ri) {
     var seq = [], i;
@@ -461,11 +495,12 @@ hotcrp_graphs.scatter = function (args) {
             .attr("cy", function (d) { return d[1]; });
     }
 
-    place(svg.selectAll(".dot").data(data.data)
+    place(svg.selectAll(".gdot").data(data.data)
           .enter().append("circle")
             .attr("class", function (d) {
                 return d[3] ? "gdot " + d[3] : "gdot";
-            }));
+            })
+            .style("fill", function (d) { return make_pattern_fill(d[3]); }));
 
     svg.append("circle").attr("class", "gdot gdot_hover0");
     svg.append("circle").attr("class", "gdot gdot_hover1");
