@@ -906,7 +906,7 @@ class ReviewForm {
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
         if (!$myReview && $prow)
             $x .= prefix_word_wrap("==-== Paper: ", $prow->title, "==-==        ") . "\n";
-        if ($contact->can_view_review_identity($prow, $rrow, null)) {
+        if (!$prow || $contact->can_view_review_identity($prow, $rrow, null)) {
             if ($rrow && isset($rrow->reviewFirstName))
                 $x .= "==+== Reviewer: " . Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
             else if ($rrow && isset($rrow->lastName))
