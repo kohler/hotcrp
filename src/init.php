@@ -138,6 +138,7 @@ function __autoload($class_name) {
                                "CsvParser" => "lib/csv.php",
                                "DocumentHelper" => "lib/documenthelper.php",
                                "Formula" => "src/formula.php",
+                               "FormulaGraph" => "src/formulagraph.php",
                                "FormulaPaperColumn" => "src/papercolumn.php",
                                "HotCRPDocument" => "src/hotcrpdocument.php",
                                "HotCRPMailer" => "src/hotcrpmailer.php",

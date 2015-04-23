@@ -134,6 +134,7 @@ src/contact.php
 src/contactlist.php
 src/distoptions.php
 src/formula.php
+src/formulagraph.php
 src/helpers.php
 src/hotcrpdocument.php
 src/hotcrpmailer.php
