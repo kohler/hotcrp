@@ -111,6 +111,20 @@ class Fexpr {
                 return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
         }
 
+        if ($op == "greatest" || $op == "least") {
+            $t1 = $state->_addltemp($this->args[0]->compile($state));
+            for ($i = 1; $i < count($this->args); ++$i) {
+                $t2 = $state->_addltemp($this->args[$i]->compile($state));
+                $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 " . ($op == "greatest" ? ">" : "<") . " $t1) ? $t2 : $t1);";
+            }
+            return $t1;
+        }
+
+        if (count($this->args) == 1 && $op == "log") {
+            $t1 = $state->_addltemp($this->args[0]->compile($state));
+            return "($t1 === null ? $t1 : log($t1))";
+        }
+
         if (count($this->args) == 1 && $op == "my")
             return $state->_compile_my($this->args[0]);
 
@@ -776,7 +790,7 @@ class Formula {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
-        } else if (preg_match('/\A(greatest|least)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(greatest|least|log)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, false)))
                 return null;
@@ -855,7 +869,7 @@ class Formula {
         global $Conf;
         $this->check();
         $state = new FormulaCompiler($contact);
-        $expr = $this->_parse->compile($state);
+        $expr = $this->_parse ? $this->_parse->compile($state) : "0";
 
         $loop = "";
         if ($this->needsReview) {
@@ -899,12 +913,13 @@ class Formula {
     }
 
     public function add_query_options(&$queryOptions, $contact) {
-        $this->check();
-        $state = new FormulaCompiler($contact);
-        $state->queryOptions =& $queryOptions;
-        $this->_parse->compile($state);
-        if ($this->needsReview)
-            $state->loop_variable();
+        if ($this->check()) {
+            $state = new FormulaCompiler($contact);
+            $state->queryOptions =& $queryOptions;
+            $this->_parse->compile($state);
+            if ($this->needsReview)
+                $state->loop_variable();
+        }
     }
 
     public function base_view_score() {
