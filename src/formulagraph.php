@@ -18,15 +18,19 @@ class FormulaGraph {
     public $errf = array();
 
     public function __construct($fx, $fy) {
-        if (preg_match('/\A\s*bar(?:|s|chart)\s*\z/i', $fx) && false) {
+        $fx = simplify_whitespace($fx);
+        $fy = simplify_whitespace($fy);
+        if (preg_match('/\Abar(?:|s|chart)\z/i', $fx) && false) {
             $this->type = self::BARCHART;
             $this->fx = new Formula("1", true);
         } else
             $this->fx = new Formula($fx, true);
-        if (preg_match('/\A\s*cdf\s*\z/i', $fy) && $this->type != self::BARCHART) {
+        if (strcasecmp($fy, "cdf") == 0 && $this->type != self::BARCHART) {
             $this->type = self::CDF;
             $this->fy = new Formula("1", true);
-        } else
+        } else if (strcasecmp($fy, "count") == 0 && $this->type == self::BARCHART)
+            $this->fy = new Formula("1", true);
+        else
             $this->fy = new Formula($fy, true);
 
         if ($this->fx->error_html()) {

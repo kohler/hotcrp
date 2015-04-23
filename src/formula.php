@@ -352,7 +352,7 @@ class DecisionFexpr extends Fexpr {
     public function format() {
         return "dec";
     }
-    public function view_score($contact) {
+    public function view_score(Contact $contact) {
         global $Conf;
         return $Conf->timeAuthorViewDecision() ? VIEWSCORE_AUTHOR :
             $Conf->timePCViewDecision(false) ? VIEWSCORE_PC : VIEWSCORE_ADMINONLY;
