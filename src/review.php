@@ -890,7 +890,7 @@ class ReviewForm {
             $rrow_contactId = $rrow->contactId;
         $myReview = $alwaysMyReview
             || (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
+        $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);
 
         $x = "==+== =====================================================================\n";
