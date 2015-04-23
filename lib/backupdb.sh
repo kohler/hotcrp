@@ -26,6 +26,11 @@ help () {
     exit
 }
 
+usage () {
+    echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [--schema|--pc] [-z] [MYSQL-OPTIONS] [OUTPUT]" 1>&2
+    exit 1
+}
+
 export FLAGS=
 structure=false
 pc=false
@@ -39,6 +44,13 @@ while [ $# -gt 0 ]; do
     --structure|--schema) structure=true;;
     --pc) pc=true;;
     -z|--g|--gz|--gzi|--gzip) gzip=true;;
+    -o|--out|--outp|--outpu|--output)
+        test "$#" -gt 1 -a -z "$output" || usage
+        output="$2"; shift=2;;
+    --out=*|--outp=*|--outpu=*|--output=*)
+        test -z "$output" || usage; output="`echo "$1" | sed 's/^[^=]*=//'`";;
+    -o*)
+        test -z "$output" || usage; output="`echo "$1" | sed 's/^-o//'`";;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
         parse_common_argument "$@";;
     -n|--n|--na|--nam|--name|-n*|--n=*|--na=*|--nam=*|--name=*)
@@ -47,11 +59,7 @@ while [ $# -gt 0 ]; do
         max_allowed_packet="`echo "$1" | sed 's/^[^=]*=//'`";;
     --help) help;;
     -*) FLAGS="$FLAGS $1";;
-    *)  if [ -z "$output" ]; then
-            output="$1"
-        else
-            echo "Usage: $PROG [-c CONFIGFILE] [-n CONFNAME] [--schema|--pc] [-z] [MYSQL-OPTIONS] [OUTPUT]" 1>&2; exit 1
-        fi;;
+    *)  test -z "$output" || usage; output="$1";;
     esac
     shift $shift
 done
