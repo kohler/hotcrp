@@ -311,7 +311,8 @@ class MailSender {
 
         $mailer = new HotCRPMailer;
         $fake_prep = (object) array("subject" => "", "body" => "", "to" => array(),
-                                    "paperId" => -1, "contactId" => array(), "fake" => 1);
+                                    "paperId" => -1, "conflictType" => null,
+                                    "contactId" => array(), "fake" => 1);
         $last_prep = $fake_prep;
         $nrows_done = 0;
         $nrows_left = edb_nrows($result);
