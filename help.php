@@ -989,6 +989,9 @@ Confidence score with choices X, Y, and Z:</p>
     _alternateRow("", "(<em>e</em>)", "Parentheses");
     _alternateRow("", "greatest(<em>e</em>, <em>e</em>, ...)", "Maximum");
     _alternateRow("", "least(<em>e</em>, <em>e</em>, ...)", "Minimum");
+    _alternateRow("", "log(<em>e</em>)", "Natural logarithm");
+    _alternateRow("", "log(<em>e</em>, <em>b</em>)", "Log to the base <em>b</em>");
+    _alternateRow("", "round(<em>e</em>[, <em>m</em>])", "Round to the nearest multiple of <em>m</em>");
     _alternateRow("", "null", "The null value");
     _alternateRow("Tags", "#<em>tagname</em>", "True if this paper has tag <em>tagname</em>");
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");

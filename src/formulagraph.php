@@ -7,10 +7,12 @@ class FormulaGraph {
     const SCATTER = 0;
     const CDF = 1;
     const BARCHART = 2;
+    const FBARCHART = 3;
 
     public $type = self::SCATTER;
     public $fx;
     public $fy;
+    public $fx_query = false;
     private $queries = array();
     private $query_styles = array();
     private $papermap = array();
@@ -20,17 +22,21 @@ class FormulaGraph {
     public function __construct($fx, $fy) {
         $fx = simplify_whitespace($fx);
         $fy = simplify_whitespace($fy);
-        if (preg_match('/\Abar(?:|s|chart)\z/i', $fx) && false) {
-            $this->type = self::BARCHART;
-            $this->fx = new Formula("1", true);
+        if (strcasecmp($fx, "query") == 0) {
+            $this->fx = new Formula("0", true);
+            $this->fx_query = true;
         } else
             $this->fx = new Formula($fx, true);
-        if (strcasecmp($fy, "cdf") == 0 && $this->type != self::BARCHART) {
+        if (strcasecmp($fy, "cdf") == 0) {
             $this->type = self::CDF;
-            $this->fy = new Formula("1", true);
-        } else if (strcasecmp($fy, "count") == 0 && $this->type == self::BARCHART)
-            $this->fy = new Formula("1", true);
-        else
+            $this->fy = new Formula("0", true);
+        } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
+            $this->type = self::BARCHART;
+            $this->fy = new Formula("0", true);
+        } else if (preg_match('/\A(?:frac|fraction)\z/i', $fy)) {
+            $this->type = self::FBARCHART;
+            $this->fy = new Formula("0", true);
+        } else
             $this->fy = new Formula($fy, true);
 
         if ($this->fx->error_html()) {
@@ -58,6 +64,16 @@ class FormulaGraph {
         }
     }
 
+    public static function barchart_compare($a, $b) {
+        if ($a[0] != $b[0])
+            return $a[0] < $b[0] ? -1 : 1;
+        if ($a[1] != $b[1])
+            return $a[1] < $b[1] ? -1 : 1;
+        if (($cmp = @strcmp($a[3], $b[3])))
+            return $cmp;
+        return $a[2] - $b[2];
+    }
+
     public function data() {
         global $Conf, $Me;
         $fxf = $this->fx->compile_function($Me);
@@ -80,6 +96,7 @@ class FormulaGraph {
         $this->fy->add_query_options($queryOptions, $Me);
         $result = Dbl::qe_raw($Conf->paperQuery($Me, $queryOptions));
         $data = array();
+        $xi = $this->fx_query ? 0 : 1;
         while (($prow = PaperInfo::fetch($result, $Me)))
             if ($Me->can_view_paper($prow)) {
                 if ($reviewf)
@@ -88,7 +105,7 @@ class FormulaGraph {
                     $revs = array(null);
                 $d = array(0, 0, $prow->paperId);
                 $style = @$this->papermap[$prow->paperId];
-                if ($this->type != self::SCATTER) {
+                if ($this->type == self::CDF) {
                     foreach ($style as $s)
                         if (@$defaultstyles[$s] !== "") {
                             $c = "";
@@ -114,12 +131,22 @@ class FormulaGraph {
                         $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
                     if ($d[0] === null || $d[1] === null)
                         /* skip */;
-                    else if ($this->type == self::CDF) {
+                    else if ($this->type == self::CDF && $this->fx_query) {
+                        foreach ($style as $s)
+                            $data[0][] = $s;
+                    } else if ($this->type == self::CDF) {
                         foreach ($style as $s)
                             $data[$s][] = $d[0];
-                    } else if ($this->type == self::BARCHART) {
-                        foreach ($style as $s)
-                            $data[$s][] = array($d[0], @$d[2]);
+                    } else if ($this->type) {
+                        foreach ($style as $s) {
+                            $d[$xi] = $s;
+                            $data[] = $d;
+                        }
+                    } else if ($this->fx_query) {
+                        foreach ($style as $s) {
+                            $d[0] = $s;
+                            $data[] = $d;
+                        }
                     } else
                         $data[] = $d;
                 }
@@ -138,6 +165,20 @@ class FormulaGraph {
                     $d->label = $this->queries[$style];
             }
             unset($d);
+        } else if ($this->type) {
+            usort($data, "FormulaGraph::barchart_compare");
+            $ndata = array();
+            $x = null;
+            foreach ($data as $d) {
+                if (!$x || $x->x != $d[0] || $x->group != $d[1]) {
+                    $x = (object) array("x" => $d[0], "group" => $d[1], "d" => array());
+                    if (@$this->queries[$d[1]])
+                        $x->groupLabel = $this->queries[$d[1]];
+                    $ndata[] = $x;
+                }
+                $x->d[] = array(@$d[3], $d[2]);
+            }
+            $data = $ndata;
         }
 
         return $data;
@@ -146,20 +187,28 @@ class FormulaGraph {
     public function axis_info_settings($axis) {
         global $Conf;
         $f = $axis == "x" ? $this->fx : $this->fy;
-        $t = "{$axis}label:" . json_encode($f->expression);
+        $t = array();
+        if ($axis == "y" && $this->type == self::FBARCHART)
+            $t[] = "ylabel:\"fraction of papers\",yfraction:true";
+        else if ($axis == "y" && $this->type == self::BARCHART)
+            $t[] = "ylabel:\"# papers\"";
+        else if ($axis != "x" || !$this->fx_query)
+            $t[] = "{$axis}label:" . json_encode($f->expression);
         $format = $f->result_format();
         $rticks = ($axis == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
-        if ($format instanceof ReviewField && $format->option_letter) {
-            $t .= "," . $axis . "flip:true"
-                . "," . $axis . "tick_setup:hotcrp_graphs.option_letter_ticks("
+        if ($axis == "x" && $this->fx_query) {
+            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
+        } else if ($format instanceof ReviewField && $format->option_letter) {
+            $t[] = $axis . "flip:true";
+            $t[] = $axis . "tick_setup:hotcrp_graphs.option_letter_ticks("
                     . count($format->options) . ",\"" . chr($format->option_letter - 1) . "\")";
         } else if ($format === "dec")
-            $t .= "," . $axis . "tick_setup:hotcrp_graphs.named_integer_ticks("
+            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;
         else if ($format === "bool")
-            $t .= "," . $axis . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
+            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
-            $t .= "," . $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
-        return $t;
+            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
+        return join(",", $t);
     }
 }

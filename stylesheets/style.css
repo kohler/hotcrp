@@ -2833,7 +2833,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	stroke: rgba(255, 255, 255, 0.8);
 }
 .gdot.whitetag, .gbar.whitetag {
-	fill: rgba(255, 255, 255, 0.2);
+	fill: rgba(255, 255, 255, 0.6);
 }
 .gcdf.redtag, .gdot.redtag, .gbar.redtag {
 	stroke: rgba(245, 51, 51, 0.8);
@@ -2878,11 +2878,11 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	fill: rgba(120, 120, 120, 0.2);
 }
 
-.gcdf_hover0, .gdot_hover0 {
+.gcdf_hover0, .gdot_hover0, .gbar_hover0 {
 	stroke: rgba(70, 0, 0, 0.5);
 	stroke-width: 3px;
 }
-.gcdf_hover1, .gdot_hover1 {
+.gcdf_hover1, .gdot_hover1, .gbar_hover1 {
 	stroke: yellow;
 	stroke-width: 2px;
 }

@@ -27,7 +27,8 @@ class Fexpr {
 
     public function format() {
         if (($this->op === "max" || $this->op === "min"
-             || $this->op === "avg" || $this->op === "wavg")
+             || $this->op === "avg" || $this->op === "wavg"
+             || $this->op === "round")
             && count($this->args) >= 1
             && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
@@ -112,7 +113,7 @@ class Fexpr {
         }
 
         if ($op == "greatest" || $op == "least") {
-            $t1 = $state->_addltemp($this->args[0]->compile($state));
+            $t1 = $state->_addltemp($this->args[0]->compile($state), true);
             for ($i = 1; $i < count($this->args); ++$i) {
                 $t2 = $state->_addltemp($this->args[$i]->compile($state));
                 $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 " . ($op == "greatest" ? ">" : "<") . " $t1) ? $t2 : $t1);";
@@ -120,9 +121,21 @@ class Fexpr {
             return $t1;
         }
 
-        if (count($this->args) == 1 && $op == "log") {
+        if (count($this->args) >= 1 && $op == "log") {
             $t1 = $state->_addltemp($this->args[0]->compile($state));
-            return "($t1 === null ? $t1 : log($t1))";
+            if (count($this->args) == 2) {
+                $t2 = $state->_addltemp($this->args[1]->compile($state));
+                return "($t1 !== null && $t2 !== null ? log($t1, $t2) : null)";
+            } else
+                return "($t1 !== null ? log($t1) : null)";
+        }
+
+        if (count($this->args) >= 1 && $op == "round") {
+            $t1 = $state->_addltemp($this->args[0]->compile($state));
+            $t2 = "1";
+            if (count($this->args) == 2)
+                $t2 = $state->_addltemp($this->args[1]->compile($state));
+            return "($t1 !== null && $t2 !== null ? round($t1 / $t2) * $t2 : null)";
         }
 
         if (count($this->args) == 1 && $op == "my")
@@ -790,7 +803,7 @@ class Formula {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
-        } else if (preg_match('/\A(greatest|least|log)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(greatest|least|round|log)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, false)))
                 return null;
@@ -809,10 +822,10 @@ class Formula {
         } else if (preg_match('/\Atopicscore\b(.*)\z/s', $t, $m)) {
             $e = new TopicScoreFexpr;
             $t = $m[1];
-        } else if (preg_match('/\Aconf(?:lict)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\Aconf(?:lict)?\b(.*)\z/s', $t, $m)) {
             $e = new ConflictFexpr(false);
             $t = $m[1];
-        } else if (preg_match('/\Apcconf(?:lict)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\Apcconf(?:lict)?\b(.*)\z/s', $t, $m)) {
             $e = new ConflictFexpr(true);
             $t = $m[1];
         } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/s', $t, $m)) {

@@ -110,18 +110,22 @@ if ($Graph == "formula") {
         if (count($fg->error_html) > $fgerr_begin)
             $Conf->warnMsg(join("<br/>", array_slice($fg->error_html, $fgerr_begin)));
 
-        if ($fg->type == FormulaGraph::BARCHART)
-            echo "<h2>", htmlspecialchars($fg->fy->expression), "</h2>\n";
+        if ($fg->fx_query)
+            /* no header */;
         else if ($fg->type == FormulaGraph::CDF)
             echo "<h2>", htmlspecialchars($fg->fx->expression), " CDF</h2>\n";
+        else if ($fg->type == FormulaGraph::BARCHART)
+            echo "<h2>", htmlspecialchars($fg->fx->expression), "</h2>\n";
         else
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. ", htmlspecialchars($fg->fx->expression), "</h2>\n";
         echo_graph();
 
         $data = $fg->data();
-        if ($fg->type == FormulaGraph::CDF) {
+        if ($fg->type == FormulaGraph::CDF)
             $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',ylabel:"CDF"}); })');
-        } else
+        else if ($fg->type)
+            $Conf->echoScript('jQuery(function () { hotcrp_graphs.barchart({selector:"#hotgraph",data:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',' . $fg->axis_info_settings("y") . '}); })');
+        else
             $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter({selector:"#hotgraph",data:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',' . $fg->axis_info_settings("y") . '}); })');
     } else
         echo "<h2>Formulas</h2>\n";
@@ -131,21 +135,21 @@ if ($Graph == "formula") {
     // X axis
     echo '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
         '<td class="lentry">', Ht::entry("fx", (string) @$_REQUEST["fx"] !== "" ? $_REQUEST["fx"] : "", array("id" => "fx", "size" => 32, "class" => $fg && @$fg->errf["fx"] ? "setting_error" : "")),
-        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a></span>',
+        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “query”</span>',
         '</td></tr>';
     // Y axis
     echo '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
         '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32, "class" => $fg && @$fg->errf["fy"] ? "setting_error" : "")),
-        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”</span>',
+        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”</span>',
         '</td></tr>';
     // Series
-    echo '<tr><td class="lcaption"><label for="q">Show</label></td>',
+    echo '<tr><td class="lcaption"><label for="q">Query</label></td>',
         '<td class="lentry"><table><tbody id="qcontainer">';
     for ($i = 0; $i < count($styles); ++$i)
         echo formulas_qrow($i, $queries[$i], $styles[$i], $fg && @$fg->errf["q$i"]);
     echo "</tbody></table>\n";
     echo '<tr><td></td><td class="lentry">',
-        Ht::js_button("Add point type", "hotcrp_graphs.formulas_add_qrow()"),
+        Ht::js_button("Add query", "hotcrp_graphs.formulas_add_qrow()"),
         '</td></tr>';
     echo '</table>';
     echo '<div class="g"></div>';

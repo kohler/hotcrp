@@ -120,10 +120,10 @@ function make_pattern_fill(classes) {
             x.remove();
 
             pattern.append("path")
-                .attr("d", ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size, "Z"].join(" "))
+                .attr("d", ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" "))
                 .attr("fill", tags[i]);
             pattern.append("path")
-                .attr("d", ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size, "Z"].join(" "))
+                .attr("d", ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" "))
                 .attr("fill", tags[i]);
         }
         pattern_fills[classes] = "url(#" + id + ")";
@@ -188,6 +188,35 @@ function seq_to_cdf(seq) {
 function expand_extent(e, delta) {
     return [e[0] - delta, e[1] + delta];
 }
+
+
+function pid_sorter(a, b) {
+    var d = (typeof a === "string" ? parseInt(a, 10) : a) -
+            (typeof b === "string" ? parseInt(b, 10) : b);
+    return d ? d : (a < b ? -1 : (a == b ? 0 : 1));
+}
+
+function clicker(pids) {
+    var m, x, i, url;
+    if (!pids)
+        return;
+    for (i = 0, x = []; i < pids.length; ++i) {
+        m = parseInt(pids[i], 10);
+        if (!x.length || x[x.length - 1] != m)
+            x.push(m);
+    }
+    if (x.length == 1 && pids.length == 1 && /[A-Z]$/.test(pids[0]))
+        url = hoturl("paper", {p: x[0], anchor: "review" + pids[0]});
+    else if (x.length == 1)
+        url = hoturl("paper", {p: x[0]});
+    else
+        url = hoturl("search", {q: x.join(" ")});
+    if (d3.event.metaKey)
+        window.open(url, "_blank");
+    else
+        window.location = url;
+}
+
 
 /* actual graphs */
 var hotcrp_graphs = {};
@@ -546,12 +575,7 @@ hotcrp_graphs.scatter = function (args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             if (!p.sorted) {
-                p[2].sort(function (a, b) {
-                    var an = parseInt(a, 10), bn = parseInt(b, 10);
-                    if (an == bn)
-                        an = a, bn = b;
-                    return an < bn ? -1 : an == bn ? 0 : 1;
-                });
+                p[2].sort(pid_sorter);
                 p.sorted = true;
             }
             hubble.html("<p>#" + p[2].join(", #") + "</p>")
@@ -567,24 +591,138 @@ hotcrp_graphs.scatter = function (args) {
     }
 
     function mouseclick() {
-        var pids = hovered_data ? hovered_data[2] : null, m, x, i, url;
-        if (!pids)
-            return;
-        for (i = 0, x = []; i < pids.length; ++i) {
-            m = parseInt(pids[i], 10);
-            if (!x.length || x[x.length - 1] != m)
-                x.push(m);
+        clicker(hovered_data ? hovered_data[2] : null);
+    }
+};
+
+function data_to_barchart(data, isfraction) {
+    data = data.map(function (d) {
+        var i, x = [], z = null;
+        for (i = 0; i < d.d.length; ++i) {
+            if (!z || z[4] != d.d[i][0]) {
+                z = [d.x, d.group, i, i, d.d[i][0], []];
+                z.groupLabel = d.groupLabel;
+                x.push(z);
+            }
+            z[3] = i + 1;
+            z[5].push(d.d[i][1]);
         }
-        if (x.length == 1 && pids.length == 1 && /[A-Z]$/.test(pids[0]))
-            url = hoturl("paper", {p: x[0], anchor: "review" + pids[0]});
-        else if (x.length == 1)
-            url = hoturl("paper", {p: x[0]});
-        else
-            url = hoturl("search", {q: x.join(" ")});
-        if (d3.event.metaKey)
-            window.open(url, "_blank");
-        else
-            window.location = url;
+        if (isfraction) {
+            z = 1 / d.d.length;
+            x.forEach(function (m) { m[2] *= z; m[3] *= z; });
+        }
+        return x;
+    });
+    return Array.prototype.concat.apply([], data);
+}
+
+hotcrp_graphs.barchart = function (args) {
+    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = $(args.selector).width() - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom,
+        data = data_to_barchart(args.data, !!args.yfraction);
+
+    var xe = d3.extent(data, function (d) { return d[0]; }),
+        ge = d3.extent(data, function (d) { return d[1]; }),
+        ye = [0, d3.extent(data, function (d) { return d[3]; })[1]],
+        deltae = d3.extent(data, function (d, i) {
+            var delta = i ? d[0] - data[i-1][0] : 0;
+            return delta || Infinity;
+        }),
+        x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
+                .domain(expand_extent(xe, xe[1] - xe[0] < 10 ? 0.2 : 0)),
+        y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
+                .domain(ye);
+
+    var barwidth = width/20;
+    if (deltae[0] != Infinity)
+        barwidth = Math.max(Math.min(barwidth, x(xe[0] + deltae[0]) - x(xe[0])), 10);
+    var gdelta = -(ge[1] + 1) * barwidth / 2;
+
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    args.xtick_setup && args.xtick_setup(xAxis, xe);
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+    args.ytick_setup && args.ytick_setup(yAxis, ye);
+
+    var svg = d3.select(args.selector).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    function place(sel, close) {
+        return sel.attr("d", function (d) {
+            return ["M", x(d[0]) + gdelta + barwidth * d[1], y(d[2]),
+                    "V", y(d[3]), "h", barwidth,
+                    "V", y(d[2])].join(" ") + (close || "");
+        });
+    }
+
+    place(svg.selectAll(".gbar").data(data)
+          .enter().append("path")
+            .attr("class", function (d) {
+                return d[4] ? "gbar " + d[4] : "gbar";
+            })
+            .style("fill", function (d) { return make_pattern_fill(d[4]); }));
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+        .call(args.xaxis_setup || function () {})
+      .append("text")
+        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(args.xlabel || "");
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .call(args.yaxis_setup || function () {})
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6).attr("dy", ".71em")
+        .style({"text-anchor": "end", "font-size": "smaller"})
+        .text(args.ylabel || "");
+
+    svg.append("path").attr("class", "gbar gbar_hover0");
+    svg.append("path").attr("class", "gbar gbar_hover1");
+    var hovers = svg.selectAll(".gbar_hover0, .gbar_hover1")
+        .style("display", "none").style("pointer-events", "none");
+
+    svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
+        .on("click", mouseclick);
+
+    var hovered_data, hubble;
+    function mouseover() {
+        var p = d3.select(this).data()[0];
+        if (p != hovered_data) {
+            if (p)
+                place(hovers.datum(p), "Z").style("display", null);
+            else
+                hovers.style("display", "none");
+            svg.style("cursor", p ? "pointer" : null);
+            hovered_data = p;
+        }
+        if (p) {
+            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            if (!p.sorted) {
+                p[5].sort(pid_sorter);
+                p.sorted = true;
+            }
+            hubble.html("<p>#" + p[5].join(", #") + "</p>")
+                .direction("l").near(this);
+        }
+    }
+
+    function mouseout() {
+        hovers.style("display", "none");
+        hubble && hubble.remove();
+        hovered_data = hubble = null;
+    }
+
+    function mouseclick() {
+        clicker(hovered_data ? hovered_data[5] : null);
     }
 };
 
