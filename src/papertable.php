@@ -1735,7 +1735,7 @@ class PaperTable {
             && $Me->can_change_tag($prow, "~$rank_tag", null, 1))
             $this->papstripRank();
         $this->papstripWatch();
-        if ($Me->can_view_pc_conflicts($prow) && !$this->editable)
+        if ($Me->can_view_conflicts($prow) && !$this->editable)
             $this->papstripPCConflicts();
         if ($Me->can_view_authors($prow, true) && !$this->editable)
             $this->papstripCollaborators();

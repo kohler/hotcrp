@@ -11,6 +11,7 @@ class Fexpr {
     const ASUBREV = 1;
     const APREF = 2;
     const APCCANREV = 4;
+    const ACONF = 8;
 
     const LNONE = 0;
     const LMY = 1;
@@ -299,8 +300,8 @@ class TagFexpr extends Fexpr {
         $tagger = new Tagger($state->contact);
         $e_tag = $tagger->check($this->tag);
         $t_tags = $state->define_gvar("tags", "\$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\"");
-        $t_tagpos = $state->define_gvar("tagpos {$this->tag}", "stripos($t_tags, \" $e_tag#\")");
-        $t_tagval = $state->define_gvar("tagval {$this->tag}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
+        $t_tagpos = $state->define_gvar("tagpos_{$this->tag}", "stripos($t_tags, \" $e_tag#\")");
+        $t_tagval = $state->define_gvar("tagval_{$this->tag}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : null)");
         if ($this->isvalue)
             return $t_tagval;
         else
@@ -391,6 +392,32 @@ class RevtypeFexpr extends Fexpr {
     }
 }
 
+class ConflictFexpr extends Fexpr {
+    private $ispc;
+    public function __construct($ispc) {
+        $this->ispc = $ispc;
+    }
+    public function format() {
+        return "bool";
+    }
+    public function compile(FormulaCompiler $state) {
+        // XXX the actual search is different
+        $state->datatype |= self::ACONF;
+        if ($state->looptype == self::LMY)
+            $rt = $state->contact->isPC ? "!!\$prow->conflictType" : "false";
+        else {
+            if ($state->looptype == self::LNONE)
+                $idx = '[$rrow_cid]';
+            else
+                $idx = '[~i~]';
+            $rt = "!!@" . $state->_add_conflicts() . $idx;
+            if ($this->ispc)
+                $rt = "(@" . $state->_add_pc() . $idx . " ? $rt : null)";
+        }
+        return $rt;
+    }
+}
+
 class FormulaCompiler {
     public $contact;
     private $gvar = array();
@@ -427,24 +454,37 @@ class FormulaCompiler {
         }
         return $name;
     }
+
     public function _add_pc_can_review() {
         if ($this->check_gvar('$pc_can_review'))
             $this->gstmt[] = "\$pc_can_review = \$prow->pc_can_become_reviewer();";
-        return "\$pc_can_review";
+        return '$pc_can_review';
     }
     public function _add_submitted_reviewers() {
         if ($this->check_gvar('$submitted_reviewers')) {
             $this->queryOptions["reviewContactIds"] = true;
             $this->gstmt[] = "\$submitted_reviewers = array_flip(\$prow->viewable_submitted_reviewers(\$contact, \$forceShow));";
         }
-        return "\$submitted_reviewers";
+        return '$submitted_reviewers';
     }
     public function _add_review_prefs() {
         if ($this->check_gvar('$allrevprefs')) {
             $this->queryOptions["allReviewerPreference"] = true;
             $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : array();";
         }
-        return "\$allrevprefs";
+        return '$allrevprefs';
+    }
+    public function _add_conflicts() {
+        if ($this->check_gvar('$conflicts')) {
+            $this->queryOptions["allConflictType"] = true;
+            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow, \$forceShow) ? \$prow->conflicts() : array();";
+        }
+        return '$conflicts';
+    }
+    public function _add_pc() {
+        if ($this->check_gvar('$pc'))
+            $this->gstmt[] = "\$pc = pcMembers();";
+        return '$pc';
     }
 
     private function _push() {
@@ -477,18 +517,20 @@ class FormulaCompiler {
     }
 
     public function loop_variable() {
-        if ($this->datatype & Fexpr::APCCANREV) {
-            $g = $this->_add_pc_can_review();
-            if ($this->datatype & Fexpr::ASUBREV)
-                $g = $this->define_gvar("rev_and_pc_can_review", "$g + " . $this->_add_submitted_reviewers());
-            return $g;
-        } else if ($this->datatype === (Fexpr::ASUBREV | Fexpr::APREF)) {
-            $g = $this->define_gvar("rev_and_pref_cids", $this->_add_review_prefs() . " + " . $this->_add_submitted_reviewers());
-            return $g;
-        } else if ($this->datatype === Fexpr::ASUBREV)
-            return $this->_add_submitted_reviewers();
-        else
-            return $this->_add_review_prefs();
+        $g = array();
+        if ($this->datatype & Fexpr::APCCANREV)
+            $g[] = $this->_add_pc_can_review();
+        if ($this->datatype & Fexpr::ASUBREV)
+            $g[] = $this->_add_submitted_reviewers();
+        if ($this->datatype & Fexpr::APREF)
+            $g[] = $this->_add_review_prefs();
+        if ($this->datatype & Fexpr::ACONF)
+            $g[] = $this->_add_conflicts();
+        if (count($g) > 1) {
+            $gx = str_replace('$', "", join("_and_", $g));
+            return $this->define_gvar($gx, join(" + ", $g));
+        } else
+            return $g[0];
     }
     public function _compile_loop($initial_value, $combiner, Fexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
@@ -752,6 +794,12 @@ class Formula {
             $t = $m[2];
         } else if (preg_match('/\Atopicscore\b(.*)\z/s', $t, $m)) {
             $e = new TopicScoreFexpr;
+            $t = $m[1];
+        } else if (preg_match('/\Aconf(?:lict)\b(.*)\z/s', $t, $m)) {
+            $e = new ConflictFexpr(false);
+            $t = $m[1];
+        } else if (preg_match('/\Apcconf(?:lict)\b(.*)\z/s', $t, $m)) {
+            $e = new ConflictFexpr(true);
             $t = $m[1];
         } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/s', $t, $m)) {
             $e = new PrefFexpr(false);

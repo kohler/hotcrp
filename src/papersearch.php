@@ -2533,7 +2533,7 @@ class PaperSearch {
                 && !$this->contact->can_view_authors($row, true))
                 return false;
             if ($t->type == "conflict"
-                && !$this->contact->can_view_pc_conflicts($row, true))
+                && !$this->contact->can_view_conflicts($row, true))
                 return false;
             if ($t->type == "pf" && $t->value[0] == "outcome"
                 && !$this->contact->can_view_decision($row, true))

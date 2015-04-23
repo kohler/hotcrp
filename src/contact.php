@@ -1672,7 +1672,7 @@ class Contact {
                 : $rights->act_author_view);
     }
 
-    function can_view_pc_conflicts(PaperInfo $prow, $forceShow = null) {
+    function can_view_conflicts(PaperInfo $prow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->act_author_view
