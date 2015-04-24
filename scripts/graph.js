@@ -104,7 +104,7 @@ function make_pattern_fill(classes) {
     if (!classes || classes.indexOf(" ") < 0)
         return null;
     if (!pattern_fills[classes]) {
-        pattern_fill = pattern_fill || d3.select("body").append("svg")
+        pattern_fill = pattern_fill || d3.select("div.body").append("svg")
             .attr("width", 0).attr("height", 0)
             .append("defs");
         var id = "svgpat__" + classes.replace(/\s+/g, "__"),
