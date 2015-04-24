@@ -190,6 +190,26 @@ function expand_extent(e, delta) {
 }
 
 
+function make_axes(svg, width, height, xAxis, yAxis, args) {
+    var css = {"text-anchor": "end", "font-size": "smaller", "pointer-events": "none"};
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis).call(args.xaxis_setup || function () {})
+      .append("text")
+        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
+        .style(css).text(args.xlabel || "");
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis).call(args.yaxis_setup || function () {})
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6).attr("dy", ".71em")
+        .style(css).text(args.ylabel || "");
+}
+
 function pid_sorter(a, b) {
     var d = (typeof a === "string" ? parseInt(a, 10) : a) -
             (typeof b === "string" ? parseInt(b, 10) : b);
@@ -291,23 +311,7 @@ function hotcrp_graphs_cdf(args) {
     var hovers = svg.selectAll(".gcdf_hover0, .gcdf_hover1");
     hovers.style("display", "none");
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-      .append("text")
-        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(args.xlabel || "");
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6).attr("dy", ".71em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(args.ylabel || "");
+    make_axes(svg, width, height, xAxis, yAxis, args);
 
     svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
         .attr("height", height + margin.bottom)
@@ -535,25 +539,7 @@ hotcrp_graphs.scatter = function (args) {
     svg.append("circle").attr("class", "gdot gdot_hover1");
     var hovers = svg.selectAll(".gdot_hover0, .gdot_hover1").style("display", "none");
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-        .call(args.xaxis_setup || function () {})
-      .append("text")
-        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(args.xlabel || "");
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-        .call(args.yaxis_setup || function () {})
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6).attr("dy", ".71em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(args.ylabel || "");
+    make_axes(svg, width, height, xAxis, yAxis, args);
 
     svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
         .attr("height", height + margin.bottom)
@@ -665,25 +651,7 @@ hotcrp_graphs.barchart = function (args) {
             })
             .style("fill", function (d) { return make_pattern_fill(d[4]); }));
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-        .call(args.xaxis_setup || function () {})
-      .append("text")
-        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(args.xlabel || "");
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-        .call(args.yaxis_setup || function () {})
-      .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6).attr("dy", ".71em")
-        .style({"text-anchor": "end", "font-size": "smaller"})
-        .text(args.ylabel || "");
+    make_axes(svg, width, height, xAxis, yAxis, args);
 
     svg.append("path").attr("class", "gbar gbar_hover0");
     svg.append("path").attr("class", "gbar gbar_hover1");
