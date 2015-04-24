@@ -28,7 +28,8 @@ class Fexpr {
     public function format() {
         if (($this->op === "max" || $this->op === "min"
              || $this->op === "avg" || $this->op === "wavg"
-             || $this->op === "round")
+             || $this->op === "round" || $this->op === "trunc"
+             || $this->op === "floor" || $this->op === "ceil")
             && count($this->args) >= 1
             && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
@@ -130,12 +131,15 @@ class Fexpr {
                 return "($t1 !== null ? log($t1) : null)";
         }
 
-        if (count($this->args) >= 1 && $op == "round") {
+        if (count($this->args) >= 1 && ($op == "round" || $op == "trunc"
+                                        || $op == "floor" || $op == "ceil")) {
             $t1 = $state->_addltemp($this->args[0]->compile($state));
             $t2 = "1";
             if (count($this->args) == 2)
                 $t2 = $state->_addltemp($this->args[1]->compile($state));
-            return "($t1 !== null && $t2 !== null ? round($t1 / $t2) * $t2 : null)";
+            if ($op == "trunc")
+                $op = "floor";
+            return "($t1 !== null && $t2 !== null ? $op($t1 / $t2) * $t2 : null)";
         }
 
         if (count($this->args) == 1 && $op == "my")
@@ -803,7 +807,7 @@ class Formula {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
-        } else if (preg_match('/\A(greatest|least|round|log)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(greatest|least|round|floor|trunc|ceil|log)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, false)))
                 return null;
