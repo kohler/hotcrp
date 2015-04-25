@@ -79,9 +79,9 @@ class FormulaGraph {
         $fxf = $this->fx->compile_function($Me);
         $fyf = $this->fy->compile_function($Me);
         if ($this->fx->needs_review())
-            $reviewf = $this->fx;
+            $reviewf = $fxf;
         else if ($this->fy->needs_review())
-            $reviewf = $this->fy;
+            $reviewf = $fyf;
         else
             $reviewf = null;
 
