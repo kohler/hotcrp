@@ -1519,11 +1519,12 @@ $blind\n";
         if (!$options)
             $options = array();
         $editmode = defval($options, "edit", false);
+        $forceShow = $Me->is_admin_force() ? "&amp;forceShow=1" : "";
 
         $reviewOrdinal = unparseReviewOrdinal($rrow);
-        $reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re";
+        $reviewLinkArgs = "p=$prow->paperId" . ($rrow ? "&amp;r=$reviewOrdinal" : "") . "&amp;m=re" . $forceShow;
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
-        $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1");
+        $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
         $admin = $Me->allow_administer($prow);
         self::check_review_author_seen($prow, $rrow, $Me);
 
@@ -1540,10 +1541,10 @@ $blind\n";
         if ($rrow) {
             echo '<div class="floatright">';
             if (!$editmode && $Me->can_review($prow, $rrow))
-                echo "<a href='" . hoturl("review", "r=$reviewOrdinal") . "' class='xx'>",
+                echo '<a href="' . hoturl("review", "r=$reviewOrdinal" . $forceShow) . '" class="xx">',
                     Ht::img("edit.png", "[Edit]", "b"),
                     "&nbsp;<u>Edit</u></a><br />";
-            echo "<a href='" . hoturl("review", "r=$reviewOrdinal&amp;text=1") . "' class='xx'>",
+            echo '<a href="' . hoturl("review", "r=$reviewOrdinal&amp;text=1" . $forceShow) . '" class="xx">',
                 Ht::img("txt.png", "[Text]", "b"),
                 "&nbsp;<u>Plain text</u></a>",
                 "</div>";
@@ -1551,8 +1552,8 @@ $blind\n";
 
         echo "<h3>";
         if ($rrow) {
-            echo "<a href='", hoturl("review", "r=$reviewOrdinal"), "' name='review$reviewOrdinal' class='",
-                ($editmode ? "q'>Edit " : "u'>"), "Review";
+            echo '<a href="', hoturl("review", "r=$reviewOrdinal" . $forceShow), '" name="review', $reviewOrdinal, '" class="',
+                ($editmode ? 'q">Edit ' : 'u">'), "Review";
             if ($rrow->reviewSubmitted)
                 echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
             echo "</a>";
