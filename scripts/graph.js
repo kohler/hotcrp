@@ -622,7 +622,7 @@ hotcrp_graphs.barchart = function (args) {
 
     var barwidth = width/20;
     if (deltae[0] != Infinity)
-        barwidth = Math.max(Math.min(barwidth, x(xe[0] + deltae[0]) - x(xe[0])), 10);
+        barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0]))), 10);
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
