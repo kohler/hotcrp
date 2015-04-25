@@ -96,6 +96,7 @@ class FormulaGraph {
         $this->fy->add_query_options($queryOptions, $Me);
         $result = Dbl::qe_raw($Conf->paperQuery($Me, $queryOptions));
         $data = array();
+        $tagger = new Tagger($Me);
         $xi = $this->fx_query ? 0 : 1;
         while (($prow = PaperInfo::fetch($result, $Me)))
             if ($Me->can_view_paper($prow)) {
@@ -110,7 +111,7 @@ class FormulaGraph {
                         if (@$defaultstyles[$s] !== "") {
                             $c = "";
                             if (@$prow->paperTags && $Me->can_view_tags($prow))
-                                $c = TagInfo::color_classes($prow->paperTags, true);
+                                $c = TagInfo::color_classes($tagger->viewable($prow->paperTags), true);
                             if ($c !== "" && (@$defaultstyles[$s] ? : $c) !== $c)
                                 $c = "";
                             $defaultstyles[$s] = $c;
@@ -121,7 +122,7 @@ class FormulaGraph {
                         $d[] = $s;
                     else if ($s !== "plain"
                              && @$prow->paperTags && $Me->can_view_tags($prow)
-                             && ($color = TagInfo::color_classes($prow->paperTags, true)))
+                             && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), true)))
                         $d[] = $color;
                 }
                 foreach ($revs as $rcid) {
