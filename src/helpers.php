@@ -592,7 +592,7 @@ function _tryNewList($opt, $listtype, $sort = null) {
         $x = $search->session_list_object($sort);
         if ($sort || $search->has_sort()) {
             $pl = new PaperList($search, array("sort" => $sort));
-            $x->ids = $pl->table_html("s", array("idarray" => true));
+            $x->ids = $pl->id_array();
         }
         return $x;
     }

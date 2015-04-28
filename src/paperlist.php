@@ -625,8 +625,10 @@ class PaperList extends BaseList {
         $Conf->footerHtml($t);
     }
 
-    private function _make_query($field_list) {
+    private function _rows($field_list) {
         global $Conf;
+        if (!$field_list)
+            return null;
 
         // prepare review query (see also search > getaction == "reviewers")
         $this->review_list = array();
@@ -1058,6 +1060,27 @@ class PaperList extends BaseList {
         return $field_list2;
     }
 
+    private function _columns($field_list, $table_html) {
+        $field_list = $this->_canonicalize_columns($field_list);
+        if ($table_html)
+            $field_list = $this->_view_columns($field_list);
+        $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
+        return $this->_prepare_columns($field_list);
+    }
+
+    public function id_array() {
+        if (!$this->_prepare())
+            return null;
+        $field_list = $this->_columns("id", false);
+        $rows = $this->_rows($field_list);
+        if ($rows === null)
+            return null;
+        $idarray = array();
+        foreach ($rows as $row)
+            $idarray[] = (int) $row->paperId;
+        return $idarray;
+    }
+
     public function table_html($listname, $options = array()) {
         global $Conf;
 
@@ -1076,22 +1099,13 @@ class PaperList extends BaseList {
             $Conf->errorMsg("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
             return null;
         }
-        $field_list = $this->_canonicalize_columns($field_list);
-        $field_list = $this->_view_columns($field_list);
-        $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
-        $field_list = $this->_prepare_columns($field_list);
-
-        $rows = $this->_make_query($field_list);
+        $field_list = $this->_columns($field_list, true);
+        $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
 
         // return IDs if requested
-        if (@$options["idarray"]) {
-            $idarray = array();
-            foreach ($rows as $row)
-                $idarray[] = (int) $row->paperId;
-            return $idarray;
-        } else if (count($rows) == 0) {
+        if (count($rows) == 0) {
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw($altq);
@@ -1272,9 +1286,7 @@ class PaperList extends BaseList {
 
         // get rows
         $field_list = $this->_prepare_columns(array($fdef));
-        if (!count($field_list))
-            return null;
-        $rows = $this->_make_query($field_list);
+        $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
 
@@ -1299,12 +1311,8 @@ class PaperList extends BaseList {
             return null;
 
         // get column list, check sort
-        $field_list = $this->_canonicalize_columns($fields);
-        $field_list = $this->_view_columns($field_list);
-        $field_list = $this->_prepare_columns($field_list);
-        $this->_prepare_sort();
-
-        $rows = $this->_make_query($field_list);
+        $field_list = $this->_columns($fields, false);
+        $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
 
