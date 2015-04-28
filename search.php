@@ -1205,8 +1205,8 @@ if (isset($_REQUEST["q"])) {
         foreach (SearchActions::selection() as $pid)
             $pl->papersel[$pid] = 1;
     }
-    $pl_text = $pl->text($Search->limitName, array("class" => "pltable_full",
-                                                   "attributes" => array("hotcrp_foldsession" => 'pldisplay.$')));
+    $pl_text = $pl->table_html($Search->limitName, array("class" => "pltable_full",
+                           "attributes" => array("hotcrp_foldsession" => 'pldisplay.$')));
     $pldisplay = $pl->display;
 } else
     $pl = null;

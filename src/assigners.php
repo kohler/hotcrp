@@ -1353,7 +1353,7 @@ class AssignmentSet {
                                         "q" => $papers !== "" ? $papers : "NONE"));
         $plist = new PaperList($search);
         $plist->display .= " reviewers ";
-        echo $plist->text("reviewers");
+        echo $plist->table_html("reviewers");
 
         echo '<div class="g"></div>';
         echo "<h3>Assignment summary</h3>\n";

@@ -217,7 +217,7 @@ $Conf->header($title, "accounts", actionBar());
 
 
 $pl = new ContactList($Me, true);
-$pl_text = $pl->text($_REQUEST["t"], hoturl("users", "t=" . $_REQUEST["t"]),
+$pl_text = $pl->table_html($_REQUEST["t"], hoturl("users", "t=" . $_REQUEST["t"]),
                      $tOpt[$_REQUEST["t"]], 'ppldisplay.$');
 
 

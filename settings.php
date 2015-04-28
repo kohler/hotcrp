@@ -1426,7 +1426,7 @@ function doAccGroup() {
     echo "<p><a href='", hoturl("profile", "u=new&amp;role=pc"), "' class='button'>Create PC account</a> &nbsp;|&nbsp; ",
         "Select a user’s name to edit a profile.</p>\n";
     $pl = new ContactList($Me, false);
-    echo $pl->text("pcadminx", hoturl("users", "t=pcadmin"));
+    echo $pl->table_html("pcadminx", hoturl("users", "t=pcadmin"));
 }
 
 // Messages

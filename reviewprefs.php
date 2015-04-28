@@ -194,10 +194,10 @@ $search = new PaperSearch($Me, array("t" => "rable",
                                      "q" => defval($_REQUEST, "q", ""),
                                      "reviewer" => $reviewer));
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer_contact));
-$pl_text = $pl->text("editReviewPreference",
-                     array("class" => "pltable_full",
-                           "attributes" => array("hotcrp_foldsession" => "pfdisplay.$"),
-                           "footer_extra" => "<div id='plactr'>" . Ht::submit("update", "Save changes", array("class" => "hb")) . "</div>"));
+$pl_text = $pl->table_html("editReviewPreference",
+                array("class" => "pltable_full",
+                      "attributes" => array("hotcrp_foldsession" => "pfdisplay.$"),
+                      "footer_extra" => "<div id='plactr'>" . Ht::submit("update", "Save changes", array("class" => "hb")) . "</div>"));
 SessionList::change($pl->listNumber, array("revprefs" => true));
 
 

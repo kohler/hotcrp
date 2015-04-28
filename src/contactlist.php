@@ -641,7 +641,7 @@ class ContactList extends BaseList {
         return $rows;
     }
 
-    function text($listname, $url, $listtitle = "", $foldsession = null) {
+    function table_html($listname, $url, $listtitle = "", $foldsession = null) {
         global $Conf, $contactListFields;
 
         // PC tags

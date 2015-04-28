@@ -685,6 +685,7 @@ class PaperList extends BaseList {
                 $this->_sortReviewOrdinal($rows);
         }
 
+        Dbl::free($result);
         return $rows;
     }
 
@@ -984,15 +985,6 @@ class PaperList extends BaseList {
         return $field_list2;
     }
 
-    private function _prepare_columns($field_list) {
-        $field_list2 = array();
-        foreach ($field_list as $fdef)
-            if ($fdef && $fdef->prepare($this, $this->query_options,
-                                        $this->is_folded($fdef) ? 0 : 1))
-                $field_list2[] = $fdef;
-        return $field_list2;
-    }
-
     private function _prepare_sort() {
         global $Conf;
         if (count($this->search->orderTags)
@@ -1057,7 +1049,16 @@ class PaperList extends BaseList {
         }
     }
 
-    public function text($listname, $options = array()) {
+    private function _prepare_columns($field_list) {
+        $field_list2 = array();
+        foreach ($field_list as $fdef)
+            if ($fdef && $fdef->prepare($this, $this->query_options,
+                                        $this->is_folded($fdef) ? 0 : 1))
+                $field_list2[] = $fdef;
+        return $field_list2;
+    }
+
+    public function table_html($listname, $options = array()) {
         global $Conf;
 
         if (!$this->_prepare())
@@ -1065,6 +1066,9 @@ class PaperList extends BaseList {
         if (isset($options["fold"]))
             foreach ($options["fold"] as $n => $v)
                 $this->viewmap->$n = $v;
+        // need tags for row coloring
+        if ($this->contact->can_view_tags(null))
+            $this->query_options["tags"] = 1;
 
         // get column list, check sort
         $field_list = $this->_list_columns($listname);
@@ -1076,10 +1080,6 @@ class PaperList extends BaseList {
         $field_list = $this->_view_columns($field_list);
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
         $field_list = $this->_prepare_columns($field_list);
-
-        // make query; need tags for row coloring
-        if ($this->contact->can_view_tags(null))
-            $this->query_options["tags"] = 1;
 
         $rows = $this->_make_query($field_list);
         if ($rows === null)
