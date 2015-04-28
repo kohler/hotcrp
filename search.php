@@ -190,9 +190,8 @@ function downloadReviews(&$texts, &$errors) {
         $rfname = "review";
     else
         $rfname = "reviews";
-    $papersel = SearchActions::selection();
     if (count($texts) == 1 && $gettext)
-        $rfname .= $papersel[key($texts)];
+        $rfname .= key($texts);
 
     if ($getforms)
         $header = ReviewForm::textFormHeader(count($texts) > 1 && $gettext);
@@ -213,8 +212,8 @@ function downloadReviews(&$texts, &$errors) {
     } else {
         $zip = new ZipDocument($Opt["downloadPrefix"] . "reviews.zip");
         $zip->warnings = $warnings;
-        foreach ($texts as $sel => $text)
-            $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $papersel[$sel] . ".txt");
+        foreach ($texts as $pid => $text)
+            $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $pid . ".txt");
         $result = $zip->download();
         if (!$result->error)
             exit;

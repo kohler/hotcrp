@@ -64,7 +64,7 @@ class SearchActions {
         $ax = array();
         foreach (self::$sel as $pid)
             if (array_key_exists($pid, $a))
-                $ax[] = $a[$pid];
+                $ax[$pid] = $a[$pid];
         return $ax;
     }
 
