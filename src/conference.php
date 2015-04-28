@@ -1143,6 +1143,12 @@ class Conference {
     }
 
 
+    function take_script() {
+        $s = $this->scriptStuff;
+        $this->scriptStuff = "";
+        return $s;
+    }
+
     function echoScript($script) {
         if ($this->scriptStuff)
             echo $this->scriptStuff;

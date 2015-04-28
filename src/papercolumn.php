@@ -76,7 +76,7 @@ class PaperColumn extends Column {
         return false;
     }
 
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         return "";
     }
     public function text($pl, $row) {
@@ -92,7 +92,7 @@ class IdPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "ID";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $href = $pl->_paperLink($row);
         return "<a href=\"$href\" class=\"pnum\" tabindex=\"4\">#$row->paperId</a>";
     }
@@ -127,7 +127,7 @@ class SelectorPaperColumn extends PaperColumn {
                 || ($this->name == "selconf" && $row->reviewerConflictType > 0));
         return $pl->papersel ? defval($pl->papersel, $row->paperId, $def) : $def;
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if ($this->name == "selunlessconf" && $row->reviewerConflictType)
             return "";
         $pl->any->sel = true;
@@ -159,7 +159,7 @@ class TitlePaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Title";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $href = $pl->_paperLink($row);
         $x = Text::highlight($row->title, defval($pl->search->matchPreg, "title"));
         return "<a href=\"$href\" class=\"ptitle\" tabindex=\"5\">" . $x . "</a>" . $pl->_contentDownload($row);
@@ -190,7 +190,7 @@ class StatusPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Status";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if ($row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0)
             $pl->any->need_submit = true;
         if ($row->outcome > 0 && $pl->contact->can_view_decision($row))
@@ -244,7 +244,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !$pl->contact->can_count_review($row, null, null);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $done = $row->num_reviews_submitted();
         $started = $row->num_reviews_started($pl->contact);
         return "<b>$done</b>" . ($done == $started ? "" : "/$started");
@@ -288,7 +288,7 @@ class AuthorsPaperColumn extends PaperColumn {
                 $ax[1] = "unaffiliated";
         return $affaus;
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if (!$pl->contact->can_view_authors($row, true))
             return "";
         cleanAuthor($row);
@@ -354,7 +354,7 @@ class CollabPaperColumn extends PaperColumn {
                 || strcasecmp($row->collaborators, "None") == 0
                 || !$pl->contact->can_view_authors($row, true));
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $x = "";
         foreach (explode("\n", $row->collaborators) as $c)
             $x .= ($x === "" ? "" : ", ") . trim($c);
@@ -378,7 +378,7 @@ class AbstractPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return $row->abstract == "";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         return Text::highlight($row->abstract, defval($pl->search->matchPreg, "abstract"));
     }
     public function text($pl, $row) {
@@ -404,7 +404,7 @@ class TopicListPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         return join(", ", PaperInfo::unparse_topics($row->topicIds, defval($row, "topicInterest")));
     }
 }
@@ -467,7 +467,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
         else
             return "Review";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         global $Conf;
         if ($this->xreviewer && !isset($row->_xreviewer))
             $xrow = (object) array("reviewType" => 0, "conflictType" => 0);
@@ -503,7 +503,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !$row->reviewId;
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if (!$row->reviewId)
             return "";
         $ranal = $pl->_reviewAnalysis($row);
@@ -540,7 +540,7 @@ class ReviewDelegationPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Reviewer";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         global $Conf;
         $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
         return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
@@ -569,7 +569,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     public function content_empty($pl, $row) {
         return !$pl->contact->allow_administer($row);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if ($row->reviewerConflictType >= CONFLICT_AUTHOR)
             return '<span class="author">Author</span>';
         $rt = ($row->reviewerConflictType > 0 ? -1 : min(max($row->reviewerReviewType, 0), REVIEW_PRIMARY));
@@ -605,7 +605,7 @@ class DesirabilityPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Desirability";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         return htmlspecialchars(@($row->desirability + 0));
     }
     public function text($pl, $row) {
@@ -632,7 +632,7 @@ class TopicScorePaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Topic<br/>score";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         return htmlspecialchars($row->topicInterestScore + 0);
     }
     public function text($pl, $row) {
@@ -668,7 +668,7 @@ class PreferencePaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Preference";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $pref = unparse_preference($row);
         if ($pl->reviewer_cid()
             && $pl->reviewer_cid() != $pl->contact->contactId
@@ -706,7 +706,7 @@ class PreferenceListPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !$pl->contact->allow_administer($row);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $prefs = PaperList::_rowPreferences($row);
         $ts = array();
         foreach (pcMembers() as $pcid => $pc)
@@ -736,7 +736,7 @@ class ReviewerListPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Reviewers";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         // see also search.php > getaction == "reviewers"
         if (!isset($pl->review_list[$row->paperId]))
             return "";
@@ -771,7 +771,7 @@ class PCConflictListPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "PC conflicts";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $conf = $row->conflicts();
         $y = array();
         foreach (pcMembers() as $id => $pc)
@@ -799,7 +799,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return defval($pl->search->matchPreg, $this->field, "") == "";
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $preg = defval($pl->search->matchPreg, $this->field, "");
         if ($preg == "")
             return "";
@@ -834,7 +834,7 @@ class TagListPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_tags($row, true);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if ((string) $row->paperTags === "")
             return "";
         $viewable = $pl->tagger->viewable($row->paperTags);
@@ -902,7 +902,7 @@ class TagPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_tags($row, true);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if (($v = $this->_tag_value($row)) === null)
             return "";
         else if ($v === 0 && !$this->is_value)
@@ -953,7 +953,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         }
         return $p;
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $v = $this->_tag_value($row);
         if (!$this->is_value)
             return "<input type='checkbox' class='cb' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
@@ -1001,6 +1001,7 @@ class ScorePaperColumn extends PaperColumn {
             if (!isset($queryOptions["scores"]))
                 $queryOptions["scores"] = array();
             $queryOptions["scores"][$this->score] = true;
+            $queryOptions["need_javascript"] = true;
             $this->max_score = count($this->form_field->options);
         }
         return true;
@@ -1039,7 +1040,7 @@ class ScorePaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return $row->viewable_scores($this->form_field, $pl->contact, true) === null;
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $wrap_conflict = false;
         $scores = $row->viewable_scores($this->form_field, $pl->contact, false);
         if ($scores === null && $pl->contact->allow_administer($row)) {
@@ -1048,6 +1049,8 @@ class ScorePaperColumn extends PaperColumn {
         }
         if ($scores) {
             $t = $this->form_field->unparse_graph($scores, 1, defval($row, $this->score));
+            if ($pl->live_table && $rowidx % 16 == 15)
+                $t .= "<script>scorechart()</script>";
             return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
         }
         return "";
@@ -1120,7 +1123,7 @@ class FormulaPaperColumn extends PaperColumn {
         else
             return htmlspecialchars($x);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $formulaf = $this->formula_function;
         $t = $formulaf($row, null, $pl->contact, "h");
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
@@ -1159,7 +1162,7 @@ class TagReportPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_tags($row, true);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         if (($t = $row->paperTags) === "")
             return "";
         $a = array();
@@ -1188,7 +1191,7 @@ class TimestampPaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return max($row->timeFinalSubmitted, $row->timeSubmitted) <= 0;
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         global $Conf;
         $t = max($row->timeFinalSubmitted, $row->timeSubmitted, 0);
         if ($t > 0)
@@ -1272,7 +1275,7 @@ class LeadPaperColumn extends PaperColumn {
         return !$row->leadContactId
             || !$pl->contact->can_view_lead($row, true);
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $visible = $pl->contact->can_view_lead($row, null);
         return $pl->_contentPC($row, $row->leadContactId, $visible);
     }
@@ -1296,7 +1299,7 @@ class ShepherdPaperColumn extends PaperColumn {
         // XXX external reviewer can view shepherd even if external reviewer
         // cannot view reviewer identities? WHO GIVES A SHIT
     }
-    public function content($pl, $row) {
+    public function content($pl, $row, $rowidx) {
         $visible = $pl->contact->can_view_shepherd($row, null);
         return $pl->_contentPC($row, $row->shepherdContactId, $visible);
     }

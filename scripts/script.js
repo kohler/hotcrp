@@ -3743,7 +3743,7 @@ function scorechart1() {
 
 return function (j) {
     if (j == null)
-        j = $(".scorechart");
+        j = $(".scorechart").filter(":empty");
     j.each(scorechart1);
 }
 })(jQuery);

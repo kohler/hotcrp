@@ -20,6 +20,7 @@ class PaperList extends BaseList {
     public $tagger;
     private $_reviewer = null;
     public $review_list;
+    public $live_table;
 
     private $sortable;
     var $listNumber;
@@ -705,6 +706,7 @@ class PaperList extends BaseList {
     private function _row_text($rstate, $row, $fieldDef) {
         global $Conf;
 
+        $rowidx = count($rstate->ids);
         $rstate->ids[] = (int) $row->paperId;
         $trclass = "k" . $rstate->colorindex;
         if (@$row->paperTags
@@ -738,7 +740,7 @@ class PaperList extends BaseList {
                 $t .= $td . "\" id=\"$fdef->name.$row->paperId\"></td>\n";
                 $this->any[$fdef->name] = true;
             } else {
-                $c = $fdef->content($this, $row);
+                $c = $fdef->content($this, $row, $rowidx);
                 $t .= $td . "\">" . $c . "</td>\n";
                 if ($c !== "")
                     $this->any[$fdef->name] = true;
@@ -757,7 +759,7 @@ class PaperList extends BaseList {
                 && $rstate->foldinfo[$fdef->name]) {
                 $tt .= "<div id=\"$fdef->name.$row->paperId\"></div>";
                 $this->any[$fdef->name] = true;
-            } else if (($c = $fdef->content($this, $row)) !== "") {
+            } else if (($c = $fdef->content($this, $row, $rowidx)) !== "") {
                 if (!$fdef->foldable)
                     $tc = "";
                 else if ($fdef->name != "authors")
@@ -931,6 +933,7 @@ class PaperList extends BaseList {
         $this->scoresOk = $this->contact->privChair
             || $this->contact->is_reviewer()
             || $Conf->timeAuthorViewReviews();
+        $this->live_table = false;
 
         $this->query_options = array();
         if ($this->search->complexSearch($this->query_options))
@@ -1092,6 +1095,7 @@ class PaperList extends BaseList {
         // need tags for row coloring
         if ($this->contact->can_view_tags(null))
             $this->query_options["tags"] = 1;
+        $this->live_table = !@$options["no_javascript"];
 
         // get column list, check sort
         $field_list = $this->_list_columns($listname);
@@ -1270,6 +1274,8 @@ class PaperList extends BaseList {
         }
 
         $this->ids = $rstate->ids;
+        if (@$this->query_options["need_javascript"] && $this->live_table)
+            $x = $Conf->take_script() . $x;
         return $x;
     }
 
@@ -1295,11 +1301,11 @@ class PaperList extends BaseList {
         if (($x = $fdef->header($this, null, 0)))
             $data["$fname.headerhtml"] = $x;
         $m = array();
-        foreach ($rows as $row) {
+        foreach ($rows as $rowidx => $row) {
             if ($fdef->content_empty($this, $row))
                 $m[$row->paperId] = "";
             else
-                $m[$row->paperId] = $fdef->content($this, $row);
+                $m[$row->paperId] = $fdef->content($this, $row, $rowidx);
         }
         $data["$fname.html"] = $m;
 
