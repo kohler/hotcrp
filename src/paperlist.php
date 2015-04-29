@@ -312,7 +312,7 @@ class PaperList extends BaseList {
         if ($this->count == 0)
             return "";
 
-        $barsep = "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
+        $barsep = "    <td><span class='barsep'>·</span></td>\n";
         $nlll = 1;
         $revpref = ($listname == "editReviewPreference");
         $whichlll = 1;

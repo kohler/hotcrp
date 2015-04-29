@@ -2621,6 +2621,7 @@ td.mhcb {
 .mhb pre {
 	background-color: #ffffff;
 	padding: 4px 8px;
+	display: table-cell;
 }
 .mhdp {
 	font-size: smaller;

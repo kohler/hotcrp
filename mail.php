@@ -89,6 +89,8 @@ class MailSender {
     private $sending;
 
     private $started = false;
+    private $group;
+    private $groupable = false;
     private $mcount = 0;
     private $mrecipients = array();
     private $mpapers = array();
@@ -98,6 +100,7 @@ class MailSender {
     function __construct($recip, $sending) {
         $this->recip = $recip;
         $this->sending = $sending;
+        $this->group = @$_REQUEST["group"] || !@$_REQUEST["ungroup"];
     }
 
     static function check($recip) {
@@ -110,6 +113,18 @@ class MailSender {
         $ms->run();
     }
 
+    private function echo_actions($extra_class = "") {
+        echo '<div class="aa', $extra_class, '">',
+            Ht::submit("send", "Send", array("style" => "margin-right:4em")),
+            ' &nbsp; ';
+        $style = $this->groupable ? "" : "display:none";
+        if (!@$_REQUEST["group"] && @$_REQUEST["ungroup"])
+            echo Ht::submit("group", "Gather recipients", array("style" => $style, "class" => "mail_groupable"));
+        else
+            echo Ht::submit("ungroup", "Separate recipients", array("style" => $style, "class" => "mail_groupable"));
+        echo ' &nbsp; ', Ht::submit("cancel", "Cancel"), '</div>';
+    }
+
     private function echo_prologue() {
         global $Conf, $Me;
         if ($this->started)
@@ -118,6 +133,8 @@ class MailSender {
         foreach (array("recipients", "subject", "emailBody", "cc", "replyto", "q", "t", "plimit", "newrev_since") as $x)
             if (isset($_REQUEST[$x]))
                 echo Ht::hidden($x, $_REQUEST[$x]);
+        if (!$this->group)
+            echo Ht::hidden("ungroup", 1);
         $recipients = defval($_REQUEST, "recipients", "");
         if ($this->sending) {
             echo "<div id='foldmail' class='foldc fold2c'>",
@@ -154,10 +171,10 @@ class MailSender {
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $recipients)
                 && defval($_REQUEST, "plimit") && $_REQUEST["q"] !== "")
                 echo "<br />Paper selection:&nbsp;", htmlspecialchars($_REQUEST["q"]);
-            echo "</div><div class='aa fx'>", Ht::submit("send", "Send"),
-                " &nbsp; ", Ht::submit("cancel", "Cancel"), "</div>",
-                // This next is only displayed when Javascript is off
-                "<div class='fn2 warning'>Scroll down to send the prepared mail once the page finishes loading.</div>",
+            echo "</div>";
+            $this->echo_actions(" fx");
+            // This next is only displayed when Javascript is off
+            echo '<div class="fn2 warning">Scroll down to send the prepared mail once the page finishes loading.</div>',
                 "</div>\n";
         }
         $Conf->echoScript("fold('mail',0,2)");
@@ -174,8 +191,10 @@ class MailSender {
                 . plural($this->mrecipients, "recipient");
             if (count($this->mpapers) != 0)
                 $m .= ", " . plural($this->mpapers, "paper");
-            $s .= "\$\$('mailinfo').innerHTML=\" <span class='barsep'>·</span> " . $m . "\";";
+            $s .= "\$\$('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
         }
+        if (!$this->sending && $this->groupable)
+            $s .= "\$('.mail_groupable').show();";
         $Conf->echoScript($s);
     }
 
@@ -211,35 +230,36 @@ class MailSender {
 
         echo '<div class="mail"><table>';
         $nprintrows = 0;
-        foreach (array("to", "cc", "bcc", "reply-to", "subject") as $k) {
-            if ($k == "to")
-                $line = "To: " . join(", ", $show_prep->to);
-            else if ($k == "subject")
-                $line = "Subject: " . $show_prep->$k;
-            else
-                $line = @$show_prep->headers[$k];
-            if ($line) {
-                echo " <tr>";
-                if (++$nprintrows > 1)
-                    echo "<td class='mhpad'></td>";
-                else if ($this->sending)
-                    echo "<td class='mhx'></td>";
-                else {
-                    ++$this->cbcount;
-                    echo '<td class="mhcb"><input type="checkbox" class="cb" name="', $cbkey,
-                        '" value="1" checked="checked" rangetype="mhcb" id="psel', $this->cbcount,
-                        '" onclick="rangeclick(event,this)" /></td>';
-                }
-                $v = substr($line, strlen($k) + 2);
-                echo '<td class="mhnp">', substr($line, 0, strlen($k)), ":</td>",
-                    '<td class="mhdp">',
-                    htmlspecialchars(MimeText::decode_header($v)),
-                    "</td></tr>\n";
+        foreach (array("To", "cc", "bcc", "reply-to", "Subject") as $k) {
+            if ($k == "To") {
+                $vh = array();
+                foreach ($show_prep->to as $to)
+                    $vh[] = htmlspecialchars(MimeText::decode_header($to));
+                $vh = '<div style="max-width:60em"><span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span></div>';
+            } else if ($k == "Subject")
+                $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
+            else if (($line = @$show_prep->headers[$k])) {
+                $k = substr($line, 0, strlen($k));
+                $vh = htmlspecialchars(MimeText::decode_header(substr($line, strlen($k) + 2)));
+            } else
+                continue;
+            echo " <tr>";
+            if (++$nprintrows > 1)
+                echo "<td class='mhpad'></td>";
+            else if ($this->sending)
+                echo "<td class='mhx'></td>";
+            else {
+                ++$this->cbcount;
+                echo '<td class="mhcb"><input type="checkbox" class="cb" name="', $cbkey,
+                    '" value="1" checked="checked" rangetype="mhcb" id="psel', $this->cbcount,
+                    '" onclick="rangeclick(event,this)" /></td>';
             }
+            echo '<td class="mhnp">', $k, ":</td>",
+                '<td class="mhdp">', $vh, "</td></tr>\n";
         }
 
         echo " <tr><td></td><td></td><td class='mhb'><pre class='email'>",
-            preg_replace(',https?://\S+,', '<a href="$0">$0</a>', htmlspecialchars($show_prep->body)),
+            Ht::link_urls(htmlspecialchars($show_prep->body)),
             "</pre></td></tr>\n",
             "<tr><td class='mhpad'></td><td></td><td class='mhpad'></td></tr>",
             "</table></div>\n";
@@ -252,7 +272,9 @@ class MailSender {
         $mail_differs = HotCRPMailer::preparation_differs($prep, $last_prep);
         $prep_to = $prep->to;
 
-        if ($mail_differs) {
+        if (!$mail_differs)
+            $this->groupable = true;
+        if ($mail_differs || !$this->group) {
             if (!@$last_prep->fake)
                 $this->send_prep($last_prep);
             $last_prep = $prep;
@@ -365,11 +387,8 @@ class MailSender {
             return $Conf->errorMsg("No users match “" . $this->recip->unparse() . "” for that search.");
         else if (!$this->started)
             return false;
-        else if (!$this->sending) {
-            echo "<div class='aa'>",
-                Ht::submit("send", "Send"), " &nbsp; ", Ht::submit("cancel", "Cancel"),
-                "</div>\n";
-        }
+        else if (!$this->sending)
+            $this->echo_actions();
         if ($revinform)
             $Conf->qe("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
         echo "</div></form>";
@@ -433,14 +452,13 @@ else
 
 
 // Check or send
-if (defval($_REQUEST, "loadtmpl"))
-    /* do nothing */;
-else if (defval($_REQUEST, "check") && !$recip->error && check_post())
-    MailSender::check($recip);
-else if (defval($_REQUEST, "cancel"))
+if (defval($_REQUEST, "loadtmpl") || defval($_REQUEST, "cancel"))
     /* do nothing */;
 else if (defval($_REQUEST, "send") && !$recip->error && check_post())
     MailSender::send($recip);
+else if ((@$_REQUEST["check"] || @$_REQUEST["group"] || @$_REQUEST["ungroup"])
+         && !$recip->error && check_post())
+    MailSender::check($recip);
 
 
 if (isset($_REQUEST["monreq"])) {
