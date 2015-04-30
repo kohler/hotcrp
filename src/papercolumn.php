@@ -405,7 +405,7 @@ class TopicListPaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     public function content($pl, $row, $rowidx) {
-        return join(", ", PaperInfo::unparse_topics($row->topicIds, defval($row, "topicInterest")));
+        return PaperInfo::unparse_topics($row->topicIds, @$row->topicInterest, true);
     }
 }
 

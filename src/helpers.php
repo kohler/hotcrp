@@ -443,10 +443,8 @@ function topicTable($prow, $active = 0) {
     $paperId = ($prow ? $prow->paperId : -1);
 
     // read from paper row if appropriate
-    if ($paperId > 0 && $active < 0 && isset($prow->topicIds)) {
-        $top = PaperInfo::unparse_topics($prow->topicIds, defval($prow, "topicInterest"));
-        return join(' <span class="sep">&nbsp;</span> ', $top);
-    }
+    if ($paperId > 0 && $active < 0 && isset($prow->topicIds))
+        return PaperInfo::unparse_topics($prow->topicIds, @$prow->topicInterest, false);
 
     // get current topics
     $paperTopic = array();

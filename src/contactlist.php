@@ -328,7 +328,7 @@ class ContactList extends BaseList {
                     $nti[] = $v;
                 }
             if (count($nt))
-                return join(", ", PaperInfo::unparse_topics($nt, $nti));
+                return PaperInfo::unparse_topics($nt, $nti, true);
             else
                 return "";
         case self::FIELD_REVIEWS:

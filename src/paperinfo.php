@@ -243,10 +243,10 @@ class PaperInfo {
         return $x;
     }
 
-    public static function unparse_topics($topicIds, $interests = null) {
+    public static function unparse_topics($topicIds, $interests, $comma) {
         global $Conf;
         if (!$topicIds)
-            return array();
+            return "";
         if (!is_array($topicIds))
             $topicIds = explode(",", $topicIds);
         if ($interests !== null && !is_array($interests))
@@ -254,22 +254,25 @@ class PaperInfo {
         $out = array();
         $tmap = $Conf->topic_map();
         $tomap = $Conf->topic_order_map();
+        $long = false;
         for ($i = 0; $i < count($topicIds); $i++) {
             $s = '<span class="topic' . ($interests ? $interests[$i] : 0);
             $tn = $tmap[$topicIds[$i]];
-            if (true)
-                $s .= ' topict">' . htmlspecialchars($tn);
-            else if (strlen($tn) <= 50)
+            if (strlen($tn) <= 50)
                 $s .= ' nw">' . htmlspecialchars($tn);
-            else if (($tx = utf8_prefix_at_word_boundary($tn, 50)))
-                $s .= '"><span class="nw">' . htmlspecialchars($tx)
-                    . '</span> ' . htmlspecialchars(ltrim(substr($tn, strlen($tx))));
-            else
+            else {
+                $long = true;
                 $s .= htmlspecialchars($tn);
+            }
             $out[$tomap[$topicIds[$i]]] = $s . "</span>";
         }
         ksort($out);
-        return array_values($out);
+        if ($comma)
+            return join(", ", $out);
+        else if ($long)
+            return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
+        else
+            return join(' <span class="sep">&nbsp;</span> ', $out);
     }
 
     public function topic_interest_score($contact) {

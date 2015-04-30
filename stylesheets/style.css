@@ -465,11 +465,6 @@ span.topic4, span.topic3, span.topic2, span.topic1 {
 span.optvalue {
 	color: #555555;
 }
-span.topict {
-	display: inline-block;
-	margin-left: 1.5em;
-	text-indent: -1.5em;
-}
 .dim {
 	color: #777777;
 }
