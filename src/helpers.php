@@ -1117,16 +1117,20 @@ function unparseReviewOrdinal($ord) {
         return chr(intval(($ord - 1) / 26) + 65) . chr(($ord % 26) + 64);
 }
 
+function utf8_prefix_at_word_boundary($s, $len) {
+    if (strlen($s) <= $len)
+        return $s;
+    $ss = utf8_substr($s, 0, $len);
+    if (($pos = strrpos($ss, " ")) > 0
+        && substr($s, strlen($ss), 1) != " ")
+        $ss = substr($ss, 0, $pos);
+    return $ss;
+}
+
 function titleWords($title, $chars = 40) {
-    // assume that title whitespace has been simplified
     if (strlen($title) <= $chars)
         return $title;
-    // don't over-shorten due to UTF-8
-    $xtitle = utf8_substr($title, 0, $chars);
-    if (($pos = strrpos($xtitle, " ")) > 0
-        && substr($title, strlen($xtitle), 1) != " ")
-        $xtitle = substr($xtitle, 0, $pos);
-    return $xtitle . "...";
+    return utf8_prefix_at_word_boundary($title, $chars) . "...";
 }
 
 function downloadCSV($info, $header, $filename, $options = array()) {

@@ -255,11 +255,16 @@ class PaperInfo {
         $tmap = $Conf->topic_map();
         $tomap = $Conf->topic_order_map();
         for ($i = 0; $i < count($topicIds); $i++) {
+            $s = '<span class="topic' . ($interests ? $interests[$i] : 0);
             $tn = $tmap[$topicIds[$i]];
-            $out[$tomap[$topicIds[$i]]] =
-                '<span class="topic' . ($interests ? $interests[$i] : 0)
-                . (strlen($tn) <= 50 ? " nw" : "")
-                . '">' . htmlspecialchars($tn) . "</span>";
+            if (strlen($tn) <= 50)
+                $s .= ' nw">' . htmlspecialchars($tn);
+            else if (($tx = utf8_prefix_at_word_boundary($tn, 50)))
+                $s .= '"><span class="nw">' . htmlspecialchars($tx)
+                    . '</span> ' . htmlspecialchars(ltrim(substr($tn, strlen($tx))));
+            else
+                $s .= htmlspecialchars($tn);
+            $out[$tomap[$topicIds[$i]]] = $s . "</span>";
         }
         ksort($out);
         return array_values($out);
