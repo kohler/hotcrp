@@ -258,7 +258,7 @@ class PaperInfo {
             $tn = $tmap[$topicIds[$i]];
             $out[$tomap[$topicIds[$i]]] =
                 '<span class="topic' . ($interests ? $interests[$i] : 0)
-                . (strlen($tn) <= 40 ? " nw" : "")
+                . (strlen($tn) <= 50 ? " nw" : "")
                 . '">' . htmlspecialchars($tn) . "</span>";
         }
         ksort($out);
