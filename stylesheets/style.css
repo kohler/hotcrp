@@ -1105,6 +1105,24 @@ span.asspref-1 {
 	color: #800000;
 }
 
+.pctb_editconf_cconf {
+	padding: 2px 0 2px 7px;
+}
+.pctb_editconf_cname {
+	padding: 2px 1em 2px 0;
+}
+.pctb_editconf_sname {
+	padding: 2px 1em 2px 7px;
+}
+.pctb_editconf_sconf {
+	padding: 2px 1em 2px 0;
+	font-size: smaller;
+	white-space: nowrap;
+}
+.pctbconfselector {
+	font-size: 69%;
+}
+
 .pctbname, .pctbname-1, .pctbname-2, .pctbname-3,
 .pctbname0, .pctbname1, .pctbname2, .pctbname3, .pctbname4 {
 	padding-right: 1em;
@@ -1123,14 +1141,6 @@ span.asspref-1 {
 .pctbass {
 	padding-right: 0.45em;
 	white-space: nowrap;
-}
-.pctbconfsel {
-	padding-right: 1em;
-	font-size: smaller;
-	white-space: nowrap;
-}
-.pctbconfselector {
-	font-size: 69%;
 }
 .pctbl {
 	padding-left: 7px;

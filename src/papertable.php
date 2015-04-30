@@ -1141,6 +1141,7 @@ class PaperTable {
             return;
 
         $selectors = $Conf->setting("sub_pcconfsel");
+        $show_colors = $Me->can_view_reviewer_tags($this->prow);
 
         $conflict = array();
         if ($this->useRequest) {
@@ -1169,9 +1170,23 @@ class PaperTable {
                 $ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
                 $extra["optionstyles"] = array(CONFLICT_CHAIRMARK => "font-weight:bold");
             }
-            foreach ($pcm as $id => $p) {
-                $c = "<tr><td class='pctbname0 pctbl'>". Text::name_html($p) . "</td><td class='pctbconfsel'>";
-                $ct = defval($conflict, $id, $nonct);
+        }
+
+        foreach ($pcm as $id => $p) {
+            $pctclass = "";
+            if ($show_colors) {
+                $tags = Contact::roles_all_contact_tags($p->roles, $p->contactTags);
+                if (($color = TagInfo::color_classes($tags)))
+                    $pctclass = " " . $color;
+            }
+            $label = Ht::label(Text::name_html($p), "pcc$id");
+            if ($p->affiliation)
+                $label .= '<div class="pcconfaff">' . htmlspecialchars(titleWords($p->affiliation, 60)) . '</div>';
+            $ct = defval($conflict, $id, $nonct);
+
+            $c = '<tr>';
+            if ($selectors) {
+                $c = '<td class="pctb_editconf_sname' . $pctclass . '">' . $label . '</td><td class="pctb_editconf_sconf' . $pctclass . '">';
                 if ($ct->is_author())
                     $c .= "<strong>Author</strong>";
                 else if ($ct->is_conflict() && !$ct->is_author_mark()) {
@@ -1181,48 +1196,33 @@ class PaperTable {
                         $c .= Ht::select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
                 } else
                     $c .= Ht::select("pcc$id", $ctypes, $ct->value, $extra);
-                $c .= "</td></tr>\n";
-                $pcconfs[] = $c;
-            }
-            $tclass = " style='padding-left:0'><table class='pctb'";
-            $topen = "<td class='pctbcolleft'><table>";
-            $tswitch = "</table></td><td class='pctbcolmid'><table>";
-            $tclose = "</table>";
-        } else {
-            foreach ($pcm as $id => $p) {
-                $ct = defval($conflict, $id, $nonct);
+                $c .= "</td>";
+            } else {
                 $checked = $ct->is_conflict();
-                $disabled = $checked
-                    && ($ct->is_author()
-                        || (!$ct->is_author_mark() && !$this->admin));
-                $value = $checked ? $ct->value : CONFLICT_AUTHORMARK;
-                $cbox = Ht::checkbox_h("pcc$id", $value, $checked, array("disabled" => $disabled));
-                $aff = ($p->affiliation === "" ? "" : "<div class='pcconfaff'>" . htmlspecialchars($p->affiliation) . "</div>");
-                $label = Ht::label(Text::name_html($p) . $aff);
-                if ($aff !== "")
-                    $pcconfs[] = "<table><tr><td>$cbox&nbsp;</td><td>$label</td></table>\n";
-                else
-                    $pcconfs[] = "$cbox&nbsp;$label<br />\n";
+                $disabled = $checked && ($ct->is_author() || (!$ct->is_author_mark() && !$this->admin));
+                $pcconfs[] = '<td class="pctb_editconf_cconf' . $pctclass . '">'
+                    . Ht::checkbox_h("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
+                                     $checked, array("disabled" => $disabled))
+                    . '&nbsp;</td><td class="pctb_editconf_cname' . $pctclass . '">' . $label . '</td>';
             }
-            $tclass = "><table";
-            $topen = "<td class='rpad'>";
-            $tclose = "";
-            $tswitch = "</td><td class='rpad'>";
+            $c .= "</tr>\n";
+
+            $pcconfs[] = $c;
         }
 
+        $cols = $selectors ? 2 : 3;
+        $n = intval(count($pcconfs) + $cols - 1) / $cols;
         echo $this->editable_papt("pcconf", "PC conflicts"),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
-            "<div class='papv'", $tclass, "><tr>", $topen,
+            "<div class='papv' style='padding-left:0'>",
+            "<table class='pctb'><tr><td class='pctbcolleft'><table>",
             Ht::hidden("has_pcconf", 1);
-        $n = ($selectors
-              ? intval((count($pcconfs) + 1) / 2)
-              : intval((count($pcconfs) + 2) / 3));
         for ($i = 0; $i < count($pcconfs); $i++) {
             if (($i % $n) == 0 && $i)
-                echo $tswitch;
+                echo '</table></td><td class="pctbcolmid"><table>';
             echo $pcconfs[$i];
         }
-        echo $tclose, "</td></tr></table></div>\n\n";
+        echo "</table></td></tr></table></div>\n\n";
     }
 
     private function papstripPCConflicts() {
