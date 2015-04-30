@@ -262,7 +262,7 @@ class PaperInfo {
                 $s .= ' nw">' . htmlspecialchars($tn);
             else {
                 $long = true;
-                $s .= htmlspecialchars($tn);
+                $s .= '">' . htmlspecialchars($tn);
             }
             $out[$tomap[$topicIds[$i]]] = $s . "</span>";
         }
