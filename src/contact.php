@@ -2485,9 +2485,6 @@ class Contact {
                 $dl->rev->blind = true;
             else if ($rb === Conference::BLIND_OPTIONAL)
                 $dl->rev->blind = "optional";
-            // can authors see reviews?
-            if ($Conf->au_seerev)
-                $dl->au_allowseerev = true;
         }
 
         // grace periods: give a minute's notice of an impending grace
