@@ -462,9 +462,6 @@ span.topic-2, span.topic-1 {
 span.topic4, span.topic3, span.topic2, span.topic1 {
 	font-weight: bold;
 }
-span.topic-2, span.topic-1, span.topic0, span.topic1, span.topic2, span.topic3, span.topic4 {
-	white-space: nowrap;
-}
 span.optvalue {
 	color: #555555;
 }

@@ -468,7 +468,7 @@ function topicTable($prow, $active = 0) {
             continue;
         if ($i > 0 && ($i % $colheight) == 0)
             $out .= "</td><td>";
-        $tname = htmlspecialchars($tname);
+        $tname = '<span class="topic0">' . htmlspecialchars($tname) . '</span>';
         if ($paperId <= 0 || $active >= 0) {
             $out .= Ht::checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
                                     array("disabled" => $active < 0))
