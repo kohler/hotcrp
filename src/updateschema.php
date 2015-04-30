@@ -681,4 +681,7 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table Paper modify `collaborators` varbinary(8192) DEFAULT NULL")
         && $Conf->ql("alter table Paper modify `withdrawReason` varbinary(1024) DEFAULT NULL"))
         update_schema_version($Conf, 93);
+    if ($Conf->settings["allowPaperOption"] == 93
+        && $Conf->ql("alter table TopicArea modify `topicName` varchar(200) DEFAULT NULL"))
+        update_schema_version($Conf, 94);
 }
