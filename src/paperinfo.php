@@ -257,7 +257,9 @@ class PaperInfo {
         for ($i = 0; $i < count($topicIds); $i++) {
             $s = '<span class="topic' . ($interests ? $interests[$i] : 0);
             $tn = $tmap[$topicIds[$i]];
-            if (strlen($tn) <= 50)
+            if (true)
+                $s .= ' topict">' . htmlspecialchars($tn);
+            else if (strlen($tn) <= 50)
                 $s .= ' nw">' . htmlspecialchars($tn);
             else if (($tx = utf8_prefix_at_word_boundary($tn, 50)))
                 $s .= '"><span class="nw">' . htmlspecialchars($tx)
