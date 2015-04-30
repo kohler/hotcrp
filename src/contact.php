@@ -2383,7 +2383,7 @@ class Contact {
         return $this->perm_change_tag($prow, null, null, null, $forceShow);
     }
 
-    function can_view_reviewer_tags(PaperInfo $prow) {
+    function can_view_reviewer_tags(PaperInfo $prow = null) {
         return $this->act_pc($prow);
     }
 
