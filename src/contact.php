@@ -1731,7 +1731,7 @@ class Contact {
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
-    public static function can_some_author_view_submitted_review(PaperInfo $prow) {
+    public static function author_can_view_submitted_review(PaperInfo $prow) {
         global $Conf;
         if ($Conf->au_seerev == Conference::AUSEEREV_TAGS)
             return $prow->has_any_tag($Conf->tag_au_seerev);
@@ -2544,6 +2544,8 @@ class Contact {
                         else if ($admin && $this->can_respond($prow, $crow, false))
                             $perm->$k = "override";
                     }
+                if (self::author_can_view_submitted_review($prow))
+                    $perm->author_can_view_review = true;
             }
         }
 
