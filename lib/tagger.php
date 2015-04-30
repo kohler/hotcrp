@@ -441,7 +441,7 @@ class Tagger {
                 $title = "Tag search";
                 $link = ($base === $tag ? "%23" : "order:");
             }
-            $tx = "<a class=\"q\" href=\"" . hoturl("search", "q=$link$base") . "\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
+            $tx = "<a class=\"q nw\" href=\"" . hoturl("search", "q=$link$base") . "\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
             if (isset($byhighlight[$lbase])) {
                 $byhighlight[$lbase] .= "<strong>" . $tx . "</strong> ";
                 $anyhighlight = true;
