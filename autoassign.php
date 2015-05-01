@@ -727,7 +727,7 @@ foreach ($pcm as $id => $p) {
         . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
                         array("id" => "pcsel$count",
                               "onclick" => "rangeclick(event,this);\$\$('pctyp_sel').checked=true"))
-        . "&nbsp;</td><td class='pctbname'>"
+        . "&nbsp;</td><td class='pctbname taghl'>"
         . Ht::label(Text::name_html($p), "pcsel$count")
         . "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>"
         . AssignmentSet::review_count_report($nrev, $p, "")

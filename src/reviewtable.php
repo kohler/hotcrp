@@ -140,7 +140,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
             if ($allow_admin)
                 $n .= _review_table_actas($rr);
-            $t .= '<td class="rl rl_name">' . $n . ($rtype ? " $rtype" : "") . "</td>";
+            $t .= '<td class="rl"><span class="taghl">' . $n . '</span>'
+                . ($rtype ? " $rtype" : "") . "</td>";
             if ($show_colors && (@$rr->contactRoles || @$rr->contactTags)) {
                 $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
                 if (($color = TagInfo::color_classes($tags)))
@@ -334,7 +335,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                     && ($color = TagInfo::color_classes($cr->commentTags))) {
                     if (TagInfo::classes_have_colors($color))
                         $tclass .= " cmtlinkcolor";
-                    $tclass .= " $color";
+                    $tclass .= " $color taghl";
                 }
                 $cnames[] = '<a class="' . $tclass . '" href="#comment' . $cr->commentId . '">' . $n . '</a>';
             }

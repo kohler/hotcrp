@@ -1758,56 +1758,47 @@ tr.purpletag, tr.graytag, tr.whitetag {
 .whitetag div.pst, .whitetag div.pst {
 	background-color: #f8f8f8;
 }
-.boldtag, tr.pl.boldtag > td.pl_id, tr.pl.boldtag > td.pl_title,
-tr.pl.boldtag > td.pl_name, tr.rl.boldtag > td.rl_name {
+.boldtag.taghl, .boldtag .taghl {
 	font-weight: bold;
 }
-tr.pl.boldtag, tr.plx.boldtag, tr.rl.boldtag {
+.fold5c .boldtag.conflicttag.taghl, .fold5c .boldtag.conflicttag .taghl {
 	font-weight: inherit;
 }
-.italictag, tr.pl.italictag > td.pl_id, tr.pl.italictag > td.pl_title,
-tr.pl.italictag > td.pl_name, tr.rl.italictag > td.rl_name {
+.italictag.taghl, .italictag .taghl {
 	font-style: italic;
 }
-tr.pl.italictag, tr.plx.italictag, tr.rl.italictag {
+.fold5c .italictag.conflicttag.taghl, .fold5c .italictag.conflicttag .taghl {
 	font-style: inherit;
 }
-.underlinetag, tr.pl.underlinetag > td.pl_id, tr.pl.underlinetag > td.pl_title,
-tr.pl.underlinetag > td.pl_name, tr.rl.underlinetag > td.rl_name {
+.underlinetag.taghl, .underlinetag .taghl {
 	text-decoration: underline;
 }
-tr.pl.underlinetag, tr.plx.underlinetag, tr.rl.underlinetag {
-	text-decoration: inherit;
-}
-.strikethroughtag, tr.pl.strikethroughtag > td.pl_id, tr.pl.strikethroughtag > td.pl_title,
-tr.pl.strikethroughtag > td.pl_name, tr.rl.strikethroughtag > td.rl_name {
+.strikethroughtag.taghl, .strikethroughtag .taghl {
 	text-decoration: line-through;
 }
-tr.pl.strikethroughtag, tr.plx.strikethroughtag, tr.rl.strikethroughtag {
+.fold5c .underlinetag.conflicttag.taghl, .fold5c .underlinetag.conflicttag .taghl,
+.fold5c .strikethroughtag.conflicttag.taghl, .fold5c .strikethroughtag.conflicttag .taghl {
 	text-decoration: inherit;
 }
-.bigtag, tr.pl.bigtag > td.pl_id, tr.pl.bigtag > td.pl_title,
-tr.pl.bigtag > td.pl_name, tr.rl.bigtag > td.rl_name {
+.fold5c .underlinetag.conflicttag a.taghl,
+.fold5c .strikethroughtag.conflicttag a.taghl {
+	text-decoration: underline;
+}
+.bigtag.taghl, .bigtag .taghl {
 	font-size: 140%;
 }
-.bigtag .pst {
-	font-size: 71.4%;
-}
-tr.pl.bigtag, tr.plx.bigtag, tr.rl.bigtag {
-	font-size: inherit;
-}
-.smalltag, tr.pl.smalltag > td.pl_id, tr.pl.smalltag > td.pl_title,
-tr.pl.smalltag > td.pl_name, tr.rl.smalltag > td.rl_name {
+.smalltag.taghl, .smalltag .taghl {
 	font-size: 80%;
 }
-.smalltag .pst {
-	font-size: 125%;
-}
-tr.pl.smalltag, tr.plx.smalltag, tr.rl.smalltag {
+.fold5c .bigtag.conflicttag.taghl, .fold5c .bigtag.conflicttag .taghl,
+.fold5c .smalltag.conflicttag.taghl, .fold5c .smalltag.conflicttag .taghl {
 	font-size: inherit;
 }
-.dimtag, .dimtag a {
+.dimtag.taghl, .dimtag .taghl {
 	color: gray;
+}
+.fold5c .dimtag.conflicttag.taghl, .fold5c .dimtag.conflicttag .taghl {
+	color: inherit;
 }
 
 .redtag.orangetag, .redtag.orangetag.psc,
@@ -1851,6 +1842,18 @@ tr.pl.smalltag, tr.plx.smalltag, tr.rl.smalltag {
 }
 .graytag.whitetag, .graytag.whitetag.psc {
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNCIgaGVpZ2h0PSIzNCI+PHBvbHlsaW5lIHBvaW50cz0iLTM0LDM0LDAsMCwxNywwLC0xNywzNCIgZmlsbD0iI2UyZTJlMiIgLz48cG9seWxpbmUgcG9pbnRzPSIwLDM0LDM0LDAsNTEsMCwxNywzNCIgZmlsbD0iI2UyZTJlMiIgLz48L3N2Zz4=);
+}
+
+.fold5c .redtag.conflicttag,
+.fold5c .orangetag.conflicttag,
+.fold5c .yellowtag.conflicttag,
+.fold5c .greentag.conflicttag,
+.fold5c .bluetag.conflicttag,
+.fold5c .purpletag.conflicttag,
+.fold5c .graytag.conflicttag,
+.fold5c .whitetag.conflicttag {
+	background-image: none;
+	background-color: inherit;
 }
 
 .graytext {

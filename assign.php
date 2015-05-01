@@ -537,8 +537,8 @@ if ($Me->can_administer($prow)) {
         $color = ($color ? " class='${color}'" : "");
         $pctext = "      <tr$color>";
         if ($p->conflictType >= CONFLICT_AUTHOR) {
-            $pctext .= "<td id='ass$p->contactId' class='pctbname-2 pctbl'>"
-                . str_replace(' ', "&nbsp;", Text::name_html($pc))
+            $pctext .= "<td id='ass$p->contactId' class='pctbname-2 pctbl taghl nw'>"
+                . Text::name_html($pc)
                 . "</td><td class='pctbass'>"
                 . review_type_icon(-2)
                 . "</td>";
@@ -551,7 +551,7 @@ if ($Me->can_administer($prow)) {
                 $revtype = ($p->refused ? -3 : 0);
             $title = ($revtype == -3 ? "' title='Review previously declined" : "");
             $pctext .= "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>"
-                . str_replace(' ', "&nbsp;", Text::name_html($pc));
+                . '<span class="taghl nw">' . Text::name_html($pc) . '</span>';
             if ($p->conflictType == 0
                 && ($p->reviewerPreference || $p->reviewerExpertise
                     || $p->topicInterestScore))

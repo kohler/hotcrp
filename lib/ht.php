@@ -166,10 +166,10 @@ class Ht {
         return '<input type="radio"' . substr($t, 22);
     }
 
-    static function label($html, $id = null) {
+    static function label($html, $id = null, $js = null) {
         if (!$id || $id === true)
             $id = self::$_lastcontrolid;
-        return '<label for="' . $id . '">' . $html . "</label>";
+        return '<label for="' . $id . '"' . self::extra($js) . '>' . $html . "</label>";
     }
 
     static function button($name, $html, $js = null) {

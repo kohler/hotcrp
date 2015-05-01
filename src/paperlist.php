@@ -201,7 +201,7 @@ class PaperList extends BaseList {
     }
 
     static function wrapChairConflict($text) {
-        return "<span class='fn5'><em>Hidden for conflict</em> &nbsp;<span class='barsep'>·</span>&nbsp; <a href=\"javascript:void fold('pl',0,'force')\">Override conflicts</a></span><span class='fx5'>$text</span>";
+        return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a href="#" onclick="return fold(\'pl\',0,\'force\')">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
     }
 
     public function reviewer_cid() {
@@ -718,6 +718,8 @@ class PaperList extends BaseList {
                 $trclass = $m;
             } else
                 $trclass .= " " . $m;
+            if ($row->conflictType > 0 && !$this->contact->can_view_tags($row, false))
+                $trclass .= " conflicttag";
         }
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;

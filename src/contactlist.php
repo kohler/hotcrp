@@ -275,6 +275,7 @@ class ContactList extends BaseList {
             $t = Text::name_html($row);
             if (trim($t) == "")
                 $t = "[No name]";
+            $t = '<span class="taghl">' . $t . '</span>';
             if ($this->contact->privChair)
                 $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
             if ($row->roles & Contact::ROLE_CHAIR)

@@ -1174,7 +1174,7 @@ class PaperTable {
                 if (($color = TagInfo::color_classes($tags)))
                     $pctclass = " " . $color;
             }
-            $label = Ht::label(Text::name_html($p), "pcc$id");
+            $label = Ht::label(Text::name_html($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(titleWords($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
@@ -1233,7 +1233,7 @@ class PaperTable {
             $text = "<p class=\"odname\">" . Text::name_html($p) . "</p>";
             if ($Me->isPC && $p->contactTags
                 && ($classes = TagInfo::color_classes($p->contactTags)))
-                $text = "<div class=\"pscopen $classes\">$text</div>";
+                $text = "<div class=\"pscopen $classes taghl\">$text</div>";
             $pcconf[$p->sort_position] = $text;
         }
 
@@ -1330,7 +1330,7 @@ class PaperTable {
                 $treport = PaperActions::tag_report($this->prow);
 
                 // uneditable
-                echo '<div class="fn">';
+                echo '<div class="fn taghl">';
                 if ($treport->warnings)
                     echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
                 echo ($tx == "" ? "None" : $tx), '</div>';
@@ -1360,7 +1360,7 @@ class PaperTable {
                     "</div>";
                 $Conf->footerScript("taghelp(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
             } else
-                echo ($tx == "" ? "None" : $tx);
+                echo '<div class="taghl">', ($tx == "" ? "None" : $tx), '</div>';
             echo "</div>";
 
             if ($is_editable)

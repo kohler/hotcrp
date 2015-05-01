@@ -94,7 +94,7 @@ class IdPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $href = $pl->_paperLink($row);
-        return "<a href=\"$href\" class=\"pnum\" tabindex=\"4\">#$row->paperId</a>";
+        return "<a href=\"$href\" class=\"pnum taghl\" tabindex=\"4\">#$row->paperId</a>";
     }
     public function text($pl, $row) {
         return $row->paperId;
@@ -162,7 +162,7 @@ class TitlePaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $href = $pl->_paperLink($row);
         $x = Text::highlight($row->title, defval($pl->search->matchPreg, "title"));
-        return "<a href=\"$href\" class=\"ptitle\" tabindex=\"5\">" . $x . "</a>" . $pl->_contentDownload($row);
+        return "<a href=\"$href\" class=\"ptitle taghl\" tabindex=\"5\">" . $x . "</a>" . $pl->_contentDownload($row);
     }
     public function text($pl, $row) {
         return $row->title;
@@ -838,9 +838,10 @@ class TagListPaperColumn extends PaperColumn {
         if ((string) $row->paperTags === "")
             return "";
         $viewable = $pl->tagger->viewable($row->paperTags);
-        return $pl->tagger->unparse_and_link($viewable, $row->paperTags,
-                                             $pl->search->orderTags,
-                                             $row->conflictType <= 0);
+        $noconf = $row->conflictType <= 0;
+        $str = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
+                                             $pl->search->orderTags, $noconf);
+        return $pl->maybeConflict($row, $str, $noconf || $pl->contact->can_view_tags($row, false));
     }
 }
 

@@ -1364,8 +1364,8 @@ class AssignmentSet {
             $color = TagInfo::color_classes($pc->all_contact_tags());
             $color = ($color ? ' class="' . $color . '"' : "");
             $c = "<tr$color>" . '<td class="pctbname pctbl">'
-                . Text::name_html($pc)
-                . ": " . plural($nnew, "assignment")
+                . '<span class="taghl">' . Text::name_html($pc) . '</span>: '
+                . plural($nnew, "assignment")
                 . "</td></tr><tr$color>" . '<td class="pctbnrev pctbl">'
                 . self::review_count_report($nrev, $pc, $nnew ? "After assignment:&nbsp;" : "");
             $pcdesc[] = $c . "</td></tr>\n";
