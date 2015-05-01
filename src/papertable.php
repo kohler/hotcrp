@@ -1050,7 +1050,7 @@ class PaperTable {
         if (($prow = $this->prow) && ($optx = $prow->option($o->id))) {
             $docclass = new HotCRPDocument($o->id, $o);
             foreach ($optx->documents($prow) as $doc) {
-                $oname = "opt" . $o->id . "_" . $docid;
+                $oname = "opt" . $o->id . "_" . $doc->paperStorageId;
                 echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
                     "<td class='nowrap'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
                     "<td class='fx'><span class='sep'></span></td>",
