@@ -1265,21 +1265,27 @@ class Conference {
     private function __downloadPaper($paperId, $attachment, $documentType, $docid) {
         global $Opt, $Me;
 
-        $result = $this->document_result($paperId, $documentType, $docid);
-        if (!$result) {
-            $this->log("Download error: " . $this->dblink->error, $Me, $paperId);
-            return set_error_html("Database error while downloading paper.");
-        } else if (edb_nrows($result) == 0)
-            return set_error_html("No such document.");
+        if (is_object($docid))
+            $docs = array($docid);
+        else {
+            $result = $this->document_result($paperId, $documentType, $docid);
+            if (!$result) {
+                $this->log("Download error: " . $this->dblink->error, $Me, $paperId);
+                return set_error_html("Database error while downloading paper.");
+            } else if (edb_nrows($result) == 0)
+                return set_error_html("No such document.");
 
-        // Check data
-        $docs = array();
-        while (($doc = $this->document_row($result, $documentType))) {
-            if (!$doc->mimetype)
-                $doc->mimetype = Mimetype::PDF;
-            $doc->filename = HotCRPDocument::filename($doc);
-            $docs[] = $doc;
+            // Check data
+            $docs = array();
+            while (($doc = $this->document_row($result, $documentType))) {
+                if (!$doc->mimetype)
+                    $doc->mimetype = Mimetype::PDF;
+                $doc->filename = HotCRPDocument::filename($doc);
+                $docs[] = $doc;
+            }
+            Dbl::free($result);
         }
+
         if (count($docs) == 1 && $docs[0]->paperStorageId <= 1)
             return set_error_html("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
         $downloadname = false;

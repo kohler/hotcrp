@@ -3,6 +3,40 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class PaperOptionValue {
+    public $id;
+    public $option;
+    private $_documents = null;
+
+    public function __construct(PaperOption $o) {
+        $this->id = $o->id;
+        $this->option = $o;
+    }
+    public function documents($prow) {
+        assert($this->option->has_document());
+        if ($this->_documents === null) {
+            $this->_documents = $by_unique_filename = array();
+            $docclass = null;
+            foreach ($this->values as $docid)
+                if ($docid > 1 && ($d = paperDocumentData($prow, $this->id, $docid))) {
+                    $d->docclass = $docclass = $docclass ? : new HotCRPDocument($this->id);
+                    $d->unique_filename = $d->filename;
+                    while (@$by_unique_filename[$d->unique_filename]) {
+                        if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $d->unique_filename, $m))
+                            $d->unique_filename = $m[1] . ($m[2] + 1) . $m[3];
+                        else if (preg_match('/\A(.*?)(\.\w+|)\z/', $d->unique_filename, $m) && $m[1] !== "")
+                            $d->unique_filename = $m[1] . " (1)" . $m[2];
+                        else
+                            $d->unique_filename .= " (1)";
+                    }
+                    $by_unique_filename[$d->unique_filename] = true;
+                    $this->_documents[] = $d;
+                }
+        }
+        return $this->_documents;
+    }
+}
+
 class PaperOption {
     private static $list = null;
 
@@ -177,30 +211,43 @@ class PaperOption {
             array_multisort($ox->data, SORT_NUMERIC, $ox->values);
     }
 
+    private static function load_optdata($pid) {
+        $result = Dbl::qe("select optionId, value, data from PaperOption where paperId=?", $pid);
+        $optdata = array();
+        while (($row = edb_row($result)))
+            $optdata[$row[0] . "." . $row[1]] = $row[2];
+        Dbl::free($result);
+        return $optdata;
+    }
+
     static function parse_paper_options($prow) {
         global $Conf;
         if (!$prow)
             return 0;
         $options = self::option_list();
         $prow->option_array = array();
-        if (!count($options) || !@$prow->optionIds)
+        if (!count($options) || @$prow->optionIds === "")
             return 0;
 
-        preg_match_all('/(\d+)#(\d+)/', $prow->optionIds, $m);
         $optsel = array();
-        for ($i = 0; $i < count($m[1]); ++$i)
-            arrayappend($optsel[$m[1][$i]], (int) $m[2][$i]);
-        $optdata = null;
+        if (property_exists($prow, "optionIds")) {
+            preg_match_all('/(\d+)#(\d+)/', $prow->optionIds, $m);
+            for ($i = 0; $i < count($m[1]); ++$i)
+                arrayappend($optsel[$m[1][$i]], (int) $m[2][$i]);
+            $optdata = null;
+        } else {
+            $optdata = self::load_optdata($prow->paperId);
+            foreach ($optdata as $k => $v) {
+                $dot = strpos($k, ".");
+                arrayappend($optsel[substr($k, 0, $dot)], (int) substr($k, $dot + 1));
+            }
+        }
 
         foreach ($options as $o)
             if (isset($optsel[$o->id])) {
-                $ox = (object) array("id" => $o->id, "option" => $o);
-                if ($o->needs_data() && !$optdata) {
-                    $optdata = array();
-                    $result = Dbl::qe_raw("select optionId, value, data from PaperOption where paperId=$prow->paperId");
-                    while (($row = edb_row($result)))
-                        $optdata[$row[0] . "." . $row[1]] = $row[2];
-                }
+                $ox = new PaperOptionValue($o);
+                if ($o->needs_data() && !$optdata)
+                    $optdata = self::load_optdata($prow->paperId);
                 $ox->values = $optsel[$o->id];
                 if ($o->takes_multiple()) {
                     if ($o->needs_data()) {

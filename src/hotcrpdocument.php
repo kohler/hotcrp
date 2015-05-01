@@ -59,9 +59,10 @@ class HotCRPDocument {
             $fn .= "final" . $doc->paperId;
         else {
             $o = PaperOption::find($doc->documentType);
-            if ($o && $o->type == "attachments" && $doc->filename)
+            if ($o && $o->type == "attachments"
+                && ($afn = @$doc->unique_filename ? : $doc->filename))
                 // do not decorate with MIME type suffix
-                return $fn . "paper" . $doc->paperId . "-" . $o->abbr . "/" . $doc->filename;
+                return $fn . "paper" . $doc->paperId . "-" . $o->abbr . "/" . $afn;
             else if ($o && $o->is_document())
                 $fn .= "paper" . $doc->paperId . "-" . $o->abbr;
             else
@@ -269,7 +270,7 @@ class HotCRPDocument {
     static function url($doc) {
         assert(property_exists($doc, "mimetype") && isset($doc->documentType));
         if ($doc->mimetype)
-            $f = "file=" . urlencode(self::filename($doc));
+            $f = "file=" . rawurlencode(self::filename($doc));
         else {
             $f = "p=$doc->paperId";
             if ($doc->documentType == DTYPE_FINAL)

@@ -323,13 +323,12 @@ class PaperTable {
                     && $prow
                     && $Me->can_view_paper_option($prow, $o)
                     && ($oa = $prow->option($id))) {
-                    foreach ($oa->values as $docid)
-                        if ($docid > 1 && ($d = paperDocumentData($prow, $id, $docid))) {
-                            $name = '<span class="pavfn">' . htmlspecialchars($o->name) . '</span>';
-                            if ($o->type == "attachments")
-                                $name .= "/" . htmlspecialchars($d->filename);
-                            $pdfs[] = documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg", $name);
-                        }
+                    foreach ($oa->documents($prow) as $d) {
+                        $name = '<span class="pavfn">' . htmlspecialchars($o->name) . '</span>';
+                        if ($o->type == "attachments")
+                            $name .= "/" . htmlspecialchars($d->unique_filename);
+                        $pdfs[] = documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg", $name);
+                    }
                 }
 
             if ($prow->finalPaperStorageId > 1
@@ -750,11 +749,8 @@ class PaperTable {
                 $ox = Ht::link_urls($ox);
             } else if ($o->type == "attachments") {
                 $ox = array();
-                foreach ($oa->values as $docid)
-                    if (($doc = paperDocumentData($this->prow, $o->id, $docid))) {
-                        unset($doc->size);
-                        $ox[] = documentDownload($doc, "sdlimg", htmlspecialchars($doc->filename));
-                    }
+                foreach ($oa->documents($this->prow) as $doc)
+                    $ox[] = documentDownload($doc, "sdlimg", htmlspecialchars($doc->unique_filename));
                 $ox = join("<br />\n", $ox);
             } else if ($o->is_document() && $oa->value > 1) {
                 $show_on = false;
@@ -1053,17 +1049,16 @@ class PaperTable {
         echo "<div class='papv'>", Ht::hidden("has_opt$o->id", 1);
         if (($prow = $this->prow) && ($optx = $prow->option($o->id))) {
             $docclass = new HotCRPDocument($o->id, $o);
-            foreach ($optx->values as $docid)
-                if (($doc = paperDocumentData($prow, $o->id, $docid))) {
-                    $oname = "opt" . $o->id . "_" . $docid;
-                    echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
-                        "<td class='nowrap'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->filename)), "</td>",
-                        "<td class='fx'><span class='sep'></span></td>",
-                        "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
-                    if (($stamps = self::pdfStamps($doc)))
-                        echo "<td class='fx'><span class='sep'></span></td><td class='fx'>$stamps</td>";
-                    echo "</tr></table></div>\n";
-                }
+            foreach ($optx->documents($prow) as $doc) {
+                $oname = "opt" . $o->id . "_" . $docid;
+                echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
+                    "<td class='nowrap'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
+                    "<td class='fx'><span class='sep'></span></td>",
+                    "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
+                if (($stamps = self::pdfStamps($doc)))
+                    echo "<td class='fx'><span class='sep'></span></td><td class='fx'>$stamps</td>";
+                echo "</tr></table></div>\n";
+            }
         }
         echo "<div id='opt", $o->id, "_new'></div>",
             Ht::js_button("Attach file", "addattachment($o->id)"), "</div>";

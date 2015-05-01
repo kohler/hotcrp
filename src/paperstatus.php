@@ -49,11 +49,18 @@ class PaperStatus {
 
     private function document_to_json($prow, $dtype, $docid, $args) {
         global $Conf;
+        if (!is_object($docid)) {
+            $dresult = $Conf->document_result($prow, $dtype, $docid);
+            $drow = $Conf->document_row($dresult, $dtype);
+            Dbl::free($dresult);
+        } else {
+            $drow = $docid;
+            $docid = $drow ? $drow->paperStorageId : null;
+        }
         $d = (object) array();
-        if (@$args["docids"] || $this->export_docids)
+        if ($docid && (@$args["docids"] || $this->export_docids))
             $d->docid = $docid;
-        $dresult = $Conf->document_result($prow, $dtype, $docid);
-        if (($drow = $Conf->document_row($dresult, $dtype))) {
+        if ($drow) {
             if ($drow->mimetype)
                 $d->mimetype = $drow->mimetype;
             if ($drow->sha1 !== null && $drow->sha1 !== "")
@@ -71,7 +78,6 @@ class PaperStatus {
         }
         foreach ($this->document_callbacks as $cb)
             call_user_func($cb, $d, $prow, $dtype, $drow);
-        Dbl::free($dresult);
         return count(get_object_vars($d)) ? $d : null;
     }
 
@@ -187,8 +193,8 @@ class PaperStatus {
                     $options[$okey] = $oa->data;
                 else if ($o->type == "attachments") {
                     $attachments = array();
-                    foreach ($oa->values as $docid)
-                        if ($docid && ($doc = $this->document_to_json($prow, $o->id, $docid, $args)))
+                    foreach ($oa->documents($prow) as $doc)
+                        if (($doc = $this->document_to_json($prow, $o->id, $doc, $args)))
                             $attachments[] = $doc;
                     if (count($attachments))
                         $options[$okey] = $attachments;
