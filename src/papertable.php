@@ -646,7 +646,7 @@ class PaperTable {
     }
 
     private function paptabAuthors($skip_contacts) {
-        global $Conf, $Me;
+        global $Conf, $Me, $Error;
 
         $viewable = $Me->can_view_authors($this->prow, false);
         if (!$viewable && !$Me->can_view_authors($this->prow, true)) {
@@ -866,7 +866,7 @@ class PaperTable {
     }
 
     private function editable_contact_author($always_unfold) {
-        global $Conf, $Me;
+        global $Conf, $Me, $Error;
         $paperId = $this->prow->paperId;
         list($autable, $contacts) = $this->_analyze_authors();
 
@@ -1251,7 +1251,7 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {
-        global $Conf, $Me, $Opt, $Error;
+        global $Conf, $Me, $Opt;
         $editable = ($type == "manager" ? $Me->privChair : $Me->can_administer($this->prow));
 
         $field = $type . "ContactId";
@@ -1375,7 +1375,7 @@ class PaperTable {
     }
 
     function papstripOutcomeSelector() {
-        global $Conf, $Error;
+        global $Conf;
         echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") != "decision"),
             $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
             "<div class='psv'>",

@@ -156,7 +156,7 @@ class PaperActions {
     }
 
     static function setTags($prow) {
-        global $Conf, $Me, $Error, $OK;
+        global $Conf, $Me, $OK;
         if (isset($_REQUEST["cancelsettags"]))
             return;
         $ajax = @$_REQUEST["ajax"];
@@ -240,7 +240,7 @@ class PaperActions {
     }
 
     static function all_tags($papersel = null) {
-        global $Conf, $Me, $Error, $OK;
+        global $Conf, $Me, $OK;
         if (!$Me->isPC)
             $Conf->ajaxExit(array("ok" => false));
         $ajax = defval($_REQUEST, "ajax", false);

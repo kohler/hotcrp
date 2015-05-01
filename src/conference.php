@@ -1263,7 +1263,7 @@ class Conference {
     }
 
     private function __downloadPaper($paperId, $attachment, $documentType, $docid) {
-        global $Opt, $Me, $zlib_output_compression;
+        global $Opt, $Me;
 
         $result = $this->document_result($paperId, $documentType, $docid);
         if (!$result) {
