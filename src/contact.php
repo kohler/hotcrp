@@ -2252,7 +2252,7 @@ class Contact {
                 && $Conf->timeReviewerViewDecision());
     }
 
-    function can_set_decision(PaperInfo $prow) {
+    function can_set_decision(PaperInfo $prow = null) {
         return $this->can_administer($prow);
     }
 
