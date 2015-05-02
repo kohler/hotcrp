@@ -2252,8 +2252,8 @@ class Contact {
                 && $Conf->timeReviewerViewDecision());
     }
 
-    function can_set_decision(PaperInfo $prow = null) {
-        return $this->can_administer($prow);
+    function can_set_decision(PaperInfo $prow, $forceShow = null) {
+        return $this->can_administer($prow, $forceShow);
     }
 
     // A review field is visible only if viewScore > view_score_bound.

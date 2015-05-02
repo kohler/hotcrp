@@ -914,21 +914,31 @@ if ($getaction == "jsonattach" && SearchActions::any() && $Me->privChair) {
 
 
 // set outcome for selected papers
+function search_set_decisions() {
+    global $Conf, $Me;
+    $o = cvtint(@$_REQUEST["decision"]);
+    $decision_map = $Conf->decision_map();
+    if (!isset($decision_map[$o]))
+        return $Conf->errorMsg("Bad decision value.");
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
+    $success = $fail = array();
+    while (($prow = PaperInfo::fetch($result, $Me)))
+        if ($Me->can_set_decision($prow))
+            $success[] = $prow->paperId;
+        else
+            $fails[] = "#" . $prow->paperId;
+    if (count($fails))
+        $Conf->errorMsg("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
+    if (count($success)) {
+        Dbl::qe("update Paper set outcome=$o where paperId ?a", $success);
+        $Conf->updatePaperaccSetting($o > 0);
+        redirectSelf(array("atab" => "decide", "decision" => $o));
+    }
+    $_REQUEST["atab"] = "decide";
+}
 if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
     && SearchActions::any() && check_post())
-    if (!$Me->can_set_decision(null))
-        $Conf->errorMsg("You cannot set paper decisions.");
-    else {
-        $o = cvtint(@$_REQUEST["decision"]);
-        $decision_map = $Conf->decision_map();
-        if (isset($decision_map[$o])) {
-            Dbl::qe_raw("update Paper set outcome=$o where paperId" . SearchActions::sql_predicate());
-            $Conf->updatePaperaccSetting($o > 0);
-            redirectSelf(array("atab" => "decide", "decision" => $o));
-            // normally does not return
-        } else
-            $Conf->errorMsg("Bad decision value!");
-    }
+    search_set_decisions();
 
 
 // "Assign"
@@ -1558,7 +1568,7 @@ if ($pl && $pl->count > 0) {
         echo "<td class='padlb'>",
             Ht::checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
                           array("id" => "showforce", "class" => "cbx",
-                                "onchange" => "fold('pl',!this.checked,'force')")),
+                                "onchange" => "fold('pl',!this.checked,'force');$('#forceShow').val(this.checked?1:0)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Formulas link
@@ -1658,6 +1668,7 @@ if ($pl) {
     if (isset($pl->any->sel))
         echo Ht::form_div(selfHref(array("selector" => 1, "post" => post_value())), array("id" => "sel", "onsubmit" => "return paperselCheck()")),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
+            Ht::hidden("forceShow", (string) @$_REQUEST["forceShow"], array("id" => "forceShow")),
             Ht::hidden_default_submit("default", 1);
 
     echo $pl_text;
