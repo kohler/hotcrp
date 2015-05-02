@@ -426,22 +426,21 @@ class Tagger {
             if (!($base = TagInfo::base($tag)))
                 continue;
             $lbase = strtolower($base);
+            $close = '">';
             if (TagInfo::is_vote($lbase)) {
                 $v = array();
                 if ($votereport)
                     foreach (pcMembers() as $pcm)
                         if (($count = defval($vote[$lbase], $pcm->contactId, 0)) > 0)
                             $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
-                $title = ($v ? "PC votes: " . join(", ", $v) : "Vote search");
+                if (count($v))
+                    $close = '" title="PC votes: ' . join(", ", $v) . $close;
                 $link = "rorder:";
-            } else if ($base[0] === "~" && TagInfo::is_vote(substr($lbase, 1))) {
-                $title = "Vote search";
+            } else if ($base[0] === "~" && TagInfo::is_vote(substr($lbase, 1)))
                 $link = "rorder:";
-            } else {
-                $title = "Tag search";
+            else
                 $link = ($base === $tag ? "%23" : "order:");
-            }
-            $tx = "<a class=\"qq nw\" href=\"" . hoturl("search", "q=$link$base") . "\" title=\"$title\">" . $base . "</a>" . substr($tag, strlen($base));
+            $tx = "<a class=\"qq nw\" href=\"" . hoturl("search", "q=$link$base") . $close . $base . "</a>" . substr($tag, strlen($base));
             if (isset($byhighlight[$lbase])) {
                 $byhighlight[$lbase] .= "<strong>" . $tx . "</strong> ";
                 $anyhighlight = true;
