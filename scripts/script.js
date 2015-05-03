@@ -1924,6 +1924,22 @@ function comment_shortcut() {
         return false;
 }
 
+function blur_keyup_shortcut(evt) {
+    var code;
+    // IE compatibility
+    evt = evt || window.event;
+    code = evt.charCode || evt.keyCode;
+    // reject modified keys, interesting targets
+    if (code != 27 || evt.altKey || evt.ctrlKey || evt.metaKey)
+        return true;
+    document.activeElement && document.activeElement.blur();
+    if (evt.preventDefault)
+        evt.preventDefault();
+    else
+        evt.returnValue = false;
+    return false;
+}
+
 function gopaper_shortcut() {
     var a = $$("quicksearchq");
     if (a) {
@@ -1933,8 +1949,35 @@ function gopaper_shortcut() {
         return false;
 }
 
+function make_selector_shortcut(type) {
+    function end(evt) {
+        var e = $$("fold" + type);
+        e.className = e.className.replace(/ psfocus\b/g, "");
+        e = e.getElementsByTagName("select")[0];
+        e.removeEventListener("blur", end, false);
+        e.removeEventListener("change", end, false);
+        e.removeEventListener("keyup", blur_keyup_shortcut, false);
+        if (evt && evt.type == "change")
+            this.blur();
+        return false;
+    }
+    return function (evt) {
+        var e = $$("fold" + type);
+        e.className += " psfocus";
+        foldup(e, null, {f: false});
+        jQuery(e).scrollIntoView();
+        e = e.getElementsByTagName("select")[0];
+        e.focus();
+        e.addEventListener("blur", end, false);
+        e.addEventListener("change", end, false);
+        e.addEventListener("keyup", blur_keyup_shortcut, false);
+        event_stop(evt);
+        return true;
+    }
+}
+
 function shortcut(top_elt) {
-    var self, keys = {};
+    var self, main_keys = {}, current_keys = null, last_key_at = null;
 
     function keypress(evt) {
         var key, a, f, target, x, i, j;
@@ -1962,8 +2005,20 @@ function shortcut(top_elt) {
                     return true;
             }
         // call function
-        if (!keys[key] || !keys[key](evt, key))
-            return true;
+        var keymap, time = new Date().getTime();
+        if (current_keys && last_key_at && time - last_key_at <= 600)
+            keymap = current_keys;
+        else
+            keymap = current_keys = main_keys;
+        var keyfunc = keymap[key] || function () { return false; };
+        if (jQuery.isFunction(keyfunc)) {
+            current_keys = null;
+            if (!keyfunc(evt, key))
+                return true;
+        } else {
+            current_keys = keyfunc;
+            last_key_at = time;
+        }
         // done
         if (evt.preventDefault)
             evt.preventDefault();
@@ -1976,14 +2031,25 @@ function shortcut(top_elt) {
     function add(key, f) {
         if (arguments.length > 2)
             f = bind_append(f, Array.prototype.slice.call(arguments, 2));
-        if (key)
-            keys[key] = f;
-        else {
+        if (key) {
+            if (typeof key === "string")
+                key = [key];
+            for (var i = 0, keymap = main_keys; i < key.length - 1; ++i) {
+                keymap[key[i]] = keymap[key[i]] || {};
+                if (jQuery.isFunction(keymap[key[i]]))
+                    log_jserror("bad shortcut " + key.join(","));
+                keymap = keymap[key[i]];
+            }
+            keymap[key[key.length - 1]] = f;
+        } else {
             add("j", quicklink_shortcut);
             add("k", quicklink_shortcut);
             if (top_elt == document) {
-                add("c", comment_shortcut);
-                add("g", gopaper_shortcut);
+                add(["g", "c"], comment_shortcut);
+                add(["g", "p"], gopaper_shortcut);
+                add(["g", "d"], make_selector_shortcut("decision"));
+                add(["g", "l"], make_selector_shortcut("lead"));
+                add(["g", "s"], make_selector_shortcut("shepherd"));
             }
         }
         return self;

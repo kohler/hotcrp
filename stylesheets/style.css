@@ -1972,6 +1972,12 @@ div.psc.psc1 {
 	border-top: 0 none;
 	margin-top: 0;
 }
+div.psfocus {
+	box-shadow: 0 0 10px #9999cc;
+	-moz-box-shadow: 0 0 10px #9999cc;
+	-webkit-box-shadow: 0 0 10px #9999cc;
+	background: #f5f5ff;
+}
 div.pscopen {
 	margin: 0 -2px;
 	padding: 0 2px;
