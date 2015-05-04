@@ -208,12 +208,13 @@ class TagInfo {
 
     public static function approval_tags() {
         $dt = self::defined_tags();
-        return $dt->nvote ? $dt->tag_array("approval") : array();
+        return $dt->napproval ? $dt->tag_array("approval") : array();
     }
 
     public static function votish_base($tag) {
         $dt = self::defined_tags();
-        if (!$dt->nvote || ($twiddle = strpos($tag, "~")) === false)
+        if ((!$dt->nvote && !$dt->napproval)
+            || ($twiddle = strpos($tag, "~")) === false)
             return false;
         $tbase = substr(self::base($tag), $twiddle + 1);
         $t = $dt->check($tbase);
