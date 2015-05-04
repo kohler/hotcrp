@@ -1118,22 +1118,17 @@ class PaperSearch {
         return $ret;
     }
 
-    private function _search_one_tag($value, $keyword, $targs, &$qt) {
-        $extra = null;
-        if ($keyword == "order" || $keyword == "rorder" || !$keyword)
-            $extra = array("tagorder" => (object) array("tag" => $value, "reverse" => $keyword == "rorder"));
+    private function _search_one_tag($value, $old_arg) {
         if (($starpos = strpos($value, "*")) !== false) {
-            $targs[0] = "\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
+            $arg = "(\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
             if ($starpos == 0)
-                $targs[0] .= " and \3 not like '%~%'";
+                $arg .= " and \3 not like '%~%'";
+            $arg .= ")";
         } else if ($value === "any" || $value === "none")
-            $targs[0] = "\3 is not null and (\3 not like '%~%' or \3 like '{$this->cid}~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . ")";
+            $arg = "(\3 is not null and (\3 not like '%~%' or \3 like '{$this->cid}~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . "))";
         else
-            $targs[0] = $value;
-        $term = new SearchTerm("tag", self::F_XVIEW, $targs, $extra);
-        if ($value === "none")
-            $term = SearchTerm::negate($term);
-        $qt[] = $term;
+            $arg = "\3='" . sqlq($value) . "'";
+        return $old_arg ? "$old_arg or $arg" : $arg;
     }
 
     private function _search_tags($word, $keyword, &$qt) {
@@ -1170,13 +1165,19 @@ class PaperSearch {
             $tagword = ltrim(substr($tagword, 1));
         }
 
-        $qx = array();
-        foreach ($this->_expand_tag($tagword, $keyword == "tag") as $tag)
-            $this->_search_one_tag($tag, $keyword, $compar, $qx);
-        $qx = SearchTerm::combine("or", $qx);
-        if ($qx && $negated)
-            $qx = SearchTerm::negate($qx);
-        $qt[] = $qx ? : new SearchTerm("f");
+        $tags = $this->_expand_tag($tagword, $keyword == "tag");
+        if (!count($tags))
+            return new SearchTerm("f");
+
+        foreach ($tags as $tag)
+            $compar[0] = $this->_search_one_tag($tag, $compar[0]);
+        $extra = null;
+        if ($keyword == "order" || $keyword == "rorder" || !$keyword)
+            $extra = array("tagorder" => (object) array("tag" => $tags[0], "reverse" => $keyword == "rorder"));
+        $term = new SearchTerm("tag", self::F_XVIEW, $compar, $extra);
+        if ($tags[0] === "none")
+            $term = SearchTerm::negate($term);
+        $qt[] = $term;
     }
 
     static public function analyze_option_search($word) {
@@ -2864,7 +2865,7 @@ class PaperSearch {
             else {
                 $joiners = array("$tabname.paperId=Paper.paperId");
                 for ($i = 2; $i < count($value); ++$i)
-                    $joiners[] = $value[$i];
+                    $joiners[] = "(" . $value[$i] . ")";
                 $q .= "\n    " . $value[0] . " " . $value[1] . " as " . $tabname
                     . " on (" . join("\n        and ", $joiners) . ")";
             }
