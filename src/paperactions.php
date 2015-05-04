@@ -120,11 +120,12 @@ class PaperActions {
         return self::set_paper_pc($prow, $value, $contact, $ajax, "manager");
     }
 
-    static function setTags($prow) {
+    static function setTags($prow, $ajax = null) {
         global $Conf, $Me, $OK;
         if (isset($_REQUEST["cancelsettags"]))
             return;
-        $ajax = @$_REQUEST["ajax"];
+        if ($ajax === null)
+            $ajax = @$_REQUEST["ajax"];
 
         // save tags using assigner
         $x = array("paper,tag");

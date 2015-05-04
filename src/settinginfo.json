@@ -58,6 +58,7 @@
     "sub_pcconfsel": {"type": "checkbox", "name": "Collect PC conflict types"},
     "sub_reg": {"type": "date", "name": "Submission registration deadline"},
     "sub_sub": {"type": "date", "name": "Submission deadline"},
+    "tag_approval": {"type": "special", "name": "Approval voting tags"},
     "tag_au_seerev": {"type": "special", "name": "Review visibility tags"},
     "tag_chair": {"type": "special", "name": "Chair-only tags"},
     "tag_color": {"type": "special", "name": "Tag colors"},

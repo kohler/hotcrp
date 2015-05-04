@@ -10,6 +10,7 @@
 class TagMap implements ArrayAccess, IteratorAggregate {
     public $nchair = 0;
     public $nvote = 0;
+    public $napproval = 0;
     public $nrank = 0;
     private $storage = array();
     private $sorted = false;
@@ -19,7 +20,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     public function offsetGet($offset) {
         $loffset = strtolower($offset);
         if (!isset($this->storage[$loffset])) {
-            $n = (object) array("tag" => $offset, "chair" => false, "vote" => false, "rank" => false, "colors" => null);
+            $n = (object) array("tag" => $offset, "chair" => false, "vote" => false, "approval" => false, "rank" => false, "colors" => null);
             if (!TagInfo::basic_check($loffset))
                 return $n;
             $this->storage[$loffset] = $n;
@@ -116,6 +117,14 @@ class TagInfo {
                     $map[$b]->vote = ($v ? $v : 1);
                     ++$map->nvote;
                 }
+        $vt = $Conf->setting_data("tag_approval", "");
+        if ($vt != "")
+            foreach (preg_split('/\s+/', $vt) as $t)
+                if ($t != "") {
+                    list($b, $v) = self::split_index($t);
+                    $map[$b]->approval = true;
+                    ++$map->napproval;
+                }
         $rt = $Conf->setting_data("tag_rank", "");
         if ($rt != "")
             foreach (preg_split('/\s+/', $rt) as $t) {
@@ -148,6 +157,10 @@ class TagInfo {
         return self::defined_tags()->nvote;
     }
 
+    public static function has_approval() {
+        return self::defined_tags()->napproval;
+    }
+
     public static function has_rank() {
         return self::defined_tags()->nrank;
     }
@@ -162,6 +175,12 @@ class TagInfo {
 
     public static function chair_tags() {
         return self::defined_tags()->tag_array("chair");
+    }
+
+    public static function is_votish($tag) {
+        $dt = self::defined_tags();
+        $t = $dt->check(self::base($tag));
+        return $t && ($t->vote || $t->approval);
     }
 
     public static function is_vote($tag) {
@@ -181,13 +200,24 @@ class TagInfo {
         return $t && $t->vote > 0 ? $t->vote : 0;
     }
 
-    public static function vote_base($tag) {
+    public static function is_approval($tag) {
+        $dt = self::defined_tags();
+        $t = $dt->check(self::base($tag));
+        return $t && $t->approval;
+    }
+
+    public static function approval_tags() {
+        $dt = self::defined_tags();
+        return $dt->nvote ? $dt->tag_array("approval") : array();
+    }
+
+    public static function votish_base($tag) {
         $dt = self::defined_tags();
         if (!$dt->nvote || ($twiddle = strpos($tag, "~")) === false)
             return false;
         $tbase = substr(self::base($tag), $twiddle + 1);
         $t = $dt->check($tbase);
-        return $t && $t->vote ? $tbase : false;
+        return $t && ($t->vote || $t->approval) ? $tbase : false;
     }
 
     public static function is_rank($tag) {
@@ -348,6 +378,7 @@ class Tagger {
                 if (!($t === ""
                       || (($v = $dt->check(TagInfo::base($t)))
                           && ($v->vote
+                              || $v->approval
                               || ($v->chair && !$privChair)
                               || ($v->rank && !$privChair)))))
                     $etags[] = $t;
@@ -399,8 +430,8 @@ class Tagger {
 
         // track votes for vote report
         $dt = TagInfo::defined_tags();
-        if ($votereport && $dt->nvote) {
-            preg_match_all('{ (\d+)~(\S+)#([1-9]\d*)}',
+        if ($votereport && ($dt->nvote || $dt->napproval)) {
+            preg_match_all('{ (\d+)~(\S+)#(\d+)}',
                            strtolower(" $alltags"), $m, PREG_SET_ORDER);
             $vote = array();
             foreach ($m as $x)
@@ -427,11 +458,12 @@ class Tagger {
                 continue;
             $lbase = strtolower($base);
             $close = '">';
-            if (TagInfo::is_vote($lbase)) {
+            if (TagInfo::is_votish($lbase)) {
                 $v = array();
+                $limit = TagInfo::is_vote($lbase) ? 1 : 0;
                 if ($votereport)
                     foreach (pcMembers() as $pcm)
-                        if (($count = defval($vote[$lbase], $pcm->contactId, 0)) > 0)
+                        if (($count = defval($vote[$lbase], $pcm->contactId, $limit - 1)) >= $limit)
                             $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
                 if (count($v))
                     $close = '" title="PC votes: ' . join(", ", $v) . $close;

@@ -628,7 +628,7 @@ class TagAssigner extends Assigner {
             $xtag = $tag;
         if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
             return "Invalid tag “" . htmlspecialchars($xtag) . "”.";
-        else if ($m[3] && !$m[4])
+        else if ($m[3] && $m[4] === "")
             return "Index missing.";
         else if ($m[3] && !preg_match(',\A(-?\d+|any|all|none|clear)\z,', $m[4]))
             return "Index must be an integer.";
@@ -637,7 +637,7 @@ class TagAssigner extends Assigner {
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
-        if (!$m[1] && TagInfo::is_vote($m[2]))
+        if (!$m[1] && TagInfo::is_votish($m[2]))
             return false;
 
         // add and remove use different paths
@@ -678,7 +678,7 @@ class TagAssigner extends Assigner {
             $index = $x[0]["_index"];
         $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
                           "_tag" => $tag, "_index" => $index ? : 0));
-        if (($vtag = TagInfo::vote_base($tag)))
+        if (($vtag = TagInfo::votish_base($tag)))
             $this->account_votes($pid, $vtag, $state);
     }
     private function apply_next_index($pid, $tag, $state, $m) {
@@ -741,7 +741,7 @@ class TagAssigner extends Assigner {
                     || $state->contact->can_change_tag($prow, $x["ltag"],
                                                        $x["_index"], null, $state->override))) {
                 $state->remove($x);
-                if (($v = TagInfo::vote_base($x["ltag"])))
+                if (($v = TagInfo::votish_base($x["ltag"])))
                     $vote_adjustments[$v] = true;
             }
         foreach ($vote_adjustments as $vtag => $v)
@@ -750,10 +750,11 @@ class TagAssigner extends Assigner {
     private function account_votes($pid, $vtag, $state) {
         $res = $state->query(array("type" => "tag", "pid" => $pid));
         $tag_re = '{\A\d+~' . preg_quote($vtag) . '\z}i';
+        $is_vote = TagInfo::is_vote($vtag);
         $total = 0;
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
-                $total += (int) $x["_index"];
+                $total += $is_vote ? (int) $x["_index"] : 1;
         $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
                           "_tag" => $vtag, "_index" => $total, "_vote" => true));
     }

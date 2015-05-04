@@ -95,6 +95,8 @@ function handle_api() {
         PaperActions::set_shepherd($prow, @$_REQUEST["shepherd"], $Me, true);
     else if ($_REQUEST["fn"] == "setmanager")
         PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, true);
+    else if ($_REQUEST["fn"] == "settags")
+        PaperActions::setTags($prow, true);
     $Conf->ajaxExit(array("ok" => false, "error" => "Unknown action."));
 }
 if (@$_REQUEST["m"] === "api")

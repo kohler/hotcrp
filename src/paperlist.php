@@ -28,6 +28,7 @@ class PaperList extends BaseList {
     private $_paper_link_args;
     private $viewmap;
     private $atab;
+    private $_row_id_pattern = null;
 
     private $query_options;
     private $default_sort_column;
@@ -75,6 +76,7 @@ class PaperList extends BaseList {
             $this->_reviewer = $r;
         }
         $this->atab = defval($_REQUEST, "atab", "");
+        $this->_row_id_pattern = defval($args, "row_id_pattern", null);
         unset($_REQUEST["atab"]);
     }
 
@@ -786,7 +788,10 @@ class PaperList extends BaseList {
             $rstate->foldinfo["wholerow"] = true;
         }
 
-        $t = "  <tr class=\"pl $trclass\" hotcrpid=\"$row->paperId\" hotcrptitlehint=\"" . htmlspecialchars(titleWords($row->title, 60)) . "\">\n" . $t . "  </tr>\n";
+        $tb = "  <tr class=\"pl $trclass\" hotcrpid=\"$row->paperId\" hotcrptitlehint=\"" . htmlspecialchars(titleWords($row->title, 60));
+        if ($this->_row_id_pattern)
+            $tb .= "\" id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern);
+        $t = $tb . "\">\n" . $t . "  </tr>\n";
 
         if ($tt !== "") {
             $t .= "  <tr class=\"plx $trclass\" hotcrpid=\"$row->paperId\">";

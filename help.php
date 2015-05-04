@@ -805,6 +805,7 @@ function showvotetags() {
 <p>Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
 arbitrarily among unconflicted papers.
+Alternately, each PC member can vote, once, for as many papers as they like (“approval voting”).
 The PC’s aggregated vote totals might help determine
 which papers to discuss.</p>
 

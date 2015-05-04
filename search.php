@@ -1208,7 +1208,7 @@ if ($Me->privChair) {
 $Conf->header("Search", "search", actionBar());
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
-    $pl = new PaperList($Search, array("sort" => true, "list" => true,
+    $pl = new PaperList($Search, array("sort" => true, "list" => true, "row_id_pattern" => "p#",
                                        "display" => defval($_REQUEST, "display")));
     if (check_post()) {
         $pl->papersel = array();

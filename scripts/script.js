@@ -3598,22 +3598,32 @@ save_tags.success = function (data) {
     if (!jQuery("#foldtags textarea").is(":visible"))
         jQuery("#foldtags textarea").val(data.tags_edit_text);
     jQuery(".has_hotcrp_tag_indexof").each(function () {
-        var j = jQuery(this), res = j.is("input") ? "" : "None",
+        var j = jQuery(this), res = "",
             t = j.attr("hotcrp_tag_indexof") + "#", i;
         if (t.charAt(0) == "~" && t.charAt(1) != "~")
             t = hotcrp_user.cid + t;
         for (i = 0; i != data.tags.length; ++i)
             if (data.tags[i].substr(0, t.length) == t)
                 res = data.tags[i].substr(t.length);
-        j.is("input") ? j.val(res) : j.text(res);
+        if (j.is("input[type='checkbox']"))
+            j.prop("checked", res !== "");
+        else if (j.is("input"))
+            j.val(res);
+        else
+            j.text(res === "" ? "None" : res);
     });
 };
 
 function save_tag_index(e) {
     var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),
-        index = jQuery.trim(j.find("input[name='tagindex']").val());
+        indexelt = j.find("input[name='tagindex']"), index = "";
+    if (indexelt.is("input[type='checkbox']"))
+        index = indexelt.is(":checked") ? indexelt.val() : "";
+    else
+        index = indexelt.val();
+    index = jQuery.trim(index);
     jQuery.ajax({
-        url: hoturl_post("paper", "p=" + hotcrp_paperid + "&settags=1&ajax=1"),
+        url: hoturl_post("paper", "p=" + hotcrp_paperid + "&m=api&fn=settags"),
         type: "POST", cache: false,
         data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
         success: function (data) {

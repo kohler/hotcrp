@@ -307,6 +307,54 @@ function save_tags($set, $what) {
         }
     }
 
+    if (!$set && $what == "tag_approval" && isset($_POST["tag_approval"])) {
+        $vs = array();
+        foreach (preg_split('/\s+/', $_POST["tag_approval"]) as $t)
+            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                $vs[] = $t;
+            else if ($t !== "") {
+                $Error[] = "Approval voting tag: " . $tagger->error_html;
+                $Highlight["tag_approval"] = true;
+            }
+        $v = array(count($vs), join(" ", $vs));
+        if (!isset($Highlight["tag_approval"])
+            && ($Conf->setting("tag_approval") != $v[0]
+                || $Conf->setting_data("tag_approval") !== $v[1]))
+            $Values["tag_approval"] = $v;
+    }
+
+    if ($set && $what == "tag_approval" && isset($Values["tag_approval"])) {
+        // check allotments
+        $pcm = pcMembers();
+        foreach (preg_split('/\s+/', $Values["tag_approval"][1]) as $t) {
+            if ($t === "")
+                continue;
+            $base = substr($t, 0, strpos($t, "#"));
+            $allotment = substr($t, strlen($base) + 1);
+
+            $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
+            $pvals = array();
+            $negative = false;
+            while (($row = edb_row($result))) {
+                $who = substr($row[1], 0, strpos($row[1], "~"));
+                if ($row[2] < 0) {
+                    $Error[] = "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” approval vote for paper #$row[0].";
+                    $negative = true;
+                } else
+                    $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
+            }
+
+            $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
+            $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
+
+            $q = array();
+            foreach ($pvals as $pid => $what)
+                $q[] = "($pid, '" . sqlq($base) . "', $what)";
+            if (count($q) > 0)
+                $Conf->qe("insert into PaperTag values " . join(", ", $q));
+        }
+    }
+
     if (!$set && $what == "tag_rank" && isset($_POST["tag_rank"])) {
         $vs = array();
         foreach (preg_split('/\s+/', $_POST["tag_rank"]) as $t)
@@ -990,7 +1038,7 @@ function save_resp_rounds($set) {
 
 function doSpecial($name, $set) {
     global $Values;
-    if ($name == "tag_chair" || $name == "tag_vote"
+    if ($name == "tag_chair" || $name == "tag_vote" || $name == "tag_approval"
         || $name == "tag_rank" || $name == "tag_color"
         || $name == "tag_au_seerev")
         save_tags($set, $name);
@@ -1169,9 +1217,11 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (count($Error) == 0 && count($Values) > 0) {
         $tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, PaperOption write";
         if (array_key_exists("decisions", $Values)
-            || array_key_exists("tag_vote", $Values))
+            || array_key_exists("tag_vote", $Values)
+            || array_key_exists("tag_approval", $Values))
             $tables .= ", Paper write";
-        if (array_key_exists("tag_vote", $Values))
+        if (array_key_exists("tag_vote", $Values)
+            || array_key_exists("tag_approval", $Values))
             $tables .= ", PaperTag write";
         if (array_key_exists("reviewform", $Values))
             $tables .= ", PaperReview write";
@@ -2057,6 +2107,19 @@ function doTagsGroup() {
     echo "<td>", Ht::hidden("has_tag_vote", 1);
     doEntry("tag_vote", $v, 40);
     echo "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+
+    echo "<tr><td class='lxcaption'>", setting_label("tag_approval", "Approval voting tags"), "</td>";
+    if (count($Error) > 0)
+        $v = defval($_POST, "tag_approval", "");
+    else {
+        $x = "";
+        foreach (TagInfo::approval_tags() as $n => $v)
+            $x .= "$n ";
+        $v = trim($x);
+    }
+    echo "<td>", Ht::hidden("has_tag_approval", 1);
+    doEntry("tag_approval", $v, 40);
+    echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)

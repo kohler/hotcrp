@@ -203,7 +203,7 @@ class PaperTable {
         if (!$fold) {
             $n = (is_array($name) ? $name[0] : $name);
             if ($editfolder)
-                $c .= "<a class=\"q fn hottooltip\" hottooltip=\"Edit\" "
+                $c .= "<a class=\"q fn\" "
                     . "href=\"" . selfHref(array("atab" => $what))
                     . "\" onclick=\"return foldup(this,event$foldnumarg)\">"
                     . $n . "</a><span class=\"fx\">" . $n . "</span>";
@@ -1438,6 +1438,29 @@ class PaperTable {
         echo "</div></div></div>\n";
     }
 
+    private function papstripApproval($tag) {
+        global $Conf, $Me;
+
+        // load rank
+        if (($rp = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
+            $rp = "";
+
+        $id = "approval_" . html_id_encode($tag);
+        echo $this->_papstripBegin(),
+            Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
+        echo $this->papt($id,
+                         Ht::checkbox("tagindex", "0", $rp !== "",
+                                      array("id" => "fold" . $id . "_d", "tabindex" => 1,
+                                            "onchange" => "save_tag_index(this)",
+                                            "class" => "has_hotcrp_tag_indexof",
+                                            "hotcrp_tag_indexof" => "~$tag",
+                                            "style" => "padding-left:0;margin-left:0"))
+                         . "&nbsp;" . Ht::label("#~$tag vote"),
+                         array("type" => "ps")),
+            "<div class='pshint'><span id='{$id}formresult'></span>",
+            "</div></div></form></div>\n\n";
+    }
+
     private function papstripWatch() {
         global $Conf, $Me;
         $prow = $this->prow;
@@ -1717,6 +1740,9 @@ class PaperTable {
         if (($rank_tag = $Conf->setting_data("tag_rank"))
             && $Me->can_change_tag($prow, "~$rank_tag", null, 1))
             $this->papstripRank($rank_tag);
+        foreach (TagInfo::approval_tags() as $tag => $index)
+            if ($Me->can_change_tag($prow, "~$tag", null, 1))
+                $this->papstripApproval($tag);
         $this->papstripWatch();
         if ($Me->can_view_conflicts($prow) && !$this->editable)
             $this->papstripPCConflicts();
