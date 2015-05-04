@@ -324,32 +324,28 @@ function save_tags($set, $what) {
     }
 
     if ($set && $what == "tag_approval" && isset($Values["tag_approval"])) {
-        // check allotments
         $pcm = pcMembers();
         foreach (preg_split('/\s+/', $Values["tag_approval"][1]) as $t) {
             if ($t === "")
                 continue;
-            $base = substr($t, 0, strpos($t, "#"));
-            $allotment = substr($t, strlen($base) + 1);
-
-            $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
+            $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
             $pvals = array();
             $negative = false;
             while (($row = edb_row($result))) {
                 $who = substr($row[1], 0, strpos($row[1], "~"));
                 if ($row[2] < 0) {
-                    $Error[] = "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” approval vote for paper #$row[0].";
+                    $Error[] = "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].";
                     $negative = true;
                 } else
                     $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
             }
 
-            $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
-            $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
+            $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
+            $Conf->qe("delete from PaperTag where tag='" . sqlq($t) . "'$q");
 
             $q = array();
             foreach ($pvals as $pid => $what)
-                $q[] = "($pid, '" . sqlq($base) . "', $what)";
+                $q[] = "($pid, '" . sqlq($t) . "', $what)";
             if (count($q) > 0)
                 $Conf->qe("insert into PaperTag values " . join(", ", $q));
         }
