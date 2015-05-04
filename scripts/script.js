@@ -1422,24 +1422,14 @@ function setajaxcheck(elt, rv) {
         elt = $$(elt);
     if (elt) {
         make_outline_flasher(elt);
-
-        var s;
-        if (rv.ok)
-            s = "Saved";
-        else if (rv.error)
-            s = rv.error.replace(/<\/?.*?>/g, "").replace(/\(Override conflict\)\s*/g, "").replace(/\s+$/, "");
-        else
-            s = "Error";
-        elt.setAttribute("title", s);
-
+        if (!rv.ok && !rv.error)
+            rv.error = "Error";
         if (rv.ok)
             make_outline_flasher(elt, "0, 200, 0");
         else
             elt.style.outline = "5px solid red";
         if (rv.error) {
-            var bub = make_bubble(rv.error, "errorbubble");
-            bub.color("red");
-            bub.near(elt);
+            var bub = make_bubble(rv.error, "errorbubble").near(elt);
             jQuery(elt).one("input change", function () {
                 bub.remove();
             });
@@ -2380,20 +2370,23 @@ return function (content, bubopt) {
         $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
     var bubch = bubdiv.childNodes;
     var sizes = null;
+    var divbw = null;
 
     function change_tail_direction() {
-        var divbw = bubdiv.style[cssbw(dir)], bw = [0, 0, 0, 0];
+        var bw = [0, 0, 0, 0];
+        divbw = parseFloat($(bubdiv).css(cssbw(dir)));
         bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
-        bw[dir^2] = (sizes[1] - divbw) + "px";
+        bw[dir^2] = sizes[1] + "px";
         bubch[0].style.borderWidth = bw.join(" ");
-        bw[dir^2] = (sizes[1] - 2*divbw) + "px";
+        bw[dir^1] = bw[dir^3] = Math.max(sizes[0] / 2 - 0.77*divbw, 0) + "px";
+        bw[dir^2] = Math.max(sizes[1] - 0.77*divbw, 0) + "px";
         bubch[2].style.borderWidth = bw.join(" ");
 
         var i, yc;
         for (i = 1; i <= 3; ++i)
             bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
         bubch[0].style[lcdir[dir]] = (-sizes[1]) + "px";
-        bubch[2].style[lcdir[dir]] = (-sizes[1] + 2*divbw) + "px";
+        bubch[2].style[lcdir[dir]] = (-sizes[1] + divbw) + "px";
 
         for (i = 0; i < 3; i += 2)
             bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
@@ -2463,7 +2456,8 @@ return function (content, bubopt) {
             ya = (nearpos.top + nearpos.bottom) / 2;
             y = constrain(ya, wpos.top, wpos.bottom, bpos.height, noconstrain);
             d = roundpixel(ya - y - size / 2);
-            bubch[0].style.top = bubch[2].style.top = d + "px";
+            bubch[0].style.top = d + "px";
+            bubch[2].style.top = (d + 0.77*divbw) + "px";
 
             if (dir == 1)
                 x = nearpos.left - bpos.width - sizes[1] - 1;
@@ -2473,7 +2467,8 @@ return function (content, bubopt) {
             xa = (nearpos.left + nearpos.right) / 2;
             x = constrain(xa, wpos.left, wpos.right, bpos.width, noconstrain);
             d = roundpixel(xa - x - size / 2);
-            bubch[0].style.left = bubch[2].style.left = d + "px";
+            bubch[0].style.left = d + "px";
+            bubch[2].style.left = (d + 0.77*divbw) + "px";
 
             if (dir == 0)
                 y = nearpos.bottom + sizes[1];
