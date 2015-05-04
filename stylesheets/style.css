@@ -2142,23 +2142,6 @@ div.tooltipmenu a.ttmenu {
 	color: white;
 }
 
-/* ranks */
-div#rankctxformresult {
-	font-size: smaller;
-}
-div#rankctxformresult div.xconfirm {
-	background: none;
-	border: 0 none;
-	padding: 0;
-}
-div.rankctx, div.rankctx_h {
-	padding-left: 2em;
-	text-indent: -2em;
-}
-div.rankctx_h {
-	font-weight: bold;
-}
-
 /* paper */
 div.paptab {
 	width: 50%;

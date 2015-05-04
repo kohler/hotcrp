@@ -61,34 +61,6 @@ class PaperActions {
                                   "value" => $v));
     }
 
-    static function rankContext($prow) {
-        global $Conf, $Me, $Error, $OK;
-        $ajax = defval($_REQUEST, "ajax", false);
-        $tag = $Conf->setting_data("tag_rank", "");
-        if (!$tag || !$Me->can_change_tag($prow, "~$tag", null, 1)) {
-            $Conf->errorMsg("You don’t have permission to rank this paper.");
-            $Error["rank"] = true;
-        } else {
-            $result = Dbl::qe_raw("select Paper.paperId, title, tagIndex from Paper join PaperTag on (PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($Me->contactId . "~" . $tag) . "') order by tagIndex, Paper.paperId");
-            $x = array();
-            $prowIndex = -1;
-            while (($row = edb_row($result))) {
-                $t = "$row[2]. <a class='q' href='" . hoturl("paper", "p=$row[0]") . "'>#$row[0] " . htmlspecialchars(titleWords($row[1], 48)) . "</a>";
-                if ($row[0] == $prow->paperId) {
-                    $prowIndex = count($x);
-                    $t = "<div class='rankctx_h'>" . $t . "</div>";
-                } else
-                    $t = "<div class='rankctx'>" . $t . "</div>";
-                $x[] = $t;
-            }
-            $first = max(0, min($prowIndex - 3, count($x) - 7));
-            $x = array_slice($x, $first, min(7, count($x) - $first));
-            $Conf->confirmMsg(join("", $x));
-        }
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "rank")), true);
-    }
-
     static function set_follow($prow) {
         global $Conf, $Me, $OK;
         $ajax = defval($_REQUEST, "ajax", 0);

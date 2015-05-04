@@ -1409,24 +1409,15 @@ class PaperTable {
             $Conf->footerScript("crpfocus('revprefform',null,3)");
     }
 
-    function papstripRank() {
+    private function papstripRank($tag) {
         global $Conf, $Me;
-        if (!($tag = $Conf->setting_data("tag_rank")))
-            return;
 
         // load rank
         if (($rp = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
             $rp = "";
 
-        // rank context form
-        $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=" . $this->prow->paperId),
-                                       array("id" => "rankctxform", "class" => "fold7c",
-                                             "onsubmit" => "return Miniajax.submit('rankctxform')",
-                                             "divclass" => "aahc"))
-                          . Ht::hidden("rankctx", 1) . "</div></form>");
-
         echo $this->_papstripBegin("rank", true, "fold2c"),
-            $this->papt("rank", "Your rank", array("type" => "ps", "editfolder" => "rank")),
+            $this->papt("rank", "#~$tag ranking", array("type" => "ps", "editfolder" => "rank")),
             "<div class='psv'>",
             Ht::form_div("", array("id" => "rankform", "class" => "fx", "hotcrp_tag" => "~$tag",
                                    "onsubmit" => "return false"));
@@ -1443,12 +1434,8 @@ class PaperTable {
             '<div class="fn">',
             '<span class="has_hotcrp_tag_indexof" hotcrp_tag_indexof="~', $tag, '">',
             ($rp === "" ? "None" : $rp), '</span>';
-        if ($rp != "")
-            echo " <span class='fn2'>&nbsp; <a href='#' onclick='fold(\"rank\", 0, 2);return void Miniajax.submit(\"rankctxform\")'>(context)</a></span>";
-        echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>(all)</a>";
-        echo "</div>",
-            "<div id='rankctxformresult' class='fx2'>Loading...</div>",
-            "</div></div>\n";
+        echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag") . "#p" . $this->prow->paperId), "'>(all)</a>";
+        echo "</div></div></div>\n";
     }
 
     private function papstripWatch() {
@@ -1729,7 +1716,7 @@ class PaperTable {
             $this->papstripTags("review");
         if (($rank_tag = $Conf->setting_data("tag_rank"))
             && $Me->can_change_tag($prow, "~$rank_tag", null, 1))
-            $this->papstripRank();
+            $this->papstripRank($rank_tag);
         $this->papstripWatch();
         if ($Me->can_view_conflicts($prow) && !$this->editable)
             $this->papstripPCConflicts();

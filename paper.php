@@ -103,10 +103,6 @@ if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
-if (isset($_REQUEST["rankctx"]) && $prow && check_post()) {
-    PaperActions::rankContext($prow);
-    loadRows();
-}
 if (isset($_REQUEST["setfollow"]) && $prow && check_post()) {
     PaperActions::set_follow($prow);
     loadRows();
