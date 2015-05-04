@@ -15,6 +15,7 @@ class PaperTable {
     var $rrows = null;
     var $crows = null;
     private $mycrows;
+    private $can_view_reviews = false;
     var $rrow = null;
     var $editrrow = null;
     var $mode;
@@ -39,35 +40,37 @@ class PaperTable {
         $this->admin = $Me->allow_administer($prow);
 
         if ($this->prow == null) {
-            $this->mode = "pe";
+            $this->mode = "edit";
             return;
         }
 
         $ms = array();
         if ($Me->can_view_review($prow, null, null)
             || ($prow && $prow->review_submitted($Me)))
-            $ms["r"] = true;
+            $this->can_view_reviews = $ms["p"] = true;
         if ($Me->can_review($prow, null))
             $ms["re"] = true;
         if ($prow->has_author($Me)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
-            $ms["pe"] = true;
+            $ms["edit"] = true;
         if ($Me->can_view_paper($prow))
             $ms["p"] = true;
         if ($prow->has_author($Me)
             || $Me->allow_administer($prow))
-            $ms["pe"] = true;
+            $ms["edit"] = true;
         if ($prow->myReviewType >= REVIEW_SECONDARY
             || $Me->allow_administer($prow))
             $ms["assign"] = true;
-        if (isset($_REQUEST["mode"]) && isset($ms[$_REQUEST["mode"]]))
-            $this->mode = $_REQUEST["mode"];
-        else if (isset($_REQUEST["m"]) && isset($ms[$_REQUEST["m"]]))
-            $this->mode = $_REQUEST["m"];
+        $ms["api"] = true;
+        $mode = @$_REQUEST["m"] ? : @$_REQUEST["mode"];
+        if ($mode === "pe")
+            $mode = "edit";
+        else if ($mode === "view" || $mode === "r")
+            $mode = "p";
+        if ($mode && @$ms[$mode])
+            $this->mode = $mode;
         else
             $this->mode = key($ms);
-        if ($this->mode == "p" && isset($ms["r"]))
-            $this->mode = "r";
         if (@$ms["re"] && isset($_REQUEST["reviewId"]))
             $this->mode = "re";
     }
@@ -95,7 +98,7 @@ class PaperTable {
                 $this->foldState &= ~(1 << $v);
 
         $this->allFolded = $this->mode == "re" || $this->mode == "assign"
-            || ($this->mode != "pe" && (count($this->rrows) || count($this->crows)));
+            || ($this->mode != "edit" && (count($this->rrows) || count($this->crows)));
 
         $this->matchPreg = array();
         $matcher = array();
@@ -117,6 +120,10 @@ class PaperTable {
             $this->matchPreg = null;
 
         $this->watchCheckbox = WATCH_COMMENT;
+    }
+
+    function can_view_reviews() {
+        return $this->can_view_reviews;
     }
 
     private function echoDivEnter() {
@@ -1258,28 +1265,26 @@ class PaperTable {
         if ($wholefold === null)
             echo $this->_papstripBegin($type, true);
         else
-            echo "<div id='fold${type}' class='foldc fold2", ($wholefold ? "c" : "o"), "'>",
-                $this->_papstripBegin(null, true, "fx2");
+            echo '<div id="fold', $type, '" class="foldc">',
+                $this->_papstripBegin(null, true);
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
-            "<div class='psv'><p class='fn odname'>";
+            '<div class="psv"><p class="fn odname">';
         if ($value)
-            echo isset($pc[$value]) ? Text::name_html($pc[$value]) : "Unknown!";
+            echo Text::name_html(@$pc[$value] ? : "Unknown!");
+        else if ($wholefold)
+            echo "";
         else
             echo "None";
-        echo "</p>";
+        echo '</p>';
 
         if ($editable) {
-            echo Ht::form_div(hoturl_post("review", "p=" . $this->prow->paperId), array("id" => "${type}form", "class" => "fx fold7c", "onsubmit" => "return dosubmitstripselector('$type')")),
-                Ht::hidden("set$type", 1);
-            $Conf->footerScript("Miniajax.onload(\"${type}form\")");
-
             $sel = pc_members_selector_options(true, $this->prow, $value);
-            echo Ht::select($type, $sel,
-                            ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
-                            array("onchange" => "dosubmitstripselector('${type}')", "id" => "fold${type}_d")),
-                " ", Ht::submit("Save", array("class" => "fx7")),
-                " <span id='${type}formresult'></span>",
-                "</div></form>";
+            echo '<form class="fx"><div>',
+                Ht::select($type, $sel,
+                           ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
+                           array("id" => "fold${type}_d")),
+                '</div></form>';
+            $Conf->footerScript('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',m:"api",fn:"set' . $type . '"})');
         }
 
         if ($wholefold === null)
@@ -1373,18 +1378,14 @@ class PaperTable {
         global $Conf;
         echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") != "decision"),
             $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
-            "<div class='psv'>",
-            Ht::form_div(hoturl_post("review", "p=" . $this->prow->paperId), array("id" => "decisionform", "class" => "fx fold7c", "onsubmit" => "return dosubmitstripselector('decision')")),
-            Ht::hidden("setdecision", 1);
+            '<div class="psv"><form class="fx"><div>';
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
-        echo decisionSelector($this->prow->outcome, null, " onchange='dosubmitstripselector(\"decision\")' id='folddecision_d'"),
-            " ", Ht::submit("Save", array("class" => "fx7")),
-            " <span id='decisionformresult'></span>",
-            "</div></form><p class='fn odname'>",
+        echo decisionSelector($this->prow->outcome, null, " id='folddecision_d'"),
+            '</div></form><p class="fn odname">',
             htmlspecialchars($Conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
-        $Conf->footerScript("Miniajax.onload(\"decisionform\")");
+        $Conf->footerScript('make_pseditor("decision",{p:' . $this->prow->paperId . ',m:"api",fn:"setdecision"})');
     }
 
     function papstripReviewPreference() {
@@ -1404,7 +1405,7 @@ class PaperTable {
             "</div></form></div></div>\n";
         $Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
         if ($CurrentList && ($l = SessionList::lookup($CurrentList))
-            && @$l->revprefs && ($this->mode == "p" || $this->mode == "r"))
+            && @$l->revprefs && $this->mode == "p")
             $Conf->footerScript("crpfocus('revprefform',null,3)");
     }
 
@@ -1573,7 +1574,7 @@ class PaperTable {
             else
                 $m .= '<div class="xmsg xwarning">The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
         } else if ($has_author && $Me->can_update_paper($prow)) {
-            if ($this->mode == "pe")
+            if ($this->mode == "edit")
                 $m .= '<div class="xmsg xconfirm">This paper is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author
                    && $prow->outcome > 0
@@ -1582,7 +1583,7 @@ class PaperTable {
             $m .= '<div class="xmsg xinfo">' . $t . "</div>";
         else if ($has_author) {
             $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
-            if ($this->mode == "pe") {
+            if ($this->mode == "edit") {
                 $m .= '<div class="xmsg xinfo">This paper is under review and can’t be changed, but you can change its contacts';
                 if ($Me->can_withdraw_paper($prow))
                     $m .= ' or withdraw it from consideration';
@@ -1618,7 +1619,7 @@ class PaperTable {
 
         $buttons = array();
 
-        if ($this->mode == "pe") {
+        if ($this->mode == "edit") {
             // check whether we can save
             if ($this->canUploadFinal) {
                 $updater = "submitfinal";
@@ -1664,7 +1665,7 @@ class PaperTable {
             $Conf->footerHtml("<div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>\n"
-    . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe"))
+    . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
     . "<textarea id='withdrawreason' class='temptext' name='reason' rows='3' cols='40' style='width:99%'>Optional explanation</textarea>$override
     <div class='popup_actions' style='margin-top:10px'>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
@@ -1693,7 +1694,7 @@ class PaperTable {
             $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)"), "(admin only)");
             Ht::popup("delp",
                 "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>",
-                Ht::form(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=pe")),
+                Ht::form(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit")),
                 Ht::hidden("doemail", 1, array("class" => "popup_populate"))
                     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
                     . Ht::js_button("Cancel", "popup(null,'delp',1)")
@@ -1776,13 +1777,13 @@ class PaperTable {
             echo "<div class='psmodec'><div class='psmode'>";
 
             // home link
-            $highlight = ($this->mode != "assign" && $this->mode != "pe"
+            $highlight = ($this->mode != "assign" && $this->mode != "edit"
                           && $this->mode != "contact" && $this->mode != "re");
-            $a = ($this->mode == "pe" || $this->mode == "re" ? "&amp;m=p" : "");
+            $a = ""; // ($this->mode == "edit" || $this->mode == "re" ? "&amp;m=p" : "");
             $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a"), "view18.png", $highlight);
 
             if ($canEdit)
-                $this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=pe"), "edit18.png", $this->mode == "pe");
+                $this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=edit"), "edit18.png", $this->mode == "edit");
 
             if ($canReview)
                 $this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re"), "review18.png", $this->mode == "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
@@ -1896,7 +1897,7 @@ class PaperTable {
         if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
             && !$Conf->setting('sub_freeze'))
             $form_js["onsubmit"] = "return docheckpaperstillready()";
-        $form = Ht::form(hoturl_post("paper", "p=" . ($prow ? $prow->paperId : "new") . "&amp;m=pe"), $form_js);
+        $form = Ht::form(hoturl_post("paper", "p=" . ($prow ? $prow->paperId : "new") . "&amp;m=edit"), $form_js);
 
         $this->echoDivEnter();
         if ($this->editable) {
@@ -1909,20 +1910,20 @@ class PaperTable {
             } else
                 $this->_echo_editable_body($form);
         } else {
-            if ($this->mode == "pe" && ($m = $this->editMessage()))
+            if ($this->mode == "edit" && ($m = $this->editMessage()))
                 echo $m, "<div class='g'></div>\n";
             $this->paptabDownload();
             echo '<div class="paptab"><div class="paptab_abstract">';
             $this->paptabAbstract();
             echo '</div></div><div class="paptab"><div class="paptab_authors">';
-            $this->paptabAuthors(!$this->editable && $this->mode == "pe"
+            $this->paptabAuthors(!$this->editable && $this->mode == "edit"
                                  && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions($Me->can_administer($prow));
             echo '</div></div><hr class="c" />';
         }
         $this->echoDivExit();
 
-        if (!$this->editable && $this->mode == "pe") {
+        if (!$this->editable && $this->mode == "edit") {
             echo $form;
             if ($prow->timeSubmitted > 0)
                 $this->editable_contact_author(true);
@@ -2058,7 +2059,7 @@ class PaperTable {
         if (count($m))
             $this->_paptabSepContaining(join("<br />", $m));
 
-        if ($this->mode != "pe")
+        if ($this->mode != "edit")
             $this->_paptabReviewLinks(false, null, "");
         else
             echo "</div></div>\n";
@@ -2286,9 +2287,9 @@ class PaperTable {
 
         // naming a nonexistent review? silently view all reviews
         if ($this->mode == "re" && !$this->rrow && isset($_REQUEST["reviewId"]))
-            $this->mode = "r";
+            $this->mode = "p";
 
-        $this->editrrow = ($this->rrow ? $this->rrow : $myrrow);
+        $this->editrrow = ($this->rrow ? : $myrrow);
     }
 
     function resolveComments() {
@@ -2309,11 +2310,11 @@ class PaperTable {
             && !$Me->can_review($prow, $this->rrow, false)
             && ($this->rrow->contactId != $Me->contactId
                 || $this->rrow->reviewSubmitted))
-            $this->mode = "r";
-        if ($this->mode == "r" && $this->rrow
+            $this->mode = "p";
+        if ($this->mode == "p" && $this->rrow
             && !$Me->can_view_review($prow, $this->rrow, null))
             $this->rrow = $this->editrrow = null;
-        if ($this->mode == "r" && !$this->rrow && !$this->editrrow
+        if ($this->mode == "p" && !$this->rrow && !$this->editrrow
             && !$Me->can_view_review($prow, $this->rrow, null)
             && $Me->can_review($prow, $this->rrow, false))  {
             $this->mode = "re";
@@ -2322,12 +2323,12 @@ class PaperTable {
                     || (!$this->editrrow && $Me->is_my_review($rr)))
                     $this->editrrow = $rr;
         }
-        if ($this->mode == "r" && $prow && !count($this->rrows)
+        if ($this->mode == "p" && $prow && !count($this->rrows)
             && !count($this->mycrows)
             && $prow->has_author($Me)
             && !$Me->allow_administer($prow)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
-            $this->mode = "pe";
+            $this->mode = "edit";
     }
 
 }

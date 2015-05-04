@@ -356,9 +356,9 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // edit paper
-    if ($mode != "pe" && $prow->conflictType >= CONFLICT_AUTHOR
+    if ($mode != "edit" && $prow->conflictType >= CONFLICT_AUTHOR
         && !$Me->can_administer($prow)) {
-        $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=pe") . '" class="xx">'
+        $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx">'
             . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
         $t .= ($t == "" ? "" : $xsep) . $x;
     }

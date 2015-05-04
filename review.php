@@ -28,10 +28,6 @@ if ($Me->is_empty())
     $Me->escape();
 $rf = reviewForm();
 $useRequest = isset($_REQUEST["after_login"]);
-if (@$_REQUEST["mode"] == "edit")
-    $_REQUEST["mode"] = "re";
-else if (@$_REQUEST["mode"] == "view")
-    $_REQUEST["mode"] = "r";
 
 
 // header
@@ -370,24 +366,8 @@ if (isset($_REQUEST["accept"])) {
 // paper actions
 if (isset($_REQUEST["clickthrough"]) && check_post())
     PaperActions::save_clickthrough();
-if (isset($_REQUEST["setdecision"]) && check_post()) {
-    PaperActions::setDecision($prow);
-    loadRows();
-}
 if (isset($_REQUEST["setrevpref"]) && check_post()) {
     PaperActions::setReviewPreference($prow);
-    loadRows();
-}
-if (isset($_REQUEST["setlead"]) && check_post()) {
-    PaperActions::set_lead($prow, @$_REQUEST["lead"], $Me, @$_REQUEST["ajax"]);
-    loadRows();
-}
-if (isset($_REQUEST["setshepherd"]) && check_post()) {
-    PaperActions::set_shepherd($prow, @$_REQUEST["shepherd"], $Me, @$_REQUEST["ajax"]);
-    loadRows();
-}
-if (isset($_REQUEST["setmanager"]) && check_post()) {
-    PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, @$_REQUEST["ajax"]);
     loadRows();
 }
 if (isset($_REQUEST["settags"]) && check_post()) {
@@ -414,9 +394,8 @@ if (!$viewAny && !$editAny) {
 
 
 // mode
-if ($paperTable->mode == "r" || $paperTable->mode == "re")
-    $paperTable->fixReviewMode();
-if ($paperTable->mode == "pe")
+$paperTable->fixReviewMode();
+if ($paperTable->mode == "edit")
     go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])));
 
 
@@ -433,12 +412,12 @@ if (!$viewAny && !$editAny
     && (!$paperTable->rrow
         || !$Me->can_view_review($prow, $paperTable->rrow, null)))
     $paperTable->paptabEndWithReviewMessage();
-else if ($paperTable->mode == "r" && !$paperTable->rrow)
-    $paperTable->paptabEndWithReviews();
-else
+else if ($paperTable->mode === "re")
     $paperTable->paptabEndWithEditableReview();
+else
+    $paperTable->paptabEndWithReviews();
 
-if ($paperTable->mode != "pe")
+if ($paperTable->mode != "edit")
     $paperTable->paptabComments();
 
 $Conf->footer();

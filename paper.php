@@ -15,15 +15,16 @@ $useRequest = isset($_REQUEST["after_login"]);
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
         unset($_REQUEST[$x]);
-if (defval($_REQUEST, "mode") == "edit")
-    $_REQUEST["mode"] = "pe";
-else if (defval($_REQUEST, "mode") == "view")
-    $_REQUEST["mode"] = "p";
 if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
-    && preg_match(',\A/(?:new|\d+)\z,i', Navigation::path()))
-    $_REQUEST["p"] = substr(Navigation::path(), 1);
-else if (!Navigation::path() && @$_REQUEST["p"] && ctype_digit($_REQUEST["p"])
-         && !@$Opt["disableSlashUrls"] && !check_post())
+    && preg_match(',\A(?:new|\d+)\z,i', Navigation::path_component(0))) {
+    $_REQUEST["p"] = Navigation::path_component(0);
+    if (!isset($_REQUEST["m"]) && ($x = Navigation::path_component(1)))
+        $_REQUEST["m"] = $x;
+    if (@$_REQUEST["m"] === "api" && !isset($_REQUEST["fn"])
+        && ($x = Navigation::path_component(2)))
+        $_REQUEST["fn"] = $x;
+} else if (!Navigation::path() && @$_REQUEST["p"] && ctype_digit($_REQUEST["p"])
+           && !check_post())
     go(selfHref());
 
 
@@ -39,7 +40,7 @@ function confHeader() {
     else
         $title = "Paper #$prow->paperId";
 
-    $Conf->header($title, "paper_" . ($mode == "pe" ? "edit" : "view"), actionBar($mode, $prow), false);
+    $Conf->header($title, "paper_" . ($mode == "edit" ? "edit" : "view"), actionBar($mode, $prow), false);
 }
 
 function errorMsgExit($msg) {
@@ -80,6 +81,24 @@ if (!$newPaper)
 
 
 // paper actions
+function handle_api() {
+    global $Conf, $Me, $prow;
+    if (!check_post() || !@$_REQUEST["fn"])
+        $Conf->ajaxExit(array("ok" => false));
+    if (!$prow)
+        $Conf->ajaxExit(array("ok" => false, "error" => "No such paper."));
+    if ($_REQUEST["fn"] == "setdecision")
+        $Conf->ajaxExit(PaperActions::set_decision($prow));
+    else if ($_REQUEST["fn"] == "setlead")
+        PaperActions::set_lead($prow, @$_REQUEST["lead"], $Me, true);
+    else if ($_REQUEST["fn"] == "setshepherd")
+        PaperActions::set_shepherd($prow, @$_REQUEST["shepherd"], $Me, true);
+    else if ($_REQUEST["fn"] == "setmanager")
+        PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, true);
+    $Conf->ajaxExit(array("ok" => false, "error" => "Unknown action."));
+}
+if (@$_REQUEST["m"] === "api")
+    handle_api();
 if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();
@@ -534,7 +553,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
     // actually update
     if (!$whyNot) {
         if (update_paper($pj, $opj, $action, $diffs))
-            redirectSelf(array("p" => $prow->paperId, "m" => "pe"));
+            redirectSelf(array("p" => $prow->paperId, "m" => "edit"));
     } else {
         if ($action == "final")
             $adescription = "submit final version for";
@@ -621,7 +640,7 @@ if (isset($_REQUEST["tagreport"]) && check_post()) {
 // correct modes
 $paperTable = new PaperTable($prow);
 $paperTable->resolveComments();
-if ($paperTable->mode == "r" || $paperTable->mode == "re") {
+if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
     $paperTable->resolveReview();
     $paperTable->fixReviewMode();
 }
@@ -632,7 +651,7 @@ confHeader();
 
 
 // prepare paper table
-if ($paperTable->mode == "pe") {
+if ($paperTable->mode == "edit") {
     $editable = $newPaper || $Me->can_update_paper($prow, true);
     if ($prow && $prow->outcome > 0 && $Conf->collectFinalPapers()
         && (($Conf->timeAuthorViewDecision() && $Conf->timeSubmitFinalPaper())
@@ -649,14 +668,14 @@ $paperTable->initialize($editable, $editable && $useRequest);
 // produce paper table
 $paperTable->paptabBegin();
 
-if ($paperTable->mode == "r" && !$paperTable->rrow)
-    $paperTable->paptabEndWithReviews();
-else if ($paperTable->mode == "re" || $paperTable->mode == "r")
+if ($paperTable->mode === "re")
     $paperTable->paptabEndWithEditableReview();
+else if ($paperTable->can_view_reviews())
+    $paperTable->paptabEndWithReviews();
 else
     $paperTable->paptabEndWithReviewMessage();
 
-if ($paperTable->mode != "pe")
+if ($paperTable->mode != "edit")
     $paperTable->paptabComments();
 
 $Conf->footer();

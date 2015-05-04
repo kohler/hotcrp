@@ -5,28 +5,21 @@
 
 class PaperActions {
 
-    static function setDecision($prow) {
-        global $Conf, $Me, $Error, $OK;
-        $ajax = defval($_REQUEST, "ajax", false);
-        if ($Me->can_set_decision($prow)) {
-            $dnum = cvtint(@$_REQUEST["decision"]);
-            $decs = $Conf->decision_map();
-            if (isset($decs[$dnum])) {
-                $result = Dbl::qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
-                if ($result && $ajax)
-                    $Conf->confirmMsg("Saved");
-                else if ($result)
-                    $Conf->confirmMsg("Decision for paper #$prow->paperId set to " . htmlspecialchars($decs[$dnum]) . ".");
-                if ($dnum > 0 || $prow->outcome > 0)
-                    $Conf->updatePaperaccSetting($dnum > 0);
-            } else {
-                $Conf->errorMsg("Bad decision value.");
-                $Error["decision"] = true;
-            }
-        } else
-            $Conf->errorMsg("You can’t set the decision for paper #$prow->paperId." . ($Me->allow_administer($prow) ? "  (<a href=\"" . selfHref(array("forceShow" => 1)) . "\">Override conflict</a>)" : ""));
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => $OK && !defval($Error, "decision")));
+    static function set_decision($prow) {
+        global $Conf, $Me;
+        if (!$Me->can_set_decision($prow))
+            return array("ok" => false, "error" => "You can’t set the decision for paper #$prow->paperId.");
+        $dnum = cvtint(@$_REQUEST["decision"]);
+        $decs = $Conf->decision_map();
+        if (!isset($decs[$dnum]))
+            return array("ok" => false, "error" => "Bad decision value.");
+        $result = Dbl::qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
+        if ($result && ($dnum > 0 || $prow->outcome > 0))
+            $Conf->updatePaperaccSetting($dnum > 0);
+        if ($result)
+            return array("ok" => true, "result" => htmlspecialchars($decs[$dnum]));
+        else
+            return array("ok" => false);
     }
 
     static function save_review_preferences($prefarray) {
@@ -139,7 +132,7 @@ class PaperActions {
         }
 
         if ($ajax)
-            $Conf->ajaxExit(array("ok" => $OK && !@$Error[$type]));
+            $Conf->ajaxExit(array("ok" => $OK && !@$Error[$type], "result" => $OK && $pc ? Text::name_html($pc) : "None"));
         return $OK && !@$Error[$type];
     }
 

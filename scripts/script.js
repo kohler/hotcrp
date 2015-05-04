@@ -53,10 +53,12 @@ function hoturl_add(url, component) {
 
 function hoturl_clean(x, page_component) {
     var m;
-    if (x.o && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
+    if (x.o && x.last !== false && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
         x.t += "/" + m[2];
         x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
-    }
+        x.last = m[2];
+    } else
+        x.last = false;
 }
 
 function hoturl(page, options) {
@@ -66,7 +68,11 @@ function hoturl(page, options) {
         x.o = m[1];
         anchor = m[2];
     }
-    if (page === "paper" || page === "review")
+    if (page === "paper") {
+        hoturl_clean(x, "p=(\\d+)");
+        hoturl_clean(x, "m=(\\w+)");
+        x.last === "api" && hoturl_clean(x, "fn=(\\w+)");
+    } else if (page === "review")
         hoturl_clean(x, "p=(\\d+)");
     else if (page === "help")
         hoturl_clean(x, "t=(\\w+)");
@@ -1930,23 +1936,73 @@ function blur_keyup_shortcut(evt) {
     return false;
 }
 
-function gopaper_shortcut() {
-    var a = $$("quicksearchq");
-    if (a) {
-        a.focus();
-        return true;
-    } else
-        return false;
+function make_pseditor(type, url) {
+    var folde = $$("fold" + type),
+        edite = folde.getElementsByTagName("select")[0] || folde.getElementsByTagName("textarea")[0],
+        val = jQuery(edite).val();
+    function cancel() {
+        jQuery(edite).val(val);
+        foldup(folde, null, {f: true});
+    }
+    function done(ok, message) {
+        jQuery(folde).find(".psfn .savesuccess, .psfn .savefailure").remove();
+        var s = jQuery("<span class=\"save" + (ok ? "success" : "failure") + "\"></span>");
+        s.appendTo(jQuery(folde).find(".psfn"));
+        if (ok)
+            s.delay(1000).fadeOut();
+        else
+            jQuery(edite).val(val);
+        if (message)
+            make_bubble(message, "errorbubble").near(s[0], "l");
+        edite.disabled = false;
+    }
+    function error(jqxhr, status, errormsg) {
+        if (!errormsg && status == "timeout")
+            errormsg = "Connection timed out.";
+        else if (!errormsg)
+            errormsg = "Error.";
+        done(false, errormsg.toString());
+    }
+    function change() {
+        var saveval = jQuery(edite).val();
+        jQuery.ajax({
+            url: hoturl_post("paper", url), type: "POST", cache: false,
+            data: jQuery(folde).find("form").serialize(), dataType: "json",
+            success: function (data) {
+                if (data.ok) {
+                    done(true);
+                    foldup(folde, null, {f: true});
+                    val = saveval;
+                    var p = folde.getElementsByTagName("p")[0];
+                    p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
+                } else
+                    error(null, null, data.error);
+            }, error: error
+        });
+        edite.disabled = true;
+    }
+    function keyup(evt) {
+        if ((evt.charCode || evt.keyCode) == 27
+            && !evt.altKey && !evt.ctrlKey && !evt.metaKey) {
+            cancel();
+            evt.preventDefault();
+            return false;
+        } else
+            return true;
+    }
+    jQuery(edite).on("change", change).on("keyup", keyup);
 }
 
 function make_selector_shortcut(type) {
+    function find(e) {
+        return e.getElementsByTagName("select")[0] || e.getElementsByTagName("textarea")[0];
+    }
     function end(evt) {
         var e = $$("fold" + type);
         e.className = e.className.replace(/ psfocus\b/g, "");
-        e = e.getElementsByTagName("select")[0];
+        e = find(e);
         e.removeEventListener("blur", end, false);
         e.removeEventListener("change", end, false);
-        e.removeEventListener("keyup", blur_keyup_shortcut, false);
         if (evt && evt.type == "change")
             this.blur();
         return false;
@@ -1956,11 +2012,10 @@ function make_selector_shortcut(type) {
         e.className += " psfocus";
         foldup(e, null, {f: false});
         jQuery(e).scrollIntoView();
-        e = e.getElementsByTagName("select")[0];
+        e = find(e);
         e.focus();
         e.addEventListener("blur", end, false);
         e.addEventListener("change", end, false);
-        e.addEventListener("keyup", blur_keyup_shortcut, false);
         event_stop(evt);
         return true;
     }
@@ -2035,11 +2090,11 @@ function shortcut(top_elt) {
             add("j", quicklink_shortcut);
             add("k", quicklink_shortcut);
             if (top_elt == document) {
-                add(["g", "c"], comment_shortcut);
-                add(["g", "p"], gopaper_shortcut);
-                add(["g", "d"], make_selector_shortcut("decision"));
-                add(["g", "l"], make_selector_shortcut("lead"));
-                add(["g", "s"], make_selector_shortcut("shepherd"));
+                add(["c"], comment_shortcut);
+                add(["s", "d"], make_selector_shortcut("decision"));
+                add(["s", "l"], make_selector_shortcut("lead"));
+                add(["s", "s"], make_selector_shortcut("shepherd"));
+                add(["s", "t"], make_selector_shortcut("tags"));
             }
         }
         return self;

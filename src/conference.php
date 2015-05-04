@@ -281,7 +281,7 @@ class Conference {
         $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
 
         // option name updates (backwards compatibility)
-        foreach (array("disableSlashURLs" => "disableSlashUrls", "assetsURL" => "assetsUrl",
+        foreach (array("assetsURL" => "assetsUrl",
                        "jqueryURL" => "jqueryUrl", "jqueryCDN" => "jqueryCdn",
                        "disableCSV" => "disableCsv") as $kold => $knew)
             if (isset($Opt[$kold]) && !isset($Opt[$knew]))

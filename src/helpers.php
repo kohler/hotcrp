@@ -149,7 +149,7 @@ function hoturl_defaults($options = array()) {
 }
 
 function hoturl_site_relative($page, $options = null) {
-    global $ConfSiteSuffix, $Opt, $Me, $paperTable, $CurrentList, $_hoturl_defaults;
+    global $ConfSiteSuffix, $Me, $paperTable, $CurrentList, $_hoturl_defaults;
     $t = $page . $ConfSiteSuffix;
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
@@ -184,13 +184,18 @@ function hoturl_site_relative($page, $options = null) {
         && !preg_match($are . 'ls=/', $options))
         $options .= "&amp;ls=$CurrentList";
     // create slash-based URLs if appropriate
-    if ($options && !@$Opt["disableSlashUrls"]) {
+    if ($options) {
         if ($page == "review"
             && preg_match($are . 'r=(\d+[A-Z]+)' . $zre, $options, $m)) {
             $t .= "/" . $m[2];
             $options = $m[1] . $m[3];
             if (preg_match($are . 'p=\d+' . $zre, $options, $m))
                 $options = $m[1] . $m[2];
+        } else if ($page == "paper"
+                   && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m)
+                   && preg_match($are . 'm=(\w+)' . $zre, $m[1] . $m[3], $m2)) {
+            $t .= "/" . $m[2] . "/" . $m2[2];
+            $options = $m2[1] . $m2[3];
         } else if (($is_paper_page
                     && preg_match($are . 'p=(\d+|%\w+%|new)' . $zre, $options, $m))
                    || ($page == "profile"
