@@ -348,7 +348,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // see all reviews
     $allreviewslink = false;
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
-        && ($mode != "r" || $rrow)) {
+        && ($mode != "p" || $rrow)) {
         $allreviewslink = true;
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="xx">'
             . Ht::img("view24.png", "[All reviews]", "dlimg") . "&nbsp;<u>All reviews</u></a>";
