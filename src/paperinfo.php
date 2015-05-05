@@ -472,6 +472,12 @@ class PaperInfo {
         return @$s[$cid];
     }
 
+    public function may_have_viewable_scores($field, $contact, $forceShow) {
+        $field = is_object($field) ? $field : ReviewForm::field($field);
+        return $contact->can_view_review($this, $field->view_score, $forceShow)
+            || $this->review_type($contact);
+    }
+
     public function viewable_scores($field, $contact, $forceShow) {
         $field = is_object($field) ? $field : ReviewForm::field($field);
         $view = $contact->can_view_review($this, $field->view_score, $forceShow);

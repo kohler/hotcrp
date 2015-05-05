@@ -1039,7 +1039,10 @@ class ScorePaperColumn extends PaperColumn {
         return $this->form_field->web_abbreviation();
     }
     public function content_empty($pl, $row) {
-        return $row->viewable_scores($this->form_field, $pl->contact, true) === null;
+        // Do not use viewable_scores to determine content emptiness, since
+        // that would load the scores from the DB -- even for folded score
+        // columns.
+        return !$row->may_have_viewable_scores($this->form_field, $pl->contact, true);
     }
     public function content($pl, $row, $rowidx) {
         $wrap_conflict = false;
