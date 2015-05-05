@@ -143,24 +143,15 @@ class PaperActions {
         $error = join("<br>", $assigner->errors_html());
         $ok = $assigner->execute();
 
-        // load results
-        $prow->load_tags();
-        $tagger = new Tagger;
-        $editable = $tagger->paper_editable($prow);
-        $tags_edit_text = $tagger->unparse($editable);
-        $viewable = $tagger->viewable($prow->paperTags);
-        $tags_view_html = $tagger->unparse_and_link($viewable, $prow->paperTags, false, !$prow->has_conflict($Me));
-        $tags_color = TagInfo::color_classes($viewable);
-
         // exit
+        $prow->load_tags();
         if ($ajax && $ok) {
             $treport = self::tag_report($prow);
             if ($treport->warnings)
                 $Conf->warnMsg(join("<br>", $treport->warnings));
-            $Conf->ajaxExit(array("ok" => true, "tags" => TagInfo::split($viewable),
-                                  "tags_edit_text" => $tags_edit_text,
-                                  "tags_view_html" => $tags_view_html,
-                                  "tags_color" => $tags_color), true);
+            $taginfo = $prow->tag_info_json($Me);
+            $taginfo->ok = true;
+            $Conf->ajaxExit((array) $taginfo, true);
         } else if ($ajax)
             $Conf->ajaxExit(array("ok" => false, "error" => $error));
         else {

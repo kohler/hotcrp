@@ -232,6 +232,8 @@ class PaperTable {
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
         }
+        if (@$extra["float"])
+            $c .= $extra["float"];
         $c .= "<hr class=\"c\" /></div>";
         return $c;
     }
@@ -1271,10 +1273,8 @@ class PaperTable {
             '<div class="psv"><p class="fn odname">';
         if ($value)
             echo Text::name_html(@$pc[$value] ? : "Unknown!");
-        else if ($wholefold)
-            echo "";
         else
-            echo "None";
+            echo "";
         echo '</p>';
 
         if ($editable) {
@@ -1411,54 +1411,83 @@ class PaperTable {
 
     private function papstripRank($tag) {
         global $Conf, $Me;
+        $id = "rank_" . html_id_encode($tag);
+        if (($myval = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
+            $myval = "";
+        $totmark = $this->papstrip_tag_float($tag, "overall");
 
-        // load rank
-        if (($rp = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
-            $rp = "";
-
-        echo $this->_papstripBegin("rank", true, "fold2c"),
-            $this->papt("rank", "#~$tag ranking", array("type" => "ps", "editfolder" => "rank")),
-            "<div class='psv'>",
-            Ht::form_div("", array("id" => "rankform", "class" => "fx", "hotcrp_tag" => "~$tag",
-                                   "onsubmit" => "return false"));
+        echo $this->_papstripBegin($id, true, "fold2c"),
+            Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
         if (isset($_REQUEST["forceShow"]))
-            echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
-        echo Ht::entry("tagindex", $rp,
-                       array("id" => "foldrank_d", "size" => 4, "tabindex" => 1,
-                             "onchange" => "save_tag_index(this)",
-                             "class" => "has_hotcrp_tag_indexof",
-                             "hotcrp_tag_indexof" => "~$tag")),
-            " <span id='rankformresult'></span>",
+            echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
+        echo $this->papt($id, "#$tag rank",
+                         array("type" => "ps", "fold" => $id, "float" => $totmark)),
+            '<div class="psv"><div class="fx">',
+            Ht::entry("tagindex", $myval,
+                      array("id" => "fold{$id}_d", "size" => 4, "tabindex" => 1,
+                            "onchange" => "save_tag_index(this)",
+                            "class" => "has_hotcrp_tag_indexof",
+                            "hotcrp_tag_indexof" => "~$tag")),
             " <div class='hint'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
-            "</div></form>",
-            '<div class="fn">',
-            '<span class="has_hotcrp_tag_indexof" hotcrp_tag_indexof="~', $tag, '">',
-            ($rp === "" ? "None" : $rp), '</span>';
-        echo " &nbsp; <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag") . "#p" . $this->prow->paperId), "'>(all)</a>";
-        echo "</div></div></div>\n";
+            '</div><div class="fn">',
+            '<a class="qq has_hotcrp_tag_indexof" hotcrp_tag_indexof="~', $tag, '" href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">',
+            ($myval === "" ? "None" : $myval), '</a>',
+            "</div></div></div></form></div>\n";
+    }
+
+    private function papstripVote($tag, $allotment) {
+        global $Conf, $Me;
+        $id = "vote_" . html_id_encode($tag);
+        if (($myval = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
+            $myval = "";
+        $totmark = $this->papstrip_tag_float($tag, "total");
+
+        echo $this->_papstripBegin($id, true, "fold2c"),
+            Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
+        if (isset($_REQUEST["forceShow"]))
+            echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
+        echo $this->papt($id, "#$tag votes",
+                         array("type" => "ps", "fold" => $id, "float" => $totmark)),
+            '<div class="psv"><div class="fx">',
+            Ht::entry("tagindex", $myval,
+                      array("id" => "fold{$id}_d", "size" => 4, "tabindex" => 1,
+                            "onchange" => "save_tag_index(this)",
+                            "class" => "has_hotcrp_tag_indexof",
+                            "hotcrp_tag_indexof" => "~$tag")),
+            " &nbsp;of $allotment",
+            '</div><div class="fn">',
+            '<a class="qq has_hotcrp_tag_indexof" hotcrp_tag_indexof="~', $tag, '" href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">',
+            ($myval === "" ? "None" : $myval), '</a>',
+            "</div></div></div></form></div>\n";
+    }
+
+    private function papstrip_tag_float($tag, $kind) {
+        if (($totval = $this->prow->tag_value($tag)) === false)
+            $totval = "";
+        return '<div class="hotcrp_tag_hideempty floatright" style="display:' . ($totval ? "block" : "none") . '"><span class="has_hotcrp_tag_indexof" hotcrp_tag_indexof="' . $tag . '">' . $totval . '</span> ' . $kind . '</div>';
     }
 
     private function papstripApproval($tag) {
         global $Conf, $Me;
-
-        // load rank
-        if (($rp = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
-            $rp = "";
-
         $id = "approval_" . html_id_encode($tag);
+        if (($myval = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
+            $myval = "";
+        $totmark = $this->papstrip_tag_float($tag, "total");
+
         echo $this->_papstripBegin(),
             Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
+        if (isset($_REQUEST["forceShow"]))
+            echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
         echo $this->papt($id,
-                         Ht::checkbox("tagindex", "0", $rp !== "",
+                         Ht::checkbox("tagindex", "0", $myval !== "",
                                       array("id" => "fold" . $id . "_d", "tabindex" => 1,
                                             "onchange" => "save_tag_index(this)",
                                             "class" => "has_hotcrp_tag_indexof",
                                             "hotcrp_tag_indexof" => "~$tag",
-                                            "style" => "padding-left:0;margin-left:0"))
-                         . "&nbsp;" . Ht::label("#~$tag vote"),
-                         array("type" => "ps")),
-            "<div class='pshint'><span id='{$id}formresult'></span>",
-            "</div></div></form></div>\n\n";
+                                            "style" => "padding-left:0;margin-left:0;margin-top:0"))
+                         . "&nbsp;" . Ht::label("#$tag vote"),
+                         array("type" => "ps", "float" => $totmark)),
+            "</div></form></div>\n\n";
     }
 
     private function papstripWatch() {
@@ -1737,12 +1766,15 @@ class PaperTable {
             $this->papstripManager($Me->privChair);
         if ($Me->can_view_tags($prow))
             $this->papstripTags("review");
-        if (($rank_tag = $Conf->setting_data("tag_rank"))
-            && $Me->can_change_tag($prow, "~$rank_tag", null, 1))
-            $this->papstripRank($rank_tag);
-        foreach (TagInfo::approval_tags() as $tag => $index)
-            if ($Me->can_change_tag($prow, "~$tag", null, 1))
-                $this->papstripApproval($tag);
+        foreach (TagInfo::defined_tags() as $ltag => $dt)
+            if ($Me->can_change_tag($prow, "~$ltag", null, 0)) {
+                if ($dt->approval)
+                    $this->papstripApproval($dt->tag);
+                else if ($dt->vote)
+                    $this->papstripVote($dt->tag, $dt->vote);
+                else if ($dt->rank)
+                    $this->papstripRank($dt->tag);
+            }
         $this->papstripWatch();
         if ($Me->can_view_conflicts($prow) && !$this->editable)
             $this->papstripPCConflicts();

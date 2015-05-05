@@ -287,6 +287,9 @@ class Assigner {
     }
     function add_locks(&$locks) {
     }
+    function notify_tracker() {
+        return false;
+    }
 }
 
 class NullAssigner extends Assigner {
@@ -676,9 +679,13 @@ class TagAssigner extends Assigner {
         if ($index === null
             && ($x = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $ltag))))
             $index = $x[0]["_index"];
-        $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
-                          "_tag" => $tag, "_index" => $index ? : 0));
-        if (($vtag = TagInfo::votish_base($tag)))
+        $vtag = TagInfo::votish_base($tag);
+        if ($vtag && TagInfo::is_vote($vtag) && !$index)
+            $state->remove(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
+        else
+            $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
+                              "_tag" => $tag, "_index" => $index ? : 0));
+        if ($vtag)
             $this->account_votes($pid, $vtag, $state);
     }
     private function apply_next_index($pid, $tag, $state, $m) {
@@ -795,6 +802,9 @@ class TagAssigner extends Assigner {
         else
             Dbl::qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
         $who->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
+    }
+    function notify_tracker() {
+        return true;
     }
 }
 
@@ -1385,7 +1395,7 @@ class AssignmentSet {
     }
 
     function execute($verbose = false) {
-        global $Conf, $Now;
+        global $Conf, $Now, $Opt;
         if (count($this->errors_) || !count($this->assigners)) {
             if ($verbose && count($this->errors_))
                 $this->report_errors();
@@ -1431,6 +1441,14 @@ class AssignmentSet {
         // clean up
         $Conf->updateRevTokensSetting(false);
         $Conf->update_paperlead_setting();
+
+        $pids = array();
+        foreach ($this->assigners as $assigner)
+            if ($assigner->pid > 0 && $assigner->notify_tracker())
+                $pids[$assigner->pid] = true;
+        if (count($pids) && @$Opt["trackerCometSite"])
+            MeetingTracker::contact_tracker_comet(MeetingTracker::lookup(), array_keys($pids));
+
         return true;
     }
 

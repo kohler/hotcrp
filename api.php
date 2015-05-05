@@ -93,6 +93,7 @@ if (@$_GET["p"] && ctype_digit($_GET["p"])) {
 
 
 $j = $Me->my_deadlines($CurrentProw);
+
 if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
     $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
@@ -104,6 +105,9 @@ if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb()))
         $j->conflist[] = $row;
     }
 }
+
+if ($CurrentProw && $Me->can_view_tags($CurrentProw))
+    $j->tags = (object) array($CurrentProw->paperId => $CurrentProw->tag_info_json($Me));
 
 $j->ok = true;
 $Conf->ajaxExit($j);

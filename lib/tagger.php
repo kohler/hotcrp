@@ -302,7 +302,7 @@ class Tagger {
 
     public function __construct($contact = null) {
         global $Me;
-        $this->contact = ($contact ? $contact : $Me);
+        $this->contact = ($contact ? : $Me);
         if ($this->contact && $this->contact->contactId > 0)
             $this->_contactId = $this->contact->contactId;
     }

@@ -456,6 +456,9 @@ function display_main(is_initial) {
         time_since_load = browser_now - +dl.load,
         now = +dl.now + time_since_load,
         elt = $$("maindeadline");
+
+    if (is_initial && $$("foldtags"))
+        save_tags.attach_deadlines();
     if (!elt)
         return;
 
@@ -1937,6 +1940,17 @@ function blur_keyup_shortcut(evt) {
     return false;
 }
 
+function jqxhr_error_message(jqxhr, status, message) {
+    if (message)
+        return message.toString();
+    else if (status == "timeout")
+        return "Connection timed out.";
+    else if (status)
+        return "Error [" + status + "].";
+    else
+        return "Error.";
+}
+
 function make_pseditor(type, url) {
     var folde = $$("fold" + type),
         edite = folde.getElementsByTagName("select")[0] || folde.getElementsByTagName("textarea")[0],
@@ -1957,13 +1971,6 @@ function make_pseditor(type, url) {
             make_bubble(message, "errorbubble").near(s[0], "l");
         edite.disabled = false;
     }
-    function error(jqxhr, status, errormsg) {
-        if (!errormsg && status == "timeout")
-            errormsg = "Connection timed out.";
-        else if (!errormsg)
-            errormsg = "Error.";
-        done(false, errormsg.toString());
-    }
     function change() {
         var saveval = jQuery(edite).val();
         jQuery.ajax({
@@ -1977,8 +1984,11 @@ function make_pseditor(type, url) {
                     var p = folde.getElementsByTagName("p")[0];
                     p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
                 } else
-                    error(null, null, data.error);
-            }, error: error
+                    done(false, data.error);
+            },
+            error: function (jqxhr, status, errormsg) {
+                done(false, jqxhr_error_message(jqxhr, status, errormsg));
+            }
         });
         edite.disabled = true;
     }
@@ -2537,6 +2547,11 @@ return function (content, bubopt) {
         bubdiv.style.visibility = "visible";
     }
 
+    function remove() {
+        bubdiv && bubdiv.parentElement.removeChild(bubdiv);
+        bubdiv = null;
+    }
+
     var bubble = {
         near: function (epos, dir) {
             if (epos.tagName || epos.jquery)
@@ -2561,12 +2576,7 @@ return function (content, bubopt) {
             }
             return bubble.near({top: y, right: x, bottom: y, left: x, exact: true});
         },
-        remove: function () {
-            if (bubdiv) {
-                bubdiv.parentElement.removeChild(bubdiv);
-                bubdiv = null;
-            }
-        },
+        remove: remove,
         color: function (newcolor) {
             newcolor = newcolor ? " " + newcolor : "";
             if (color !== newcolor) {
@@ -2599,6 +2609,10 @@ return function (content, bubopt) {
         },
         hover: function (enter, leave) {
             jQuery(bubdiv).hover(enter, leave);
+            return bubble;
+        },
+        removeOn: function (jq, event) {
+            jQuery(jq).on(event, remove);
             return bubble;
         }
     };
@@ -3609,10 +3623,19 @@ save_tags.success = function (data) {
         if (j.is("input[type='checkbox']"))
             j.prop("checked", res !== "");
         else if (j.is("input"))
-            j.val(res);
-        else
-            j.text(res === "" ? "None" : res);
+            j.filter(":not(:focus)").val(res);
+        else {
+            j.text(res);
+            j.closest(".hotcrp_tag_hideempty").toggle(res !== "");
+        }
     });
+};
+save_tags.attach_deadlines = function () {
+    if ($$("foldtags"))
+        jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
+            if (dl.tags && dl.tags[hotcrp_paperid])
+                save_tags.success(dl.tags[hotcrp_paperid]);
+        });
 };
 
 function save_tag_index(e) {
@@ -3623,17 +3646,33 @@ function save_tag_index(e) {
     else
         index = indexelt.val();
     index = jQuery.trim(index);
+    function done(ok, message) {
+        j.find(".psfn .savesuccess, .psfn .savefailure").remove();
+        var s = jQuery("<span class=\"save" + (ok ? "success" : "failure") + "\"></span>");
+        s.appendTo(j.find(".psfn"));
+        if (ok)
+            s.delay(1000).fadeOut();
+        if (message) {
+            var ji = indexelt.closest(".psfn");
+            make_bubble(message, "errorbubble").near(ji.length ? ji[0] : e, "l").removeOn(j.find("input"), "input");
+        }
+    }
     jQuery.ajax({
         url: hoturl_post("paper", "p=" + hotcrp_paperid + "&m=api&fn=settags"),
         type: "POST", cache: false,
         data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
         success: function (data) {
-            j.find(".xconfirm, .xmerror").remove();
             if (data.ok) {
                 save_tags.success(data);
                 foldup(j[0]);
-            } else
-                jQuery('<div class="xmsg xmerror"></div>').html(data.error).prependTo(j);
+                done(true);
+            } else {
+                e.focus();
+                done(false, data.error);
+            }
+        },
+        error: function (jqxhr, status, errormsg) {
+            done(false, jqxhr_error_message(jqxhr, status, errormsg));
         }
     });
     return false;

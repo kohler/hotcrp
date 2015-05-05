@@ -2317,25 +2317,29 @@ class Contact {
 
     function can_change_tag(PaperInfo $prow, $tag, $previndex, $index, $forceShow = null) {
         global $Conf;
-        $rights = $this->rights($prow, $forceShow);
-        if ($rights->can_administer || $forceShow === ALWAYS_OVERRIDE)
+        if ($forceShow === ALWAYS_OVERRIDE)
             return true;
-        else if (!$rights->allow_pc
-                 || !$Conf->timePCViewPaper($prow, false))
+        $rights = $this->rights($prow, $forceShow);
+        if (!($rights->allow_pc
+              && ($rights->can_administer || $Conf->timePCViewPaper($prow, false))))
             return false;
-        else if (!$tag)
+        if (!$tag)
             return true;
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
-        if (($twiddle === 0 && $tag[1] === "~")
-            || ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId))
+        if ($twiddle === 0 && $tag[1] === "~")
+            return $rights->can_administer;
+        if ($twiddle > 0 && substr($tag, 0, $twiddle) != $this->contactId
+            && !$rights->can_administer)
             return false;
-        else if ($twiddle !== false) {
+        if ($twiddle !== false) {
             $t = TagInfo::defined_tag(substr($tag, $twiddle + 1));
             return !($t && $t->vote && $index < 0);
         } else {
             $t = TagInfo::defined_tag($tag);
-            return !($t && ($t->chair || $t->vote || $t->rank));
+            return !$t
+                || (($rights->can_administer || (!$t->chair && !$t->rank))
+                    && !$t->vote && !$t->approval);
         }
     }
 

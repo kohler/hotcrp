@@ -52,8 +52,8 @@ class MeetingTracker {
         return $tracker;
     }
 
-    static function contact_tracker_comet($tracker) {
-        global $Opt;
+    static function contact_tracker_comet($tracker, $pids = null) {
+        global $Opt, $Now;
         if (!($comet_url = @$Opt["trackerCometSite"]))
             return;
         $conference = Navigation::site_absolute();
@@ -75,6 +75,8 @@ class MeetingTracker {
                                                      "timeout" => 1.0)));
         $comet_url .= "?conference=" . urlencode($conference)
             . "&update=" . urlencode(self::tracker_status($tracker));
+        if ($pids)
+            $comet_url .= "&pulse=1";
         $stream = @fopen($comet_url, "r", false, $context);
         if (!$stream) {
             $e = error_get_last();

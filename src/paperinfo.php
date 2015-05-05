@@ -226,6 +226,19 @@ class PaperInfo {
         return $this->paperTags;
     }
 
+    public function tag_info_json(Contact $user) {
+        if (!property_exists($this, "paperTags"))
+            $this->load_tags();
+        $tagger = new Tagger($user);
+        $editable = $tagger->paper_editable($this);
+        $viewable = $tagger->viewable($this->paperTags);
+        $tags_view_html = $tagger->unparse_and_link($viewable, $this->paperTags, false, !$this->has_conflict($user));
+        return (object) array("tags" => TagInfo::split($viewable),
+                              "tags_edit_text" => $tagger->unparse($editable),
+                              "tags_view_html" => $tags_view_html,
+                              "tags_color" => TagInfo::color_classes($viewable));
+    }
+
     private function load_topics() {
         $result = Dbl::qe_raw("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
         $row = edb_row($result);

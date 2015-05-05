@@ -256,7 +256,7 @@ function save_tags($set, $what) {
                     $t = $m[1] . "#1";
                 $vs[] = $t;
             } else if ($t !== "") {
-                $Error[] = "Voting tag: " . $tagger->error_html;
+                $Error[] = "Allotment voting tag: " . $tagger->error_html;
                 $Highlight["tag_vote"] = true;
             }
         $v = array(count($vs), join(" ", $vs));
@@ -2091,19 +2091,6 @@ function doTagsGroup() {
     doEntry("tag_chair", $v, 40, "");
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
-    echo "<tr><td class='lxcaption'>", setting_label("tag_vote", "Voting tags"), "</td>";
-    if (count($Error) > 0)
-        $v = defval($_POST, "tag_vote", "");
-    else {
-        $x = "";
-        foreach (TagInfo::vote_tags() as $n => $v)
-            $x .= "$n#$v ";
-        $v = trim($x);
-    }
-    echo "<td>", Ht::hidden("has_tag_vote", 1);
-    doEntry("tag_vote", $v, 40);
-    echo "<br /><div class='hint'>“vote#10” declares a voting tag named “vote” with an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
-
     echo "<tr><td class='lxcaption'>", setting_label("tag_approval", "Approval voting tags"), "</td>";
     if (count($Error) > 0)
         $v = defval($_POST, "tag_approval", "");
@@ -2116,6 +2103,19 @@ function doTagsGroup() {
     echo "<td>", Ht::hidden("has_tag_approval", 1);
     doEntry("tag_approval", $v, 40);
     echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+
+    echo "<tr><td class='lxcaption'>", setting_label("tag_vote", "Allotment voting tags"), "</td>";
+    if (count($Error) > 0)
+        $v = defval($_POST, "tag_vote", "");
+    else {
+        $x = "";
+        foreach (TagInfo::vote_tags() as $n => $v)
+            $x .= "$n#$v ";
+        $v = trim($x);
+    }
+    echo "<td>", Ht::hidden("has_tag_vote", 1);
+    doEntry("tag_vote", $v, 40);
+    echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
     if (count($Error) > 0)
