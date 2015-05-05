@@ -1275,13 +1275,17 @@ class Contact {
         }
 
         // correct $forceShow
-        if ($ci->allow_administer) {
-            if ($forceShow === "any")
-                $forceShow = @$ci->rights_force;
-            if ($forceShow === null)
-                $forceShow = ($fs = @$_REQUEST["forceShow"]) && $fs != "0";
-        } else
+        if (!$ci->allow_administer)
             $forceShow = false;
+        else if ($forceShow === null)
+            $forceShow = ($fs = @$_REQUEST["forceShow"]) && $fs != "0";
+        else if ($forceShow === "any")
+            $forceShow = @$ci->forced_rights && @$ci->forced_rights_version == $this->rights_version_;
+        if ($forceShow) {
+            if (!@$ci->forced_rights)
+                $ci->forced_rights = clone $ci;
+            $ci = $ci->forced_rights;
+        }
 
         // set other rights
         if (@$ci->rights_version != $this->rights_version_
@@ -1344,6 +1348,7 @@ class Contact {
                     && ($isPC || $ci->allow_review)
                     && $Conf->timeReviewerViewAcceptedAuthors());
         }
+
         return $ci;
     }
 
