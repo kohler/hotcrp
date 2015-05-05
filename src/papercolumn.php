@@ -597,7 +597,8 @@ class DesirabilityPaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         if (!$pl->contact->privChair)
             return false;
-        $queryOptions["desirability"] = 1;
+        if ($visible)
+            $queryOptions["desirability"] = 1;
         return true;
     }
     public function desirability_sorter($a, $b) {
@@ -623,8 +624,10 @@ class TopicScorePaperColumn extends PaperColumn {
         global $Conf;
         if (!$Conf->has_topics() || !$pl->contact->isPC)
             return false;
-        $queryOptions["reviewer"] = $pl->reviewer_cid();
-        $queryOptions["topicInterestScore"] = 1;
+        if ($visible) {
+            $queryOptions["reviewer"] = $pl->reviewer_cid();
+            $queryOptions["topicInterestScore"] = 1;
+        }
         return true;
     }
     public function topic_score_sorter($a, $b) {
@@ -652,8 +655,10 @@ class PreferencePaperColumn extends PaperColumn {
         global $Conf;
         if (!$pl->contact->isPC)
             return false;
-        $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
-        $queryOptions["reviewer"] = $pl->reviewer_cid();
+        if ($visible) {
+            $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
+            $queryOptions["reviewer"] = $pl->reviewer_cid();
+        }
         if ($this->editable && $visible > 0) {
             $arg = "ajax=1&amp;setrevpref=1";
             if ($pl->contact->privChair && $pl->reviewer_cid())
@@ -871,7 +876,8 @@ class TagPaperColumn extends PaperColumn {
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE)))
             return false;
         $this->ctag = strtolower(" $ctag#");
-        $queryOptions["tags"] = 1;
+        if ($visible)
+            $queryOptions["tags"] = 1;
         return true;
     }
     protected function _tag_value($row) {
@@ -1108,7 +1114,8 @@ class FormulaPaperColumn extends PaperColumn {
             || $this->formula->base_view_score() <= $view_bound)
             return false;
         $this->formula_function = $this->formula->compile_function($pl->contact);
-        $this->formula->add_query_options($queryOptions, $pl->contact);
+        if ($visible)
+            $this->formula->add_query_options($queryOptions, $pl->contact);
         return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
