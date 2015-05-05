@@ -3443,10 +3443,13 @@ function set(elt, text, which, type) {
     }
 }
 
+function get_xtype(type) {
+    return ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
+}
+
 function make_callback(dofold, type, which) {
-    var xtype = ({au: 1, anonau: 1, aufull: 1}[type] ? "authors" : type);
     return function (rv) {
-        var i, x, elt, eltx, h6 = "";
+        var xtype = get_xtype(type), i, x, elt, eltx, h6 = "";
         if ((x = rv[xtype + ".headerhtml"]))
             title[type] = x;
         if ((x = title[type]) && !plinfo.notitle[type])
@@ -3465,20 +3468,20 @@ function make_callback(dofold, type, which) {
 
 function show_loading(type, which) {
     return function () {
-        var i, x, elt, divs, h6;
-        if (!plinfo.needload[type] || !(elt = $$("fold" + which)))
+        var xtype = get_xtype(type), i, x, elt, divs, h6;
+        if (!plinfo.needload[xtype] || !(elt = $$("fold" + which)))
             return;
         divs = elt.getElementsByTagName("div");
         for (i = 0; i < divs.length; i++)
-            if (divs[i].id.substr(0, type.length) == type)
-                set(divs[i], "Loading", which, type);
+            if (divs[i].id.substr(0, type.length) == xtype)
+                set(divs[i], "Loading", which, xtype);
     };
 }
 
 function plinfo(type, dofold, which) {
     var elt;
     which = which || "pl";
-    if (dofold.checked !== undefined)
+    if (dofold && dofold !== true && dofold.checked !== undefined)
         dofold = !dofold.checked;
 
     // fold
@@ -3501,9 +3504,12 @@ function plinfo(type, dofold, which) {
         setTimeout(show_loading(type, which), 750);
 
         // initiate load
-        if (type == "aufull") {
+        if (type == "aufull" || type == "au" || type == "anonau") {
             $("#plloadform_get").val("authors");
-            $("#plloadform_aufull").val(dofold ? "" : "1");
+            if (type == "aufull")
+                $("#plloadform_aufull").val(dofold ? "" : "1");
+            else
+                $("#plloadform_aufull").val($$("showaufull").checked ? "1" : "");
         } else
             $("#plloadform_get").val(type);
         Miniajax.submit(["plloadform", type + "loadform"],

@@ -288,9 +288,10 @@ class AuthorsPaperColumn extends PaperColumn {
                 $ax[1] = "unaffiliated";
         return $affaus;
     }
+    public function content_empty($pl, $row) {
+        return !$pl->contact->can_view_authors($row, true);
+    }
     public function content($pl, $row, $rowidx) {
-        if (!$pl->contact->can_view_authors($row, true))
-            return "";
         cleanAuthor($row);
         $aus = array();
         $highlight = defval($pl->search->matchPreg, "authorInformation", "");

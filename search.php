@@ -1316,7 +1316,7 @@ if ($pl) {
                                "style" => "display:none"));
     }
     if (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors || $Me->privChair)
-        displayOptionCheckbox("aufull", 1, "Full author info", array("indent" => true));
+        displayOptionCheckbox("aufull", 1, "Full author info", array("id" => "showaufull", "indent" => true));
     if ($Me->privChair && !$Conf->subBlindNever()
         && (!$Conf->subBlindAlways() || $viewAcceptedAuthors || $viewAllAuthors))
         displayOptionCheckbox("anonau", 1, "Deblinded authors", array("disabled" => (!$pl || !$pl->any->anonau), "indent" => true));

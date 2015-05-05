@@ -757,29 +757,35 @@ class PaperList extends BaseList {
             if ($fdef->view != Column::VIEW_ROW
                 || $fdef->content_empty($this, $row))
                 continue;
+
+            // track foldedness
+            $this->any[$fdef->name] = true;
             if ($fdef->foldable && !isset($rstate->foldinfo[$fdef->name]))
                 $rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
-            if ($fdef->foldable && $fdef->name != "authors"
-                && $rstate->foldinfo[$fdef->name]) {
-                $tt .= "<div id=\"$fdef->name.$row->paperId\"></div>";
-                $this->any[$fdef->name] = true;
-            } else if (($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                if (!$fdef->foldable)
-                    $tc = "";
-                else if ($fdef->name != "authors")
-                    $tc = " fx" . $fdef->foldable;
-                else if ($this->contact->can_view_authors($row, false)) {
+
+            $tc = "";
+            if ($fdef->name == "authors") {
+                if ($this->contact->can_view_authors($row, false)) {
                     $tc = " fx1";
                     $this->any->openau = true;
                 } else {
                     $tc = " fx1 fx2";
                     $this->any->anonau = true;
                 }
+            }
+
+            if ($fdef->foldable && $rstate->foldinfo[$fdef->name]) {
+                $tt .= "<div id=\"$fdef->name.$row->paperId\"";
+                if ($tc)
+                    $tt .= " class=\"pl_{$fdef->cssname}$tc\"";
+                $tt .= "></div>";
+            } else if (($c = $fdef->content($this, $row, $rowidx)) !== "") {
+                if ($fdef->foldable && $tc === "")
+                    $tc = " fx" . $fdef->foldable;
                 $tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"pl_"
                     . $fdef->cssname . $tc . "\"><h6>"
                     . $fdef->header($this, $row, -1)
                     . ":</h6> " . $c . "</div>";
-                $this->any[$fdef->name] = true;
             }
         }
 
@@ -843,6 +849,8 @@ class PaperList extends BaseList {
         if ($this->any->openau || $this->any->anonau) {
             $classes[] = "fold1" . ($this->is_folded("au") ? "c" : "o");
             $jsmap[] = "\"au\":1,\"aufull\":4";
+            if (@$rstate->foldinfo["authors"])
+                $jsloadmap[] = "\"au\":true";
             $jsloadmap[] = "\"aufull\":true";
         }
         if ($this->any->anonau) {
@@ -879,13 +887,13 @@ class PaperList extends BaseList {
         if (($this->any->openau || $this->any->anonau) && $show_links) {
             $titleextra .= "<span class='sep'></span>";
             if ($Conf->submission_blindness() == Conference::BLIND_NEVER)
-                $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
+                $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
             else if ($this->contact->privChair && $this->any->anonau && !$this->any->openau)
-                $titleextra .= "<a class='fn1 fn2' href=\"javascript:fold('pl',0,'au');void fold('pl',0,'anonau')\">Show authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
+                $titleextra .= '<a class="fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else if ($this->contact->privChair && $this->any->anonau)
-                $titleextra .= "<a class='fn1' href=\"javascript:fold('pl',0,'au');void fold('pl',1,'anonau')\">Show non-anonymous authors</a><a class='fx1 fn2' href=\"javascript:void fold('pl',0,'anonau')\">Show all authors</a><a class='fx1 fx2' href=\"javascript:fold('pl',1,'au');void fold('pl',1,'anonau')\">Hide authors</a>";
+                $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else
-                $titleextra .= "<a class='fn1' href=\"javascript:void fold('pl',0,'au')\">Show non-anonymous authors</a><a class='fx1' href=\"javascript:void fold('pl',1,'au')\">Hide authors</a>";
+                $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
         }
         if ($this->any->tags && $show_links)
             foreach ($fieldDef as $fdef)
@@ -1154,7 +1162,7 @@ class PaperList extends BaseList {
         // create render state
         $rstate = (object) array();
         $rstate->ids = array();
-        $rstate->foldinfo = array();
+        $rstate->foldinfo = array("authors" => $this->is_folded("au"));
         $rstate->colorindex = 0;
         $rstate->hascolors = false;
         $rstate->skipcallout = $skipcallout;
