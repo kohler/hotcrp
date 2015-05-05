@@ -457,8 +457,6 @@ function display_main(is_initial) {
         now = +dl.now + time_since_load,
         elt = $$("maindeadline");
 
-    if (is_initial && $$("foldtags"))
-        save_tags.attach_deadlines();
     if (!elt)
         return;
 
@@ -3636,13 +3634,13 @@ save_tags.success = function (data) {
         }
     });
 };
-save_tags.attach_deadlines = function () {
+jQuery(function () {
     if ($$("foldtags"))
         jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
             if (dl.tags && dl.tags[hotcrp_paperid])
                 save_tags.success(dl.tags[hotcrp_paperid]);
         });
-};
+});
 
 function save_tag_index(e) {
     var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),
