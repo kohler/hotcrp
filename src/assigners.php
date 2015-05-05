@@ -713,6 +713,7 @@ class TagAssigner extends Assigner {
         }
 
         // resolve tag portion
+        $search_ltag = null;
         if (strcasecmp($m[2], "none") == 0)
             return;
         else if (strcasecmp($m[2], "any") == 0 || strcasecmp($m[2], "all") == 0) {
@@ -722,9 +723,11 @@ class TagAssigner extends Assigner {
                 $m[2] = "(?:~~|" . $state->contact->contactId . "~|)[^~]*";
             else
                 $m[2] = "(?:" . $state->contact->contactId . "~|)[^~]*";
-        } else
-            $m[2] = str_replace(array("\\-", "\\*"), array("-", "[^~]*"),
-                                preg_quote($m[2]));
+        } else {
+            if (!preg_match(',[*(],', $m[1] . $m[2]))
+                $search_ltag = $m[1] . $m[2];
+            $m[2] = str_replace("\\*", "[^~]*", preg_quote($m[2]));
+        }
 
         // resolve index comparator
         if (preg_match(',\A(?:any|all|none|clear)\z,i', $m[4]))
@@ -736,10 +739,8 @@ class TagAssigner extends Assigner {
         }
 
         // query
-        $tag = $m[1] . $m[2];
-        $search_ltag = !preg_match(',[*(],', $tag) ? strtolower($tag) : null;
         $res = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $search_ltag));
-        $tag_re = '{\A' . $tag . '\z}i';
+        $tag_re = '{\A' . $m[1] . $m[2] . '\z}i';
         $vote_adjustments = array();
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"])
