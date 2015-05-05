@@ -459,10 +459,10 @@ class PaperRank {
         $aminvoters = $a[2];
         $bminvoters = $b[2];
 
-        $awin_scaled = $a[0] / $aminvoters;
-        $alose_scaled = $a[1] / $aminvoters;
-        $bwin_scaled = $b[0] / $bminvoters;
-        $blose_scaled = $b[1] / $bminvoters;
+        $awin_scaled = $a[0] / ($aminvoters ? : 1);
+        $alose_scaled = $a[1] / ($aminvoters ? : 1);
+        $bwin_scaled = $b[0] / ($bminvoters ? : 1);
+        $blose_scaled = $b[1] / ($bminvoters ? : 1);
 
         $amargin = $awin_scaled - $alose_scaled;
         $bmargin = $bwin_scaled - $blose_scaled;
