@@ -625,10 +625,9 @@ class TagAssigner extends Assigner {
         if ($tag[0] === "#")
             $tag = substr($tag, 1);
         $m = array(null, "", "", "", "");
-        if (preg_match(',\A(.*?)([=!<>]=?|#|≠|≤|≥)(.*?)\z,', $tag, $xm))
+        $xtag = $tag;
+        if (preg_match(',\A(.*?)([=!<>]=?|#|≠|≤|≥)(.*?)\z,', $xtag, $xm))
             list($xtag, $m[3], $m[4]) = array($xm[1], $xm[2], $xm[3]);
-        else
-            $xtag = $tag;
         if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
             return "Invalid tag “" . htmlspecialchars($xtag) . "”.";
         else if ($m[3] && $m[4] === "")
@@ -724,7 +723,8 @@ class TagAssigner extends Assigner {
             else
                 $m[2] = "(?:" . $state->contact->contactId . "~|)[^~]*";
         } else
-            $m[2] = str_replace("\\*", "[^~]*", preg_quote($m[2]));
+            $m[2] = str_replace(array("\\-", "\\*"), array("-", "[^~]*"),
+                                preg_quote($m[2]));
 
         // resolve index comparator
         if (preg_match(',\A(?:any|all|none|clear)\z,i', $m[4]))
