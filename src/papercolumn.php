@@ -696,9 +696,11 @@ class PreferenceListPaperColumn extends PaperColumn {
     public function prepare($pl, &$qopts, $visible) {
         if (!$pl->contact->privChair)
             return false;
-        $qopts["allReviewerPreference"] = $qopts["allConflictType"] = 1;
-        if ($this->topics)
-            $queryOptions["topics"] = 1;
+        if ($visible) {
+            $qopts["allReviewerPreference"] = $qopts["allConflictType"] = 1;
+            if ($this->topics)
+                $queryOptions["topics"] = 1;
+        }
         return true;
     }
     public function header($pl, $row, $ordinal) {
