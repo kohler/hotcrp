@@ -25,7 +25,7 @@ class CleanHTML {
         $tagstack = array();
 
         $x = "";
-        while ($t != "") {
+        while ($t !== "") {
             if (($p = strpos($t, "<")) === false) {
                 $x .= $t;
                 break;
@@ -48,27 +48,27 @@ class CleanHTML {
                 $x .= "<" . $tag;
                 if (!isset(self::$goodtags[$tag]))
                     return self::_cleanHTMLError($err, "some <code>&lt;$tag&gt;</code> tag");
-                while ($t != "" && $t[0] != "/" && $t[0] != ">") {
+                while ($t !== "" && $t[0] !== "/" && $t[0] !== ">") {
                     if (!preg_match(',\A([^\s/<>=\'"]+)\s*(.*)\z,s', $t, $m))
                         return self::_cleanHTMLError($err, "garbage <code>" . htmlspecialchars($t) . "</code> within some <code>&lt;$tag&gt;</code> tag");
                     $attr = strtolower($m[1]);
-                    if (strlen($attr) > 2 && $attr[0] == "o" && $attr[1] == "n")
+                    if (strlen($attr) > 2 && $attr[0] === "o" && $attr[1] === "n")
                         return self::_cleanHTMLError($err, "an event handler attribute in some <code>&lt;$tag&gt;</code> tag");
-                    else if ($attr == "style" || $attr == "script" || $attr == "id")
+                    else if ($attr === "style" || $attr === "script" || $attr === "id")
                         return self::_cleanHTMLError($err, "a <code>$attr</code> attribute in some <code>&lt;$tag&gt;</code> tag");
                     $x .= " " . $attr . "=";
                     $t = $m[2];
                     if (preg_match(',\A=\s*(\'.*?\'|".*?"|\w+)\s*(.*)\z,s', $t, $m)) {
-                        if ($m[1][0] != "'" && $m[1][0] != "\"")
+                        if ($m[1][0] !== "'" && $m[1][0] !== "\"")
                             $m[1] = "\"$m[1]\"";
                         $x .= $m[1];
                         $t = $m[2];
                     } else
                         $x .= "\"$attr\" ";
                 }
-                if ($t == "")
+                if ($t === "")
                     return self::_cleanHTMLError($err, "an unclosed <code>&lt;$tag&gt;</code> tag");
-                else if ($t[0] == ">") {
+                else if ($t[0] === ">") {
                     $t = substr($t, 1);
                     if (isset(self::$emptytags[$tag])
                         && !preg_match(',\A\s*<\s*/' . $tag . '\s*>,si', $t))
@@ -89,7 +89,7 @@ class CleanHTML {
                     return self::_cleanHTMLError($err, "some <code>&lt;/$tag&gt;</code> tag");
                 else if (count($tagstack) == 0)
                     return self::_cleanHTMLError($err, "a extra close tag <code>&lt;/$tag&gt;</code>");
-                else if (($last = array_pop($tagstack)) != $tag)
+                else if (($last = array_pop($tagstack)) !== $tag)
                     return self::_cleanHTMLError($err, "a close tag <code>&lt;/$tag</code> that doesn’t match the open tag <code>&lt;$last</code>");
                 $x .= "</$tag>";
                 $t = $m[2];

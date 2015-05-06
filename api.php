@@ -17,12 +17,12 @@ if (!isset($_GET["fn"])) {
         $_GET["fn"] = "deadlines";
 }
 
-if ($_GET["fn"] == "trackerstatus") { // used by hotcrp-comet
+if ($_GET["fn"] === "trackerstatus") { // used by hotcrp-comet
     $tracker = MeetingTracker::lookup();
     $Conf->ajaxExit(array("tracker_status" => MeetingTracker::tracker_status($tracker), "ok" => true));
 }
 
-if ($_GET["fn"] == "deadlines" && !$Me->has_database_account()
+if ($_GET["fn"] === "deadlines" && !$Me->has_database_account()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
     if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 172800) {
@@ -35,15 +35,15 @@ if ($_GET["fn"] == "deadlines" && !$Me->has_database_account()
     }
 }
 
-if (@$_GET["fn"] == "jserror") {
+if (@$_GET["fn"] === "jserror") {
     $url = defval($_REQUEST, "url", "");
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
         $url = $m[1];
-    if (isset($_REQUEST["lineno"]) && $_REQUEST["lineno"] != "0")
+    if (isset($_REQUEST["lineno"]) && $_REQUEST["lineno"] !== "0")
         $url .= ":" . $_REQUEST["lineno"];
-    if (isset($_REQUEST["colno"]) && $_REQUEST["colno"] != "0")
+    if (isset($_REQUEST["colno"]) && $_REQUEST["colno"] !== "0")
         $url .= ":" . $_REQUEST["colno"];
-    if ($url != "")
+    if ($url !== "")
         $url .= ": ";
     $errormsg = trim((string) @$_REQUEST["error"]);
     if ($errormsg) {
@@ -69,9 +69,9 @@ if (@$_GET["fn"] == "jserror") {
     $Conf->ajaxExit(array("ok" => true));
 }
 
-if (@$_GET["fn"] == "track" && $Me->privChair && check_post()) {
+if (@$_GET["fn"] === "track" && $Me->privChair && check_post()) {
     // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
-    if ($_REQUEST["track"] == "stop")
+    if ($_REQUEST["track"] === "stop")
         MeetingTracker::clear();
     else {
         $args = preg_split('/\s+/', $_REQUEST["track"]);

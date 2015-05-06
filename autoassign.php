@@ -10,7 +10,7 @@ if (!$Me->is_manager())
     $Me->escape();
 
 // paper selection
-if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
+if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) === "(All)")
     $_REQUEST["q"] = "";
 if (isset($_REQUEST["pcs"]) && is_string($_REQUEST["pcs"]))
     $_REQUEST["pcs"] = preg_split('/\s+/', $_REQUEST["pcs"]);
@@ -24,7 +24,7 @@ if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
 
 $tOpt = PaperSearch::manager_search_types($Me);
 if ($Me->privChair && !isset($_REQUEST["t"])
-    && defval($_REQUEST, "a") == "prefconflict"
+    && defval($_REQUEST, "a") === "prefconflict"
     && $Conf->can_pc_see_all_submissions())
     $_REQUEST["t"] = "all";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
@@ -48,8 +48,8 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && !isset($_REQUEST["reque
 }
 sort($papersel);
 
-if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] != $_REQUEST["t"])
-    || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] != $_REQUEST["q"])) {
+if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !== $_REQUEST["t"])
+    || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] !== $_REQUEST["q"])) {
     if (isset($_REQUEST["p"]) && isset($_REQUEST["assign"]))
         $Conf->infoMsg("You changed the paper search.  Please review the resulting paper list.");
     unset($_REQUEST["assign"]);
@@ -57,9 +57,9 @@ if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !=
 }
 if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"])
     && isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
-    && ($_REQUEST["defaultact"] == "assign" || $_REQUEST["defaultact"] == "requery"))
+    && ($_REQUEST["defaultact"] === "assign" || $_REQUEST["defaultact"] === "requery"))
     $_REQUEST[$_REQUEST["defaultact"]] = true;
-if (!isset($_REQUEST["pctyp"]) || ($_REQUEST["pctyp"] != "all" && $_REQUEST["pctyp"] != "sel"))
+if (!isset($_REQUEST["pctyp"]) || ($_REQUEST["pctyp"] !== "all" && $_REQUEST["pctyp"] !== "sel"))
     $_REQUEST["pctyp"] = "all";
 
 // bad pairs
@@ -130,9 +130,9 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     global $Error, $Conf;
 
     $atype = $_REQUEST["a"];
-    $atype_review = ($atype == "rev" || $atype == "revadd" || $atype == "revpc");
-    if (!$atype_review && $atype != "lead" && $atype != "shepherd"
-        && $atype != "prefconflict" && $atype != "clear") {
+    $atype_review = ($atype === "rev" || $atype === "revadd" || $atype === "revpc");
+    if (!$atype_review && $atype !== "lead" && $atype !== "shepherd"
+        && $atype !== "prefconflict" && $atype !== "clear") {
         $Error["ass"] = true;
         return $Conf->errorMsg("Malformed request!");
     }
@@ -145,9 +145,9 @@ function checkRequest(&$atype, &$reviewtype, $save) {
             return $Conf->errorMsg("Malformed request!");
         }
     }
-    if ($atype == "clear")
+    if ($atype === "clear")
         $reviewtype = defval($_REQUEST, "cleartype", "");
-    if ($atype == "clear"
+    if ($atype === "clear"
         && ($reviewtype != REVIEW_PRIMARY && $reviewtype != REVIEW_SECONDARY
             && $reviewtype != REVIEW_PC
             && $reviewtype !== "conflict" && $reviewtype !== "lead"
@@ -156,9 +156,9 @@ function checkRequest(&$atype, &$reviewtype, $save) {
         return $Conf->errorMsg("Malformed request!");
     }
     $_REQUEST["rev_roundtag"] = defval($_REQUEST, "rev_roundtag", "");
-    if ($_REQUEST["rev_roundtag"] == "(None)")
+    if ($_REQUEST["rev_roundtag"] === "(None)")
         $_REQUEST["rev_roundtag"] = "";
-    if ($atype_review && $_REQUEST["rev_roundtag"] != ""
+    if ($atype_review && $_REQUEST["rev_roundtag"] !== ""
         && !preg_match('/^[a-zA-Z0-9]+$/', $_REQUEST["rev_roundtag"])) {
         $Error["rev_roundtag"] = true;
         return $Conf->errorMsg("The review round must contain only letters and numbers.");
@@ -166,13 +166,13 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 
     if ($save)
         /* no check */;
-    else if ($atype == "rev" && cvtint(@$_REQUEST["revct"], -1) <= 0) {
+    else if ($atype === "rev" && cvtint(@$_REQUEST["revct"], -1) <= 0) {
         $Error["rev"] = true;
         return $Conf->errorMsg("Enter the number of reviews you want to assign.");
-    } else if ($atype == "revadd" && cvtint(@$_REQUEST["revaddct"], -1) <= 0) {
+    } else if ($atype === "revadd" && cvtint(@$_REQUEST["revaddct"], -1) <= 0) {
         $Error["revadd"] = true;
         return $Conf->errorMsg("You must assign at least one review.");
-    } else if ($atype == "revpc" && cvtint(@$_REQUEST["revpcct"], -1) <= 0) {
+    } else if ($atype === "revpc" && cvtint(@$_REQUEST["revpcct"], -1) <= 0) {
         $Error["revpc"] = true;
         return $Conf->errorMsg("You must assign at least one review.");
     }
@@ -204,7 +204,7 @@ function doAssign() {
     $assignprefs = array();
 
     // choose PC members to use for assignment
-    if ($_REQUEST["pctyp"] == "sel") {
+    if ($_REQUEST["pctyp"] === "sel") {
         $pck = array_keys($pcm);
         foreach ($pck as $pcid)
             if (!isset($pcsel[$pcid]))
@@ -216,7 +216,7 @@ function doAssign() {
     }
 
     // prefconflict is a special case
-    if ($atype == "prefconflict") {
+    if ($atype === "prefconflict") {
         $papers = array_fill_keys($papersel, 1);
         $result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""));
         while (($row = edb_row($result))) {
@@ -233,7 +233,7 @@ function doAssign() {
     }
 
     // clear is another special case
-    if ($atype == "clear") {
+    if ($atype === "clear") {
         $papers = array_fill_keys($papersel, 1);
         $action = null;
         if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY
@@ -263,8 +263,8 @@ function doAssign() {
 
     // prepare to balance load
     $load = array_fill_keys(array_keys($pcm), 0);
-    if (defval($_REQUEST, "balance", "new") != "new" && $atype != "revpc") {
-        if ($atype == "rev" || $atype == "revadd")
+    if (defval($_REQUEST, "balance", "new") !== "new" && $atype !== "revpc") {
+        if ($atype === "rev" || $atype === "revadd")
             $result = $Conf->qe("select ContactInfo.contactId, count(reviewId)
                 from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType=$reviewtype)
                 where (roles&" . Contact::ROLE_PC . ")!=0
@@ -281,11 +281,11 @@ function doAssign() {
     }
 
     // get preferences
-    if (($atype == "lead" || $atype == "shepherd")
+    if (($atype === "lead" || $atype === "shepherd")
         && isset($_REQUEST["${atype}score"])
         && isset($scoreselector[$_REQUEST["${atype}score"]])) {
         $score = $_REQUEST["${atype}score"];
-        if ($score == "x")
+        if ($score === "x")
             $score = "1";
         else
             $score = "PaperReview." . substr($score, 1);
@@ -318,7 +318,7 @@ function doAssign() {
     foreach ($pcm as $cid => $pc) {
         $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $cid, $papersel);
 
-        if ($atype == "rev" || $atype == "revadd" || $atype == "revpc") {
+        if ($atype === "rev" || $atype === "revadd" || $atype === "revpc") {
             while (($row = PaperInfo::fetch($result, true))) {
                 $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
                 if ($row->conflictType > 0
@@ -330,7 +330,7 @@ function doAssign() {
                     $prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
             }
         } else {
-            $scoredir = (substr(defval($_REQUEST, "${atype}score", "x"), 0, 1) == "-" ? -1 : 1);
+            $scoredir = (substr(defval($_REQUEST, "${atype}score", "x"), 0, 1) === "-" ? -1 : 1);
             // First, collect score extremes
             $scoreextreme = array();
             $rows = array();
@@ -383,19 +383,19 @@ function doAssign() {
     // get papers
     $papers = array();
     $loadlimit = null;
-    if ($atype == "revadd")
+    if ($atype === "revadd")
         $papers = array_fill_keys($papersel, cvtint(@$_REQUEST["revaddct"]));
-    else if ($atype == "revpc") {
+    else if ($atype === "revpc") {
         $loadlimit = cvtint(@$_REQUEST["revpcct"]);
         $papers = array_fill_keys($papersel, ceil((count($pcm) * $loadlimit) / count($papersel)));
-    } else if ($atype == "rev") {
+    } else if ($atype === "rev") {
         $papers = array_fill_keys($papersel, cvtint(@$_REQUEST["revct"]));
         $result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId");
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] = max($papers[$row[0]] - $row[1], 0);
         Dbl::free($result);
-    } else if ($atype == "lead" || $atype == "shepherd") {
+    } else if ($atype === "lead" || $atype === "shepherd") {
         $papers = array();
         $xpapers = array_fill_keys($papersel, 1);
         $result = $Conf->qe("select paperId from Paper where ${atype}ContactId=0");
@@ -407,7 +407,7 @@ function doAssign() {
         assert(false);
 
     // check action
-    if ($atype == "lead" || $atype == "shepherd")
+    if ($atype === "lead" || $atype === "shepherd")
         $action = $atype;
     else if ($reviewtype == REVIEW_PRIMARY)
         $action = "primary";
@@ -415,7 +415,7 @@ function doAssign() {
         $action = "secondary";
     else
         $action = "pcreview";
-    if ($atype != "lead" && $atype != "shepherd" && $_REQUEST["rev_roundtag"])
+    if ($atype !== "lead" && $atype !== "shepherd" && $_REQUEST["rev_roundtag"])
         $round = "," . $_REQUEST["rev_roundtag"];
     else
         $round = "";
@@ -483,14 +483,14 @@ function doAssign() {
     foreach ($papers as $pid => $n)
         if ($n > 0)
             $badpids[] = $pid;
-    if ($badpids && $atype != "revpc") {
+    if ($badpids && $atype !== "revpc") {
         $b = array();
         $pidx = join("+", $badpids);
         foreach ($badpids as $pid)
             $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;ls=$pidx") . "'>$pid</a>";
-        if ($atype == "rev" || $atype == "revadd")
+        if ($atype === "rev" || $atype === "revadd")
             $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
-        else if ($_REQUEST["pctyp"] == "sel")
+        else if ($_REQUEST["pctyp"] === "sel")
             $x = ", possibly because you haven’t selected all PC members";
         else
             $x = "";
@@ -525,12 +525,12 @@ $Conf->header("Review Assignments", "autoassign", $abar);
 
 
 function doRadio($name, $value, $text, $extra = null) {
-    if (($checked = (!isset($_REQUEST[$name]) || $_REQUEST[$name] == $value)))
+    if (($checked = (!isset($_REQUEST[$name]) || $_REQUEST[$name] === $value)))
         $_REQUEST[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
     echo Ht::radio($name, $value, $checked, $extra), "&nbsp;";
-    if ($text != "")
+    if ($text !== "")
         echo Ht::label($text, "${name}_$value");
 }
 
@@ -609,7 +609,7 @@ echo "<form method='post' action='", hoturl_post("autoassign"), "' accept-charse
 echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
-$q = ($_REQUEST["q"] == "" ? "(All)" : $_REQUEST["q"]);
+$q = ($_REQUEST["q"] === "" ? "(All)" : $_REQUEST["q"]);
 echo "<input id='autoassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")"));
@@ -703,7 +703,7 @@ if (count($pctags)) {
         $tagsjson[] = "\"$pc->contactId\":\"" . strtolower($pc->all_contact_tags()) . "\"";
     $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
     foreach ($pctags as $tagname => $pctag)
-        if ($tagname != "pc")
+        if ($tagname !== "pc")
             $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");
 }
 $sep = "";

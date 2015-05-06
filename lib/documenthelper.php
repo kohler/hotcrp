@@ -79,7 +79,7 @@ class ZipDocument {
             $zip_filename .= "/";
             $fn = substr($fn, $p + 1);
         }
-        if ($fn == "") {
+        if ($fn === "") {
             $this->warnings[] = "$filename: Bad filename.";
             return self::_add_done($doc, false);
         }
@@ -175,7 +175,7 @@ class DocumentHelper {
 
         $a = array();
         foreach ($cols as $k => $v)
-            if ($k != $idcol)
+            if ($k !== $idcol)
                 $a[] = "`" . $k . "`='" . sqlq(substr($v, 0, $N)) . "'";
 
         if (isset($cols[$idcol]))
@@ -257,22 +257,22 @@ class DocumentHelper {
             $fpath = $m[4];
 
             $xfpath .= $m[1];
-            if ($m[3] == "%")
+            if ($m[3] === "%")
                 $xfpath .= "%";
-            else if ($m[3] == "x")
+            else if ($m[3] === "x")
                 $xfpath .= Mimetype::extension(self::_mimetype($doc));
             else {
                 if ($sha1 === null
                     && ($sha1 = self::text_sha1($doc)) === null)
                     return array(null, null);
-                if ($m[2] != "")
+                if ($m[2] !== "")
                     $xfpath .= substr($sha1, 0, +$m[2]);
                 else
                     $xfpath .= $sha1;
             }
         }
 
-        if ($fdir && $fdir[strlen($fdir) - 1] == "/")
+        if ($fdir && $fdir[strlen($fdir) - 1] === "/")
             $fdir = substr($fdir, 0, strlen($fdir) - 1);
         return array($fdir, $xfpath . $fpath);
     }
@@ -409,7 +409,7 @@ class DocumentHelper {
 
         $mimetypes = $docclass->mimetypes($doc, $docinfo);
         for ($i = 0; $i < count($mimetypes); ++$i)
-            if ($mimetypes[$i]->mimetype == $doc->mimetype)
+            if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 break;
         if ($i >= count($mimetypes) && count($mimetypes)) {
             $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";

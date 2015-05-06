@@ -95,11 +95,11 @@ class PaperOption {
     }
 
     static function search($name) {
-        if ((string) $name == (string) DTYPE_SUBMISSION
+        if ((string) $name === (string) DTYPE_SUBMISSION
             || strcasecmp($name, "paper") == 0
             || strcasecmp($name, "submission") == 0)
             return array(DTYPE_SUBMISSION => self::find_document(DTYPE_SUBMISSION));
-        else if ((string) $name == (string) DTYPE_FINAL
+        else if ((string) $name === (string) DTYPE_FINAL
                  || strcasecmp($name, "final") == 0)
             return array(DTYPE_FINAL => self::find_document(DTYPE_FINAL));
         if (self::$list === null)
@@ -114,7 +114,7 @@ class PaperOption {
         if (substr($name, 0, 4) === "opt-")
             $name = substr($name, 4);
         foreach (self::$list as $o)
-            if ($o->abbr == $name)
+            if ($o->abbr === $name)
                 return array($o->id => $o);
         $rewords = array();
         foreach (preg_split('/[^a-z_0-9*]+/', $name) as $word)
@@ -146,7 +146,7 @@ class PaperOption {
     }
 
     static function type_has_selector($type) {
-        return $type == "radio" || $type == "selector";
+        return $type === "radio" || $type === "selector";
     }
 
     function has_selector() {
@@ -154,24 +154,24 @@ class PaperOption {
     }
 
     static function type_takes_pdf($type) {
-        return $type == "pdf" || $type == "slides";
+        return $type === "pdf" || $type === "slides";
     }
 
     function is_document() {
-        return $this->type == "pdf" || $this->type == "slides"
-            || $this->type == "video";
+        return $this->type === "pdf" || $this->type === "slides"
+            || $this->type === "video";
     }
 
     function has_document() {
-        return $this->is_document() || $this->type == "attachments";
+        return $this->is_document() || $this->type === "attachments";
     }
 
     function needs_data() {
-        return $this->type == "text" || $this->type == "attachments";
+        return $this->type === "text" || $this->type === "attachments";
     }
 
     function takes_multiple() {
-        return $this->type == "attachments";
+        return $this->type === "attachments";
     }
 
     function display_type() {
@@ -197,7 +197,7 @@ class PaperOption {
             $j->near_submission = true;
         if (@$this->highlight)
             $j->highlight = true;
-        if (@$this->visibility && $this->visibility != "rev")
+        if (@$this->visibility && $this->visibility !== "rev")
             $j->visibility = $this->visibility;
         if (@$this->display_space)
             $j->display_space = $this->display_space;
@@ -207,7 +207,7 @@ class PaperOption {
     }
 
     private static function sort_multiples($o, $ox) {
-        if ($o->type == "attachments")
+        if ($o->type === "attachments")
             array_multisort($ox->data, SORT_NUMERIC, $ox->values);
     }
 

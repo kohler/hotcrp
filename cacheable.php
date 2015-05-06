@@ -34,21 +34,21 @@ $prefix = "";
 if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
     && preg_match(',.*([.][a-z]*)\z,', $file, $m)) {
     $s = $m[1];
-    if ($s == ".js") {
+    if ($s === ".js") {
         header("Content-Type: text/javascript; charset=utf-8");
         if (@$_REQUEST["strictjs"])
             $prefix = "\"use strict\";\n";
-    } else if ($s == ".map")
+    } else if ($s === ".map")
         header("Content-Type: application/json; charset=utf-8");
-    else if ($s == ".css")
+    else if ($s === ".css")
         header("Content-Type: text/css; charset=utf-8");
-    else if ($s == ".gif")
+    else if ($s === ".gif")
         header("Content-Type: image/gif");
-    else if ($s == ".jpg")
+    else if ($s === ".jpg")
         header("Content-Type: image/jpeg");
-    else if ($s == ".png")
+    else if ($s === ".png")
         header("Content-Type: image/png");
-    else if ($s == ".mp3")
+    else if ($s === ".mp3")
         header("Content-Type: audio/mpeg");
     else
         fail();
@@ -65,8 +65,8 @@ header("ETag: $etag");
 $if_modified_since = @$_SERVER["HTTP_IF_MODIFIED_SINCE"];
 $if_none_match = @$_SERVER["HTTP_IF_NONE_MATCH"];
 if (($if_modified_since || $if_none_match)
-    && (!$if_modified_since || $if_modified_since == $last_modified)
-    && (!$if_none_match || $if_none_match == $etag))
+    && (!$if_modified_since || $if_modified_since === $last_modified)
+    && (!$if_none_match || $if_none_match === $etag))
     header("HTTP/1.0 304 Not Modified");
 else if (function_exists("ob_gzhandler") && !$zlib_output_compression) {
     ob_start("ob_gzhandler");

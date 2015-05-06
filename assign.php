@@ -138,7 +138,7 @@ function handle_set_round() {
     if (!$Me->can_administer($prow))
         $Conf->ajaxExit(array("ok" => false, "error" => "Permission denied."));
     $rname = trim((string) $_POST["round"]);
-    if (!$rname || $rname == "default")
+    if (!$rname || $rname === "default")
         $rname = "";
     else if (($err = Conference::round_name_error($rname)))
         $Conf->ajaxExit(array("ok" => false, "error" => $err));
@@ -227,7 +227,7 @@ function requestReviewChecks($themHtml, $reqId) {
     $result = Dbl::qe_raw("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
     if (edb_nrows($result) > 0) {
         $row = edb_row($result);
-        if ($row[1] == "<conflict>")
+        if ($row[1] === "<conflict>")
             return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
         else if ($Me->override_deadlines($prow)) {
             $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : ""));
@@ -333,13 +333,13 @@ function unassignedAnonymousContact() {
         $name = "anonymous$n";
         $good = true;
         foreach ($rrows as $rr)
-            if ($rr->email == $name) {
+            if ($rr->email === $name) {
                 $good = false;
                 break;
             }
         if ($good)
             return $name;
-        $n = ($n == "" ? 2 : $n + 1);
+        $n = ($n === "" ? 2 : $n + 1);
     }
 }
 
@@ -381,13 +381,13 @@ if (isset($_REQUEST["add"]) && check_post()) {
         $Conf->errorMsg(whyNotText($whyNot, "request reviews for"));
     else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
         $Conf->errorMsg("An email address is required to request a review.");
-    else if (trim($_REQUEST["email"]) == "" && trim($_REQUEST["name"]) == ""
+    else if (trim($_REQUEST["email"]) === "" && trim($_REQUEST["name"]) === ""
              && $Me->allow_administer($prow)) {
         if (!createAnonymousReview())
             Dbl::qx_raw("unlock tables");
         unset($_REQUEST["reason"]);
         loadRows();
-    } else if (trim($_REQUEST["email"]) == "")
+    } else if (trim($_REQUEST["email"]) === "")
         $Conf->errorMsg("An email address is required to request a review.");
     else {
         if ($Conf->setting("extrev_chairreq") && !$Me->allow_administer($prow))
@@ -480,7 +480,7 @@ if ($Conf->setting("extrev_chairreq")) {
 }
 $t = reviewTable($prow, $rrows, null, null, "assign", $proposals);
 $t .= reviewLinks($prow, $rrows, null, null, "assign", $allreviewslink);
-if ($t != "")
+if ($t !== "")
     echo '<div class="papcard_sep"></div>', $t;
 
 

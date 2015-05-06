@@ -23,7 +23,7 @@ function assignment_defaults() {
     if (@$_REQUEST["requestreview_notify"] && @$_REQUEST["requestreview_body"])
         $defaults["extrev_notify"] = array("subject" => @$_REQUEST["requestreview_subject"],
                                            "body" => @$_REQUEST["requestreview_body"]);
-    if (trim($defaults["round"]) == "(None)")
+    if (trim($defaults["round"]) !== "(None)")
         $defaults["round"] = null;
     return $defaults;
 }
@@ -184,7 +184,7 @@ echo 'By default, assign&nbsp; ',
 
 if (!isset($_REQUEST["rev_roundtag"]))
     $rev_roundtag = $Conf->setting_data("rev_roundtag");
-else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
+else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) !== "(None)")
     $rev_roundtag = "";
 $requestreview_template = $null_mailer->expand_template("requestreview");
 echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);

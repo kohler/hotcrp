@@ -54,7 +54,7 @@ class Dbl {
             $dbpass = urldecode($m[2]);
             $dbname = urldecode($m[4]);
         }
-        if (!$dbname || $dbname == "mysql" || substr($dbname, -7) === "_schema")
+        if (!$dbname || $dbname === "mysql" || substr($dbname, -7) === "_schema")
             return array(null, null);
 
         $dbsock = @$Opt["dbSocket"];
@@ -403,5 +403,5 @@ function sql_in_numeric_set($set) {
 
 function sql_not_in_numeric_set($set) {
     $sql = sql_in_numeric_set($set);
-    return ($sql[0] == "=" ? "!" : " not") . $sql;
+    return ($sql[0] === "=" ? "!" : " not") . $sql;
 }

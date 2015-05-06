@@ -23,16 +23,16 @@ class CsvParser {
         $last_lineend = false;
         for ($i = 0; $i < $n; ) {
             $t = $a[$i];
-            if ($t != "\n" && $t != "\r")
+            if ($t !== "\n" && $t !== "\r")
                 ++$i;
             else
                 $t = "";
             $lineend = ($i == $n ? false : $a[$i]);
-            if ($lineend == "\n" && $last_lineend == "\r" && $t == "") {
+            if ($lineend === "\n" && $last_lineend === "\r" && $t === "") {
                 $b[count($b) - 1] .= $lineend;
                 ++$i;
                 continue;
-            } else if ($lineend == "\n" || $lineend == "\r") {
+            } else if ($lineend === "\n" || $lineend === "\r") {
                 $t .= $lineend;
                 ++$i;
             }
@@ -75,9 +75,9 @@ class CsvParser {
 
     static function linelen($line) {
         $len = strlen($line);
-        if ($len > 0 && $line[$len - 1] == "\n")
+        if ($len > 0 && $line[$len - 1] === "\n")
             --$len;
-        if ($len > 0 && $line[$len - 1] == "\r")
+        if ($len > 0 && $line[$len - 1] === "\r")
             --$len;
         return $len;
     }
@@ -110,7 +110,7 @@ class CsvParser {
         if (is_array($line))
             return self::reparse($line, $this->header);
         // blank lines, comments
-        if ($line == "" || $line[0] == "\n" || $line[0] == "\r"
+        if ($line === "" || $line[0] === "\n" || $line[0] === "\r"
             || ($this->comment_chars
                 && strpos($this->comment_chars, $line[0]) !== false))
             return null;
@@ -140,10 +140,10 @@ class CsvParser {
         $linelen = self::linelen($line);
         $pos = 0;
         while ($pos != $linelen) {
-            if ($i && $line[$pos] == ",")
+            if ($i && $line[$pos] === ",")
                 ++$pos;
             $bpos = $pos;
-            if ($line[$pos] == "\"") {
+            if ($line[$pos] === "\"") {
                 while (1) {
                     $pos = strpos($line, "\"", $pos + 1);
                     if ($pos === false) {
@@ -153,7 +153,7 @@ class CsvParser {
                         $line .= $this->lines[$this->pos];
                         ++$this->pos;
                         $linelen = self::linelen($line);
-                    } else if (@$line[$pos + 1] == "\"")
+                    } else if (@$line[$pos + 1] === "\"")
                         ++$pos;
                     else
                         break;
@@ -192,7 +192,7 @@ class CsvParser {
             else
                 $a[$i] = $field;
             ++$i;
-            if ($pos != $linelen && $line[$pos] == "|")
+            if ($pos != $linelen && $line[$pos] === "|")
                 ++$pos;
         }
         return $a;
@@ -214,7 +214,7 @@ class CsvParser {
             else
                 $a[$i] = $field;
             ++$i;
-            if ($pos != $linelen && $line[$pos] == "\t")
+            if ($pos != $linelen && $line[$pos] === "\t")
                 ++$pos;
         }
         return $a;
@@ -251,7 +251,7 @@ class CsvGenerator {
     }
 
     static function quote($text, $quote_empty = false) {
-        if ($text == "")
+        if ($text === "")
             return $quote_empty ? '""' : $text;
         else if (preg_match('/\A[-_@\$#+A-Za-z0-9.](?:[-_@\$#+A-Za-z0-9. \t]*[-_\$#+A-Za-z0-9.]|)\z/', $text))
             return $text;

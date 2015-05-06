@@ -25,7 +25,7 @@ function cleannl($text) {
 	$text = str_replace("\r\n", "\n", $text);
 	$text = strtr($text, "\r", "\n");
     }
-    if (strlen($text) && $text[strlen($text) - 1] != "\n")
+    if (strlen($text) && $text[strlen($text) - 1] !== "\n")
 	$text .= "\n";
     return $text;
 }
@@ -43,7 +43,7 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
         $indentlen = strlen($indent);
 
     $out = "";
-    while ($text != "" && ctype_space($text[0])) {
+    while ($text !== "" && ctype_space($text[0])) {
         $out .= $text[0];
         $text = substr($text, 1);
     }
@@ -64,7 +64,7 @@ function validate_email($email) {
     // Allow @_.com email addresses.  Simpler than RFC822 validation.
     if (!preg_match(':\A[-!#$%&\'*+./0-9=?A-Z^_`a-z{|}~]+@(.+)\z:', $email, $m))
         return false;
-    if ($m[1][0] == "_")
+    if ($m[1][0] === "_")
         return preg_match(':\A_\.[0-9A-Za-z]+\z:', $m[1]);
     else
         return preg_match(':\A([-0-9A-Za-z]+\.)+[0-9A-Za-z]+\z:', $m[1]);

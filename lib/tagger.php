@@ -89,7 +89,7 @@ class TagInfo {
     }
 
     public static function basic_check($tag) {
-        return $tag != "" && strlen($tag) <= TAG_MAXLEN
+        return $tag !== "" && strlen($tag) <= TAG_MAXLEN
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
     }
 
@@ -100,7 +100,7 @@ class TagInfo {
             return $map;
         $ct = $Conf->setting_data("tag_chair", "");
         foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t != "" && !$map[self::base($t)]->chair) {
+            if ($t !== "" && !$map[self::base($t)]->chair) {
                 $map[self::base($t)]->chair = true;
                 ++$map->nchair;
             }
@@ -110,31 +110,31 @@ class TagInfo {
                 ++$map->nchair;
             }
         $vt = $Conf->setting_data("tag_vote", "");
-        if ($vt != "")
+        if ($vt !== "")
             foreach (preg_split('/\s+/', $vt) as $t)
-                if ($t != "") {
+                if ($t !== "") {
                     list($b, $v) = self::split_index($t);
                     $map[$b]->vote = ($v ? $v : 1);
                     ++$map->nvote;
                 }
         $vt = $Conf->setting_data("tag_approval", "");
-        if ($vt != "")
+        if ($vt !== "")
             foreach (preg_split('/\s+/', $vt) as $t)
-                if ($t != "") {
+                if ($t !== "") {
                     list($b, $v) = self::split_index($t);
                     $map[$b]->approval = true;
                     ++$map->napproval;
                 }
         $rt = $Conf->setting_data("tag_rank", "");
-        if ($rt != "")
+        if ($rt !== "")
             foreach (preg_split('/\s+/', $rt) as $t) {
                 $map[self::base($t)]->rank = true;
                 ++$map->nrank;
             }
         $ct = $Conf->setting_data("tag_color", "");
-        if ($ct != "")
+        if ($ct !== "")
             foreach (explode(" ", $ct) as $k)
-                if ($k != "" && ($p = strpos($k, "=")) !== false)
+                if ($k !== "" && ($p = strpos($k, "=")) !== false)
                     arrayappend($map[substr($k, 0, $p)]->colors,
                                 self::canonical_color(substr($k, $p + 1)));
         return $map;
@@ -166,8 +166,8 @@ class TagInfo {
     }
 
     public static function is_chair($tag) {
-        if ($tag[0] == "~")
-            return $tag[1] == "~";
+        if ($tag[0] === "~")
+            return $tag[1] === "~";
         $dt = self::defined_tags();
         $t = $dt->check(self::base($tag));
         return $t && $t->chair;
@@ -308,7 +308,7 @@ class Tagger {
     }
 
     private static function analyze($tag, $flags) {
-        if ($tag == "")
+        if ($tag === "")
             return "Empty tag.";
         else if (!preg_match('/\A' . TAG_REGEX_OPTVALUE . '\z/', $tag, $m)
                  || (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false))
@@ -331,11 +331,11 @@ class Tagger {
     public function check($tag, $flags = 0) {
         if (!($this->contact && $this->contact->privChair))
             $flags |= self::NOCHAIR;
-        if ($tag[0] == "#")
+        if ($tag[0] === "#")
             $tag = substr($tag, 1);
         if (($this->error_html = self::analyze($tag, $flags)))
             return false;
-        else if ($tag[0] == "~" && $tag[1] != "~" && $this->_contactId)
+        else if ($tag[0] === "~" && $tag[1] !== "~" && $this->_contactId)
             return $this->_contactId . $tag;
         else
             return $tag;
@@ -370,7 +370,7 @@ class Tagger {
 
     public function paper_editable($prow) {
         $tags = $this->viewable($prow->all_tags_text());
-        if ($tags != "") {
+        if ($tags !== "") {
             $privChair = $this->contact
                 && $this->contact->allow_administer($prow);
             $dt = TagInfo::defined_tags();
@@ -389,7 +389,7 @@ class Tagger {
     }
 
     public function unparse($tags) {
-        if ($tags == "" || (is_array($tags) && count($tags) == 0))
+        if ($tags === "" || (is_array($tags) && count($tags) == 0))
             return "";
         if (is_array($tags))
             $tags = join(" ", $tags);
@@ -406,11 +406,11 @@ class Tagger {
     }
 
     private function trim_for_sort($x) {
-        if ($x[0] == "#")
+        if ($x[0] === "#")
             $x = substr($x, 1);
-        if ($x[0] == "~" && $x[1] != "~")
+        if ($x[0] === "~" && $x[1] !== "~")
             $x = $this->_contactId . $x;
-        else if ($x[0] == "~")
+        else if ($x[0] === "~")
             $x = ";" . $x;
         return $x;
     }
@@ -426,7 +426,7 @@ class Tagger {
     public function unparse_and_link($viewable, $alltags, $highlight = false,
                                      $votereport = false) {
         $vtags = $this->unparse($viewable);
-        if ($vtags == "")
+        if ($vtags === "")
             return "";
 
         // track votes for vote report

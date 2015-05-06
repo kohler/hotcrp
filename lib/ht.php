@@ -90,7 +90,7 @@ class Ht {
         $optionstyles = defval($js, "optionstyles", null);
         $optgroup = "";
         foreach ($opt as $value => $info) {
-            if (is_array($info) && $info[0] == "optgroup")
+            if (is_array($info) && $info[0] === "optgroup")
                 $info = (object) array("type" => "optgroup", "label" => @$info[1]);
             else if (is_scalar($info)) {
                 $info = (object) array("label" => $info);
@@ -102,7 +102,7 @@ class Ht {
 
             if ($info === null)
                 $x .= '<option disabled="disabled"></option>';
-            else if (isset($info->type) && $info->type == "optgroup") {
+            else if (isset($info->type) && $info->type === "optgroup") {
                 $x .= $optgroup;
                 if ($info->label) {
                     $x .= '<optgroup label="' . htmlspecialchars($info->label) . '">';
@@ -143,7 +143,7 @@ class Ht {
         if ($name)
             $t .= " name=\"$name\" value=\"" . htmlspecialchars($value) . "\"";
         if ($checked === null)
-            $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] == $value;
+            $checked = isset($_REQUEST[$name]) && $_REQUEST[$name] === $value;
         if ($checked)
             $t .= " checked=\"checked\"";
         return $t . self::extra($js) . " />";
@@ -186,7 +186,7 @@ class Ht {
             $name = "";
         } else
             $name = $name ? " name=\"$name\"" : "";
-        if ($type == "button" || preg_match("_[<>]_", $html) || isset($js["value"]))
+        if ($type === "button" || preg_match("_[<>]_", $html) || isset($js["value"]))
             return "<button type=\"$type\"$name value=\""
                 . defval($js, "value", 1) . "\"" . self::extra($js)
                 . ">" . $html . "</button>";
