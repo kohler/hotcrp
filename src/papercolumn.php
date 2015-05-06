@@ -1171,7 +1171,7 @@ class TagReportPaperColumn extends PaperColumn {
         return true;
     }
     public function header($pl, $row, $ordinal) {
-        return "“" . $this->tag . "” tag report";
+        return "#~" . $this->tag . " tags";
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_tags($row, true);
@@ -1182,8 +1182,10 @@ class TagReportPaperColumn extends PaperColumn {
         $a = array();
         foreach (pcMembers() as $pcm) {
             $mytag = " " . $pcm->contactId . "~" . $this->tag . "#";
-            if (($p = strpos($t, $mytag)) !== false)
-                $a[] = Text::name_html($pcm) . " (#" . ((int) substr($t, $p + strlen($mytag))) . ")";
+            if (($p = strpos($t, $mytag)) !== false) {
+                $n = (int) substr($t, $p + strlen($mytag));
+                $a[] = Text::name_html($pcm) . ($n ? " (#$n)" : "");
+            }
         }
         return join(", ", $a);
     }
@@ -1400,10 +1402,10 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("", $formula);
 
     $tagger = new Tagger;
-    if ($Conf && (TagInfo::has_vote() || TagInfo::has_rank())) {
+    if ($Conf && (TagInfo::has_vote() || TagInfo::has_approval() || TagInfo::has_rank())) {
         $vt = array();
         foreach (TagInfo::defined_tags() as $v)
-            if ($v->vote || $v->rank)
+            if ($v->vote || $v->approval || $v->rank)
                 $vt[] = $v->tag;
         foreach ($vt as $n)
             TagReportPaperColumn::register(new TagReportPaperColumn($n));

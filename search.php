@@ -1333,10 +1333,12 @@ if ($pl) {
     if ($Me->isPC && $pl->any->tags) {
         $opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
         displayOptionCheckbox("tags", 1, "Tags", $opt);
-        if ($Me->privChair)
+        if ($Me->privChair) {
+            $opt["indent"] = true;
             foreach (TagInfo::defined_tags() as $t)
-                if ($t->vote || $t->rank)
-                    displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "“" . $t->tag . "” tag report", $opt);
+                if ($t->vote || $t->approval || $t->rank)
+                    displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "#~" . $t->tag . " tags", $opt);
+        }
     }
 
     // Row numbers
