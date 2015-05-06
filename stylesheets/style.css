@@ -1977,6 +1977,12 @@ div.psc {
 	padding: 7px 0;
 	border-top: 1px solid #eeeeee;
 }
+div.psc.psc_te {
+	padding: 3px 0;
+}
+div.pste {
+	margin: 4px 0;
+}
 div.psfocus.psc, div.psfocus div.psc {
 	padding: 7px 8px;
 	margin: 0 -8px;

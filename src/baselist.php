@@ -26,7 +26,7 @@ class BaseList {
         // parse the sorter
         $text = simplify_whitespace($text);
         if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
-            || preg_match('/\A([^,+#]+)[,+#]([a-z]*)\z/i', $text, $m)) {
+            || preg_match('/\A([^-,+#]+)[,+#]([a-z]*)\z/i', $text, $m)) {
             $sort = (object) array("type" => $m[1], "reverse" => false,
                                    "score" => null, "empty" => false);
             foreach (str_split(strtoupper($m[2])) as $x)
