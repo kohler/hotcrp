@@ -62,7 +62,7 @@ function hoturl_clean(x, page_component) {
 }
 
 function hoturl(page, options) {
-    var k, t, a, m, x, anchor;
+    var k, t, a, m, x, anchor, want_forceShow;
     x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
     if ((m = x.o.match(/^(.*?)(#.*)$/))) {
         x.o = m[1];
@@ -71,17 +71,25 @@ function hoturl(page, options) {
     if (page === "paper") {
         hoturl_clean(x, "p=(\\d+)");
         hoturl_clean(x, "m=(\\w+)");
-        x.last === "api" && hoturl_clean(x, "fn=(\\w+)");
+        if (x.last === "api") {
+            hoturl_clean(x, "fn=(\\w+)");
+            want_forceShow = true;
+        }
     } else if (page === "review")
         hoturl_clean(x, "p=(\\d+)");
     else if (page === "help")
         hoturl_clean(x, "t=(\\w+)");
-    else if (page === "api")
+    else if (page === "api") {
         hoturl_clean(x, "fn=(\\w+)");
+        want_forceShow = true;
+    }
     if (x.o && hotcrp_list
         && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
         && hotcrp_list.id == decodeURIComponent(m[2]))
         x.o = m[1] + hotcrp_list.num + m[3];
+    if (hotcrp_want_override_conflict && want_forceShow
+        && (!x.o || !/(?:^|&)forceShow=/.test(x.o)))
+        x.o = (x.o ? x.o + "&" : "") + "forceShow=1";
     a = [];
     if (siteurl_defaults)
         a.push(serialize_object(siteurl_defaults));
