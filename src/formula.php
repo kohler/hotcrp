@@ -560,8 +560,10 @@ class FormulaCompiler {
         if (count($g) > 1) {
             $gx = str_replace('$', "", join("_and_", $g));
             return $this->define_gvar($gx, join(" + ", $g));
-        } else
+        } else if (count($g))
             return $g[0];
+        else
+            return $this->define_gvar("trivial_loop", "array(0)");
     }
     public function _compile_loop($initial_value, $combiner, Fexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
