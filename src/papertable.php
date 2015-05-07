@@ -2123,10 +2123,7 @@ class PaperTable {
         if (count($m))
             $this->_paptabSepContaining(join("<br />", $m));
 
-        if ($this->mode != "edit")
-            $this->_paptabReviewLinks(false, null, "");
-        else
-            echo "</div></div>\n";
+        $this->_paptabReviewLinks(false, null, "");
     }
 
     function paptabEndWithEditableReview() {

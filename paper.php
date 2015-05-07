@@ -666,14 +666,16 @@ $paperTable->initialize($editable, $editable && $useRequest);
 // produce paper table
 $paperTable->paptabBegin();
 
-if ($paperTable->mode === "re")
-    $paperTable->paptabEndWithEditableReview();
-else if ($paperTable->can_view_reviews())
-    $paperTable->paptabEndWithReviews();
-else
+if ($paperTable->mode === "edit")
     $paperTable->paptabEndWithReviewMessage();
-
-if ($paperTable->mode != "edit")
+else if ($paperTable->mode === "re")
+    $paperTable->paptabEndWithEditableReview();
+else {
+    if ($paperTable->can_view_reviews())
+        $paperTable->paptabEndWithReviews();
+    else
+        $paperTable->paptabEndWithReviewMessage();
     $paperTable->paptabComments();
+}
 
 $Conf->footer();
