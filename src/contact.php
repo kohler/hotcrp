@@ -1656,7 +1656,8 @@ class Contact {
 
     function can_view_shepherd(PaperInfo $prow, $forceShow = null) {
         return $this->act_pc($prow, $forceShow)
-            || $this->can_view_decision($prow, $forceShow);
+            || ($this->can_view_decision($prow, $forceShow)
+                && $this->can_view_review($prow, null, $forceShow));
     }
 
     /* NB caller must check can_view_paper() */
