@@ -50,7 +50,7 @@ class PaperTable {
             || ($prow && $prow->review_submitted($Me)))
             $this->can_view_reviews = $ms["p"] = true;
         else if ($prow && $prow->timeWithdrawn > 0
-                 && !$Conf->timeRevivePaper($prow))
+                 && !$Conf->timeUpdatePaper($prow))
             $ms["p"] = true;
         if ($Me->can_review($prow, null))
             $ms["re"] = true;
