@@ -1767,8 +1767,6 @@ class Contact {
             || ($rrow && $this->is_my_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY))
             return true;
-        if (!($prow->timeSubmitted > 0 || $rights->review_type || $rights->allow_administer))
-            return false;
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $pc_trackok = $rights->allow_pc && $Conf->check_tracks($prow, $this, "viewrev");

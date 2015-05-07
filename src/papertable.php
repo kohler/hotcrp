@@ -49,6 +49,9 @@ class PaperTable {
         if ($Me->can_view_review($prow, null, null)
             || ($prow && $prow->review_submitted($Me)))
             $this->can_view_reviews = $ms["p"] = true;
+        else if ($prow && $prow->timeWithdrawn > 0
+                 && !$Conf->timeRevivePaper($prow))
+            $ms["p"] = true;
         if ($Me->can_review($prow, null))
             $ms["re"] = true;
         if ($prow->has_author($Me)
