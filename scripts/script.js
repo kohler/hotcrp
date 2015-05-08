@@ -779,12 +779,15 @@ function comet_tracker() {
     // make the request
     comet_sent_at = at;
 
-    function complete(xhr, status) {
+    function success(data, status, xhr) {
         var now = (new Date).getTime();
         if (comet_sent_at != at)
             return;
         comet_sent_at = null;
-        if (status == "success" && xhr.status == 200) {
+        if (status == "success" && xhr.status == 200 && data && data.ok
+            && (!data.tracker_status_at || !dl.tracker_status_at
+                || dl.tracker_status_at <= data.tracker_status_at)) {
+            // successful status
             comet_nerrors = comet_stop_until = 0;
             ++comet_nsuccess;
             reload();
@@ -801,10 +804,14 @@ function comet_tracker() {
         }
     }
 
+    function complete(xhr, status) {
+        success(null, status, xhr);
+    }
+
     jQuery.ajax({
         url: hoturl_add(dl.tracker_site, "poll=" + encodeURIComponent(dl.tracker_status || "off") + "&timeout=" + timeout),
         timeout: timeout + 2000, cache: false, dataType: "json",
-        complete: complete
+        success: success, complete: complete
     });
     return true;
 }

@@ -56,12 +56,11 @@ class MeetingTracker {
         global $Opt, $Now;
         $conference = Navigation::site_absolute();
 
-        // first drop notification json in trackerCometDirectory
+        // first drop notification json in trackerCometUpdateDirectory
         if (($comet_dir = @$Opt["trackerCometUpdateDirectory"])) {
             $j = array("ok" => true, "conference" => $conference,
-                       "tracker_status" => self::tracker_status($tracker));
-            if ($tracker && $tracker->position_at)
-                $j["tracker_status_at"] = $tracker->position_at;
+                       "tracker_status" => self::tracker_status($tracker),
+                       "tracker_status_at" => microtime(true));
             if ($pids)
                 $j["pulse"] = true;
             if (!str_ends_with($comet_dir, "/"))
@@ -101,9 +100,8 @@ class MeetingTracker {
                                                      "content" => "",
                                                      "timeout" => 1.0)));
         $comet_url .= "?conference=" . urlencode($conference)
-            . "&tracker_status=" . urlencode(self::tracker_status($tracker));
-        if ($tracker && $tracker->position_at)
-            $comet_url .= "&tracker_status_at=" . urlencode($tracker->position_at);
+            . "&tracker_status=" . urlencode(self::tracker_status($tracker))
+            . "&tracker_status_at=" . microtime(true);
         if ($pids)
             $comet_url .= "&pulse=1";
         $stream = @fopen($comet_url, "r", false, $context);
