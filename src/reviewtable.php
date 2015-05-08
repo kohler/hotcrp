@@ -61,7 +61,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         || (!$Me->act_pc($prow) && !$Conf->setting("extrev_view"));
     $show_colors = $Me->can_view_reviewer_tags($prow);
     $xsep = ' <span class="barsep">·</span> ';
-    $want_scores = $mode != "assign" && $mode != "edit" && $mode != "re";
+    $want_scores = $mode !== "assign" && $mode !== "edit" && $mode !== "re";
     $want_requested_by = false;
     $want_retract = false;
     $pcm = pcMembers();
@@ -103,10 +103,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         } else if (!$canView)
             $t .= "<td>$id</td>";
         else if ($rrow || $rr->reviewModified <= 0
-                 || (($mode == "re" || $mode == "assign")
+                 || (($mode === "re" || $mode === "assign")
                      && $Me->can_review($prow, $rr)))
             $t .= '<td><a href="' . hoturl("review", "r=$rlink") . '">' . $id . '</a></td>';
-        else if (Navigation::page() != "paper")
+        else if (Navigation::page() !== "paper")
             $t .= '<td><a href="' . hoturl("paper", "p=$prow->paperId#review$rlink") . '">' . $id . '</a></td>';
         else
             $t .= '<td><a href="#review' . $rlink . '">' . $id . '</a></td>';
@@ -116,7 +116,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $rtype = "";
         else if ($rr->reviewType > 0) {
             $rtype = review_type_icon($rr->reviewType);
-            if ($admin && $mode == "assign")
+            if ($admin && $mode === "assign")
                 $rtype .= _review_table_round_selector($prow, $rr);
             else if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
                 $rtype .= '&nbsp;<span class="revround" title="Review round">'
@@ -132,7 +132,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
                 $u = @$pcm[$rr->contactId] ? : $rr;
-                if ($mode == "assign")
+                if ($mode === "assign")
                     $n = Text::user_html($rr);
                 else
                     $n = Text::name_html($rr);
@@ -150,7 +150,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         }
 
         // requester
-        if ($mode == "assign") {
+        if ($mode === "assign") {
             if (($conflictType <= 0 || $admin)
                 && $rr->reviewType == REVIEW_EXTERNAL
                 && !$showtoken) {
@@ -168,7 +168,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         }
 
         // actions
-        if ($mode == "assign"
+        if ($mode === "assign"
             && ($conflictType <= 0 || $admin)
             && $rr->reviewType == REVIEW_EXTERNAL
             && $rr->reviewModified <= 0
@@ -240,7 +240,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     . ' '
                     . Ht::submit("deny", "Deny request", array("style" => "font-size:smaller"))
                     . '</div></form>';
-            else if ($rr->reqEmail == $Me->email)
+            else if ($rr->reqEmail === $Me->email)
                 $t .= _retract_review_request_form($prow, $rr);
             $t .= '</td>';
 
@@ -348,23 +348,23 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // see all reviews
     $allreviewslink = false;
     if (($nvisible > 1 || ($nvisible > 0 && !$myrr))
-        && ($mode != "p" || $rrow)) {
+        && ($mode !== "p" || $rrow)) {
         $allreviewslink = true;
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="xx">'
             . Ht::img("view24.png", "[All reviews]", "dlimg") . "&nbsp;<u>All reviews</u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // edit paper
-    if ($mode != "edit" && $prow->conflictType >= CONFLICT_AUTHOR
+    if ($mode !== "edit" && $prow->conflictType >= CONFLICT_AUTHOR
         && !$Me->can_administer($prow)) {
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx">'
             . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // edit review
-    if ($mode == "re" || ($mode == "assign" && $t != ""))
+    if ($mode === "re" || ($mode === "assign" && $t !== ""))
         /* no link */;
     else if ($myrr && $rrow != $myrr) {
         $myrlink = unparseReviewOrdinal($myrr);
@@ -373,18 +373,18 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
             $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
         else
             $x = $a . Ht::img("review24.png", "[Your review]", "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->can_review($prow, null)) {
         $x = '<a href="' . hoturl("review", "p=$prow->paperId&amp;m=re") . '" class="xx">'
             . Ht::img("review24.png", "[Write review]", "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // review assignments
-    if ($mode != "assign" && $Me->can_request_review($prow, true)) {
+    if ($mode !== "assign" && $Me->can_request_review($prow, true)) {
         $x = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx">'
             . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // new comment
@@ -392,7 +392,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         && $Me->can_comment($prow, null)) {
         $x = "<a href=\"" . selfHref(array("c" => "new")) . '#commentnew" onclick="return open_new_comment(1)" class="xx">'
             . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // new response
@@ -418,17 +418,17 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 . Ht::img("comment24.png", "[$cid[1] response]", "dlimg") . "&nbsp;"
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $cid[1] . ($i ? " $rname" : "") . ' response</u></a>';
-            $t .= ($t == "" ? "" : $xsep) . $x;
+            $t .= ($t === "" ? "" : $xsep) . $x;
         }
 
     // override conflict
     if ($allow_admin && !$admin) {
         $x = '<a href="' . selfHref(array("forceShow" => 1)) . '" class="xx">'
             . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     } else if ($Me->privChair && !$allow_admin) {
         $x = "You can’t override your conflict because this paper has an administrator.";
-        $t .= ($t == "" ? "" : $xsep) . $x;
+        $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     return $pret . $t;
