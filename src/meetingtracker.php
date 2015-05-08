@@ -57,7 +57,7 @@ class MeetingTracker {
         $conference = Navigation::site_absolute();
 
         // first drop notification json in trackerCometDirectory
-        if (($comet_dir = @$Opt["trackerCometDirectory"])) {
+        if (($comet_dir = @$Opt["trackerCometUpdateDirectory"])) {
             $j = array("ok" => true, "conference" => $conference,
                        "tracker_status" => self::tracker_status($tracker));
             if ($tracker && $tracker->position_at)
@@ -76,6 +76,7 @@ class MeetingTracker {
             if ($f !== false) {
                 fwrite($f, json_encode($j));
                 fclose($f);
+                return;
             } else
                 trigger_error("$comet_dir not writable", E_USER_WARNING);
         }
