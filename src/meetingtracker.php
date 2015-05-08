@@ -54,9 +54,35 @@ class MeetingTracker {
 
     static function contact_tracker_comet($tracker, $pids = null) {
         global $Opt, $Now;
+        $conference = Navigation::site_absolute();
+
+        // first drop notification json in trackerCometDirectory
+        if (($comet_dir = @$Opt["trackerCometDirectory"])) {
+            $j = array("ok" => true, "conference" => $conference,
+                       "tracker_status" => self::tracker_status($tracker));
+            if ($tracker && $tracker->position_at)
+                $j["tracker_status_at"] = $tracker->position_at;
+            if ($pids)
+                $j["pulse"] = true;
+            if (!str_ends_with($comet_dir, "/"))
+                $comet_dir .= "/";
+            $suffix = "";
+            $count = 0;
+            while (($f = @fopen($comet_dir . $Now . $suffix, "x")) === false
+                   && $count < 20) {
+                $suffix = "x" . mt_rand(0, 65535);
+                ++$count;
+            }
+            if ($f !== false) {
+                fwrite($f, json_encode($j));
+                fclose($f);
+            } else
+                trigger_error("$comet_dir not writable", E_USER_WARNING);
+        }
+
+        // second contact trackerCometSite
         if (!($comet_url = @$Opt["trackerCometSite"]))
             return;
-        $conference = Navigation::site_absolute();
 
         if (!preg_match(',\Ahttps?:,', $comet_url)) {
             preg_match(',\A(.*:)(//[^/]*),', $conference, $m);
@@ -74,7 +100,9 @@ class MeetingTracker {
                                                      "content" => "",
                                                      "timeout" => 1.0)));
         $comet_url .= "?conference=" . urlencode($conference)
-            . "&update=" . urlencode(self::tracker_status($tracker));
+            . "&tracker_status=" . urlencode(self::tracker_status($tracker));
+        if ($tracker && $tracker->position_at)
+            $comet_url .= "&tracker_status_at=" . urlencode($tracker->position_at);
         if ($pids)
             $comet_url .= "&pulse=1";
         $stream = @fopen($comet_url, "r", false, $context);

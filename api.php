@@ -19,7 +19,11 @@ if (!isset($_GET["fn"])) {
 
 if ($_GET["fn"] === "trackerstatus") { // used by hotcrp-comet
     $tracker = MeetingTracker::lookup();
-    $Conf->ajaxExit(array("tracker_status" => MeetingTracker::tracker_status($tracker), "ok" => true));
+    $a = array("tracker_status" => MeetingTracker::tracker_status($tracker));
+    if ($tracker && $tracker->position_at)
+        $a["tracker_status_at"] = $tracker->position_at;
+    $a["ok"] = true;
+    $Conf->ajaxExit($a);
 }
 
 if ($_GET["fn"] === "deadlines" && !$Me->has_database_account()
