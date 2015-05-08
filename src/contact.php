@@ -1397,9 +1397,12 @@ class Contact {
             return $this->privChair || $this->isPC;
     }
 
-    public function view_conflict_type(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return $rights->view_conflict_type;
+    public function view_conflict_type(PaperInfo $prow = null) {
+        if ($prow) {
+            $rights = $this->rights($prow);
+            return $rights->view_conflict_type;
+        } else
+            return 0;
     }
 
     public function actAuthorView(PaperInfo $prow) {
