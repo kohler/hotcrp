@@ -3017,6 +3017,8 @@ class PaperSearch {
             if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $q)) {
                 $a = array();
                 foreach (preg_split('/\s+/', $q) as $word) {
+                    if ($word === "")
+                        continue;
                     if ($word[0] === "#" && preg_match('/\A#\d+(?:-#?\d+)?/', $word))
                         $word = substr($word, 1);
                     if (ctype_digit($word))
