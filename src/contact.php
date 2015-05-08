@@ -2518,6 +2518,8 @@ class Contact {
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);
+            if (@$Opt["trackerHidden"])
+                $dl->tracker_hidden = true;
             $dl->now = microtime(true);
         }
         if (($this->isPC || @$this->is_tracker_kiosk)

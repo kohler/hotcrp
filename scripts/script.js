@@ -565,7 +565,7 @@ function tracker_show_elapsed() {
         clearTimeout(tracker_timer);
         tracker_timer = null;
     }
-    if (!dl.tracker || !dl.tracker.position_at)
+    if (!dl.tracker || dl.tracker_hidden || !dl.tracker.position_at)
         return;
 
     var now = (new Date).getTime() / 1000;
@@ -585,6 +585,7 @@ function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"), mytracker,
         body, pid, trackerstate, t = "", i, e, now = (new Date).getTime();
 
+    // tracker button
     mytracker = dl.tracker && (i = window_trackerstate())
         && dl.tracker.trackerid == i[1];
     if ((e = $$("trackerconnectbtn"))) {
@@ -597,17 +598,21 @@ function display_tracker() {
         }
     }
 
-    if (!dl.tracker) {
+    // tracker display management
+    has_tracker = !!dl.tracker;
+    if (has_tracker)
+        had_tracker_at = now;
+    else if (window_trackerstate())
+        wstorage(true, "hotcrp-tracking", null);
+    if (!dl.tracker || dl.tracker_hidden) {
         if (mne)
             mne.parentNode.removeChild(mne);
         if (mnspace)
             mnspace.parentNode.removeChild(mnspace);
-        if (window_trackerstate())
-            wstorage(true, "hotcrp-tracking", null);
-        has_tracker = false;
         return;
     }
 
+    // tracker display
     body = $("body")[0];
     if (!mnspace) {
         mnspace = document.createElement("div");
@@ -649,9 +654,6 @@ function display_tracker() {
     if (dl.tracker && dl.tracker.position_at)
         tracker_show_elapsed();
     mnspace.style.height = mne.offsetHeight + "px";
-
-    has_tracker = true;
-    had_tracker_at = now;
 }
 
 function tracker(start) {
@@ -668,10 +670,9 @@ function tracker(start) {
     if (!wstorage() || start < 0)
         return false;
     trackerstate = window_trackerstate();
-    if (start && (!trackerstate || trackerstate[0] != siteurl)) {
+    if (start && (!trackerstate || trackerstate[0] != siteurl))
         trackerstate = [siteurl, Math.floor(Math.random() * 100000)];
-        wstorage(true, "hotcrp-tracking", trackerstate);
-    } else if (trackerstate && trackerstate[0] != siteurl)
+    else if (trackerstate && trackerstate[0] != siteurl)
         trackerstate = null;
     if (trackerstate) {
         if (hotcrp_list)
@@ -682,6 +683,7 @@ function tracker(start) {
         Miniajax.post(hoturl_post("api", "fn=track&track=" + req), load, 10000);
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 70000);
+        wstorage(true, "hotcrp-tracking", trackerstate);
     }
     return false;
 }
