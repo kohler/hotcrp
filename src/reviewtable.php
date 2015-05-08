@@ -308,7 +308,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
 
     // comments
     $pret = "";
-    if ($crows && count($crows) > 0 && !$rrow) {
+    if ($crows && count($crows) > 0 && !$rrow && $mode !== "edit") {
         $cids = array();
         $cnames = array();
         foreach ($crows as $cr)
@@ -388,7 +388,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // new comment
-    if (!$allreviewslink && $mode != "assign" && $mode != "contact"
+    if (!$allreviewslink
+        && $mode !== "assign" && $mode !== "contact" && $mode !== "edit"
         && $Me->can_comment($prow, null)) {
         $x = "<a href=\"" . selfHref(array("c" => "new")) . '#commentnew" onclick="return open_new_comment(1)" class="xx">'
             . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
@@ -396,7 +397,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // new response
-    if ($mode != "assign"
+    if ($mode !== "assign" && $mode !== "contact" && $mode !== "edit"
         && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
         && ($rrounds = $Conf->time_author_respond()))
         foreach ($rrounds as $i => $rname) {
