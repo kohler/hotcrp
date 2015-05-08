@@ -1347,7 +1347,7 @@ function scoreCounts($values, $max = null) {
     if (is_string($values))
         $values = preg_split('/[\s,]+/', $values);
     foreach ($values ? : array() as $i)
-        if (($i = cvtint($i)) > 0) {
+        if (($i = (int) $i) > 0) {
             while ($i > count($merit))
                 $merit[count($merit) + 1] = 0;
             $merit[$i]++;
