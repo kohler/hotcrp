@@ -3523,8 +3523,8 @@ function plinfo(type, dofold, which) {
             $("#plloadform_get").val("authors");
             if (type == "aufull")
                 $("#plloadform_aufull").val(dofold ? "" : "1");
-            else
-                $("#plloadform_aufull").val($$("showaufull").checked ? "1" : "");
+            else if ((elt = $$("showaufull")))
+                $("#plloadform_aufull").val(elt.checked ? "1" : "");
         } else
             $("#plloadform_get").val(type);
         Miniajax.submit(["plloadform", type + "loadform"],
