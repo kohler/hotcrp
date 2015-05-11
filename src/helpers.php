@@ -151,6 +151,7 @@ function hoturl_defaults($options = array()) {
 function hoturl_site_relative($page, $options = null) {
     global $ConfSiteSuffix, $Me, $paperTable, $CurrentList, $_hoturl_defaults;
     $t = $page . $ConfSiteSuffix;
+    $list = $CurrentList;
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
     if ($options && is_array($options)) {
@@ -160,6 +161,8 @@ function hoturl_site_relative($page, $options = null) {
                 $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
             else if ($v !== null)
                 $anchor = "#" . urlencode($v);
+            else if ($k === "ls")
+                $list = null;
         $options = $x;
     } else if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
         list($options, $anchor) = array($m[1], $m[2]);
@@ -180,9 +183,8 @@ function hoturl_site_relative($page, $options = null) {
         $options .= "&amp;forceShow=1";
     // append list links if appropriate
     if ($is_paper_page && @$paperTable && $paperTable->prow
-        && @$CurrentList && $CurrentList > 0
-        && !preg_match($are . 'ls=/', $options))
-        $options .= "&amp;ls=$CurrentList";
+        && $list && !preg_match($are . 'ls=/', $options))
+        $options .= "&amp;ls=$list";
     // create slash-based URLs if appropriate
     if ($options) {
         if ($page == "review"
@@ -314,8 +316,7 @@ function selfHref($extra = array(), $options = null) {
     foreach ($extra as $key => $value)
         if ($key != "anchor" && $value !== null)
             $param .= "&$key=" . urlencode($value);
-    if (isset($CurrentList) && $CurrentList > 0
-        && !isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra))
+    if ($CurrentList && !isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra))
         $param .= "&ls=" . $CurrentList;
 
     $param = $param ? substr($param, 1) : "";
@@ -560,7 +561,7 @@ class SessionList {
                     return $i;
                 else if (!$oldest || @($lists[$oldest]->timestamp < $l->timestamp))
                     $oldest = $i;
-            } else if (@$_REQUEST["ls"] == $i)
+            } else if (@$_REQUEST["ls"] == $i || @$_COOKIE["hotcrp_ls"] == $i)
                 return $i;
             else if (!$empty)
                 $empty = $i;
@@ -608,10 +609,10 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $row = edb_row($result);
         Dbl::free($result);
         $paperText = htmlspecialchars($row ? $row[0] : $id);
-        $urlrest = "u=" . urlencode($id) . $urlrest;
+        $urlrest["u"] = urlencode($id);
     } else {
         $paperText = "#$id";
-        $urlrest = "p=" . $id . $urlrest;
+        $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
         . "\" href=\"" . hoturl($baseUrl, $urlrest)
@@ -626,10 +627,16 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     global $Me, $Conf, $ConfSiteBase, $CurrentList, $Now;
 
     $list = false;
-    $CurrentList = 0;
-    if (isset($_REQUEST["ls"])
-        && ($listno = cvtint(@$_REQUEST["ls"])) > 0
-        && ($xlist = SessionList::lookup($listno))
+    $CurrentList = null;
+
+    $listno = null;
+    if (isset($_REQUEST["ls"]))
+        $listno = cvtint($_REQUEST["ls"], null);
+    if (isset($_COOKIE["hotcrp_ls"])) {
+        $listno = $listno ? : cvtint($_COOKIE["hotcrp_ls"], null);
+        setcookie("hotcrp_ls", "", $Now - 86400);
+    }
+    if ($listno && ($xlist = SessionList::lookup($listno))
         && str_starts_with($xlist->listid, $listtype)
         && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0))) {
         $list = $xlist;
@@ -653,7 +660,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
         $k = array_search($id, $list->ids);
 
     if ($k === false && !isset($_REQUEST["list"])) {
-        $CurrentList = 0;
+        $CurrentList = null;
         $list = _tryNewList(array(), $listtype);
         $k = array_search($id, $list->ids);
         if ($k === false && $Me->privChair) {
@@ -667,19 +674,16 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     if (!$list)
         return "";
 
-    if ($CurrentList == 0) {
+    if (!$CurrentList) {
         $CurrentList = SessionList::allocate($list->listid);
         SessionList::change($CurrentList, $list);
     }
     SessionList::change($CurrentList, array("timestamp" => $Now));
 
-    $urlrest = "&amp;ls=" . $CurrentList;
-    foreach ($args as $what => $val)
-        $urlrest .= "&amp;" . urlencode($what) . "=" . urlencode($val);
-
-    $x = "";
+    $args["ls"] = null;
+    $x = '<td class="quicklinks nw has_hotcrp_list" hotcrp_list="' . $CurrentList . '">';
     if ($k > 0)
-        $x .= _one_quicklink($list->ids[$k - 1], $baseUrl, $urlrest, $listtype, true);
+        $x .= _one_quicklink($list->ids[$k - 1], $baseUrl, $args, $listtype, true);
     if (@$list->description) {
         $x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
         if (@$list->url)
@@ -689,24 +693,23 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     }
     if (isset($list->ids[$k + 1])) {
         $x .= ($k > 0 || @$list->description ? "&nbsp;&nbsp;" : "");
-        $x .= _one_quicklink($list->ids[$k + 1], $baseUrl, $urlrest, $listtype, false);
+        $x .= _one_quicklink($list->ids[$k + 1], $baseUrl, $args, $listtype, false);
     }
-    return $x;
+    return $x . '</td>';
 }
 
 function goPaperForm($baseUrl = null, $args = array()) {
     global $Conf, $Me, $CurrentList;
     if ($Me->is_empty())
         return "";
-    $x = Ht::form_div(hoturl($baseUrl ? : "paper"), array("method" => "get", "class" => "gopaper"));
+    $x = Ht::form_div(hoturl($baseUrl ? : "paper", array("ls" => null)),
+                      array("method" => "get", "class" => "gopaper" . ($CurrentList ? " has_hotcrp_list" : ""), "hotcrp_list" => $CurrentList));
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(User)"));
     else
         $x .= Ht::entry("p", "(All)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(All)"));
     foreach ($args as $what => $val)
         $x .= Ht::hidden($what, $val);
-    if (isset($CurrentList) && $CurrentList > 0)
-        $x .= Ht::hidden("ls", $CurrentList);
     $x .= "&nbsp; " . Ht::submit("Search") . "</div></form>";
     return $x;
 }
@@ -1074,20 +1077,17 @@ function actionBar($mode = null, $prow = null) {
     } else if (($wantmode = defval($_REQUEST, "m", defval($_REQUEST, "mode"))))
         $xmode["m"] = $wantmode;
 
-    $listarg = $forceShow;
     $quicklinks_txt = "";
     if ($prow) {
         $id = ($listtype === "u" ? $prow->contactId : $prow->paperId);
         $quicklinks_txt = quicklinks($id, $goBase, $xmode, $listtype);
-        if (isset($CurrentList) && $CurrentList > 0)
-            $listarg .= "&amp;ls=$CurrentList";
     }
 
     // collect actions
     $x = "<div class='nvbar'><table class='vbar'><tr><td class='spanner'></td>\n";
 
     if ($quicklinks_txt)
-        $x .= "  <td class='quicklinks nowrap'>" . $quicklinks_txt . "</td>\n";
+        $x .= "  " . $quicklinks_txt . "\n";
     if ($quicklinks_txt && $Me->privChair && $listtype == "p")
         $x .= "  <td id=\"trackerconnect\" class=\"nowrap\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
 

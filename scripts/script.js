@@ -3659,23 +3659,36 @@ jQuery(function () {
         });
 });
 
-function add_hotcrp_list(evt) {
-    var j = $(this), href = j.attr("href"), prefix = siteurl + "paper/", ls, m;
-    if (href
-        && href.substring(0, prefix.length) === prefix
-        && (ls = j.closest(".has_hotcrp_list").attr("hotcrp_list"))
-        && ls !== "0"
-        && (m = href.substring(prefix.length).match(/^([^?#]*)(|[?#].*)$/))) {
-        if (m[2].charAt(0) === "?")
-            m[2] = "&" + m[2].substring(1);
-        j.attr("href", prefix + m[1] + "?ls=" + ls + m[2]);
+
+// list management
+(function ($) {
+var cookie_set;
+function set_cookie(ls) {
+    if (ls && ls !== "0" && !cookie_set) {
+        var p = "", m;
+        if (siteurl && (m = /^[a-z]+:\/\/[^\/]*(\/.*)/.exec(hoturl_absolute_base())))
+            p = "; path=" + m[1];
+        document.cookie = "hotcrp_ls=" + ls + "; max-age=2" + p;
+        cookie_set = true;
     }
+}
+function add_list() {
+    var j = $(this), href = j.attr("href"), prefix = siteurl + "paper/", ls;
+    if (href && href.substring(0, prefix.length) === prefix
+        && (ls = j.closest(".has_hotcrp_list").attr("hotcrp_list")))
+        set_cookie(ls);
     return true;
 }
-
-jQuery(function ($) {
-    $(".has_hotcrp_list a").on("click", add_hotcrp_list);
+function unload_list() {
+    hotcrp_list && hotcrp_list.num && set_cookie(hotcrp_list.num);
+}
+$(function () {
+    $(".has_hotcrp_list a").on("click", add_list);
+    $("form.has_hotcrp_list").on("submit", add_list);
+    hotcrp_list && $(window).on("beforeunload", unload_list);
 });
+})(jQuery);
+
 
 function save_tag_index(e) {
     var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),

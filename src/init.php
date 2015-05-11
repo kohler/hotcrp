@@ -91,8 +91,7 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
 global $OK, $Now, $CurrentList, $CurrentProw;
 $OK = 1;
 $Now = time();
-$CurrentList = 0;
-$CurrentProw = null;
+$CurrentList = $CurrentProw = null;
 
 global $allowedSessionVars;
 $allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",

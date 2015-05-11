@@ -2123,7 +2123,7 @@ class Conference {
         $this->scriptStuff .= "<script>siteurl=\"$ConfSiteBase\";siteurl_suffix=\"$ConfSiteSuffix\"";
         if (session_id() !== "")
             $this->scriptStuff .= ";siteurl_postvalue=\"" . post_value() . "\"";
-        if (@$CurrentList
+        if ($CurrentList
             && ($list = SessionList::lookup($CurrentList)))
             $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
         if (($urldefaults = hoturl_defaults()))
