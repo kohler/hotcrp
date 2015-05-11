@@ -426,14 +426,15 @@ class PaperSearch {
     const F_REVIEWTYPEMASK = 0x00007;
     const F_COMPLETE = 0x00008;
     const F_INCOMPLETE = 0x00010;
-    const F_NONCONFLICT = 0x00020;
-    const F_AUTHOR = 0x00040;
-    const F_REVIEWER = 0x00080;
-    const F_AUTHORCOMMENT = 0x00100;
-    const F_ALLOWRESPONSE = 0x00200;
-    const F_ALLOWCOMMENT = 0x00400;
-    const F_ALLOWDRAFT = 0x00800;
-    const F_REQUIREDRAFT = 0x01000;
+    const F_INPROGRESS = 0x00020;
+    const F_NONCONFLICT = 0x00040;
+    const F_AUTHOR = 0x00080;
+    const F_REVIEWER = 0x00100;
+    const F_AUTHORCOMMENT = 0x00200;
+    const F_ALLOWRESPONSE = 0x00400;
+    const F_ALLOWCOMMENT = 0x00800;
+    const F_ALLOWDRAFT = 0x01000;
+    const F_REQUIREDRAFT = 0x02000;
     const F_FALSE = 0x10000;
     const F_XVIEW = 0x20000;
 
@@ -486,6 +487,7 @@ class PaperSearch {
         "cre" => "cre", "crev" => "cre", "creview" => "cre",
         "subre" => "cre", "subrev" => "cre", "subreview" => "cre",
         "ire" => "ire", "irev" => "ire", "ireview" => "ire",
+        "pre" => "pre", "prev" => "pre", "preview" => "pre",
         "pri" => "pri", "primary" => "pri", "prire" => "pri", "prirev" => "pri",
         "cpri" => "cpri", "cprimary" => "cpri",
         "ipri" => "ipri", "iprimary" => "ipri",
@@ -798,6 +800,8 @@ class PaperSearch {
             $rt |= self::F_COMPLETE;
         if ($rtype === "ire" || $rtype === "ipri" || $rtype === "isec" || $rtype === "iext")
             $rt |= self::F_INCOMPLETE;
+        if ($rtype === "pre" || $rtype === "ppri" || $rtype === "psec" || $rtype === "pext")
+            $rt |= self::F_INPROGRESS;
 
         $m = self::_matchCompar($word, $quoted);
         if (($type = self::_comparTautology($m))) {
@@ -1520,7 +1524,7 @@ class PaperSearch {
             $this->_searchAuthors($word, $qt, $keyword, $quoted);
         if ($keyword ? $keyword === "co" : isset($this->fields["co"]))
             $this->_searchField($word, "co", $qt);
-        foreach (array("re", "cre", "ire", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
+        foreach (array("re", "cre", "ire", "pre", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
             if ($keyword ? $keyword === $rtype : isset($this->fields[$rtype]))
                 $this->_searchReviewer($word, $rtype, $qt, $quoted);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
@@ -2291,6 +2295,10 @@ class PaperSearch {
                 $where[] = "reviewSubmitted>0";
             else if ($t->flags & self::F_INCOMPLETE)
                 $where[] = "reviewNeedsSubmit>0";
+            else if ($t->flags & self::F_INPROGRESS) {
+                $where[] = "reviewNeedsSubmit>0";
+                $where[] = "reviewModified>0";
+            }
             $rrnegate = $t->get("revadjnegate");
             if (($x = $t->get("round")) !== null) {
                 if (count($x) == 0)
