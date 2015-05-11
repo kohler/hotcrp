@@ -25,7 +25,6 @@ class PaperList extends BaseList {
     private $sortable;
     var $listNumber;
     private $_paper_link_page;
-    private $_paper_link_args;
     private $viewmap;
     private $atab;
     private $_row_id_pattern = null;
@@ -55,12 +54,9 @@ class PaperList extends BaseList {
         if (isset($_REQUEST["linkto"])
             && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
             $this->_paper_link_page = $_REQUEST["linkto"];
-        $this->_paper_link_args = "";
-        if (defval($args, "list")) {
+        $this->listNumber = 0;
+        if (defval($args, "list"))
             $this->listNumber = SessionList::allocate($search->listId($this->sortdef()));
-            $this->_paper_link_args .= "&amp;ls=" . $this->listNumber;
-        } else
-            $this->listNumber = 0;
 
         if (is_string(defval($args, "display", null)))
             $this->display = " " . $args["display"] . " ";
@@ -186,7 +182,6 @@ class PaperList extends BaseList {
             }
         } else if ($pt === "review")
             $pt = "paper";
-        $pl .= $this->_paper_link_args;
         if ($doreview && $row->reviewSubmitted > 0)
             $pl .= "#review" . $rord;
         return hoturl($pt, $pl);
@@ -285,9 +280,9 @@ class PaperList extends BaseList {
             else
                 $ranal->completion = "In&nbsp;progress";
             if ($ranal->needsSubmit)
-                $link = hoturl("review", "r=" . unparseReviewOrdinal($row) . $this->_paper_link_args);
+                $link = hoturl("review", "r=" . unparseReviewOrdinal($row));
             else
-                $link = hoturl("paper", "p=" . $row->paperId . $this->_paper_link_args . "#review" . unparseReviewOrdinal($row));
+                $link = hoturl("paper", "p=" . $row->paperId . "#review" . unparseReviewOrdinal($row));
             $ranal->link1 = "<a href=\"$link\">";
             $ranal->link2 = "</a>";
             if ($row->reviewRound)
@@ -613,7 +608,7 @@ class PaperList extends BaseList {
 
     private function _addAjaxLoadForm($pap, $extra = "") {
         global $Conf;
-        $t = "<div>" . Ht::form_div(hoturl_post("search", "ajax=1" . $this->_paper_link_args), array("id" => "plloadform"));
+        $t = "<div>" . Ht::form_div(hoturl_post("search", "ajax=1"), array("id" => "plloadform"));
         $s = $this->search;
         if ($s->q)
             $t .= Ht::hidden("q", $s->q);
@@ -1252,11 +1247,15 @@ class PaperList extends BaseList {
         $enter = "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if (defval($options, "class"))
             $enter .= " " . $options["class"];
+        if ($this->listNumber)
+            $enter .= " has_hotcrp_list";
         if (count($foldclasses))
             $enter .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
         if (defval($options, "attributes"))
             foreach ($options["attributes"] as $n => $v)
                 $enter .= "\" $n=\"$v";
+        if ($this->listNumber)
+            $enter .= '" hotcrp_list="' . $this->listNumber;
         $enter .= "\">\n";
         $exit = "</table>";
 

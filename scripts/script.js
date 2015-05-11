@@ -3659,6 +3659,24 @@ jQuery(function () {
         });
 });
 
+function add_hotcrp_list(evt) {
+    var j = $(this), href = j.attr("href"), prefix = siteurl + "paper/", ls, m;
+    if (href
+        && href.substring(0, prefix.length) === prefix
+        && (ls = j.closest(".has_hotcrp_list").attr("hotcrp_list"))
+        && ls !== "0"
+        && (m = href.substring(prefix.length).match(/^([^?#]*)(|[?#].*)$/))) {
+        if (m[2].charAt(0) === "?")
+            m[2] = "&" + m[2].substring(1);
+        j.attr("href", prefix + m[1] + "?ls=" + ls + m[2]);
+    }
+    return true;
+}
+
+jQuery(function ($) {
+    $(".has_hotcrp_list a").on("click", add_hotcrp_list);
+});
+
 function save_tag_index(e) {
     var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),
         indexelt = j.find("input[name='tagindex']"), index = "";
