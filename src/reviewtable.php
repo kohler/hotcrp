@@ -364,7 +364,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // edit review
-    if ($mode === "re" || ($mode === "assign" && $t !== ""))
+    if ($mode === "re" || ($mode === "assign" && $t !== "") || !$prow)
         /* no link */;
     else if ($myrr && $rrow != $myrr) {
         $myrlink = unparseReviewOrdinal($myrr);
