@@ -538,6 +538,11 @@ class PaperSearch {
         "sort" => "sort", "showsort" => "showsort",
         "sortshow" => "showsort", "editsort" => "editsort",
         "sortedit" => "editsort");
+    static private $_canonical_review_keywords = array(
+        "re" => 1, "cre" => 1, "ire" => 1, "pre" => 1,
+        "pri" => 1, "cpri" => 1, "ipri" => 1, "ppri" => 1,
+        "sec" => 1, "csec" => 1, "isec" => 1, "psec" => 1,
+        "ext" => 1, "cext" => 1, "iext" => 1, "pext" => 1);
 
 
     function __construct($me, $opt) {
@@ -790,17 +795,17 @@ class PaperSearch {
 
     function _searchReviewer($word, $rtype, &$qt, $quoted) {
         $rt = 0;
-        if ($rtype === "pri" || $rtype === "cpri" || $rtype === "ipri")
+        if (str_ends_with($rtype, "pri"))
             $rt = REVIEW_PRIMARY;
-        else if ($rtype === "sec" || $rtype === "csec" || $rtype === "isec")
+        else if (str_ends_with($rtype, "sec"))
             $rt = REVIEW_SECONDARY;
-        else if ($rtype === "ext" || $rtype === "cext" || $rtype === "iext")
+        else if (str_ends_with($rtype, "ext"))
             $rt = REVIEW_EXTERNAL;
-        if ($rtype === "cre" || $rtype === "cpri" || $rtype === "csec" || $rtype === "cext")
+        if (str_starts_with($rtype, "c"))
             $rt |= self::F_COMPLETE;
-        if ($rtype === "ire" || $rtype === "ipri" || $rtype === "isec" || $rtype === "iext")
+        if (str_starts_with($rtype, "i"))
             $rt |= self::F_INCOMPLETE;
-        if ($rtype === "pre" || $rtype === "ppri" || $rtype === "psec" || $rtype === "pext")
+        if (str_starts_with($rtype, "p") && $rtype !== "pri")
             $rt |= self::F_INPROGRESS;
 
         $m = self::_matchCompar($word, $quoted);
@@ -1524,9 +1529,10 @@ class PaperSearch {
             $this->_searchAuthors($word, $qt, $keyword, $quoted);
         if ($keyword ? $keyword === "co" : isset($this->fields["co"]))
             $this->_searchField($word, "co", $qt);
-        foreach (array("re", "cre", "ire", "pre", "pri", "cpri", "ipri", "sec", "csec", "isec", "ext", "cext", "iext") as $rtype)
-            if ($keyword ? $keyword === $rtype : isset($this->fields[$rtype]))
-                $this->_searchReviewer($word, $rtype, $qt, $quoted);
+        if ($keyword ? $keyword === "re" : isset($this->fields["re"]))
+            $this->_searchReviewer($word, "re", $qt, $quoted);
+        else if ($keyword && @self::$_canonical_review_keywords[$keyword])
+            $this->_searchReviewer($word, $keyword, $qt, $quoted);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
             $this->_search_comment($word, $keyword, $qt, $quoted);
         if ($keyword === "revpref" && $this->amPC)
