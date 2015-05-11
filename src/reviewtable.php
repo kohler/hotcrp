@@ -381,7 +381,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // review assignments
-    if ($mode !== "assign" && $Me->can_request_review($prow, true)) {
+    if ($mode !== "assign" && $mode !== "edit"
+        && $Me->can_request_review($prow, true)) {
         $x = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx">'
             . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
