@@ -209,14 +209,17 @@ class PaperActions {
         }
         if ($papersel)
             $where[] = "t.paperId in (" . join(",", mkarray($papersel)) . ")";
-        if (count($where))
-            $q .= " where " . join(" and ", $where);
+        else {
+            $q .= " join Paper p on (p.paperId=t.paperId)";
+            $where[] = "p.timeSubmitted>0";
+        }
+        $q .= " where " . join(" and ", $where);
         $tags = array();
         $result = Dbl::qe_raw($q);
         while (($row = edb_row($result))) {
             $twiddle = strpos($row[0], "~");
             if ($twiddle === false
-                || ($twiddle == 0 && $row[0][1] == "~" && $Me->privChair))
+                || ($twiddle == 0 && $row[0][1] === "~" && $Me->privChair))
                 $tags[] = $row[0];
             else if ($twiddle > 0 && substr($row[0], 0, $twiddle) == $Me->contactId)
                 $tags[] = substr($row[0], $twiddle);
