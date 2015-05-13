@@ -1452,13 +1452,12 @@ function reviewForm() {
 
 
 function hotcrp_random_bytes($length = 16, $secure_only = false) {
-    $key = false;
-    if (function_exists("openssl_random_pseudo_bytes")) {
+    $key = @file_get_contents("/dev/urandom", false, null, 0, $length);
+    if (($key === false || $key === "")
+        && function_exists("openssl_random_pseudo_bytes")) {
         $key = openssl_random_pseudo_bytes($length, $strong);
         $key = ($strong ? $key : false);
     }
-    if ($key === false || $key === "")
-        $key = @file_get_contents("/dev/urandom", false, null, 0, $length);
     if (($key === false || $key === "") && !$secure_only) {
         $key = "";
         while (strlen($key) < $length)
