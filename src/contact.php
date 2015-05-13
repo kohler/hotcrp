@@ -381,6 +381,18 @@ class Contact {
             return false;
     }
 
+    public function contactdb_merge() {
+        global $Opt, $Now;
+        if (!($dblink = self::contactdb())
+            || !$this->has_email()
+            || !($cdb_user = self::contactdb_find_by_email($this->email)))
+            return false;
+        foreach (array("firstName", "lastName", "affiliation") as $k)
+            if ($cdb_user->$k && !$this->$k)
+                $this->$k = $cdb_user->$k;
+        return true;
+    }
+
     public function is_actas_user() {
         return $this->activated_
             && ($trueuser = @$_SESSION["trueuser"])
@@ -1032,8 +1044,10 @@ class Contact {
     function sendAccountInfo($sendtype, $sensitive) {
         global $Conf, $Opt;
         $rest = array();
-        if ($sendtype == "create" && $this->password
-            && @$this->contactdb_encoded_password === $this->password)
+        if ($sendtype == "create"
+            && @$this->contactdb_encoded_password
+            && ($this->password === "*"
+                || $this->password === $this->contactdb_encoded_password))
             $template = "@activateaccount";
         else if ($sendtype == "create")
             $template = "@createaccount";

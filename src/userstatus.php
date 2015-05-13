@@ -35,6 +35,7 @@ class UserStatus {
         global $Conf;
         if (!$user)
             return null;
+        $user->contactdb_merge();
 
         $cj = (object) array();
         if ($user->contactId)
@@ -308,14 +309,17 @@ class UserStatus {
             $this->set_error("id", "Saving user with different ID");
             return false;
         }
+
         $no_old_db_account = !$old_user || !$old_user->has_database_account();
-        if (!$old_user && is_string(@$cj->email) && $cj->email) {
-            $old_user = Contact::contactdb_find_by_email($cj->email);
-            // ensure we don't use contactdb password if disabled
-            if ($old_user && !$old_user->contactdb_allow_password())
-                unset($old_user->password);
-        }
-        $no_old_account = !$old_user || !$old_user->has_database_account();
+        $old_cdb_user = null;
+        if ($old_user && $old_user->has_email())
+            $old_cdb_user = Contact::contactdb_find_by_email($old_user->email);
+        else if (is_string(@$cj->email) && $cj->email)
+            $old_cdb_user = Contact::contactdb_find_by_email($cj->email);
+        // ensure we don't use contactdb password if disabled
+        if ($old_cdb_user && !$old_cdb_user->contactdb_allow_password())
+            unset($old_cdb_user->password);
+        $old_user = $old_user ? : $old_cdb_user;
 
         $this->normalize($cj, $old_user);
         if ($this->nerrors)
@@ -340,6 +344,10 @@ class UserStatus {
             $user->set_encoded_password($cj->password);
         else if (isset($cj->password_plaintext))
             $user->change_password($cj->password_plaintext, false);
+        else if ($old_cdb_user && @$old_cdb_user->password) {
+            $user->password = "*";
+            $user->contactdb_encoded_password = $old_cdb_user->password;
+        }
         if (!$user->password && !Contact::external_login())
             $user->password = $user->password_plaintext = Contact::random_password();
 
@@ -405,7 +413,7 @@ class UserStatus {
 
         if ($no_old_db_account) {
             if (($send_email = $this->send_email) === null)
-                $send_email = $no_old_account;
+                $send_email = !$old_cdb_user;
             $user->mark_create($send_email, false);
         }
         $actor = $actor ? : $Me;
