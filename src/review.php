@@ -999,27 +999,24 @@ $blind\n";
 
     function pretty_text($prow, $rrow, $contact, $no_update_review_author_seen = false) {
         global $Conf, $Opt;
+        assert($prow !== null && $rrow !== null);
 
-        $rrow_contactId = 0;
-        if (isset($rrow) && isset($rrow->reviewContactId))
-            $rrow_contactId = $rrow->reviewContactId;
-        else if (isset($rrow) && isset($rrow->contactId))
-            $rrow_contactId = $rrow->contactId;
+        $rrow_contactId = @$rrow->reviewContactId ? : (@$rrow->contactId ? : 0);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";
         $n = $Opt["shortName"] . " Review";
-        if ($rrow && isset($rrow->reviewOrdinal))
+        if (@$rrow->reviewOrdinal)
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
-        if ($rrow && $rrow->reviewModified && $contact->can_view_review_time($prow, $rrow)) {
+        if ($rrow->reviewModified && $contact->can_view_review_time($prow, $rrow)) {
             $n = "Updated " . $Conf->printableTime($rrow->reviewModified);
             $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
         }
         $x .= "---------------------------------------------------------------------------\n";
         $x .= $prow->pretty_text_title();
-        if ($rrow && $contact->can_view_review_identity($prow, $rrow, false)) {
+        if ($contact->can_view_review_identity($prow, $rrow, false)) {
             if (isset($rrow->reviewFirstName))
                 $n = Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
             else if (isset($rrow->lastName))

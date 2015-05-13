@@ -247,7 +247,7 @@ function downloadForm($editable) {
         if (!$rr->reviewSubmitted
             && ($explicit || $rr->reviewModified))
             $text .= downloadView($prow, $rr, $editable);
-    if (count($downrrows) == 0)
+    if (count($downrrows) == 0 && $editable)
         $text .= downloadView($prow, null, $editable);
     if (!$explicit) {
         $paperTable->resolveComments();
