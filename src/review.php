@@ -1036,7 +1036,7 @@ $blind\n";
                 continue;
 
             $fval = "";
-            if ($rrow != null && isset($rrow->$field)) {
+            if (isset($rrow->$field)) {
                 if ($f->has_options)
                     $fval = $f->unparse_value($rrow->$field);
                 else
@@ -1264,7 +1264,7 @@ $blind\n";
         $fshow = array();
         $fdisp = array();
         foreach ($this->forder as $field => $f) {
-            $fval = ($rrow ? $rrow->$field : "");
+            $fval = $rrow->$field;
             if ($f->view_score > $revViewScore
                 && ($f->has_options || $fval != "")) {
                 $fshow[] = $f;
@@ -1293,7 +1293,7 @@ $blind\n";
         foreach ($fshow as $fnum => $f) {
             $disp = $fdisp[$fnum];
             $field = $f->id;
-            $fval = ($rrow ? $rrow->$field : "");
+            $fval = $rrow->$field;
             if ($f->has_options && $fval)
                 $fval = $f->unparse_value($fval);
 
