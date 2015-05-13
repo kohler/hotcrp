@@ -2317,7 +2317,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         if ($rights->can_administer)
             return VIEWSCORE_ADMINONLY - 1;
-        else if ($rrow && $this->is_my_review($rrow))
+        else if ($rrow ? $this->is_my_review($rrow) : $rights->allow_review)
             return VIEWSCORE_REVIEWERONLY - 1;
         else if (!$this->can_view_review($prow, $rrow, $forceShow))
             return VIEWSCORE_MAX + 1;
