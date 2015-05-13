@@ -1,7 +1,7 @@
 <?php
-$ConfSiteBase = preg_replace(',/batch/[^/]+,', '', __FILE__);
-require_once("$ConfSiteBase/src/init.php");
-require_once("$ConfSiteBase/lib/getopt.php");
+$ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
+require_once("$ConfSitePATH/src/init.php");
+require_once("$ConfSitePATH/lib/getopt.php");
 
 $arg = getopt_rest($argv, "hn:m:p:d:f:", array("help", "name:", "mimetype:", "paper:", "dtype:", "filename:"));
 if (!isset($arg["d"]))
