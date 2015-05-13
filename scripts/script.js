@@ -4003,7 +4003,7 @@ function render_events(e, rows) {
 return function (e) {
     var j = $(e);
     if (!j.find(".hotcrp_events_container").length) {
-        j = $("<div class=\"fx20 hotcrp_events_container\"></div>").appendTo(j);
+        j = $("<div class=\"fx20 hotcrp_events_container\" style=\"overflow:hidden;padding-top:3px\"></div>").appendTo(j);
         events ? render_events(j[0], events) : load_more_events();
     }
 };
