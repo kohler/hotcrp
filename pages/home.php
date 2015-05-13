@@ -464,27 +464,12 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->is_reviewer()) {
-        $entries = $Conf->reviewerActivity($Me, time(), 30);
-        if (count($entries)) {
-            $fold20 = $Conf->session("foldhomeactivity", 1) ? "fold20c" : "fold20o";
-            echo "<div class=\"homegrp $fold20\" id=\"homeactivity\" hotcrp_foldsession=\"foldhomeactivity\">",
-                "<div class=\"fold21c\" id=\"homeactivitymore\">",
-                foldbutton("homeactivity", 20),
-                "<h4><a href=\"#\" onclick=\"return fold('homeactivity',null,20)\" class=\"x homeactivity\">Recent activity<span class='fx20'>:</span></a></h4>";
-            if (count($entries) > 10)
-                echo "&nbsp; <a href=\"#\" onclick=\"return fold('homeactivitymore',null,21)\" class='fx20'><span class='fn21'>More &#187;</span><span class='fx21'>&#171; Fewer</span></a>";
-            echo "<div class='fx20' style='overflow:hidden;padding-top:3px'><table><tbody>";
-            foreach ($entries as $which => $xr) {
-                $tr_class = "k" . ($which % 2) . ($which >= 10 ? " fx21" : "");
-                if ($xr->isComment)
-                    echo CommentInfo::unparse_flow_entry($xr, $Me, $tr_class);
-                else {
-                    $rf = ReviewForm::get($xr);
-                    echo $rf->reviewFlowEntry($Me, $xr, $tr_class);
-                }
-            }
-            echo "</tbody></table></div></div></div>";
-        }
+        echo "<div class=\"homegrp fold20c\" id=\"homeactivity\" hotcrp_fold=\"1\" hotcrp_foldsession=\"foldhomeactivity\" onunfold=\"unfold_events(this)\">",
+            foldbutton("homeactivity", 20),
+            "<h4><a href=\"#\" onclick=\"return foldup(this,event,{n:20})\" class=\"x homeactivity\">Recent activity<span class='fx20'>:</span></a></h4>",
+            "</div>";
+        if (!$Conf->session("foldhomeactivity", 1))
+            $Conf->footerScript("foldup(jQuery(\"#homeactivity\")[0],null,{n:20})");
     }
 
     echo "<hr class='home' /></div>\n";

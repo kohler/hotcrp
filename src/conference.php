@@ -1166,6 +1166,18 @@ class Conference {
     }
 
 
+    function set_siteurl($base) {
+        global $ConfSiteBase, $Opt;
+        if ($base !== "" && !str_ends_with($base, "/"))
+            $base .= "/";
+        if ($Opt["assetsUrl"] === Navigation::siteurl()) {
+            $Opt["assetsUrl"] = $base;
+            Ht::$img_base = $Opt["assetsUrl"] . "images/";
+        }
+        $ConfSiteBase = $base; // XXX Navigation
+    }
+
+
     //
     // Paper storage
     //
@@ -1894,7 +1906,7 @@ class Conference {
         return $q;
     }
 
-    function _activity_compar($a, $b) {
+    static function _activity_compar($a, $b) {
         if (!$a || !$b)
             return !$a && !$b ? 0 : ($a ? -1 : 1);
         $at = isset($a->timeModified) ? $a->timeModified : $a->reviewSubmitted;
@@ -1926,9 +1938,10 @@ class Conference {
 
         $crows = $rrows = array(); // comment/review rows being worked through
         $curcr = $currr = null;    // current comment/review row
+        $last_time = INF;
         // We read new comment/review rows when the current set is empty.
 
-        while (count($activity) < $limit) {
+        while (1) {
             // load $curcr with most recent viewable comment
             if ($curcr)
                 /* do nothing */;
@@ -1966,15 +1979,22 @@ class Conference {
             // if neither, ran out of activity
             if (!$curcr && !$currr)
                 break;
+            // if above limit, ran out of activity
+            if (count($activity) >= $limit
+                && (!$curcr || $curcr->timeModified < $last_time)
+                && (!$currr || $currr->reviewSubmitted < $last_time))
+                break;
 
             // otherwise, choose the later one first
             if (self::_activity_compar($curcr, $currr) < 0) {
                 $curcr->isComment = true;
                 $activity[] = $curcr;
+                $last_time = $curcr->timeModified;
                 $curcr = null;
             } else {
                 $currr->isComment = false;
                 $activity[] = $currr;
+                $last_time = $currr->reviewSubmitted;
                 $currr = null;
             }
         }

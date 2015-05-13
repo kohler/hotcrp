@@ -87,7 +87,31 @@ if (@$_GET["fn"] === "track" && $Me->privChair && check_post()) {
             MeetingTracker::update($xlist, $args[0], $position);
         }
     }
-}
+} else if (@$_GET["fn"] === "track")
+    $Conf->ajaxExit(array("ok" => false));
+
+if (@$_GET["fn"] === "events" && $Me->is_reviewer()) {
+    if (($base = @$_GET["base"]) !== null)
+        $Conf->set_siteurl($base);
+    $from = @$_GET["from"];
+    if (!$from || !ctype_digit($from))
+        $from = $Now;
+    $entries = $Conf->reviewerActivity($Me, $from, 10);
+    $when = $from;
+    $rows = array();
+    foreach ($entries as $which => $xr)
+        if ($xr->isComment) {
+            $rows[] = CommentInfo::unparse_flow_entry($xr, $Me, "");
+            $when = $xr->timeModified;
+        } else {
+            $rf = ReviewForm::get($xr);
+            $rows[] = $rf->reviewFlowEntry($Me, $xr, "");
+            $when = $xr->reviewSubmitted;
+        }
+    $Conf->ajaxExit(array("ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
+                          "rows" => $rows));
+} else if (@$_GET["fn"] === "events")
+    $Conf->ajaxExit(array("ok" => false));
 
 if (@$_GET["p"] && ctype_digit($_GET["p"])) {
     $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])), $Me);

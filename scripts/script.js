@@ -3968,6 +3968,48 @@ return function (j) {
 })(jQuery);
 
 
+// home activity
+var unfold_events = (function ($) {
+var events = null, events_at = 0;
+
+function load_more_events() {
+    $.ajax({
+        url: hoturl("api", "fn=events&base=" + encodeURIComponent(siteurl) + (events_at ? "&from=" + events_at : "")),
+        type: "GET", cache: false, dataType: "json",
+        success: function (data) {
+            if (data.ok) {
+                events = (events || []).concat(data.rows);
+                events_at = data.to;
+                $(".hotcrp_events_container").each(function (i, e) {
+                    render_events(e, data.rows);
+                });
+            }
+        }
+    });
+}
+
+function render_events(e, rows) {
+    var j = $(e).find("tbody");
+    if (!j.length) {
+        $(e).append("<table class=\"hotcrp_events_table\"><tbody></tbody></table><div class=\"g\"><button type=\"button\">More</button></div>");
+        $(e).find("button").on("click", load_more_events);
+        j = $(e).find("tbody");
+    }
+    console.log(rows);
+    for (var i = 0; i < rows.length; ++i)
+        j.append(rows[i]);
+}
+
+return function (e) {
+    var j = $(e);
+    if (!j.find(".hotcrp_events_container").length) {
+        j = $("<div class=\"fx20 hotcrp_events_container\"></div>").appendTo(j);
+        events ? render_events(j[0], events) : load_more_events();
+    }
+};
+})(jQuery);
+
+
 // autogrowing text areas; based on https://github.com/jaz303/jquery-grab-bag
 (function ($) {
     $.fn.autogrow = function (options)
