@@ -114,12 +114,14 @@ $Opt["emailSender"] = null;
 //                   as those generated for new accounts, are stored in
 //                   plaintext for usability reasons. Set safePasswords to 2
 //                   to opportunistically upgrade these passwords to hashes.
+//   chairHidePasswords  If true, then chairs cannot view or modify other
+//                   users' passwords. Defaults to false.
+//
+//   In PHP versions below 5.5, password hashing uses these settings:
 //   passwordHmacKey  Secret key used for password HMAC.
 //   passwordHmacKeyid  If a secret key is compromised, change
 //                   passwordHmacKeyid to switch keys. Defaults to 0.
 //   passwordHmacKey.ID  Secret key for passwordHmacKeyid==ID.
-//   chairHidePasswords  If true, then chairs cannot view or modify other
-//                   users' passwords. Defaults to false.
 
 $Opt["safePasswords"] = true;
 $Opt["passwordHmacKey"] = null;

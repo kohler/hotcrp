@@ -925,6 +925,26 @@ class Contact {
             && $password !== "*";
     }
 
+    private function check_hashed_password($password) {
+        if ($this->password[1] === "$") {
+            if (function_exists("password_verify"))
+                return password_verify($password, substr($this->password, 2));
+        } else {
+            if (($method_pos = strpos($this->password, " ", 1)) !== false
+                && ($keyid_pos = strpos($this->password, " ", $method_pos + 1)) !== false
+                && strlen($this->password) > $keyid_pos + 17
+                && function_exists("hash_hmac")) {
+                $method = substr($this->password, 1, $method_pos - 1);
+                $keyid = substr($this->password, $method_pos + 1, $keyid_pos - $method_pos - 1);
+                $salt = substr($this->password, $keyid_pos + 1, 16);
+                return hash_hmac($method, $salt . $password,
+                                 self::password_hmac_key($keyid), true)
+                    == substr($this->password, $keyid_pos + 17);
+            }
+        }
+        return -1;
+    }
+
     public function check_password($password) {
         global $Conf, $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
@@ -932,28 +952,27 @@ class Contact {
             return false;
         if ($this->password_type == 0)
             return $password === $this->password;
-        if ($this->password_type == 1
-            && ($hash_method_pos = strpos($this->password, " ", 1)) !== false
-            && ($keyid_pos = strpos($this->password, " ", $hash_method_pos + 1)) !== false
-            && strlen($this->password) > $keyid_pos + 17
-            && function_exists("hash_hmac")) {
-            $hash_method = substr($this->password, 1, $hash_method_pos - 1);
-            $keyid = substr($this->password, $hash_method_pos + 1, $keyid_pos - $hash_method_pos - 1);
-            $salt = substr($this->password, $keyid_pos + 1, 16);
-            return hash_hmac($hash_method, $salt . $password,
-                             self::password_hmac_key($keyid), true)
-                == substr($this->password, $keyid_pos + 17);
-        } else if ($this->password_type == 1)
+        if ($this->password_type != 1)
+            return false;
+        $x = $this->check_hashed_password($password);
+        if (is_bool($x))
+            return $x;
+        else {
             error_log("cannot check hashed password for user " . $this->email);
-        return false;
+            return false;
+        }
     }
 
     static public function password_hash_method() {
         global $Opt;
-        if (isset($Opt["passwordHashMethod"]) && $Opt["passwordHashMethod"])
-            return $Opt["passwordHashMethod"];
-        else
-            return PHP_INT_SIZE == 8 ? "sha512" : "sha256";
+        $m = @$Opt["passwordHashMethod"];
+        if (function_exists("password_verify") && !is_string($m))
+            return is_int($m) ? $m : PASSWORD_DEFAULT;
+        if (!function_exists("hash_hmac"))
+            return false;
+        if (is_string($m))
+            return $m;
+        return PHP_INT_SIZE == 8 ? "sha512" : "sha256";
     }
 
     static public function password_cleartext() {
@@ -972,15 +991,19 @@ class Contact {
     public function check_password_encryption($is_change) {
         global $Opt;
         if ($Opt["safePasswords"] < 1
-            || ($Opt["safePasswords"] == 1 && !$is_change)
-            || !function_exists("hash_hmac"))
+            || ($method = self::password_hash_method()) === false
+            || ($Opt["safePasswords"] == 1 && !$is_change
+                && $this->password_type == 0))
             return false;
-        if ($this->password_type == 0)
+        if ($this->password_type != 1)
             return true;
-        $expected_prefix = " " . self::password_hash_method() . " "
-            . $this->preferred_password_keyid() . " ";
-        return $this->password_type == 1
-            && !str_starts_with($this->password, $expected_prefix . " ");
+        if (is_int($method))
+            return $this->password[1] !== "$"
+                || password_needs_rehash(substr($this->password, 2), $method);
+        else {
+            $expected_prefix = " $method " . $this->preferred_password_keyid() . " ";
+            return str_starts_with($this->password, $expected_prefix);
+        }
     }
 
     public function change_password($new_password, $save, $plaintext = false) {
@@ -993,12 +1016,16 @@ class Contact {
             $this->password_type = 1;
         $this->password_plaintext = $new_password;
         if ($this->password_type == 1) {
-            $keyid = $this->preferred_password_keyid();
-            $key = self::password_hmac_key($keyid);
-            $hash_method = self::password_hash_method();
-            $salt = hotcrp_random_bytes(16);
-            $this->password = " " . $hash_method . " " . $keyid . " " . $salt
-                . hash_hmac($hash_method, $salt . $new_password, $key, true);
+            $method = self::password_hash_method();
+            if (is_int($method))
+                $this->password = ' $' . password_hash($new_password, $method);
+            else {
+                $keyid = $this->preferred_password_keyid();
+                $key = self::password_hmac_key($keyid);
+                $salt = hotcrp_random_bytes(16);
+                $this->password = " " . $method . " " . $keyid . " " . $salt
+                    . hash_hmac($method, $salt . $new_password, $key, true);
+            }
         } else
             $this->password = $new_password;
         $this->passwordTime = $Now;
