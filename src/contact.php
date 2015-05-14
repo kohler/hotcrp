@@ -2559,7 +2559,8 @@ class Contact {
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-            $dl->tracker_status_at = $tracker->position_at;
+            if (($p = @$tracker->position_at))
+                $dl->tracker_status_at = $p;
             if (@$Opt["trackerHidden"])
                 $dl->tracker_hidden = true;
             $dl->now = microtime(true);
