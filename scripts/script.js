@@ -871,7 +871,7 @@ function reload() {
     var options = hotcrp_deadlines.options || {};
     if (hotcrp_deadlines)
         options.p = hotcrp_paperid;
-    options.fn = "deadlines";
+    options.fn = "status";
     $.ajax({
         url: hoturl("api", options),
         timeout: 30000, cache: false, dataType: "json",

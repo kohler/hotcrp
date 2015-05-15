@@ -14,8 +14,9 @@ if (!isset($_GET["fn"])) {
     else if (isset($_GET["track"]))
         $_GET["fn"] = "track";
     else
-        $_GET["fn"] = "deadlines";
-}
+        $_GET["fn"] = "status";
+} else if ($_GET["fn"] === "deadlines")
+    $_GET["fn"] = "status";
 
 if ($_GET["fn"] === "trackerstatus") { // used by hotcrp-comet
     $tracker = MeetingTracker::lookup();
@@ -26,7 +27,7 @@ if ($_GET["fn"] === "trackerstatus") { // used by hotcrp-comet
     $Conf->ajaxExit($a);
 }
 
-if ($_GET["fn"] === "deadlines" && !$Me->has_database_account()
+if ($_GET["fn"] === "status" && !$Me->has_database_account()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
     if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 172800) {
