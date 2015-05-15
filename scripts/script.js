@@ -874,7 +874,7 @@ function reload() {
     options.fn = "status";
     $.ajax({
         url: hoturl("api", options),
-        timeout: 30000, cache: false, dataType: "json",
+        timeout: 30000, dataType: "json",
         success: reload_success, error: reload_error
     });
 }
