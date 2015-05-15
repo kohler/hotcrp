@@ -453,8 +453,8 @@ wstorage.json = function (is_session, key) {
 };
 
 
-window.hotcrp_deadlines = (function () {
-var dl, dlname, dltime, reload_timeout, redisplay_timeout;
+window.hotcrp_deadlines = (function ($) {
+var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
 
 // deadline display
 function display_main(is_initial) {
@@ -575,7 +575,7 @@ function tracker_show_elapsed() {
         s = sprintf("%d:%02d:%02d", s/3600, (s/60)%60, s%60);
     else
         s = sprintf("%d:%02d", s/60, s%60);
-    jQuery("#trackerelapsed").html(s);
+    $("#trackerelapsed").html(s);
 
     tracker_timer = setTimeout(tracker_show_elapsed,
                                1000 - (delta * 1000) % 1000);
@@ -650,7 +650,7 @@ function display_tracker() {
         t += "</tr></tbody></table>";
     }
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
-    jQuery(mne).find(".hottooltip").each(add_tooltip);
+    $(mne).find(".hottooltip").each(add_tooltip);
     if (dl.tracker && dl.tracker.position_at)
         tracker_show_elapsed();
     mnspace.style.height = mne.offsetHeight + "px";
@@ -701,7 +701,7 @@ var comet_store = (function () {
         return "hotcrp-comet " + hoturl_absolute_base();
     }
     function make_site_value(v) {
-        var x = v && jQuery.parseJSON(v);
+        var x = v && $.parseJSON(v);
         if (!x || typeof x !== "object")
             x = {};
         if (!x.updated_at || x.updated_at + 10 < (new Date).getTime() / 1000
@@ -727,7 +727,7 @@ var comet_store = (function () {
                 site_store();
         }, 5000);
     }
-    jQuery(window).on("storage", function (e) {
+    $(window).on("storage", function (e) {
         var x, ee = e.originalEvent;
         if (dl && dl.tracker_site && ee.key == site_key()) {
             var x = make_site_value(ee.newValue);
@@ -757,7 +757,7 @@ var comet_store = (function () {
     return s;
 })();
 
-jQuery(window).on("unload", function () { comet_store(-1); });
+$(window).on("unload", function () { comet_store(-1); });
 
 function comet_tracker() {
     var at = (new Date).getTime(),
@@ -808,7 +808,7 @@ function comet_tracker() {
         success(null, status, xhr);
     }
 
-    jQuery.ajax({
+    $.ajax({
         url: hoturl_add(dl.tracker_site, "poll=" + encodeURIComponent(dl.tracker_status || "off") + "&timeout=" + timeout),
         timeout: timeout + 2000, cache: false, dataType: "json",
         success: success, complete: complete
@@ -827,8 +827,8 @@ function load(dlx, is_initial) {
     if (dl.tracker)
         had_tracker_at = dl.load;
     display_main(is_initial);
-    var evt = jQuery.Event("hotcrp_deadlines");
-    jQuery(window).trigger(evt, [dl]);
+    var evt = $.Event("hotcrp_deadlines");
+    $(window).trigger(evt, [dl]);
     if (!evt.isDefaultPrevented() && had_tracker_at)
         display_tracker();
     if (had_tracker_at)
@@ -852,14 +852,31 @@ function load(dlx, is_initial) {
     }
 }
 
-function reload() {
-    clearTimeout(reload_timeout);
+function reload_success(data) {
     reload_timeout = null;
+    reload_nerrors = 0;
+    load(data);
+}
+
+function reload_error(xhr, status, err) {
+    ++reload_nerrors;
+    reload_timeout = setTimeout(reload, 10000 * Math.min(reload_nerrors, 60));
+}
+
+function reload() {
+    if (reload_timeout === true) // reload outstanding
+        return;
+    clearTimeout(reload_timeout);
+    reload_timeout = true;
     var options = hotcrp_deadlines.options || {};
     if (hotcrp_deadlines)
         options.p = hotcrp_paperid;
     options.fn = "deadlines";
-    Miniajax.get(hoturl("api", options), load, 10000);
+    $.ajax({
+        url: hoturl("api", options),
+        timeout: 30000, cache: false, dataType: "json",
+        success: reload_success, error: reload_error
+    });
 }
 
 return {
@@ -867,7 +884,7 @@ return {
     tracker: tracker,
     tracker_show_elapsed: tracker_show_elapsed
 };
-})();
+})(jQuery);
 
 
 var hotcrp_load = {
