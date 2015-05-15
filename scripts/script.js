@@ -649,6 +649,7 @@ function display_tracker() {
             t += "</tr><tr class=\"tracker" + i + "\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
         t += "</tr></tbody></table>";
     }
+    t += '<hr class="c" />';
     mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
     $(mne).find(".hottooltip").each(add_tooltip);
     if (dl.tracker && dl.tracker.position_at)
