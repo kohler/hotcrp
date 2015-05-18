@@ -810,8 +810,10 @@ function comet_tracker() {
     }
 
     $.ajax({
-        url: hoturl_add(dl.tracker_site, "poll=" + encodeURIComponent(dl.tracker_status || "off") + "&timeout=" + timeout),
-        timeout: timeout + 2000, cache: false, dataType: "json",
+        url: hoturl_add(dl.tracker_site, "poll=" + encodeURIComponent(dl.tracker_status || "off")
+                        + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
+                        + "&timeout=" + timeout),
+        timeout: timeout + 2000, dataType: "json",
         success: success, complete: complete
     });
     return true;
