@@ -706,6 +706,7 @@ if (count($pctags)) {
         if ($tagname !== "pc")
             $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");
 }
+$pctyp_sel[] = array("__flip__", -1, "flip");
 $sep = "";
 foreach ($pctyp_sel as $pctyp) {
     echo $sep, "<a href='#pc_", $pctyp[0], "' onclick='",

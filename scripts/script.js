@@ -1095,7 +1095,7 @@ function contactPulldown(which) {
 // paper selection
 function papersel(value, name) {
     var ins = document.getElementsByTagName("input"),
-        xvalue = value, value_hash = true, i;
+        xvalue = value, value_hash = true, i, chk = !!xvalue;
     name = name || "pap[]";
 
     if (jQuery.isArray(value)) {
@@ -1106,8 +1106,13 @@ function papersel(value, name) {
         value_hash = false;
 
     for (var i = 0; i < ins.length; i++)
-        if (ins[i].name == name)
-            ins[i].checked = !!(value_hash ? xvalue[ins[i].value] : xvalue);
+        if (ins[i].name == name) {
+            if (value_hash)
+                chk = !!xvalue[ins[i].value];
+            else if (xvalue === -1)
+                chk = !ins[i].checked;
+            ins[i].checked = chk;
+        }
 
     return false;
 }
