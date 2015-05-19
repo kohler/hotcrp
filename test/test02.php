@@ -1,5 +1,5 @@
 <?php
-// test02.php -- HotCRP tests
+// test02.php -- HotCRP S3 and database unit tests
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
@@ -8,6 +8,7 @@ $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 
 require_once("$ConfSitePATH/test/setup.php");
 
+// S3 unit tests
 $s3d = new S3Document(array("key" => "AKIAIOSFODNN7EXAMPLE",
                             "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                             "fixed_time" => gmmktime(0, 0, 0, 5, 24, 2013)));

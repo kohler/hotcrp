@@ -148,6 +148,7 @@ function __autoload($class_name) {
                                "Message" => "lib/message.php",
                                "MimeText" => "lib/mailer.php",
                                "Mimetype" => "lib/mimetype.php",
+                               "MinCostMaxFlow" => "lib/mincostmaxflow.php",
                                "Multiconference" => "src/multiconference.php",
                                "PaperActions" => "src/paperactions.php",
                                "PaperColumn" => "src/papercolumn.php",
