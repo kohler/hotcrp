@@ -9,10 +9,13 @@ class Autoassigner {
     private $load = array();
     private $prefs;
     private $pref_groups;
+    private $use_mcmf = false;
 
     const PMIN = -1000000;
     const PNOASSIGN = -1000001;
     const PASSIGNED = -1000002;
+
+    const COSTPERPAPER = 100;
 
     public function __construct() {
         $this->pcm = pcMembers();
@@ -26,6 +29,10 @@ class Autoassigner {
             if (isset($pcids[$cid]))
                 $this->pcm[$cid] = $pc;
         return count($this->pcm);
+    }
+
+    public function set_mcmf($use_mcmf) {
+        $this->use_mcmf = $use_mcmf;
     }
 
     private function run_prefconflict($papertype) {
@@ -305,6 +312,105 @@ class Autoassigner {
         }
     }
 
+    private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
+        global $Conf, $badpairs;
+        $m = new MinCostMaxFlow;
+        // paper nodes
+        $nass = 0;
+        foreach ($papers as $pid => $count) {
+            $m->add_node("p$pid", "p");
+            $m->add_edge("p$pid", ".sink", $count, 0);
+            $nass += $count;
+        }
+        // user nodes
+        $assperpc = ceil($nass / count($this->pcm));
+        $minload = $this->load ? min($this->load) : 0;
+        $maxload = ($this->load ? max($this->load) : 0) + $assperpc;
+        foreach ($this->pcm as $cid => $p) {
+            $m->add_node("u$cid", "u");
+            if ($nperpc)
+                $m->add_edge(".source", "u$cid", $nperpc, 0);
+            else {
+                for ($l = (int) @$this->load[$cid]; $l < $maxload; ++$l)
+                    $m->add_edge(".source", "u$cid", 1, self::COSTPERPAPER * ($l - $minload));
+            }
+        }
+        // cost determination
+        $cost = array();
+        foreach ($this->pcm as $cid => $x) {
+            foreach ($this->pref_groups[$cid] as $pgi => $pg)
+                foreach ($pg->pids as $pid)
+                    $cost[$cid][$pid] = $pgi;
+        }
+        // figure out badpairs class for each user
+        $bpclass = array();
+        foreach ($badpairs as $cid => $bp)
+            $bpclass[$cid] = $cid;
+        $done = false;
+        while (!$done) {
+            $done = true;
+            foreach ($badpairs as $ocid => $bp) {
+                foreach ($bp as $cid => $x)
+                    if ($bpclass[$ocid] > $bpclass[$cid]) {
+                        $bpclass[$ocid] = $bpclass[$cid];
+                        $done = false;
+                    }
+            }
+        }
+        // paper <-> contact map
+        foreach ($papers as $pid => $x)
+            foreach ($this->pcm as $cid => $p) {
+                if ((int) @$this->prefs[$cid][$pid] < self::PMIN)
+                    continue;
+                if (isset($bpclass[$cid]) && $bpclass[$cid] == $cid) {
+                    $m->add_node("b{$pid}.$cid", "b");
+                    $x = "b{$pid}.$cid";
+                    $m->add_edge($x, "p$pid", 1, 0);
+                } else if (isset($bpclass[$cid]))
+                    $x = "b{$pid}." . $bpclass[$cid];
+                else
+                    $x = "p$pid";
+                $m->add_edge("u$cid", $x, 1, $cost[$cid][$pid]);
+            }
+        // run MCMF
+        $m->run();
+        // make assignments
+        $nassigned = 0;
+        foreach ($this->pcm as $cid => $p) {
+            foreach ($m->reachable("u$cid", "p") as $v) {
+                $this->make_assignment($action, $round, $cid,
+                                       substr($v->name, 1), $papers);
+                ++$nassigned;
+            }
+        }
+        return $nassigned;
+    }
+
+    private function assign_mcmf(&$papers, $action, $round, $nperpc) {
+        while ($this->assign_mcmf_once($papers, $action, $round, $nperpc)) {
+            $nmissing = 0;
+            foreach ($papers as $pid => $ct)
+                if ($ct > 0)
+                    $nmissing += $ct;
+            $navailable = 0;
+            if ($nperpc) {
+                foreach ($this->pcm as $cid => $p)
+                    if ($this->load[$cid] < $nperpc)
+                        $navailable += $nperpc - $load;
+            }
+            if ($nmissing == 0 || $navailable == 0)
+                break;
+        }
+    }
+
+    private function assign_method(&$papers, $action, $round, $nperpc) {
+        if ($this->use_mcmf)
+            $this->assign_mcmf($papers, $action, $round, $nperpc);
+        else
+            $this->assign_randomly($papers, $action, $round, $nperpc);
+    }
+
+
     private function check_missing_assignments(&$papers, $action) {
         global $Conf;
         ksort($papers);
@@ -338,7 +444,7 @@ class Autoassigner {
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] = 1;
         Dbl::free($result);
-        $this->assign_randomly($papers, $action, "", null);
+        $this->assign_method($papers, $action, "", null);
         $this->check_missing_assignments($papers, $action);
     }
 
@@ -357,7 +463,7 @@ class Autoassigner {
         $this->preferences_review();
         $papers = array_fill_keys($papersel, ceil((count($this->pcm) * ($nass + 2)) / count($papersel)));
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
-        $this->assign_randomly($papers, $action, $round, $nass);
+        $this->assign_method($papers, $action, $round, $nass);
     }
 
     public function run_more_reviews($reviewtype, $round, $nass) {
@@ -367,7 +473,7 @@ class Autoassigner {
         $this->preferences_review();
         $papers = array_fill_keys($papersel, $nass);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
-        $this->assign_randomly($papers, $action, $round, null);
+        $this->assign_method($papers, $action, $round, null);
         $this->check_missing_assignments($papers, "revadd");
     }
 
@@ -383,7 +489,7 @@ class Autoassigner {
                 $papers[$row[0]] = max($nass - $row[1], 0);
         Dbl::free($result);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
-        $this->assign_randomly($papers, $action, $round, null);
+        $this->assign_method($papers, $action, $round, null);
         $this->check_missing_assignments($papers, "rev");
     }
 
