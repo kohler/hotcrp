@@ -180,14 +180,6 @@ function checkRequest(&$atype, &$reviewtype, $save) {
     return true;
 }
 
-function noBadPair($pc, $pid, $prefs) {
-    global $badpairs;
-    foreach ($badpairs[$pc] as $opc => $val)
-        if (defval($prefs[$opc], $pid, 0) < -1000000)
-            return false;
-    return true;
-}
-
 function doAssign() {
     global $Conf, $papersel, $pcsel, $assignments, $assignprefs, $badpairs, $scoreselector;
 
@@ -195,312 +187,33 @@ function doAssign() {
     if (!checkRequest($atype, $reviewtype, false))
         return false;
 
-    // fetch PC members, initialize preferences and results arrays
-    $pcm = pcMembers();
-    $prefs = array();
-    foreach ($pcm as $pc)
-        $prefs[$pc->contactId] = array();
-    $assignments = array("paper,action,email,round");
     $assignprefs = array();
-
-    // choose PC members to use for assignment
+    $autoassigner = new Autoassigner;
     if ($_REQUEST["pctyp"] === "sel") {
-        $pck = array_keys($pcm);
-        foreach ($pck as $pcid)
-            if (!isset($pcsel[$pcid]))
-                unset($pcm[$pcid]);
-        if (!count($pcm)) {
+        $n = $autoassigner->select_pc(array_keys($pcsel));
+        if ($n == 0) {
             $Conf->errorMsg("Select one or more PC members to assign.");
             return null;
         }
     }
-
-    // prefconflict is a special case
-    if ($atype === "prefconflict") {
-        $papers = array_fill_keys($papersel, 1);
-        $result = $Conf->qe($Conf->preferenceConflictQuery($_REQUEST["t"], ""));
-        while (($row = edb_row($result))) {
-            if (!isset($papers[$row[0]]) || !@$pcm[$row[1]])
-                continue;
-            $assignments[] = "$row[0],conflict," . $pcm[$row[1]]->email;
-            $assignprefs["$row[0]:$row[1]"] = $row[2];
-        }
-        if (count($assignments) == 1) {
-            $Conf->warnMsg("Nothing to assign.");
-            $assignments = null;
-        }
-        return;
-    }
-
-    // clear is another special case
-    if ($atype === "clear") {
-        $papers = array_fill_keys($papersel, 1);
-        $action = null;
-        if ($reviewtype == REVIEW_PRIMARY || $reviewtype == REVIEW_SECONDARY
-            || $reviewtype == REVIEW_PC) {
-            $q = "select paperId, contactId from PaperReview where reviewType=" . $reviewtype;
-            $action = "noreview";
-        } else if ($reviewtype === "conflict") {
-            $q = "select paperId, contactId from PaperConflict where conflictType>0 and conflictType<" . CONFLICT_AUTHOR;
-            $action = "noconflict";
-        } else if ($reviewtype === "lead" || $reviewtype === "shepherd") {
-            $q = "select paperId, ${reviewtype}ContactId from Paper where ${reviewtype}ContactId!=0";
-            $action = "no" . $reviewtype;
-        }
-        $result = $Conf->qe($q);
-        while (($row = edb_row($result))) {
-            if (!isset($papers[$row[0]]) || !@$pcm[$row[1]])
-                continue;
-            $assignments[] = "$row[0],$action," . $pcm[$row[1]]->email;
-            $assignprefs["$row[0]:$row[1]"] = "*";
-        }
-        if (count($assignments) == 1) {
-            $Conf->warnMsg("Nothing to assign.");
-            $assignments = null;
-        }
-        return;
-    }
-
-    // prepare to balance load
-    $load = array_fill_keys(array_keys($pcm), 0);
-    if (defval($_REQUEST, "balance", "new") !== "new" && $atype !== "revpc") {
-        if ($atype === "rev" || $atype === "revadd")
-            $result = $Conf->qe("select ContactInfo.contactId, count(reviewId)
-                from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType=$reviewtype)
-                where (roles&" . Contact::ROLE_PC . ")!=0
-                group by ContactInfo.contactId");
-        else
-            $result = $Conf->qe("select ContactInfo.contactId, count(paperId)
-                from ContactInfo left join Paper on (Paper.${atype}ContactId=ContactInfo.contactId)
-                where not (paperId in (" . join(",", $papersel) . "))
-                and (roles&" . Contact::ROLE_PC . ")!=0
-                group by ContactInfo.contactId");
-        while (($row = edb_row($result)))
-            $load[$row[0]] = $row[1] + 0;
-        Dbl::free($result);
-    }
-
-    // get preferences
-    if (($atype === "lead" || $atype === "shepherd")
-        && isset($_REQUEST["${atype}score"])
-        && isset($scoreselector[$_REQUEST["${atype}score"]])) {
-        $score = $_REQUEST["${atype}score"];
-        if ($score === "x")
-            $score = "1";
-        else
-            $score = "PaperReview." . substr($score, 1);
-    } else
-        $score = "PaperReview.overAllMerit";
-
-    $query = "select Paper.paperId, ? contactId,
-        coalesce(PaperConflict.conflictType, 0) as conflictType,
-        coalesce(PaperReviewPreference.preference, 0) as preference,
-        coalesce(PaperReview.reviewType, 0) as myReviewType,
-        coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
-        coalesce($score, 0) as reviewScore,
-        Paper.outcome,
-        topicInterestScore,
-        coalesce(PRR.contactId, 0) as refused,
-        Paper.managerContactId
-    from Paper
-    left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
-    left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=?)
-    left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
-    left join (select paperId,
-               sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore
-           from PaperTopic
-           join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=?)
-           group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)
-    left join PaperReviewRefused PRR on (PRR.paperId=Paper.paperId and PRR.contactId=?)
-    where Paper.paperId ?a
-    group by Paper.paperId";
-
-    foreach ($pcm as $cid => $pc) {
-        $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $cid, $papersel);
-
-        if ($atype === "rev" || $atype === "revadd" || $atype === "revpc") {
-            while (($row = PaperInfo::fetch($result, true))) {
-                $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-                if ($row->conflictType > 0
-                    || $row->myReviewType > 0
-                    || $row->refused > 0
-                    || !$pc->can_accept_review_assignment($row))
-                    $prefs[$row->contactId][$row->paperId] = -1000001;
-                else
-                    $prefs[$row->contactId][$row->paperId] = max($row->preference, -1000) + ($row->topicInterestScore / 100);
-            }
-        } else {
-            $scoredir = (substr(defval($_REQUEST, "${atype}score", "x"), 0, 1) === "-" ? -1 : 1);
-            // First, collect score extremes
-            $scoreextreme = array();
-            $rows = array();
-            while (($row = edb_orow($result))) {
-                $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
-                if ($row->conflictType > 0
-                    || $row->myReviewType == 0
-                    || $row->myReviewSubmitted == 0
-                    || $row->reviewScore == 0)
-                    /* ignore row */;
-                else {
-                    if (!isset($scoreextreme[$row->paperId])
-                        || $scoredir * $row->reviewScore > $scoredir * $scoreextreme[$row->paperId])
-                        $scoreextreme[$row->paperId] = $row->reviewScore;
-                    $rows[] = $row;
-                }
-            }
-            // Then, collect preferences; ignore score differences farther
-            // than 1 score away from the relevant extreme
-            foreach ($rows as $row) {
-                $scoredifference = $scoredir * ($row->reviewScore - $scoreextreme[$row->paperId]);
-                if ($scoredifference >= -1)
-                    $prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), -1000000);
-            }
-            $badpairs = array(); // bad pairs only relevant for reviews,
-                                 // not discussion leads or shepherds
-            unset($rows);        // don't need the memory any more
-        }
-
-        Dbl::free($result);
-        set_time_limit(30);
-    }
-
-    // sort preferences
-    $pref_unhappiness = $pref_dist = $pref_nextdist = array_fill_keys(array_keys($pcm), 0);
-    $pref_groups = array();
-    foreach ($pcm as $pc => $pcval) {
-        arsort($prefs[$pc]);
-        $last_group = null;
-        $pref_groups[$pc] = array();
-        foreach ($prefs[$pc] as $pid => $pref)
-            if (!$last_group || $pref != $last_group->pref) {
-                $last_group = (object) array("pref" => $pref, "pids" => array($pid));
-                $pref_groups[$pc][] = $last_group;
-            } else
-                $last_group->pids[] = $pid;
-        reset($pref_groups[$pc]);
-    }
-
-    // get papers
-    $papers = array();
-    $loadlimit = null;
-    if ($atype === "revadd")
-        $papers = array_fill_keys($papersel, cvtint(@$_REQUEST["revaddct"]));
-    else if ($atype === "revpc") {
-        $loadlimit = cvtint(@$_REQUEST["revpcct"]);
-        $papers = array_fill_keys($papersel, ceil((count($pcm) * $loadlimit) / count($papersel)));
-    } else if ($atype === "rev") {
-        $papers = array_fill_keys($papersel, cvtint(@$_REQUEST["revct"]));
-        $result = $Conf->qe("select paperId, count(reviewId) from PaperReview where reviewType=$reviewtype group by paperId");
-        while (($row = edb_row($result)))
-            if (isset($papers[$row[0]]))
-                $papers[$row[0]] = max($papers[$row[0]] - $row[1], 0);
-        Dbl::free($result);
-    } else if ($atype === "lead" || $atype === "shepherd") {
-        $papers = array();
-        $xpapers = array_fill_keys($papersel, 1);
-        $result = $Conf->qe("select paperId from Paper where ${atype}ContactId=0");
-        while (($row = edb_row($result)))
-            if (isset($xpapers[$row[0]]))
-                $papers[$row[0]] = 1;
-        Dbl::free($result);
-    } else
-        assert(false);
-
-    // check action
-    if ($atype === "lead" || $atype === "shepherd")
-        $action = $atype;
-    else if ($reviewtype == REVIEW_PRIMARY)
-        $action = "primary";
-    else if ($reviewtype == REVIEW_SECONDARY)
-        $action = "secondary";
-    else
-        $action = "pcreview";
-    if ($atype !== "lead" && $atype !== "shepherd" && $_REQUEST["rev_roundtag"])
-        $round = "," . $_REQUEST["rev_roundtag"];
-    else
-        $round = "";
-
-    // now, loop forever
-    $pcids = array_keys($pcm);
-    $progress = false;
-    while (count($pcm)) {
-        // choose a pc member at random, equalizing load
-        $pc = null;
-        foreach ($pcm as $pcx => $pcxval)
-            if ($pc == null
-                || $load[$pcx] < $load[$pc]
-                || ($load[$pcx] == $load[$pc]
-                    && $pref_unhappiness[$pcx] > $pref_unhappiness[$pc])) {
-                $numminpc = 0;
-                $pc = $pcx;
-            } else if ($load[$pcx] == $load[$pc]
-                       && $pref_unhappiness[$pcx] == $pref_unhappiness[$pc]) {
-                $numminpc++;
-                if (mt_rand(0, $numminpc) == 0)
-                    $pc = $pcx;
-            }
-
-        // traverse preferences in descending order until encountering an
-        // assignable paper
-        $pg = null;
-        while ($pref_groups[$pc] && ($pg = current($pref_groups[$pc]))) {
-            // skip if no papers left
-            if (!count($pg->pids)) {
-                next($pref_groups[$pc]);
-                $pref_dist[$pc] = $pref_nextdist[$pc];
-                continue;
-            }
-            // pick a random paper at current preference level
-            $pididx = mt_rand(0, count($pg->pids) - 1);
-            $pid = $pg->pids[$pididx];
-            array_splice($pg->pids, $pididx, 1);
-            // skip if not assignable
-            if (!isset($papers[$pid]) || $prefs[$pc][$pid] < -1000000)
-                continue;
-            // skip if already completely assigned
-            if ($papers[$pid] <= 0
-                || (isset($badpairs[$pc]) && !noBadPair($pc, $pid, $prefs))) {
-                ++$pref_nextdist[$pc];
-                continue;
-            }
-            // make assignment
-            $assignments[] = "$pid,$action," . $pcm[$pc]->email . $round;
-            $prefs[$pc][$pid] = -1000001;
-            $papers[$pid]--;
-            $load[$pc]++;
-            $pref_unhappiness[$pc] += $pref_dist[$pc];
-            break;
-        }
-
-        // if have exhausted preferences, remove pc member
-        if (!$pg || $load[$pc] === $loadlimit)
-            unset($pcm[$pc]);
-    }
-
-    // check for unmade assignments
-    ksort($papers);
-    $badpids = array();
-    foreach ($papers as $pid => $n)
-        if ($n > 0)
-            $badpids[] = $pid;
-    if ($badpids && $atype !== "revpc") {
-        $b = array();
-        $pidx = join("+", $badpids);
-        foreach ($badpids as $pid)
-            $b[] = "<a href='" . hoturl("assign", "p=$pid&amp;ls=$pidx") . "'>$pid</a>";
-        if ($atype === "rev" || $atype === "revadd")
-            $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
-        else if ($_REQUEST["pctyp"] === "sel")
-            $x = ", possibly because you haven’t selected all PC members";
-        else
-            $x = "";
-        $y = (count($b) > 1 ? " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>)" : "");
-        $Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
-    }
-    if (count($assignments) == 1) {
+    if ($atype === "prefconflict")
+        $autoassigner->run_prefconflict(@$_REQUEST["t"]);
+    else if ($atype === "clear")
+        $autoassigner->run_clear($reviewtype);
+    else if ($atype === "lead" || $atype === "shepherd")
+        $autoassigner->run_paperpc($atype);
+    else if ($atype === "revpc")
+        $autoassigner->run_reviews_per_pc($reviewtype, @$_REQUEST["rev_roundtag"],
+                                          cvtint(@$_REQUEST["revpcct"]));
+    else if ($atype === "revadd")
+        $autoassigner->run_more_reviews($reviewtype, @$_REQUEST["rev_roundtag"],
+                                        cvtint(@$_REQUEST["revaddct"]));
+    else if ($atype === "rev")
+        $autoassigner->run_ensure_reviews($reviewtype, @$_REQUEST["rev_roundtag"],
+                                          cvtint(@$_REQUEST["revct"]));
+    $assignments = $autoassigner->assignments();
+    if (!$assignments)
         $Conf->warnMsg("Nothing to assign.");
-        $assignments = null;
-    }
 }
 
 if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])

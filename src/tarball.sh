@@ -105,6 +105,7 @@ lib/login.php
 lib/mailer.php
 lib/message.php
 lib/mimetype.php
+lib/mincostmaxflow.php
 lib/navigation.php
 lib/qobject.php
 lib/redirect.php
@@ -123,6 +124,7 @@ pages/home.php
 
 src/.htaccess
 src/assigners.php
+src/autoassigner.php
 src/banal
 src/baselist.php
 src/capability.php

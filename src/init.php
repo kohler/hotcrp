@@ -124,6 +124,7 @@ function __autoload($class_name) {
     global $ConfSitePATH, $ConfAutoloads;
     if (!@$ConfAutoloads)
         $ConfAutoloads = array("AssignmentSet" => "src/assigners.php",
+                               "Autoassigner" => "src/autoassigner.php",
                                "CapabilityManager" => "src/capability.php",
                                "CheckFormat" => "src/checkformat.php",
                                "CleanHTML" => "lib/cleanhtml.php",
