@@ -317,11 +317,12 @@ class Autoassigner {
         $m = new MinCostMaxFlow;
         // paper nodes
         $nass = 0;
-        foreach ($papers as $pid => $count) {
-            $m->add_node("p$pid", "p");
-            $m->add_edge("p$pid", ".sink", $count, 0);
-            $nass += $count;
-        }
+        foreach ($papers as $pid => $count)
+            if ($count > 0) {
+                $m->add_node("p$pid", "p");
+                $m->add_edge("p$pid", ".sink", $count, 0);
+                $nass += $count;
+            }
         // user nodes
         $assperpc = ceil($nass / count($this->pcm));
         $minload = $this->load ? min($this->load) : 0;
