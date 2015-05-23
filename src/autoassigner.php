@@ -315,14 +315,14 @@ class Autoassigner {
     private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
         global $Conf, $badpairs;
         $m = new MinCostMaxFlow;
+        $papers = array_filter($papers, function ($ct) { return $ct > 0; });
         // paper nodes
         $nass = 0;
-        foreach ($papers as $pid => $count)
-            if ($count > 0) {
-                $m->add_node("p$pid", "p");
-                $m->add_edge("p$pid", ".sink", $count, 0);
-                $nass += $count;
-            }
+        foreach ($papers as $pid => $ct) {
+            $m->add_node("p$pid", "p");
+            $m->add_edge("p$pid", ".sink", $ct, 0);
+            $nass += $ct;
+        }
         // user nodes
         $assperpc = ceil($nass / count($this->pcm));
         $minload = $this->load ? min($this->load) : 0;
@@ -359,7 +359,7 @@ class Autoassigner {
             }
         }
         // paper <-> contact map
-        foreach ($papers as $pid => $x)
+        foreach ($papers as $pid => $ct)
             foreach ($this->pcm as $cid => $p) {
                 if ((int) @$this->prefs[$cid][$pid] < self::PMIN)
                     continue;
