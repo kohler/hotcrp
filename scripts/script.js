@@ -1050,7 +1050,7 @@ function crpfocus(id, subfocus, seltype) {
     if ((selt || felt) && window.event)
         window.event.returnValue = false;
     if (seltype && seltype >= 1)
-        window.scrollTo(0, 0);
+        window.scroll(0, 0);
     return !(selt || felt);
 }
 
@@ -2867,7 +2867,7 @@ function tag_scroll() {
     if (delta) {
         scrolldelta += delta;
         if ((delta = Math.round(scrolldelta))) {
-            window.scrollTo(geometry.left, geometry.top + delta);
+            window.scroll(geometry.left, geometry.top + delta);
             scrolldelta -= delta;
         }
     }
