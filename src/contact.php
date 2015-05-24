@@ -926,7 +926,7 @@ class Contact {
     }
 
     private function check_hashed_password($password) {
-        if ($this->password[1] === "$") {
+        if ($this->password[1] === '$') {
             if (function_exists("password_verify"))
                 return password_verify($password, substr($this->password, 2));
         } else {
@@ -998,7 +998,7 @@ class Contact {
         if ($this->password_type != 1)
             return true;
         if (is_int($method))
-            return $this->password[1] !== "$"
+            return $this->password[1] !== '$'
                 || password_needs_rehash(substr($this->password, 2), $method);
         else {
             $expected_prefix = " $method " . $this->preferred_password_keyid() . " ";

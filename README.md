@@ -77,8 +77,7 @@ world-unreadable. You must ensure that your web server can read this
 file, for instance by changing its group.
 
 2. Edit `conf/options.php`, which is annotated to guide you.
-(`lib/createdb.sh` creates this file based on
-`src/distoptions.php`.)
+(`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
 
 3. Configure your web server to access HotCRP. The right way to do this
 depends on which server you’re running.
@@ -112,7 +111,7 @@ The `AllowOverride all` directive is required. If you get an Error
 
     Everything under HotCRP’s URL path (here, `/testconf`) should be
 served by HotCRP. This normally happens automatically. However, if
-HOTCRPROOT is `/`, you may need to turn off your server’s default
+the URL path is `/`, you may need to turn off your server’s default
 handlers for subdirectories such as `/doc`.
 
     **Nginx**: Configure Nginx to access `php-fpm` for anything under
@@ -192,8 +191,8 @@ Database access
 
 Run `lib/backupdb.sh` at the shell prompt to back up the database.
 This will write the database’s current structure and comments to the
-standard output. HotCRP stores all paper submissions in the database,
-so the backup file may be quite large.
+standard output. As typically configured, HotCRP stores all paper
+submissions in the database, so the backup file may be quite large.
 
 Run `lib/restoredb.sh BACKUPFILE` at the shell prompt to restore the
 database from a backup stored in `BACKUPFILE`.
