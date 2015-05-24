@@ -19,7 +19,7 @@ Prerequisites
 HotCRP runs on Unix, including Mac OS X. It requires the following
 software:
 
-* Apache, http://apache.org/
+* Apache, http://apache.org/ or Nginx, http://nginx.org/
   (You may be able to use another web server that works with PHP.)
 * PHP version 5.4 or higher, http://php.net/
   - Including MySQL and GD support
@@ -28,8 +28,8 @@ software:
 * pdftohtml, http://poppler.freedesktop.org/ (Only required for format
   checking.)
 
-Apache is preloaded on most Linux distributions.  You may need to install
-additional packages for PHP, MySQL, and GD, such as:
+Apache is preloaded on most Linux distributions. You may need to install
+additional packages for PHP and MySQL, such as:
 
 * Fedora Linux: php-mysql, php-gd, zip, (poppler-utils)
 * Debian Linux: php5-common, php5-gd, php5-mysql,
@@ -38,10 +38,11 @@ additional packages for PHP, MySQL, and GD, such as:
 * Ubuntu Linux: php5-common, php5-gd, php5-mysql,
   libapache2-mod-php5 (or libapache-mod-php5 for Apache 1.x),
   zip, (poppler-utils), and a package for SMTP support, such
-  as sendmail
+  as sendmail or postfix
 
 You may need to restart the Apache web server after installing these
-packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`).
+packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`). If
+using nginx, you will need the php-fpm package.
 
 **pdftohtml notes**: HotCRP and the banal script use pdftohtml for
 paper format checking. As of 2013, many current Unix distributions
@@ -79,14 +80,16 @@ file, for instance by changing its group.
 (`lib/createdb.sh` creates this file based on
 `src/distoptions.php`.)
 
-3. Redirect Apache so your server URL will point at the HotCRP
-directory. (If you get an Error 500, see "Configuration notes".) This
-will generally require adding a `<Directory>` for the HotCRP
-directory, and an Alias redirecting a particular URL to that
-directory. This section of httpd.conf makes "/testconf" point at a
-HotCRP installation in /home/kohler/hotcrp; it works in Apache 2.2 or
-earlier.
+3. Configure your web server to access HotCRP. The right way to do this
+depends on which server you’re running.
 
+    **Apache**: Generally you must add a `<Directory>` to `httpd.conf`
+(or one of its inclusions) for the HotCRP directory, and an `Alias`
+redirecting your preferred URL path to that directory. This example
+makes `/testconf` point at a HotCRP installation in
+/home/kohler/hotcrp:
+
+        # Apache 2.2 and earlier:
         <Directory "/home/kohler/hotcrp">
             Options Indexes Includes FollowSymLinks
             AllowOverride all
@@ -94,9 +97,8 @@ earlier.
             Allow from all
         </Directory>
         Alias /testconf /home/kohler/hotcrp
-
-    Apache 2.4 or later requires this instead.
-
+        
+        # Apache 2.4 and later:
         <Directory "/home/kohler/hotcrp">
             Options Indexes Includes FollowSymLinks
             AllowOverride all
@@ -104,13 +106,31 @@ earlier.
         </Directory>
         Alias /testconf /home/kohler/hotcrp
 
-    Note that the first argument to Alias should NOT end in a slash. The
-"AllowOverride all" directive is required.
+    Note that the first argument to Alias should NOT end in a slash.
+The `AllowOverride all` directive is required. If you get an Error
+500, see “Configuration notes”.
 
-    All files under HOTCRPROOT (here, "/testconf") should be served by
-HotCRP. This normally happens automatically. However, if HOTCRPROOT is
-`/`, you may need to turn off your server’s default handlers for
-subdirectories such as `/doc`.
+    Everything under HotCRP’s URL path (here, `/testconf`) should be
+served by HotCRP. This normally happens automatically. However, if
+HOTCRPROOT is `/`, you may need to turn off your server’s default
+handlers for subdirectories such as `/doc`.
+
+    **Nginx**: Configure Nginx to access `php-fpm` for anything under
+the HotCRP URL path. All accesses should be redirected to `index.php`.
+This example, which would go in a `server` block, makes `/testconf`
+point at a HotCRP installation in /home/kohler/hotcrp (assuming that
+the running `php-fpm` is listening on port 9000):
+
+        location /testconf/ {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_split_path_info ^(/testconf)(/.*)$;
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+            fastcgi_param SCRIPT_FILENAME /home/kohler/hotcrp/index.php;
+            include fastcgi_params;
+        }
+
+    You may also set up separate `location` blocks so that Nginx
+serves files under `images/`, `scripts/`, and `stylesheets/` directly.
 
 4. Update the systemwide setting for PHP’s `session.gc_maxlifetime`
 configuration variable. This provides an upper bound on HotCRP session
