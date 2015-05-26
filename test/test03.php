@@ -45,8 +45,10 @@ foreach (range(100, 921384, 1247) as $seed) {
     assert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
 }
 
+fwrite(STDERR, "- Phase 1 complete.\n");
 
-// (2) no preferences =>  all possible results
+
+// (2) no preferences => all possible results
 
 $m = new MinCostMaxFlow;
 foreach (array("u0", "u1", "u2") as $x) {
@@ -59,7 +61,7 @@ foreach (array("p0", "p1", "p2") as $x) {
 }
 foreach (array("u0", "u1", "u2") as $x)
     foreach (array("p0", "p1", "p2") as $y)
-        $m->add_edge($x, $y, 1, 0);
+        $m->add_edge($x, $y, 1, 1);
 $assignments = array();
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
@@ -77,6 +79,7 @@ assert_eqq($assignments[3], "u0 p1\nu1 p2\nu2 p0\n");
 assert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
 assert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 
+fwrite(STDERR, "- Phase 2 complete.\n");
 
 // (3) several possible results
 
@@ -108,6 +111,42 @@ sort($assignments);
 assert_eqq(count($assignments), 2);
 assert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
 assert_eqq($assignments[1], "u0 p1\nu1 p0\nu2 p2\n");
+
+fwrite(STDERR, "- Phase 3 complete.\n");
+
+
+// (4) all zero preferences => all possible results; this uses push-relabel
+
+$m = new MinCostMaxFlow;
+foreach (array("u0", "u1", "u2") as $x) {
+    $m->add_node($x, "user");
+    $m->add_edge(".source", $x, 1);
+}
+foreach (array("p0", "p1", "p2") as $x) {
+    $m->add_node($x, "paper");
+    $m->add_edge($x, ".sink", 1);
+}
+foreach (array("u0", "u1", "u2") as $x)
+    foreach (array("p0", "p1", "p2") as $y)
+        $m->add_edge($x, $y, 1);
+$assignments = array();
+foreach (range(100, 921384, 1247) as $seed) {
+    $m->reset();
+    srand($seed); // the shuffle() uses this seed
+    $m->run();
+    $assignments[mcmf_assignment_text($m)] = true;
+}
+$assignments = array_keys($assignments);
+sort($assignments);
+assert_eqq(count($assignments), 6);
+assert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
+assert_eqq($assignments[1], "u0 p0\nu1 p2\nu2 p1\n");
+assert_eqq($assignments[2], "u0 p1\nu1 p0\nu2 p2\n");
+assert_eqq($assignments[3], "u0 p1\nu1 p2\nu2 p0\n");
+assert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
+assert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
+
+fwrite(STDERR, "- Phase 4 complete.\n");
 
 
 xassert_exit();
