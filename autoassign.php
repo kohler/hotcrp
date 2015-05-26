@@ -98,10 +98,7 @@ if (isset($_REQUEST["badpairs"]))
         if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")) {
             if (!isset($badpairs[$_REQUEST["bpa$i"]]))
                 $badpairs[$_REQUEST["bpa$i"]] = array();
-            if (!isset($badpairs[$_REQUEST["bpb$i"]]))
-                $badpairs[$_REQUEST["bpb$i"]] = array();
             $badpairs[$_REQUEST["bpa$i"]][$_REQUEST["bpb$i"]] = 1;
-            $badpairs[$_REQUEST["bpb$i"]][$_REQUEST["bpa$i"]] = 1;
         }
 
 // score selector
@@ -188,7 +185,7 @@ function doAssign() {
         return false;
 
     $assignprefs = array();
-    $autoassigner = new Autoassigner;
+    $autoassigner = new Autoassigner($papersel);
     if ($_REQUEST["pctyp"] === "sel") {
         $n = $autoassigner->select_pc(array_keys($pcsel));
         if ($n == 0) {
@@ -196,12 +193,18 @@ function doAssign() {
             return null;
         }
     }
+    if (@$_REQUEST["balance"] === "all")
+        $autoassigner->set_balance(Autoassigner::BALANCE_ALL);
+    foreach ($badpairs as $cid1 => $bp) {
+        foreach ($bp as $cid2 => $x)
+            $autoassigner->avoid_pair_assignment($cid1, $cid2);
+    }
     if ($atype === "prefconflict")
         $autoassigner->run_prefconflict(@$_REQUEST["t"]);
     else if ($atype === "clear")
         $autoassigner->run_clear($reviewtype);
     else if ($atype === "lead" || $atype === "shepherd")
-        $autoassigner->run_paperpc($atype);
+        $autoassigner->run_paperpc($atype, @$_REQUEST["{$atype}score"]);
     else if ($atype === "revpc")
         $autoassigner->run_reviews_per_pc($reviewtype, @$_REQUEST["rev_roundtag"],
                                           cvtint(@$_REQUEST["revpcct"]));

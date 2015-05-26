@@ -4,12 +4,18 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Autoassigner {
+    const BALANCE_NEW = 0;
+    const BALANCE_ALL = 1;
+
     private $pcm;
+    private $badpairs = array();
+    private $papersel;
     private $assignments;
     private $load = array();
     private $prefs;
     private $pref_groups;
     private $use_mcmf = false;
+    private $balance = self::BALANCE_NEW;
 
     const PMIN = -1000000;
     const PNOASSIGN = -1000001;
@@ -17,8 +23,9 @@ class Autoassigner {
 
     const COSTPERPAPER = 100;
 
-    public function __construct() {
+    public function __construct($papersel) {
         $this->pcm = pcMembers();
+        $this->papersel = $papersel;
         $this->ass = array("paper,action,email,round");
     }
 
@@ -31,14 +38,31 @@ class Autoassigner {
         return count($this->pcm);
     }
 
+    public function avoid_pair_assignment($pc1, $pc2) {
+        if (!is_numeric($pc1)) {
+            $pc1 = pcByEmail($pc1);
+            $pc1 = $pc1 ? $pc1->contactId : null;
+        }
+        if (!is_numeric($pc2)) {
+            $pc2 = pcByEmail($pc2);
+            $pc2 = $pc2 ? $pc2->contactId : null;
+        }
+        if ($pc1 && $pc2)
+            $this->badpairs[$pc1][$pc2] = $this->badpairs[$pc2][$pc1] = true;
+    }
+
+    public function set_balance($balance) {
+        $this->balance = $balance;
+    }
+
     public function set_mcmf($use_mcmf) {
         $this->use_mcmf = $use_mcmf;
     }
 
     private function run_prefconflict($papertype) {
-        global $Conf, $papersel, $assignprefs;
-        $papers = array_fill_keys($papersel, 1);
-        $result = $Conf->qe($Conf->preferenceConflictQuery($papertype, ""));
+        global $Conf, $assignprefs;
+        $papers = array_fill_keys($this->papersel, 1);
+        $result = Dbl::qe_raw($Conf->preferenceConflictQuery($papertype, ""));
         while (($row = edb_row($result))) {
             if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
                 continue;
@@ -49,8 +73,8 @@ class Autoassigner {
     }
 
     private function run_clear($reviewtype) {
-        global $Conf, $papersel, $assignprefs;
-        $papers = array_fill_keys($papersel, 1);
+        global $assignprefs;
+        $papers = array_fill_keys($this->papersel, 1);
         if ($reviewtype == REVIEW_PRIMARY
             || $reviewtype == REVIEW_SECONDARY
             || $reviewtype == REVIEW_PC) {
@@ -64,7 +88,7 @@ class Autoassigner {
             $action = "no" . $reviewtype;
         } else
             return false;
-        $result = $Conf->qe($q);
+        $result = Dbl::qe_raw($q);
         while (($row = edb_row($result))) {
             if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
                 continue;
@@ -85,16 +109,15 @@ class Autoassigner {
     }
 
     public function balance_paperpc($action) {
-        global $papersel;
         $q = "select {$action}ContactId, count(paperId) from Paper where paperId ?A group by {$action}ContactId";
-        $result = Dbl::qe($q, $papersel);
+        $result = Dbl::qe($q, $this->papersel);
         while (($row = edb_row($result)))
             $this->load[$row[0]] = (int) $row[1];
         Dbl::free($result);
     }
 
     public function preferences_review() {
-        global $Conf, $assignprefs, $papersel, $badpairs;
+        global $Conf, $assignprefs;
         $this->prefs = array();
         foreach ($this->pcm as $cid => $p)
             $this->prefs[$cid] = array();
@@ -123,7 +146,8 @@ class Autoassigner {
         group by Paper.paperId";
 
         foreach ($this->pcm as $cid => $p) {
-            $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $papersel, $cid, $papersel);
+            $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid,
+                              $this->papersel, $cid, $this->papersel);
 
             while (($row = PaperInfo::fetch($result, true))) {
                 $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
@@ -143,17 +167,17 @@ class Autoassigner {
         $this->make_pref_groups();
 
         // need to populate review assignments for badpairs not in `pcm`
-        foreach ($badpairs as $cid => $x)
+        foreach ($this->badpairs as $cid => $x)
             if (!isset($this->pcm[$cid])) {
-                $result = Dbl::qe("select paperId from PaperReview where contactId=? and paperId ?a", $cid, $papersel);
+                $result = Dbl::qe("select paperId from PaperReview where contactId=? and paperId ?a", $cid, $this->papersel);
                 while (($row = edb_row($result)))
                     $this->prefs[$cid][$row[0]] = self::PASSIGNED;
                 Dbl::free($result);
             }
 
         // mark badpairs as noassign
-        foreach ($badpairs as $cid => $bp)
-            foreach ($papersel as $pid) {
+        foreach ($this->badpairs as $cid => $bp)
+            foreach ($this->papersel as $pid) {
                 if ($this->prefs[$cid][$pid] < self::PMIN)
                     continue;
                 foreach ($bp as $cid2 => $x)
@@ -163,7 +187,7 @@ class Autoassigner {
     }
 
     public function preferences_paperpc($scoreinfo) {
-        global $Conf, $assignprefs, $papersel, $badpairs;
+        global $Conf, $assignprefs;
         $this->prefs = array();
         foreach ($this->pcm as $pcid => $p)
             $this->prefs[$pcid] = array();
@@ -194,7 +218,7 @@ class Autoassigner {
         group by Paper.paperId";
 
         foreach ($this->pcm as $cid => $p) {
-            $result = Dbl::qe($query, $cid, $cid, $cid, $papersel);
+            $result = Dbl::qe($query, $cid, $cid, $cid, $this->papersel);
 
             // First, collect score extremes
             $scoreextreme = array();
@@ -220,8 +244,6 @@ class Autoassigner {
                 if ($scoredifference >= -1)
                     $this->prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), self::PMIN);
             }
-            $badpairs = array(); // bad pairs only relevant for reviews,
-                                 // not discussion leads or shepherds
             unset($rows);        // don't need the memory any more
 
             Dbl::free($result);
@@ -247,15 +269,18 @@ class Autoassigner {
     }
 
     private function make_assignment($action, $round, $cid, $pid, &$papers) {
-        global $badpairs;
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
         $this->prefs[$cid][$pid] = self::PASSIGNED;
         $papers[$pid]--;
         $this->load[$cid]++;
-        if (isset($badpairs[$cid]))
-            foreach ($badpairs[$cid] as $cid2 => $x)
+        if (isset($this->badpairs[$cid]))
+            foreach ($this->badpairs[$cid] as $cid2 => $x)
                 if ($this->prefs[$cid2][$pid] >= self::PMIN)
                     $this->prefs[$cid2][$pid] = self::PNOASSIGN;
+    }
+
+    private function action_takes_badpairs($action) {
+        return $action !== "lead" && $action !== "shepherd";
     }
 
     private function assign_randomly(&$papers, $action, $round, $nperpc) {
@@ -313,7 +338,7 @@ class Autoassigner {
     }
 
     private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
-        global $Conf, $badpairs;
+        global $Conf;
         $m = new MinCostMaxFlow;
         $papers = array_filter($papers, function ($ct) { return $ct > 0; });
         // paper nodes
@@ -345,17 +370,19 @@ class Autoassigner {
         }
         // figure out badpairs class for each user
         $bpclass = array();
-        foreach ($badpairs as $cid => $bp)
-            $bpclass[$cid] = $cid;
-        $done = false;
-        while (!$done) {
-            $done = true;
-            foreach ($badpairs as $ocid => $bp) {
-                foreach ($bp as $cid => $x)
-                    if ($bpclass[$ocid] > $bpclass[$cid]) {
-                        $bpclass[$ocid] = $bpclass[$cid];
-                        $done = false;
-                    }
+        if ($this->action_takes_badpairs($action)) {
+            foreach ($this->badpairs as $cid => $bp)
+                $bpclass[$cid] = $cid;
+            $done = false;
+            while (!$done) {
+                $done = true;
+                foreach ($this->badpairs as $ocid => $bp) {
+                    foreach ($bp as $cid => $x)
+                        if ($bpclass[$ocid] > $bpclass[$cid]) {
+                            $bpclass[$ocid] = $bpclass[$cid];
+                            $done = false;
+                        }
+                }
             }
         }
         // paper <-> contact map
@@ -434,13 +461,13 @@ class Autoassigner {
         $Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
 
-    public function run_paperpc($action) {
-        global $Conf, $papersel, $assignprefs;
-        if (@$_REQUEST["balance"] && $_REQUEST["balance"] !== "new")
+    public function run_paperpc($action, $preference) {
+        global $Conf, $assignprefs;
+        if ($this->balance !== self::BALANCE_NEW)
             $this->balance_paperpc($action);
-        $this->preferences_paperpc(@$_REQUEST["{$action}score"]);
-        $papers = array_fill_keys($papersel, 0);
-        $result = $Conf->qe("select paperId from Paper where {$action}ContactId=0");
+        $this->preferences_paperpc($preference);
+        $papers = array_fill_keys($this->papersel, 0);
+        $result = Dbl::qe("select paperId from Paper where {$action}ContactId=0");
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))
                 $papers[$row[0]] = 1;
@@ -460,30 +487,28 @@ class Autoassigner {
     }
 
     public function run_reviews_per_pc($reviewtype, $nass) {
-        global $Conf, $papersel;
         $this->preferences_review();
-        $papers = array_fill_keys($papersel, ceil((count($this->pcm) * ($nass + 2)) / count($papersel)));
+        $papers = array_fill_keys($this->papersel, ceil((count($this->pcm) * ($nass + 2)) / count($this->papersel)));
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
         $this->assign_method($papers, $action, $round, $nass);
     }
 
     public function run_more_reviews($reviewtype, $round, $nass) {
-        global $Conf, $papersel;
-        if (@$_REQUEST["balance"] && $_REQUEST["balance"] !== "new")
+        if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
         $this->preferences_review();
-        $papers = array_fill_keys($papersel, $nass);
+        $papers = array_fill_keys($this->papersel, $nass);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
         $this->assign_method($papers, $action, $round, null);
         $this->check_missing_assignments($papers, "revadd");
     }
 
     public function run_ensure_reviews($reviewtype, $round, $nass) {
-        global $Conf, $papersel, $assignprefs;
-        if (@$_REQUEST["balance"] && $_REQUEST["balance"] !== "new")
+        global $Conf, $assignprefs;
+        if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
         $this->preferences_review();
-        $papers = array_fill_keys($papersel, $nass);
+        $papers = array_fill_keys($this->papersel, $nass);
         $result = Dbl::qe("select paperId, count(reviewId) from PaperReview where reviewType={$reviewtype} group by paperId");
         while (($row = edb_row($result)))
             if (isset($papers[$row[0]]))
