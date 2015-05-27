@@ -77,8 +77,14 @@ class MinCostMaxFlow {
     private $maxcap = 0;
     private $mincost = 0;
     private $maxcost = 0;
+    private $progressf = array();
     private $hasrun = false;
-    // cspushrelabel state
+    // times
+    public $maxflow_start_at = null;
+    public $maxflow_end_at = null;
+    public $mincost_start_at = null;
+    public $mincost_end_at = null;
+    // pushrelabel/cspushrelabel state
     private $epsilon;
     private $ltail;
 
@@ -109,6 +115,13 @@ class MinCostMaxFlow {
         $this->maxcost = max($this->maxcost, $cost);
     }
 
+    public function add_progressf($progressf) {
+        $this->progressf[] = $progressf;
+    }
+
+
+    // extract information
+
     public function nodes($klass) {
         $a = array();
         foreach ($this->v as $v)
@@ -116,6 +129,39 @@ class MinCostMaxFlow {
                 $a[] = $v;
         return $a;
     }
+
+    public function current_flow() {
+        return min(-$this->source->excess, -$this->sink->excess);
+    }
+
+    public function current_cost() {
+        $cost = 0;
+        foreach ($this->e as $e)
+            if ($e->flow)
+                $cost += $e->flow * $e->cost;
+        return $cost;
+    }
+
+    private function add_reachable($v, $klass, &$a) {
+        if ($v->klass === $klass)
+            $a[] = $v;
+        else if ($v !== $this->sink) {
+            foreach ($v->eout as $e)
+                if ($e->flow > 0)
+                    $this->add_reachable($e->dst, $klass, $a);
+        }
+    }
+
+    public function reachable($v, $klass) {
+        if (is_string($v))
+            $v = $this->vmap[$v];
+        $a = array();
+        $this->add_reachable($v, $klass, $a);
+        return $a;
+    }
+
+
+    // internals
 
     private function shuffle() {
         // shuffle vertices and edges because edge order affects which
@@ -129,7 +175,7 @@ class MinCostMaxFlow {
     }
 
 
-    // Cycle canceling via Bellman-Ford
+    // Cycle canceling via Bellman-Ford (very slow)
 
     private function bf_walk($v) {
         $e = $v->link;
@@ -287,6 +333,8 @@ class MinCostMaxFlow {
     }
 
     private function pushrelabel_run() {
+        $this->maxflow_start_at = microtime(true);
+
         // initialize preflow
         $this->pushrelabel_make_distance();
         foreach ($this->source->eout as $e) {
@@ -308,11 +356,19 @@ class MinCostMaxFlow {
 
         // relabel-to-front
         set_time_limit(120);
+        $n = 0;
         $l = $lhead;
         $lprev = null;
         $max_height = 2 * count($this->v) - 1;
         $nrelabels = 0;
         while ($l) {
+            // check progress
+            ++$n;
+            if ($n % 1048576 == 0)
+                foreach ($this->progressf as $progressf)
+                    call_user_func($progressf, $this);
+
+            // discharge current vertex
             if ($this->pushrelabel_discharge($l)) {
                 ++$nrelabels;
                 // global relabeling heuristic is quite useful
@@ -328,8 +384,8 @@ class MinCostMaxFlow {
             $lprev = $l;
             $l = $l->link;
 
-            // thanks to distance metric, may still have active nodes;
-            // go one more time through
+            // thanks to global relabeling heuristic, may still have active
+            // nodes; go one more time through
             if (!$l) {
                 $lprev = null;
                 for ($l = $lhead; $l && $l->excess == 0; ) {
@@ -342,6 +398,7 @@ class MinCostMaxFlow {
         $this->source->entryflow = -$this->source->excess;
         $this->sink->entryflow = -$this->sink->excess;
         $this->source->excess = $this->sink->excess = 0;
+        $this->maxflow_end_at = microtime(true);
     }
 
 
@@ -427,7 +484,15 @@ class MinCostMaxFlow {
         }
 
         // relabel-to-front
+        $n = 0;
         while ($lhead) {
+            // check progress
+            ++$n;
+            if ($n % 1048576 == 0)
+                foreach ($this->progressf as $progressf)
+                    call_user_func($progressf, $this);
+
+            // discharge current vertex
             $this->cspushrelabel_discharge($lhead);
             $l = $lhead->link;
             $lhead->link = false;
@@ -436,15 +501,16 @@ class MinCostMaxFlow {
     }
 
     private function cspushrelabel_run() {
-        // get a maximum flow, then adjust the excess
+        // get a maximum flow
         $this->pushrelabel_run();
-        //fwrite(STDERR, "-\n" . $this->debug_info(true) . "\n");
 
         // refine the maximum flow to achieve min cost
+        $this->mincost_start_at = microtime(true);
         $this->epsilon = $this->maxcost;
         set_time_limit(180);
         while ($this->epsilon >= 1 / count($this->v))
             $this->cspushrelabel_refine();
+        $this->mincost_end_at = microtime(true);
     }
 
 
@@ -459,24 +525,6 @@ class MinCostMaxFlow {
     }
 
 
-    private function add_reachable($v, $klass, &$a) {
-        if ($v->klass === $klass)
-            $a[] = $v;
-        else if ($v !== $this->sink) {
-            foreach ($v->eout as $e)
-                if ($e->flow > 0)
-                    $this->add_reachable($e->dst, $klass, $a);
-        }
-    }
-
-    public function reachable($v, $klass) {
-        if (is_string($v))
-            $v = $this->vmap[$v];
-        $a = array();
-        $this->add_reachable($v, $klass, $a);
-        return $a;
-    }
-
     public function reset() {
         if ($this->hasrun) {
             foreach ($this->v as $v) {
@@ -487,6 +535,8 @@ class MinCostMaxFlow {
             $this->source->entryflow = $this->sink->entryflow = true;
             foreach ($this->e as $e)
                 $e->flow = 0;
+            $this->maxflow_start_at = $this->maxflow_end_at = null;
+            $this->mincost_start_at = $this->mincost_end_at = null;
             $this->hasrun = false;
         }
     }
