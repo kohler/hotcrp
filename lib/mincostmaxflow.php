@@ -14,6 +14,7 @@ class MinCostMaxFlow_Node {
     public $height = 0;
     public $excess = 0;
     public $price = 0;
+    public $entryflow = 0;
     public $ein = array();
     public $eout = array();
     public function __construct($name, $klass) {
@@ -21,7 +22,7 @@ class MinCostMaxFlow_Node {
         $this->klass = $klass;
     }
     public function check_excess() {
-        $x = 0;
+        $x = $this->entryflow;
         foreach ($this->ein as $e)
             $x += $e->flow;
         foreach ($this->eout as $e)
@@ -65,7 +66,6 @@ class MinCostMaxFlow {
     private $mincost = 0;
     private $maxcost = 0;
     private $hasrun = false;
-    private $hascirculation = false;
     // cspushrelabel state
     private $epsilon;
     private $ltail;
@@ -73,6 +73,7 @@ class MinCostMaxFlow {
     public function __construct() {
         $this->source = $this->add_node(".source", ".internal");
         $this->sink = $this->add_node(".sink", ".internal");
+        $this->source->entryflow = $this->sink->entryflow = true;
     }
 
     public function add_node($name, $klass) {
@@ -194,11 +195,11 @@ class MinCostMaxFlow {
     private function cyclecancel_run() {
         // make it a circulation
         $this->add_edge($this->sink, $this->source, count($this->e) * $this->maxcap, -count($this->v) * ($this->maxcost + 1));
-        $this->hascirculation = true;
 
         while ($this->cyclecancel_iteration())
             /* nada */;
 
+        array_pop($this->e);
         foreach ($this->e as $i => $e)
             if ($e->flow > 0)
                 $e->src->flow += $e->flow;
@@ -300,7 +301,6 @@ class MinCostMaxFlow {
                 $p = max($p, $e->src->price + $e->cost - $this->epsilon);
             }
         $v->price = $p;
-        fwrite(STDERR, "{$v->name} relabel P{$v->price} e{$v->excess}\n");
     }
 
     private function cspushrelabel_discharge($v) {
@@ -310,13 +310,11 @@ class MinCostMaxFlow {
         while ($v->excess > 0) {
             if ($v->npos == $nout + $nin) {
                 $this->cspushrelabel_relabel($v);
-                $v->check_excess();
                 $v->npos = $notrelabeled = 0;
             } else {
                 $erev = $v->npos >= $nout;
                 $e = $erev ? $v->ein[$v->npos - $nout] : $v->eout[$v->npos];
                 $other = $erev ? $e->src : $e->dst;
-                fwrite(STDERR, " ... {$e->src->name}P{$e->src->price} {$e->dst->name}P{$e->dst->price} {$e->cap} {$e->cost} {$e->flow} / " . $e->residual_cap($erev) . " " . $e->reduced_cost($erev) . "\n");
                 if ($e->residual_cap($erev) > 0
                     && $e->reduced_cost($erev) < 0) {
                     $this->pushrelabel_push($e, $erev);
@@ -340,13 +338,11 @@ class MinCostMaxFlow {
                 $e->flow = $e->cap;
                 $e->dst->excess += $delta;
                 $e->src->excess -= $delta;
-                fwrite(STDERR, "moving $delta {$e->src->name} > {$e->dst->name}\n");
             } else if ($e->reduced_cost(true) < 0 && $e->flow) {
                 $delta = $e->flow;
                 $e->flow = 0;
                 $e->src->excess += $delta;
                 $e->dst->excess -= $delta;
-                fwrite(STDERR, "moving $delta {$e->dst->name}.e{$e->dst->excess} > {$e->src->name}.e{$e->src->excess}\n");
             }
         }
         foreach ($this->v as $v)
@@ -356,9 +352,7 @@ class MinCostMaxFlow {
         $lhead = $this->ltail = null;
         foreach ($this->v as $v) {
             $v->npos = 0;
-            if ($v === $this->source || $v === $this->sink)
-                $v->link = null;
-            else if ($v->excess > 0) {
+            if ($v->excess > 0) {
                 $this->ltail ? ($this->ltail->link = $v) : ($lhead = $v);
                 $v->link = null;
                 $this->ltail = $v;
@@ -368,25 +362,25 @@ class MinCostMaxFlow {
 
         // relabel-to-front
         while ($lhead) {
-            fwrite(STDERR, ".");
             $this->cspushrelabel_discharge($lhead);
             $l = $lhead->link;
             $lhead->link = false;
             $lhead = $l;
         }
 
-        fwrite(STDERR, "!\n" . $this->debug_info() . "\n");
-        foreach ($this->v as $v) {
-            fwrite(STDERR, "{$v->name}.e{$v->excess} ");
-            $v->check_excess();
-        }
-        fwrite(STDERR, "\n");
+        set_time_limit(30);
+        error_log(".\n");
     }
 
     private function cspushrelabel_run() {
-        $this->epsilon = $this->maxcost;
+        // get a maximum flow, then adjust the excess
         $this->pushrelabel_run();
-        fwrite(STDERR, "====\n" . $this->debug_info() . "\n");
+        $this->source->entryflow = -$this->source->excess;
+        $this->sink->entryflow = -$this->sink->excess;
+        $this->source->excess = $this->sink->excess = 0;
+
+        // refine the maximum flow to achieve min cost
+        $this->epsilon = $this->maxcost;
         while ($this->epsilon >= 1 / count($this->v))
             $this->cspushrelabel_refine();
     }
@@ -399,7 +393,7 @@ class MinCostMaxFlow {
         if ($this->mincost == 0 && $this->maxcost == 0)
             return $this->pushrelabel_run();
         else
-            return $this->cyclecancel_run();
+            return $this->cspushrelabel_run();
     }
 
 
@@ -423,16 +417,14 @@ class MinCostMaxFlow {
 
     public function reset() {
         if ($this->hasrun) {
-            if ($this->hascirculation)
-                array_pop($this->e);
             foreach ($this->v as $v) {
-                $v->flow = $v->height = $v->excess = $v->price = 0;
+                $v->height = $v->excess = $v->price = 0;
                 $v->ein = array();
                 $v->eout = array();
             }
             foreach ($this->e as $e)
                 $e->flow = 0;
-            $this->hasrun = $this->hascirculation = false;
+            $this->hasrun = false;
         }
     }
 
@@ -447,13 +439,8 @@ class MinCostMaxFlow {
         }
         sort($ex);
         $x = "";
-        if ($this->hasrun) {
-            if ($this->hascirculation) {
-                $e = $this->e[count($this->e) - 1];
-                $cost -= $e->flow * $e->cost;
-            }
+        if ($this->hasrun)
             $x = "total {$e->flow} $cost\n";
-        }
         return $x . join("", $ex);
     }
 }
