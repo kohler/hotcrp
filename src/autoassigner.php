@@ -272,7 +272,7 @@ class Autoassigner {
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
         $this->prefs[$cid][$pid] = self::PASSIGNED;
         $papers[$pid]--;
-        $this->load[$cid]++;
+        @$this->load[$cid]++;
         if (isset($this->badpairs[$cid]))
             foreach ($this->badpairs[$cid] as $cid2 => $x)
                 if ($this->prefs[$cid2][$pid] >= self::PMIN)
