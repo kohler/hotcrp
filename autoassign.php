@@ -221,9 +221,14 @@ class AutoassignerInterface {
                 $umedian = ($umap[count($umap) / 2 - 1] + $umap[count($umap) / 2]) / 2;
             else
                 $umedian = $umap[(count($umap) - 1) / 2];
-            echo 'min ', $umap[0], ', max ', $umap[count($umap) - 1], ', median ', $umedian,
-                ', mean ', sprintf("%.2f", $usum / count($umap)),
-                ', 90% ', $umap[(int) (count($umap) * 0.9)];
+            echo 'mean ', sprintf("%.2f", $usum / count($umap)),
+                ', min ', $umap[0],
+                ', 10% ', $umap[(int) (count($umap) * 0.1)],
+                ', 25% ', $umap[(int) (count($umap) * 0.25)],
+                ', median ', $umedian,
+                ', 75% ', $umap[(int) (count($umap) * 0.75)],
+                ', 90% ', $umap[(int) (count($umap) * 0.9)],
+                ', max ', $umap[count($umap) - 1];
             echo '</p>';
         }
 
@@ -236,7 +241,7 @@ class AutoassignerInterface {
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Save assignment"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method") as $t)
             if (isset($_REQUEST[$t]))
                 echo Ht::hidden($t, $_REQUEST[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))), "\n";
