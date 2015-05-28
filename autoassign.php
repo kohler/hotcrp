@@ -197,7 +197,7 @@ class AutoassignerInterface {
 
         if (!$assignments) {
             $Conf->warnMsg("Nothing to assign.");
-            return;
+            return ob_get_clean();
         }
 
         echo "<h3>Proposed assignment</h3>";
@@ -298,8 +298,10 @@ class AutoassignerInterface {
             echo $this->result_html(), "</div>\n";
         else
             echo '<script>$$("propass").innerHTML=', json_encode($this->result_html()), ";</script>\n";
-        $Conf->footer();
-        exit;
+        if ($this->autoassigner->assignments()) {
+            $Conf->footer();
+            exit;
+        }
     }
 }
 
