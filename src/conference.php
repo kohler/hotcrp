@@ -1337,17 +1337,11 @@ class Conference {
     }
 
     function query_topic_interest($table = "") {
-        if ($this->sversion >= 73)
-            return $table . "interest";
-        else
-            return "if(" . $table . "interest=2,4,(" . $table . "interest-1)*2)";
+        return $table . "interest";
     }
 
     function query_topic_interest_score() {
-        if ($this->sversion >= 73)
-            return "interest";
-        else
-            return "(if(interest=2,2,interest-1)*2)";
+        return "interest";
     }
 
     function paperQuery($contact, $options = array()) {
