@@ -25,17 +25,10 @@ class PaperActions {
     static function save_review_preferences($prefarray) {
         global $Conf;
         $q = array();
-        if ($Conf->sversion >= 69) {
-            foreach ($prefarray as $p)
-                $q[] = "($p[0],$p[1],$p[2]," . ($p[3] === null ? "NULL" : $p[3]) . ")";
-            if (count($q))
-                return Dbl::qe_raw("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)");
-        } else {
-            foreach ($prefarray as $p)
-                $q[] = "($p[0],$p[1],$p[2])";
-            if (count($q))
-                return Dbl::qe_raw("insert into PaperReviewPreference (paperId,contactId,preference) values " . join(",", $q) . " on duplicate key update preference=values(preference)");
-        }
+        foreach ($prefarray as $p)
+            $q[] = "($p[0],$p[1],$p[2]," . ($p[3] === null ? "NULL" : $p[3]) . ")";
+        if (count($q))
+            return Dbl::qe_raw("insert into PaperReviewPreference (paperId,contactId,preference,expertise) values " . join(",", $q) . " on duplicate key update preference=values(preference), expertise=values(expertise)");
         return true;
     }
 

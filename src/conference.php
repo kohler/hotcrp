@@ -101,7 +101,7 @@ class Conference {
             $OK = $oldOK;
         }
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 56)
+        if ($this->sversion < 73)
             $this->errorMsg("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
         // invalidate caches after loading from backup
@@ -135,8 +135,7 @@ class Conference {
             $Opt["disableCapabilities"] = true;
 
         // GC old capabilities
-        if ($this->sversion >= 58
-            && defval($this->settings, "__capability_gc", 0) < $Now - 86400) {
+        if (defval($this->settings, "__capability_gc", 0) < $Now - 86400) {
             foreach (array($this->dblink, Contact::contactdb()) as $db)
                 if ($db) {
                     Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
@@ -1330,10 +1329,7 @@ class Conference {
     }
 
     function query_all_reviewer_preference() {
-        if ($this->sversion >= 69)
-            return "group_concat(concat(contactId,' ',preference,' ',coalesce(expertise,'.')) separator ',')";
-        else
-            return "group_concat(concat(contactId,' ',preference,' .') separator ',')";
+        return "group_concat(concat(contactId,' ',preference,' ',coalesce(expertise,'.')) separator ',')";
     }
 
     function query_topic_interest($table = "") {
@@ -1555,10 +1551,7 @@ class Conference {
         if (@$options["reviewerPreference"]) {
             $joins[] = "left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewerContactId)";
             $cols[] = "coalesce(PaperReviewPreference.preference, 0) as reviewerPreference";
-            if ($this->sversion >= 69)
-                $cols[] = "PaperReviewPreference.expertise as reviewerExpertise";
-            else
-                $cols[] = "NULL as reviewerExpertise";
+            $cols[] = "PaperReviewPreference.expertise as reviewerExpertise";
         }
 
         if (@$options["allReviewerPreference"] || @$options["desirability"]) {

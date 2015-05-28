@@ -636,15 +636,13 @@ class Contact {
         $qf[] = "contactTags=?";
         $qv[] = $this->contactTags ? : null;
         $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
-        if ($Conf->sversion >= 71) {
-            $qf[] = "data=?";
-            if (!$this->data_ || is_string($this->data_))
-                $qv[] = $this->data_ ? : null;
-            else if (is_object($this->data_))
-                $qv[] = json_encode($this->data_);
-            else
-                $qv[] = null;
-        }
+        $qf[] = "data=?";
+        if (!$this->data_ || is_string($this->data_))
+            $qv[] = $this->data_ ? : null;
+        else if (is_object($this->data_))
+            $qv[] = json_encode($this->data_);
+        else
+            $qv[] = null;
         $q = ($inserting ? "insert into" : "update")
             . " ContactInfo set " . join(", ", $qf);
         if ($inserting) {

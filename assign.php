@@ -486,12 +486,11 @@ if ($t !== "")
 
 // PC assignments
 if ($Me->can_administer($prow)) {
-    $expertise = $Conf->sversion >= 69 ? "expertise" : "NULL";
     $result = Dbl::qe_raw("select ContactInfo.contactId,
         PaperConflict.conflictType,
         PaperReview.reviewType,
         coalesce(preference, 0) as reviewerPreference,
-        $expertise as reviewerExpertise,
+        expertise as reviewerExpertise,
         coalesce(allReviews,'') as allReviews,
         coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore,
         coalesce(PRR.paperId,0) as refused
