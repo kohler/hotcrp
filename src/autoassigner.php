@@ -10,9 +10,10 @@ class Autoassigner {
     private $pcm;
     private $badpairs = array();
     private $papersel;
-    private $assignments;
+    private $ass;
     private $load = array();
     private $prefs;
+    public $prefinfo = array();
     private $pref_groups;
     private $use_mcmf = false;
     private $balance = self::BALANCE_NEW;
@@ -60,20 +61,19 @@ class Autoassigner {
     }
 
     private function run_prefconflict($papertype) {
-        global $Conf, $assignprefs;
+        global $Conf;
         $papers = array_fill_keys($this->papersel, 1);
         $result = Dbl::qe_raw($Conf->preferenceConflictQuery($papertype, ""));
         while (($row = edb_row($result))) {
             if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
                 continue;
             $this->ass[] = "$row[0],conflict," . $this->pcm[$row[1]]->email;
-            $assignprefs["$row[0]:$row[1]"] = $row[2];
+            $this->prefinfo["$row[0] $row[1]"] = $row[2];
         }
         Dbl::free($result);
     }
 
     private function run_clear($reviewtype) {
-        global $assignprefs;
         $papers = array_fill_keys($this->papersel, 1);
         if ($reviewtype == REVIEW_PRIMARY
             || $reviewtype == REVIEW_SECONDARY
@@ -93,7 +93,6 @@ class Autoassigner {
             if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
                 continue;
             $this->ass[] = "$row[0],$action," . $this->pcm[$row[1]]->email;
-            $assignprefs["$row[0]:$row[1]"] = "*";
         }
         Dbl::free($result);
     }
@@ -117,7 +116,7 @@ class Autoassigner {
     }
 
     public function preferences_review() {
-        global $Conf, $assignprefs;
+        global $Conf;
         $this->prefs = array();
         foreach ($this->pcm as $cid => $p)
             $this->prefs[$cid] = array();
@@ -125,6 +124,7 @@ class Autoassigner {
         $query = "select Paper.paperId, ? contactId,
             coalesce(PaperConflict.conflictType, 0) as conflictType,
             coalesce(PaperReviewPreference.preference, 0) as preference,
+            PaperReviewPreference.expertise,
             coalesce(PaperReview.reviewType, 0) as myReviewType,
             coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
             Paper.outcome,
@@ -150,7 +150,7 @@ class Autoassigner {
                               $this->papersel, $cid, $this->papersel);
 
             while (($row = PaperInfo::fetch($result, true))) {
-                $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
+                $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $row->expertise, $row->topicInterestScore);
                 if ($row->myReviewType > 0)
                     $pref = self::PASSIGNED;
                 else if ($row->conflictType > 0 || $row->refused > 0
@@ -187,10 +187,10 @@ class Autoassigner {
     }
 
     public function preferences_paperpc($scoreinfo) {
-        global $Conf, $assignprefs;
+        global $Conf;
         $this->prefs = array();
-        foreach ($this->pcm as $pcid => $p)
-            $this->prefs[$pcid] = array();
+        foreach ($this->pcm as $cid => $p)
+            $this->prefs[$cid] = array();
 
         $all_fields = ReviewForm::all_fields();
         $scoredir = 1;
@@ -224,7 +224,6 @@ class Autoassigner {
             $scoreextreme = array();
             $rows = array();
             while (($row = edb_orow($result))) {
-                $assignprefs["$row->paperId:$row->contactId"] = $row->preference;
                 if ($row->conflictType > 0
                     || $row->myReviewType == 0
                     || $row->myReviewSubmitted == 0
@@ -462,7 +461,7 @@ class Autoassigner {
     }
 
     public function run_paperpc($action, $preference) {
-        global $Conf, $assignprefs;
+        global $Conf;
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_paperpc($action);
         $this->preferences_paperpc($preference);
@@ -504,7 +503,7 @@ class Autoassigner {
     }
 
     public function run_ensure_reviews($reviewtype, $round, $nass) {
-        global $Conf, $assignprefs;
+        global $Conf;
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
         $this->preferences_review();

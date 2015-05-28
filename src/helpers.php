@@ -1211,6 +1211,8 @@ function unparse_preference_span($preference, $always = false) {
         $preference = array(@$preference->reviewerPreference,
                             @$preference->reviewerExpertise,
                             @$preference->topicInterestScore);
+    else if (!is_array($preference))
+        $preference = array($preference, null, null);
     $type = 1;
     if ($preference[0] < 0 || (!$preference[0] && @($preference[2] < 0)))
         $type = -1;
@@ -1220,7 +1222,7 @@ function unparse_preference_span($preference, $always = false) {
     if (@$preference[2])
         $t .= ($t ? " " : "") . "T" . decorateNumber($preference[2]);
     if ($t !== "")
-        $t = " <span class='asspref$type'>$t</span>";
+        $t = " <span class=\"asspref$type\">$t</span>";
     return $t;
 }
 

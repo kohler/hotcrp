@@ -178,13 +178,12 @@ function checkRequest(&$atype, &$reviewtype, $save) {
 }
 
 function doAssign() {
-    global $Conf, $papersel, $pcsel, $assignments, $assignprefs, $badpairs, $scoreselector;
+    global $Conf, $papersel, $pcsel, $assignments, $badpairs, $scoreselector;
 
     // check request
     if (!checkRequest($atype, $reviewtype, false))
         return false;
 
-    $assignprefs = array();
     $autoassigner = new Autoassigner($papersel);
     if ($_REQUEST["pctyp"] === "sel") {
         $n = $autoassigner->select_pc(array_keys($pcsel));
@@ -215,6 +214,7 @@ function doAssign() {
         $autoassigner->run_ensure_reviews($reviewtype, @$_REQUEST["rev_roundtag"],
                                           cvtint(@$_REQUEST["revct"]));
     $assignments = $autoassigner->assignments();
+    ReviewAssigner::$prefinfo = $autoassigner->prefinfo;
     if (!$assignments)
         $Conf->warnMsg("Nothing to assign.");
 }

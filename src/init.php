@@ -162,6 +162,7 @@ function __autoload($class_name) {
                                "PaperStatus" => "src/paperstatus.php",
                                "PaperTable" => "src/papertable.php",
                                "Qobject" => "lib/qobject.php",
+                               "ReviewAssigner" => "src/assigners.php",
                                "ReviewForm" => "src/review.php",
                                "ReviewTimes" => "src/reviewtimes.php",
                                "S3Document" => "lib/s3document.php",

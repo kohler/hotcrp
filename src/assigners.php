@@ -314,6 +314,7 @@ class ReviewAssigner extends Assigner {
     private $round;
     private $oldtype;
     private $notify;
+    static public $prefinfo = null;
     function __construct($pid, $contact, $rtype, $round, $oldtype = 0, $notify = null) {
         global $reviewTypeName;
         parent::__construct($rtype ? strtolower($reviewTypeName[$rtype]) : "noreview", $pid, $contact);
@@ -397,17 +398,15 @@ class ReviewAssigner extends Assigner {
                                   $item->deleted() ? null : $item["_notify"]);
     }
     function unparse_display() {
-        global $assignprefs;
         $t = Text::name_html($this->contact) . ' ';
         if ($this->rtype) {
             $t .= review_type_icon($this->rtype, true);
             if ($this->round)
                 $t .= ' <span class="revround" title="Review round">'
                     . htmlspecialchars($this->round) . '</span>';
-            if (@$assignprefs && ($pref = @$assignprefs["$this->pid:$this->cid"])
-                && $pref !== "*")
-                $t .= ' <span class="asspref' . ($pref > 0 ? 1 : -1)
-                    . '">P' . decorateNumber($pref) . "</span>";
+            if (self::$prefinfo
+                && ($pref = @self::$prefinfo["$this->pid $this->cid"]))
+                $t .= unparse_preference_span($pref);
         } else
             $t = 'clear ' . $t . ' review';
         return $t;
