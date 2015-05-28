@@ -393,7 +393,6 @@ class Autoassigner {
         $m = new MinCostMaxFlow;
         $m->add_progressf(array($this, "mcmf_progress"));
         $papers = array_filter($papers, function ($ct) { return $ct > 0; });
-        $mcmf_round = $this->mcmf_round ? " (round " . ($this->mcmf_round + 1) : "";
         $this->ndesired = $this->assign_desired($papers, $nperpc);
         $this->mcmf_max_cost = null;
         $this->set_progress("Preparing assignment optimizer" . $this->mcmf_round_descriptor);
