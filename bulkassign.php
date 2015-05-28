@@ -49,9 +49,9 @@ function keep_browser_alive($assignset, $lineno, $line) {
             $text .= " processing";
         else
             $text .= " <code>" . htmlspecialchars(join(",", $line)) . "</code>";
-        $Conf->echoScript("\$\$('mailcount').innerHTML=\"$text\";");
+        $Conf->echoScript("\$\$('mailcount').innerHTML=" . json_encode($text) . ";");
         flush();
-        while (@ob_end_flush());
+        while (@ob_end_flush())
             /* skip */;
     }
 }

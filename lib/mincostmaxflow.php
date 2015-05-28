@@ -70,15 +70,15 @@ class MinCostMaxFlow_Edge {
 
 class MinCostMaxFlow {
     private $v = array();
-    private $vmap = array();
+    private $vmap;
     private $source;
     private $sink;
     private $e = array();
-    private $maxcap = 0;
-    private $mincost = 0;
-    private $maxcost = 0;
+    private $maxcap;
+    private $mincost;
+    private $maxcost;
     private $progressf = array();
-    private $hasrun = false;
+    private $hasrun;
     // times
     public $maxflow_start_at = null;
     public $maxflow_end_at = null;
@@ -88,10 +88,14 @@ class MinCostMaxFlow {
     private $epsilon;
     private $ltail;
 
+    const PMAXFLOW = 0;
+    const PMAXFLOW_DONE = 1;
+    const PMINCOST_BEGINROUND = 2;
+    const PMINCOST_INROUND = 3;
+    const PMINCOST_DONE = 4;
+
     public function __construct() {
-        $this->source = $this->add_node(".source", ".internal");
-        $this->sink = $this->add_node(".sink", ".internal");
-        $this->source->entryflow = $this->sink->entryflow = true;
+        $this->clear();
     }
 
     public function add_node($name, $klass) {
@@ -109,7 +113,7 @@ class MinCostMaxFlow {
         assert(($vs instanceof MinCostMaxFlow_Node) && ($vd instanceof MinCostMaxFlow_Node));
         // XXX assert(this edge does not exist)
         $ei = count($this->e);
-        $this->e[] = new MinCostMaxFlow_Edge($vs, $vd, $cap, $cost, 0);
+        $this->e[] = new MinCostMaxFlow_Edge($vs, $vd, $cap, $cost);
         $this->maxcap = max($this->maxcap, $cap);
         $this->mincost = min($this->mincost, $cost);
         $this->maxcost = max($this->maxcost, $cost);
@@ -131,7 +135,25 @@ class MinCostMaxFlow {
     }
 
     public function current_flow() {
-        return min(-$this->source->excess, -$this->sink->excess);
+        if ($this->source->entryflow !== true)
+            return $this->source->entryflow;
+        else
+            return min(-$this->source->excess, $this->sink->excess);
+    }
+
+    public function has_excess() {
+        foreach ($this->v as $v)
+            if ($v->excess)
+                return true;
+        return false;
+    }
+
+    public function current_excess() {
+        $n = 0;
+        foreach ($this->v as $v)
+            if (!$v->entryflow && $v->excess)
+                $n += $v->excess;
+        return $n;
     }
 
     public function current_cost() {
@@ -253,7 +275,6 @@ class MinCostMaxFlow {
         // make it a circulation
         $this->add_edge($this->sink, $this->source, count($this->e) * $this->maxcap, -count($this->v) * ($this->maxcost + 1));
 
-        set_time_limit(60);
         while ($this->cyclecancel_iteration())
             /* nada */;
 
@@ -355,7 +376,6 @@ class MinCostMaxFlow {
         }
 
         // relabel-to-front
-        set_time_limit(120);
         $n = 0;
         $l = $lhead;
         $lprev = null;
@@ -364,9 +384,9 @@ class MinCostMaxFlow {
         while ($l) {
             // check progress
             ++$n;
-            if ($n % 1048576 == 0)
+            if ($n % 32768 == 0)
                 foreach ($this->progressf as $progressf)
-                    call_user_func($progressf, $this);
+                    call_user_func($progressf, $this, self::PMAXFLOW);
 
             // discharge current vertex
             if ($this->pushrelabel_discharge($l)) {
@@ -399,6 +419,8 @@ class MinCostMaxFlow {
         $this->sink->entryflow = -$this->sink->excess;
         $this->source->excess = $this->sink->excess = 0;
         $this->maxflow_end_at = microtime(true);
+        foreach ($this->progressf as $progressf)
+            call_user_func($progressf, $this, self::PMAXFLOW_DONE);
     }
 
 
@@ -453,6 +475,9 @@ class MinCostMaxFlow {
     }
 
     private function cspushrelabel_refine() {
+        foreach ($this->progressf as $progressf)
+            call_user_func($progressf, $this, self::PMINCOST_BEGINROUND);
+
         $this->epsilon = $this->epsilon / 4; /* Goldberg has 12 */
         foreach ($this->e as $e) {
             if ($e->reduced_cost(false) < 0 && $e->flow < $e->cap) {
@@ -488,9 +513,9 @@ class MinCostMaxFlow {
         while ($lhead) {
             // check progress
             ++$n;
-            if ($n % 1048576 == 0)
+            if ($n % 1024 == 0)
                 foreach ($this->progressf as $progressf)
-                    call_user_func($progressf, $this);
+                    call_user_func($progressf, $this, self::PMINCOST_INROUND);
 
             // discharge current vertex
             $this->cspushrelabel_discharge($lhead);
@@ -507,10 +532,11 @@ class MinCostMaxFlow {
         // refine the maximum flow to achieve min cost
         $this->mincost_start_at = microtime(true);
         $this->epsilon = $this->maxcost;
-        set_time_limit(180);
         while ($this->epsilon >= 1 / count($this->v))
             $this->cspushrelabel_refine();
         $this->mincost_end_at = microtime(true);
+        foreach ($this->progressf as $progressf)
+            call_user_func($progressf, $this, self::PMINCOST_DONE);
     }
 
 
@@ -539,6 +565,22 @@ class MinCostMaxFlow {
             $this->mincost_start_at = $this->mincost_end_at = null;
             $this->hasrun = false;
         }
+    }
+
+    public function clear() {
+        // break circular references
+        foreach ($this->v as $v)
+            $v->link = $v->xlink = $v->cycle = $v->ein = $v->eout = null;
+        foreach ($this->e as $e)
+            $e->src = $e->dst = null;
+        $this->v = array();
+        $this->e = array();
+        $this->vmap = array();
+        $this->maxcap = $this->mincost = $this->maxcost = 0;
+        $this->source = $this->add_node(".source", ".internal");
+        $this->sink = $this->add_node(".sink", ".internal");
+        $this->source->entryflow = $this->sink->entryflow = true;
+        $this->hasrun = false;
     }
 
     public function debug_info($only_flow = false) {

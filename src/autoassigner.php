@@ -15,8 +15,12 @@ class Autoassigner {
     private $prefs;
     public $prefinfo = array();
     private $pref_groups;
-    private $use_mcmf = false;
+    private $use_mcmf = true;
     private $balance = self::BALANCE_NEW;
+    private $progressf = array();
+    private $mcmf_round_descriptor; // for use in MCMF progress
+    private $mcmf_max_cost;
+    private $ndesired;
 
     const PMIN = -1000000;
     const PNOASSIGN = -1000001;
@@ -60,7 +64,17 @@ class Autoassigner {
         $this->use_mcmf = $use_mcmf;
     }
 
-    private function run_prefconflict($papertype) {
+    public function add_progressf($progressf) {
+        $this->progressf[] = $progressf;
+    }
+
+    private function set_progress($status) {
+        foreach ($this->progressf as $progressf)
+            call_user_func($progressf, $status);
+    }
+
+
+    public function run_prefconflict($papertype) {
         global $Conf;
         $papers = array_fill_keys($this->papersel, 1);
         $result = Dbl::qe_raw($Conf->preferenceConflictQuery($papertype, ""));
@@ -73,7 +87,7 @@ class Autoassigner {
         Dbl::free($result);
     }
 
-    private function run_clear($reviewtype) {
+    public function run_clear($reviewtype) {
         $papers = array_fill_keys($this->papersel, 1);
         if ($reviewtype == REVIEW_PRIMARY
             || $reviewtype == REVIEW_SECONDARY
@@ -97,7 +111,8 @@ class Autoassigner {
         Dbl::free($result);
     }
 
-    public function balance_reviews($reviewtype) {
+
+    private function balance_reviews($reviewtype) {
         $q = "select contactId, count(reviewId) from PaperReview where contactId ?a";
         if ($reviewtype)
             $q .= " and reviewType={$reviewtype}";
@@ -107,7 +122,7 @@ class Autoassigner {
         Dbl::free($result);
     }
 
-    public function balance_paperpc($action) {
+    private function balance_paperpc($action) {
         $q = "select {$action}ContactId, count(paperId) from Paper where paperId ?A group by {$action}ContactId";
         $result = Dbl::qe($q, $this->papersel);
         while (($row = edb_row($result)))
@@ -115,7 +130,7 @@ class Autoassigner {
         Dbl::free($result);
     }
 
-    public function preferences_review() {
+    private function preferences_review() {
         global $Conf;
         $this->prefs = array();
         foreach ($this->pcm as $cid => $p)
@@ -145,6 +160,7 @@ class Autoassigner {
         where Paper.paperId ?a
         group by Paper.paperId";
 
+        $nmade = 0;
         foreach ($this->pcm as $cid => $p) {
             $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid,
                               $this->papersel, $cid, $this->papersel);
@@ -162,7 +178,9 @@ class Autoassigner {
             }
 
             Dbl::free($result);
-            set_time_limit(30);
+            ++$nmade;
+            if ($nmade % 4 == 0)
+                $this->set_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->pcm) + 0.5)));
         }
         $this->make_pref_groups();
 
@@ -186,7 +204,7 @@ class Autoassigner {
             }
     }
 
-    public function preferences_paperpc($scoreinfo) {
+    private function preferences_paperpc($scoreinfo) {
         global $Conf;
         $this->prefs = array();
         foreach ($this->pcm as $cid => $p)
@@ -217,6 +235,7 @@ class Autoassigner {
         where Paper.paperId ?a
         group by Paper.paperId";
 
+        $nmade = 0;
         foreach ($this->pcm as $cid => $p) {
             $result = Dbl::qe($query, $cid, $cid, $cid, $this->papersel);
 
@@ -246,7 +265,9 @@ class Autoassigner {
             unset($rows);        // don't need the memory any more
 
             Dbl::free($result);
-            set_time_limit(30);
+            ++$nmade;
+            if ($nmade % 4 == 0)
+                $this->set_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->pcm) + 0.5)));
         }
         $this->make_pref_groups();
     }
@@ -282,12 +303,22 @@ class Autoassigner {
         return $action !== "lead" && $action !== "shepherd";
     }
 
+    private function assign_desired(&$papers, $nperpc) {
+        if ($nperpc)
+            return $nperpc * count($this->pcm);
+        $n = 0;
+        foreach ($papers as $ct)
+            $n += $ct;
+        return $n;
+    }
+
     private function assign_randomly(&$papers, $action, $round, $nperpc) {
         foreach ($this->pcm as $cid => $p)
             $this->load[$cid] = (int) @$this->load[$cid];
         $pref_unhappiness = $pref_dist = $pref_nextdist = array_fill_keys(array_keys($this->pcm), 0);
         $pcids = array_keys($this->pcm);
-        $progress = false;
+        $ndesired = $this->assign_desired($papers, $nperpc);
+        $nmade = 0;
         while (count($this->pcm)) {
             // choose a pc member at random, equalizing load
             $pc = null;
@@ -327,6 +358,10 @@ class Autoassigner {
                 // make assignment
                 $this->make_assignment($action, $round, $pc, $pid, $papers);
                 $pref_unhappiness[$pc] += $pref_dist[$pc];
+                // report progress
+                ++$nmade;
+                if ($nmade % 10 == 0)
+                    $this->set_progress(sprintf("Making assignments (%d%% done)", (int) ($nmade * 100 / $ndesired + 0.5)));
                 break;
             }
 
@@ -336,10 +371,32 @@ class Autoassigner {
         }
     }
 
+    public function mcmf_progress($mcmf, $what) {
+        if ($what <= MinCostMaxFlow::PMAXFLOW_DONE) {
+            $n = max($mcmf->current_flow() - $mcmf->current_excess(), 0);
+            $this->set_progress(sprintf("Preparing unoptimized assignment$this->mcmf_round_descriptor (%d%% done)", (int) ($n * 100 / $this->ndesired + 0.5)));
+        } else {
+            $x = array();
+            $cost = $mcmf->current_cost();
+            if ($this->mcmf_max_cost === null)
+                $this->mcmf_max_cost = $cost;
+            else if ($cost < $this->mcmf_max_cost)
+                $x[] = sprintf("%.1f%% better", ((int) (($this->mcmf_max_cost - $cost) * 1000 / $this->mcmf_max_cost + 0.5)) / 10);
+            if ($mcmf->has_excess() && $x)
+                $x[] = "but needs correction";
+            $this->set_progress("Optimizing assignment for preferences and balance$this->mcmf_round_descriptor" . ($x ? " (" . join(", ", $x) . ")" : ""));
+        }
+    }
+
     private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
         global $Conf;
         $m = new MinCostMaxFlow;
+        $m->add_progressf(array($this, "mcmf_progress"));
         $papers = array_filter($papers, function ($ct) { return $ct > 0; });
+        $mcmf_round = $this->mcmf_round ? " (round " . ($this->mcmf_round + 1) : "";
+        $this->ndesired = $this->assign_desired($papers, $nperpc);
+        $this->mcmf_max_cost = null;
+        $this->set_progress("Preparing assignment optimizer" . $this->mcmf_round_descriptor);
         // paper nodes
         $nass = 0;
         foreach ($papers as $pid => $ct) {
@@ -402,6 +459,7 @@ class Autoassigner {
         // run MCMF
         $m->run();
         // make assignments
+        $this->set_progress("Completing assignment" . $this->mcmf_round_descriptor);
         $nassigned = 0;
         foreach ($this->pcm as $cid => $p) {
             foreach ($m->reachable("u$cid", "p") as $v) {
@@ -410,10 +468,13 @@ class Autoassigner {
                 ++$nassigned;
             }
         }
+        $m->clear(); // break circular refs
         return $nassigned;
     }
 
     private function assign_mcmf(&$papers, $action, $round, $nperpc) {
+        $this->mcmf_round_descriptor = "";
+        $mcmf_round = 1;
         while ($this->assign_mcmf_once($papers, $action, $round, $nperpc)) {
             $nmissing = 0;
             foreach ($papers as $pid => $ct)
@@ -427,6 +488,8 @@ class Autoassigner {
             }
             if ($nmissing == 0 || $navailable == 0)
                 break;
+            ++$mcmf_round;
+            $this->mcmf_round_descriptor = " (round $mcmf_round)";
         }
     }
 
