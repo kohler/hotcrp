@@ -24,7 +24,8 @@ class Autoassigner {
 
     const PMIN = -1000000;
     const PNOASSIGN = -1000001;
-    const PASSIGNED = -1000002;
+    const POLDASSIGN = -1000002;
+    const PNEWASSIGN = -1000003;
 
     const COSTPERPAPER = 100;
 
@@ -37,9 +38,9 @@ class Autoassigner {
     public function select_pc($pcids) {
         $this->pcm = array();
         $pcids = array_flip($pcids);
-        foreach (pcMembers() as $cid => $pc)
+        foreach (pcMembers() as $cid => $p)
             if (isset($pcids[$cid]))
-                $this->pcm[$cid] = $pc;
+                $this->pcm[$cid] = $p;
         return count($this->pcm);
     }
 
@@ -168,7 +169,7 @@ class Autoassigner {
             while (($row = PaperInfo::fetch($result, true))) {
                 $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $row->expertise, $row->topicInterestScore);
                 if ($row->myReviewType > 0)
-                    $pref = self::PASSIGNED;
+                    $pref = self::POLDASSIGN;
                 else if ($row->conflictType > 0 || $row->refused > 0
                          || !$p->can_accept_review_assignment($row))
                     $pref = self::PNOASSIGN;
@@ -189,7 +190,7 @@ class Autoassigner {
             if (!isset($this->pcm[$cid])) {
                 $result = Dbl::qe("select paperId from PaperReview where contactId=? and paperId ?a", $cid, $this->papersel);
                 while (($row = edb_row($result)))
-                    $this->prefs[$cid][$row[0]] = self::PASSIGNED;
+                    $this->prefs[$cid][$row[0]] = self::POLDASSIGN;
                 Dbl::free($result);
             }
 
@@ -199,7 +200,7 @@ class Autoassigner {
                 if ($this->prefs[$cid][$pid] < self::PMIN)
                     continue;
                 foreach ($bp as $cid2 => $x)
-                    if ($this->prefs[$cid2][$pid] == self::PASSIGNED)
+                    if ($this->prefs[$cid2][$pid] <= self::POLDASSIGN)
                         $this->prefs[$cid][$pid] = self::PNOASSIGN;
             }
     }
@@ -280,6 +281,8 @@ class Autoassigner {
             $this->pref_groups[$cid] = array();
             foreach ($this->prefs[$cid] as $pid => $pref)
                 if (!$last_group || $pref != $last_group->pref) {
+                    if ($pref < self::PMIN)
+                        break;
                     $last_group = (object) array("pref" => $pref, "pids" => array($pid));
                     $this->pref_groups[$cid][] = $last_group;
                 } else
@@ -290,7 +293,7 @@ class Autoassigner {
 
     private function make_assignment($action, $round, $cid, $pid, &$papers) {
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
-        $this->prefs[$cid][$pid] = self::PASSIGNED;
+        $this->prefs[$cid][$pid] = self::PNEWASSIGN;
         $papers[$pid]--;
         @$this->load[$cid]++;
         if (isset($this->badpairs[$cid]))
@@ -315,15 +318,16 @@ class Autoassigner {
     private function assign_randomly(&$papers, $action, $round, $nperpc) {
         foreach ($this->pcm as $cid => $p)
             $this->load[$cid] = (int) @$this->load[$cid];
-        $pref_unhappiness = $pref_dist = $pref_nextdist = array_fill_keys(array_keys($this->pcm), 0);
+        $pref_unhappiness = $pref_dist = array_fill_keys(array_keys($this->pcm), 0);
         $pcids = array_keys($this->pcm);
         $ndesired = $this->assign_desired($papers, $nperpc);
         $nmade = 0;
-        while (count($this->pcm)) {
+        $pcm = $this->pcm;
+        while (count($pcm)) {
             // choose a pc member at random, equalizing load
             $pc = null;
-            foreach ($this->pcm as $pcx => $pcxval)
-                if ($pc == null
+            foreach ($pcm as $pcx => $p)
+                if ($pc === null
                     || $this->load[$pcx] < $this->load[$pc]
                     || ($this->load[$pcx] == $this->load[$pc]
                         && $pref_unhappiness[$pcx] > $pref_unhappiness[$pc])) {
@@ -341,16 +345,19 @@ class Autoassigner {
             $pg = null;
             while ($this->pref_groups[$pc]
                    && ($pg = current($this->pref_groups[$pc]))) {
+                // create copy of pids for assignment
+                if (@$pg->apids === null)
+                    $pg->apids = $pg->pids;
                 // skip if no papers left
-                if (!count($pg->pids)) {
+                if (!count($pg->apids)) {
                     next($this->pref_groups[$pc]);
-                    $pref_dist[$pc] = $pref_nextdist[$pc];
+                    ++$pref_dist[$pc];
                     continue;
                 }
                 // pick a random paper at current preference level
-                $pididx = mt_rand(0, count($pg->pids) - 1);
-                $pid = $pg->pids[$pididx];
-                array_splice($pg->pids, $pididx, 1);
+                $pididx = mt_rand(0, count($pg->apids) - 1);
+                $pid = $pg->apids[$pididx];
+                array_splice($pg->apids, $pididx, 1);
                 // skip if not assignable
                 if (!isset($papers[$pid]) || $this->prefs[$pc][$pid] < self::PMIN
                     || $papers[$pid] <= 0)
@@ -367,7 +374,7 @@ class Autoassigner {
 
             // if have exhausted preferences, remove pc member
             if (!$pg || $this->load[$pc] === $nperpc)
-                unset($this->pcm[$pc]);
+                unset($pcm[$pc]);
         }
     }
 
@@ -582,5 +589,27 @@ class Autoassigner {
 
     public function assignments() {
         return count($this->ass) > 1 ? $this->ass : null;
+    }
+
+    public function pc_unhappiness() {
+        if (!$this->prefs)
+            return array();
+
+        $ubypid = array();
+        foreach ($this->pcm as $cid => $p) {
+            $u = array();
+            foreach ($this->pref_groups[$cid] as $i => $pg)
+                foreach ($pg->pids as $pid)
+                    $u[$pid] = $i;
+            $ubypid[$cid] = $u;
+        }
+
+        $u = array_fill_keys(array_keys($this->pcm), 0);
+        foreach ($this->prefs as $cid => $m) {
+            foreach ($m as $pid => $pref)
+                if ($pref === self::PNEWASSIGN)
+                    $u[$cid] += $ubypid[$cid][$pid];
+        }
+        return $u;
     }
 }

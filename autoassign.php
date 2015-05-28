@@ -128,6 +128,7 @@ $Conf->header("Review Assignments", "autoassign", $abar);
 
 class AutoassignerInterface {
     private $atype;
+    private $atype_review;
     private $reviewtype;
     private $autoassigner;
     private $start_at;
@@ -145,10 +146,10 @@ class AutoassignerInterface {
             $Error["ass"] = true;
             return $Conf->errorMsg("Malformed request!");
         }
-        $atype_review = $atypes[$this->atype] === "r";
+        $this->atype_review = $atypes[$this->atype] === "r";
 
         $r = false;
-        if ($atype_review) {
+        if ($this->atype_review) {
             $r = defval($_REQUEST, $this->atype . "type", "");
             if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
                 && $r != REVIEW_PC) {
@@ -169,7 +170,7 @@ class AutoassignerInterface {
         $_REQUEST["rev_roundtag"] = defval($_REQUEST, "rev_roundtag", "");
         if ($_REQUEST["rev_roundtag"] === "(None)")
             $_REQUEST["rev_roundtag"] = "";
-        if ($atype_review && $_REQUEST["rev_roundtag"] !== ""
+        if ($this->atype_review && $_REQUEST["rev_roundtag"] !== ""
             && !preg_match('/^[a-zA-Z0-9]+$/', $_REQUEST["rev_roundtag"])) {
             $Error["rev_roundtag"] = true;
             return $Conf->errorMsg("The review round must contain only letters and numbers.");
@@ -207,6 +208,24 @@ class AutoassignerInterface {
         $assignset->parse(join("\n", $assignments));
         $assignset->report_errors();
         $assignset->echo_unparse_display($papersel);
+
+        // print preference unhappiness (currently disabled)
+        if (false && $this->atype_review) {
+            $umap = $this->autoassigner->pc_unhappiness();
+            sort($umap);
+            echo '<p style="font-size:65%">Preference unhappiness: ';
+            $usum = 0;
+            foreach ($umap as $u)
+                $usum += $u;
+            if (count($umap) % 2 == 0)
+                $umedian = ($umap[count($umap) / 2 - 1] + $umap[count($umap) / 2]) / 2;
+            else
+                $umedian = $umap[(count($umap) - 1) / 2];
+            echo 'min ', $umap[0], ', max ', $umap[count($umap) - 1], ', median ', $umedian,
+                ', mean ', sprintf("%.2f", $usum / count($umap)),
+                ', 90% ', $umap[(int) (count($umap) * 0.9)];
+            echo '</p>';
+        }
 
         list($atypes, $apids) = $assignset->types_and_papers(true);
         echo "<div class='g'></div>",
