@@ -8,6 +8,8 @@ require_once("src/papersearch.php");
 require_once("src/assigners.php");
 if (!$Me->is_manager())
     $Me->escape();
+if (check_post())
+    header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
 // paper selection
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) === "(All)")
