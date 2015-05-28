@@ -379,11 +379,11 @@ function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
     $sp = "&nbsp;";
     $imgsize = ($dlimg_class[0] == "s" ? "" : "24");
     if ($doc->mimetype == "application/postscript")
-        $x = "<a href=\"$p\" class='q nowrap'>" . Ht::img("postscript${finalsuffix}${imgsize}.png", "[PS]", $dlimg_class);
+        $x = "<a href=\"$p\" class='q nowrap' target='_blank'>" . Ht::img("postscript${finalsuffix}${imgsize}.png", "[PS]", $dlimg_class);
     else if ($doc->mimetype == "application/pdf")
-        $x = "<a href=\"$p\" class='q nowrap'>" . Ht::img("pdf${finalsuffix}${imgsize}.png", "[PDF]", $dlimg_class);
+        $x = "<a href=\"$p\" class='q nowrap' target='_blank'>" . Ht::img("pdf${finalsuffix}${imgsize}.png", "[PDF]", $dlimg_class);
     else
-        $x = "<a href=\"$p\" class='q nowrap'>" . Ht::img("generic${finalsuffix}${imgsize}.png", "[Download]", $dlimg_class);
+        $x = "<a href=\"$p\" class='q nowrap' target='_blank'>" . Ht::img("generic${finalsuffix}${imgsize}.png", "[Download]", $dlimg_class);
     if ($text)
         $x .= $sp . $text;
     if (isset($doc->size) && $doc->size > 0) {
