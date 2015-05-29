@@ -1286,12 +1286,27 @@ class Contact {
     // topic interests
 
     function topic_interest_map() {
+        global $Me;
         if ($this->topic_interest_map_ !== null)
             return $this->topic_interest_map_;
-        else if ($this->contactId <= 0)
+        if ($this->contactId <= 0)
             return array();
-        $result = Dbl::qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
-        return ($this->topic_interest_map_ = Dbl::fetch_iimap($result));
+        if (($this->roles & self::ROLE_PCLIKE)
+            && $this !== $Me
+            && ($pcm = pcMembers())
+            && $this === @$pcm[$this->contactId]) {
+            $result = Dbl::qe("select contactId, topicId, interest from TopicInterest");
+            foreach ($pcm as $pc)
+                $pc->topic_interest_map_ = array();
+            while (($row = edb_orow($result)))
+                if (($pc = @$pcm[$row[0]]))
+                    $pc->topic_interest_map_[(int) $row[1]] = (int) $row[2];
+            Dbl::free($result);
+        } else {
+            $result = Dbl::qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
+            $this->topic_interest_map_ = Dbl::fetch_iimap($result);
+        }
+        return $this->topic_interest_map_;
     }
 
 
