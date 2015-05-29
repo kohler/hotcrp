@@ -2562,8 +2562,12 @@ return function (content, bubopt) {
             ya = (nearpos.top + nearpos.bottom) / 2;
             y = constrain(ya, wpos.top, wpos.bottom, bpos.height, noconstrain);
             d = roundpixel(ya - y - size / 2);
-            bubch[0].style.top = d + "px";
-            bubch[2].style.top = (d + 0.77*divbw) + "px";
+            try {
+                bubch[0].style.top = d + "px";
+                bubch[2].style.top = (d + 0.77*divbw) + "px";
+            } catch (err) {
+                log_jserror({"error": JSON.stringify([d, divbw, nearpos, wpos, bpos, ya, y])}, err);
+            }
 
             if (dir == 1)
                 x = nearpos.left - bpos.width - sizes[1] - 1;
@@ -2573,8 +2577,12 @@ return function (content, bubopt) {
             xa = (nearpos.left + nearpos.right) / 2;
             x = constrain(xa, wpos.left, wpos.right, bpos.width, noconstrain);
             d = roundpixel(xa - x - size / 2);
-            bubch[0].style.left = d + "px";
-            bubch[2].style.left = (d + 0.77*divbw) + "px";
+            try {
+                bubch[0].style.left = d + "px";
+                bubch[2].style.left = (d + 0.77*divbw) + "px";
+            } catch (err) {
+                log_jserror({"error": JSON.stringify([d, divbw, nearpos, wpos, bpos, ya, y])}, err);
+            }
 
             if (dir == 0)
                 y = nearpos.bottom + sizes[1];
