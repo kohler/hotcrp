@@ -709,29 +709,40 @@ if (($getaction == "revpref" || $getaction == "revprefx")
 function downloadAllRevpref() {
     global $Conf, $Me, $Opt;
     // maybe download preferences for someone else
-    $q = $Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviewerPreference" => 1, "allConflictType" => 1));
+    $q = $Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
     $result = Dbl::qe_raw($q);
     $texts = array();
-    $pc = pcMembers();
-    $has_conflict = false;
+    $pcm = pcMembers();
+    $has_conflict = $has_expertise = $has_topic_score = false;
     while (($prow = PaperInfo::fetch($result, $Me))) {
         $out = array();
-        foreach (array_intersect_key($prow->reviewer_preferences(), $pc) as $pcid => $pref)
-            $out[$pc[$pcid]->sorter] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, unparse_preference($pref));
-        foreach (array_intersect_key($prow->conflicts(), $pc) as $pcid => $conf) {
-            $k = $pc[$pcid]->sorter;
-            if (!isset($out[$k]))
-                $out[$k] = array($prow->paperId, $prow->title, Text::name_text($pc[$pcid]), $pc[$pcid]->email, "");
-            $out[$k][] = $has_conflict = "conflict";
-        }
-        if (count($out)) {
-            ksort($out);
-            arrayappend($texts[$prow->paperId], $out);
+        $prefs = $prow->reviewer_preferences();
+        $conflicts = $prow->conflicts();
+        foreach ($pcm as $cid => $p) {
+            $pref = @$prefs[$cid] ? : array();
+            $conf = @$conflicts[$cid];
+            $tv = $prow->topicIds ? $prow->topic_interest_score($p) : 0;
+            if ($conf)
+                $pref = $tv = "";
+            if ($pref || $conf || $tv) {
+                $texts[$prow->paperId][] = array("paper" => $prow->paperId, "title" => $prow->title, "name" => Text::name_text($p), "email" => $p->email,
+                            "preference" => @$pref[0] ? : "",
+                            "expertise" => unparse_expertise(@$pref[1]),
+                            "topic_score" => $tv ? : "",
+                            "conflict" => ($conf ? "conflict" : ""));
+                $has_conflict = $has_conflict || $conf;
+                $has_expertise = $has_expertise || @$pref[1] !== null;
+                $has_topic_score = $has_topic_score || $tv;
+            }
         }
     }
 
     if (count($texts)) {
         $headers = array("paper", "title", "name", "email", "preference");
+        if ($has_expertise)
+            $headers[] = "expertise";
+        if ($has_topic_score)
+            $headers[] = "topic_score";
         if ($has_conflict)
             $headers[] = "conflict";
         downloadCSV(SearchActions::reorder($texts), $headers, "allprefs");
