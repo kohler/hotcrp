@@ -1206,6 +1206,7 @@ if ($Me->privChair) {
 
 // search
 $Conf->header("Search", "search", actionBar());
+$Conf->echoScript();
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true, "row_id_pattern" => "p#",
@@ -1240,10 +1241,6 @@ else if (defval($_REQUEST, "tab", "x") == "formulas") {
 }
 if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
-if ($pl && $pl->count > 0)
-    $Conf->footerScript("crpfocus(\"searchform\",$activetab,1)");
-else
-    $Conf->footerScript("crpfocus(\"searchform\",$activetab)");
 
 $tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
 
@@ -1655,8 +1652,11 @@ if ($ss)
     echo "  <td><div class='tll4'><a class='tla nowrap' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla nowrap' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
-echo "</tr></table></td></tr>
-</table>\n\n";
+echo "</tr></table></td></tr>\n</table>\n\n";
+if ($pl && $pl->count > 0)
+    $Conf->echoScript("crpfocus(\"searchform\",$activetab,1)");
+else
+    $Conf->footerScript("crpfocus(\"searchform\",$activetab)");
 
 
 if ($pl) {

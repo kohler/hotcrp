@@ -1148,7 +1148,7 @@ class Conference {
         return $s;
     }
 
-    function echoScript($script) {
+    function echoScript($script = "") {
         if ($this->scriptStuff)
             echo $this->scriptStuff;
         $this->scriptStuff = "";
@@ -2255,7 +2255,7 @@ class Conference {
 
         // If browser owns tracker, send it the script immediately
         if ($trackerowner)
-            $this->echoScript("");
+            $this->echoScript();
 
         // Callback for version warnings
         if ($Me && $Me->privChair
