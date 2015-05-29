@@ -312,6 +312,16 @@ class Dbl {
         return $x;
     }
 
+    static function fetch_iimap($result) {
+        $x = array();
+        while ($result && ($row = $result->fetch_row())) {
+            assert(count($row) == 2);
+            $x[(int) $row[0]] = ($row[1] === null ? $row[1] : (int) $row[1]);
+        }
+        $result && $result->close();
+        return $x;
+    }
+
     static function log_queries($limit) {
         if (!$limit)
             self::$log_queries = false;

@@ -142,7 +142,7 @@ class Autoassigner {
             $this->prefs[$cid] = array();
 
         // first load topics
-        $result = Dbl::qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a", $this->papersel);
+        $result = Dbl::qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $this->papersel);
         $topicIds = Dbl::fetch_map($result);
 
         $query = "select Paper.paperId, ? contactId,

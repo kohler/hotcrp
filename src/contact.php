@@ -25,7 +25,7 @@ class Contact {
     public $disabled = false;
     public $activity_at = false;
     private $data_ = null;
-    private $topic_interests_ = null;
+    private $topic_interest_map_ = null;
     var $defaultWatch = WATCH_COMMENT;
 
     // Roles
@@ -1291,7 +1291,7 @@ class Contact {
         else if ($this->contactId <= 0)
             return array();
         $result = Dbl::qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
-        return ($this->topic_interest_map_ = edb_map($result));
+        return ($this->topic_interest_map_ = Dbl::fetch_iimap($result));
     }
 
 
