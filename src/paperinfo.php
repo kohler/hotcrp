@@ -249,6 +249,8 @@ class PaperInfo {
     public function topics() {
         if (!property_exists($this, "topicIds"))
             $this->load_topics();
+        if (is_array($this->topicIds))
+            return $this->topicIds;
         $x = array();
         if ($this->topicIds !== "" && $this->topicIds !== null)
             foreach (explode(",", $this->topicIds) as $topic)
