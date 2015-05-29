@@ -1516,17 +1516,24 @@ class Conference {
         if ($myPaperReview == "MyPaperReview")
             $joins[] = "left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)";
 
-        if (@$options["topics"] || @$options["topicInterestScore"]) {
+        if (@$options["topics"] || @$options["topicInterest"] || @$options["topicInterestScore"]) {
             $j = "left join (select paperId";
-            if (@$options["topics"]) {
-                $j .= ", group_concat(PaperTopic.topicId) as topicIds, group_concat(ifnull(" . $this->query_topic_interest("TopicInterest.") . ",0)) as topicInterest";
-                $cols[] = "PaperTopics.topicIds, PaperTopics.topicInterest";
+            if (@$options["topics"] || @$options["topicInterest"]) {
+                $j .= ", group_concat(PaperTopic.topicId) as topicIds";
+                $cols[] = "PaperTopics.topicIds";
+            }
+            if (@$options["topicInterest"]) {
+                $j .= ", group_concat(ifnull(" . $this->query_topic_interest("TopicInterest.") . ",0)) as topicInterest";
+                $cols[] = "PaperTopics.topicInterest";
             }
             if (@$options["topicInterestScore"]) {
                 $j .= ", sum(" . $this->query_topic_interest_score() . ") as topicInterestScore";
                 $cols[] = "coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore";
             }
-            $j .= " from PaperTopic left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewerContactId) where {$papersel}true group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)";
+            $j .= " from PaperTopic";
+            if (@$options["topicInterest"] || @$options["topicInterestScore"])
+                $j .= " left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewerContactId)";
+            $j .= " where {$papersel}true group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)";
             $joins[] = $j;
         }
 

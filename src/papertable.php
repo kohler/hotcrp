@@ -2297,7 +2297,7 @@ class PaperTable {
         else if (isset($_REQUEST["commentId"]))
             $sel["commentId"] = $_REQUEST["commentId"];
 
-        $sel["topics"] = $sel["options"] = true;
+        $sel["topics"] = $sel["topicInterest"] = $sel["options"] = true;
         if (($Me->isPC && $Conf->timePCReviewPreferences()) || $Me->privChair)
             $sel["reviewerPreference"] = true;
         if ($Me->isPC || $Conf->setting("tag_rank"))
