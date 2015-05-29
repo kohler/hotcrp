@@ -237,18 +237,12 @@ class PaperList extends BaseList {
                 $prefs[$cid] = false;
         // topic interest scores (except for conflicts)
         if (isset($row->topicIds) && $row->topicIds != "") {
-            $topicids = explode(",", $row->topicIds);
             foreach (pcMembers() as $pcid => $pc) {
                 $pref = defval($prefs, $pcid, null);
-                if ($pref !== false) {
-                    $tscore = 0;
-                    foreach ($topicids as $t)
-                        $tscore += defval($pc->topicInterest, $t, 0);
-                    if ($tscore) {
-                        if ($pref === null)
-                            $prefs[$pcid] = array(0, null);
-                        $prefs[$pcid][2] = $tscore;
-                    }
+                if ($pref !== false && ($tscore = $row->topic_interest_score($pc))) {
+                    if ($pref === null)
+                        $prefs[$pcid] = array(0, null);
+                    $prefs[$pcid][2] = $tscore;
                 }
             }
         }

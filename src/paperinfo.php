@@ -290,6 +290,17 @@ class PaperInfo {
             return join(' <span class="sep">&nbsp;</span> ', $out);
     }
 
+    static public function make_topic_map($pids) {
+        $result = Dbl::qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $pids);
+        $topic_map = Dbl::fetch_map($result);
+        foreach ($topic_map as $pid => &$t) {
+            $t = explode(",", $t);
+            foreach ($t as &$x)
+                $x = (int) $x;
+        }
+        return $topic_map;
+    }
+
     public function topic_interest_score($contact) {
         if (is_int($contact)) {
             $pcm = pcMembers();

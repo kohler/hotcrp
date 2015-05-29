@@ -142,14 +142,7 @@ class Autoassigner {
             $this->prefs[$cid] = array();
 
         // first load topics
-        $result = Dbl::qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $this->papersel);
-        $topicIds = Dbl::fetch_map($result);
-        foreach ($topicIds as $pid => &$t) {
-            $t = explode(",", $t);
-            foreach ($t as &$x)
-                $x = (int) $x;
-        }
-        unset($t, $x);
+        $topicIds = PaperInfo::make_topic_map($this->papersel);
 
         $query = "select Paper.paperId, ? contactId,
             coalesce(PaperConflict.conflictType, 0) as conflictType,
