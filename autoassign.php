@@ -228,8 +228,9 @@ class AutoassignerInterface {
                 ', median ', $umedian,
                 ', 75% ', $umap[(int) (count($umap) * 0.75)],
                 ', 90% ', $umap[(int) (count($umap) * 0.9)],
-                ', max ', $umap[count($umap) - 1];
-            echo '</p>';
+                ', max ', $umap[count($umap) - 1],
+                '<br/>Time: ', sprintf("%.6f", microtime(true) - $this->start_at),
+                '</p>';
         }
 
         list($atypes, $apids) = $assignset->types_and_papers(true);
