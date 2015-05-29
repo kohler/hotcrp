@@ -699,6 +699,9 @@ class PreferenceListPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$qopts, $visible) {
+        global $Conf;
+        if ($this->topics && !$Conf->has_topics())
+            $this->topics = false;
         if (!$pl->contact->privChair)
             return false;
         if ($visible) {
@@ -715,11 +718,14 @@ class PreferenceListPaperColumn extends PaperColumn {
         return !$pl->contact->allow_administer($row);
     }
     public function content($pl, $row, $rowidx) {
-        $prefs = PaperList::_rowPreferences($row);
+        $prefs = $row->reviewer_preferences();
+        $topics = $this->topics ? $row->topics() : false;
         $ts = array();
-        foreach (pcMembers() as $pcid => $pc)
-            if (($pref = defval($prefs, $pcid, null))) {
-                $pref = $this->topics ? $pref : array_slice($pref, 0, 2);
+        if ($prefs || $topics)
+            foreach (pcMembers() as $pcid => $pc) {
+                $pref = @$prefs[$pcid] ? : array();
+                if ($this->topics)
+                    $pref[2] = $row->topic_interest_score($pc);
                 if (($pspan = unparse_preference_span($pref)) !== "")
                     $ts[] = '<span class="nw">' . Text::name_html($pc) . $pspan . '</span>';
             }
@@ -728,10 +734,13 @@ class PreferenceListPaperColumn extends PaperColumn {
 }
 
 class ReviewerListPaperColumn extends PaperColumn {
+    private $topics;
     public function __construct() {
         parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE);
     }
     public function prepare($pl, &$queryOptions, $visible) {
+        global $Conf;
+        $this->topics = $Conf->has_topics();
         if (!$pl->contact->can_view_some_review_identity(null))
             return false;
         if ($visible) {
@@ -748,16 +757,25 @@ class ReviewerListPaperColumn extends PaperColumn {
         // see also search.php > getaction == "reviewers"
         if (!isset($pl->review_list[$row->paperId]))
             return "";
+        $prefs = $topics = false;
+        if ($pl->contact->privChair) {
+            $prefs = $row->reviewer_preferences();
+            $topics = $this->topics ? $row->topics() : null;
+            $pcm = pcMembers();
+        }
         $x = array();
-        $prefs = $pl->contact->privChair ? PaperList::_rowPreferences($row) : array();
         foreach ($pl->review_list[$row->paperId] as $xrow)
             if ($xrow->lastName) {
                 $ranal = $pl->_reviewAnalysis($xrow);
                 $n = Text::name_html($xrow);
                 if ($xrow->reviewType >= REVIEW_SECONDARY)
                     $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
-                if (($pref = defval($prefs, $xrow->contactId, null)))
+                if ($prefs || $topics) {
+                    $pref = @$prefs[$xrow->contactId];
+                    if ($topics)
+                        $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
                     $n .= unparse_preference_span($pref);
+                }
                 $x[] = '<span class="nw">' . $n . '</span>';
             }
         return $pl->maybeConflict($row, join(", ", $x),

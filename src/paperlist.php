@@ -226,29 +226,6 @@ class PaperList extends BaseList {
             return "";
     }
 
-    static function _rowPreferences($row) {
-        // reviewer preferences
-        $prefs = array();
-        if (isset($row->allReviewerPreference))
-            $prefs = $row->reviewer_preferences();
-        // if conflict, reviewer preference is set to "X"
-        if (isset($row->allConflictType))
-            foreach ($row->conflicts() as $cid => $conf)
-                $prefs[$cid] = false;
-        // topic interest scores (except for conflicts)
-        if (isset($row->topicIds) && $row->topicIds != "") {
-            foreach (pcMembers() as $pcid => $pc) {
-                $pref = defval($prefs, $pcid, null);
-                if ($pref !== false && ($tscore = $row->topic_interest_score($pc))) {
-                    if ($pref === null)
-                        $prefs[$pcid] = array(0, null);
-                    $prefs[$pcid][2] = $tscore;
-                }
-            }
-        }
-        return $prefs;
-    }
-
     function _reviewAnalysis($row) {
         global $Conf, $reviewTypeName;
         $ranal = (object) array("completion" => "", "delegated" => false,

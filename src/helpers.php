@@ -1213,14 +1213,17 @@ function unparse_preference_span($preference, $always = false) {
                             @$preference->topicInterestScore);
     else if (!is_array($preference))
         $preference = array($preference, null, null);
+    $pv = (int) @$preference[0];
+    $ev = @$preference[1];
+    $tv = (int) @$preference[2];
     $type = 1;
-    if ($preference[0] < 0 || (!$preference[0] && @($preference[2] < 0)))
+    if ($pv < 0 || (!$pv && $tv < 0))
         $type = -1;
     $t = "";
-    if ($preference[0] || $preference[1] !== null || $always)
-        $t .= "P" . decorateNumber($preference[0]) . unparse_expertise($preference[1]);
-    if (@$preference[2])
-        $t .= ($t ? " " : "") . "T" . decorateNumber($preference[2]);
+    if ($pv || $ev !== null || $always)
+        $t .= "P" . decorateNumber($pv) . unparse_expertise($ev);
+    if ($tv)
+        $t .= ($t ? " " : "") . "T" . decorateNumber($tv);
     if ($t !== "")
         $t = " <span class=\"asspref$type\">$t</span>";
     return $t;

@@ -309,12 +309,14 @@ class PaperInfo {
     public function topic_interest_score($contact) {
         if (is_int($contact)) {
             $pcm = pcMembers();
-            $contact = @$pcm[$contact] ? : Contact::find_by_id($contact);
+            $contact = @$pcm[$contact];
         }
-        $interests = $contact->topic_interest_map();
         $score = 0;
-        foreach ($this->topics() as $t)
-            $score += (int) @$interests[$t];
+        if ($contact) {
+            $interests = $contact->topic_interest_map();
+            foreach ($this->topics() as $t)
+                $score += (int) @$interests[$t];
+        }
         return $score;
     }
 
