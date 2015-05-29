@@ -3561,7 +3561,8 @@ function plinfo(type, dofold, which) {
         } else
             $("#plloadform_get").val(type);
         Miniajax.submit(["plloadform", type + "loadform"],
-                        make_callback(dofold, type, which));
+                        make_callback(dofold, type, which),
+                        10000);
     }
 
     return false;
