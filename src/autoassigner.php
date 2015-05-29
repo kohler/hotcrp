@@ -262,7 +262,7 @@ class Autoassigner {
             foreach ($rows as $row) {
                 $scoredifference = $scoredir * ($row->reviewScore - $scoreextreme[$row->paperId]);
                 if ($scoredifference >= -1)
-                    $this->prefs[$row->contactId][$row->paperId] = max($scoredifference * 1001 + max(min($row->preference, 1000), -1000) + ($row->topicInterestScore / 100), self::PMIN);
+                    $this->prefs[$row->contactId][$row->paperId] = $scoredifference;
             }
             unset($rows);        // don't need the memory any more
 
