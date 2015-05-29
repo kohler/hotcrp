@@ -95,6 +95,8 @@ class MinCostMaxFlow {
     const PMINCOST_INROUND = 3;
     const PMINCOST_DONE = 4;
 
+    const CSPUSHRELABEL_ALPHA = 4;
+
     public function __construct() {
         $this->clear();
     }
@@ -493,11 +495,11 @@ class MinCostMaxFlow {
         return !$notrelabeled;
     }
 
-    private function cspushrelabel_refine() {
+    private function cspushrelabel_refine($phaseno, $nphases) {
         foreach ($this->progressf as $progressf)
-            call_user_func($progressf, $this, self::PMINCOST_BEGINROUND);
+            call_user_func($progressf, $this, self::PMINCOST_BEGINROUND, $phaseno, $nphases);
 
-        $this->epsilon = $this->epsilon / 4; /* Goldberg has 12 */
+        $this->epsilon = $this->epsilon / self::CSPUSHRELABEL_ALPHA;
         foreach ($this->e as $e) {
             if ($e->reduced_cost(false) < 0 && $e->flow < $e->cap) {
                 assert($e->reduced_cost(true) >= 0);
@@ -533,7 +535,7 @@ class MinCostMaxFlow {
             ++$n;
             if ($n % 1024 == 0)
                 foreach ($this->progressf as $progressf)
-                    call_user_func($progressf, $this, self::PMINCOST_INROUND);
+                    call_user_func($progressf, $this, self::PMINCOST_INROUND, $phaseno, $nphases);
 
             // discharge current vertex
             $this->cspushrelabel_discharge($lhead);
@@ -548,13 +550,20 @@ class MinCostMaxFlow {
         $this->pushrelabel_run();
 
         // refine the maximum flow to achieve min cost
-        $this->mincost_start_at = microtime(true);
+        $phaseno = $nphases = 0;
+        for ($e = $this->maxcost; $e >= 1 / count($this->v); $e /= self::CSPUSHRELABEL_ALPHA)
+            ++$nphases;
         $this->epsilon = $this->maxcost;
-        while ($this->epsilon >= 1 / count($this->v))
-            $this->cspushrelabel_refine();
+
+        $this->mincost_start_at = microtime(true);
+        while ($this->epsilon >= 1 / count($this->v)) {
+            $this->cspushrelabel_refine($phaseno, $nphases);
+            ++$phaseno;
+        }
         $this->mincost_end_at = microtime(true);
+
         foreach ($this->progressf as $progressf)
-            call_user_func($progressf, $this, self::PMINCOST_DONE);
+            call_user_func($progressf, $this, self::PMINCOST_DONE, $phaseno, $nphases);
     }
 
 

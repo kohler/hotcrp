@@ -426,7 +426,7 @@ class Autoassigner {
         }
     }
 
-    public function mcmf_progress($mcmf, $what) {
+    public function mcmf_progress($mcmf, $what, $phaseno = 0, $nphases = 0) {
         if ($what <= MinCostMaxFlow::PMAXFLOW_DONE) {
             $n = max($mcmf->current_flow() - $mcmf->current_excess(), 0);
             $this->set_progress(sprintf("Preparing unoptimized assignment$this->mcmf_round_descriptor (%d%% done)", (int) ($n * 100 / $this->ndesired + 0.5)));
@@ -439,7 +439,10 @@ class Autoassigner {
                 $x[] = sprintf("%.1f%% better", ((int) (($this->mcmf_max_cost - $cost) * 1000 / $this->mcmf_max_cost + 0.5)) / 10);
             if ($mcmf->has_excess() && $x)
                 $x[] = "but needs correction";
-            $this->set_progress("Optimizing assignment for preferences and balance$this->mcmf_round_descriptor" . ($x ? " (" . join(", ", $x) . ")" : ""));
+            $phasedescriptor = $nphases > 1 ? ", phase " . ($phaseno + 1) . "/" . $nphases : "";
+            $this->set_progress("Optimizing assignment for preferences and balance"
+                                . $this->mcmf_round_descriptor . $phasedescriptor
+                                . ($x ? " (" . join(", ", $x) . ")" : ""));
         }
     }
 
@@ -543,7 +546,7 @@ class Autoassigner {
             if ($nmissing == 0 || $navailable == 0)
                 break;
             ++$mcmf_round;
-            $this->mcmf_round_descriptor = " (round $mcmf_round)";
+            $this->mcmf_round_descriptor = ", round $mcmf_round";
         }
     }
 
