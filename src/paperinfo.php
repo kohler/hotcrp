@@ -64,6 +64,7 @@ class PaperInfo {
     private $_contact_info = array();
     private $_prefs_array = null;
     private $_review_id_array = null;
+    private $_topics_array = null;
     private $_conflicts;
     private $_conflicts_email;
 
@@ -247,15 +248,19 @@ class PaperInfo {
     }
 
     public function topics() {
-        if (!property_exists($this, "topicIds"))
-            $this->load_topics();
-        if (is_array($this->topicIds))
-            return $this->topicIds;
-        $x = array();
-        if ($this->topicIds !== "" && $this->topicIds !== null)
-            foreach (explode(",", $this->topicIds) as $topic)
-                $x[] = (int) $topic;
-        return $x;
+        if ($this->_topics_array === null) {
+            if (!property_exists($this, "topicIds"))
+                $this->load_topics();
+            if (is_array($this->topicIds))
+                $this->_topics_array = $this->topicIds;
+            else {
+                $this->_topics_array = array();
+                if ($this->topicIds !== "" && $this->topicIds !== null)
+                    foreach (explode(",", $this->topicIds) as $topic)
+                        $this->_topics_array[] = (int) $topic;
+            }
+        }
+        return $this->_topics_array;
     }
 
     public static function unparse_topics($topicIds, $interests, $comma) {
