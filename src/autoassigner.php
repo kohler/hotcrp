@@ -15,12 +15,16 @@ class Autoassigner {
     private $prefs;
     public $prefinfo = array();
     private $pref_groups;
-    private $use_mcmf = true;
+    private $method = self::METHOD_MCMF;
     private $balance = self::BALANCE_NEW;
     private $progressf = array();
     private $mcmf_round_descriptor; // for use in MCMF progress
     private $mcmf_max_cost;
     private $ndesired;
+
+    const METHOD_MCMF = 0;
+    const METHOD_RANDOM = 1;
+    const METHOD_STUPID = 2;
 
     const PMIN = -1000000;
     const PNOASSIGN = -1000001;
@@ -61,8 +65,8 @@ class Autoassigner {
         $this->balance = $balance;
     }
 
-    public function set_mcmf($use_mcmf) {
-        $this->use_mcmf = $use_mcmf;
+    public function set_method($method) {
+        $this->method = $method;
     }
 
     public function add_progressf($progressf) {
@@ -315,6 +319,50 @@ class Autoassigner {
         return $n;
     }
 
+    // This assignment function assigns without considering preferences.
+    private function assign_stupidly(&$papers, $action, $round, $nperpc) {
+        foreach ($this->pcm as $cid => $p)
+            $this->load[$cid] = (int) @$this->load[$cid];
+        $ndesired = $this->assign_desired($papers, $nperpc);
+        $nmade = 0;
+        $pcm = $this->pcm;
+        while (count($pcm)) {
+            // choose a pc member at random, equalizing load
+            $pc = null;
+            foreach ($pcm as $pcx => $p)
+                if ($pc === null
+                    || $this->load[$pcx] < $this->load[$pc]) {
+                    $numminpc = 0;
+                    $pc = $pcx;
+                } else if ($this->load[$pcx] == $this->load[$pc]) {
+                    $numminpc++;
+                    if (mt_rand(0, $numminpc) == 0)
+                        $pc = $pcx;
+                }
+
+            // select a paper
+            $apids = array_keys(array_filter($papers, function ($ct) { return $ct > 0; }));
+            while (count($apids)) {
+                $pididx = mt_rand(0, count($apids) - 1);
+                $pid = $apids[$pididx];
+                array_splice($apids, $pididx, 1);
+                if ($this->prefs[$pc][$pid] < self::PMIN)
+                    continue;
+                // make assignment
+                $this->make_assignment($action, $round, $pc, $pid, $papers);
+                // report progress
+                ++$nmade;
+                if ($nmade % 10 == 0)
+                    $this->set_progress(sprintf("Making assignments stupidly (%d%% done)", (int) ($nmade * 100 / $ndesired + 0.5)));
+                break;
+            }
+
+            // if have exhausted preferences, remove pc member
+            if (!$apids || $this->load[$pc] === $nperpc)
+                unset($pcm[$pc]);
+        }
+    }
+
     private function assign_randomly(&$papers, $action, $round, $nperpc) {
         foreach ($this->pcm as $cid => $p)
             $this->load[$cid] = (int) @$this->load[$cid];
@@ -500,10 +548,12 @@ class Autoassigner {
     }
 
     private function assign_method(&$papers, $action, $round, $nperpc) {
-        if ($this->use_mcmf)
-            $this->assign_mcmf($papers, $action, $round, $nperpc);
-        else
+        if ($this->method == self::METHOD_RANDOM)
             $this->assign_randomly($papers, $action, $round, $nperpc);
+        else if ($this->method == self::METHOD_STUPID)
+            $this->assign_stupidly($papers, $action, $round, $nperpc);
+        else
+            $this->assign_mcmf($papers, $action, $round, $nperpc);
     }
 
 

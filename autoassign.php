@@ -297,7 +297,10 @@ class AutoassignerInterface {
             foreach ($bp as $cid2 => $x)
                 $autoassigner->avoid_pair_assignment($cid1, $cid2);
         }
-        $autoassigner->set_mcmf(@$_REQUEST["method"] !== "random");
+        if (@$_REQUEST["method"] === "random")
+            $autoassigner->set_method(Autoassigner::METHOD_RANDOM);
+        else
+            $autoassigner->set_method(Autoassigner::METHOD_MCMF);
         $autoassigner->add_progressf(array($this, "progress"));
         $this->live = true;
         echo '<div id="propass" class="propass">';
