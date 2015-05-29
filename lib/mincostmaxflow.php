@@ -16,6 +16,7 @@ class MinCostMaxFlow_Node {
     public $excess = 0;
     public $price = 0;
     public $entryflow = 0;
+    public $check_outgoing_admissible = null;
     public $ein = array();
     public $eout = array();
     public function __construct($name, $klass) {
@@ -32,16 +33,16 @@ class MinCostMaxFlow_Node {
             fwrite(STDERR, "{$this->name}: bad excess e{$this->excess}, have $x\n");
         assert($x == $this->excess);
     }
-    public function can_accept_cspush() {
-        if ($this->excess < 0)
-            return true;
+    public function has_outgoing_admissible() {
+        if ($this->check_outgoing_admissible !== null)
+            return $this->check_outgoing_admissible;
         foreach ($this->ein as $e)
             if ($e->flow > 0 && $e->reduced_cost(true) < 0)
-                return true;
+                return $this->check_outgoing_admissible = true;
         foreach ($this->eout as $e)
             if ($e->flow < $e->cap && $e->reduced_cost(false) < 0)
-                return true;
-        return false;
+                return $this->check_outgoing_admissible = true;
+        return $this->check_outgoing_admissible = false;
     }
 };
 
@@ -427,25 +428,48 @@ class MinCostMaxFlow {
     // cost-scaling push-relabel
 
     private function cspushrelabel_push($e, $erev) {
-        $src = $erev ? $e->dst : $e->src;
         $dst = $erev ? $e->src : $e->dst;
+        // push lookahead heuristic
+        if ($dst->excess >= 0 && !$dst->has_outgoing_admissible()) {
+            $this->cspushrelabel_relabel($dst);
+            return;
+        }
+
+        $src = $erev ? $e->dst : $e->src;
         $amt = min($src->excess, $e->residual_cap($erev));
         $e->flow += $erev ? -$amt : $amt;
         $src->excess -= $amt;
         $dst->excess += $amt;
+        $src->check_outgoing_admissible = $dst->check_outgoing_admissible = null;
+
+        if ($dst->excess > 0 && $dst->link === false) {
+            $this->ltail = $this->ltail->link = $dst;
+            $dst->link = null;
+        }
         //fwrite(STDERR, "push $amt {$src->name} > {$dst->name}\n" . $this->debug_info(true) . "\n");
     }
 
     private function cspushrelabel_relabel($v) {
         $p = -INF;
-        foreach ($v->eout as $e)
+        foreach ($v->eout as $e) {
             if ($e->flow < $e->cap)
                 $p = max($p, $e->dst->price - $e->cost - $this->epsilon);
-        foreach ($v->ein as $e)
+            if ($e->flow > 0)
+                $e->dst->check_outgoing_admissible = null;
+        }
+        foreach ($v->ein as $e) {
             if ($e->flow > 0)
                 $p = max($p, $e->src->price + $e->cost - $this->epsilon);
+            if ($e->flow < $e->cap)
+                $e->src->check_outgoing_admissible = null;
+        }
         //fwrite(STDERR, "relabel {$v->name} {$v->price}->$p\n");
-        $v->price = $p;
+        if ($p > -INF)
+            $v->price = $p;
+        else
+            $v->price -= $this->epsilon;
+        $v->npos = 0;
+        $v->check_outgoing_admissible = null;
     }
 
     private function cspushrelabel_discharge($v) {
@@ -455,19 +479,14 @@ class MinCostMaxFlow {
         while ($v->excess > 0) {
             if ($v->npos == $nout + $nin) {
                 $this->cspushrelabel_relabel($v);
-                $v->npos = $notrelabeled = 0;
+                $notrelabeled = 0;
             } else {
                 $erev = $v->npos >= $nout;
                 $e = $erev ? $v->ein[$v->npos - $nout] : $v->eout[$v->npos];
-                $other = $erev ? $e->src : $e->dst;
                 if ($e->residual_cap($erev) > 0
-                    && $e->reduced_cost($erev) < 0) {
+                    && $e->reduced_cost($erev) < 0)
                     $this->cspushrelabel_push($e, $erev);
-                    if ($other->excess > 0 && $other->link === false) {
-                        $this->ltail = $this->ltail->link = $other;
-                        $other->link = null;
-                    }
-                } else
+                else
                     ++$v->npos;
             }
         }
@@ -486,20 +505,19 @@ class MinCostMaxFlow {
                 $e->flow = $e->cap;
                 $e->dst->excess += $delta;
                 $e->src->excess -= $delta;
-            } else if ($e->reduced_cost(true) < 0 && $e->flow) {
+            } else if ($e->reduced_cost(true) < 0 && $e->flow > 0) {
                 $delta = $e->flow;
                 $e->flow = 0;
                 $e->src->excess += $delta;
                 $e->dst->excess -= $delta;
             }
         }
-        foreach ($this->v as $v)
-            $v->check_excess();
 
         // initialize lists and neighbor position
         $lhead = $this->ltail = null;
         foreach ($this->v as $v) {
             $v->npos = 0;
+            $v->check_outgoing_admissible = null;
             if ($v->excess > 0) {
                 $this->ltail ? ($this->ltail->link = $v) : ($lhead = $v);
                 $v->link = null;
