@@ -141,6 +141,10 @@ class Autoassigner {
         foreach ($this->pcm as $cid => $p)
             $this->prefs[$cid] = array();
 
+        // first load topics
+        $result = Dbl::qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a", $this->papersel);
+        $topicIds = Dbl::fetch_map($result);
+
         $query = "select Paper.paperId, ? contactId,
             coalesce(PaperConflict.conflictType, 0) as conflictType,
             coalesce(PaperReviewPreference.preference, 0) as preference,
@@ -148,37 +152,31 @@ class Autoassigner {
             coalesce(PaperReview.reviewType, 0) as myReviewType,
             coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
             Paper.outcome,
-            topicInterestScore,
             coalesce(PRR.contactId, 0) as refused,
             Paper.managerContactId
         from Paper
         left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
         left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=?)
         left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
-        left join (select paperId,
-                   sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore
-               from PaperTopic
-               join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=?)
-               where paperId ?a
-               group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)
         left join PaperReviewRefused PRR on (PRR.paperId=Paper.paperId and PRR.contactId=?)
         where Paper.paperId ?a
         group by Paper.paperId";
 
         $nmade = 0;
         foreach ($this->pcm as $cid => $p) {
-            $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid,
-                              $this->papersel, $cid, $this->papersel);
+            $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $this->papersel);
 
             while (($row = PaperInfo::fetch($result, true))) {
-                $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $row->expertise, $row->topicInterestScore);
+                $row->topicIds = @$topicIds[$row->paperId];
+                $topic_interest_score = $row->topic_interest_score($p);
+                $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $row->expertise, $topic_interest_score);
                 if ($row->myReviewType > 0)
                     $pref = self::POLDASSIGN;
                 else if ($row->conflictType > 0 || $row->refused > 0
                          || !$p->can_accept_review_assignment($row))
                     $pref = self::PNOASSIGN;
                 else
-                    $pref = max($row->preference, -1000) + ($row->topicInterestScore / 100);
+                    $pref = max($row->preference, -1000) + ($topic_interest_score / 100);
                 $this->prefs[$row->contactId][$row->paperId] = $pref;
             }
 

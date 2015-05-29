@@ -302,6 +302,16 @@ class Dbl {
         return $x;
     }
 
+    static function fetch_map($result) {
+        $x = array();
+        while ($result && ($row = $result->fetch_row())) {
+            assert(count($row) == 2);
+            $x[$row[0]] = $row[1];
+        }
+        $result && $result->close();
+        return $x;
+    }
+
     static function log_queries($limit) {
         if (!$limit)
             self::$log_queries = false;
