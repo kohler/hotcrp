@@ -95,7 +95,7 @@ class MinCostMaxFlow {
     const PMINCOST_INROUND = 3;
     const PMINCOST_DONE = 4;
 
-    const CSPUSHRELABEL_ALPHA = 4;
+    const CSPUSHRELABEL_ALPHA = 12;
 
     public function __construct() {
         $this->clear();
