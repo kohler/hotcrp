@@ -210,7 +210,7 @@ class AutoassignerInterface {
         $assignset->echo_unparse_display($papersel);
 
         // print preference unhappiness (currently disabled)
-        if (false && $this->atype_review) {
+        if (@$_REQUEST["profile"] && $this->atype_review) {
             $umap = $this->autoassigner->pc_unhappiness();
             sort($umap);
             echo '<p style="font-size:65%">Preference unhappiness: ';
@@ -229,8 +229,10 @@ class AutoassignerInterface {
                 ', 75% ', $umap[(int) (count($umap) * 0.75)],
                 ', 90% ', $umap[(int) (count($umap) * 0.9)],
                 ', max ', $umap[count($umap) - 1],
-                '<br/>Time: ', sprintf("%.6f", microtime(true) - $this->start_at),
-                '</p>';
+                '<br/>Time: ', sprintf("%.6f", microtime(true) - $this->start_at);
+            foreach ($this->autoassigner->profile as $name => $time)
+                echo ', ', sprintf("%s %.6f", htmlspecialchars($name), $time);
+            echo '</p>';
         }
 
         list($atypes, $apids) = $assignset->types_and_papers(true);
@@ -242,7 +244,7 @@ class AutoassignerInterface {
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Save assignment"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method", "profile") as $t)
             if (isset($_REQUEST[$t]))
                 echo Ht::hidden($t, $_REQUEST[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))), "\n";
@@ -367,7 +369,7 @@ function divClass($name) {
     return "<div" . (isset($Error[$name]) ? " class='error'" : "") . ">";
 }
 
-echo "<form method='post' action='", hoturl_post("autoassign"), "' accept-charset='UTF-8'><div class='aahc'>",
+echo Ht::form(hoturl_post("autoassign")), '<div class="aahc">',
     "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "' class='q'><strong>Automatic</strong></a></li>
@@ -578,6 +580,8 @@ echo "<div class='g'></div>\n";
 echo "<div class='aa'>", Ht::submit("assign", "Prepare assignment"),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
+if (@$_REQUEST["profile"])
+    echo Ht::hidden("profile", $_REQUEST["profile"]);
 
 echo "</div></form>";
 

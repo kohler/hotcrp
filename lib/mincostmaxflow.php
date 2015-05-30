@@ -550,12 +550,12 @@ class MinCostMaxFlow {
         $this->pushrelabel_run();
 
         // refine the maximum flow to achieve min cost
+        $this->mincost_start_at = microtime(true);
         $phaseno = $nphases = 0;
         for ($e = $this->maxcost; $e >= 1 / count($this->v); $e /= self::CSPUSHRELABEL_ALPHA)
             ++$nphases;
         $this->epsilon = $this->maxcost;
 
-        $this->mincost_start_at = microtime(true);
         while ($this->epsilon >= 1 / count($this->v)) {
             $this->cspushrelabel_refine($phaseno, $nphases);
             ++$phaseno;

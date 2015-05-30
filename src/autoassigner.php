@@ -21,6 +21,7 @@ class Autoassigner {
     private $mcmf_round_descriptor; // for use in MCMF progress
     private $mcmf_max_cost;
     private $ndesired;
+    public $profile = array();
 
     const METHOD_MCMF = 0;
     const METHOD_RANDOM = 1;
@@ -137,6 +138,7 @@ class Autoassigner {
 
     private function preferences_review() {
         global $Conf;
+        $time = microtime(true);
         $this->prefs = array();
         foreach ($this->pcm as $cid => $p)
             $this->prefs[$cid] = array();
@@ -204,10 +206,13 @@ class Autoassigner {
                     if ($this->prefs[$cid2][$pid] <= self::POLDASSIGN)
                         $this->prefs[$cid][$pid] = self::PNOASSIGN;
             }
+
+        $this->profile["preferences"] = microtime(true) - $time;
     }
 
     private function preferences_paperpc($scoreinfo) {
         global $Conf;
+        $time = microtime(true);
         $this->prefs = array();
         foreach ($this->pcm as $cid => $p)
             $this->prefs[$cid] = array();
@@ -272,6 +277,8 @@ class Autoassigner {
                 $this->set_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->pcm) + 0.5)));
         }
         $this->make_pref_groups();
+
+        $this->profile["preferences"] = microtime(true) - $time;
     }
 
     private function make_pref_groups() {
@@ -514,6 +521,7 @@ class Autoassigner {
         $m->run();
         // make assignments
         $this->set_progress("Completing assignment" . $this->mcmf_round_descriptor);
+        $time = microtime(true);
         $nassigned = 0;
         foreach ($this->pcm as $cid => $p) {
             foreach ($m->reachable("u$cid", "p") as $v) {
@@ -523,6 +531,10 @@ class Autoassigner {
             }
         }
         $m->clear(); // break circular refs
+        $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
+        if ($m->mincost_start_at)
+            $this->profile["mincost"] = $m->mincost_end_at - $m->mincost_start_at;
+        $this->profile["traverse"] = microtime(true) - $time;
         return $nassigned;
     }
 
