@@ -932,7 +932,7 @@ function search_set_decisions() {
     if (!isset($decision_map[$o]))
         return $Conf->errorMsg("Bad decision value.");
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
-    $success = $fail = array();
+    $success = $fails = array();
     while (($prow = PaperInfo::fetch($result, $Me)))
         if ($Me->can_set_decision($prow))
             $success[] = $prow->paperId;
