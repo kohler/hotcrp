@@ -974,7 +974,7 @@ class Conference {
         global $Now;
         $t = @$this->settings[$name];
         if ($t !== null && $t > 0 && $grace && ($g = @$this->settings[$grace]))
-            $t += $grace;
+            $t += $g;
         return $t !== null && $t > 0 && $t <= $Now;
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
@@ -984,7 +984,7 @@ class Conference {
             return false;
         $t = @$this->settings[$name2];
         if ($t !== null && $t > 0 && $grace && ($g = @$this->settings[$grace]))
-            $t += $grace;
+            $t += $g;
         return $t === null || $t <= 0 || $t >= $Now;
     }
 
