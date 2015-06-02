@@ -573,7 +573,7 @@ echo "<table id='foldaccount' class='form foldc ",
     ($pcrole == "no" ? "fold1c " : "fold1o "),
     (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), "'>
 <tr>
-  <td class='caption initial'>Contact information</td>
+  <td class='caption'>Contact information</td>
   <td class='entry'><div class='f-contain'>\n\n";
 
 if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))

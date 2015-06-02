@@ -718,10 +718,10 @@ td.caption {
 	border-left: 1px solid #ccb7a3; /* #9999cc; */
 	border-right: 1px solid #ccb7a3; /* #9999cc; */
 }
-td.caption.initial {
+tr:first-child > td.caption {
 	border-top: 1px solid #ccb7a3; /* #9999cc; */
 }
-td.caption.final {
+tr:last-child > td.caption {
 	border-bottom: 1px solid #ccb7a3; /* #9999cc; */
 }
 tr.topspace td.caption {

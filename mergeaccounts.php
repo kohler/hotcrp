@@ -160,7 +160,7 @@ echo Ht::hidden("actas", $Me->contactId);
 <table class='form'>
 
 <tr>
-  <td class='caption initial'>Email</td>
+  <td class='caption'>Email</td>
   <td class='entry'><input type='text' name='email' size='50'
     <?php if (isset($_REQUEST["email"])) echo "value=\"", htmlspecialchars($_REQUEST["email"]), "\" "; ?>
   /></td>

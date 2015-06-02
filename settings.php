@@ -2319,7 +2319,7 @@ echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
 echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform")), "<div>";
 
-echo "<table class='settings'><tr><td class='caption initial final'>";
+echo "<table class='settings'><tr><td class='caption'>";
 echo "<table class='lhsel'>";
 foreach (array("info" => "Conference information",
                "users" => "Accounts",
