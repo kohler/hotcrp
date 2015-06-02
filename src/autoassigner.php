@@ -437,7 +437,7 @@ class Autoassigner {
         } else {
             $x = array();
             $cost = $mcmf->current_cost();
-            if ($this->mcmf_max_cost === null)
+            if (!$this->mcmf_max_cost)
                 $this->mcmf_max_cost = $cost;
             else if ($cost < $this->mcmf_max_cost)
                 $x[] = sprintf("%.1f%% better", ((int) (($this->mcmf_max_cost - $cost) * 1000 / $this->mcmf_max_cost + 0.5)) / 10);
