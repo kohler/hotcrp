@@ -63,7 +63,7 @@ loadRows();
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST)
     && !isset($_REQUEST["retract"]) && !isset($_REQUEST["add"])
     && !isset($_REQUEST["deny"]))
-    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  Any changes were lost.");
+    $Conf->post_missing_msg();
 
 
 

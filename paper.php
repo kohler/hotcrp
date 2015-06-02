@@ -63,7 +63,7 @@ $newPaper = (defval($_REQUEST, "p") == "new"
 
 // general error messages
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
-    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept. Any changes were lost.");
+    $Conf->post_missing_msg();
 
 
 // grab paper row

@@ -2037,6 +2037,10 @@ class Conference {
         return false;
     }
 
+    function post_missing_msg() {
+        $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
+    }
+
     function errorMsgExit($text) {
         if ($text)
             $this->msg($text, "merror");

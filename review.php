@@ -70,7 +70,7 @@ loadRows();
 
 // general error messages
 if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
-    $Conf->errorMsg("It looks like you tried to upload a gigantic file, larger than I can accept.  The file was ignored.");
+    $Conf->post_missing_msg();
 else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
     if (fileUploaded($_FILES["uploadedFile"]))
         $_REQUEST["uploadForm"] = 1;
