@@ -2588,7 +2588,7 @@ return function (content, bubopt) {
                 bubch[0].style.left = d + "px";
                 bubch[2].style.left = (d + 0.77*divbw) + "px";
             } catch (err) {
-                errlog(d, ya, y, wpos, bpos, err);
+                errlog(d, xa, x, wpos, bpos, err);
             }
 
             if (dir == 0)
