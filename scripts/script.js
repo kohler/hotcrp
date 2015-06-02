@@ -2514,6 +2514,13 @@ return function (content, bubopt) {
         return z;
     }
 
+    function errlog(d, ya, y, wpos, bpos, err) {
+        var ex = [d, divbw, ya, y];
+        if (window.JSON)
+            ex.push(JSON.stringify({"n": nearpos, "w": wpos, "b": bpos}));
+        log_jserror({"error": ex.join(" ")}, err);
+    }
+
     function show() {
         var noflip = /!/.test(dirspec), noconstrain = /\*/.test(dirspec),
             ds = dirspec.replace(/[!*]/g, "");
@@ -2566,7 +2573,7 @@ return function (content, bubopt) {
                 bubch[0].style.top = d + "px";
                 bubch[2].style.top = (d + 0.77*divbw) + "px";
             } catch (err) {
-                log_jserror({"error": JSON.stringify([d, divbw, nearpos, wpos, bpos, ya, y])}, err);
+                errlog(d, ya, y, wpos, bpos, err);
             }
 
             if (dir == 1)
@@ -2581,7 +2588,7 @@ return function (content, bubopt) {
                 bubch[0].style.left = d + "px";
                 bubch[2].style.left = (d + 0.77*divbw) + "px";
             } catch (err) {
-                log_jserror({"error": JSON.stringify([d, divbw, nearpos, wpos, bpos, ya, y])}, err);
+                errlog(d, ya, y, wpos, bpos, err);
             }
 
             if (dir == 0)
