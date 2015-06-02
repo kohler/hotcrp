@@ -335,7 +335,7 @@ class UserStatus {
             $aupapers = Contact::email_authored_papers($cj->email, $cj);
 
         foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators", "password") as $k)
+                       "collaborators") as $k)
             if (isset($cj->$k))
                 $user->$k = $cj->$k;
         if (isset($cj->phone))

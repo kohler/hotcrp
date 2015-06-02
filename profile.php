@@ -275,6 +275,8 @@ function parseBulkFile($text, $filename) {
                        "zip" => "zipCode", "tags" => "contactTags") as $k => $x)
             if (isset($cj->$k) && !isset($cj->$x))
                 $cj->$x = $cj->$k;
+        // thou shalt not set passwords by bulk update
+        unset($cj->password, $cj->password_plaintext);
         if (isset($cj->name) && !isset($cj->firstName) && !isset($cj->lastName))
             list($cj->firstName, $cj->lastName) = Text::split_name($cj->name);
         if (count($topic_revmap)) {
