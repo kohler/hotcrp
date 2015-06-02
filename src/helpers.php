@@ -561,7 +561,8 @@ class SessionList {
                     return $i;
                 else if (!$oldest || @($lists[$oldest]->timestamp < $l->timestamp))
                     $oldest = $i;
-            } else if (@$_REQUEST["ls"] == $i || @$_COOKIE["hotcrp_ls"] == $i)
+            } else if (@$_REQUEST["ls"] === (string) $i
+                       || @$_COOKIE["hotcrp_ls"] === (string) $i)
                 return $i;
             else if (!$empty)
                 $empty = $i;
@@ -629,30 +630,28 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     $list = false;
     $CurrentList = null;
 
-    $listno = null;
-    if (isset($_REQUEST["ls"]))
-        $listno = cvtint($_REQUEST["ls"], null);
+    $listdesc = @$_REQUEST["ls"];
     if (isset($_COOKIE["hotcrp_ls"])) {
-        $listno = $listno ? : cvtint($_COOKIE["hotcrp_ls"], null);
+        $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
         setcookie("hotcrp_ls", "", $Now - 86400);
     }
+    $listno = cvtint($listdesc, null);
     if ($listno && ($xlist = SessionList::lookup($listno))
         && str_starts_with($xlist->listid, $listtype)
         && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0))) {
         $list = $xlist;
         $CurrentList = $listno;
-    } else if (isset($_REQUEST["ls"]) && $listtype == "p") {
-        $l = $_REQUEST["ls"];
-        if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $l, $m))
+    } else if ($listdesc && $listtype == "p") {
+        if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
             $list = _tryNewList(array("t" => $m[1],
                                       "q" => urldecode($m[2])),
                                 $listtype, $m[3]);
-        if (!$list && preg_match('/\A[a-z]+\z/', $l))
-            $list = _tryNewList(array("t" => $l), $listtype);
-        if (!$list && preg_match('/\A(all|s):(.*)\z/s', $l, $m))
+        if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
+            $list = _tryNewList(array("t" => $listdesc), $listtype);
+        if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
             $list = _tryNewList(array("t" => $m[1], "q" => $m[2]), $listtype);
         if (!$list)
-            $list = _tryNewList(array("q" => $l), $listtype);
+            $list = _tryNewList(array("q" => $listdesc), $listtype);
     }
 
     $k = false;

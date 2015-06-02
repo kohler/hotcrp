@@ -92,7 +92,7 @@ class ContactList extends BaseList {
             $queryOptions["revratings"] = $queryOptions["reviews"] = true;
         }
         if ($fieldId == self::FIELD_PAPERS)
-            $queryOptions['papers'] = true;
+            $queryOptions["papers"] = true;
         if ($fieldId == self::FIELD_REVIEW_PAPERS)
             $queryOptions["repapers"] = $queryOptions["reviews"] = true;
         if ($fieldId == self::FIELD_AFFILIATION_ROW)
@@ -279,20 +279,20 @@ class ContactList extends BaseList {
             if ($this->contact->privChair)
                 $t = "<a href=\"" . hoturl("profile", "u=" . urlencode($row->email) . $this->contactLinkArgs) . "\"" . ($row->disabled ? " class='uu'" : "") . ">$t</a>";
             if ($row->roles & Contact::ROLE_CHAIR)
-                $t .= " <span class='pcrole'>(Chair)</span>";
+                $t .= ' <span class="pcrole">(chair)</span>';
             else if (($row->roles & (Contact::ROLE_ADMIN | Contact::ROLE_PC)) == (Contact::ROLE_ADMIN | Contact::ROLE_PC))
-                $t .= " <span class='pcrole'>(PC, sysadmin)</span>";
+                $t .= ' <span class="pcrole">(PC, sysadmin)</span>';
             else if ($row->roles & Contact::ROLE_ADMIN)
-                $t .= " <span class='pcrole'>(Sysadmin)</span>";
+                $t .= ' <span class="pcrole">(sysadmin)</span>';
             else if (($row->roles & Contact::ROLE_PC)
                      && $this->limit != "pc")
-                $t .= " <span class='pcrole'>(PC)</span>";
+                $t .= ' <span class="pcrole">(PC)</span>';
             if ($this->contact->privChair && $row->email != $this->contact->email)
                 $t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
                     . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
                     . "</a>";
             if ($row->disabled)
-                $t .= " <span class='hint'>(disabled)</span>";
+                $t .= ' <span class="hint">(disabled)</span>';
             return $t;
         case self::FIELD_EMAIL:
             if (!$this->contact->isPC)
@@ -368,14 +368,14 @@ class ContactList extends BaseList {
                 return "";
             $x = explode(",", $row->paperIds);
             sort($x, SORT_NUMERIC);
+            foreach ($x as &$v)
+                $v = '<a href="' . hoturl("paper", "p=$v") . '">' . $v . '</a>';
+            $ls = "p/s/";
             if ($this->limit == "auuns" || $this->limit == "all")
-                $extra = "&amp;ls=" . urlencode("p/all/" . join(" ", $x));
-            else
-                $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", $x));
-            $m = array();
-            foreach ($x as $v)
-                $m[] = "<a href=\"" . hoturl("paper", "p=$v$extra") . "\">$v</a>";
-            return join(", ", $m);
+                $ls = "p/all/";
+            $ls = htmlspecialchars($ls . urlencode("au:" . $row->email));
+            return '<div class="has_hotcrp_list" hotcrp_list="' . $ls . '">'
+                . join(", ", $x) . '</div>';
         case self::FIELD_REVIEW_PAPERS:
             if (!$row->paperIds)
                 return "";
@@ -384,17 +384,18 @@ class ContactList extends BaseList {
             $ords = explode(",", $row->reviewOrdinals);
             $spids = $pids;
             sort($spids, SORT_NUMERIC);
-            $extra = "&amp;ls=" . urlencode("p/s/" . join(" ", $spids));
             $m = array();
             for ($i = 0; $i != count($pids); ++$i) {
                 if ($ords[$i])
-                    $url = hoturl("paper", "p=" . $pids[$i] . "$extra#review" . $pids[$i] . unparseReviewOrdinal($ords[$i]));
+                    $url = hoturl("paper", "p=" . $pids[$i] . "#review" . $pids[$i] . unparseReviewOrdinal($ords[$i]));
                 else
-                    $url = hoturl("review", "p=" . $pids[$i] . "&amp;r=" . $rids[$i] . $extra);
+                    $url = hoturl("review", "p=" . $pids[$i] . "&amp;r=" . $rids[$i]);
                 $m[$pids[$i]] = "<a href=\"$url\">" . $pids[$i] . "</a>";
             }
             ksort($m, SORT_NUMERIC);
-            return join(", ", $m);
+            $ls = htmlspecialchars("p/s/" . urlencode("re:" . $row->email));
+            return '<div class="has_hotcrp_list" hotcrp_list="' . $ls . '">'
+                . join(", ", $m) . '</div>';
         case self::FIELD_TAGS:
             if (!$this->contact->isPC || !$row->contactTags)
                 return "";
@@ -775,7 +776,7 @@ class ContactList extends BaseList {
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
 
-        $x = "<table id=\"foldppl\" class=\"pltable plt_" . htmlspecialchars($listname);
+        $x = "<table id=\"foldppl\" class=\"pltable pltable_full plt_" . htmlspecialchars($listname);
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
         if ($foldclasses && $foldsession)
