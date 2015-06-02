@@ -180,6 +180,10 @@ jQuery.fn.extend({
                 x.left += d, x.right += d;
             if ((d = window.pageYOffset))
                 x.top += d, x.bottom += d;
+            if (!("width" in x)) {
+                x.width = x.right - x.left;
+                x.height = x.bottom - x.top;
+            }
             return x;
         } else
             x = this.offset();
