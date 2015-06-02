@@ -204,6 +204,8 @@ $Opt["disablePS"] = true;
 //   disableCsv      Set to true if downloaded information files should be
 //                   tab-separated rather than CSV.
 //   hideManager     If set, PC members are not shown paper managers.
+//   disableCapabilities If set, emails to authors will not have a
+//                   token enabling them to view their papers without logging in.
 
 $Opt["smartScoreCompare"] = true;
 
