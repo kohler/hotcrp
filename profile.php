@@ -75,10 +75,9 @@ if (!$Acct
         && $_REQUEST["profile_contactid"] !== (string) $Acct->contactId)) {
     if (!$Acct)
         $Conf->errorMsg("Invalid user.");
-    else if (isset($_REQUEST["register"]))
+    else if (isset($_REQUEST["register"]) || isset($_REQUEST["bulkregister"]))
         $Conf->errorMsg("You’re logged in as a different user now, so your changes were ignored.");
-    unset($_REQUEST["u"]);
-    unset($_REQUEST["register"]);
+    unset($_REQUEST["u"], $_REQUEST["register"], $_REQUEST["bulkregister"]);
     redirectSelf();
 }
 
@@ -328,7 +327,7 @@ function parseBulkFile($text, $filename) {
 
 if (!check_post())
     /* do nothing */;
-else if (isset($_REQUEST["register"]) && $newProfile
+else if (isset($_REQUEST["bulkregister"]) && $newProfile
          && fileUploaded($_FILES["bulk"])) {
     if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
         $Conf->errorMsg("Internal error: cannot read file.");
@@ -549,14 +548,16 @@ if (!$useRequest && $Me->privChair && $newProfile
     $pcrole = $_REQUEST["role"];
 
 
-$params = array();
+$form_params = array();
 if ($newProfile)
-    $params[] = "u=new";
+    $form_params[] = "u=new";
 else if ($Me->contactId != $Acct->contactId)
-    $params[] = "u=" . urlencode($Acct->email);
+    $form_params[] = "u=" . urlencode($Acct->email);
 if (isset($_REQUEST["ls"]))
-    $params[] = "ls=" . urlencode($_REQUEST["ls"]);
-echo Ht::form(hoturl_post("profile", join("&amp;", $params)),
+    $form_params[] = "ls=" . urlencode($_REQUEST["ls"]);
+if ($newProfile)
+    echo '<div id="foldbulk" class="fold9' . (@$_REQUEST["bulkregister"] ? "o" : "c") . '"><div class="fn9">';
+echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
     "<div class='aahc", ($UserStatus->nerrors ? " alert" : "") , "'>\n",
     // Don't want chrome to autofill the password changer.
@@ -569,13 +570,16 @@ if (isset($_REQUEST["redirect"]))
 if ($Me->privChair)
     echo Ht::hidden("whichpassword", "");
 
-echo "<table id='foldaccount' class='form foldc ",
+echo '<table id="foldaccount" class="form foldc ',
     ($pcrole == "no" ? "fold1c " : "fold1o "),
-    (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), "'>
-<tr>
-  <td class='caption'>Contact information</td>
-  <td class='entry'><div class='f-contain'>\n\n";
+    (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), '">';
 
+if ($newProfile)
+    echo '<tr><td class="caption"></td><td class="entry"><div style="margin-bottom:2em">', Ht::js_link("Bulk upload", "fold('bulk',null,9)"), '</div></td></tr>';
+
+echo '<tr>
+  <td class="caption">Contact information</td>
+  <td class="entry"><div class="f-contain">', "\n\n";
 if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
     echofield(0, "uemail", "Email", textinput("uemail", contact_value("uemail", "email"), 52, "account_d"));
 else if (!$newProfile) {
@@ -648,39 +652,6 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
     }
     echo '  <hr class="c" />';
     echo "</div></div>\n\n";
-}
-
-
-if ($newProfile) {
-    echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", 2),
-        "</td><td><a href=\"#\" onclick=\"return fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
-        "<tr class='fx2'><td></td><td>",
-        "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Example:</p>\n",
-        '<pre class="entryexample">
-name,email,affiliation,roles
-John Adams,john@earbox.org,UC Berkeley,pc
-"Adams, John Quincy",quincy@whitehouse.gov
-</pre>', "\n",
-        '<p>Other fields:</p><table>',
-        '<tr><td class="lmcaption"><code>name</code></td>',
-          '<td>User name</td></tr>',
-        '<tr><td class="lmcaption"><code>first</code></td>',
-          '<td>First name</td></tr>',
-        '<tr><td class="lmcaption"><code>last</code></td>',
-          '<td>Last name</td></tr>',
-        '<tr><td class="lmcaption"><code>affiliation</code></td>',
-          '<td>Affiliation</td></tr>',
-        '<tr><td class="lmcaption"><code>roles</code></td>',
-          '<td>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</td></tr>',
-        '<tr><td class="lmcaption"><code>tags</code></td>',
-          '<td>PC tags (space-separated)</td></tr>',
-        '<tr><td class="lmcaption"><code>collaborators</code></td>',
-          '<td>Collaborators</td></tr>',
-        '<tr><td class="lmcaption"><code>follow</code></td>',
-          '<td>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”</td></tr>',
-        "</table>\n",
-        "<p><input type='file' name='bulk' size='30' /></p>",
-        "</td></tr></table></div>\n\n";
 }
 
 echo "</div></td>\n</tr>\n\n";
@@ -847,6 +818,53 @@ foreach ($buttons as $b) {
 }
 echo "    </tr>\n    </table></div></td>\n</tr>
 </table></div></form>\n";
+
+if ($newProfile) {
+    echo '</div><div class="fx9">';
+    echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
+                  array("id" => "accountform", "autocomplete" => "off")),
+        "<div class='aahc", ($UserStatus->nerrors ? " alert" : "") , "'>\n",
+        // Don't want chrome to autofill the password changer.
+        // But chrome defaults to autofilling the password changer
+        // unless we supply an earlier password input.
+        Ht::password("chromefooler", "", array("style" => "display:none")),
+        '<table><tr><td class="caption"></td><td class="entry">',
+        '<div style="margin-bottom:2em">', Ht::js_link("Direct entry", "fold('bulk',null,9)"), '</div></td></tr>',
+        '<tr><td class="caption">Contact information</td><td class="entry">';
+
+    echo '<table class="pt_buttons"><tr>',
+        '<td class="ptb_button"><input type="file" name="bulk" size="30" /></td>',
+        '<td class="ptb_button">', Ht::submit("bulkregister", "Save accounts"), '</td>',
+        '</tr></table>';
+
+    echo "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Example:</p>\n",
+        '<pre class="entryexample">
+name,email,affiliation,roles
+John Adams,john@earbox.org,UC Berkeley,pc
+"Adams, John Quincy",quincy@whitehouse.gov
+</pre>', "\n",
+        '<p>Other fields include:</p><table>',
+        '<tr><td class="lmcaption"><code>name</code></td>',
+          '<td>User name</td></tr>',
+        '<tr><td class="lmcaption"><code>first</code></td>',
+          '<td>First name</td></tr>',
+        '<tr><td class="lmcaption"><code>last</code></td>',
+          '<td>Last name</td></tr>',
+        '<tr><td class="lmcaption"><code>affiliation</code></td>',
+          '<td>Affiliation</td></tr>',
+        '<tr><td class="lmcaption"><code>roles</code></td>',
+          '<td>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</td></tr>',
+        '<tr><td class="lmcaption"><code>tags</code></td>',
+          '<td>PC tags (space-separated)</td></tr>',
+        '<tr><td class="lmcaption"><code>collaborators</code></td>',
+          '<td>Collaborators</td></tr>',
+        '<tr><td class="lmcaption"><code>follow</code></td>',
+          '<td>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”</td></tr>',
+        "</table>\n";
+
+    echo '</td></tr></table></div></form></div></div>';
+}
+
 
 $Conf->footerScript("hiliter_children('#accountform');jQuery('textarea').autogrow()");
 $Conf->footerScript("crpfocus(\"account\")");

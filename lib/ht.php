@@ -352,6 +352,21 @@ class Ht {
             . self::extra($js) . " />";
     }
 
+    static function js_link($html, $onclick, $js = null) {
+        if (!$js && is_array($onclick)) {
+            $js = $onclick;
+            $onclick = null;
+        } else if (!$js)
+            $js = array();
+        if ($onclick && !preg_match('/(?:^return|;)/', $onclick))
+            $onclick = "return " . $onclick;
+        if ($onclick)
+            $js["onclick"] = $onclick;
+        if (!@$js["href"])
+            $js["href"] = "#";
+        return "<a" . self::extra($js) . ">" . $html . "</a>";
+    }
+
     static function popup($idpart, $content, $form = null, $actions = null) {
         if ($form && $actions)
             $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
