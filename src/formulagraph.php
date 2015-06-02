@@ -168,10 +168,11 @@ class FormulaGraph {
             unset($d);
         } else if ($this->type) {
             usort($data, "FormulaGraph::barchart_compare");
+            $epsilon = ($data[count($data) - 1][0] - $data[0][0]) / 5000;
             $ndata = array();
             $x = null;
             foreach ($data as $d) {
-                if (!$x || $x->x != $d[0] || $x->group != $d[1]) {
+                if (!$x || abs($x->x - $d[0]) > $epsilon || $x->group != $d[1]) {
                     $x = (object) array("x" => $d[0], "group" => $d[1], "d" => array());
                     if (@$this->queries[$d[1]])
                         $x->groupLabel = $this->queries[$d[1]];
