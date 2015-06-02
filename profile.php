@@ -256,7 +256,6 @@ function parseBulkFile($text, $filename) {
     }
 
     $cj_template = (object) array();
-    pc_request_as_json($cj_template);
     $topic_revmap = array();
     foreach ($Conf->topic_map() as $id => $name)
         $topic_revmap[strtolower($name)] = $id;
@@ -654,13 +653,30 @@ if ($newProfile) {
     echo "<div class='f-i'><table style='font-size: smaller'><tr><td>", foldbutton("account", 2),
         "</td><td><a href=\"#\" onclick=\"return fold('account',null,2)\"><strong>Bulk account creation</strong></a></td></tr>",
         "<tr class='fx2'><td></td><td>",
-        "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Other fields can include <code>name</code>, <code>first</code>, <code>last</code>, and <code>affiliation</code>. Example:</p>\n",
-        "<pre class='entryexample'>
+        "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Example:</p>\n",
+        '<pre class="entryexample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc
-\"Adams, John Quincy\",quincy@whitehouse.gov
-</pre>\n",
-        '<p>If you don’t give a <code>roles</code> column, role information is set from the form below.</p>',
+"Adams, John Quincy",quincy@whitehouse.gov
+</pre>', "\n",
+        '<p>Other fields:</p><table>',
+        '<tr><td class="lmcaption"><code>name</code></td>',
+          '<td>User name</td></tr>',
+        '<tr><td class="lmcaption"><code>first</code></td>',
+          '<td>First name</td></tr>',
+        '<tr><td class="lmcaption"><code>last</code></td>',
+          '<td>Last name</td></tr>',
+        '<tr><td class="lmcaption"><code>affiliation</code></td>',
+          '<td>Affiliation</td></tr>',
+        '<tr><td class="lmcaption"><code>roles</code></td>',
+          '<td>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</td></tr>',
+        '<tr><td class="lmcaption"><code>tags</code></td>',
+          '<td>PC tags (space-separated)</td></tr>',
+        '<tr><td class="lmcaption"><code>collaborators</code></td>',
+          '<td>Collaborators</td></tr>',
+        '<tr><td class="lmcaption"><code>follow</code></td>',
+          '<td>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”</td></tr>',
+        "</table>\n",
         "<p><input type='file' name='bulk' size='30' /></p>",
         "</td></tr></table></div>\n\n";
 }

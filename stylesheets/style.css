@@ -783,6 +783,9 @@ th.lcaption, td.lcaption {
 th.lxcaption, td.lxcaption {
 	padding: 3px 1em 3px 0;
 }
+td.lmcaption {
+	padding-right: 1em;
+}
 td.mcaption {
 	text-align: right;
 	padding-right: 1em;
