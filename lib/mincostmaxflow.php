@@ -16,7 +16,7 @@ class MinCostMaxFlow_Node {
     public $excess = 0;
     public $price = 0;
     public $entryflow = 0;
-    public $check_outgoing_admissible = null;
+    public $n_outgoing_admissible = 0;
     public $ein = array();
     public $eout = array();
     public function __construct($name, $klass) {
@@ -33,16 +33,15 @@ class MinCostMaxFlow_Node {
             fwrite(STDERR, "{$this->name}: bad excess e{$this->excess}, have $x\n");
         assert($x == $this->excess);
     }
-    public function has_outgoing_admissible() {
-        if ($this->check_outgoing_admissible !== null)
-            return $this->check_outgoing_admissible;
+    public function count_outgoing_admissible() {
+        $n = 0;
         foreach ($this->ein as $e)
             if ($e->flow > 0 && $e->reduced_cost(true) < 0)
-                return $this->check_outgoing_admissible = true;
+                ++$n;
         foreach ($this->eout as $e)
             if ($e->flow < $e->cap && $e->reduced_cost(false) < 0)
-                return $this->check_outgoing_admissible = true;
-        return $this->check_outgoing_admissible = false;
+                ++$n;
+        return $n;
     }
 };
 
@@ -432,7 +431,7 @@ class MinCostMaxFlow {
     private function cspushrelabel_push($e, $erev) {
         $dst = $erev ? $e->src : $e->dst;
         // push lookahead heuristic
-        if ($dst->excess >= 0 && !$dst->has_outgoing_admissible()) {
+        if ($dst->excess >= 0 && !$dst->n_outgoing_admissible) {
             $this->cspushrelabel_relabel($dst);
             return;
         }
@@ -442,7 +441,8 @@ class MinCostMaxFlow {
         $e->flow += $erev ? -$amt : $amt;
         $src->excess -= $amt;
         $dst->excess += $amt;
-        $src->check_outgoing_admissible = $dst->check_outgoing_admissible = null;
+        if ($e->flow == ($erev ? 0 : $e->cap))
+            --$src->n_outgoing_admissible;
 
         if ($dst->excess > 0 && $dst->link === false) {
             $this->ltail = $this->ltail->link = $dst;
@@ -452,26 +452,35 @@ class MinCostMaxFlow {
     }
 
     private function cspushrelabel_relabel($v) {
+        // calculate new price
         $p = -INF;
-        foreach ($v->eout as $e) {
+        foreach ($v->eout as $e)
             if ($e->flow < $e->cap)
                 $p = max($p, $e->dst->price - $e->cost - $this->epsilon);
-            if ($e->flow > 0)
-                $e->dst->check_outgoing_admissible = null;
-        }
-        foreach ($v->ein as $e) {
+        foreach ($v->ein as $e)
             if ($e->flow > 0)
                 $p = max($p, $e->src->price + $e->cost - $this->epsilon);
-            if ($e->flow < $e->cap)
-                $e->src->check_outgoing_admissible = null;
-        }
-        //fwrite(STDERR, "relabel {$v->name} {$v->price}->$p\n");
-        if ($p > -INF)
-            $v->price = $p;
-        else
-            $v->price -= $this->epsilon;
+        $p_delta = $p > -INF ? $p - $v->price : -$this->epsilon;
+        $v->price += $p_delta;
+
+        // start over on arcs
         $v->npos = 0;
-        $v->check_outgoing_admissible = null;
+
+        // adjust n_outgoing_admissible counts
+        foreach ($v->eout as $e) {
+            $c = $e->reduced_cost(false);
+            if (($c < 0) !== ($c - $p_delta < 0) && $e->flow < $e->cap)
+                $v->n_outgoing_admissible += $c < 0 ? 1 : -1;
+            if (($c > 0) !== ($c - $p_delta > 0) && $e->flow > 0)
+                $e->dst->n_outgoing_admissible += $c > 0 ? 1 : -1;
+        }
+        foreach ($v->ein as $e) {
+            $c = $e->reduced_cost(false);
+            if (($c > 0) !== ($c + $p_delta > 0) && $e->flow > 0)
+                $v->n_outgoing_admissible += $c > 0 ? 1 : -1;
+            if (($c < 0) !== ($c + $p_delta < 0) && $e->flow < $e->cap)
+                $e->src->n_outgoing_admissible += $c < 0 ? 1 : -1;
+        }
     }
 
     private function cspushrelabel_discharge($v) {
@@ -500,26 +509,32 @@ class MinCostMaxFlow {
             call_user_func($progressf, $this, self::PMINCOST_BEGINROUND, $phaseno, $nphases);
 
         $this->epsilon = $this->epsilon / self::CSPUSHRELABEL_ALPHA;
-        foreach ($this->e as $e) {
-            if ($e->reduced_cost(false) < 0 && $e->flow < $e->cap) {
-                assert($e->reduced_cost(true) >= 0);
-                $delta = $e->cap - $e->flow;
-                $e->flow = $e->cap;
-                $e->dst->excess += $delta;
-                $e->src->excess -= $delta;
-            } else if ($e->reduced_cost(true) < 0 && $e->flow > 0) {
-                $delta = $e->flow;
-                $e->flow = 0;
-                $e->src->excess += $delta;
-                $e->dst->excess -= $delta;
+
+        // saturate negative-cost arcs
+        foreach ($this->v as $v)
+            if ($v->n_outgoing_admissible) {
+                foreach ($v->eout as $e)
+                    if ($e->flow < $e->cap && $e->reduced_cost(false) < 0) {
+                        $delta = $e->cap - $e->flow;
+                        $e->flow = $e->cap;
+                        $e->dst->excess += $delta;
+                        $e->src->excess -= $delta;
+                        --$v->n_outgoing_admissible;
+                    }
+                foreach ($v->ein as $e)
+                    if ($e->flow > 0 && $e->reduced_cost(true) < 0) {
+                        $delta = $e->flow;
+                        $e->flow = 0;
+                        $e->src->excess += $delta;
+                        $e->dst->excess -= $delta;
+                        --$v->n_outgoing_admissible;
+                    }
             }
-        }
 
         // initialize lists and neighbor position
         $lhead = $this->ltail = null;
         foreach ($this->v as $v) {
             $v->npos = 0;
-            $v->check_outgoing_admissible = null;
             if ($v->excess > 0) {
                 $this->ltail ? ($this->ltail->link = $v) : ($lhead = $v);
                 $v->link = null;
@@ -555,6 +570,9 @@ class MinCostMaxFlow {
         for ($e = $this->maxcost; $e >= 1 / count($this->v); $e /= self::CSPUSHRELABEL_ALPHA)
             ++$nphases;
         $this->epsilon = $this->maxcost;
+
+        foreach ($this->v as $v)
+            $v->n_outgoing_admissible = $v->count_outgoing_admissible();
 
         while ($this->epsilon >= 1 / count($this->v)) {
             $this->cspushrelabel_refine($phaseno, $nphases);
