@@ -43,6 +43,8 @@ foreach (range(100, 921384, 1247) as $seed) {
     srand($seed); // the shuffle() uses this seed
     $m->run();
     assert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
+    if (mcmf_assignment_text($m) !== "u0 p1\nu1 p2\nu2 p0\n")
+        fwrite(STDERR, "-- bad seed $seed\n");
 }
 
 fwrite(STDERR, "- Phase 1 complete.\n");
