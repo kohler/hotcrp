@@ -209,10 +209,10 @@ class MinCostMaxFlow {
             shuffle($this->v);
             shuffle($this->e);
         }
-        foreach ($this->e as $e) {
+        foreach ($this->e as $e)
             $e->src->e[] = $e;
+        foreach ($this->e as $e)
             $e->dst->e[] = $e;
-        }
     }
 
 
