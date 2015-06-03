@@ -508,7 +508,7 @@ class MinCostMaxFlow {
         $ne = count($v->e);
         $notrelabeled = 1;
         while ($v->excess > 0) {
-            if ($v->npos == $ne) {
+            if ($v->npos == $ne || !$v->n_outgoing_admissible) {
                 $this->cspushrelabel_relabel($v);
                 $notrelabeled = 0;
             } else {
