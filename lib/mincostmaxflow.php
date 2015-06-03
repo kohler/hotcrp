@@ -92,6 +92,7 @@ class MinCostMaxFlow {
     private $maxcost;
     private $progressf = array();
     private $hasrun;
+    private $noshuffle;
     // times
     public $maxflow_start_at = null;
     public $maxflow_end_at = null;
@@ -109,8 +110,9 @@ class MinCostMaxFlow {
 
     const CSPUSHRELABEL_ALPHA = 12;
 
-    public function __construct() {
+    public function __construct($noshuffle = false) {
         $this->clear();
+        $this->noshuffle = $noshuffle;
     }
 
     public function add_node($name, $klass) {
@@ -126,7 +128,7 @@ class MinCostMaxFlow {
         if (is_string($vd))
             $vd = $this->vmap[$vd];
         assert(($vs instanceof MinCostMaxFlow_Node) && ($vd instanceof MinCostMaxFlow_Node));
-        assert($vs !== $this->sink && $vd !== $this->source);
+        assert($vs !== $this->sink && $vd !== $this->source && $vs !== $vd);
         // XXX assert(this edge does not exist)
         $this->e[] = new MinCostMaxFlow_Edge($vs, $vd, $cap, $cost);
         $this->maxcap = max($this->maxcap, $cap);
@@ -203,8 +205,10 @@ class MinCostMaxFlow {
     private function shuffle() {
         // shuffle vertices and edges because edge order affects which
         // circulations we choose; this randomizes the assignment
-        shuffle($this->v);
-        shuffle($this->e);
+        if (!$this->noshuffle) {
+            shuffle($this->v);
+            shuffle($this->e);
+        }
         foreach ($this->e as $e) {
             $e->src->e[] = $e;
             $e->dst->e[] = $e;
