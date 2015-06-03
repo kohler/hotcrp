@@ -244,7 +244,7 @@ class AutoassignerInterface {
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Save assignment"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method", "profile") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method", "profile", "XDEBUG_PROFILE", "seed") as $t)
             if (isset($_REQUEST[$t]))
                 echo Ht::hidden($t, $_REQUEST[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))), "\n";
@@ -285,6 +285,8 @@ class AutoassignerInterface {
         set_time_limit(240);
 
         // prepare autoassigner
+        if (@$_REQUEST["seed"] && is_numeric($_REQUEST["seed"]))
+            srand((int) $_REQUEST["seed"]);
         $this->autoassigner = $autoassigner = new Autoassigner($papersel);
         if ($_REQUEST["pctyp"] === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
@@ -580,8 +582,9 @@ echo "<div class='g'></div>\n";
 echo "<div class='aa'>", Ht::submit("assign", "Prepare assignment"),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
-if (@$_REQUEST["profile"])
-    echo Ht::hidden("profile", $_REQUEST["profile"]);
+foreach (array("profile", "XDEBUG_PROFILE", "seed") as $var)
+    if (@$_REQUEST[$var])
+        echo Ht::hidden($var, $_REQUEST[$var]);
 
 echo "</div></form>";
 
