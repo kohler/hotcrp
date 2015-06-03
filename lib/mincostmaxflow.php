@@ -326,9 +326,6 @@ class MinCostMaxFlow {
                     $qtail = self::pushrelabel_bfs_setdistance($qtail, $e->other($qhead), $d);
             $qhead = $qhead->xlink;
         }
-        // It's important to keep the source a little further away
-        // from the other nodes; we don't want to push flow back there!
-        ++$this->source->distance;
     }
 
     private function pushrelabel_push_from($e, $v) {
