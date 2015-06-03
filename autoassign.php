@@ -282,6 +282,7 @@ class AutoassignerInterface {
     public function run() {
         global $Conf, $Me, $papersel, $pcsel, $badpairs, $scoreselector;
         assert($this->ok);
+        session_write_close(); // this might take a long time
         set_time_limit(240);
 
         // prepare autoassigner
@@ -342,6 +343,7 @@ if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
     $ai = new AutoassignerInterface;
     if ($ai->check())
         $ai->run();
+    ensure_session();
 } else if (@$_REQUEST["saveassignment"] && @$_REQUEST["submit"]
          && isset($_REQUEST["assignment"]) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
