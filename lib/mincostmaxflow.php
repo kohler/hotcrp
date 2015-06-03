@@ -30,7 +30,7 @@ class MinCostMaxFlow_Node {
             fwrite(STDERR, "{$this->name}: bad excess e{$this->excess}, have $x\n");
         assert($x == $this->excess);
     }
-    public function count_outgoing_admissible() {
+    public function count_outgoing_price_admissible() {
         $n = 0;
         foreach ($this->e as $e)
             if ($e->is_price_admissible_from($this))
@@ -563,7 +563,7 @@ class MinCostMaxFlow {
         $this->epsilon = $this->maxcost;
 
         foreach ($this->v as $v)
-            $v->n_outgoing_admissible = $v->count_outgoing_admissible();
+            $v->n_outgoing_admissible = $v->count_outgoing_price_admissible();
 
         while ($this->epsilon >= 1 / count($this->v)) {
             $this->cspushrelabel_refine($phaseno, $nphases);
