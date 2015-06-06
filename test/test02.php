@@ -47,4 +47,21 @@ assert_eqq(Dbl::format_query_apply("select ?{2}, ?{1}, ?{ab}, ?{2}s, ?{1}s, ?{ab
                                    array(1, "a", "ab" => "Woah", "Leftover")),
            "select 'a', 1, 'Woah', a, 1, Woah, 'Leftover'");
 
+// Csv::split_lines tests
+assert_array_eqq(CsvParser::split_lines(""),
+                 array());
+assert_array_eqq(CsvParser::split_lines("\r"),
+                 array("\r"));
+assert_array_eqq(CsvParser::split_lines("\n"),
+                 array("\n"));
+assert_array_eqq(CsvParser::split_lines("\r\n"),
+                 array("\r\n"));
+assert_array_eqq(CsvParser::split_lines("\r\r\n"),
+                 array("\r", "\r\n"));
+assert_array_eqq(CsvParser::split_lines("\r\naaa"),
+                 array("\r\n", "aaa"));
+assert_array_eqq(CsvParser::split_lines("\na\r\nb\rc\n"),
+                 array("\n", "a\r\n", "b\r", "c\n"));
+
+
 xassert_exit();

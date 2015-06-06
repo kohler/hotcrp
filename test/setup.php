@@ -91,20 +91,47 @@ function xassert_exit() {
 
 function assert_eqq($a, $b) {
     ++Xassert::$n;
-    if ($a !== $b)
+    if ($a === $b)
+        ++Xassert::$nsuccess;
+    else
         trigger_error("Assertion " . var_export($a, true) . " === " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
-    else
-        ++Xassert::$nsuccess;
 }
 
 function assert_neqq($a, $b) {
     ++Xassert::$n;
-    if ($a === $b)
+    if ($a !== $b)
+        ++Xassert::$nsuccess;
+    else
         trigger_error("Assertion " . var_export($a, true) . " !== " . var_export($b, true)
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
-    else
+}
+
+function assert_array_eqq($a, $b) {
+    ++Xassert::$n;
+    $problem = "";
+    if ($a === null && $b === null)
+        /* ok */;
+    else if (is_array($a) && is_array($b)) {
+        if (count($a) !== count($b))
+            $problem = "size " . count($a) . " !== " . count($b);
+        else {
+            $ka = array_keys($a);
+            $va = array_values($a);
+            $kb = array_keys($b);
+            $vb = array_values($b);
+            for ($i = 0; $i < count($ka) && !$problem; ++$i)
+                if ($ka[$i] !== $kb[$i])
+                    $problem = "key position $i differs, {$ka[$i]} !== {$kb[$i]}";
+                else if ($va[$i] !== $vb[$i])
+                    $problem = "value {$ka[$i]} differs, " . var_export($va[$i], true) . " !== " . var_export($vb[$i], true);
+        }
+    } else
+        $problem = "different types";
+    if ($problem === "")
         ++Xassert::$nsuccess;
+    else
+        trigger_error("Array assertion failed, $problem at " . assert_location() . "\n", E_USER_WARNING);
 }
 
 function search_json($user, $text, $cols = "id") {

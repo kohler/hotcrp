@@ -4,46 +4,28 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class CsvParser {
-
     private $lines;
-    private $pos;
+    private $pos = 0;
     private $type;
-    private $header;
-    private $comment_chars;
+    private $header = false;
+    private $comment_chars = false;
 
     const TYPE_GUESS = -1;
     const TYPE_COMMA = 0;
     const TYPE_PIPE = 1;
     const TYPE_TAB = 2;
 
-    function __construct($str, $type = self::TYPE_COMMA) {
-        $a = preg_split('/([\r\n])/', $str, 0, PREG_SPLIT_DELIM_CAPTURE);
-        $n = count($a);
+    static public function split_lines($str) {
         $b = array();
-        $last_lineend = false;
-        for ($i = 0; $i < $n; ) {
-            $t = $a[$i];
-            if ($t !== "\n" && $t !== "\r")
-                ++$i;
-            else
-                $t = "";
-            $lineend = ($i == $n ? false : $a[$i]);
-            if ($lineend === "\n" && $last_lineend === "\r" && $t === "") {
-                $b[count($b) - 1] .= $lineend;
-                ++$i;
-                continue;
-            } else if ($lineend === "\n" || $lineend === "\r") {
-                $t .= $lineend;
-                ++$i;
-            }
-            $last_lineend = $lineend;
-            $b[] = $t;
-        }
-        $this->lines = $b;
-        $this->pos = 0;
+        foreach (preg_split('/([^\r\n]*(?:\z|\r\n?|\n))/', $str, 0, PREG_SPLIT_DELIM_CAPTURE) as $line)
+            if ($line !== "")
+                $b[] = $line;
+        return $b;
+    }
+
+    function __construct($str, $type = self::TYPE_COMMA) {
+        $this->lines = self::split_lines($str);
         $this->type = $type;
-        $this->header = false;
-        $this->comment_chars = false;
     }
 
     function set_comment_chars($s) {
@@ -56,21 +38,6 @@ class CsvParser {
 
     function set_header($header) {
         $this->header = $header;
-    }
-
-    static function take_line(&$str) {
-        if (is_array($str))
-            return array_shift($str);
-        $nl = strpos($str, "\n");
-        $cr = strpos($nl === false ? $str : substr($str, 0, $nl), "\r");
-        if ($cr !== false && ($nl === false || $cr < $nl))
-            $line = substr($str, 0, $cr + ($cr + 1 === $nl ? 2 : 1));
-        else if ($nl !== false)
-            $line = substr($str, 0, $nl + 1);
-        else
-            $line = $str . "\n";
-        $str = substr($str, strlen($line));
-        return $line;
     }
 
     static function linelen($line) {
