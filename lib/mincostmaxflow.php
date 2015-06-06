@@ -469,23 +469,34 @@ class MinCostMaxFlow {
     private function cspushrelabel_relabel($v) {
         // calculate new price
         $p = -INF;
-        foreach ($v->e as $e)
+        foreach ($v->e as $epos => $e) {
             if ($e->src === $v && $e->flow < $e->cap)
-                $p = max($p, $e->dst->price - $e->cost);
+                $px = $e->dst->price - $e->cost;
             else if ($e->dst === $v && $e->flow > 0)
-                $p = max($p, $e->src->price + $e->cost);
+                $px = $e->src->price + $e->cost;
+            else
+                continue;
+            if ($px > $p) {
+                $p = $px;
+                $ex = $epos;
+            }
+        }
         assert($p != -INF || $v->excess == 0);
         $old_price = $v->price;
-        $v->price = ($p > -INF ? $p : $old_price) - $this->epsilon;
+        if ($p > -INF) {
+            $v->price = $p - $this->epsilon;
+            $v->npos = $ex;
+        } else
+            $v->price = $old_price - $this->epsilon;
         $this->debug && fwrite(STDERR, "relabel {$v->name} E{$v->excess} @{$old_price}->{$v->price}\n");
-
-        // start over on arcs
-        $v->npos = 0;
 
         // adjust n_outgoing_admissible counts
         foreach ($v->e as $e) {
             $c = $e->cost + $e->src->price - $e->dst->price;
-            $old_c = $e->cost + ($e->src === $v ? $old_price : $e->src->price) - ($e->src === $v ? $e->dst->price : $old_price);
+            if ($e->src === $v)
+                $old_c = $e->cost + $old_price - $e->dst->price;
+            else
+                $old_c = $e->cost + $e->src->price - $old_price;
             if (($c < 0) !== ($old_c < 0) && $e->flow < $e->cap)
                 $e->src->n_outgoing_admissible += $c < 0 ? 1 : -1;
             if (($c > 0) !== ($old_c > 0) && $e->flow > 0)
