@@ -373,7 +373,8 @@ function divClass($name) {
     return "<div" . (isset($Error[$name]) ? " class='error'" : "") . ">";
 }
 
-echo Ht::form(hoturl_post("autoassign")), '<div class="aahc">',
+echo Ht::form(hoturl_post("autoassign", array("profile" => @$_REQUEST["profile"], "seed" => @$_REQUEST["seed"], "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"]))),
+    '<div class="aahc">',
     "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "' class='q'><strong>Automatic</strong></a></li>
@@ -583,10 +584,6 @@ doRadio('method', 'random', "Random good assignment");
 echo "<div class='g'></div>\n";
 echo "<div class='aa'>", Ht::submit("assign", "Prepare assignment"),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
-
-foreach (array("profile", "XDEBUG_PROFILE", "seed") as $var)
-    if (@$_REQUEST[$var])
-        echo Ht::hidden($var, $_REQUEST[$var]);
 
 echo "</div></form>";
 
