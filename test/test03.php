@@ -151,4 +151,41 @@ assert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 fwrite(STDERR, "- Phase 4 complete.\n");
 
 
+$m = new MinCostMaxFlow(MinCostMaxFlow::NOSHUFFLE);
+$m->parse_dimacs("n 1 s
+n 2 t
+c ninfo 3 u0 user
+c ninfo 4 u1 user
+c ninfo 5 u2 user
+c ninfo 6 p0 paper
+c ninfo 7 p1 paper
+c ninfo 8 p2 paper
+a 1 3 1
+a 1 4 1
+a 1 5 1
+a 3 6 0 1 0
+a 3 7 0 1 -1
+a 4 6 0 1 0
+a 4 7 0 1 0
+a 4 8 0 1 0
+a 5 6 0 1 0
+a 5 8 0 1 1
+a 6 2 1
+a 7 2 1
+a 8 2 1");
+$m->run();
+assert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
+assert_eqq(preg_replace('/^c[^\n]*\n/m', "", $m->mincost_dimacs_output()),
+           "s -1
+f 1 3 1
+f 1 4 1
+f 1 5 1
+f 3 7 1
+f 4 8 1
+f 5 6 1
+f 6 2 1
+f 7 2 1
+f 8 2 1\n");
+
+
 xassert_exit();
