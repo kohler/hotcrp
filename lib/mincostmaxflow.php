@@ -18,6 +18,7 @@ class MinCostMaxFlow_Node {
     public $price = 0;
     public $n_outgoing_admissible = 0;
     public $e = array();
+    public $xe;
     public function __construct($name, $klass) {
         $this->name = $name;
         $this->klass = $klass;
@@ -64,6 +65,13 @@ class MinCostMaxFlow_Edge {
     }
     public function residual_cap_to($v) {
         return $v === $this->src ? $this->flow : $this->cap - $this->flow;
+    }
+    public function reduced_cost($isrev) {
+        $c = $this->cost + $this->src->price - $this->dst->price;
+        return $isrev ? -$c : $c;
+    }
+    public function reduced_cost_from($v) {
+        return $this->reduced_cost($v === $this->dst);
     }
     public function is_distance_admissible_from($v) {
         if ($v === $this->src)
@@ -463,12 +471,13 @@ class MinCostMaxFlow {
         $p = -INF;
         foreach ($v->e as $e)
             if ($e->src === $v && $e->flow < $e->cap)
-                $p = max($p, $e->dst->price - $e->cost - $this->epsilon);
+                $p = max($p, $e->dst->price - $e->cost);
             else if ($e->dst === $v && $e->flow > 0)
-                $p = max($p, $e->src->price + $e->cost - $this->epsilon);
-        $p_delta = $p > -INF ? $p - $v->price : -$this->epsilon;
-        $v->price += $p_delta;
-        $this->debug && fwrite(STDERR, "relabel {$v->name} E{$v->excess} @" . ($v->price - $p_delta) . "->{$v->price}\n");
+                $p = max($p, $e->src->price + $e->cost);
+        assert($p != -INF || $v->excess == 0);
+        $old_price = $v->price;
+        $v->price = ($p > -INF ? $p : $old_price) - $this->epsilon;
+        $this->debug && fwrite(STDERR, "relabel {$v->name} E{$v->excess} @{$old_price}->{$v->price}\n");
 
         // start over on arcs
         $v->npos = 0;
@@ -476,7 +485,7 @@ class MinCostMaxFlow {
         // adjust n_outgoing_admissible counts
         foreach ($v->e as $e) {
             $c = $e->cost + $e->src->price - $e->dst->price;
-            $old_c = $c + ($e->src === $v ? -$p_delta : $p_delta);
+            $old_c = $e->cost + ($e->src === $v ? $old_price : $e->src->price) - ($e->src === $v ? $e->dst->price : $old_price);
             if (($c < 0) !== ($old_c < 0) && $e->flow < $e->cap)
                 $e->src->n_outgoing_admissible += $c < 0 ? 1 : -1;
             if (($c > 0) !== ($old_c > 0) && $e->flow > 0)
@@ -506,7 +515,37 @@ class MinCostMaxFlow {
         foreach ($this->progressf as $progressf)
             call_user_func($progressf, $this, self::PMINCOST_BEGINROUND, $phaseno, $nphases);
 
+        // arc fixing; note that Goldberg 1997's description of arc fixing
+        // is incorrect/misleading -- we care about the absolute value of
+        // REDUCED costs, not original costs; use the lower fixbound from
+        // Goldberg & Tarjan 1990, rather than 2*n*epsilon.
+        $fixbound = count($this->v) * $this->epsilon * (1 + 1.0 / self::CSPUSHRELABEL_ALPHA);
+        if (max(abs($this->mincost), $this->maxcost) >= $fixbound) {
+            $ndropped = 0;
+            foreach ($this->v as $v)
+                for ($i = 0; $i < count($v->e); ) {
+                    $e = $v->e[$i];
+                    if (abs($e->reduced_cost(false)) >= $fixbound) {
+                        if ($e->is_price_admissible_from($v))
+                            --$v->n_outgoing_admissible;
+                        $v->xe[] = $e;
+                        $v->e[$i] = $v->e[count($v->e) - 1];
+                        array_pop($v->e);
+                        $v->npos = 0; // keep npos in bounds
+                        ++$ndropped;
+                    } else
+                        ++$i;
+                }
+            $this->debug && $ndropped && fwrite(STDERR, "dropedge $ndropped\n");
+        }
+
+        // generate output
+        //$tempnam = tempnam(sys_get_temp_dir(), "mincost.$phaseno");
+        //file_put_contents($tempnam, $this->mincost_dimacs_input() . $this->mincost_dimacs_output());
+
+        // reduce epsilon
         $this->epsilon = $this->epsilon / self::CSPUSHRELABEL_ALPHA;
+        $this->debug && fwrite(STDERR, "phase " . (1 + $phaseno) . " epsilon $this->epsilon\n");
 
         // saturate negative-cost arcs
         foreach ($this->v as $v)
@@ -550,6 +589,19 @@ class MinCostMaxFlow {
         }
     }
 
+    public function cspushrelabel_check() {
+        foreach ($this->v as $v)
+            if ($v->excess > 0)
+                fwrite(STDERR, "BUG: node {$v->name} has positive excess {$v->excess}\n");
+        $ebound = -$this->epsilon - (0.5 / count($this->v));
+        foreach ($this->e as $e) {
+            if ($e->flow < $e->cap && $e->reduced_cost(false) < $ebound)
+                fwrite(STDERR, "BUG: residual arc {$e->src->name} > {$e->dst->name} ({$e->flow}/{$e->cap} \${$e->cost}) has reduced cost " . $e->reduced_cost(false) . " < " . -$this->epsilon . "\n");
+            if ($e->flow > 0 && $e->reduced_cost(true) < $ebound)
+                fwrite(STDERR, "BUG: residual arc {$e->src->name} < {$e->dst->name} (" . (-$e->flow) . "/0 \$" . -$e->cost . ") has reduced cost " . $e->reduced_cost(true) . " < " . -$this->epsilon . "\n");
+        }
+    }
+
     public function cspushrelabel_finish() {
         // refine the maximum flow to achieve min cost
         $this->mincost_start_at = microtime(true);
@@ -557,15 +609,24 @@ class MinCostMaxFlow {
         for ($e = $this->epsilon; $e >= 1 / count($this->v); $e /= self::CSPUSHRELABEL_ALPHA)
             ++$nphases;
 
-        foreach ($this->v as $v)
+        foreach ($this->v as $v) {
             $v->n_outgoing_admissible = $v->count_outgoing_price_admissible();
+            $v->xe = array();
+        }
 
+        $this->debug && $this->cspushrelabel_check();
         while ($this->epsilon >= 1 / count($this->v)) {
             $this->cspushrelabel_refine($phaseno, $nphases);
+            $this->debug && $this->cspushrelabel_check();
             ++$phaseno;
         }
         $this->mincost_end_at = microtime(true);
 
+        foreach ($this->v as $v)
+            if ($v->xe) {
+                $v->e = array_merge($v->e, $v->xe);
+                $v->xe = null;
+            }
         foreach ($this->progressf as $progressf)
             call_user_func($progressf, $this, self::PMINCOST_DONE, $phaseno, $nphases);
     }
