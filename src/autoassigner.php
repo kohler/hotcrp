@@ -518,6 +518,7 @@ class Autoassigner {
                 $m->add_edge("u$cid", $x, 1, $cost[$cid][$pid]);
             }
         // run MCMF
+        $m->shuffle();
         $m->run();
         // make assignments
         $this->set_progress("Completing assignment" . $this->mcmf_round_descriptor);

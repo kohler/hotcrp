@@ -92,7 +92,6 @@ class MinCostMaxFlow {
     private $maxcost;
     private $progressf = array();
     private $hasrun;
-    private $noshuffle;
     private $debug;
     // times
     public $maxflow_start_at = null;
@@ -111,12 +110,10 @@ class MinCostMaxFlow {
 
     const CSPUSHRELABEL_ALPHA = 12;
 
-    const NOSHUFFLE = 1;
-    const DEBUG = 2;
+    const DEBUG = 1;
 
     public function __construct($flags = false) {
         $this->clear();
-        $this->noshuffle = ($flags & self::NOSHUFFLE) != 0;
         $this->debug = ($flags & self::DEBUG) != 0;
     }
 
@@ -574,18 +571,17 @@ class MinCostMaxFlow {
     }
 
 
+    public function shuffle() {
+        // shuffle vertices and edges because edge order affects which
+        // circulations we choose; this randomizes the assignment
+        shuffle($this->v);
+        shuffle($this->e);
+    }
+
     public function run() {
         assert(!$this->hasrun);
         $this->hasrun = true;
-
-        // shuffle vertices and edges because edge order affects which
-        // circulations we choose; this randomizes the assignment
-        if (!$this->noshuffle) {
-            shuffle($this->v);
-            shuffle($this->e);
-        }
         $this->initialize_edges();
-
         $this->pushrelabel_run();
         if ($this->mincost != 0 || $this->maxcost != 0) {
             $this->epsilon = $this->maxcost;

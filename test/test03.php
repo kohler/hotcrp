@@ -41,6 +41,7 @@ $m->add_edge("u2", "p2", 1, 1);
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
     srand($seed); // the shuffle() uses this seed
+    $m->shuffle();
     $m->run();
     assert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
     if (mcmf_assignment_text($m) !== "u0 p1\nu1 p2\nu2 p0\n")
@@ -68,6 +69,7 @@ $assignments = array();
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
     srand($seed); // the shuffle() uses this seed
+    $m->shuffle();
     $m->run();
     $assignments[mcmf_assignment_text($m)] = true;
 }
@@ -105,6 +107,7 @@ $assignments = array();
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
     srand($seed); // the shuffle() uses this seed
+    $m->shuffle();
     $m->run();
     $assignments[mcmf_assignment_text($m)] = true;
 }
@@ -135,6 +138,7 @@ $assignments = array();
 foreach (range(100, 921384, 1247) as $seed) {
     $m->reset();
     srand($seed); // the shuffle() uses this seed
+    $m->shuffle();
     $m->run();
     $assignments[mcmf_assignment_text($m)] = true;
 }
@@ -151,7 +155,7 @@ assert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 fwrite(STDERR, "- Phase 4 complete.\n");
 
 
-$m = new MinCostMaxFlow(MinCostMaxFlow::NOSHUFFLE);
+$m = new MinCostMaxFlow;
 $m->parse_dimacs("n 1 s
 n 2 t
 c ninfo 3 u0 user
