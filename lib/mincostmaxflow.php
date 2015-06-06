@@ -93,6 +93,7 @@ class MinCostMaxFlow {
     private $progressf = array();
     private $hasrun;
     private $noshuffle;
+    private $debug;
     // times
     public $maxflow_start_at = null;
     public $maxflow_end_at = null;
@@ -111,10 +112,12 @@ class MinCostMaxFlow {
     const CSPUSHRELABEL_ALPHA = 12;
 
     const NOSHUFFLE = 1;
+    const DEBUG = 2;
 
     public function __construct($flags = false) {
         $this->clear();
         $this->noshuffle = ($flags & self::NOSHUFFLE) != 0;
+        $this->debug = ($flags & self::DEBUG) != 0;
     }
 
     public function add_node($name, $klass) {
@@ -325,9 +328,9 @@ class MinCostMaxFlow {
         }
     }
 
-    private function pushrelabel_push_from($e, $v) {
-        $amt = min($v->excess, $e->residual_cap_from($v));
-        $amt = ($v == $e->dst ? -$amt : $amt);
+    private function pushrelabel_push_from($e, $src) {
+        $amt = min($src->excess, $e->residual_cap_from($src));
+        $amt = ($src == $e->dst ? -$amt : $amt);
         //fwrite(STDERR, "push {$amt} {$e->src->name}@{$e->src->distance} -> {$e->dst->name}@{$e->dst->distance}\n");
         $e->flow += $amt;
         $e->src->excess -= $amt;
@@ -434,27 +437,28 @@ class MinCostMaxFlow {
 
     // cost-scaling push-relabel
 
-    private function cspushrelabel_push_from($e, $v) {
-        $dst = $e->other($v);
+    private function cspushrelabel_push_from($e, $src) {
+        $dst = $e->other($src);
         // push lookahead heuristic
         if ($dst->excess >= 0 && !$dst->n_outgoing_admissible) {
+            $this->debug && fwrite(STDERR, "push lookahead {$src->name} > {$dst->name}\n");
             $this->cspushrelabel_relabel($dst);
             return;
         }
 
-        $amt = min($v->excess, $e->residual_cap_from($v));
-        $amt = ($e->src === $v ? $amt : -$amt);
+        $amt = min($src->excess, $e->residual_cap_from($src));
+        $amt = ($e->src === $src ? $amt : -$amt);
         $e->flow += $amt;
         $e->src->excess -= $amt;
         $e->dst->excess += $amt;
-        if (!$e->residual_cap_from($v))
-            --$v->n_outgoing_admissible;
+        if (!$e->residual_cap_from($src))
+            --$src->n_outgoing_admissible;
 
         if ($dst->excess > 0 && $dst->link === false) {
             $this->ltail = $this->ltail->link = $dst;
             $dst->link = null;
         }
-        //fwrite(STDERR, "push $amt {$src->name} > {$dst->name}\n" . $this->debug_info(true) . "\n");
+        $this->debug && fwrite(STDERR, "push $amt {$e->src->name} > {$e->dst->name}\n");
     }
 
     private function cspushrelabel_relabel($v) {
@@ -467,6 +471,7 @@ class MinCostMaxFlow {
                 $p = max($p, $e->src->price + $e->cost - $this->epsilon);
         $p_delta = $p > -INF ? $p - $v->price : -$this->epsilon;
         $v->price += $p_delta;
+        $this->debug && fwrite(STDERR, "relabel {$v->name} E{$v->excess} @" . ($v->price - $p_delta) . "->{$v->price}\n");
 
         // start over on arcs
         $v->npos = 0;
