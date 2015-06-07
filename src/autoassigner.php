@@ -18,6 +18,7 @@ class Autoassigner {
     private $method = self::METHOD_MCMF;
     private $balance = self::BALANCE_NEW;
     private $progressf = array();
+    private $mcmf;
     private $mcmf_round_descriptor; // for use in MCMF progress
     private $mcmf_max_cost;
     private $ndesired;
@@ -518,6 +519,7 @@ class Autoassigner {
                 $m->add_edge("u$cid", $x, 1, $cost[$cid][$pid]);
             }
         // run MCMF
+        $this->mcmf = $m;
         $m->shuffle();
         $m->run();
         // make assignments
@@ -532,6 +534,7 @@ class Autoassigner {
             }
         }
         $m->clear(); // break circular refs
+        $this->mcmf = null;
         $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
         if ($m->mincost_start_at)
             $this->profile["mincost"] = $m->mincost_end_at - $m->mincost_start_at;
@@ -674,5 +677,27 @@ class Autoassigner {
                     $u[$cid] += $ubypid[$cid][$pid];
         }
         return $u;
+    }
+
+    public function has_tentative_assignment() {
+        return count($this->ass) || $this->mcmf;
+    }
+
+    public function tentative_assignment_map() {
+        $pcmap = $a = array();
+        foreach ($this->pcm as $cid => $p) {
+            $pcmap[$p->email] = $cid;
+            $a[$cid] = array();
+        }
+        foreach ($this->ass as $atext) {
+            $arow = explode(",", $atext);
+            $a[$pcmap[$arow[2]]][$arow[0]] = true;
+        }
+        if (($m = $this->mcmf))
+            foreach ($this->pcm as $cid => $p) {
+                foreach ($m->reachable("u$cid", "p") as $v)
+                    $a[$cid][substr($v->name, 1)] = true;
+            }
+        return $a;
     }
 }

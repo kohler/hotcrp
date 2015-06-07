@@ -1368,26 +1368,13 @@ class AssignmentSet {
 
         echo '<div class="g"></div>';
         echo "<h3>Assignment summary</h3>\n";
-        echo '<table class="pctb"><tr><td class="pctbcolleft"><table>';
-        $pcdesc = array();
-        foreach (pcMembers() as $cid => $pc) {
+        $ccol = new ContactColumns(3);
+        foreach (pcMembers() as $cid => $p) {
             $nnew = @+$countbycid[$cid];
-            $color = TagInfo::color_classes($pc->all_contact_tags());
-            $color = ($color ? ' class="' . $color . '"' : "");
-            $c = "<tr$color>" . '<td class="pctbname pctbl">'
-                . '<span class="taghl">' . Text::name_html($pc) . '</span>: '
-                . plural($nnew, "assignment")
-                . "</td></tr><tr$color>" . '<td class="pctbnrev pctbl">'
-                . self::review_count_report($nrev, $pc, $nnew ? "After assignment:&nbsp;" : "");
-            $pcdesc[] = $c . "</td></tr>\n";
+            $ccol->add($p, ": " . plural($nnew, "assignment"),
+                       self::review_count_report($nrev, $p, $nnew ? "After assignment:&nbsp;" : ""));
         }
-        $n = intval((count($pcdesc) + 2) / 3);
-        for ($i = 0; $i < count($pcdesc); $i++) {
-            if (($i % $n) == 0 && $i)
-                echo '</table></td><td class="pctbcolmid"><table>';
-            echo $pcdesc[$i];
-        }
-        echo "</table></td></tr></table>\n";
+        echo $ccol->render(), "\n";
     }
 
     function is_empty() {

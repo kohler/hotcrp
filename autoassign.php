@@ -209,7 +209,7 @@ class AutoassignerInterface {
         $assignset->report_errors();
         $assignset->echo_unparse_display($papersel);
 
-        // print preference unhappiness (currently disabled)
+        // print preference unhappiness
         if (@$_REQUEST["profile"] && $this->atype_review) {
             $umap = $this->autoassigner->pc_unhappiness();
             sort($umap);
@@ -240,11 +240,14 @@ class AutoassignerInterface {
             Ht::form(hoturl_post("autoassign",
                                  array("saveassignment" => 1,
                                        "assigntypes" => join(" ", $atypes),
-                                       "assignpids" => join(" ", $apids)))),
+                                       "assignpids" => join(" ", $apids),
+                                       "profile" => @$_REQUEST["profile"],
+                                       "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"],
+                                       "seed" => @$_REQUEST["seed"]))),
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Save assignment"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method", "profile", "XDEBUG_PROFILE", "seed") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method") as $t)
             if (isset($_REQUEST[$t]))
                 echo Ht::hidden($t, $_REQUEST[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))), "\n";
@@ -272,6 +275,17 @@ class AutoassignerInterface {
         }
         if (!$this->live) {
             $t = '<h3>Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
+            // Print current tentative assignment -- slow, so commented out
+            /*if (false && $this->autoassigner->has_tentative_assignment()) {
+                $ta = $this->autoassigner->tentative_assignment_map();
+                $ccol = new ContactColumns(3);
+                foreach (pcMembers() as $cid => $p)
+                    if (@$ta[$cid]) {
+                        ksort($ta[$cid], SORT_NUMERIC);
+                        $ccol->add($p, "#" . join(", #", array_keys($ta[$cid])));
+                    }
+                $t .= $ccol->render();
+            }*/
             echo '<script>$$("propass").innerHTML=', json_encode($t), ";</script>\n";
             flush();
             while (@ob_end_flush())
@@ -500,34 +514,16 @@ foreach ($pctyp_sel as $pctyp) {
         $pctyp[2], "</a>";
     $sep = ", ";
 }
-echo ")</td></tr>\n<tr><td></td><td><table class='pctb'><tr><td class='pctbcolleft'><table>";
+echo ")</td></tr>\n<tr><td></td><td>";
 
-$pcm = pcMembers();
+$ccol = new ContactColumns(3, array("name" => "pcs[]", "checked" => $pcsel,
+                                    "id" => "pcsel{{count}}",
+                                    "onclick" => "rangeclick(event,this);\$\$('pctyp_sel').checked=true"));
 $nrev = AssignmentSet::count_reviews();
 $nrev->pset = AssignmentSet::count_reviews($papersel);
-$pcdesc = array();
-foreach ($pcm as $id => $p) {
-    $count = count($pcdesc) + 1;
-    $color = TagInfo::color_classes($p->all_contact_tags());
-    $color = ($color ? " class='${color}'" : "");
-    $c = "<tr$color><td class='pctbl'>"
-        . Ht::checkbox("pcs[]", $id, isset($pcsel[$id]),
-                        array("id" => "pcsel$count",
-                              "onclick" => "rangeclick(event,this);\$\$('pctyp_sel').checked=true"))
-        . "&nbsp;</td><td class='pctbname taghl'>"
-        . Ht::label(Text::name_html($p), "pcsel$count")
-        . "</td></tr><tr$color><td class='pctbl'></td><td class='pctbnrev'>"
-        . AssignmentSet::review_count_report($nrev, $p, "")
-        . "</td></tr>";
-    $pcdesc[] = $c;
-}
-$n = intval((count($pcdesc) + 2) / 3);
-for ($i = 0; $i < count($pcdesc); $i++) {
-    if (($i % $n) == 0 && $i)
-        echo "</table></td><td class='pctbcolmid'><table>";
-    echo $pcdesc[$i];
-}
-echo "</table></td></tr></table></td></tr></table>";
+foreach (pcMembers() as $p)
+    $ccol->add($p, null, AssignmentSet::review_count_report($nrev, $p, ""));
+echo $ccol->render(), '</td></tr></table>';
 
 
 // Bad pairs
