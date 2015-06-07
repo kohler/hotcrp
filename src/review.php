@@ -1216,10 +1216,16 @@ $blind\n";
             $pl = preg_replace('/\b' . $m[1] . '\*/', pluralx(count($a), $m[1]), $pl);
         if ($single)
             return preg_replace('/\|.*/', "", $pl);
+        $pids = array();
         foreach ($a as &$x)
-            if (preg_match('/\A(#?)(\d+)\z/', $x, $m))
+            if (preg_match('/\A(#?)(\d+)\z/', $x, $m)) {
                 $x = "<a href=\"" . hoturl("paper", "p=$m[2]") . "\">" . $x . "</a>";
-        return str_replace("|", "", $pl) . commajoin($a);
+                $pids[] = $m[2];
+            }
+        $t = str_replace("|", "", $pl) . commajoin($a);
+        if (count($pids) > 1)
+            $t = '<span class="has_hotcrp_list" hotcrp_list="p/s/' . join("+", $pids) . '">' . $t . '</span>';
+        return $t;
     }
 
     function textFormMessages(&$tf) {
