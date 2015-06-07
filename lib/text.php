@@ -252,12 +252,14 @@ class Text {
             . ($zw ? '\b' : '');
     }
 
+    const UTF8_INITIAL_NONLETTER = '(?:\A|(?!\pL|\pN)\X)';
+
     public static function utf8_word_regex($word) {
         if ($word === "")
             return "";
         list($aw, $zw) = array(preg_match('{\A(?:\pL|\pN)}u', $word),
                                preg_match('{(?:\pL|\pN)\z}u', $word));
-        return ($aw ? '(?:\A|(?!\pL|\pN)\X)' : '')
+        return ($aw ? self::UTF8_INITIAL_NONLETTER : '')
             . str_replace(" ", '(?:\s|\p{Zs})+', $word)
             . ($zw ? '(?:\z|(?!\pL|\pN)(?=\PM))' : '');
     }
@@ -269,24 +271,25 @@ class Text {
 
         $mtext = $text;
         $offsetmap = null;
-        if (!is_object($match))
-            $flags = "i";
-        else if (!isset($match->preg_raw)) {
-            $match = $match->preg_utf8;
-            $flags = "ui";
-        } else if (preg_match('/[\x80-\xFF]/', $text)) {
-            list($mtext, $offsetmap) = UnicodeHelper::deaccent_offsets($mtext);
-            $match = $match->preg_utf8;
-            $flags = "ui";
-        } else {
-            $match = $match->preg_raw;
-            $flags = "i";
+        $flags = "";
+        if (is_object($match)) {
+            if (!isset($match->preg_raw)) {
+                $match = $match->preg_utf8;
+                $flags = "u";
+            } else if (preg_match('/[\x80-\xFF]/', $text)) {
+                list($mtext, $offsetmap) = UnicodeHelper::deaccent_offsets($mtext);
+                $match = $match->preg_utf8;
+                $flags = "u";
+            } else
+                $match = $match->preg_raw;
         }
 
-        $s = false;
-        if ($match != "") {
-            if ($match[0] != "{")
-                $match = "{(" . $match . ")}" . $flags;
+        $s = $clean_initial_nonletter = false;
+        if ($match !== null && $match !== "") {
+            if (str_starts_with($match, self::UTF8_INITIAL_NONLETTER))
+                $clean_initial_nonletter = true;
+            if ($match[0] !== "{")
+                $match = "{(" . $match . ")}is" . $flags;
             $s = preg_split($match, $mtext, -1, PREG_SPLIT_DELIM_CAPTURE);
         }
         if (!$s || count($s) == 1)
@@ -301,8 +304,15 @@ class Text {
                     $s[$i] = substr($text, $b, $e - $b);
                     $b = $e;
                 }
+        if ($clean_initial_nonletter)
+            for ($i = 1; $i < count($s); $i += 2)
+                if ($s[$i] !== ""
+                    && preg_match('{\A((?!\pL|\pN)\X)(.*)\z}us', $s[$i], $m)) {
+                    $s[$i - 1] .= $m[1];
+                    $s[$i] = $m[2];
+                }
         for ($i = 0; $i < count($s); ++$i)
-            if (($i % 2) && $s[$i] != "")
+            if (($i % 2) && $s[$i] !== "")
                 $s[$i] = '<span class="match">' . htmlspecialchars($s[$i]) . "</span>";
             else
                 $s[$i] = htmlspecialchars($s[$i]);
