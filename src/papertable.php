@@ -2191,7 +2191,7 @@ class PaperTable {
     // Functions for loading papers
 
     static function _maybeSearchPaperId() {
-        global $Conf, $Me;
+        global $Conf, $Me, $Now;
 
         // if a number, don't search
         if (isset($_REQUEST["paperId"]) && $_REQUEST["paperId"] != "") {
@@ -2240,8 +2240,8 @@ class PaperTable {
             $pl = $search->session_list_object();
             $_REQUEST["paperId"] = $_REQUEST["p"] = $pl->ids[0];
             // check if the paper is in the current list
-            if (@$_REQUEST["ls"]
-                && ($curpl = SessionList::lookup($_REQUEST["ls"]))
+            if (@($listno = $_REQUEST["ls"])
+                && ($curpl = SessionList::lookup($listno))
                 && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
                 && array_search($pl->ids[0], $curpl->ids) !== false) {
                 // preserve current list
@@ -2249,9 +2249,11 @@ class PaperTable {
                     $Conf->save_session("temp_matchPreg", $pl->matchPreg);
             } else {
                 // make new list
-                $_REQUEST["ls"] = SessionList::allocate($pl->listid);
-                SessionList::change($_REQUEST["ls"], $pl);
+                $listno = SessionList::allocate($pl->listid);
+                SessionList::change($listno, $pl);
             }
+            unset($_REQUEST["ls"]);
+            setcookie("hotcrp_ls", $listno, $Now + 2);
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;
