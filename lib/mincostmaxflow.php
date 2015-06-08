@@ -37,6 +37,23 @@ class MinCostMaxFlow_Node {
                 ++$n;
         return $n;
     }
+    public function set_price_fix_admissible($p) {
+        $old_price = $this->price;
+        $this->price = $p;
+
+        // adjust n_outgoing_admissible counts
+        foreach ($this->e as $e) {
+            $rc = $e->cost + $e->src->price - $e->dst->price;
+            if ($e->src === $this)
+                $old_rc = $e->cost + $old_price - $e->dst->price;
+            else
+                $old_rc = $e->cost + $e->src->price - $old_price;
+            if (($rc < 0) !== ($old_rc < 0) && $e->flow < $e->cap)
+                $e->src->n_outgoing_admissible += $rc < 0 ? 1 : -1;
+            if (($rc > 0) !== ($old_rc > 0) && $e->flow > 0)
+                $e->dst->n_outgoing_admissible += $rc > 0 ? 1 : -1;
+        }
+    }
 };
 
 class MinCostMaxFlow_Edge {
@@ -109,6 +126,8 @@ class MinCostMaxFlow {
     // pushrelabel/cspushrelabel state
     private $epsilon;
     private $ltail;
+    public $npush;
+    public $nrelabel;
 
     const PMAXFLOW = 0;
     const PMAXFLOW_DONE = 1;
@@ -397,7 +416,7 @@ class MinCostMaxFlow {
         $l = $lhead;
         $lprev = null;
         $max_distance = 2 * count($this->v) - 1;
-        $nrelabels = 0;
+        $this->nrelabel = 0;
         while ($l) {
             // check progress
             ++$n;
@@ -407,10 +426,11 @@ class MinCostMaxFlow {
 
             // discharge current vertex
             if ($this->pushrelabel_discharge($l)) {
-                ++$nrelabels;
                 // global relabeling heuristic is quite useful
-                if ($nrelabels % count($this->v) == 0)
+                ++$this->nrelabel;
+                if ($this->nrelabel % count($this->v) == 0)
                     $this->pushrelabel_make_distance();
+                // if relabeled, put back on front
                 if ($l !== $lhead) {
                     $lprev->link = $l->link;
                     $l->link = $lhead;
@@ -464,6 +484,7 @@ class MinCostMaxFlow {
             $dst->link = null;
         }
         $this->debug && fwrite(STDERR, "push $amt {$e->src->name} > {$e->dst->name}\n");
+        ++$this->npush;
     }
 
     private function cspushrelabel_relabel($v) {
@@ -482,36 +503,22 @@ class MinCostMaxFlow {
             }
         }
         assert($p != -INF || $v->excess == 0);
-        $old_price = $v->price;
-        if ($p > -INF) {
-            $v->price = $p - $this->epsilon;
+        if ($p > -INF)
             $v->npos = $ex;
-        } else
-            $v->price = $old_price - $this->epsilon;
-        $this->debug && fwrite(STDERR, "relabel {$v->name} E{$v->excess} @{$old_price}->{$v->price}\n");
-
-        // adjust n_outgoing_admissible counts
-        foreach ($v->e as $e) {
-            $c = $e->cost + $e->src->price - $e->dst->price;
-            if ($e->src === $v)
-                $old_c = $e->cost + $old_price - $e->dst->price;
-            else
-                $old_c = $e->cost + $e->src->price - $old_price;
-            if (($c < 0) !== ($old_c < 0) && $e->flow < $e->cap)
-                $e->src->n_outgoing_admissible += $c < 0 ? 1 : -1;
-            if (($c > 0) !== ($old_c > 0) && $e->flow > 0)
-                $e->dst->n_outgoing_admissible += $c > 0 ? 1 : -1;
-        }
+        else
+            $p = $v->price;
+        $p -= $this->epsilon;
+        $this->debug && fwrite(STDERR, "relabel {$v->name} E{$v->excess} @{$v->price}->{$p}\n");
+        $v->set_price_fix_admissible($p);
+        ++$this->nrelabel;
     }
 
     private function cspushrelabel_discharge($v) {
         $ne = count($v->e);
-        $notrelabeled = 1;
         while ($v->excess > 0) {
-            if ($v->npos == $ne || !$v->n_outgoing_admissible) {
+            if ($v->npos == $ne || !$v->n_outgoing_admissible)
                 $this->cspushrelabel_relabel($v);
-                $notrelabeled = 0;
-            } else {
+            else {
                 $e = $v->e[$v->npos];
                 if ($e->is_price_admissible_from($v))
                     $this->cspushrelabel_push_from($e, $v);
@@ -519,7 +526,60 @@ class MinCostMaxFlow {
                     ++$v->npos;
             }
         }
-        return !$notrelabeled;
+    }
+
+    private function cspushrelabel_reprice() {
+        $max_distance = (int) (2 * (count($this->v) + 1) * self::CSPUSHRELABEL_ALPHA + 2);
+        $excess = 0;
+
+        // initialize $b[0] with negative-excess nodes
+        $b = array(array());
+        foreach ($this->v as $v) {
+            if ($v->excess < 0) {
+                $v->distance = 0;
+                $b[0][] = $v;
+            } else
+                $v->distance = $max_distance;
+            $excess += max($v->excess, 0);
+        }
+        $total_excess = $excess;
+
+        // loop over buckets, pricing one node at a time
+        $bi = 0;
+        while ($bi < count($b) && $excess > 0) {
+            if (!@$b[$bi]) {
+                ++$bi;
+                continue;
+            }
+            $v = array_pop($b[$bi]);
+            if ($v->distance !== $bi)
+                continue;
+            foreach ($v->e as $ei => $e)
+                if ($e->residual_cap_to($v)
+                    && ($dst = $e->other($v))
+                    && $bi < $dst->distance) {
+                    $nd = $bi;
+                    $cost = $e->reduced_cost_from($dst);
+                    if ($cost >= 0)
+                        $nd += 1 + (int) min($max_distance, $cost / $this->epsilon);
+                    if ($nd < $dst->distance) {
+                        $dst->distance = $nd;
+                        while (count($b) <= $nd)
+                            $b[] = array();
+                        $b[$nd][] = $dst;
+                    }
+                }
+            if ($bi)
+                $v->set_price_fix_admissible($v->price - $bi * $this->epsilon);
+            $v->distance = -1;
+            $excess -= max($v->excess, 0);
+        }
+
+        // reduce prices for unexamined nodes
+        if ($total_excess && $bi)
+            foreach ($this->v as $v)
+                if ($v->distance >= 0)
+                    $v->set_price_fix_admissible($v->price - $bi * $this->epsilon);
     }
 
     private function cspushrelabel_refine($phaseno, $nphases) {
@@ -583,27 +643,34 @@ class MinCostMaxFlow {
                 $v->link = false;
         }
 
-        // relabel-to-front
+        // price update heuristic
+        $this->cspushrelabel_reprice();
+
+        // repeated discharge
         $n = 0;
         while ($lhead) {
             // check progress
-            ++$n;
-            if ($n % 1024 == 0)
+            if ($this->npush + $this->nrelabel - $n >= 2048) {
                 foreach ($this->progressf as $progressf)
                     call_user_func($progressf, $this, self::PMINCOST_INROUND, $phaseno, $nphases);
+                $n = $this->npush + $this->nrelabel;
+            }
 
             // discharge current vertex
             $this->cspushrelabel_discharge($lhead);
+
             $l = $lhead->link;
             $lhead->link = false;
             $lhead = $l;
         }
     }
 
-    public function cspushrelabel_check() {
-        foreach ($this->v as $v)
-            if ($v->excess > 0)
-                fwrite(STDERR, "BUG: node {$v->name} has positive excess {$v->excess}\n");
+    public function cspushrelabel_check($allow_excess = false) {
+        if (!$allow_excess)
+            foreach ($this->v as $v)
+                if ($v->excess > 0)
+                    fwrite(STDERR, "BUG: node {$v->name} has positive excess {$v->excess}\n");
+
         $ebound = -$this->epsilon - (0.5 / count($this->v));
         foreach ($this->e as $e) {
             if ($e->flow < $e->cap && $e->reduced_cost(false) < $ebound)
@@ -616,6 +683,7 @@ class MinCostMaxFlow {
     public function cspushrelabel_finish() {
         // refine the maximum flow to achieve min cost
         $this->mincost_start_at = microtime(true);
+        $this->npush = $this->nrelabel = 0;
         $phaseno = $nphases = 0;
         for ($e = $this->epsilon; $e >= 1 / count($this->v); $e /= self::CSPUSHRELABEL_ALPHA)
             ++$nphases;
