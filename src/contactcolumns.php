@@ -32,7 +32,7 @@ class ContactColumns {
                 . '&nbsp;</td>';
         }
         $name = Text::name_html($pc);
-        if ($label)
+        if ($this->checkbox)
             $name = Ht::label($name);
         $t .= '<td class="' . ($this->checkbox ? '' : 'pctbl ') . 'pctbname">'
             . '<span class="taghl">' . $name . '</span>';
