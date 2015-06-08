@@ -2525,6 +2525,22 @@ return function (content, bubopt) {
         log_jserror({"error": ex.join(" ")}, err);
     }
 
+    function make_bpos(wpos, ds) {
+        var bj = $(bubdiv);
+        bj.css("maxWidth", "");
+        var bpos = bj.geometry(true);
+        var lw = nearpos.left - wpos.left, rw = wpos.right - nearpos.right;
+        var xw = Math.max(ds === 1 ? 0 : lw, ds === 3 ? 0 : rw);
+        var wb = wpos.width;
+        if ((ds === "h" || ds === 1 || ds === 3) && xw > 100)
+            wb = Math.min(wb, xw);
+        if (wb < bpos.width - 3*SPACE) {
+            bj.css("maxWidth", wb - 3*SPACE);
+            bpos = bj.geometry(true);
+        }
+        return bpos;
+    }
+
     function show() {
         var noflip = /!/.test(dirspec), noconstrain = /\*/.test(dirspec),
             ds = dirspec.replace(/[!*]/g, "");
@@ -2532,7 +2548,9 @@ return function (content, bubopt) {
             ds = dir_to_taildir[ds];
         if (!sizes)
             sizes = calculate_sizes(color);
-        var bpos = $(bubdiv).geometry(true), wpos = $(window).geometry();
+
+        var wpos = $(window).geometry();
+        var bpos = make_bpos(wpos, ds);
         var size = sizes[0];
         var bw = bpos.width + size, bh = bpos.height + size;
 
