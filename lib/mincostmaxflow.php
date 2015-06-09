@@ -189,20 +189,6 @@ class MinCostMaxFlow {
             return min(-$this->source->excess, $this->sink->excess);
     }
 
-    public function has_excess() {
-        foreach ($this->v as $v)
-            if ($v->excess)
-                return true;
-        return false;
-    }
-
-    public function current_excess() {
-        $n = -($this->source->excess + $this->sink->excess);
-        foreach ($this->v as $v)
-            $n += $v->excess;
-        return $n;
-    }
-
     public function current_cost() {
         $cost = 0;
         foreach ($this->e as $e)
