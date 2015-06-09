@@ -177,8 +177,10 @@ class Autoassigner {
                 else if ($row->conflictType > 0 || $row->refused > 0
                          || !$p->can_accept_review_assignment($row))
                     $pref = self::PNOASSIGN;
+                else if ($row->preference)
+                    $pref = max($row->preference, -1000);
                 else
-                    $pref = max($row->preference, -1000) + ($topic_interest_score / 100);
+                    $pref = $topic_interest_score / 100;
                 $this->prefs[$row->contactId][$row->paperId] = $pref;
             }
 
@@ -478,11 +480,19 @@ class Autoassigner {
             }
         }
         // cost determination
+        // Adjust preference group counts so people who enter fewer
+        // preference levels aren't disadvantaged.
+        $maxnpg = 0;
+        foreach ($this->pcm as $cid => $p)
+            $maxnpg = max($maxnpg, count($this->pref_groups[$cid]));
         $cost = array();
-        foreach ($this->pcm as $cid => $x) {
-            foreach ($this->pref_groups[$cid] as $pgi => $pg)
+        foreach ($this->pcm as $cid => $p) {
+            $ppg = $this->pref_groups[$cid];
+            foreach ($ppg as $pgi => $pg) {
+                $adjusted_pgi = (int) ($pgi * 64 / count($ppg));
                 foreach ($pg->pids as $pid)
-                    $cost[$cid][$pid] = $pgi;
+                    $cost[$cid][$pid] = $adjusted_pgi;
+            }
         }
         // figure out badpairs class for each user
         $bpclass = array();

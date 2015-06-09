@@ -1221,7 +1221,7 @@ function unparse_preference_span($preference, $always = false) {
     $t = "";
     if ($pv || $ev !== null || $always)
         $t .= "P" . decorateNumber($pv) . unparse_expertise($ev);
-    if ($tv)
+    if ($tv && !$pv)
         $t .= ($t ? " " : "") . "T" . decorateNumber($tv);
     if ($t !== "")
         $t = " <span class=\"asspref$type\">$t</span>";
