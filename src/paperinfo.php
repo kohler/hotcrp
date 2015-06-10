@@ -356,6 +356,15 @@ class PaperInfo {
         return $c;
     }
 
+    public function named_contacts() {
+        $vals = edb_orows(Dbl::qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
+        foreach ($vals as $v) {
+            $v->contactId = (int) $v->contactId;
+            $v->conflictType = (int) $v->conflictType;
+        }
+        return $vals;
+    }
+
     private function load_reviewer_preferences() {
         global $Conf;
         $result = Dbl::qe("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");

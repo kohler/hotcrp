@@ -113,9 +113,9 @@ class PaperStatus {
         $can_view_authors = !$this->view_contact
             || $this->view_contact->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
-            $conflicts = array();
-            foreach ($prow->conflicts(true) as $conf)
-                $conflicts[strtolower($conf->email)] = $conf;
+            $contacts = array();
+            foreach ($prow->named_contacts() as $conf)
+                $contacts[strtolower($conf->email)] = $conf;
 
             $pj->authors = array();
             cleanAuthor($prow);
@@ -129,18 +129,26 @@ class PaperStatus {
                     $aux->last = $au[1];
                 if ($au[3])
                     $aux->affiliation = $au[3];
-                if (@$aux->email
-                    && ($conf = @$conflicts[strtolower($aux->email)])
-                    && $conf->conflictType >= CONFLICT_AUTHOR)
+                if (($lemail = strtolower(@$aux->email ? : ""))
+                    && ($conf = @$contacts[$lemail])
+                    && $conf->conflictType >= CONFLICT_AUTHOR) {
                     $aux->contact = true;
+                    unset($contacts[$lemail]);
+                }
                 $pj->authors[] = $aux;
             }
 
-            $pj->contacts = (object) array();
-            foreach ($conflicts as $conf)
+            $pj->contacts = array();
+            foreach ($contacts as $conf)
                 if ($conf->conflictType >= CONFLICT_CONTACTAUTHOR) {
-                    $e = $conf->email;
-                    $pj->contacts->$e = true;
+                    $aux = (object) array("email" => $conf->email);
+                    if ($conf->firstName)
+                        $aux->first = $conf->firstName;
+                    if ($conf->lastName)
+                        $aux->last = $conf->lastName;
+                    if ($conf->affiliation)
+                        $aux->affiliation = $conf->affiliation;
+                    $pj->contacts[] = $aux;
                 }
         }
 
@@ -494,8 +502,8 @@ class PaperStatus {
                 if (@$au->contact)
                     $old_contacts[strtolower($au->email)] = true;
         if ($old_pj && @$old_pj->contacts)
-            foreach ((array) $old_pj->contacts as $e => $ctype)
-                $old_contacts[strtolower($e)] = true;
+            foreach ($old_pj->contacts as $conf)
+                $old_contacts[strtolower($conf->email)] = true;
 
         // Contacts
         $contacts = @$pj->contacts;
@@ -536,13 +544,12 @@ class PaperStatus {
             if (is_object($v) && @$v->email) {
                 $lemail = strtolower($v->email);
                 if (validate_email($lemail) || @$old_contacts[$lemail])
-                    $pj->contacts[$lemail] = (object) array_merge((array) @$au_by_email[$lemail], (array) $v);
+                    $pj->contacts[] = (object) array_merge((array) @$au_by_email[$lemail], (array) $v);
                 else
                     $pj->bad_contacts[] = $v;
             } else
                 $this->set_error_html("contacts", "Format error [contacts]");
         }
-        $pj->contacts = (object) $pj->contacts;
     }
 
     private function check_invariants($pj, $old_pj) {
@@ -614,7 +621,8 @@ class PaperStatus {
                 $c = clone $au;
                 $contacts[strtolower($c->email)] = $c;
             }
-        foreach ((array) (@$pj->contacts ? : array()) as $lemail => $v) {
+        foreach (@$pj->contacts ? : array() as $v) {
+            $lemail = strtolower($v->email);
             $c = (object) array_merge((array) @$contacts[$lemail], (array) $v);
             $c->contact = true;
             $contacts[$lemail] = $c;
@@ -644,10 +652,9 @@ class PaperStatus {
             $c = $pj->contacts;
         else
             $c = $old_pj ? $old_pj->contacts : array();
-        foreach ((array) $c as $email => $crap) {
-            $email = strtolower($email);
-            if (!@$x[$email] || $x[$email] < CONFLICT_CONTACTAUTHOR)
-                $x[$email] = CONFLICT_CONTACTAUTHOR;
+        foreach ($c as $v) {
+            $lemail = strtolower($v->email);
+            $x[$lemail] = max((int) @$x[$lemail], CONFLICT_CONTACTAUTHOR);
         }
 
         if ($old_pj && @$old_pj->pc_conflicts)

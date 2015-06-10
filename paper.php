@@ -225,7 +225,7 @@ function request_to_json($opj, $action) {
     if (@$_POST["setcontacts"] || @$_POST["has_contacts"])
         request_contacts_to_json($pj);
     else if (!$opj)
-        $pj->contacts = (object) array($Me->email => true);
+        $pj->contacts = array($Me);
 
     // Status
     if ($action === "submit")
@@ -280,11 +280,11 @@ function request_to_json($opj, $action) {
 }
 
 function request_contacts_to_json($pj) {
-    $pj->contacts = (object) array();
+    $pj->contacts = array();
     foreach ($_POST as $k => $v)
         if (str_starts_with($k, "contact_")) {
             $email = html_id_decode(substr($k, 8));
-            $pj->contacts->$email = true;
+            $pj->contacts[] = $email;
         } else if (str_starts_with($k, "newcontact_email")
                    && trim($v) !== ""
                    && trim($v) !== "Email") {
@@ -293,8 +293,8 @@ function request_contacts_to_json($pj) {
             $name = defval($_REQUEST, "newcontact_name$suffix", "");
             if ($name === "Name")
                 $name = "";
-            $pj->contacts->$email = (object) array("email" => $email,
-                                                   "name" => $name);
+            $pj->contacts[] = (object) array("email" => $email,
+                                             "name" => $name);
         }
 }
 
@@ -414,8 +414,11 @@ function update_paper($pj, $opj, $action, $diffs) {
     }
 
     // note differences in contacts
-    $contacts = @$pj->contacts ? array_keys((array) $pj->contacts) : array();
-    $ocontacts = $opj ? array_keys((array) $opj->contacts) : array();
+    $contacts = $ocontacts = array();
+    foreach (@$pj->contacts ? : array() as $v)
+        $contacts[] = strtolower(is_string($v) ? $v : $v->email);
+    foreach ($opj ? $opj->contacts : array() as $v)
+        $ocontacts[] = strtolower($v->email);
     sort($contacts);
     sort($ocontacts);
     if (json_encode($contacts) !== json_encode($ocontacts))
