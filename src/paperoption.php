@@ -228,6 +228,9 @@ class PaperOption {
                 $x["selector"] = array("{$this->abbr}:" . strtolower($this->selector[1]), $this);
             else if (!strpos($this->selector[1], "\""))
                 $x["selector"] = array("{$this->abbr}:\"{$this->selector[1]}\"", $this);
+        } else if ($this->type === "attachments") {
+            $x["attachment-count"] = array("{$this->abbr}:>2", $this);
+            $x["attachment-filename"] = array("{$this->abbr}:*.gif", $this);
         }
         return $x;
     }

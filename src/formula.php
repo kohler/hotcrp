@@ -769,7 +769,9 @@ class Formula {
             $e = null;
             foreach ($os->os as $o) {
                 $ex = new OptionFexpr($o[0]);
-                if (@$o[3] !== "" && $o[1] == "not in")
+                if ($o[2] === "special")
+                    $this->_error_html[] = "“" . htmlspecialchars($rest[1]) . "” can’t be used in formulas.";
+                else if (@$o[3] !== "" && $o[1] == "not in")
                     $ex = new NegateFexpr(new InFexpr($ex, $o[2]));
                 else if (@$o[3] !== "" && $o[1] == "in")
                     $ex = new InFexpr($ex, $o[2]);

@@ -276,6 +276,10 @@ function searchQuickref() {
                 $desc = "paper’s “" . htmlspecialchars($oex[1]->name) . "” option has value &gt; 100";
             else if ($extype === "selector")
                 $desc = "paper’s “" . htmlspecialchars($oex[1]->name) . "” option has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
+            else if ($extype === "attachment-count")
+                $desc = "paper has more than 2 “" . htmlspecialchars($oex[1]->name) . "” attachments";
+            else if ($extype === "attachment-filename")
+                $desc = "paper has an “" . htmlspecialchars($oex[1]->name) . "” attachment with a .gif extension";
             else
                 continue;
             _searchQuickrefRow($section, $oex[0], $desc);

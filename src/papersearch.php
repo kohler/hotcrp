@@ -30,10 +30,12 @@ SearchOperator::$list =
               ")" => null);
 
 class SearchTerm {
-    var $type;
-    var $link;
-    var $flags;
-    var $value;
+    public $type;
+    public $link;
+    public $flags;
+    public $value;
+    public $regex;
+    public $float;
 
     function __construct($t, $f = 0, $v = null, $other = null) {
         $this->type = $t;
@@ -174,6 +176,12 @@ class SearchReviewValue {
             return ($compar & 2) != 0;
         else
             return ($compar & 1) != 0;
+    }
+    static function compare_string($x, $compar_y) {
+        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?\d+)\z/', $compar_y, $m))
+            return self::compare($x, $m[1], $m[2]);
+        else
+            return false;
     }
     public function conservative_countexpr() {
         if ($this->allowed & 1)
@@ -1213,17 +1221,8 @@ class PaperSearch {
         // global $Conf; $Conf->infoMsg(Ht::pre_text(var_export($omatches, true)));
         if (count($omatches)) {
             foreach ($omatches as $oid => $o) {
-                // find the relevant values
-                if ($o->type === "numeric") {
-                    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-                        $qo[] = array($o, $ocompar, $m[1]);
-                    else if ($oval === "" || $oval === "yes")
-                        $qo[] = array($o, "!=", 0, $oval);
-                    else if ($oval === "no")
-                        $qo[] = array($o, "=", 0);
-                    else
-                        $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
-                } else if ($o->has_selector()) {
+                // selectors handle “yes”, “”, and “no” specially
+                if ($o->has_selector()) {
                     $xval = array();
                     if ($oval === "") {
                         foreach ($o->selector as $k => $v)
@@ -1241,14 +1240,29 @@ class PaperSearch {
                         $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
                     else
                         $qo[] = array($o, $ocompar === "=" ? "in" : "not in", $xval, $oval);
-                } else {
-                    if ($oval === "" || $oval === "yes")
-                        $qo[] = array($o, "!=", 0, $oval);
-                    else if ($oval === "no")
-                        $qo[] = array($o, "=", 0);
-                    else
-                        continue;
+                    continue;
                 }
+
+                if ($oval === "" || $oval === "yes")
+                    $qo[] = array($o, "!=", 0, $oval);
+                else if ($oval === "no")
+                    $qo[] = array($o, "=", 0);
+                else if ($o->type === "numeric") {
+                    if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
+                        $qo[] = array($o, $ocompar, $m[1]);
+                    else
+                        $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
+                } else if ($o->type === "attachments") {
+                    if ($oval === "any")
+                        $qo[] = array($o, "!=", 0, $oval);
+                    else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m)) {
+                        if (SearchReviewValue::compare(0, $ocompar, $m[1]))
+                            $qo[] = array($o, "=", 0);
+                        $qo[] = array($o, ">0", "special", "attachment-count", $ocompar, $m[1]);
+                    } else
+                        $qo[] = array($o, ">0", "special", "attachment-name", $oval);
+                } else
+                    continue;
             }
         } else if (($ocompar === "=" || $ocompar === "!=") && $oval === "")
             foreach (PaperOption::option_list() as $oid => $o)
@@ -1274,11 +1288,14 @@ class PaperSearch {
 
         // add expressions
         $qz = array();
-        foreach ($os->os as $o) {
-            $cmp = ctype_alpha($o[1][0]) ? " $o[1] " : $o[1];
-            $value = is_array($o[2]) ? "(" . join(",", $o[2]) . ")" : $o[2];
-            $qz[] = new SearchTerm("option", self::F_XVIEW, array($o[0], $cmp . $value));
-        }
+        foreach ($os->os as $oq)
+            if ($oq[2] === "special") {
+                $qz[] = new SearchTerm("option", self::F_XVIEW, $oq);
+            } else {
+                $cmp = ctype_alpha($oq[1][0]) ? " $oq[1] " : $oq[1];
+                $value = is_array($oq[2]) ? "(" . join(",", $oq[2]) . ")" : $oq[2];
+                $qz[] = new SearchTerm("option", self::F_XVIEW, array($oq[0], $cmp . $value));
+            }
         if ($os->negate)
             $qz = array(SearchTerm::negate(SearchTerm::combine("or", $qz)));
         $qt = array_merge($qt, $qz);
@@ -2558,6 +2575,13 @@ class PaperSearch {
             if ($t->type === "option"
                 && !$this->contact->can_view_paper_option($row, $t->value[0], true))
                 return false;
+            if ($t->type === "option"
+                && $t->value[0]->type === "attachments") {
+                $attq = $t->value[2];
+                if ($attq[0] === "A")
+                    ;
+
+            }
             if ($t->type === "re" && ($fieldname = $t->link)
                 && !isset($row->$fieldname)) {
                 $row->$fieldname = 0;
@@ -2657,33 +2681,38 @@ class PaperSearch {
                     $expr = $t->value[$i + 1];
                     if (is_array($expr))
                         $ans = in_array($row->$fieldname, $expr);
-                    else if ($expr[0] === '=')
-                        $ans = $row->$fieldname == substr($expr, 1);
-                    else if ($expr[0] === '!')
-                        $ans = $row->$fieldname != substr($expr, 2);
-                    else if ($expr[0] === '<' && $expr[1] === '=')
-                        $ans = $row->$fieldname <= substr($expr, 2);
-                    else if ($expr[0] === '>' && $expr[1] === '=')
-                        $ans = $row->$fieldname >= substr($expr, 2);
-                    else if ($expr[0] === '<')
-                        $ans = $row->$fieldname < substr($expr, 1);
-                    else if ($expr[0] === '>')
-                        $ans = $row->$fieldname > substr($expr, 1);
                     else
-                        $ans = false;
+                        $ans = SearchReviewValue::compare_string($row->$fieldname, $expr);
                 }
                 return $ans;
             }
-        } else if ($tt === "tag" || $tt === "topic" || $tt === "option") {
+        } else if ($tt === "tag" || $tt === "topic") {
             if (!$this->_clauseTermCheckFlags($t, $row))
                 return false;
-            else {
-                $fieldname = $t->link;
-                if ($t->value[0] === "none")
-                    return $row->$fieldname == 0;
-                else
-                    return $row->$fieldname != 0;
+            $fieldname = $t->link;
+            if ($t->value[0] === "none")
+                return $row->$fieldname == 0;
+            else
+                return $row->$fieldname != 0;
+        } else if ($tt === "option") {
+            if (!$this->_clauseTermCheckFlags($t, $row))
+                return false;
+            $fieldname = $t->link;
+            if ($row->$fieldname == 0)
+                return false;
+            if ($t->value[2] === "special") {
+                $ov = $row->option($t->value[0]->id);
+                if ($t->value[3] === "attachment-count")
+                    return SearchReviewValue::compare(count($ov->values), $t->value[4], $t->value[5]);
+                else if ($t->value[3] === "attachment-name") {
+                    $reg = self::analyze_field_preg($t->value[4]);
+                    foreach ($ov->documents($row) as $doc)
+                        if (self::match_field_preg($reg, $doc->filename, false))
+                            return true;
+                }
+                return false;
             }
+            return true;
         } else if ($tt === "formula") {
             $formulaf = $t->link;
             return !!$formulaf($row, null, $this->contact);
