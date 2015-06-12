@@ -140,7 +140,7 @@ class PaperStatus {
 
             $pj->contacts = array();
             foreach ($contacts as $conf)
-                if ($conf->conflictType >= CONFLICT_CONTACTAUTHOR) {
+                if ($conf->conflictType >= CONFLICT_AUTHOR) {
                     $aux = (object) array("email" => $conf->email);
                     if ($conf->firstName)
                         $aux->first = $conf->firstName;
@@ -534,7 +534,7 @@ class PaperStatus {
                 $v = (object) array();
             else if (is_string($v) && is_int($k)) {
                 $v = trim($v);
-                if (validate_email($v))
+                if (@$old_contacts[strtolower($v)] || validate_email($v))
                     $v = (object) array("email" => $v);
                 else
                     $v = Text::analyze_name($v);
