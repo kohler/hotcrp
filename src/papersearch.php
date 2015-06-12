@@ -1234,7 +1234,7 @@ class PaperSearch {
                     } else
                         $xval = matchValue($o->selector, $oval);
                     if (count($xval) == 0)
-                        $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any opt:" . htmlspecialchars($oname) . " values.";
+                        $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
                     else if (count($xval) == 1)
                         $qo[] = array($o, $ocompar, $xval[0], $oval);
                     else if ($ocompar !== "=" && $ocompar !== "!=")
@@ -1315,6 +1315,8 @@ class PaperSearch {
                 if ($i)
                     $x[] = "“{$rname}response”";
             }
+            foreach (PaperOption::option_list() as $o)
+                array_push($x, "“" . htmlspecialchars($o->abbr) . "”");
             $this->warn("Unknown “has:” search. I understand " . commajoin($x) . ".");
             $qt[] = new SearchTerm("f");
         }

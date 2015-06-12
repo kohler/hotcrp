@@ -255,8 +255,34 @@ function searchQuickref() {
         _searchQuickrefRow("", "au:pc", "one or more authors are PC members (author email matches PC email)");
     _searchQuickrefRow("Collaborators", "co:liskov", "collaborators contains “liskov”");
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
-    _searchQuickrefRow("Options", "opt:shadow", "selected submission options match “shadow”");
-    _searchQuickrefRow("", "budget:>1000", "numerical submission option “budget” has value &gt; 1000");
+
+    $oex = array();
+    foreach (PaperOption::option_list() as $o)
+        $oex = array_merge($oex, $o->example_searches());
+    if (count($oex)) {
+        $section = "Options";
+        foreach ($oex as $extype => $oex) {
+            if ($extype === "has") {
+                $desc = "paper has “" . htmlspecialchars($oex[1]->name) . "” submission option";
+                $oabbr = array();
+                foreach (PaperOption::option_list() as $ox)
+                    if ($ox !== $oex[1])
+                        $oabbr[] = "“has:" . htmlspecialchars($ox->abbr) . "”";
+                if (count($oabbr))
+                    $desc .= '<div class="hint">Other option ' . pluralx(count($oabbr), "search") . ': ' . commajoin($oabbr) . '</div>';
+            } else if ($extype === "yes")
+                $desc = "same meaning; abbreviations also accepted";
+            else if ($extype === "numeric")
+                $desc = "paper’s “" . htmlspecialchars($oex[1]->name) . "” option has value &gt; 100";
+            else if ($extype === "selector")
+                $desc = "paper’s “" . htmlspecialchars($oex[1]->name) . "” option has value “" . htmlspecialchars($oex[1]->selector[1]) . "”";
+            else
+                continue;
+            _searchQuickrefRow($section, $oex[0], $desc);
+            $section = "";
+        }
+    }
+
     _searchQuickrefRow("<a href='" . hoturl("help", "t=tags") . "'>Tags</a>", "#discuss", "tagged “discuss” (“tag:discuss” also works)");
     _searchQuickrefRow("", "-#discuss", "not tagged “discuss”");
     _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
@@ -1197,7 +1223,7 @@ discussion process for the relevant papers. This PC member is called the
 A paper’s administrators have full privilege to assign and view reviews
 for that paper, although they cannot change conference settings.</p>
 
-<p>The presence of a paper administrator changes conflicted chairs’
+<p>Assigned administrators change conflicted chairs’
 access rights. Normally, a conflicted chair can easily override
 their conflict. If a paper has an administrator, however, conflicts cannot
 be overridden until the administrator is removed.</p>

@@ -38,6 +38,18 @@ class PaperOptionValue {
 }
 
 class PaperOption {
+    public $id;
+    public $name;
+    public $type;
+    public $abbr;
+    public $description;
+    public $position;
+    public $final;
+    public $visibility;
+    public $near_submission;
+    public $highlight;
+    public $display_space;
+    public $selector;
     private static $list = null;
 
     function __construct($args) {
@@ -204,6 +216,20 @@ class PaperOption {
         if (@$this->selector)
             $j->selector = $this->selector;
         return $j;
+    }
+
+    function example_searches() {
+        $x = array("has" => array("has:$this->abbr", $this),
+                   "yes" => array("{$this->abbr}:yes", $this));
+        if ($this->type === "numeric")
+            $x["numeric"] = array("{$this->abbr}:>100", $this);
+        if ($this->has_selector() && @$this->selector[1]) {
+            if (preg_match('/\A\w+\z/', $this->selector[1]))
+                $x["selector"] = array("{$this->abbr}:" . strtolower($this->selector[1]), $this);
+            else if (!strpos($this->selector[1], "\""))
+                $x["selector"] = array("{$this->abbr}:\"{$this->selector[1]}\"", $this);
+        }
+        return $x;
     }
 
     private static function sort_multiples($o, $ox) {

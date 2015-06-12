@@ -1654,19 +1654,12 @@ function doOptGroupOption($o) {
         "</div>",
         "</div></td>";
 
-    if ($id !== "n") {
+    if ($id !== "n" && ($examples = $o->example_searches())) {
         echo "<td style='padding-left: 1em'><div class='f-i'>",
-            "<div class='f-c'>Example search</div>",
-            "<div class='f-e'>";
-        $oabbrev = option_search_term($o->name);
-        if ($o->has_selector() && count($o->selector) > 1
-            && $o->selector[1] !== "")
-            $oabbrev .= "#" . strtolower(simplify_whitespace($o->selector[1]));
-        if (strstr($oabbrev, " ") !== false)
-            $oabbrev = "\"$oabbrev\"";
-        echo "“<a href=\"", hoturl("search", "q=opt:" . urlencode($oabbrev)), "\">",
-            "opt:", htmlspecialchars($oabbrev), "</a>”",
-            "</div></div></td>";
+            "<div class='f-c'>Example " . pluralx($examples, "search") . "</div>";
+        foreach ($examples as &$ex)
+            $ex = "<a href=\"" . hoturl("search", array("q" => $ex[0])) . "\">" . htmlspecialchars($ex[0]) . "</a>";
+        echo '<div class="f-e">', join("<br/>", $examples), "</div></div></td>";
     }
 
     echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
