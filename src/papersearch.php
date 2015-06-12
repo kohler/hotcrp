@@ -1305,7 +1305,7 @@ class PaperSearch {
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
         else if (strcasecmp($word, "shep") == 0 || strcasecmp($word, "shepherd") == 0)
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
-        else if (preg_match('/\A\w+\z/', $word) && $this->_search_options("$word:yes", $qt, false))
+        else if (preg_match('/\A[\w-]+\z/', $word) && $this->_search_options("$word:yes", $qt, false))
             /* OK */;
         else {
             $x = array("“paper”", "“final”", "“abstract”", "“comment”", "“aucomment”", "“pcrev”", "“extrev”");
