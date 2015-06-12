@@ -2575,13 +2575,6 @@ class PaperSearch {
             if ($t->type === "option"
                 && !$this->contact->can_view_paper_option($row, $t->value[0], true))
                 return false;
-            if ($t->type === "option"
-                && $t->value[0]->type === "attachments") {
-                $attq = $t->value[2];
-                if ($attq[0] === "A")
-                    ;
-
-            }
             if ($t->type === "re" && ($fieldname = $t->link)
                 && !isset($row->$fieldname)) {
                 $row->$fieldname = 0;
@@ -2700,7 +2693,7 @@ class PaperSearch {
             $fieldname = $t->link;
             if ($row->$fieldname == 0)
                 return false;
-            if ($t->value[2] === "special") {
+            if (@$t->value[2] === "special") {
                 $ov = $row->option($t->value[0]->id);
                 if ($t->value[3] === "attachment-count")
                     return SearchReviewValue::compare(count($ov->values), $t->value[4], $t->value[5]);
