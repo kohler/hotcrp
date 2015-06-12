@@ -738,7 +738,7 @@ class PaperTable {
 
         foreach ($this->prow->options() as $oa) {
             $o = $oa->option;
-            if ((@$o->near_submission && $o->is_document())
+            if ((@$o->near_submission && $o->has_document() && $Me->can_view_paper_option($this->prow, $o))
                 || (!$showAllOptions && !$Me->can_view_paper_option($this->prow, $o)))
                 continue;
 
