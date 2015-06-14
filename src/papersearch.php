@@ -996,7 +996,7 @@ class PaperSearch {
                 else {
                     $score = $m[3];
                     if ($f->option_letter) {
-                        if (!defval($Opt, "smartScoreCompare") || $noswitch) {
+                        if (!@$Opt["smartScoreCompare"] || $noswitch) {
                             // switch meaning of inequality
                             if ($m[2][0] === "<")
                                 $m[2] = ">" . substr($m[2], 1);

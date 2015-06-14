@@ -208,8 +208,6 @@ $Opt["disablePS"] = true;
 //                   token enabling them to view their papers without logging in.
 //   mobileStylesheet  If true, make the site mobile aware.
 
-$Opt["smartScoreCompare"] = true;
-
 
 // EXTERNAL SOFTWARE CONFIGURATION
 //
