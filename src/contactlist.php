@@ -476,12 +476,13 @@ class ContactList extends BaseList {
         }
     }
 
-    function footer($ncol) {
+    function footer($ncol, $hascolors) {
         global $Conf;
         if ($this->count == 0)
             return "";
 
-        $t = "  <tfoot class=\"pltable\"><tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
+        $t = "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
+            . "\"><tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
             . Ht::img("_.gif", "^^", array("class" => "placthook")) . "</td>\n";
         $t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
 
@@ -711,7 +712,7 @@ class ContactList extends BaseList {
 
         $anyData = array();
         $body = '';
-        $extrainfo = false;
+        $extrainfo = $hascolors = false;
         $ids = array();
         foreach ($srows as $row) {
             if (($this->limit == "resub" || $this->limit == "extsub")
@@ -721,8 +722,13 @@ class ContactList extends BaseList {
             $trclass = "k" . ($this->count % 2);
             if ($show_colors) {
                 $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
-                if (($c = TagInfo::color_classes($tags)))
-                    $trclass .= " " . $c;
+                if (($m = TagInfo::color_classes($tags))) {
+                    if (TagInfo::classes_have_colors($m)) {
+                        $trclass = $m;
+                        $hascolors = true;
+                    } else
+                        $trclass .= " $m";
+                }
             }
             if ($row->disabled)
                 $trclass .= " graytext";
@@ -824,9 +830,10 @@ class ContactList extends BaseList {
 
         reset($fieldDef);
         if (key($fieldDef) == self::FIELD_SELECTOR)
-            $x .= $this->footer($ncol);
+            $x .= $this->footer($ncol, $hascolors);
 
-        $x .= "<tbody class=\"pltable\">" . $body . "</tbody></table>";
+        $x .= "<tbody class=\"pltable" . ($hascolors ? " pltable_colored" : "")
+            . "\">" . $body . "</tbody></table>";
 
         if ($this->listNumber) {
             $l = SessionList::create("u/" . $this->limit, $ids,
