@@ -1569,7 +1569,7 @@ window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
               pc: "shown only to PC reviewers",
               admin: "shown only to administrators"};
-var cmts = {}, cmtcontainer = null;
+var cmts = {}, cmtcontainer = null, has_unload = false;
 var idctr = 0, resp_rounds = {};
 var detwiddle = new RegExp("^" + (hotcrp_user.cid ? hotcrp_user.cid : "") + "~");
 
@@ -1621,7 +1621,7 @@ function fill_editing(hc, cj) {
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
-    hc.push('<form><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
+    hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
     if (!cj.response) {
         // tags
@@ -1736,6 +1736,19 @@ function analyze(e) {
         return {j: j, cid: cid, cj: cmts[cid], is_new: true};
 }
 
+function beforeunload() {
+    var i, cj = $(".cmtg textarea"), x, ta;
+    for (i = 0; i != cj.length; ++i) {
+        x = analyze(cj[i]);
+        if ($.trim($(cj[i]).val()) !== (x.cj.text || "")) {
+            if (cj.is_new)
+                return "Your new comment has not been saved.";
+            else
+                return "The changes you’ve made to a comment have not been saved.";
+        }
+    }
+}
+
 function make_editor() {
     var x = analyze(this), te;
     fill(x.j, x.cj, true);
@@ -1744,6 +1757,8 @@ function make_editor() {
     if (te.setSelectionRange)
         te.setSelectionRange(te.value.length, te.value.length);
     x.j.scrollIntoView();
+    has_unload || $(window).on("beforeunload.papercomment", beforeunload);
+    has_unload = true;
     return false;
 }
 
@@ -1935,7 +1950,9 @@ function set_resp_round(rname, rinfo) {
     resp_rounds[rname] = rinfo;
 }
 
-return {add: add, edit_response: edit_response, set_resp_round: set_resp_round};
+return {
+    add: add, edit_response: edit_response, set_resp_round: set_resp_round
+};
 })(jQuery);
 
 
@@ -2101,7 +2118,8 @@ function shortcut(top_elt) {
             for (j = 0; j < x[i].childNodes.length; ++j) {
                 a = x[i].childNodes[j];
                 if (a.nodeType == 1 && a.tagName.toUpperCase() == "DIV"
-                    && a.className.match(/\baahc\b.*\balert\b/))
+                    && a.className.match(/\baahc\b.*\balert\b/)
+                    && !x[i].className.match(/\bshortcutok\b/))
                     return true;
             }
         // call function
