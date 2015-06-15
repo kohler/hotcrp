@@ -2086,7 +2086,7 @@ class Conference {
 
     private function header_head($title) {
         global $Me, $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH,
-            $Opt, $CurrentList;
+            $Opt, $CurrentList, $CurrentProw;
         echo "<!DOCTYPE html>
 <html>
 <head>
@@ -2157,6 +2157,8 @@ class Conference {
 
         $pid = @$_REQUEST["paperId"];
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
+        if (!$pid && $CurrentProw)
+            $pid = $CurrentProw->paperId;
         if ($pid)
             $this->scriptStuff .= ";hotcrp_paperid=$pid";
         if ($pid && $Me && $Me->privChair
