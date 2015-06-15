@@ -1742,9 +1742,9 @@ function beforeunload() {
         x = analyze(cj[i]);
         if ($.trim($(cj[i]).val()) !== (x.cj.text || "")) {
             if (cj.is_new)
-                return "Your new comment has not been saved.";
+                return "Your new comment has not been saved. If you leave this page now, your comment will be lost.";
             else
-                return "The changes you’ve made to a comment have not been saved.";
+                return "The edits you’ve made to a comment have not been saved. If you leave this page now, your edits will be lost.";
         }
     }
 }
