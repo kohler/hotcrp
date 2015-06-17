@@ -1644,7 +1644,7 @@ function fill_editing(hc, cj) {
         hc.pop();
 
         // actions
-        hc.push('<div class="clear"></div><div class="aab" style="margin-bottom:0">', '<hr class="c" /></div>');
+        hc.push('<hr class="c" /><div class="aab" style="margin-bottom:0">', '<hr class="c" /></div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
         if (!cj.is_new) {

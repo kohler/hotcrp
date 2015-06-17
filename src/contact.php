@@ -319,8 +319,8 @@ class Contact {
         if (!$this->has_database_account()) {
             $reg = $_SESSION["trueuser"];
             if (strcasecmp($reg->email, $this->email) != 0)
-                $reg = true;
-            if (($c = self::find_by_email($this->email, $reg, false))) {
+                $reg = (object) array();
+            if (($c = self::find_by_email($this->email, $reg))) {
                 $this->load_by_id($c->contactId);
                 $this->activate();
             }
@@ -740,12 +740,12 @@ class Contact {
     }
 
     static function safe_registration($reg) {
-        $safereg = array();
+        $safereg = (object) array();
         foreach (array("firstName", "lastName", "name", "preferredEmail",
                        "affiliation", "collaborators", "voicePhoneNumber",
                        "unaccentedName") as $k)
             if (isset($reg[$k]))
-                $safereg[$k] = $reg[$k];
+                $safereg->$k = $reg[$k];
         return $safereg;
     }
 
@@ -842,7 +842,7 @@ class Contact {
         return true;
     }
 
-    static function find_by_email($email, $reg = false, $send = false) {
+    static function find_by_email($email, $reg = null, $send = false) {
         global $Conf, $Me;
 
         // Lookup by email
@@ -856,7 +856,11 @@ class Contact {
         }
 
         // Not found: register
-        if (!$reg || !validate_email($email))
+        if (!$reg)
+            return null;
+        if (is_array($reg))
+            $reg = (object) $reg;
+        if (!(@$reg->no_validate_email || validate_email($email)))
             return null;
 
         $sreg = self::safe_registration_with_contactdb($email, $reg);

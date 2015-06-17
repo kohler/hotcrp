@@ -134,6 +134,7 @@ class LoginHelper {
         // auto-create account if external login
         if (!$user && $external_login) {
             $reg = Contact::safe_registration($_REQUEST);
+            $reg->no_validate_email = true;
             if (!($user = Contact::find_by_email($_REQUEST["email"], $reg)))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
             if (defval($Conf->settings, "setupPhase", false))
@@ -255,7 +256,7 @@ class LoginHelper {
 
         // create database account
         if (!$user || !$user->has_database_account()) {
-            if (!($user = Contact::find_by_email($_REQUEST["email"], true)))
+            if (!($user = Contact::find_by_email($_REQUEST["email"], (object) array())))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
         }
 

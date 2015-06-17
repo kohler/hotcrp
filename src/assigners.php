@@ -237,7 +237,7 @@ class AssignerContacts {
         $cx = $this->lookup_lemail($lemail);
         if (!$cx || $cx->contactId < 0) {
             // XXX assume that never fails:
-            $cx = Contact::find_by_email($c->email, array("firstName" => @$c->firstName, "lastName" => @$c->lastName), false);
+            $cx = Contact::find_by_email($c->email, array("firstName" => @$c->firstName, "lastName" => @$c->lastName));
             $cx = $this->store($cx);
         }
         return $cx;
