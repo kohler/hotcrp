@@ -1,4 +1,4 @@
-export VERSION=2.94
+export VERSION=2.95
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*, *//;s/[;)].*//'`
@@ -161,6 +161,7 @@ src/review.php
 src/reviewformlibrary.json
 src/reviewsetform.php
 src/reviewtable.php
+src/reviewtimes.php
 src/sample.pdf
 src/schema.sql
 src/searchactions.php
@@ -236,5 +237,6 @@ scripts/settings.js
 
 stylesheets/.htaccess
 stylesheets/style.css
+stylesheets/mobile.css
 
 EOF

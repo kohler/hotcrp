@@ -1,5 +1,31 @@
 HotCRP NEWS
 
+Version 2.95   19.Jun.2015
+
+* Graphs!!!!!
+
+* Globally-optimal autoassignment through min-cost max-flow!!!!!
+
+* Paper administrators can access the autoassigner and bulk assigner for those
+  papers they administer.
+
+* Keyboard shortcuts on paper pages: c, enter new comment; s+d, set decision;
+  s+l, set discussion lead; s+s, set shepherd; s+t, set tags.
+
+* Add approval voting.
+
+* Review scores can have different color scales.
+
+* Reviews can be made visible only for papers with a certain tag.
+
+* Add `pre:` searches for partially-complete reviews.
+
+* Add searches for attachment options: number of attachments, attachment
+  filename.
+
+* Hundreds of bug fixes and minor improvements, and some performance work.
+
+
 Version 2.94   15.Mar.2015
 
 * Add buzzer, a discussion status page based on the tracker. Many
