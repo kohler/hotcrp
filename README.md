@@ -10,8 +10,7 @@ used in computer science conferences and for internal review processes
 at several large companies.
 
 HotCRP also has weaknesses. It requires that you run your own server,
-and it does not natively support multitrack conferences (although you
-can hack something together).
+and multitrack conference support requires manual intervention.
 
 Prerequisites
 -------------
