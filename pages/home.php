@@ -445,7 +445,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             $a = array();
             while (($row = edb_row($result)))
                 if (isset(ReviewForm::$rating_types[$row[0]]))
-                    $a[] = "<a href=\"" . hoturl("search", "q=rate:%22" . urlencode(ReviewForm::$rating_types[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars(ReviewForm::$rating_types[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
+                    $a[] = "<a href=\"" . hoturl("search", "q=re:me+rate:%22" . urlencode(ReviewForm::$rating_types[$row[0]]) . "%22") . "\" title='List rated reviews'>$row[1] &ldquo;" . htmlspecialchars(ReviewForm::$rating_types[$row[0]]) . "&rdquo; " . pluralx($row[1], "rating") . "</a>";
             if (count($a) > 0) {
                 echo "<div class='hint g'>\nYour reviews have received ",
                     commajoin($a);
