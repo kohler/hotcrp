@@ -1813,6 +1813,19 @@ tr.purpletag, tr.graytag, tr.whitetag {
 .fold5c .dimtag.conflicttag.taghl, .fold5c .dimtag.conflicttag .taghl {
 	color: inherit;
 }
+.highlighttag.taghl, .highlighttag .taghl {
+	background-color: #ffeb00;
+	box-shadow: -0.2em 0 0 #ffeb00, 0.2em 0 0 0 #ffeb00;
+}
+.pinkhighlighttag.taghl, .pinkhighlighttag .taghl {
+	background-color: #ff9ee5;
+	box-shadow: -0.2em 0 0 #ff9ee5, 0.2em 0 0 0 #ff9ee5;
+}
+.fold5c .highlighttag.conflicttag.taghl, .fold5c .highlighttag.conflicttag .taghl,
+.fold5c .pinkhighlighttag.conflicttag.taghl, .fold5c .pinkhighlighttag.conflicttag .taghl {
+	background-color: inherit;
+	box-shadow: none;
+}
 
 .redtag.orangetag, .redtag.orangetag.psc,
 .redtag.yellowtag, .redtag.yellowtag.psc,

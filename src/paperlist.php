@@ -687,6 +687,8 @@ class PaperList extends BaseList {
             if ($row->conflictType > 0 && !$this->contact->can_view_tags($row, false))
                 $trclass .= " conflicttag";
         }
+        if (($highlightclass = @$this->search->highlightmap[$row->paperId]))
+            $trclass .= " {$highlightclass}tag";
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
 

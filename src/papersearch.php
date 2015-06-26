@@ -18,15 +18,17 @@ class SearchOperator {
 
 SearchOperator::$list =
         array("(" => new SearchOperator("(", true, null),
-              "NOT" => new SearchOperator("not", true, 6),
-              "-" => new SearchOperator("not", true, 6),
-              "+" => new SearchOperator("+", true, 6),
-              "SPACE" => new SearchOperator("and2", false, 5),
-              "AND" => new SearchOperator("and", false, 4),
-              "OR" => new SearchOperator("or", false, 3),
-              "XAND" => new SearchOperator("and2", false, 2),
-              "XOR" => new SearchOperator("or", false, 2),
-              "THEN" => new SearchOperator("then", false, 1),
+              "NOT" => new SearchOperator("not", true, 7),
+              "-" => new SearchOperator("not", true, 7),
+              "+" => new SearchOperator("+", true, 7),
+              "SPACE" => new SearchOperator("and2", false, 6),
+              "AND" => new SearchOperator("and", false, 5),
+              "OR" => new SearchOperator("or", false, 4),
+              "XAND" => new SearchOperator("and2", false, 3),
+              "XOR" => new SearchOperator("or", false, 3),
+              "THEN" => new SearchOperator("then", false, 2),
+              "HIGHLIGHT" => new SearchOperator("highlight", false, 1),
+              "PINKHIGHLIGHT" => new SearchOperator("pinkhighlight", false, 1),
               ")" => null);
 
 class SearchTerm {
@@ -112,8 +114,8 @@ class SearchTerm {
         return $this->type === "f";
     }
     function islistcombiner() {
-        return $this->type === "and" || $this->type === "and2"
-            || $this->type === "or" || $this->type === "then";
+        // "and" "and2" "or" "then" "highlight"
+        return $this->precedence <= 6;
     }
     function set($k, $v) {
         $this->$k = $v;
@@ -477,8 +479,9 @@ class PaperSearch {
     private $_thenError = false;
     private $_ssRecursion = array();
     private $_allow_deleted = false;
-    var $thenmap = null;
-    var $headingmap = null;
+    public $thenmap = null;
+    public $headingmap = null;
+    public $highlightmap = null;
     public $viewmap;
     public $sorters;
 
@@ -1735,7 +1738,7 @@ class PaperSearch {
     }
 
     static function _searchPopKeyword($str) {
-        if (preg_match('/\A([-+()]|(?:AND|OR|NOT|THEN)(?=[\s\(]))/is', $str, $m))
+        if (preg_match('/\A([-+()]|(?:AND|and|OR|or|NOT|not|THEN|then|(?:PINK)?HIGHLIGHT)(?=[\s\(]))/s', $str, $m))
             return array(strtoupper($m[1]), ltrim(substr($str, strlen($m[0]))));
         else
             return array(null, $str);
@@ -1773,15 +1776,17 @@ class PaperSearch {
                 list($opstr, $op, $nextstr) =
                     array("", SearchOperator::$list["SPACE"], $str);
             }
+            if (!$curqe && $op && ($op->op === "highlight" || $op->op === "pinkhighlight"))
+                $curqe = new SearchTerm("t");
 
             if ($opstr === null) {
                 $word = self::pop_word($nextstr);
                 // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
-                    && (!count($stack) || $stack[count($stack) - 1]->op->op === "then")
+                    && (!count($stack) || $stack[count($stack) - 1]->op->precedence <= 2)
                     && ($uword = strtoupper($word))
                     && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
-                    && preg_match(',\A\s*(?:|THEN(?:\s|\().*)\z,', $nextstr))
+                    && preg_match(',\A\s*(?:|(?:THEN|then|(?:PINK)?HIGHLIGHT)(?:\s|\().*)\z,', $nextstr))
                     $word = $uword;
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($word[strlen($word) - 1] === ":"
@@ -1828,7 +1833,7 @@ class PaperSearch {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->precedence > $op->precedence)
                     $curqe = self::_searchPopStack($curqe, $stack);
-                if ($op->op === "then" && $curqe) {
+                if ($op->precedence <= 2 && $curqe) {
                     $curqe->set_float("substr", trim($headstr . substr($xstr, 0, -strlen($str))));
                     $xstr = $nextstr;
                     $headstr = "";
@@ -1951,23 +1956,24 @@ class PaperSearch {
     // this step is to combine all paper numbers into a single group, and to
     // assign review adjustments (rates & rounds).
 
-    function _queryClean($qe, $below = false) {
+    private function _queryClean($qe, $prec) {
         if (!$qe)
             return $qe;
         else if ($qe->type === "not")
-            return $this->_queryCleanNot($qe);
+            return $this->_queryCleanNot($qe, $prec);
         else if ($qe->type === "or")
-            return $this->_queryCleanOr($qe);
-        else if ($qe->type === "then")
-            return $this->_queryCleanThen($qe, $below);
+            return $this->_queryCleanOr($qe, $prec);
+        else if ($qe->type === "then" || $qe->type === "highlight"
+                 || $qe->type === "pinkhighlight")
+            return $this->_queryCleanThen($qe, $prec);
         else if ($qe->type === "and" || $qe->type === "and2")
-            return $this->_queryCleanAnd($qe);
+            return $this->_queryCleanAnd($qe, $prec);
         else
             return $qe;
     }
 
-    function _queryCleanNot($qe) {
-        $qv = $this->_queryClean($qe->value, true);
+    private function _queryCleanNot($qe, $prec) {
+        $qv = $this->_queryClean($qe->value, max($prec, 2));
         if ($qv->type === "not")
             return $qv->value;
         else if ($qv->type === "pn")
@@ -2019,13 +2025,14 @@ class PaperSearch {
         return $revadj;
     }
 
-    function _queryCleanOr($qe) {
+    private function _queryCleanOr($qe, $prec) {
         $revadj = null;
         $float = $qe->get("float");
         $newvalues = array();
+        $prec = max($prec, 2);
 
         foreach ($qe->value as $qv) {
-            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
+            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
             if ($qv && $qv->type === "revadj")
                 $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "or");
             else if ($qv)
@@ -2039,14 +2046,15 @@ class PaperSearch {
         return SearchTerm::combine_float($float, "or", $newvalues);
     }
 
-    function _queryCleanAnd($qe) {
+    private function _queryCleanAnd($qe, $prec) {
         $pn = array(array(), array());
         $revadj = null;
         $float = $qe->get("float");
         $newvalues = array();
+        $prec = max($prec, 2);
 
         foreach ($qe->value as $qv) {
-            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
+            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
             if ($qv && $qv->type === "pn" && $qe->type === "and2") {
                 $pn[0] = array_merge($pn[0], $qv->value[0]);
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
@@ -2063,23 +2071,51 @@ class PaperSearch {
         return SearchTerm::combine_float($float, "and", $newvalues);
     }
 
-    function _queryCleanThen($qe, $below) {
-        if ($below) {
+    private function _queryCleanThen($qe, $prec) {
+        if ($prec >= 2) {
             $this->_thenError = true;
             $qe->type = "or";
             return $this->_queryCleanOr($qe);
         }
+
         $float = $qe->get("float");
-        for ($i = 0; $i < count($qe->value); ) {
-            $qv = $qe->value[$i];
-            if ($qv->type === "then")
-                array_splice($qe->value, $i, 1, $qv->value);
-            else {
-                $qe->value[$i] = SearchTerm::extract_float($float, $this->_queryClean($qv, true));
-                ++$i;
-            }
+        $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
+        $ishighlight = $qe->type !== "then";
+
+        foreach ($qe->value as $qvidx => $qv) {
+            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
+            if ($qv && $qvidx && $ishighlight) {
+                if ($qv->type === "then") {
+                    for ($i = 0; $i < $qv->nthen; ++$i) {
+                        $newhvalues[] = $qv->value[$i];
+                        $newhmasks[] = (1 << count($newvalues)) - 1;
+                        $newhtypes[] = $qe->type;
+                    }
+                } else {
+                    $newhvalues[] = $qv;
+                    $newhmasks[] = (1 << count($newvalues)) - 1;
+                    $newhtypes[] = $qe->type;
+                }
+            } else if ($qv && $qv->type === "then") {
+                $pos = count($newvalues);
+                for ($i = 0; $i < $qv->nthen; ++$i)
+                    $newvalues[] = $qv->value[$i];
+                for ($i = $qv->nthen; $i < count($qv->value); ++$i)
+                    $newhvalues[] = $qv->value[$i];
+                foreach ($qv->highlights as $hlmask)
+                    $newhmasks[] = $hlmask << $pos;
+                foreach ($qv->highlight_types as $hltype)
+                    $newhtypes[] = $hltype;
+            } else if ($qv)
+                $newvalues[] = $qv;
         }
-        return SearchTerm::combine_float($float, "then", $qe->value);
+
+        if (count($newvalues) === 1 && !count($newhvalues))
+            return $newvalues[0];
+
+        $xqe = new SearchTerm("then", 0, $newvalues, array("nthen" => count($newvalues), "highlights" => $newhmasks, "highlight_types" => $newhtypes, "float" => $float));
+        array_splice($xqe->value, count($newvalues), 0, $newhvalues);
+        return $xqe;
     }
 
     // apply rounds to reviewer searches
@@ -2142,20 +2178,21 @@ class PaperSearch {
         return $qe;
     }
 
-    function _queryExtractInfo($qe, $top, &$contradictions) {
+    private function _queryExtractInfo($qe, $top, $highlight, &$contradictions) {
         if ($qe->type === "and" || $qe->type === "and2"
             || $qe->type === "or" || $qe->type === "then") {
             $isand = $qe->type === "and" || $qe->type === "and2";
-            foreach ($qe->value as $qv)
-                $this->_queryExtractInfo($qv, $top && $isand, $contradictions);
+            $nthen = $qe->type === "then" ? $qe->nthen : count($qe->value);
+            foreach ($qe->value as $qvidx => $qv)
+                $this->_queryExtractInfo($qv, $top && $isand, $qvidx >= $nthen, $contradictions);
         }
         if (($x = $qe->get("regex"))) {
             $this->regex[$x[0]] = defval($this->regex, $x[0], array());
             $this->regex[$x[0]][] = $x[1];
         }
-        if (($x = $qe->get("tagorder")))
+        if (($x = $qe->get("tagorder")) && !$highlight)
             $this->orderTags[] = $x;
-        if ($top && $qe->type === "re" && !$this->_reviewer_fixed) {
+        if ($top && $qe->type === "re" && !$this->_reviewer_fixed && !$highlight) {
             if ($this->_reviewer === false) {
                 $v = $qe->value->contactsql;
                 if ($v[0] === "=")
@@ -2768,7 +2805,7 @@ class PaperSearch {
             $qe = SearchTerm::combine("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
 
         // clean query
-        $qe = $this->_queryClean($qe);
+        $qe = $this->_queryClean($qe, 0);
         // apply review rounds (top down, needs separate step)
         if ($this->reviewAdjust) {
             $qe = $this->_queryAdjustReviews($qe, null);
@@ -2919,9 +2956,13 @@ class PaperSearch {
             return ($this->_matches = false);
         $this->_matches = array();
 
-        // correct query, create thenmap and headingmap
-        $this->thenmap = ($qe->type === "then" ? array() : null);
+        // correct query, create thenmap, headingmap, highlightmap
+        $need_then = $qe->type === "then";
+        $this->thenmap = null;
+        if ($need_then && $qe->nthen > 1)
+            $this->thenmap = array();
         $this->headingmap = array();
+        $this->highlightmap = array();
         if ($need_filter) {
             $delete = array();
             $qe_heading = $qe->get_float("heading");
@@ -2930,9 +2971,9 @@ class PaperSearch {
                     || ($limit === "rable"
                         && !$limitcontact->can_accept_review_assignment_ignore_conflict($row)))
                     $x = false;
-                else if ($this->thenmap !== null) {
+                else if ($need_then) {
                     $x = false;
-                    for ($i = 0; $i < count($qe->value) && $x === false; ++$i)
+                    for ($i = 0; $i < $qe->nthen && $x === false; ++$i)
                         if ($this->_clauseTermCheck($qe->value[$i], $row))
                             $x = $i;
                 } else
@@ -2947,6 +2988,13 @@ class PaperSearch {
                         $qex->get_float("heading", $qex->get_float("substr", ""));
                 } else if ($qe_heading)
                     $this->headingmap[$row->paperId] = $qe_heading;
+                if ($need_then)
+                    for ($j = $qe->nthen; $j < count($qe->value); ++$j)
+                        if ($this->_clauseTermCheck($qe->value[$j], $row)
+                            && ($qe->highlights[$j - $qe->nthen] & (1 << $x))) {
+                            $this->highlightmap[$row->paperId] = $qe->highlight_types[$j - $qe->nthen];
+                            break;
+                        }
             }
             if (!count($this->headingmap))
                 $this->headingmap = null;
@@ -2964,7 +3012,7 @@ class PaperSearch {
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions
         $contradictions = array();
-        $this->_queryExtractInfo($qe, true, $contradictions);
+        $this->_queryExtractInfo($qe, true, false, $contradictions);
         foreach ($contradictions as $contradiction => $garbage)
             $this->warn($contradiction);
 
