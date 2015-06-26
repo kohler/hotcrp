@@ -994,10 +994,11 @@ class Contact {
         global $Opt;
         if ($Opt["safePasswords"] < 1
             || ($method = self::password_hash_method()) === false
-            || ($Opt["safePasswords"] == 1 && !$is_change
+            || ($Opt["safePasswords"] == 1
+                && !$is_change
                 && $this->password_type == 0))
             return false;
-        if ($this->password_type != 1)
+        if ($is_change || $this->password_type != 1)
             return true;
         if (is_int($method))
             return $this->password[1] !== '$'
