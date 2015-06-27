@@ -117,11 +117,10 @@ class LoginHelper {
         // look up or create user in contact database
         $cdb_user = null;
         if (@$Opt["contactdb_dsn"]) {
-            $cdb_user = Contact::contactdb_find_by_email($_REQUEST["email"]);
-            if ($user && !$cdb_user) {
-                $user->contactdb_update();
-                $cdb_user = Contact::contactdb_find_by_email($user->email);
-            }
+            if ($user)
+                $cdb_user = $user->contactdb_load();
+            else
+                $cdb_user = Contact::contactdb_find_by_email($_REQUEST["email"]);
         }
 
         // create account if requested

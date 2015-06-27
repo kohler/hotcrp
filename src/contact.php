@@ -359,6 +359,20 @@ class Contact {
         return !$this->disable_shared_password && !@$Opt["contactdb_noPasswords"];
     }
 
+    public function contactdb_load() {
+        global $Opt;
+        if (!($dblink = self::contactdb()) || !$this->has_email())
+            return null;
+        $cdb_user = self::contactdb_find_by_email($this->email);
+        if (!$cdb_user)
+            $cdb_user = self::contactdb_find_by_email($this->email);
+        if ($cdb_user && $cdb_user->contactdb_allow_password())
+            $this->contactdb_encoded_password = $cdb_user->password;
+        if ($cdb_user)
+            $this->contactDbId = $cdb_user->contactDbId;
+        return $cdb_user;
+    }
+
     public function contactdb_update() {
         global $Opt, $Now;
         if (!($dblink = self::contactdb()) || !$this->has_database_account())

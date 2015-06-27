@@ -2419,9 +2419,9 @@ class Conference {
     public function capability_manager($for) {
         global $Opt;
         if (@$Opt["contactdb_dsn"]
-            && ($cdb = Contact::contactdb())
             && ((is_string($for) && substr($for, 0, 1) === "U")
-                || ($for instanceof Contact && $for->contactDbId)))
+                || ($for instanceof Contact && $for->contactDbId))
+            && ($cdb = Contact::contactdb()))
             return new CapabilityManager($cdb, "U");
         else
             return new CapabilityManager($this->dblink, "");

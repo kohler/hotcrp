@@ -43,7 +43,7 @@ if (isset($_POST["go"]) && check_post()) {
     else {
         $Acct->change_password($_POST["password"], true,
                                $_POST["password"] === @$_POST["autopassword"]);
-        $Acct->log_activity("Reset password");
+        $Acct->log_activity("Reset password using " . $_REQUEST["resetcap"]);
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
         $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_POST["password"]));
