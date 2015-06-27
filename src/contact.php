@@ -965,7 +965,7 @@ class Contact {
         }
     }
 
-    static public function password_hash_method() {
+    static private function password_hash_method() {
         global $Opt;
         $m = @$Opt["passwordHashMethod"];
         if (function_exists("password_verify") && !is_string($m))
@@ -994,9 +994,13 @@ class Contact {
         global $Opt;
         if ($Opt["safePasswords"] < 1
             || ($method = self::password_hash_method()) === false
-            || ($Opt["safePasswords"] == 1
-                && !$is_change
-                && $this->password_type == 0))
+            || (!$is_change
+                && $Opt["safePasswords"] == 1
+                && $this->password_type == 0)
+            || ($is_change
+                && !is_int($method)
+                && @$this->contactId
+                && @$this->contactDbId))
             return false;
         if ($is_change || $this->password_type != 1)
             return true;
