@@ -4084,7 +4084,6 @@ function render_events(e, rows) {
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }
-    console.log(rows);
     for (var i = 0; i < rows.length; ++i)
         j.append(rows[i]);
 }
