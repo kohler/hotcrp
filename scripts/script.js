@@ -171,29 +171,29 @@ function log_jserror(errormsg, error, noconsole) {
 
 jQuery.fn.extend({
     geometry: function (outer) {
-        var x, d;
+        var g, d;
         if (this[0] == window)
-            x = {left: this.scrollLeft(), top: this.scrollTop()};
+            g = {left: this.scrollLeft(), top: this.scrollTop()};
         else if (this.length == 1 && this[0].getBoundingClientRect) {
-            x = jQuery.extend({}, this[0].getBoundingClientRect());
+            g = jQuery.extend({}, this[0].getBoundingClientRect());
             if ((d = window.pageXOffset))
-                x.left += d, x.right += d;
+                g.left += d, g.right += d;
             if ((d = window.pageYOffset))
-                x.top += d, x.bottom += d;
-            if (!("width" in x)) {
-                x.width = x.right - x.left;
-                x.height = x.bottom - x.top;
+                g.top += d, g.bottom += d;
+            if (!("width" in g)) {
+                g.width = g.right - g.left;
+                g.height = g.bottom - g.top;
             }
-            return x;
+            return g;
         } else
-            x = this.offset();
-        if (x) {
-            x.width = outer ? this.outerWidth() : this.width();
-            x.height = outer ? this.outerHeight() : this.height();
-            x.right = x.left + x.width;
-            x.bottom = x.top + x.height;
+            g = this.offset();
+        if (g) {
+            g.width = outer ? this.outerWidth() : this.width();
+            g.height = outer ? this.outerHeight() : this.height();
+            g.right = g.left + g.width;
+            g.bottom = g.top + g.height;
         }
-        return x;
+        return g;
     },
     scrollIntoView: function () {
         var p = this.geometry(), w = jQuery(window).geometry();
@@ -204,6 +204,17 @@ jQuery.fn.extend({
         return this;
     }
 });
+
+function geometry_translate(g, dx, dy) {
+    if (typeof dx === "object")
+        dy = dx.top, dx = dx.left;
+    g = jQuery.extend({}, g);
+    g.top += dy;
+    g.right += dx;
+    g.bottom += dy;
+    g.left += dx;
+    return g;
+}
 
 
 function plural_noun(n, what) {
