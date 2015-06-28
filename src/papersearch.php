@@ -7,6 +7,7 @@ class SearchOperator {
     public $op;
     public $unary;
     public $precedence;
+    public $opinfo;
     function __construct($what, $unary, $precedence) {
         $this->op = $what;
         $this->unary = $unary;
@@ -28,7 +29,6 @@ SearchOperator::$list =
               "XOR" => new SearchOperator("or", false, 3),
               "THEN" => new SearchOperator("then", false, 2),
               "HIGHLIGHT" => new SearchOperator("highlight", false, 1),
-              "PINKHIGHLIGHT" => new SearchOperator("pinkhighlight", false, 1),
               ")" => null);
 
 class SearchTerm {
@@ -52,15 +52,19 @@ class SearchTerm {
     static function combine($combiner, $terms) {
         if (!is_array($terms) && $terms)
             $terms = array($terms);
+        $op = $combiner instanceof SearchOperator ? $combiner->op : $combiner;
         if (count($terms) == 0)
-            return null;
+            $x = null;
         else if ($combiner === "not") {
             assert(count($terms) == 1);
-            return self::negate($terms[0]);
+            $x = self::negate($terms[0]);
         } else if (count($terms) == 1)
-            return $terms[0];
+            $x = $terms[0];
         else
-            return new SearchTerm($combiner, 0, $terms);
+            $x = new SearchTerm($op, 0, $terms);
+        if ($combiner instanceof SearchOperator && @$combiner->opinfo)
+            $x->set_float("opinfo", $combiner->opinfo);
+        return $x;
     }
     static function negate($term) {
         if (!$term)
@@ -1738,7 +1742,7 @@ class PaperSearch {
     }
 
     static function _searchPopKeyword($str) {
-        if (preg_match('/\A([-+()]|(?:AND|and|OR|or|NOT|not|THEN|then|(?:PINK)?HIGHLIGHT)(?=[\s\(]))/s', $str, $m))
+        if (preg_match('/\A([-+()]|(?:AND|and|OR|or|NOT|not|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(]))/s', $str, $m))
             return array(strtoupper($m[1]), ltrim(substr($str, strlen($m[0]))));
         else
             return array(null, $str);
@@ -1756,7 +1760,7 @@ class PaperSearch {
             $x->leftqe->value[] = $curqe;
             return $x->leftqe;
         } else
-            return SearchTerm::combine($x->op->op, array($x->leftqe, $curqe));
+            return SearchTerm::combine($x->op, array($x->leftqe, $curqe));
     }
 
     function _searchQueryType($str) {
@@ -1771,12 +1775,17 @@ class PaperSearch {
         while ($str !== "") {
             list($opstr, $nextstr) = self::_searchPopKeyword($str);
             $op = $opstr ? SearchOperator::$list[$opstr] : null;
+            if ($opstr && !$op && ($colon = strpos($opstr, ":"))
+                && ($op = SearchOperator::$list[substr($opstr, 0, $colon)])) {
+                $op = clone $op;
+                $op->opinfo = substr($opstr, $colon + 1);
+            }
 
             if ($curqe && (!$op || $op->unary)) {
                 list($opstr, $op, $nextstr) =
                     array("", SearchOperator::$list["SPACE"], $str);
             }
-            if (!$curqe && $op && ($op->op === "highlight" || $op->op === "pinkhighlight"))
+            if (!$curqe && $op && $op->op === "highlight")
                 $curqe = new SearchTerm("t");
 
             if ($opstr === null) {
@@ -1786,7 +1795,7 @@ class PaperSearch {
                     && (!count($stack) || $stack[count($stack) - 1]->op->precedence <= 2)
                     && ($uword = strtoupper($word))
                     && ($uword === "ALL" || $uword === "ANY" || $uword === "NONE")
-                    && preg_match(',\A\s*(?:|(?:THEN|then|(?:PINK)?HIGHLIGHT)(?:\s|\().*)\z,', $nextstr))
+                    && preg_match(',\A\s*(?:|(?:THEN|then|HIGHLIGHT(?::\w+)?)(?:\s|\().*)\z,', $nextstr))
                     $word = $uword;
                 // Search like "ti:(foo OR bar)" adds a default keyword.
                 if ($word[strlen($word) - 1] === ":"
@@ -1830,8 +1839,9 @@ class PaperSearch {
             } else if (!$op->unary && !$curqe)
                 /* ignore bad operator */;
             else {
+                $end_precedence = $op->precedence - ($op->precedence <= 1);
                 while (count($stack)
-                       && $stack[count($stack) - 1]->op->precedence > $op->precedence)
+                       && $stack[count($stack) - 1]->op->precedence > $end_precedence)
                     $curqe = self::_searchPopStack($curqe, $stack);
                 if ($op->precedence <= 2 && $curqe) {
                     $curqe->set_float("substr", trim($headstr . substr($xstr, 0, -strlen($str))));
@@ -1839,11 +1849,11 @@ class PaperSearch {
                     $headstr = "";
                 }
                 $top = count($stack) ? $stack[count($stack) - 1] : null;
-                if ($top && !$op->unary && $top->op->op === $op->op) {
+                if ($top && !$op->unary && $top->op === $op) {
                     if ($top->used)
                         $top->leftqe->value[] = $curqe;
                     else {
-                        $top->leftqe = SearchTerm::combine($op->op, array($top->leftqe, $curqe));
+                        $top->leftqe = SearchTerm::combine($op, array($top->leftqe, $curqe));
                         $top->used = true;
                     }
                 } else
@@ -1963,8 +1973,7 @@ class PaperSearch {
             return $this->_queryCleanNot($qe, $prec);
         else if ($qe->type === "or")
             return $this->_queryCleanOr($qe, $prec);
-        else if ($qe->type === "then" || $qe->type === "highlight"
-                 || $qe->type === "pinkhighlight")
+        else if ($qe->type === "then" || $qe->type === "highlight")
             return $this->_queryCleanThen($qe, $prec);
         else if ($qe->type === "and" || $qe->type === "and2")
             return $this->_queryCleanAnd($qe, $prec);
@@ -2081,6 +2090,7 @@ class PaperSearch {
         $float = $qe->get("float");
         $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
         $ishighlight = $qe->type !== "then";
+        $qeopinfo = strtolower(@$qe->get_float("opinfo", ""));
 
         foreach ($qe->value as $qvidx => $qv) {
             $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
@@ -2089,12 +2099,12 @@ class PaperSearch {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
                         $newhvalues[] = $qv->value[$i];
                         $newhmasks[] = (1 << count($newvalues)) - 1;
-                        $newhtypes[] = $qe->type;
+                        $newhtypes[] = $qeopinfo;
                     }
                 } else {
                     $newhvalues[] = $qv;
                     $newhmasks[] = (1 << count($newvalues)) - 1;
-                    $newhtypes[] = $qe->type;
+                    $newhtypes[] = $qeopinfo;
                 }
             } else if ($qv && $qv->type === "then") {
                 $pos = count($newvalues);
@@ -2992,7 +3002,7 @@ class PaperSearch {
                     for ($j = $qe->nthen; $j < count($qe->value); ++$j)
                         if ($this->_clauseTermCheck($qe->value[$j], $row)
                             && ($qe->highlights[$j - $qe->nthen] & (1 << $x))) {
-                            $this->highlightmap[$row->paperId] = $qe->highlight_types[$j - $qe->nthen];
+                            $this->highlightmap[$row->paperId] = $qe->highlight_types[$j - $qe->nthen] . "highlight";
                             break;
                         }
             }

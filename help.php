@@ -248,7 +248,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
     _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
     _searchQuickrefRow("", "very THEN new", "like “very OR new”, but papers matching “very” appear earlier in the sorting order");
-    _searchQuickrefRow("", "new HIGHLIGHT good", "search for “new”, but <span class=\"taghl highlighttag\">highlight</span> papers in that list that match “good” (PINKHIGHLIGHT also works)");
+    _searchQuickrefRow("", "new HIGHLIGHT good", "search for “new”, but <span class=\"taghl highlighttag\">highlight</span> papers in that list that match “good” (or try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
     _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
