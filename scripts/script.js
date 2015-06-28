@@ -628,7 +628,7 @@ function display_tracker() {
     }
 
     // tracker display
-    body = $("body")[0];
+    body = document.body;
     if (!mnspace) {
         mnspace = document.createElement("div");
         mnspace.id = "trackerspace";
@@ -2471,7 +2471,7 @@ function to_rgba(c) {
 }
 
 function make_model(color) {
-    return $('<div style="display:none" class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo("body");
+    return $('<div style="display:none" class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo(document.body);
 }
 
 function calculate_sizes(color) {
@@ -2504,7 +2504,7 @@ return function (content, bubopt) {
         color = bubopt.color ? " " + bubopt.color : "";
 
     var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
-    $("body")[0].appendChild(bubdiv);
+    document.body.appendChild(bubdiv);
     if (bubopt["pointer-events"])
         $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
     var bubch = bubdiv.childNodes;
@@ -3872,7 +3872,7 @@ function make_info(n, c, sv) {
     function rgb_array(val) {
         var svx = sv + (Math.floor(fm(val) * 8.99) + 1);
         if (!sccolor[svx]) {
-            var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo("body"), m;
+            var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo(document.body), m;
             sccolor[sv] = [0, 0, 0];
             if ((m = /^rgba?\((\d+),(\d+),(\d+)[,)]/.exec(j.css("color").replace(/\s+/g, ""))))
                 sccolor[sv] = [+m[1], +m[2], +m[3]];
