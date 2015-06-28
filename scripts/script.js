@@ -1493,12 +1493,8 @@ function setajaxcheck(elt, rv) {
             make_outline_flasher(elt, "0, 200, 0");
         else
             elt.style.outline = "5px solid red";
-        if (rv.error) {
-            var bub = make_bubble(rv.error, "errorbubble").near(elt);
-            jQuery(elt).one("input change", function () {
-                bub.remove();
-            });
-        }
+        if (rv.error)
+            make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change");
     }
 }
 
