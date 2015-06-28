@@ -2246,79 +2246,99 @@ return function (callback) {
 function taghelp_tset(elt) {
     var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/),
         n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
-    return (m && m[1] + n[1]) || "";
+    return {match: (m && m[1] + n[1]) || ""};
 }
 
 function taghelp_q(elt) {
     var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)$/),
         n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
-    return m ? [m[2] + n[1], m[1]] : null;
+    return m ? {prefix: m[1], match: m[2] + n[1]} : null;
 }
 
-function taghelp(elt, report_elt, cleanf) {
-    var hiding = false;
+function taghelp(elt, klass, cleanf) {
+    var hiding = false, blurring, tagdiv;
+
+    function kill() {
+        tagdiv && tagdiv.remove();
+        tagdiv = null;
+        blurring = hiding = false;
+    }
 
     function display() {
-        var tags, s, ls, a, i, t, cols, colheight, n, pfx = "";
-        elt.hotcrp_tagpress = true;
+        var tags, x, pfx, s, ls, a, i, t, cols, colheight, n, interesting;
         tags = alltags(display);
-        if (!tags.length || (elt.selectionEnd != elt.selectionStart))
+        if (!tags.length || elt.selectionEnd != elt.selectionStart)
             return;
-        if ((s = cleanf(elt)) === null) {
-            report_elt.style.display = "none";
-            return;
-        }
-        if (typeof s !== "string") {
-            pfx = s[1];
-            s = s[0];
-        }
+        if (!(x = cleanf(elt)))
+            return kill();
+        s = x.match || "";
+        pfx = x.prefix || "";
         ls = s.toLowerCase();
-        for (i = 0, a = []; i < tags.length; ++i)
+        interesting = false;
+        for (i = 0, a = []; i < tags.length; ++i) {
+            if (s.length && tags[i].substring(0, s.length).toLowerCase() != ls)
+                continue;
             if (s.length == 0)
-                a.push(pfx + tags[i]);
+                x = tags[i];
             else if (tags[i].substring(0, s.length).toLowerCase() == ls)
-                a.push(pfx + "<b>" + tags[i].substring(0, s.length) + "</b>" + tags[i].substring(s.length));
-        if (a.length == 0) {
-            report_elt.style.display = "none";
-            return;
+                x = "<b>" + tags[i].substring(0, s.length) + "</b>" + tags[i].substring(s.length);
+            a.push('<div class="tagcomplete" tagcomplete="' + tags[i] + '">' + pfx + x + '</div>');
+            interesting = interesting || s !== tags[i];
         }
-        t = "<table class='taghelp'><tbody><tr>";
+        if (a.length == 0 || (!interesting && !tagdiv))
+            return kill();
+        if (!tagdiv) {
+            tagdiv = make_bubble({dir: "t", color: "taghelp"});
+            tagdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
+                .on("click", "div[tagcomplete]", click);
+        }
+        t = '<table class="taghelp"><tbody><tr>';
         cols = (a.length < 6 ? 1 : 2);
         colheight = Math.floor((a.length + cols - 1) / cols);
         for (i = n = 0; i < cols; ++i, n += colheight)
-            t += "<td class='taghelp_td'>" + a.slice(n, Math.min(n + colheight, a.length)).join("<br/>") + "</td>";
+            t += '<td class="taghelp_td">' + a.slice(n, Math.min(n + colheight, a.length)).join("") + "</td>";
         t += "</tr></tbody></table>";
-        report_elt.style.display = "block";
-        report_elt.innerHTML = t;
-    }
 
-    function b() {
-        report_elt.style.display = "none";
-        hiding = false;
+        var $elt = jQuery(elt), shadow = textarea_shadow($elt);
+        shadow.text(elt.value.substr(0, elt.selectionStart)).append("<span></span>");
+        var $pos = shadow.find("span").geometry(), soff = shadow.offset();
+        $pos = geometry_translate($pos, -soff.left + 4, -soff.top + 4);
+        tagdiv.html(t).near($pos, elt);
+        shadow.remove();
     }
 
     function kp(evt) {
         evt = evt || window.event;
         if (event_key(evt) == "Escape") {
+            kill();
             hiding = true;
-            report_elt.style.display = "none";
         } else if (event_key(evt) && !hiding)
             setTimeout(display, 1);
         return true;
     }
 
+    function click(evt) {
+        var $self = jQuery(this), x = cleanf(elt),
+            tag = $self.attr("tagcomplete"), start = elt.selectionStart,
+            insertion = tag.substring((x.match || "").length),
+            text = elt.value.substring(0, start) + insertion + elt.value.substring(start);
+        jQuery(elt).val(text);
+        elt.selectionStart = elt.selectionEnd = start + insertion.length;
+        evt.stopPropagation();
+        kill();
+    }
+
+    function blur() {
+        blurring = true;
+        setTimeout(function () {
+            blurring && kill();
+        }, 10);
+    }
+
     if (typeof elt === "string")
         elt = $$(elt);
-    if (typeof report_elt === "string")
-        report_elt = $$(report_elt);
-    if (elt && report_elt && (elt.addEventListener || elt.attachEvent)) {
-        if (elt.addEventListener) {
-            elt.addEventListener("keyup", kp, false);
-            elt.addEventListener("blur", b, false);
-        } else {
-            elt.attachEvent("keyup", kp);
-            elt.attachEvent("blur", b);
-        }
+    if (elt) {
+        jQuery(elt).on("keyup", kp).on("blur", blur);
         elt.autocomplete = "off";
     }
 }
@@ -2716,6 +2736,9 @@ return function (content, bubopt) {
         removeOn: function (jq, event) {
             jQuery(jq).on(event, remove);
             return bubble;
+        },
+        self: function () {
+            return bubdiv ? jQuery(bubdiv) : null;
         }
     };
 

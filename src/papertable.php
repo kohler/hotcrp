@@ -1356,7 +1356,6 @@ class PaperTable {
                 if ($this->prow)
                     $editable = $tagger->paper_editable($this->prow);
                 echo "<div style='position:relative'>",
-                    "<div id='taghelp_p' class='taghelp_p'></div>",
                     "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>",
                     $tagger->unparse($editable),
                     "</textarea></div>",

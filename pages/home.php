@@ -266,15 +266,14 @@ if ($homelist) {
     &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),
-        "    <div id='taghelp_homeq' class='taghelp_s'></div>
-    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>·</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
+        "    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>·</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
   </div></form>
   </td></tr></table>
 </div>
 <hr class='home' />\n";
     $Conf->footerScript("mktemptext('homeq','(All)')");
     if (!defval($Opt, "noSearchAutocomplete"))
-        $Conf->footerScript("taghelp(\"homeq\",\"taghelp_homeq\",taghelp_q)");
+        $Conf->footerScript("taghelp(\"homeq\",\"taghelp_s\",taghelp_q)");
 }
 
 

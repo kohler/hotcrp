@@ -1410,11 +1410,10 @@ echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
     "<input id='searchform1_d' type='text' size='40' style='width:30em' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" tabindex='1' /> &nbsp;in &nbsp;$tselect &nbsp;\n",
     Ht::submit("Search"),
-    "<div id='taghelp_searchform1' class='taghelp_s'></div>
-</div></form>";
+    "</div></form>";
 
 if (!defval($Opt, "noSearchAutocomplete"))
-    $Conf->footerScript("taghelp(\"searchform1_d\",\"taghelp_searchform1\",taghelp_q)");
+    $Conf->footerScript("taghelp(\"searchform1_d\",\"taghelp_s\",taghelp_q)");
 
 echo "</div><div class='tld2'>";
 

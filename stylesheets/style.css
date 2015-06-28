@@ -2073,7 +2073,6 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .taghelp_p, .taghelp_s {
 	text-align: left;
 	position: absolute;
-	display: none;
 	padding: 5px 10px;
 	font-size: smaller;
 	background: #f2f2f2;
@@ -2137,6 +2136,17 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	border: 0 none;
 	font-size: 75%;
 	margin: 0 8px;
+}
+.bubble.taghelp {
+	background-color: rgba(44, 44, 66, 0.95);
+	color: #ffffff;
+	border: 0 none;
+	font-size: smaller;
+	margin: 0 8px;
+}
+.tagcomplete:hover {
+	background-color: rgba(255, 0, 0, 0.95);
+	cursor: pointer;
 }
 .hottooltip {
 	cursor: default;
