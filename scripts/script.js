@@ -2299,7 +2299,7 @@ function taghelp(elt, report_elt, cleanf) {
 
     function kp(evt) {
         evt = evt || window.event;
-        if (event_key(evt) == "Esc") {
+        if (event_key(evt) == "Escape") {
             hiding = true;
             report_elt.style.display = "none";
         } else if (event_key(evt) && !hiding)
