@@ -2596,7 +2596,7 @@ return function (content, bubopt) {
             || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom)
             || (ds === 2 && (noflip || nearpos.top - bh >= wpos.top + SPACE)))
             ds = 2;
-        else if (ds === "v" || ds === 2)
+        else if (ds === "v" || ds === 0 || ds === 2)
             ds = 0;
         else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
                   && nearpos.right + bw < wpos.right - 3*SPACE)
