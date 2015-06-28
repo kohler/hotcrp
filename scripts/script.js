@@ -2036,7 +2036,7 @@ function make_pseditor(type, url) {
         else
             jQuery(edite).val(val);
         if (message)
-            make_bubble(message, "errorbubble").near(s[0], "l");
+            make_bubble(message, "errorbubble").dir("l").near(s[0]);
         edite.disabled = false;
     }
     function change() {
@@ -2655,28 +2655,28 @@ return function (content, bubopt) {
     }
 
     var bubble = {
-        near: function (epos, dir) {
+        near: function (epos, reference) {
+            var i, off;
             if (epos.tagName || epos.jquery)
                 epos = $(epos).geometry(true);
+            for (i = 0; i < 4; ++i)
+                if (!(lcdir[i] in epos) && (lcdir[i ^ 2] in epos))
+                    epos[lcdir[i]] = epos[lcdir[i ^ 2]];
+            if (reference && (reference = $(reference)) && reference.length
+                && reference[0] != window)
+                epos = geometry_translate(epos, reference.geometry());
             if (!epos.exact)
                 epos = expand_near(epos, color);
             nearpos = epos;
-            if (dir != null)
-                dirspec = dir;
             show();
             return bubble;
         },
-        direction: function (dir) {
+        at: function (x, y, reference) {
+            return bubble.near({top: y, left: x, exact: true}, reference);
+        },
+        dir: function (dir) {
             dirspec = dir;
             return bubble;
-        },
-        show: function (x, y, reference) {
-            if (reference && (reference = $(reference)) && reference.length
-                && reference[0] != window) {
-                var off = reference.geometry();
-                x += off.left, y += off.top;
-            }
-            return bubble.near({top: y, right: x, bottom: y, left: x, exact: true});
         },
         remove: remove,
         color: function (newcolor) {
@@ -2719,7 +2719,8 @@ return function (content, bubopt) {
         }
     };
 
-    return bubble.html(content);
+    content && bubble.html(content);
+    return bubble;
 };
 })();
 
@@ -3008,7 +3009,7 @@ function tag_mousemove(evt) {
         m += '">#' + dragtag + '#' + v + '</span>';
     }
 
-    dragger.html(m).show($(rowanal[srcindex].entry).offset().left - 6, y)
+    dragger.html(m).at($(rowanal[srcindex].entry).offset().left - 6, y)
         .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
 
     event_stop(evt);
@@ -3794,7 +3795,7 @@ function save_tag_index(e) {
             s.delay(1000).fadeOut();
         if (message) {
             var ji = indexelt.closest(".psfn");
-            make_bubble(message, "errorbubble").near(ji.length ? ji[0] : e, "l").removeOn(j.find("input"), "input");
+            make_bubble(message, "errorbubble").dir("l").near(ji.length ? ji[0] : e).removeOn(j.find("input"), "input");
         }
     }
     jQuery.ajax({

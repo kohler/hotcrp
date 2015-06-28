@@ -340,8 +340,8 @@ function hotcrp_graphs_cdf(args) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             hubble.text(u.label)
-                .direction(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
-                .show(p[0] + margin.left, p[1], this);
+                .dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
+                .at(p[0] + margin.left, p[1], this);
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
@@ -565,7 +565,7 @@ hotcrp_graphs.scatter = function (args) {
                 p.sorted = true;
             }
             hubble.html("<p>#" + p[2].join(", #") + "</p>")
-                .direction("b").near(hovers.node());
+                .dir("b").near(hovers.node());
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
@@ -679,7 +679,7 @@ hotcrp_graphs.barchart = function (args) {
                 p.sorted = true;
             }
             hubble.html("<p>#" + p[5].join(", #") + "</p>")
-                .direction("l").near(this);
+                .dir("l").near(this);
         }
     }
 
