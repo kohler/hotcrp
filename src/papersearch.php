@@ -1636,7 +1636,7 @@ class PaperSearch {
             $this->_search_has($word, $qt, $quoted);
         if ($keyword === "formula")
             $this->_search_formula($word, $qt, $quoted);
-        if ($keyword === "ss") {
+        if ($keyword === "ss" && $this->amPC) {
             if (($nextq = self::_expand_saved_search($word, $this->_ssRecursion))) {
                 $this->_ssRecursion[$word] = true;
                 $qe = $this->_searchQueryType($nextq);
