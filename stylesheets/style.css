@@ -27,7 +27,7 @@ html {
 	background-position: top;
 }
 #header_right {
-	padding: 8px 12px 0 12px;
+	padding: 8px 12px 0;
 	font-size: smaller;
 	text-align: right;
 	float: right;
@@ -2404,7 +2404,7 @@ span.rev_rating_summary {
 /* comments */
 div.cmtcard {
 	margin: 24px 0 0 14em;
-	padding: 0 5px 8px 5px;
+	padding: 0 5px 8px;
 	background: #e6e1cf;
 	position: relative;
 	box-shadow: 0 1px 5px #46678c;
@@ -2420,7 +2420,7 @@ div.cmtcard_head {
 }
 div.cmtcard_body {
 	background: #ffffff;
-	padding: 8px 12px 12px;
+	padding: 0 12px;
 	border-radius: 2px;
 }
 div.cmtcard h3 {
@@ -2436,10 +2436,6 @@ div.cmtg {
 }
 div.cmtg:first-child {
 	border-top: 0 none;
-	padding-top: 0;
-}
-div.cmtg:last-child {
-	padding-bottom: 0;
 }
 span.cmtfn > span.barsep {
 	color: #eadeb7;
@@ -2525,7 +2521,7 @@ div.revtext, div.cmttext {
 	line-height: 125%;
 }
 div#commentnew:last-child {
-	margin-bottom: -8px;
+	margin-bottom: -4px;
 }
 .cmtnumhead {
 	display: inline-block;
