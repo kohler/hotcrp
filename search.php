@@ -60,13 +60,6 @@ function cleanAjaxResponse(&$response, $type) {
 }
 
 
-// report tag info
-if (isset($_REQUEST["alltags"]) && $Me->isPC)
-    PaperActions::all_tags(SearchActions::any() ? SearchActions::selection() : null);
-else if (isset($_REQUEST["alltags"]))
-    $Conf->ajaxExit(false);
-
-
 // download selected papers
 if (($getaction == "paper" || $getaction == "final"
      || substr($getaction, 0, 4) == "opt-")

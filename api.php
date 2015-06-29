@@ -40,7 +40,7 @@ if ($_GET["fn"] === "status" && !$Me->has_database_account()
     }
 }
 
-if (@$_GET["fn"] === "jserror") {
+if ($_GET["fn"] === "jserror") {
     $url = defval($_REQUEST, "url", "");
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
         $url = $m[1];
@@ -74,7 +74,7 @@ if (@$_GET["fn"] === "jserror") {
     $Conf->ajaxExit(array("ok" => true));
 }
 
-if (@$_GET["fn"] === "track" && $Me->privChair && check_post()) {
+if ($_GET["fn"] === "track" && $Me->privChair && check_post()) {
     // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
     if ($_REQUEST["track"] === "stop")
         MeetingTracker::clear();
@@ -91,7 +91,7 @@ if (@$_GET["fn"] === "track" && $Me->privChair && check_post()) {
 } else if (@$_GET["fn"] === "track")
     $Conf->ajaxExit(array("ok" => false));
 
-if (@$_GET["fn"] === "events" && $Me->is_reviewer()) {
+if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
     if (($base = @$_GET["base"]) !== null)
         $Conf->set_siteurl($base);
     $from = @$_GET["from"];
@@ -111,8 +111,16 @@ if (@$_GET["fn"] === "events" && $Me->is_reviewer()) {
         }
     $Conf->ajaxExit(array("ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
                           "rows" => $rows));
-} else if (@$_GET["fn"] === "events")
+} else if ($_GET["fn"] === "events")
     $Conf->ajaxExit(array("ok" => false));
+
+if ($_GET["fn"] === "alltags") {
+    if ($Me->isPC)
+        PaperActions::all_tags(null);
+    else
+        $Conf->ajaxExit(array("ok" => false));
+}
+
 
 if (@$_GET["p"] && ctype_digit($_GET["p"])) {
     $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])), $Me);
