@@ -12,6 +12,13 @@ body {
 	margin: 0;
 }
 
+/* box-sizing */
+html {
+	box-sizing: border-box;
+}
+*, *:before, *:after {
+	box-sizing: inherit;
+}
 
 /* header */
 #header {
@@ -271,7 +278,7 @@ div.info, div.warning, div.confirm, div.merror {
 	padding: 0.5em 0.5em 0.5em 65px;
 	border: 1px solid #ccccee;
 	margin: 0.5em 0;
-	min-height: 45px;
+	min-height: 65px;
 }
 div.help {
 	padding: 0.5em;
@@ -1163,8 +1170,8 @@ span.asspref-1 {
 /* review type/assignment blocks */
 .rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n, .rt1, .rt1n, .rt0, .rt-1, .rt-2, .rt-3 {
 	display: inline-block;
-	width: 0.75em;
-        height: 0.75em;
+	width: 0.95em;
+	height: 0.95em;
         border-width: 1px;
         position: relative;
 	bottom: -0.125em;
