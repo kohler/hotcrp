@@ -2209,7 +2209,7 @@ function add_callback(cb1, cb2) {
 
 // tags
 var alltags = (function () {
-var a = [], status = 0, cb = null;
+var tlist = null, status = 0, cb = null;
 function tagsorter(a, b) {
     var al = a.toLowerCase(), bl = b.toLowerCase();
     if (al < bl)
@@ -2225,11 +2225,11 @@ function tagsorter(a, b) {
 }
 function getcb(v) {
     if (v && v.tags) {
-        a = v.tags;
-        a.sort(tagsorter);
+        tlist = v.tags;
+        tlist.sort(tagsorter);
     }
     status = 2;
-    cb && cb(a);
+    cb && cb(tlist);
 }
 return function (callback) {
     if (!status && hotcrp_user.is_pclike) {
@@ -2238,21 +2238,49 @@ return function (callback) {
     }
     if (status == 1)
         cb = add_callback(cb, callback);
-    return a;
+    return tlist;
 };
 })();
 
 
-function taghelp_tset(elt) {
-    var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/),
-        n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
-    return {match: (m && m[1] + n[1]) || ""};
+function taghelp_complete(pfx, str, cb, displayed) {
+    function go(tlist) {
+        var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
+        for (i = 0; i < tlist.length; ++i) {
+            var t = tlist[i], tt = t;
+            if (str.length && t.substring(0, str.length).toLowerCase() !== lstr)
+                continue;
+            else if (str.length)
+                t = "<b>" + t.substring(0, str.length) + "</b>" + t.substring(str.length);
+            res.push('<div class="autocomplete" autocomplete="' +
+                     tt.substring(str.length) + '">' + pfx + t + '</div>');
+            interesting = interesting || str !== tt;
+        }
+        if (res.length && (interesting || displayed))
+            cb({prefix: pfx, match: str, list: res});
+        else
+            cb(null);
+    }
+    var tlist = alltags(go);
+    tlist && go(tlist);
 }
 
-function taghelp_q(elt) {
-    var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)$/),
-        n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
-    return m ? {prefix: m[1], match: m[2] + n[1]} : null;
+function taghelp_tset(elt, cb, displayed) {
+    if (elt.selectionStart == elt.selectionEnd) {
+        var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/),
+            n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
+        taghelp_complete("", (m && m[1] + n[1]) || "", cb, displayed);
+    } else
+        cb(null);
+}
+
+function taghelp_q(elt, cb, displayed) {
+    if (elt.selectionStart == elt.selectionEnd) {
+        var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)$/),
+            n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
+        m ? taghelp_complete(m[1], m[2] + n[1], cb, displayed) : cb(null);
+    } else
+        cb(null);
 }
 
 function taghelp(elt, klass, cleanf) {
@@ -2264,39 +2292,19 @@ function taghelp(elt, klass, cleanf) {
         blurring = hiding = false;
     }
 
-    function display() {
-        var tags, x, pfx, s, ls, a, i, t, cols, colheight, n, interesting;
-        tags = alltags(display);
-        if (!tags.length || elt.selectionEnd != elt.selectionStart)
-            return;
-        if (!(x = cleanf(elt)))
-            return kill();
-        s = x.match || "";
-        pfx = x.prefix || "";
-        ls = s.toLowerCase();
-        interesting = false;
-        for (i = 0, a = []; i < tags.length; ++i) {
-            if (s.length && tags[i].substring(0, s.length).toLowerCase() != ls)
-                continue;
-            if (s.length == 0)
-                x = tags[i];
-            else if (tags[i].substring(0, s.length).toLowerCase() == ls)
-                x = "<b>" + tags[i].substring(0, s.length) + "</b>" + tags[i].substring(s.length);
-            a.push('<div class="tagcomplete" tagcomplete="' + tags[i] + '">' + pfx + x + '</div>');
-            interesting = interesting || s !== tags[i];
-        }
-        if (a.length == 0 || (!interesting && !tagdiv))
+    function finish_display(x) {
+        if (!x)
             return kill();
         if (!tagdiv) {
             tagdiv = make_bubble({dir: "t", color: "taghelp"});
             tagdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
-                .on("click", "div[tagcomplete]", click);
+                .on("click", "div.autocomplete", click);
         }
-        t = '<table class="taghelp"><tbody><tr>';
-        cols = (a.length < 6 ? 1 : 2);
-        colheight = Math.floor((a.length + cols - 1) / cols);
+        var i, n, t = '<table class="taghelp"><tbody><tr>',
+            cols = (x.list.length < 6 ? 1 : 2),
+            colheight = Math.floor((x.list.length + cols - 1) / cols);
         for (i = n = 0; i < cols; ++i, n += colheight)
-            t += '<td class="taghelp_td">' + a.slice(n, Math.min(n + colheight, a.length)).join("") + "</td>";
+            t += '<td class="taghelp_td">' + x.list.slice(n, Math.min(n + colheight, x.list.length)).join("") + "</td>";
         t += "</tr></tbody></table>";
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt);
@@ -2307,8 +2315,11 @@ function taghelp(elt, klass, cleanf) {
         shadow.remove();
     }
 
+    function display() {
+        cleanf(elt, finish_display, !!tagdiv)
+    }
+
     function kp(evt) {
-        evt = evt || window.event;
         if (event_key(evt) == "Escape") {
             kill();
             hiding = true;
@@ -2318,12 +2329,11 @@ function taghelp(elt, klass, cleanf) {
     }
 
     function click(evt) {
-        var $self = jQuery(this), x = cleanf(elt),
-            tag = $self.attr("tagcomplete"), start = elt.selectionStart,
-            insertion = tag.substring((x.match || "").length),
-            text = elt.value.substring(0, start) + insertion + elt.value.substring(start);
+        var $self = jQuery(this),
+            tag = $self.attr("autocomplete"), start = elt.selectionStart,
+            text = elt.value.substring(0, start) + tag + elt.value.substring(start);
         jQuery(elt).val(text);
-        elt.selectionStart = elt.selectionEnd = start + insertion.length;
+        elt.selectionStart = elt.selectionEnd = start + tag.length;
         evt.stopPropagation();
         kill();
     }
