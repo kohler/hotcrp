@@ -2207,44 +2207,88 @@ function add_callback(cb1, cb2) {
         return cb1 || cb2;
 }
 
-// tags
-var alltags = (function () {
-var tlist = null, status = 0, cb = null;
-function tagsorter(a, b) {
-    var al = a.toLowerCase(), bl = b.toLowerCase();
-    if (al < bl)
-        return -1;
-    else if (bl < al)
-        return 1;
-    else if (a == b)
-        return 0;
-    else if (a < b)
-        return -1;
-    else
-        return 1;
+
+// promises
+function Promise(value) {
+    this.value = value;
+    this.state = value !== undefined;
+    this.c = [];
 }
-function getcb(v) {
-    if (v && v.tags) {
-        tlist = v.tags;
-        tlist.sort(tagsorter);
+Promise.prototype.then = function (yes, no) {
+    var next = new Promise;
+    this.c.push([no, yes, next]);
+    if (this.state !== false)
+        this._resolve();
+    else if (this.on) {
+        this.on(this);
+        this.on = null;
     }
-    status = 2;
-    cb && cb(tlist);
-}
-return function (callback) {
-    if (!status && hotcrp_user.is_pclike) {
-        status = 1;
-        Miniajax.get(hoturl("api", "fn=alltags"), getcb);
-    }
-    if (status == 1)
-        cb = add_callback(cb, callback);
-    return tlist;
+    return next;
 };
-})();
+Promise.prototype._resolve = function () {
+    var i, x, f, v;
+    for (i in this.c) {
+        x = this.c[i];
+        f = x[this.state];
+        if ($.isFunction(f)) {
+            try {
+                v = f(this.value);
+                x[2].fulfill(v);
+            } catch (e) {
+                x[2].reject(e);
+            }
+        } else
+            x[2][this.state ? "fulfill" : "reject"](this.value);
+    }
+    this.c = [];
+};
+Promise.prototype.fulfill = function (value) {
+    if (this.state === false) {
+        this.value = value;
+        this.state = 1;
+        this._resolve();
+    }
+};
+Promise.prototype.reject = function (reason) {
+    if (this.state === false) {
+        this.value = reason;
+        this.state = 0;
+        this._resolve();
+    }
+};
+Promise.prototype.onThen = function (f) {
+    this.on = add_callback(this.on, f);
+    return this;
+};
+
+
+// tags
+var alltags = new Promise().onThen(function (alltags) {
+    if (hotcrp_user.is_pclike)
+        Miniajax.get(hoturl("api", "fn=alltags"), function (v) {
+            var tlist = v && v.tags ? v.tags : [];
+            tlist.sort(function (a, b) {
+                var al = a.toLowerCase(), bl = b.toLowerCase();
+                if (al < bl)
+                    return -1;
+                else if (bl < al)
+                    return 1;
+                else if (a == b)
+                    return 0;
+                else if (a < b)
+                    return -1;
+                else
+                    return 1;
+            });
+            alltags.fulfill(tlist);
+        });
+    else
+        alltags.fulfill([]);
+});
 
 
 function taghelp_complete(pfx, str, cb, displayed) {
-    function go(tlist) {
+    alltags.then(function (tlist) {
         var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
         for (i = 0; i < tlist.length; ++i) {
             var t = tlist[i], tt = t;
@@ -2260,9 +2304,7 @@ function taghelp_complete(pfx, str, cb, displayed) {
             cb({prefix: pfx, match: str, list: res});
         else
             cb(null);
-    }
-    var tlist = alltags(go);
-    tlist && go(tlist);
+    });
 }
 
 function taghelp_tset(elt, cb, displayed) {
