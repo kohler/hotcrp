@@ -3319,4 +3319,15 @@ class PaperSearch {
             return current($tOpt);
     }
 
+    function search_completion() {
+        global $Conf;
+        $res = array();
+        if ($this->amPC) {
+            foreach ($Conf->settingTexts as $k => $v)
+                if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
+                    $res[] = $k;
+        }
+        return $res;
+    }
+
 }

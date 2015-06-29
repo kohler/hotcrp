@@ -121,6 +121,11 @@ if ($_GET["fn"] === "alltags") {
         $Conf->ajaxExit(array("ok" => false));
 }
 
+if ($_GET["fn"] === "searchcompletion") {
+    $s = new PaperSearch($Me, "");
+    $Conf->ajaxExit(array("ok" => true, "searchcompletion" => $s->search_completion()));
+}
+
 
 if (@$_GET["p"] && ctype_digit($_GET["p"])) {
     $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])), $Me);

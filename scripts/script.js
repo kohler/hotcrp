@@ -2211,7 +2211,7 @@ function add_callback(cb1, cb2) {
 // promises
 function Promise(value) {
     this.value = value;
-    this.state = value !== undefined;
+    this.state = value === undefined ? false : 1;
     this.c = [];
 }
 Promise.prototype.then = function (yes, no) {
@@ -2263,35 +2263,50 @@ Promise.prototype.onThen = function (f) {
 
 
 // tags
+function strcasecmp(a, b) {
+    var al = a.toLowerCase(), bl = b.toLowerCase();
+    if (al < bl)
+        return -1;
+    else if (bl < al)
+        return 1;
+    else if (a == b)
+        return 0;
+    else if (a < b)
+        return -1;
+    else
+        return 1;
+}
+
 var alltags = new Promise().onThen(function (alltags) {
     if (hotcrp_user.is_pclike)
         Miniajax.get(hoturl("api", "fn=alltags"), function (v) {
-            var tlist = v && v.tags ? v.tags : [];
-            tlist.sort(function (a, b) {
-                var al = a.toLowerCase(), bl = b.toLowerCase();
-                if (al < bl)
-                    return -1;
-                else if (bl < al)
-                    return 1;
-                else if (a == b)
-                    return 0;
-                else if (a < b)
-                    return -1;
-                else
-                    return 1;
-            });
+            var tlist = (v && v.tags) || [];
+            tlist.sort(strcasecmp);
             alltags.fulfill(tlist);
         });
     else
         alltags.fulfill([]);
 });
 
+var search_completion = new Promise().onThen(function (search_completion) {
+    Miniajax.get(hoturl("api", "fn=searchcompletion"), function (v) {
+        var sclist = (v && v.searchcompletion) || [];
+        sclist.sort(strcasecmp);
+        search_completion.fulfill(sclist);
+    });
+});
 
-function taghelp_complete(pfx, str, cb, displayed) {
-    alltags.then(function (tlist) {
+
+function taghelp_completer(pfx, str, displayed, include_pfx) {
+    return function (tlist) {
         var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
         for (i = 0; i < tlist.length; ++i) {
             var t = tlist[i], tt = t;
+            if (include_pfx) {
+                if (t.substring(0, pfx.length).toLowerCase() !== pfx)
+                    continue;
+                tt = t = t.substring(pfx.length);
+            }
             if (str.length && t.substring(0, str.length).toLowerCase() !== lstr)
                 continue;
             else if (str.length)
@@ -2301,28 +2316,40 @@ function taghelp_complete(pfx, str, cb, displayed) {
             interesting = interesting || str !== tt;
         }
         if (res.length && (interesting || displayed))
-            cb({prefix: pfx, match: str, list: res});
+            return {prefix: pfx, match: str, list: res};
         else
-            cb(null);
-    });
+            return null;
+    };
 }
 
-function taghelp_tset(elt, cb, displayed) {
-    if (elt.selectionStart == elt.selectionEnd) {
-        var m = elt.value.substring(0, elt.selectionStart).match(/.*?([^#\s]*)(?:#\d*)?$/),
-            n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
-        taghelp_complete("", (m && m[1] + n[1]) || "", cb, displayed);
-    } else
-        cb(null);
+function completion_split(elt) {
+    if (elt.selectionStart == elt.selectionEnd)
+        return [elt.value.substring(0, elt.selectionStart),
+                elt.value.substring(elt.selectionEnd)];
+    else
+        return null;
 }
 
-function taghelp_q(elt, cb, displayed) {
-    if (elt.selectionStart == elt.selectionEnd) {
-        var m = elt.value.substring(0, elt.selectionStart).match(/.*?(tag:\s*|r?order:\s*|#)([^#\s]*)$/),
-            n = elt.value.substring(elt.selectionStart).match(/^([^#\s]*)/);
-        m ? taghelp_complete(m[1], m[2] + n[1], cb, displayed) : cb(null);
+function taghelp_tset(elt, displayed) {
+    var x = completion_split(elt), m, n;
+    if (x) {
+        m = x[0].match(/.*?([^#\s]*)(?:#\d*)?$/);
+        n = x[1].match(/^([^#\s]*)/);
+        return alltags.then(taghelp_completer("", (m && m[1] + n[1]) || "", displayed));
     } else
-        cb(null);
+        return new Promise(null);
+}
+
+function taghelp_q(elt, displayed) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/.*?(\btag:\s*|\br?order:\s*|#)([^#\s()]*)$/))) {
+        n = x[1].match(/^([^#\s()]*)/);
+        return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
+    } else if (x && (m = x[0].match(/.*?(\bhas:\s*|\bss:\s*)([^\s()]*)$/))) {
+        n = x[1].match(/^([^\s()]*)/);
+        return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
+    } else
+        return new Promise(null);
 }
 
 function taghelp(elt, klass, cleanf) {
@@ -2358,7 +2385,7 @@ function taghelp(elt, klass, cleanf) {
     }
 
     function display() {
-        cleanf(elt, finish_display, !!tagdiv)
+        cleanf(elt, !!tagdiv).then(finish_display);
     }
 
     function kp(evt) {
