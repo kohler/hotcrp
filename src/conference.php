@@ -1164,8 +1164,7 @@ class Conference {
     }
 
     function has_managed_submissions() {
-        $result = $this->q("select paperId from Paper where timeSubmitted>0 and managerContactId!=0 limit 1");
-        return !!edb_row($result);
+        return !!@$this->settings["papermanager"];
     }
 
     function can_pc_see_all_submissions() {
