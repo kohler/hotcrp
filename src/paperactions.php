@@ -15,7 +15,7 @@ class PaperActions {
             return array("ok" => false, "error" => "Bad decision value.");
         $result = Dbl::qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
         if ($result && ($dnum > 0 || $prow->outcome > 0))
-            $Conf->updatePaperaccSetting($dnum > 0);
+            $Conf->update_paperacc_setting($dnum > 0);
         if ($result)
             return array("ok" => true, "result" => htmlspecialchars($decs[$dnum]));
         else

@@ -678,24 +678,25 @@ class Conference {
         return $start . $suffix;
     }
 
+
     // update the 'papersub' setting: are there any submitted papers?
-    function updatePapersubSetting($forsubmit) {
+    function update_papersub_setting($forsubmit) {
         $papersub = defval($this->settings, "papersub");
         if ($papersub === null && $forsubmit)
-            $this->q("insert into Settings (name, value) values ('papersub',1) on duplicate key update name=name");
+            $this->q("insert into Settings (name, value) values ('papersub',1) on duplicate key update value=value");
         else if ($papersub <= 0 || !$forsubmit)
             // see also settings.php
             $this->q("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
     }
 
-    function updatePaperaccSetting($foraccept) {
+    function update_paperacc_setting($foraccept) {
         if (!isset($this->settings["paperacc"]) && $foraccept)
-            $this->q("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update name=name");
+            $this->q("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update value=value");
         else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
             $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
     }
 
-    function updateRevTokensSetting($always) {
+    function update_rev_tokens_setting($always) {
         if ($always || defval($this->settings, "rev_tokens", 0) < 0)
             $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
     }
@@ -707,6 +708,41 @@ class Conference {
     function update_papermanager_setting() {
         $this->qe("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
     }
+
+    private function invariantq($q) {
+        $result = $this->ql($q);
+        if ($result) {
+            $any = !!$result->fetch_row();
+            $result->close();
+            return $any;
+        } else
+            return null;
+    }
+
+    function check_invariants() {
+        global $Opt;
+
+        $any = $this->invariantq("select paperId from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . " limit 1");
+        if ($any !== !!@$this->settings["papersub"])
+            trigger_error($Opt["dbName"] . " invariant error: papersub");
+
+        $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
+        if ($any !== !!@$this->settings["paperacc"])
+            trigger_error($Opt["dbName"] . " invariant error: paperacc");
+
+        $any = $this->invariantq("select reviewId from PaperReview where reviewToken!=0 limit 1");
+        if ($any !== !!@$this->settings["rev_tokens"])
+            trigger_error($Opt["dbName"] . " invariant error: rev_tokens");
+
+        $any = $this->invariantq("select paperId from Paper where leadContactId>0 or shepherdContactId>0 limit 1");
+        if ($any !== !!@$this->settings["paperlead"])
+            trigger_error($Opt["dbName"] . " invariant error: paperlead");
+
+        $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
+        if ($any !== !!@$this->settings["papermanager"])
+            trigger_error($Opt["dbName"] . " invariant error: papermanager");
+    }
+
 
     function save_setting($name, $value, $data = null) {
         $qname = $this->dblink->escape_string($name);

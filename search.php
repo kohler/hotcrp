@@ -935,7 +935,7 @@ function search_set_decisions() {
         $Conf->errorMsg("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
     if (count($success)) {
         Dbl::qe("update Paper set outcome=$o where paperId ?a", $success);
-        $Conf->updatePaperaccSetting($o > 0);
+        $Conf->update_paperacc_setting($o > 0);
         redirectSelf(array("atab" => "decide", "decision" => $o));
     }
     $_REQUEST["atab"] = "decide";
@@ -997,7 +997,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
         if ($nworked)
             $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
         Dbl::qe_raw("unlock tables");
-        $Conf->updateRevTokensSetting(false);
+        $Conf->update_rev_tokens_setting(false);
     }
 }
 

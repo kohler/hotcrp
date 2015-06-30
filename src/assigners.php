@@ -1426,7 +1426,7 @@ class AssignmentSet {
         }
 
         // clean up
-        $Conf->updateRevTokensSetting(false);
+        $Conf->update_rev_tokens_setting(false);
         $Conf->update_paperlead_setting();
 
         $pids = array();

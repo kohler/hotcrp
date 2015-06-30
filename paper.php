@@ -147,7 +147,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
         $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId");
         $numreviews = $result ? $result->affected_rows : false;
-        $Conf->updatePapersubSetting(false);
+        $Conf->update_papersub_setting(false);
         loadRows();
 
         // email contact authors themselves
@@ -179,7 +179,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
         Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=1 where paperId=$prow->paperId and reviewSubmitted is null");
         Dbl::qe_raw("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
         Dbl::qe_raw("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
-        $Conf->updatePapersubSetting(true);
+        $Conf->update_papersub_setting(true);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);
         redirectSelf();
@@ -436,7 +436,7 @@ function update_paper($pj, $opj, $action, $diffs) {
     }
     $wasSubmitted = $opj && @$opj->submitted;
     if (@$pj->submitted || $Conf->can_pc_see_all_submissions())
-        $Conf->updatePapersubSetting(true);
+        $Conf->update_papersub_setting(true);
     if ($wasSubmitted != @$pj->submitted)
         $diffs["submission"] = 1;
 
@@ -611,9 +611,9 @@ if (isset($_REQUEST["delete"]) && check_post()) {
         }
         if (!$error) {
             $Conf->confirmMsg("Paper #$prow->paperId deleted.");
-            $Conf->updatePapersubSetting(false);
+            $Conf->update_papersub_setting(false);
             if ($prow->outcome > 0)
-                $Conf->updatePaperaccSetting(false);
+                $Conf->update_paperacc_setting(false);
             $Me->log_activity("Deleted", $prow->paperId);
         }
 

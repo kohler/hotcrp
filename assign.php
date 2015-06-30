@@ -123,7 +123,7 @@ function retractRequest($email, $prow, $confirm = true) {
 if (isset($_REQUEST["retract"]) && check_post()) {
     retractRequest($_REQUEST["retract"], $prow);
     Dbl::qe_raw("unlock tables");
-    $Conf->updateRevTokensSetting(false);
+    $Conf->update_rev_tokens_setting(false);
     redirectSelf();
     loadRows();
 }
@@ -196,7 +196,7 @@ function pcAssignments() {
 if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post()) {
     pcAssignments();
     Dbl::qe_raw("unlock tables");
-    $Conf->updateRevTokensSetting(false);
+    $Conf->update_rev_tokens_setting(false);
     if ($OK)
         $Conf->confirmMsg("Assignments saved.");
     if (defval($_REQUEST, "ajax"))
@@ -372,7 +372,7 @@ function createAnonymousReview() {
     }
 
     Dbl::qx_raw("unlock tables");
-    $Conf->updateRevTokensSetting(true);
+    $Conf->update_rev_tokens_setting(true);
     return true;
 }
 
@@ -440,7 +440,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
     else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
         $Me->assign_review($prow->paperId, $pcid, $pctype);
-        $Conf->updateRevTokensSetting(false);
+        $Conf->update_rev_tokens_setting(false);
     }
     loadRows();
 }

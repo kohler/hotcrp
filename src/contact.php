@@ -2758,7 +2758,7 @@ class Contact {
         if ($q[0] == "i")
             Dbl::ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
         // Mark rev_tokens setting for future update by
-        // updateRevTokensSetting
+        // update_rev_tokens_setting
         if ($rrow && @$rrow->reviewToken && $type <= 0)
             $Conf->settings["rev_tokens"] = -1;
         // Set pcrev_assigntime
