@@ -2104,6 +2104,10 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .taghelp_td:first-child {
 	padding-left: 0;
 }
+.autocomplete:hover {
+	cursor: pointer;
+	background-color: #cc0000;
+}
 
 /* bubbles */
 .bubble {
