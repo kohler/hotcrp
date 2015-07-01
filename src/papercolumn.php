@@ -1322,7 +1322,7 @@ class ShepherdPaperColumn extends PaperColumn {
     public function prepare($pl, &$queryOptions, $visible) {
         global $Conf;
         return $pl->contact->isPC
-            || ($Conf->setting("paperacc") && $Conf->timeAuthorViewDecision());
+            || ($Conf->has_any_accepts() && $Conf->timeAuthorViewDecision());
     }
     public function header($pl, $row, $ordinal) {
         return "Shepherd";

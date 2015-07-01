@@ -107,45 +107,32 @@ class PaperOption {
     }
 
     static function search($name) {
+        $name = @strtolower($name);
         if ((string) $name === (string) DTYPE_SUBMISSION
-            || strcasecmp($name, "paper") == 0
-            || strcasecmp($name, "submission") == 0)
+            || $name === "paper"
+            || $name === "submission")
             return array(DTYPE_SUBMISSION => self::find_document(DTYPE_SUBMISSION));
         else if ((string) $name === (string) DTYPE_FINAL
-                 || strcasecmp($name, "final") == 0)
+                 || $name === "final")
             return array(DTYPE_FINAL => self::find_document(DTYPE_FINAL));
         if (self::$list === null)
             self::option_list();
-        if (($o = @self::$list[$name]))
-            return array($o->id => $o);
-        $name = @strtolower($name);
         if ($name === "" || $name === "none")
             return array();
         else if ($name === "any")
             return self::$list;
         if (substr($name, 0, 4) === "opt-")
             $name = substr($name, 4);
+        $oabbr = array();
         foreach (self::$list as $o)
             if ($o->abbr === $name)
                 return array($o->id => $o);
-        $rewords = array();
-        foreach (preg_split('/[^a-z_0-9*]+/', $name) as $word)
-            if ($word !== "")
-                $rewords[] = str_replace("*", ".*", $word);
-        $re = array(',\A\b' . join('\b.*\b', $rewords) . '\b,',
-                    ',\b' . join('.*\b', $rewords) . ',');
-        $matches = array();
-        $matchscore = count($re) - 1;
-        foreach (self::$list as $o)
-            for ($i = 0; $i <= $matchscore; ++$i)
-                if (preg_match($re[$i], $o->abbr)) {
-                    if ($i < $matchscore) {
-                        $matches = array();
-                        $matchscore = $i;
-                    }
-                    $matches[$o->id] = $o;
-                }
-        return $matches;
+            else
+                $oabbr[$o->id] = $o->abbr;
+        $oabbr = Text::simple_search($name, $oabbr, true);
+        foreach ($oabbr as $id => &$x)
+            $x = self::$list[$id];
+        return $oabbr;
     }
 
     static function abbreviate($name, $id) {

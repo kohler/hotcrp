@@ -413,7 +413,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         echo $sep, foldbutton("re"), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
         $sep = $xsep;
     }
-    if ($Me->isPC && $Conf->setting("paperlead") > 0
+    if ($Me->isPC && $Conf->has_any_lead_or_shepherd()
         && $Me->is_discussion_lead()) {
         echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nowrap">Your discussion leads</a>';
         $sep = $xsep;

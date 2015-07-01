@@ -33,6 +33,9 @@ class Text {
     static private $boolkeys = array("withMiddle" => true,
                                      "lastFirst" => true,
                                      "nameAmbiguous" => true);
+    static private $boring_words = array("a" => true, "an" => true, "as" => true,
+                                         "in" => true, "on" => true, "the" => true,
+                                         "with" => true);
 
     static function analyze_von($lastName) {
         if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
@@ -319,4 +322,26 @@ class Text {
         return join("", $s);
     }
 
+    public static function simple_search($needle, $haystacks, $case_sensitive = false) {
+        $reflags = $case_sensitive ? "" : "i";
+        $rewords = array();
+        foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word)
+            if ($word !== "")
+                $rewords[] = str_replace("*", ".*", $word);
+        $matches = array();
+        for ($i = 0; $i < 3 && !count($matches); ++$i) {
+            if ($i == 0)
+                $re = ',\A' . join('\b.*\b', $rewords) . '\z,' . $reflags;
+            else if ($i == 1)
+                $re = ',\A' . join('\b.*\b', $rewords) . '\b,' . $reflags;
+            else
+                $re = ',\b' . join('.*\b', $rewords) . ',' . $reflags;
+            $matches = preg_grep($re, $haystacks);
+        }
+        return $matches;
+    }
+
+    public static function is_boring_word($word) {
+        return isset(self::$boring_words[strtolower($word)]);
+    }
 }

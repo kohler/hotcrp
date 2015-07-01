@@ -328,7 +328,7 @@ class PaperList extends BaseList {
         }
         if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
             $sel_opt["scores"] = "Scores";
-        if ($Conf->setting("paperlead") > 0) {
+        if ($Conf->has_any_lead_or_shepherd()) {
             $sel_opt["lead"] = "Discussion leads";
             $sel_opt["shepherd"] = "Shepherds";
         }

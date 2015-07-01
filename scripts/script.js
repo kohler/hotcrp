@@ -1642,7 +1642,7 @@ function fill_editing(hc, cj) {
         else if (hotcrp_status.rev.blind)
             tsuf = ' &nbsp; (<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '">&nbsp;' +
                 '<label for="htctlcb' + idctr + '">Anonymous to authors</label>)';
-        var au_allowseerev = hotcrp_status.perm[hotcrp_paperid].author_can_view_review;
+        var au_allowseerev = hotcrp_status.perm[hotcrp_paperid].some_author_can_view_review;
         tsuf += '<br><span class="fx2 hint">' + (au_allowseerev ? "Authors will be notified immediately." : "Authors cannot view comments at the moment.") + '</span>';
         make_visibility(hc, "Visibility: &nbsp; ", "au", "Authors and reviewers" + lsuf, tsuf);
         make_visibility(hc, "", "rev", "PC and external reviewers");
@@ -2312,7 +2312,7 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
             else if (str.length)
                 t = "<b>" + t.substring(0, str.length) + "</b>" + t.substring(str.length);
             res.push('<div class="autocomplete" autocomplete="' +
-                     tt.substring(str.length) + '">' + pfx + t + '</div>');
+                     tt.substring(str.length).replace(/\"/g, "&quot;") + '">' + pfx + t + '</div>');
             interesting = interesting || str !== tt;
         }
         if (res.length && (interesting || displayed))
@@ -2345,7 +2345,7 @@ function taghelp_q(elt, displayed) {
     if (x && (m = x[0].match(/.*?(\btag:\s*|\br?order:\s*|#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
-    } else if (x && (m = x[0].match(/.*?(\bhas:\s*|\bss:\s*)([^\s()]*)$/))) {
+    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic):\s*)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
         return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
     } else

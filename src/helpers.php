@@ -1325,26 +1325,6 @@ function review_type_icon($revtype, $unfinished = null, $title = null) {
         . '"><span class="rti">' . $revtypemap[$revtype][0] . '</span></span>';
 }
 
-function matchValue($a, $word, $allowKey = false) {
-    $outa = array();
-    $outb = array();
-    $outc = array();
-    foreach ($a as $k => $v)
-        if (strcmp($word, $v) == 0
-            || ($allowKey && strcmp($word, $k) == 0))
-            $outa[] = $k;
-        else if (strcasecmp($word, $v) == 0)
-            $outb[] = $k;
-        else if (stripos($v, $word) !== false)
-            $outc[] = $k;
-    if (count($outa) > 0)
-        return $outa;
-    else if (count($outb) > 0)
-        return $outb;
-    else
-        return $outc;
-}
-
 function scoreCounts($values, $max = null) {
     $merit = ($max ? array_fill(1, $max, 0) : array());
     $n = $sum = $sumsq = 0;

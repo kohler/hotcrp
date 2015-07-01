@@ -498,20 +498,35 @@ class PaperSearch {
         "au" => "au", "author" => "au",
         "co" => "co", "collab" => "co", "collaborators" => "co",
         "re" => "re", "rev" => "re", "review" => "re",
-        "sre" => "cre", "srev" => "cre", "sreview" => "cre",
         "cre" => "cre", "crev" => "cre", "creview" => "cre",
-        "subre" => "cre", "subrev" => "cre", "subreview" => "cre",
         "ire" => "ire", "irev" => "ire", "ireview" => "ire",
         "pre" => "pre", "prev" => "pre", "preview" => "pre",
-        "pri" => "pri", "primary" => "pri", "prire" => "pri", "prirev" => "pri",
+        "sre" => "cre", "srev" => "cre", "sreview" => "cre", // deprecated
+        "subre" => "cre", "subrev" => "cre", "subreview" => "cre", // deprecated
+        "pri" => "pri", "primary" => "pri",
+        "prire" => "pri", "prirev" => "pri", "prireview" => "pri",
         "cpri" => "cpri", "cprimary" => "cpri",
+        "cprire" => "cpri", "cprirev" => "cpri", "cprireview" => "cpri",
         "ipri" => "ipri", "iprimary" => "ipri",
-        "sec" => "sec", "secondary" => "sec", "secre" => "sec", "secrev" => "sec",
+        "iprire" => "ipri", "iprirev" => "ipri", "iprireview" => "ipri",
+        "ppri" => "ppri", "pprimary" => "ppri",
+        "pprire" => "ppri", "pprirev" => "ppri", "pprireview" => "ppri",
+        "sec" => "sec", "secondary" => "sec",
+        "secre" => "sec", "secrev" => "sec", "secreview" => "sec",
         "csec" => "csec", "csecondary" => "csec",
+        "csecre" => "csec", "csecrev" => "csec", "csecreview" => "csec",
         "isec" => "isec", "isecondary" => "isec",
-        "ext" => "ext", "external" => "ext", "extre" => "ext", "extrev" => "ext",
+        "isecre" => "isec", "isecrev" => "isec", "isecreview" => "isec",
+        "psec" => "psec", "psecondary" => "psec",
+        "psecre" => "psec", "psecrev" => "psec", "psecreview" => "psec",
+        "ext" => "ext", "external" => "ext",
+        "extre" => "ext", "extrev" => "ext", "extreview" => "ext",
         "cext" => "cext", "cexternal" => "cext",
+        "cextre" => "cext", "cextrev" => "cext", "cextreview" => "cext",
         "iext" => "iext", "iexternal" => "iext",
+        "iextre" => "iext", "iextrev" => "iext", "iextreview" => "iext",
+        "pext" => "pext", "pexternal" => "pext",
+        "pextre" => "pext", "pextrev" => "pext", "pextreview" => "pext",
         "cmt" => "cmt", "comment" => "cmt",
         "aucmt" => "aucmt", "aucomment" => "aucmt",
         "resp" => "response", "response" => "response",
@@ -852,12 +867,12 @@ class PaperSearch {
         else if (!$quoted && strcasecmp($word, "any") == 0)
             $value = "!=0";
         else {
-            $value = matchValue($Conf->decision_map(), $word, true);
+            $value = Text::simple_search($word, $Conf->decision_map());
             if (count($value) == 0) {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
                 $value[] = -10000000;
             }
-            $value = sql_in_numeric_set($value);
+            $value = sql_in_numeric_set(array_keys($value));
         }
 
         $value = array("outcome", $value);
@@ -1234,19 +1249,20 @@ class PaperSearch {
                     if ($oval === "") {
                         foreach ($o->selector as $k => $v)
                             if (strcasecmp($v, "yes") == 0)
-                                $xval[] = $k;
+                                $xval[$k] = $v;
                         if (count($xval) == 0)
-                            $xval = array_keys($o->selector);
+                            $xval = $o->selector;
                     } else
-                        $xval = matchValue($o->selector, $oval);
+                        $xval = Text::simple_search($oval, $o->selector);
                     if (count($xval) == 0)
                         $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
-                    else if (count($xval) == 1)
-                        $qo[] = array($o, $ocompar, $xval[0], $oval);
-                    else if ($ocompar !== "=" && $ocompar !== "!=")
+                    else if (count($xval) == 1) {
+                        reset($xval);
+                        $qo[] = array($o, $ocompar, key($xval), $oval);
+                    } else if ($ocompar !== "=" && $ocompar !== "!=")
                         $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
                     else
-                        $qo[] = array($o, $ocompar === "=" ? "in" : "not in", $xval, $oval);
+                        $qo[] = array($o, $ocompar === "=" ? "in" : "not in", array_keys($xval), $oval);
                     continue;
                 }
 
@@ -1274,7 +1290,7 @@ class PaperSearch {
         } else if (($ocompar === "=" || $ocompar === "!=") && $oval === "")
             foreach (PaperOption::option_list() as $oid => $o)
                 if ($o->has_selector()) {
-                    foreach (matchValue($o->selector, $oname) as $xval)
+                    foreach (Text::simple_search($oname, $o->selector) as $xval => $text)
                         $qo[] = array($o, $ocompar, $xval);
                 }
 
@@ -1312,27 +1328,29 @@ class PaperSearch {
     private function _search_has($word, &$qt, $quoted) {
         global $Conf;
         $lword = strtolower($word);
-        $word = @self::$_keywords[$lword] ? : $word;
-        if (strcasecmp($word, "paper") == 0 || strcasecmp($word, "submission") == 0)
+        $lword = @self::$_keywords[$lword] ? : $lword;
+        if ($lword === "paper" || $lword === "sub" || $lword === "submission")
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
-        else if (strcasecmp($word, "final") == 0 || strcasecmp($word, "finalcopy") == 0)
+        else if ($lword === "final" || $lword === "finalcopy")
             $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", "!=0"));
-        else if (strcasecmp($word, "abstract") == 0)
+        else if ($lword === "abstract")
             $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
-        else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/i', $word))
-            $this->_search_comment(">0", $word, $qt, $quoted);
-        else if (strcasecmp($word, "manager") == 0 || strcasecmp($word, "admin") == 0 || strcasecmp($word, "administrator") == 0)
+        else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
+            $this->_search_comment(">0", $lword, $qt, $quoted);
+        else if ($lword === "manager" || $lword === "admin" || $lword === "administrator")
             $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
-        else if (preg_match('/\A[ci]?(?:re|pri|sec|ext)\z/', $word))
-            $this->_searchReviewer(">0", $word, $qt, $quoted);
-        else if (strcasecmp($word, "lead") == 0)
+        else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword))
+            $this->_searchReviewer(">0", $lword, $qt, $quoted);
+        else if ($lword === "lead")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
-        else if (strcasecmp($word, "shep") == 0 || strcasecmp($word, "shepherd") == 0)
+        else if ($lword === "shep" || $lword === "shepherd")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
-        else if (preg_match('/\A[\w-]+\z/', $word) && $this->_search_options("$word:yes", $qt, false))
+        else if ($lword === "dec" || $lword === "decision")
+            $this->_search_decision("yes", $qt, false, false);
+        else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
             /* OK */;
         else {
-            $x = array("“paper”", "“final”", "“abstract”", "“comment”", "“aucomment”", "“pcrev”", "“extrev”");
+            $x = array("“paper”", "“final”", "“abstract”", "“comment”", "“aucomment”", "“re”", "“extre”");
             foreach ($Conf->resp_round_list() as $i => $rname) {
                 if (!in_array("“response”", $x))
                     array_push($x, "“response”", "“draftresponse”");
@@ -1375,14 +1393,14 @@ class PaperSearch {
                 $this->interestingRatings["any"] = "!=100";
                 $term = "nrate_any";
             } else {
-                $x = array_diff(matchValue(ReviewForm::$rating_types, $m[1]),
-                                array("n")); /* don't allow "average" */
+                $x = Text::simple_search($m[1], ReviewForm::$rating_types);
+                unset($x["n"]); /* don't allow "average" */
                 if (count($x) == 0) {
                     $this->warn("Unknown rating type “" . htmlspecialchars($m[1]) . "”.");
                     $qt[] = new SearchTerm("f");
                 } else {
                     $type = count($this->interestingRatings);
-                    $this->interestingRatings[$type] = " in (" . join(",", $x) . ")";
+                    $this->interestingRatings[$type] = " in (" . join(",", array_keys($x)) . ")";
                     $term = "nrate_$type";
                 }
             }
@@ -1622,12 +1640,12 @@ class PaperSearch {
                 $qt[] = new SearchTerm("revadj", 0, array("round" => range(1, count($Conf->round_list()) - 1)));
             else {
                 $x = simplify_whitespace($word);
-                $rounds = matchValue($Conf->round_list(), $x);
+                $rounds = Text::simple_search($x, $Conf->round_list());
                 if (count($rounds) == 0) {
                     $this->warn("“" . htmlspecialchars($x) . "” doesn’t match a review round.");
                     $qt[] = new SearchTerm("f");
                 } else
-                    $qt[] = new SearchTerm("revadj", 0, array("round" => $rounds));
+                    $qt[] = new SearchTerm("revadj", 0, array("round" => array_keys($rounds)));
             }
         }
         if ($keyword === "rate")
@@ -3259,7 +3277,7 @@ class PaperSearch {
             $tOpt["act"] = "Active papers";
         if ($me->isPC)
             $tOpt["s"] = "Submitted papers";
-        if ($me->isPC && $Conf->timePCViewDecision(false) && $Conf->setting("paperacc") > 0)
+        if ($me->isPC && $Conf->timePCViewDecision(false) && $Conf->has_any_accepts())
             $tOpt["acc"] = "Accepted papers";
         if ($me->privChair)
             $tOpt["all"] = "All papers";
@@ -3273,10 +3291,10 @@ class PaperSearch {
             $tOpt["rout"] = "Your incomplete reviews";
         if ($me->isPC)
             $tOpt["req"] = "Your review requests";
-        if ($me->isPC && $Conf->setting("paperlead") > 0
+        if ($me->isPC && $Conf->has_any_lead_or_shepherd()
             && $me->is_discussion_lead())
             $tOpt["lead"] = "Your discussion leads";
-        if ($me->isPC && $Conf->setting("papermanager") > 0
+        if ($me->isPC && $Conf->has_any_manager()
             && ($me->privChair || $me->is_manager()))
             $tOpt["manager"] = "Papers you administer";
         if ($me->is_author())
@@ -3287,7 +3305,7 @@ class PaperSearch {
     static function manager_search_types($me) {
         global $Conf;
         if ($me->privChair) {
-            if ($Conf->has_managed_submissions())
+            if ($Conf->has_any_manager())
                 $tOpt = array("manager" => "Papers you administer",
                               "unm" => "Unmanaged submissions",
                               "s" => "All submissions");
@@ -3319,15 +3337,82 @@ class PaperSearch {
             return current($tOpt);
     }
 
-    function search_completion() {
+    private static function simple_search_completion($prefix, $map) {
+        $x = array();
+        foreach ($map as $id => $str) {
+            $match = null;
+            foreach (preg_split(',[^a-z0-9_]+,', strtolower($str)) as $word)
+                if ($word !== ""
+                    && ($m = Text::simple_search($word, $map))
+                    && isset($m[$id]) && count($m) == 1
+                    && !Text::is_boring_word($word)) {
+                    $match = $word;
+                    break;
+                }
+            $x[] = $prefix . ($match ? : "\"$str\"");
+        }
+        return $x;
+    }
+
+    function search_completion($category = "") {
         global $Conf;
-        $res = array();
-        if ($this->amPC) {
+        $x = array();
+
+        if ($this->amPC && (!$category || $category === "ss")) {
             foreach ($Conf->settingTexts as $k => $v)
                 if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
-                    $res[] = $k;
+                    $x[] = $k;
         }
-        return $res;
+
+        array_push($x, "has:submission", "has:abstract", "has:finalcopy");
+        if ($this->amPC && $Conf->has_any_manager())
+            $x[] = "has:admin";
+        if ($this->amPC && $Conf->has_any_lead_or_shepherd())
+            $x[] = "has:lead";
+        if ($this->contact->can_view_some_decision()) {
+            $x[] = "has:decision";
+            if (!$category || $category === "dec") {
+                array_push($x, "dec:yes", "dec:no", "dec:any", "dec:none");
+                $dm = $Conf->decision_map();
+                unset($dm[0]);
+                $x = array_merge($x, self::simple_search_completion("dec:", $dm));
+            }
+        }
+        if ($this->amPC || $this->contact->can_view_some_decision())
+            $x[] = "has:shepherd";
+        if ($this->contact->can_view_some_review())
+            array_push($x, "has:re", "has:cre", "has:ire", "has:pre", "has:comment", "has:aucomment");
+        if ($this->contact->is_reviewer())
+            array_push($x, "has:primary", "has:secondary", "has:external");
+        foreach ($Conf->resp_round_list() as $i => $rname) {
+            if (!in_array("has:response", $x))
+                $x[] = "has:response";
+            if ($i)
+                $x[] = "has:{$rname}response";
+        }
+        if ($this->contact->can_view_some_draft_response())
+            foreach ($Conf->resp_round_list() as $i => $rname) {
+                if (!in_array("has:draftresponse", $x))
+                    $x[] = "has:draftresponse";
+                if ($i)
+                    $x[] = "has:draft{$rname}response";
+            }
+        foreach (PaperOption::option_list() as $o)
+            if ($this->contact->can_view_some_paper_option($o))
+                array_push($x, "has:{$o->abbr}", "opt:{$o->abbr}");
+        if ($this->contact->is_reviewer() && $Conf->has_rounds()
+            && (!$category || $category === "round")) {
+            array_push($x, "round:none", "round:any");
+            $rlist = array();
+            foreach ($Conf->round_list() as $rnum => $round)
+                if ($rnum && $round !== ";")
+                    $rlist[$rnum] = $round;
+            $x = array_merge($x, self::simple_search_completion("round:", $rlist));
+        }
+        if ($Conf->has_topics() && (!$category || $category === "topic"))
+            $x = array_merge($x, self::simple_search_completion("topic:", $Conf->topic_map()));
+
+        return $x;
     }
 
 }

@@ -1762,6 +1762,14 @@ class Contact {
                 : $rights->act_author_view);
     }
 
+    function can_view_some_authors() {
+        return $this->is_manager()
+            || $this->is_author()
+            || ($this->is_reviewer()
+                && ($Conf->submission_blindness() != Conference::BLIND_ALWAYS
+                    || $Conf->timeReviewerViewAcceptedAuthors()));
+    }
+
     function can_view_conflicts(PaperInfo $prow, $forceShow = null) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
@@ -1793,6 +1801,16 @@ class Contact {
                     || $Conf->check_tracks($prow, $this, "viewpdf")));
     }
 
+    function can_view_some_paper_option($opt) {
+        if (!is_object($opt) && !($opt = PaperOption::find($opt)))
+            return false;
+        $oview = @$opt->visibility;
+        return $this->is_author()
+            || ($oview == "admin" && $this->is_manager())
+            || ((!$oview || $oview == "rev") && $this->is_reviewer())
+            || ($oview == "nonblind" && $this->can_view_some_authors());
+    }
+
     function is_my_review($rrow) {
         global $Conf;
         if (!$rrow || !$rrow->reviewId)
@@ -1821,7 +1839,7 @@ class Contact {
             || $this->can_view_review($prow, $rrow, $forceShow);
     }
 
-    public static function author_can_view_submitted_review(PaperInfo $prow) {
+    public static function can_some_author_view_submitted_review(PaperInfo $prow) {
         global $Conf;
         if ($Conf->au_seerev == Conference::AUSEEREV_TAGS)
             return $prow->has_any_tag($Conf->tag_au_seerev);
@@ -1829,7 +1847,7 @@ class Contact {
             return $Conf->au_seerev != 0;
     }
 
-    public function can_author_view_submitted_review(PaperInfo $prow) {
+    private function can_view_submitted_review_as_author(PaperInfo $prow) {
         global $Conf;
         return $Conf->au_seerev == Conference::AUSEEREV_YES
             || ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
@@ -1837,6 +1855,11 @@ class Contact {
                     || !$this->has_outstanding_review()))
             || ($Conf->au_seerev == Conference::AUSEEREV_TAGS
                 && $prow->has_any_tag($Conf->tag_au_seerev));
+    }
+
+    public function can_view_some_review() {
+        return $this->is_reviewer()
+            || ($this->is_author() && $Conf->au_seerev != 0);
     }
 
     public function can_view_review(PaperInfo $prow, $rrow, $forceShow) {
@@ -1859,7 +1882,7 @@ class Contact {
         return ($rights->act_author_view
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_AUTHOR
-                && $this->can_author_view_submitted_review($prow))
+                && $this->can_view_submitted_review_as_author($prow))
             || ($rights->allow_pc
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
@@ -2285,7 +2308,7 @@ class Contact {
                 && $ctype >= COMMENTTYPE_AUTHOR
                 && (($ctype & COMMENTTYPE_RESPONSE)    // author's response
                     || (!($ctype & COMMENTTYPE_DRAFT)  // author-visible cmt
-                        && $this->can_author_view_submitted_review($prow))))
+                        && $this->can_view_submitted_review_as_author($prow))))
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_review($prow, null, $forceShow)
@@ -2326,6 +2349,10 @@ class Contact {
             || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
     }
 
+    function can_view_some_draft_response() {
+        return $this->is_manager() || $this->is_author();
+    }
+
 
     function can_view_decision(PaperInfo $prow, $forceShow = null) {
         global $Conf;
@@ -2338,6 +2365,13 @@ class Contact {
             || ($rights->review_type > 0
                 && $rights->review_submitted
                 && $Conf->timeReviewerViewDecision());
+    }
+
+    function can_view_some_decision() {
+        return $this->is_manager()
+            || ($this->is_author() && $Conf->timeAuthorViewDecision())
+            || ($this->isPC && $Conf->timePCViewDecision(false))
+            || ($this->is_reviewer() && $Conf->timeReviewerViewDecision());
     }
 
     function can_set_decision(PaperInfo $prow, $forceShow = null) {
@@ -2637,8 +2671,8 @@ class Contact {
                         else if ($admin && $this->can_respond($prow, $crow, false))
                             $perm->$k = "override";
                     }
-                if (self::author_can_view_submitted_review($prow))
-                    $perm->author_can_view_review = true;
+                if (self::can_some_author_view_submitted_review($prow))
+                    $perm->some_author_can_view_review = true;
             }
         }
 

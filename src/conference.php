@@ -1163,7 +1163,15 @@ class Conference {
         return $this->settings["rev_blind"];
     }
 
-    function has_managed_submissions() {
+    function has_any_accepts() {
+        return !!@$this->settings["paperacc"];
+    }
+
+    function has_any_lead_or_shepherd() {
+        return !!@$this->settings["paperlead"];
+    }
+
+    function has_any_manager() {
         return !!@$this->settings["papermanager"];
     }
 
