@@ -2332,10 +2332,9 @@ function completion_split(elt) {
 
 function taghelp_tset(elt, displayed) {
     var x = completion_split(elt), m, n;
-    if (x) {
-        m = x[0].match(/.*?([^#\s]*)(?:#\d*)?$/);
+    if (x && (m = x[0].match(/.*?(?:\A|\s)#?([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)/);
-        return alltags.then(taghelp_completer("", (m && m[1] + n[1]) || "", displayed));
+        return alltags.then(taghelp_completer("", m[1] + n[1], displayed));
     } else
         return new Promise(null);
 }
