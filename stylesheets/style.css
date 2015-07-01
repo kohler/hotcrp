@@ -2555,6 +2555,9 @@ div.cmthint {
 	display: inline-block;
 	padding: 1px 0 2px;
 }
+.cmtlink.cmtlinkcolor {
+	padding: 1px 2px 2px;
+}
 
 .words {
 	color: #555555;
