@@ -1168,7 +1168,8 @@ span.asspref-1 {
 }
 
 /* review type/assignment blocks */
-.rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n, .rt1, .rt1n, .rt0, .rt-1, .rt-2, .rt-3 {
+.rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n, .rt1, .rt1n, .rt0, .rt-1, .rt-2, .rt-3,
+.rtlead, .rtshep {
 	display: inline-block;
 	width: 0.95em;
 	height: 0.95em;
@@ -1179,11 +1180,14 @@ span.asspref-1 {
 .rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n {
 	background-color: #ffffbb;
 }
+.rtlead, .rtshep {
+	background-color: #e2e2ff;
+}
 .rt4n, .rt3n, .rt2n, .rt1n {
 	color: red;
 	border: 1px solid red;
 }
-.rt4, .rt3, .rt2, .rt1 {
+.rt4, .rt3, .rt2, .rt1, .rtlead, .rtshep {
 	color: black;
 	border: 1px solid black;
 }
