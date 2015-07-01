@@ -247,8 +247,6 @@ function searchQuickref() {
     _searchQuickrefRow("", "very NOT new", "the same");
     _searchQuickrefRow("", "ve*", "words that <em>start with</em> “ve” in title, abstract, authors");
     _searchQuickrefRow("", "*me*", "words that <em>contain</em> “me” in title, abstract, authors");
-    _searchQuickrefRow("", "very THEN new", "like “very OR new”, but papers matching “very” appear earlier in the sorting order");
-    _searchQuickrefRow("", "new HIGHLIGHT good", "search for “new”, but <span class=\"taghl highlighttag\">highlight</span> papers in that list that match “good” (or try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
     _searchQuickrefRow("Title", "ti:flexible", "title contains “flexible”");
     _searchQuickrefRow("Abstract", "ab:\"very novel\"", "abstract contains “very novel”");
     _searchQuickrefRow("Authors", "au:poletto", "author list contains “poletto”");
@@ -410,7 +408,9 @@ function searchQuickref() {
     }
     _searchQuickrefRow("", "sort:-status", "sort by reverse status");
     _searchQuickrefRow("", "edit:#discuss", "edit the values for tag “#discuss”");
-    _searchQuickrefRow("", "1-5 THEN 6-10 show:cc", "columnar display");
+    _searchQuickrefRow("", "search1 THEN search2", "like “search1 OR search2”, but papers matching “search1” are grouped together and appear earlier in the sorting order");
+    _searchQuickrefRow("", "1-5 THEN 6-10 show:cc", "display searches in <u>c</u>ompact <u>c</u>olumns");
+    _searchQuickrefRow("", "search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlighttag\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
 
     echo "</table>\n";
 }
