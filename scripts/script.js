@@ -2310,7 +2310,10 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
             if (str.length && t.substring(0, str.length).toLowerCase() !== lstr)
                 continue;
             else if (str.length)
-                t = "<b>" + t.substring(0, str.length) + "</b>" + t.substring(str.length);
+                t = "<b>" + t.substring(0, str.length) + "</b>" +
+                    escape_entities(t.substring(str.length));
+            else
+                t = escape_entities(t);
             res.push('<div class="autocomplete" autocomplete="' +
                      tt.substring(str.length).replace(/\"/g, "&quot;") + '">' + pfx + t + '</div>');
             interesting = interesting || str !== tt;
@@ -2341,10 +2344,10 @@ function taghelp_tset(elt, displayed) {
 
 function taghelp_q(elt, displayed) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(\btag:\s*|\br?order:\s*|#)([^#\s()]*)$/))) {
+    if (x && (m = x[0].match(/.*?(?:^|[^\w:])(tag:\s*|r?order:\s*|#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
-    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color):\s*)([^"\s()]*|"[^"]*)$/))) {
+    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
         return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
     } else

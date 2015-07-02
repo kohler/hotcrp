@@ -42,6 +42,7 @@ class PaperList extends BaseList {
     function __construct($search, $args = array()) {
         global $Conf;
         $this->search = $search;
+        $this->contact = $this->search->contact;
 
         $this->sortable = !!@$args["sort"];
         if ($this->sortable && is_string($args["sort"]))
@@ -75,6 +76,23 @@ class PaperList extends BaseList {
         $this->atab = defval($_REQUEST, "atab", "");
         $this->_row_id_pattern = defval($args, "row_id_pattern", null);
         unset($_REQUEST["atab"]);
+
+        $this->tagger = new Tagger($this->contact);
+        $this->scoresOk = $this->contact->privChair
+            || $this->contact->is_reviewer()
+            || $Conf->timeAuthorViewReviews();
+
+        $this->qopts = array("scores" => array());
+        if ($this->search->complexSearch($this->qopts))
+            $this->qopts["paperId"] = $this->search->paperList();
+        // NB that actually processed the search, setting PaperSearch::viewmap
+
+        $this->viewmap = new Qobject($this->search->viewmap);
+        if ($this->viewmap->cc || $this->viewmap->compactcolumn
+            || $this->viewmap->ccol || $this->viewmap->compactcolumns)
+            $this->viewmap->compactcolumns = $this->viewmap->columns = true;
+        if ($this->viewmap->column || $this->viewmap->col)
+            $this->viewmap->columns = true;
     }
 
     function _sort($rows) {
@@ -908,28 +926,9 @@ class PaperList extends BaseList {
     }
 
     private function _prepare() {
-        global $Conf;
-        $this->contact = $this->search->contact;
-        $this->count = 0;
         $this->any = new Qobject;
-        $this->tagger = new Tagger($this->contact);
-        $this->scoresOk = $this->contact->privChair
-            || $this->contact->is_reviewer()
-            || $Conf->timeAuthorViewReviews();
+        $this->count = 0;
         $this->live_table = false;
-
-        $this->qopts = array("scores" => array());
-        if ($this->search->complexSearch($this->qopts))
-            $this->qopts["paperId"] = $this->search->paperList();
-        // NB that actually processed the search, setting PaperSearch::viewmap
-
-        $this->viewmap = new Qobject($this->search->viewmap);
-        if ($this->viewmap->cc || $this->viewmap->compactcolumn
-            || $this->viewmap->ccol || $this->viewmap->compactcolumns)
-            $this->viewmap->compactcolumns = $this->viewmap->columns = true;
-        if ($this->viewmap->column || $this->viewmap->col)
-            $this->viewmap->columns = true;
-
         return true;
     }
 

@@ -3380,7 +3380,7 @@ class PaperSearch {
     }
 
     function search_completion($category = "") {
-        global $Conf;
+        global $Conf, $Me;
         $x = array();
 
         if ($this->amPC && (!$category || $category === "ss")) {
@@ -3441,6 +3441,20 @@ class PaperSearch {
             foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
                 if (TagInfo::canonical_color($t) === $t)
                     array_push($x, "style:$t", "color:$t");
+        }
+        if (!$category || $category === "show" || $category === "hide") {
+            $cats = array();
+            $pl = new PaperList(new PaperSearch($Me, ""));
+            foreach (PaperColumn::$by_name as $c)
+                if (($cat = $c->completion_name()) && $c->prepare($pl, 1))
+                    $cats[$cat] = true;
+            foreach (PaperColumn::$factories as $f) {
+                foreach ($f[1]->completion_instances() as $c)
+                    if (($cat = $c->completion_name()) && $c->prepare($pl, 1))
+                        $cats[$cat] = true;
+            }
+            foreach (array_keys($cats) as $cat)
+                array_push($x, "show:$cat", "hide:$cat");
         }
 
         return $x;

@@ -10,20 +10,23 @@ class Column {
     const VIEWMASK = 3;
 
     const FOLDABLE = 16;
+    const COMPLETABLE = 32;
 
     public $name;
     public $cssname;
     public $foldable;
+    public $completable;
     public $view;
     public $sorter;
     public $minimal;
 
     public function __construct($name, $flags, $extra) {
         $this->name = $name;
-	$this->cssname = defval($extra, "cssname", $name);
+        $this->cssname = defval($extra, "cssname", $name);
         $this->foldable = ($flags & self::FOLDABLE) != 0;
-	$this->view = $flags & self::VIEWMASK;
+        $this->completable = ($flags & self::COMPLETABLE) != 0;
+        $this->view = $flags & self::VIEWMASK;
         $this->sorter = defval($extra, "sorter", false);
-	$this->minimal = defval($extra, "minimal", false);
+        $this->minimal = defval($extra, "minimal", false);
     }
 }

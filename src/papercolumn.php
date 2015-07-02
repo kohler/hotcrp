@@ -17,8 +17,8 @@ class PaperColumnErrors {
 }
 
 class PaperColumn extends Column {
-    static private $by_name = array();
-    static private $factories = array();
+    static public $by_name = array();
+    static public $factories = array();
 
     public function __construct($name, $flags, $extra = array()) {
         parent::__construct($name, $flags, $extra);
@@ -71,6 +71,15 @@ class PaperColumn extends Column {
     public function header($pl, $row, $ordinal) {
         return "&lt;" . htmlspecialchars($this->name) . "&gt;";
     }
+    public function completion_name() {
+        if ($this->completable)
+            return $this->name;
+        else
+            return false;
+    }
+    public function completion_instances() {
+        return array($this);
+    }
 
     public function content_empty($pl, $row) {
         return false;
@@ -86,7 +95,7 @@ class PaperColumn extends Column {
 
 class IdPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("id", Column::VIEW_COLUMN,
+        parent::__construct("id", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("minimal" => true, "sorter" => "id_sorter"));
     }
     public function header($pl, $row, $ordinal) {
@@ -150,7 +159,7 @@ class SelectorPaperColumn extends PaperColumn {
 
 class TitlePaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("title", Column::VIEW_COLUMN,
+        parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("minimal" => true, "sorter" => "title_sorter"));
     }
     public function title_sorter($a, $b) {
@@ -172,7 +181,7 @@ class TitlePaperColumn extends PaperColumn {
 class StatusPaperColumn extends PaperColumn {
     private $is_long;
     public function __construct($name, $is_long, $extra = 0) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("cssname" => "status", "sorter" => "status_sorter"));
         $this->is_long = $is_long;
     }
@@ -211,7 +220,7 @@ class StatusPaperColumn extends PaperColumn {
 
 class ReviewStatusPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("revstat", Column::VIEW_COLUMN,
+        parent::__construct("revstat", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("sorter" => "review_status_sorter"));
     }
     public function prepare(PaperList $pl, $visible) {
@@ -259,7 +268,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
 class AuthorsPaperColumn extends PaperColumn {
     private $aufull;
     public function __construct() {
-        parent::__construct("authors", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("authors", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function header($pl, $row, $ordinal) {
         return "Authors";
@@ -341,7 +350,7 @@ class AuthorsPaperColumn extends PaperColumn {
 
 class CollabPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("collab", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("collab", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -371,7 +380,7 @@ class CollabPaperColumn extends PaperColumn {
 
 class AbstractPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function header($pl, $row, $ordinal) {
         return "Abstract";
@@ -389,7 +398,7 @@ class AbstractPaperColumn extends PaperColumn {
 
 class TopicListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -413,7 +422,7 @@ class TopicListPaperColumn extends PaperColumn {
 class ReviewerTypePaperColumn extends PaperColumn {
     protected $xreviewer;
     public function __construct($name) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("sorter" => "reviewer_type_sorter"));
     }
     public function analyze($pl, &$rows) {
@@ -501,7 +510,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
 
 class ReviewSubmittedPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("revsubmitted", Column::VIEW_COLUMN, array("cssname" => "text"));
+        parent::__construct("revsubmitted", Column::VIEW_COLUMN | Column::COMPLETABLE, array("cssname" => "text"));
     }
     public function prepare(PaperList $pl, $visible) {
         return !!$pl->contact->isPC;
@@ -599,7 +608,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
 
 class DesirabilityPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("desirability", Column::VIEW_COLUMN,
+        parent::__construct("desirability", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("sorter" => "desirability_sorter"));
     }
     public function prepare(PaperList $pl, $visible) {
@@ -625,7 +634,7 @@ class DesirabilityPaperColumn extends PaperColumn {
 
 class TopicScorePaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("topicscore", Column::VIEW_COLUMN,
+        parent::__construct("topicscore", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("sorter" => "topic_score_sorter"));
     }
     public function prepare(PaperList $pl, $visible) {
@@ -655,7 +664,7 @@ class TopicScorePaperColumn extends PaperColumn {
 class PreferencePaperColumn extends PaperColumn {
     private $editable;
     public function __construct($name, $editable) {
-        parent::__construct($name, Column::VIEW_COLUMN,
+        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("sorter" => "preference_sorter"));
         $this->editable = $editable;
     }
@@ -704,7 +713,7 @@ class PreferenceListPaperColumn extends PaperColumn {
     private $topics;
     public function __construct($name, $topics) {
         $this->topics = $topics;
-        parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -744,7 +753,7 @@ class PreferenceListPaperColumn extends PaperColumn {
 class ReviewerListPaperColumn extends PaperColumn {
     private $topics;
     public function __construct() {
-        parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -793,7 +802,7 @@ class ReviewerListPaperColumn extends PaperColumn {
 
 class PCConflictListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("pcconf", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("pcconf", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
@@ -853,7 +862,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
 
 class TagListPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
@@ -886,7 +895,7 @@ class TagPaperColumn extends PaperColumn {
     protected $editable = false;
     static private $sortf_ctr = 0;
     public function __construct($name, $tag, $is_value) {
-        parent::__construct($name, Column::VIEW_COLUMN, array("sorter" => "tag_sorter"));
+        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE, array("sorter" => "tag_sorter"));
         $this->dtag = $tag;
         $this->is_value = $is_value;
         $this->cssname = ($this->is_value ? "tagval" : "tag");
@@ -905,6 +914,9 @@ class TagPaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["tags"] = 1;
         return true;
+    }
+    public function completion_name() {
+        return $this->dtag ? "#$this->dtag" : "#<tag>";
     }
     protected function _tag_value($row) {
         if (($p = strpos($row->paperTags, $this->ctag)) === false)
@@ -1005,26 +1017,31 @@ class ScorePaperColumn extends PaperColumn {
     private $form_field;
     private static $registered = array();
     public function __construct($score) {
-        parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE,
+        parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("sorter" => "score_sorter"));
         $this->minimal = true;
         $this->cssname = "score";
         $this->score = $score;
     }
     public static function lookup_all() {
-        return self::$registered;
+        $reg = array();
+        foreach (ReviewForm::all_fields() as $f)
+            if (($s = self::_make_field($f->id)))
+                $reg[$f->display_order] = $s;
+        ksort($reg);
+        return $reg;
     }
-    public static function register_score($fdef, $order) {
-        PaperColumn::register($fdef);
-        if ($order !== false) {
-            self::$registered[$order] = $fdef;
-            ksort(self::$registered);
-        }
+    private static function _make_field($name) {
+        if (($f = ReviewForm::field_search($name))
+            && $f->has_options && $f->display_order !== false) {
+            $s = parent::lookup_local($f->id);
+            $s = $s ? : PaperColumn::register(new ScorePaperColumn($f->id));
+            return $s;
+        } else
+            return null;
     }
     public function make_field($name, $errors) {
-        if (($f = ReviewForm::field_search($name)) && $f->has_options)
-            return parent::lookup_local($f->id);
-        return null;
+        return self::_make_field($name);
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk)
@@ -1070,6 +1087,15 @@ class ScorePaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return $this->form_field->web_abbreviation();
     }
+    public function completion_name() {
+        if ($this->score && ($ff = ReviewForm::field($this->score)))
+            return $ff->abbreviation;
+        else
+            return null;
+    }
+    public function completion_instances() {
+        return self::lookup_all();
+    }
     public function content_empty($pl, $row) {
         // Do not use viewable_scores to determine content emptiness, since
         // that would load the scores from the DB -- even for folded score
@@ -1096,8 +1122,9 @@ class ScorePaperColumn extends PaperColumn {
 class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
     public static $list = array();
+    public $formula;
     public function __construct($name, $formula) {
-        parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE,
+        parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "sorter" => "formula_sorter"));
         $this->cssname = "formula";
         $this->formula = $formula;
@@ -1126,6 +1153,9 @@ class FormulaPaperColumn extends PaperColumn {
         $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1), $formula);
         self::register($fdef);
         return $fdef;
+    }
+    public function completion_name() {
+        return $this->formula && $this->formula->name ? $this->formula->name : "(<formula>)";
     }
     public function prepare(PaperList $pl, $visible) {
         global $ConfSitePATH;
@@ -1216,7 +1246,7 @@ class TagReportPaperColumn extends PaperColumn {
 
 class TimestampPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("timestamp", Column::VIEW_COLUMN,
+        parent::__construct("timestamp", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("sorter" => "update_time_sorter"));
     }
     public function update_time_sorter($a, $b) {
@@ -1302,7 +1332,7 @@ class TagOrderSortPaperColumn extends PaperColumn {
 
 class LeadPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         return $pl->contact->can_view_lead(null, true);
@@ -1322,7 +1352,7 @@ class LeadPaperColumn extends PaperColumn {
 
 class ShepherdPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("shepherd", Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct("shepherd", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -1402,14 +1432,11 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
 
-    $score = null;
     foreach (ReviewForm::all_fields() as $f)
         if ($f->has_options) {
-            $score = new ScorePaperColumn($f->id);
-            ScorePaperColumn::register_score($score, $f->display_order);
+            PaperColumn::register_factory("", new ScorePaperColumn(null));
+            break;
         }
-    if ($score)
-        PaperColumn::register_factory("", $score);
 
     $formula = null;
     if ($Conf && $Conf->setting("formulas")) {
