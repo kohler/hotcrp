@@ -112,7 +112,7 @@ class SearchTerm {
             $float && $qe->set("float", $float);
             return $qe;
         } else if ($float)
-            return SearchTerm::make_float($flot);
+            return SearchTerm::make_float($float);
         else
             return null;
     }
