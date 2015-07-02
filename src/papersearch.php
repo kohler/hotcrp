@@ -51,10 +51,10 @@ class SearchTerm {
     }
     static function combine($combiner, $terms) {
         if (!is_array($terms) && $terms)
-            $terms = array($terms);
+            $terms = $terms ? array($terms) : array();
         $op = $combiner instanceof SearchOperator ? $combiner->op : $combiner;
         if (count($terms) == 0)
-            $x = null;
+            $x = new SearchTerm("f");
         else if ($combiner === "not") {
             assert(count($terms) == 1);
             $x = self::negate($terms[0]);
@@ -105,14 +105,16 @@ class SearchTerm {
             return $qe;
     }
     static function combine_float($float, $combiner, $terms) {
-        $qe = self::combine($combiner, $terms);
-        if ($float && !$qe)
-            return SearchTerm::make_float($float);
-        else {
-            if ($float)
-                $qe->set("float", $float);
+        if (!is_array($terms))
+            $terms = $terms ? array($terms) : array();
+        if (count($terms)) {
+            $qe = self::combine($combiner, $terms);
+            $float && $qe->set("float", $float);
             return $qe;
-        }
+        } else if ($float)
+            return SearchTerm::make_float($flot);
+        else
+            return null;
     }
     function isfalse() {
         return $this->type === "f";
@@ -537,6 +539,7 @@ class PaperSearch {
         "anycmt" => "anycmt", "anycomment" => "anycmt",
         "tag" => "tag",
         "notag" => "notag",
+        "color" => "color", "style" => "color",
         "ord" => "order", "order" => "order",
         "rord" => "rorder", "rorder" => "rorder",
         "revord" => "rorder", "revorder" => "rorder",
@@ -1219,6 +1222,30 @@ class PaperSearch {
         $qt[] = $term;
     }
 
+    private function _search_color($word, &$qt) {
+        global $Conf;
+        if (!$this->amPC)
+            return;
+        $word = strtolower($word);
+        if (!preg_match(',\A(any|none|' . TagInfo::BASIC_COLORS . ')\z,', $word))
+            return new SearchTerm("f");
+        $any = $word === "any" || $word === "none";
+        $qx = array();
+        foreach (TagInfo::color_tags($any ? null : $word) as $tag) {
+            array_push($qx, sqlq($tag), sqlq("{$this->cid}~$tag"));
+            if ($this->privChair)
+                $qx[] = sqlq("~~$tag");
+        }
+        if (count($qx))
+            $qe = new SearchTerm("tag", self::F_XVIEW,
+                                 array("\3 in ('" . join("','", $qx) . "')"));
+        else
+            $qe = new SearchTerm("f");
+        if ($word === "none")
+            $qe = SearchTerm::negate($qe);
+        $qt[] = $qe;
+    }
+
     static public function analyze_option_search($word) {
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
@@ -1591,6 +1618,8 @@ class PaperSearch {
         if (($keyword ? $keyword === "tag" : isset($this->fields["tag"]))
             || $keyword === "order" || $keyword === "rorder")
             $this->_search_tags($word, $keyword, $qt);
+        if ($keyword === "color")
+            $this->_search_color($word, $qt);
         if ($keyword === "topic") {
             $type = "topic";
             $value = null;
@@ -1706,10 +1735,6 @@ class PaperSearch {
                      && $report_error)
                 $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
         }
-
-        // Must always return something
-        if (count($qt) == 0)
-            $qt[] = new SearchTerm("f");
 
         $qe = SearchTerm::combine("or", $qt);
         return $negated ? SearchTerm::negate($qe) : $qe;
@@ -3411,6 +3436,12 @@ class PaperSearch {
         }
         if ($Conf->has_topics() && (!$category || $category === "topic"))
             $x = array_merge($x, self::simple_search_completion("topic:", $Conf->topic_map()));
+        if (!$category || $category === "style") {
+            array_push($x, "style:none", "style:any");
+            foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
+                if (TagInfo::canonical_color($t) === $t)
+                    $x[] = "style:$t";
+        }
 
         return $x;
     }

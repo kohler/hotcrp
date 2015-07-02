@@ -291,6 +291,19 @@ function searchQuickref() {
     _searchQuickrefRow("", "order:discuss", "tagged “discuss”, sort by tag order (“rorder:” for reverse order)");
     _searchQuickrefRow("", "#disc*", "matches any tag that <em>starts with</em> “disc”");
 
+    $cx = null;
+    $cm = array();
+    foreach (TagInfo::defined_tags() as $t)
+        foreach ($t->colors ? : array() as $c) {
+            $cx = $cx ? : $c;
+            if ($cx === $c)
+                $cm[] = "“{$t->tag}”";
+        }
+    if (count($cm)) {
+        array_unshift($cm, "“{$cx}”");
+        _searchQuickrefRow("", "style:$cx", "tagged to appear $cx (tagged " . commajoin($cm, "or") . ")");
+    }
+
     _searchQuickrefRow("Reviews", "re:me", "you are a reviewer");
     _searchQuickrefRow("", "re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag)

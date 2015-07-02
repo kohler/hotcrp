@@ -7,6 +7,18 @@
 // no "'&<>.  If you add PHP-protected characters, such as $, make sure you
 // check for uses of eval().
 
+class TagMapItem {
+    public $tag;
+    public $chair = false;
+    public $vote = false;
+    public $approval = false;
+    public $rank = false;
+    public $colors = null;
+    public function __construct($tag) {
+        $this->tag = $tag;
+    }
+}
+
 class TagMap implements ArrayAccess, IteratorAggregate {
     public $nchair = 0;
     public $nvote = 0;
@@ -20,7 +32,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     public function offsetGet($offset) {
         $loffset = strtolower($offset);
         if (!isset($this->storage[$loffset])) {
-            $n = (object) array("tag" => $offset, "chair" => false, "vote" => false, "approval" => false, "rank" => false, "colors" => null);
+            $n = new TagMapItem($offset);
             if (!TagInfo::basic_check($loffset))
                 return $n;
             $this->storage[$loffset] = $n;
@@ -54,12 +66,13 @@ class TagMap implements ArrayAccess, IteratorAggregate {
 }
 
 class TagInfo {
-
     const ALLOWRESERVED = 1;
     const NOPRIVATE = 2;
     const NOVALUE = 4;
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
+
+    const BASIC_COLORS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|underline|strikethrough|big|small";
 
     private static $tagmap = null;
     private static $colorre = null;
@@ -241,9 +254,29 @@ class TagInfo {
             return $tag;
     }
 
+    public static function color_tags($color = null) {
+        $a = array();
+        if ($color) {
+            $canonical = self::canonical_color($color);
+            $a[] = $canonical;
+            if ($color !== $canonical)
+                $a[] = $color;
+            foreach (self::defined_tags() as $v)
+                foreach ($v->colors ? : array() as $c)
+                    if ($c === $canonical)
+                        $a[] = $v->tag;
+        } else {
+            $a = explode("|", self::BASIC_COLORS);
+            foreach (self::defined_tags() as $v)
+                if ($v->colors)
+                    $a[] = $v->tag;
+        }
+        return $a;
+    }
+
     public static function color_regex() {
         if (!self::$colorre) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|underline|strikethrough|big|small";
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . self::BASIC_COLORS;
             foreach (self::defined_tags() as $v)
                 if ($v->colors)
                     $re .= "|" . $v->tag;
