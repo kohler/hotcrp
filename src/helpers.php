@@ -706,7 +706,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(User)"));
     else
-        $x .= Ht::entry("p", "(All)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(All)"));
+        $x .= Ht::entry("p", "(All)", array("id" => "quicksearchq", "size" => 10, "hottemptext" => "(All)", "class" => "hotcrp_searchbox"));
     foreach ($args as $what => $val)
         $x .= Ht::hidden($what, $val);
     $x .= "&nbsp; " . Ht::submit("Search") . "</div></form>";

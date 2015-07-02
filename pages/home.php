@@ -258,12 +258,10 @@ if ($homelist) {
     $tOpt = PaperSearch::search_types($Me);
     $q = defval($_REQUEST, "q", "(All)");
     echo "  <td>", Ht::form_div(hoturl("search"), array("method" => "get")),
-        "<input id='homeq' class='",
-        ($q == "(All)" ? "temptext" : "temptextoff"),
-        "' type='text' size='32' name='q' value=\"",
-        htmlspecialchars($q),
-        "\" title='Enter paper numbers or search terms' />
-    &nbsp;in&nbsp; ",
+        Ht::entry("q", $q,
+                  array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
+                        "class" => "hotcrp_searchbox", "hottemptext" => "(All)")),
+        " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),
         "    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>·</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
@@ -271,9 +269,6 @@ if ($homelist) {
   </td></tr></table>
 </div>
 <hr class='home' />\n";
-    $Conf->footerScript("mktemptext('homeq','(All)')");
-    if (!defval($Opt, "noSearchAutocomplete"))
-        $Conf->footerScript("taghelp(\"homeq\",\"taghelp_s\",taghelp_q)");
 }
 
 

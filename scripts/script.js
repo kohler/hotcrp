@@ -2376,7 +2376,7 @@ function taghelp(elt, klass, cleanf) {
         t += "</tr></tbody></table>";
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt);
-        shadow.text(elt.value.substr(0, elt.selectionStart)).append("<span></span>");
+        shadow.text(elt.value.substr(0, elt.selectionStart)).append("<span>.</span>");
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left + 4, -soff.top + 4);
         tagdiv.html(t).near($pos, elt);
@@ -2420,6 +2420,12 @@ function taghelp(elt, klass, cleanf) {
         elt.autocomplete = "off";
     }
 }
+
+$(function () {
+    $(".hotcrp_searchbox").each(function () {
+        taghelp(this, "taghelp_q", taghelp_q);
+    });
+});
 
 
 // review preferences

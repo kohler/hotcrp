@@ -198,8 +198,6 @@ $Opt["disablePS"] = true;
 //                   for scores better than B (i.e., A), rather than scores
 //                   alphabetically after B (i.e., C or D).
 //   noFooterVersion Set to true to avoid a version comment in footer HTML.
-//   noSearchAutocomplete  If set, do not implement Javascript autocompletion
-//                   on searchboxes.
 //   strictJavascript  If true, send Javascript with "use strict".
 //   disableCsv      Set to true if downloaded information files should be
 //                   tab-separated rather than CSV.
