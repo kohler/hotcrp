@@ -3437,10 +3437,10 @@ class PaperSearch {
         if ($Conf->has_topics() && (!$category || $category === "topic"))
             $x = array_merge($x, self::simple_search_completion("topic:", $Conf->topic_map()));
         if (!$category || $category === "style") {
-            array_push($x, "style:none", "style:any");
+            array_push($x, "style:none", "style:any", "color:none", "color:any");
             foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
                 if (TagInfo::canonical_color($t) === $t)
-                    $x[] = "style:$t";
+                    array_push($x, "style:$t", "color:$t");
         }
 
         return $x;

@@ -2344,7 +2344,7 @@ function taghelp_q(elt, displayed) {
     if (x && (m = x[0].match(/.*?(\btag:\s*|\br?order:\s*|#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
-    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style):\s*)([^"\s()]*|"[^"]*)$/))) {
+    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color):\s*)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
         return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
     } else
