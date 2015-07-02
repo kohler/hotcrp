@@ -55,7 +55,7 @@ class PaperColumn extends Column {
         self::$by_name[$new_name] = $fdef;
     }
 
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         return true;
     }
 
@@ -106,12 +106,12 @@ class SelectorPaperColumn extends PaperColumn {
     public function __construct($name, $extra) {
         parent::__construct($name, Column::VIEW_COLUMN, $extra);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
         if ($this->name == "selconf" || $this->name == "selunlessconf")
-            $queryOptions["reviewer"] = $pl->reviewer_cid();
+            $pl->qopts["reviewer"] = $pl->reviewer_cid();
         if ($this->name == "selconf")
             $Conf->footerScript("add_conflict_ajax()");
         return true;
@@ -214,12 +214,12 @@ class ReviewStatusPaperColumn extends PaperColumn {
         parent::__construct("revstat", Column::VIEW_COLUMN,
                             array("sorter" => "review_status_sorter"));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if ($pl->contact->is_reviewer()
             || $Conf->timeAuthorViewReviews()
             || $pl->contact->privChair) {
-            $queryOptions["startedReviewCount"] = true;
+            $pl->qopts["startedReviewCount"] = true;
             return true;
         } else
             return false;
@@ -264,7 +264,7 @@ class AuthorsPaperColumn extends PaperColumn {
     public function header($pl, $row, $ordinal) {
         return "Authors";
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         $this->aufull = !$pl->is_folded("aufull");
         return true;
     }
@@ -343,7 +343,7 @@ class CollabPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("collab", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         return !!$Conf->setting("sub_collab");
     }
@@ -391,12 +391,12 @@ class TopicListPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if (!$Conf->has_topics())
             return false;
         if ($visible)
-            $queryOptions["topics"] = 1;
+            $pl->qopts["topics"] = 1;
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -503,7 +503,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("revsubmitted", Column::VIEW_COLUMN, array("cssname" => "text"));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         return !!$pl->contact->isPC;
     }
     public function header($pl, $row, $ordinal) {
@@ -533,12 +533,12 @@ class ReviewDelegationPaperColumn extends PaperColumn {
                             array("cssname" => "text",
                                   "sorter" => "review_delegation_sorter"));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
             return false;
-        $queryOptions["reviewerName"] = true;
-        $queryOptions["allReviewScores"] = true;
-        $queryOptions["reviewLimitSql"] = "PaperReview.requestedBy=" . $pl->reviewer_cid();
+        $pl->qopts["reviewerName"] = true;
+        $pl->qopts["allReviewScores"] = true;
+        $pl->qopts["reviewLimitSql"] = "PaperReview.requestedBy=" . $pl->reviewer_cid();
         return true;
     }
     public function review_delegation_sorter($a, $b) {
@@ -560,13 +560,13 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     public function __construct() {
         parent::__construct("assrev");
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0)
             $Conf->footerScript("add_assrev_ajax()");
-        $queryOptions["reviewer"] = $pl->reviewer_cid();
+        $pl->qopts["reviewer"] = $pl->reviewer_cid();
         return true;
     }
     public function analyze($pl, &$rows) {
@@ -602,11 +602,11 @@ class DesirabilityPaperColumn extends PaperColumn {
         parent::__construct("desirability", Column::VIEW_COLUMN,
                             array("sorter" => "desirability_sorter"));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
             return false;
         if ($visible)
-            $queryOptions["desirability"] = 1;
+            $pl->qopts["desirability"] = 1;
         return true;
     }
     public function desirability_sorter($a, $b) {
@@ -628,13 +628,13 @@ class TopicScorePaperColumn extends PaperColumn {
         parent::__construct("topicscore", Column::VIEW_COLUMN,
                             array("sorter" => "topic_score_sorter"));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if (!$Conf->has_topics() || !$pl->contact->isPC)
             return false;
         if ($visible) {
-            $queryOptions["reviewer"] = $pl->reviewer_cid();
-            $queryOptions["topicInterestScore"] = 1;
+            $pl->qopts["reviewer"] = $pl->reviewer_cid();
+            $pl->qopts["topicInterestScore"] = 1;
         }
         return true;
     }
@@ -659,13 +659,13 @@ class PreferencePaperColumn extends PaperColumn {
                             array("sorter" => "preference_sorter"));
         $this->editable = $editable;
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if (!$pl->contact->isPC)
             return false;
         if ($visible) {
-            $queryOptions["reviewerPreference"] = $queryOptions["topicInterestScore"] = 1;
-            $queryOptions["reviewer"] = $pl->reviewer_cid();
+            $pl->qopts["reviewerPreference"] = $pl->qopts["topicInterestScore"] = 1;
+            $pl->qopts["reviewer"] = $pl->reviewer_cid();
         }
         if ($this->editable && $visible > 0) {
             $arg = "ajax=1&amp;setrevpref=1";
@@ -706,16 +706,16 @@ class PreferenceListPaperColumn extends PaperColumn {
         $this->topics = $topics;
         parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$qopts, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if ($this->topics && !$Conf->has_topics())
             $this->topics = false;
         if (!$pl->contact->privChair)
             return false;
         if ($visible) {
-            $qopts["allReviewerPreference"] = $qopts["allConflictType"] = 1;
+            $pl->qopts["allReviewerPreference"] = $pl->qopts["allConflictType"] = 1;
             if ($this->topics)
-                $queryOptions["topics"] = 1;
+                $pl->qopts["topics"] = 1;
         }
         return true;
     }
@@ -746,15 +746,15 @@ class ReviewerListPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         $this->topics = $Conf->has_topics();
         if (!$pl->contact->can_view_some_review_identity(null))
             return false;
         if ($visible) {
-            $queryOptions["reviewList"] = 1;
+            $pl->qopts["reviewList"] = 1;
             if ($pl->contact->privChair)
-                $queryOptions["allReviewerPreference"] = $queryOptions["topics"] = 1;
+                $pl->qopts["allReviewerPreference"] = $pl->qopts["topics"] = 1;
         }
         return true;
     }
@@ -795,11 +795,11 @@ class PCConflictListPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("pcconf", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
             return false;
         if ($visible)
-            $queryOptions["allConflictType"] = 1;
+            $pl->qopts["allConflictType"] = 1;
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -821,7 +821,7 @@ class ConflictMatchPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_ROW);
         $this->field = $field;
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         return $pl->contact->privChair;
     }
     public function header($pl, $row, $ordinal) {
@@ -855,11 +855,11 @@ class TagListPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
             return false;
         if ($visible)
-            $queryOptions["tags"] = 1;
+            $pl->qopts["tags"] = 1;
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -895,7 +895,7 @@ class TagPaperColumn extends PaperColumn {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
             return false;
         $tagger = new Tagger($pl->contact);
@@ -903,7 +903,7 @@ class TagPaperColumn extends PaperColumn {
             return false;
         $this->ctag = strtolower(" $ctag#");
         if ($visible)
-            $queryOptions["tags"] = 1;
+            $pl->qopts["tags"] = 1;
         return true;
     }
     protected function _tag_value($row) {
@@ -966,10 +966,9 @@ class EditTagPaperColumn extends TagPaperColumn {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
-        if (($p = parent::prepare($pl, $queryOptions, $visible))
-            && $visible > 0) {
+        if (($p = parent::prepare($pl, $visible)) && $visible > 0) {
             $Conf->footerHtml(
                  Ht::form(hoturl_post("paper", "settags=1&amp;forceShow=1"),
                            array("id" => "edittagajaxform",
@@ -1027,17 +1026,15 @@ class ScorePaperColumn extends PaperColumn {
             return parent::lookup_local($f->id);
         return null;
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk)
             return false;
         $this->form_field = ReviewForm::field($this->score);
         if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
             return false;
         if ($visible) {
-            if (!isset($queryOptions["scores"]))
-                $queryOptions["scores"] = array();
-            $queryOptions["scores"][$this->score] = true;
-            $queryOptions["need_javascript"] = true;
+            $pl->qopts["scores"][$this->score] = true;
+            $pl->qopts["need_javascript"] = true;
             $this->max_score = count($this->form_field->options);
         }
         return true;
@@ -1130,7 +1127,7 @@ class FormulaPaperColumn extends PaperColumn {
         self::register($fdef);
         return $fdef;
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $ConfSitePATH;
         $view_bound = $pl->contact->permissive_view_score_bound();
         if ($pl->search->limitName == "a")
@@ -1141,7 +1138,7 @@ class FormulaPaperColumn extends PaperColumn {
             return false;
         $this->formula_function = $this->formula->compile_function($pl->contact);
         if ($visible)
-            $this->formula->add_query_options($queryOptions, $pl->contact);
+            $this->formula->add_query_options($pl->qopts, $pl->contact);
         return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
@@ -1189,11 +1186,11 @@ class TagReportPaperColumn extends PaperColumn {
         PaperColumn::register($fdef);
         self::$registered[] = $fdef;
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
             return false;
         if ($visible)
-            $queryOptions["tags"] = 1;
+            $pl->qopts["tags"] = 1;
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -1266,12 +1263,12 @@ class TagOrderSortPaperColumn extends PaperColumn {
         parent::__construct("tagordersort", Column::VIEW_NONE,
                             array("sorter" => "tag_order_sorter"));
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         if (!($pl->contact->isPC && count($pl->search->orderTags)))
             return false;
-        $queryOptions["tagIndex"] = array();
+        $pl->qopts["tagIndex"] = array();
         foreach ($pl->search->orderTags as $x)
-            $queryOptions["tagIndex"][] = $x->tag;
+            $pl->qopts["tagIndex"][] = $x->tag;
         return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
@@ -1307,7 +1304,7 @@ class LeadPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         return $pl->contact->can_view_lead(null, true);
     }
     public function header($pl, $row, $ordinal) {
@@ -1327,7 +1324,7 @@ class ShepherdPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("shepherd", Column::VIEW_ROW | Column::FOLDABLE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
+    public function prepare(PaperList $pl, $visible) {
         global $Conf;
         return $pl->contact->isPC
             || ($Conf->has_any_accepts() && $Conf->timeAuthorViewDecision());
@@ -1351,8 +1348,8 @@ class FoldAllPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("foldall", Column::VIEW_NONE);
     }
-    public function prepare($pl, &$queryOptions, $visible) {
-        $queryOptions["foldall"] = true;
+    public function prepare(PaperList $pl, $visible) {
+        $pl->qopts["foldall"] = true;
         return true;
     }
 }

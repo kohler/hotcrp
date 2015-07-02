@@ -29,7 +29,7 @@ class PaperList extends BaseList {
     private $atab;
     private $_row_id_pattern = null;
 
-    private $query_options;
+    public $qopts; // set by PaperColumn::prepare
     private $default_sort_column;
 
     // collected during render and exported to caller
@@ -599,7 +599,7 @@ class PaperList extends BaseList {
 
         // prepare review query (see also search > getaction == "reviewers")
         $this->review_list = array();
-        if (isset($this->query_options["reviewList"])) {
+        if (isset($this->qopts["reviewList"])) {
             $result = Dbl::qe_raw("select Paper.paperId, reviewId, reviewType,
                 reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
                 reviewOrdinal,
@@ -614,7 +614,7 @@ class PaperList extends BaseList {
         }
 
         // prepare PC topic interests
-        if (isset($this->query_options["allReviewerPreference"])) {
+        if (isset($this->qopts["allReviewerPreference"])) {
             $ord = 0;
             $pcm = pcMembers();
             foreach ($pcm as $pc) {
@@ -627,11 +627,12 @@ class PaperList extends BaseList {
                 $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
         }
 
-        if (isset($this->query_options["scores"]))
-            $this->query_options["scores"] = array_keys($this->query_options["scores"]);
+        $this->qopts["scores"] = array_keys($this->qopts["scores"]);
+        if (!count($this->qopts["scores"]))
+            unset($this->qopts["scores"]);
 
         // prepare query text
-        $pq = $Conf->paperQuery($this->contact, $this->query_options);
+        $pq = $Conf->paperQuery($this->contact, $this->qopts);
 
         // make query
         $result = Dbl::qe_raw($pq);
@@ -650,7 +651,7 @@ class PaperList extends BaseList {
         // sort rows
         if (count($this->sorters)) {
             $rows = $this->_sort($rows);
-            if (isset($this->query_options["allReviewScores"]))
+            if (isset($this->qopts["allReviewScores"]))
                 $this->_sortReviewOrdinal($rows);
         }
 
@@ -916,9 +917,9 @@ class PaperList extends BaseList {
             || $Conf->timeAuthorViewReviews();
         $this->live_table = false;
 
-        $this->query_options = array();
-        if ($this->search->complexSearch($this->query_options))
-            $this->query_options["paperId"] = $this->search->paperList();
+        $this->qopts = array("scores" => array());
+        if ($this->search->complexSearch($this->qopts))
+            $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
 
         $this->viewmap = new Qobject($this->search->viewmap);
@@ -975,7 +976,7 @@ class PaperList extends BaseList {
         global $Conf;
         if (count($this->search->orderTags)
             && ($s = PaperColumn::lookup("tagordersort"))
-            && $s->prepare($this, $this->query_options, -1))
+            && $s->prepare($this, -1))
             $this->default_sort_column = $s;
         else if ($this->search->numbered_papers() !== null)
             $this->default_sort_column = PaperColumn::lookup("searchsort");
@@ -989,7 +990,7 @@ class PaperList extends BaseList {
                 if (($s = BaseList::parse_sorter($sorter))) {
                     if ($s->type
                         && ($c = PaperColumn::lookup($s->type))
-                        && $c->prepare($this, $this->query_options, -1)) {
+                        && $c->prepare($this, -1)) {
                         $s->field = $c;
                         if ($last_sorter && $last_sorter->type === null)
                             PaperSearch::combine_sorters($last_sorter, $s);
@@ -1020,7 +1021,7 @@ class PaperList extends BaseList {
             /* all set */;
         else if ($this->sorters[0]->type
                  && ($c = PaperColumn::lookup($this->sorters[0]->type))
-                 && $c->prepare($this, $this->query_options, -1))
+                 && $c->prepare($this, -1))
             $this->sorters[0]->field = $c;
         else
             $this->sorters[0]->field = $this->default_sort_column;
@@ -1038,8 +1039,7 @@ class PaperList extends BaseList {
     private function _prepare_columns($field_list) {
         $field_list2 = array();
         foreach ($field_list as $fdef)
-            if ($fdef && $fdef->prepare($this, $this->query_options,
-                                        $this->is_folded($fdef) ? 0 : 1))
+            if ($fdef && $fdef->prepare($this, $this->is_folded($fdef) ? 0 : 1))
                 $field_list2[] = $fdef;
         return $field_list2;
     }
@@ -1075,7 +1075,7 @@ class PaperList extends BaseList {
                 $this->viewmap->$n = $v;
         // need tags for row coloring
         if ($this->contact->can_view_tags(null))
-            $this->query_options["tags"] = 1;
+            $this->qopts["tags"] = 1;
         $this->live_table = !@$options["no_javascript"];
 
         // get column list, check sort
@@ -1259,7 +1259,7 @@ class PaperList extends BaseList {
         }
 
         $this->ids = $rstate->ids;
-        if (@$this->query_options["need_javascript"] && $this->live_table)
+        if (@$this->qopts["need_javascript"] && $this->live_table)
             $x = $Conf->take_script() . $x;
         return $x;
     }
