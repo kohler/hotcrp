@@ -30,6 +30,7 @@ class PaperList extends BaseList {
     private $_row_id_pattern = null;
 
     public $qopts; // set by PaperColumn::prepare
+    private $footers = array();
     private $default_sort_column;
 
     // collected during render and exported to caller
@@ -1044,6 +1045,24 @@ class PaperList extends BaseList {
         return $field_list2;
     }
 
+    public function add_footer_script($script) {
+        $this->footers[] = array(true, $script);
+    }
+
+    public function add_footer_html($html, $name) {
+        $this->footers[] = array(false, $html, $name);
+    }
+
+    private function _resolve_footers() {
+        global $Conf;
+        foreach ($this->footers as $f)
+            if ($f[0])
+                $Conf->footerScript($f[1]);
+            else
+                $Conf->footerHtml($f[1], $f[2]);
+        $this->footers = array();
+    }
+
     private function _columns($field_list, $table_html) {
         $field_list = $this->_canonicalize_columns($field_list);
         if ($table_html)
@@ -1261,6 +1280,7 @@ class PaperList extends BaseList {
         $this->ids = $rstate->ids;
         if (@$this->qopts["need_javascript"] && $this->live_table)
             $x = $Conf->take_script() . $x;
+        $this->_resolve_footers();
         return $x;
     }
 

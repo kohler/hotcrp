@@ -113,7 +113,7 @@ class SelectorPaperColumn extends PaperColumn {
         if ($this->name == "selconf" || $this->name == "selunlessconf")
             $pl->qopts["reviewer"] = $pl->reviewer_cid();
         if ($this->name == "selconf")
-            $Conf->footerScript("add_conflict_ajax()");
+            $pl->add_footer_script("add_conflict_ajax()");
         return true;
     }
     public function header($pl, $row, $ordinal) {
@@ -565,7 +565,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0)
-            $Conf->footerScript("add_assrev_ajax()");
+            $pl->add_footer_script("add_assrev_ajax()");
         $pl->qopts["reviewer"] = $pl->reviewer_cid();
         return true;
     }
@@ -671,7 +671,7 @@ class PreferencePaperColumn extends PaperColumn {
             $arg = "ajax=1&amp;setrevpref=1";
             if ($pl->contact->privChair && $pl->reviewer_cid())
                 $arg .= "&amp;reviewer=" . $pl->reviewer_cid();
-            $Conf->footerScript("add_revpref_ajax('" . hoturl_post_raw("paper", $arg) . "')");
+            $pl->add_footer_script("add_revpref_ajax('" . hoturl_post_raw("paper", $arg) . "')");
         }
         return true;
     }
@@ -969,7 +969,7 @@ class EditTagPaperColumn extends TagPaperColumn {
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
         if (($p = parent::prepare($pl, $visible)) && $visible > 0) {
-            $Conf->footerHtml(
+            $pl->add_footer_html(
                  Ht::form(hoturl_post("paper", "settags=1&amp;forceShow=1"),
                            array("id" => "edittagajaxform",
                                  "style" => "display:none")) . "<div>"
@@ -982,9 +982,9 @@ class EditTagPaperColumn extends TagPaperColumn {
                 && !$sorter->reverse
                 && !$pl->search->thenmap
                 && $this->is_value)
-                $Conf->footerScript("add_edittag_ajax('$this->dtag')");
+                $pl->add_footer_script("add_edittag_ajax('$this->dtag')");
             else
-                $Conf->footerScript("add_edittag_ajax()");
+                $pl->add_footer_script("add_edittag_ajax()");
         }
         return $p;
     }
