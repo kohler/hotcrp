@@ -233,9 +233,9 @@ class TagInfo {
     }
 
     public static function canonical_color($tag) {
-        if (strcasecmp($tag, "violet") == 0)
+        if ($tag === "violet")
             return "purple";
-        else if (strcasecmp($tag, "grey") == 0)
+        else if ($tag === "grey")
             return "gray";
         else
             return $tag;
