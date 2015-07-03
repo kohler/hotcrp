@@ -2290,8 +2290,18 @@ var alltags = new Promise().onThen(function (alltags) {
 
 var search_completion = new Promise().onThen(function (search_completion) {
     Miniajax.get(hoturl("api", "fn=searchcompletion"), function (v) {
-        var sclist = (v && v.searchcompletion) || [];
-        sclist.sort(strcasecmp);
+        var sclist = ((v && v.searchcompletion) || []).map(function (x) {
+            if (typeof x === "string")
+                return {s: x, p: 0};
+            else
+                return x;
+        });
+        sclist.sort(function (a, b) {
+            if (a.p != b.p)
+                return a.p - b.p;
+            else
+                return strcasecmp(a.s, b.s);
+        });
         search_completion.fulfill(sclist);
     });
 });
@@ -2301,7 +2311,10 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
     return function (tlist) {
         var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
         for (i = 0; i < tlist.length; ++i) {
-            var t = tlist[i], tt = t;
+            var titem = tlist[i];
+            if (typeof titem === "string")
+                titem = {s: titem};
+            var t = titem.s, tt = t;
             if (include_pfx) {
                 if (t.substring(0, pfx.length).toLowerCase() !== pfx)
                     continue;

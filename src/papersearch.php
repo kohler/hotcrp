@@ -3381,66 +3381,69 @@ class PaperSearch {
 
     function search_completion($category = "") {
         global $Conf, $Me;
-        $x = array();
+        $res = array();
 
         if ($this->amPC && (!$category || $category === "ss")) {
             foreach ($Conf->settingTexts as $k => $v)
                 if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
-                    $x[] = $k;
+                    $res[] = $k;
         }
 
-        array_push($x, "has:submission", "has:abstract", "has:finalcopy");
+        array_push($res, "has:submission", "has:abstract", "has:finalcopy");
         if ($this->amPC && $Conf->has_any_manager())
-            $x[] = "has:admin";
+            $res[] = "has:admin";
         if ($this->amPC && $Conf->has_any_lead_or_shepherd())
-            $x[] = "has:lead";
+            $res[] = "has:lead";
         if ($this->contact->can_view_some_decision()) {
-            $x[] = "has:decision";
+            $res[] = "has:decision";
             if (!$category || $category === "dec") {
-                array_push($x, "dec:yes", "dec:no", "dec:any", "dec:none");
+                foreach (array("dec:any", "dec:none", "dec:yes", "dec:no") as $i => $x)
+                    $res[] = array("s" => $x, "p" => -5 + $i);
                 $dm = $Conf->decision_map();
                 unset($dm[0]);
-                $x = array_merge($x, self::simple_search_completion("dec:", $dm));
+                $res = array_merge($res, self::simple_search_completion("dec:", $dm));
             }
         }
         if ($this->amPC || $this->contact->can_view_some_decision())
-            $x[] = "has:shepherd";
+            $res[] = "has:shepherd";
         if ($this->contact->can_view_some_review())
-            array_push($x, "has:re", "has:cre", "has:ire", "has:pre", "has:comment", "has:aucomment");
+            array_push($res, "has:re", "has:cre", "has:ire", "has:pre", "has:comment", "has:aucomment");
         if ($this->contact->is_reviewer())
-            array_push($x, "has:primary", "has:secondary", "has:external");
+            array_push($res, "has:primary", "has:secondary", "has:external");
         foreach ($Conf->resp_round_list() as $i => $rname) {
-            if (!in_array("has:response", $x))
-                $x[] = "has:response";
+            if (!in_array("has:response", $res))
+                $res[] = "has:response";
             if ($i)
-                $x[] = "has:{$rname}response";
+                $res[] = "has:{$rname}response";
         }
         if ($this->contact->can_view_some_draft_response())
             foreach ($Conf->resp_round_list() as $i => $rname) {
-                if (!in_array("has:draftresponse", $x))
-                    $x[] = "has:draftresponse";
+                if (!in_array("has:draftresponse", $res))
+                    $res[] = "has:draftresponse";
                 if ($i)
-                    $x[] = "has:draft{$rname}response";
+                    $res[] = "has:draft{$rname}response";
             }
         foreach (PaperOption::option_list() as $o)
             if ($this->contact->can_view_some_paper_option($o))
-                array_push($x, "has:{$o->abbr}", "opt:{$o->abbr}");
+                array_push($res, "has:{$o->abbr}", "opt:{$o->abbr}");
         if ($this->contact->is_reviewer() && $Conf->has_rounds()
             && (!$category || $category === "round")) {
-            array_push($x, "round:none", "round:any");
+            array_push($res, array("s" => "round:any", "p" => -1),
+                       array("s" => "round:none", "p" => -1));
             $rlist = array();
             foreach ($Conf->round_list() as $rnum => $round)
                 if ($rnum && $round !== ";")
                     $rlist[$rnum] = $round;
-            $x = array_merge($x, self::simple_search_completion("round:", $rlist));
+            $res = array_merge($res, self::simple_search_completion("round:", $rlist));
         }
         if ($Conf->has_topics() && (!$category || $category === "topic"))
-            $x = array_merge($x, self::simple_search_completion("topic:", $Conf->topic_map()));
+            $res = array_merge($res, self::simple_search_completion("topic:", $Conf->topic_map()));
         if (!$category || $category === "style") {
-            array_push($x, "style:none", "style:any", "color:none", "color:any");
+            foreach (array("style:none", "style:any", "color:none", "color:any") as $x)
+                $res[] = array("s" => $x, "p" => -1);
             foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
                 if (TagInfo::canonical_color($t) === $t)
-                    array_push($x, "style:$t", "color:$t");
+                    array_push($res, "style:$t", "color:$t");
         }
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();
@@ -3454,10 +3457,10 @@ class PaperSearch {
                         $cats[$cat] = true;
             }
             foreach (array_keys($cats) as $cat)
-                array_push($x, "show:$cat", "hide:$cat");
+                array_push($res, "show:$cat", "hide:$cat");
         }
 
-        return $x;
+        return $res;
     }
 
 }
