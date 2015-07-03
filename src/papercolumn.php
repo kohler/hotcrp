@@ -20,6 +20,11 @@ class PaperColumn extends Column {
     static public $by_name = array();
     static public $factories = array();
 
+    const PREP_SORT = -1;
+    const PREP_FOLDED = 0; // value matters
+    const PREP_VISIBLE = 1; // value matters
+    const PREP_COMPLETION = 2;
+
     public function __construct($name, $flags, $extra = array()) {
         parent::__construct($name, $flags, $extra);
     }
@@ -907,6 +912,8 @@ class TagPaperColumn extends PaperColumn {
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
             return false;
+        if (!$this->dtag && $visible === PaperColumn::PREP_COMPLETION)
+            return true;
         $tagger = new Tagger($pl->contact);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE)))
             return false;
@@ -1165,6 +1172,8 @@ class FormulaPaperColumn extends PaperColumn {
     }
     public function prepare(PaperList $pl, $visible) {
         global $ConfSitePATH;
+        if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
+            return true;
         $view_bound = $pl->contact->permissive_view_score_bound();
         if ($pl->search->limitName == "a")
             $view_bound = max($view_bound, VIEWSCORE_AUTHOR - 1);
@@ -1444,18 +1453,14 @@ function initialize_paper_columns() {
             break;
         }
 
-    $formula = null;
     if ($Conf && $Conf->setting("formulas")) {
         $result = Dbl::q("select * from Formula order by lower(name)");
         while ($result && ($row = $result->fetch_object("Formula"))) {
             $fid = $row->formulaId;
-            $formula = new FormulaPaperColumn("formula$fid", $row);
-            FormulaPaperColumn::register($formula);
+            FormulaPaperColumn::register(new FormulaPaperColumn("formula$fid", $row));
         }
     }
-    if (!$formula)
-        $formula = new FormulaPaperColumn("", null);
-    PaperColumn::register_factory("", $formula);
+    PaperColumn::register_factory("", new FormulaPaperColumn("", null));
 
     $tagger = new Tagger;
     if ($Conf && (TagInfo::has_vote() || TagInfo::has_approval() || TagInfo::has_rank())) {

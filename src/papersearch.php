@@ -3449,11 +3449,13 @@ class PaperSearch {
             $cats = array();
             $pl = new PaperList(new PaperSearch($Me, ""));
             foreach (PaperColumn::$by_name as $c)
-                if (($cat = $c->completion_name()) && $c->prepare($pl, 1))
+                if (($cat = $c->completion_name())
+                    && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
                     $cats[$cat] = true;
             foreach (PaperColumn::$factories as $f) {
                 foreach ($f[1]->completion_instances() as $c)
-                    if (($cat = $c->completion_name()) && $c->prepare($pl, 1))
+                    if (($cat = $c->completion_name())
+                        && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
                         $cats[$cat] = true;
             }
             foreach (array_keys($cats) as $cat)

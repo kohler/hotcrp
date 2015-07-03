@@ -976,7 +976,7 @@ class PaperList extends BaseList {
         global $Conf;
         if (count($this->search->orderTags)
             && ($s = PaperColumn::lookup("tagordersort"))
-            && $s->prepare($this, -1))
+            && $s->prepare($this, PaperColumn::PREP_SORT))
             $this->default_sort_column = $s;
         else if ($this->search->numbered_papers() !== null)
             $this->default_sort_column = PaperColumn::lookup("searchsort");
@@ -990,7 +990,7 @@ class PaperList extends BaseList {
                 if (($s = BaseList::parse_sorter($sorter))) {
                     if ($s->type
                         && ($c = PaperColumn::lookup($s->type))
-                        && $c->prepare($this, -1)) {
+                        && $c->prepare($this, PaperColumn::PREP_SORT)) {
                         $s->field = $c;
                         if ($last_sorter && $last_sorter->type === null)
                             PaperSearch::combine_sorters($last_sorter, $s);
@@ -1021,7 +1021,7 @@ class PaperList extends BaseList {
             /* all set */;
         else if ($this->sorters[0]->type
                  && ($c = PaperColumn::lookup($this->sorters[0]->type))
-                 && $c->prepare($this, -1))
+                 && $c->prepare($this, PaperColumn::PREP_SORT))
             $this->sorters[0]->field = $c;
         else
             $this->sorters[0]->field = $this->default_sort_column;
