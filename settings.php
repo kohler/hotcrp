@@ -1564,12 +1564,19 @@ function doSubGroup() {
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
 
+    doRadio("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
+
+    echo "<hr class=\"hr\" />\n";
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
         (setting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
                "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
-    doCheckbox("sub_pcconfsel", "Collect PC conflict types (“Advisor/student,” “Recent collaborator,” etc.)");
+    $conf = array();
+    foreach (Conflict::$type_descriptions as $n => $d)
+        if ($n)
+            $conf[] = "“{$d}”";
+    doCheckbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
     echo "</td></tr>\n";
     doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
     echo "</table>\n";
@@ -1595,10 +1602,9 @@ function doSubGroup() {
     }
 
     echo "<hr class='hr' />\n";
-    doRadio("sub_freeze", array(0 => "<strong>Authors can update submissions until the deadline</strong>", 1 => array("Authors must freeze the final version of each submission", "“Authors can update submissions until the deadline” is usually the best choice.  Freezing submissions can be useful when there is no submission deadline.")));
 
     echo "<div class='g'></div><table>\n";
-    doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences <em>before</em> most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
+    doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
     echo "</table>";
 }
 
