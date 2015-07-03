@@ -1155,7 +1155,13 @@ class FormulaPaperColumn extends PaperColumn {
         return $fdef;
     }
     public function completion_name() {
-        return $this->formula && $this->formula->name ? $this->formula->name : "(<formula>)";
+        if ($this->formula && $this->formula->name) {
+            if (strpos($this->formula->name, " ") !== false)
+                return "\"{$this->formula->name}\"";
+            else
+                return $this->formula->name;
+        } else
+            return "(<formula>)";
     }
     public function prepare(PaperList $pl, $visible) {
         global $ConfSitePATH;
