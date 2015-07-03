@@ -469,18 +469,18 @@ function update_paper($pj, $opj, $action, $diffs) {
         if (@$pj->submitted)
             $notes[] = "You will receive email when reviews are available.";
         else if ($prow->size == 0 && !@$Opt["noPapers"] && !@$Opt["optionalPapers"])
-            $notes[] = "The paper has not yet been uploaded.";
+            $notes[] = "The submission has not yet been uploaded.";
         else if ($Conf->setting("sub_freeze") > 0)
-            $notes[] = "The paper has not yet been submitted.";
+            $notes[] = "The submission has not yet been completed.";
         else
-            $notes[] = "The paper is marked as not ready for review.";
+            $notes[] = "The submission is marked as not ready for review.";
         $deadline = $Conf->printableTimeSetting("sub_update", "span");
         if ($deadline != "N/A" && ($prow->timeSubmitted <= 0 || $Conf->setting("sub_freeze") <= 0))
             $notes[] = "Further updates are allowed until $deadline.";
         $deadline = $Conf->printableTimeSetting("sub_sub", "span");
         if ($deadline != "N/A" && $prow->timeSubmitted <= 0)
-            $notes[] = "<strong>If the paper "
-                . ($Conf->setting("sub_freeze") > 0 ? "has not been submitted"
+            $notes[] = "<strong>If the submission "
+                . ($Conf->setting("sub_freeze") > 0 ? "is not completed"
                    : "is not ready for review")
                 . " by $deadline, it will not be considered.</strong>";
     }
@@ -491,15 +491,15 @@ function update_paper($pj, $opj, $action, $diffs) {
         $webnotes .= " <ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>";
 
     if (!count($diffs)) {
-        $Conf->warnMsg("There were no changes to paper #$prow->paperId. " . $notes . $webnotes);
+        $Conf->warnMsg("There were no changes to submission #$prow->paperId. " . $notes . $webnotes);
         return true;
     }
 
     // HTML confirmation
     if ($prow->$submitkey > 0)
-        $Conf->confirmMsg($actiontext . " paper #$prow->paperId. " . $notes . $webnotes);
+        $Conf->confirmMsg($actiontext . " submission #$prow->paperId. " . $notes . $webnotes);
     else
-        $Conf->warnMsg($actiontext . " paper #$prow->paperId. " . $notes . $webnotes);
+        $Conf->warnMsg($actiontext . " submission #$prow->paperId. " . $notes . $webnotes);
 
     // mail confirmation to all contact authors
     if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {

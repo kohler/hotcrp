@@ -375,7 +375,29 @@ class PaperTable {
         echo join("<div class='g'></div>\n", $out);
     }
 
-    private function editable_document($opt, $storageId, $flags) {
+    private function echo_editable_complete($storageId) {
+        global $Conf, $Opt;
+        $prow = $this->prow;
+        if ($this->useRequest)
+            $checked = !!@$_REQUEST["submitpaper"];
+        else if ($Conf->setting("sub_freeze"))
+            $checked = $prow && $prow->timeSubmitted > 0;
+        else
+            $checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
+        echo "<div id='foldisready' class='",
+            (($prow && $storageId > 1) || @$Opt["noPapers"] || @$Opt["optionalPapers"] ? "foldo" : "foldc"),
+            "'><table class='fx'><tr><td class='nowrap'>",
+            Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
+        if ($Conf->setting('sub_freeze'))
+            echo "</td><td>", Ht::label("<strong>The submission is complete.</strong>"),
+                "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
+        else
+            echo Ht::label("The submission is ready for review.");
+        echo "</td></tr></table></div>\n";
+        $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
+    }
+
+    private function echo_editable_document($opt, $storageId, $flags) {
         global $Conf, $Me, $Opt;
 
         $prow = $this->prow;
@@ -383,14 +405,13 @@ class PaperTable {
         $documentType = $opt->id;
         $optionType = $opt->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
-        $noPapers = defval($Opt, "noPapers") && $main_submission;
         $banal = $Conf->setting("sub_banal")
             && ($optionType === null || $optionType === "pdf")
             && $main_submission;
 
         $filetypes = array();
         $accepts = array();
-        if ($noPapers) {
+        if ($main_submission && @$Opt["noPapers"]) {
             if ($documentType == DTYPE_SUBMISSION)
                 echo $this->editable_papt($opt->abbr, "Status");
         } else {
@@ -454,26 +475,7 @@ class PaperTable {
             $uploader = "";
         }
 
-        if ($documentType == DTYPE_SUBMISSION) {
-            if ($this->useRequest)
-                $checked = !!@$_REQUEST["submitpaper"];
-            else if ($Conf->setting('sub_freeze'))
-                $checked = $prow && $prow->timeSubmitted > 0;
-            else
-                $checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
-            $s = ($doc ? " style='margin-top: 0.5ex'" : "");
-            echo "<div id='foldisready' class='",
-                (($prow && $storageId > 1) || $noPapers ? "foldo" : "foldc"),
-                "'$s><table class='fx'><tr><td class='nowrap'>",
-                Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
-            if ($Conf->setting('sub_freeze'))
-                echo "</td><td>", Ht::label("<strong>This is the final submission.</strong>"),
-                    "</td></tr><tr><td></td><td><small>You must submit a final version before the deadline or your paper will not be reviewed.  Once you submit a final version you will not be able to make further changes.</small>";
-            else
-                echo Ht::label("The paper is ready for review.");
-            echo "</td></tr></table></div>\n";
-            $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
-        } else if ($documentType == DTYPE_FINAL)
+        if ($documentType == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);
 
         echo $uploader;
@@ -481,11 +483,11 @@ class PaperTable {
         echo "</div>\n\n";
     }
 
-    private function editable_submission($flags) {
+    private function echo_editable_submission($flags) {
         if ($this->canUploadFinal)
-            $this->editable_document(PaperOption::find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+            $this->echo_editable_document(PaperOption::find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
         else
-            $this->editable_document(PaperOption::find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+            $this->echo_editable_document(PaperOption::find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
     }
 
     private function editable_abstract() {
@@ -534,10 +536,10 @@ class PaperTable {
         cleanAuthor($this->prow);
 
         echo $this->editable_papt("authorInformation", "Authors"),
-            "<div class='paphint'>List the paper’s authors one per line, including email addresses and affiliations.";
+            "<div class='paphint'>List the authors one per line, including email addresses and affiliations.";
         if ($Conf->submission_blindness() == Conference::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
-        echo "  Any author with an account on this site can edit the paper.</div>",
+        echo " Any author with an account on this site can edit the submission.</div>",
             '<div class="papv"><table id="auedittable" class="auedittable">',
             '<thead><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th><th style="width:100%"></th></tr></thead>',
             '<tbody>';
@@ -851,7 +853,7 @@ class PaperTable {
         if (!$Me->privChair)
             return;
         echo $this->editable_papt("contactAuthor", "Contact"),
-            "<div class='paphint'>You can add more contacts after you register the paper.</div>",
+            "<div class='paphint'>You can add more contacts after you register the submission.</div>",
             "<div class='papv'>";
         $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
         $name = $name === "Name" ? "" : $name;
@@ -972,7 +974,7 @@ class PaperTable {
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
-            "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit the paper anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+            "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
             "<div class='papv'></div>\n\n";
     }
 
@@ -1134,7 +1136,7 @@ class PaperTable {
                 else if ($o->type === "text")
                     echo "<div class='papv'><textarea class='papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
             } else
-                $this->editable_document($o, $optx ? $optx->value : 0, 0);
+                $this->echo_editable_document($o, $optx ? $optx->value : 0, 0);
         }
     }
 
@@ -1595,7 +1597,7 @@ class PaperTable {
         if ($startDeadline && !$Conf->setting("sub_freeze"))
             $msg .= "You can make changes until the deadline, but thereafter ";
         else
-            $msg .= "You don’t have to upload the paper itself right away, but ";
+            $msg .= "You don’t have to upload the paper right away, but ";
         $msg .= "incomplete submissions will not be considered.$startDeadline</div>";
         if (($v = $Conf->message_html("submit")))
             $msg .= '<div class="xmsg xinfo">' . $v . '</div>';
@@ -1603,7 +1605,7 @@ class PaperTable {
     }
 
     private function editMessage() {
-        global $Conf, $Me;
+        global $Conf, $Me, $Opt;
         if (!($prow = $this->prow))
             return $this->_edit_message_new_paper();
 
@@ -1619,10 +1621,10 @@ class PaperTable {
                 $m .= '<div class="xmsg xwarning">';
                 if ($Conf->setting("sub_freeze"))
                     $m .= "A final version of this paper must be submitted before it can be reviewed.";
-                else if ($prow->paperStorageId <= 1)
-                    $m .= "The paper is not ready for review and will not be considered as is, but you can still make changes.";
+                else if ($prow->paperStorageId <= 1 && !@$Opt["noPapers"] && !@$Opt["optionalPapers"])
+                    $m .= "The submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
-                    $m .= "The paper is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
+                    $m .= "The submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
                 $m .= $this->deadlineSettingIs("sub_update") . "</div>";
             } else if ($Me->can_finalize_paper($prow))
                 $m .= '<div class="xmsg xwarning">Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
@@ -1632,7 +1634,7 @@ class PaperTable {
                 $m .= '<div class="xmsg xwarning">The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message() . '</div>';
         } else if ($has_author && $Me->can_update_paper($prow)) {
             if ($this->mode === "edit")
-                $m .= '<div class="xmsg xconfirm">This paper is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
+                $m .= '<div class="xmsg xconfirm">This submission is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update") . '</div>';
         } else if ($has_author
                    && $prow->outcome > 0
                    && $Conf->timeSubmitFinalPaper()
@@ -1906,7 +1908,7 @@ class PaperTable {
 
         $this->echoActions(true);
         $this->editable_title();
-        $this->editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
+        $this->echo_editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
         $this->editable_options(array("near_submission" => true));
 
         // Authorship
@@ -1936,6 +1938,7 @@ class PaperTable {
 
         // Submit button
         echo $spacer;
+        $this->echo_editable_complete($this->prow ? $this->prow->paperStorageId : 0);
         $this->echoActions(false);
 
         echo "</div></form>";
