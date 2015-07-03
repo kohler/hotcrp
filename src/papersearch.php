@@ -1360,7 +1360,7 @@ class PaperSearch {
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
         else if ($lword === "final" || $lword === "finalcopy")
             $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", "!=0"));
-        else if ($lword === "abstract")
+        else if ($lword === "ab")
             $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
             $this->_search_comment(">0", $lword, $qt, $quoted);
