@@ -468,7 +468,7 @@ function update_paper($pj, $opj, $action, $diffs) {
     } else {
         if (@$pj->submitted)
             $notes[] = "You will receive email when reviews are available.";
-        else if ($prow->size == 0 && !@$Opt["noPapers"] && !@$Opt["optionalPapers"])
+        else if ($prow->size == 0 && !@$Opt["noPapers"])
             $notes[] = "The submission has not yet been uploaded.";
         else if ($Conf->setting("sub_freeze") > 0)
             $notes[] = "The submission has not yet been completed.";
@@ -531,8 +531,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
     else if (@$_POST["submitpaper"]
              && (($prow && $prow->size > 0)
                  || fileUploaded($_FILES["paperUpload"])
-                 || @$Opt["noPapers"]
-                 || @$Opt["optionalPapers"]))
+                 || @$Opt["noPapers"]))
         $action = "submit";
 
     $ps = new PaperStatus;

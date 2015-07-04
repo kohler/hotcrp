@@ -385,7 +385,7 @@ class PaperTable {
         else
             $checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
         echo "<div id='foldisready' class='",
-            (($prow && $storageId > 1) || @$Opt["noPapers"] || @$Opt["optionalPapers"] ? "foldo" : "foldc"),
+            (($prow && $storageId > 1) || @$Opt["noPapers"] ? "foldo" : "foldc"),
             "'><table class='fx'><tr><td class='nowrap'>",
             Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
         if ($Conf->setting('sub_freeze'))
@@ -411,14 +411,14 @@ class PaperTable {
 
         $filetypes = array();
         $accepts = array();
-        if ($main_submission && @$Opt["noPapers"]) {
-            if ($documentType == DTYPE_SUBMISSION)
-                echo $this->editable_papt($opt->abbr, "Status");
-        } else {
-            $accepts = $docclass->mimetypes();
-            if (count($accepts))
-                echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
-        }
+        if ($main_submission
+            && (@$Opt["noPapers"] === 1 || @$Opt["noPapers"] === true)
+            && $documentType == DTYPE_SUBMISSION)
+            return;
+
+        $accepts = $docclass->mimetypes();
+        if (count($accepts))
+            echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
         if (@$opt->description)
             echo "<div class='paphint'>", $opt->description, "</div>";
         echo "<div class='papv'>";
@@ -469,18 +469,10 @@ class PaperTable {
                               . "</div></form>");
         }
 
-        if ($documentType == DTYPE_SUBMISSION
-            && (!$doc || $Conf->setting("sub_freeze"))) {
-            echo $uploader;
-            $uploader = "";
-        }
-
         if ($documentType == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);
 
-        echo $uploader;
-
-        echo "</div>\n\n";
+        echo $uploader, "</div>\n\n";
     }
 
     private function echo_editable_submission($flags) {
@@ -1621,7 +1613,7 @@ class PaperTable {
                 $m .= '<div class="xmsg xwarning">';
                 if ($Conf->setting("sub_freeze"))
                     $m .= "A final version of this paper must be submitted before it can be reviewed.";
-                else if ($prow->paperStorageId <= 1 && !@$Opt["noPapers"] && !@$Opt["optionalPapers"])
+                else if ($prow->paperStorageId <= 1 && !@$Opt["noPapers"])
                     $m .= "The submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
                     $m .= "The submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
@@ -1912,7 +1904,6 @@ class PaperTable {
         $this->editable_options(array("near_submission" => true));
 
         // Authorship
-        echo $spacer;
         $this->editable_authors();
         if (!$prow)
             $this->editable_new_contact_author();

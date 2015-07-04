@@ -1033,28 +1033,28 @@ function save_resp_rounds($set) {
 
 function doSpecial($name, $set) {
     global $Values;
-    if ($name == "tag_chair" || $name == "tag_vote" || $name == "tag_approval"
-        || $name == "tag_rank" || $name == "tag_color"
-        || $name == "tag_au_seerev")
+    if ($name === "tag_chair" || $name === "tag_vote" || $name === "tag_approval"
+        || $name === "tag_rank" || $name === "tag_color"
+        || $name === "tag_au_seerev")
         save_tags($set, $name);
-    else if ($name == "topics")
+    else if ($name === "topics")
         save_topics($set);
-    else if ($name == "options")
+    else if ($name === "options")
         save_options($set);
-    else if ($name == "decisions")
+    else if ($name === "decisions")
         save_decisions($set);
-    else if ($name == "reviewform") {
+    else if ($name === "reviewform") {
         if (!$set)
             $Values[$name] = true;
         else
             rf_update();
-    } else if ($name == "banal")
+    } else if ($name === "banal")
         save_banal($set);
-    else if ($name == "rev_roundtag")
+    else if ($name === "rev_roundtag")
         save_rounds($set);
-    else if ($name == "tracks")
+    else if ($name === "tracks")
         save_tracks($set);
-    else if ($name == "resp_rounds")
+    else if ($name === "resp_rounds")
         save_resp_rounds($set);
 }
 
@@ -1207,6 +1207,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Warning[] = "You haven’t set any review visibility tags.";
         $Highlight["tag_au_seerev"] = true;
     }
+    if (has_value("sub_nopapers"))
+        $Values["opt.noPapers"] = value("sub_nopapers") ? : null;
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
@@ -1384,14 +1386,6 @@ function doRadio($name, $varr) {
     echo "</table>\n";
 }
 
-function doSelect($name, $nametext, $varr, $tr = false) {
-    echo ($tr ? '<tr><td class="lcaption nw">' : ""),
-        setting_label($name, $nametext),
-        ($tr ? "</td><td class='lentry'>" : ": &nbsp;"),
-        Ht::select($name, $varr, setting($name), setting_js($name)),
-        ($tr ? "</td></tr>\n" : "<br />\n");
-}
-
 function render_entry($name, $v, $size = 30, $temptext = "") {
     return Ht::entry($name, $v, setting_js($name, array("size" => $size, "hottemptext" => $temptext)));
 }
@@ -1546,7 +1540,7 @@ function doMsgGroup() {
 
 // Submissions
 function doSubGroup() {
-    global $Conf;
+    global $Conf, $Opt;
 
     doCheckbox('sub_open', '<b>Open site for submissions</b>');
 
@@ -1565,26 +1559,21 @@ function doSubGroup() {
 
     doRadio("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
 
-    echo "<hr class=\"hr\" />\n";
-    echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
-        (setting("sub_pcconf") ? "o" : "c"), "'>\n";
-    doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
-               "void fold('pcconf',!this.checked)");
-    echo "<tr class='fx'><td></td><td>";
-    $conf = array();
-    foreach (Conflict::$type_descriptions as $n => $d)
-        if ($n)
-            $conf[] = "“{$d}”";
-    doCheckbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
-    echo "</td></tr>\n";
-    doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
-    echo "</table>\n";
+
+    echo "<hr class=\"hr\" />\n<div class=\"g\"></div>\n";
+    $sub_nopapers = 0;
+    if (@$Opt["noPapers"] === 1 || @$Opt["noPapers"] === true)
+        $sub_nopapers = 1;
+    else if (@$Opt["noPapers"] === 2)
+        $sub_nopapers = 2;
+    echo Ht::label("Must submissions include a PDF upload?", "sub_nopapers"),
+        "&nbsp; ", Ht::select("sub_nopapers", array(0 => "PDF required", 2 => "PDF optional", 1 => "No PDF"), $sub_nopapers);
 
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>",
             Ht::hidden("has_banal", 1),
             "<table id='foldbanal' class='", (setting("sub_banal") ? "foldo" : "foldc"), "'>";
-        doCheckbox("sub_banal", "<strong>Automated format checker<span class='fx'>:</span></strong>", true, "void fold('banal',!this.checked)");
+        doCheckbox("sub_banal", "Automated format checker<span class='fx'>:</span>", true, "void fold('banal',!this.checked)");
         echo "<tr class='fx'><td></td><td class='top'><table>";
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
         for ($i = 0; $i < 6; $i++)
@@ -1599,6 +1588,21 @@ function doSubGroup() {
         doTextRow("sub_banal_columns", array("Columns", null), setting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
         echo "</table></td></tr></table>";
     }
+
+    echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
+        (setting("sub_pcconf") ? "o" : "c"), "'>\n";
+    doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
+               "void fold('pcconf',!this.checked)");
+    echo "<tr class='fx'><td></td><td>";
+    $conf = array();
+    foreach (Conflict::$type_descriptions as $n => $d)
+        if ($n)
+            $conf[] = "“{$d}”";
+    doCheckbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
+    echo "</td></tr>\n";
+    doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
+    echo "</table>\n";
+
 
     echo "<hr class='hr' />\n";
 
