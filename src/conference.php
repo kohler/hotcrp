@@ -88,7 +88,7 @@ class Conference {
                 $okey = substr($row[0], 4);
                 if (!array_key_exists($okey, $OptOverride))
                     $OptOverride[$okey] = @$Opt[$okey];
-                $Opt[$okey] = ($row[2] === null ? $row[1] : $row[2]);
+                $Opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
             }
         }
         Dbl::free($result);
