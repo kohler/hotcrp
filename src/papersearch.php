@@ -1227,7 +1227,7 @@ class PaperSearch {
         if (!$this->amPC)
             return;
         $word = strtolower($word);
-        if (!preg_match(',\A(any|none|' . TagInfo::BASIC_COLORS . ')\z,', $word))
+        if (!preg_match(',\A(any|none|' . TagInfo::BASIC_COLORS_PLUS . ')\z,', $word))
             return new SearchTerm("f");
         $any = $word === "any" || $word === "none";
         $qx = array();
@@ -3442,8 +3442,7 @@ class PaperSearch {
             foreach (array("style:none", "style:any", "color:none", "color:any") as $x)
                 $res[] = array("s" => $x, "p" => -1);
             foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
-                if (TagInfo::canonical_color($t) === $t)
-                    array_push($res, "style:$t", "color:$t");
+                array_push($res, "style:$t", "color:$t");
         }
         if (!$category || $category === "show" || $category === "hide") {
             $cats = array();

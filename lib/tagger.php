@@ -72,7 +72,8 @@ class TagInfo {
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
 
-    const BASIC_COLORS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|dim|bold|italic|underline|strikethrough|big|small";
+    const BASIC_COLORS = "red|orange|yellow|green|blue|purple|gray|white|bold|italic|underline|strikethrough|big|small|dim";
+    const BASIC_COLORS_PLUS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
 
     private static $tagmap = null;
     private static $colorre = null;
@@ -276,7 +277,7 @@ class TagInfo {
 
     public static function color_regex() {
         if (!self::$colorre) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . self::BASIC_COLORS;
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . self::BASIC_COLORS_PLUS;
             foreach (self::defined_tags() as $v)
                 if ($v->colors)
                     $re .= "|" . $v->tag;

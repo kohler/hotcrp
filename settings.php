@@ -16,7 +16,6 @@ $Highlight = $Conf->session("settings_highlight", array());
 $Conf->save_session("settings_highlight", null);
 $Error = $Warning = $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
-$TagStyles = "red|orange|yellow|green|blue|purple|gray|bold|italic|underline|strikethrough|big|small|dim";
 
 // read setting information
 $SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"), true);
@@ -229,7 +228,7 @@ function parse_value($name, $info) {
 }
 
 function save_tags($set, $what) {
-    global $Conf, $Values, $Error, $Warning, $Highlight, $TagStyles;
+    global $Conf, $Values, $Error, $Warning, $Highlight;
     $tagger = new Tagger;
 
     if (!$set && $what == "tag_chair" && isset($_POST["tag_chair"])) {
@@ -374,7 +373,7 @@ function save_tags($set, $what) {
     if (!$set && $what == "tag_color") {
         $vs = array();
         $any_set = false;
-        foreach (explode("|", $TagStyles) as $k)
+        foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
             if (isset($_POST["tag_color_" . $k])) {
                 $any_set = true;
                 foreach (preg_split('/,*\s+/', $_POST["tag_color_" . $k]) as $t)
@@ -2075,7 +2074,7 @@ function do_track($trackname, $tnum) {
 }
 
 function doTagsGroup() {
-    global $Conf, $Error, $Highlight, $DateExplanation, $TagStyles;
+    global $Conf, $Error, $Highlight, $DateExplanation;
 
     // Tags
     $tagger = new Tagger;
@@ -2135,7 +2134,7 @@ function doTagsGroup() {
     foreach ($m as $x)
         $tag_colors[TagInfo::canonical_color($x[2])][] = $x[1];
     $tag_colors_rows = array();
-    foreach (explode("|", $TagStyles) as $k) {
+    foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
         if (count($Error) > 0)
             $v = defval($_POST, "tag_color_$k", "");
         else if (isset($tag_colors[$k]))
