@@ -2267,8 +2267,9 @@ Promise.prototype.onThen = function (f) {
 
 
 // tags
-function strcasecmp(a, b) {
-    var al = a.toLowerCase(), bl = b.toLowerCase();
+function strnatcmp(a, b) {
+    var al = a.toLowerCase().replace(/"/g, ""),
+        bl = b.toLowerCase().replace(/"/g, "");
     if (al < bl)
         return -1;
     else if (bl < al)
@@ -2285,28 +2286,39 @@ var alltags = new Promise().onThen(function (alltags) {
     if (hotcrp_user.is_pclike)
         Miniajax.get(hoturl("api", "fn=alltags"), function (v) {
             var tlist = (v && v.tags) || [];
-            tlist.sort(strcasecmp);
+            tlist.sort(strnatcmp);
             alltags.fulfill(tlist);
         });
     else
         alltags.fulfill([]);
 });
 
+function completion_item(c) {
+    if (typeof c === "string")
+        return {s: c};
+    else if ($.isArray(c))
+        return {s: c[0], help: c[1]};
+    else
+        return c;
+}
+
 var search_completion = new Promise().onThen(function (search_completion) {
     Miniajax.get(hoturl("api", "fn=searchcompletion"), function (v) {
-        var sclist = ((v && v.searchcompletion) || []).map(function (x) {
-            if (typeof x === "string")
-                return {s: x, p: 0};
-            else
-                return x;
+        var sc = (v && v.searchcompletion) || [],
+            scs = $.grep(sc, function (x) { return typeof x === "string"; }),
+            sci = $.grep(sc, function (x) { return typeof x === "object"; }),
+            result = [];
+        scs.length && sci.push({pri: 0, i: scs});
+        sci.sort(function (a, b) { return (a.pri || 0) - (b.pri || 0); });
+        $.each(sci, function (index, item) {
+            $.isArray(item.i) || (item.i = [item.i]);
+            item.nosort || item.i.sort(function (a, b) {
+                var ai = completion_item(a), bi = completion_item(b);
+                return strnatcmp(ai.s, bi.s);
+            });
+            Array.prototype.push.apply(result, item.i);
         });
-        sclist.sort(function (a, b) {
-            if (a.p != b.p)
-                return a.p - b.p;
-            else
-                return strcasecmp(a.s, b.s);
-        });
-        search_completion.fulfill(sclist);
+        search_completion.fulfill(result);
     });
 });
 
@@ -2330,7 +2342,7 @@ function taghelp_tset(elt, displayed) {
 
 function taghelp_q(elt, displayed) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[^\w:])(tag:\s*|r?order:\s*|#)([^#\s()]*)$/))) {
+    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*|#|(?:show|hide):\s*#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
@@ -2344,10 +2356,7 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
     return function (tlist) {
         var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
         for (i = 0; i < tlist.length; ++i) {
-            var titem = tlist[i];
-            if (typeof titem === "string")
-                titem = {s: titem};
-            var t = titem.s, tt = t;
+            var titem = completion_item(tlist[i]), t = titem.s, tt = t;
             if (include_pfx) {
                 if (t.substring(0, pfx.length).toLowerCase() !== pfx)
                     continue;

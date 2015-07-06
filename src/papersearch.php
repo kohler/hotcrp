@@ -3397,8 +3397,7 @@ class PaperSearch {
         if ($this->contact->can_view_some_decision()) {
             $res[] = "has:decision";
             if (!$category || $category === "dec") {
-                foreach (array("dec:any", "dec:none", "dec:yes", "dec:no") as $i => $x)
-                    $res[] = array("s" => $x, "p" => -5 + $i);
+                $res[] = array("pri" => -1, "nosort" => true, "i" => array("dec:any", "dec:none", "dec:yes", "dec:no"));
                 $dm = $Conf->decision_map();
                 unset($dm[0]);
                 $res = array_merge($res, self::simple_search_completion("dec:", $dm));
@@ -3428,8 +3427,7 @@ class PaperSearch {
                 array_push($res, "has:{$o->abbr}", "opt:{$o->abbr}");
         if ($this->contact->is_reviewer() && $Conf->has_rounds()
             && (!$category || $category === "round")) {
-            array_push($res, array("s" => "round:any", "p" => -1),
-                       array("s" => "round:none", "p" => -1));
+            $res[] = array("pri" => -1, "nosort" => true, "i" => array("round:any", "round:none"));
             $rlist = array();
             foreach ($Conf->round_list() as $rnum => $round)
                 if ($rnum && $round !== ";")
@@ -3439,8 +3437,7 @@ class PaperSearch {
         if ($Conf->has_topics() && (!$category || $category === "topic"))
             $res = array_merge($res, self::simple_search_completion("topic:", $Conf->topic_map()));
         if (!$category || $category === "style") {
-            foreach (array("style:none", "style:any", "color:none", "color:any") as $x)
-                $res[] = array("s" => $x, "p" => -1);
+            $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));
             foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
                 array_push($res, "style:$t", "color:$t");
         }
