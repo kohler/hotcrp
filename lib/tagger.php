@@ -260,8 +260,10 @@ class TagInfo {
         if ($color) {
             $canonical = self::canonical_color($color);
             $a[] = $canonical;
-            if ($color !== $canonical)
-                $a[] = $color;
+            if ($canonical === "purple")
+                $a[] = "violet";
+            else if ($canonical === "gray")
+                $a[] = "grey";
             foreach (self::defined_tags() as $v)
                 foreach ($v->colors ? : array() as $c)
                     if ($c === $canonical)
