@@ -1265,8 +1265,6 @@ class PaperList extends BaseList {
             $enter .= $this->_footer($ncol, $listname, $rstate,
                                      defval($options, "footer_extra", ""));
 
-        $x = $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
-
         // session variable to remember the list
         if ($this->listNumber) {
             $sl = $this->search->create_session_list_object($rstate->ids, self::_listDescription($listname), $this->sortdef());
@@ -1278,9 +1276,9 @@ class PaperList extends BaseList {
 
         $this->ids = $rstate->ids;
         if (@$this->qopts["need_javascript"] && $this->live_table)
-            $x = $Conf->take_script() . $x;
+            $enter = $Conf->take_script() . $enter;
         $this->_resolve_footers();
-        return $x;
+        return $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
     }
 
     function ajaxColumn($fieldId) {

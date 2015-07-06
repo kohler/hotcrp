@@ -3902,20 +3902,22 @@ function set_cookie(ls) {
     }
 }
 function add_list() {
-    var j = $(this), href = j.attr("href"), prefix = siteurl + "paper/", ls;
+    var j = $(this), href = j.attr("href"), prefix = siteurl + "paper/", $hl, ls;
     if (href && href.substring(0, prefix.length) === prefix
-        && (ls = j.closest(".has_hotcrp_list").attr("hotcrp_list")))
+        && ($hl = j.closest(".has_hotcrp_list")).length
+        && (ls = $hl.attr("hotcrp_list")))
         set_cookie(ls);
     return true;
 }
 function unload_list() {
     hotcrp_list && hotcrp_list.num && set_cookie(hotcrp_list.num);
 }
-$(function () {
-    $(".has_hotcrp_list a").on("click", add_list);
-    $("form.has_hotcrp_list").on("submit", add_list);
+function prepare() {
+    $(document.body).on("click", "a", add_list);
+    $(document.body).on("submit", "form", add_list);
     hotcrp_list && $(window).on("beforeunload", unload_list);
-});
+}
+document.body ? prepare() : $(prepare);
 })(jQuery);
 
 
