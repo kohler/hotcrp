@@ -262,7 +262,10 @@ function event_prevent(evt) {
 
 var event_key = (function () {
 var key_map = {"Spacebar": " ", "Esc": "Escape"},
-    code_map = {"13": "Enter", "27": "Escape"};
+    code_map = {
+        "9": "Tab", "13": "Enter", "16": "Shift", "17": "Control", "18": "Option",
+        "27": "Escape", "186": ":", "219": "[", "221": "]"
+    };
 return function (evt) {
     if (evt.key != null)
         return key_map[evt.key] || evt.key;
@@ -281,6 +284,7 @@ event_modkey.SHIFT = 1;
 event_modkey.CTRL = 2;
 event_modkey.ALT = 4;
 event_modkey.META = 8;
+
 
 function sprintf(fmt) {
     var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
@@ -2307,6 +2311,35 @@ var search_completion = new Promise().onThen(function (search_completion) {
 });
 
 
+function completion_split(elt) {
+    if (elt.selectionStart == elt.selectionEnd)
+        return [elt.value.substring(0, elt.selectionStart),
+                elt.value.substring(elt.selectionEnd)];
+    else
+        return null;
+}
+
+function taghelp_tset(elt, displayed) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/(?:^|\s)#?([^#\s]*)$/))) {
+        n = x[1].match(/^([^#\s]*)/);
+        return alltags.then(taghelp_completer("", m[1] + n[1], displayed));
+    } else
+        return new Promise(null);
+}
+
+function taghelp_q(elt, displayed) {
+    var x = completion_split(elt), m, n;
+    if (x && (m = x[0].match(/.*?(?:^|[^\w:])(tag:\s*|r?order:\s*|#)([^#\s()]*)$/))) {
+        n = x[1].match(/^([^#\s()]*)/);
+        return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
+    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
+        n = x[1].match(/^([^\s()]*)/);
+        return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
+    } else
+        return new Promise(null);
+}
+
 function taghelp_completer(pfx, str, displayed, include_pfx) {
     return function (tlist) {
         var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
@@ -2336,35 +2369,6 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
         else
             return null;
     };
-}
-
-function completion_split(elt) {
-    if (elt.selectionStart == elt.selectionEnd)
-        return [elt.value.substring(0, elt.selectionStart),
-                elt.value.substring(elt.selectionEnd)];
-    else
-        return null;
-}
-
-function taghelp_tset(elt, displayed) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/(?:^|\s)#?([^#\s]*)$/))) {
-        n = x[1].match(/^([^#\s]*)/);
-        return alltags.then(taghelp_completer("", m[1] + n[1], displayed));
-    } else
-        return new Promise(null);
-}
-
-function taghelp_q(elt, displayed) {
-    var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[^\w:])(tag:\s*|r?order:\s*|#)([^#\s()]*)$/))) {
-        n = x[1].match(/^([^#\s()]*)/);
-        return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
-    } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
-        n = x[1].match(/^([^\s()]*)/);
-        return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
-    } else
-        return new Promise(null);
 }
 
 function taghelp(elt, klass, cleanf) {
@@ -2403,23 +2407,36 @@ function taghelp(elt, klass, cleanf) {
         cleanf(elt, !!tagdiv).then(finish_display);
     }
 
+    function docomplete($ac) {
+        var tag = $ac.attr("autocomplete"), start = elt.selectionStart,
+            text = elt.value.substring(0, start) + tag + elt.value.substring(start);
+        jQuery(elt).val(text);
+        elt.selectionStart = elt.selectionEnd = start + tag.length;
+        kill();
+    }
+
     function kp(evt) {
-        if (event_key(evt) == "Escape") {
+        var k = event_key(evt), m = event_modkey(evt), $j;
+        if (k == "Escape" && !m) {
             kill();
             hiding = true;
-        } else if (event_key(evt) && !hiding)
+            return true;
+        }
+        if (k == "Tab" && tagdiv && !m) {
+            $j = tagdiv.self().find(".autocomplete");
+            if ($j.length == 1)
+                docomplete($j);
+            evt.preventDefault();
+            return false;
+        }
+        if (k && !hiding)
             setTimeout(display, 1);
         return true;
     }
 
     function click(evt) {
-        var $self = jQuery(this),
-            tag = $self.attr("autocomplete"), start = elt.selectionStart,
-            text = elt.value.substring(0, start) + tag + elt.value.substring(start);
-        jQuery(elt).val(text);
-        elt.selectionStart = elt.selectionEnd = start + tag.length;
+        docomplete($(this));
         evt.stopPropagation();
-        kill();
     }
 
     function blur() {
@@ -2432,7 +2449,7 @@ function taghelp(elt, klass, cleanf) {
     if (typeof elt === "string")
         elt = $$(elt);
     if (elt) {
-        jQuery(elt).on("keyup", kp).on("blur", blur);
+        jQuery(elt).on("keydown", kp).on("blur", blur);
         elt.autocomplete = "off";
     }
 }
