@@ -2459,14 +2459,14 @@ class Conference {
     // Miscellaneous
     //
 
-    public function capability_manager($for) {
+    public function capability_manager($for = null) {
         global $Opt;
-        if (@$Opt["contactdb_dsn"]
-            && ((is_string($for) && substr($for, 0, 1) === "U")
-                || ($for instanceof Contact && $for->contactDbId))
-            && ($cdb = Contact::contactdb()))
-            return new CapabilityManager($cdb, "U");
-        else
+        if ($for && substr($for, 0, 1) === "U") {
+            if (($cdb = Contact::contactdb()))
+                return new CapabilityManager($cdb, "U");
+            else
+                return null;
+        } else
             return new CapabilityManager($this->dblink, "");
     }
 

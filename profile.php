@@ -8,7 +8,7 @@ require_once("src/initweb.php");
 // check for change-email capabilities
 function change_email_by_capability() {
     global $Conf, $Me;
-    $capmgr = $Conf->capability_manager($_REQUEST["changeemail"]);
+    $capmgr = $Conf->capability_manager();
     $capdata = $capmgr->check($_REQUEST["changeemail"]);
     if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
@@ -216,7 +216,7 @@ function save_user($cj, $user_status) {
         if (!$newProfile && !$Me->privChair) {
             $old_preferredEmail = $Acct->preferredEmail;
             $Acct->preferredEmail = $cj->email;
-            $capmgr = $Conf->capability_manager($Acct);
+            $capmgr = $Conf->capability_manager();
             $rest = array("capability" => $capmgr->create(CAPTYPE_CHANGEEMAIL, array("user" => $Acct, "timeExpires" => time() + 259200, "data" => json_encode(array("uemail" => $cj->email)))));
             $mailer = new HotCRPMailer($Acct, null, $rest);
             $prep = $mailer->make_preparation("@changeemail", $rest);

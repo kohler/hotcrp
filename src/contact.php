@@ -1106,7 +1106,13 @@ class Contact {
                  && $this->password !== "*")
             $template = "@accountinfo";
         else {
-            $capmgr = $Conf->capability_manager($this);
+            if ($this->contactDbId
+                && $this->contactdb_allow_password()
+                && (!$this->has_database_account()
+                    || $this->password === $this->contactdb_encoded_password))
+                $capmgr = $Conf->capability_manager("U");
+            else
+                $capmgr = $Conf->capability_manager();
             $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
             $Conf->log("Created password reset " . $rest["capability"], $this);
             $template = "@resetpassword";
