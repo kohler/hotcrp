@@ -1108,7 +1108,7 @@ class Contact {
         else {
             $capmgr = $Conf->capability_manager($this);
             $rest["capability"] = $capmgr->create(CAPTYPE_RESETPASSWORD, array("user" => $this, "timeExpires" => time() + 259200));
-            $Conf->log("Created password reset request", $this);
+            $Conf->log("Created password reset " . $rest["capability"], $this);
             $template = "@resetpassword";
         }
 
