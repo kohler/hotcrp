@@ -34,14 +34,16 @@ class CapabilityManager {
         $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
         Dbl::ql($this->dblink, "insert ignore into CapabilityMap set capabilityValue=?, capabilityId=$capid, timeExpires=$timeExpires", $text);
 
-        $text = str_replace(array("+", "/", "="), array("-", "_", ""), base64_encode($text));
+        $text = str_replace(array("+", "/", "="),
+                            array("-a", "-b", ""), base64_encode($text));
         return $this->prefix . "1" . $text;
     }
 
     public function check($capabilityText) {
         if (substr($capabilityText, 0, strlen($this->prefix) + 1) !== $this->prefix . "1")
             return false;
-        $value = base64_decode(str_replace(array("-", "_"), array("+", "/"),
+        $value = base64_decode(str_replace(array("-a", "-b", "-", "_"), // -, _ obsolete
+                                           array("+", "/", "+", "/"),
                                            substr($capabilityText, strlen($this->prefix) + 1)));
         if (strlen($value) >= 16
             && ($result = Dbl::ql($this->dblink, "select * from CapabilityMap where capabilityValue=?", $value))
