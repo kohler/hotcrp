@@ -436,7 +436,8 @@ class Autoassigner {
     public function mcmf_progress($mcmf, $what, $phaseno = 0, $nphases = 0) {
         if ($what <= MinCostMaxFlow::PMAXFLOW_DONE) {
             $n = min(max($mcmf->current_flow(), 0), $this->ndesired);
-            $this->set_progress(sprintf("Preparing unoptimized assignment$this->mcmf_round_descriptor (%d%% done)", (int) ($n * 100 / $this->ndesired + 0.5)));
+            $ndesired = max($this->ndesired, 1);
+            $this->set_progress(sprintf("Preparing unoptimized assignment$this->mcmf_round_descriptor (%d%% done)", (int) ($n * 100 / $ndesired + 0.5)));
         } else {
             $x = array();
             $cost = $mcmf->current_cost();
