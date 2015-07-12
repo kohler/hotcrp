@@ -2374,6 +2374,7 @@ class Contact {
     }
 
     function can_view_some_decision() {
+        global $Conf;
         return $this->is_manager()
             || ($this->is_author() && $Conf->timeAuthorViewDecision())
             || ($this->isPC && $Conf->timePCViewDecision(false))
