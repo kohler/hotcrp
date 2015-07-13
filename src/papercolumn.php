@@ -497,15 +497,14 @@ class ReviewerTypePaperColumn extends PaperColumn {
         } else if ($xrow->conflictType > 0)
             $t = review_type_icon(-1);
         else
-            $t = review_type_icon(0);
+            $t = "";
         $x = null;
         if (!$this->xreviewer && $row->leadContactId && $row->leadContactId == $pl->contact->contactId)
             $x[] = '<span class="rtlead" title="Lead"><span class="rti">L</div></div>';
         if (!$this->xreviewer && $row->shepherdContactId && $row->shepherdContactId == $pl->contact->contactId)
             $x[] = '<span class="rtshep" title="Shepherd"><span class="rti">S</div></div>';
         if ($x)
-            $t = ($xrow->reviewType || $xrow->conflictType ? $t . '&nbsp;' : '')
-                . join('&nbsp;', $x);
+            $t .= ($t ? '&nbsp;' : '') . join('&nbsp;', $x);
         return $t;
     }
 }
