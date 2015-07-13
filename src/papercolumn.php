@@ -121,7 +121,6 @@ class SelectorPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_COLUMN, $extra);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if ($this->name == "selconf" && !$pl->contact->privChair)
             return false;
         if ($this->name == "selconf" || $this->name == "selunlessconf")
@@ -431,7 +430,6 @@ class ReviewerTypePaperColumn extends PaperColumn {
                             array("sorter" => "reviewer_type_sorter"));
     }
     public function analyze($pl, &$rows) {
-        global $Conf;
         // PaperSearch is responsible for access control checking use of
         // `reviewerContact`, but we are careful anyway.
         if ($pl->search->reviewer_cid()
@@ -483,7 +481,6 @@ class ReviewerTypePaperColumn extends PaperColumn {
             return "Review";
     }
     public function content($pl, $row, $rowidx) {
-        global $Conf;
         if ($this->xreviewer && !isset($row->_xreviewer))
             $xrow = (object) array("reviewType" => 0, "conflictType" => 0);
         else if ($this->xreviewer)
@@ -575,7 +572,6 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
         parent::__construct("assrev");
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if (!$pl->contact->is_manager())
             return false;
         if ($visible > 0)
@@ -674,7 +670,6 @@ class PreferencePaperColumn extends PaperColumn {
         $this->editable = $editable;
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if (!$pl->contact->isPC)
             return false;
         if ($visible) {
@@ -986,7 +981,6 @@ class EditTagPaperColumn extends TagPaperColumn {
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if (($p = parent::prepare($pl, $visible)) && $visible > 0) {
             $pl->add_footer_html(
                  Ht::form(hoturl_post("paper", "settags=1&amp;forceShow=1"),
@@ -1171,7 +1165,6 @@ class FormulaPaperColumn extends PaperColumn {
             return "(<formula>)";
     }
     public function prepare(PaperList $pl, $visible) {
-        global $ConfSitePATH;
         if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
             return true;
         $view_bound = $pl->contact->permissive_view_score_bound();
