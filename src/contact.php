@@ -1109,6 +1109,7 @@ class Contact {
             if ($this->contactDbId
                 && $this->contactdb_allow_password()
                 && (!$this->has_database_account()
+                    || $this->password === "*"
                     || $this->password === $this->contactdb_encoded_password))
                 $capmgr = $Conf->capability_manager("U");
             else
