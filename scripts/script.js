@@ -2417,11 +2417,28 @@ function taghelp(elt, klass, cleanf) {
     }
 
     function docomplete($ac) {
-        var tag = $ac.attr("autocomplete"), start = elt.selectionStart,
-            text = elt.value.substring(0, start) + tag + elt.value.substring(start);
-        jQuery(elt).val(text);
-        elt.selectionStart = elt.selectionEnd = start + tag.length;
-        kill();
+        var common = null, attr, i, j, start, text;
+        for (i = 0; i != $ac.length; ++i) {
+            attr = $ac[i].getAttribute("autocomplete");
+            if (common === null)
+                common = attr;
+            else {
+                j = common.length;
+                while (j && (j > attr.length || common.charAt(j - 1) != attr.charAt(j - 1)))
+                    --j;
+                common = common.substring(0, j);
+            }
+        }
+        if (common.length) {
+            start = elt.selectionStart;
+            text = elt.value.substring(0, start) + common + elt.value.substring(start);
+            jQuery(elt).val(text);
+            elt.selectionStart = elt.selectionEnd = start + common.length;
+            if ($ac.length == 1)
+                kill();
+            else
+                setTimeout(display, 1);
+        }
     }
 
     function kp(evt) {
@@ -2432,9 +2449,7 @@ function taghelp(elt, klass, cleanf) {
             return true;
         }
         if (k == "Tab" && tagdiv && !m) {
-            $j = tagdiv.self().find(".autocomplete");
-            if ($j.length == 1)
-                docomplete($j);
+            docomplete(tagdiv.self().find(".autocomplete"));
             evt.preventDefault();
             return false;
         }
