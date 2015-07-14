@@ -2841,7 +2841,8 @@ return function (content, bubopt) {
             var n = bubch[1];
             if (content === undefined)
                 return n.innerHTML;
-            else if (typeof content == "string")
+            nearpos && $(bubdiv).css({maxWidth: "", left: "", top: ""});
+            if (typeof content == "string")
                 n.innerHTML = content;
             else {
                 while (n.childNodes.length)
@@ -2853,7 +2854,10 @@ return function (content, bubopt) {
             return bubble;
         },
         text: function (text) {
-            return bubble.html(text ? text_to_html(text) : text);
+            if (text === undefined)
+                return $(bubch[1]).text();
+            else
+                return bubble.html(text ? text_to_html(text) : text);
         },
         hover: function (enter, leave) {
             jQuery(bubdiv).hover(enter, leave);
