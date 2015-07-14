@@ -34,7 +34,8 @@ class Text {
                                      "lastFirst" => true,
                                      "nameAmbiguous" => true);
     static private $boring_words = array("a" => true, "an" => true, "as" => true,
-                                         "in" => true, "on" => true, "the" => true,
+                                         "by" => true, "in" => true, "on" => true,
+                                         "the" => true, "through" => true,
                                          "with" => true);
 
     static function analyze_von($lastName) {
