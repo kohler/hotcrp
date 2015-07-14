@@ -3434,8 +3434,10 @@ class PaperSearch {
                     $rlist[$rnum] = $round;
             $res = array_merge($res, self::simple_search_completion("round:", $rlist));
         }
-        if ($Conf->has_topics() && (!$category || $category === "topic"))
-            $res = array_merge($res, self::simple_search_completion("topic:", $Conf->topic_map()));
+        if ($Conf->has_topics() && (!$category || $category === "topic")) {
+            foreach ($Conf->topic_map() as $tname)
+                $res[] = "topic:\"{$tname}\"";
+        }
         if (!$category || $category === "style") {
             $res[] = array("pri" => -1, "nosort" => true, "i" => array("style:any", "style:none", "color:any", "color:none"));
             foreach (explode("|", TagInfo::BASIC_COLORS) as $t)
