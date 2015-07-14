@@ -288,7 +288,7 @@ class PaperInfo {
         }
         ksort($out);
         if ($comma)
-            return join(", ", $out);
+            return join($Conf->topic_separator(), $out);
         else if ($long)
             return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
         else

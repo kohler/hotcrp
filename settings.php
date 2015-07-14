@@ -441,6 +441,7 @@ function save_topics($set) {
             } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
                 $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
         }
+    $Conf->invalidate_topics();
 }
 
 

@@ -28,6 +28,7 @@ class Conference {
     private $_track_tags = null;
     private $_track_review_sensitivity = false;
     private $_decisions = null;
+    private $_topic_separator_cache = null;
     public $dsn = null;
 
     const BLIND_NEVER = 0;
@@ -412,6 +413,24 @@ class Conference {
 
     function topic_count() {
         return count($this->topic_map());
+    }
+
+    function topic_separator() {
+        if ($this->_topic_separator_cache === null) {
+            $this->_topic_separator_cache = ", ";
+            foreach ($this->topic_map() as $tname)
+                if (strpos($tname, ",") !== false) {
+                    $this->_topic_separator_cache = "; ";
+                    break;
+                }
+        }
+        return $this->_topic_separator_cache;
+    }
+
+    function invalidate_topics() {
+        unset($this->settingTexts["topic_map"]);
+        unset($this->settingTexts["topic_order_map"]);
+        $this->_topic_separator_cache = null;
     }
 
 
