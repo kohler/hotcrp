@@ -760,6 +760,18 @@ class Conference {
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
         if ($any !== !!@$this->settings["papermanager"])
             trigger_error($Opt["dbName"] . " invariant error: papermanager");
+
+        // no empty text options
+        $text_options = array();
+        foreach (PaperOption::option_list($this) as $ox)
+            if ($ox->type === "text")
+                $text_options[] = $ox->id;
+        if (count($text_options)) {
+            $q = Dbl::format_query("select paperId from PaperOption where optionId ?a and data='' limit 1", $text_options);
+            $any = $this->invariantq($q);
+            if ($any)
+                trigger_error($Opt["dbName"] . " invariant error: text option with empty text");
+        }
     }
 
 
