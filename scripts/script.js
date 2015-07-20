@@ -2423,9 +2423,8 @@ function taghelp(elt, klass, cleanf) {
             if (common === null)
                 common = attr;
             else {
-                j = common.length;
-                while (j && (j > attr.length || common.charAt(j - 1) != attr.charAt(j - 1)))
-                    --j;
+                for (j = 0; attr.charAt(j) === common.charAt(j); ++j)
+                    /* skip */;
                 common = common.substring(0, j);
             }
         }
