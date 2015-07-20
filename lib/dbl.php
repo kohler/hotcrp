@@ -163,9 +163,14 @@ class Dbl {
                         unset($y);
                         break;
                     }
-                if (count($arg) === 0)
+                if (count($arg) === 0) {
+                    // We want `foo IN ()` and `foo NOT IN ()`.
+                    // That is, we want `false` and `true`. We compromise. The
+                    // statement `foo=NULL` is always NULL -- which is falsy
+                    // -- even if `foo IS NULL`. The statement `foo IS NOT
+                    // NULL` is true unless `foo IS NULL`.
                     $arg = ($nextch === "a" ? "=NULL" : " IS NOT NULL");
-                else if (count($arg) === 1) {
+                } else if (count($arg) === 1) {
                     reset($arg);
                     $arg = ($nextch === "a" ? "=" : "!=") . current($arg);
                 } else
