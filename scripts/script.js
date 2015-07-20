@@ -2423,7 +2423,7 @@ function taghelp(elt, klass, cleanf) {
             if (common === null)
                 common = attr;
             else {
-                for (j = 0; attr.charAt(j) === common.charAt(j); ++j)
+                for (j = 0; attr.charAt(j) === common.charAt(j) && j < attr.length; ++j)
                     /* skip */;
                 common = common.substring(0, j);
             }
