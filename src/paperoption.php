@@ -74,11 +74,12 @@ class PaperOption {
             return $a->id - $b->id;
     }
 
-    static function option_list() {
+    static function option_list(Conference $c = null) {
         global $Conf;
         if (self::$list === null) {
             self::$list = array();
-            if (($optj = $Conf->setting_json("options"))) {
+            $c = $c ? : $Conf;
+            if (($optj = $c->setting_json("options"))) {
                 foreach ($optj as $j)
                     self::$list[$j->id] = new PaperOption($j);
                 uasort(self::$list, array("PaperOption", "compare"));
@@ -237,7 +238,6 @@ class PaperOption {
     }
 
     static function parse_paper_options($prow) {
-        global $Conf;
         if (!$prow)
             return 0;
         $options = self::option_list();

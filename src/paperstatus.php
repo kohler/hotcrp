@@ -599,9 +599,10 @@ class PaperStatus {
         $option_list = PaperOption::option_list();
         foreach ((array) ($pj ? @$pj->options : null) as $id => $oa) {
             $o = $option_list[$id];
-            if ($o->type == "text")
-                $x[] = "($pj->id,$o->id,1,'" . sqlq($oa) . "')";
-            else if ($o->is_document())
+            if ($o->type == "text") {
+                if ((string) $oa !== "")
+                    $x[] = "($pj->id,$o->id,1,'" . sqlq($oa) . "')";
+            } else if ($o->is_document())
                 $x[] = "($pj->id,$o->id,$oa->docid,null)";
             else if ($o->type == "attachments") {
                 $oa = is_array($oa) ? $oa : array($oa);

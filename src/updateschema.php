@@ -684,4 +684,11 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 93
         && $Conf->ql("alter table TopicArea modify `topicName` varchar(200) DEFAULT NULL"))
         update_schema_version($Conf, 94);
+    if ($Conf->settings["allowPaperOption"] == 94
+        && $Conf->ql("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
+        foreach (PaperOption::option_list($Conf) as $opt)
+            if ($opt->type === "text")
+                $Conf->ql("delete from PaperOption where optionId={$opt->id} and data=''");
+        update_schema_version($Conf, 95);
+    }
 }

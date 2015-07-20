@@ -216,7 +216,7 @@ CREATE TABLE `PaperOption` (
   `paperId` int(11) NOT NULL,
   `optionId` int(11) NOT NULL,
   `value` int(11) NOT NULL DEFAULT '0',
-  `data` text,
+  `data` varbinary(32768),
   KEY `paperOption` (`paperId`,`optionId`,`value`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -513,7 +513,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 94);
+insert into Settings (name, value) values ('allowPaperOption', 95);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
