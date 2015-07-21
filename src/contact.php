@@ -1486,7 +1486,10 @@ class Contact {
     }
 
     public function can_view_tracker() {
-        return $this->isPC || @$this->is_tracker_kiosk;
+        global $Conf;
+        return $this->privChair
+            || ($this->isPC && $Conf->check_tracks(null, $this, "viewtracker"))
+            || @$this->is_tracker_kiosk;
     }
 
     public function view_conflict_type(PaperInfo $prow = null) {

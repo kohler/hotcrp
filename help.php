@@ -63,10 +63,11 @@ function _subhead_contain($close = false) {
     echo $close ? "</div>\n" : "<div class=\"helppage\">\n";
 }
 
-function _subhead($head, $entry) {
+function _subhead($head, $entry, $id = false) {
     global $nsubhead;
-    echo (isset($nsubhead) ? '<h3' : '<h2'),
-        ' class="helppage">', $head, "</h3>\n",
+    echo (isset($nsubhead) ? '<h3' : '<h2'), ' class="helppage"',
+        ($id ? ' id="' . $id . '"' : ''),
+        '>', $head, "</h3>\n",
         '<div class="helppagetext">', $entry, "</div>\n";
     $nsubhead = @($nsubhead + 1);
 }
@@ -1352,7 +1353,7 @@ administrator’s identity.</p>");
   href='" . hoturl("paper") . "'>paper by paper</a> or <a
   href='" . hoturl("autoassign", "t=acc") . "'>automatically</a>.</p></li>
 
-</ol>");
+</ol>", "meeting");
 
     _subhead("After the meeting", "
 <ol>

@@ -833,7 +833,8 @@ function save_tracks($set) {
             continue;
         }
         $t = (object) array();
-        foreach (array("view", "viewpdf", "viewrev", "assrev", "unassrev") as $type)
+        foreach (array("view", "viewpdf", "viewrev", "assrev", "unassrev",
+                       "viewtracker") as $type)
             if (($ttype = defval($_POST, "${type}_track$i", "")) == "+"
                 || $ttype == "-") {
                 $ttag = trim(defval($_POST, "${type}tag_track$i", ""));
@@ -2075,6 +2076,8 @@ function do_track($trackname, $tnum) {
     do_track_permission("viewrev", "Who can view reviews?", $tnum, $t);
     do_track_permission("assrev", "Who can be assigned a review?", $tnum, $t);
     do_track_permission("unassrev", "Who can self-assign a review?", $tnum, $t);
+    if ($trackname === "_")
+        do_track_permission("viewtracker", "Who can view the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
     echo "</table></div>\n\n";
 }
 

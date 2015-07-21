@@ -467,14 +467,15 @@ class Conference {
     function check_tracks($prow, $contact, $type) {
         if ($this->tracks) {
             $checked = false;
-            foreach ($this->_track_tags as $t)
-                if (@($perm = $this->tracks->$t->$type)
-                    && $prow->has_tag($t)) {
-                    $has_tag = $contact->has_tag(substr($perm, 1));
-                    if ($perm[0] == "-" ? $has_tag : !$has_tag)
-                        return false;
-                    $checked = true;
-                }
+            if ($prow)
+                foreach ($this->_track_tags as $t)
+                    if (@($perm = $this->tracks->$t->$type)
+                        && $prow->has_tag($t)) {
+                        $has_tag = $contact->has_tag(substr($perm, 1));
+                        if ($perm[0] == "-" ? $has_tag : !$has_tag)
+                            return false;
+                        $checked = true;
+                    }
             if (!$checked
                 && @($perm = $this->tracks->_->$type)) {
                 $has_tag = $contact->has_tag(substr($perm, 1));
