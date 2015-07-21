@@ -1485,6 +1485,10 @@ class Contact {
             return $this->privChair || $this->isPC;
     }
 
+    public function can_view_tracker() {
+        return $this->isPC || @$this->is_tracker_kiosk;
+    }
+
     public function view_conflict_type(PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);

@@ -179,7 +179,7 @@ class MeetingTracker {
     static function status($acct) {
         global $Conf, $Opt, $Now;
         $tracker = self::lookup();
-        if (!$tracker || (!$acct->isPC && !@$acct->is_tracker_kiosk))
+        if (!$tracker || !$acct->can_view_tracker())
             return false;
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
