@@ -702,7 +702,7 @@ function tracker(start) {
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         Miniajax.post(hoturl_post("api", "fn=track&track=" + req), load, 10000);
         if (!tracker_refresher)
-            tracker_refresher = setInterval(tracker, 70000);
+            tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
     }
     return false;
