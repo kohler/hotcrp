@@ -184,7 +184,8 @@ class MeetingTracker {
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
             && $status->position == $tracker->position
-            && @($status->calculated_at >= $Now - 30))
+            && @($status->calculated_at >= $Now - 30)
+            && !$acct->is_actas_user())
             return $status;
         $status = (object) array("trackerid" => $tracker->trackerid,
                                  "listid" => $tracker->listid,
@@ -195,7 +196,8 @@ class MeetingTracker {
             $status->hide_conflicts = true;
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);
-        $Conf->save_session("tracker", $status);
+        if (!$acct->is_actas_user())
+            $Conf->save_session("tracker", $status);
         return $status;
     }
 
