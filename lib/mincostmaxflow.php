@@ -215,6 +215,27 @@ class MinCostMaxFlow {
         return $a;
     }
 
+    private function topological_sort_visit($v, $klass, &$a) {
+        if ($v !== $this->sink && !$v->npos) {
+            $v->npos = true;
+            foreach ($v->e as $e)
+                if ($e->src === $v && $e->flow > 0 && !$e->dst->npos)
+                    $this->topological_sort_visit($e->dst, $klass, $a);
+            if ($v->klass === $klass)
+                $a[] = $v;
+        }
+    }
+
+    public function topological_sort($v, $klass) {
+        if (is_string($v))
+            $v = $this->vmap[$v];
+        foreach ($this->v as $vx)
+            $vx->npos = false;
+        $a = array();
+        $this->topological_sort_visit($v, $klass, $a);
+        return array_reverse($a);
+    }
+
 
     // internals
 
@@ -710,7 +731,7 @@ class MinCostMaxFlow {
         $this->initialize_edges();
         $this->pushrelabel_run();
         if ($this->mincost != 0 || $this->maxcost != 0) {
-            $this->epsilon = $this->maxcost;
+            $this->epsilon = max(abs($this->mincost), $this->maxcost);
             $this->cspushrelabel_finish();
         }
     }

@@ -140,7 +140,8 @@ class AutoassignerInterface {
 
         $atypes = array("rev" => "r", "revadd" => "r", "revpc" => "r",
                         "lead" => true, "shepherd" => true,
-                        "prefconflict" => true, "clear" => true);
+                        "prefconflict" => true, "clear" => true,
+                        "discorder" => true);
         $this->atype = @$_REQUEST["a"];
         if (!$this->atype || !@$atypes[$this->atype]) {
             $Error["ass"] = true;
@@ -340,6 +341,8 @@ class AutoassignerInterface {
         else if ($this->atype === "rev")
             $autoassigner->run_ensure_reviews($this->reviewtype, @$_REQUEST["rev_roundtag"],
                                               cvtint(@$_REQUEST["revct"]));
+        else if ($this->atype === "discorder")
+            $autoassigner->run_discussion_order("discuss");
 
         if ($this->live)
             echo $this->result_html(), "</div>\n";
@@ -482,6 +485,10 @@ echo "<div class='g'></div>", divClass("clear");
 doRadio('a', 'clear', 'Clear all &nbsp;');
 doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
 echo " &nbsp;assignments for selected papers and PC members";
+
+echo "<div class='g'></div>";
+doRadio("a", "discorder", "Assign discussion order, minimizing switches among conflicted PC members");
+
 echo "</div></div>\n";
 
 

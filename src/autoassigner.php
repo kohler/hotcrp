@@ -10,7 +10,7 @@ class Autoassigner {
     private $pcm;
     private $badpairs = array();
     private $papersel;
-    private $ass;
+    private $ass = null;
     private $load = array();
     private $prefs;
     public $prefinfo = array();
@@ -20,6 +20,7 @@ class Autoassigner {
     private $progressf = array();
     private $mcmf;
     private $mcmf_round_descriptor; // for use in MCMF progress
+    private $mcmf_optimizing_for; // for use in MCMF progress
     private $mcmf_max_cost;
     private $ndesired;
     public $profile = array();
@@ -38,7 +39,6 @@ class Autoassigner {
     public function __construct($papersel) {
         $this->pcm = pcMembers();
         $this->papersel = $papersel;
-        $this->ass = array("paper,action,email,round");
     }
 
     public function select_pc($pcids) {
@@ -85,6 +85,7 @@ class Autoassigner {
         global $Conf;
         $papers = array_fill_keys($this->papersel, 1);
         $result = Dbl::qe_raw($Conf->preferenceConflictQuery($papertype, ""));
+        $this->ass = array("paper,action,email");
         while (($row = edb_row($result))) {
             if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
                 continue;
@@ -109,6 +110,7 @@ class Autoassigner {
             $action = "no" . $reviewtype;
         } else
             return false;
+        $this->ass = array("paper,action,email");
         $result = Dbl::qe_raw($q);
         while (($row = edb_row($result))) {
             if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
@@ -303,6 +305,8 @@ class Autoassigner {
     }
 
     private function make_assignment($action, $round, $cid, $pid, &$papers) {
+        if (!$this->ass)
+            $this->ass = array("paper,action,email,round");
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
         $this->prefs[$cid][$pid] = self::PNEWASSIGN;
         $papers[$pid]--;
@@ -444,9 +448,9 @@ class Autoassigner {
             if (!$this->mcmf_max_cost)
                 $this->mcmf_max_cost = $cost;
             else if ($cost < $this->mcmf_max_cost)
-                $x[] = sprintf("%.1f%% better", ((int) (($this->mcmf_max_cost - $cost) * 1000 / $this->mcmf_max_cost + 0.5)) / 10);
+                $x[] = sprintf("%.1f%% better", ((int) (($this->mcmf_max_cost - $cost) * 1000 / abs($this->mcmf_max_cost) + 0.5)) / 10);
             $phasedescriptor = $nphases > 1 ? ", phase " . ($phaseno + 1) . "/" . $nphases : "";
-            $this->set_progress("Optimizing assignment for preferences and balance"
+            $this->set_progress($this->mcmf_optimizing_for
                                 . $this->mcmf_round_descriptor . $phasedescriptor
                                 . ($x ? " (" . join(", ", $x) . ")" : ""));
         }
@@ -553,6 +557,7 @@ class Autoassigner {
 
     private function assign_mcmf(&$papers, $action, $round, $nperpc) {
         $this->mcmf_round_descriptor = "";
+        $this->mcmf_optimizing_for = "Optimizing assignment for preferences and balance";
         $mcmf_round = 1;
         while ($this->assign_mcmf_once($papers, $action, $round, $nperpc)) {
             $nmissing = 0;
@@ -661,6 +666,69 @@ class Autoassigner {
         $this->assign_method($papers, $action, $round, null);
         $this->check_missing_assignments($papers, "rev");
     }
+
+    public function run_discussion_order($tag, $sequential = false) {
+        global $Conf;
+        $this->mcmf_round_descriptor = "";
+        $this->mcmf_optimizing_for = "Optimizing assignment";
+        $m = new MinCostMaxFlow;
+        $m->add_progressf(array($this, "mcmf_progress"));
+        $this->set_progress("Preparing assignment optimizer");
+        // paper nodes
+        // set p->po edge cost so low that traversing that edge will
+        // definitely lower total cost; all positive costs are <=
+        // count($this->pcm), so this edge should have cost:
+        $pocost = -(count($this->pcm) + 1);
+        $this->mcmf_max_cost = $pocost * (count($this->papersel) * 0.75);
+        $conf = array();
+        $m->add_node(".s", "source");
+        $m->add_edge(".source", ".s", 1, 0);
+        foreach ($this->papersel as $pid) {
+            $m->add_node("p$pid", "p");
+            $m->add_node("po$pid", "po");
+            $m->add_edge(".s", "p$pid", 1, 0);
+            $m->add_edge("p$pid", "po$pid", 1, $pocost);
+            $m->add_edge("po$pid", ".sink", 1, 0);
+            $conf[$pid] = array();
+        }
+        // load conflicts
+        $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and contactId ?a and conflictType>0", $this->papersel, array_keys($this->pcm));
+        while (($row = edb_row($result)))
+            $conf[(int) $row[0]][(int) $row[1]] = true;
+        Dbl::free($result);
+        // conflict edges
+        $papersel = $this->papersel; // need copy for different iteration ptr
+        foreach ($papersel as $pid1) {
+            foreach ($this->papersel as $pid2)
+                if ($pid1 < $pid2) {
+                    // cost of edge is number of different conflicts
+                    $cost = count($conf[$pid1]) + count($conf[$pid2]) - count($conf[$pid1] + $conf[$pid2]);
+                    $m->add_edge("po$pid1", "p$pid2", 1, $cost);
+                    $m->add_edge("po$pid2", "p$pid1", 1, $cost);
+                }
+        }
+        // run MCMF
+        $this->mcmf = $m;
+        $m->shuffle();
+        $m->run();
+        // make assignments
+        $this->set_progress("Completing assignment");
+        $this->ass = array("paper,action,tag");
+        $time = microtime(true);
+        //echo "<script>$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true))) . ")</script>";
+        $index = 0;
+        foreach ($m->topological_sort(".source", "p") as $v) {
+            $index += TagInfo::value_increment($sequential ? "aos" : "ao");
+            $this->ass[] = substr($v->name, 1) . ",tag,{$tag}#{$index}";
+        }
+        $m->clear(); // break circular refs
+        $this->mcmf = null;
+        $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
+        if ($m->mincost_start_at)
+            $this->profile["mincost"] = $m->mincost_end_at - $m->mincost_start_at;
+        $this->profile["traverse"] = microtime(true) - $time;
+    }
+
 
     public function assignments() {
         return count($this->ass) > 1 ? $this->ass : null;
