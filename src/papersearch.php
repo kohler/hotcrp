@@ -3153,6 +3153,7 @@ class PaperSearch {
         $q = $this->q;
         $ss_recursion = array();
         while (1) {
+            $q = preg_replace('/(?:\s+|\A)(?:show|hide|edit|VIEW|HEADING):\w+(?:\s+|\z)/', " ", $q);
             if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $q)) {
                 $a = array();
                 foreach (preg_split('/\s+/', $q) as $word) {
