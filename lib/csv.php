@@ -9,6 +9,7 @@ class CsvParser {
     private $type;
     private $header = false;
     private $comment_chars = false;
+    private $comment_function = null;
 
     const TYPE_GUESS = -1;
     const TYPE_COMMA = 0;
@@ -30,6 +31,10 @@ class CsvParser {
 
     function set_comment_chars($s) {
         $this->comment_chars = $s;
+    }
+
+    function set_comment_function($f) {
+        $this->comment_function = $f;
     }
 
     function header() {
@@ -77,10 +82,13 @@ class CsvParser {
         if (is_array($line))
             return self::reparse($line, $this->header);
         // blank lines, comments
-        if ($line === "" || $line[0] === "\n" || $line[0] === "\r"
-            || ($this->comment_chars
-                && strpos($this->comment_chars, $line[0]) !== false))
+        if ($line === "" || $line[0] === "\n" || $line[0] === "\r")
             return null;
+        if ($this->comment_chars
+            && strpos($this->comment_chars, $line[0]) !== false) {
+            $this->comment_function && call_user_func($this->comment_function, $line);
+            return null;
+        }
         // split on type
         if ($this->type == self::TYPE_GUESS) {
             $pipe = substr_count($line, "|");

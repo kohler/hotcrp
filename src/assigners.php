@@ -921,6 +921,9 @@ class AssignmentSet {
     private $cmap;
     private $searches = array();
     private $reviewer_set = false;
+    private $papers_encountered = array();
+    private $unparse_encounter_order = false;
+    private $unparse_columns = array();
 
     function __construct($contact, $override = null) {
         $this->contact = $contact;
@@ -1175,6 +1178,13 @@ class AssignmentSet {
         return true;
     }
 
+    function parse_csv_comment($line) {
+        if (preg_match('/\A#\s*hotcrp_assign_display_order\s*\z/', $line))
+            $this->unparse_encounter_order = true;
+        if (preg_match('/\A#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m))
+            $this->unparse_columns[] = "show:$m[1]";
+    }
+
     function parse($text, $filename = null, $defaults = null, $alertf = null) {
         global $Conf;
         $this->filename = $filename;
@@ -1182,6 +1192,7 @@ class AssignmentSet {
 
         $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
         $csv->set_comment_chars("%#");
+        $csv->set_comment_function(array($this, "parse_csv_comment"));
         if (!($req = $csv->next()))
             return $this->error($csv->lineno(), "empty file");
         if (!$this->install_csv_header($csv, $req))
@@ -1251,6 +1262,7 @@ class AssignmentSet {
                     $this->error($err);
                 continue;
             }
+            $this->encounter_order[$p] = $p;
 
             foreach ($contacts as $contact) {
                 if ($contact && @$contact->contactId > 0
@@ -1340,7 +1352,7 @@ class AssignmentSet {
             }
 
         AutoassignmentPaperColumn::$header = "Proposed assignment";
-        AutoassignmentPaperColumn::$info = array();
+        $assinfo = array();
         PaperColumn::register(new AutoassignmentPaperColumn);
         foreach ($bypaper as $pid => $list) {
             uasort($list, "Contact::compare");
@@ -1354,16 +1366,25 @@ class AssignmentSet {
                 else
                     $t = PaperList::wrapChairConflict($t);
             }
-            AutoassignmentPaperColumn::$info[$pid] = $t;
+            $assinfo[$pid] = $t;
         }
 
-        ksort(AutoassignmentPaperColumn::$info);
-        $papers = join(" ", array_keys(AutoassignmentPaperColumn::$info));
+        ksort($assinfo);
+        AutoassignmentPaperColumn::$info = $assinfo;
+
+        if ($this->unparse_encounter_order) {
+            $query_order = $this->encounter_order + $assinfo;
+            $query_order = array_intersect(array_keys($query_order), array_keys($assinfo));
+        } else
+            $query_order = array_keys($assinfo);
+        $papers = join(" ", $query_order) ? : "NONE";
+        if (!$this->unparse_columns)
+            $this->unparse_columns[] = "show:reviewers";
+        $papers .= " " . join(" ", $this->unparse_columns);
         $search = new PaperSearch($this->contact,
                                   array("t" => defval($_REQUEST, "t", "s"),
-                                        "q" => $papers !== "" ? $papers : "NONE"));
+                                        "q" => $papers));
         $plist = new PaperList($search);
-        $plist->display .= " reviewers ";
         echo $plist->table_html("reviewers");
 
         echo '<div class="g"></div>';

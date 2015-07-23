@@ -694,15 +694,16 @@ class Autoassigner {
         // load conflicts
         $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and contactId ?a and conflictType>0", $this->papersel, array_keys($this->pcm));
         while (($row = edb_row($result)))
-            $conf[(int) $row[0]][(int) $row[1]] = true;
+            $conf[(int) $row[0]][] = (int) $row[1];
         Dbl::free($result);
+        //global $Conf; $Conf->echoScript("$('#propass').before(" . json_encode(Ht::pre_text(json_encode($conf))) . ")");
         // conflict edges
         $papersel = $this->papersel; // need copy for different iteration ptr
         foreach ($papersel as $pid1) {
             foreach ($this->papersel as $pid2)
                 if ($pid1 < $pid2) {
                     // cost of edge is number of different conflicts
-                    $cost = count($conf[$pid1]) + count($conf[$pid2]) - count($conf[$pid1] + $conf[$pid2]);
+                    $cost = count($conf[$pid1] + $conf[$pid2]) - count(array_intersect($conf[$pid1], $conf[$pid2]));
                     $m->add_edge("po$pid1", "p$pid2", 1, $cost);
                     $m->add_edge("po$pid2", "p$pid1", 1, $cost);
                 }
@@ -713,14 +714,30 @@ class Autoassigner {
         $m->run();
         // make assignments
         $this->set_progress("Completing assignment");
-        $this->ass = array("paper,action,tag");
+        $this->ass = array("paper,action,tag", "# hotcrp_assign_display_order",
+                           "# hotcrp_assign_show pcconf");
         $time = microtime(true);
-        //echo "<script>$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true))) . ")</script>";
         $index = 0;
-        foreach ($m->topological_sort(".source", "p") as $v) {
-            $index += TagInfo::value_increment($sequential ? "aos" : "ao");
-            $this->ass[] = substr($v->name, 1) . ",tag,{$tag}#{$index}";
+        // we may have circular flow loops disconnected from the source;
+        // to catch every element, must do explicit work.
+        // (NB this means the MCMF model doesn't solve the real problem.)
+        $roots = $this->papersel;
+        $cycle_starts = array();
+        while (count($roots)) {
+            $source = ".source";
+            if (count($roots) !== count($this->papersel))
+                $source = "p" . $roots[mt_rand(0, count($roots) - 1)];
+            $found = array();
+            foreach ($m->topological_sort($source, "p") as $v) {
+                $pid = (int) substr($v->name, 1);
+                empty($found) && ($cycle_starts[] = $pid);
+                $index += TagInfo::value_increment($sequential ? "aos" : "ao");
+                $this->ass[] = "{$pid},tag,{$tag}#{$index}";
+                $found[] = $pid;
+            }
+            $roots = array_values(array_diff($roots, $found));
         }
+        //global $Conf; $Conf->echoScript("$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true) . "\nroots: " . join(" ", $cycle_starts))) . ")");
         $m->clear(); // break circular refs
         $this->mcmf = null;
         $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
