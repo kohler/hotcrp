@@ -385,9 +385,14 @@ function doSelect($name, $opts, $extra = null) {
     echo Ht::select($name, $opts, $_REQUEST[$name], $extra);
 }
 
-function divClass($name) {
+function divClass($name, $classes = null) {
     global $Error;
-    return "<div" . (isset($Error[$name]) ? " class='error'" : "") . ">";
+    if (@$Error[$name])
+        $classes = ($classes ? $classes . " " : "") . "error";
+    if ($classes)
+        return '<div class="' . $classes . '">';
+    else
+        return '<div>';
 }
 
 echo Ht::form(hoturl_post("autoassign", array("profile" => @$_REQUEST["profile"], "seed" => @$_REQUEST["seed"], "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"]))),
@@ -412,8 +417,11 @@ Types of PC review:
 echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
-$q = ($_REQUEST["q"] === "" ? "(All)" : $_REQUEST["q"]);
-echo "<input id='autoassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onfocus=\"autosub('requery',this)\" onchange='highlightUpdate(\"requery\")' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";
+echo Ht::entry_h("q", $_REQUEST["q"],
+                 array("id" => "autoassignq", "hottemptext" => "(All)",
+                       "size" => 40, "title" => "Enter paper numbers or search terms",
+                       "class" => "hotcrp_searchbox",
+                       "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")"));
 else
@@ -442,22 +450,30 @@ echo "</div>\n";
 
 
 // action
-echo divClass("ass"), "<h3>Action</h3>", divClass("rev");
+echo divClass("ass"), "<h3>Action</h3>";
+echo divClass("rev", "hotradiorelation");
 doRadio("a", "rev", "Ensure each selected paper has <i>at least</i>");
-echo "&nbsp; <input type='text' name='revct' value=\"", htmlspecialchars(defval($_REQUEST, "revct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ";
+echo "&nbsp; ",
+    Ht::entry("revct", defval($_REQUEST, "revct", 1),
+              array("size" => 3, "onfocus" => 'autosub(false,this)')), "&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s)</div>\n";
 
-echo divClass("revadd");
+echo divClass("revadd", "hotradiorelation");
 doRadio("a", "revadd", "Assign");
-echo "&nbsp; <input type='text' name='revaddct' value=\"", htmlspecialchars(defval($_REQUEST, "revaddct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; ",
-    "<i>additional</i>&nbsp; ";
+echo "&nbsp; ",
+    Ht::entry("revaddct", defval($_REQUEST, "revaddct", 1),
+              array("size" => 3, "onfocus" => 'autosub(false,this)')),
+    "&nbsp; <i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s) per selected paper</div>\n";
 
-echo divClass("revpc");
+echo divClass("revpc", "hotradiorelation");
 doRadio("a", "revpc", "Assign each PC member");
-echo "&nbsp; <input type='text' name='revpcct' value=\"", htmlspecialchars(defval($_REQUEST, "revpcct", 1)), "\" size='3' onfocus='autosub(\"assign\",this)' />&nbsp; additional&nbsp; ";
+echo "&nbsp; ",
+    Ht::entry("revpcct", defval($_REQUEST, "revpcct", 1),
+              array("size" => 3, "onfocus" => 'autosub(false,this)')),
+    "&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s) from this paper selection</div>\n";
 
@@ -471,25 +487,30 @@ if (count($Conf->round_list()) > 1 || $rev_roundtag) {
 }
 echo "<div class='g'></div>\n";
 
+echo divClass("prefconflict", "hotradiorelation");
 doRadio('a', 'prefconflict', 'Assign conflicts when PC members have review preferences of &minus;100 or less');
-echo "<br />\n";
+echo "</div>\n";
 
+echo divClass("lead", "hotradiorelation");
 doRadio('a', 'lead', 'Assign discussion lead from reviewers, preferring&nbsp; ');
 doSelect('leadscore', $scoreselector);
-echo "<br />\n";
+echo "</div>\n";
 
+echo divClass("shepherd", "hotradiorelation");
 doRadio('a', 'shepherd', 'Assign shepherd from reviewers, preferring&nbsp; ');
 doSelect('shepherdscore', $scoreselector);
+echo "</div>\n";
 
-echo "<div class='g'></div>", divClass("clear");
+echo "<div class='g'></div>", divClass("clear", "hotradiorelation");
 doRadio('a', 'clear', 'Clear all &nbsp;');
 doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional", "conflict" => "conflict", "lead" => "discussion lead", "shepherd" => "shepherd"));
 echo " &nbsp;assignments for selected papers and PC members";
 
-echo "<div class='g'></div>";
+echo "<div class='g'></div>", divClass("discorder", "hotradiorelation");
 doRadio("a", "discorder", "Assign discussion order, minimizing switches among conflicted PC members");
+echo "</div>";
 
-echo "</div></div>\n";
+echo "</div>\n";
 
 
 // PC

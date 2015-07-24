@@ -3948,6 +3948,18 @@ document.body ? prepare() : $(prepare);
 })(jQuery);
 
 
+// focusing
+jQuery(function () {
+jQuery(".hotradiorelation input, .hotradiorelation select").on("click keypress", function (event) {
+    var x = jQuery(this).closest(".hotradiorelation")
+        .find("input[type='radio']").first();
+    if (x.length && x[0] !== this)
+        x[0].click();
+    return true;
+});
+});
+
+
 function save_tag_index(e) {
     var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),
         indexelt = j.find("input[name='tagindex']"), index = "";
