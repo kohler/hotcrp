@@ -701,6 +701,7 @@ hotcrp_graphs.formulas_add_qrow = function () {
     j = $(hotcrp_graphs.formulas_qrow.replace(/\$/g, i)).appendTo("#qcontainer");
     hiliter_children(j);
     j.find("input[hottemptext]").each(mktemptext);
+    j.find(".hotcrp_searchbox").each(function () { taghelp(this, "taghelp_q", taghelp_q); });
 };
 
 hotcrp_graphs.option_letter_ticks = function (n, c) {
