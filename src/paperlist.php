@@ -380,7 +380,7 @@ class PaperList extends BaseList {
             $t .= $barsep
                 . "    <td class='lll$nlll nowrap'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></td>\n"
                 . "    <td class='lld$nlll nowrap'><b>:</b> &nbsp;"
-                . "<input id='plact${nlll}_d' type='text' name='paprevpref' value='' size='4' tabindex='6' onfocus='autosub(\"setpaprevpref\",this)' />"
+                . Ht::entry("paprevpref", "", array("id" => "plact${nlll}_d", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpaprevpref",this)'))
                 . " &nbsp;" . Ht::submit("setpaprevpref", "Go", array("tabindex" => 6)) . "</td>\n";
             $nlll++;
         }
@@ -417,8 +417,9 @@ class PaperList extends BaseList {
                     . "<div style='margin:2px 0'>Using: &nbsp;"
                     . Ht::select("tagcr_method", PaperRank::methods(), defval($_REQUEST, "tagcr_method"))
                     . "</div>"
-                    . "<div style='margin:2px 0'>Source tag: &nbsp;~<input type='text' name='tagcr_source' value=\"" . htmlspecialchars(defval($_REQUEST, "tagcr_source", "")) . "\" size='15' /></div>"
-                    . "</div>";
+                    . "<div style='margin:2px 0'>Source tag: &nbsp;~"
+                    . Ht::entry("tagcr_source", @$_REQUEST["tagcr_source"], array("size" => 15))
+                    . "</div></div>";
             }
             $t .= "</td></tr></table></td>\n";
             $nlll++;
