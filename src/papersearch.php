@@ -78,31 +78,95 @@ class SearchTerm {
         return $this;
     }
     function finish() {
-        if ($this->type === "not") {
-            if ($this->value && $this->value[0]->is_true())
-                $this->type = "f";
-            else if (!$this->value || $this->value[0]->is_false())
-                $this->type = "t";
-        } else if ($this->type !== "then" && $this->type !== "highlight") {
-            $any = false;
-            $values = array();
-            foreach ($this->value ? : array() as $qv)
-                if (!$qv->is_false()) {
-                    $any = true;
-                    if (!$qv->is_true())
-                        $values[] = $qv;
-                }
-            if (!$any)
-                $this->type = "f";
-            else if (!count($values))
-                $this->type = "t";
-            else if (count($values) == 1) {
-                $ql = clone $values[0];
-                $ql->float = $this->float;
-                return $ql;
-            } else
-                $this->value = $values;
+        if ($this->type === "not")
+            return $this->_finish_not();
+        else if ($this->type === "and" || $this->type === "and2")
+            return $this->_finish_and();
+        else if ($this->type === "or")
+            return $this->_finish_or();
+        else
+            return $this;
+    }
+    private function _finish_not() {
+        $qv = $this->value ? $this->value[0] : null;
+        if (!$qv || $qv->is_false())
+            $this->type = "t";
+        else if ($qv->is_true())
+            $this->type = "f";
+        else if ($qv->type === "not") {
+            $qr = clone $qv->value[0];
+            $qr->float = $this->float;
+            return $qr;
+        } else if ($qv->type === "pn") {
+            $this->type = "pn";
+            $this->value = array($qv->value[1], $qv->value[0]);
+        } else if ($qv->type === "revadj") {
+            $qr = clone $qv->value[0];
+            $qr->float = $this->float;
+            $qr->value["revadjnegate"] = !@$qr->value["revadjnegate"];
+            return $qr;
         }
+        return $this;
+    }
+    private function _finish_and() {
+        $pn = array(array(), array());
+        $revadj = null;
+        $newvalue = array();
+        $any = false;
+
+        foreach ($this->value ? : array() as $qv) {
+            if ($qv->is_false()) {
+                $this->type = "f";
+                return $this;
+            } else if ($qv->is_true())
+                $any = true;
+            else if ($qv->type === "pn" && $this->type === "and2") {
+                $pn[0] = array_merge($pn[0], $qv->value[0]);
+                $pn[1] = array_merge($pn[1], $qv->value[1]);
+            } else if ($qv->type === "revadj")
+                $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "and");
+            else
+                $newvalue[] = $qv;
+        }
+
+        return $this->_finish_combine($newvalue, $pn, $revadj, $any);
+    }
+    private function _finish_or() {
+        $pn = array(array(), array());
+        $revadj = null;
+        $newvalue = array();
+
+        foreach ($this->value ? : array() as $qv) {
+            if ($qv->is_true()) {
+                $this->type = "t";
+                return $this;
+            } else if ($qv->is_false())
+                /* skip */;
+            else if ($qv->type === "pn" && count($qv->value[0]))
+                $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
+            else if ($qv->type === "revadj")
+                $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "or");
+            else
+                $newvalue[] = $qv;
+        }
+
+        return $this->_finish_combine($newvalue, $pn, $revadj, false);
+    }
+    private function _finish_combine($newvalue, $pn, $revadj, $any) {
+        if (count($pn[0]) || count($pn[1]))
+            $newvalue[] = new SearchTerm("pn", 0, $pn);
+        if ($revadj)            // must be first
+            array_unshift($newvalue, $revadj);
+        if (!$newvalue && $any)
+            $this->type = "t";
+        else if (!$newvalue)
+            $this->type = "f";
+        else if (count($newvalue) == 1) {
+            $qr = clone $newvalue[0];
+            $qr->float = $this->float;
+            return $qr;
+        } else
+            $this->value = $newvalue;
         return $this;
     }
     static function make_op($combiner, $terms) {
@@ -1799,21 +1863,25 @@ class PaperSearch {
     }
 
     static private function _combine_stack($stack, $qe) {
-        if ($stack->used) {
-            $stack->leftqe->annotate($qe)->append($qe);
-            return $stack->leftqe;
-        } else
-            return SearchTerm::make_op($stack->op, array($stack->leftqe, $qe));
+        if ($stack->used)
+            $qr = $stack->leftqe;
+        else {
+            $qr = new SearchTerm($stack->op);
+            $leftqe = $stack->leftqe->finish();
+            $qr = $qr->annotate($leftqe)->append($leftqe);
+        }
+        $qe = $qe->finish();
+        return $qr->annotate($qe)->append($qe);
     }
 
     static function _searchPopStack($curqe, &$stack) {
         $x = array_pop($stack);
         if (!$curqe)
             return $x->leftqe;
-        else if ($x->op->op === "not")
-            return SearchTerm::make_not($curqe);
-        else if ($x->op->op === "+")
+        if ($x->op->op === "+")
             return $curqe;
+        if ($x->op->op === "not")
+            return SearchTerm::make_not($curqe->finish());
         else
             return self::_combine_stack($x, $curqe);
     }
@@ -1919,7 +1987,7 @@ class PaperSearch {
             $curqe->set_float("substr", trim($headstr . $xstr));
         while (count($stack))
             $curqe = self::_searchPopStack($curqe, $stack);
-        return $curqe;
+        return $curqe->finish();
     }
 
     static private function _canonicalizePopStack($curqe, &$stack) {
@@ -2017,36 +2085,6 @@ class PaperSearch {
     // this step is to combine all paper numbers into a single group, and to
     // assign review adjustments (rates & rounds).
 
-    private function _queryClean($qe) {
-        if (!$qe)
-            return $qe;
-        else if ($qe->type === "not")
-            return $this->_queryCleanNot($qe);
-        else if ($qe->type === "or")
-            return $this->_queryCleanOr($qe);
-        else if ($qe->type === "then" || $qe->type === "highlight")
-            return $this->_queryCleanThen($qe);
-        else if ($qe->type === "and" || $qe->type === "and2")
-            return $this->_queryCleanAnd($qe);
-        else
-            return $qe;
-    }
-
-    private function _queryCleanNot($qe) {
-        $qv = $this->_queryClean($qe->value);
-        if ($qv->type === "not")
-            return $qv->value;
-        else if ($qv->type === "pn")
-            return new SearchTerm("pn", 0, array($qv->value[1], $qv->value[0]));
-        else if ($qv->type === "revadj") {
-            $qv->value["revadjnegate"] = !defval($qv->value, "revadjnegate", false);
-            return $qv;
-        } else {
-            $qr = new SearchTerm("not");
-            return $qr->annotate($qe)->append($qv)->finish();
-        }
-    }
-
     static function _reviewAdjustmentNegate($ra) {
         global $Conf;
         if (isset($ra->value["round"]))
@@ -2084,52 +2122,6 @@ class PaperSearch {
         return $revadj;
     }
 
-    private function _queryCleanOr($qe) {
-        $revadj = null;
-        $qr = new SearchTerm("or");
-        $qr->annotate($qe);
-        $newvalues = array();
-
-        foreach ($qe->value as $qv) {
-            $qv = $this->_queryClean($qv);
-            if ($qv && $qv->type === "revadj")
-                $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "or");
-            else
-                $qr->append($qv);
-        }
-
-        if ($revadj && count($newvalues) == 0)
-            return $revadj;
-        else if ($revadj)
-            $this->_reviewAdjustError = true;
-        return $qr->finish();
-    }
-
-    private function _queryCleanAnd($qe) {
-        $pn = array(array(), array());
-        $revadj = null;
-        $qr = new SearchTerm("and");
-        $qr->annotate($qe);
-        $newvalues = array();
-
-        foreach ($qe->value as $qv) {
-            $qv = $this->_queryClean($qv);
-            if ($qv && $qv->type === "pn" && $qe->type === "and2") {
-                $pn[0] = array_merge($pn[0], $qv->value[0]);
-                $pn[1] = array_merge($pn[1], $qv->value[1]);
-            } else if ($qv && $qv->type === "revadj")
-                $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "and");
-            else
-                $qr->append($qv);
-        }
-
-        if (count($pn[0]) || count($pn[1]))
-            $qr->append(new SearchTerm("pn", 0, $pn));
-        if ($revadj)            // must be first
-            array_unshift($qr->value, $revadj);
-        return $qr->finish();
-    }
-
     private function _queryCleanThen($qe) {
         $qr = new SearchTerm("then");
         $qr->annotate($qe);
@@ -2138,7 +2130,6 @@ class PaperSearch {
         $qeopinfo = strtolower(@$qe->get_float("opinfo", ""));
 
         foreach ($qe->value as $qvidx => $qv) {
-            $qv = $this->_queryClean($qv);
             if ($qv && $qvidx && $ishighlight) {
                 if ($qv->type === "then") {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
@@ -2863,7 +2854,8 @@ class PaperSearch {
             $qe = SearchTerm::make_op("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
 
         // clean query
-        $qe = $this->_queryClean($qe, 0);
+        if ($qe && $qe->type === "then")
+            $qe = $this->_queryCleanThen($qe);
         // apply review rounds (top down, needs separate step)
         if ($this->reviewAdjust) {
             $qe = $this->_queryAdjustReviews($qe, null);
