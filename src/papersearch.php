@@ -40,7 +40,12 @@ class SearchTerm {
     public $float;
 
     function __construct($t, $f = 0, $v = null, $other = null) {
-        $this->type = $t;
+        if ($t instanceof SearchOperator) {
+            $this->type = $t->op;
+            if ($t->opinfo)
+                $this->set_float("opinfo", $t->opinfo);
+        } else
+            $this->type = $t;
         $this->link = false;
         $this->flags = $f;
         $this->value = $v;
@@ -48,6 +53,48 @@ class SearchTerm {
             foreach ($other as $k => $v)
                 $this->$k = $v;
         }
+    }
+    function annotate($term) {
+        if ($term && $term->float) {
+            $this->float = $this->float ? : array();
+            foreach ($term->float as $k => $v)
+                if ($k === "sort" && isset($this->float["sort"]))
+                    array_splice($this->float["sort"], count($this->float["sort"]), 0, $v);
+                else if (is_array(@$this->float[$k]) && is_array($v))
+                    $this->float[$k] = array_replace_recursive($this->float[$k], $v);
+                else if ($k !== "substr" || !isset($this->float[$k]))
+                    $this->float[$k] = $v;
+        }
+        return $this;
+    }
+    function append($term) {
+        if ($term && $term->float)
+            $this->annotate($term);
+        if ($term)
+            $this->value[] = $term;
+        return $this;
+    }
+    function finish() {
+        if ($this->type === "not") {
+            if ($this->value && $this->value[0]->is_true())
+                $this->type = "f";
+            else if (!$this->value || $this->value[0]->is_false())
+                $this->type = "t";
+        } else if ($this->type !== "then") {
+            $any = false;
+            $values = array();
+            foreach ($this->value ? : array() as $qv)
+                if (!$qv->is_false()) {
+                    $any = true;
+                    if (!$qv->is_true())
+                        $values[] = $qv;
+                }
+            if (!$any)
+                $this->type = "f";
+            else if (!count($values))
+                $this->type = "t";
+        }
+        return $this;
     }
     static function combine($combiner, $terms) {
         if (!is_array($terms) && $terms)
@@ -81,43 +128,11 @@ class SearchTerm {
     static function make_float($float) {
         return new SearchTerm("t", 0, null, array("float" => $float));
     }
-    static function merge_float(&$float1, $float2) {
-        if (!$float1 || !$float2)
-            return $float1 ? : $float2;
-        else {
-            foreach ($float2 as $k => $v)
-                if ($k === "sort" && isset($float1["sort"]))
-                    array_splice($float1["sort"], count($float1["sort"]), 0, $v);
-                else if (is_array(@$float1[$k]) && is_array($v))
-                    $float1[$k] = array_replace_recursive($float1[$k], $v);
-                else
-                    $float1[$k] = $v;
-            return $float1;
-        }
-    }
-    static function extract_float(&$float, $qe) {
-        if (!isset($float))
-            $float = null;
-        if ($qe && ($qefloat = $qe->get("float"))) {
-            $float = self::merge_float($float, $qefloat);
-            return $qe->type === "t" ? null : $qe;
-        } else
-            return $qe;
-    }
-    static function combine_float($float, $combiner, $terms) {
-        if (!is_array($terms))
-            $terms = $terms ? array($terms) : array();
-        if (count($terms)) {
-            $qe = self::combine($combiner, $terms);
-            $float && $qe->set("float", $float);
-            return $qe;
-        } else if ($float)
-            return SearchTerm::make_float($float);
-        else
-            return null;
-    }
-    function isfalse() {
+    function is_false() {
         return $this->type === "f";
+    }
+    function is_true() {
+        return $this->type === "t";
     }
     function islistcombiner() {
         // "and" "and2" "or" "then" "highlight"
@@ -1554,14 +1569,14 @@ class PaperSearch {
             return new SearchTerm("pn", 0, array(range($m[1], $m[2]), array()));
         } else if (substr($word, 0, 1) === "#") {
             $qe = $this->_searchQueryWord("tag:" . $word, false);
-            if (!$qe->isfalse())
+            if (!$qe->is_false())
                 return $qe;
         }
 
         // Allow searches like "ovemer>2"; parse as "ovemer:>2".
         if (preg_match('/\A([-_A-Za-z0-9]+)((?:[=!<>]=?|≠|≤|≥)[^:]+)\z/', $word, $m)) {
             $qe = $this->_searchQueryWord($m[1] . ":" . $m[2], false);
-            if (!$qe->isfalse())
+            if (!$qe->is_false())
                 return $qe;
         }
 
@@ -2034,9 +2049,8 @@ class PaperSearch {
             $qv->value["revadjnegate"] = !defval($qv->value, "revadjnegate", false);
             return $qv;
         } else {
-            $float = $qe->get("float");
-            $qv = SearchTerm::extract_float($float, $qv);
-            return SearchTerm::combine_float($float, "not", $qv);
+            $qr = new SearchTerm("not");
+            return $qr->append($qv)->finish();
         }
     }
 
@@ -2079,48 +2093,52 @@ class PaperSearch {
 
     private function _queryCleanOr($qe, $prec) {
         $revadj = null;
-        $float = $qe->get("float");
+        $qr = new SearchTerm("or");
+        $qr->annotate($qe);
         $newvalues = array();
         $prec = max($prec, 2);
 
         foreach ($qe->value as $qv) {
-            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
+            $qv = $this->_queryClean($qv, $prec);
+            $qr->annotate($qv);
             if ($qv && $qv->type === "revadj")
                 $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "or");
-            else if ($qv)
-                $newvalues[] = $qv;
+            else
+                $qr->append($qv);
         }
 
         if ($revadj && count($newvalues) == 0)
             return $revadj;
         else if ($revadj)
             $this->_reviewAdjustError = true;
-        return SearchTerm::combine_float($float, "or", $newvalues);
+        return $qr->finish();
     }
 
     private function _queryCleanAnd($qe, $prec) {
         $pn = array(array(), array());
         $revadj = null;
-        $float = $qe->get("float");
+        $qr = new SearchTerm("and");
+        $qr->annotate($qe);
         $newvalues = array();
         $prec = max($prec, 2);
 
         foreach ($qe->value as $qv) {
-            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
+            $qv = $this->_queryClean($qv, $prec);
+            $qr->annotate($qv);
             if ($qv && $qv->type === "pn" && $qe->type === "and2") {
                 $pn[0] = array_merge($pn[0], $qv->value[0]);
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
             } else if ($qv && $qv->type === "revadj")
                 $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "and");
-            else if ($qv)
-                $newvalues[] = $qv;
+            else
+                $qr->append($qv);
         }
 
         if (count($pn[0]) || count($pn[1]))
-            array_unshift($newvalues, new SearchTerm("pn", 0, $pn));
+            $qr->append(new SearchTerm("pn", 0, $pn));
         if ($revadj)            // must be first
-            array_unshift($newvalues, $revadj);
-        return SearchTerm::combine_float($float, "and", $newvalues);
+            array_unshift($qr->value, $revadj);
+        return $qr->finish();
     }
 
     private function _queryCleanThen($qe, $prec) {
@@ -2130,13 +2148,15 @@ class PaperSearch {
             return $this->_queryCleanOr($qe);
         }
 
-        $float = $qe->get("float");
+        $qr = new SearchTerm("then");
+        $qr->annotate($qe);
         $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
         $ishighlight = $qe->type !== "then";
         $qeopinfo = strtolower(@$qe->get_float("opinfo", ""));
 
         foreach ($qe->value as $qvidx => $qv) {
-            $qv = SearchTerm::extract_float($float, $this->_queryClean($qv, $prec));
+            $qv = $this->_queryClean($qv, $prec);
+            $qr->annotate($qv);
             if ($qv && $qvidx && $ishighlight) {
                 if ($qv->type === "then") {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
@@ -2163,12 +2183,13 @@ class PaperSearch {
                 $newvalues[] = $qv;
         }
 
-        if (count($newvalues) === 1 && !count($newhvalues))
-            return $newvalues[0];
-
-        $xqe = new SearchTerm("then", 0, $newvalues, array("nthen" => count($newvalues), "highlights" => $newhmasks, "highlight_types" => $newhtypes, "float" => $float));
-        array_splice($xqe->value, count($newvalues), 0, $newhvalues);
-        return $xqe;
+        $qr->set("nthen", count($newvalues));
+        $qr->set("highlights", $newhmasks);
+        $qr->set("highlight_types", $newhtypes);
+        array_splice($newvalues, $qr->nthen, 0, $newhvalues);
+        foreach ($newvalues as $qv)
+            $qr->append($qv);
+        return $qr->finish();
     }
 
     // apply rounds to reviewer searches
