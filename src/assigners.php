@@ -427,7 +427,10 @@ class ReviewAssigner extends Assigner {
     }
     function execute($who) {
         global $Conf;
-        $who->assign_review($this->pid, $this->cid, $this->rtype);
+        $extra = array();
+        if ($this->round && $this->rtype)
+            $extra["round_number"] = $Conf->round_number($this->round, true);
+        $who->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);

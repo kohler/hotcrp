@@ -2776,8 +2776,10 @@ class Contact {
         // change database
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = "";
-            if (($t = $Conf->setting_data("rev_roundtag")))
-                $qa .= ", reviewRound=" . $Conf->round_number($t, true);
+            if (@$extra["round_number"] !== null)
+                $qa .= ", reviewRound=" . $extra["round_number"];
+            else if (($round = $Conf->current_round()))
+                $qa .= ", reviewRound=" . $round;
             if (@$extra["mark_notify"])
                 $qa .= ", timeRequestNotified=$Now";
             if (@$extra["token"])
