@@ -134,6 +134,7 @@ class SearchTerm {
     }
 }
 
+
 class SearchReviewValue {
     public $countexpr;
     public $contactsql;
@@ -763,11 +764,11 @@ class PaperSearch {
             return array($text, ">0");
     }
 
-    static function _comparTautology($m) {
+    static private function _tautology($m) {
         if ($m[1] === "<0")
-            return "f";
+            return new SearchTerm("f");
         else if ($m[1] === ">=0")
-            return "t";
+            return new SearchTerm("t");
         else
             return null;
     }
@@ -834,8 +835,9 @@ class PaperSearch {
             $rt |= self::F_INPROGRESS;
 
         $m = self::_matchCompar($word, $quoted);
-        if (($type = self::_comparTautology($m))) {
-            $qt[] = new SearchTerm($type);
+        if (($qr = self::_tautology($m))) {
+            $qr->set_float("used_revadj", true);
+            $qt[] = $qr;
             return;
         }
 
@@ -879,8 +881,8 @@ class PaperSearch {
 
     private function _search_conflict($word, &$qt, $quoted, $pc_only) {
         $m = self::_matchCompar($word, $quoted);
-        if (($type = self::_comparTautology($m))) {
-            $qt[] = new SearchTerm($type);
+        if (($qr = self::_tautology($m))) {
+            $qt[] = $qr;
             return;
         }
 
@@ -927,8 +929,8 @@ class PaperSearch {
     private function _search_comment($word, $ctype, &$qt, $quoted) {
         global $Conf;
         $m = self::_matchCompar($word, $quoted);
-        if (($type = self::_comparTautology($m))) {
-            $qt[] = new SearchTerm($type);
+        if (($qr = self::_tautology($m))) {
+            $qt[] = $qr;
             return;
         }
 
@@ -1033,6 +1035,7 @@ class PaperSearch {
                             $warnings = array("<" => "less than", ">" => "greater than");
                         $t = new SearchTerm("f");
                         $t->set("contradiction_warning", "No $f->name_html scores are " . ($m[2] === "=" ? "" : $warnings[$m[2][0]] . (strlen($m[2]) == 1 ? " " : " or equal to ")) . $score . ".");
+                        $t->set_float("used_revadj", true);
                         $qt[] = $t;
                         return false;
                     } else {
@@ -2220,6 +2223,8 @@ class PaperSearch {
                 if (isset($revadj->value[$adj]))
                     $qe->set($adj, $revadj->value[$adj]);
             $revadj->used_revadj = true;
+        } else if ($qe->get_float("used_revadj")) {
+            $revadj && $revadj->used_revadj = true;
         } else if ($qe->type === "revadj") {
             assert(!$revadj);
             return $this->_queryMakeAdjustedReviewSearch($qe);
