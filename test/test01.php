@@ -284,5 +284,10 @@ $assignset->parse("action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n");
 xassert($assignset->execute());
 assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
 
+// round searches
+assert_search_papers($user_chair, "re:huitema", "8 10 13");
+assert_search_papers($user_chair, "re:huitema round:R1", "13");
+assert_search_papers($user_chair, "round:R1", "12 13");
+assert_search_papers($user_chair, "round:R1 re:any", "12 13");
 
 xassert_exit();
