@@ -79,7 +79,7 @@ class SearchTerm {
             return new SearchTerm("not", 0, $term);
     }
     static function make_float($float) {
-        return new SearchTerm("float", 0, null, array("float" => $float));
+        return new SearchTerm("t", 0, null, array("float" => $float));
     }
     static function merge_float(&$float1, $float2) {
         if (!$float1 || !$float2)
@@ -100,7 +100,7 @@ class SearchTerm {
             $float = null;
         if ($qe && ($qefloat = $qe->get("float"))) {
             $float = self::merge_float($float, $qefloat);
-            return $qe->type === "float" ? null : $qe;
+            return $qe->type === "t" ? null : $qe;
         } else
             return $qe;
     }
@@ -2813,7 +2813,7 @@ class PaperSearch {
             return false;
         } else if ($tt === "f")
             return false;
-        else if ($tt === "t" || $tt === "float" || $tt === "revadj")
+        else if ($tt === "t" || $tt === "revadj")
             return true;
         else {
             error_log("PaperSearch::_clauseTermCheck: $tt defaults, correctness unlikely");
