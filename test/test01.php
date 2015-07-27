@@ -289,6 +289,7 @@ assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");
 assert_search_papers($user_chair, "round:R1", "12 13");
 assert_search_papers($user_chair, "round:R1 re:any", "12 13");
+assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18");
 
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("action,paper,user,round\nclearreview,all,huitema,R1\n");
