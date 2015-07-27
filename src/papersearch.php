@@ -62,14 +62,13 @@ class SearchTerm {
                     array_splice($this->float["sort"], count($this->float["sort"]), 0, $v);
                 else if (is_array(@$this->float[$k]) && is_array($v))
                     $this->float[$k] = array_replace_recursive($this->float[$k], $v);
-                else if ($k !== "substr" || !isset($this->float[$k]))
+                else if (($k !== "substr" && $k !== "opinfo")
+                         || !isset($this->float[$k]))
                     $this->float[$k] = $v;
         }
         return $this;
     }
     function append($term) {
-        if ($term && $term->float)
-            $this->annotate($term);
         if ($term)
             $this->value[] = $term;
         return $this;
@@ -80,7 +79,7 @@ class SearchTerm {
                 $this->type = "f";
             else if (!$this->value || $this->value[0]->is_false())
                 $this->type = "t";
-        } else if ($this->type !== "then") {
+        } else if ($this->type !== "then" && $this->type !== "highlight") {
             $any = false;
             $values = array();
             foreach ($this->value ? : array() as $qv)
@@ -96,34 +95,16 @@ class SearchTerm {
         }
         return $this;
     }
-    static function combine($combiner, $terms) {
-        if (!is_array($terms) && $terms)
-            $terms = $terms ? array($terms) : array();
-        $op = $combiner instanceof SearchOperator ? $combiner->op : $combiner;
-        if (count($terms) == 0)
-            $x = new SearchTerm("f");
-        else if ($combiner === "not") {
-            assert(count($terms) == 1);
-            $x = self::negate($terms[0]);
-        } else if (count($terms) == 1)
-            $x = $terms[0];
-        else
-            $x = new SearchTerm($op, 0, $terms);
-        if ($combiner instanceof SearchOperator && @$combiner->opinfo)
-            $x->set_float("opinfo", $combiner->opinfo);
-        return $x;
+    static function make_op($combiner, $terms) {
+        $qr = new SearchTerm($combiner);
+        if ($terms)
+            foreach (is_array($terms) ? $terms : array($terms) as $qt)
+                $qr->annotate($qt)->append($qt);
+        return $qr->finish();
     }
-    static function negate($term) {
-        if (!$term)
-            return null;
-        else if ($term->type === "not")
-            return $term->value;
-        else if ($term->type === "f")
-            return new SearchTerm("t");
-        else if ($term->type === "t")
-            return new SearchTerm("f");
-        else
-            return new SearchTerm("not", 0, $term);
+    static function make_not($term) {
+        $qr = new SearchTerm("not");
+        return $qr->annotate($term)->append($term)->finish();
     }
     static function make_float($float) {
         return new SearchTerm("t", 0, null, array("float" => $float));
@@ -133,10 +114,6 @@ class SearchTerm {
     }
     function is_true() {
         return $this->type === "t";
-    }
-    function islistcombiner() {
-        // "and" "and2" "or" "then" "highlight"
-        return $this->precedence <= 6;
     }
     function set($k, $v) {
         $this->$k = $v;
@@ -943,7 +920,7 @@ class PaperSearch {
         if ($round !== null)
             $term->commentRound = $round;
         if ($tag === "none")
-            $term = SearchTerm::combine("not", $term);
+            $term = SearchTerm::make_not($term);
         $qt[] = $term;
     }
 
@@ -1073,14 +1050,14 @@ class PaperSearch {
                 } else
                     $this->_searchReviews($contactword . ">=" . $m[1], $f, $qo, $quoted, true);
                 if ($this->_searchReviews($contactword . "<" . $m[1], $f, $qo, $quoted, true))
-                    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
+                    $qo[count($qo) - 1] = SearchTerm::make_not($qo[count($qo) - 1]);
                 else
                     array_pop($qo);
                 if ($this->_searchReviews($contactword . ">" . $m[3], $f, $qo, $quoted, true))
-                    $qo[count($qo) - 1] = SearchTerm::negate($qo[count($qo) - 1]);
+                    $qo[count($qo) - 1] = SearchTerm::make_not($qo[count($qo) - 1]);
                 else
                     array_pop($qo);
-                $qt[] = new SearchTerm("and", 0, $qo);
+                $qt[] = SearchTerm::make_op("and", $qo);
                 return true;
             } else              // XXX
                 $value = "$field=-1";
@@ -1233,7 +1210,7 @@ class PaperSearch {
             $extra = array("tagorder" => (object) array("tag" => $tags[0], "reverse" => $keyword === "rorder"));
         $term = new SearchTerm("tag", self::F_XVIEW, $compar, $extra);
         if ($tags[0] === "none")
-            $term = SearchTerm::negate($term);
+            $term = SearchTerm::make_not($term);
         $qt[] = $term;
     }
 
@@ -1257,7 +1234,7 @@ class PaperSearch {
         else
             $qe = new SearchTerm("f");
         if ($word === "none")
-            $qe = SearchTerm::negate($qe);
+            $qe = SearchTerm::make_not($qe);
         $qt[] = $qe;
     }
 
@@ -1362,7 +1339,7 @@ class PaperSearch {
                 $qz[] = new SearchTerm("option", self::F_XVIEW, array($oq[0], $cmp . $value));
             }
         if ($os->negate)
-            $qz = array(SearchTerm::negate(SearchTerm::combine("or", $qz)));
+            $qz = array(SearchTerm::make_not(SearchTerm::make_op("or", $qz)));
         $qt = array_merge($qt, $qz);
         return true;
     }
@@ -1751,8 +1728,8 @@ class PaperSearch {
                 $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
         }
 
-        $qe = SearchTerm::combine("or", $qt);
-        return $negated ? SearchTerm::negate($qe) : $qe;
+        $qe = SearchTerm::make_op("or", $qt);
+        return $negated ? SearchTerm::make_not($qe) : $qe;
     }
 
     static public function pop_word(&$str) {
@@ -1806,19 +1783,24 @@ class PaperSearch {
             return array(null, $str);
     }
 
+    static private function _combine_stack($stack, $qe) {
+        if ($stack->used) {
+            $stack->leftqe->annotate($qe)->append($qe);
+            return $stack->leftqe;
+        } else
+            return SearchTerm::make_op($stack->op, array($stack->leftqe, $qe));
+    }
+
     static function _searchPopStack($curqe, &$stack) {
         $x = array_pop($stack);
         if (!$curqe)
             return $x->leftqe;
         else if ($x->op->op === "not")
-            return SearchTerm::negate($curqe);
+            return SearchTerm::make_not($curqe);
         else if ($x->op->op === "+")
             return $curqe;
-        else if ($x->used) {
-            $x->leftqe->value[] = $curqe;
-            return $x->leftqe;
-        } else
-            return SearchTerm::combine($x->op, array($x->leftqe, $curqe));
+        else
+            return self::_combine_stack($x, $curqe);
     }
 
     function _searchQueryType($str) {
@@ -1908,12 +1890,8 @@ class PaperSearch {
                 }
                 $top = count($stack) ? $stack[count($stack) - 1] : null;
                 if ($top && !$op->unary && $top->op === $op) {
-                    if ($top->used)
-                        $top->leftqe->value[] = $curqe;
-                    else {
-                        $top->leftqe = SearchTerm::combine($op, array($top->leftqe, $curqe));
-                        $top->used = true;
-                    }
+                    $top->leftqe = self::_combine_stack($top, $curqe);
+                    $top->used = true;
                 } else
                     $stack[] = (object) array("op" => $op, "leftqe" => $curqe, "used" => false);
                 $curqe = null;
@@ -2050,7 +2028,7 @@ class PaperSearch {
             return $qv;
         } else {
             $qr = new SearchTerm("not");
-            return $qr->append($qv)->finish();
+            return $qr->annotate($qe)->append($qv)->finish();
         }
     }
 
@@ -2100,7 +2078,6 @@ class PaperSearch {
 
         foreach ($qe->value as $qv) {
             $qv = $this->_queryClean($qv, $prec);
-            $qr->annotate($qv);
             if ($qv && $qv->type === "revadj")
                 $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "or");
             else
@@ -2124,7 +2101,6 @@ class PaperSearch {
 
         foreach ($qe->value as $qv) {
             $qv = $this->_queryClean($qv, $prec);
-            $qr->annotate($qv);
             if ($qv && $qv->type === "pn" && $qe->type === "and2") {
                 $pn[0] = array_merge($pn[0], $qv->value[0]);
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
@@ -2156,7 +2132,6 @@ class PaperSearch {
 
         foreach ($qe->value as $qvidx => $qv) {
             $qv = $this->_queryClean($qv, $prec);
-            $qr->annotate($qv);
             if ($qv && $qvidx && $ishighlight) {
                 if ($qv->type === "then") {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
@@ -2206,7 +2181,7 @@ class PaperSearch {
         $term = new SearchTerm("re", $rt | self::F_XVIEW, $value, $roundterm->value);
         if (defval($roundterm->value, "revadjnegate")) {
             $term->set("revadjnegate", false);
-            return SearchTerm::negate($term);
+            return SearchTerm::make_not($term);
         } else
             return $term;
     }
@@ -2876,7 +2851,7 @@ class PaperSearch {
         // apply complex limiters (only current example: "acc" for non-chairs)
         $limit = $this->limitName;
         if ($limit === "acc" && !$this->privChair)
-            $qe = SearchTerm::combine("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
+            $qe = SearchTerm::make_op("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
 
         // clean query
         $qe = $this->_queryClean($qe, 0);
