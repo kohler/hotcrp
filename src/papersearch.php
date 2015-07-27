@@ -70,6 +70,9 @@ class SearchTerm {
         return $this;
     }
     function append($term) {
+        // `THEN` cannot be nested underneath `AND`, `OR`, or `NOT`
+        if ($term && $term->is_then() && !$this->is_then())
+            $term->type = "or";
         if ($term)
             $this->value[] = $term;
         return $this;
@@ -121,6 +124,9 @@ class SearchTerm {
     }
     function is_true() {
         return $this->type === "t";
+    }
+    function is_then() {
+        return $this->type === "then" || $this->type === "highlight";
     }
     function set($k, $v) {
         $this->$k = $v;
@@ -482,7 +488,6 @@ class PaperSearch {
     private $_query_options = array();
     private $reviewAdjust = false;
     private $_reviewAdjustError = false;
-    private $_thenError = false;
     private $_ssRecursion = array();
     private $_allow_deleted = false;
     public $thenmap = null;
@@ -2012,23 +2017,23 @@ class PaperSearch {
     // this step is to combine all paper numbers into a single group, and to
     // assign review adjustments (rates & rounds).
 
-    private function _queryClean($qe, $prec) {
+    private function _queryClean($qe) {
         if (!$qe)
             return $qe;
         else if ($qe->type === "not")
-            return $this->_queryCleanNot($qe, $prec);
+            return $this->_queryCleanNot($qe);
         else if ($qe->type === "or")
-            return $this->_queryCleanOr($qe, $prec);
+            return $this->_queryCleanOr($qe);
         else if ($qe->type === "then" || $qe->type === "highlight")
-            return $this->_queryCleanThen($qe, $prec);
+            return $this->_queryCleanThen($qe);
         else if ($qe->type === "and" || $qe->type === "and2")
-            return $this->_queryCleanAnd($qe, $prec);
+            return $this->_queryCleanAnd($qe);
         else
             return $qe;
     }
 
-    private function _queryCleanNot($qe, $prec) {
-        $qv = $this->_queryClean($qe->value, max($prec, 2));
+    private function _queryCleanNot($qe) {
+        $qv = $this->_queryClean($qe->value);
         if ($qv->type === "not")
             return $qv->value;
         else if ($qv->type === "pn")
@@ -2079,15 +2084,14 @@ class PaperSearch {
         return $revadj;
     }
 
-    private function _queryCleanOr($qe, $prec) {
+    private function _queryCleanOr($qe) {
         $revadj = null;
         $qr = new SearchTerm("or");
         $qr->annotate($qe);
         $newvalues = array();
-        $prec = max($prec, 2);
 
         foreach ($qe->value as $qv) {
-            $qv = $this->_queryClean($qv, $prec);
+            $qv = $this->_queryClean($qv);
             if ($qv && $qv->type === "revadj")
                 $revadj = self::_reviewAdjustmentMerge($revadj, $qv, "or");
             else
@@ -2101,16 +2105,15 @@ class PaperSearch {
         return $qr->finish();
     }
 
-    private function _queryCleanAnd($qe, $prec) {
+    private function _queryCleanAnd($qe) {
         $pn = array(array(), array());
         $revadj = null;
         $qr = new SearchTerm("and");
         $qr->annotate($qe);
         $newvalues = array();
-        $prec = max($prec, 2);
 
         foreach ($qe->value as $qv) {
-            $qv = $this->_queryClean($qv, $prec);
+            $qv = $this->_queryClean($qv);
             if ($qv && $qv->type === "pn" && $qe->type === "and2") {
                 $pn[0] = array_merge($pn[0], $qv->value[0]);
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
@@ -2127,13 +2130,7 @@ class PaperSearch {
         return $qr->finish();
     }
 
-    private function _queryCleanThen($qe, $prec) {
-        if ($prec >= 2) {
-            $this->_thenError = true;
-            $qe->type = "or";
-            return $this->_queryCleanOr($qe);
-        }
-
+    private function _queryCleanThen($qe) {
         $qr = new SearchTerm("then");
         $qr->annotate($qe);
         $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
@@ -2141,7 +2138,7 @@ class PaperSearch {
         $qeopinfo = strtolower(@$qe->get_float("opinfo", ""));
 
         foreach ($qe->value as $qvidx => $qv) {
-            $qv = $this->_queryClean($qv, $prec);
+            $qv = $this->_queryClean($qv);
             if ($qv && $qvidx && $ishighlight) {
                 if ($qv->type === "then") {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
