@@ -31,13 +31,14 @@ SearchOperator::$list =
               "HIGHLIGHT" => new SearchOperator("highlight", false, 1),
               ")" => null);
 
+
 class SearchTerm {
     public $type;
     public $link;
     public $flags;
     public $value;
-    public $regex;
     public $float;
+    public $regex;
 
     function __construct($t, $f = 0, $v = null, $other = null) {
         if ($t instanceof SearchOperator) {
@@ -92,6 +93,12 @@ class SearchTerm {
                 $this->type = "f";
             else if (!count($values))
                 $this->type = "t";
+            else if (count($values) == 1) {
+                $ql = clone $values[0];
+                $ql->float = $this->float;
+                return $ql;
+            } else
+                $this->value = $values;
         }
         return $this;
     }
