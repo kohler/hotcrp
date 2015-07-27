@@ -218,7 +218,7 @@ class AssignerContacts {
             return $this->store($Me);
         if (!$this->has_pc && $this->store_pc() && ($c = @$this->by_lemail[$lemail]))
             return $c;
-        $result = Dbl::qe("select " . self::$query . " from ContactInfo where email=?", $email);
+        $result = Dbl::qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
         $c = $result ? $result->fetch_object() : null;
         Dbl::free($result);
         return $this->store($c);
