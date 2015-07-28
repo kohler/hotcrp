@@ -2854,7 +2854,7 @@ class PaperSearch {
             $qe = SearchTerm::make_op("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
 
         // clean query
-        if ($qe && $qe->type === "then")
+        if ($qe && $qe->is_then())
             $qe = $this->_queryCleanThen($qe);
         // apply review rounds (top down, needs separate step)
         if ($this->reviewAdjust) {
