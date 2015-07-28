@@ -84,6 +84,8 @@ class SearchTerm {
             return $this->_finish_and();
         else if ($this->type === "or")
             return $this->_finish_or();
+        else if ($this->type === "then" || $this->type === "highlight")
+            return $this->_finish_then();
         else
             return $this;
     }
@@ -167,6 +169,46 @@ class SearchTerm {
             return $qr;
         } else
             $this->value = $newvalue;
+        return $this;
+    }
+    private function _finish_then() {
+        $ishighlight = $this->type !== "then";
+        $opinfo = strtolower(@$this->get_float("opinfo", ""));
+        $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
+        $this->type = "then";
+
+        foreach ($this->value as $qvidx => $qv) {
+            if ($qv && $qvidx && $ishighlight) {
+                if ($qv->type === "then") {
+                    for ($i = 0; $i < $qv->nthen; ++$i) {
+                        $newhvalues[] = $qv->value[$i];
+                        $newhmasks[] = (1 << count($newvalues)) - 1;
+                        $newhtypes[] = $opinfo;
+                    }
+                } else {
+                    $newhvalues[] = $qv;
+                    $newhmasks[] = (1 << count($newvalues)) - 1;
+                    $newhtypes[] = $opinfo;
+                }
+            } else if ($qv && $qv->type === "then") {
+                $pos = count($newvalues);
+                for ($i = 0; $i < $qv->nthen; ++$i)
+                    $newvalues[] = $qv->value[$i];
+                for ($i = $qv->nthen; $i < count($qv->value); ++$i)
+                    $newhvalues[] = $qv->value[$i];
+                foreach ($qv->highlights ? : array() as $hlmask)
+                    $newhmasks[] = $hlmask << $pos;
+                foreach ($qv->highlight_types ? : array() as $hltype)
+                    $newhtypes[] = $hltype;
+            } else if ($qv)
+                $newvalues[] = $qv;
+        }
+
+        $this->set("nthen", count($newvalues));
+        $this->set("highlights", $newhmasks);
+        $this->set("highlight_types", $newhtypes);
+        array_splice($newvalues, $this->nthen, 0, $newhvalues);
+        $this->value = $newvalues;
         return $this;
     }
     static function make_op($combiner, $terms) {
@@ -2122,49 +2164,6 @@ class PaperSearch {
         return $revadj;
     }
 
-    private function _queryCleanThen($qe) {
-        $qr = new SearchTerm("then");
-        $qr->annotate($qe);
-        $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
-        $ishighlight = $qe->type !== "then";
-        $qeopinfo = strtolower(@$qe->get_float("opinfo", ""));
-
-        foreach ($qe->value as $qvidx => $qv) {
-            if ($qv && $qvidx && $ishighlight) {
-                if ($qv->type === "then") {
-                    for ($i = 0; $i < $qv->nthen; ++$i) {
-                        $newhvalues[] = $qv->value[$i];
-                        $newhmasks[] = (1 << count($newvalues)) - 1;
-                        $newhtypes[] = $qeopinfo;
-                    }
-                } else {
-                    $newhvalues[] = $qv;
-                    $newhmasks[] = (1 << count($newvalues)) - 1;
-                    $newhtypes[] = $qeopinfo;
-                }
-            } else if ($qv && $qv->type === "then") {
-                $pos = count($newvalues);
-                for ($i = 0; $i < $qv->nthen; ++$i)
-                    $newvalues[] = $qv->value[$i];
-                for ($i = $qv->nthen; $i < count($qv->value); ++$i)
-                    $newhvalues[] = $qv->value[$i];
-                foreach ($qv->highlights as $hlmask)
-                    $newhmasks[] = $hlmask << $pos;
-                foreach ($qv->highlight_types as $hltype)
-                    $newhtypes[] = $hltype;
-            } else if ($qv)
-                $newvalues[] = $qv;
-        }
-
-        $qr->set("nthen", count($newvalues));
-        $qr->set("highlights", $newhmasks);
-        $qr->set("highlight_types", $newhtypes);
-        array_splice($newvalues, $qr->nthen, 0, $newhvalues);
-        foreach ($newvalues as $qv)
-            $qr->append($qv);
-        return $qr->finish();
-    }
-
     // apply rounds to reviewer searches
     function _queryMakeAdjustedReviewSearch($roundterm) {
         if ($this->limitName === "r" || $this->limitName === "rout")
@@ -2853,9 +2852,6 @@ class PaperSearch {
         if ($limit === "acc" && !$this->privChair)
             $qe = SearchTerm::make_op("and", array($qe, $this->_searchQueryWord("dec:yes", false)));
 
-        // clean query
-        if ($qe && $qe->is_then())
-            $qe = $this->_queryCleanThen($qe);
         // apply review rounds (top down, needs separate step)
         if ($this->reviewAdjust) {
             $qe = $this->_queryAdjustReviews($qe, null);
