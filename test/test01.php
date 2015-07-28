@@ -296,4 +296,12 @@ $assignset->parse("action,paper,user,round\nclearreview,all,huitema,R1\n");
 xassert($assignset->execute());
 assert_search_papers($user_chair, "re:huitema", "8 10");
 
+$assignset = new AssignmentSet($Admin, true);
+$assignset->parse("action,paper,user,round\nprimary,13,huitema,R1\n");
+xassert($assignset->execute());
+
+// THEN searches
+assert_search_papers($user_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
+assert_search_papers($user_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");
+
 xassert_exit();
