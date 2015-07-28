@@ -303,5 +303,7 @@ xassert($assignset->execute());
 // THEN searches
 assert_search_papers($user_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
 assert_search_papers($user_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");
+assert_search_papers($user_chair, "10-12 THEN re:huitema THEN 5-6", "10 11 12 8 13 5 6");
+assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 8 13 5 6");
 
 xassert_exit();
