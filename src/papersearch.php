@@ -3066,7 +3066,7 @@ class PaperSearch {
         $this->_add_sorters($qe, null);
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)
-                $this->_add_sorters($qe->value[$i], $i);
+                $this->_add_sorters($qe->value[$i], $this->thenmap ? $i : null);
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions
