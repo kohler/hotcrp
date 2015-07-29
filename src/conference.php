@@ -265,12 +265,22 @@ class Conference {
         // expand ${confid}, ${confshortname}
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",
                        "paperSite", "defaultPaperSite", "contactName",
-                       "contactEmail", "emailFrom", "emailSender",
-                       "emailCc", "emailReplyTo") as $k)
+                       "contactEmail") as $k)
             if (isset($Opt[$k]) && is_string($Opt[$k])
                 && strpos($Opt[$k], "$") !== false) {
                 $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
                 $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $Opt["shortName"], $Opt[$k]);
+            }
+        foreach (array("emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
+            if (isset($Opt[$k]) && is_string($Opt[$k])
+                && strpos($Opt[$k], "$") !== false) {
+                $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
+                if (strpos($Opt[$k], "confshortname") !== false) {
+                    $v = rfc2822_words_quote($Opt["shortName"]);
+                    if ($v[0] === "\"" && strpos($Opt[$k], "\"") !== false)
+                        $v = substr($v, 1, strlen($v) - 2);
+                    $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $v, $Opt[$k]);
+                }
             }
 
         // remove final slash from $Opt["paperSite"]

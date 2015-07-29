@@ -71,7 +71,7 @@ function validate_email($email) {
 }
 
 function mime_quote_string($word) {
-    return '"' . preg_replace('_([\x00-\x1F\\"])_', '\$1', $word) . '"';
+    return '"' . preg_replace('_(?=[\x00-\x1F\\"])_', '\\', $word) . '"';
 }
 
 function mime_token_quote($word) {
@@ -79,6 +79,13 @@ function mime_token_quote($word) {
         return $word;
     else
         return mime_quote_string($word);
+}
+
+function rfc2822_words_quote($words) {
+    if (preg_match(':\A[-A-Za-z0-9!#$%&\'*+/=?^_`{|}~ \t]*\z:', $words))
+        return $words;
+    else
+        return mime_quote_string($words);
 }
 
 

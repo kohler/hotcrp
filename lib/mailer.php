@@ -686,12 +686,8 @@ class MimeText {
                     self::append($text, $linelen, $name, false);
             } else if ($utf8)
                 self::append($text, $linelen, $name, $utf8);
-            else if (preg_match(',\A[-!#$%&\'*+/0-9=?A-Z^_`a-z{|}~ \t]*\z,', $name))
-                self::append($text, $linelen, $name, false);
-            else {
-                $name = preg_replace(',(?=[^-!#$%&\'*+/0-9=?A-Z^_`a-z{|}~ \t]),', '\\', $name);
-                self::append($text, $linelen, "\"$name\"", false);
-            }
+            else
+                self::append($text, $linelen, rfc2822_words_quote($name), false);
 
             if ($name == "")
                 self::append($text, $linelen, $email, false);
