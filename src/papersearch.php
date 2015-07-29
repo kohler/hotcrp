@@ -3015,11 +3015,9 @@ class PaperSearch {
         $this->thenmap = null;
         if ($need_then && $qe->nthen > 1)
             $this->thenmap = array();
-        $this->headingmap = array();
         $this->highlightmap = array();
         if ($need_filter) {
             $delete = array();
-            $qe_heading = $qe->get_float("heading");
             while (($row = PaperInfo::fetch($result, $this->cid))) {
                 if (!$this->contact->can_view_paper($row)
                     || ($limit === "rable"
@@ -3035,12 +3033,8 @@ class PaperSearch {
                 if ($x === false)
                     continue;
                 $this->_matches[] = (int) $row->paperId;
-                if ($this->thenmap !== null) {
+                if ($this->thenmap !== null)
                     $this->thenmap[$row->paperId] = $x;
-                    $qex = $qe->value[$x];
-                    $this->headingmap[$row->paperId] = $qex->get_float("heading");
-                } else if ($qe_heading)
-                    $this->headingmap[$row->paperId] = $qe_heading;
                 if ($need_then)
                     for ($j = $qe->nthen; $j < count($qe->value); ++$j)
                         if ($this->_clauseTermCheck($qe->value[$j], $row)
@@ -3049,8 +3043,6 @@ class PaperSearch {
                             break;
                         }
             }
-            if (!count($this->headingmap))
-                $this->headingmap = null;
         } else
             while (($row = $result->fetch_object()))
                 $this->_matches[] = (int) $row->paperId;
@@ -3067,6 +3059,12 @@ class PaperSearch {
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)
                 $this->_add_sorters($qe->value[$i], $this->thenmap ? $i : null);
+        $this->headingmap = array();
+        if ($qe->type === "then") {
+            for ($i = 0; $i < $qe->nthen; ++$i)
+                $this->headingmap[$i] = $qe->value[$i]->get_float("heading");
+        } else if (($h = $qe->get_float("heading")))
+            $this->headingmap[0] = $h;
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions

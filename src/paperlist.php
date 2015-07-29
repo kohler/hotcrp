@@ -798,26 +798,33 @@ class PaperList {
         return $t;
     }
 
+    private function _row_thenval($row) {
+        if ($this->search->thenmap)
+            return (int) @$this->search->thenmap[$row->paperId];
+        else
+            return 0;
+    }
+
     private function _row_check_heading($rstate, $srows, $row, $lastheading, &$body) {
-        $headingmap = $this->search->headingmap;
-        $heading = defval($headingmap, $row->paperId, "");
+        $thenval = $this->_row_thenval($row);
         if ($this->count == 1)
             $rstate->headingstart = array(0);
-        if ($heading != $lastheading) {
-            if ($this->count != 1)
-                $rstate->headingstart[] = count($body);
-            if ($heading == "")
-                $body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
-            else {
-                for ($i = $this->count; $i < count($srows) && defval($headingmap, $srows[$i]->paperId, "") == $heading; ++$i)
+        else if ($thenval != $lastheading)
+            $rstate->headingstart[] = count($body);
+        if ($thenval != $lastheading) {
+            $heading = (string) @$this->search->headingmap[$thenval];
+            if ($heading == "" || !strcasecmp($heading, "none")) {
+                if ($this->count != 1)
+                    $body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
+            } else {
+                for ($i = $this->count; $i < count($srows) && $this->_row_thenval($srows[$i]) == $thenval; ++$i)
                     /* do nothing */;
                 $middle = ($this->count == 1 ? "" : " plheading_middle");
-                $pheading = preg_replace('/(?:\A|\s)(?:-\s*|NOT\s*|)VIEW:\s*\S+/', "", $heading);
-                $body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars(trim($pheading)) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
+                $body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars(trim($heading)) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
             }
             $rstate->colorindex = 0;
         }
-        return $heading;
+        return $thenval;
     }
 
     private function _analyze_folds($rstate, $fieldDef) {
@@ -1146,10 +1153,10 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = ($this->search->headingmap === null ? false : "");
+        $lastheading = count($this->search->headingmap) ? -1 : -2;
         foreach ($rows as $row) {
             ++$this->count;
-            if ($lastheading !== false)
+            if ($lastheading > -2)
                 $lastheading = $this->_row_check_heading($rstate, $rows, $row, $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
         }
