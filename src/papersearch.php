@@ -2591,7 +2591,7 @@ class PaperSearch {
         } else if ($tt === "not") {
             $ff = array();
             $sqi->negated = !$sqi->negated;
-            $this->_clauseTermSet($t->value, $sqi, $ff);
+            $this->_clauseTermSet($t->value[0], $sqi, $ff);
             $sqi->negated = !$sqi->negated;
             if (!count($ff))
                 $ff[] = "true";
@@ -2784,7 +2784,7 @@ class PaperSearch {
             $formulaf = $t->link;
             return !!$formulaf($row, null, $this->contact);
         } else if ($tt === "not") {
-            return !$this->_clauseTermCheck($t->value, $row);
+            return !$this->_clauseTermCheck($t->value[0], $row);
         } else if ($tt === "and" || $tt === "and2") {
             foreach ($t->value as $subt)
                 if (!$this->_clauseTermCheck($subt, $row))
