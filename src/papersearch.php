@@ -63,8 +63,7 @@ class SearchTerm {
                     array_splice($this->float["sort"], count($this->float["sort"]), 0, $v);
                 else if (is_array(@$this->float[$k]) && is_array($v))
                     $this->float[$k] = array_replace_recursive($this->float[$k], $v);
-                else if (($k !== "substr" && $k !== "opinfo")
-                         || !isset($this->float[$k]))
+                else if ($k !== "opinfo" || !isset($this->float[$k]))
                     $this->float[$k] = $v;
         }
         // `THEN` cannot be nested underneath `AND`, `OR`, or `NOT`
@@ -205,6 +204,14 @@ class SearchTerm {
                 $newvalues[] = $qv;
         }
 
+        // set default headings
+        foreach ($newvalues as $qv)
+            if (($substr = $qv->get_float("substr")) !== null
+                && $qv->get_float("heading") === null) {
+                $substr = preg_replace(',\A\(\s*(.*)\s*\)\z,', '$1', $substr);
+                $qv->set_float("heading", $substr);
+            }
+
         $this->set("nthen", count($newvalues));
         $this->set("highlights", $newhmasks);
         $this->set("highlight_types", $newhtypes);
@@ -212,8 +219,8 @@ class SearchTerm {
         $this->value = $newvalues;
         return $this;
     }
-    static function make_op($combiner, $terms) {
-        $qr = new SearchTerm($combiner);
+    static function make_op($op, $terms) {
+        $qr = new SearchTerm($op);
         if ($terms)
             foreach (is_array($terms) ? $terms : array($terms) as $qt)
                 $qr->append($qt);
@@ -222,6 +229,21 @@ class SearchTerm {
     static function make_not($term) {
         $qr = new SearchTerm("not");
         return $qr->append($term)->finish();
+    }
+    static function make_opstr($op, $left, $right, $opstr) {
+        $qr = new SearchTerm($op);
+        if (!$op->unary)
+            $qr->append($left);
+        $qr = $qr->append($right)->finish();
+        $lstr = $left && !$op->unary ? $left->get_float("substr") : null;
+        $rstr = $right ? $right->get_float("substr") : null;
+        if ($op->unary && $lstr !== null)
+            $qr->set_float("substr", $opstr . $lstr);
+        else if (!$op->unary && $lstr !== null && $rstr !== null)
+            $qr->set_float("substr", $lstr . $opstr . $rstr);
+        else
+            $qr->set_float("substr", $lstr !== null ? $lstr : $rstr);
+        return $qr;
     }
     static function make_float($float) {
         return new SearchTerm("t", 0, null, array("float" => $float));
@@ -1909,12 +1931,10 @@ class PaperSearch {
         $x = array_pop($stack);
         if (!$curqe)
             return $x->leftqe;
-        if ($x->op->op === "+")
+        else if ($x->op->op === "+")
             return $curqe;
-        if ($x->op->op === "not")
-            return SearchTerm::make_not($curqe);
         else
-            return SearchTerm::make_op($x->op, array($x->leftqe, $curqe));
+            return SearchTerm::make_opstr($x->op, $x->leftqe, $curqe, $x->substr);
     }
 
     private function _searchQueryType($str) {
@@ -1923,8 +1943,6 @@ class PaperSearch {
         $defkw = $next_defkw = null;
         $parens = 0;
         $curqe = null;
-        $xstr = $str;
-        $headstr = "";
 
         while ($str !== "") {
             list($opstr, $nextstr) = self::_searchPopKeyword($str);
@@ -1939,10 +1957,13 @@ class PaperSearch {
                 list($opstr, $op, $nextstr) =
                     array("", SearchOperator::$list["SPACE"], $str);
             }
-            if (!$curqe && $op && $op->op === "highlight")
+            if (!$curqe && $op && $op->op === "highlight") {
                 $curqe = new SearchTerm("t");
+                $curqe->set_float("substr", "");
+            }
 
             if ($opstr === null) {
+                $prevstr = $nextstr;
                 $word = self::pop_word($nextstr);
                 // Bare any-case "all", "any", "none" are treated as keywords.
                 if (!$curqe
@@ -1968,16 +1989,16 @@ class PaperSearch {
                     // The heart of the matter.
                     $curqe = $this->_searchQueryWord($word, true);
                     // Don't include 'show:' in headings.
-                    if (($colon = strpos($word, ":")) !== false
-                        && @self::$_noheading_keywords[substr($word, 0, $colon)]) {
-                        $headstr .= substr($xstr, 0, -strlen($str));
-                        $xstr = $nextstr;
-                    }
+                    if (($colon = strpos($word, ":")) === false
+                        || !@self::$_noheading_keywords[substr($word, 0, $colon)])
+                        $curqe->set_float("substr", substr($prevstr, 0, strlen($prevstr) - strlen($nextstr)));
                 }
             } else if ($opstr === ")") {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->op !== "(")
                     $curqe = self::_searchPopStack($curqe, $stack);
+                if ($curqe && ($x = $curqe->get_float("substr")) !== null)
+                    $curqe->set_float("substr", "(" . rtrim($x) . ")");
                 if (count($stack)) {
                     array_pop($stack);
                     --$parens;
@@ -1985,7 +2006,7 @@ class PaperSearch {
                 }
             } else if ($opstr === "(") {
                 assert(!$curqe);
-                $stack[] = (object) array("op" => $op, "leftqe" => null);
+                $stack[] = (object) array("op" => $op, "leftqe" => null, "substr" => "(");
                 $defkwstack[] = $defkw;
                 $defkw = $next_defkw;
                 $next_defkw = null;
@@ -1995,20 +2016,13 @@ class PaperSearch {
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence)
                     $curqe = self::_searchPopStack($curqe, $stack);
-                if ($op->precedence <= 2 && $curqe) {
-                    $curqe->set_float("substr", trim($headstr . substr($xstr, 0, -strlen($str))));
-                    $xstr = $nextstr;
-                    $headstr = "";
-                }
-                $stack[] = (object) array("op" => $op, "leftqe" => $curqe);
+                $stack[] = (object) array("op" => $op, "leftqe" => $curqe, "substr" => substr($str, 0, strlen($str) - strlen($nextstr)));
                 $curqe = null;
             }
 
             $str = $nextstr;
         }
 
-        if ($curqe)
-            $curqe->set_float("substr", trim($headstr . $xstr));
         while (count($stack))
             $curqe = self::_searchPopStack($curqe, $stack);
         return $curqe;
@@ -3014,8 +3028,7 @@ class PaperSearch {
                 if ($this->thenmap !== null) {
                     $this->thenmap[$row->paperId] = $x;
                     $qex = $qe->value[$x];
-                    $this->headingmap[$row->paperId] =
-                        $qex->get_float("heading", $qex->get_float("substr", ""));
+                    $this->headingmap[$row->paperId] = $qex->get_float("heading");
                 } else if ($qe_heading)
                     $this->headingmap[$row->paperId] = $qe_heading;
                 if ($need_then)
