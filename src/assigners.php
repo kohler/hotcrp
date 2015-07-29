@@ -925,7 +925,7 @@ class AssignmentSet {
     private $searches = array();
     private $reviewer_set = false;
     private $papers_encountered = array();
-    private $unparse_encounter_order = false;
+    private $unparse_search = false;
     private $unparse_columns = array();
 
     function __construct($contact, $override = null) {
@@ -1182,8 +1182,8 @@ class AssignmentSet {
     }
 
     function parse_csv_comment($line) {
-        if (preg_match('/\A#\s*hotcrp_assign_display_order\s*\z/', $line))
-            $this->unparse_encounter_order = true;
+        if (preg_match('/\A#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m))
+            $this->unparse_search = $m[1];
         if (preg_match('/\A#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m))
             $this->unparse_columns[] = "show:$m[1]";
     }
@@ -1375,18 +1375,16 @@ class AssignmentSet {
         ksort($assinfo);
         AutoassignmentPaperColumn::$info = $assinfo;
 
-        if ($this->unparse_encounter_order) {
-            $query_order = $this->encounter_order + $assinfo;
-            $query_order = array_intersect(array_keys($query_order), array_keys($assinfo));
-        } else
-            $query_order = array_keys($assinfo);
-        $papers = join(" ", $query_order) ? : "NONE";
+        if ($this->unparse_search)
+            $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", array_keys($assinfo));
+        else
+            $query_order = count($assinfo) ? join(" ", array_keys($assinfo)) : "NONE";
         if (!$this->unparse_columns)
             $this->unparse_columns[] = "show:reviewers";
-        $papers .= " " . join(" ", $this->unparse_columns);
+        $query_order .= " " . join(" ", $this->unparse_columns);
         $search = new PaperSearch($this->contact,
                                   array("t" => defval($_REQUEST, "t", "s"),
-                                        "q" => $papers));
+                                        "q" => $query_order));
         $plist = new PaperList($search);
         echo $plist->table_html("reviewers");
 

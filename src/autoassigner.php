@@ -714,7 +714,7 @@ class Autoassigner {
         $m->run();
         // make assignments
         $this->set_progress("Completing assignment");
-        $this->ass = array("paper,action,tag", "# hotcrp_assign_display_order",
+        $this->ass = array("paper,action,tag", "# hotcrp_assign_display_search",
                            "# hotcrp_assign_show pcconf");
         $time = microtime(true);
         $index = 0;
@@ -722,7 +722,7 @@ class Autoassigner {
         // to catch every element, must do explicit work.
         // (NB this means the MCMF model doesn't solve the real problem.)
         $roots = $this->papersel;
-        $cycle_starts = array();
+        $search = array();
         while (count($roots)) {
             $source = ".source";
             if (count($roots) !== count($this->papersel))
@@ -736,8 +736,10 @@ class Autoassigner {
                 $found[] = $pid;
             }
             $roots = array_values(array_diff($roots, $found));
+            $search[] = "HEADING:none " . join(" ", $found);
         }
-        //global $Conf; $Conf->echoScript("$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true) . "\nroots: " . join(" ", $cycle_starts))) . ")");
+        $this->ass[1] = "# hotcrp_assign_display_search " . join(" THEN ", $search);
+        //global $Conf; $Conf->echoScript("$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true) . "\n")) . ")");
         $m->clear(); // break circular refs
         $this->mcmf = null;
         $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
