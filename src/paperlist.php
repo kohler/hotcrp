@@ -106,7 +106,11 @@ class PaperList {
         foreach ($this->sorters as $i => $s) {
             $s->field->sort_prepare($this, $rows, $s);
             $rev = ($s->reverse ? "-" : "");
-            $code .= "if (!\$x) { \$s = \$magic_sort_info[$i]; "
+            if ($s->thenmap === null)
+                $code .= "if (!\$x)";
+            else
+                $code .= "if (!\$x && \$a->_then_sort_info == {$s->thenmap})";
+            $code .= " { \$s = \$magic_sort_info[$i]; "
                 . "\$x = $rev\$s->field->" . $s->field->sorter
                 . "(\$a, \$b, \$s); }\n";
         }
@@ -122,6 +126,7 @@ class PaperList {
     function sortdef($always = false) {
         if (count($this->sorters)
             && $this->sorters[0]->type
+            && $this->sorters[0]->thenmap === null
             && ($always || defval($_REQUEST, "sort", "") != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
             $x = ($this->sorters[0]->reverse ? "r" : "");
@@ -1195,6 +1200,7 @@ class PaperList {
                 if ($tooltip && strpos($ftext, "hottooltip") !== false)
                     $tooltip = "";
                 if (count($this->sorters)
+                    && $this->sorters[0]->thenmap === null
                     && ((($fdef->name == $this->sorters[0]->type
                           || $fdef->name == "edit" . $this->sorters[0]->type)
                          && $sortUrl)

@@ -66,9 +66,6 @@ class SearchTerm {
                 else if ($k !== "opinfo" || !isset($this->float[$k]))
                     $this->float[$k] = $v;
         }
-        // `THEN` cannot be nested underneath `AND`, `OR`, or `NOT`
-        if ($term && $term->is_then() && !$this->is_then())
-            $term->type = "or";
         if ($term)
             $this->value[] = $term;
         return $this;
@@ -217,6 +214,7 @@ class SearchTerm {
         $this->set("highlight_types", $newhtypes);
         array_splice($newvalues, $this->nthen, 0, $newhvalues);
         $this->value = $newvalues;
+        $this->set_float("sort", array());
         return $this;
     }
     static function make_op($op, $terms) {
@@ -2792,9 +2790,14 @@ class PaperSearch {
                 if (!$this->_clauseTermCheck($subt, $row))
                     return false;
             return true;
-        } else if ($tt === "or" || $tt === "then") {
+        } else if ($tt === "or") {
             foreach ($t->value as $subt)
                 if ($this->_clauseTermCheck($subt, $row))
+                    return true;
+            return false;
+        } else if ($tt === "then") {
+            for ($i = 0; $i < $t->nthen; ++$i)
+                if ($this->_clauseTermCheck($t->value[$i], $row))
                     return true;
             return false;
         } else if ($tt === "f")
@@ -2820,6 +2823,20 @@ class PaperSearch {
 
 
     // BASIC QUERY FUNCTION
+
+    private function _add_sorters($qe, $thenmap) {
+        foreach ($qe->get_float("sort", array()) as $s)
+            if (($s = ListSorter::parse_sorter($s))) {
+                $s->thenmap = $thenmap;
+                $this->sorters[] = $s;
+            }
+        if (!$qe->get_float("sort") && $qe->type === "pn") {
+            $pn = array_diff($qe->value[0], $qe->value[1]);
+            $s = ListSorter::make_field(new NumericOrderPaperColumn(array_flip($pn)));
+            $s->thenmap = $thenmap;
+            $this->sorters[] = $s;
+        }
+    }
 
     function _search() {
         global $Conf;
@@ -3046,13 +3063,10 @@ class PaperSearch {
         // view and sort information
         $this->viewmap = $qe->get_float("view", array());
         $this->sorters = array();
-        foreach ($qe->get_float("sort", array()) as $s)
-            if (($s = ListSorter::parse_sorter($s)))
-                $this->sorters[] = $s;
-        if (!$this->sorters && $qe->type === "pn") {
-            $pn = array_diff($qe->value[0], $qe->value[1]);
-            $this->sorters[] = ListSorter::make_field(new NumericOrderPaperColumn(array_flip($pn)));
-        }
+        $this->_add_sorters($qe, null);
+        if ($qe->type === "then")
+            for ($i = 0; $i < $qe->nthen; ++$i)
+                $this->_add_sorters($qe->value[$i], $i);
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions

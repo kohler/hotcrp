@@ -73,8 +73,10 @@ class ListSorter {
             if (((!$s->type && !$s->field) || (!$x->type && !$x->field))
                 && $s->thenmap === $x->thenmap) {
                 foreach (array("type", "reverse", "score", "field") as $k)
-                    if ($x->$k === null)
+                    if ($x->$k === null && $s->$k !== null) {
                         $x->$k = $s->$k;
+                        $x->empty = false;
+                    }
                 return;
             }
         }
