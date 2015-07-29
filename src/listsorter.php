@@ -1,9 +1,26 @@
 <?php
-// baselist.php -- HotCRP helper class for producing paper lists
+// listsorter.php -- HotCRP list sorter information
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class BaseList {
+class ListSorter {
+    public $type;
+    public $reverse = false;
+    public $score = null;
+    public $empty = false;
+    public $field = null;
+
+    public function __construct($type) {
+        $this->type = $type;
+    }
+
+    static public function make_empty($truly_empty) {
+        $l = new ListSorter(null);
+        $l->reverse = null;
+        $l->empty = $truly_empty;
+        return $l;
+    }
+
 
     static public $score_sorts = array("C" => "Counts",
                                        "A" => "Average",
@@ -27,8 +44,7 @@ class BaseList {
         $text = simplify_whitespace($text);
         if (preg_match('/\A(\d+)([a-z]*)\z/i', $text, $m)
             || preg_match('/\A([^-,+#]+)[,+#]([a-z]*)\z/i', $text, $m)) {
-            $sort = (object) array("type" => $m[1], "reverse" => false,
-                                   "score" => null, "empty" => false);
+            $sort = new ListSorter($m[1]);
             foreach (str_split(strtoupper($m[2])) as $x)
                 if ($x === "R" || $x === "N")
                     $sort->reverse = $x === "R";

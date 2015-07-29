@@ -3,10 +3,7 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $ConfSitePATH;
-require_once("$ConfSitePATH/src/baselist.php");
-
-class ContactList extends BaseList {
+class ContactList {
 
     const FIELD_SELECTOR = 1000;
     const FIELD_SELECTOR_ON = 1001;

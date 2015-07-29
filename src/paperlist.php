@@ -3,10 +3,7 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $ConfSitePATH;
-require_once("$ConfSitePATH/src/baselist.php");
-
-class PaperList extends BaseList {
+class PaperList {
 
     // creator can set to change behavior
     public $papersel = null;
@@ -46,11 +43,11 @@ class PaperList extends BaseList {
 
         $this->sortable = !!@$args["sort"];
         if ($this->sortable && is_string($args["sort"]))
-            $this->sorters[] = BaseList::parse_sorter($args["sort"]);
+            $this->sorters[] = ListSorter::parse_sorter($args["sort"]);
         else if ($this->sortable && isset($_REQUEST["sort"]))
-            $this->sorters[] = BaseList::parse_sorter($_REQUEST["sort"]);
+            $this->sorters[] = ListSorter::parse_sorter($_REQUEST["sort"]);
         else
-            $this->sorters[] = BaseList::parse_sorter("");
+            $this->sorters[] = ListSorter::parse_sorter("");
 
         $this->_paper_link_page = "";
         if (isset($_REQUEST["linkto"])
@@ -988,7 +985,7 @@ class PaperList extends BaseList {
         if ($this->search->sorters) {
             $last_sorter = null;
             foreach ($this->search->sorters as $sorter)
-                if (($s = BaseList::parse_sorter($sorter))) {
+                if (($s = ListSorter::parse_sorter($sorter))) {
                     if ($s->type
                         && ($c = PaperColumn::lookup($s->type))
                         && $c->prepare($this, PaperColumn::PREP_SORT)) {
@@ -1033,7 +1030,7 @@ class PaperList extends BaseList {
             if ($s->reverse === null)
                 $s->reverse = false;
             if ($s->score === null)
-                $s->score = BaseList::default_score_sort();
+                $s->score = ListSorter::default_score_sort();
         }
     }
 

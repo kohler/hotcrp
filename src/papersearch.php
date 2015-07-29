@@ -1618,8 +1618,7 @@ class PaperSearch {
                       "max-min" => "D", "my" => "Y", "score" => "");
 
         $text = simplify_whitespace($text);
-        $sort = (object) array("type" => null, "field" => null, "reverse" => null,
-                               "score" => null, "empty" => $text === "");
+        $sort = ListSorter::make_empty($text === "");
         if (($ch1 = substr($text, 0, 1)) === "-" || $ch1 === "+") {
             $sort->reverse = $ch1 === "-";
             $text = ltrim(substr($text, 1));

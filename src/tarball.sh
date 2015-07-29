@@ -126,7 +126,6 @@ src/.htaccess
 src/assigners.php
 src/autoassigner.php
 src/banal
-src/baselist.php
 src/capability.php
 src/checkformat.php
 src/commentinfo.php
@@ -143,6 +142,7 @@ src/hotcrpdocument.php
 src/hotcrpmailer.php
 src/init.php
 src/initweb.php
+src/listsorter.php
 src/mailclasses.php
 src/mailtemplate.php
 src/meetingtracker.php
