@@ -1916,7 +1916,7 @@ class PaperSearch {
         return $qr->annotate($qe)->append($qe);
     }
 
-    static function _searchPopStack($curqe, &$stack) {
+    static private function _searchPopStack($curqe, &$stack) {
         $x = array_pop($stack);
         if (!$curqe)
             return $x->leftqe;
@@ -2086,8 +2086,9 @@ class PaperSearch {
                 $stack[] = (object) array("op" => $op, "qe" => array());
                 ++$parens;
             } else {
+                $end_precedence = $op->precedence - ($op->precedence <= 1);
                 while (count($stack)
-                       && $stack[count($stack) - 1]->op->precedence > $op->precedence)
+                       && $stack[count($stack) - 1]->op->precedence > $end_precedence)
                     $curqe = self::_canonicalizePopStack($curqe, $stack);
                 $top = count($stack) ? $stack[count($stack) - 1] : null;
                 if ($top && !$op->unary && $top->op->op === $op->op)
