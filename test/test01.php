@@ -306,4 +306,9 @@ assert_search_papers($user_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");
 assert_search_papers($user_chair, "10-12 THEN re:huitema THEN 5-6", "10 11 12 8 13 5 6");
 assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 8 13 5 6");
 
+// NOT searches
+assert_search_papers($user_chair, "#fart", "1 2 3 4 5 6 7 8");
+assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18");
+assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18");
+
 xassert_exit();
