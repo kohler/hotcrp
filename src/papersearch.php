@@ -55,7 +55,7 @@ class SearchTerm {
                 $this->$k = $v;
         }
     }
-    function append($term) {
+    private function append($term) {
         if ($term && $term->float) {
             $this->float = $this->float ? : array();
             foreach ($term->float as $k => $v)
@@ -74,7 +74,7 @@ class SearchTerm {
             $this->value[] = $term;
         return $this;
     }
-    function finish() {
+    private function finish() {
         if ($this->type === "not")
             return $this->_finish_not();
         else if ($this->type === "and" || $this->type === "and2")
@@ -1905,11 +1905,6 @@ class PaperSearch {
             return array(null, $str);
     }
 
-    static private function _combine_stack($stack, $qe) {
-        $qr = new SearchTerm($stack->op);
-        return $qr->append($stack->leftqe->finish())->append($qe->finish());
-    }
-
     static private function _searchPopStack($curqe, &$stack) {
         $x = array_pop($stack);
         if (!$curqe)
@@ -1917,9 +1912,9 @@ class PaperSearch {
         if ($x->op->op === "+")
             return $curqe;
         if ($x->op->op === "not")
-            return SearchTerm::make_not($curqe->finish());
+            return SearchTerm::make_not($curqe);
         else
-            return self::_combine_stack($x, $curqe);
+            return SearchTerm::make_op($x->op, array($x->leftqe, $curqe));
     }
 
     private function _searchQueryType($str) {
@@ -2016,7 +2011,7 @@ class PaperSearch {
             $curqe->set_float("substr", trim($headstr . $xstr));
         while (count($stack))
             $curqe = self::_searchPopStack($curqe, $stack);
-        return $curqe->finish();
+        return $curqe;
     }
 
 
