@@ -127,6 +127,8 @@ class SearchTerm {
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
             } else if ($qv->type === "revadj")
                 $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "and");
+            else if ($qv->type === "and" || $qv->type === "and2")
+                $newvalue = array_merge($newvalue, $qv->value);
             else
                 $newvalue[] = $qv;
         }
@@ -148,6 +150,8 @@ class SearchTerm {
                 $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
             else if ($qv->type === "revadj")
                 $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "or");
+            else if ($qv->type === "or")
+                $newvalue = array_merge($newvalue, $qv->value);
             else
                 $newvalue[] = $qv;
         }
@@ -1905,13 +1909,9 @@ class PaperSearch {
     }
 
     static private function _combine_stack($stack, $qe) {
-        if ($stack->used)
-            $qr = $stack->leftqe;
-        else {
-            $qr = new SearchTerm($stack->op);
-            $leftqe = $stack->leftqe->finish();
-            $qr = $qr->annotate($leftqe)->append($leftqe);
-        }
+        $qr = new SearchTerm($stack->op);
+        $leftqe = $stack->leftqe->finish();
+        $qr = $qr->annotate($leftqe)->append($leftqe);
         $qe = $qe->finish();
         return $qr->annotate($qe)->append($qe);
     }
@@ -1928,7 +1928,7 @@ class PaperSearch {
             return self::_combine_stack($x, $curqe);
     }
 
-    function _searchQueryType($str) {
+    private function _searchQueryType($str) {
         $stack = array();
         $defkwstack = array();
         $defkw = $next_defkw = null;
@@ -1996,14 +1996,12 @@ class PaperSearch {
                 }
             } else if ($opstr === "(") {
                 assert(!$curqe);
-                $stack[] = (object) array("op" => $op, "leftqe" => null, "used" => false);
+                $stack[] = (object) array("op" => $op, "leftqe" => null);
                 $defkwstack[] = $defkw;
                 $defkw = $next_defkw;
                 $next_defkw = null;
                 ++$parens;
-            } else if (!$op->unary && !$curqe)
-                /* ignore bad operator */;
-            else {
+            } else if ($op->unary || $curqe) {
                 $end_precedence = $op->precedence - ($op->precedence <= 1);
                 while (count($stack)
                        && $stack[count($stack) - 1]->op->precedence > $end_precedence)
@@ -2013,12 +2011,7 @@ class PaperSearch {
                     $xstr = $nextstr;
                     $headstr = "";
                 }
-                $top = count($stack) ? $stack[count($stack) - 1] : null;
-                if ($top && !$op->unary && $top->op === $op) {
-                    $top->leftqe = self::_combine_stack($top, $curqe);
-                    $top->used = true;
-                } else
-                    $stack[] = (object) array("op" => $op, "leftqe" => $curqe, "used" => false);
+                $stack[] = (object) array("op" => $op, "leftqe" => $curqe);
                 $curqe = null;
             }
 
@@ -2031,6 +2024,7 @@ class PaperSearch {
             $curqe = self::_searchPopStack($curqe, $stack);
         return $curqe->finish();
     }
+
 
     static private function _canonicalizePopStack($curqe, &$stack) {
         $x = array_pop($stack);
