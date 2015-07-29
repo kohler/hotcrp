@@ -3,6 +3,22 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class PaperListRenderState {
+    public $ids = array();
+    public $foldinfo = array();
+    public $colorindex = 0;
+    public $hascolors = false;
+    public $skipcallout;
+    public $ncol;
+    public $last_trclass = "";
+    public $headingstart = array(0);
+    public function __construct($ncol, $skipcallout, $foldau) {
+        $this->ncol = $ncol;
+        $this->skipcallout = $skipcallout;
+        $this->foldinfo["authors"] = $foldau;
+    }
+}
+
 class PaperList {
 
     // creator can set to change behavior
@@ -807,9 +823,7 @@ class PaperList {
 
     private function _row_check_heading($rstate, $srows, $row, $lastheading, &$body) {
         $thenval = $this->_row_thenval($row);
-        if ($this->count == 1)
-            $rstate->headingstart = array(0);
-        else if ($thenval != $lastheading)
+        if ($this->count != 1 && $thenval != $lastheading)
             $rstate->headingstart[] = count($body);
         if ($thenval != $lastheading) {
             $heading = (string) @$this->search->headingmap[$thenval];
@@ -821,8 +835,8 @@ class PaperList {
                     /* do nothing */;
                 $middle = ($this->count == 1 ? "" : " plheading_middle");
                 $body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars(trim($heading)) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
+                $rstate->colorindex = 0;
             }
-            $rstate->colorindex = 0;
         }
         return $thenval;
     }
@@ -901,7 +915,7 @@ class PaperList {
     }
 
     private function _column_split($rstate, $colhead, &$body) {
-        if (!isset($rstate->headingstart) || count($rstate->headingstart) <= 1)
+        if (count($rstate->headingstart) <= 1)
             return false;
         $rstate->headingstart[] = count($body);
         $rstate->split_ncol = count($rstate->headingstart) - 1;
@@ -1142,14 +1156,7 @@ class PaperList {
                 ++$skipcallout;
 
         // create render state
-        $rstate = (object) array();
-        $rstate->ids = array();
-        $rstate->foldinfo = array("authors" => $this->is_folded("au"));
-        $rstate->colorindex = 0;
-        $rstate->hascolors = false;
-        $rstate->skipcallout = $skipcallout;
-        $rstate->ncol = $ncol;
-        $rstate->last_trclass = "";
+        $rstate = new PaperListRenderState($ncol, $skipcallout, $this->is_folded("au"));
 
         // collect row data
         $body = array();
