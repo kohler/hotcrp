@@ -55,7 +55,7 @@ class SearchTerm {
                 $this->$k = $v;
         }
     }
-    function annotate($term) {
+    function append($term) {
         if ($term && $term->float) {
             $this->float = $this->float ? : array();
             foreach ($term->float as $k => $v)
@@ -67,9 +67,6 @@ class SearchTerm {
                          || !isset($this->float[$k]))
                     $this->float[$k] = $v;
         }
-        return $this;
-    }
-    function append($term) {
         // `THEN` cannot be nested underneath `AND`, `OR`, or `NOT`
         if ($term && $term->is_then() && !$this->is_then())
             $term->type = "or";
@@ -219,12 +216,12 @@ class SearchTerm {
         $qr = new SearchTerm($combiner);
         if ($terms)
             foreach (is_array($terms) ? $terms : array($terms) as $qt)
-                $qr->annotate($qt)->append($qt);
+                $qr->append($qt);
         return $qr->finish();
     }
     static function make_not($term) {
         $qr = new SearchTerm("not");
-        return $qr->annotate($term)->append($term)->finish();
+        return $qr->append($term)->finish();
     }
     static function make_float($float) {
         return new SearchTerm("t", 0, null, array("float" => $float));
@@ -1910,10 +1907,7 @@ class PaperSearch {
 
     static private function _combine_stack($stack, $qe) {
         $qr = new SearchTerm($stack->op);
-        $leftqe = $stack->leftqe->finish();
-        $qr = $qr->annotate($leftqe)->append($leftqe);
-        $qe = $qe->finish();
-        return $qr->annotate($qe)->append($qe);
+        return $qr->append($stack->leftqe->finish())->append($qe->finish());
     }
 
     static private function _searchPopStack($curqe, &$stack) {
