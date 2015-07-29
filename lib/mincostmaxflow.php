@@ -714,7 +714,7 @@ class MinCostMaxFlow {
                 $v->xe = null;
             }
         foreach ($this->progressf as $progressf)
-            call_user_func($progressf, $this, self::PMINCOST_DONE, $phaseno, $nphases);
+            call_user_func($progressf, $this, self::PMINCOST_DONE);
     }
 
 

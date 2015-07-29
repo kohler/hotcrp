@@ -667,10 +667,7 @@ class Autoassigner {
         $this->check_missing_assignments($papers, "rev");
     }
 
-    public function run_discussion_order($tag, $sequential = false) {
-        global $Conf;
-        $this->mcmf_round_descriptor = "";
-        $this->mcmf_optimizing_for = "Optimizing assignment";
+    private function run_discussion_order_once($conf, $plist) {
         $m = new MinCostMaxFlow;
         $m->add_progressf(array($this, "mcmf_progress"));
         $this->set_progress("Preparing assignment optimizer");
@@ -679,73 +676,100 @@ class Autoassigner {
         // definitely lower total cost; all positive costs are <=
         // count($this->pcm), so this edge should have cost:
         $pocost = -(count($this->pcm) + 1);
-        $this->mcmf_max_cost = $pocost * (count($this->papersel) * 0.75);
-        $conf = array();
+        $this->mcmf_max_cost = $pocost * count($plist) * 0.75;
         $m->add_node(".s", "source");
         $m->add_edge(".source", ".s", 1, 0);
-        foreach ($this->papersel as $pid) {
-            $m->add_node("p$pid", "p");
-            $m->add_node("po$pid", "po");
-            $m->add_edge(".s", "p$pid", 1, 0);
-            $m->add_edge("p$pid", "po$pid", 1, $pocost);
-            $m->add_edge("po$pid", ".sink", 1, 0);
-            $conf[$pid] = array();
+        foreach ($plist as $i => $pids) {
+            $m->add_node("p$i", "p");
+            $m->add_node("po$i", "po");
+            $m->add_edge(".s", "p$i", 1, 0);
+            $m->add_edge("p$i", "po$i", 1, $pocost);
+            $m->add_edge("po$i", ".sink", 1, 0);
         }
-        // load conflicts
-        $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and contactId ?a and conflictType>0", $this->papersel, array_keys($this->pcm));
-        while (($row = edb_row($result)))
-            $conf[(int) $row[0]][] = (int) $row[1];
-        Dbl::free($result);
-        //global $Conf; $Conf->echoScript("$('#propass').before(" . json_encode(Ht::pre_text(json_encode($conf))) . ")");
         // conflict edges
-        $papersel = $this->papersel; // need copy for different iteration ptr
-        foreach ($papersel as $pid1) {
-            foreach ($this->papersel as $pid2)
-                if ($pid1 < $pid2) {
+        $plist2 = $plist; // need copy for different iteration ptr
+        foreach ($plist as $i => $pid1)
+            foreach ($plist2 as $j => $pid2)
+                if ($i != $j) {
+                    $pid1 = is_array($pid1) ? $pid1[count($pid1) - 1] : $pid1;
+                    $pid2 = is_array($pid2) ? $pid2[0] : $pid2;
                     // cost of edge is number of different conflicts
                     $cost = count($conf[$pid1] + $conf[$pid2]) - count(array_intersect($conf[$pid1], $conf[$pid2]));
-                    $m->add_edge("po$pid1", "p$pid2", 1, $cost);
-                    $m->add_edge("po$pid2", "p$pid1", 1, $cost);
+                    $m->add_edge("po$i", "p$j", 1, $cost);
                 }
-        }
         // run MCMF
         $this->mcmf = $m;
         $m->shuffle();
         $m->run();
+        // extract next roots
+        $roots = array_keys($plist);
+        $result = array();
+        while (count($roots)) {
+            $source = ".source";
+            if (count($roots) !== count($plist))
+                $source = "p" . $roots[mt_rand(0, count($roots) - 1)];
+            $pgroup = $igroup = array();
+            foreach ($m->topological_sort($source, "p") as $v) {
+                $pidx = (int) substr($v->name, 1);
+                $igroup[] = $pidx;
+                if (is_array($plist[$pidx]))
+                    $pgroup = array_merge($pgroup, $plist[$pidx]);
+                else
+                    $pgroup[] = $plist[$pidx];
+            }
+            $result[] = $pgroup;
+            $roots = array_values(array_diff($roots, $igroup));
+        }
+        // done
+        $m->clear(); // break circular refs
+        $this->mcmf = null;
+        @$this->profile["maxflow"] += $m->maxflow_end_at - $m->maxflow_start_at;
+        if ($m->mincost_start_at)
+            @$this->profile["mincost"] += $m->mincost_end_at - $m->mincost_start_at;
+        return $result;
+    }
+
+    public function run_discussion_order($tag, $sequential = false) {
+        global $Conf;
+        $this->mcmf_round_descriptor = "";
+        $this->mcmf_optimizing_for = "Optimizing assignment";
+        // load conflicts
+        $conf = array();
+        foreach ($this->papersel as $pid)
+            $conf[$pid] = array();
+        $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and contactId ?a and conflictType>0", $this->papersel, array_keys($this->pcm));
+        while (($row = edb_row($result)))
+            $conf[(int) $row[0]][] = (int) $row[1];
+        Dbl::free($result);
+        // run max-flow
+        $result = $this->papersel;
+        for ($roundno = 0; count($result) > 1; ++$roundno) {
+            $this->mcmf_round_descriptor = $roundno ? ", round " . ($roundno + 1) : "";
+            $result = $this->run_discussion_order_once($conf, $result);
+            if (!$roundno) {
+                $groupmap = array();
+                foreach ($result as $i => $pids)
+                    foreach ($pids as $pid)
+                        $groupmap[$pid] = $i;
+            }
+        }
         // make assignments
         $this->set_progress("Completing assignment");
         $this->ass = array("paper,action,tag", "# hotcrp_assign_display_search",
                            "# hotcrp_assign_show pcconf");
-        $time = microtime(true);
+        $curgroup = -1;
         $index = 0;
-        // we may have circular flow loops disconnected from the source;
-        // to catch every element, must do explicit work.
-        // (NB this means the MCMF model doesn't solve the real problem.)
-        $roots = $this->papersel;
-        $search = array();
-        while (count($roots)) {
-            $source = ".source";
-            if (count($roots) !== count($this->papersel))
-                $source = "p" . $roots[mt_rand(0, count($roots) - 1)];
-            $found = array();
-            foreach ($m->topological_sort($source, "p") as $v) {
-                $pid = (int) substr($v->name, 1);
-                empty($found) && ($cycle_starts[] = $pid);
-                $index += TagInfo::value_increment($sequential ? "aos" : "ao");
-                $this->ass[] = "{$pid},tag,{$tag}#{$index}";
-                $found[] = $pid;
-            }
-            $roots = array_values(array_diff($roots, $found));
-            $search[] = "HEADING:none " . join(" ", $found);
+        $search = array("HEADING:none");
+        foreach ($result[0] as $pid) {
+            if ($groupmap[$pid] != $curgroup && $curgroup != -1)
+                $search[] = "THEN HEADING:none";
+            $curgroup = $groupmap[$pid];
+            $index += TagInfo::value_increment($sequential ? "aos" : "ao");
+            $this->ass[] = "{$pid},tag,{$tag}#{$index}";
+            $search[] = $pid;
         }
-        $this->ass[1] = "# hotcrp_assign_display_search " . join(" THEN ", $search);
+        $this->ass[1] = "# hotcrp_assign_display_search " . join(" ", $search);
         //global $Conf; $Conf->echoScript("$('#propass').before(" . json_encode(Ht::pre_text_wrap($m->debug_info(true) . "\n")) . ")");
-        $m->clear(); // break circular refs
-        $this->mcmf = null;
-        $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
-        if ($m->mincost_start_at)
-            $this->profile["mincost"] = $m->mincost_end_at - $m->mincost_start_at;
-        $this->profile["traverse"] = microtime(true) - $time;
     }
 
 

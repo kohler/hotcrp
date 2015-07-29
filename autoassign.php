@@ -507,7 +507,7 @@ doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "se
 echo " &nbsp;assignments for selected papers and PC members";
 
 echo "<div class='g'></div>", divClass("discorder", "hotradiorelation");
-doRadio("a", "discorder", "Assign discussion order, minimizing switches among conflicted PC members");
+doRadio("a", "discorder", "Assign discussion order, grouping papers with similar PC conflicts");
 echo "</div>";
 
 echo "</div>\n";
