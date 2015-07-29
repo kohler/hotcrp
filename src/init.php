@@ -153,6 +153,7 @@ function __autoload($class_name) {
                                "Mimetype" => "lib/mimetype.php",
                                "MinCostMaxFlow" => "lib/mincostmaxflow.php",
                                "Multiconference" => "src/multiconference.php",
+                               "NumericOrderPaperColumn" => "src/papercolumn.php",
                                "PaperActions" => "src/paperactions.php",
                                "PaperColumn" => "src/papercolumn.php",
                                "PaperColumnErrors" => "src/papercolumn.php",

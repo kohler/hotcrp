@@ -1277,21 +1277,15 @@ class TimestampPaperColumn extends PaperColumn {
     }
 }
 
-class SearchSortPaperColumn extends PaperColumn {
-    public function __construct() {
-        parent::__construct("searchsort", Column::VIEW_NONE,
-                            array("sorter" => "search_sort_sorter"));
+class NumericOrderPaperColumn extends PaperColumn {
+    private $order;
+    public function __construct($order) {
+        parent::__construct("numericorder", Column::VIEW_NONE,
+                            array("sorter" => "numeric_order_sorter"));
+        $this->order = $order;
     }
-    public function sort_prepare($pl, &$rows, $sorter) {
-        $sortInfo = array();
-        foreach ($pl->search->numbered_papers() as $k => $v)
-            if (!isset($sortInfo[$v]))
-                $sortInfo[$v] = $k;
-        foreach ($rows as $row)
-            $row->_search_sort_info = $sortInfo[$row->paperId];
-    }
-    public function search_sort_sorter($a, $b) {
-        return $a->_search_sort_info - $b->_search_sort_info;
+    public function numeric_order_sorter($a, $b) {
+        return @$this->order[$a->paperId] - @$this->order[$b->paperId];
     }
 }
 
@@ -1428,7 +1422,6 @@ function initialize_paper_columns() {
     PaperColumn::register(new PCConflictListPaperColumn);
     PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"));
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
-    PaperColumn::register(new SearchSortPaperColumn);
     PaperColumn::register(new TagOrderSortPaperColumn);
     PaperColumn::register(new TimestampPaperColumn);
     PaperColumn::register(new FoldAllPaperColumn);

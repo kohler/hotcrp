@@ -3047,6 +3047,12 @@ class PaperSearch {
         $this->sorters = $qe->get_float("sort", array());
         Dbl::free($result);
 
+        // add numeric sorter
+        if (!$this->sorters && $qe->type === "pn") {
+            $pn = array_diff($qe->value[0], $qe->value[1]);
+            $this->sorters[] = new NumericOrderPaperColumn(array_flip($pn));
+        }
+
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted)
             $this->_add_deleted_papers($qe);
@@ -3138,36 +3144,6 @@ class PaperSearch {
         return false;
     }
 
-    function numbered_papers() {
-        $q = $this->q;
-        $ss_recursion = array();
-        while (1) {
-            $q = preg_replace('/(?:\s+|\A)(?:show|hide|edit|VIEW|HEADING):\w+(?:\s+|\z)/', " ", $q);
-            if (preg_match('/\A\s*#?\d[-#\d\s]*\z/s', $q)) {
-                $a = array();
-                foreach (preg_split('/\s+/', $q) as $word) {
-                    if ($word === "")
-                        continue;
-                    if ($word[0] === "#" && preg_match('/\A#\d+(?:-#?\d+)?/', $word))
-                        $word = substr($word, 1);
-                    if (ctype_digit($word))
-                        $a[$word] = (int) $word;
-                    else if (preg_match('/\A(\d+)-#?(\d+)\z/s', $word, $m)) {
-                        foreach (range($m[1], $m[2]) as $num)
-                            $a[$num] = $num;
-                    } else
-                        return null;
-                }
-                return array_values($a);
-            } else if (preg_match('/\A(\w+):"?([^"\s]+)"?\z/', $q, $m)
-                       && @self::$_keywords[$m[1]] === "ss") {
-                $q = self::_expand_saved_search($m[2], $ss_recursion);
-                $ss_recursion[$m[1]] = true;
-            } else
-                return null;
-        }
-    }
-
     function alternate_query() {
         if ($this->q !== "" && $this->q[0] !== "#"
             && preg_match('/\A' . TAG_REGEX . '\z/', $this->q)) {
@@ -3181,9 +3157,7 @@ class PaperSearch {
     }
 
     function has_sort() {
-        return count($this->orderTags)
-            || $this->numbered_papers() !== null
-            || @$this->sorters;
+        return count($this->orderTags) || @$this->sorters;
     }
 
     function paperList() {

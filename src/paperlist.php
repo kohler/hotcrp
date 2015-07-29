@@ -976,8 +976,6 @@ class PaperList {
             && ($s = PaperColumn::lookup("tagordersort"))
             && $s->prepare($this, PaperColumn::PREP_SORT))
             $this->default_sort_column = $s;
-        else if ($this->search->numbered_papers() !== null)
-            $this->default_sort_column = PaperColumn::lookup("searchsort");
         else
             $this->default_sort_column = PaperColumn::lookup("id");
         $this->sorters[0]->field = null;
@@ -985,7 +983,11 @@ class PaperList {
         if ($this->search->sorters) {
             $last_sorter = null;
             foreach ($this->search->sorters as $sorter)
-                if (($s = ListSorter::parse_sorter($sorter))) {
+                if ($sorter instanceof PaperColumn) {
+                    $s = new ListSorter(null);
+                    $s->field = $sorter;
+                    $this->sorters[] = $s;
+                } else if (($s = ListSorter::parse_sorter($sorter))) {
                     if ($s->type
                         && ($c = PaperColumn::lookup($s->type))
                         && $c->prepare($this, PaperColumn::PREP_SORT)) {
