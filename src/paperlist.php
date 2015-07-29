@@ -981,39 +981,25 @@ class PaperList {
         $this->sorters[0]->field = null;
 
         if ($this->search->sorters) {
-            $last_sorter = null;
-            foreach ($this->search->sorters as $sorter)
-                if ($sorter instanceof PaperColumn) {
-                    $s = new ListSorter(null);
-                    $s->field = $sorter;
-                    $this->sorters[] = $s;
-                } else if (($s = ListSorter::parse_sorter($sorter))) {
-                    if ($s->type
-                        && ($c = PaperColumn::lookup($s->type))
-                        && $c->prepare($this, PaperColumn::PREP_SORT)) {
-                        $s->field = $c;
-                        if ($last_sorter && $last_sorter->type === null)
-                            PaperSearch::combine_sorters($last_sorter, $s);
-                        else
-                            $this->sorters[] = $last_sorter = $s;
-                    } else if ($s->type) {
-                        if ($this->contact->can_view_tags(null)
-                            && ($tagger = new Tagger)
-                            && ($tag = $tagger->check($s->type))
-                            && ($result = Dbl::qe("select paperId from PaperTag where tag=? limit 1", $tag))
-                            && edb_nrows($result))
-                            $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”. Did you mean “sort:#" . htmlspecialchars($s->type) . "”?");
-                        else
-                            $this->search->warn("Unrecognized sort “" . htmlspecialchars($s->type) . "”.");
-                    } else if ($last_sorter)
-                        PaperSearch::combine_sorters($last_sorter, $s);
+            foreach ($this->search->sorters as $sorter) {
+                if ($sorter->type
+                    && ($field = PaperColumn::lookup($sorter->type))
+                    && $field->prepare($this, PaperColumn::PREP_SORT))
+                    $sorter->field = $field;
+                else if ($sorter->type) {
+                    if ($this->contact->can_view_tags(null)
+                        && ($tagger = new Tagger)
+                        && ($tag = $tagger->check($sorter->type))
+                        && ($result = Dbl::qe("select paperId from PaperTag where tag=? limit 1", $tag))
+                        && edb_nrows($result))
+                        $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”. Did you mean “sort:#" . htmlspecialchars($sorter->type) . "”?");
                     else
-                        $this->sorters[] = $last_sorter = $s;
+                        $this->search->warn("Unrecognized sort “" . htmlspecialchars($sorter->type) . "”.");
+                    continue;
                 }
-            if (count($this->sorters) == 2 && !$this->sorters[1]->type) {
-                PaperSearch::combine_sorters($this->sorters[0], $this->sorters[1]);
-                array_pop($this->sorters);
-            } else if (count($this->sorters) > 1 && $this->sorters[0]->empty)
+                ListSorter::push($this->sorters, $sorter);
+            }
+            if (count($this->sorters) > 1 && $this->sorters[0]->empty)
                 array_shift($this->sorters);
         }
 

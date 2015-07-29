@@ -1662,12 +1662,6 @@ class PaperSearch {
         return $sort;
     }
 
-    public static function combine_sorters($a, $b) {
-        foreach (array("type", "reverse", "score", "field") as $k)
-            if ($a->$k === null)
-                $a->$k = $b->$k;
-    }
-
     private static function _expand_saved_search($word, $recursion) {
         global $Conf;
         if (isset($recursion[$word]))
@@ -3043,19 +3037,22 @@ class PaperSearch {
         } else
             while (($row = $result->fetch_object()))
                 $this->_matches[] = (int) $row->paperId;
-        $this->viewmap = $qe->get_float("view", array());
-        $this->sorters = $qe->get_float("sort", array());
         Dbl::free($result);
-
-        // add numeric sorter
-        if (!$this->sorters && $qe->type === "pn") {
-            $pn = array_diff($qe->value[0], $qe->value[1]);
-            $this->sorters[] = new NumericOrderPaperColumn(array_flip($pn));
-        }
 
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted)
             $this->_add_deleted_papers($qe);
+
+        // view and sort information
+        $this->viewmap = $qe->get_float("view", array());
+        $this->sorters = array();
+        foreach ($qe->get_float("sort", array()) as $s)
+            if (($s = ListSorter::parse_sorter($s)))
+                $this->sorters[] = $s;
+        if (!$this->sorters && $qe->type === "pn") {
+            $pn = array_diff($qe->value[0], $qe->value[1]);
+            $this->sorters[] = ListSorter::make_field(new NumericOrderPaperColumn(array_flip($pn)));
+        }
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions

@@ -8,6 +8,7 @@ class ListSorter {
     public $reverse = false;
     public $score = null;
     public $empty = false;
+    public $thenmap = null;
     public $field = null;
 
     public function __construct($type) {
@@ -18,6 +19,12 @@ class ListSorter {
         $l = new ListSorter(null);
         $l->reverse = null;
         $l->empty = $truly_empty;
+        return $l;
+    }
+
+    static public function make_field($field) {
+        $l = new ListSorter(null);
+        $l->field = $field;
         return $l;
     }
 
@@ -60,4 +67,17 @@ class ListSorter {
         return $sort;
     }
 
+    public static function push(&$array, $s) {
+        if (count($array)) {
+            $x = $array[count($array) - 1];
+            if (((!$s->type && !$s->field) || (!$x->type && !$x->field))
+                && $s->thenmap === $x->thenmap) {
+                foreach (array("type", "reverse", "score", "field") as $k)
+                    if ($x->$k === null)
+                        $x->$k = $s->$k;
+                return;
+            }
+        }
+        $array[] = $s;
+    }
 }
