@@ -606,7 +606,11 @@ conflicted papers’ positions.  (Any given gap might or might not hold a
 conflicted paper.)  The <b>Define gapless order</b> action assigns
 strictly sequential values, like “#tag#1”,
 “#tag#2”, “#tag#3”, “#tag#4”.
-<b>Define order</b> is better for most purposes.</p>");
+<b>Define order</b> is better for most purposes.</p>
+
+<p>The <a href=\"" . hoturl("autoassign", "a=discorder") . "\">autoassigner</a>
+has special support for creating discussion orders. It tries to group papers
+with similar PC conflicts, which can make the meeting run smoother.</p>");
 
     _subhead("Tag colors", "
 <p>The tag names “red”, “orange”, “yellow”,
@@ -1202,8 +1206,8 @@ function chair() {
   conflicts.</a></strong> You can assign conflicts <a
   href='" . hoturl("manualassign", "kind=c") . "'>by PC member</a> or, if
   PC members have entered preferences, <a
-  href='" . hoturl("autoassign") . "'>automatically</a> by searching for
-  preferences of &minus;100 or less.</p></li>
+  href='" . hoturl("autoassign", "a=prefconflict") . "'>automatically</a>
+  by searching for preferences of &minus;100 or less.</p></li>
 
 <li><p><strong><a href='" . hoturl("manualassign") . "'>Assign
   reviews.</a></strong> You can make assignments <a
@@ -1302,11 +1306,12 @@ administrator’s identity.</p>");
   keywords</a> to, for example, find all papers with at least two overall
   merit ratings of 2 or better.</p></li>
 
-<li><p><strong>Assign discussion order using <a
+<li><p><strong>Assign discussion orders using <a
   href='" . hoturl("help", "t=tags") . "'>tags</a></strong> (optional).  Common
   discussion orders include sorted by overall ranking (high-to-low,
-  low-to-high, or alternating) and sorted by topic.  Explicit tag-based orders
-  make it easier for the PC to follow along.</p></li>
+  low-to-high, or alternating), sorted by topic, and <a href=\"" .
+  hoturl("autoassign", "a=discorder") . "\">grouped by PC conflicts</a>.
+  Explicit tag-based orders make it easier for the PC to follow along.</p></li>
 
 <li><p><strong><a href='" . hoturl("autoassign") . "'>Assign discussion leads
   (optional).</a></strong> Discussion leads are expected to be able to

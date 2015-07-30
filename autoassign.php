@@ -130,6 +130,7 @@ class AutoassignerInterface {
     private $atype;
     private $atype_review;
     private $reviewtype;
+    private $discordertag;
     private $autoassigner;
     private $start_at;
     private $live;
@@ -186,6 +187,17 @@ class AutoassignerInterface {
         } else if ($this->atype === "revpc" && cvtint(@$_REQUEST["revpcct"], -1) <= 0) {
             $Error["revpc"] = true;
             return $Conf->errorMsg("You must assign at least one review.");
+        }
+
+        if ($this->atype === "discorder") {
+            $tag = trim((string) @$_REQUEST["discordertag"]);
+            $tag = $tag === "" ? "discuss" : $tag;
+            $tagger = new Tagger;
+            if (!($tag = $tagger->check($tag, Tagger::NOVALUE))) {
+                $Error["discordertag"] = true;
+                return $Conf->errorMsg($tagger->error_html);
+            }
+            $this->discordertag = $tag;
         }
 
         return $this->ok = true;
@@ -342,7 +354,7 @@ class AutoassignerInterface {
             $autoassigner->run_ensure_reviews($this->reviewtype, @$_REQUEST["rev_roundtag"],
                                               cvtint(@$_REQUEST["revct"]));
         else if ($this->atype === "discorder")
-            $autoassigner->run_discussion_order("discuss");
+            $autoassigner->run_discussion_order($this->discordertag);
 
         if ($this->live)
             echo $this->result_html(), "</div>\n";
@@ -507,8 +519,10 @@ doSelect('cleartype', array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "se
 echo " &nbsp;assignments for selected papers and PC members";
 
 echo "<div class='g'></div>", divClass("discorder", "hotradiorelation");
-doRadio("a", "discorder", "Assign discussion order, grouping papers with similar PC conflicts");
-echo "</div>";
+doRadio("a", "discorder", "Create discussion order in tag #");
+echo Ht::entry("discordertag", defval($_REQUEST, "discordertag", "discuss"),
+               array("size" => 12, "onfocus" => 'autosub(false,this)')),
+    ", grouping papers with similar PC conflicts</div>";
 
 echo "</div>\n";
 
