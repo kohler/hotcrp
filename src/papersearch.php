@@ -597,7 +597,6 @@ class PaperSearch {
     var $qt;
     var $allowAuthor;
     private $fields;
-    var $orderTags = array();
     private $_reviewer;
     private $_reviewer_fixed;
     var $matchPreg;
@@ -622,6 +621,7 @@ class PaperSearch {
     public $highlightmap = null;
     public $viewmap;
     public $sorters;
+    private $_highlight_tags = null;
 
     private $_matches = null;
 
@@ -1347,12 +1347,11 @@ class PaperSearch {
 
         foreach ($tags as $tag)
             $compar[0] = $this->_search_one_tag($tag, $compar[0]);
-        $extra = null;
-        if ($keyword === "order" || $keyword === "rorder" || !$keyword)
-            $extra = array("tagorder" => (object) array("tag" => $tags[0], "reverse" => $keyword === "rorder"));
-        $term = new SearchTerm("tag", self::F_XVIEW, $compar, $extra);
+        $term = new SearchTerm("tag", self::F_XVIEW, $compar);
         if ($tags[0] === "none")
             $term = SearchTerm::make_not($term);
+        else if ($keyword === "order" || $keyword === "rorder" || !$keyword)
+            $term->set_float("sort", array(($keyword === "rorder" ? "-" : "") . "#" . $tags[0]));
         $qt[] = $term;
     }
 
@@ -2227,8 +2226,6 @@ class PaperSearch {
             $this->regex[$x[0]] = defval($this->regex, $x[0], array());
             $this->regex[$x[0]][] = $x[1];
         }
-        if (($x = $qe->get("tagorder")) && !$highlight)
-            $this->orderTags[] = $x;
         if ($top && $qe->type === "re" && !$this->_reviewer_fixed && !$highlight) {
             if ($this->_reviewer === false) {
                 $v = $qe->value->contactsql;
@@ -3166,7 +3163,7 @@ class PaperSearch {
     }
 
     function has_sort() {
-        return count($this->orderTags) || @$this->sorters;
+        return @$this->sorters;
     }
 
     function paperList() {
@@ -3267,6 +3264,17 @@ class PaperSearch {
         return $this->create_session_list_object($this->paperList(),
                                                  null, $sort);
     }
+
+    function highlight_tags() {
+        if ($this->_highlight_tags === null) {
+            $this->_highlight_tags = array();
+            foreach ($this->sorters as $s)
+                if ($s->type[0] === "#")
+                    $this->_highlight_tags[] = substr($s->type, 1);
+        }
+        return $this->_highlight_tags;
+    }
+
 
     static function search_types($me) {
         global $Conf;

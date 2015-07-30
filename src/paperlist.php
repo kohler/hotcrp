@@ -998,12 +998,7 @@ class PaperList {
 
     private function _prepare_sort() {
         global $Conf;
-        if (count($this->search->orderTags)
-            && ($s = PaperColumn::lookup("tagordersort"))
-            && $s->prepare($this, PaperColumn::PREP_SORT))
-            $this->default_sort_column = $s;
-        else
-            $this->default_sort_column = PaperColumn::lookup("id");
+        $this->default_sort_column = PaperColumn::lookup("id");
         $this->sorters[0]->field = null;
 
         if ($this->search->sorters) {
@@ -1204,10 +1199,7 @@ class PaperList {
                     $defsortname = null;
 
                 $tooltip = "";
-                if ($defsortname == "tagordersort") {
-                    $tooltip = "Sort by tag order";
-                    $ftext = "#";
-                } else if ($defsortname == "searchsort") {
+                if ($defsortname == "searchsort") {
                     $tooltip = "Sort by search term order";
                     $ftext = "#";
                 }

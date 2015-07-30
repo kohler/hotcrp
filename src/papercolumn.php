@@ -882,7 +882,7 @@ class TagListPaperColumn extends PaperColumn {
         $viewable = $pl->tagger->viewable($row->paperTags);
         $noconf = $row->conflictType <= 0;
         $str = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
-                                             $pl->search->orderTags, $noconf);
+                                             $pl->search->highlight_tags(), $noconf);
         return $pl->maybeConflict($row, $str, $noconf || $pl->contact->can_view_tags($row, false));
     }
 }
@@ -1289,48 +1289,6 @@ class NumericOrderPaperColumn extends PaperColumn {
     }
 }
 
-class TagOrderSortPaperColumn extends PaperColumn {
-    public function __construct() {
-        parent::__construct("tagordersort", Column::VIEW_NONE,
-                            array("sorter" => "tag_order_sorter"));
-    }
-    public function prepare(PaperList $pl, $visible) {
-        if (!($pl->contact->isPC && count($pl->search->orderTags)))
-            return false;
-        $pl->qopts["tagIndex"] = array();
-        foreach ($pl->search->orderTags as $x)
-            $pl->qopts["tagIndex"][] = $x->tag;
-        return true;
-    }
-    public function sort_prepare($pl, &$rows, $sorter) {
-        global $Conf;
-        $careful = !$pl->contact->privChair
-            && $Conf->setting("tag_seeall") <= 0;
-        $ot = $pl->search->orderTags;
-        for ($i = 0; $i < count($ot); ++$i) {
-            $n = "tagIndex" . ($i ? $i : "");
-            $rev = $ot[$i]->reverse;
-            foreach ($rows as $row) {
-                if ($row->$n === null
-                    || ($careful && !$pl->contact->can_view_tags($row, true)))
-                    $row->$n = 2147483647;
-                if ($rev)
-                    $row->$n = -$row->$n;
-            }
-        }
-    }
-    public function tag_order_sorter($a, $b) {
-        $i = $x = 0;
-        for ($i = $x = 0; $x == 0; ++$i) {
-            $n = "tagIndex" . ($i ? $i : "");
-            if (!isset($a->$n))
-                break;
-            $x = ($a->$n < $b->$n ? -1 : ($a->$n == $b->$n ? 0 : 1));
-        }
-        return $x;
-    }
-}
-
 class LeadPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("lead", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
@@ -1422,7 +1380,6 @@ function initialize_paper_columns() {
     PaperColumn::register(new PCConflictListPaperColumn);
     PaperColumn::register(new ConflictMatchPaperColumn("authorsmatch", "authorInformation"));
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
-    PaperColumn::register(new TagOrderSortPaperColumn);
     PaperColumn::register(new TimestampPaperColumn);
     PaperColumn::register(new FoldAllPaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));

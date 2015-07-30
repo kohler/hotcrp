@@ -477,7 +477,7 @@ class Tagger {
         assert($highlight === false || is_array($highlight));
         if ($highlight)
             foreach ($highlight as $h) {
-                $tag = $h->tag;
+                $tag = is_object($h) ? $h->tag : $h;
                 if (($pos = strpos($tag, "~")) !== false)
                     $tag = substr($tag, $pos);
                 $byhighlight[strtolower($tag)] = "";
