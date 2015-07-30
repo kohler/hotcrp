@@ -66,12 +66,6 @@ class TagMap implements ArrayAccess, IteratorAggregate {
 }
 
 class TagInfo {
-    const ALLOWRESERVED = 1;
-    const NOPRIVATE = 2;
-    const NOVALUE = 4;
-    const NOCHAIR = 8;
-    const ALLOWSTAR = 16;
-
     const BASIC_COLORS = "red|orange|yellow|green|blue|purple|gray|white|bold|italic|underline|strikethrough|big|small|dim";
     const BASIC_COLORS_PLUS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
 
@@ -325,7 +319,6 @@ class TagInfo {
 }
 
 class Tagger {
-
     const ALLOWRESERVED = 1;
     const NOPRIVATE = 2;
     const NOVALUE = 4;
