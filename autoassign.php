@@ -123,7 +123,7 @@ $abar .= actionTab("Manual", hoturl("manualassign"), false);
 $abar .= actionTab("Upload", hoturl("bulkassign"), false);
 $abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
 
-$Conf->header("Review Assignments", "autoassign", $abar);
+$Conf->header("Assignments", "autoassign", $abar);
 
 
 class AutoassignerInterface {
