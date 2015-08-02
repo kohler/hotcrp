@@ -134,9 +134,9 @@ if ($Me->is_manager()) {
         $links[] = '<a href="' . hoturl("settings") . '">Settings</a>';
         $links[] = '<a href="' . hoturl("users", "t=all") . '">Users</a>';
     }
-    $links[] = '<a href="' . hoturl("autoassign") . '">Assign reviews</a>';
+    $links[] = '<a href="' . hoturl("autoassign") . '">Assignments</a>';
     if ($Me->privChair) {
-        $links[] = '<a href="' . hoturl("mail") . '">Send mail</a>';
+        $links[] = '<a href="' . hoturl("mail") . '">Mail</a>';
         $links[] = '<a href="' . hoturl("log") . '">Action log</a>';
     }
     echo "<h4>Administration</h4>\n  <ul style=\"margin-bottom:0.75em\">\n    <li>",
