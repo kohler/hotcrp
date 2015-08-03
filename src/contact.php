@@ -1013,7 +1013,7 @@ class Contact {
                 || password_needs_rehash(substr($this->password, 2), $method);
         else {
             $expected_prefix = " $method " . $this->preferred_password_keyid() . " ";
-            return str_starts_with($this->password, $expected_prefix);
+            return !str_starts_with($this->password, $expected_prefix);
         }
     }
 
