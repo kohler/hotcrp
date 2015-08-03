@@ -190,7 +190,7 @@ class Contact {
         if ($password === null || $password === false)
             $password = "";
         $this->password = $password;
-        $this->password_type = substr($this->password, 0, 1) == " " ? 1 : 0;
+        $this->password_type = @$this->password[0] === " " ? 1 : 0;
         if ($this->password_type == 0)
             $this->password_plaintext = $password;
     }
@@ -938,42 +938,35 @@ class Contact {
             && $password !== "*";
     }
 
-    private function check_hashed_password($password) {
-        if ($this->password[1] === '$') {
+    private static function check_hashed_password($input, $pwhash, $email) {
+        if ($input == "" || $input === "*")
+            return false;
+        else if (@$pwhash[0] !== " ")
+            return $pwhash === $input;
+        else if ($pwhash[1] === "\$") {
             if (function_exists("password_verify"))
-                return password_verify($password, substr($this->password, 2));
+                return password_verify($input, substr($pwhash, 2));
         } else {
-            if (($method_pos = strpos($this->password, " ", 1)) !== false
-                && ($keyid_pos = strpos($this->password, " ", $method_pos + 1)) !== false
-                && strlen($this->password) > $keyid_pos + 17
+            if (($method_pos = strpos($pwhash, " ", 1)) !== false
+                && ($keyid_pos = strpos($pwhash, " ", $method_pos + 1)) !== false
+                && strlen($pwhash) > $keyid_pos + 17
                 && function_exists("hash_hmac")) {
-                $method = substr($this->password, 1, $method_pos - 1);
-                $keyid = substr($this->password, $method_pos + 1, $keyid_pos - $method_pos - 1);
-                $salt = substr($this->password, $keyid_pos + 1, 16);
-                return hash_hmac($method, $salt . $password,
+                $method = substr($pwhash, 1, $method_pos - 1);
+                $keyid = substr($pwhash, $method_pos + 1, $keyid_pos - $method_pos - 1);
+                $salt = substr($pwhash, $keyid_pos + 1, 16);
+                return hash_hmac($method, $salt . $input,
                                  self::password_hmac_key($keyid), true)
-                    == substr($this->password, $keyid_pos + 17);
+                    == substr($pwhash, $keyid_pos + 17);
             }
         }
-        return -1;
+        error_log("cannot check hashed password for user $email");
+        return false;
     }
 
     public function check_local_password($password) {
-        global $Conf, $Opt;
+        global $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        if ($password == "" || $password === "*")
-            return false;
-        if ($this->password_type == 0)
-            return $password === $this->password;
-        if ($this->password_type != 1)
-            return false;
-        $x = $this->check_hashed_password($password);
-        if (is_bool($x))
-            return $x;
-        else {
-            error_log("cannot check hashed password for user " . $this->email);
-            return false;
-        }
+        return self::check_hashed_password($password, $this->password, $this->email);
     }
 
     static private function password_hash_method() {
