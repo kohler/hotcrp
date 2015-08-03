@@ -579,4 +579,61 @@ class PaperInfo {
             $this->load_comments();
         return $this->comment_array;
     }
+
+
+    public function notify($notifytype, $callback, $contact) {
+        global $Conf;
+
+        $q = "select ContactInfo.contactId, firstName, lastName, email,
+                password, contactTags, roles, defaultWatch,
+                PaperReview.reviewType myReviewType,
+                PaperReview.reviewSubmitted myReviewSubmitted,
+                PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,
+                conflictType, watch, preferredEmail, disabled
+        from ContactInfo
+        left join PaperConflict on (PaperConflict.paperId=$this->paperId and PaperConflict.contactId=ContactInfo.contactId)
+        left join PaperWatch on (PaperWatch.paperId=$this->paperId and PaperWatch.contactId=ContactInfo.contactId)
+        left join PaperReview on (PaperReview.paperId=$this->paperId and PaperReview.contactId=ContactInfo.contactId)
+        left join PaperComment on (PaperComment.paperId=$this->paperId and PaperComment.contactId=ContactInfo.contactId)
+        where watch is not null
+        or conflictType>=" . CONFLICT_AUTHOR . "
+        or reviewType is not null or commentId is not null
+        or (defaultWatch & " . ($notifytype << WATCHSHIFT_ALL) . ")!=0";
+        if ($this->managerContactId > 0)
+            $q .= " or ContactInfo.contactId=" . $this->managerContactId;
+        $q .= " order by conflictType";
+
+        $result = Dbl::qe_raw($q);
+        $watchers = array();
+        $lastContactId = 0;
+        while ($result && ($row = $result->fetch_object("Contact"))) {
+            if ($row->contactId == $lastContactId
+                || ($contact && $row->contactId == $contact->contactId)
+                || Contact::is_anonymous_email($row->email))
+                continue;
+            $lastContactId = $row->contactId;
+
+            if ($row->watch
+                && ($row->watch & ($notifytype << WATCHSHIFT_EXPLICIT))) {
+                if (!($row->watch & ($notifytype << WATCHSHIFT_NORMAL)))
+                    continue;
+            } else {
+                if (!($row->defaultWatch & (($notifytype << WATCHSHIFT_NORMAL) | ($notifytype << WATCHSHIFT_ALL))))
+                    continue;
+            }
+
+            $watchers[$row->contactId] = $row;
+        }
+
+        // save my current contact info map -- we are replacing it with another
+        // map that lacks review token information and so forth
+        $cimap = $this->replace_contact_info_map(null);
+
+        foreach ($watchers as $minic) {
+            $this->assign_contact_info($minic, $minic->contactId);
+            call_user_func($callback, $this, $minic);
+        }
+
+        $this->replace_contact_info_map($cimap);
+    }
 }

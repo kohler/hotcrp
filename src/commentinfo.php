@@ -311,7 +311,7 @@ class CommentInfo {
             $this->merge($comments[$cmtid]);
             if ($this->timeNotified == $this->timeModified) {
                 self::$watching = $this;
-                genericWatch($this->prow, WATCHTYPE_COMMENT, "CommentInfo::watch_callback", $contact);
+                $this->prow->notify(WATCHTYPE_COMMENT, "CommentInfo::watch_callback", $contact);
                 self::$watching = null;
             }
         } else {

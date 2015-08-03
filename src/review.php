@@ -813,7 +813,7 @@ class ReviewForm {
             $this->mailer_preps = array();
             if ($Conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($tmpl, $prow, $this->mailer_info);
-            genericWatch($prow, WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
+            $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
             if (count($this->mailer_preps))
                 HotCRPMailer::send_combined_preparations($this->mailer_preps);
             unset($this->mailer_info, $this->mailer_preps);

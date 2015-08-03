@@ -515,7 +515,7 @@ function update_paper($pj, $opj, $action, $diffs) {
 
     // other mail confirmations
     if ($action == "final" && $OK && !count($Error))
-        genericWatch($prow, WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
+        $prow->notify(WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
     $Me->log_activity($actiontext, $prow->paperId);
     return true;
