@@ -43,7 +43,7 @@ foreach (range(100, 921384, 1247) as $seed) {
     srand($seed); // the shuffle() uses this seed
     $m->shuffle();
     $m->run();
-    assert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
+    xassert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
     if (mcmf_assignment_text($m) !== "u0 p1\nu1 p2\nu2 p0\n")
         fwrite(STDERR, "-- bad seed $seed\n");
 }
@@ -75,13 +75,13 @@ foreach (range(100, 921384, 1247) as $seed) {
 }
 $assignments = array_keys($assignments);
 sort($assignments);
-assert_eqq(count($assignments), 6);
-assert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
-assert_eqq($assignments[1], "u0 p0\nu1 p2\nu2 p1\n");
-assert_eqq($assignments[2], "u0 p1\nu1 p0\nu2 p2\n");
-assert_eqq($assignments[3], "u0 p1\nu1 p2\nu2 p0\n");
-assert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
-assert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
+xassert_eqq(count($assignments), 6);
+xassert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
+xassert_eqq($assignments[1], "u0 p0\nu1 p2\nu2 p1\n");
+xassert_eqq($assignments[2], "u0 p1\nu1 p0\nu2 p2\n");
+xassert_eqq($assignments[3], "u0 p1\nu1 p2\nu2 p0\n");
+xassert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
+xassert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 
 fwrite(STDERR, "- Phase 2 complete.\n");
 
@@ -113,9 +113,9 @@ foreach (range(100, 921384, 1247) as $seed) {
 }
 $assignments = array_keys($assignments);
 sort($assignments);
-assert_eqq(count($assignments), 2);
-assert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
-assert_eqq($assignments[1], "u0 p1\nu1 p0\nu2 p2\n");
+xassert_eqq(count($assignments), 2);
+xassert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
+xassert_eqq($assignments[1], "u0 p1\nu1 p0\nu2 p2\n");
 
 fwrite(STDERR, "- Phase 3 complete.\n");
 
@@ -144,13 +144,13 @@ foreach (range(100, 921384, 1247) as $seed) {
 }
 $assignments = array_keys($assignments);
 sort($assignments);
-assert_eqq(count($assignments), 6);
-assert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
-assert_eqq($assignments[1], "u0 p0\nu1 p2\nu2 p1\n");
-assert_eqq($assignments[2], "u0 p1\nu1 p0\nu2 p2\n");
-assert_eqq($assignments[3], "u0 p1\nu1 p2\nu2 p0\n");
-assert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
-assert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
+xassert_eqq(count($assignments), 6);
+xassert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
+xassert_eqq($assignments[1], "u0 p0\nu1 p2\nu2 p1\n");
+xassert_eqq($assignments[2], "u0 p1\nu1 p0\nu2 p2\n");
+xassert_eqq($assignments[3], "u0 p1\nu1 p2\nu2 p0\n");
+xassert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
+xassert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 
 fwrite(STDERR, "- Phase 4 complete.\n");
 
@@ -178,8 +178,8 @@ a 6 2 1
 a 7 2 1
 a 8 2 1");
 $m->run();
-assert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
-assert_eqq(preg_replace('/^c[^\n]*\n/m', "", $m->mincost_dimacs_output()),
+xassert_eqq(mcmf_assignment_text($m), "u0 p1\nu1 p2\nu2 p0\n");
+xassert_eqq(preg_replace('/^c[^\n]*\n/m', "", $m->mincost_dimacs_output()),
            "s -1
 f 1 3 1
 f 1 4 1

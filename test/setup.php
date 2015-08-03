@@ -89,7 +89,7 @@ function xassert_exit() {
     exit($ok ? 0 : 1);
 }
 
-function assert_eqq($a, $b) {
+function xassert_eqq($a, $b) {
     ++Xassert::$n;
     if ($a === $b)
         ++Xassert::$nsuccess;
@@ -98,7 +98,7 @@ function assert_eqq($a, $b) {
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
 }
 
-function assert_neqq($a, $b) {
+function xassert_neqq($a, $b) {
     ++Xassert::$n;
     if ($a !== $b)
         ++Xassert::$nsuccess;
@@ -107,7 +107,25 @@ function assert_neqq($a, $b) {
                       . " failed at " . assert_location() . "\n", E_USER_WARNING);
 }
 
-function assert_array_eqq($a, $b) {
+function xassert_eq($a, $b) {
+    ++Xassert::$n;
+    if ($a == $b)
+        ++Xassert::$nsuccess;
+    else
+        trigger_error("Assertion " . var_export($a, true) . " == " . var_export($b, true)
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
+}
+
+function xassert_neq($a, $b) {
+    ++Xassert::$n;
+    if ($a != $b)
+        ++Xassert::$nsuccess;
+    else
+        trigger_error("Assertion " . var_export($a, true) . " != " . var_export($b, true)
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
+}
+
+function xassert_array_eqq($a, $b) {
     ++Xassert::$n;
     $problem = "";
     if ($a === null && $b === null)
@@ -150,12 +168,12 @@ function search_text_col($user, $text, $col = "id") {
 function assert_search_papers($user, $text, $result) {
     if (is_array($result))
         $result = join(" ", $result);
-    assert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
+    xassert_eqq(join(" ", array_keys(search_json($user, $text))), $result);
 }
 
 function assert_query($q, $b) {
     $result = Dbl::qe_raw($q);
-    assert_eqq(join("\n", edb_first_columns($result)), $b);
+    xassert_eqq(join("\n", edb_first_columns($result)), $b);
 }
 
 function tag_normalize_compare($a, $b) {

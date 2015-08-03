@@ -31,7 +31,7 @@ xassert($user_chair->contactId != $user_estrin->contactId);
 // check permissions on paper
 function check_paper1($paper1) {
     global $user_chair, $user_estrin, $user_kohler, $user_marina, $user_van, $user_nobody;
-    assert_neqq($paper1, null);
+    xassert_neqq($paper1, null);
 
     xassert($user_chair->can_view_paper($paper1));
     xassert($user_estrin->can_view_paper($paper1));
@@ -106,7 +106,7 @@ xassert($user_mgbaker->actAuthorView($paper18));
 // simple search
 $pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));
 $j = $pl->text_json("id title");
-assert_eqq(join(";", array_keys($j)), "1;6;13;15");
+xassert_eqq(join(";", array_keys($j)), "1;6;13;15");
 
 // sorting works
 assert_search_papers($user_shenker, "au:berkeley sort:title", "15 13 1 6");
@@ -115,14 +115,14 @@ assert_search_papers($user_shenker, "au:berkeley sort:title", "15 13 1 6");
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
                     array("reviewer" => $user_mgbaker));
 $j = $pl->text_json("id selconf");
-assert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
+xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert(!@$j[1]->selconf && !@$j[2]->selconf && @$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
        && !@$j[15]->selconf && !@$j[16]->selconf && !@$j[17]->selconf && @$j[18]->selconf);
 
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
                     array("reviewer" => $user_jon));
 $j = $pl->text_json("id selconf");
-assert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
+xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
 xassert(!@$j[1]->selconf && !@$j[2]->selconf && !@$j[3]->selconf && !@$j[4]->selconf && !@$j[5]->selconf
        && !@$j[15]->selconf && !@$j[16]->selconf && @$j[17]->selconf && !@$j[18]->selconf);
 
@@ -145,6 +145,7 @@ $rf->save_review($revreq,
 assert_search_papers($user_mgbaker, "re:varghese", "1");
 
 // check comment identity
+xassert($Conf->setting("au_seerev") == Conference::AUSEEREV_NO);
 $comment1 = new CommentInfo(null, $paper1);
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 xassert($c1ok);
@@ -209,7 +210,7 @@ $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("paper,action,tag,index
 1,tag,~vote,clear
 2,tag,marina~vote,clear\n");
-assert_eqq(join("\n", $assignset->errors_text()), "");
+xassert_eqq(join("\n", $assignset->errors_text()), "");
 $assignset->execute();
 assert_search_papers($user_chair, "#any~vote", "1");
 
@@ -217,7 +218,7 @@ assert_search_papers($user_chair, "#any~vote", "1");
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email
 1,pri,estrin@usc.edu\n");
-assert_eqq(join("\n", $assignset->errors_text()), "Deborah Estrin <estrin@usc.edu> has a conflict with paper #1.");
+xassert_eqq(join("\n", $assignset->errors_text()), "Deborah Estrin <estrin@usc.edu> has a conflict with paper #1.");
 $assignset->execute();
 assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "mgbaker@cs.stanford.edu\nmjh@isi.edu\nvarghese@ccrc.wustl.edu");
 
@@ -226,7 +227,7 @@ $assignset = new AssignmentSet($user_estrin, false);
 $assignset->parse("paper,tag
 1,fart
 2,fart\n");
-assert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with paper #1.");
+xassert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with paper #1.");
 
 $assignset = new AssignmentSet($user_estrin, false);
 $assignset->parse("paper,tag\n2,fart\n");
@@ -244,35 +245,35 @@ $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
 xassert($assignset->execute());
 $paper1->load_tags();
-assert_eqq(join(" ", paper_tag_normalize($paper1)),
+xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
 
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,tag\n1,all#none\n");
 xassert($assignset->execute());
 $paper1->load_tags();
-assert_eqq(join(" ", paper_tag_normalize($paper1)),
+xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,tag\n1,fart\n");
 xassert($assignset->execute());
 $paper1->load_tags();
-assert_eqq(join(" ", paper_tag_normalize($paper1)),
+xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
 $assignset = new AssignmentSet($user_varghese, false);
 $assignset->parse("paper,tag\n1,all#clear\n1,~green\n");
 xassert($assignset->execute());
 $paper1->load_tags();
-assert_eqq(join(" ", paper_tag_normalize($paper1)),
+xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~green jon~vote#10 marina~vote#5");
 
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n");
 xassert($assignset->execute());
 assert_search_papers($user_chair, "order:fart", "1 2 3");
-assert_eqq(search_text_col($user_chair, "order:fart", "tagval:fart"), "1 4\n2 5\n3 6\n");
+xassert_eqq(search_text_col($user_chair, "order:fart", "tagval:fart"), "1 4\n2 5\n3 6\n");
 
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("action,paper,tag\nnexttag,6,fart\nnexttag,5,fart\nnexttag,4,fart\n");
