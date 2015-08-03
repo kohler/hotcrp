@@ -780,6 +780,9 @@ class ReviewForm {
         if (!$result)
             return $result;
 
+        // update caches
+        Contact::update_rights();
+
         // look up review ID
         if (!$reviewId)
             return $reviewId;

@@ -40,7 +40,7 @@ if (isset($_REQUEST["uploadForm"])
     }
     $rf->textFormMessages($tf);
     // Uploading forms may have completed the reviewer's task; recheck roles.
-    $Me->update_cached_roles();
+    Contact::update_rights();
 } else if (isset($_REQUEST["uploadForm"]))
     $Conf->errorMsg("Choose a file first.");
 

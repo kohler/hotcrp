@@ -62,6 +62,7 @@ class PaperContactInfo {
 
 class PaperInfo {
     private $_contact_info = array();
+    private $_contact_info_rights_version = 0;
     private $_prefs_array = null;
     private $_review_id_array = null;
     private $_topics_array = null;
@@ -110,6 +111,10 @@ class PaperInfo {
             $rev_tokens = $contact->review_tokens();
             $contact = $contact->contactId;
         }
+        if ($this->_contact_info_rights_version !== Contact::$rights_version) {
+            $this->_contact_info = array();
+            $this->_contact_info_rights_version = Contact::$rights_version;
+        }
         $ci = @$this->_contact_info[$contact];
         if (!$ci)
             $ci = $this->_contact_info[$contact] =
@@ -120,6 +125,7 @@ class PaperInfo {
     public function replace_contact_info_map($cimap) {
         $old_cimap = $this->_contact_info;
         $this->_contact_info = $cimap;
+        $this->_contact_info_rights_version = Contact::$rights_version;
         return $old_cimap;
     }
 

@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Contact {
+    static public $rights_version = 1;
 
     // Information from the SQL definition
     public $contactId = 0;
@@ -41,7 +42,7 @@ class Contact {
     private $is_requester_;
     private $is_lead_;
     private $is_explicit_manager_;
-    private $rights_version_ = 1;
+    private $rights_version_ = 0;
     var $roles = 0;
     var $isPC = false;
     var $privChair = false;
@@ -278,7 +279,7 @@ class Contact {
         if (!@$Opt["disableCapabilities"]) {
             if (($caps = $Conf->session("capabilities"))) {
                 $this->capabilities = $caps;
-                ++$this->rights_version_;
+                ++self::$rights_version;
             }
             if (isset($_REQUEST["cap"]) || isset($_REQUEST["testcap"]))
                 $this->activate_capabilities();
@@ -287,7 +288,7 @@ class Contact {
         // Add review tokens from session
         if (($rtokens = $Conf->session("rev_tokens"))) {
             $this->review_tokens_ = $rtokens;
-            ++$this->rights_version_;
+            ++self::$rights_version;
         }
 
         // Maybe auto-create a user
@@ -520,7 +521,7 @@ class Contact {
         else
             $newval = ($oldval | ($on ? $c : 0)) & ~($on ? 0 : $c);
         if ($newval !== $oldval) {
-            ++$this->rights_version_;
+            ++self::$rights_version;
             if ($newval !== 0)
                 $this->capabilities[$pid] = $newval;
             else
@@ -1156,16 +1157,11 @@ class Contact {
 
     // HotCRP roles
 
-    function update_cached_roles() {
-        foreach (array("is_author_", "has_review_", "has_outstanding_review_",
-                       "is_requester_", "is_lead_", "is_explicit_manager_") as $k)
-            unset($this->$k);
-        ++$this->rights_version_;
+    static public function update_rights() {
+        ++self::$rights_version;
     }
 
     private function load_author_reviewer_status() {
-        global $Conf;
-
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
@@ -1192,16 +1188,29 @@ class Contact {
                     $this->is_author_ = true;
     }
 
+    private function check_rights_version() {
+        if ($this->rights_version_ !== self::$rights_version) {
+            unset($this->is_author_, $this->has_review_, $this->has_outstanding_review_, $this->is_requester_, $this->is_lead_, $this->is_explicit_manager_);
+            $this->rights_version_ = self::$rights_version;
+        }
+    }
+
     function is_author() {
+        $this->check_rights_version();
         if (!isset($this->is_author_))
             $this->load_author_reviewer_status();
         return $this->is_author_;
     }
 
-    function is_reviewer() {
-        if (!$this->isPC && !isset($this->has_review_))
+    function has_review() {
+        $this->check_rights_version();
+        if (!isset($this->has_review_))
             $this->load_author_reviewer_status();
-        return $this->isPC || $this->has_review_;
+        return $this->has_review_;
+    }
+
+    function is_reviewer() {
+        return $this->isPC || $this->has_review();
     }
 
     function all_roles() {
@@ -1213,20 +1222,15 @@ class Contact {
         return $r;
     }
 
-    function has_review() {
-        if (!isset($this->has_review_))
-            $this->load_author_reviewer_status();
-        return $this->has_review_;
-    }
-
     function has_outstanding_review() {
+        $this->check_rights_version();
         if (!isset($this->has_outstanding_review_))
             $this->load_author_reviewer_status();
         return $this->has_outstanding_review_;
     }
 
     function is_requester() {
-        global $Conf;
+        $this->check_rights_version();
         if (!isset($this->is_requester_)) {
             $result = null;
             if ($this->contactId > 0)
@@ -1238,7 +1242,7 @@ class Contact {
     }
 
     function is_discussion_lead() {
-        global $Conf;
+        $this->check_rights_version();
         if (!isset($this->is_lead_)) {
             $result = null;
             if ($this->contactId > 0)
@@ -1249,6 +1253,7 @@ class Contact {
     }
 
     function is_explicit_manager() {
+        $this->check_rights_version();
         if (!isset($this->is_explicit_manager_)) {
             $result = null;
             if ($this->contactId > 0 && $this->isPC)
@@ -1302,7 +1307,7 @@ class Contact {
         if ($new_ntokens == 0)
             $this->review_tokens_ = null;
         if ($new_ntokens != $old_ntokens)
-            $this->update_cached_roles();
+            self::update_rights();
         if ($this->activated_ && $new_ntokens != $old_ntokens)
             $Conf->save_session("rev_tokens", $this->review_tokens_);
         return $new_ntokens != $old_ntokens;
@@ -1347,7 +1352,7 @@ class Contact {
         $ci = $prow->contact_info($this);
 
         // check first whether administration is allowed
-        if (@$ci->rights_version != $this->rights_version_) {
+        if (!isset($ci->allow_administer)) {
             $ci->allow_administer = false;
             if ($this->contactId > 0
                 && !($prow->managerContactId
@@ -1364,7 +1369,7 @@ class Contact {
         else if ($forceShow === null)
             $forceShow = ($fs = @$_REQUEST["forceShow"]) && $fs != "0";
         else if ($forceShow === "any")
-            $forceShow = @$ci->forced_rights && @$ci->forced_rights_version == $this->rights_version_;
+            $forceShow = !!@$ci->forced_rights;
         if ($forceShow) {
             if (!@$ci->forced_rights)
                 $ci->forced_rights = clone $ci;
@@ -1372,9 +1377,7 @@ class Contact {
         }
 
         // set other rights
-        if (@$ci->rights_version != $this->rights_version_
-            || @$ci->rights_force !== $forceShow) {
-            $ci->rights_version = $this->rights_version_;
+        if (@$ci->rights_force !== $forceShow) {
             $ci->rights_force = $forceShow;
 
             // check current administration status
@@ -2811,6 +2814,7 @@ class Contact {
         // Set pcrev_assigntime
         if ($q[0] == "i" && $type >= REVIEW_PC && $Conf->setting("pcrev_assigntime", 0) < $Now)
             $Conf->save_setting("pcrev_assigntime", $Now);
+        Contact::update_rights();
         return $reviewId;
     }
 
