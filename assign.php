@@ -109,7 +109,7 @@ function retractRequest($email, $prow, $confirm = true) {
         $Conf->settings["rev_tokens"] = -1;
     // send confirmation email, if the review site is open
     if ($Conf->time_review_open() && $row) {
-        $Reviewer = Contact::make($row);
+        $Reviewer = new Contact($row);
         HotCRPMailer::send_to($Reviewer, "@retractrequest", $prow,
                               array("requester_contact" => $Me,
                                     "cc" => Text::user_email_to($Me)));
@@ -267,10 +267,8 @@ function requestReview($email) {
     $Requester = $Me;
     if ($Conf->setting("extrev_chairreq")) {
         $result = Dbl::qe_raw("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
-        if (($row = edb_orow($result))) {
-            $Requester = Contact::make($row);
+        if ($result && ($Requester = $result->fetch_object("Contact")))
             Dbl::qe_raw("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
-        }
     }
 
     // store the review request

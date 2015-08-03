@@ -9,8 +9,7 @@ class UserActions {
         global $Conf;
         $j = (object) array("ok" => true);
         $result = $Conf->qe("select * from ContactInfo where $where and contactId" . sql_in_numeric_set($ids));
-        while (($row = edb_orow($result))) {
-            $Acct = Contact::make($row);
+        while ($result && ($Acct = $result->fetch_object("Contact"))) {
             if ($dopassword)
                 $Acct->change_password(null, true);
             if ($sendtype && $Acct->password != "" && !$Acct->disabled)

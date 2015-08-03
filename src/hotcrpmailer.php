@@ -411,9 +411,9 @@ class HotCRPMailer extends Mailer {
         $contact_info_map = $row->replace_contact_info_map(null);
 
         $preps = $contacts = array();
-        while (($contact = edb_orow($result))) {
+        while ($result && ($contact = $result->fetch_object("Contact"))) {
             $row->assign_contact_info($contact, $contact->contactId);
-            if (($p = self::prepare_to(Contact::make($contact), $template, $row, $rest))) {
+            if (($p = self::prepare_to($contact, $template, $row, $rest))) {
                 $preps[] = $p;
                 $contacts[] = Text::user_html($contact);
             }
@@ -454,9 +454,9 @@ class HotCRPMailer extends Mailer {
         $contact_info_map = $row->replace_contact_info_map(null);
 
         $preps = $contacts = array();
-        while (($contact = edb_orow($result))) {
+        while ($result && ($contact = $result->fetch_object("Contact"))) {
             $row->assign_contact_info($contact, $contact->contactId);
-            if (($p = self::prepare_to(Contact::make($contact), $template, $row, $rest))) {
+            if (($p = self::prepare_to($contact, $template, $row, $rest))) {
                 $preps[] = $p;
                 $contacts[] = Text::user_html($contact);
             }

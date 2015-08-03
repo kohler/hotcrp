@@ -791,7 +791,7 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
     $result = Dbl::qe_raw($q);
     $watchers = array();
     $lastContactId = 0;
-    while (($row = edb_orow($result))) {
+    while ($result && ($row = $result->fetch_object("Contact"))) {
         if ($row->contactId == $lastContactId
             || ($contact && $row->contactId == $contact->contactId)
             || Contact::is_anonymous_email($row->email))
@@ -829,9 +829,8 @@ function genericWatch($prow, $watchtype, $callback, $contact) {
     // map that lacks review token information and so forth
     $cimap = $prow->replace_contact_info_map(null);
 
-    foreach ($watchers as $row) {
-        $minic = Contact::make($row);
-        $prow->assign_contact_info($row, $row->contactId);
+    foreach ($watchers as $minic) {
+        $prow->assign_contact_info($minic, $minic->contactId);
         call_user_func($callback, $prow, $minic);
     }
 

@@ -62,10 +62,6 @@ class Contact {
             $this->db_load();
     }
 
-    static public function make($o) {
-        return new Contact($o);
-    }
-
     private function merge($user) {
         global $Conf;
         if (!isset($user->dsn) || $user->dsn == $Conf->dsn) {
