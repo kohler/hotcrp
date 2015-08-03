@@ -21,6 +21,8 @@ $user_mgbaker = Contact::find_by_email("mgbaker@cs.stanford.edu"); // pc
 $user_shenker = Contact::find_by_email("shenker@parc.xerox.com"); // pc, chair
 $user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk"); // pc, red
 $user_varghese = Contact::find_by_email("varghese@ccrc.wustl.edu"); // pc
+$user_wilma = Contact::find_by_email("ojuelegba@gmail.com"); // pc
+$user_mjh = Contact::find_by_email("mjh@isi.edu"); // pc
 $user_nobody = new Contact;
 
 // users are different
@@ -163,6 +165,64 @@ xassert($user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", null);
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("au_seerev", Conference::AUSEEREV_NO);
+
+// check comment/review visibility when reviews are incomplete
+$Conf->save_setting("pc_seeallrev", Conference::PCSEEREV_UNLESSINCOMPLETE);
+Contact::update_rights();
+$review1 = $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId));
+xassert(!$user_wilma->has_review());
+xassert(!$user_wilma->has_outstanding_review());
+xassert($user_wilma->can_view_review($paper1, $review1, false));
+xassert($user_mgbaker->has_review());
+xassert($user_mgbaker->has_outstanding_review());
+xassert($user_mgbaker->can_view_review($paper1, $review1, false));
+xassert($user_mjh->has_review());
+xassert($user_mjh->has_outstanding_review());
+xassert(!$user_mjh->can_view_review($paper1, $review1, false));
+xassert($user_varghese->has_review());
+xassert($user_varghese->has_outstanding_review());
+xassert(!$user_varghese->can_view_review($paper1, $review1, false));
+xassert($user_marina->has_review());
+xassert($user_marina->has_outstanding_review());
+xassert($user_marina->can_view_review($paper1, $review1, false));
+$rf->save_review($revreq,
+                 $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mjh->contactId)),
+                 $Conf->paperRow(1, $user_mjh),
+                 $user_mjh);
+$review2 = $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mjh->contactId));
+xassert($user_wilma->can_view_review($paper1, $review1, false));
+xassert($user_wilma->can_view_review($paper1, $review2, false));
+xassert($user_mgbaker->can_view_review($paper1, $review1, false));
+xassert($user_mgbaker->can_view_review($paper1, $review2, false));
+xassert($user_mjh->can_view_review($paper1, $review1, false));
+xassert($user_mjh->can_view_review($paper1, $review2, false));
+xassert(!$user_varghese->can_view_review($paper1, $review1, false));
+xassert(!$user_varghese->can_view_review($paper1, $review2, false));
+xassert($user_marina->can_view_review($paper1, $review1, false));
+xassert($user_marina->can_view_review($paper1, $review2, false));
+
+$Conf->save_setting("pc_seeallrev", Conference::PCSEEREV_UNLESSANYINCOMPLETE);
+Contact::update_rights();
+xassert($user_wilma->can_view_review($paper1, $review1, false));
+xassert($user_wilma->can_view_review($paper1, $review2, false));
+xassert($user_mgbaker->can_view_review($paper1, $review1, false));
+xassert($user_mgbaker->can_view_review($paper1, $review2, false));
+xassert($user_mjh->can_view_review($paper1, $review1, false));
+xassert($user_mjh->can_view_review($paper1, $review2, false));
+xassert(!$user_marina->can_view_review($paper1, $review1, false));
+xassert(!$user_marina->can_view_review($paper1, $review2, false));
+
+AssignmentSet::run($user_chair, "paper,action,email\n3,primary,ojuelegba@gmail.com\n");
+xassert($user_wilma->has_outstanding_review());
+xassert(!$user_wilma->can_view_review($paper1, $review1, false));
+xassert(!$user_wilma->can_view_review($paper1, $review2, false));
+$rf->save_review($revreq,
+                 $Conf->reviewRow(array("paperId" => 3, "contactId" => $user_wilma->contactId)),
+                 $Conf->paperRow(3, $user_wilma),
+                 $user_wilma);
+xassert(!$user_wilma->has_outstanding_review());
+xassert($user_wilma->can_view_review($paper1, $review1, false));
+xassert($user_wilma->can_view_review($paper1, $review2, false));
 
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);

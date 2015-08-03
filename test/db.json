@@ -17,7 +17,8 @@
     {"name": "Roch Guerin", "email": "rguerin@ibm.com", "affiliation": "IBM", "roles": ["pc"]},
     {"name": "Sally Floyd", "email": "floyd@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory", "roles": ["pc"]},
     {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox PARC", "roles": ["pc", "chair"]},
-    {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"}
+    {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
+    {"name": "Wilma Ojuelegba", "email": "ojuelegba@gmail.com", "affiliation": "Stanford", "roles": ["pc"]}
 ],
 "papers": [{
     "_id_": 1,
