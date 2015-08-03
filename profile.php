@@ -172,14 +172,11 @@ function web_request_as_json($cj) {
         else if (!$Acct)
             $cj->password_plaintext = $pw;
         else {
-            $cdb_user = Contact::contactdb_find_by_email($Acct->email);
+            $cdb_user = $Acct->contactdb_load();
             $oldpw = @trim($_REQUEST["oldpassword"]);
-            if (!$Me->can_change_password(null)
-                && ($oldpw === ""
-                    || (!$Acct->check_local_password($oldpw)
-                        && !($cdb_user && $cdb_user->check_local_password($oldpw)))))
+            if (!$Me->can_change_password(null) && !$Acct->check_password($oldpw))
                 $UserStatus->set_error("password", "Incorrect current password, new password ignored.");
-            else if ($cdb_user && !@$Opt["contactdb_noPasswords"]) {
+            else if ($cdb_user && $cdb_user->contactdb_allow_password()) {
                 $cdb_user->change_password($pw, true);
                 $cj->password = "*"; // mark valid login, require contactdb password
             } else

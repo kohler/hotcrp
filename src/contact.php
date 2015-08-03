@@ -139,6 +139,9 @@ class Contact {
         self::set_sorter($this);
         if ($this->password)
             $this->set_encoded_password($this->password);
+        if ($this->contactDbId && @$this->is_contactdb
+            && $this->contactdb_allow_password())
+            $this->contactdb_encoded_password = $this->password;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
         foreach (array("defaultWatch", "passwordTime") as $k)
@@ -337,7 +340,7 @@ class Contact {
 
     static public function contactdb_find_by_email($email) {
         if (($cdb = self::contactdb())
-            && ($result = Dbl::ql($cdb, "select *, password contactdb_encoded_password from ContactInfo where email=?", $email))
+            && ($result = Dbl::ql($cdb, "select *, 1 is_contactdb from ContactInfo where email=?", $email))
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
@@ -345,7 +348,7 @@ class Contact {
 
     static public function contactdb_find_by_id($cid) {
         if (($cdb = self::contactdb())
-            && ($result = Dbl::ql($cdb, "select *, password contactdb_encoded_password from ContactInfo where contactDbId=?", $cid))
+            && ($result = Dbl::ql($cdb, "select *, 1 is_contactdb from ContactInfo where contactDbId=?", $cid))
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
@@ -363,10 +366,10 @@ class Contact {
         $cdb_user = self::contactdb_find_by_email($this->email);
         if (!$cdb_user)
             $cdb_user = self::contactdb_find_by_email($this->email);
-        if ($cdb_user && $cdb_user->contactdb_allow_password())
-            $this->contactdb_encoded_password = $cdb_user->password;
-        if ($cdb_user)
+        if ($cdb_user) {
             $this->contactDbId = $cdb_user->contactDbId;
+            $this->contactdb_encoded_password = @$cdb_user->contactdb_encoded_password;
+        }
         return $cdb_user;
     }
 
@@ -963,12 +966,6 @@ class Contact {
         return false;
     }
 
-    public function check_local_password($password) {
-        global $Opt;
-        assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        return self::check_hashed_password($password, $this->password, $this->email);
-    }
-
     static private function password_hash_method() {
         global $Opt;
         $m = @$Opt["passwordHashMethod"];
@@ -986,64 +983,94 @@ class Contact {
         return $Opt["safePasswords"] < 1;
     }
 
-    private function preferred_password_keyid() {
+    static private function preferred_password_keyid($iscdb) {
         global $Opt;
-        if ($this->contactDbId)
+        if ($iscdb)
             return defval($Opt, "contactdb_passwordHmacKeyid", 0);
         else
             return defval($Opt, "passwordHmacKeyid", 0);
     }
 
-    public function check_password_encryption($is_change) {
+    static private function check_password_encryption($hash, $iscdb) {
         global $Opt;
         if ($Opt["safePasswords"] < 1
             || ($method = self::password_hash_method()) === false
-            || (!$is_change
-                && $Opt["safePasswords"] == 1
-                && $this->password_type == 0)
-            || ($is_change
-                && !is_int($method)
-                && @$this->contactId
-                && @$this->contactDbId))
+            || ($hash && $Opt["safePasswords"] == 1 && @$hash[0] !== " "))
             return false;
-        if ($is_change || $this->password_type != 1)
+        else if (!$hash || @$hash[0] !== " ")
             return true;
-        if (is_int($method))
-            return $this->password[1] !== '$'
-                || password_needs_rehash(substr($this->password, 2), $method);
+        else if (is_int($method))
+            return $hash[1] !== "\$"
+                || password_needs_rehash(substr($hash, 2), $method);
         else {
-            $expected_prefix = " $method " . $this->preferred_password_keyid() . " ";
-            return !str_starts_with($this->password, $expected_prefix);
+            $prefix = " " . $method . " " . self::preferred_password_keyid($iscdb) . " ";
+            return !str_starts_with($hash, $prefix);
         }
     }
 
-    public function change_password($new_password, $save, $plaintext = false) {
+    static private function hash_password($input, $iscdb) {
+        global $Opt;
+        $method = self::password_hash_method();
+        if ($method === false)
+            return $input;
+        if (is_int($method))
+            return " \$" . password_hash($input, $method);
+        $keyid = self::preferred_password_keyid($iscdb);
+        $key = self::password_hmac_key($keyid);
+        $salt = hotcrp_random_bytes(16);
+        return " " . $method . " " . $keyid . " " . $salt
+            . hash_hmac($method, $salt . $input, $key, true);
+    }
+
+    public function check_password($input) {
+        global $Conf, $Opt;
+        assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
+        if (!$this->contactDbId && $this->contactId && self::contactdb())
+            $this->contactdb_load();
+
+        $cdbok = false;
+        if ($this->contactDbId && ($hash = $this->contactdb_encoded_password)) {
+            $cdbok = self::check_hashed_password($input, $hash, $this->email);
+            if ($cdbok && self::check_password_encryption($hash, true)) {
+                $hash = self::hash_password($input, true);
+                Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $this->contactDbId);
+                $this->contactdb_encoded_password = $hash;
+            }
+        }
+
+        $localok = false;
+        if ($this->contactId && ($hash = $this->password) && $hash !== "*") {
+            $localok = self::check_hashed_password($input, $hash, $this->email);
+            if ($localok ? self::check_password_encryption($hash, false) : $cdbok) {
+                $hash = $cdbok ? $this->contactdb_encoded_password : "";
+                if (substr($this->contactdb_encoded_password, 0, 2) !== " \$")
+                    $hash = self::hash_password($input, false);
+                Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
+                $this->set_encoded_password($hash);
+            }
+        }
+
+        return $cdbok || $localok;
+    }
+
+    public function change_password($input, $save, $plaintext = false) {
         global $Conf, $Opt, $Now;
         // set password fields
-        $this->password_type = 0;
-        if (!$new_password)
-            $new_password = self::random_password();
-        else if (!$plaintext && $this->check_password_encryption(true))
-            $this->password_type = 1;
-        $this->password_plaintext = $new_password;
-        if ($this->password_type == 1) {
-            $method = self::password_hash_method();
-            if (is_int($method))
-                $this->password = ' $' . password_hash($new_password, $method);
-            else {
-                $keyid = $this->preferred_password_keyid();
-                $key = self::password_hmac_key($keyid);
-                $salt = hotcrp_random_bytes(16);
-                $this->password = " " . $method . " " . $keyid . " " . $salt
-                    . hash_hmac($method, $salt . $new_password, $key, true);
-            }
-        } else
-            $this->password = $new_password;
+        $iscdb = $this->contactDbId && $this->contactdb_allow_password();
+        if ($input
+            && !$plaintext
+            && self::check_password_encryption(false, $iscdb))
+            $hash = self::hash_password($input, $iscdb);
+        else if ($input)
+            $hash = $input;
+        else
+            $hash = $input = self::random_password();
+        $this->set_encoded_password($hash);
         $this->passwordTime = $Now;
         // save possibly-encrypted password
         if ($save && $this->contactId)
             Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
-        if ($save && $this->contactDbId)
+        if ($save && $this->contactDbId && $iscdb)
             Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->password, $this->passwordTime, $this->contactDbId);
     }
 

@@ -172,19 +172,10 @@ class LoginHelper {
                 return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
             }
 
-            $user_match = $user_password && $user->check_local_password($password);
-            $cdb_match = $cdb_password && $cdb_user->check_local_password($password);
-            if (!$user_match && !$cdb_match) {
+            if (!$user->check_password($password)) {
                 $password_class = " error";
                 return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
             }
-
-            // maybe update database passwords
-            if ($user && $user_match && $user->check_password_encryption(false))
-                $user->change_password($password, true);
-            if ($cdb_user && $cdb_user->contactdb_allow_password()
-                && ($cdb_match ? $cdb_user->check_password_encryption(false) : $cdb_password === ""))
-                $cdb_user->change_password($password, true);
         }
 
         // mark activity
