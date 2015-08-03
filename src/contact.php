@@ -961,7 +961,7 @@ class Contact {
         return -1;
     }
 
-    public function check_password($password) {
+    public function check_local_password($password) {
         global $Conf, $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
         if ($password == "" || $password === "*")

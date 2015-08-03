@@ -172,8 +172,8 @@ class LoginHelper {
                 return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
             }
 
-            $user_match = $user_password && $user->check_password($password);
-            $cdb_match = $cdb_password && $cdb_user->check_password($password);
+            $user_match = $user_password && $user->check_local_password($password);
+            $cdb_match = $cdb_password && $cdb_user->check_local_password($password);
             if (!$user_match && !$cdb_match) {
                 $password_class = " error";
                 return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");

@@ -30,7 +30,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
         $MiniMe = Contact::find_by_email($_REQUEST["email"]);
         if (!$MiniMe)
             $MergeError = "No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?";
-        else if (!$MiniMe->check_password($_REQUEST["password"]))
+        else if (!$MiniMe->check_local_password($_REQUEST["password"]))
             $MergeError = "That password is incorrect.";
         else if ($MiniMe->contactId == $Me->contactId) {
             $Conf->confirmMsg("Accounts successfully merged.");
