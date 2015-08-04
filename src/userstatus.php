@@ -349,7 +349,7 @@ class UserStatus {
             $user->contactdb_encoded_password = $old_cdb_user->password;
         }
         if (!$user->password && !Contact::external_login())
-            $user->password = $user->password_plaintext = Contact::random_password();
+            $user->set_encoded_password(Contact::random_password());
 
         $data = (object) array();
         foreach (array("address", "city", "state", "zip", "country") as $k)

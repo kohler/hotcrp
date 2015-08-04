@@ -203,7 +203,7 @@ class Mailer {
                     $password = $pwd_plaintext;
                 else if ($pwd_plaintext && $this->sensitivity === "display")
                     $password = "HIDDEN";
-                else if ($this->sensitivity || $this->recipient->password_type != 0)
+                else if ($this->sensitivity || $this->recipient->has_password())
                     $password = false;
             }
             $loginparts = "";

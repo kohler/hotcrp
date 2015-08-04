@@ -20,7 +20,6 @@ class Contact {
     var $collaborators;
     var $voicePhoneNumber;
     var $password = "";
-    public $password_type = 0;
     public $password_plaintext = "";
     public $passwordTime = 0;
     public $disabled = false;
@@ -193,9 +192,10 @@ class Contact {
         if ($password === null || $password === false)
             $password = "";
         $this->password = $password;
-        $this->password_type = @$this->password[0] === " " ? 1 : 0;
-        if ($this->password_type == 0)
+        if ($password !== "" && @$password[0] !== " " && $password !== "*")
             $this->password_plaintext = $password;
+        else
+            $this->password_plaintext = null;
     }
 
     static public function site_contact() {
@@ -920,7 +920,22 @@ class Contact {
     }
 
 
-    public static function password_hmac_key($keyid) {
+    public static function valid_password($password) {
+        return $password && trim($password) === $password
+            && $password !== "*";
+    }
+
+    public static function password_storage_cleartext() {
+        global $Opt;
+        return $Opt["safePasswords"] < 1;
+    }
+
+    public function has_password() {
+        return $this->password !== "" && $this->password !== "*";
+    }
+
+    // obsolete
+    private static function password_hmac_key($keyid) {
         global $Conf, $Opt;
         if ($keyid === null)
             $keyid = defval($Opt, "passwordHmacKeyid", 0);
@@ -934,11 +949,6 @@ class Contact {
             $key = "NdHHynw6JwtfSZyG3NYPTSpgPFG8UN8NeXp4tduTk2JhnSVy";
         }
         return $key;
-    }
-
-    public static function valid_password($password) {
-        return $password && trim($password) === $password
-            && $password !== "*";
     }
 
     private static function check_hashed_password($input, $pwhash, $email) {
@@ -978,11 +988,6 @@ class Contact {
         return PHP_INT_SIZE == 8 ? "sha512" : "sha256";
     }
 
-    static public function password_cleartext() {
-        global $Opt;
-        return $Opt["safePasswords"] < 1;
-    }
-
     static private function preferred_password_keyid($iscdb) {
         global $Opt;
         if ($iscdb)
@@ -993,9 +998,10 @@ class Contact {
 
     static private function check_password_encryption($hash, $iscdb) {
         global $Opt;
-        if ($Opt["safePasswords"] < 1
+        $safe = $Opt[$iscdb ? "contactdb_safePasswords" : "safePasswords"];
+        if ($safe < 1
             || ($method = self::password_hash_method()) === false
-            || ($hash && $Opt["safePasswords"] == 1 && @$hash[0] !== " "))
+            || ($hash && $safe == 1 && @$hash[0] !== " "))
             return false;
         else if (!$hash || @$hash[0] !== " ")
             return true;
@@ -1043,7 +1049,7 @@ class Contact {
             $localok = self::check_hashed_password($input, $hash, $this->email);
             if ($localok ? self::check_password_encryption($hash, false) : $cdbok) {
                 $hash = $cdbok ? $this->contactdb_encoded_password : "";
-                if (substr($this->contactdb_encoded_password, 0, 2) !== " \$")
+                if (substr($hash, 0, 2) !== " \$")
                     $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
                 $this->set_encoded_password($hash);
@@ -1116,11 +1122,8 @@ class Contact {
             $template = "@activateaccount";
         else if ($sendtype == "create")
             $template = "@createaccount";
-        else if ($this->password_type == 0
-                 && (!@$Opt["safePasswords"]
-                     || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] <= 1)
-                     || $sendtype != "forgot")
-                 && $this->password !== "*")
+        else if ($this->password_plaintext
+                 && ($Opt["safePasswords"] <= 1 || $sendtype != "forgot"))
             $template = "@accountinfo";
         else {
             if ($this->contactDbId

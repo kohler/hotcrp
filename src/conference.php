@@ -332,6 +332,8 @@ class Conference {
             $Opt["safePasswords"] = 0;
         else if ($Opt["safePasswords"] === true)
             $Opt["safePasswords"] = 1;
+        if (!isset($Opt["contactdb_safePasswords"]))
+            $Opt["contactdb_safePasswords"] = $Opt["safePasswords"];
     }
 
     function setting($name, $defval = false) {

@@ -445,9 +445,10 @@ function contact_value($key, $field = null) {
     global $Acct, $useRequest;
     if ($useRequest && isset($_REQUEST[$key]))
         return htmlspecialchars($_REQUEST[$key]);
-    else if ($field == "password" && $Acct->password_type != 0)
-        return "";
-    else if ($key == "contactTags")
+    else if ($field == "password") {
+        $v = $Acct->password_plaintext;
+        return htmlspecialchars($v ? : "");
+    } else if ($key == "contactTags")
         return htmlspecialchars($Acct->all_contact_tags());
     else if ($field !== false) {
         $v = $field ? $Acct->$field : $Acct->$key;
@@ -627,21 +628,21 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
     echo '<div class="f-i"><div class="f-ix">
   <div class="', fcclass("password"), '">New password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));
-    if ($Me->privChair && $Acct->password_type == 0)
+    if ($Acct->password_plaintext && $Me->privChair)
         echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), array("size" => 24, "class" => "fx"));
     echo '</div>
 </div><div class="fn f-ix">
   <div class="', fcclass("password"), '">Repeat new password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 24)), "</div>
 </div>\n";
-    if ($Acct->password_type == 0
-        && ($Me->privChair || Contact::password_cleartext())) {
+    if ($Acct->password_plaintext
+        && ($Me->privChair || Contact::password_storage_cleartext())) {
         echo "  <div class=\"f-h\">";
-        if (Contact::password_cleartext())
+        if (Contact::password_storage_cleartext())
             echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
         if ($Me->privChair) {
             $Conf->footerScript("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
-            if (Contact::password_cleartext())
+            if (Contact::password_storage_cleartext())
                 echo " <span class=\"sep\"></span>";
             echo "<span class='f-cx'><a class='fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
         }
