@@ -20,23 +20,21 @@ class CapabilityManager {
             $contactId = $this->prefix === "U" ? $user->contactDbId : $user->contactId;
         $paperId = defval($options, "paperId", 0);
         $timeExpires = defval($options, "timeExpires", time() + 259200);
-        $salt = hotcrp_random_bytes(24);
         $data = defval($options, "data");
-        Dbl::ql($this->dblink, "insert into Capability set capabilityType=$capabilityType, contactId=?, paperId=?, timeExpires=?, salt=?, data=?",
-               $contactId, $paperId, $timeExpires, $salt, $data);
-        $capid = $this->dblink->insert_id;
-        if (!$capid || !function_exists("hash_hmac"))
+        $capid = false;
+
+        for ($tries = 0; !$capid && $tries < 4; ++$tries)
+            if (($salt = hotcrp_random_bytes(16)) !== false) {
+                Dbl::ql($this->dblink, "insert into Capability set capabilityType=$capabilityType, contactId=?, paperId=?, timeExpires=?, salt=?, data=?",
+                        $contactId, $paperId, $timeExpires, $salt, $data);
+                $capid = $this->dblink->insert_id;
+            }
+
+        if (!$capid)
             return false;
-
-        $key = Contact::password_hmac_key(null);
-        if (!($hash_method = @$Opt["capabilityHashMethod"]))
-            $hash_method = (PHP_INT_SIZE == 8 ? "sha512" : "sha256");
-        $text = substr(hash_hmac($hash_method, $capid . " " . $timeExpires . " " . $salt, $key, true), 0, 16);
-        Dbl::ql($this->dblink, "insert ignore into CapabilityMap set capabilityValue=?, capabilityId=$capid, timeExpires=$timeExpires", $text);
-
-        $text = str_replace(array("+", "/", "="),
-                            array("-a", "-b", ""), base64_encode($text));
-        return $this->prefix . "1" . $text;
+        return $this->prefix . "1"
+            . str_replace(array("+", "/", "="),
+                          array("-a", "-b", ""), base64_encode($salt));
     }
 
     public function check($capabilityText) {
@@ -46,22 +44,17 @@ class CapabilityManager {
                                            array("+", "/", "+", "/"),
                                            substr($capabilityText, strlen($this->prefix) + 1)));
         if (strlen($value) >= 16
-            && ($result = Dbl::ql($this->dblink, "select * from CapabilityMap where capabilityValue=?", $value))
-            && ($row = $result->fetch_object())
-            && ($row->timeExpires == 0 || $row->timeExpires >= time())
-            && ($result = Dbl::ql($this->dblink, "select * from Capability where capabilityId=" . $row->capabilityId))
-            && ($row = $result->fetch_object())) {
-            $row->capabilityValue = $value;
+            && ($result = Dbl::ql($this->dblink, "select * from Capability where salt=?", $value))
+            && ($row = Dbl::fetch_first_object($result))
+            && ($row->timeExpires == 0 || $row->timeExpires >= time()))
             return $row;
-        } else
+        else
             return false;
     }
 
     public function delete($capdata) {
-        if ($capdata) {
-            Dbl::ql($this->dblink, "delete from CapabilityMap where capabilityValue=?", $capdata->capabilityValue);
+        if ($capdata)
             Dbl::ql($this->dblink, "delete from Capability where capabilityId=" . $capdata->capabilityId);
-        }
     }
 
 }

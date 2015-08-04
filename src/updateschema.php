@@ -691,4 +691,9 @@ function updateSchema($Conf) {
                 $Conf->ql("delete from PaperOption where optionId={$opt->id} and data=''");
         update_schema_version($Conf, 95);
     }
+    if ($Conf->settings["allowPaperOption"] == 95
+        && $Conf->ql("alter table Capability add unique key `salt` (`salt`)")
+        && $Conf->ql("update Capability join CapabilityMap using (capabilityId) set Capability.salt=CapabilityMap.capabilityValue")
+        && $Conf->ql("drop table if exists `CapabilityMap`"))
+        update_schema_version($Conf, 96);
 }

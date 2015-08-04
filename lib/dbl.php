@@ -307,6 +307,12 @@ class Dbl {
         return $x;
     }
 
+    static function fetch_first_object($result) {
+        $x = $result ? $result->fetch_object() : null;
+        $result && $result->close();
+        return $x;
+    }
+
     static function fetch_map($result) {
         $x = array();
         while ($result && ($row = $result->fetch_row())) {

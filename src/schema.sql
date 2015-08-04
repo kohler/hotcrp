@@ -32,22 +32,8 @@ CREATE TABLE `Capability` (
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(4096) DEFAULT NULL,
   PRIMARY KEY (`capabilityId`),
-  UNIQUE KEY `capabilityId` (`capabilityId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-
-
---
--- Table structure for table `CapabilityMap`
---
-
-DROP TABLE IF EXISTS `CapabilityMap`;
-CREATE TABLE `CapabilityMap` (
-  `capabilityValue` varbinary(255) NOT NULL,
-  `capabilityId` int(11) NOT NULL,
-  `timeExpires` int(11) NOT NULL,
-  PRIMARY KEY (`capabilityValue`),
-  UNIQUE KEY `capabilityValue` (`capabilityValue`)
+  UNIQUE KEY `capabilityId` (`capabilityId`),
+  UNIQUE KEY `salt` (`salt`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
