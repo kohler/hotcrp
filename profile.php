@@ -176,7 +176,7 @@ function web_request_as_json($cj) {
             $oldpw = @trim($_REQUEST["oldpassword"]);
             if (!$Me->can_change_password(null) && !$Acct->check_password($oldpw))
                 $UserStatus->set_error("password", "Incorrect current password, new password ignored.");
-            else if ($cdb_user && $cdb_user->contactdb_allow_password()) {
+            else if ($cdb_user && $cdb_user->allow_contactdb_password()) {
                 $cdb_user->change_password($pw, true);
                 $cj->password = "*"; // mark valid login, require contactdb password
             } else

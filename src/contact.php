@@ -139,7 +139,7 @@ class Contact {
         if ($this->password)
             $this->set_encoded_password($this->password);
         if ($this->contactDbId && @$this->is_contactdb
-            && $this->contactdb_allow_password())
+            && $this->allow_contactdb_password())
             $this->contactdb_encoded_password = $this->password;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
@@ -352,11 +352,6 @@ class Contact {
             && ($acct = $result->fetch_object("Contact")))
             return $acct;
         return null;
-    }
-
-    public function contactdb_allow_password() {
-        global $Opt;
-        return !$this->disable_shared_password && !@$Opt["contactdb_noPasswords"];
     }
 
     public function contactdb_load() {
@@ -677,7 +672,7 @@ class Contact {
             if ($this->password_plaintext
                 && ($cdb_user = self::contactdb_find_by_email($this->email))
                 && !$cdb_user->password
-                && $cdb_user->contactdb_allow_password())
+                && $cdb_user->allow_contactdb_password())
                 $cdb_user->change_password($this->password_plaintext, true);
         }
 
@@ -786,7 +781,7 @@ class Contact {
                 if (!@$sreg->$k && $cdb_user->$k)
                     $sreg->$k = $cdb_user->$k;
             if (!@$sreg->password && $cdb_user->password
-                && $cdb_user->contactdb_allow_password())
+                && $cdb_user->allow_contactdb_password())
                 $sreg->encoded_password = $cdb_user->password;
         }
 
@@ -934,6 +929,19 @@ class Contact {
         return $this->password !== "" && $this->password !== "*";
     }
 
+    public function allow_contactdb_password() {
+        global $Opt;
+        return !$this->disable_shared_password && !@$Opt["contactdb_noPasswords"];
+    }
+
+    public function prefer_contactdb_password() {
+        return @$this->contactdb_encoded_password
+            && (!$this->has_database_account()
+                || $this->password === "*"
+                || $this->password === $this->contactdb_encoded_password);
+    }
+
+
     // obsolete
     private static function password_hmac_key($keyid) {
         global $Conf, $Opt;
@@ -1062,7 +1070,7 @@ class Contact {
     public function change_password($input, $save, $plaintext = false) {
         global $Conf, $Opt, $Now;
         // set password fields
-        $iscdb = $this->contactDbId && $this->contactdb_allow_password();
+        $iscdb = $this->contactDbId && $this->allow_contactdb_password();
         if ($input
             && !$plaintext
             && self::check_password_encryption(false, $iscdb))
@@ -1115,10 +1123,7 @@ class Contact {
     function sendAccountInfo($sendtype, $sensitive) {
         global $Conf, $Opt;
         $rest = array();
-        if ($sendtype == "create"
-            && @$this->contactdb_encoded_password
-            && ($this->password === "*"
-                || $this->password === $this->contactdb_encoded_password))
+        if ($sendtype == "create" && $this->prefer_contactdb_password())
             $template = "@activateaccount";
         else if ($sendtype == "create")
             $template = "@createaccount";
@@ -1126,11 +1131,7 @@ class Contact {
                  && ($Opt["safePasswords"] <= 1 || $sendtype != "forgot"))
             $template = "@accountinfo";
         else {
-            if ($this->contactDbId
-                && $this->contactdb_allow_password()
-                && (!$this->has_database_account()
-                    || $this->password === "*"
-                    || $this->password === $this->contactdb_encoded_password))
+            if ($this->contactDbId && $this->prefer_contactdb_password())
                 $capmgr = $Conf->capability_manager("U");
             else
                 $capmgr = $Conf->capability_manager();

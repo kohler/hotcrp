@@ -317,7 +317,7 @@ class UserStatus {
         else if (is_string(@$cj->email) && $cj->email)
             $old_cdb_user = Contact::contactdb_find_by_email($cj->email);
         // ensure we don't use contactdb password if disabled
-        if ($old_cdb_user && !$old_cdb_user->contactdb_allow_password())
+        if ($old_cdb_user && !$old_cdb_user->allow_contactdb_password())
             unset($old_cdb_user->password);
         $old_user = $old_user ? : $old_cdb_user;
 
