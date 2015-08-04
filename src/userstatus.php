@@ -46,7 +46,7 @@ class UserStatus {
                        "voicePhoneNumber" => "phone") as $uk => $jk)
             if ($user->$uk !== null && $user->$uk !== "")
                 $cj->$jk = $user->$uk;
-        if ($user->disabled)
+        if ($user->is_disabled())
             $cj->disabled = true;
 
         foreach (array("address", "city", "state", "zip", "country") as $k)

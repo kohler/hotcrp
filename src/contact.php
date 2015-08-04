@@ -445,6 +445,10 @@ class Contact {
         return $this->contactId <= 0 && !$this->capabilities && !$this->email;
     }
 
+    function is_disabled() {
+        return $this->disabled || $this->password === "";
+    }
+
     function has_email() {
         return !!$this->email;
     }
@@ -891,10 +895,10 @@ class Contact {
 
     function mark_create($send_email, $message_chair) {
         global $Conf, $Me;
-        $account = $this->disabled ? "disabled account" : "account";
+        $account = $this->is_disabled() ? "disabled account" : "account";
         if ($Me && $Me->privChair && $message_chair)
             $Conf->infoMsg("Created $account for <a href=\"" . hoturl("profile", "u=" . urlencode($this->email)) . "\">" . Text::user_html_nolink($this) . "</a>.");
-        if ($send_email && !$this->disabled)
+        if ($send_email && !$this->is_disabled())
             $this->sendAccountInfo("create", false);
         if ($Me && $Me->has_email() && $Me->email !== $this->email)
             $Conf->log("Created $account ($Me->email)", $this);

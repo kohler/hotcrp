@@ -147,7 +147,7 @@ class LoginHelper {
         }
 
         // if user disabled, then fail
-        if ($user && ($user->disabled || $user->password == "") && !$external_login)
+        if ($user && $user->is_disabled() && !$external_login)
             return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
         // maybe reset password
