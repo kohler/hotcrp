@@ -3268,7 +3268,7 @@ class PaperSearch {
     function highlight_tags() {
         if ($this->_highlight_tags === null) {
             $this->_highlight_tags = array();
-            foreach ($this->sorters as $s)
+            foreach ($this->sorters ? : array() as $s)
                 if ($s->type[0] === "#")
                     $this->_highlight_tags[] = substr($s->type, 1);
         }
