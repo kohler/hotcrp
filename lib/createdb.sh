@@ -21,6 +21,7 @@ help () {
     echo "      --replace           Replace existing database and user."
     echo "  -q, --quiet             Be quiet."
     echo "      --dbuser=USER,PASS  Specify database USER and PASS."
+    echo "      --merge-dbuser      Merge with existing database user, if any."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
@@ -61,6 +62,7 @@ force=false
 batch=false
 replace=false
 dbuser_existing=false
+merge_dbuser=false
 quiet=false
 qecho=echo
 qecho_n=echo_n
@@ -84,6 +86,8 @@ while [ $# -gt 0 ]; do
         set_dbuserpass "$2"; shift;;
     --dbuser=*)
         set_dbuserpass "`echo "$1" | sed 's/^[^=]*=//'`";;
+    --merge-dbuser)
+        merge_dbuser=true;;
     --he|--hel|--help)
         help;;
     --force)
@@ -131,7 +135,7 @@ set_myargs "$MYCREATEDB_USER" "$PASSWORD"
 # check that we can run mysql
 if ! (echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS >/dev/null); then
     echo 1>&2
-    echo "* Failure running '$MYSQL$myargs_redacted$FLAGS'." 1>&2
+    echo "* Failure running \`$MYSQL$myargs_redacted$FLAGS\`." 1>&2
     echo 1>&2
     exit 1
 fi
@@ -167,7 +171,7 @@ __EOF__
 batch_fail () {
     if $batch; then
         echo 1>&2
-        echo "* Giving up. Try '--batch --replace' or other arguments and try again." 1>&2
+        echo "* Giving up. Try \`--batch --replace\` or other arguments and try again." 1>&2
         echo 1>&2
         exit 1
     fi
@@ -181,12 +185,20 @@ if test -n "$x"; then
     if test -z "$bad"; then default_dbname="`echo $x`"; fi
 fi
 
+default_dbuser=
+x="`getdbopt dbUser 2>/dev/null`"
+x="`eval "echo $x"`"
+if test -n "$x"; then
+    bad="`eval "echo $x" | tr -d a-zA-Z0-9_.-`"
+    if test -z "$bad"; then default_dbuser="`echo $x`"; fi
+fi
+
 while true; do
     if [ -z "$DBNAME" -a -n "$default_dbname" ] && $batch; then
         DBNAME="$default_dbname"
     elif [ -z "$DBNAME" ] && $batch; then
         echo 1>&2
-        echo "* Supply the database name on the command line or drop '--batch'." 1>&2
+        echo "* Supply the database name on the command line or drop \`--batch\`." 1>&2
         echo 1>&2
         exit 1
     elif [ -z "$DBNAME" ]; then
@@ -208,13 +220,15 @@ while true; do
         echo "* The database name must only contain characters in [-.a-zA-Z0-9_]." 1>&2
     elif test "$c" -gt 64; then
         echo "* The database name can be at most 64 characters long." 1>&2
-    elif ! $dbuser_existing && test "$c" -gt 16; then
-        echo "* Database user names can be at most 16 characters long." 1>&2
-        echo "* Either choose a shorter database name, or use --dbuser." 1>&2
     elif test "`echo "$DBNAME" | head -c 1`" = "."; then
         echo "* The database name must not start with a period." 1>&2
     elif test "$DBNAME" = mysql || expr "$DBNAME" : '.*_schema$' >/dev/null; then
         echo "* Database name '$DBNAME' is reserved." 1>&2
+    elif ! $dbuser_existing && test "$DBNAME" = "$default_dbname" -a -n "$default_dbuser"; then
+        DBUSER="$default_dbuser"; break
+    elif ! $dbuser_existing && test "$c" -gt 16; then
+        echo "* Database user names can be at most 16 characters long." 1>&2
+        echo "* Either choose a shorter database name, or use --dbuser." 1>&2
     else
         break
     fi
@@ -230,6 +244,7 @@ $DBPASS
 __EOF__
 }
 
+test -z "$DBUSER" && DBUSER="$DBNAME"
 default_dbpass=
 x="`getdbopt dbPassword 2>/dev/null`"
 x="`eval "echo $x"`"
@@ -243,7 +258,7 @@ else
 fi
 while test -z "$DBPASS"; do
     if ! $batch; then
-        echo_n "Enter password for mysql user $DBNAME [default $default_dbpass_description]: "
+        echo_n "Enter password for mysql user $DBUSER [default $default_dbpass_description]: "
         stty -echo; trap "stty echo; exit 1" INT
         read -r DBPASS
         stty echo; trap - INT
@@ -276,36 +291,37 @@ echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N >/dev/nu
 echo 'show databases;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N | grep "^$DBNAME_QUOTED\$" >/dev/null 2>&1
 dbexists="$?"
 
-test -z "$DBUSER" && DBUSER="$DBNAME"
 DBUSER_QUOTED=`echo "$DBUSER" | sed 's/[.]/[.]/g'`
 $qecho "+ echo 'select User from user group by User;' | $MYSQL$mycreatedb_args$myargs_redacted$FLAGS -N mysql | grep '^$DBUSER_QUOTED\$'"
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql >/dev/null || exit 1
 echo 'select User from user group by User;' | eval $MYSQL $mycreatedb_args $myargs $FLAGS -N mysql | grep "^$DBUSER_QUOTED\$" >/dev/null 2>&1
 userexists="$?"
 
+createdb=y; createuser=y
 if $dbuser_existing && [ "$userexists" != 0 ]; then
     echo "* The requested database user $DBUSER does not exist." 1>&2
     exit 1
+elif $dbuser_existing; then
+    createuser=n
+elif $merge_dbuser && [ "$userexists" = 0 ]; then
+    createuser=n
 fi
 
-createdb=y; createuser=y; createdbuser=y
-$dbuser_existing && createuser=n
-
-if [ "$dbexists" = 0 -o \( "$userexists" = 0 -a "$dbuser_existing" != true \) ]; then
+if [ "$createdb$dbexists" = y0 -o "$createuser$userexists" = y0 ]; then
     echo 1>&2
-    test "$dbexists" = 0 && echo "* A database named '$DBNAME' already exists!" 1>&2
-    test "$userexists" = 0 -a "$dbuser_existing" != true && echo "* A user named '$DBUSER' already exists!" 1>&2
+    test "$createdb$dbexists" = y0 && echo "* A database named '$DBNAME' already exists!" 1>&2
+    test "$createuser$userexists" = y0 && echo "* A user named '$DBUSER' already exists!" 1>&2
     while ! $replace; do
         batch_fail
         echo_n "Replace? [Y/n] "
-        read createdbuser
-        expr "$createdbuser" : "[ynqYNQ].*" >/dev/null && break
-        test -z "$createdbuser" && break
+        read create
+        expr "$create" : "[ynqYNQ].*" >/dev/null && break
+        test -z "$create" && break
     done
-    expr "$createdbuser" : "[qQ].*" >/dev/null && echo "Exiting" && exit 0
-    expr "$createdbuser" : "[nN].*" >/dev/null || createdbuser=y
-    test "$createdbuser$createdb" = yy || createdb=n
-    test "$createdbuser$createuser" = yy || createuser=n
+    expr "$create" : "[qQ].*" >/dev/null && echo "Exiting" && exit 0
+    if expr "$create" : "[nN].*" >/dev/null; then create=n; else create=y; fi
+    test "$createdb$dbexists$create" = y0n && createdb=n
+    test "$createuser$userexists$create" = y0n && createuser=n
 fi
 
 echo
@@ -314,10 +330,6 @@ if [ "$createdb" = y ]; then
     if [ "$dbexists" = 0 ]; then
         $qecho "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS -f drop $DBNAME"
         eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS -f drop $DBNAME || exit 1
-        eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
-DELETE FROM db WHERE db='$DBNAME';
-FLUSH PRIVILEGES;
-__EOF__
     fi
     $qecho "+ $MYSQLADMIN$mycreatedb_args$myargs_redacted$FLAGS --default-character-set=utf8 create $DBNAME"
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
@@ -325,8 +337,15 @@ fi
 
 if [ "$createuser" = y ]; then
     $qecho "Creating $DBUSER user and password..."
+    # 1. GRANT USAGE to ensure users exist (because DROP USER errors if they don't)
+    # 2. DROP USER
+    # 3. CREATE USER
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
-DELETE FROM user WHERE user='$DBUSER';
+GRANT USAGE ON *.* TO '$DBUSER'@'localhost' IDENTIFIED BY '`sql_dbpass`',
+    '$DBUSER'@'127.0.0.1' IDENTIFIED BY '`sql_dbpass`',
+    '$DBUSER'@'localhost.localdomain' IDENTIFIED BY '`sql_dbpass`';
+
+DROP USER '$DBUSER'@'localhost', '$DBUSER'@'127.0.0.1', '$DBUSER'@'localhost.localdomain';
 FLUSH PRIVILEGES;
 
 CREATE USER '$DBUSER'@'localhost' IDENTIFIED BY '`sql_dbpass`',
@@ -336,7 +355,7 @@ CREATE USER '$DBUSER'@'localhost' IDENTIFIED BY '`sql_dbpass`',
 __EOF__
 fi
 
-if [ "$createdbuser" = y ]; then
+if [ "$createdb" = y -o "$createuser" = y ]; then
     $qecho "Granting $DBUSER access to $DBNAME..."
     eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1    
 DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
