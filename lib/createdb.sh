@@ -21,7 +21,8 @@ help () {
     echo "      --replace           Replace existing database and user."
     echo "  -q, --quiet             Be quiet."
     echo "      --dbuser=USER,PASS  Specify database USER and PASS."
-    echo "      --merge-dbuser      Merge with existing database user, if any."
+    echo "      --no-dbuser         Do not create database user."
+    echo "      --no-schema         Do not load initial schema."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
     echo
     echo "MYSQLOPTIONS are sent to mysql and mysqladmin."
@@ -62,7 +63,7 @@ force=false
 batch=false
 replace=false
 dbuser_existing=false
-merge_dbuser=false
+no_schema=false
 quiet=false
 qecho=echo
 qecho_n=echo_n
@@ -86,8 +87,8 @@ while [ $# -gt 0 ]; do
         set_dbuserpass "$2"; shift;;
     --dbuser=*)
         set_dbuserpass "`echo "$1" | sed 's/^[^=]*=//'`";;
-    --merge-dbuser)
-        merge_dbuser=true;;
+    --no-dbuser)
+        dbuser_existing=true;;
     --he|--hel|--help)
         help;;
     --force)
@@ -106,6 +107,8 @@ while [ $# -gt 0 ]; do
         parse_common_argument "$@";;
     --defaults-group-suffix=*)
         mycreatedb_args=; FLAGS="$FLAGS '$1'";;
+    --no-schema)
+        no_schema=true;;
     --no-setup-phase)
         setup_phase="grep -v 'setupPhase'";;
     -*)
@@ -303,8 +306,6 @@ if $dbuser_existing && [ "$userexists" != 0 ]; then
     exit 1
 elif $dbuser_existing; then
     createuser=n
-elif $merge_dbuser && [ "$userexists" = 0 ]; then
-    createuser=n
 fi
 
 if [ "$createdb$dbexists" = y0 -o "$createuser$userexists" = y0 ]; then
@@ -384,8 +385,7 @@ fi
 ##
 ## Populate the database schema
 ##
-populatedb=y
-if ! $replace && test "$createdb" = n; then
+if ! $replace && ! $no_schema && test "$createdb" = n; then
     batch_fail
     echo
     echo "Do you want to replace the current database contents with a fresh install?"
@@ -396,10 +396,10 @@ if ! $replace && test "$createdb" = n; then
         test -z "$populatedb" && break
     done
     expr "$populatedb" : "[qQ].*" >/dev/null && echo "Exiting..." && exit 0
-    expr "$populatedb" : "[nN].*" >/dev/null || populatedb=y
+    expr "$populatedb" : "[nN].*" >/dev/null && no_schema=true
     echo
 fi
-if [ "$populatedb" = y ]; then
+if ! $no_schema; then
     $qecho "Populating database..."
     set_myargs "$DBUSER" "`echo_dbpass`"
     $qecho "+ $setup_phase ${SRCDIR}schema.sql | $MYSQL$myargs_redacted$FLAGS $DBNAME"
