@@ -19,9 +19,13 @@ class Contact {
     var $affiliation = "";
     var $collaborators;
     var $voicePhoneNumber;
+
     var $password = "";
     public $password_plaintext = "";
     public $passwordTime = 0;
+    public $contactdb_password;
+    public $contactdb_passwordTime;
+
     public $disabled = false;
     public $activity_at = false;
     private $data_ = null;
@@ -140,7 +144,7 @@ class Contact {
             $this->set_encoded_password($this->password);
         if ($this->contactDbId && @$this->is_contactdb
             && $this->allow_contactdb_password())
-            $this->contactdb_encoded_password = $this->password;
+            $this->contactdb_password = $this->password;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
         foreach (array("defaultWatch", "passwordTime") as $k)
@@ -186,16 +190,6 @@ class Contact {
 
     static public function compare($a, $b) {
         return strcasecmp($a->sorter, $b->sorter);
-    }
-
-    public function set_encoded_password($password) {
-        if ($password === null || $password === false)
-            $password = "";
-        $this->password = $password;
-        if ($password !== "" && @$password[0] !== " " && $password !== "*")
-            $this->password_plaintext = $password;
-        else
-            $this->password_plaintext = null;
     }
 
     static public function site_contact() {
@@ -363,7 +357,8 @@ class Contact {
             $cdb_user = self::contactdb_find_by_email($this->email);
         if ($cdb_user) {
             $this->contactDbId = $cdb_user->contactDbId;
-            $this->contactdb_encoded_password = @$cdb_user->contactdb_encoded_password;
+            $this->contactdb_password = @$cdb_user->contactdb_password;
+            $this->contactdb_passwordTime = @$cdb_user->passwordTime;
         }
         return $cdb_user;
     }
@@ -849,7 +844,7 @@ class Contact {
         if (@$Opt["contactdb_dsn"] && @$sreg->contactDbId) {
             $this->contactdb_update();
             $this->contactDbId = $sreg->contactDbId;
-            $this->contactdb_encoded_password = @$sreg->encoded_password;
+            $this->contactdb_password = @$sreg->encoded_password;
         }
 
         return true;
@@ -919,9 +914,49 @@ class Contact {
     }
 
 
-    public static function valid_password($password) {
-        return $password && trim($password) === $password
-            && $password !== "*";
+    // PASSWORDS
+    //
+    // password "": disabled user; example: anonymous users for review tokens
+    // password "*": invalid password, used to require the contactdb
+    // password starting with " ": legacy hashed password using janky
+    //     hash_hmac format: " HASHMETHOD KEYID SALT[16B]HMAC"
+    // password starting with " $": password hashed by password_hash
+    //
+    // contactdb_password falsy: contactdb password unusable
+    // contactdb_password truthy: follows rules above (but no "*")
+    //
+    // PASSWORD PRINCIPLES
+    //
+    // - prefer contactdb password
+    // - require contactdb password if it is newer
+    //
+    // PASSWORD CHECKING RULES
+    //
+    // if (contactdb password exists && contactdb password newer)
+    //     check only contactdb password;
+    // else
+    //     check local password and contactdb password;
+    // if (contactdb password matches && contactdb password needs upgrade) {
+    //     upgrade contactdb password;
+    //     set local password to "*";
+    // } else if (local password matches && local password needs upgrade)
+    //     upgrade local password;
+    //
+    // PASSWORD CHANGING RULES
+    //
+    // change(expected, new):
+    // if (expected given
+    //     && !(expected matches local || expected matches contactdb))
+    //     return false;
+    // if (contactdb password allowed
+    //     && (!expected || expected matches contactdb)) {
+    //     change contactdb password and update time;
+    //     set local password to "*";
+    // } else
+    //     change local password and update time;
+
+    public static function valid_password($input) {
+        return $input && trim($input) === $input && $input !== "*";
     }
 
     public static function password_storage_cleartext() {
@@ -939,10 +974,20 @@ class Contact {
     }
 
     public function prefer_contactdb_password() {
-        return @$this->contactdb_encoded_password
+        return @$this->contactdb_password
             && (!$this->has_database_account()
                 || $this->password === "*"
-                || $this->password === $this->contactdb_encoded_password);
+                || $this->password === $this->contactdb_password);
+    }
+
+    public function set_encoded_password($password) {
+        if ($password === null || $password === false)
+            $password = "";
+        $this->password = $password;
+        if ($password !== "" && @$password[0] !== " " && $password !== "*")
+            $this->password_plaintext = $password;
+        else
+            $this->password_plaintext = null;
     }
 
 
@@ -1043,16 +1088,16 @@ class Contact {
     public function check_password($input) {
         global $Conf, $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        if (!$this->contactDbId && $this->contactId && self::contactdb())
+        if (!$this->contactDbId && $this->email && self::contactdb())
             $this->contactdb_load();
 
         $cdbok = false;
-        if ($this->contactDbId && ($hash = $this->contactdb_encoded_password)) {
+        if ($this->contactDbId && ($hash = $this->contactdb_password)) {
             $cdbok = self::check_hashed_password($input, $hash, $this->email);
             if ($cdbok && self::check_password_encryption($hash, true)) {
                 $hash = self::hash_password($input, true);
                 Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $this->contactDbId);
-                $this->contactdb_encoded_password = $hash;
+                $this->contactdb_password = $hash;
             }
         }
 
@@ -1060,7 +1105,7 @@ class Contact {
         if ($this->contactId && ($hash = $this->password) && $hash !== "*") {
             $localok = self::check_hashed_password($input, $hash, $this->email);
             if ($localok ? self::check_password_encryption($hash, false) : $cdbok) {
-                $hash = $cdbok ? $this->contactdb_encoded_password : "";
+                $hash = $cdbok ? $this->contactdb_password : "";
                 if (substr($hash, 0, 2) !== " \$")
                     $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);

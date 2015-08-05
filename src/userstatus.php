@@ -346,7 +346,7 @@ class UserStatus {
             $user->change_password($cj->password_plaintext, false);
         else if ($old_cdb_user && @$old_cdb_user->password) {
             $user->password = "*";
-            $user->contactdb_encoded_password = $old_cdb_user->password;
+            $user->contactdb_password = $old_cdb_user->password;
         }
         if (!$user->password && !Contact::external_login())
             $user->set_encoded_password(Contact::random_password());
