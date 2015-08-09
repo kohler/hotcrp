@@ -278,10 +278,12 @@ class PaperTable {
     }
 
     private function echoTitle() {
+        echo '<span class="ptitle">';
         if ($this->matchPreg && isset($this->matchPreg["title"]))
             echo Text::highlight($this->prow->title, $this->matchPreg["title"]);
         else
             echo htmlspecialchars($this->prow->title);
+        echo '</span>';
     }
 
     private function editable_title() {
@@ -1856,7 +1858,7 @@ class PaperTable {
 
         // paper number
         $pa = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="q">';
-        echo '<div class="paptitle"><h2 class="paptitle">', $pa, '<span class="paptitlenum">#', $prow->paperId, '&nbsp;</span>';
+        echo '<div class="paptitle"><h2 class="paptitle">', $pa, '<span class="paptitlenum pnum">#', $prow->paperId, '&nbsp;</span>';
         $this->echoTitle();
         echo '</a></h2></div>';
 
