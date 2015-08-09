@@ -3939,9 +3939,15 @@ function add_list() {
 function unload_list() {
     hotcrp_list && hotcrp_list.num && set_cookie(hotcrp_list.num);
 }
+function row_click(e) {
+    var j = $(e.target);
+    if (j.hasClass("pl_id") || j.hasClass("pl_title") || j.hasClass("pl_status"))
+        $(this).find("a.pnum")[0].click();
+}
 function prepare() {
     $(document.body).on("click", "a", add_list);
     $(document.body).on("submit", "form", add_list);
+    $(document.body).on("click", "tbody.pltable tr.pl", row_click);
     hotcrp_list && $(window).on("beforeunload", unload_list);
 }
 document.body ? prepare() : $(prepare);

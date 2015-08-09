@@ -147,7 +147,8 @@ a.q, a.qq, a.qx, a.x, a.xx, a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
 a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x,
-a.pnum:hover, a.ptitle:hover, .childfold:hover a.q, a.maillink:hover, .ul {
+tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
+.childfold:hover a.q, a.maillink:hover, .ul {
 	text-decoration: underline;
 }
 a.small {
