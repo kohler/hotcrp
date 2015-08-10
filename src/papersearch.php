@@ -3439,6 +3439,7 @@ class PaperSearch {
             }
             foreach (array_keys($cats) as $cat)
                 array_push($res, "show:$cat", "hide:$cat");
+            array_push($res, "show:compact", "show:statistics");
         }
 
         return $res;

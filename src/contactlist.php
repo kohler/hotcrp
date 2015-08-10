@@ -211,7 +211,7 @@ class ContactList {
             foreach ($rows as $row) {
                 $scoreinfo = new ScoreInfo(@$row->$scoreName);
                 $row->_sort_info = $scoreinfo->sort_data($scoresort);
-                $row->_sort_avg = $scoreinfo->average();
+                $row->_sort_avg = $scoreinfo->mean();
             }
             usort($rows, array($this, "_sortScores"));
             break;

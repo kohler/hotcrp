@@ -6,11 +6,19 @@
 class ScoreInfo {
     private $_scores = array();
     private $_keyed = true;
+    private $_sorted = false;
     private $_sum = 0;
     private $_sumsq = 0;
     private $_n = 0;
 
-    public function __construct($data) {
+    const COUNT = 0;
+    const MEAN = 1;
+    const MEDIAN = 2;
+    const SUM = 3;
+    const VARIANCE_P = 4;
+    const STDDEV_P = 5;
+
+    public function __construct($data = null) {
         if (is_array($data)) {
             foreach ($data as $key => $value)
                 $this->add($value, $key);
@@ -22,22 +30,31 @@ class ScoreInfo {
     }
 
     public function add($score, $key = null) {
-        if ($this->_keyed && $key === null)
-            $this->_keyed = false;
-        else if ($this->_keyed)
-            $this->_scores[$key] = $score;
-        else
-            $this->_scores[] = $score;
-        $this->_sum += $score;
-        $this->_sumsq += $score * $score;
-        ++$this->_n;
+        if ($score !== null) {
+            if ($this->_keyed && $key === null)
+                $this->_keyed = false;
+            if (is_bool($score))
+                $score = (int) $score;
+            if ($this->_keyed)
+                $this->_scores[$key] = $score;
+            else
+                $this->_scores[] = $score;
+            $this->_sum += $score;
+            $this->_sumsq += $score * $score;
+            ++$this->_n;
+            $this->_sorted = false;
+        }
+    }
+
+    public function count() {
+        return $this->_n;
     }
 
     public function n() {
         return $this->_n;
     }
 
-    public function average() {
+    public function mean() {
         return $this->_n > 0 ? $this->_sum / $this->_n : 0;
     }
 
@@ -68,18 +85,17 @@ class ScoreInfo {
     }
 
     public function median() {
-        $p = count($this->_scores) / 2;
-        $last = $below = 0;
-        foreach ($this->counts() as $i => $ct)
-            if ($p == $below)
-                return ($last + $i) / 2;
-            else if ($p < $below + $ct)
-                return $i;
-            else {
-                $below += $ct;
-                $last = $i;
-            }
-        return 0;
+        if (!$this->_sorted) {
+            $this->_keyed ? asort($this->_scores) : sort($this->_scores);
+            $this->_sorted = true;
+        }
+        $a = $this->_keyed ? array_values($this->_scores) : $this->_scores;
+        if ($this->_n % 2)
+            return $a[($this->_n - 1) >> 1];
+        else if ($this->_n)
+            return ($a[($this->_n - 2) >> 1] + $a[$this->_n >> 1]) / 2;
+        else
+            return 0;
     }
 
     public function max() {
@@ -116,7 +132,22 @@ class ScoreInfo {
         else if ($sorter == "D")
             return $this->max() - $this->min();
         else
-            return $this->average();
+            return $this->mean();
+    }
+
+    public function statistic($what) {
+        if ($what == self::COUNT)
+            return $this->_n;
+        else if ($what == self::MEAN)
+            return $this->mean();
+        else if ($what == self::MEDIAN)
+            return $this->median();
+        else if ($what == self::SUM)
+            return $this->_sum;
+        else if ($what == self::VARIANCE_P)
+            return $this->variance_p();
+        else if ($what == self::STDDEV_P)
+            return $this->stddev_p();
     }
 
     static public function empty_sort_data($sorter) {

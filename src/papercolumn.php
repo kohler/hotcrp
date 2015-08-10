@@ -96,6 +96,10 @@ class PaperColumn extends Column {
     public function text($pl, $row) {
         return "";
     }
+
+    public function has_statistics() {
+        return false;
+    }
 }
 
 class IdPaperColumn extends PaperColumn {
@@ -1065,7 +1069,7 @@ class ScorePaperColumn extends PaperColumn {
             if (($scores = $row->viewable_scores($field, $pl->contact, null)) !== null) {
                 $scoreinfo = new ScoreInfo($scores);
                 $row->$sortinfo = $scoreinfo->sort_data($sorter->score, $reviewer);
-                $row->$avginfo = $scoreinfo->average();
+                $row->$avginfo = $scoreinfo->mean();
             } else {
                 $row->$sortinfo = ScoreInfo::empty_sort_data($sorter->score);
                 $row->$avginfo = -1;
@@ -1123,6 +1127,8 @@ class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
     public static $list = array();
     public $formula;
+    private $formula_function;
+    public $statistics;
     public function __construct($name, $formula) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "sorter" => "formula_sorter"));
@@ -1176,6 +1182,7 @@ class FormulaPaperColumn extends PaperColumn {
         $this->formula_function = $this->formula->compile_function($pl->contact);
         if ($visible)
             $this->formula->add_query_options($pl->qopts, $pl->contact);
+        $this->statistics = new ScoreInfo;
         return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
@@ -1203,12 +1210,28 @@ class FormulaPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $formulaf = $this->formula_function;
-        $t = $formulaf($row, null, $pl->contact, "h");
-        if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
-            return "<span class='fn5'>$t</span><span class='fx5'>"
-                . $formulaf($row, null, $pl->contact, "h", true) . "</span>";
-        else
+        $s = $formulaf($row, null, $pl->contact);
+        $t = $this->formula->unparse_html($s);
+        if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
+            $ss = $formulaf($row, null, $pl->contact, null, true);
+            $tt = $this->formula->unparse_html($ss);
+            $this->statistics->add($ss);
+            return '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
+        } else {
+            $this->statistics->add($s);
             return $t;
+        }
+    }
+    public function text($pl, $row) {
+        $formulaf = $this->formula_function;
+        $s = $formulaf($row, null, $pl->contact);
+        return $this->formula->unparse_text($s);
+    }
+    public function has_statistics() {
+        return $this->statistics && $this->statistics->count();
+    }
+    public function statistic($what) {
+        return $this->formula->unparse_html($this->statistics->statistic($what));
     }
 }
 

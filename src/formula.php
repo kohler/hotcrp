@@ -213,9 +213,9 @@ class ConstantFexpr extends Fexpr {
             || $e->resolve_constants())
             return;
         $format = $e->format();
-        if ($format === "revprefexp" && $this->x >= "X" && $this->x <= "Z") {
+        if ($format instanceof PrefFexpr && $this->x >= "X" && $this->x <= "Z") {
             $this->x = 89 - ord($word);
-            $this->format = "revprefexp";
+            $this->format = $format;
         } else if ($format instanceof ReviewField
                    && ($x = $format->parse_value($this->x, true))) {
             $this->x = $x;
@@ -292,7 +292,7 @@ class PrefFexpr extends Fexpr {
         $this->isexpertise = $isexpertise;
     }
     public function format() {
-        return $this->isexpertise ? "revprefexp" : null;
+        return $this->isexpertise ? $this : null;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -905,26 +905,7 @@ class Formula {
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . $loop . join("\n  ", $state->lstmt) . "\n"
             . "  \$x = $expr;\n\n"
-            . '  if ($format == "h") {
-    if ($x === null || $x === false)
-      return "";
-    else if ($x === true)
-      return "&#x2713;";
-    else';
-
-        // HTML format for output depends on type of output
-        if ($this->_format === "revprefexp")
-            $t .= "\n      "
-                . 'return ReviewField::unparse_letter(91, $x + 2);';
-        else if ($this->_format instanceof ReviewField
-                 && $this->_format->option_letter)
-            $t .= "\n      "
-                . 'return ReviewField::unparse_letter(' . $this->_format->option_letter . ', $x);';
-        else
-            $t .= "\n      "
-                . 'return round($x * 100) / 100;';
-
-        $t .= "\n" . '  } else if ($format == "s")
+            . '  if ($format == "s")
     return ($x === true ? 1 : $x);
   else
     return $x;' . "\n";
@@ -932,6 +913,23 @@ class Formula {
         $args = '$prow, $rrow_cid, $contact, $format = null, $forceShow = false';
         //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
         return create_function($args, $t);
+    }
+
+    public function unparse_html($x) {
+        if ($x === null || $x === false)
+            return "";
+        else if ($x === true)
+            return "✓";
+        else if ($this->_format instanceof PrefFexpr)
+            return ReviewField::unparse_letter(91, $x + 2);
+        else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
+            return ReviewField::unparse_letter($this->_format->option_letter, $x);
+        else
+            return round($x * 100) / 100;
+    }
+
+    public function unparse_text($x) {
+        return $this->unparse_html($x);
     }
 
     public function add_query_options(&$queryOptions, $contact) {

@@ -101,11 +101,14 @@ class PaperList {
         // NB that actually processed the search, setting PaperSearch::viewmap
 
         $this->viewmap = new Qobject($this->search->viewmap);
-        if ($this->viewmap->cc || $this->viewmap->compactcolumn
+        if ($this->viewmap->compact
+            || $this->viewmap->cc || $this->viewmap->compactcolumn
             || $this->viewmap->ccol || $this->viewmap->compactcolumns)
             $this->viewmap->compactcolumns = $this->viewmap->columns = true;
         if ($this->viewmap->column || $this->viewmap->col)
             $this->viewmap->columns = true;
+        if ($this->viewmap->stat || $this->viewmap->stats)
+            $this->viewmap->statistics = true;
     }
 
     function _sort($rows) {
@@ -498,8 +501,7 @@ class PaperList {
             $Conf->footerScript("plactions_dofold()");
 
         // Linelinks container
-        $foot = " <tfoot" . ($rstate->hascolors ? ' class="pltable_colored"' : "") . ">\n"
-            . "  <tr class=\"pl_footrow\">\n";
+        $foot = '<tr class="pl_footrow">';
         if ($this->viewmap->columns)
             $foot .= '   <td class="pl_footer" colspan="' . $ncol . '">';
         else
@@ -513,7 +515,7 @@ class PaperList {
             . '<img id="foldplactsession" alt="" src="'
             . hoturl("sessionvar", "var=foldplact&amp;val=" . $Conf->session("foldplact", 1) . "&amp;cache=1")
             . "\" width=\"1\" height=\"1\" /></td>\n"
-            . $t . "   </tr></table>" . $extra . "</td>\n  </tr>\n </tfoot>";
+            . $t . "   </tr></table>" . $extra . "</td>\n  </tr>";
     }
 
     static function _listDescription($listname) {
@@ -958,8 +960,9 @@ class PaperList {
 
     private function _view_columns($field_list) {
         // add explicitly requested columns
-        $specials = array_flip(array("cc", "compactcolumn", "compactcolumns",
-                                     "column", "col", "columns", "sort"));
+        $specials = array_flip(array("cc", "compact", "compactcolumn", "compactcolumns",
+                                     "column", "col", "columns", "sort",
+                                     "stat", "stats", "statistics"));
         $viewmap_add = array();
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
@@ -1075,6 +1078,47 @@ class PaperList {
             $field_list = $this->_view_columns($field_list);
         $this->_prepare_sort(); // NB before prepare_columns so columns see sorter
         return $this->_prepare_columns($field_list);
+    }
+
+    private function _statistics_rows($rstate, $fieldDef) {
+        $t = "";
+        $any_empty = null;
+        foreach ($fieldDef as $fdef)
+            if ($fdef->view == Column::VIEW_COLUMN && $fdef->has_statistics())
+                $any_empty = $any_empty || $fdef->statistic(ScoreInfo::COUNT) != $this->count;
+        if ($any_empty === null)
+            return "";
+        foreach (array(ScoreInfo::SUM => "Total", ScoreInfo::MEAN => "Mean",
+                       ScoreInfo::MEDIAN => "Median") as $stat => $name) {
+            $t .= "<tr>";
+            $titled = 0;
+            foreach ($fieldDef as $fdef) {
+                if ($fdef->view != Column::VIEW_COLUMN)
+                    continue;
+                if (!$fdef->has_statistics() && is_int($titled) && !$fdef->foldable) {
+                    ++$titled;
+                    continue;
+                }
+                if (is_int($titled) && $titled) {
+                    $name = '<strong>' . $name . '</strong>';
+                    if ($any_empty && $stat != ScoreInfo::SUM)
+                        $name .= " of nonempty values";
+                    $t .= '<td colspan="' . $titled . '" class="pl pl_statheader">' . $name . '</td>';
+                }
+                $titled = false;
+                $t .= '<td class="pl pl_' . $fdef->cssname;
+                if ($fdef->foldable)
+                    $t .= ' fx' . $fdef->foldable;
+                $t .= '">';
+                if ($fdef->has_statistics())
+                    $t .= $fdef->statistic($stat);
+                $t .= '</td>';
+            }
+            if (is_int($titled))
+                return "";
+            $t .= "</tr>";
+        }
+        return $t;
     }
 
     public function id_array() {
@@ -1258,10 +1302,17 @@ class PaperList {
             $tbody_class .= $rstate->hascolors ? " pltable_colored" : "";
         }
 
+        // footer
+        $foot = "";
+        if ($this->viewmap->statistics && !$this->viewmap->columns)
+            $foot .= $this->_statistics_rows($rstate, $fieldDef);
         if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))
-            $enter .= $this->_footer($ncol, $listname, $rstate,
-                                     defval($options, "footer_extra", ""));
+            $foot .= $this->_footer($ncol, $listname, $rstate,
+                                    defval($options, "footer_extra", ""));
+        if ($foot)
+            $enter .= '<tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
+                . ">\n" . $foot . "</tfoot>\n";
 
         // session variable to remember the list
         if ($this->listNumber) {
