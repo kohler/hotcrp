@@ -417,6 +417,7 @@ function searchQuickref() {
     if (count($farr[0])) {
         $r = $farr[0][0];
         _searchQuickrefRow("", "show:max($r->abbreviation)", "show a <a href=\"" . hoturl("help", "t=formulas") . "\">formula</a>");
+        _searchQuickrefRow("", "show:statistics", "show summary statistics for formulas");
         _searchQuickrefRow("", "sort:$r->abbreviation", "sort by score");
         _searchQuickrefRow("", "sort:\"$r->abbreviation variance\"", "sort by score variance");
     }
@@ -997,6 +998,7 @@ merit among reviewers with high Reviewer expertise.</p>
 <p>To display a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=show%3avar%28OveMer%29") . "\">show:var(OveMer)</a>” (show
 the variance in Overall merit scores).
+Add “<a href=\"" . hoturl("search", "q=show%3avar%28OveMer%29+show%3astatistics") . "\">show:statistics</a>” to show summary statistics over all papers.
 You can also <a href=\"" . hoturl("graph", "g=formula") . "\">graph formulas</a>.
 To search for a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=formula%3avar%28OveMer%29%3e0.5") . "\">formula:var(OveMer)>0.5</a>”
@@ -1050,6 +1052,7 @@ Confidence score with choices X, Y, and Z:</p>
     _alternateRow("", "isprimary", "True for primary reviews");
     _alternateRow("", "issecondary", "True for secondary reviews");
     _alternateRow("", "isexternal", "True for external reviews");
+    _alternateRow("", "ispc", "True for PC reviews");
     _alternateRow("Review preferences", "pref", "Review preference");
     _alternateRow("", "prefexp", "Predicted expertise");
     echo "</table>\n";
