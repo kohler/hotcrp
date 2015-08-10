@@ -316,20 +316,18 @@ class PaperTable {
         // status and download
         if ($Me->can_view_pdf($prow)) {
             $status_info = $Me->paper_status_info($prow);
-            $t = "<td class=\"nowrap pad\">"
-                . "<span class=\"pstat $status_info[0]\">" . htmlspecialchars($status_info[1]) . "</span></td>";
+            $out[] = "<p class=\"xd\"><span class=\"pstat $status_info[0]\">"
+                . htmlspecialchars($status_info[1]) . "</span></p>";
+
             $pdfs = array();
 
             $dprefix = "";
-            if ($prow->finalPaperStorageId > 1) {
-                $data = paperDocumentData($prow, DTYPE_FINAL);
-                $dprefix = "Final version: &nbsp;";
-            } else
-                $data = paperDocumentData($prow, DTYPE_SUBMISSION);
-            if ($data) {
+            $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
+            if (($data = paperDocumentData($prow, $dtype))) {
                 if (($stamps = self::pdfStamps($data)))
                     $stamps = "<span class='sep'></span>" . $stamps;
-                $pdfs[] = $dprefix . documentDownload($data) . $stamps;
+                $dname = $dtype == DTYPE_FINAL ? "Final version" : "Submission";
+                $pdfs[] = $dprefix . documentDownload($data, "dlimg", '<span class="pavfn">' . $dname . '</span>') . $stamps;
             }
 
             foreach (PaperOption::option_list() as $id => $o)
@@ -356,25 +354,21 @@ class PaperTable {
                     . "\">Submission version</a></small>";
             }
 
-            $t .= "<td>";
             foreach ($pdfs as $p)
-                $t .= "<p class='od'>" . $p . "</p>";
-            $out[] = "<table><tr>$t</td></tr></table>";
+                $out[] = '<p class="xd">' . $p . '</p>';
         }
 
         // conflicts
         if ($prow->has_author($Me))
-            $out[] = "You are an <span class='author'>author</span> of this paper.";
+            $out[] = "<p class='xd'>You are an <span class='author'>author</span> of this paper.</p>";
         else if ($prow->has_conflict($Me))
-            $out[] = "You have a <span class='conflict'>conflict</span> with this paper.";
+            $out[] = "<p class='xd'>You have a <span class='conflict'>conflict</span> with this paper.</p>";
         if ($Me->isPC && !$prow->has_conflict($Me)
             && $Conf->timeUpdatePaper($prow) && $this->mode !== "assign"
             && $this->mode !== "contact")
             $out[] = "<div class='xwarning'>The authors still have <a href='" . hoturl("deadlines") . "'>time</a> to make changes.</div>";
-        if (count($out))
-            $out[] = "";
 
-        echo join("<div class='g'></div>\n", $out);
+        echo join("", $out);
     }
 
     private function echo_editable_complete($storageId) {
