@@ -292,7 +292,7 @@ class PrefFexpr extends Fexpr {
         $this->isexpertise = $isexpertise;
     }
     public function format() {
-        return $this->isexprtise ? "revprefexp" : null;
+        return $this->isexpertise ? "revprefexp" : null;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
