@@ -819,14 +819,22 @@ class Formula {
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = new ConstantFexpr("null");
             $t = $m[1];
-        } else if (preg_match('/\A(?:is)?(pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(?:is)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
+            $op = "==";
             if ($m[1] == "pri" || $m[1] == "primary")
                 $rt = REVIEW_PRIMARY;
             else if ($m[1] == "sec" || $m[1] == "secondary")
                 $rt = REVIEW_SECONDARY;
             else if ($m[1] == "ext" || $m[1] == "external")
                 $rt = REVIEW_EXTERNAL;
-            $e = new Fexpr("==", new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
+            else if ($m[1] == "pc" || $m[1] == "pcre" || $m[1] == "pcrev") {
+                $rt = REVIEW_PC;
+                $op = ">=";
+            } else {
+                $rt = 0;
+                $op = ">=";
+            }
+            $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
             $t = $m[2];
         } else if (preg_match('/\Atopicscore\b(.*)\z/s', $t, $m)) {
             $e = new TopicScoreFexpr;
