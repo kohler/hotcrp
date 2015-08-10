@@ -4,28 +4,33 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class ScoreInfo {
-    private $_scores;
-    private $_keyed;
+    private $_scores = array();
+    private $_keyed = true;
     private $_sum = 0;
     private $_sumsq = 0;
     private $_n = 0;
 
     public function __construct($data) {
-        if (($this->_keyed = is_array($data)))
-            $this->_scores = $data;
-        else {
-            $this->_scores = array();
-            if (is_string($data) && $data !== "")
-                foreach (preg_split('/[\s,]+/', $data) as $i)
-                    if (($i = cvtint($i)) > 0)
-                        $this->_scores[] = $i;
+        if (is_array($data)) {
+            foreach ($data as $key => $value)
+                $this->add($value, $key);
+        } else if (is_string($data) && $data !== "") {
+            foreach (preg_split('/[\s,]+/', $data) as $s)
+                if (($s = cvtint($s)) > 0)
+                    $this->add($i);
         }
-        foreach ($this->_scores as $i)
-            if ($i) {
-                $this->_sum += $i;
-                $this->_sumsq += $i * $i;
-                ++$this->_n;
-            }
+    }
+
+    public function add($score, $key = null) {
+        if ($this->_keyed && $key === null)
+            $this->_keyed = false;
+        else if ($this->_keyed)
+            $this->_scores[$key] = $score;
+        else
+            $this->_scores[] = $score;
+        $this->_sum += $score;
+        $this->_sumsq += $score * $score;
+        ++$this->_n;
     }
 
     public function n() {
