@@ -55,7 +55,7 @@ function loadRows() {
     if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
-    $paperTable->resolveReview();
+    $paperTable->resolveReview(true);
 
     if ($paperTable->editrrow && $paperTable->editrrow->contactId == $Me->contactId)
         $editRrowLogname = "Review " . $paperTable->editrrow->reviewId;

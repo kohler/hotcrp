@@ -2314,7 +2314,7 @@ class PaperTable {
         return $prow;
     }
 
-    function resolveReview() {
+    function resolveReview($want_review) {
         global $Conf, $Me;
 
         $sel = array("paperId" => $this->prow->paperId, "array" => true);
@@ -2340,11 +2340,10 @@ class PaperTable {
                 $myrrow = $rr;
         }
 
-        // naming a nonexistent review? silently view all reviews
-        if ($this->mode === "re" && !$this->rrow && isset($_REQUEST["reviewId"]))
-            $this->mode = "p";
+        $this->editrrow = $this->rrow ? : $myrrow;
 
-        $this->editrrow = ($this->rrow ? : $myrrow);
+        if ($want_review && $Me->can_review($this->prow, $this->editrrow, false))
+            $this->mode = "re";
     }
 
     function resolveComments() {

@@ -26,7 +26,7 @@ function loadRows() {
     if (!$prow)
         exit_to_paper();
     $paperTable = new PaperTable($prow);
-    $paperTable->resolveReview();
+    $paperTable->resolveReview(false);
     $paperTable->resolveComments();
 
     $cid = defval($_REQUEST, "commentId", "xxx");

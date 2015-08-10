@@ -99,13 +99,13 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         if ($rrow && $rrow->reviewId == $rr->reviewId) {
             if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
                 $id = "Your $id";
-            $t .= '<td><a href="' . hoturl("review", "r=$rlink") . '" class="q"><b>' . $id . '</b></a></td>';
+            $t .= '<td><a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a></td>';
         } else if (!$canView)
             $t .= "<td>$id</td>";
         else if ($rrow || $rr->reviewModified <= 0
                  || (($mode === "re" || $mode === "assign")
                      && $Me->can_review($prow, $rr)))
-            $t .= '<td><a href="' . hoturl("review", "r=$rlink") . '">' . $id . '</a></td>';
+            $t .= '<td><a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a></td>';
         else if (Navigation::page() !== "paper")
             $t .= '<td><a href="' . hoturl("paper", "p=$prow->paperId#review$rlink") . '">' . $id . '</a></td>';
         else

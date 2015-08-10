@@ -642,7 +642,7 @@ if (isset($_REQUEST["tagreport"]) && check_post()) {
 $paperTable = new PaperTable($prow);
 $paperTable->resolveComments();
 if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
-    $paperTable->resolveReview();
+    $paperTable->resolveReview(false);
     $paperTable->fixReviewMode();
 }
 
