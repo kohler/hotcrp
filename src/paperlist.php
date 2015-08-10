@@ -1297,6 +1297,7 @@ class PaperList {
             $enter = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $enter;
             $exit = $exit . "</div></div>";
             $ncol = $rstate->split_ncol;
+            $tbody_class = "pltable_split";
         } else {
             $enter .= $colhead;
             $tbody_class .= $rstate->hascolors ? " pltable_colored" : "";
