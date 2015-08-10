@@ -1186,8 +1186,12 @@ class FormulaPaperColumn extends PaperColumn {
     }
     public function formula_sorter($a, $b) {
         $sorter = $this->formula_sorter;
-        return $a->$sorter < $b->$sorter ? -1
-            : ($a->$sorter == $b->$sorter ? 0 : 1);
+        $as = $a->$sorter;
+        $bs = $b->$sorter;
+        if ($as === null || $bs === null)
+            return $as === $bs ? 0 : ($as === null ? -1 : 1);
+        else
+            return $as == $bs ? 0 : ($as < $bs ? -1 : 1);
     }
     public function header($pl, $row, $ordinal) {
         $x = $this->formula->column_header();
