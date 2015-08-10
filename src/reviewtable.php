@@ -49,7 +49,9 @@ function _retract_review_request_form($prow, $rr) {
 
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
-    global $Conf, $Me;
+    global $Conf, $Me, $CurrentList;
+    $saved_list = $CurrentList;
+    $CurrentList = null;
 
     $subrev = array();
     $nonsubrev = array();
@@ -261,8 +263,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     }
 
     // completion
+    $CurrentList = $saved_list;
     if (count($nonsubrev) + count($subrev)) {
-        $t = "<table class=\"reviewers\">\n";
+        $t = "<table class=\"reviewers";
+        if ($CurrentList)
+            $t .= " has_hotcrp_list\" hotcrp_list=\"$CurrentList";
+        $t .= "\">\n";
         if ($want_requested_by)
             array_unshift($score_header, '<th class="revsl">Requester</th>');
         if (count($score_header))
@@ -288,7 +294,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
 // links below review table
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
-    global $Conf, $Me;
+    global $Conf, $Me, $CurrentList;
+    $saved_list = $CurrentList;
+    $CurrentList = null;
 
     $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
@@ -368,7 +376,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         /* no link */;
     else if ($myrr && $rrow != $myrr) {
         $myrlink = unparseReviewOrdinal($myrr);
-        $a = '<a href="' . hoturl("review", "r=$myrlink") . '" class="xx">';
+        $a = '<a href="' . hoturl("review", "p=$prow->paperId&r=$myrlink") . '" class="xx">';
         if ($Me->can_review($prow, $myrr))
             $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
         else
@@ -433,5 +441,9 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
-    return $pret . $t;
+    if (($CurrentList = $saved_list))
+        return '<div class="has_hotcrp_list" hotcrp_list="' . $CurrentList . '">'
+            . $pret . $t . '</div>';
+    else
+        return $pret . $t;
 }
