@@ -177,15 +177,16 @@ class Fexpr {
             return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
         }
 
-        if (count($this->args) == 1 && ($op == "variance" || $op == "var" || $op == "var_pop" || $op == "var_samp" || $op == "std" || $op == "stddev" || $op == "stddev_pop" || $op == "stddev_samp")) {
+        if (count($this->args) == 1 && preg_match('/\A(var(?:iance)?|std(?:d?ev)?)(|_pop|_samp|[_.][ps])\z/', $op, $m)) {
             $t = $state->_compile_loop("array(0, 0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1) : ~r~)", $this);
-            if ($op == "variance" || $op == "var" || $op == "var_samp")
+            $ispop = preg_match('/\A(?:|_pop|[_.]p)\z/', $m[2]);
+            if ($m[1][0] == "v" && !$ispop)
                 return "(${t}[2] > 1 ? ${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1)) : (${t}[2] ? 0 : null))";
-            else if ($op == "var_pop")
+            else if ($m[1][0] == "v")
                 return "(${t}[2] ? ${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2]) : null)";
-            else if ($op == "std" || $op == "stddev" || $op == "stddev_samp")
+            else if (!$ispop)
                 return "(${t}[2] > 1 ? sqrt(${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1))) : (${t}[2] ? 0 : null))";
-            else if ($op == "stddev_pop")
+            else
                 return "(${t}[2] ? sqrt(${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2])) : null)";
         }
 
@@ -807,7 +808,7 @@ class Formula {
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], true);
             $t = $m[2];
-        } else if (preg_match('/\A(my|all|any|avg|count|min|max|std(?:dev(?:_pop|_samp)?)?|sum|var(?:iance|_pop|_samp)?|wavg)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(my|all|any|avg|count|min|max|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;

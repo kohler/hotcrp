@@ -36,12 +36,20 @@ class ScoreInfo {
         return $this->_n > 0 ? $this->_sum / $this->_n : 0;
     }
 
-    public function variance() {
+    public function variance_s() {
         return $this->_n > 1 ? ($this->_sumsq - $this->_sum * $this->_sum / $this->_n) / ($this->_n - 1) : 0;
     }
 
-    public function stddev() {
-        return sqrt($this->variance());
+    public function stddev_s() {
+        return sqrt($this->variance_s());
+    }
+
+    public function variance_p() {
+        return $this->_n > 1 ? ($this->_sumsq - $this->_sum * $this->_sum / $this->_n) / $this->_n : 0;
+    }
+
+    public function stddev_p() {
+        return sqrt($this->variance_p());
     }
 
     public function counts($max = 0) {
@@ -99,7 +107,7 @@ class ScoreInfo {
         else if ($sorter == "E")
             return $this->median();
         else if ($sorter == "V")
-            return $this->variance();
+            return $this->variance_p();
         else if ($sorter == "D")
             return $this->max() - $this->min();
         else
