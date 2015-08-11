@@ -75,6 +75,16 @@ xassert_eqq(password($marina), "dungdevitch");
 xassert(user($marina)->check_password("isdevitch"));
 xassert(!user($marina)->check_password("dungdevitch"));
 
+// update local password only
+user($marina)->change_password(null, "ncurses", Contact::CHANGE_PASSWORD_NO_CDB);
+xassert_eqq(password($marina), "ncurses");
+xassert_eqq(password($marina, true), "isdevitch");
+xassert(user($marina)->check_password("ncurses"));
+xassert(user($marina)->check_password("isdevitch"));
+xassert(user($marina)->check_password("ncurses"));
+// restore to "this is a cdb password"
+Dbl::qe("update ContactInfo set passwordIsCdb=1 where email=?", $marina);
+
 // start upgrading passwords
 if (function_exists("password_needs_rehash")) {
     $Opt["safePasswords"] = $Opt["contactdb_safePasswords"] = 2;
