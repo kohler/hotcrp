@@ -267,8 +267,10 @@ function requestReview($email) {
     $Requester = $Me;
     if ($Conf->setting("extrev_chairreq")) {
         $result = Dbl::qe_raw("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
-        if ($result && ($Requester = $result->fetch_object("Contact")))
+        if ($result && ($recorded_requester = $result->fetch_object("Contact"))) {
+            $Requester = $recorded_requester;
             Dbl::qe_raw("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
+        }
     }
 
     // store the review request
