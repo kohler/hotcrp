@@ -195,6 +195,7 @@ if test -n "$x"; then
     bad="`eval "echo $x" | tr -d a-zA-Z0-9_.-`"
     if test -z "$bad"; then default_dbuser="`echo $x`"; fi
 fi
+if $dbuser_existing && [ -z "$DBUSER" ]; then DBUSER="$default_dbuser"; fi
 
 while true; do
     if [ -z "$DBNAME" -a -n "$default_dbname" ] && $batch; then
