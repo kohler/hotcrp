@@ -22,11 +22,11 @@ function stri_ends_with($haystack, $needle) {
 
 function cleannl($text) {
     if (strpos($text, "\r") !== false) {
-	$text = str_replace("\r\n", "\n", $text);
-	$text = strtr($text, "\r", "\n");
+        $text = str_replace("\r\n", "\n", $text);
+        $text = strtr($text, "\r", "\n");
     }
     if (strlen($text) && $text[strlen($text) - 1] !== "\n")
-	$text .= "\n";
+        $text .= "\n";
     return $text;
 }
 
@@ -133,9 +133,9 @@ if (!defined("JSON_UNESCAPED_UNICODE"))
 
 function defval($var, $idx, $defval = null) {
     if (is_array($var))
-	return (isset($var[$idx]) ? $var[$idx] : $defval);
+        return (isset($var[$idx]) ? $var[$idx] : $defval);
     else
-	return (isset($var->$idx) ? $var->$idx : $defval);
+        return (isset($var->$idx) ? $var->$idx : $defval);
 }
 
 function is_associative_array($a) {
