@@ -10,7 +10,7 @@ class UserActions {
         $result = Dbl::qe("select * from ContactInfo where $where and contactId ?a", $ids);
         while ($result && ($Acct = $result->fetch_object("Contact"))) {
             if ($dopassword)
-                $Acct->change_password(null, true);
+                $Acct->change_password(null, null, Contact::CHANGE_PASSWORD_NO_CDB);
             if ($sendtype && !$Acct->is_disabled())
                 $Acct->sendAccountInfo($sendtype, false);
             else if ($sendtype)

@@ -44,8 +44,10 @@ if (isset($_POST["go"]) && check_post()) {
     else if (!Contact::valid_password($_POST["password"]))
         $Conf->errorMsg("Invalid password.");
     else {
-        $Acct->change_password($_POST["password"],
-                               $_POST["password"] === @$_POST["autopassword"]);
+        $flags = 0;
+        if ($_POST["password"] === @$_POST["autopassword"])
+            $flags |= Contact::CHANGE_PASSWORD_PLAINTEXT;
+        $Acct->change_password(null, $_POST["password"], $flags);
         $Acct->log_activity("Password reset via " . substr($_REQUEST["resetcap"], 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);

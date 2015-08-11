@@ -148,8 +148,8 @@ class UserStatus {
 
         // Stringiness
         foreach (array("firstName", "lastName", "email", "preferred_email",
-                       "affiliation", "phone", "new_password", "city", "state",
-                       "zip", "country") as $k)
+                       "affiliation", "phone", "old_password", "new_password",
+                       "city", "state", "zip", "country") as $k)
             if (isset($cj->$k) && !is_string($cj->$k)) {
                 $this->set_error($k, "Format error [$k]");
                 unset($cj->$k);
@@ -396,7 +396,7 @@ class UserStatus {
 
         // Password
         if (@$cj->new_password)
-            $user->change_password($cj->new_password);
+            $user->change_password(@$cj->old_password, $cj->new_password, 0);
 
         // Beware PC cache
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)

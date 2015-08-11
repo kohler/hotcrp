@@ -14,10 +14,17 @@ $Opt["disablePrintEmail"] = true;
 if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql")))
     die("* Can't reinitialize database.\n" . $Conf->dblink->error);
 while ($Conf->dblink->more_results())
-    $Conf->dblink->next_result();
+    Dbl::free($Conf->dblink->next_result());
 // No setup phase.
 $Conf->qe("delete from Settings where name='setupPhase'");
 $Conf->load_settings();
+// Contactdb.
+if (($cdb = Contact::contactdb())) {
+    if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql")))
+        die("* Can't reinitialize contact database.\n" . $cdb->error);
+    while ($cdb->more_results())
+        Dbl::free($cdb->next_result());
+}
 
 // Create initial administrator user.
 $Admin = Contact::create(array("email" => "chair@_.com", "name" => "Jane Chair",
