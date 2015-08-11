@@ -482,8 +482,8 @@ if test -n "$current_options"; then
 
     if test -z "$httpd_user"; then
         echo
-        echo "* The $current_options file contains sensitive data."
-        echo "* You may need to change its group so the Web server can read it."
+        echo "* The $current_options file contains important, sensitive data."
+        echo "* You may need to change its group and mode so the Web server can read it."
         echo
     elif ! is_group_member "$httpd_user" "$group"; then
         if [ -n "$SUDO_USER" ] && chgrp "$httpd_user" "$current_options" 2>/dev/null; then
