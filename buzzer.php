@@ -26,7 +26,7 @@ if ($Me->privChair) {
             $kiosk_keys[$kj->show_papers ? 1 : 0] = $k;
     for ($show_papers = 0; $show_papers <= 1; ++$show_papers)
         if (!$kiosk_keys[$show_papers]) {
-            $key = Contact::random_password();
+            $key = hotcrp_random_password();
             $kiosks[$key] = (object) array("update_at" => $Now, "show_papers" => !!$show_papers);
             $kiosk_keys[$show_papers] = $kchange = $key;
         }

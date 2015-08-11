@@ -798,7 +798,7 @@ class Contact {
             $this->change_password($sreg->password, false);
         else if (@$sreg->encoded_password)
             $this->set_encoded_password($sreg->encoded_password);
-        else
+        else if (!self::external_login())
             // Always store initial, randomly-generated user passwords in
             // plaintext. The first time a user logs in, we will encrypt
             // their password.
@@ -918,8 +918,8 @@ class Contact {
     //
     // password "": disabled user; example: anonymous users for review tokens
     // password "*": invalid password, used to require the contactdb
-    // password starting with " ": legacy hashed password using janky
-    //     hash_hmac format: " HASHMETHOD KEYID SALT[16B]HMAC"
+    // password starting with " ": legacy hashed password using hash_hmac
+    //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
     // password starting with " $": password hashed by password_hash
     //
     // contactdb_password falsy: contactdb password unusable
@@ -954,6 +954,11 @@ class Contact {
     //     set local password to "*";
     // } else
     //     change local password and update time;
+
+    static function random_password($length = 14) {
+        assert(!self::external_login());
+        return hotcrp_random_password($length);
+    }
 
     public static function valid_password($input) {
         return $input && trim($input) === $input && $input !== "*";
@@ -1137,37 +1142,6 @@ class Contact {
             Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->password, $this->passwordTime, $this->contactDbId);
     }
 
-    static function random_password($length = 14) {
-        global $Opt;
-        if (isset($Opt["ldapLogin"]))
-            return "<stored in LDAP>";
-        else if (isset($Opt["httpAuthLogin"]))
-            return "<using HTTP authentication>";
-
-        // see also regexp in randompassword.php
-        $l = explode(" ", "a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w tr cr br fr th dr ch ph wr st sp sw pr sl cl 2 3 4 5 6 7 8 9 - @ _ + =");
-        $n = count($l);
-
-        $bytes = hotcrp_random_bytes($length + 10, true);
-        if ($bytes === false) {
-            $bytes = "";
-            while (strlen($bytes) < $length)
-                $bytes .= sha1($Opt["conferenceKey"] . pack("V", mt_rand()));
-        }
-
-        $pw = "";
-        $nvow = 0;
-        for ($i = 0;
-             $i < strlen($bytes) &&
-                 strlen($pw) < $length + max(0, ($nvow - 3) / 3);
-             ++$i) {
-            $x = ord($bytes[$i]) % $n;
-            if ($x < 30)
-                ++$nvow;
-            $pw .= $l[$x];
-        }
-        return $pw;
-    }
 
     function sendAccountInfo($sendtype, $sensitive) {
         global $Conf, $Opt;

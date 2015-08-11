@@ -8,6 +8,9 @@ if (!isset($_REQUEST["resetcap"])
     && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
     $_REQUEST["resetcap"] = $m[1];
 
+if (Contact::external_login())
+    error_go(false, "This HotCRP installation does not store passwords. Contact your administrator to reset your password.");
+
 if (!isset($_REQUEST["resetcap"]))
     error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
 
