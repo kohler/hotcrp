@@ -1066,6 +1066,8 @@ class Contact {
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
         if (!$this->contactDbId && $this->email && self::contactdb())
             $this->contactdb_load();
+        if ($this->contactId && $this->is_disabled())
+            return false;
 
         $cdbok = false;
         if ($this->contactDbId && ($hash = $this->contactdb_password)) {
