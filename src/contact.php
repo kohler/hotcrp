@@ -23,9 +23,8 @@ class Contact {
     private $password = "";
     private $passwordTime = 0;
     private $passwordIsCdb;
-    private $contactdb_password;
-    private $contactdb_passwordTime;
     private $disable_shared_password;
+    private $contactdb_user_ = false;
 
     public $disabled = false;
     public $activity_at = false;
@@ -142,10 +141,9 @@ class Contact {
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         self::set_sorter($this);
         $this->password = (string) $this->password;
-        if ($this->contactDbId && @$this->is_contactdb) {
-            $this->contactdb_password = $this->password;
+        if ($this->contactDbId && !$this->contactId)
             $this->passwordIsCdb = true;
-        } else
+        else
             $this->passwordIsCdb = (int) $this->passwordIsCdb != 0;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
@@ -338,7 +336,7 @@ class Contact {
     static public function contactdb_find_by_email($email) {
         $acct = null;
         if (($cdb = self::contactdb())) {
-            $result = Dbl::ql($cdb, "select *, 1 is_contactdb from ContactInfo where email=?", $email);
+            $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
             $acct = $result ? $result->fetch_object("Contact") : null;
             Dbl::free($result);
         }
@@ -348,24 +346,24 @@ class Contact {
     static public function contactdb_find_by_id($cid) {
         $acct = null;
         if (($cdb = self::contactdb())) {
-            $result = Dbl::ql($cdb, "select *, 1 is_contactdb from ContactInfo where contactDbId=?", $cid);
+            $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
             $acct = $result ? $result->fetch_object("Contact") : null;
             Dbl::free($result);
         }
         return $acct;
     }
 
-    public function contactdb_load() {
-        global $Opt;
-        if (!($dblink = self::contactdb()) || !$this->has_email())
-            return null;
-        if (($cdbu = self::contactdb_find_by_email($this->email))) {
-            $this->contactDbId = $cdbu->contactDbId;
-            $this->contactdb_password = @$cdbu->contactdb_password;
-            $this->contactdb_passwordTime = @$cdbu->passwordTime;
-            $this->disable_shared_password = @$cdbu->disable_shared_password;
+    public function contactdb_user($refresh = false) {
+        if ($this->contactDbId && !$this->contactId)
+            return $this;
+        else if ($refresh || $this->contactdb_user_ === false) {
+            $cdbu = null;
+            if ($this->has_email() && ($cdb = self::contactdb()))
+                $cdbu = self::contactdb_find_by_email($this->email);
+            $this->contactDbId = $cdbu ? $cdbu->contactDbId : 0;
+            $this->contactdb_user_ = $cdbu;
         }
-        return $cdbu;
+        return $this->contactdb_user_;
     }
 
     public function contactdb_update() {
@@ -381,6 +379,7 @@ class Contact {
         if (!$row) {
             Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
             $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
+            $this->contactdb_user_ = false;
         }
 
         if ($row && $row[1] && (int) $row[2] != $this->all_roles()) {
@@ -770,10 +769,11 @@ class Contact {
 
     static private function _create_password($cdbu, $reg, &$qf, &$qv) {
         global $Conf, $Now;
-        if ($cdbu && $cdbu->allow_contactdb_password()) {
+        if ($cdbu && ($cdbu = $cdbu->contactdb_user())
+            && $cdbu->allow_contactdb_password()) {
             $qf[] = "password=?, passwordTime=?";
-            $qv[] = $reg->password = $cdbu->contactdb_password;
-            $qv[] = $reg->passwordTime = $cdbu->contactdb_passwordTime;
+            $qv[] = $reg->password = $cdbu->password;
+            $qv[] = $reg->passwordTime = $cdbu->passwordTime;
             if ($Conf->sversion >= 97) {
                 $qf[] = "passwordIsCdb=?";
                 $qv[] = $reg->passwordIsCdb = 1;
@@ -894,8 +894,9 @@ class Contact {
     //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
     // password starting with " $": password hashed by password_hash
     //
-    // contactdb_password falsy: contactdb password unusable
-    // contactdb_password truthy: follows rules above (but no "*")
+    // contactdb_user password falsy, or contactdb_user disable_shared_password:
+    //     contactdb password unusable
+    // contactdb_user password truthy: follows rules above (but no "*")
     //
     // PASSWORD PRINCIPLES
     //
@@ -945,15 +946,18 @@ class Contact {
 
     public function allow_contactdb_password() {
         global $Opt;
-        return $this->contactdb_password && !$this->disable_shared_password
+        $cdbu = $this->contactdb_user();
+        return $cdbu && $cdbu->password && !$cdbu->disable_shared_password
             && !@$Opt["contactdb_noPasswords"];
     }
 
     private function prefer_contactdb_password() {
-        return @$this->contactdb_password
-            && (!$this->has_database_account()
-                || $this->password === "*"
-                || $this->password === $this->contactdb_password);
+        global $Opt;
+        $cdbu = $this->contactdb_user();
+        return $cdbu && $cdbu->password && !$cdbu->disable_shared_password
+            && !@$Opt["contactdb_noPasswords"]
+            && (!$this->has_database_account() || $this->password === "*"
+                || $this->passwordIsCdb);
     }
 
     public function plaintext_password() {
@@ -1064,31 +1068,30 @@ class Contact {
     public function check_password($input) {
         global $Conf, $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        if (!$this->contactDbId && $this->email && self::contactdb())
-            $this->contactdb_load();
         if ($this->contactId && $this->is_disabled())
             return false;
 
+        $cdbu = $this->contactdb_user();
         $cdbok = false;
-        if ($this->contactDbId && ($hash = $this->contactdb_password)) {
+        if ($cdbu && ($hash = $cdbu->password) && $cdbu->allow_contactdb_password()) {
             $cdbok = self::check_hashed_password($input, $hash, $this->email);
             if ($cdbok && self::check_password_encryption($hash, true)) {
                 $hash = self::hash_password($input, true);
-                Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $this->contactDbId);
-                $this->contactdb_password = $hash;
+                Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
+                $cdbu->password = $hash;
             }
             if ($cdbok && $this->contactId && $this->passwordIsCdb
                 && $this->password !== $hash) {
                 if (@$hash[0] == " " && @$hash[1] !== "\$")
                     $hash = self::hash_password($input, false);
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $hash, $this->contactdb_passwordTime, $this->contactId);
+                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $hash, $cdbu->passwordTime, $this->contactId);
                 $this->password = $hash;
-                $this->passwordTime = $this->contactdb_passwordTime;
+                $this->passwordTime = $cdbu->passwordTime;
             }
         }
 
         $localok = false;
-        if ($this->contactId && !$this->passwordIsCdb && ($hash = $this->password)) {
+        if ($this->contactId && ($hash = $this->password) && !$this->passwordIsCdb) {
             $localok = self::check_hashed_password($input, $hash, $this->email);
             if ($localok && self::check_password_encryption($hash, false)) {
                 $hash = self::hash_password($input, false);
@@ -1106,23 +1109,20 @@ class Contact {
     public function change_password($old, $new, $flags) {
         global $Conf, $Opt, $Now;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        if (!$this->contactDbId && $this->email && self::contactdb()
-            && !($flags & self::CHANGE_PASSWORD_NO_CDB))
-            $this->contactdb_load();
 
         $hash = null;
-        if ($this->contactDbId && !($flags & self::CHANGE_PASSWORD_NO_CDB)
-            && (!$old || self::check_hashed_password($old, $this->contactdb_password, $this->email))
-            && !$this->disable_shared_password) {
+        $cdbu = ($flags & self::CHANGE_PASSWORD_NO_CDB) ? null : $this->contactdb_user();
+        if ($cdbu && !$cdbu->disable_shared_password && !@$Opt["contactdb_noPasswords"]
+            && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
             if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && self::check_password_encryption(false, true))
                 $hash = self::hash_password($new, true);
             else
                 $hash = $new = $new ? : self::random_password();
-            $this->contactdb_password = $hash;
+            $cdbu->password = $hash;
             if (!$old || $old !== $new)
-                $this->contactdb_passwordTime = $Now;
-            Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->contactdb_password, $this->contactdb_passwordTime, $this->contactDbId);
+                $cdbu->passwordTime = $Now;
+            Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
         }
 
         if ($this->contactId
@@ -1179,7 +1179,16 @@ class Contact {
     }
 
 
-    function mark_activity() {
+    public function mark_login() {
+        global $Now;
+        // at least one login every 90 days is marked as activity
+        if (!$this->activity_at || $this->activity_at <= $Now - 7776000
+            || (($cdbu = $this->contactdb_user())
+                && (!$cdbu->activity_at || $cdbu->activity_at <= $Now - 7776000)))
+            $this->mark_activity();
+    }
+
+    public function mark_activity() {
         global $Conf, $Now;
         if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;

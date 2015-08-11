@@ -118,7 +118,7 @@ class LoginHelper {
         $cdb_user = null;
         if (@$Opt["contactdb_dsn"]) {
             if ($user)
-                $cdb_user = $user->contactdb_load();
+                $cdb_user = $user->contactdb_user();
             else
                 $cdb_user = Contact::contactdb_find_by_email($_REQUEST["email"]);
         }
@@ -151,14 +151,14 @@ class LoginHelper {
             return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
 
         // maybe reset password
+        $xuser = $user ? : $cdb_user;
         if ($_REQUEST["action"] == "forgot") {
-            $user = $user ? : $cdb_user;
-            $worked = $user->sendAccountInfo("forgot", true);
+            $worked = $xuser->sendAccountInfo("forgot", true);
             if ($worked == "@resetpassword")
                 $Conf->confirmMsg("A password reset link has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ". When you receive that email, follow its instructions to create a new password.");
             else if ($worked) {
                 $Conf->confirmMsg("Your password has been emailed to " . htmlspecialchars($_REQUEST["email"]) . ".  When you receive that email, return here to sign in.");
-                $Conf->log("Sent password", $user);
+                $Conf->log("Sent password", $xuser);
             }
             return null;
         }
@@ -170,21 +170,17 @@ class LoginHelper {
                 return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
             }
 
-            if (!$user->check_password($password)) {
+            if (!$xuser->check_password($password)) {
                 $password_class = " error";
                 return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
             }
         }
 
         // mark activity
-        if ($user && !$user->activity_at)
-            $user->mark_activity();
-        if ($cdb_user && !$cdb_user->activity_at)
-            $cdb_user->mark_activity();
+        $xuser->mark_login();
 
         // activate and redirect
-        $user = $user ? : $cdb_user;
-        $user = $user->activate();
+        $user = $xuser->activate();
         unset($_SESSION["testsession"]);
         $_SESSION["trueuser"] = (object) array("contactId" => $user->contactId, "dsn" => $Conf->dsn, "email" => $user->email);
         $Conf->save_session("freshlogin", true);
