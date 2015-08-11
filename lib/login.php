@@ -127,14 +127,14 @@ class LoginHelper {
         if ($_REQUEST["action"] == "new") {
             if (!($user = self::create_account($user, $cdb_user)))
                 return null;
-            $_REQUEST["password"] = $user->password_plaintext;
+            $_REQUEST["password"] = $user->plaintext_password();
         }
 
         // auto-create account if external login
         if (!$user && $external_login) {
             $reg = Contact::safe_registration($_REQUEST);
             $reg->no_validate_email = true;
-            if (!($user = Contact::find_by_email($_REQUEST["email"], $reg)))
+            if (!($user = Contact::create($reg)))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
             if (defval($Conf->settings, "setupPhase", false))
                 return self::first_user($user, $msg);
@@ -233,7 +233,7 @@ class LoginHelper {
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if ($cdb_user && $cdb_user->allow_contactdb_password()
-                   && $cdb_user->password && $cdb_user->activity_at > 0) {
+                   && $cdb_user->activity_at > 0) {
             $desc = @$Opt["contactdb_description"] ? : "HotCRP";
             $email_class = " error";
             return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “I forgot my password.”");
@@ -244,7 +244,7 @@ class LoginHelper {
 
         // create database account
         if (!$user || !$user->has_database_account()) {
-            if (!($user = Contact::find_by_email($_REQUEST["email"], (object) array())))
+            if (!($user = Contact::create(Contact::safe_registration($_REQUEST))))
                 return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
         }
 
@@ -274,7 +274,7 @@ class LoginHelper {
         global $Conf, $Opt;
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
         if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-            $msg .= " Your password is “<tt>" . htmlspecialchars($user->password_plaintext) . "</tt>”. All later users will have to sign in normally.";
+            $msg .= " Your password is “<tt>" . htmlspecialchars($user->plaintext_password()) . "</tt>”. All later users will have to sign in normally.";
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $Conf->save_setting("setupPhase", null);
         $Conf->confirmMsg($msg);

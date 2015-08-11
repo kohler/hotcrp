@@ -20,8 +20,8 @@ $Conf->qe("delete from Settings where name='setupPhase'");
 $Conf->load_settings();
 
 // Create initial administrator user.
-$Admin = Contact::find_by_email("chair@_.com", array("name" => "Jane Chair",
-                                                     "password" => "testchair"));
+$Admin = Contact::create(array("email" => "chair@_.com", "name" => "Jane Chair",
+                               "password" => "testchair"));
 $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
 // Load data.

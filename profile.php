@@ -169,18 +169,15 @@ function web_request_as_json($cj) {
             $UserStatus->set_error("password", "Those passwords do not match.");
         else if (!Contact::valid_password($pw))
             $UserStatus->set_error("password", "Invalid new password.");
-        else if (!$Acct)
-            $cj->password_plaintext = $pw;
-        else {
-            $cdb_user = $Acct->contactdb_load();
-            $oldpw = @trim($_REQUEST["oldpassword"]);
-            if (!$Me->can_change_password(null) && !$Acct->check_password($oldpw))
-                $UserStatus->set_error("password", "Incorrect current password, new password ignored.");
-            else if ($cdb_user && $cdb_user->allow_contactdb_password()) {
-                $cdb_user->change_password($pw, true);
-                $cj->password = "*"; // mark valid login, require contactdb password
-            } else
-                $cj->password_plaintext = $pw;
+        else if (!$Acct || $Me->can_change_password(null)) {
+            $cj->old_password = null;
+            $cj->new_password = $pw;
+        } else {
+            $cj->old_password = @trim($_REQUEST["oldpassword"]);
+            if ($Acct->check_password($cj->old_password))
+                $cj->new_password = $pw;
+            else
+                $UserStatus->set_error("password", "Incorrect current password. New password ignored.");
         }
     }
 }
@@ -272,7 +269,7 @@ function parseBulkFile($text, $filename) {
             if (isset($cj->$k) && !isset($cj->$x))
                 $cj->$x = $cj->$k;
         // thou shalt not set passwords by bulk update
-        unset($cj->password, $cj->password_plaintext);
+        unset($cj->password, $cj->password_plaintext, $cj->new_password);
         if (isset($cj->name) && !isset($cj->firstName) && !isset($cj->lastName))
             list($cj->firstName, $cj->lastName) = Text::split_name($cj->name);
         if (count($topic_revmap)) {
@@ -446,7 +443,7 @@ function contact_value($key, $field = null) {
     if ($useRequest && isset($_REQUEST[$key]))
         return htmlspecialchars($_REQUEST[$key]);
     else if ($field == "password") {
-        $v = $Acct->password_plaintext;
+        $v = $Acct->plaintext_password();
         return htmlspecialchars($v ? : "");
     } else if ($key == "contactTags")
         return htmlspecialchars($Acct->all_contact_tags());
@@ -628,14 +625,14 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
     echo '<div class="f-i"><div class="f-ix">
   <div class="', fcclass("password"), '">New password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));
-    if ($Acct->password_plaintext && $Me->privChair)
+    if ($Acct->plaintext_password() && $Me->privChair)
         echo Ht::entry("upasswordt", contact_value("upasswordt", "password"), array("size" => 24, "class" => "fx"));
     echo '</div>
 </div><div class="fn f-ix">
   <div class="', fcclass("password"), '">Repeat new password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword2", "", array("size" => 24)), "</div>
 </div>\n";
-    if ($Acct->password_plaintext
+    if ($Acct->plaintext_password()
         && ($Me->privChair || Contact::password_storage_cleartext())) {
         echo "  <div class=\"f-h\">";
         if (Contact::password_storage_cleartext())

@@ -242,7 +242,7 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Error, $Opt, $prow;
 
-    $Them = Contact::find_by_email($email, array("name" => @$_REQUEST["name"]));
+    $Them = Contact::create(array("name" => @$_REQUEST["name"], "email" => $email));
     if (!$Them) {
         if (trim($email) === "" || !validate_email($email)) {
             $Conf->errorMsg("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");

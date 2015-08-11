@@ -710,7 +710,7 @@ class PaperStatus {
         foreach (self::contacts_array($pj) as $c) {
             $c->only_if_contactdb = !@$c->contact;
             $c->disabled = !!@$this->disable_users;
-            if (!Contact::find_by_email($c->email, $c, !$this->no_email)
+            if (!Contact::create($c, !$this->no_email)
                 && @$c->contact)
                 $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
         }

@@ -198,7 +198,7 @@ class Mailer {
         if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
             $password = null;
             if (!$external_password) {
-                $pwd_plaintext = @$this->recipient->password_plaintext;
+                $pwd_plaintext = @$this->recipient->plaintext_password();
                 if ($pwd_plaintext && !$this->sensitivity)
                     $password = $pwd_plaintext;
                 else if ($pwd_plaintext && $this->sensitivity === "display")

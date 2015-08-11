@@ -55,6 +55,7 @@ CREATE TABLE `ContactInfo` (
   `faxPhoneNumber` varchar(256) DEFAULT NULL,
   `password` varbinary(2048) NOT NULL,
   `passwordTime` int(11) NOT NULL DEFAULT '0',
+  `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0',
   `collaborators` varbinary(8192) DEFAULT NULL,
   `creationTime` int(11) NOT NULL DEFAULT '0',
   `lastLogin` int(11) NOT NULL DEFAULT '0',
@@ -499,7 +500,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 95);
+insert into Settings (name, value) values ('allowPaperOption', 97);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

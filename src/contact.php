@@ -20,11 +20,11 @@ class Contact {
     var $collaborators;
     var $voicePhoneNumber;
 
-    var $password = "";
-    public $password_plaintext = "";
-    public $passwordTime = 0;
-    public $contactdb_password;
-    public $contactdb_passwordTime;
+    private $password = "";
+    private $passwordTime = 0;
+    private $passwordIsCdb;
+    private $contactdb_password;
+    private $contactdb_passwordTime;
 
     public $disabled = false;
     public $activity_at = false;
@@ -99,7 +99,7 @@ class Contact {
         }
         self::set_sorter($this);
         if (isset($user->password))
-            $this->set_encoded_password($user->password);
+            $this->password = (string) $user->password;
         if (isset($user->disabled))
             $this->disabled = !!$user->disabled;
         foreach (array("defaultWatch", "passwordTime") as $k)
@@ -140,11 +140,13 @@ class Contact {
         if ($this->unaccentedName === "")
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         self::set_sorter($this);
-        if ($this->password)
-            $this->set_encoded_password($this->password);
+        $this->password = (string) $this->password;
         if ($this->contactDbId && @$this->is_contactdb
-            && $this->allow_contactdb_password())
+            && $this->allow_contactdb_password()) {
             $this->contactdb_password = $this->password;
+            $this->passwordIsCdb = true;
+        } else
+            $this->passwordIsCdb = (int) $this->passwordIsCdb != 0;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
         foreach (array("defaultWatch", "passwordTime") as $k)
@@ -311,10 +313,11 @@ class Contact {
     public function activate_database_account() {
         assert($this->has_email());
         if (!$this->has_database_account()) {
-            $reg = $_SESSION["trueuser"];
+            $reg = clone $_SESSION["trueuser"];
             if (strcasecmp($reg->email, $this->email) != 0)
                 $reg = (object) array();
-            if (($c = self::find_by_email($this->email, $reg))) {
+            $reg->email = $this->email;
+            if (($c = Contact::create($reg))) {
                 $this->load_by_id($c->contactId);
                 $this->activate();
             }
@@ -630,8 +633,8 @@ class Contact {
         $inserting = !$this->contactId;
         $qf = $qv = array();
         foreach (array("firstName", "lastName", "email", "affiliation",
-                       "voicePhoneNumber", "password", "collaborators",
-                       "roles", "defaultWatch", "passwordTime") as $k) {
+                       "voicePhoneNumber", "collaborators", "roles",
+                       "defaultWatch") as $k) {
             $qf[] = "$k=?";
             $qv[] = $this->$k;
         }
@@ -651,29 +654,25 @@ class Contact {
             $qv[] = json_encode($this->data_);
         else
             $qv[] = null;
-        $q = ($inserting ? "insert into" : "update")
-            . " ContactInfo set " . join(", ", $qf);
         if ($inserting) {
-            $this->creationTime = $Now;
-            $q .= ", creationTime=$Now";
-        } else
-            $q .= " where contactId=" . $this->contactId;
+            $qf[] = "creationTime=?";
+            $qv[] = $this->creationTime = $Now;
+            self::_create_password(self::contactdb_find_by_email($this->email),
+                                   $this, $qf, $qv);
+        }
+        $q = ($inserting ? "insert into" : "update")
+            . " ContactInfo set " . join(", ", $qf)
+            . ($inserting ? "" : " where contactId=$this->contactId");;
         $result = Dbl::qe_apply($Conf->dblink, $q, $qv);
         if (!$result)
             return $result;
         if ($inserting)
-            $this->contactId = $this->cid = $result->insert_id;
+            $this->contactId = $this->cid = (int) $result->insert_id;
 
         // add to contact database
-        if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb())) {
+        if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb()))
             Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
                     $this->firstName, $this->lastName, $this->email, $this->affiliation);
-            if ($this->password_plaintext
-                && ($cdb_user = self::contactdb_find_by_email($this->email))
-                && !$cdb_user->password
-                && $cdb_user->allow_contactdb_password())
-                $cdb_user->change_password($this->password_plaintext, true);
-        }
 
         return $result;
     }
@@ -749,143 +748,114 @@ class Contact {
 
     static function safe_registration($reg) {
         $safereg = (object) array();
-        foreach (array("firstName", "lastName", "name", "preferredEmail",
-                       "affiliation", "collaborators", "voicePhoneNumber",
-                       "unaccentedName") as $k)
+        foreach (array("email", "firstName", "lastName", "name",
+                       "preferredEmail", "affiliation", "collaborators",
+                       "voicePhoneNumber", "unaccentedName") as $k)
             if (isset($reg[$k]))
                 $safereg->$k = $reg[$k];
         return $safereg;
     }
 
-    static private function safe_registration_with_contactdb($email, $reg) {
-        global $Opt;
-        $reg = (object) ($reg === true ? array() : $reg);
-        $sreg = (object) array("email" => $email);
+    static function find_by_email($email) {
+        $acct = null;
+        if (($email = trim((string) $email)) !== "") {
+            $result = Dbl::qe("select * from ContactInfo where email=?", $email);
+            $acct = $result ? $result->fetch_object("Contact") : null;
+            Dbl::free($result);
+        }
+        return $acct;
+    }
+
+    static private function _create_password($cdbu, $reg, &$qf, &$qv) {
+        global $Conf, $Now;
+        if ($cdbu && $cdbu->allow_contactdb_password()) {
+            $qf[] = "password=?, passwordTime=?";
+            $qv[] = $reg->password = $cdbu->contactdb_password;
+            $qv[] = $reg->passwordTime = $cdbu->contactdb_passwordTime;
+            if ($Conf->sversion >= 97) {
+                $qf[] = "passwordIsCdb=?";
+                $qv[] = $reg->passwordIsCdb = 1;
+            }
+        } else if (!self::external_login()) {
+            $qf[] = "password=?, passwordTime=?";
+            $qv[] = $reg->password = self::random_password();
+            $qv[] = $reg->passwordTime = $Now;
+        } else {
+            $qf[] = "password=?";
+            $qv[] = $reg->password = "";
+        }
+    }
+
+    static private function _create_insert($qf, $qv) {
+        $q = "insert into ContactInfo set " . join(", ", $qf);
+        if (!($result = Dbl::ql_apply($q, $qv)))
+            return null;
+        if (!($cid = (int) $result->insert_id))
+            return null;
+        Dbl::free($result);
+        $acct = new Contact;
+        if ($acct->load_by_id($cid))
+            return $acct;
+        else
+            return null;
+    }
+
+    static function create($reg, $send = false) {
+        global $Conf, $Me, $Opt, $Now;
+        if (is_array($reg))
+            $reg = (object) $reg;
+        assert(is_string(@$reg->email));
+        $email = trim($reg->email);
+        assert($email !== "");
+
+        // look up account first
+        if (($acct = self::find_by_email($email)))
+            return $acct;
+
+        // validate email, check contactdb
+        if (!@$reg->no_validate_email && !validate_email($email))
+            return null;
+        $cdbu = Contact::contactdb_find_by_email($email);
+        if (@$reg->only_if_contactdb && !$cdbu)
+            return null;
+        $authored_papers = Contact::email_authored_papers($email, $reg);
+
+        // create insertion request
+        $qf = array("email=?, creationTime=$Now");
+        $qv = array($email);
 
         $name = Text::analyze_name($reg);
         foreach (array("firstName", "lastName", "unaccentedName") as $k)
-            $sreg->$k = $name->$k;
+            if ($k === "unaccentedName" && $Conf->sversion < 90)
+                /* skip */;
+            else if ($cdbu && $cdbu->$k) {
+                $qf[] = "$k=?";
+                $qv[] = $cdbu->$k;
+            } else if ($name->$k) {
+                $qf[] = "$k=?";
+                $qv[] = $name->$k;
+            }
 
         foreach (array("affiliation", "collaborators", "voicePhoneNumber",
-                       "preferredEmail", "password", "country") as $k)
-            if (is_string(@$reg->$k) && $reg->$k)
-                $sreg->$k = $reg->$k;
-
-        if (@$Opt["contactdb_dsn"]
-            && ($cdb_user = self::contactdb_find_by_email($email))) {
-            $sreg->contactDbId = $cdb_user->contactDbId;
-            foreach (array("firstName", "lastName", "unaccentedName",
-                           "affiliation", "collaborators", "voicePhoneNumber",
-                           "preferredEmail", "country") as $k)
-                if (!@$sreg->$k && $cdb_user->$k)
-                    $sreg->$k = $cdb_user->$k;
-            if (!@$sreg->password && $cdb_user->password
-                && $cdb_user->allow_contactdb_password())
-                $sreg->encoded_password = $cdb_user->password;
-        }
-
-        if (@$reg->disabled)
-            $sreg->disabled = 1;
-
-        return $sreg;
-    }
-
-    private function register_by_email($sreg) {
-        // For more complicated registrations, use UserStatus
-        global $Conf, $Opt, $Now;
-
-        if (@$sreg->password)
-            $this->change_password($sreg->password, false);
-        else if (@$sreg->encoded_password)
-            $this->set_encoded_password($sreg->encoded_password);
-        else if (!self::external_login())
-            // Always store initial, randomly-generated user passwords in
-            // plaintext. The first time a user logs in, we will encrypt
-            // their password.
-            //
-            // Why? (1) There is no real security problem to storing random
-            // values. (2) We get a better UI by storing the textual password.
-            // Specifically, if someone tries to "create an account", then
-            // they don't get the email, then they try to create the account
-            // again, the password will be visible in both emails.
-            $this->set_encoded_password(self::random_password());
-
-        $best_email = @$sreg->preferredEmail ? : $sreg->email;
-        $authored_papers = Contact::email_authored_papers($best_email, $sreg);
-
-        // Insert
-        $qf = array("email=?, password=?, creationTime=$Now");
-        $qv = array($sreg->email, $this->password);
-        $reg_keys = array("firstName", "lastName", "affiliation", "collaborators",
-                          "voicePhoneNumber", "preferredEmail", "disabled");
-        if ($Conf->sversion >= 90)
-            $reg_keys[] = "unaccentedName";
-        foreach ($reg_keys as $k)
-            if (isset($sreg->$k)) {
+                       "preferredEmail") as $k)
+            if (($v = $cdbu && @$cdbu->$k ? $cdbu->$k : @$reg->$k)) {
                 $qf[] = "$k=?";
-                $qv[] = $sreg->$k;
+                $qv[] = $v;
             }
-        $result = Dbl::ql_apply("insert into ContactInfo set " . join(", ", $qf), $qv);
-        if (!$result)
-            return false;
-        $cid = (int) $result->insert_id;
-        if (!$cid)
-            return false;
-        Dbl::free($result);
 
-        // Having added, load it
-        if (!$this->load_by_id($cid))
-            return false;
+        if (($cdbu && $cdbu->disabled) || @$reg->disabled)
+            $qf[] = "disabled=1";
 
-        // Success! Save newly authored papers
-        if (count($authored_papers))
-            $this->save_authored_papers($authored_papers);
-        // Maybe add to contact db
-        if (@$Opt["contactdb_dsn"] && @$sreg->contactDbId) {
-            $this->contactdb_update();
-            $this->contactDbId = $sreg->contactDbId;
-            $this->contactdb_password = @$sreg->encoded_password;
-        }
+        self::_create_password($cdbu, $reg, $qf, $qv);
 
-        return true;
-    }
-
-    static function find_by_email($email, $reg = null, $send = false) {
-        global $Conf, $Me;
-
-        // Lookup by email
-        $email = trim((string) $email);
-        if ($email != "") {
-            $result = Dbl::qe("select ContactInfo.* from ContactInfo where email=?", $email);
-            $acct = $result ? $result->fetch_object("Contact") : null;
-            Dbl::free($result);
-            if ($acct)
-                return $acct;
-        }
-
-        // Not found: register
-        if (!$reg)
-            return null;
-        if (is_array($reg))
-            $reg = (object) $reg;
-        if (!(@$reg->no_validate_email || validate_email($email)))
-            return null;
-
-        $sreg = self::safe_registration_with_contactdb($email, $reg);
-        if (is_object($reg) && @$reg->only_if_contactdb
-            && !@$sreg->contactDbId)
-            return null;
-
-        $acct = new Contact;
-        $ok = $acct->register_by_email($sreg);
-
-        // Log
-        if ($ok)
+        if (($acct = self::_create_insert($qf, $qv))) {
+            $acct->save_authored_papers($authored_papers);
+            if ($cdbu)
+                $acct->contactdb_update();
             $acct->mark_create($send, true);
-        else
+        } else
             $Conf->log("Account $email creation failure", $Me);
-
-        return $ok ? $acct : null;
+        return $acct;
     }
 
     function mark_create($send_email, $message_chair) {
@@ -955,13 +925,13 @@ class Contact {
     // } else
     //     change local password and update time;
 
-    static function random_password($length = 14) {
-        assert(!self::external_login());
-        return hotcrp_random_password($length);
-    }
-
     public static function valid_password($input) {
         return $input && trim($input) === $input && $input !== "*";
+    }
+
+    public static function random_password($length = 14) {
+        assert(!self::external_login());
+        return hotcrp_random_password($length);
     }
 
     public static function password_storage_cleartext() {
@@ -975,24 +945,23 @@ class Contact {
 
     public function allow_contactdb_password() {
         global $Opt;
-        return !$this->disable_shared_password && !@$Opt["contactdb_noPasswords"];
+        return $this->contactdb_password && !$this->disable_shared_password
+            && !@$Opt["contactdb_noPasswords"];
     }
 
-    public function prefer_contactdb_password() {
+    private function prefer_contactdb_password() {
         return @$this->contactdb_password
             && (!$this->has_database_account()
                 || $this->password === "*"
                 || $this->password === $this->contactdb_password);
     }
 
-    public function set_encoded_password($password) {
-        if ($password === null || $password === false)
-            $password = "";
-        $this->password = $password;
-        if ($password !== "" && @$password[0] !== " " && $password !== "*")
-            $this->password_plaintext = $password;
+    public function plaintext_password() {
+        if ($this->password !== "" && $this->password !== "*"
+            && $this->password[0] !== " ")
+            return $this->password;
         else
-            $this->password_plaintext = null;
+            return false;
     }
 
 
@@ -1081,13 +1050,15 @@ class Contact {
         $method = self::password_hash_method();
         if ($method === false)
             return $input;
-        if (is_int($method))
+        else if (is_int($method))
             return " \$" . password_hash($input, $method);
-        $keyid = self::preferred_password_keyid($iscdb);
-        $key = self::password_hmac_key($keyid);
-        $salt = hotcrp_random_bytes(16);
-        return " " . $method . " " . $keyid . " " . $salt
-            . hash_hmac($method, $salt . $input, $key, true);
+        else {
+            $keyid = self::preferred_password_keyid($iscdb);
+            $key = self::password_hmac_key($keyid);
+            $salt = hotcrp_random_bytes(16);
+            return " " . $method . " " . $keyid . " " . $salt
+                . hash_hmac($method, $salt . $input, $key, true);
+        }
     }
 
     public function check_password($input) {
@@ -1107,21 +1078,22 @@ class Contact {
         }
 
         $localok = false;
-        if ($this->contactId && ($hash = $this->password) && $hash !== "*") {
+        if ($this->contactId && ($hash = $this->password) && $hash !== "*"
+            && (!$this->passwordIsCdb || !$this->contactDbId)) {
             $localok = self::check_hashed_password($input, $hash, $this->email);
             if ($localok ? self::check_password_encryption($hash, false) : $cdbok) {
                 $hash = $cdbok ? $this->contactdb_password : "";
                 if (substr($hash, 0, 2) !== " \$")
                     $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
-                $this->set_encoded_password($hash);
+                $this->password = $hash;
             }
         }
 
-        return $cdbok || $localok;
+        return ($cdbok ? 2 : 0) | ($localok ? 1 : 0);
     }
 
-    public function change_password($input, $save, $plaintext = false) {
+    public function change_password($input, $plaintext = false) {
         global $Conf, $Opt, $Now;
         // set password fields
         $iscdb = $this->contactDbId && $this->allow_contactdb_password();
@@ -1133,12 +1105,12 @@ class Contact {
             $hash = $input;
         else
             $hash = $input = self::random_password();
-        $this->set_encoded_password($hash);
+        $this->password = $hash;
         $this->passwordTime = $Now;
         // save possibly-encrypted password
-        if ($save && $this->contactId)
+        if ($this->contactId)
             Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
-        if ($save && $this->contactDbId && $iscdb)
+        if ($this->contactDbId && $iscdb)
             Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $this->password, $this->passwordTime, $this->contactDbId);
     }
 
@@ -1150,7 +1122,7 @@ class Contact {
             $template = "@activateaccount";
         else if ($sendtype == "create")
             $template = "@createaccount";
-        else if ($this->password_plaintext
+        else if ($this->plaintext_password()
                  && ($Opt["safePasswords"] <= 1 || $sendtype != "forgot"))
             $template = "@accountinfo";
         else {

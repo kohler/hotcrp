@@ -696,4 +696,7 @@ function updateSchema($Conf) {
         && $Conf->ql("update Capability join CapabilityMap using (capabilityId) set Capability.salt=CapabilityMap.capabilityValue")
         && $Conf->ql("drop table if exists `CapabilityMap`"))
         update_schema_version($Conf, 96);
+    if ($Conf->settings["allowPaperOption"] == 96
+        && $Conf->ql("alter table ContactInfo add `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0'"))
+        update_schema_version($Conf, 97);
 }

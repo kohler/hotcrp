@@ -148,7 +148,7 @@ class UserStatus {
 
         // Stringiness
         foreach (array("firstName", "lastName", "email", "preferred_email",
-                       "affiliation", "phone", "password", "city", "state",
+                       "affiliation", "phone", "new_password", "city", "state",
                        "zip", "country") as $k)
             if (isset($cj->$k) && !is_string($cj->$k)) {
                 $this->set_error($k, "Format error [$k]");
@@ -316,9 +316,6 @@ class UserStatus {
             $old_cdb_user = Contact::contactdb_find_by_email($old_user->email);
         else if (is_string(@$cj->email) && $cj->email)
             $old_cdb_user = Contact::contactdb_find_by_email($cj->email);
-        // ensure we don't use contactdb password if disabled
-        if ($old_cdb_user && !$old_cdb_user->allow_contactdb_password())
-            unset($old_cdb_user->password);
         $old_user = $old_user ? : $old_cdb_user;
 
         $this->normalize($cj, $old_user);
@@ -340,16 +337,6 @@ class UserStatus {
                 $user->$k = $cj->$k;
         if (isset($cj->phone))
             $user->voicePhoneNumber = $cj->phone;
-        if (isset($cj->password))
-            $user->set_encoded_password($cj->password);
-        else if (isset($cj->password_plaintext))
-            $user->change_password($cj->password_plaintext, false);
-        else if ($old_cdb_user && @$old_cdb_user->password) {
-            $user->password = "*";
-            $user->contactdb_password = $old_cdb_user->password;
-        }
-        if (!$user->password && !Contact::external_login())
-            $user->set_encoded_password(Contact::random_password());
 
         $data = (object) array();
         foreach (array("address", "city", "state", "zip", "country") as $k)
@@ -406,6 +393,10 @@ class UserStatus {
         // Update authorship
         if ($aupapers)
             $user->save_authored_papers($aupapers);
+
+        // Password
+        if (@$cj->new_password)
+            $user->change_password($cj->new_password);
 
         // Beware PC cache
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
