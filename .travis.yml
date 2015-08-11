@@ -1,6 +1,7 @@
 language: php
 before_script:
   - lib/createdb.sh -u root -c test/options.php --batch
+  - lib/createdb.sh -u root -c test/cdb-options.php --no-dbuser --batch
 php:
   - 5.4
   - 5.5
@@ -9,3 +10,4 @@ script:
   - php -d error_reporting=E_ALL test/test01.php
   - php -d error_reporting=E_ALL test/test02.php
   - php -d error_reporting=E_ALL test/test03.php
+  - php -d error_reporting=E_ALL test/test04.php
