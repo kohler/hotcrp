@@ -130,6 +130,32 @@ class PaperTable {
         return $this->can_view_reviews;
     }
 
+    static public function make_title_div($title) {
+        return '<div id="header_page" class="header_page_submission">'
+            . '<h1 class="paptitle">' . $title . '</h1></div>';
+    }
+
+    public function title_div() {
+        global $CurrentList;
+        $pnum = $this->prow ? $this->prow->paperId : 0;
+        $ptitle = $this->prow ? htmlspecialchars($this->prow->title) : "New Submission";
+
+        $t = '<div id="header_page" class="header_page_submission">';
+        if ($pnum && $CurrentList)
+            $t .= '<h1 class="paptitle has_hotcrp_list" hotcrp_list="' . $CurrentList . '">';
+        else
+            $t .= '<h1 class="paptitle">';
+        if ($pnum)
+            $t .= '<a class="q" href="' . hoturl("paper", array("p" => $pnum, "ls" => null)) . '">'
+                . '<span class="paptitlenum pnum">#' . $pnum . '&nbsp;</span>'
+                . '<span class="ptitle">' . $ptitle . '</span></a>';
+        else
+            $t .= $ptitle;
+        $t .= '</h1></div>';
+
+        return $t;
+    }
+
     private function echoDivEnter() {
         global $Me;
 
@@ -164,7 +190,7 @@ class PaperTable {
         echo '<div id="foldpaper" class="', join(" ", $folders), '">';
     }
 
-    function echoDivExit() {
+    private function echoDivExit() {
         echo "</div>";
     }
 
@@ -275,15 +301,6 @@ class PaperTable {
         if ($this->editable)
             $text = "<textarea class='papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='60' onchange='hiliter(this)'>" . $text . "</textarea>";
         return $text;
-    }
-
-    private function echoTitle() {
-        echo '<span class="ptitle">';
-        if ($this->matchPreg && isset($this->matchPreg["title"]))
-            echo Text::highlight($this->prow->title, $this->matchPreg["title"]);
-        else
-            echo htmlspecialchars($this->prow->title);
-        echo '</span>';
     }
 
     private function editable_title() {
@@ -1850,12 +1867,6 @@ class PaperTable {
             echo "<hr class=\"c\" /></div></div>\n";
         }
 
-        // paper number
-        $pa = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="q">';
-        echo '<div class="paptitle"><h2 class="paptitle">', $pa, '<span class="paptitlenum pnum">#', $prow->paperId, '&nbsp;</span>';
-        $this->echoTitle();
-        echo '</a></h2></div>';
-
         echo "</div>\n";
     }
 
@@ -1946,7 +1957,6 @@ class PaperTable {
             echo '<div class="papcard"><div class="papcard_body">';
         } else
             echo '<div class="pedcard">',
-                '<div class="pedcard_head"><h2>New paper</h2></div>',
                 '<div class="pedcard_body">';
 
         $form_js = array("id" => "paperedit");

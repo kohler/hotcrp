@@ -32,12 +32,16 @@ $useRequest = isset($_REQUEST["after_login"]);
 
 // header
 function confHeader() {
-    global $prow, $Conf;
-    if ($prow)
-        $title = "Paper #$prow->paperId";
-    else
-        $title = "Paper Reviews";
-    $Conf->header($title, "review", actionBar(@$_REQUEST["mode"], $prow), false);
+    global $prow, $paperTable, $Conf;
+    if ($prow) {
+        $title = "#" . $prow->paperId;
+        $ptitle = $paperTable->title_div();
+    } else {
+        $title = $newPaper ? "New Submission" : "Submission";
+        $ptitle = PaperTable::make_title_div($title);
+    }
+
+    $Conf->header($title, "review", actionBar(@$_REQUEST["mode"], $prow), $ptitle);
 }
 
 function errorMsgExit($msg) {
@@ -399,11 +403,9 @@ if ($paperTable->mode == "edit")
     go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])));
 
 
-// page header
+// paper table
 confHeader();
 
-
-// paper table
 $paperTable->initialize(false, false);
 $paperTable->paptabBegin();
 $paperTable->resolveComments();

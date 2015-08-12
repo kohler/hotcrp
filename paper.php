@@ -30,17 +30,17 @@ if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
 
 // header
 function confHeader() {
-    global $newPaper, $prow, $paperTable, $Conf, $Error;
-    if ($paperTable)
-        $mode = $paperTable->mode;
-    else
-        $mode = "p";
-    if (!$prow)
-        $title = ($newPaper ? "New Paper" : "Paper View");
-    else
-        $title = "Paper #$prow->paperId";
+    global $newPaper, $prow, $paperTable, $Conf;
+    $mode = $paperTable ? $paperTable->mode : "p";
+    if ($prow) {
+        $title = "#" . $prow->paperId;
+        $ptitle = $paperTable->title_div();
+    } else {
+        $title = $newPaper ? "New Submission" : "Submission";
+        $ptitle = PaperTable::make_title_div($title);
+    }
 
-    $Conf->header($title, "paper_" . ($mode == "edit" ? "edit" : "view"), actionBar($mode, $prow), false);
+    $Conf->header($title, "paper_" . ($mode == "edit" ? "edit" : "view"), actionBar($mode, $prow), $ptitle);
 }
 
 function errorMsgExit($msg) {

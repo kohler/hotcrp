@@ -16,12 +16,16 @@ Contact::site_contact();
 
 // header
 function confHeader() {
-    global $prow, $Conf;
-    if ($prow)
-        $title = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>Paper #$prow->paperId</a>";
-    else
-        $title = "Paper Review Assignments";
-    $Conf->header($title, "assign", actionBar("assign", $prow));
+    global $prow, $paperTable, $Conf;
+    if ($prow) {
+        $title = "#" . $prow->paperId;
+        $ptitle = $paperTable->title_div();
+    } else {
+        $title = $newPaper ? "New Submission" : "Submission";
+        $ptitle = PaperTable::make_title_div($title);
+    }
+
+    $Conf->header($title, "assign", actionBar("assign", $prow), $ptitle);
 }
 
 function errorMsgExit($msg) {
@@ -454,12 +458,11 @@ if (isset($_REQUEST["settags"]) && check_post()) {
 
 
 // paper table
-confHeader();
-
-
 $paperTable = new PaperTable($prow);
 $paperTable->mode = "assign";
 $paperTable->initialize(false, false);
+
+confHeader();
 
 
 // begin form and table

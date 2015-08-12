@@ -41,7 +41,7 @@ html {
 }
 #header_site {
 	float: left;
-	padding: 0.2em 0.8em 0.3em 0.8em;
+	padding: 0.2em 0.8em 0.3em 20px;
 	border-bottom: 2px solid #b2a584;
 	border-right: 1px solid #b2a584;
 	background-color: #ffffbb;
@@ -49,14 +49,30 @@ html {
 	background-repeat: repeat-x;
 	background-position: bottom;
 }
-#header_page {
-	float: left;
-	padding: 0.2em 0 0 0.8em;
-}
 h1 {
 	display: inline;
 	font-size: 144%;
 	margin: 0;
+}
+.header_site_page > h1 {
+	font-size: 100%;
+}
+#header_page {
+	clear: both;
+	padding: 0.5em 0 0 0.8em;
+}
+#header_page.header_page_submission {
+	clear: both;
+	padding: 1em 0 0;
+}
+h1.paptitle {
+	display: block;
+	background: #cec1ff;
+	padding: 0.25em 0 0.25em 20px;
+}
+span.paptitlenum {
+	display: inline-block;
+	padding-right: 20px;
 }
 
 /* Tab bar */
@@ -222,7 +238,7 @@ body#account div.body, body#scorehelp div.body, body#settings div.body {
 	margin: 0;
 }
 
-body.paper {
+body.paper, body.paper div.nvbar, body.paper div.vbar {
 	background: #f0f0f0;
 }
 body.paper div#prebody {
@@ -1924,7 +1940,7 @@ span.contactpulldown select {
 /* paper mode tabs */
 div.psmodec {
 	position: relative;
-	top: -2.4ex;
+	top: -3.4ex;
 	left: 1px;
 	z-index: 6;
 }
@@ -1941,8 +1957,7 @@ div.papmode, div.papmodex {
 }
 div.papmodex {
 	background: #cec1ff;
-	border-top-left-radius: 5px;
-	border-top-right-radius: 5px;
+	border-radius: 5px;
 }
 div.papmodex a {
 	font-weight: bold;
@@ -1960,20 +1975,6 @@ div.pban {
 	margin: 0 -22px 0 -12px;
 	padding: 0 22px 0 12px;
 	z-index: 5;
-}
-div.paptitle {
-	margin-left: 14em;
-	padding: 8px 0;
-}
-h2.paptitle {
-	text-indent: -124px;
-	margin: 0;
-}
-span.paptitlenum {
-	display: inline-block;
-	width: 124px;
-	padding-right: 20px;
-	text-align: right;
 }
 
 /* reviews and comments */
@@ -1997,11 +1998,8 @@ div.pspcard {
 	z-index: 4;
 	font-size: 8.7pt; /* 10.5pt / 1.2 */
 	background: white;
-	box-shadow: 0 1px 5px #46678c;
-	-moz-box-shadow: 0 1px 5px #46678c;
-	-webkit-box-shadow: 0 1px 5px #46678c;
-	border-bottom-left-radius: 2px;
-	border-bottom-right-radius: 2px;
+	border: 1px solid #cccccc;
+	border-radius: 2px;
 }
 div.pspcard_body {
 	padding-bottom: 0.5em;
@@ -2267,14 +2265,11 @@ div.pgsm {
 /* papers */
 div.papcard, div.pedcard {
 	margin: 0 0 0 14em;
-	padding: 0 5px 8px 5px;
+	padding: 5px;
 	background: #cec1ff;
 	position: relative;
-	box-shadow: 0 1px 5px #46678c;
-	-moz-box-shadow: 0 1px 5px #46678c;
-	-webkit-box-shadow: 0 1px 5px #46678c;
-	border-bottom-right-radius: 2px;
-	border-bottom-left-radius: 2px;
+	border: 1px solid #9999bf;
+	border-radius: 4px;
 }
 div.pedcard {
 	margin: 0 8em;
@@ -2309,13 +2304,11 @@ div.notecard_body {
 /* reviews */
 div.revcard {
 	margin: 24px 0 0 14em;
-	padding: 0 5px 8px 5px;
+	padding: 3px 5px 5px;
 	background: #fad5d5;
 	position: relative;
-	box-shadow: 0 1px 5px #46678c;
-	-moz-box-shadow: 0 1px 5px #46678c;
-	-webkit-box-shadow: 0 1px 5px #46678c;
-	border-radius: 2px;
+	border: 1px solid #bf9999;
+	border-radius: 4px;
 }
 body#offline div.revcard {
 	margin: 16px 7em;
@@ -2417,12 +2410,10 @@ span.rev_rating_summary {
 /* comments */
 div.cmtcard {
 	margin: 24px 0 0 14em;
-	padding: 0 5px 8px;
+	padding: 2px 5px 5px 5px;
 	background: #e6e1cf;
 	position: relative;
-	box-shadow: 0 1px 5px #46678c;
-	-moz-box-shadow: 0 1px 5px #46678c;
-	-webkit-box-shadow: 0 1px 5px #46678c;
+	border: 1px solid #99aabf;
 	border-radius: 2px;
 }
 div.cmtcard.response {
@@ -2532,9 +2523,6 @@ div.revtext, div.cmttext {
 	white-space: pre-wrap;
 	max-width: 42em;
 	line-height: 125%;
-}
-div#commentnew:last-child {
-	margin-bottom: -4px;
 }
 .cmtnumhead {
 	display: inline-block;

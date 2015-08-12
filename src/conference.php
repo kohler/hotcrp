@@ -2254,11 +2254,13 @@ class Conference {
         // script.js
         $this->scriptStuff .= $this->make_script_file("scripts/script.js") . "\n";
 
-        echo "<title>", $title, " - ", htmlspecialchars($Opt["shortName"]),
-            "</title>\n</head>\n";
+        echo "<title>";
+        if ($title)
+            echo $title, " - ";
+        echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
     }
 
-    function header($title, $id = "", $actionBar = null) {
+    function header($title, $id = "", $actionBar = null, $title_div = null) {
         global $ConfSiteBase, $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
         if ($this->headerPrinted)
             return;
@@ -2266,6 +2268,8 @@ class Conference {
             $actionBar = actionBar();
 
         // <head>
+        if ($title === "Home")
+            $title = "";
         $this->header_head($title);
 
         // <body>
@@ -2295,12 +2299,14 @@ class Conference {
 
         echo "<div id='prebody'>\n";
 
-        echo "<div id='header'>\n<div id='header_site'><h1>";
-        if ($title && $title == "Home")
-            echo "<a class='q' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
-        else
-            echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_page'><h1>", $title;
-        echo "</h1></div><div id='header_right'>";
+        echo '<div id="header">';
+
+        echo '<div id="header_site" class="',
+            ($title ? "header_site_page" : "header_site_home"),
+            '"><h1><a class="', ($title ? "x" : "q"), '" href="', hoturl("index"),
+            '">', htmlspecialchars($Opt["shortName"]), '</a></h1></div>';
+
+        echo '<div id="header_right">';
         if ($Me && !$Me->is_empty()) {
             // profile link
             $xsep = ' <span class="barsep">·</span> ';
@@ -2330,6 +2336,11 @@ class Conference {
                 echo $xsep, '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
         }
         echo '<div id="maindeadline" style="display:none"></div></div>', "\n";
+
+        if ($title_div)
+            echo $title_div;
+        else if ($title)
+            echo '<div id="header_page"><h1>', $title, '</h1></div>';
 
         echo "  <hr class=\"c\" />\n";
 
