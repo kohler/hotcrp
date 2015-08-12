@@ -82,7 +82,13 @@ xassert_eqq(password($marina, true), "isdevitch");
 xassert(user($marina)->check_password("ncurses"));
 xassert(user($marina)->check_password("isdevitch"));
 xassert(user($marina)->check_password("ncurses"));
+
+// null contactdb password => can log in locally
+save_password($marina, null, true);
+xassert(user($marina)->check_password("ncurses"));
+
 // restore to "this is a cdb password"
+save_password($marina, "isdevitch", true);
 Dbl::qe("update ContactInfo set passwordIsCdb=1 where email=?", $marina);
 
 // start upgrading passwords

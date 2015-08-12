@@ -17,16 +17,12 @@ function change_email_by_capability() {
     $Acct = Contact::find_by_id($capdata->contactId);
     if (!$Acct)
         error_go(false, "No such account.");
-    if (Contact::id_by_email($capdata->data->uemail))
-        error_go(false, "Email address " . htmlspecialchars($capdata->data->uemail) . " is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
 
-    $Acct->email = $capdata->data->uemail;
-    $aupapers = Contact::email_authored_papers($Acct->email, $Acct);
-    $Acct->save();
-    if (count($aupapers))
-        $Acct->save_authored_papers($aupapers);
-    if ($Acct->roles & Contact::ROLE_PCLIKE)
-        $Conf->invalidateCaches(array("pc" => 1));
+    $email = $capdata->data->uemail;
+    if (Contact::id_by_email($email))
+        error_go(false, "Email address " . htmlspecialchars($email) . " is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+
+    $Acct->change_email($email);
     $capmgr->delete($capdata);
 
     $Conf->confirmMsg("Your email address has been changed.");

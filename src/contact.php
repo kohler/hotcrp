@@ -23,7 +23,6 @@ class Contact {
     private $password = "";
     private $passwordTime = 0;
     private $passwordIsCdb;
-    private $disable_shared_password;
     private $contactdb_user_ = false;
 
     public $disabled = false;
@@ -377,6 +376,8 @@ class Contact {
             where email=?", $Opt["dbName"], $this->email);
         $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
         if (!$row) {
+            $qf = "firstName=?, lastName=?, email=?, affiliation=?";
+            $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation);
             Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
             $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
             $this->contactdb_user_ = false;
@@ -590,18 +591,6 @@ class Contact {
             Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
     }
 
-    private function trim() {
-        $this->contactId = (int) trim($this->contactId);
-        $this->cid = $this->contactId;
-        $this->firstName = simplify_whitespace($this->firstName);
-        $this->lastName = simplify_whitespace($this->lastName);
-        $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
-        foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
-            if ($this->$k)
-                $this->$k = trim($this->$k);
-        self::set_sorter($this);
-    }
-
     function escape() {
         global $Conf;
         if (@$_REQUEST["ajax"]) {
@@ -628,26 +617,77 @@ class Contact {
             error_go(false, "You don’t have permission to access that page.");
     }
 
-    function save() {
-        global $Conf, $Now, $Opt;
-        $this->trim();
+
+    static private $save_fields = array("firstName" => 2, "lastName" => 2, "email" => 1, "affiliation" => 1, "preferredEmail" => 1, "voicePhoneNumber" => 1);
+
+    private function _save_assign_field($k, $v, &$qf, &$qv) {
+        global $Conf;
+        if (@self::$save_fields[$k] == 2)
+            $v = simplify_whitespace($v);
+        else if (@self::$save_fields[$k])
+            $v = trim($v);
+        if ($this->$k !== $v) {
+            $this->$k = $v;
+            if ($k !== "unaccentedName" || $Conf->sversion >= 90) {
+                $qf[$k] = "$k=?";
+                $qv[] = $v;
+            }
+        }
+    }
+
+    function save_json($cj, $actor, $send) {
+        global $Conf, $Me, $Now;
         $inserting = !$this->contactId;
+        $old_roles = $this->roles;
+        $old_email = $this->email;
         $qf = $qv = array();
+
+        $aupapers = null;
+        if (strtolower($cj->email) !== @strtolower($old_email))
+            $aupapers = self::email_authored_papers($cj->email, $cj);
+
+        // Main fields
         foreach (array("firstName", "lastName", "email", "affiliation",
-                       "voicePhoneNumber", "collaborators", "roles",
-                       "defaultWatch") as $k) {
-            $qf[] = "$k=?";
-            $qv[] = $this->$k;
+                       "collaborators", "preferredEmail") as $k)
+            if (isset($cj->$k))
+                $this->_save_assign_field($k, $cj->$k, $qf, $qv);
+        if (isset($cj->phone))
+            $this->_save_assign_field("voicePhoneNumber", $cj->phone, $qf, $qv);
+        $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $qf, $qv);
+        self::set_sorter($this);
+
+        // Follow
+        if (isset($cj->follow)) {
+            $w = 0;
+            if (@$cj->follow->reviews)
+                $w |= WATCH_COMMENT;
+            if (@$cj->follow->allreviews)
+                $w |= WATCH_ALLCOMMENTS;
+            if (@$cj->follow->allfinal)
+                $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
+            $this->_save_assign_field("defaultWatch", $w, $qf, $qv);
         }
-        if ($Conf->sversion >= 90) {
-            $qf[] = "unaccentedName=?";
-            $qv[] = $this->unaccentedName;
+
+        // Tags
+        if (isset($cj->tags)) {
+            $tags = array();
+            foreach ($cj->tags as $t => $v)
+                if ($v && strtolower($t) !== "pc")
+                    $tags[$t] = true;
+            ksort($tags);
+            $t = count($tags) ? " " . join(" ", array_keys($tags)) . " " : "";
+            $this->_save_assign_field("contactTags", $t, $qf, $qv);
         }
-        $qf[] = "preferredEmail=?";
-        $qv[] = $this->preferredEmail != "" ? $this->preferredEmail : null;
-        $qf[] = "contactTags=?";
-        $qv[] = $this->contactTags ? : null;
+
+        // Disabled
         $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
+
+        // Data
+        $data = (object) array();
+        foreach (array("address", "city", "state", "zip", "country") as $k)
+            if (($x = @$cj->$k))
+                $data->$k = $x;
+        $this->merge_data($data);
         $qf[] = "data=?";
         if (!$this->data_ || is_string($this->data_))
             $qv[] = $this->data_ ? : null;
@@ -655,27 +695,106 @@ class Contact {
             $qv[] = json_encode($this->data_);
         else
             $qv[] = null;
+
+        // If inserting, set initial password and creation time
         if ($inserting) {
             $qf[] = "creationTime=?";
             $qv[] = $this->creationTime = $Now;
-            self::_create_password(self::contactdb_find_by_email($this->email),
-                                   $this, $qf, $qv);
+            self::_create_password(self::contactdb_find_by_email($this->email), $this, $qf, $qv);
         }
+
+        // Initial save
         $q = ($inserting ? "insert into" : "update")
             . " ContactInfo set " . join(", ", $qf)
             . ($inserting ? "" : " where contactId=$this->contactId");;
-        $result = Dbl::qe_apply($Conf->dblink, $q, $qv);
-        if (!$result)
+        if (!($result = Dbl::qe_apply($Conf->dblink, $q, $qv)))
             return $result;
         if ($inserting)
             $this->contactId = $this->cid = (int) $result->insert_id;
+        Dbl::free($result);
 
-        // add to contact database
-        if (@$Opt["contactdb_dsn"] && ($cdb = self::contactdb()))
-            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=values(firstName), lastName=values(lastName), affiliation=values(affiliation)",
-                    $this->firstName, $this->lastName, $this->email, $this->affiliation);
+        // Topics
+        if (isset($cj->topics)) {
+            $tf = array();
+            foreach ($cj->topics as $k => $v)
+                $tf[] = "($this->contactId,$k,$v)";
+            $Conf->qe("delete from TopicInterest where contactId=$this->contactId");
+            if (count($tf))
+                $Conf->qe("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
+        }
 
-        return $result;
+        // Roles
+        $roles = 0;
+        if (isset($cj->roles)) {
+            if (@$cj->roles->pc)
+                $roles |= Contact::ROLE_PC;
+            if (@$cj->roles->chair)
+                $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
+            if (@$cj->roles->sysadmin)
+                $roles |= Contact::ROLE_ADMIN;
+            if ($roles !== $old_roles)
+                $this->save_roles($roles, $actor);
+        }
+
+        // Update authorship
+        if ($aupapers)
+            $this->save_authored_papers($aupapers);
+
+        // Update contact database
+        if (($cdb = self::contactdb())) {
+            $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?";
+            $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation);
+            if ($this->password && ($this->password[0] !== " " || substr($this->password, 0, 2) === " \$")) {
+                $q .= ", password=?";
+                $qv[] = $this->password;
+            }
+            $q .= " on duplicate key update ";
+            $cf = array();
+            foreach (array("firstName", "lastName", "affiliation") as $k)
+                if (isset($qf[$k]))
+                    $cf[] = "$k=values($k)";
+            if (!count($cf))
+                $cf[] = "firstName=firstName";
+            $q .= join(", ", $cf);
+            $result = Dbl::ql_apply($cdb, $q, $qv);
+            Dbl::free($result);
+            $this->contactdb_user_ = false;
+        }
+
+        // Password
+        if (@$cj->new_password)
+            $this->change_password(@$cj->old_password, $cj->new_password, 0);
+
+        // Beware PC cache
+        if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
+            $Conf->invalidateCaches(array("pc" => 1));
+
+        // Mark creation and activity
+        if ($inserting) {
+            if ($send && !$this->is_disabled())
+                $this->sendAccountInfo("create", false);
+            $type = $this->is_disabled() ? "disabled " : "";
+            if ($Me && $Me->has_email() && $Me->email !== $this->email)
+                $Conf->log("Created {$type}account ($Me->email)", $this);
+            else
+                $Conf->log("Created {$type}account", $this);
+        }
+
+        $actor = $actor ? : $Me;
+        if ($actor && $this->contactId == $actor->contactId)
+            $this->mark_activity();
+
+        return true;
+    }
+
+    public function change_email($email) {
+        global $Conf;
+        $aupapers = self::email_authored_papers($email, $this);
+        Dbl::ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
+        $this->save_authored_papers($aupapers);
+        if ($this->roles & Contact::ROLE_PCLIKE)
+            $Conf->invalidateCaches(array("pc" => 1));
+        $this->email = $email;
     }
 
     static function email_authored_papers($email, $reg) {
@@ -698,7 +817,7 @@ class Contact {
         return $aupapers;
     }
 
-    function save_authored_papers($aupapers) {
+    private function save_authored_papers($aupapers) {
         if (count($aupapers) && $this->contactId) {
             $q = array();
             foreach ($aupapers as $pid)
@@ -788,20 +907,6 @@ class Contact {
         }
     }
 
-    static private function _create_insert($qf, $qv) {
-        $q = "insert into ContactInfo set " . join(", ", $qf);
-        if (!($result = Dbl::ql_apply($q, $qv)))
-            return null;
-        if (!($cid = (int) $result->insert_id))
-            return null;
-        Dbl::free($result);
-        $acct = new Contact;
-        if ($acct->load_by_id($cid))
-            return $acct;
-        else
-            return null;
-    }
-
     static function create($reg, $send = false) {
         global $Conf, $Me, $Opt, $Now;
         if (is_array($reg))
@@ -820,57 +925,28 @@ class Contact {
         $cdbu = Contact::contactdb_find_by_email($email);
         if (@$reg->only_if_contactdb && !$cdbu)
             return null;
-        $authored_papers = Contact::email_authored_papers($email, $reg);
 
-        // create insertion request
-        $qf = array("email=?, creationTime=$Now");
-        $qv = array($email);
-
-        $name = Text::analyze_name($reg);
-        foreach (array("firstName", "lastName", "unaccentedName") as $k)
-            if ($k === "unaccentedName" && $Conf->sversion < 90)
-                /* skip */;
-            else if ($cdbu && $cdbu->$k) {
-                $qf[] = "$k=?";
-                $qv[] = $cdbu->$k;
-            } else if ($name->$k) {
-                $qf[] = "$k=?";
-                $qv[] = $name->$k;
-            }
-
-        foreach (array("affiliation", "collaborators", "voicePhoneNumber",
-                       "preferredEmail") as $k)
-            if (($v = $cdbu && @$cdbu->$k ? $cdbu->$k : @$reg->$k)) {
-                $qf[] = "$k=?";
-                $qv[] = $v;
-            }
-
+        $cj = (object) array();
+        foreach (array("firstName", "lastName", "email", "affiliation",
+                       "collaborators", "preferredEmail") as $k)
+            if (($v = $cdbu && @$cdbu->$k ? $cdbu->$k : @$reg->$k))
+                $cj->$k = $v;
+        if (($v = $cdbu && @$cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : @$reg->voicePhoneNumber))
+            $cj->phone = $v;
         if (($cdbu && $cdbu->disabled) || @$reg->disabled)
-            $qf[] = "disabled=1";
+            $cj->disabled = true;
 
-        self::_create_password($cdbu, $reg, $qf, $qv);
-
-        if (($acct = self::_create_insert($qf, $qv))) {
-            $acct->save_authored_papers($authored_papers);
-            if ($cdbu)
-                $acct->contactdb_update();
-            $acct->mark_create($send, true);
-        } else
+        $acct = new Contact;
+        if ($acct->save_json($cj, null, $send)) {
+            if ($Me && $Me->privChair) {
+                $type = $acct->is_disabled() ? "disabled " : "";
+                $Conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");
+            }
+            return $acct;
+        } else {
             $Conf->log("Account $email creation failure", $Me);
-        return $acct;
-    }
-
-    function mark_create($send_email, $message_chair) {
-        global $Conf, $Me;
-        $account = $this->is_disabled() ? "disabled account" : "account";
-        if ($Me && $Me->privChair && $message_chair)
-            $Conf->infoMsg("Created $account for <a href=\"" . hoturl("profile", "u=" . urlencode($this->email)) . "\">" . Text::user_html_nolink($this) . "</a>.");
-        if ($send_email && !$this->is_disabled())
-            $this->sendAccountInfo("create", false);
-        if ($Me && $Me->has_email() && $Me->email !== $this->email)
-            $Conf->log("Created $account ($Me->email)", $this);
-        else
-            $Conf->log("Created $account", $this);
+            return null;
+        }
     }
 
     static function id_by_email($email) {
@@ -894,8 +970,7 @@ class Contact {
     //     format: " HASHMETHOD KEYID SALT[16B]HMAC"
     // password starting with " $": password hashed by password_hash
     //
-    // contactdb_user password falsy, or contactdb_user disable_shared_password:
-    //     contactdb password unusable
+    // contactdb_user password falsy: contactdb password unusable
     // contactdb_user password truthy: follows rules above (but no "*")
     //
     // PASSWORD PRINCIPLES
@@ -947,15 +1022,13 @@ class Contact {
     public function allow_contactdb_password() {
         global $Opt;
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !$cdbu->disable_shared_password
-            && !@$Opt["contactdb_noPasswords"];
+        return $cdbu && $cdbu->password && !@$Opt["contactdb_noPasswords"];
     }
 
     private function prefer_contactdb_password() {
         global $Opt;
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !$cdbu->disable_shared_password
-            && !@$Opt["contactdb_noPasswords"]
+        return $cdbu && $cdbu->password && !@$Opt["contactdb_noPasswords"]
             && (!$this->has_database_account() || $this->password === "*"
                 || $this->passwordIsCdb);
     }
@@ -1110,9 +1183,10 @@ class Contact {
         global $Conf, $Opt, $Now;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
 
-        $hash = null;
-        $cdbu = ($flags & self::CHANGE_PASSWORD_NO_CDB) ? null : $this->contactdb_user();
-        if ($cdbu && !$cdbu->disable_shared_password && !@$Opt["contactdb_noPasswords"]
+        $hash = $cdbu = null;
+        if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
+            $cdbu = $this->contactdb_user();
+        if ($cdbu && $cdbu->password && !@$Opt["contactdb_noPasswords"]
             && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
             if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && self::check_password_encryption(false, true))

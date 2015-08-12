@@ -324,93 +324,12 @@ class UserStatus {
         $this->check_invariants($cj);
 
         $user = $old_user ? : new Contact;
-        $old_roles = $user->roles;
-        $old_email = $user->email;
-
-        $aupapers = null;
-        if (strtolower($cj->email) !== @strtolower($old_email))
-            $aupapers = Contact::email_authored_papers($cj->email, $cj);
-
-        foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators") as $k)
-            if (isset($cj->$k))
-                $user->$k = $cj->$k;
-        if (isset($cj->phone))
-            $user->voicePhoneNumber = $cj->phone;
-
-        $data = (object) array();
-        foreach (array("address", "city", "state", "zip", "country") as $k)
-            if (($x = @$cj->$k))
-                $data->$k = $x;
-        $user->merge_data($data);
-
-        if (isset($cj->follow)) {
-            $user->defaultWatch = 0;
-            if (@$cj->follow->reviews)
-                $user->defaultWatch |= WATCH_COMMENT;
-            if (@$cj->follow->allreviews)
-                $user->defaultWatch |= WATCH_ALLCOMMENTS;
-            if (@$cj->follow->allfinal)
-                $user->defaultWatch |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
-        }
-        if (isset($cj->tags)) {
-            $tags = array();
-            foreach ($cj->tags as $t => $v)
-                if ($v && strtolower($t) !== "pc")
-                    $tags[$t] = true;
-            if (count($tags)) {
-                ksort($tags);
-                $user->contactTags = " " . join(" ", array_keys($tags)) . " ";
-            } else
-                $user->contactTags = "";
-        }
-        if (!$user->save())
+        if (($send = $this->send_email) === null)
+            $send = !$old_cdb_user;
+        if ($user->save_json($cj, $actor, $send))
+            return $user;
+        else
             return false;
-
-        // Topics
-        if (isset($cj->topics)) {
-            $qf = array();
-            foreach ($cj->topics as $k => $v)
-                $qf[] = "($user->contactId,$k,$v)";
-            $Conf->qe("delete from TopicInterest where contactId=$user->contactId");
-            if (count($qf))
-                $Conf->qe("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $qf));
-        }
-
-        // Roles
-        $roles = 0;
-        if (isset($cj->roles)) {
-            if (@$cj->roles->pc)
-                $roles |= Contact::ROLE_PC;
-            if (@$cj->roles->chair)
-                $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
-            if (@$cj->roles->sysadmin)
-                $roles |= Contact::ROLE_ADMIN;
-            if ($roles !== $old_roles)
-                $user->save_roles($roles, $actor);
-        }
-
-        // Update authorship
-        if ($aupapers)
-            $user->save_authored_papers($aupapers);
-
-        // Password
-        if (@$cj->new_password)
-            $user->change_password(@$cj->old_password, $cj->new_password, 0);
-
-        // Beware PC cache
-        if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
-            $Conf->invalidateCaches(array("pc" => 1));
-
-        if ($no_old_db_account) {
-            if (($send_email = $this->send_email) === null)
-                $send_email = !$old_cdb_user;
-            $user->mark_create($send_email, false);
-        }
-        $actor = $actor ? : $Me;
-        if ($actor && $user->contactId == $actor->contactId)
-            $user->mark_activity();
-        return $user;
     }
 
     function error_messages() {
