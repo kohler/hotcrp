@@ -2495,18 +2495,18 @@ div.revcard_body div.xmsg, div.cmtg div.xmsg {
 }
 div.revcard_body div.xinfo, div.cmtg div.xinfo {
 	background: #eeeeff;
-	background: linear-gradient(to bottom, rgba(238,238,255,0), #eeeeff 4px, #eeeeff 50%, transparent 50%),
-		linear-gradient(to top, rgba(238,238,255,0), #eeeeff 4px, #eeeeff 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(238,238,255,0), #eeeeff 4px, #eeeeff 51%, transparent 51%),
+		linear-gradient(to top, rgba(238,238,255,0), #eeeeff 4px, #eeeeff 51%, transparent 51%);
 }
 div.cmtg div.xconfirm {
 	background: #eeffee;
-	background: linear-gradient(to bottom, rgba(238,255,238,0), #eeffee 4px, #eeffee 50%, transparent 50%),
-		linear-gradient(to top, rgba(238,255,238,0), #eeffee 4px, #eeffee 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(238,255,238,0), #eeffee 4px, #eeffee 51%, transparent 51%),
+		linear-gradient(to top, rgba(238,255,238,0), #eeffee 4px, #eeffee 51%, transparent 51%);
 }
 div.cmtg div.xwarning {
 	background: #ffffdd;
-	background: linear-gradient(to bottom, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 50%, transparent 50%),
-		linear-gradient(to top, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%),
+		linear-gradient(to top, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%);
 }
 div.cmtg div.xmerror {
 	border-top: 2px solid red;
@@ -2514,8 +2514,8 @@ div.cmtg div.xmerror {
 }
 div.response div.cmtg div.xinfo {
 	background: rgba(255, 221, 193, 0.5);
-	background: linear-gradient(to bottom, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 50%, transparent 50%),
-		linear-gradient(to top, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 50%, transparent 50%);
+	background: linear-gradient(to bottom, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 51%, transparent 51%),
+		linear-gradient(to top, rgba(255,221,193,0), rgba(255,221,193,0.4) 4px, rgba(255,221,193,0.4) 51%, transparent 51%);
 }
 div.aab {
 	margin: 0.2em -12px 8px;
