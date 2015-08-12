@@ -2258,7 +2258,7 @@ class Conference {
             "</title>\n</head>\n";
     }
 
-    function header($title, $id = "", $actionBar = null, $showTitle = true) {
+    function header($title, $id = "", $actionBar = null) {
         global $ConfSiteBase, $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
         if ($this->headerPrinted)
             return;
@@ -2296,7 +2296,7 @@ class Conference {
         echo "<div id='prebody'>\n";
 
         echo "<div id='header'>\n<div id='header_site'><h1>";
-        if ($title && $showTitle && $title == "Home")
+        if ($title && $title == "Home")
             echo "<a class='q' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a>";
         else
             echo "<a class='x' href='", hoturl("index"), "' title='Home'>", htmlspecialchars($Opt["shortName"]), "</a></h1></div><div id='header_page'><h1>", $title;

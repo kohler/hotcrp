@@ -21,7 +21,7 @@ function confHeader() {
         $title = "<a href='" . hoturl("paper", "p=$prow->paperId") . "' class='q'>Paper #$prow->paperId</a>";
     else
         $title = "Paper Review Assignments";
-    $Conf->header($title, "assign", actionBar("assign", $prow), false);
+    $Conf->header($title, "assign", actionBar("assign", $prow));
 }
 
 function errorMsgExit($msg) {
