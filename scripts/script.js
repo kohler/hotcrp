@@ -2670,6 +2670,7 @@ return function (content, bubopt) {
     function change_tail_direction() {
         var bw = [0, 0, 0, 0];
         divbw = parseFloat($(bubdiv).css(cssbw(dir)));
+        divbw !== divbw && (divbw = 0); // eliminate NaN
         bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
         bw[dir^2] = sizes[1] + "px";
         bubch[0].style.borderWidth = bw.join(" ");
