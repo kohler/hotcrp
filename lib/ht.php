@@ -332,15 +332,11 @@ class Ht {
             $text = join("\n", $text);
         else if (is_object($text))
             $text = var_export($text, true);
-        return "<pre style=\"white-space: pre-wrap\">" . htmlspecialchars($text) . "</pre>";
+        return "<pre style=\"white-space:pre-wrap\">" . htmlspecialchars($text) . "</pre>";
     }
 
     static function pre_export($x) {
-        return "<pre>" . htmlspecialchars(var_export($x, true)) . "</pre>";
-    }
-
-    static function pre_export_wrap($x) {
-        return "<pre style=\"white-space: pre-wrap\">" . htmlspecialchars(var_export($x, true)) . "</pre>";
+        return "<pre style=\"white-space:pre-wrap\">" . htmlspecialchars(var_export($x, true)) . "</pre>";
     }
 
     static function img($src, $alt, $js = null) {
