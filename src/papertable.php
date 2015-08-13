@@ -140,18 +140,25 @@ class PaperTable {
         $pnum = $this->prow ? $this->prow->paperId : 0;
         $ptitle = $this->prow ? htmlspecialchars($this->prow->title) : "New Submission";
 
-        $t = '<div id="header_page" class="header_page_submission">';
+        $t = '<div id="header_page" class="header_page_submission';
         if ($pnum && $CurrentList)
-            $t .= '<h1 class="paptitle has_hotcrp_list" hotcrp_list="' . $CurrentList . '">';
-        else
-            $t .= '<h1 class="paptitle">';
+            $t .= ' has_hotcrp_list" hotcrp_list="' . $CurrentList;
+        $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
+        if ($this->prow && ($tags = $this->prow->all_tags_text())) {
+            $t .= ' has_hotcrp_tag_classes';
+            $tagger = new Tagger;
+            $viewable = $tagger->viewable($tags);
+            if (($color = TagInfo::color_classes($viewable)))
+                $t .= ' ' . $color;
+        }
+        $t .= '">';
         if ($pnum)
-            $t .= '<a class="q" href="' . hoturl("paper", array("p" => $pnum, "ls" => null)) . '">'
-                . '<span class="paptitlenum pnum">#' . $pnum . '&nbsp;</span>'
-                . '<span class="ptitle">' . $ptitle . '</span></a>';
+            $t .= '<a class="q" href="' . hoturl("paper", array("p" => $pnum, "ls" => null)) . '"><span class="taghl">'
+                . '<span class="pnum">#' . $pnum . '</span> '
+                . '<span class="ptitle">' . $ptitle . '</span></span></a>';
         else
             $t .= $ptitle;
-        $t .= '</h1></div>';
+        $t .= '</h1></div></div>';
 
         return $t;
     }
@@ -1332,7 +1339,7 @@ class PaperTable {
             echo $this->_papstripBegin("tags", !$unfolded,
                                        array("onunfold" => "Miniajax.submit('tagreportform')"));
             $color = TagInfo::color_classes($viewable);
-            echo "<div class=\"", trim("pscopen $color"), "\">";
+            echo "<div class=\"", trim("has_hotcrp_tag_classes pscopen $color"), "\">";
 
             if ($is_editable)
                 echo Ht::form_div(hoturl_post($site, "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));

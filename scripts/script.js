@@ -3883,7 +3883,10 @@ function save_tags() {
     });
 }
 save_tags.success = function (data) {
-    jQuery("#foldtags .pscopen")[0].className = "pscopen " + (data.tags_color || "");
+    jQuery(".has_hotcrp_tag_classes").each(function () {
+        var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
+        this.className = t + " " + (data.tags_color || "");
+    });
     jQuery("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
     if (data.response)
         jQuery("#foldtags .psv .fn").prepend(data.response);

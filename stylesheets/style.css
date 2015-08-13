@@ -22,12 +22,11 @@ html {
 
 /* header */
 #header {
-	background-image: url(../images/headgrad.png);
 	background-repeat: repeat-x;
 	background-position: top;
 }
 #header_right {
-	padding: 8px 12px 0;
+	padding: 8px 24px 0;
 	font-size: smaller;
 	text-align: right;
 	float: right;
@@ -41,11 +40,10 @@ html {
 }
 #header_site {
 	float: left;
-	padding: 0.2em 0.8em 0.3em 20px;
+	padding: 0.2em 0.8em 0.3em 24px;
 	border-bottom: 2px solid #b2a584;
 	border-right: 1px solid #b2a584;
 	background-color: #ffffbb;
-	background-image: url(../images/homegrad.png);
 	background-repeat: repeat-x;
 	background-position: bottom;
 }
@@ -59,31 +57,37 @@ h1 {
 }
 #header_page {
 	clear: both;
-	padding: 0.5em 0 0 0.8em;
+	padding: 0.5em 0 0 24px;
+}
+#header_page > h1, h1.paptitle {
+	font-weight: normal;
 }
 #header_page.header_page_submission {
 	clear: both;
 	padding: 1em 0 0;
 }
+#header_page_submission_inner {
+	background: white;
+	border-top: 1px solid #b2a584;
+	border-bottom: 1px solid #b2a584;
+}
 h1.paptitle {
 	display: block;
-	background: #cec1ff;
-	padding: 0.25em 0 0.25em 20px;
+	padding: 0.25em 0 0.25em 24px;
 }
-span.paptitlenum {
-	display: inline-block;
+h1.paptitle span.pnum {
 	padding-right: 20px;
 }
 
 /* Tab bar */
 div.vbar {
-	padding: 0 12px;
+	padding: 0 24px;
 	position: relative;
 	clear: left;
 	border-bottom: 2px solid #9999cc;
 }
 div.nvbar {
-	padding: 0 12px;
+	padding: 0 24px;
 	position: relative;
 	clear: left;
 }
@@ -227,22 +231,16 @@ div.inline {
 
 /* body */
 div.body {
-	margin: 0 12px;
+	margin: 0 24px;
 	position: relative;
 	z-index: 3;
-}
-body.paper div.body {
-	margin: 0 22px 0 12px;
 }
 body#account div.body, body#scorehelp div.body, body#settings div.body {
 	margin: 0;
 }
 
 body.paper, body.paper div.nvbar, body.paper div.vbar {
-	background: #f0f0f0;
-}
-body.paper div#prebody {
-	background: white;
+	background: #dce4e8;
 }
 
 div#initialmsgs > div {
@@ -278,7 +276,7 @@ table, tr, td {
 /* footer */
 div#footer {
 	margin-top: 36px;
-	padding: 0 12px 3px 12px;
+	padding: 0 24px 3px 12px;
 	clear: both;
 }
 div#footer_crp {
@@ -1459,7 +1457,7 @@ tr:hover > td > a.row_up, tr:hover > td > a.row_down, tr:hover > td > a.row_kill
 
 /* paper list tables geometry */
 .pltable_full_ctr {
-	padding: 0.75em 0.5em;
+	padding: 0.75em 0;
 }
 .pltable_full {
 	width: 100%;
@@ -1945,6 +1943,7 @@ div.psmodec {
 	z-index: 6;
 }
 div.psmode {
+	margin-left: -5px;
 	padding: 0 0 1em 0;
 	position: absolute;
 }
@@ -1956,11 +1955,12 @@ div.papmode, div.papmodex {
 	margin: 0 5px;
 }
 div.papmodex {
-	background: #cec1ff;
+	background: #ffbbbb;
 	border-radius: 5px;
 }
-div.papmodex a {
+div.papmodex > a {
 	font-weight: bold;
+	color: #f33360;
 }
 div.papmode img, div.papmodex img {
 	position: relative;
@@ -1990,8 +1990,7 @@ td.pboxi {
 /* paper strip */
 div.pspcard_container {
 	float: left;
-	margin-left: 0.7em;
-	width: 12em;
+	width: 12.8em;
 	position: absolute;
 }
 div.pspcard {
@@ -2265,7 +2264,7 @@ div.pgsm {
 /* papers */
 div.papcard, div.pedcard {
 	margin: 0 0 0 14em;
-	padding: 5px;
+	padding: 8px 0 5px;
 	background: #cec1ff;
 	position: relative;
 	border: 1px solid #9999bf;
@@ -2304,7 +2303,7 @@ div.notecard_body {
 /* reviews */
 div.revcard {
 	margin: 24px 0 0 14em;
-	padding: 3px 5px 5px;
+	padding: 3px 0 5px;
 	background: #fad5d5;
 	position: relative;
 	border: 1px solid #bf9999;
@@ -2410,11 +2409,11 @@ span.rev_rating_summary {
 /* comments */
 div.cmtcard {
 	margin: 24px 0 0 14em;
-	padding: 2px 5px 5px 5px;
+	padding: 2px 0 5px;
 	background: #e6e1cf;
 	position: relative;
 	border: 1px solid #99aabf;
-	border-radius: 2px;
+	border-radius: 4px;
 }
 div.cmtcard.response {
 	background: #ffddc1;
