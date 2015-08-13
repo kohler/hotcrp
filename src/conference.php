@@ -2260,12 +2260,10 @@ class Conference {
         echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
     }
 
-    function header($title, $id = "", $actionBar = null, $title_div = null) {
+    function header($title, $id, $actionBar, $title_div = null) {
         global $ConfSiteBase, $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
         if ($this->headerPrinted)
             return;
-        if ($actionBar === null)
-            $actionBar = actionBar();
 
         // <head>
         if ($title === "Home")
@@ -2303,8 +2301,11 @@ class Conference {
 
         echo '<div id="header_site" class="',
             ($title ? "header_site_page" : "header_site_home"),
-            '"><h1><a class="', ($title ? "x" : "q"), '" href="', hoturl("index"),
-            '">', htmlspecialchars($Opt["shortName"]), '</a></h1></div>';
+            '"><h1><a class="qq" href="', hoturl("index"),
+            '">', htmlspecialchars($Opt["shortName"]);
+        if ($title)
+            echo ' <span style="font-weight:normal">Home</span>';
+        echo '</a></h1></div>';
 
         echo '<div id="header_right">';
         if ($Me && !$Me->is_empty()) {
@@ -2341,11 +2342,13 @@ class Conference {
             echo $title_div;
         else if ($title)
             echo '<div id="header_page"><h1>', $title, '</h1></div>';
-
-        echo "  <hr class=\"c\" />\n";
+        else if ($actionBar)
+            echo '<hr class="c" />';
 
         if ($actionBar)
             echo $actionBar;
+
+        echo "  <hr class=\"c\" />\n";
 
         echo "</div>\n<div id=\"initialmsgs\">\n";
         if (@$Opt["maintenance"])
@@ -2354,7 +2357,6 @@ class Conference {
             foreach ($msgs as $m)
                 echo $m;
             $this->save_session("msgs", null);
-            echo "<div id=\"initialmsgspacer\"></div>";
         }
         $this->save_messages = false;
         echo "</div>\n";

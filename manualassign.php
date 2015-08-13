@@ -55,13 +55,6 @@ else
     $Conf->save_setting("rev_roundtag", null);
 
 
-$abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", hoturl("autoassign"), false);
-$abar .= actionTab("Manual", hoturl("manualassign"), true);
-$abar .= actionTab("Upload", hoturl("bulkassign"), false);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
-
-
 $pcm = pcMembers();
 $reviewer = cvtint(@$_REQUEST["reviewer"]);
 if ($reviewer <= 0)
@@ -123,7 +116,12 @@ else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You need to select a reviewer.");
 
 
-$Conf->header("Review Assignments", "assignpc", $abar);
+$Conf->header("Assignments", "assignpc", actionBar());
+echo '<div class="psmode">',
+    '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
+    '<div class="papmodex"><a href="', hoturl("manualassign"), '"><u class="x">Manual</u></a></div>',
+    '<div class="papmode"><a href="', hoturl("bulkassign"), '">Upload</a></div>',
+    '</div><hr class="c" />';
 
 
 // Help list

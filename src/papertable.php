@@ -130,37 +130,44 @@ class PaperTable {
         return $this->can_view_reviews;
     }
 
-    static public function make_title_div($title) {
-        return '<div id="header_page" class="header_page_submission">'
-            . '<h1 class="paptitle">' . $title . '</h1></div>';
-    }
-
-    public function title_div() {
-        global $CurrentList;
-        $pnum = $this->prow ? $this->prow->paperId : 0;
-        $ptitle = $this->prow ? htmlspecialchars($this->prow->title) : "New Submission";
+    static public function do_header($paperTable, $id, $action_mode) {
+        global $Conf, $CurrentList;
+        $prow = $paperTable ? $paperTable->prow : null;
 
         $t = '<div id="header_page" class="header_page_submission';
-        if ($pnum && $CurrentList)
+        if ($prow && $paperTable && $CurrentList)
             $t .= ' has_hotcrp_list" hotcrp_list="' . $CurrentList;
         $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
-        if ($this->prow && ($tags = $this->prow->all_tags_text())) {
-            $t .= ' has_hotcrp_tag_classes';
-            $tagger = new Tagger;
-            $viewable = $tagger->viewable($tags);
-            if (($color = TagInfo::color_classes($viewable)))
-                $t .= ' ' . $color;
-        }
-        $t .= '">';
-        if ($pnum)
-            $t .= '<a class="q" href="' . hoturl("paper", array("p" => $pnum, "ls" => null)) . '"><span class="taghl">'
-                . '<span class="pnum">#' . $pnum . '</span> '
-                . '<span class="ptitle">' . $ptitle . '</span></span></a>';
-        else
-            $t .= $ptitle;
-        $t .= '</h1></div></div>';
 
-        return $t;
+        if (!$paperTable && !$prow) {
+            if (@$_REQUEST["paperId"] && ctype_digit($_REQUEST["paperId"]))
+                $title = '#' . $_REQUEST["paperId"];
+            else
+                $title = "Submission";
+            $t .= '">' . $title;
+        } else if (!$prow) {
+            $title = "New Submission";
+            $t .= '">' . $title;
+        } else {
+            $title = "#" . $prow->paperId;
+            $t .= ' has_hotcrp_tag_classes';
+            if (($tags = $prow->all_tags_text())) {
+                $tagger = new Tagger;
+                $viewable = $tagger->viewable($tags);
+                if (($color = TagInfo::color_classes($viewable)))
+                    $t .= ' ' . $color;
+            }
+            $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
+                . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
+                . ' &nbsp; <span class="ptitle">' . htmlspecialchars($prow->title) . '</span>'
+                . '</span></a>';
+        }
+
+        $t .= '</h1></div></div>';
+        if ($paperTable && $prow)
+            $t .= $paperTable->_paptabBeginKnown();
+
+        $Conf->header($title, $id, actionBar($action_mode, $prow), $t);
     }
 
     private function echoDivEnter() {
@@ -1833,14 +1840,14 @@ class PaperTable {
 
     function _paptabTabLink($text, $link, $image, $highlight) {
         global $Conf;
-        echo "<div class='", ($highlight ? "papmodex" : "papmode"),
-            "'><a href='", $link, "' class='", ($highlight ? "qx" : "xx"),
-            "'>", Ht::img($image, "[$text]", "b"),
-            "&nbsp;<u", ($highlight ? " class='x'" : ""), ">", $text,
-            "</u></a></div>\n";
+        return "<div class='" . ($highlight ? "papmodex" : "papmode")
+            . "'><a href='" . $link . "' class='" . ($highlight ? "qx" : "xx")
+            . "'>" . Ht::img($image, "[$text]", "b")
+            . "&nbsp;<u" . ($highlight ? " class='x'" : "") . ">" . $text
+            . "</u></a></div>\n";
     }
 
-    function _paptabBeginKnown() {
+    private function _paptabBeginKnown() {
         global $Conf, $Me;
         $prow = $this->prow;
 
@@ -1850,31 +1857,31 @@ class PaperTable {
         $canAssign = $Me->can_administer($prow);
         $canHome = ($canEdit || $canAssign || $this->mode === "contact");
 
-        echo "<div class='pban'>";
+        $t = "";
 
         // paper tabs
         if ($canEdit || $canReview || $canAssign || $canHome) {
-            echo "<div class='psmodec'><div class='psmode'>";
+            $t .= '<div class="submission_modes">';
 
             // home link
             $highlight = ($this->mode !== "assign" && $this->mode !== "edit"
                           && $this->mode !== "contact" && $this->mode !== "re");
             $a = ""; // ($this->mode === "edit" || $this->mode === "re" ? "&amp;m=p" : "");
-            $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a"), "view18.png", $highlight);
+            $t .= $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a"), "view18.png", $highlight);
 
             if ($canEdit)
-                $this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=edit"), "edit18.png", $this->mode === "edit");
+                $t .= $this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=edit"), "edit18.png", $this->mode === "edit");
 
             if ($canReview)
-                $this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re"), "review18.png", $this->mode === "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
+                $t .= $this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re"), "review18.png", $this->mode === "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
 
             if ($canAssign)
-                $this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign18.png", $this->mode === "assign");
+                $t .= $this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign18.png", $this->mode === "assign");
 
-            echo "<hr class=\"c\" /></div></div>\n";
+            $t .= "<hr class=\"c\" /></div>";
         }
 
-        echo "</div>\n";
+        return $t;
     }
 
     static private function _echo_clickthrough($ctype) {
@@ -1955,7 +1962,6 @@ class PaperTable {
         $prow = $this->prow;
 
         if ($prow) {
-            $this->_paptabBeginKnown();
             echo '<div class="pspcard_container">',
                 '<div class="pspcard">',
                 '<div class="pspcard_body">';

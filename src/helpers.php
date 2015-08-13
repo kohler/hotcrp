@@ -616,7 +616,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
-        . "\" href=\"" . hoturl($baseUrl, $urlrest)
+        . "\" class=\"q\" href=\"" . hoturl($baseUrl, $urlrest)
         . "\" onclick=\"return !Miniajax.isoutstanding('revprevform', make_link_callback(this))\">"
         . ($isprev ? Ht::img("_.gif", "<-", "prev") : "")
         . $paperText
@@ -686,7 +686,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     if (@$list->description) {
         $x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
         if (@$list->url)
-            $x .= '<a id="quicklink_list" href="' . $ConfSiteBase . htmlspecialchars($list->url) . "\">" . $list->description . "</a>";
+            $x .= '<a id="quicklink_list" class="q" href="' . $ConfSiteBase . htmlspecialchars($list->url) . "\">" . $list->description . "</a>";
         else
             $x .= '<span id="quicklink_list">' . $list->description . '</span>';
     }
@@ -975,13 +975,6 @@ function whyNotText($whyNot, $action) {
     return rtrim($text);
 }
 
-function actionTab($text, $url, $default) {
-    if ($default)
-        return "    <td><div class='vbtab1'><div class='vbtab1x'><div class='vbtab1y'><a href='$url'>$text</a></div></div></div></td>\n";
-    else
-        return "    <td><div class='vbtab'><a href='$url'>$text</a></div></td>\n";
-}
-
 function actionBar($mode = null, $prow = null) {
     global $Me, $Conf, $CurrentList;
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
@@ -1011,16 +1004,16 @@ function actionBar($mode = null, $prow = null) {
     }
 
     // collect actions
-    $x = "<div class='nvbar'><table class='vbar'><tr><td class='spanner'></td>\n";
+    $x = '<table class="vbar"><tr>';
 
     if ($quicklinks_txt)
-        $x .= "  " . $quicklinks_txt . "\n";
+        $x .= $quicklinks_txt;
     if ($quicklinks_txt && $Me->privChair && $listtype == "p")
         $x .= "  <td id=\"trackerconnect\" class=\"nowrap\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
 
     $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
 
-    return $x . "</tr></table></div>";
+    return $x . "</tr></table>";
 }
 
 function parseReviewOrdinal($text) {

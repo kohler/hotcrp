@@ -41,29 +41,37 @@ html {
 #header_site {
 	float: left;
 	padding: 0.2em 0.8em 0.3em 24px;
-	border-bottom: 2px solid #b2a584;
-	border-right: 1px solid #b2a584;
-	background-color: #ffffbb;
+	border-bottom: 1px solid #f33360;
+	border-right: 1px solid #f33360;
+	border-bottom-right-radius: 4px;
+	background-color: #ffc9d6; /* #ed6182; */
 	background-repeat: repeat-x;
 	background-position: bottom;
+}
+#header_site, #footer_crp a {
+	color: #f33360;
 }
 h1 {
 	display: inline;
 	font-size: 144%;
 	margin: 0;
 }
+#header {
+	padding-bottom: 24px;
+}
 .header_site_page > h1 {
 	font-size: 100%;
 }
 #header_page {
 	clear: both;
+	float: left;
 	padding: 0.5em 0 0 24px;
 }
 #header_page > h1, h1.paptitle {
 	font-weight: normal;
 }
 #header_page.header_page_submission {
-	clear: both;
+	float: none;
 	padding: 1em 0 0;
 }
 #header_page_submission_inner {
@@ -75,26 +83,15 @@ h1.paptitle {
 	display: block;
 	padding: 0.25em 0 0.25em 24px;
 }
-h1.paptitle span.pnum {
-	padding-right: 20px;
-}
 
 /* Tab bar */
-div.vbar {
-	padding: 0 24px;
-	position: relative;
-	clear: left;
-	border-bottom: 2px solid #9999cc;
-}
-div.nvbar {
-	padding: 0 24px;
-	position: relative;
-	clear: left;
-}
 table.vbar {
-	width: 100%;
+	float: right;
 	font-size: smaller;
-	position: relative;
+	margin: 6px 24px 0 0;
+}
+body#home table.vbar {
+	margin-top: -4px;
 }
 table.vbar td {
 	vertical-align: bottom;
@@ -102,46 +99,6 @@ table.vbar td {
 }
 table.vbar td#vbartabs {
 	padding-top: 6px;
-}
-table.vbar div.vbtab, table.vbar div.vbtab1 {
-	margin: 0 0.75em;
-	white-space: nowrap;
-}
-table.vbar div.vbtab, table.vbar div.vbtab1y {
-	padding: 0 1em 1px;
-}
-table.vbar div.vbtab {
-	background: #fcf6e3; /*#e6dcc1;*/
-	border-top: 2px solid #ccc1a3;
-	border-left: 1px solid #ccc1a3;
-	border-right: 1px solid #ccc1a3;
-}
-table.vbar div.vbtab1 {
-	background: #ffffff;
-	border-top: 2px solid #9999cc;
-	border-right: 1px solid #9999cc;
-	border-left: 1px solid #9999cc;
-}
-table.vbar div.vbtab1x {
-	background: #ffffff;
-	position: relative;
-	bottom: -5px;
-	z-index: 2;
-}
-table.vbar div.vbtab1y {
-	position: relative;
-	bottom: 5px;
-}
-.vbtab1 a {
-	text-decoration: none;
-	color: black;
-	font-weight: bold;
-}
-.vbtab a, td.quicklinks a {
-	text-decoration: none;
-}
-.vbtab a:hover, .vbtab1 a:hover, td.quicklinks a:hover {
-	text-decoration: underline;
 }
 td.gopaper {
 	vertical-align: middle;
@@ -151,22 +108,19 @@ table.vbar td.quicklinks, #trackerconnect {
 	vertical-align: middle;
 	padding: 4px 0.75em 4px 0.5em;
 }
-td.spanner {
-	width: 100%;
-}
 
 
 /* generic horizontal styles */
-a.q, a.qx, a.u {
+a.q, a.u {
 	color: black;
 }
 a.qq, a.uu, a.maillink {
 	color: inherit;
 }
-a.q, a.qq, a.qx, a.x, a.xx, a.pnum, a.ptitle, a.maillink, u.x, .noul {
+a.q, a.qq, div.papmodex > a, a.x, a.xx, a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
-a.q:hover, a.qq:hover, a.qx:hover u.x, a.x:hover, a.xx:hover u.x,
+a.q:hover, a.qq:hover, a:hover u.x, a.x:hover, a.xx:hover u.x,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
 .childfold:hover a.q, a.maillink:hover, .ul {
 	text-decoration: underline;
@@ -235,24 +189,13 @@ div.body {
 	position: relative;
 	z-index: 3;
 }
-body#account div.body, body#scorehelp div.body, body#settings div.body {
-	margin: 0;
-}
-
-body.paper, body.paper div.nvbar, body.paper div.vbar {
+body.paper {
 	background: #dce4e8;
 }
 
-div#initialmsgs > div {
-	margin: 0 12px 0.5em;
-}
-body#paper_view div#initialmsgspacer,
-body#paper_edit div#initialmsgspacer,
-body#review div#initialmsgspacer,
-body#comment div#initialmsgspacer,
-body#assign div#initialmsgspacer {
-	margin: 0;
-	padding: 2.5ex 0 0;
+div#initialmsgs {
+	padding: 0 24px;
+	margin: -24px 0 24px;
 }
 
 table.manyassign {
@@ -282,8 +225,10 @@ div#footer {
 div#footer_crp {
 	float: right;
 	font-size: 69%;
-	background: #d8deef;
+	background: #ffc9d6;
+	color: #f33360;
 	padding: 0.2em 0.5em;
+	border-radius: 4px;
 }
 
 
@@ -473,7 +418,7 @@ div.lht {
 	background: #ffffff;
 	position: relative;
 	z-index: 5;
-	padding: 0 1em 3px 0.75em;
+	padding: 0 0 3px 0.75em;
 }
 
 
@@ -1936,17 +1881,6 @@ span.contactpulldown select {
 }
 
 /* paper mode tabs */
-div.psmodec {
-	position: relative;
-	top: -3.4ex;
-	left: 1px;
-	z-index: 6;
-}
-div.psmode {
-	margin-left: -5px;
-	padding: 0 0 1em 0;
-	position: absolute;
-}
 div.papmode, div.papmodex {
 	float: left;
 	text-align: center;
@@ -1955,8 +1889,9 @@ div.papmode, div.papmodex {
 	margin: 0 5px;
 }
 div.papmodex {
-	background: #ffbbbb;
+	background: white;
 	border-radius: 5px;
+	border: 1px solid #f33360;
 }
 div.papmodex > a {
 	font-weight: bold;
@@ -1967,13 +1902,17 @@ div.papmode img, div.papmodex img {
 	margin: -10px 0;
 	bottom: 10px;
 }
+div.papmode:first-child {
+	padding-left: 0;
+}
+div.papmode:first-child, div.papmodex:first-child {
+	margin-left: 0;
+}
 
 /* paper banner */
-div.pban {
-	position: relative;
-	background: #cec1ff;
-	margin: 0 -22px 0 -12px;
-	padding: 0 22px 0 12px;
+div.submission_modes {
+	float: left;
+	padding: 12px 0 0 24px;
 	z-index: 5;
 }
 
@@ -1998,7 +1937,7 @@ div.pspcard {
 	font-size: 8.7pt; /* 10.5pt / 1.2 */
 	background: white;
 	border: 1px solid #cccccc;
-	border-radius: 2px;
+	border-radius: 4px;
 }
 div.pspcard_body {
 	padding-bottom: 0.5em;
@@ -2264,7 +2203,7 @@ div.pgsm {
 /* papers */
 div.papcard, div.pedcard {
 	margin: 0 0 0 14em;
-	padding: 8px 0 5px;
+	padding: 8px 0 6px;
 	background: #cec1ff;
 	position: relative;
 	border: 1px solid #9999bf;

@@ -77,14 +77,12 @@ if (isset($_REQUEST["saveassignment"]) && check_post()) {
 }
 
 
-$abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", hoturl("autoassign"), false);
-$abar .= actionTab("Manual", hoturl("manualassign"), false);
-$abar .= actionTab("Upload", hoturl("bulkassign"), true);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
-
-
-$Conf->header("Review Assignments", "bulkassign", $abar);
+$Conf->header("Assignments", "bulkassign", actionBar());
+echo '<div class="psmode">',
+    '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
+    '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</u></a></div>',
+    '<div class="papmodex"><a href="', hoturl("bulkassign"), '"><u class="x">Upload</u></a></div>',
+    '</div><hr class="c" />';
 
 
 // Help list

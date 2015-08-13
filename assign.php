@@ -16,16 +16,8 @@ Contact::site_contact();
 
 // header
 function confHeader() {
-    global $prow, $paperTable, $Conf;
-    if ($prow) {
-        $title = "#" . $prow->paperId;
-        $ptitle = $paperTable->title_div();
-    } else {
-        $title = $newPaper ? "New Submission" : "Submission";
-        $ptitle = PaperTable::make_title_div($title);
-    }
-
-    $Conf->header($title, "assign", actionBar("assign", $prow), $ptitle);
+    global $paperTable;
+    PaperTable::do_header($paperTable, "assign", "assign");
 }
 
 function errorMsgExit($msg) {

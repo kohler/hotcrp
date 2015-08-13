@@ -27,10 +27,7 @@ if ($topic == "syntax")
 if (!isset($topicTitles[$topic]))
     $topic = "topics";
 
-if ($topic == "topics")
-    $Conf->header("Help");
-else
-    $Conf->header("<a href='" . hoturl("help") . "'>Help</a>");
+$Conf->header("Help", null, actionBar());
 
 
 function _alternateRow($caption, $entry, $next = null) {

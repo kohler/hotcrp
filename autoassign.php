@@ -117,13 +117,12 @@ $scoreselector["x"] = "(no score preference)";
 $Error = array();
 
 
-$abar = "<div class='vbar'><table class='vbar'><tr><td><table><tr>\n";
-$abar .= actionTab("Automatic", hoturl("autoassign"), true);
-$abar .= actionTab("Manual", hoturl("manualassign"), false);
-$abar .= actionTab("Upload", hoturl("bulkassign"), false);
-$abar .= "</tr></table></td>\n<td class='spanner'></td>\n<td class='gopaper nowrap'>" . goPaperForm() . "</td></tr></table></div>\n";
-
-$Conf->header("Assignments", "autoassign", $abar);
+$Conf->header("Assignments", "autoassign", actionBar());
+echo '<div class="psmode">',
+    '<div class="papmodex"><a href="', hoturl("autoassign"), '"><u class="x">Automatic</u></a></div>',
+    '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
+    '<div class="papmode"><a href="', hoturl("bulkassign"), '">Upload</a></div>',
+    '</div><hr class="c" />';
 
 
 class AutoassignerInterface {

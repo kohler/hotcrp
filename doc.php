@@ -11,7 +11,7 @@ require_once("src/initweb.php");
 
 function document_error($error) {
     global $Conf;
-    $Conf->header("Download");
+    $Conf->header("Download", null, actionBar());
     if ($error)
         $Conf->errorMsg($error);
     $Conf->footer();
