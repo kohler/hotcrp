@@ -1935,13 +1935,15 @@ div.pspcard_container {
 div.pspcard {
 	z-index: 4;
 	font-size: 8.7pt; /* 10.5pt / 1.2 */
-	background: white;
-	border: 1px solid #cccccc;
+	background: #dddddd;
+	border: 1px solid #aaaaaa;
+	padding: 5px 0;
 	border-radius: 4px;
 }
 div.pspcard_body {
-	padding-bottom: 0.5em;
-	margin: 0 8px;
+	padding: 0 8px 0.5em;
+	background: white;
+	border-radius: 2px;
 }
 div#papstriptagsedit {
 	font-size: 8.7pt;
@@ -2203,7 +2205,7 @@ div.pgsm {
 /* papers */
 div.papcard, div.pedcard {
 	margin: 0 0 0 14em;
-	padding: 8px 0 6px;
+	padding: 6px 0 6px;
 	background: #cec1ff;
 	position: relative;
 	border: 1px solid #9999bf;

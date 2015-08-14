@@ -616,7 +616,7 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
         $urlrest["p"] = $id;
     }
     return "<a id=\"quicklink_" . ($isprev ? "prev" : "next")
-        . "\" class=\"q\" href=\"" . hoturl($baseUrl, $urlrest)
+        . "\" class=\"x\" href=\"" . hoturl($baseUrl, $urlrest)
         . "\" onclick=\"return !Miniajax.isoutstanding('revprevform', make_link_callback(this))\">"
         . ($isprev ? Ht::img("_.gif", "<-", "prev") : "")
         . $paperText
@@ -686,7 +686,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     if (@$list->description) {
         $x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
         if (@$list->url)
-            $x .= '<a id="quicklink_list" class="q" href="' . $ConfSiteBase . htmlspecialchars($list->url) . "\">" . $list->description . "</a>";
+            $x .= '<a id="quicklink_list" class="x" href="' . $ConfSiteBase . htmlspecialchars($list->url) . "\">" . $list->description . "</a>";
         else
             $x .= '<span id="quicklink_list">' . $list->description . '</span>';
     }
