@@ -324,6 +324,7 @@ class Tagger {
     const NOVALUE = 4;
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
+    const ALLOWCONTACTID = 32;
 
     public $error_html = false;
     private $contact = null;
@@ -336,25 +337,9 @@ class Tagger {
             $this->_contactId = $this->contact->contactId;
     }
 
-    private static function analyze($tag, $flags) {
-        if ($tag === "")
-            return "Empty tag.";
-        else if (!preg_match('/\A' . TAG_REGEX_OPTVALUE . '\z/', $tag, $m)
-                 || (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false))
-            return "Tag “" . htmlspecialchars($tag) . "” contains characters not allowed in tags.";
-        else if (strlen($tag) > TAG_MAXLEN)
-            return "Tag “${tag}” is too long; maximum " . TAG_MAXLEN . " characters.";
-        else if (count($m) > 1 && $m[1] && ($flags & self::NOVALUE))
-            return "Tag values aren’t allowed here.";
-        else if ($tag[0] === "~" && $tag[1] === "~" && ($flags & self::NOCHAIR))
-            return "Tag “${tag}” is exclusively for chairs.";
-        else if ($tag[0] === "~" && $tag[1] !== "~" && ($flags & self::NOPRIVATE))
-            return "Twiddle tags aren’t allowed here.";
-        else if (!($flags & self::ALLOWRESERVED) && strlen($tag) <= 4
-                 && preg_match('/\A(?:none|any)\z/i', $tag))
-            return "Tag “${tag}” is reserved.";
-        else
-            return false;
+    private function set_error($e) {
+        $this->error_html = $e;
+        return false;
     }
 
     public function check($tag, $flags = 0) {
@@ -362,12 +347,40 @@ class Tagger {
             $flags |= self::NOCHAIR;
         if ($tag[0] === "#")
             $tag = substr($tag, 1);
-        if (($this->error_html = self::analyze($tag, $flags)))
-            return false;
-        else if ($tag[0] === "~" && $tag[1] !== "~" && $this->_contactId)
-            return $this->_contactId . $tag;
-        else
-            return $tag;
+        if ($tag === "")
+            return $this->set_error("Empty tag.");
+        if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-\d|)\d*)\z/', $tag, $m))
+            return $this->set_error("Format error: #" . htmlspecialchars($tag) . " is an invalid tag.");
+        if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false)
+            return $this->set_error("Wildcards aren’t allowed in tag names.");
+        // After this point we know `$tag` contains no HTML specials
+        if ($m[1] === "")
+            /* OK */;
+        else if ($m[1] === "~~") {
+            if ($flags & self::NOCHAIR)
+                return $this->set_error("Tag #{$tag} is exclusively for chairs.");
+        } else {
+            if ($flags & self::NOPRIVATE)
+                return $this->set_error("Twiddle tags aren’t allowed here.");
+            if ($m[1] !== "~" && !($flags & self::ALLOWCONTACTID))
+                return $this->set_error("Format error: #{$tag} is an invalid tag.");
+            if ($m[1] === "~" && $this->_contactId)
+                $m[1] = $this->_contactId . "~";
+            if (!($flags & self::NOCHAIR) && $m[1] !== "~"
+                && $m[1] !== $this->_contactId . "~")
+                return $this->set_error("Format error: #{$tag} is an invalid tag.");
+        }
+        if ($m[3] !== "")
+            return $this->set_error("Tag values aren’t allowed here.");
+        if (!($flags & self::ALLOWRESERVED)
+            && (!strcasecmp("none", $m[2]) || !strcasecmp("any", $m[2])))
+            return $this->set_error("Tag #{$m[2]} is reserved.");
+        $t = $m[1] . $m[2];
+        if (strlen($t) > TAG_MAXLEN)
+            return $this->set_error("Tag #{$tag} is too long.");
+        if ($m[3] !== "")
+            $t .= "#" . substr($m[3], 1);
+        return $t;
     }
 
     public function view_score($tag) {

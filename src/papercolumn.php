@@ -913,7 +913,7 @@ class TagPaperColumn extends PaperColumn {
         if (!$this->dtag && $visible === PaperColumn::PREP_COMPLETION)
             return true;
         $tagger = new Tagger($pl->contact);
-        if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE)))
+        if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)))
             return false;
         $this->ctag = strtolower(" $ctag#");
         if ($visible)
