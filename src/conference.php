@@ -2299,11 +2299,12 @@ class Conference {
 
         echo '<div id="header">';
 
+        $is_home = $id === "home";
         echo '<div id="header_site" class="',
-            ($title ? "header_site_page" : "header_site_home"),
+            ($is_home ? "header_site_home" : "header_site_page"),
             '"><h1><a class="qq" href="', hoturl("index"),
             '">', htmlspecialchars($Opt["shortName"]);
-        if ($title)
+        if (!$is_home)
             echo ' <span style="font-weight:normal">Home</span>';
         echo '</a></h1></div>';
 
