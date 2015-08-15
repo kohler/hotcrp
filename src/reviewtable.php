@@ -265,15 +265,18 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     // completion
     $CurrentList = $saved_list;
     if (count($nonsubrev) + count($subrev)) {
+        if ($want_requested_by)
+            array_unshift($score_header, '<th class="revsl">Requester</th>');
+        $score_header_text = join("", $score_header);
         $t = "<table class=\"reviewers";
+        if ($score_header_text)
+            $t .= " reviewers_scores";
         if ($CurrentList)
             $t .= " has_hotcrp_list\" hotcrp_list=\"$CurrentList";
         $t .= "\">\n";
-        if ($want_requested_by)
-            array_unshift($score_header, '<th class="revsl">Requester</th>');
-        if (count($score_header))
+        if ($score_header_text)
             $t .= '<tr><td class="empty" colspan="2"></td>'
-                . join("", $score_header) . "</tr>\n";
+                . $score_header_text . "</tr>\n";
         foreach (array_merge($subrev, $nonsubrev) as $r) {
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (@$r[2]) {
@@ -397,16 +400,15 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     // new comment
-    if (!$allreviewslink
-        && $mode !== "assign" && $mode !== "contact" && $mode !== "edit"
-        && $Me->can_comment($prow, null)) {
+    $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $mode);
+    if (!$allreviewslink && !$nocmt && $Me->can_comment($prow, null)) {
         $x = "<a href=\"" . selfHref(array("c" => "new")) . '#commentnew" onclick="return open_new_comment(1)" class="xx">'
             . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
     // new response
-    if ($mode !== "assign" && $mode !== "contact" && $mode !== "edit"
+    if (!$nocmt
         && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
         && ($rrounds = $Conf->time_author_respond()))
         foreach ($rrounds as $i => $rname) {
@@ -441,7 +443,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
-    if (($CurrentList = $saved_list))
+    if (($CurrentList = $saved_list) && ($pret || $t))
         return '<div class="has_hotcrp_list" hotcrp_list="' . $CurrentList . '">'
             . $pret . $t . '</div>';
     else

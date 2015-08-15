@@ -146,7 +146,7 @@ class PaperTable {
                 $title = "Submission";
             $t .= '">' . $title;
         } else if (!$prow) {
-            $title = "New Submission";
+            $title = "New submission";
             $t .= '">' . $title;
         } else {
             $title = "#" . $prow->paperId;
@@ -346,10 +346,6 @@ class PaperTable {
 
         // status and download
         if ($Me->can_view_pdf($prow)) {
-            $status_info = $Me->paper_status_info($prow);
-            $out[] = "<p class=\"xd\"><span class=\"pstat $status_info[0]\">"
-                . htmlspecialchars($status_info[1]) . "</span></p>";
-
             $pdfs = array();
 
             $dprefix = "";
@@ -390,10 +386,6 @@ class PaperTable {
         }
 
         // conflicts
-        if ($prow->has_author($Me))
-            $out[] = "<p class='xd'>You are an <span class='author'>author</span> of this paper.</p>";
-        else if ($prow->has_conflict($Me))
-            $out[] = "<p class='xd'>You have a <span class='conflict'>conflict</span> with this paper.</p>";
         if ($Me->isPC && !$prow->has_conflict($Me)
             && $Conf->timeUpdatePaper($prow) && $this->mode !== "assign"
             && $this->mode !== "contact")
@@ -2022,7 +2014,18 @@ class PaperTable {
     }
 
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
+        global $Me;
         require_once("reviewtable.php");
+        $status_info = $Me->paper_status_info($this->prow);
+        $out = "<span class=\"pstat $status_info[0]\">"
+            . htmlspecialchars($status_info[1]) . "</span>";
+
+        if ($this->prow->has_author($Me))
+            $out .= ' <span class="barsep">·</span> You are an <span class="author">author</span> of this paper.';
+        else if ($this->prow->has_conflict($Me))
+            $out .= ' <span class="barsep">·</span> You have a <span class="conflit">conflict</span> with this paper.';
+        $this->_paptabSepContaining('<p class="xd">' . $out . '</p>');
+
         $t = "";
         if ($rtable)
             $t .= reviewTable($this->prow, $this->rrows, $this->mycrows,
@@ -2031,8 +2034,7 @@ class PaperTable {
                           $editrrow, $this->mode, $this->allreviewslink);
         if (($empty = ($t === "")))
             $t = $ifempty;
-        $this->_paptabSepContaining($t);
-        echo "</div></div>\n";
+        echo $t, "</div></div>\n";
         return $empty;
     }
 

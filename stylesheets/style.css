@@ -1206,6 +1206,9 @@ table.topicinterest tr td.ti_topic {
 table.reviewers, div.revnotes {
 	margin-bottom: 0.5em;
 }
+table.reviewers_scores {
+	margin-top: -0.5em;
+}
 table.reviewers {
 	line-height: 125%;
 	margin-left: -6px;
@@ -1213,15 +1216,16 @@ table.reviewers {
 table.reviewers > tbody > tr > td:first-child {
 	padding-left: 6px;
 }
-table.reviewers td {
+table.reviewers > tbody > tr > td {
 	padding-right: 1em;
 }
 table.reviewers > tbody > tr.hilite {
 	background: #f0f0ff;
 }
-table.reviewers th {
+table.reviewers > tbody > tr > th {
 	font-size: smaller;
 	padding: 0 0.25em;
+	color: #666666;
 }
 table.reviewers th.revsl {
 	padding-left: 0;
@@ -2013,8 +2017,14 @@ div.od, p.od, p.odname {
 	text-indent: -1.5em;
 }
 p.xd {
-	margin: 0 0 0.5em 1.5em;
+	margin: 0.5em 0 0.5em 1.5em;
 	text-indent: -1.5em;
+}
+p.xd:first-child {
+	margin-top: 0;
+}
+p.xd:last-child {
+	margin-bottom: 0;
 }
 textarea#foldtags_d {
 	margin: 0;
