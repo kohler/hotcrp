@@ -565,6 +565,12 @@ class PaperStatus {
             $this->set_error_html("author", "Each paper must have at least one author.");
         if (count($pj->bad_authors))
             $this->set_error_html("author", "Some authors ignored.");
+        $ncontacts = 0;
+        foreach (self::conflicts_array($pj, $old_pj) as $c)
+            if ($c >= CONFLICT_CONTACTAUTHOR)
+                ++$ncontacts;
+        if (!$ncontacts && $old_pj && self::contacts_array($old_pj))
+            $this->set_error_html("contacts", "Each paper must have at least one contact.");
         foreach ($pj->bad_contacts as $reg)
             if (!isset($reg->email))
                 $this->set_error_html("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
