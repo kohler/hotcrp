@@ -131,7 +131,7 @@ class PaperTable {
     }
 
     static public function do_header($paperTable, $id, $action_mode) {
-        global $Conf, $CurrentList;
+        global $Conf, $CurrentList, $Me;
         $prow = $paperTable ? $paperTable->prow : null;
 
         $t = '<div id="header_page" class="header_page_submission';
@@ -150,12 +150,14 @@ class PaperTable {
             $t .= '">' . $title;
         } else {
             $title = "#" . $prow->paperId;
-            $t .= ' has_hotcrp_tag_classes';
-            if (($tags = $prow->all_tags_text())) {
-                $tagger = new Tagger;
-                $viewable = $tagger->viewable($tags);
-                if (($color = TagInfo::color_classes($viewable)))
-                    $t .= ' ' . $color;
+            if ($Me->can_view_tags($prow)) {
+                $t .= ' has_hotcrp_tag_classes';
+                if (($tags = $prow->all_tags_text())) {
+                    $tagger = new Tagger;
+                    $viewable = $tagger->viewable($tags);
+                    if (($color = TagInfo::color_classes($viewable)))
+                        $t .= ' ' . $color;
+                }
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
