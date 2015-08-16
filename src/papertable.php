@@ -346,7 +346,7 @@ class PaperTable {
         $prow = $this->prow;
         $out = array();
 
-        // status and download
+        // download
         if ($Me->can_view_pdf($prow)) {
             $pdfs = array();
 
@@ -2128,6 +2128,10 @@ class PaperTable {
 
     function paptabEndWithReviewMessage() {
         global $Conf, $Me;
+        if ($this->editable) {
+            echo "</div></div>\n";
+            return;
+        }
 
         $m = array();
         if ($this->rrows
