@@ -47,13 +47,14 @@ class PaperTable {
 
         $ms = array();
         if ($Me->can_view_review($prow, null, null)
-            || ($prow && $prow->review_submitted($Me)))
+            || $prow->review_submitted($Me))
             $this->can_view_reviews = $ms["p"] = true;
-        else if ($prow && $prow->timeWithdrawn > 0
-                 && !$Conf->timeUpdatePaper($prow))
+        else if ($prow->timeWithdrawn > 0 && !$Conf->timeUpdatePaper($prow))
             $ms["p"] = true;
         if ($Me->can_review($prow, null))
             $ms["re"] = true;
+        if ($Me->can_view_paper($prow) && $Me->allow_administer($prow))
+            $ms["p"] = true;
         if ($prow->has_author($Me)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
             $ms["edit"] = true;
@@ -1017,7 +1018,11 @@ class PaperTable {
     }
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
-        $x = '<div';
+        $x = "";
+        if (!$this->npapstrip)
+            $x .= '<div class="pspcard_container">'
+                . '<div class="pspcard"><div class="pspcard_body">';
+        $x .= '<div';
         if ($foldid)
             $x .= " id=\"fold$foldid\"";
         $x .= ' class="psc';
@@ -1955,16 +1960,13 @@ class PaperTable {
         global $Conf, $Me;
         $prow = $this->prow;
 
-        if ($prow) {
-            echo '<div class="pspcard_container">',
-                '<div class="pspcard">',
-                '<div class="pspcard_body">';
+        if ($prow)
             $this->_papstrip();
-            echo "</div></div></div>\n";
-            echo '<div class="papcard"><div class="papcard_body">';
+        if ($this->npapstrip) {
+            echo "</div></div></div>\n",
+                '<div class="papcard"><div class="papcard_body">';
         } else
-            echo '<div class="pedcard">',
-                '<div class="pedcard_body">';
+            echo '<div class="pedcard"><div class="pedcard_body">';
 
         $form_js = array("id" => "paperedit");
         if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
