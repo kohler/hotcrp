@@ -421,6 +421,13 @@ class PaperStatus {
         }
     }
 
+    private function valid_contact($lemail, $old_contacts) {
+        global $Me;
+        return $lemail
+            && (@$old_contacts[$lemail] || validate_email($lemail)
+                || strcasecmp($lemail, $Me->email) == 0);
+    }
+
     function normalize($pj, $old_pj) {
         // Errors prevent saving
         global $Conf, $Now;
@@ -523,8 +530,7 @@ class PaperStatus {
         foreach (@$pj->authors ? : array() as $au)
             if (@$au->contact
                 && (!@$au->email
-                    || (!@$old_contacts[strtolower($au->email)]
-                        && !validate_email($au->email))))
+                    || !$this->valid_contact(strtolower($au->email), $old_contacts)))
                 $pj->bad_contacts[] = $au;
         // verify emails on explicitly named contacts
         foreach ($contacts as $k => $v) {
@@ -534,7 +540,7 @@ class PaperStatus {
                 $v = (object) array();
             else if (is_string($v) && is_int($k)) {
                 $v = trim($v);
-                if (@$old_contacts[strtolower($v)] || validate_email($v))
+                if ($this->valid_contact(strtolower($v), $old_contacts))
                     $v = (object) array("email" => $v);
                 else
                     $v = Text::analyze_name($v);
@@ -543,7 +549,7 @@ class PaperStatus {
                 $v->email = $k;
             if (is_object($v) && @$v->email) {
                 $lemail = strtolower($v->email);
-                if (validate_email($lemail) || @$old_contacts[$lemail])
+                if ($this->valid_contact($lemail, $old_contacts))
                     $pj->contacts[] = (object) array_merge((array) @$au_by_email[$lemail], (array) $v);
                 else
                     $pj->bad_contacts[] = $v;
