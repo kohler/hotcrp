@@ -325,6 +325,7 @@ class Text {
 
     const SEARCH_CASE_SENSITIVE = 1;
     const SEARCH_UNPRIVILEGE_EXACT = 2;
+    const SEARCH_ONLY_EXACT = 4;
 
     public static function simple_search($needle, $haystacks, $flags = 0) {
         $reflags = $flags & self::SEARCH_CASE_SENSITIVE ? "" : "i";
@@ -334,7 +335,8 @@ class Text {
                 $rewords[] = str_replace("*", ".*", $word);
         $matches = array();
         $i = $flags & self::SEARCH_UNPRIVILEGE_EXACT ? 1 : 0;
-        for (; $i < 3 && !count($matches); ++$i) {
+        $last = $flags & self::SEARCH_ONLY_EXACT ? $i : 2;
+        for (; $i <= $last && !count($matches); ++$i) {
             if ($i == 0)
                 $re = ',\A' . join('\b.*\b', $rewords) . '\z,' . $reflags;
             else if ($i == 1)

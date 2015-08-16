@@ -1003,7 +1003,7 @@ class PaperSearch {
         else if (!$quoted && strcasecmp($word, "any") == 0)
             $value = "!=0";
         else {
-            $flags = $quoted ? 0 : Text::SEARCH_UNPRIVILEGE_EXACT;
+            $flags = $quoted ? Text::SEARCH_ONLY_EXACT : Text::SEARCH_UNPRIVILEGE_EXACT;
             $value = Text::simple_search($word, $Conf->decision_map(), $flags);
             if (count($value) == 0) {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
