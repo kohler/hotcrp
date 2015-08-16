@@ -2268,12 +2268,10 @@ Promise.prototype.onThen = function (f) {
 
 // tags
 function strnatcmp(a, b) {
-    var al = a.toLowerCase().replace(/"/g, ""),
-        bl = b.toLowerCase().replace(/"/g, "");
-    if (al < bl)
-        return -1;
-    else if (bl < al)
-        return 1;
+    var cmp = a.toLowerCase().replace(/"/g, "")
+        .localeCompare(b.toLowerCase().replace(/"/g, ""));
+    if (cmp != 0)
+        return cmp;
     else if (a == b)
         return 0;
     else if (a < b)
