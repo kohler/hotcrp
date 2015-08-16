@@ -2245,7 +2245,7 @@ div.pedcard_head h2 {
 /* paper notes */
 div.notecard {
 	margin: 16px 0 -8px 14em;
-	padding: 0 5px 0 5px;
+	padding: 3px 0 5px;
 	position: relative;
 }
 div.notecard_body {
