@@ -1008,7 +1008,7 @@ class PaperSearch {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
                 $value[] = -10000000;
             }
-            $value = sql_in_numeric_set(array_keys($value));
+            $value = array_keys($value);
         }
 
         $value = array("outcome", $value);
