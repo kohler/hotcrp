@@ -200,6 +200,15 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
     _alternateRow($caption, _searchForm($search, $other, 36), $explanation);
 }
 
+function meaningful_pc_tag() {
+    global $Me;
+    if ($Me->isPC)
+        foreach (pcTags() as $tag)
+            if ($tag !== "pc")
+                return $tag;
+    return false;
+}
+
 function meaningful_round_name() {
     global $Conf;
     $rounds = $Conf->round_list();
@@ -221,13 +230,7 @@ function searchQuickref() {
         $aunote = "<br /><span class='hint'>Search uses fields visible to the searcher. For example, PC member searches do not examine authors.</span>";
 
     // does a reviewer tag exist?
-    $retag = "";
-    if ($Me->isPC) {
-        foreach (pcMembers() as $pc)
-            if ($pc->contactTags
-                && preg_match('/(\S+)/', $pc->contactTags, $m))
-                $retag = $m[1];
-    }
+    $retag = meaningful_pc_tag() ? : "";
 
     echo '<h2 class="helppage">Search keywords</h2>', "\n";
     echo "<table class=\"helppage\">\n";
@@ -1005,16 +1008,21 @@ href=\"" . hoturl("search", "q=&amp;tab=formulas") . "\">Search &gt; Display opt
 &gt; Edit formulas</a>.</p>
 
 <p>Formulas use a familiar expression language.
-For example, the following formula calculates a weighted average of the
-Overall merit score, where reviews are weighted proportional to the Reviewer
-expertise score (so low expertise has low weight):</p>
+For example, this computes the sum of the squares of the overall merit scores:</p>
 
-<blockquote>wavg(OveMer, RevExp)</blockquote>
+<blockquote>sum(OveMer*OveMer)</blockquote>
 
-<p>But this weighting function might be too aggressive; the following function
-weights low expertise just slightly less than high expertise.</p>
+This calculates an average of overall merit scores, weighted by expertise
+(high-expertise reviews are given slightly more weight):</p>
 
-<blockquote>wavg(OveMer, RevExp < 3 ? 0.8 : 1)</blockquote>
+<blockquote>wavg(OveMer, RevExp >= 4 ? 1 : 0.8)</blockquote>
+
+<p>And there are many variations. This version gives more weight to PC
+reviewers with the “#heavy” tag:</p>
+
+<blockquote>wavg(OveMer, re:#heavy + 1)</blockquote>
+
+<p>(“re:#heavy + 1” equals 2 for #heavy reviews and 1 for others.)</p>
 
 <p>Formulas work better for numeric scores, but you can use them
 for alphabetical scores; for instance, assuming a
@@ -1050,6 +1058,9 @@ Confidence score with choices X, Y, and Z:</p>
     _alternateRow("", "issecondary", "True for secondary reviews");
     _alternateRow("", "isexternal", "True for external reviews");
     _alternateRow("", "ispc", "True for PC reviews");
+    _alternateRow("", "re:sylvia", "True if reviewer matches “sylvia”");
+    if (($retag = meaningful_pc_tag()))
+        _alternateRow("", "re:#$retag", "True if reviewer has tag “#{$retag}”");
     _alternateRow("Review preferences", "pref", "Review preference");
     _alternateRow("", "prefexp", "Predicted expertise");
     echo "</table>\n";

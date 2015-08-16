@@ -776,7 +776,7 @@ class Formula {
             return array($t, "", $t);
     }
 
-    const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.])+)';
+    const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.@+!*\/?])+)';
 
     private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "")
