@@ -631,7 +631,7 @@ class PaperSearch {
         "ab" => "ab", "abstract" => "ab",
         "au" => "au", "author" => "au",
         "co" => "co", "collab" => "co", "collaborators" => "co",
-        "re" => "re", "rev" => "re", "review" => "re",
+        "r" => "re", "re" => "re", "rev" => "re", "review" => "re",
         "cre" => "cre", "crev" => "cre", "creview" => "cre",
         "ire" => "ire", "irev" => "ire", "ireview" => "ire",
         "pre" => "pre", "prev" => "pre", "preview" => "pre",

@@ -2097,6 +2097,7 @@ class Contact {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
         // See also PaperInfo::can_view_review_identity_of.
+        // See also ReviewerFexpr.
         return $rights->can_administer
             || ($rrow && ($this->is_my_review($rrow)
                           || ($rights->allow_pc

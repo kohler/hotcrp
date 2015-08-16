@@ -276,13 +276,7 @@ class ScoreFexpr extends Fexpr {
         $state->queryOptions["scores"][$fid] = $fid;
         $state->datatype |= Fexpr::ASUBREV;
         $scores = $state->define_gvar($fid, "\$prow->viewable_scores(\"$fid\", \$contact, \$forceShow)");
-        if ($state->looptype == self::LNONE)
-            $fidx = "[\$rrow_cid]";
-        else if ($state->looptype == self::LMY)
-            $fidx = "[\$contact->contactId]";
-        else
-            $fidx = "[~i~]";
-        return "((int) @{$scores}$fidx ? : null)";
+        return "((int) @{$scores}[" . $state->_rrow_cid() . "] ? : null)";
     }
 }
 
@@ -302,13 +296,8 @@ class PrefFexpr extends Fexpr {
             return "null";
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
-        if ($state->looptype == self::LNONE)
-            $fidx = "[\$rrow_cid]";
-        else if ($state->looptype == self::LMY)
-            $fidx = "[\$contact->contactId]";
-        else
-            $fidx = "[~i~]";
-        return "@" . $state->_add_review_prefs() . $fidx . "[" . ($this->isexpertise ? 1 : 0) . "]";
+        return "@" . $state->_add_review_prefs() . "[" . $state->_rrow_cid()
+            . "][" . ($this->isexpertise ? 1 : 0) . "]";
     }
 }
 
@@ -389,12 +378,10 @@ class TopicScoreFexpr extends Fexpr {
     public function compile(FormulaCompiler $state) {
         $state->datatype |= Fexpr::APCCANREV;
         $state->queryOptions["topics"] = true;
-        if ($state->looptype == self::LNONE)
-            return "\$prow->topic_interest_score(\$rrow_cid)";
-        else if ($state->looptype == self::LMY)
+        if ($state->looptype == self::LMY)
             return $state->define_gvar("mytopicscore", "\$prow->topic_interest_score(\$contact)");
         else
-            return "\$prow->topic_interest_score(~i~)";
+            return "\$prow->topic_interest_score(" . $state->_rrow_cid() . ")";
     }
 }
 
@@ -415,10 +402,7 @@ class RevtypeFexpr extends Fexpr {
                 return "null";
             $state->queryOptions["reviewTypes"] = true;
             $rt = $state->define_gvar("revtypes", "\$prow->submitted_review_types()");
-            if ($state->looptype == self::LNONE)
-                $rt = "@{$rt}[\$rrow_cid]";
-            else
-                $rt = "@{$rt}[~i~]";
+            return "@{$rt}[" . $state->_rrow_cid() . "]";
         }
         return $rt;
     }
@@ -438,15 +422,57 @@ class ConflictFexpr extends Fexpr {
         if ($state->looptype == self::LMY)
             $rt = $state->contact->isPC ? "!!\$prow->conflictType" : "false";
         else {
-            if ($state->looptype == self::LNONE)
-                $idx = '[$rrow_cid]';
-            else
-                $idx = '[~i~]';
+            $idx = "[" . $state->_rrow_cid() . "]";
             $rt = "!!@" . $state->_add_conflicts() . $idx;
             if ($this->ispc)
                 $rt = "(@" . $state->_add_pc() . $idx . " ? $rt : null)";
         }
         return $rt;
+    }
+}
+
+class ReviewerFexpr extends Fexpr {
+    private $arg;
+    private $flags;
+    public function __construct($arg) {
+        $this->arg = $arg;
+        $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && pcTags($arg));
+    }
+    public function format() {
+        return "bool";
+    }
+    public function view_score(Contact $contact) {
+        global $Conf;
+        if ($this->istag)
+            return VIEWSCORE_PC;
+        else if (!$Conf->setting("rev_blind"))
+            return VIEWSCORE_AUTHOR;
+        else if ($Conf->setting("pc_seeblindrev"))
+            return VIEWSCORE_REVIEWERONLY;
+        else
+            return VIEWSCORE_PC;
+    }
+    public function compile(FormulaCompiler $state) {
+        $state->datatype |= self::ASUBREV;
+        $flags = 0;
+        $arg = $this->arg;
+        if ($arg[0] === "\"") {
+            $flags |= ContactSearch::F_QUOTED;
+            $arg = str_replace("\"", "", $arg);
+        }
+        if (!($flags & ContactSearch::F_QUOTED)
+            && ($arg[0] === "#" || pcTags($arg))
+            && $state->contact->can_view_reviewer_tags())
+            $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
+        $cs = new ContactSearch($flags, $arg, $state->contact);
+        if ($flags & ContactSearch::F_TAG) {
+            $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
+            $e = "($cvt ? array_search(" . $state->_rrow_cid() . ", array(" . join(", ", $cs->ids) . ")) !== false : null)";
+        } else {
+            // XXX information leak?
+            $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", array(" . join(", ", $cs->ids) . ")) !== false : null)";
+        }
+        return $e;
     }
 }
 
@@ -517,6 +543,15 @@ class FormulaCompiler {
         if ($this->check_gvar('$pc'))
             $this->gstmt[] = "\$pc = pcMembers();";
         return '$pc';
+    }
+
+    public function _rrow_cid() {
+        if ($this->looptype == Fexpr::LNONE)
+            return '$rrow_cid';
+        else if ($this->looptype == Fexpr::LMY)
+            return (string) $this->contact->contactId;
+        else
+            return '~i~';
     }
 
     private function _push() {
@@ -741,6 +776,8 @@ class Formula {
             return array($t, "", $t);
     }
 
+    const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.])+)';
+
     private function _parse_expr(&$t, $level, $in_qc) {
         if (($t = ltrim($t)) === "")
             return null;
@@ -797,7 +834,7 @@ class Formula {
         } else if (preg_match('/\A(?:pid|paperid)\b(.*)\z/si', $t, $m)) {
             $e = new ConstantFexpr("\$prow->paperId");
             $t = $m[1];
-        } else if (preg_match('/\A(?:dec|decision):\s*("[^"]*"|[-a-zA-Z0-9_.]+)(.*)\z/si', $t, $m)) {
+        } else if (preg_match('/\A(?:dec|decision):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
             $value = PaperSearch::decision_matcher($m[1]);
             if (is_string($value))
                 $e = new Fexpr(str_replace("0", "", $value),
@@ -815,6 +852,9 @@ class Formula {
         } else if (preg_match('/\Atag(?:v|-?val|-?value)(?:\s*:\s*|\s+)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], true);
+            $t = $m[2];
+        } else if (preg_match('/\A(?:r|re|rev|review)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
+            $e = new ReviewerFexpr($m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(my|all|any|avg|count|min|max|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
