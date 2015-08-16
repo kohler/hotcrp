@@ -990,26 +990,31 @@ class PaperSearch {
         $qt[] = new SearchTerm("re", $rt | self::F_XVIEW, $value);
     }
 
-    function _search_decision($word, &$qt, $quoted, $allow_status) {
+    static public function decision_matcher($word, $quoted = null) {
         global $Conf;
-        if (!$quoted && strcasecmp($word, "yes") == 0)
-            $value = ">0";
-        else if (!$quoted && strcasecmp($word, "no") == 0)
-            $value = "<0";
-        else if ($word === "?"
-                 || (!$quoted && strcasecmp($word, "none") == 0)
-                 || (!$quoted && strcasecmp($word, "unknown") == 0))
-            $value = "=0";
-        else if (!$quoted && strcasecmp($word, "any") == 0)
-            $value = "!=0";
-        else {
-            $flags = $quoted ? Text::SEARCH_ONLY_EXACT : Text::SEARCH_UNPRIVILEGE_EXACT;
-            $value = Text::simple_search($word, $Conf->decision_map(), $flags);
-            if (count($value) == 0) {
-                $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
-                $value[] = -10000000;
-            }
-            $value = array_keys($value);
+        if ($quoted === null && ($quoted = ($word && $word[0] === '"')))
+            $word = str_replace('"', '', $word);
+        $lword = strtolower($word);
+        if (!$quoted) {
+            if ($lword === "yes")
+                return ">0";
+            else if ($lword === "no")
+                return "<0";
+            else if ($lword === "?" || $lword === "none" || $lword === "unknown")
+                return array(0);
+            else if ($lword === "any")
+                return "!=0";
+        }
+        $flags = $quoted ? Text::SEARCH_ONLY_EXACT : Text::SEARCH_UNPRIVILEGE_EXACT;
+        return array_keys(Text::simple_search($word, $Conf->decision_map(), $flags));
+    }
+
+    private function _search_decision($word, &$qt, $quoted, $allow_status) {
+        global $Conf;
+        $value = self::decision_matcher($word, $quoted);
+        if (is_array($value) && count($value) == 0) {
+            $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
+            $value[] = -10000000;
         }
 
         $value = array("outcome", $value);

@@ -794,12 +794,20 @@ class Formula {
         } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
             $e = new ConstantFexpr($m[1], "bool");
             $t = $m[2];
-        } else if (preg_match('/\A(pid|paperid)\b(.*)\z/si', $t, $m)) {
+        } else if (preg_match('/\A(?:pid|paperid)\b(.*)\z/si', $t, $m)) {
             $e = new ConstantFexpr("\$prow->paperId");
+            $t = $m[1];
+        } else if (preg_match('/\A(?:dec|decision):\s*("[^"]*"|[-a-zA-Z0-9_.]+)(.*)\z/si', $t, $m)) {
+            $value = PaperSearch::decision_matcher($m[1]);
+            if (is_string($value))
+                $e = new Fexpr(str_replace("0", "", $value),
+                               new DecisionFexpr, new ConstantFexpr("0"));
+            else
+                $e = new InFexpr(new DecisionFexpr, $value);
             $t = $m[2];
-        } else if (preg_match('/\A(dec|decision)\b(.*)\z/si', $t, $m)) {
+        } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new DecisionFexpr;
-            $t = $m[2];
+            $t = $m[1];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], false);
