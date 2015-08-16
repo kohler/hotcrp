@@ -130,7 +130,7 @@ class PaperOption {
                 return array($o->id => $o);
             else
                 $oabbr[$o->id] = $o->abbr;
-        $oabbr = Text::simple_search($name, $oabbr, true);
+        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
         foreach ($oabbr as $id => &$x)
             $x = self::$list[$id];
         return $oabbr;

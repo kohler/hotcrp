@@ -1003,7 +1003,8 @@ class PaperSearch {
         else if (!$quoted && strcasecmp($word, "any") == 0)
             $value = "!=0";
         else {
-            $value = Text::simple_search($word, $Conf->decision_map());
+            $flags = $quoted ? 0 : Text::SEARCH_UNPRIVILEGE_EXACT;
+            $value = Text::simple_search($word, $Conf->decision_map(), $flags);
             if (count($value) == 0) {
                 $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
                 $value[] = -10000000;
@@ -3343,13 +3344,13 @@ class PaperSearch {
             return current($tOpt);
     }
 
-    private static function simple_search_completion($prefix, $map) {
+    private static function simple_search_completion($prefix, $map, $flags = 0) {
         $x = array();
         foreach ($map as $id => $str) {
             $match = null;
             foreach (preg_split(',[^a-z0-9_]+,', strtolower($str)) as $word)
                 if ($word !== ""
-                    && ($m = Text::simple_search($word, $map))
+                    && ($m = Text::simple_search($word, $map, $flags))
                     && isset($m[$id]) && count($m) == 1
                     && !Text::is_boring_word($word)) {
                     $match = $word;
@@ -3381,7 +3382,7 @@ class PaperSearch {
                 $res[] = array("pri" => -1, "nosort" => true, "i" => array("dec:any", "dec:none", "dec:yes", "dec:no"));
                 $dm = $Conf->decision_map();
                 unset($dm[0]);
-                $res = array_merge($res, self::simple_search_completion("dec:", $dm));
+                $res = array_merge($res, self::simple_search_completion("dec:", $dm, Text::SEARCH_UNPRIVILEGE_EXACT));
             }
         }
         if ($this->amPC || $this->contact->can_view_some_decision())

@@ -323,14 +323,18 @@ class Text {
         return join("", $s);
     }
 
-    public static function simple_search($needle, $haystacks, $case_sensitive = false) {
-        $reflags = $case_sensitive ? "" : "i";
+    const SEARCH_CASE_SENSITIVE = 1;
+    const SEARCH_UNPRIVILEGE_EXACT = 2;
+
+    public static function simple_search($needle, $haystacks, $flags = 0) {
+        $reflags = $flags & self::SEARCH_CASE_SENSITIVE ? "" : "i";
         $rewords = array();
         foreach (preg_split('/[^A-Za-z_0-9*]+/', $needle) as $word)
             if ($word !== "")
                 $rewords[] = str_replace("*", ".*", $word);
         $matches = array();
-        for ($i = 0; $i < 3 && !count($matches); ++$i) {
+        $i = $flags & self::SEARCH_UNPRIVILEGE_EXACT ? 1 : 0;
+        for (; $i < 3 && !count($matches); ++$i) {
             if ($i == 0)
                 $re = ',\A' . join('\b.*\b', $rewords) . '\z,' . $reflags;
             else if ($i == 1)
