@@ -1018,25 +1018,43 @@ class PaperTable {
     }
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
-        $x = "";
-        if (!$this->npapstrip)
-            $x .= '<div class="pspcard_container">'
-                . '<div class="pspcard"><div class="pspcard_body">';
-        $x .= '<div';
+        global $Conf, $Me;
+        if (!$this->npapstrip) {
+            echo '<div class="pspcard_container"><div class="pspcard">',
+                '<div id="pspcard_body"><div class="pspcard_fold">',
+                '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
+
+            if ($this->prow && $Me->can_view_tags($this->prow)
+                && ($tags = $this->prow->all_tags_text()) !== "") {
+                $tagger = new Tagger;
+                if (($viewable = $tagger->viewable($tags)) !== "") {
+                    $color = TagInfo::color_classes($viewable);
+                    echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',
+                        '<span class="psfn">Tags:</span> ',
+                        $tagger->unparse_and_link($viewable, $tags, false,
+                                                  !$this->prow->has_conflict($Me)),
+                        '</div>';
+                }
+            }
+
+            echo '</div><div class="pspcard_open">';
+            $Conf->footerScript('$(".pspcard_fold").click(function(e){$(".pspcard_fold").hide();$(".pspcard_open").show();e.preventDefault();return false})');
+        }
+        echo '<div';
         if ($foldid)
-            $x .= " id=\"fold$foldid\"";
-        $x .= ' class="psc';
+            echo " id=\"fold$foldid\"";
+        echo ' class="psc';
         if (!$this->npapstrip)
-            $x .= " psc1";
+            echo " psc1";
         if ($foldid)
-            $x .= " fold" . ($folded ? "c" : "o");
+            echo " fold", ($folded ? "c" : "o");
         if (is_string($extra))
-            $x .= " " . $extra;
+            echo " " . $extra;
         else if (is_array($extra))
             foreach ($extra as $k => $v)
-                $x .= "\" $k=\"$v";
+                echo "\" $k=\"$v";
+        echo '">';
         ++$this->npapstrip;
-        return $x . '">';
     }
 
     private function papstripCollaborators() {
@@ -1051,11 +1069,11 @@ class PaperTable {
         if ($this->entryMatches || !$this->allFolded)
             $fold = 0;
 
-        echo $this->_papstripBegin("pscollab", $fold),
-            $this->papt("collaborators", $name,
-                        array("type" => "ps", "fold" => "pscollab",
-                              "foldsession" => "foldpscollab",
-                              "folded" => $fold)),
+        $this->_papstripBegin("pscollab", $fold);
+        echo $this->papt("collaborators", $name,
+                         array("type" => "ps", "fold" => "pscollab",
+                               "foldsession" => "foldpscollab",
+                               "folded" => $fold)),
             "<div class='psv'><div class='fx'>", $data,
             "</div></div></div>\n\n";
     }
@@ -1273,8 +1291,8 @@ class PaperTable {
         if (!count($pcconf))
             $pcconf[] = "<p class=\"odname\">None</p>";
         ksort($pcconf);
-        echo $this->_papstripBegin(),
-            $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
+        $this->_papstripBegin();
+        echo $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
             "<div class='psv psconf'>", join("", $pcconf), "</div></div>\n";
     }
 
@@ -1289,10 +1307,11 @@ class PaperTable {
         $pc = pcMembers();
 
         if ($wholefold === null)
-            echo $this->_papstripBegin($type, true);
-        else
-            echo '<div id="fold', $type, '" class="foldc">',
-                $this->_papstripBegin(null, true);
+            $this->_papstripBegin($type, true);
+        else {
+            echo '<div id="fold', $type, '" class="foldc">';
+            $this->_papstripBegin(null, true);
+        }
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv"><p class="fn odname">';
         if ($value)
@@ -1329,78 +1348,81 @@ class PaperTable {
         $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || defval($_REQUEST, "atab") === "manager", null);
     }
 
-    private function papstripTags($site = null) {
+    private function papstripTags() {
         global $Conf, $Me, $Error;
-        $tags = $this->prow ? $this->prow->all_tags_text() : "";
-        if ($site || $tags !== "") {
-            // Note that tags MUST NOT contain HTML special characters.
-            $tagger = new Tagger;
-            $viewable = $tagger->viewable($tags);
+        if (!$this->prow || !$Me->can_view_tags($this->prow))
+            return;
+        $tags = $this->prow->all_tags_text();
+        $is_editable = $Me->can_change_some_tag($this->prow);
+        if ($tags === "" && !$is_editable)
+            return;
 
-            $tx = $tagger->unparse_and_link($viewable, $tags, false,
-                                            !$this->prow->has_conflict($Me));
-            $is_editable = $site && $Me->can_change_some_tag($this->prow);
-            $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") === "tags");
+        // Note that tags MUST NOT contain HTML special characters.
+        $tagger = new Tagger;
+        $viewable = $tagger->viewable($tags);
 
-            echo $this->_papstripBegin("tags", !$unfolded,
-                                       array("onunfold" => "Miniajax.submit('tagreportform')"));
-            $color = TagInfo::color_classes($viewable);
-            echo "<div class=\"", trim("has_hotcrp_tag_classes pscopen $color"), "\">";
+        $tx = $tagger->unparse_and_link($viewable, $tags, false,
+                                        !$this->prow->has_conflict($Me));
+        $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") === "tags");
 
-            if ($is_editable)
-                echo Ht::form_div(hoturl_post($site, "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));
+        $this->_papstripBegin("tags", !$unfolded,
+                              array("onunfold" => "Miniajax.submit('tagreportform')"));
+        $color = TagInfo::color_classes($viewable);
+        echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">';
 
-            echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
-                '<div class="psv" style="position:relative">';
-            if ($is_editable) {
-                // tag report form
-                $Conf->footerHtml(Ht::form(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1"), array("id" => "tagreportform", "onsubmit" => "return Miniajax.submit('tagreportform')"))
-                                  . "</form>");
-                $treport = PaperActions::tag_report($this->prow);
+        if ($is_editable)
+            echo Ht::form_div(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;m=api&amp;fn=settags"), array("id" => "tagform", "onsubmit" => "return save_tags()"));
 
-                // uneditable
-                echo '<div class="fn taghl">';
-                if ($treport->warnings)
-                    echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
-                echo ($tx === "" ? "None" : $tx), '</div>';
+        echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
+            '<div class="psv" style="position:relative">';
+        if ($is_editable) {
+            // tag report form
+            $Conf->footerHtml(Ht::form(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1"), array("id" => "tagreportform", "onsubmit" => "return Miniajax.submit('tagreportform')"))
+                              . "</form>");
+            $treport = PaperActions::tag_report($this->prow);
 
-                echo "<div id='papstriptagsedit' class='fx'><div id='tagreportformresult'>";
-                if ($treport->warnings)
-                    echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
-                if ($treport->messages)
-                    echo '<div class="xmsg xinfo">', join("<br>", $treport->messages), '</div>';
-                echo "</div>";
-                if (isset($Error["tags"]))
-                    echo '<div class="xmsg xmerror">', $Error["tags"], "</div>";
-                $editable = $tags;
-                if ($this->prow)
-                    $editable = $tagger->paper_editable($this->prow);
-                echo "<div style='position:relative'>",
-                    "<textarea id='foldtags_d' cols='20' rows='4' name='tags' onkeypress='return crpSubmitKeyFilter(this, event)'>",
-                    $tagger->unparse($editable),
-                    "</textarea></div>",
-                    "<div style='padding:1ex 0;text-align:right'>",
-                    Ht::hidden("settags", "1"),
-                    Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)")),
-                    " &nbsp;", Ht::submit("Save", array("class" => "bsm")),
-                    "</div>",
-                    "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
-                    "</div>";
-                $Conf->footerScript("taghelp(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
-            } else
-                echo '<div class="taghl">', ($tx === "" ? "None" : $tx), '</div>';
+            // uneditable
+            echo '<div class="fn taghl">';
+            if ($treport->warnings)
+                echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
+            echo ($tx === "" ? "None" : $tx), '</div>';
+
+            echo '<div id="papstriptagsedit" class="fx"><div id="tagreportformresult">';
+            if ($treport->warnings)
+                echo '<div class="xmsg xwarning">', join("<br>", $treport->warnings), '</div>';
+            if ($treport->messages)
+                echo '<div class="xmsg xinfo">', join("<br>", $treport->messages), '</div>';
             echo "</div>";
+            if (isset($Error["tags"]))
+                echo '<div class="xmsg xmerror">', $Error["tags"], "</div>";
+            $editable = $tags;
+            if ($this->prow)
+                $editable = $tagger->paper_editable($this->prow);
+            echo '<div style="position:relative">',
+                '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)">',
+                $tagger->unparse($editable),
+                "</textarea></div>",
+                '<div style="padding:1ex 0;text-align:right">',
+                Ht::hidden("settags", "1"),
+                Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)")),
+                " &nbsp;", Ht::submit("Save", array("class" => "bsm")),
+                "</div>",
+                "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
+                "</div>";
+            $Conf->footerScript("taghelp(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
+        } else
+            echo '<div class="taghl">', ($tx === "" ? "None" : $tx), '</div>';
+        echo "</div>";
 
-            if ($is_editable)
-                echo "</div></form>";
-            echo "</div></div>\n";
-        }
+        if ($is_editable)
+            echo "</div></form>";
+        echo "</div></div>\n";
     }
 
     function papstripOutcomeSelector() {
         global $Conf;
-        echo $this->_papstripBegin("decision", defval($_REQUEST, "atab") !== "decision"),
-            $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
+        $this->_papstripBegin("decision", defval($_REQUEST, "atab") !== "decision");
+        echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
             '<div class="psv"><form class="fx"><div>';
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
@@ -1413,8 +1435,8 @@ class PaperTable {
 
     function papstripReviewPreference() {
         global $Conf, $CurrentList;
-        echo $this->_papstripBegin(),
-            $this->papt("revpref", "Review preference", array("type" => "ps")),
+        $this->_papstripBegin();
+        echo $this->papt("revpref", "Review preference", array("type" => "ps")),
             "<div class='psv'>",
             Ht::form_div(hoturl_post("review", "p=" . $this->prow->paperId), array("id" => "revprefform", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('revprefform')", "divclass" => "aahc")),
             Ht::hidden("setrevpref", 1);
@@ -1434,7 +1456,7 @@ class PaperTable {
 
     private function papstrip_tag_entry($id, $folds) {
         if (!$this->npapstrip_tag_entry)
-            echo $this->_papstripBegin(null, null, "psc_te");
+            $this->_papstripBegin(null, null, "psc_te");
         ++$this->npapstrip_tag_entry;
         echo '<div', ($id ? " id=\"fold{$id}\"" : ""),
             ' class="pste', ($folds ? " $folds" : ""), '">';
@@ -1550,8 +1572,8 @@ class PaperTable {
         where ContactInfo.contactId=$Me->contactId");
         $row = edb_row($result);
 
-        echo $this->_papstripBegin(),
-            Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;setfollow=1"), array("id" => "watchform", "class" => "fold7c", "onsubmit" => "Miniajax.submit('watchform')"));
+        $this->_papstripBegin();
+        echo Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;setfollow=1"), array("id" => "watchform", "class" => "fold7c", "onsubmit" => "Miniajax.submit('watchform')"));
 
         if ($row[4] && ($row[4] & ($this->watchCheckbox >> 1)))
             $watchValue = $row[4];
@@ -1802,8 +1824,7 @@ class PaperTable {
         if (($prow->managerContactId || ($Me->privChair && $this->mode === "assign"))
             && $Me->can_view_paper_manager($prow))
             $this->papstripManager($Me->privChair);
-        if ($Me->can_view_tags($prow))
-            $this->papstripTags("review");
+        $this->papstripTags();
         $this->npapstrip_tag_entry = 0;
         foreach (TagInfo::defined_tags() as $ltag => $dt)
             if ($Me->can_change_tag($prow, "~$ltag", null, 0)) {
@@ -1963,7 +1984,7 @@ class PaperTable {
         if ($prow)
             $this->_papstrip();
         if ($this->npapstrip) {
-            echo "</div></div></div>\n",
+            echo "</div></div></div></div>\n",
                 '<div class="papcard"><div class="papcard_body">';
         } else
             echo '<div class="pedcard"><div class="pedcard_body">';

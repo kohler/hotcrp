@@ -32,6 +32,13 @@ div.pspcard_container {
 	margin-left: 0;
 	margin-bottom: 16px;
 }
+div.pspcard_fold {
+	padding: 7px 0;
+	display: block;
+}
+div.pspcard_open {
+	display: none;
+}
 div.paptab {
 	float: none;
 	width: 100%;

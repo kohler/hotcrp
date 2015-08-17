@@ -1945,15 +1945,18 @@ div.pspcard {
 	padding: 5px 0;
 	border-radius: 4px;
 }
-div.pspcard_body {
-	padding: 0 8px 0.5em;
+div#pspcard_body {
+	padding: 0 8px;
 	background: white;
 	border-radius: 2px;
+}
+div.pspcard_fold {
+	display: none;
 }
 div#papstriptagsedit {
 	font-size: 8.7pt;
 }
-div.pspcard_body textarea, div.pspcard_body select {
+div#pspcard_body textarea, div#pspcard_body select {
 	font-size: inherit;
 }
 div.psc {
