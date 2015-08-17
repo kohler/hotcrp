@@ -512,7 +512,6 @@ class Autoassigner {
             foreach ($bpclass as $cid => &$x)
                 $x = min(array_keys($x));
             unset($x);
-            global $Conf; $Conf->infoMsg(json_encode($bpclass));
         }
         // paper <-> contact map
         $bpdone = array();
