@@ -204,12 +204,14 @@ class Autoassigner {
 
         // mark badpairs as noassign
         foreach ($this->badpairs as $cid => $bp)
-            foreach ($this->papersel as $pid) {
-                if ($this->prefs[$cid][$pid] < self::PMIN)
-                    continue;
-                foreach ($bp as $cid2 => $x)
-                    if ($this->prefs[$cid2][$pid] <= self::POLDASSIGN)
-                        $this->prefs[$cid][$pid] = self::PNOASSIGN;
+            if (isset($this->pcm[$cid])) {
+                foreach ($this->papersel as $pid) {
+                    if ($this->prefs[$cid][$pid] < self::PMIN)
+                        continue;
+                    foreach ($bp as $cid2 => $x)
+                        if ($this->prefs[$cid2][$pid] <= self::POLDASSIGN)
+                            $this->prefs[$cid][$pid] = self::PNOASSIGN;
+                }
             }
 
         $this->profile["preferences"] = microtime(true) - $time;
@@ -502,32 +504,29 @@ class Autoassigner {
         // figure out badpairs class for each user
         $bpclass = array();
         if ($this->action_takes_badpairs($action)) {
-            foreach ($this->badpairs as $cid => $bp)
-                $bpclass[$cid] = $cid;
-            $done = false;
-            while (!$done) {
-                $done = true;
-                foreach ($this->badpairs as $ocid => $bp) {
-                    foreach ($bp as $cid => $x)
-                        if ($bpclass[$ocid] > $bpclass[$cid]) {
-                            $bpclass[$ocid] = $bpclass[$cid];
-                            $done = false;
-                        }
-                }
+            foreach ($this->badpairs as $cid1 => $bp) {
+                foreach ($bp as $cid2 => $x)
+                    if (isset($this->pcm[$cid1]) && isset($this->pcm[$cid2]))
+                        @$bpclass[$cid1][$cid2] = @$bpclass[$cid1][$cid1] = true;
             }
+            foreach ($bpclass as $cid => &$x)
+                $x = min(array_keys($x));
+            unset($x);
+            global $Conf; $Conf->infoMsg(json_encode($bpclass));
         }
         // paper <-> contact map
+        $bpdone = array();
         foreach ($papers as $pid => $ct)
             foreach ($this->pcm as $cid => $p) {
                 if ((int) @$this->prefs[$cid][$pid] < self::PMIN)
                     continue;
-                if (isset($bpclass[$cid]) && $bpclass[$cid] == $cid) {
-                    $m->add_node("b{$pid}.$cid", "b");
-                    $x = "b{$pid}.$cid";
-                    $m->add_edge($x, "p$pid", 1, 0);
-                } else if (isset($bpclass[$cid]))
+                if (isset($bpclass[$cid])) {
                     $x = "b{$pid}." . $bpclass[$cid];
-                else
+                    if (!$m->node_exists($x)) {
+                        $m->add_node($x, "b");
+                        $m->add_edge($x, "p$pid", 1, 0);
+                    }
+                } else
                     $x = "p$pid";
                 $m->add_edge("u$cid", $x, 1, $cost[$cid][$pid]);
             }

@@ -248,11 +248,19 @@ class AutoassignerInterface {
         }
 
         list($atypes, $apids) = $assignset->types_and_papers(true);
+        $badpairs_inputs = $badpairs_arg = array();
+        for ($i = 1; $i <= 20; ++$i)
+            if (@$_REQUEST["bpa$i"] && @$_REQUEST["bpb$i"]) {
+                array_push($badpairs_inputs, Ht::hidden("bpa$i", $_REQUEST["bpa$i"]),
+                           Ht::hidden("bpb$i", $_REQUEST["bpb$i"]));
+                $badpairs_arg[] = $_REQUEST["bpa$i"] . "-" . $_REQUEST["bpb$i"];
+            }
         echo "<div class='g'></div>",
             Ht::form(hoturl_post("autoassign",
                                  array("saveassignment" => 1,
                                        "assigntypes" => join(" ", $atypes),
                                        "assignpids" => join(" ", $apids),
+                                       "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
                                        "profile" => @$_REQUEST["profile"],
                                        "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"],
                                        "seed" => @$_REQUEST["seed"]))),
@@ -262,14 +270,9 @@ class AutoassignerInterface {
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method") as $t)
             if (isset($_REQUEST[$t]))
                 echo Ht::hidden($t, $_REQUEST[$t]);
-        echo Ht::hidden("pcs", join(" ", array_keys($pcsel))), "\n";
-        for ($i = 1; $i <= 20; $i++) {
-            if (defval($_REQUEST, "bpa$i"))
-                echo Ht::hidden("bpa$i", $_REQUEST["bpa$i"]);
-            if (defval($_REQUEST, "bpb$i"))
-                echo Ht::hidden("bpb$i", $_REQUEST["bpb$i"]);
-        }
-        echo Ht::hidden("p", join(" ", $papersel)), "\n";
+        echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
+            join("", $badpairs_inputs),
+            Ht::hidden("p", join(" ", $papersel)), "\n";
 
         // save the assignment
         echo Ht::hidden("assignment", join("\n", $assignments)), "\n";

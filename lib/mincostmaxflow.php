@@ -174,6 +174,10 @@ class MinCostMaxFlow {
 
     // extract information
 
+    public function node_exists($name) {
+        return isset($this->vmap[$name]);
+    }
+
     public function nodes($klass) {
         $a = array();
         foreach ($this->v as $v)
