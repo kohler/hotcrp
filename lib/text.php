@@ -3,6 +3,17 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class NameInfo {
+    public $firstName = null;
+    public $lastName = null;
+    public $email = null;
+    public $withMiddle = null;
+    public $lastFirst = null;
+    public $nameAmbiguous = null;
+    public $name = null;
+    public $affiliation = null;
+}
+
 class Text {
 
     static private $argkeys = array("firstName", "lastName", "email",
@@ -46,34 +57,34 @@ class Text {
     }
 
     static function analyze_name_args($args, $ret = null) {
-        $ret = $ret ? : (object) array();
+        $ret = $ret ? : new NameInfo;
         $delta = 0;
         foreach ($args as $i => $v) {
             if (is_string($v) || is_bool($v)) {
                 if ($i + $delta < 4) {
                     $k = self::$argkeys[$i + $delta];
-                    if (!property_exists($ret, $k))
+                    if (@$ret->$k === null)
                         $ret->$k = $v;
                 }
             } else if (is_array($v) && isset($v[0])) {
                 for ($j = 0; $j < 3 && $j < count($v); ++$j) {
                     $k = self::$argkeys[$j];
-                    if (!property_exists($ret, $k))
+                    if (@$ret->$k === null)
                         $ret->$k = $v[$j];
                 }
             } else if (is_array($v)) {
                 foreach ($v as $k => $x)
                     if (@($mk = self::$mapkeys[$k])
-                        && !property_exists($ret, $mk))
+                        && @$ret->$mk === null)
                         $ret->$mk = $x;
                 $delta = 3;
             } else if (is_object($v)) {
                 foreach (self::$mapkeys as $k => $mk)
-                    if (property_exists($v, $k)
-                        && !property_exists($ret, $mk)
+                    if (@$ret->$mk === null
+                        && @$v->$k !== null
                         && (@self::$boolkeys[$mk]
                             ? is_bool($v->$k)
-                            : is_string($v->$k) || $v->$k === null))
+                            : is_string($v->$k)))
                         $ret->$mk = $v->$k;
             }
         }
@@ -81,8 +92,7 @@ class Text {
             if (@$ret->$k === null)
                 $ret->$k = $v;
         if ($ret->name && $ret->firstName === "" && $ret->lastName === "")
-            list($ret->firstName, $ret->lastName) =
-                self::split_name($ret->name);
+            list($ret->firstName, $ret->lastName) = self::split_name($ret->name);
         if ($ret->withMiddle && $ret->middleName) {
             $m = trim($ret->middleName);
             if ($m)
