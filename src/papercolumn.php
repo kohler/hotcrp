@@ -747,7 +747,7 @@ class PreferenceListPaperColumn extends PaperColumn {
                 if ($this->topics)
                     $pref[2] = $row->topic_interest_score($pc);
                 if (($pspan = unparse_preference_span($pref)) !== "")
-                    $ts[] = '<span class="nw">' . Text::name_html($pc) . $pspan . '</span>';
+                    $ts[] = '<span class="nw">' . $pc->name_html() . $pspan . '</span>';
             }
         return join(", ", $ts);
     }
@@ -822,7 +822,7 @@ class PCConflictListPaperColumn extends PaperColumn {
         $y = array();
         foreach (pcMembers() as $id => $pc)
             if (@$conf[$id])
-                $y[] = Text::name_html($pc);
+                $y[] = $pc->name_html();
         return join(", ", $y);
     }
 }
@@ -1271,7 +1271,7 @@ class TagReportPaperColumn extends PaperColumn {
             $mytag = " " . $pcm->contactId . "~" . $this->tag . "#";
             if (($p = strpos($t, $mytag)) !== false) {
                 $n = (int) substr($t, $p + strlen($mytag));
-                $a[] = Text::name_html($pcm) . ($n ? " (#$n)" : "");
+                $a[] = $pcm->name_html() . ($n ? " (#$n)" : "");
             }
         }
         return join(", ", $a);

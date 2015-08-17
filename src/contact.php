@@ -13,6 +13,8 @@ class Contact {
     public $firstName = "";
     public $lastName = "";
     public $unaccentedName = "";
+    public $nameAmbiguous = null;
+    private $name_html_ = null;
     var $email = "";
     var $preferredEmail = "";
     var $sorter = "";
@@ -87,6 +89,7 @@ class Contact {
             $this->unaccentedName = $name->unaccentedName;
         else
             $this->unaccentedName = Text::unaccented_name($name);
+        $this->name_html_ = null;
         foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
@@ -447,6 +450,12 @@ class Contact {
 
     function is_disabled() {
         return $this->disabled || $this->password === "";
+    }
+
+    function name_html() {
+        if ($this->name_html_ === null)
+            $this->name_html_ = Text::name_html($this);
+        return $this->name_html_;
     }
 
     function has_email() {
