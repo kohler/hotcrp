@@ -1233,6 +1233,7 @@ class PaperTable {
             $c = '<tr>';
             if ($selectors) {
                 $c = '<td class="pctb_editconf_sname' . $pctclass . '">' . $label . '</td><td class="pctb_editconf_sconf' . $pctclass . '">';
+                $extra["id"] = "pcc$id";
                 if ($ct->is_author())
                     $c .= "<strong>Author</strong>";
                 else if ($ct->is_conflict() && !$ct->is_author_mark()) {
@@ -1248,7 +1249,7 @@ class PaperTable {
                 $disabled = $checked && ($ct->is_author() || (!$ct->is_author_mark() && !$this->admin));
                 $pcconfs[] = '<td class="pctb_editconf_cconf' . $pctclass . '">'
                     . Ht::checkbox_h("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
-                                     $checked, array("disabled" => $disabled))
+                                     $checked, array("id" => "pcc$id", "disabled" => $disabled))
                     . '&nbsp;</td><td class="pctb_editconf_cname' . $pctclass . '">' . $label . '</td>';
             }
             $c .= "</tr>\n";
