@@ -215,4 +215,10 @@ function paper_tag_normalize($prow) {
     return $t;
 }
 
+function xassert_assign($who, $override, $what) {
+    $assignset = new AssignmentSet($who, $override);
+    $assignset->parse($what);
+    xassert($assignset->execute());
+}
+
 echo "* Tests initialized.\n";

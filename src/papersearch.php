@@ -2321,9 +2321,7 @@ class PaperSearch {
                 $tdef = array("left join", $table, "$thistab.$field in (" . join(",", $value) . ")");
             else
                 $tdef = array("left join", $table, "false");
-        } else if ($value[0] === "\1") {
-            $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", "\3$value"));
-        } else if ($value[0] === "\3") {
+        } else if (strpos($value, "\3") !== false) {
             $tdef = array("left join", $table, str_replace("\3", "$thistab.$field", $value));
         } else {
             $tdef = array("left join", $table, "$thistab.$field='" . sqlq($value) . "'");

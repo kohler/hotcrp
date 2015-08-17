@@ -289,60 +289,42 @@ $assignset->parse("paper,tag
 2,fart\n");
 xassert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with paper #1.");
 
-$assignset = new AssignmentSet($user_estrin, false);
-$assignset->parse("paper,tag\n2,fart\n");
-xassert($assignset->execute());
+xassert_assign($user_estrin, false, "paper,tag\n2,fart\n");
 assert_search_papers($user_chair, "#fart", "2");
 
-$assignset = new AssignmentSet($Admin, false);
-$assignset->parse("paper,tag\n1,#fart\n");
-xassert($assignset->execute());
+xassert_assign($Admin, false, "paper,tag\n1,#fart\n");
 assert_search_papers($user_chair, "#fart", "1 2");
 assert_search_papers($user_estrin, "#fart", "2");
 
 // check twiddle tags
-$assignset = new AssignmentSet($Admin, false);
-$assignset->parse("paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
-xassert($assignset->execute());
+xassert_assign($Admin, false, "paper,tag\n1,~fart\n1,~~fart\n1,varghese~fart\n1,mjh~fart\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart chair~fart mjh~fart varghese~fart jon~vote#10 marina~vote#5 ~~fart");
 
-$assignset = new AssignmentSet($Admin, false);
-$assignset->parse("paper,tag\n1,all#none\n");
-xassert($assignset->execute());
+xassert_assign($Admin, false, "paper,tag\n1,all#none\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
-$assignset = new AssignmentSet($Admin, false);
-$assignset->parse("paper,tag\n1,fart\n");
-xassert($assignset->execute());
+xassert_assign($Admin, false, "paper,tag\n1,fart\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "fart mjh~fart varghese~fart jon~vote#10 marina~vote#5");
 
-$assignset = new AssignmentSet($user_varghese, false);
-$assignset->parse("paper,tag\n1,all#clear\n1,~green\n");
-xassert($assignset->execute());
+xassert_assign($user_varghese, false, "paper,tag\n1,all#clear\n1,~green\n");
 $paper1->load_tags();
 xassert_eqq(join(" ", paper_tag_normalize($paper1)),
            "mjh~fart varghese~green jon~vote#10 marina~vote#5");
 
-$assignset = new AssignmentSet($Admin, true);
-$assignset->parse("paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n");
-xassert($assignset->execute());
+xassert_assign($Admin, true, "paper,tag\nall,fart#clear\n1,fart#4\n2,fart#5\n3,fart#6\n");
 assert_search_papers($user_chair, "order:fart", "1 2 3");
 xassert_eqq(search_text_col($user_chair, "order:fart", "tagval:fart"), "1 4\n2 5\n3 6\n");
 
-$assignset = new AssignmentSet($Admin, true);
-$assignset->parse("action,paper,tag\nnexttag,6,fart\nnexttag,5,fart\nnexttag,4,fart\n");
-xassert($assignset->execute());
+xassert_assign($Admin, true, "action,paper,tag\nnexttag,6,fart\nnexttag,5,fart\nnexttag,4,fart\n");
 assert_search_papers($user_chair, "order:fart", "1 2 3 6 5 4");
 
-$assignset = new AssignmentSet($Admin, true);
-$assignset->parse("action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n");
-xassert($assignset->execute());
+xassert_assign($Admin, true, "action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n");
 assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
 
 // round searches
@@ -352,14 +334,10 @@ assert_search_papers($user_chair, "round:R1", "12 13");
 assert_search_papers($user_chair, "round:R1 re:any", "12 13");
 assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18");
 
-$assignset = new AssignmentSet($Admin, true);
-$assignset->parse("action,paper,user,round\nclearreview,all,huitema,R1\n");
-xassert($assignset->execute());
+xassert_assign($Admin, true, "action,paper,user,round\nclearreview,all,huitema,R1\n");
 assert_search_papers($user_chair, "re:huitema", "8 10");
 
-$assignset = new AssignmentSet($Admin, true);
-$assignset->parse("action,paper,user,round\nprimary,13,huitema,R1\n");
-xassert($assignset->execute());
+xassert_assign($Admin, true, "action,paper,user,round\nprimary,13,huitema,R1\n");
 
 // THEN searches
 assert_search_papers($user_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
@@ -371,5 +349,17 @@ assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 
 assert_search_papers($user_chair, "#fart", "1 2 3 4 5 6 7 8");
 assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18");
 assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18");
+
+// Check all tags
+assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18");
+xassert_assign($Admin, false, "paper,tag\n9,~private\n10,~~chair\n");
+assert_search_papers($user_chair, "#none", "11 12 14 15 16 18");
+assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18");
+
+/*$result = Dbl::qe("select paperId, tag, tagIndex from PaperTag order by paperId, tag");
+$tags = array();
+while ($result && ($row = $result->fetch_row()))
+    $tags[] = "$row[0],$row[1],$row[2]\n";
+echo join("", $tags);*/
 
 xassert_exit();
