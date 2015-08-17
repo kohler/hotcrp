@@ -57,7 +57,7 @@ if (isset($_POST["go"]) && check_post()) {
     $password_class = " error";
 }
 
-$Conf->header("Reset Password", "resetpassword", false);
+$Conf->header("Reset password", "resetpassword", false);
 
 if (!isset($_POST["autopassword"])
     || trim($_POST["autopassword"]) != $_POST["autopassword"]

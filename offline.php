@@ -167,7 +167,7 @@ if (!$Conf->time_review_open() && !$Me->privChair) {
     go(hoturl("index"));
 }
 
-$Conf->header("Offline Reviewing", "offline", actionBar());
+$Conf->header("Offline reviewing", "offline", actionBar());
 
 if ($Me->is_reviewer()) {
     if (!$Conf->time_review_open())

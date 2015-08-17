@@ -184,7 +184,7 @@ $pldisplay = displayOptionsSet("pfdisplay");
 
 
 // Header and body
-$Conf->header("Review Preferences", "revpref", actionBar());
+$Conf->header("Review preferences", "revpref", actionBar());
 $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 

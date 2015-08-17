@@ -485,9 +485,9 @@ function textinput($name, $value, $size, $id = false, $password = false) {
 
 
 if ($newProfile)
-    $Conf->header("Create Account", "account", actionBar("account"));
+    $Conf->header("Create account", "account", actionBar("account"));
 else
-    $Conf->header($Me->email == $Acct->email ? "Your Profile" : "Account Profile", "account", actionBar("account", $Acct));
+    $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
 $useRequest = (!$Acct->has_database_account() && isset($_REQUEST["watchcomment"]))
     || $UserStatus->nerrors;
 
