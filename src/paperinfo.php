@@ -61,6 +61,16 @@ class PaperContactInfo {
 }
 
 class PaperInfo {
+    public $paperId;
+    public $title;
+    public $authorInformation;
+    public $abstract;
+    public $collaborators;
+    public $timeSubmitted;
+    public $timeWithdrawn;
+    public $paperStorageId;
+    public $managerContactId;
+
     private $_contact_info = array();
     private $_contact_info_rights_version = 0;
     private $_prefs_array = null;
@@ -73,8 +83,8 @@ class PaperInfo {
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
-        if (isset($this->paperId))
-            $this->paperId = (int) $this->paperId;
+        $this->paperId = (int) $this->paperId;
+        $this->managerContactId = (int) $this->managerContactId;
         if ($contact && (property_exists($this, "conflictType")
                          || property_exists($this, "myReviewType"))) {
             if ($contact === true)
@@ -83,6 +93,8 @@ class PaperInfo {
                 $cid = is_object($contact) ? $contact->contactId : $contact;
             $this->assign_contact_info($this, $cid);
         }
+        if (property_exists($this, "paperTags") && $this->paperTags === null)
+            $this->paperTags = "";
     }
 
     static public function fetch($result, $contact) {

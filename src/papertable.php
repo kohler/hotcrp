@@ -1037,7 +1037,7 @@ class PaperTable {
                 }
             }
 
-            echo '</div><div class="pspcard_open">';
+            echo '<hr class="c" /></div><div class="pspcard_open">';
             $Conf->footerScript('$(".pspcard_fold").click(function(e){$(".pspcard_fold").hide();$(".pspcard_open").show();e.preventDefault();return false})');
         }
         echo '<div';
