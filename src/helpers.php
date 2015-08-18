@@ -16,6 +16,13 @@ function arrayappend(&$var, $value) {
         $var = array($value);
 }
 
+function mkarray($value) {
+    if (is_array($value))
+        return $value;
+    else
+        return array($value);
+}
+
 function set_error_html($x, $error_html = null) {
     if (!$error_html) {
         $error_html = $x;
@@ -44,13 +51,6 @@ function cvtnum($value, $default = -1) {
     if (is_numeric($v))
         return floatval($v);
     return $default;
-}
-
-function mkarray($value) {
-    if (is_array($value))
-        return $value;
-    else
-        return array($value);
 }
 
 if (function_exists("mb_check_encoding")) {

@@ -1326,7 +1326,7 @@ class PaperList {
 
         $this->ids = $rstate->ids;
         if (@$this->qopts["need_javascript"] && $this->live_table)
-            $enter = $Conf->take_script() . $enter;
+            $enter = Ht::take_stash() . $enter;
         $this->_resolve_footers();
         return $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
     }

@@ -20,7 +20,6 @@ class Conference {
     var $headerPrinted = false;
     private $_save_logs = false;
 
-    private $scriptStuff = "";
     private $usertimeId = 1;
 
     private $rounds = null;
@@ -1227,16 +1226,8 @@ class Conference {
     }
 
 
-    function take_script() {
-        $s = $this->scriptStuff;
-        $this->scriptStuff = "";
-        return $s;
-    }
-
     function echoScript($script = "") {
-        if ($this->scriptStuff)
-            echo $this->scriptStuff;
-        $this->scriptStuff = "";
+        echo Ht::take_stash();
         if ($script)
             echo "<script>", $script, "</script>";
     }
@@ -2192,7 +2183,7 @@ class Conference {
             echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 768px)"), "\n";
         }
         if (isset($Opt["stylesheets"]))
-            foreach ($Opt["stylesheets"] as $css)
+            foreach (mkarray($Opt["stylesheets"]) as $css)
                 echo $this->make_css_link($css), "\n";
 
         // favicon
@@ -2213,24 +2204,31 @@ class Conference {
                 echo "<link rel=\"icon\" href=\"$favicon\" />\n";
         }
 
+        // title
+        echo "<title>";
+        if ($title)
+            echo $title, " - ";
+        echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
+
         // jQuery
+        $stash = Ht::take_stash();
         if (isset($Opt["jqueryUrl"]))
             $jquery = $Opt["jqueryUrl"];
         else if (@$Opt["jqueryCdn"])
             $jquery = "//code.jquery.com/jquery-1.11.3.min.js";
         else
             $jquery = "scripts/jquery-1.11.3.min.js";
-        $this->scriptStuff = $this->make_script_file($jquery, true) . "\n";
+        Ht::stash_html($this->make_script_file($jquery, true) . "\n");
 
         // Javascript settings to set before script.js
-        $this->scriptStuff .= "<script>siteurl=\"$ConfSiteBase\";siteurl_suffix=\"$ConfSiteSuffix\"";
+        Ht::stash_script("siteurl=\"$ConfSiteBase\";siteurl_suffix=\"$ConfSiteSuffix\"");
         if (session_id() !== "")
-            $this->scriptStuff .= ";siteurl_postvalue=\"" . post_value() . "\"";
+            Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($CurrentList
             && ($list = SessionList::lookup($CurrentList)))
-            $this->scriptStuff .= ";hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}";
+            Ht::stash_script("hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}");
         if (($urldefaults = hoturl_defaults()))
-            $this->scriptStuff .= ";siteurl_defaults=" . json_encode($urldefaults);
+            Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults));
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
@@ -2238,29 +2236,26 @@ class Conference {
             $huser->is_pclike = true;
         if ($Me && $Me->has_database_account())
             $huser->cid = $Me->contactId;
-        $this->scriptStuff .= ";hotcrp_user=" . json_encode($huser);
+        Ht::stash_script("hotcrp_user=" . json_encode($huser));
 
         $pid = @$_REQUEST["paperId"];
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
         if (!$pid && $CurrentProw)
             $pid = $CurrentProw->paperId;
         if ($pid)
-            $this->scriptStuff .= ";hotcrp_paperid=$pid";
+            Ht::stash_script("hotcrp_paperid=$pid");
         if ($pid && $Me && $Me->privChair
             && ($forceShow = @$_REQUEST["forceShow"]) && $forceShow != "0")
-            $this->scriptStuff .= ";hotcrp_want_override_conflict=true";
-        $this->scriptStuff .= "</script>\n";
+            Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
-        $this->scriptStuff .= $this->make_script_file("scripts/script.js") . "\n";
+        Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
 
-        echo "<title>";
-        if ($title)
-            echo $title, " - ";
-        echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
+        if ($stash)
+            Ht::stash_html($stash);
     }
 
-    static function echo_header($conf, $id, $site_div, $title_div,
+    static function echo_header($conf, $is_home, $site_div, $title_div,
                                 $profile_html, $actions_html) {
         echo $site_div,
             '<div id="header_right">', $profile_html,
@@ -2291,23 +2286,19 @@ class Conference {
             echo ' class="', $body_class, '"';
         echo ">\n";
 
-        // on load of script.js
-        $this->scriptStuff .= Ht::take_stash() . "<script>";
-
         // initial load (JS's timezone offsets are negative of PHP's)
-        $this->scriptStuff .= "hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")";
+        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")");
 
         // deadlines settings
         if ($Me)
-            $this->scriptStuff .= ";hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($CurrentProw)) . ")";
+            Ht::stash_script("hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($CurrentProw)) . ")");
 
         // meeting tracker
         $trackerowner = $Me && $Me->privChair
             && ($trackerstate = $this->setting_json("tracker"))
             && $trackerstate->sessionid == session_id();
         if ($trackerowner)
-            $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
-        $this->scriptStuff .= "</script>";
+            Ht::stash_script("hotcrp_deadlines.tracker(0)");
 
         echo '<div id="prebody"><div id="header">';
 
@@ -2360,7 +2351,14 @@ class Conference {
         if (!$title_div && $actionBar)
             $title_div = '<hr class="c" />';
 
-        self::echo_header($this, $id, $site_div, $title_div, $profile_html, $actionBar);
+        $renderf = @$Opt["headerRenderer"];
+        if (!$renderf)
+            $renderf = "Conference::echo_header";
+        if (is_array($renderf)) {
+            require_once($renderf[0]);
+            $renderf = $renderf[1];
+        }
+        call_user_func($renderf, $this, $is_home, $site_div, $title_div, $profile_html, $actionBar);
 
         echo "  <hr class=\"c\" /></div>\n";
 
@@ -2428,8 +2426,7 @@ class Conference {
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
         }
         echo "</div>\n  <hr class=\"c\" /></div>\n";
-        echo $this->scriptStuff, Ht::take_stash(), "</body>\n</html>\n";
-        $this->scriptStuff = "";
+        echo Ht::take_stash(), "</body>\n</html>\n";
     }
 
     function output_ajax($values = null, $div = false) {
