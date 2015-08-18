@@ -118,12 +118,12 @@ a.qq, a.uu, a.maillink {
 	color: inherit;
 }
 a.q, a.qq, a.x, a.xx,
-div.papmodex > a, div.leftmenu_item > a,
+div.papmodex > a, div.papmodex:hover > a.xx, div.leftmenu_item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
 a.q:hover, a.qq:hover, a.x:hover, a.xx:hover u.x,
-div.leftmenu_item:hover > a,
+div.papmodex:hover > a, div.leftmenu_item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
 .childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
 	text-decoration: underline;
@@ -818,13 +818,13 @@ td h2, td h3 {
 
 
 /* settings */
-h3.settings, h3.helppage, h4.helppage {
+h3.settings, h3.helppage, h3.profile, h4.helppage {
 	color: #565d91;
 }
 h2.helppage {
 	font-size: 140%;
 }
-h3.settings, h3.helppage {
+h3.settings, h3.helppage, h3.profile {
 	margin: 2em 0 0.5em;
 }
 h3.settings:first-child, h3.helppage:first-child {
@@ -878,7 +878,7 @@ div.leftmenu_content {
 	background: white;
 	border-radius: 2px;
 }
-div.helppagetext {
+div.helppagetext, div.profiletext {
 	max-width: 42em;
 }
 div.helppage_content > *:first-child, div.helppagetext > p:first-child {

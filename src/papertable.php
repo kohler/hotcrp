@@ -1861,10 +1861,10 @@ class PaperTable {
 
     function _paptabTabLink($text, $link, $image, $highlight) {
         global $Conf;
-        return "<div class='" . ($highlight ? "papmodex" : "papmode")
-            . "'><a href='" . $link . "' class='" . ($highlight ? "qx" : "xx")
-            . "'>" . Ht::img($image, "[$text]", "b")
-            . "&nbsp;<u" . ($highlight ? " class='x'" : "") . ">" . $text
+        return '<div class="' . ($highlight ? "papmodex" : "papmode")
+            . '"><a href="' . $link . '" class="xx">'
+            . Ht::img($image, "[$text]", "b")
+            . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
             . "</u></a></div>\n";
     }
 

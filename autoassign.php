@@ -119,7 +119,7 @@ $Error = array();
 
 $Conf->header("Assignments", "autoassign", actionBar());
 echo '<div class="psmode">',
-    '<div class="papmodex"><a href="', hoturl("autoassign"), '"><u class="x">Automatic</u></a></div>',
+    '<div class="papmodex"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
     '<div class="papmode"><a href="', hoturl("bulkassign"), '">Upload</a></div>',
     '</div><hr class="c" />';

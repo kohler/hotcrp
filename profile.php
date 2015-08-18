@@ -468,11 +468,11 @@ function feclass($field = false) {
 
 function echofield($type, $classname, $captiontext, $entrytext) {
     if ($type <= 1)
-        echo "<div class='f-i'>";
+        echo '<div class="f-i">';
     if ($type >= 1)
-        echo "<div class='f-ix'>";
-    echo "<div class='", fcclass($classname), "'>", $captiontext, "</div>",
-        "<div class='", feclass($classname), "'>", $entrytext, "</div></div>\n";
+        echo '<div class="f-ix">';
+    echo '<div class="', fcclass($classname), '">', $captiontext, "</div>",
+        '<div class="', feclass($classname), '">', $entrytext, "</div></div>\n";
     if ($type > 2)
         echo '<hr class="c" />', "</div>\n";
 }
@@ -481,6 +481,15 @@ function textinput($name, $value, $size, $id = false, $password = false) {
     return '<input type="' . ($password ? "password" : "text")
         . '" name="' . $name . '" ' . ($id ? "id=\"$id\" " : "")
         . 'size="' . $size . '" value="' . $value . '" />';
+}
+
+function create_modes($hlbulk) {
+    echo '<div class="psmode">',
+        '<div class="', ($hlbulk ? "papmode" : "papmodex"), '">',
+        Ht::js_link("Create account", "fold('bulk',null,9)"),
+        '</div><div class="', ($hlbulk ? "papmodex" : "papmode"), '">',
+        Ht::js_link("Bulk upload", "fold('bulk',null,9)"),
+        '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
 }
 
 
@@ -548,9 +557,10 @@ if (isset($_REQUEST["ls"]))
     $form_params[] = "ls=" . urlencode($_REQUEST["ls"]);
 if ($newProfile)
     echo '<div id="foldbulk" class="fold9' . (@$_REQUEST["bulkregister"] ? "o" : "c") . '"><div class="fn9">';
+
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
-    "<div class='aahc", ($UserStatus->nerrors ? " alert" : "") , "'>\n",
+    '<div class="profiletext aahc', ($UserStatus->nerrors ? " alert" : "") , "\">\n",
     // Don't want chrome to autofill the password changer.
     // But chrome defaults to autofilling the password changer
     // unless we supply an earlier password input.
@@ -561,16 +571,14 @@ if (isset($_REQUEST["redirect"]))
 if ($Me->privChair)
     echo Ht::hidden("whichpassword", "");
 
-echo '<table id="foldaccount" class="form foldc ',
+echo '<div id="foldaccount" class="form foldc ',
     ($pcrole == "no" ? "fold1c " : "fold1o "),
     (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), '">';
 
 if ($newProfile)
-    echo '<tr><td class="caption"></td><td class="entry"><div style="margin-bottom:2em">', Ht::js_link("Bulk upload", "fold('bulk',null,9)"), '</div></td></tr>';
+    create_modes(false);
 
-echo '<tr>
-  <td class="caption">Contact information</td>
-  <td class="entry"><div class="f-contain">', "\n\n";
+echo '<div class="f-contain">', "\n\n";
 if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
     echofield(0, "uemail", "Email", textinput("uemail", contact_value("uemail", "email"), 52, "account_d"));
 else if (!$newProfile) {
@@ -596,8 +604,7 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echofield(1, false, "State/Province/Region", textinput("state", value("state", @$data->state), 24));
     echofield(3, false, "ZIP/Postal code", textinput("zipCode", value("zipCode", @$data->zip), 12));
     echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : @$data->country)));
-    echofield(1, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", contact_value("voicePhoneNumber"), 24));
-    echo '<hr class="c" /></div>', "\n";
+    echofield(0, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", contact_value("voicePhoneNumber"), 24));
 }
 
 
@@ -642,14 +649,13 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
         echo "</div>\n";
     }
     echo '  <hr class="c" />';
-    echo "</div></div>\n\n";
+    echo "</div></div></div>\n\n";
 }
 
-echo "</div></td>\n</tr>\n\n";
+echo "</div>\n"; // f-contain
 
 
-echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n\n",
-    "<tr><td class='caption'>Email notification</td><td class='entry'>";
+echo '<h3 class="profile">Email notification</h3>';
 if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
     echo "<table><tr><td>Send mail on: &nbsp;</td>",
         "<td>", Ht::checkbox_h("watchcomment", 1, !!@($formcj->follow->reviews)), "&nbsp;",
@@ -663,13 +669,11 @@ if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
 } else
     echo Ht::checkbox_h("watchcomment", 1, !!@($formcj->follow->reviews)), "&nbsp;",
         Ht::label("Send mail on new comments for authored or reviewed papers");
-echo "</td></tr>\n\n";
 
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
-    echo "<tr>
-  <td class='caption'>Roles</td>
-  <td class='entry'><table><tr><td class='nowrap'>\n";
+    echo '<h3 class="profile">Roles</h3>', "\n",
+      "<table><tr><td class=\"nowrap\">\n";
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
@@ -682,29 +686,25 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo Ht::checkbox_h("ass", 1, !!@($formcj->roles->sysadmin)), "&nbsp;</td>",
         "<td>", Ht::label("Sysadmin"), "<br/>",
         '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";
-    echo "  </td>\n</tr>\n\n";
 }
 
 
 if ($newProfile || $Acct->isPC || $Me->privChair) {
-    echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='g'></div><strong>Program committee information</strong></td></tr>\n";
+    echo '<div class="fx1"><div class="g"></div>', "\n";
 
-    echo "<tr class='fx1'>
-  <td class='caption'>Collaborators and other affiliations</td>
-  <td class='entry'><div class='hint'>Please list potential conflicts of interest. ",
+    echo '<h3 class="profile">Collaborators and other affiliations</h3>', "\n",
+        "<div>Please list potential conflicts of interest. ",
         $Conf->message_html("conflictdef"),
         " List one conflict per line.
     We use this information when assigning reviews.
     For example: &ldquo;<tt>Ping Yen Zhang (INRIA)</tt>&rdquo;
     or, for a whole institution, &ldquo;<tt>INRIA</tt>&rdquo;.</div>
-    <textarea name='collaborators' rows='5' cols='50'>", contact_value("collaborators"), "</textarea></td>
-</tr>\n\n";
+    <textarea name='collaborators' rows='5' cols='50'>", contact_value("collaborators"), "</textarea>\n";
 
     $topics = $Conf->topic_map();
     if (count($topics)) {
-        echo "<tr id='topicinterest' class='fx1'>
-  <td class='caption'>Topic interests</td>
-  <td class='entry' id='topicinterest'><div class='hint'>
+        echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
+            "<div class='hint'>
     Please indicate your interest in reviewing papers on these conference
     topics. We use this information to help match papers to reviewers.</div>
     <table class='topicinterest'>
@@ -720,8 +720,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
                 echo "<td class='ti_interest'>", Ht::radio_h("ti$id", $interests[$j], $j == $xj), "</td>";
             echo "</td></tr>\n";
         }
-        echo "    </table></td>
-</tr>";
+        echo "    </table></div>\n";
     }
 
 
@@ -732,25 +731,22 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
             $tags = $formcj->tags;
         else
             $tags = array();
-        echo "<tr class='fx1'><td class='caption'></td><td class='entry'><div class='gs'></div></td></tr>\n",
-            "<tr class='fx1'><td class='caption'>Tags</td><td class='entry'>";
+        echo "<h3 class=\"profile\">Tags</h3>\n";
         if ($Me->privChair) {
             echo "<div class='", feclass("contactTags"), "'>",
                 textinput("contactTags", join(" ", $tags), 60),
                 "</div>
-  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div></td>
-</tr>\n\n";
+  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
         } else {
             echo join(" ", $tags), "
-  <div class='hint'>Tags represent PC subgroups and are set by administrators.</div></td>
-</tr>\n\n";
+  <div class='hint'>Tags represent PC subgroups and are set by administrators.</div>\n";
         }
     }
+    echo "</div>\n"; // fx1
 }
 
 
-echo "<tr class='last'><td class='caption'></td>
-  <td class='entry'><div class='aa'><table class='pt_buttons'>\n";
+echo "<div class='aa'><table class='pt_buttons'>\n";
 $buttons = array(Ht::submit("register", $newProfile ? "Create account" : "Save changes", array("class" => "bb")));
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
@@ -807,21 +803,22 @@ foreach ($buttons as $b) {
     $x = (is_array($b) ? $b[1] : "");
     echo "      <td class='ptb_explain'>", $x, "</td>\n";
 }
-echo "    </tr>\n    </table></div></td>\n</tr>
-</table></div></form>\n";
+echo "    </tr>\n    </table></div>\n";
+
+echo "</div>\n", // foldaccount
+    "</div>\n", // aahc
+    "</form>\n";
 
 if ($newProfile) {
     echo '</div><div class="fx9">';
     echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
                   array("id" => "accountform", "autocomplete" => "off")),
-        "<div class='aahc", ($UserStatus->nerrors ? " alert" : "") , "'>\n",
+        "<div class='profiletext aahc", ($UserStatus->nerrors ? " alert" : "") , "'>\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.
-        Ht::password("chromefooler", "", array("style" => "display:none")),
-        '<table><tr><td class="caption"></td><td class="entry">',
-        '<div style="margin-bottom:2em">', Ht::js_link("Direct entry", "fold('bulk',null,9)"), '</div></td></tr>',
-        '<tr><td class="caption">Contact information</td><td class="entry">';
+        Ht::password("chromefooler", "", array("style" => "display:none"));
+    create_modes(true);
 
     echo '<table class="pt_buttons"><tr>',
         '<td class="ptb_button"><input type="file" name="bulk" size="30" /></td>',
@@ -853,7 +850,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
           '<td>Email notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”</td></tr>',
         "</table>\n";
 
-    echo '</td></tr></table></div></form></div></div>';
+    echo '</div></form></div></div>';
 }
 
 
