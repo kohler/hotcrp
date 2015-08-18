@@ -2260,6 +2260,14 @@ class Conference {
         echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
     }
 
+    static function echo_header($conf, $id, $site_div, $title_div,
+                                $profile_html, $actions_html) {
+        echo $site_div,
+            '<div id="header_right">', $profile_html,
+            '<div id="maindeadline" style="display:none"></div></div>',
+            $title_div, $actions_html;
+    }
+
     function header($title, $id, $actionBar, $title_div = null) {
         global $ConfSiteBase, $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
         if ($this->headerPrinted)
@@ -2271,10 +2279,16 @@ class Conference {
         $this->header_head($title);
 
         // <body>
-        echo "<body", ($id ? " id=\"$id\"" : "");
+        $body_class = "";
         if ($id === "paper_view" || $id === "paper_edit"
             || $id === "review" || $id === "assign")
-            echo ' class="paper"';
+            $body_class = "paper";
+
+        echo "<body";
+        if ($id)
+            echo ' id="', $id, '"';
+        if ($body_class)
+            echo ' class="', $body_class, '"';
         echo ">\n";
 
         // on load of script.js
@@ -2295,28 +2309,28 @@ class Conference {
             $this->scriptStuff .= ";hotcrp_deadlines.tracker(0)";
         $this->scriptStuff .= "</script>";
 
-        echo "<div id='prebody'>\n";
+        echo '<div id="prebody"><div id="header">';
 
-        echo '<div id="header">';
-
+        // $header_site
         $is_home = $id === "home";
-        echo '<div id="header_site" class="',
-            ($is_home ? "header_site_home" : "header_site_page"),
-            '"><h1><a class="qq" href="', hoturl("index"),
-            '">', htmlspecialchars($Opt["shortName"]);
+        $site_div = '<div id="header_site" class="'
+            . ($is_home ? "header_site_home" : "header_site_page")
+            . '"><h1><a class="qq" href="' . hoturl("index") . '">'
+            . htmlspecialchars($Opt["shortName"]);
         if (!$is_home)
-            echo ' <span style="font-weight:normal">Home</span>';
-        echo '</a></h1></div>';
+            $site_div .= ' <span style="font-weight:normal">Home</span>';
+        $site_div .= '</a></h1></div>';
 
-        echo '<div id="header_right">';
+        // $header_profile
+        $profile_html = "";
         if ($Me && !$Me->is_empty()) {
             // profile link
             $xsep = ' <span class="barsep">·</span> ';
             if ($Me->has_email()) {
-                echo '<a class="q" href="', hoturl("profile"), '"><strong>',
-                    htmlspecialchars($Me->email),
-                    '</strong></a> &nbsp; <a href="', hoturl("profile"), '">Profile</a>',
-                    $xsep;
+                $profile_html .= '<a class="q" href="' . hoturl("profile") . '"><strong>'
+                    . htmlspecialchars($Me->email)
+                    . '</strong></a> &nbsp; <a href="' . hoturl("profile") . '">Profile</a>'
+                    . $xsep;
             }
 
             // "act as" link
@@ -2326,32 +2340,31 @@ class Conference {
                 if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0)
                     $actas = $_SESSION["trueuser"]->email;
                 if (strcasecmp($Me->email, $actas) != 0)
-                    echo "<a href=\"", selfHref(array("actas" => $actas)), "\">", ($Me->privChair ? htmlspecialchars($actas) : "Admin"), "&nbsp;", Ht::img("viewas.png", "Act as " . htmlspecialchars($actas)), "</a>", $xsep;
+                    $profile_html .= "<a href=\"" . selfHref(array("actas" => $actas)) . "\">"
+                        . ($Me->privChair ? htmlspecialchars($actas) : "Admin")
+                        . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
+                        . "</a>" . $xsep;
             }
 
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            echo '<a href="', hoturl("help", $x), '">Help</a>';
+            $profile_html .= '<a href="' . hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($Opt["httpAuthLogin"]))
-                echo $xsep, '<a href="', hoturl("index", "signin=1"), '">Sign&nbsp;in</a>';
+                $profile_html .= $xsep . '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
             if (!$Me->is_empty() || isset($Opt["httpAuthLogin"]))
-                echo $xsep, '<a href="', hoturl_post("index", "signout=1"), '">Sign&nbsp;out</a>';
+                $profile_html .= $xsep . '<a href="' . hoturl_post("index", "signout=1") . '">Sign&nbsp;out</a>';
         }
-        echo '<div id="maindeadline" style="display:none"></div></div>', "\n";
 
-        if ($title_div)
-            echo $title_div;
-        else if ($title)
-            echo '<div id="header_page"><h1>', $title, '</h1></div>';
-        else if ($actionBar)
-            echo '<hr class="c" />';
+        if (!$title_div && $title)
+            $title_div = '<div id="header_page"><h1>' . $title . '</h1></div>';
+        if (!$title_div && $actionBar)
+            $title_div = '<hr class="c" />';
 
-        if ($actionBar)
-            echo $actionBar;
+        self::echo_header($this, $id, $site_div, $title_div, $profile_html, $actionBar);
 
-        echo "  <hr class=\"c\" />\n";
+        echo "  <hr class=\"c\" /></div>\n";
 
-        echo "</div>\n<div id=\"initialmsgs\">\n";
+        echo "<div id=\"initialmsgs\">\n";
         if (@$Opt["maintenance"])
             echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
         if (($msgs = $this->session("msgs")) && count($msgs)) {

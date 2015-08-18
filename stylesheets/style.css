@@ -73,6 +73,8 @@ h1 {
 #header_page.header_page_submission {
 	float: none;
 	padding: 1em 0 0;
+	position: relative;
+	z-index: 1;
 }
 #header_page_submission_inner {
 	background: white;
