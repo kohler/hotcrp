@@ -117,12 +117,15 @@ a.q, a.u {
 a.qq, a.uu, a.maillink {
 	color: inherit;
 }
-a.q, a.qq, div.papmodex > a, a.x, a.xx, a.pnum, a.ptitle, a.maillink, u.x, .noul {
+a.q, a.qq, a.x, a.xx,
+div.papmodex > a, div.leftmenu_item > a,
+a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
-a.q:hover, a.qq:hover, a:hover u.x, a.x:hover, a.xx:hover u.x,
+a.q:hover, a.qq:hover, a.x:hover, a.xx:hover u.x,
+div.leftmenu_item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
-.childfold:hover a.q, a.maillink:hover, .ul {
+.childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
 	text-decoration: underline;
 }
 a.small {
@@ -168,7 +171,7 @@ div.g { /* small gap */
 div.ug { /* microgap */
 	margin: 0.35em 0;
 }
-.clear {
+.c, .clear {
 	clear: both;
 }
 div.clear {
@@ -191,6 +194,9 @@ div.body {
 }
 body.paper {
 	background: #dce4e8;
+}
+body#help, body#settings {
+	background: #ecf2f4;
 }
 
 div#initialmsgs {
@@ -635,6 +641,12 @@ input.cbx {
 	padding: 0.3em;
 	margin: 0.5em 0;
 }
+.aa:first-child {
+	margin-top: 0;
+}
+.aa:last-child {
+	margin-bottom: 0;
+}
 .aa {
 	background: #f2f2f2;
 	clear: both;
@@ -816,7 +828,7 @@ h3.settings, h3.helppage {
 	margin: 2em 0 0.5em;
 }
 h3.settings:first-child, h3.helppage:first-child {
-	margin-top: 0.5em;
+	margin-top: 0;
 }
 h4.helppage {
 	margin: 0.8em 0 0;
@@ -829,36 +841,67 @@ table#foldtag_color th {
 
 
 /* help pages */
-div.helppage_topiccontainer {
+div.leftmenu_menucontainer {
 	width: 140px;
 	font-size: smaller;
 	float: left;
-	box-shadow: 0 1px 5px #46678c;
-	border-radius: 2px;
+	position: absolute;
 }
-div.helppage_topiclist {
-	padding: 6px 0;
-}
-div.helppage_topic {
-	padding: 3px 8px 3px 16px;
+div.leftmenu_item {
+	padding: 0.25ex 5px 0.6ex 5px;
+	margin-left: -5px;
 	cursor: pointer;
+	clear: left;
 }
-div.helppage_topic_on {
+div.leftmenu_item_on {
+	padding: 0.5ex 5px 0.6ex 5px;
+	margin-left: -6px;
+	background: white;
+	border-radius: 5px;
+	border: 1px solid #f33360;
+	color: #f33360;
 	font-weight: bold;
-	background: #e6e1cf;
-	background: linear-gradient(to bottom, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 51%, transparent 51%),
-		linear-gradient(to top, rgba(230,225,207,0), #e6e1cf 4px, #e6e1cf 51%, transparent 51%);
-	padding: 4px 8px 4px 16px;
+	display: inline-block;
 }
-div.helppage_content {
-	margin-left: 164px;
+div.leftmenu_item_on > a {
+	display: table-cell;
+}
+div.leftmenu_content_container {
+	margin-left: 140px;
 	padding-bottom: 2em;
+	background: #eeeeee;
+	border: 1px solid #bbbbbb;
+	padding: 5px 0;
+	border-radius: 4px;
+}
+div.leftmenu_content {
+	background: white;
+	border-radius: 2px;
 }
 div.helppagetext {
 	max-width: 42em;
 }
+div.helppage_content > *:first-child, div.helppagetext > p:first-child {
+	margin-top: 0;
+}
+div.helppage_content {
+	padding: 16px 16px 24px 16px;
+}
+div.settingspage_content {
+	padding: 16px;
+}
 table.helppage {
-	margin-left: -0.75em;
+	margin: 0 -16px;
+}
+div.helplist_item {
+	margin: 0 -16px;
+	padding: 3px 16px;
+}
+td.helplist_dt {
+	padding-right: 16px;
+}
+table.helppage > tbody > tr > td:first-child {
+	padding-left: 16px;
 }
 table.helppage td.sentry form div.nowrap {
 	margin-left: -1px;
@@ -1615,7 +1658,6 @@ hr.c {
 	margin: 0;
 	border: 0 none;
 	height: 0;
-	clear: both;
 }
 div.msgpg { /* message-paper gap */
 	margin: 2ex 0;

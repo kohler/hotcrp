@@ -59,8 +59,10 @@ class Ht {
 
     static function form_div($action, $extra = null) {
         $div = "<div>";
-        if (($divclass = @$extra["divclass"]))
+        if (($divclass = @$extra["divclass"])) {
             $div = '<div class="' . $divclass . '">';
+            unset($extra["divclass"]);
+        }
         if (@$extra["method"] === "get" && ($qpos = strpos($action, "?")) !== false) {
             if (($hpos = strpos($action, "#", $qpos + 1)) === false)
                 $hpos = strlen($action);

@@ -1448,7 +1448,7 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
 }
 
 function doActionArea($top) {
-    echo "<div class='aa'", ($top ? " style='margin-top:0'" : ""), ">",
+    echo "<div class='aa'>",
         Ht::submit("update", "Save changes", array("class" => "bb")),
         " &nbsp;", Ht::submit("cancel", "Cancel"), "</div>";
 }
@@ -2318,16 +2318,7 @@ function doDecGroup() {
 }
 
 
-
-$Conf->header("Settings", "settings", actionBar());
-$Conf->echoScript(""); // clear out other script references
-echo $Conf->make_script_file("scripts/settings.js"), "\n";
-
-echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform")), "<div>";
-
-echo "<table class='settings'><tr><td class='caption'>";
-echo "<table class='lhsel'>";
-foreach (array("info" => "Conference information",
+$settings_groups = array("info" => "Basics",
                "users" => "Accounts",
                "msg" => "Messages",
                "sub" => "Submissions",
@@ -2335,15 +2326,26 @@ foreach (array("info" => "Conference information",
                "reviews" => "Reviews",
                "reviewform" => "Review form",
                "tags" => "Tags &amp; tracks",
-               "dec" => "Decisions") as $k => $v) {
-    echo "<tr><td>";
-    if ($Group == $k)
-        echo "<div class='lhl1'><a class='q' href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
+               "dec" => "Decisions");
+
+$Conf->header("Settings &nbsp;|&nbsp; <strong>" . $settings_groups[$Group] . "</strong>", "settings", actionBar());
+$Conf->echoScript(""); // clear out other script references
+echo $Conf->make_script_file("scripts/settings.js"), "\n";
+
+echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform")), "<div>";
+
+echo '<div class="leftmenu_menucontainer"><div class="leftmenu_list">';
+foreach ($settings_groups as $k => $v) {
+    if ($k === $Group)
+        echo '<div class="leftmenu_item_on">', $v, '</div>';
     else
-        echo "<div class='lhl0'><a href='", hoturl("settings", "group=$k"), "'>$v</a></div>";
-    echo "</td></tr>";
+        echo '<div class="leftmenu_item">',
+            '<a href="', hoturl("settings", "group=$k"), '">', $v, '</a></div>';
 }
-echo "</table></td><td class='top'><div class='lht'>";
+echo "</div></div>\n",
+    '<div class="leftmenu_content_container"><div class="leftmenu_content">',
+    '<div class="settingspage_content">';
+Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
 echo "<div class='aahc'>";
 doActionArea(true);
@@ -2373,8 +2375,7 @@ else {
 
 echo "</div>";
 doActionArea(false);
-echo "</div></div></td></tr>
-</table></div></form>\n";
+echo "</div></div></div></div></form>\n";
 
 $Conf->footerScript("hiliter_children('#settingsform');jQuery('textarea').autogrow()");
 $Conf->footer();

@@ -5,18 +5,34 @@
 
 require_once("src/initweb.php");
 
-$topicTitles = array("topics" => array("Help topics"),
-                     "chair" => array("Chair’s guide", "How to run a conference using HotCRP."),
-                     "search" => array("Search", "About paper searching."),
-                     "keywords" => array("Search keywords", "Quick reference to search keywords and syntax."),
-                     "tags" => array("Tags", "How to use tags to define paper sets and discussion orders."),
-                     "tracks" => array("Tracks", "How tags can control PC access to papers."),
-                     "scoresort" => array("Sorting scores", "How scores are sorted in paper lists."),
-                     "revround" => array("Review rounds", "Review rounds are sets of reviews with optionally different deadlines."),
-                     "revrate" => array("Review ratings", "Rating the quality of reviews."),
-                     "votetags" => array("Voting", "PC members can vote for papers using tags."),
-                     "ranking" => array("Ranking", "PC members can rank papers using tags."),
-                     "formulas" => array("Formulas", "Create and display formulas in search orders."));
+class HelpTopic {
+    public $id;
+    public $name;
+    public $description;
+    static public $list = array();
+    public function __construct($id, $name, $description = null) {
+        $this->id = $id;
+        $this->name = $name;
+        $this->description = $description;
+    }
+    static public function register($id, $name, $description = null) {
+        assert(!isset(self::$list[$id]));
+        self::$list[$id] = new HelpTopic($id, $name, $description);
+    }
+}
+
+HelpTopic::register("topics", "Help topics");
+HelpTopic::register("chair", "Chair’s guide", "How to run a conference using HotCRP.");
+HelpTopic::register("search", "Search", "About paper searching.");
+HelpTopic::register("keywords", "Search keywords", "Quick reference to search keywords and syntax.");
+HelpTopic::register("tags", "Tags", "How to use tags to define paper sets and discussion orders.");
+HelpTopic::register("tracks", "Tracks", "How tags can control PC access to papers.");
+HelpTopic::register("scoresort", "Sorting scores", "How scores are sorted in paper lists.");
+HelpTopic::register("revround", "Review rounds", "Review rounds are sets of reviews with optionally different deadlines.");
+HelpTopic::register("revrate", "Review ratings", "Rating the quality of reviews.");
+HelpTopic::register("votetags", "Voting", "PC members can vote for papers using tags.");
+HelpTopic::register("ranking", "Ranking", "PC members can rank papers using tags.");
+HelpTopic::register("formulas", "Formulas", "Create and display formulas in search orders.");
 
 if (!isset($_REQUEST["t"])
     && preg_match(',\A/(\w+)\z,i', Navigation::path()))
@@ -24,10 +40,13 @@ if (!isset($_REQUEST["t"])
 $topic = defval($_REQUEST, "t", "topics");
 if ($topic == "syntax")
     $topic = "keywords";
-if (!isset($topicTitles[$topic]))
+if (!isset(HelpTopic::$list[$topic]))
     $topic = "topics";
 
-$Conf->header("Help", null, actionBar());
+if ($topic === "topics")
+    $Conf->header("Help", "help", actionBar());
+else
+    $Conf->header("Help &nbsp;|&nbsp; <strong>" . HelpTopic::$list[$topic]->name . "</strong>", "help", actionBar());
 
 
 function _alternateRow($caption, $entry, $next = null) {
@@ -61,23 +80,19 @@ function _subhead_contain($close = false) {
 }
 
 function _subhead($head, $entry, $id = false) {
-    global $nsubhead;
-    echo (isset($nsubhead) ? '<h3' : '<h2'), ' class="helppage"',
-        ($id ? ' id="' . $id . '"' : ''),
-        '>', $head, "</h3>\n",
-        '<div class="helppagetext">', $entry, "</div>\n";
-    $nsubhead = @($nsubhead + 1);
+    if ($id || $head)
+        echo '<h3 class="helppage"', ($id ? ' id="' . $id . '"' : ''),
+            '>', $head, "</h3>\n";
+    echo '<div class="helppagetext">', $entry, "</div>\n";
 }
 
 
 function topics() {
-    global $topicTitles;
-    echo '<h2 class="helppage">Help topics</h2>', "\n";
     echo "<dl>\n";
-    foreach ($topicTitles as $tid => $tt)
-        if ($tid !== "topics")
-            echo '<dt><strong><a href="', hoturl("help", "t=$tid"), '">',
-                $tt[0], '</a></strong></dt><dd>', $tt[1], '</dd>', "\n";
+    foreach (HelpTopic::$list as $ht)
+        if ($ht->id !== "topics")
+            echo '<dt><strong><a href="', hoturl("help", "t=$ht->id"), '">',
+                $ht->name, '</a></strong></dt><dd>', $ht->description, '</dd>', "\n";
     echo "</dl>\n";
 }
 
@@ -96,7 +111,7 @@ function _searchForm($forwhat, $other = null, $size = 20) {
 
 function search() {
     _subhead_contain();
-    _subhead("Search", "
+    _subhead("", "
 <p>All HotCRP paper lists are obtained through search, search syntax is flexible,
 and it’s possible to download all matching papers and/or reviews at once.</p>
 
@@ -197,7 +212,18 @@ to the search results.  On many pages, you can press “<code>j</code>” or
 }
 
 function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
-    _alternateRow($caption, _searchForm($search, $other, 36), $explanation);
+    global $rowidx;
+    if ($caption) {
+        echo '<h3 class="helppage">', $caption, "</h3>\n";
+        $rowidx = null;
+    }
+    echo '<div class="helplist_item k' . ((int) @$rowidx % 2) . '">';
+    echo '<table class="helppage"><tbody><tr><td class="helplist_dt">',
+        _searchForm($search, $other, 36),
+        '</td><td class="helplist_dd">',
+        $explanation,
+        "</td></tr></tbody></table></div>\n";
+    $rowidx = @($rowidx + 1);
 }
 
 function meaningful_pc_tag() {
@@ -232,8 +258,6 @@ function searchQuickref() {
     // does a reviewer tag exist?
     $retag = meaningful_pc_tag() ? : "";
 
-    echo '<h2 class="helppage">Search keywords</h2>', "\n";
-    echo "<table class=\"helppage\">\n";
     _searchQuickrefRow("Basics", "", "all papers in the search category");
     _searchQuickrefRow("", "story", "“story” in title, abstract, authors$aunote");
     _searchQuickrefRow("", "119", "paper #119");
@@ -426,8 +450,6 @@ function searchQuickref() {
     _searchQuickrefRow("", "search1 THEN search2", "like “search1 OR search2”, but papers matching “search1” are grouped together and appear earlier in the sorting order");
     _searchQuickrefRow("", "1-5 THEN 6-10 show:compact", "display searches in compact columns");
     _searchQuickrefRow("", "search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlighttag\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
-
-    echo "</table>\n";
 }
 
 
@@ -482,7 +504,7 @@ function tags() {
     }
 
     _subhead_contain();
-    _subhead("Tags", "
+    _subhead("", "
 <p>PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
 Tags are never shown to authors$conflictmsg1.
@@ -633,7 +655,7 @@ function tracks() {
     global $Conf, $Me;
 
     _subhead_contain();
-    _subhead("Tracks", "
+    _subhead("", "
 <p>Tracks control which PC members can view and review
 specific papers. Tracks are managed through the <a href=\"" . hoturl("help", "t=tags") . "\">tags system</a>.
 Without tracks, all PC members are treated equally.
@@ -688,7 +710,7 @@ function revround() {
     global $Conf, $Me;
 
     _subhead_contain();
-    _subhead("Review rounds", "
+    _subhead("", "
 <p>Many conferences divide reviews into multiple <em>rounds</em>.
 Chairs label assignments in each round with names, such as
 “R1” or “lastround”.
@@ -738,7 +760,7 @@ function revrate() {
     global $Conf, $Me;
 
     _subhead_contain();
-    _subhead("Review ratings", "
+    _subhead("", "
 <p>PC members and, optionally, external reviewers can rate one another’s
 reviews.  We hope this feedback will help reviewers improve the quality of
 their reviews.  The interface appears above each visible review:</p>
@@ -811,7 +833,7 @@ function scoresort() {
     global $Conf, $Me;
 
     _subhead_contain();
-    _subhead("Sorting scores", "
+    _subhead("", "
 <p>Some paper search results include columns with score graphs. Click on a score
 column heading to sort the paper list using that score. Search &gt; Display
 options changes how scores are sorted.  There are five choices:</p>
@@ -851,7 +873,7 @@ function showvotetags() {
     global $Conf, $Me;
 
     _subhead_contain();
-    _subhead("Voting", "
+    _subhead("", "
 <p>Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
 arbitrarily among unconflicted papers.
@@ -897,14 +919,14 @@ function showranking() {
     global $Conf, $Me;
 
     _subhead_contain();
-    _subhead("Ranking", "
-<p>Paper ranking is an alternate method to extract the PC’s preference order for
+    _subhead("", "
+<p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
 algorithm, <a href='http://en.wikipedia.org/wiki/Schulze_method'>the Schulze
 method</a> by default, combines these rankings into a global preference order.</p>
 
-<p>HotCRP supports ranking through the <a
-href='" . hoturl("help", "t=tags") . "'>tags system</a>.  The chair chooses
+<p>HotCRP supports ranking through <a
+href='" . hoturl("help", "t=tags") . "'>tags</a>.  The chair chooses
 a tag for ranking—“rank” is a good default—and enters it on <a
 href='" . hoturl("settings", "group=tags") . "'>the settings page</a>.
 PC members then rank papers using their private versions of this tag,
@@ -920,8 +942,8 @@ by a <a href='" . hoturl("search", "q=order:rank") . "'>search for
 <p>PC members can enter rankings by reordering rows in a paper list.
 For example, for rank tag “rank”, PC members should
 <a href=\"" . hoturl("search", "q=editsort%3A%23~rank") . "\">search for “editsort:#~rank”</a>.
-Ranks can be entered directly in the text fields, or PC members can drag paper
-rows into position using the dotted areas on the right-hand side of the list.</p>
+Ranks can be entered directly in the text fields, or the rows can be dragged
+into position using the dotted areas on the right-hand side of the list.</p>
 
 <p>Alternately, PC members can use an <a href='" . hoturl("offline") . "'>offline
 ranking form</a>. Download a ranking file, rearrange the lines to create a
@@ -989,7 +1011,7 @@ function showformulas() {
     global $Conf, $Me, $rowidx;
 
     _subhead_contain();
-    _subhead("Formulas", "
+    _subhead("", "
 <p>Program committee members and administrators can search and display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
 standard deviation of papers’ Overall merit scores, or average Overall
@@ -1102,7 +1124,6 @@ Use an aggregate function to calculate a property over all review scores.</p>");
 
 function chair() {
     _subhead_contain();
-    _subhead("Chair’s guide", "");
     _subhead("Submission time", "
 <p>Follow these steps to prepare to accept paper submissions.</p>
 
@@ -1406,20 +1427,22 @@ administrator’s identity.</p>");
 
 
 
-echo '<div class="helppage_topiccontainer">',
-    '<div class="helppage_topiclist">';
-foreach ($topicTitles as $tid => $tt) {
-    if ($tid === $topic)
-        echo '<div class="helppage_topic_on">', $tt[0], '</div>';
+echo '<div class="leftmenu_menucontainer"><div class="leftmenu_list">';
+foreach (HelpTopic::$list as $ht) {
+    if ($ht->id === $topic)
+        echo '<div class="leftmenu_item_on">', $ht->name, '</div>';
     else
-        echo '<div class="helppage_topic">',
-            '<a href="', hoturl("help", "t=$tid"), '">', $tt[0], '</a>',
-            '</div>';
-    if ($tid === "topics")
-        echo '<div class="g"></div>';
+        echo '<div class="leftmenu_item">',
+            '<a href="', hoturl("help", "t=$ht->id"), '">', $ht->name, '</a></div>';
+    if ($ht->id === "topics")
+        echo '<div class="c g"></div>';
 }
-echo '</div></div><div class="helppage_content">';
-Ht::stash_script("jQuery(\".helppage_topic\").click(divclick)");
+echo "</div></div>\n",
+    '<div class="leftmenu_content_container"><div class="leftmenu_content">',
+    '<div class="helppage_content">';
+    //,
+    //'<h2 class="helppage">', HelpTopic::$list[$topic]->name, "</h2>\n";
+Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
 if ($topic == "topics")
     topics();
@@ -1446,7 +1469,7 @@ else if ($topic == "formulas")
 else if ($topic == "chair")
     chair();
 
-echo "</div>\n";
+echo "</div></div></div>\n";
 
 
 $Conf->footer();
