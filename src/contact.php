@@ -2730,12 +2730,13 @@ class Contact {
 
         // reviewer deadlines
         $revtypes = array();
-        if ($this->is_reviewer() && @$set["rev_open"] > 0) {
-            if (($rev_open = @+$set["rev_open"]))
-                $dl->rev->open = $rev_open;
+        if ($this->is_reviewer()
+            && ($rev_open = @+$set["rev_open"]) > 0
+            && $rev_open <= $Now) {
+            $dl->rev->open = true;
             $dl->rev->rounds = array();
             $dl->rev->roundsuf = array();
-            $grace = $rev_open ? @$set["rev_grace"] : 0;
+            $grace = @$set["rev_grace"];
             $cur_round = $Conf->current_round_name();
             foreach ($Conf->round_list() as $i => $round_name) {
                 if ($round_name === ";" && ($i || !$Conf->round0_defined()))
@@ -2749,7 +2750,7 @@ class Contact {
                         continue;
                     list($s, $h) = array(@+$set["{$rt}_soft$isuf"], @+$set["{$rt}_hard$isuf"]);
                     $k = $rt . $jsuf;
-                    $dlround = $dl->$k = (object) array("open" => $rev_open);
+                    $dlround = $dl->$k = (object) array("open" => true);
                     if ($h && ($h < $Now || $s < $Now)) {
                         $dlround->done = $h;
                         $dlround->ishard = true;
