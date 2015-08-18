@@ -6,7 +6,7 @@
 #header_site, #header_page, h1.paptitle, div.submission_modes {
 	padding-left: 12px;
 }
-#header_right, div#footer {
+#header_right, h1.paptitle, div#footer {
 	padding-right: 12px;
 }
 table.vbar {
