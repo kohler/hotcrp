@@ -253,20 +253,18 @@ if ($homelist) {
     echo "<div class='homegrp' id='homelist'>\n";
 
     // Lists
-    echo "<table><tr><td><h4>Search: &nbsp;&nbsp;</h4></td>\n";
+    echo Ht::form_div(hoturl("search"), array("method" => "get")),
+        '<h4><a class="qq" href="', hoturl("search"), '">Search</a>: &nbsp;&nbsp;</h4>';
 
     $tOpt = PaperSearch::search_types($Me);
     $q = defval($_REQUEST, "q", "(All)");
-    echo "  <td>", Ht::form_div(hoturl("search"), array("method" => "get")),
-        Ht::entry("q", $q,
-                  array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                        "class" => "hotcrp_searchbox", "hottemptext" => "(All)")),
+    echo Ht::entry("q", $q,
+                   array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
+                         "class" => "hotcrp_searchbox", "hottemptext" => "(All)")),
         " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),
-        "    <div style='font-size:85%'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a> <span class='barsep'>·</span> <a href='", hoturl("search", "tab=advanced"), "'>Advanced search</a></div>
-  </div></form>
-  </td></tr></table>
+        "</div></form>
 </div>
 <hr class='home' />\n";
 }
