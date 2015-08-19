@@ -2207,6 +2207,7 @@ div.paptab {
 }
 div.paptab_abstract {
 	padding-right: 1.5em;
+	word-wrap: break-word;
 }
 div.paptab div.pavt {
 	font-size: smaller;
