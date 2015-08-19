@@ -2226,9 +2226,9 @@ class Conference {
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($CurrentList
             && ($list = SessionList::lookup($CurrentList)))
-            Ht::stash_script("hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"}");
+            Ht::stash_script("hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"};");
         if (($urldefaults = hoturl_defaults()))
-            Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults));
+            Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
@@ -2236,7 +2236,7 @@ class Conference {
             $huser->is_pclike = true;
         if ($Me && $Me->has_database_account())
             $huser->cid = $Me->contactId;
-        Ht::stash_script("hotcrp_user=" . json_encode($huser));
+        Ht::stash_script("hotcrp_user=" . json_encode($huser) . ";");
 
         $pid = @$_REQUEST["paperId"];
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
