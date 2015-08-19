@@ -99,9 +99,6 @@ table.vbar td {
 	vertical-align: bottom;
 	min-height: 4px;
 }
-table.vbar td#vbartabs {
-	padding-top: 6px;
-}
 td.gopaper {
 	vertical-align: middle;
 	padding: 4px 0 6px 0.5em;
@@ -829,8 +826,11 @@ h2.helppage {
 h3.settings, h3.helppage, h3.profile {
 	margin: 2em 0 0.5em;
 }
-h3.settings:first-child, h3.helppage:first-child {
+h3.settings:first-child {
 	margin-top: 0;
+}
+h3.helppage:first-child {
+	margin-top: 16px;
 }
 h4.helppage {
 	margin: 0.8em 0 0;
@@ -879,18 +879,16 @@ div.leftmenu_content_container {
 div.leftmenu_content {
 	background: white;
 	border-radius: 2px;
+	padding: 16px;
+}
+div.leftmenu_body {
+	position: relative;
+}
+div.leftmenu_body > *:first-child, div.helppagetext > p:first-child {
+	margin-top: 0;
 }
 div.helppagetext, div.profiletext {
 	max-width: 42em;
-}
-div.helppage_content > *:first-child, div.helppagetext > p:first-child {
-	margin-top: 0;
-}
-div.helppage_content {
-	padding: 16px 16px 24px 16px;
-}
-div.settingspage_content {
-	padding: 16px;
 }
 table.helppage {
 	margin: 0 -16px;

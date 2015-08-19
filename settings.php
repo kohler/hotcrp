@@ -2344,7 +2344,7 @@ foreach ($settings_groups as $k => $v) {
 }
 echo "</div></div>\n",
     '<div class="leftmenu_content_container"><div class="leftmenu_content">',
-    '<div class="settingspage_content">';
+    '<div class="leftmenu_body">';
 Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
 echo "<div class='aahc'>";

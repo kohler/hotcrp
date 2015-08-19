@@ -75,10 +75,6 @@ function _alternateRow($caption, $entry, $next = null) {
     }
 }
 
-function _subhead_contain($close = false) {
-    echo $close ? "</div>\n" : "<div class=\"helppage\">\n";
-}
-
 function _subhead($head, $entry, $id = false) {
     if ($id || $head)
         echo '<h3 class="helppage"', ($id ? ' id="' . $id . '"' : ''),
@@ -110,7 +106,6 @@ function _searchForm($forwhat, $other = null, $size = 20) {
 }
 
 function search() {
-    _subhead_contain();
     _subhead("", "
 <p>All HotCRP paper lists are obtained through search, search syntax is flexible,
 and it’s possible to download all matching papers and/or reviews at once.</p>
@@ -208,7 +203,6 @@ one paper, to go directly to that paper.</p>
 Click on the search description (here, “Submitted papers search”) to return
 to the search results.  On many pages, you can press “<code>j</code>” or
 “<code>k</code>” to go to the previous or next paper in the list.</p>");
-    _subhead_contain(true);
 }
 
 function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
@@ -503,7 +497,6 @@ function tags() {
         }
     }
 
-    _subhead_contain();
     _subhead("", "
 <p>PC members and administrators can attach tag names to papers.
 Papers can have many tags, and you can invent new tags on the fly.
@@ -647,14 +640,12 @@ href='" . hoturl("settings", "group=tags") . "'>associate other tags with colors
 so that, for example, “<a
 href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
 as gray.</p>");
-    _subhead_contain(true);
 }
 
 
 function tracks() {
     global $Conf, $Me;
 
-    _subhead_contain();
     _subhead("", "
 <p>Tracks control which PC members can view and review
 specific papers. Tracks are managed through the <a href=\"" . hoturl("help", "t=tags") . "\">tags system</a>.
@@ -701,7 +692,6 @@ setting is off, <em>no</em> PC member can enter an unassigned review,
 no matter what the track settings say.
 It can be useful to “act as” a member of the PC to check which permissions
 are actually in effect.</p>");
-    _subhead_contain(true);
 }
 
 
@@ -709,7 +699,6 @@ are actually in effect.</p>");
 function revround() {
     global $Conf, $Me;
 
-    _subhead_contain();
     _subhead("", "
 <p>Many conferences divide reviews into multiple <em>rounds</em>.
 Chairs label assignments in each round with names, such as
@@ -752,14 +741,12 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
             $texts[] = "So far no review rounds have been defined.";
         _subhead("Round status", join(" ", $texts));
     }
-    _subhead_contain(true);
 }
 
 
 function revrate() {
     global $Conf, $Me;
 
-    _subhead_contain();
     _subhead("", "
 <p>PC members and, optionally, external reviewers can rate one another’s
 reviews.  We hope this feedback will help reviewers improve the quality of
@@ -825,14 +812,12 @@ the review, but HotCRP tries to hide ratings from review authors if they
 could figure out who assigned the rating: if only one PC member could
 rate a review, then that PC member’s rating is hidden from the review
 author.</p>");
-    _subhead_contain(true);
 }
 
 
 function scoresort() {
     global $Conf, $Me;
 
-    _subhead_contain();
     _subhead("", "
 <p>Some paper search results include columns with score graphs. Click on a score
 column heading to sort the paper list using that score. Search &gt; Display
@@ -865,14 +850,12 @@ measure of differences of opinion).</dd>
 darker colored square.</dd>
 
 </dl>");
-    _subhead_contain(true);
 }
 
 
 function showvotetags() {
     global $Conf, $Me;
 
-    _subhead_contain();
     _subhead("", "
 <p>Some conferences have PC members vote for papers.
 Each PC member is assigned a vote allotment, and can distribute that allotment
@@ -911,14 +894,12 @@ in the search results (or set up a
 Hover to learn how the PC voted:</p>
 
 <p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]") . "</p>");
-    _subhead_contain(true);
 }
 
 
 function showranking() {
     global $Conf, $Me;
 
-    _subhead_contain();
     _subhead("", "
 <p>Paper ranking is a way to extract the PC’s preference order for
 submitted papers.  Each PC member ranks the submitted papers, and a voting
@@ -1003,14 +984,12 @@ X	11	Analyzing Scatter/Gather I/O Using Encrypted Epistemologies
  administrators can search for
  “order:<i>pcname</i>~rank” to see a PC member’s ranking.
  Once a global ranking is assigned, “order:rank” will show it.</p>");
-    _subhead_contain(true);
 }
 
 
 function showformulas() {
     global $Conf, $Me, $rowidx;
 
-    _subhead_contain();
     _subhead("", "
 <p>Program committee members and administrators can search and display <em>formulas</em>
 that calculate properties of paper scores&mdash;for instance, the
@@ -1118,12 +1097,10 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "my(<em>e</em>)", "Calculate <em>e</em> for your review");
     echo "</table>\n";
 
-    _subhead_contain(true);
 }
 
 
 function chair() {
-    _subhead_contain();
     _subhead("Submission time", "
 <p>Follow these steps to prepare to accept paper submissions.</p>
 
@@ -1422,7 +1399,6 @@ administrator’s identity.</p>");
   versions are archived for reference.)</p></li>
 
 </ol>");
-    _subhead_contain(true);
 }
 
 
@@ -1439,9 +1415,7 @@ foreach (HelpTopic::$list as $ht) {
 }
 echo "</div></div>\n",
     '<div class="leftmenu_content_container"><div class="leftmenu_content">',
-    '<div class="helppage_content">';
-    //,
-    //'<h2 class="helppage">', HelpTopic::$list[$topic]->name, "</h2>\n";
+    '<div class="leftmenu_body">';
 Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
 if ($topic == "topics")

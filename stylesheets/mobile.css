@@ -25,7 +25,7 @@ h2.paptitle {
 	text-indent: -1.5em;
 	margin-left: 1.5em;
 }
-div.pspcard_container {
+div.pspcard_container, div.leftmenu_menucontainer {
 	float: none;
 	position: static;
 	width: auto;
@@ -51,4 +51,20 @@ div.paptab_authors {
 }
 div.papcard, div.pedcard, div.notecard, div.revcard, div.cmtcard {
 	margin-left: 0;
+}
+div.leftmenu_content_container {
+	margin: 0 -12px;
+}
+div.leftmenu_content {
+	padding-left: 12px;
+	padding-right: 12px;
+}
+div.helplist_item {
+	margin-left: -12px;
+	margin-right: -12px;
+	padding-left: 12px;
+	padding-right: 12px;
+}
+input, textarea {
+	max-width: 100%;
 }
