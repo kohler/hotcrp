@@ -141,12 +141,15 @@ function fill_field(fid, fieldj) {
     $("#authorView_" + fid).val(fieldj.view_score || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
     $("#option_class_prefix_" + fid).val(fieldj.option_class_prefix || "sv");
-    if (fieldj.options && fieldj.option_letter)
+    if (fieldj.options && fieldj.option_letter) {
         $("#option_class_prefix_" + fid + " option").each(function () {
             var m = /^(.*) to (.)(.*)$/.exec($(this).text().toLowerCase());
             if (m)
                 $(this).text(m[2].toUpperCase() + m[3] + " to " + m[1]);
         });
+        $("#option_class_prefix_flipped_" + fid).val("1");
+    } else
+        $("#option_class_prefix_flipped_" + fid).val("");
     if (!fieldj.selector)
         $("#removed_" + fid).val(fieldj.position ? 0 : 1);
     check_change(fid);
