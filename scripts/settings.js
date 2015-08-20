@@ -94,10 +94,8 @@ function options_to_text(fieldj) {
     }
     for (i = 0; i != fieldj.options.length; ++i, cc += ccdelta)
         t.push(String.fromCharCode(cc) + ". " + fieldj.options[i]);
-    if (fieldj.option_letter)
-        t.reverse();
-    if (t.length)
-        t.push("");             // get a trailing newline
+    fieldj.option_letter && t.reverse();
+    t.length && t.push(""); // get a trailing newline
     return t.join("\n");
 }
 
@@ -175,8 +173,55 @@ function samples_change() {
         fill_field(this, samples[val]);
 }
 
+var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain foldo errloc_$">\
+  <div class="f-i errloc_shortName_$">\
+    <div class="f-c">Field name</div><input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" />\
+  </div>\
+  <div class="f-i fx">\
+    <div class="f-ix">\
+      <div class="f-c">Form position</div>\
+      <select name="order_$" id="order_$" class="reviewfield_order"></select>\
+      <span class="fn"><span class="sep"></span><button id="revert2_$" type="button" class="revfield_revert">Button</button></span>\
+    </div>\
+    <div class="f-ix">\
+      <div class="f-c">Visibility</div>\
+      <select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
+        <option value="author">Authors &amp; reviewers</option>\
+        <option value="pc">Reviewers only</option>\
+        <option value="admin">Administrators only</option>\
+      </select>\
+    </div>\
+    <div class="f-ix reviewrow_options">\
+      <div class="f-c">Colors</div>\
+      <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix">\
+        <option value="sv">Red to green</option>\
+        <option value="svr">Green to red</option>\
+        <option value="sv-blpu">Blue to purple</option>\
+        <option value="sv-publ">Purple to blue</option>\
+      </select>\
+<input type="hidden" name="option_class_prefix_flipped_$" id="option_class_prefix_flipped_$" value="" />\
+    </div>\
+    <hr class="c" />\
+  </div>\
+  <div class="f-i errloc_description_$ fx">\
+    <div class="f-c">Description</div>\
+    <textarea name="description_$" id="description_$" class="reviewtext hottooltip" rows="6" hottooltipcontent="#review_form_caption_description" hottooltipdir="l" hottooltiptype="focus"></textarea>\
+  </div>\
+  <div class="f-i errloc_options_$ fx reviewrow_options">\
+    <div class="f-c">Options</div>\
+    <textarea name="options_$" id="options_$" class="reviewtext hottooltip" rows="6" hottooltipcontent="#review_form_caption_options" hottooltipdir="l" hottooltiptype="focus"></textarea>\
+  </div>\
+  <div class="f-i">\
+    <select name="samples_$" id="samples_$" class="revfield_samples fx"></select>\
+    <span class="fx"><span class="sep"></span><button id="remove_$" class="revfield_remove" type="button">Remove field from form</button></span>\
+<span class="fn" style="font-style:italic">Removed from form</span>\
+<input type="hidden" name="removed_$" id="removed_$" value="0" />\
+<span class="sep"></span><button id="revert_$" class="revfield_revert" style="display:none" type="button">Revert</button>\
+  </div>\
+</div>';
+
 function append_field(fid) {
-    var jq = $($("#revfield_template").html().replace(/\$/g, fid)),
+    var jq = $(revfield_template.replace(/\$/g, fid)),
         sampleopt = "<option value=\"x\">Load field from library...</option>", i;
     for (i = 0; i != samples.length; ++i)
         if (!samples[i].options == !fieldmap[fid])
@@ -190,7 +235,6 @@ function append_field(fid) {
     jq.find("input, textarea, select").on("change", check_this_change);
     jq.find("textarea").autogrow();
     jq.appendTo("#reviewform_container");
-    $("<hr class='hr'>").appendTo("#reviewform_container");
     fill_field(fid, original[fid]);
 }
 

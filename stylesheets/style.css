@@ -840,6 +840,9 @@ table#foldtag_color th {
 	font-size: smaller;
 	padding-right: 1em;
 }
+div.settings_revfield {
+	margin-bottom: 36px;
+}
 
 
 /* help pages */
@@ -888,7 +891,7 @@ div.leftmenu_body > *:first-child, div.helppagetext > p:first-child {
 	margin-top: 0;
 }
 div.helppagetext, div.profiletext {
-	max-width: 42em;
+	max-width: 640px;
 }
 table.helppage {
 	margin: 0 -16px;
@@ -1056,7 +1059,7 @@ input.textlite-tt, textarea.tt {
 	width: 99%;
 }
 .reviewtext {
-	max-width: 42em;
+	max-width: 640px;
 }
 textarea[name=comment] {
 	min-height: 5em;
@@ -1688,7 +1691,6 @@ div.plist_form {
 span.rev_num {
 	font-size: larger;
 	font-weight: bold;
-	color: red;
 }
 
 span.reviewer, span.reviewstatus {
@@ -2030,7 +2032,7 @@ div.pscopen div.pst {
 	margin: 0 -2px;
 	padding: 0 2px;
 }
-span.pavfn, span.psfn, div.rv span.revfn,
+span.pavfn, span.psfn, .revfn,
 span.pavfn a.q, span.psfn a.q {
 	color: #666666;
 }
@@ -2220,7 +2222,7 @@ div.pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px;
 }
-span.papfn, span.pavfn, span.psfn, span.revfn {
+span.papfn, span.pavfn, span.psfn, .revfn {
 	font-weight: bold;
 }
 div.papt span.papfn, div.pavt span.pavfn {
@@ -2325,23 +2327,22 @@ div.revcard_head h3 {
 span.revinfo {
 	font-size: smaller;
 }
-div.revt {
-	font-size: smaller;
-	margin: 0 -5px;
-	padding: 0.25em 1em 0.25em 5px;
-	background: #ffecef; /* #ffe6f8; */
-	border-top-left-radius: 2px;
-	border-top-right-radius: 2px;
+.revvt, .revet {
+	margin: 0.25em -5px;
+	padding: 0 1em 0 5px;
 }
-span.revfn {
+.revvt {
+	font-size: smaller;
+}
+.revet > .revfn {
+	color: #555555;
+}
+.revfn, .revvis {
 	float: left;
 }
 .revvis {
 	padding-left: 1em;
 	color: #999999;
-}
-.revevis {
-	clear: both;
 }
 div.revv {
 	padding: 2px 0 1em 7px;
@@ -2355,14 +2356,14 @@ table.revoff span.revfn {
 	padding: 0 1em 5px 0;
 }
 div.revev {
-	padding: 5px 0 1em 0;
+	margin: 5px 0;
 }
 div.revhint {
-	font-size: smaller;
+	font-size: 90%;
 	color: #555555;
-	background: #fff9fb;
 	padding: 0.2em 1em 0.3em 5px;
 	margin: 0 -5px;
+	max-width: 640px;
 }
 div.rvl, div.rvr {
 	width: 50%;
@@ -2374,18 +2375,16 @@ div.rvl div.rv {
 div.rvr div.rv {
 	padding-left: 10px;
 }
-div.rv div.revt {
-	padding: 0.25em 1em 0.25em 5px;
-	background: none; /* #ffe6f8; */
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-}
 div.rv div.revv {
 	padding: 0;
 }
-div.rvg, div.rvge {
+div.rvg {
 	border-top: 1px solid #ffecef;
 	padding-top: 5px;
+}
+div.rvg:first-child {
+	border-top: 0 none;
+	padding-top: 0;
 }
 div.rv {
 	padding-bottom: 8px;
@@ -2518,7 +2517,7 @@ div.aahc.alert div.aab {
 }
 div.revtext, div.cmttext {
 	white-space: pre-wrap;
-	max-width: 42em;
+	max-width: 640px;
 	line-height: 125%;
 }
 .cmtnumhead {

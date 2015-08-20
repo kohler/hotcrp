@@ -152,7 +152,10 @@ class ReviewField {
     }
 
     public function value_class($value) {
-        $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
+        if (count($this->options) > 1)
+            $n = (int) (($value - 1) * 8.0 / (count($this->options) - 1) + 1.5);
+        else
+            $n = 1;
         return "sv " . $this->option_class_prefix . $n;
     }
 
@@ -534,6 +537,7 @@ class ReviewForm {
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
         global $ReviewFormError, $Conf;
         $revViewScore = $contact->view_score_bound($prow, $rrow);
+        echo '<div>';
         foreach ($this->forder as $field => $f) {
             if ($f->view_score <= $revViewScore)
                 continue;
@@ -544,16 +548,16 @@ class ReviewForm {
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$field);
 
-            echo '<div class="revt';
+            echo '<div class="rv rvg rv_', $field, '"><div class="revet';
             if (isset($ReviewFormError[$field]))
                 echo " error";
-            echo '"><span class="revfn">', $f->name_html, '</span>';
+            echo '"><div class="revfn">', $f->name_html, '</div>';
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                echo '<div class="revevis">(secret)</div>';
+                echo '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
-                echo '<div class="revevis">(shown only to chairs)</div>';
+                echo '<div class="revvis">(shown only to chairs)</div>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
-                echo '<div class="revevis">(hidden from authors)</div>';
+                echo '<div class="revvis">(hidden from authors)</div>';
             echo '<hr class="c" /></div>';
 
             if ($f->description)
@@ -574,8 +578,9 @@ class ReviewForm {
             } else {
                 echo '<textarea name="' . $field . '" class="reviewtext" onchange="hiliter(this)" rows="' . $f->display_space . '" cols="60">' . htmlspecialchars($fval) . '</textarea>';
             }
-            echo "</div>\n";
+            echo "</div></div>\n";
         }
+        echo "</div>\n";
     }
 
     function tfError(&$tf, $isError, $text, $field = null) {
@@ -1311,7 +1316,7 @@ $blind\n";
                 $n = preg_replace("/\\s+/", "&nbsp;", $n);
 
             if ($f->has_options || $f->description) {
-                $c = '<span class="revfn hottooltip" hottooltipdir="l" hottooltipcontent="#scorehelp_' . $field . '">' . $n . '</span>';
+                $c = '<div class="revfn hottooltip" hottooltipdir="l" hottooltipcontent="#scorehelp_' . $field . '">' . $n . '</div>';
                 if (!isset($scoreHelps[$field])) {
                     $scoreHelps[$field] = true;
                     $help = '<div id="scorehelp_' . $field . '" style="display:none">';
@@ -1326,45 +1331,38 @@ $blind\n";
                     $Conf->footerHtml($help . '</div>');
                 }
             } else
-                $c = '<span class="revfn">' . $n . '</span>';
+                $c = '<div class="revfn">' . $n . '</div>';
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                $c .= '<span class="revvis">(secret)</span>';
+                $c .= '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
-                $c .= '<span class="revvis">(shown only to chairs)</span>';
+                $c .= '<div class="revvis">(shown only to chairs)</div>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
-                $c .= '<span class="revvis">(hidden from authors)</span>';
+                $c .= '<div class="revvis">(hidden from authors)</div>';
 
-            if (!($disp & self::WEB_RIGHT)) {
-                if ($x == "")
-                    $x = "<div class='rvgb'>";
-                else if ($disp & self::WEB_FINAL)
-                    $x .= "<div class='rvge'>";
-                else
-                    $x .= "<div class='rvg'>";
-            }
             if ($disp & self::WEB_LEFT)
-                $x .= "<div class='rvl'>";
+                $x .= '<div class="rvg">';
+            $x .= '<div class="rv';
+            if ($disp & self::WEB_LEFT)
+                $x .= ' rvl';
             else if ($disp & self::WEB_RIGHT)
-                $x .= "<div class='rvr'>";
+                $x .= ' rvr';
             else
-                $x .= "<div class='rvb'>";
-            $x .= '<div class="rv rv_' . $field . '"><div class="revt">' . $c . '<hr class="c" />'
-                . '</div><div class="revv">';
+                $x .= ' rvg';
+            $x .= ' rv_' . $field . '"><div class="revvt">' . $c . '<hr class="c" />'
+                . '</div><div class="revv';
             if ($f->has_options) {
                 if (!$fval || !isset($f->options[$fval]))
-                    $x .= "<span class='rev_${field} rev_unknown'>Unknown</span>";
+                    $x .= "\"><span class='rev_${field} rev_unknown'>Unknown</span>";
                 else
-                    $x .= "<span class='rev_${field}'>"
+                    $x .= "\"><span class='rev_${field}'>"
                         . $f->unparse_value($fval, ReviewField::VALUE_REV_NUM)
                         . " " . htmlspecialchars($f->options[$fval])
                         . "</span>";
             } else
-                $x .= '<div class="revtext">' . Ht::link_urls(htmlspecialchars($fval)) . '</div>';
-            $x .= "</div></div></div>";
+                $x .= ' revtext">' . Ht::link_urls(htmlspecialchars($fval));
+            $x .= "</div></div>";
             if ($disp & self::WEB_RIGHT)
-                $x .= '<hr class="c" />';
-            if (!($disp & self::WEB_LEFT))
-                $x .= "</div>\n";
+                $x .= '<hr class="c" /></div>';
         }
 
         return "<div class='rvtab'>" . $x . "</div>\n";
@@ -1610,7 +1608,7 @@ $blind\n";
         // download?
         echo '<hr class="c" />';
         echo "<table class='revoff'><tr>
-      <td><span class='revfn'>Offline reviewing</span></td>
+      <td><strong>Offline reviewing</strong> &nbsp;</td>
       <td>Upload form: &nbsp; <input type='file' name='uploadedFile' accept='text/plain' size='30' />
       &nbsp; ", Ht::submit("uploadForm", "Go"), "</td>
     </tr><tr>
@@ -1659,7 +1657,7 @@ $blind\n";
 
         // blind?
         if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL) {
-            echo '<div class="revt"><span class="revfn">',
+            echo '<div class="revet"><span class="revfn">',
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
@@ -1717,5 +1715,4 @@ $blind\n";
 
         return $t . "</a></td></tr>";
     }
-
 }

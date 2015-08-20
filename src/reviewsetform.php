@@ -164,42 +164,6 @@ function rf_show() {
 
     $samples = json_decode(file_get_contents("$ConfSitePATH/src/reviewformlibrary.json"));
 
-    $Conf->footerHtml
-        ("<div id='revfield_template' style='display:none'>"
-         . '<div id="revfield_$" class="f-contain foldo errloc_$">'
-         . '<div class="f-i errloc_shortName_$">'
-         .   '<div class="f-c">Field name</div>'
-         .   Ht::entry('shortName_$', "", array("size" => 50, "style" => "font-weight:bold", "id" => 'shortName_$'))
-         . '</div>'
-         . '<div class="f-i fx">'
-         . '<div class="f-ix">'
-         .   '<div class="f-c">Form position</div>'
-         .   Ht::select('order_$', array(), array("class" => "reviewfield_order", "id" => 'order_$'))
-         .   '<span class="fn"><span class="sep"></span>' . Ht::button("Revert", array("class" => "revfield_revert", "id" => 'revert2_$')) . '</span>'
-         . '</div><div class="f-ix">'
-         .   '<div class="f-c">Visibility</div>'
-         .   Ht::select('authorView_$', array("author" => "Authors &amp; reviewers", "pc" => "Reviewers only", "admin" => "Administrators only"), array("class" => "reviewfield_authorView", "id" => 'authorView_$'))
-         . '</div><div class="f-ix reviewrow_options">'
-         .   '<div class="f-c">Colors</div>'
-         .   Ht::select('option_class_prefix_$', array("sv" => "Red to green", "svr" => "Green to red", "sv-blpu" => "Blue to purple", "sv-publ" => "Purple to blue"), array("class" => "reviewfield_option_class_prefix", "id" => 'option_class_prefix_$'))
-         . '</div><hr class="c" /></div>'
-         . '<div class="f-i errloc_description_$ fx">'
-         .   '<div class="f-c">Description</div>'
-         .   Ht::textarea('description_$', null, array("class" => "reviewtext hottooltip", "rows" => 6, "id" => 'description_$', "hottooltipcontent" => "#review_form_caption_description", "hottooltipdir" => "l", "hottooltiptype" => "focus"))
-         . '</div>'
-         . '<div class="f-i errloc_options_$ fx reviewrow_options">'
-         .   '<div class="f-c">Options</div>'
-         .   Ht::textarea('options_$', null, array("class" => "reviewtext hottooltip", "rows" => 6, "id" => 'options_$', "hottooltipcontent" => "#review_form_caption_options", "hottooltipdir" => "l", "hottooltiptype" => "focus"))
-         . '</div>'
-         . '<div class="f-i">'
-         .   Ht::select('samples_$', array(), array("class" => "revfield_samples fx", "id" => 'samples_$'))
-         .   '<span class="fx"><span class="sep"></span>' . Ht::button("Remove field from form", array("class" => "revfield_remove", "id" => 'remove_$'))
-         .   '</span><span class="fn" style="font-style:italic">Removed from form</span>'
-         .   Ht::hidden('removed_$', 0, array("id" => 'removed_$'))
-         .   '<span class="sep"></span>' . Ht::button("Revert", array("class" => "revfield_revert", "id" => 'revert_$', "style" => "display:none"))
-         . '</div>'
-         . '</div></div>');
-
     $req = array();
     if (count($Error))
         foreach ($rf->fmap as $fid => $f) {
