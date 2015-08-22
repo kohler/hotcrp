@@ -1186,6 +1186,11 @@ class PaperList {
                 $ncol++;
         }
 
+        // prepare entry
+        $enter = "";
+        if (@$this->qopts["need_javascript"] && $this->live_table)
+            $enter .= Ht::take_stash();
+
         // count non-callout columns
         $skipcallout = 0;
         foreach ($fieldDef as $fdef)
@@ -1275,7 +1280,7 @@ class PaperList {
 
         // table skeleton including fold classes
         $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter = "<table class=\"pltable plt_" . htmlspecialchars($listname);
+        $enter .= "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if (defval($options, "class"))
             $enter .= " " . $options["class"];
         if ($this->listNumber)
@@ -1325,8 +1330,6 @@ class PaperList {
         }
 
         $this->ids = $rstate->ids;
-        if (@$this->qopts["need_javascript"] && $this->live_table)
-            $enter = Ht::take_stash() . $enter;
         $this->_resolve_footers();
         return $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
     }
