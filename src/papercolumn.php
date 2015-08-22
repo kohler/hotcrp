@@ -30,7 +30,8 @@ class PaperColumn extends Column {
     }
 
     public static function lookup_local($name) {
-        return defval(self::$by_name, $name, null);
+        $lname = strtolower($name);
+        return defval(self::$by_name, $lname, null);
     }
 
     public static function lookup($name, $errors = null) {
@@ -45,17 +46,22 @@ class PaperColumn extends Column {
     }
 
     public static function register($fdef) {
-        assert(!isset(self::$by_name[$fdef->name]));
-        self::$by_name[$fdef->name] = $fdef;
-        for ($i = 1; $i < func_num_args(); ++$i)
-            self::$by_name[func_get_arg($i)] = $fdef;
+        $lname = strtolower($fdef->name);
+        assert(!isset(self::$by_name[$lname]));
+        self::$by_name[$lname] = $fdef;
+        for ($i = 1; $i < func_num_args(); ++$i) {
+            $lname = strtolower(func_get_arg($i));
+            assert(!isset(self::$by_name[$lname]));
+            self::$by_name[$lname] = $fdef;
+        }
         return $fdef;
     }
     public static function register_factory($prefix, $f) {
         self::$factories[] = array(strtolower($prefix), $f);
     }
     public static function register_synonym($new_name, $old_name) {
-        $fdef = self::$by_name[$old_name];
+        $fdef = self::$by_name[strtolower($old_name)];
+        $new_name = strtolower($new_name);
         assert($fdef && !isset(self::$by_name[$new_name]));
         self::$by_name[$new_name] = $fdef;
     }
