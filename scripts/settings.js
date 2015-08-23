@@ -101,6 +101,53 @@ function options_to_text(fieldj) {
     return t.join("\n");
 }
 
+/* parse HTML form into JSON review form description -- currently unused
+function parse_field(fid) {
+    var fieldj = {name: $("#shortName_" + fid).val()}, x;
+    if ((x = $("#order_" + fid).val()))
+        fieldj.position = x|0;
+    if ((x = $.trim($("#description_" + fid).val())) !== "")
+        fieldj.description = x;
+    if ((x = $("#options_" + fid).val()) != "pc")
+        fieldj.view_score = x;
+    if (original[fid].options) {
+        if (!text_to_options(fieldj, $("#options_" + fid).val()))
+            return false;
+        x = $("#option_class_prefix_" + fid).val() || "sv";
+        if ($("#option_class_prefix_flipped_" + fid).val())
+            x = colors[(colors.indexOf(x) || 0) ^ 2];
+        if (x != "sv")
+            fieldj.option_class_prefix = x;
+    }
+    return fieldj;
+}
+
+function text_to_options(fieldj, text) {
+    var lines = $.split(/[\r\n\v]+/), i, s, cc, xlines = [], m;
+    for (i in lines)
+        if ((s = $.trim(lines[i])) !== "")
+            xlines.push(s);
+    xlines.sort();
+    if (xlines.length >= 1 && xlines.length <= 9
+        && /^[1A-Z](?:[.]|\s)\s*\S/.test(xlines[0]))
+        cc = xlines[0].charCodeAt(0);
+    else
+        return false;
+    lines = [];
+    for (i = 0; i < xlines.length; ++i)
+        if ((m = /^[1-9A-Z](?:[.]|\s)\s*(\S.*)\z/.exec(xlines[i]))
+            && xlines[i].charCodeAt(0) == cc + i)
+            lines.push(m[1]);
+        else
+            return false;
+    if (cc != 49) {
+        lines.reverse();
+        fieldj.option_letter = String.fromCharCode(cc + lines.length - 1);
+    }
+    fieldj.options = lines;
+    return true;
+} */
+
 function option_class_prefix(fieldj) {
     var sv = fieldj.option_class_prefix || "sv";
     if (fieldj.option_letter)
