@@ -62,7 +62,7 @@ function hoturl_clean(x, page_component) {
 }
 
 function hoturl(page, options) {
-    var k, t, a, m, x, anchor, want_forceShow;
+    var k, t, a, m, x, anchor = "", want_forceShow;
     x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
     if ((m = x.o.match(/^(.*?)(#.*)$/))) {
         x.o = m[1];
@@ -97,7 +97,7 @@ function hoturl(page, options) {
         a.push(x.o);
     if (a.length)
         x.t += "?" + a.join("&");
-    return x.t + (anchor || "");
+    return x.t + anchor;
 }
 
 function hoturl_post(page, options) {
@@ -681,7 +681,10 @@ function tracker(start) {
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
-        Miniajax.post(hoturl_post("api", "fn=track&track=stop"), load, 10000);
+        $.ajax({
+            url: hoturl_post("api", "fn=track&track=stop"),
+            type: "POST", success: load, timeout: 10000
+        });
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
@@ -700,7 +703,10 @@ function tracker(start) {
         var req = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
-        Miniajax.post(hoturl_post("api", "fn=track&track=" + req), load, 10000);
+        $.ajax({
+            url: hoturl_post("api", "fn=track&track=" + req),
+            type: "POST", success: load, timeout: 10000
+        });
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
@@ -1005,7 +1011,7 @@ function fold(elt, dofold, foldtype) {
 
     // check for session
     if ((opentxt = elt.getAttribute("hotcrp_foldsession")))
-        Miniajax.get(hoturl("sessionvar", "j=1&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
+        jQuery.get(hoturl("sessionvar", "j=1&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
 
     return false;
 }
@@ -1028,7 +1034,7 @@ function foldup(e, event, opts) {
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     if (opts.s)
-        Miniajax.get(hoturl("sessionvar", "j=1&var=" + opts.s + "&val=" + (dofold ? 1 : 0)));
+        jQuery.get(hoturl("sessionvar", "j=1&var=" + opts.s + "&val=" + (dofold ? 1 : 0)));
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);
@@ -1304,10 +1310,7 @@ function selassign(elt, which) {
 
 function save_review_round(elt) {
     var form = jQuery(elt).closest("form");
-    jQuery.post(form[0].action,
-                form.serialize() + "&ajax=1",
-                function (data, status, jqxhr) {
-                });
+    jQuery.post(form[0].action, form.serialize() + "&ajax=1");
 }
 
 
@@ -2282,7 +2285,7 @@ function strnatcmp(a, b) {
 
 var alltags = new Promise().onThen(function (alltags) {
     if (hotcrp_user.is_pclike)
-        Miniajax.get(hoturl("api", "fn=alltags"), function (v) {
+        jQuery.get(hoturl("api", "fn=alltags"), null, function (v) {
             var tlist = (v && v.tags) || [];
             tlist.sort(strnatcmp);
             alltags.fulfill(tlist);
@@ -2301,7 +2304,7 @@ function completion_item(c) {
 }
 
 var search_completion = new Promise().onThen(function (search_completion) {
-    Miniajax.get(hoturl("api", "fn=searchcompletion"), function (v) {
+    jQuery.get(hoturl("api", "fn=searchcompletion"), null, function (v) {
         var sc = (v && v.searchcompletion) || [],
             scs = $.grep(sc, function (x) { return typeof x === "string"; }),
             sci = $.grep(sc, function (x) { return typeof x === "object"; }),
@@ -3578,72 +3581,6 @@ Miniajax.submit = function (formname, callback, timeout) {
     req.send(pairs.join("&").replace(/%20/g, "+"));
     return false;
 };
-function getorpost(method, url, callback, timeout) {
-    callback = callback || function () {};
-    var req = newRequest(), timer = setTimeout(function () {
-            timer = null; // tell handler that request is aborted
-            req.abort();
-            callback(null);
-        }, timeout ? timeout : 4000);
-    req.onreadystatechange = function () {
-        var j = null;
-        // IE will throw if we access XHR properties after abort()
-        if (!timer || req.readyState != 4)
-            return;
-        clearTimeout(timer);
-        if (req.status == 200)
-            try {
-                j = jQuery.parseJSON(req.responseText);
-            } catch (err) {
-                err.message += " [" + url + "]";
-                log_jserror(err);
-            }
-        callback(j);
-    };
-    req.open(method, url);
-    req.send(null); /* old Firefox needs an arg */
-    return false;
-};
-Miniajax.get = function (url, callback, timeout) {
-    return getorpost("GET", url, callback, timeout);
-};
-Miniajax.post = function (url, callback, timeout) {
-    return getorpost("POST", url, callback, timeout);
-};
-Miniajax.getjsonp = function (url, callback, timeout) {
-    // Written with reference to jquery
-    var head, script, timer, cbname = "mjp" + jsonp;
-    function readystatechange(_, isAbort) {
-        var err;
-        try {
-            if (isAbort || !script.readyState || /loaded|complete/.test(script.readyState)) {
-                script.onload = script.onreadystatechange = null;
-                if (head && script.parentNode)
-                    head.removeChild(script);
-                script = undefined;
-                window[cbname] = function () {};
-                if (timer) {
-                    clearTimeout(timer);
-                    timer = null;
-                }
-            }
-        } catch (err) {
-        }
-    }
-    timer = setTimeout(function () {
-            timer = null;
-            callback(null);
-            readystatechange(null, true);
-        }, timeout ? timeout : 4000);
-    window[cbname] = callback;
-    head = document.head || document.getElementsByTagName("head")[0] || document.documentElement;
-    script = document.createElement("script");
-    script.async = "async";
-    script.src = url.replace(/=\?/, "=" + cbname);
-    script.onload = script.onreadystatechange = readystatechange;
-    head.insertBefore(script, head.firstChild);
-    ++jsonp;
-};
 Miniajax.isoutstanding = function (formname, callback) {
     var myoutstanding = outstanding[formname];
     myoutstanding && callback && myoutstanding.push(callback);
@@ -3663,9 +3600,8 @@ function check_version(url, versionstr) {
     }
     function updatecb(json) {
         if (json && json.updates && window.JSON)
-            Miniajax.get(siteurl + "checkupdates.php?data="
-                         + encodeURIComponent(JSON.stringify(json)),
-                         updateverifycb);
+            jQuery.get(siteurl + "checkupdates.php",
+                       {data: JSON.stringify(json)}, updateverifycb);
         else if (json && json.status)
             wstorage(false, "hotcrp_version_check", {at: (new Date).getTime(), version: versionstr});
     }
@@ -3676,10 +3612,11 @@ function check_version(url, versionstr) {
             return;
     } catch (x) {
     }
-    Miniajax.getjsonp(url + "&site=" + encodeURIComponent(window.location.toString()) + "&jsonp=?", updatecb, null);
+    jQuery.get(url + "&site=" + encodeURIComponent(window.location.toString()) + "&jsonp=?",
+               null, updatecb, "jsonp");
 }
 check_version.ignore = function (id) {
-    Miniajax.get(siteurl + "checkupdates.php?ignore=" + id, function () {}, null);
+    jQuery.get(siteurl + "checkupdates.php", {ignore: id});
     var e = $$("softwareupdate_" + id);
     if (e)
         e.style.display = "none";
