@@ -262,7 +262,7 @@ class ReviewField {
             }
             $retstr .= '<br /><span class="sc_sum">' . $avgtext . "</span></div>";
         }
-        $Conf->footerScript("scorechart()", "scorechart");
+        $Conf->footerScript("$(scorechart)", "scorechart");
 
         return $retstr;
     }

@@ -4179,7 +4179,7 @@ function scorechart1() {
 }
 
 return function (j) {
-    if (j == null)
+    if (j == null || j === $)
         j = $(".scorechart:empty");
     j.each(scorechart1);
 }
