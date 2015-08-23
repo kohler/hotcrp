@@ -289,11 +289,9 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    public $round;
     public $fmap;
     public $forder;
     public $fieldName;
-    private $all_forder;
     private $mailer_info;
     private $mailer_preps;
 
@@ -305,25 +303,18 @@ class ReviewForm {
                                         -4 => "too narrow",
                                         -2 => "not constructive",
                                         -3 => "not correct");
-    static private $cache = array();
+    static private $cache = null;
     static private $review_author_seen = null;
 
-    static public function get($round = 0) {
+    static public function get($unused = null) {
         global $Conf;
-        if (is_object($round))
-            $round = $round->reviewRound;
-        else if ($round === null)
-            $round = 0;
-        if (!($rf0 = @self::$cache[0]))
-            self::$cache[0] = new ReviewForm(0);
-        if (($rf = @self::$cache[$round]))
-            return $rf;
-        else
-            return self::$cache[$round] = new ReviewForm($round, $rf0);
+        if (!self::$cache)
+            self::$cache = new ReviewForm;
+        return self::$cache;
     }
 
     static public function clear_cache() {
-        self::$cache = array();
+        self::$cache = null;
     }
 
     static public function fmap_sorter($a, $b) {
@@ -335,7 +326,40 @@ class ReviewForm {
             return strcmp($a->id, $b->id);
     }
 
-    private function create_fmap() {
+    static public function all_fields() {
+        $rf = self::get();
+        return $rf->forder;
+    }
+
+    static public function field($fid) {
+        $rf = self::get();
+        $f = @$rf->fmap[$fid];
+        return $f && $f->displayed ? $f : null;
+    }
+
+    static public function field_search($name) {
+        $rf = self::get();
+        $f = @$rf->fmap[$name];
+        if ($f && $f->displayed)
+            return $f;
+        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        for ($i = 0; $i < count($a); ++$i)
+            $a[$i] = preg_quote($a[$i], "/");
+        $field = null;
+        foreach ($rf->forder as $f) {
+            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
+                return $f;
+            for ($i = 0; $i < count($a); ++$i)
+                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
+                    && !preg_match("{\\b$a[$i]}i", $f->name))
+                    break;
+            if ($i == count($a))
+                $field = ($field === null ? $f : false);
+        }
+        return $field;
+    }
+
+    function __construct() {
         global $Conf;
 
         // prototype fields
@@ -379,10 +403,10 @@ class ReviewForm {
         foreach ($forder as $f)
             $f->display_order = ++$n;
         uasort($this->fmap, "ReviewForm::fmap_sorter");
-        $this->all_forder = array();
+        $this->forder = array();
         foreach ($this->fmap as $f)
             if ($f->displayed)
-                $this->all_forder[$f->id] = $f;
+                $this->forder[$f->id] = $f;
 
         // set field abbreviations; try to ensure uniqueness
         $fdupes = $forder;
@@ -396,60 +420,6 @@ class ReviewForm {
             foreach ($fmap as $fs)
                 if (count($fs) > 1)
                     $fdupes = array_merge($fdupes, $fs);
-        }
-    }
-
-    static public function all_fields() {
-        $rf = self::get(0);
-        return $rf->all_forder;
-    }
-
-    static public function field($fid) {
-        $rf = self::get(0);
-        $f = @$rf->fmap[$fid];
-        return $f && $f->displayed ? $f : null;
-    }
-
-    static public function field_search($name) {
-        $rf = self::get(0);
-        $f = @$rf->fmap[$name];
-        if ($f && $f->displayed)
-            return $f;
-        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-        for ($i = 0; $i < count($a); ++$i)
-            $a[$i] = preg_quote($a[$i], "/");
-        $field = null;
-        foreach ($rf->all_forder as $f) {
-            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
-                return $f;
-            for ($i = 0; $i < count($a); ++$i)
-                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
-                    && !preg_match("{\\b$a[$i]}i", $f->name))
-                    break;
-            if ($i == count($a))
-                $field = ($field === null ? $f : false);
-        }
-        return $field;
-    }
-
-    function __construct($round, $fmap_cache = null) {
-        global $Conf;
-        $this->round = $round;
-        if ($fmap_cache) {
-            $this->fmap = $fmap_cache->fmap;
-            $this->fieldName = $fmap_cache->fieldName;
-        } else
-            $this->create_fmap();
-
-        $this->forder = array();
-        if (($j = $Conf->review_form_order_json($round))) {
-            foreach ($j as $fid)
-                if (($f = @$this->fmap[$fid]))
-                    $this->forder[$f->id] = $f;
-        } else {
-            foreach ($this->fmap as $f)
-                if ($f->displayed)
-                    $this->forder[$f->id] = $f;
         }
     }
 
@@ -523,7 +493,7 @@ class ReviewForm {
 
     static public function reviewArchiveFields() {
         global $Conf;
-        $rf = self::get(0);
+        $rf = self::get();
         $x = "reviewId, paperId, contactId, reviewType, requestedBy,
                 reviewModified, reviewSubmitted, reviewNeedsSubmit, "
             . join(", ", array_keys($rf->fmap))

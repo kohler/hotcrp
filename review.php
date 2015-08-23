@@ -26,7 +26,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
 
 if ($Me->is_empty())
     $Me->escape();
-$rf = reviewForm();
+$rf = ReviewForm::get();
 $useRequest = isset($_REQUEST["after_login"]);
 
 

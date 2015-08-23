@@ -70,7 +70,7 @@ function rf_update() {
     $nrfj = (object) array();
     $shortNameError = $optionError = false;
 
-    $rf = reviewForm();
+    $rf = ReviewForm::get();
     foreach ($rf->fmap as $fid => $f) {
         $nrfj->$fid = $fj = (object) array();
 
@@ -154,7 +154,7 @@ function rf_getField($f, $formname, $fname, $backup = null) {
 function rf_show() {
     global $Conf, $ConfSitePATH, $Error, $review_form_setting_prefixes;
 
-    $rf = reviewForm();
+    $rf = ReviewForm::get();
     $fmap = array();
     foreach ($rf->fmap as $fid => $f)
         $fmap[$fid] = $f->has_options;

@@ -6,7 +6,7 @@
 require_once("src/initweb.php");
 if ($Me->is_empty())
     $Me->escape();
-$rf = reviewForm();
+$rf = ReviewForm::get();
 
 
 // general error messages

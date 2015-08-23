@@ -451,15 +451,6 @@ class Conference {
         return is_object($x) ? $x : null;
     }
 
-    function review_form_order_json($round) {
-        $key = $round ? "review_form_order.$round" : "review_form_order";
-        $x = @$this->settingTexts[$key];
-        if (is_string($x))
-            $x = $this->settingTexts[$key] = json_decode($x);
-        return is_array($x) ? $x : null;
-    }
-
-
 
     function has_tracks() {
         return $this->tracks !== null;

@@ -1351,10 +1351,6 @@ function cleanAuthor($row) {
     }
 }
 
-function reviewForm() {
-    return ReviewForm::get(0);
-}
-
 
 function hotcrp_random_bytes($length = 16, $secure_only = false) {
     $key = @file_get_contents("/dev/urandom", false, null, 0, $length);

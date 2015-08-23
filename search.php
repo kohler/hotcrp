@@ -218,7 +218,7 @@ function downloadReviews(&$texts, &$errors) {
 // (or blank form if no papers selected)
 if (($getaction == "revform" || $getaction == "revformz")
     && !SearchActions::any()) {
-    $rf = reviewForm();
+    $rf = ReviewForm::get();
     $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
     exit;
@@ -1360,7 +1360,7 @@ if ($pl) {
 
     // Scores group
     if ($pl->scoresOk == "present") {
-        $rf = reviewForm();
+        $rf = ReviewForm::get();
         if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
             $revViewScore = $Me->permissive_view_score_bound();
         else

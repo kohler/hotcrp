@@ -139,7 +139,7 @@ $Conf->save_setting("pc_seeblindrev", 1);
 assert_search_papers($user_mgbaker, "re:varghese", "");
 
 $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
-$rf = reviewForm();
+$rf = ReviewForm::get();
 $rf->save_review($revreq,
                  $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId)),
                  $Conf->paperRow(1, $user_mgbaker),
