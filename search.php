@@ -1210,7 +1210,7 @@ if ($Me->privChair) {
 
 // search
 $Conf->header("Search", "search", actionBar());
-$Conf->echoScript();
+$Conf->echoScript(); // need the JS right away
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, array("sort" => true, "list" => true, "row_id_pattern" => "p#",
@@ -1359,7 +1359,6 @@ if ($pl) {
         displayOptionCheckbox("shepherd", 2, "Shepherds");
 
     // Scores group
-    $anyScores = false;
     if ($pl->scoresOk == "present") {
         $rf = reviewForm();
         if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
@@ -1384,7 +1383,6 @@ if ($pl) {
                               . Ht::select("scoresort", ListSorter::$score_sorts, $Conf->session("scoresort"), array("onchange" => $onchange, "id" => "scoresort", "style" => "font-size: 100%"))
                 . "<a class='help' href='" . hoturl("help", "t=scoresort") . "' target='_blank' title='Learn more'>?</a></div>", 3);
         }
-        $anyScores = count($displayOptions) != $n;
     }
 
     // Formulas group
@@ -1657,7 +1655,8 @@ if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla nowrap' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>\n</table>\n\n";
 if ($pl && $pl->count > 0)
-    $Conf->echoScript("crpfocus(\"searchform\",$activetab,1)");
+    // `echoScript()` not necessary because we've already got the script
+    echo "<script>crpfocus(\"searchform\",$activetab,1)</script>";
 else
     $Conf->footerScript("crpfocus(\"searchform\",$activetab)");
 
