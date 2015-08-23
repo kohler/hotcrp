@@ -113,7 +113,7 @@ function rf_update() {
             $prefixes = array("sv", "svr", "sv-blpu", "sv-publ");
             $sv = defval($_REQUEST, "option_class_prefix_$fid", "sv");
             $prefix_index = array_search($sv, $prefixes) ? : 0;
-            if (!!$fj->option_letter != !!@$_REQUEST["option_class_prefix_flipped_$fid"])
+            if (@$_REQUEST["option_class_prefix_flipped_$fid"])
                 $prefix_index ^= 1;
             if ($prefix_index)
                 $fj->option_class_prefix = $prefixes[$prefix_index];

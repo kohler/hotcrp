@@ -78,7 +78,9 @@ return {init: init, add: add, kill: kill};
 
 
 window.review_form_settings = (function () {
-var fieldmap, fieldorder, original, samples;
+var fieldmap, fieldorder, original, samples,
+    colors = ["sv", "Red to green", "svr", "Green to red",
+              "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue"];
 
 function get_fid(elt) {
     return elt.id.replace(/^.*_/, "");
@@ -106,8 +108,15 @@ function set_position(fid, pos) {
     $("#order_" + fid).html(t).val(pos);
 }
 
+function option_class_prefix(fieldj) {
+    var sv = fieldj.option_class_prefix || "sv";
+    if (fieldj.option_letter)
+        sv = colors[(colors.indexOf(sv) || 0) ^ 2];
+    return sv;
+}
+
 function check_change(fid) {
-    var fieldj = original[fid] || {}, j,
+    var fieldj = original[fid] || {}, j, sv,
         removed = $("#removed_" + fid).val() != "0";
     if ($.trim($("#shortName_" + fid).val()) != fieldj.name
         || $("#order_" + fid).val() != (fieldj.position || 0)
@@ -115,7 +124,7 @@ function check_change(fid) {
         || $("#authorView_" + fid).val() != (fieldj.view_score || "pc")
         || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
         || ((j = $("#option_class_prefix_" + fid)) && j.length
-            && j.val() != (fieldj.option_class_prefix || "sv"))
+            && j.val() != option_class_prefix(fieldj))
         || removed) {
         $("#revfield_" + fid + " .revfield_revert").show();
         hiliter("reviewform_container");
@@ -138,16 +147,8 @@ function fill_field(fid, fieldj) {
     $("#description_" + fid).val(fieldj.description || "");
     $("#authorView_" + fid).val(fieldj.view_score || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
-    $("#option_class_prefix_" + fid).val(fieldj.option_class_prefix || "sv");
-    if (fieldj.options && fieldj.option_letter) {
-        $("#option_class_prefix_" + fid + " option").each(function () {
-            var m = /^(.*) to (.)(.*)$/.exec($(this).text().toLowerCase());
-            if (m)
-                $(this).text(m[2].toUpperCase() + m[3] + " to " + m[1]);
-        });
-        $("#option_class_prefix_flipped_" + fid).val("1");
-    } else
-        $("#option_class_prefix_flipped_" + fid).val("");
+    $("#option_class_prefix_flipped_" + fid).val(fieldj.option_letter ? "1" : "");
+    $("#option_class_prefix_" + fid).val(option_class_prefix(fieldj));
     if (!fieldj.selector)
         $("#removed_" + fid).val(fieldj.position ? 0 : 1);
     check_change(fid);
@@ -193,12 +194,7 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
     </div>\
     <div class="f-ix reviewrow_options">\
       <div class="f-c">Colors</div>\
-      <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix">\
-        <option value="sv">Red to green</option>\
-        <option value="svr">Green to red</option>\
-        <option value="sv-blpu">Blue to purple</option>\
-        <option value="sv-publ">Purple to blue</option>\
-      </select>\
+      <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix"></select>\
 <input type="hidden" name="option_class_prefix_flipped_$" id="option_class_prefix_flipped_$" value="" />\
     </div>\
     <hr class="c" />\
@@ -221,15 +217,20 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
 </div>';
 
 function append_field(fid) {
-    var jq = $(revfield_template.replace(/\$/g, fid)),
-        sampleopt = "<option value=\"x\">Load field from library...</option>", i;
+    var jq = $(revfield_template.replace(/\$/g, fid)), i;
+
+    if (fieldmap[fid]) {
+        for (i = 0; i < colors.length; i += 2)
+            jq.find(".reviewfield_option_class_prefix").append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
+    } else
+        jq.find(".reviewrow_options").remove();
+
+    var sampleopt = "<option value=\"x\">Load field from library...</option>";
     for (i = 0; i != samples.length; ++i)
         if (!samples[i].options == !fieldmap[fid])
             sampleopt += "<option value=\"" + i + "\">" + samples[i].selector + "</option>";
-
-    if (!fieldmap[fid])
-        jq.find(".reviewrow_options").remove();
     jq.find(".revfield_samples").html(sampleopt).on("change", samples_change);
+
     jq.find(".revfield_remove").on("click", remove);
     jq.find(".revfield_revert").on("click", revert);
     jq.find("input, textarea, select").on("change", check_this_change);
