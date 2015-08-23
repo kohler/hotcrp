@@ -3694,7 +3694,7 @@ var aufull = {}, title = {
     shepherd: "Shepherd", lead: "Discussion lead", topics: "Topics",
     pcconf: "PC conflicts", collab: "Collaborators", authors: "Authors",
     aufull: "Authors"
-};
+}, needload = {}, loadargs = {};
 
 function set(elt, text, which, type) {
     var x;
@@ -3724,7 +3724,7 @@ function make_callback(dofold, type, which) {
         for (i in x)
             if ((elt = $$(xtype + "." + i)))
                 set(elt, x[i], which, type);
-        plinfo.needload[xtype] = false;
+        needload[xtype] = false;
         fold(which, dofold, xtype);
         if (type == "aufull")
             aufull[!!dofold] = rv;
@@ -3735,7 +3735,7 @@ function make_callback(dofold, type, which) {
 function show_loading(type, which) {
     return function () {
         var xtype = get_xtype(type), i, x, elt, divs, h6;
-        if (!plinfo.needload[xtype] || !(elt = $$("fold" + which)))
+        if (!needload[xtype] || !(elt = $$("fold" + which)))
             return;
         divs = elt.getElementsByTagName("div");
         for (i = 0; i < divs.length; i++)
@@ -3765,28 +3765,34 @@ function plinfo(type, dofold, which) {
     // may need to load information by ajax
     if (type == "aufull" && aufull[!!dofold])
         make_callback(dofold, type, which)(aufull[!!dofold]);
-    else if ((!dofold || type == "aufull") && plinfo.needload[type]) {
+    else if ((!dofold || type == "aufull") && needload[type]) {
         // set up "loading" display
         setTimeout(show_loading(type, which), 750);
 
         // initiate load
+        delete loadargs.aufull;
         if (type == "aufull" || type == "au" || type == "anonau") {
-            $("#plloadform_get").val("authors");
-            if (type == "aufull")
-                $("#plloadform_aufull").val(dofold ? "" : "1");
-            else if ((elt = $$("showaufull")))
-                $("#plloadform_aufull").val(elt.checked ? "1" : "");
+            loadargs.get = "authors";
+            if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
+                loadargs.aufull = 1;
         } else
-            $("#plloadform_get").val(type);
-        Miniajax.submit(["plloadform", type + "loadform"],
-                        make_callback(dofold, type, which),
-                        10000);
+            loadargs.get = type;
+        loadargs.ajax = 1;
+        $.ajax({
+            url: hoturl_post("search", loadargs),
+            type: "POST", timeout: 10000, dataType: "json",
+            success: make_callback(dofold, type, which)
+        });
     }
 
     return false;
 }
 
-plinfo.needload = {};
+plinfo.needload = function (nl, la) {
+    needload = nl;
+    loadargs = la;
+};
+
 plinfo.notitle = {};
 return plinfo;
 })();

@@ -615,23 +615,6 @@ class PaperList {
         return $field_list;
     }
 
-    private function _addAjaxLoadForm($pap, $extra = "") {
-        global $Conf;
-        $t = "<div>" . Ht::form_div(hoturl_post("search", "ajax=1"), array("id" => "plloadform"));
-        $s = $this->search;
-        if ($s->q)
-            $t .= Ht::hidden("q", $s->q);
-        if ($s->qt)
-            $t .= Ht::hidden("qt", $s->qt);
-        $aufull = !$this->is_folded("aufull");
-        $t .= Ht::hidden("t", $s->limitName)
-            . Ht::hidden("pap", join(" ", $pap))
-            . Ht::hidden("get", "", array("id" => "plloadform_get"))
-            . Ht::hidden("aufull", $aufull ? "1" : "", array("id" => "plloadform_aufull"))
-            . "</div></form></div>";
-        $Conf->footerHtml($t);
-    }
-
     private function _rows($field_list) {
         global $Conf;
         if (!$field_list)
@@ -883,8 +866,15 @@ class PaperList {
         if (count($jsmap))
             $Conf->footerScript("foldmap.pl={" . join(",", $jsmap) . "};");
         if (count($jsloadmap)) {
-            $Conf->footerScript("plinfo.needload={" . join(",", $jsloadmap) . "};");
-            $this->_addAjaxLoadForm($rstate->ids);
+            $args = array();
+            if ($this->search->q)
+                $args["q"] = $this->search->q;
+            if ($this->search->qt)
+                $args["qt"] = $this->search->qt;
+            $args["t"] = $this->search->limitName;
+            $args["pap"] = join(" ", $rstate->ids);
+            $Conf->footerScript("plinfo.needload({" . join(",", $jsloadmap) . "},"
+                                . json_encode($args) . ");");
         }
         if (count($jsnotitlemap))
             $Conf->footerScript("plinfo.notitle={" . join(",", $jsnotitlemap) . "};");
