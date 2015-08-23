@@ -840,10 +840,39 @@ table#foldtag_color th {
 	font-size: smaller;
 	padding-right: 1em;
 }
-div.settings_revfield {
-	margin-bottom: 36px;
+div.settings_revfieldpos, div.settings_revfieldview, div.settings_revfieldedit {
+	float: left;
 }
-
+div.settings_revfieldpos {
+	font-weight: bold;
+	padding-right: 0.5em;
+}
+div.settings_revfield {
+	margin: 18px 0;
+}
+div.settings_revfieldedit {
+	margin-top: -2px;
+}
+div.settings_revfieldview, div.settings_revfieldedit {
+	position: relative;
+}
+div.settings_revfn {
+	font-weight: bold;
+	color: #555555;
+	float: left;
+}
+div.settings_revvis {
+	padding-left: 1em;
+	color: #999999;
+	float: left;
+}
+div.settings_reveditor {
+	padding-left: 1em;
+	float: left;
+}
+div.settings_revdata {
+	clear: both;
+}
 
 /* help pages */
 div.leftmenu_menucontainer {

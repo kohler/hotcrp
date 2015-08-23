@@ -75,12 +75,9 @@ function rf_update() {
         $nrfj->$fid = $fj = (object) array();
 
         $sn = simplify_whitespace(defval($_REQUEST, "shortName_$fid", ""));
-        if ($sn == "<None>" || $sn == "<New field>")
+        if ($sn == "<None>" || $sn == "<New field>" || $sn == "Field name")
             $sn = "";
-        if (@$_REQUEST["removed_$fid"] == "1")
-            $pos = 0;
-        else
-            $pos = cvtint(@$_REQUEST["order_$fid"]);
+        $pos = cvtint(@$_REQUEST["order_$fid"]);
         if ($pos > 0 && $sn == ""
             && trim(defval($_REQUEST, "description_$fid", "")) == ""
             && trim(defval($_REQUEST, "options_$fid", "")) == "")
@@ -192,10 +189,10 @@ are better). For example:</p>
                         . json_encode($Error) . ","
                         . json_encode($req) . ")");
 
-    echo "<div id=\"reviewform_container\">",
-        Ht::hidden("has_reviewform", 1),
-        "</div>";
-    echo Ht::button("Add score field", array("onclick" => "review_form_settings.add(1)")),
+    echo Ht::hidden("has_reviewform", 1),
+        "<div id=\"reviewform_container\"></div>",
+        "<div id=\"reviewform_removedcontainer\" style=\"display:none\"></div>",
+        Ht::button("Add score field", array("onclick" => "review_form_settings.add(1)")),
         "<span class='sep'></span>",
         Ht::button("Add text field", array("onclick" => "review_form_settings.add(0)"));
 }

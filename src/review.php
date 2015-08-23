@@ -45,7 +45,7 @@ class ReviewField {
     }
 
     public function assign($j) {
-        $this->name = (@$j->name ? $j->name : "<None>");
+        $this->name = (@$j->name ? $j->name : "Field name");
         $this->name_html = htmlspecialchars($this->name);
         $this->description = (@$j->description ? $j->description : "");
         $this->display_space = (int) @$j->display_space;
