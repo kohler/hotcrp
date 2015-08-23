@@ -2,6 +2,18 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+function next_lexicographic_permutation(i, size) {
+    var y = (i & -i) || 1, c = i + y, highbit = 1 << size;
+    i = (((i ^ c) >> 2) / y) | c;
+    if (i >= highbit) {
+        i = ((i & (highbit - 1)) << 2) | 3;
+        if (i >= highbit)
+            i = false;
+    }
+    return i;
+}
+
+
 function do_option_type(e, nohilite) {
     var m;
     if (!nohilite)
@@ -163,7 +175,8 @@ function check_change(fid) {
         || $("#authorView_" + fid).val() != (fieldj.view_score || "pc")
         || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
         || ((j = $("#option_class_prefix_" + fid)) && j.length
-            && j.val() != option_class_prefix(fieldj)))
+            && j.val() != option_class_prefix(fieldj))
+        || ($("#round_mask_" + fid).val() || 0) != (fieldj.round_mask || 0))
         hiliter("reviewform_container");
 }
 
@@ -195,6 +208,7 @@ function fill_field(fid, fieldj) {
     $("#option_class_prefix_" + fid).val(option_class_prefix(fieldj));
     $("#revfield_" + fid + " textarea").trigger("change");
     $("#revfieldview_" + fid).html("").append(create_field_view(fid, fieldj));
+    $("#round_mask_" + fid).val(fieldj.round_mask || 0);
     check_change(fid);
     return false;
 }
@@ -243,6 +257,10 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
       <select name="option_class_prefix_$" id="option_class_prefix_$" class="reviewfield_option_class_prefix"></select>\
 <input type="hidden" name="option_class_prefix_flipped_$" id="option_class_prefix_flipped_$" value="" />\
     </div>\
+    <div class="f-ix reviewrow_rounds">\
+      <div class="f-c">Rounds</div>\
+      <select name="round_mask_$" id="round_mask_$" class="reviewfield_round_mask"></select>\
+    </div>\
     <hr class="c" />\
   </div>\
   <div class="f-i errloc_description_$">\
@@ -256,10 +274,11 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
 </div><hr class="c" /></div>';
 
 var revfieldview_template = '<div>\
-  <div class="settings_revfn"></div>\
-  <div class="settings_revvis"></div>\
-  <div class="settings_reveditor"><button type="button">Edit</button></div>\
-  <div class="settings_revdata"></div>\
+<div class="settings_revfn"></div>\
+<div class="settings_revrounds"></div>\
+<div class="settings_revvis"></div>\
+<div class="settings_reveditor"><button type="button">Edit</button></div>\
+<div class="settings_revdata"></div>\
 </div>';
 
 function option_value_html(fieldj, value) {
@@ -290,26 +309,46 @@ function view_unfold(event) {
 }
 
 function create_field_view(fid, fieldj) {
-    var jq = $(revfieldview_template.replace(/\$/g, fid)), x;
-    jq.find(".settings_revfn").text(fieldj.name || "<unnamed>");
+    var $f = $(revfieldview_template.replace(/\$/g, fid)), $x, i, j, x;
+    $f.find(".settings_revfn").text(fieldj.name || "<unnamed>");
+
+    x = "";
     if ((fieldj.view_score || "pc") === "pc")
         x = "(hidden from authors)";
     else if (fieldj.view_score === "admin")
         x = "(shown only to administrators)";
     else if (fieldj.view_score === "secret")
         x = "(secret)";
-    else
-        x = "";
-    x ? jq.find(".settings_revvis").text(x) : jq.find(".settings_revvis").remove();
+    $x = $f.find(".settings_revvis");
+    x ? $x.text(x) : $x.remove();
+
+    x = "";
+    if (fieldj.round_mask && hotcrp_status.rev.roundidx) {
+        x = [];
+        for (i = 0; (1 << i) <= fieldj.round_mask; ++i)
+            if ((fieldj.round_mask & (1 << i))
+                && (j = hotcrp_status.rev.roundidx.indexOf(i)) >= 0)
+                x.push(hotcrp_status.rev.rounds[j] || "unnamed");
+        if (x.length == 1)
+            x = "(round " + x[0] + " only)";
+        else if (x.length)
+            x = "(rounds " + commajoin(x) + ")";
+        else
+            x = "";
+    }
+    $x = $f.find(".settings_revrounds");
+    x ? $x.text(x) : $x.remove();
+
     if (fieldj.options) {
         x = [option_value_html(fieldj, 1),
              option_value_html(fieldj, fieldj.options.length)];
         fieldj.option_letter && x.reverse();
     } else
         x = ["Text field"];
-    jq.find(".settings_revdata").html(x.join(" … "));
-    jq.find("button").click(view_unfold);
-    return jq;
+    $f.find(".settings_revdata").html(x.join(" … "));
+
+    $f.find("button").click(view_unfold);
+    return $f;
 }
 
 function move_field(event) {
@@ -328,7 +367,7 @@ function move_field(event) {
 }
 
 function append_field(fid, pos) {
-    var $f = $("#revfield_" + fid), i;
+    var $f = $("#revfield_" + fid), i, $j;
     if ($f.length) {
         $f.detach().appendTo("#reviewform_container");
         fill_order();
@@ -339,10 +378,34 @@ function append_field(fid, pos) {
     $f.find(".settings_revfieldpos").html(pos + ".");
 
     if (fieldmap[fid]) {
+        $j = $f.find(".reviewfield_option_class_prefix");
         for (i = 0; i < colors.length; i += 2)
-            $f.find(".reviewfield_option_class_prefix").append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
+            $j.append("<option value=\"" + colors[i] + "\">" + colors[i+1] + "</option>");
     } else
         $f.find(".reviewrow_options").remove();
+
+    if (hotcrp_status.rev && hotcrp_status.rev.roundidx
+        && hotcrp_status.rev.roundidx.length > 1) {
+        var rname = hotcrp_status.rev.rounds, ridx = hotcrp_status.rev.roundidx,
+            v, j, text;
+        $j = $f.find(".reviewfield_round_mask");
+        for (i = 0; i < (1 << ridx.length) - 1;
+             i = next_lexicographic_permutation(i, ridx.length)) {
+            v = 0, text = [];
+            for (j = 0; j < ridx.length; ++j)
+                if (i & (1 << j)) {
+                    v |= 1 << ridx[j];
+                    text.push(rname[j] || "unnamed");
+                }
+            if (v == 0)
+                $j.append("<option value=\"0\">All rounds</option>");
+            else if (!(v & (v - 1)))
+                $j.append("<option value=\"" + v + "\">" + text[0] + " only</option>");
+            else
+                $j.append("<option value=\"" + v + "\">" + commajoin(text) + "</option>");
+        }
+    } else
+        $f.find(".reviewrow_rounds").remove();
 
     var sampleopt = "<option value=\"x\">Load field from library...</option>";
     for (i = 0; i != samples.length; ++i)

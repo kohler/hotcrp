@@ -115,6 +115,8 @@ function rf_update() {
             if ($prefix_index)
                 $fj->option_class_prefix = $prefixes[$prefix_index];
         }
+
+        $fj->round_mask = cvtint(@$_REQUEST["round_mask_$fid"], 0);
     }
 
     if ($shortNameError)

@@ -183,7 +183,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $view_score = $Me->view_score_bound($prow, $rr);
             $rf = ReviewForm::get($rr);
             foreach ($rf->forder as $fid => $f) {
-                if (!$f->has_options || $f->view_score <= $view_score)
+                if (!$f->has_options || $f->view_score <= $view_score
+                    || ($f->round_mask && !$f->is_round_visible($rr)))
                     /* do nothing */;
                 else if ($rr->$fid) {
                     if (!@$score_header[$fid])

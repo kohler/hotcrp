@@ -2736,15 +2736,19 @@ class Contact {
             $dl->rev->open = true;
             $dl->rev->rounds = array();
             $dl->rev->roundsuf = array();
+            if ($this->privChair)
+                $dl->rev->roundidx = array();
             $grace = @$set["rev_grace"];
             $cur_round = $Conf->current_round_name();
             foreach ($Conf->round_list() as $i => $round_name) {
-                if ($round_name === ";" && ($i || !$Conf->round0_defined()))
+                if ($i ? $round_name === ";" : !$Conf->round0_defined())
                     continue;
                 $isuf = $i ? "_$i" : "";
                 $jsuf = $i ? ".$round_name" : "";
                 $dl->rev->rounds[] = $i ? $round_name : 0;
                 $dl->rev->roundsuf[] = $jsuf;
+                if ($this->privChair)
+                    $dl->rev->roundidx[] = $i;
                 foreach (array("pcrev", "extrev") as $rt) {
                     if ($rt == "pcrev" && !$this->isPC)
                         continue;

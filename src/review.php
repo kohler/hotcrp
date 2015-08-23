@@ -31,6 +31,7 @@ class ReviewField {
     public $displayed = false;
     public $display_order;
     public $option_class_prefix = "sv";
+    public $round_mask = 0;
     private $analyzed = false;
 
     static private $view_score_map = array("secret" => VIEWSCORE_ADMINONLY,
@@ -64,6 +65,7 @@ class ReviewField {
             $this->display_order = $j->position;
         } else
             $this->displayed = $this->display_order = false;
+        $this->round_mask = (int) @$j->round_mask;
         if ($this->has_options) {
             $options = @$j->options ? $j->options : array();
             $ol = @$j->option_letter;
@@ -107,6 +109,8 @@ class ReviewField {
             if ($this->option_class_prefix !== "sv")
                 $j->option_class_prefix = $this->option_class_prefix;
         }
+        if ($this->round_mask)
+            $j->round_mask = $this->round_mask;
         return $j;
     }
 
@@ -121,6 +125,15 @@ class ReviewField {
 
     public function unparse_view_score() {
         return self::unparse_view_score_value($this->view_score);
+    }
+
+    public function is_round_visible($rrow) {
+        global $Conf;
+        $round = $rrow ? $rrow->reviewRound : $Conf->current_round();
+        return !$this->round_mask
+            || $round === null
+            || ($this->round_mask & (1 << $round))
+            || ($rrow && ($fid = $this->id) && $rrow->$fid);
     }
 
     public function analyze() {
@@ -509,7 +522,8 @@ class ReviewForm {
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         echo '<div>';
         foreach ($this->forder as $field => $f) {
-            if ($f->view_score <= $revViewScore)
+            if ($f->view_score <= $revViewScore
+                || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
             $fval = "";
@@ -576,8 +590,12 @@ class ReviewForm {
             if (!isset($req[$field]) && !$submit)
                 continue;
             $fval = defval($req, $field, ($rrow ? $rrow->$field : ""));
-            if (!isset($req[$field]) && $f->view_score >= VIEWSCORE_PC)
-                $missing[] = $f->name;
+            if (!isset($req[$field])) {
+                if ($f->round_mask && !$f->is_round_visible($rrow))
+                    continue;
+                if ($f->view_score >= VIEWSCORE_PC)
+                    $missing[] = $f->name;
+            }
             if ($f->has_options) {
                 $fval = trim($fval);
                 if ($fval === "" || $fval === "0" || $fval[0] === "(") {
@@ -657,7 +675,8 @@ class ReviewForm {
         $q = array();
         $diff_view_score = VIEWSCORE_FALSE;
         foreach ($this->forder as $field => $f)
-            if (isset($req[$field])) {
+            if (isset($req[$field])
+                && (!$f->round_mask || $f->is_round_visible($rrow))) {
                 $fval = $req[$field];
                 if ($f->has_options) {
                     if (!($fval = $f->parse_value($fval, false)))
@@ -666,11 +685,9 @@ class ReviewForm {
                     $fval = rtrim($fval);
                     if ($fval != "")
                         $fval .= "\n";
-                    // Check for valid UTF-8.  Re-encode invalid UTF-8 as if
-                    // it were Windows-1252, which is a superset of
-                    // ISO-8859-1.
+                    // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                     if (!is_valid_utf8($fval))
-                        $fval = windows_1252_to_utf8($fval);
+                        $fval = convert_to_utf8($fval);
                     $req[$field] = $fval;
                 }
                 if ($rrow && strcmp($rrow->$field, $fval) != 0
@@ -923,7 +940,8 @@ $blind\n";
         $numericMessage = 0;
         foreach ($this->forder as $field => $f) {
             $i++;
-            if ($f->view_score <= $revViewScore)
+            if ($f->view_score <= $revViewScore
+                || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
             $fval = "";
@@ -1010,7 +1028,8 @@ $blind\n";
         $lastNumeric = null;
         foreach ($this->forder as $field => $f) {
             $i++;
-            if ($f->view_score <= $revViewScore)
+            if ($f->view_score <= $revViewScore
+                || ($f->round_mask && !$f->is_round_visible($rrow)))
                 continue;
 
             $fval = "";
@@ -1250,7 +1269,8 @@ $blind\n";
         foreach ($this->forder as $field => $f) {
             $fval = $rrow->$field;
             if ($f->view_score > $revViewScore
-                && ($f->has_options || $fval != "")) {
+                && ($f->has_options || $fval != "")
+                && (!$f->round_mask || $f->is_round_visible($rrow))) {
                 $fshow[] = $f;
                 $fdisp[] = ($f->has_options ? self::WEB_OPTIONS : 0);
             }

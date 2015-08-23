@@ -246,6 +246,19 @@ function ordinal(n) {
         return n + "th";
 }
 
+function commajoin(a, joinword) {
+    joinword = joinword || "and";
+    if (a.length == 0)
+        return "";
+    else if (a.length == 1)
+        return a[0];
+    else if (a.length == 2)
+        return a[0] + " " + joinword + " " + a[1];
+    else
+        return a.slice(0, a.length - 1).join(", ") + ", " + joinword + " " + a[a.length - 1];
+}
+
+
 function event_stop(evt) {
     if (evt.stopPropagation)
         evt.stopPropagation();

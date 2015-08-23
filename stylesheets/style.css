@@ -861,12 +861,7 @@ div.settings_revfn {
 	color: #555555;
 	float: left;
 }
-div.settings_revvis {
-	padding-left: 1em;
-	color: #999999;
-	float: left;
-}
-div.settings_reveditor {
+div.settings_revvis, div.settings_revrounds, div.settings_reveditor {
 	padding-left: 1em;
 	float: left;
 }

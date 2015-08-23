@@ -28,7 +28,7 @@ HelpTopic::register("keywords", "Search keywords", "Quick reference to search ke
 HelpTopic::register("tags", "Tags", "How to use tags to define paper sets and discussion orders.");
 HelpTopic::register("tracks", "Tracks", "How tags can control PC access to papers.");
 HelpTopic::register("scoresort", "Sorting scores", "How scores are sorted in paper lists.");
-HelpTopic::register("revround", "Review rounds", "Review rounds are sets of reviews with optionally different deadlines.");
+HelpTopic::register("revround", "Review rounds", "Review rounds are sets of reviews with different deadlines.");
 HelpTopic::register("revrate", "Review ratings", "Rating the quality of reviews.");
 HelpTopic::register("votetags", "Voting", "PC members can vote for papers using tags.");
 HelpTopic::register("ranking", "Ranking", "PC members can rank papers using tags.");
@@ -700,13 +700,18 @@ function revround() {
     global $Conf, $Me;
 
     _subhead("", "
-<p>Many conferences divide reviews into multiple <em>rounds</em>.
-Chairs label assignments in each round with names, such as
-“R1” or “lastround”.
-(We suggest very short names like “R1”.)
-Rounds are purely informational; different rounds have the same review form.
+<p>Many conferences divide their review assignments into multiple <em>rounds</em>.
+Each round is given a name, such as “R1” or “lastround”
+(we suggest very short names like “R1”).
+Configure rounds on the <a href='" . hoturl("settings", "group=reviews#rounds")
+. "'>settings page</a>.
 To search for any paper with a round “R2” review assignment, <a href='" . hoturl("search", "q=round:R2") . "'>search for “round:R2”</a>.
-To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.</p>");
+To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.</p>
+
+<p>Different rounds usually share the same review form, but you can also
+mark review fields as appearing only in certain rounds. First configure
+rounds, then see
+<a href=\"" . hoturl("settings", "group=reviewform") . "\">Settings &gt; Review form</a>.</p>");
 
     _subhead("Assigning rounds", "
 <p>New assignments are marked by default with the round defined in
