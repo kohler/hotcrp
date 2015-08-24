@@ -632,7 +632,7 @@ class Autoassigner {
         return array($action, $round ? ",$round" : "");
     }
 
-    public function run_reviews_per_pc($reviewtype, $nass) {
+    public function run_reviews_per_pc($reviewtype, $round, $nass) {
         $this->preferences_review();
         $papers = array_fill_keys($this->papersel, ceil((count($this->pcm) * ($nass + 2)) / count($this->papersel)));
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
