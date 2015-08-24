@@ -38,21 +38,7 @@ if (isset($_REQUEST["papx"]) && is_array($_REQUEST["papx"])) {
             $_REQUEST["assrev$p"] = 0;
 }
 
-// set review round
-if (!isset($_REQUEST["rev_roundtag"]))
-    $rev_roundtag = $Conf->setting_data("rev_roundtag");
-else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) == "(None)")
-    $rev_roundtag = "";
-$Error = array();
-if ($rev_roundtag && !preg_match('/^[a-zA-Z0-9]+$/', $rev_roundtag)) {
-    $Error["rev_roundtag"] = true;
-    $Conf->errorMsg("The review round must contain only letters and numbers.");
-    $rev_roundtag = "";
-}
-if ($rev_roundtag)
-    $Conf->save_setting("rev_roundtag", 1, $rev_roundtag);
-else
-    $Conf->save_setting("rev_roundtag", null);
+$_REQUEST["rev_roundtag"] = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
 
 
 $pcm = pcMembers();
@@ -66,6 +52,7 @@ if ($reviewer <= 0 || !@$pcm[$reviewer])
 function saveAssignments($reviewer) {
     global $Conf, $Me, $Now, $kind, $pcm;
     $reviewer_contact = $pcm[$reviewer];
+    $round_number = null;
 
     $pids = array();
     foreach ($_POST as $k => $v)
@@ -93,8 +80,12 @@ function saveAssignments($reviewer) {
         if ($type < 0 && $row->reviewerConflictType < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
         if ($kind == "a" && $type != $row->reviewerReviewType
-            && ($type <= 0 || $reviewer_contact->can_accept_review_assignment_ignore_conflict($row)))
-            $Me->assign_review($row->paperId, $reviewer, $type);
+            && ($type <= 0 || $reviewer_contact->can_accept_review_assignment_ignore_conflict($row))) {
+            if ($type > 0 && $round_number === null)
+                $round_number = $Conf->round_number($_REQUEST["rev_roundtag"], true);
+            $Me->assign_review($row->paperId, $reviewer, $type,
+                               array("round_number" => $round_number));
+        }
     }
 
     if ($ins)
@@ -196,15 +187,6 @@ echo Ht::radio("kind", "a", $kind == "a",
                array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
-$rev_roundtag = $Conf->setting_data("rev_roundtag");
-if ($kind == "a" && (count($Conf->round_list()) > 1 || $rev_roundtag)) {
-    echo "<tr><td colspan='2'><div class='g'></div>",
-        Ht::hidden("rev_roundtag", $rev_roundtag),
-        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-        ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a>',
-        "</td></tr>";
-}
-
 echo "<tr><td colspan='2'><div class='aax' style='text-align:right'>",
     Ht::submit("Go", array("class" => "bb")),
     "</div></td></tr>\n",
@@ -304,7 +286,7 @@ if ($reviewer > 0) {
         Ht::hidden("p", ""),
         Ht::hidden("pcs$reviewer", ""),
         Ht::hidden("reviewer", $reviewer),
-        Ht::hidden("rev_roundtag", $rev_roundtag),
+        Ht::hidden("rev_roundtag", $_REQUEST["rev_roundtag"]),
         "</div></form>\n\n";
 
     // main assignment form
@@ -330,8 +312,17 @@ if ($reviewer > 0) {
         Ht::hidden("q", $_REQUEST["q"]),
         Ht::hidden("papx", join(" ", $search->paperList())),
         "<div class=\"aa\">",
-        Ht::submit("update", "Save assignments", array("class" => "bb")),
-        "<span style='padding:0 0 0 2em'>",
+        Ht::submit("update", "Save assignments", array("class" => "bb"));
+    if ($kind != "c") {
+        $rev_rounds = $Conf->round_selector_options();
+        if (count($rev_rounds) > 1)
+            echo '<span style="padding-left:2em">Review round: &nbsp;',
+                Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed", array("id" => "assrevroundtag")),
+                '</span>';
+        else if (!@$rev_rounds["unnamed"])
+            echo '<span style="padding-left:2em">Review round: ', $Conf->current_round_name(), '</span>';
+    }
+    echo "<span style='padding-left:2em'>",
         Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
         "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
         "</span></div>\n",

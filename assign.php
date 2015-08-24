@@ -134,10 +134,9 @@ function handle_set_round() {
     if (!$Me->can_administer($prow))
         $Conf->ajaxExit(array("ok" => false, "error" => "Permission denied."));
     $rname = trim((string) $_POST["round"]);
-    if (!$rname || $rname === "default")
-        $rname = "";
-    else if (($err = Conference::round_name_error($rname)))
-        $Conf->ajaxExit(array("ok" => false, "error" => $err));
+    $round = $Conf->sanitize_round_name($rname);
+    if ($round === false)
+        $Conf->ajaxExit(array("ok" => false, "error" => Conference::round_name_error($rname)));
 
     // assign round
     $rnum = $Conf->round_number($rname, true);
@@ -153,6 +152,9 @@ if (isset($_GET["setround"]) && check_post())
 function pcAssignments() {
     global $Conf, $Me, $prow;
     $pcm = pcMembers();
+
+    $rname = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
+    $round_number = null;
 
     $where = array("(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
     if (@$_REQUEST["reviewer"] && isset($pcm[$_REQUEST["reviewer"]]))
@@ -184,8 +186,12 @@ function pcAssignments() {
             && ($pctype == 0 || $pctype == REVIEW_PRIMARY
                 || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC)
             && ($pctype == 0
-                || $pcm[$row->contactId]->can_accept_review_assignment($prow)))
-            $Me->assign_review($prow->paperId, $row->contactId, $pctype);
+                || $pcm[$row->contactId]->can_accept_review_assignment($prow))) {
+            if ($pctype != 0 && $round_number === null)
+                $round_number = $Conf->round_number($rname, true);
+            $Me->assign_review($prow->paperId, $row->contactId, $pctype,
+                               array("round_number" => $round_number));
+        }
     }
 }
 
