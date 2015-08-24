@@ -69,6 +69,8 @@ class Contact {
 
     private function merge($user) {
         global $Conf;
+        if (is_array($user))
+            $user = (object) $user;
         if (!isset($user->dsn) || $user->dsn == $Conf->dsn) {
             if (isset($user->contactId))
                 $this->contactId = $this->cid = (int) $user->contactId;

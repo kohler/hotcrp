@@ -177,7 +177,7 @@ class AssignerContacts {
     static private $next_fake_id = -10;
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags";
     static public function make_none($email = null) {
-        return (object) array("contactId" => 0, "roles" => 0, "email" => $email, "sorter" => "");
+        return new Contact(array("contactId" => 0, "roles" => 0, "email" => $email, "sorter" => ""));
     }
     private function store($c) {
         if ($c && $c->contactId)
@@ -202,9 +202,9 @@ class AssignerContacts {
         if (!$this->has_pc && $this->store_pc() && ($c = @$this->by_id[$cid]))
             return $c;
         $result = Dbl::qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
-        $c = $result ? $result->fetch_object() : null;
+        $c = $result ? $result->fetch_object("Contact") : null;
         if (!$c)
-            $c = (object) array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => "");
+            $c = new Contact(array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => ""));
         Dbl::free($result);
         return $this->store($c);
     }
@@ -219,14 +219,14 @@ class AssignerContacts {
         if (!$this->has_pc && $this->store_pc() && ($c = @$this->by_lemail[$lemail]))
             return $c;
         $result = Dbl::qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
-        $c = $result ? $result->fetch_object() : null;
+        $c = $result ? $result->fetch_object("Contact") : null;
         Dbl::free($result);
         return $this->store($c);
     }
     public function make_email($email) {
         $c = $this->lookup_lemail(strtolower($email));
         if (!$c) {
-            $c = (object) array("contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email);
+            $c = new Contact(array("contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email));
             self::$next_fake_id -= 1;
             $c = $this->store($c);
         }
