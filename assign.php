@@ -546,9 +546,10 @@ if ($Me->can_administer($prow)) {
         $color = TagInfo::color_classes($pc->all_contact_tags());
         echo '<div class="ctable_elt pctbelt' . ($color ? " $color" : "") . '">';
         if ($p->conflictType >= CONFLICT_AUTHOR) {
-            echo '<div class="pctbass">' . review_type_icon(-2) . '</div>'
-                . '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl nw">'
-                . $pc->name_html() . '</div>';
+            echo '<div class="pctbass">', review_type_icon(-2),
+                Ht::img("_.gif", ">", array("class" => "next", "style" => "visibility:hidden")), '&nbsp;</div>',
+                '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl nw">',
+                $pc->name_html(), '</div>';
         } else {
             if ($p->conflictType > 0)
                 $revtype = -1;
