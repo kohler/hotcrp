@@ -565,10 +565,10 @@ class Conference {
     static function round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
-        else if (preg_match('/\A(?:none|any|default|unnamed|.*response)\z/i', $rname))
-            return "Round name $rname is reserved.";
         else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
             return "Round names must start with a letter and contain only letters and numbers.";
+        else if (preg_match('/\A(?:none|any|default|unnamed|.*response)\z/i', $rname))
+            return "Round name $rname is reserved.";
         else
             return false;
     }
