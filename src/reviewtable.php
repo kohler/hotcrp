@@ -14,26 +14,19 @@ function _review_table_actas($rr) {
 
 function _review_table_round_selector($prow, $rr) {
     global $Conf;
-    $rlist = $Conf->round_list();
-    if (count($rlist) == 1)
-        return "";
-    if (count($rlist) == 2 && !$Conf->round0_defined())
+    $sel = $Conf->round_selector_options($rr->reviewRound);
+    if (count($sel) <= 1) {
+        if (@$sel["unnamed"] || count($sel) == 0)
+            return "";
+        reset($sel);
         return '&nbsp;<span class="revround" title="Review round">'
             . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
             . "</span>";
-    $sel = array();
-    foreach ($rlist as $rnum => $rname)
-        if ($rnum == 0 && $Conf->round0_defined())
-            $sel["default"] = "default";
-        else if ($rnum && $rname !== ";")
-            $sel[$rname] = $rname;
-    $crname = $Conf->current_round_name();
-    if ($crname && !@$sel[$crname])
-        $sel[$crname] = $crname;
+    }
     return '&nbsp;'
         . Ht::form(hoturl_post("assign", "p={$prow->paperId}&amp;r={$rr->reviewId}&amp;setround=1"))
         . '<div class="inline">'
-        . Ht::select("round", $sel, $rr->reviewRound ? $Conf->round_name($rr->reviewRound) : "default",
+        . Ht::select("round", $sel, $Conf->round_selector_name($rr->reviewRound),
                      array("onchange" => "save_review_round(this)", "title" => "Set review round"))
         . '</div></form>';
 }

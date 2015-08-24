@@ -565,7 +565,7 @@ class Conference {
     static function round_name_error($rname) {
         if ((string) $rname === "")
             return "Empty round name.";
-        else if (preg_match('/\A(?:none|any|default|.*response)\z/i', $rname))
+        else if (preg_match('/\A(?:none|any|default|unnamed|.*response)\z/i', $rname))
             return "Round name $rname is reserved.";
         else if (!preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $rname))
             return "Round names must start with a letter and contain only letters and numbers.";
@@ -582,7 +582,7 @@ class Conference {
     }
 
     function round_number($name, $add) {
-        if (!$name || !strcasecmp($name, "default"))
+        if (!$name || !strcasecmp($name, "default") || !strcasecmp($name, "unnamed"))
             return 0;
         for ($i = 1; $i != count($this->rounds); ++$i)
             if (!strcasecmp($this->rounds[$i], $name))
@@ -594,6 +594,29 @@ class Conference {
             return $this->round_number($name, false);
         } else
             return 0;
+    }
+
+    function round_selector_options() {
+        $opt = array();
+        foreach ($this->round_list() as $rnum => $rname)
+            if ($rnum == 0 && $this->round0_defined())
+                $opt["unnamed"] = "unnamed";
+            else if ($rnum && $rname !== ";")
+                $opt[$rname] = $rname;
+        $crname = $this->current_round_name() ? : "unnamed";
+        if ($crname && !@$opt[$crname])
+            $opt[$crname] = $crname;
+        return $opt;
+    }
+
+    function round_selector_name($roundno) {
+        if ($roundno === null)
+            return $this->current_round_name() ? : "unnamed";
+        else if ($roundno > 0 && ($rname = @$this->rounds[$roundno])
+                 && $rname !== ";")
+            return $rname;
+        else
+            return "unnamed";
     }
 
 

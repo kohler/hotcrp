@@ -492,13 +492,18 @@ doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "se
 echo "&nbsp; review(s) from this paper selection</div>\n";
 
 // Review round
-$rev_roundtag = $Conf->setting_data("rev_roundtag");
-if (count($Conf->round_list()) > 1 || $rev_roundtag) {
-    echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $rev_roundtag);
-    echo "<input style='visibility: hidden' type='radio' class='cb' name='a' value='rev_roundtag' disabled='disabled' />&nbsp;";
-    echo '<span class="hint">Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-        ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews"), '">Configure rounds</a></span>';
-}
+$rev_rounds = $Conf->round_selector_options();
+if (count($rev_rounds) > 1) {
+    echo divClass("rev_roundtag"),
+        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
+        '<span style="font-size:smaller">Review round:&nbsp; ',
+        Ht::select("rev_roundtag", $rev_rounds, $Conf->round_selector_name(null)),
+        '</span></div>';
+} else if (!@$rev_rounds["unnamed"])
+    echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $Conf->current_round_name()),
+        '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
+        '<span style="font-size:smaller">Assignment round: ',
+        $Conf->round_selector_name(), '</span></div>';
 echo "<div class='g'></div>\n";
 
 echo divClass("prefconflict", "hotradiorelation");

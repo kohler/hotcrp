@@ -877,7 +877,7 @@ function save_rounds($set) {
          isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
          ++$i) {
         $rname = @trim($_POST["roundname_$i"]);
-        if ($rname === "(no name)" || $rname === "default")
+        if ($rname === "(no name)" || $rname === "default" || $rname === "unnamed")
             $rname = "";
         if ((@$_POST["deleteround_$i"] || $rname === "") && $i) {
             $roundnames[] = ";";
@@ -962,7 +962,7 @@ function save_rounds($set) {
     // default round
     $t = trim($_POST["rev_roundtag"]);
     $Values["rev_roundtag"] = null;
-    if ($t === "" || strtolower($t) === "(none)" || strtolower($t) === "(no name)" || strtolower($t) === "default")
+    if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed)\z/i', $t))
         /* do nothing */;
     else if ($t === "#0") {
         if ($roundname0)
@@ -1846,7 +1846,7 @@ function echo_round($rnum, $nameval, $review_count, $deletable) {
     if (count($Error) && $rnum !== '$')
         $nameval = (string) @$_POST[$rname];
 
-    $default_rname = "default";
+    $default_rname = "unnamed";
     if ($nameval === "(new round)" || $rnum === '$')
         $default_rname = "(new round)";
     echo '<div class="mg" hotroundnum="', $rnum, '"><div>',
@@ -1921,8 +1921,7 @@ function doRevGroup() {
     // prepare round selector
     $round_value = trim(setting_data("rev_roundtag"));
     $current_round_value = $Conf->setting_data("rev_roundtag", "");
-    if ($round_value === "" || strtolower($round_value) === "(none)" || strtolower($round_value) === "(no name)"
-        || strtolower($round_value) === "default" || $round_value === "#0")
+    if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
         $round_value = "#0";
     else if (($round_number = $Conf->round_number($round_value, false))
              || ($round_number = $Conf->round_number($current_round_value, false)))
@@ -1941,7 +1940,7 @@ function doRevGroup() {
 
     $selector = array();
     if ($print_round0)
-        $selector["#0"] = "default";
+        $selector["#0"] = "unnamed";
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] !== ";")
             $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
