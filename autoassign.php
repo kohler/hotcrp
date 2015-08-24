@@ -103,6 +103,10 @@ if (isset($_REQUEST["badpairs"]))
             $badpairs[$_REQUEST["bpa$i"]][$_REQUEST["bpb$i"]] = 1;
         }
 
+// rev_roundtag
+if (($x = $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"])) !== false)
+    $_REQUEST["rev_roundtag"] = $x;
+
 // score selector
 $scoreselector = array("+overAllMerit" => "", "-overAllMerit" => "");
 foreach (ReviewForm::all_fields() as $f)
@@ -168,13 +172,10 @@ class AutoassignerInterface {
         }
         $this->reviewtype = $r;
 
-        $_REQUEST["rev_roundtag"] = defval($_REQUEST, "rev_roundtag", "");
-        if ($_REQUEST["rev_roundtag"] === "(None)")
-            $_REQUEST["rev_roundtag"] = "";
         if ($this->atype_review && $_REQUEST["rev_roundtag"] !== ""
-            && !preg_match('/^[a-zA-Z0-9]+$/', $_REQUEST["rev_roundtag"])) {
+            && ($err = Conference::round_name_error($_REQUEST["rev_roundtag"]))) {
             $Error["rev_roundtag"] = true;
-            return $Conf->errorMsg("The review round must contain only letters and numbers.");
+            return $Conf->errorMsg($err);
         }
 
         if ($this->atype === "rev" && cvtint(@$_REQUEST["revct"], -1) <= 0) {
@@ -497,13 +498,13 @@ if (count($rev_rounds) > 1) {
     echo divClass("rev_roundtag"),
         '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Review round:&nbsp; ',
-        Ht::select("rev_roundtag", $rev_rounds, $Conf->round_selector_name(null)),
+        Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed"),
         '</span></div>';
 } else if (!@$rev_rounds["unnamed"])
     echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $Conf->current_round_name()),
         '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Assignment round: ',
-        $Conf->round_selector_name(), '</span></div>';
+        ($_REQUEST["rev_roundtag"] ? : "unnamed"), '</span></div>';
 echo "<div class='g'></div>\n";
 
 echo divClass("prefconflict", "hotradiorelation");

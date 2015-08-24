@@ -350,14 +350,13 @@ class ReviewAssigner extends Assigner {
         Dbl::free($result);
     }
     function apply($pid, $contact, $req, $state) {
-        $roundname = @$req["round"];
-        if ($roundname === null && $this->rtype > 0 && @$state->defaults["round"])
-            $roundname = $state->defaults["round"];
-        if ($roundname && strcasecmp($roundname, "none") == 0)
-            $roundname = "";
-        else if ($roundname && (strcasecmp($roundname, "any") != 0 || $this->rtype > 0)) {
-            if (($rerror = Conference::round_name_error($roundname)))
-                return $rerror;
+        global $Conf;
+        $round = @$req["round"];
+        if ($round === null && $this->rtype > 0)
+            $round = @$state->defaults["round"];
+        if ($round && (strcasecmp($round, "any") != 0 || $this->rtype > 0)) {
+            if (($roundname = $Conf->sanitize_round_name($round)) === false)
+                return Conference::round_name_error($round);
         } else
             $roundname = null;
         $rtype = $this->rtype;
