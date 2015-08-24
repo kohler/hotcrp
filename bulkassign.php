@@ -16,15 +16,15 @@ $null_mailer = new HotCRPMailer(null, null, array("requester_contact" => $Me,
                                                   "width" => false));
 $Error = array();
 
+$_REQUEST["rev_roundtag"] = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
+
 
 function assignment_defaults() {
     $defaults = array("action" => @$_REQUEST["default_action"],
-                      "round" => @$_REQUEST["rev_roundtag"]);
+                      "round" => $_REQUEST["rev_roundtag"]);
     if (@$_REQUEST["requestreview_notify"] && @$_REQUEST["requestreview_body"])
         $defaults["extrev_notify"] = array("subject" => @$_REQUEST["requestreview_subject"],
                                            "body" => @$_REQUEST["requestreview_body"]);
-    if (trim($defaults["round"]) !== "(None)")
-        $defaults["round"] = null;
     return $defaults;
 }
 
@@ -163,7 +163,7 @@ echo Ht::form_div(hoturl_post("bulkassign", "upload=1"));
 
 // Upload
 echo '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" />',
-    '<div style="margin:0.5em 0">';
+    '<div id="foldoptions" style="margin:0.5em 0" class="foldo fold2o">';
 
 echo 'By default, assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
@@ -177,29 +177,28 @@ echo 'By default, assign&nbsp; ',
                                        "settag" => "replace tags",
                                        "preference" => "reviewer preferences"),
                defval($_REQUEST, "default_action", "primary"),
-               array("id" => "tsel", "onchange" => "fold(\"email\",this.value!=\"review\")")),
-    '<div class="g"></div>', "\n";
+               array("id" => "tsel", "onchange" => "fold(\"options\",this.value!=\"review\");fold(\"options\",!/^(?:primary|secondary|(?:pc)?review)$/.test(this.value),2)"));
+$rev_rounds = $Conf->round_selector_options();
+if (count($rev_rounds) > 1)
+    echo '<span class="fx2">&nbsp; in round &nbsp;',
+        Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed"),
+        '</span>';
+else if (!@$rev_rounds["unnamed"])
+    echo '<span class="fx2">&nbsp; in round ', $Conf->current_round_name(), '</span>';
+echo '<div class="g"></div>', "\n";
 
-if (!isset($_REQUEST["rev_roundtag"]))
-    $rev_roundtag = $Conf->setting_data("rev_roundtag");
-else if (($rev_roundtag = $_REQUEST["rev_roundtag"]) !== "(None)")
-    $rev_roundtag = "";
 $requestreview_template = $null_mailer->expand_template("requestreview");
 echo Ht::hidden("requestreview_subject", $requestreview_template["subject"]);
 if (isset($_REQUEST["requestreview_body"]))
     $t = $_REQUEST["requestreview_body"];
 else
     $t = $requestreview_template["body"];
-echo "<div id='foldemail' class='foldo'><table class='fx'>
-<tr><td>", Ht::checkbox("requestreview_notify", 1, true), "&nbsp;</td>
-<td>", Ht::label("Send email to external reviewers:"), "</td></tr>
+echo "<table class='fx'><tr><td>",
+    Ht::checkbox("requestreview_notify", 1, true),
+    "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
 <tr><td></td><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20)),
-    "</td></tr></table></div>\n";
-if (count($Conf->round_list()) > 1 || $rev_roundtag)
-    echo Ht::hidden("rev_roundtag", $rev_roundtag),
-        'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-        ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
+    "</td></tr></table>\n";
 
 echo '<div class="g"></div>', Ht::submit("Upload"), "</div>";
 
@@ -295,5 +294,5 @@ To clear a tag, use assignment type <code>cleartag</code> or value <code>none</c
 gives the preference value.</dd>
 </dl>\n";
 
-$Conf->footerScript("fold('email',\$\$('tsel').value!='review')");
+$Conf->footerScript("$('#tsel').trigger('change')");
 $Conf->footer();
