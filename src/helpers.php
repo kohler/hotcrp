@@ -464,24 +464,24 @@ function topicTable($prow, $active = 0) {
     if (count($allTopics) == 0)
         return "";
 
-    $out = "<table><tr><td class='pad'>";
-    $colheight = (int) ((count($allTopics) + 1) / 2);
+    $out = '<div class="ctable">';
     $i = 0;
     foreach ($tmap as $tid => $tname) {
         if (!isset($allTopics[$tid]))
             continue;
-        if ($i > 0 && ($i % $colheight) == 0)
-            $out .= "</td><td>";
+        $out .= '<div class="ctable_elt">';
         $tname = '<span class="topic0">' . htmlspecialchars($tname) . '</span>';
         if ($paperId <= 0 || $active >= 0) {
-            $out .= Ht::checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
-                                    array("disabled" => $active < 0))
-                . "&nbsp;" . Ht::label($tname) . "<br />\n";
+            $out .= '<table><tr><td>'
+                . Ht::checkbox_h("top$tid", 1, ($active > 0 ? isset($_REQUEST["top$tid"]) : isset($paperTopic[$tid])),
+                                 array("disabled" => $active < 0))
+                . "&nbsp;</td><td>" . Ht::label($tname) . "</td></tr></table>";
         } else
-            $out .= $tname . "<br />\n";
+            $out .= $tname;
+        $out .= "</div>\n";
         $i++;
     }
-    return $out . "</td></tr></table>";
+    return $out . "</div>";
 }
 
 function actas_link($cid, $contact = null) {

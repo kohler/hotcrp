@@ -1151,17 +1151,9 @@ span.asspref-1 {
 	color: #800000;
 }
 
-.pctb_editconf_cconf {
-	padding: 2px 0 2px 7px;
-}
-.pctb_editconf_cname {
-	padding: 2px 1em 2px 0;
-}
-.pctb_editconf_sname {
-	padding: 2px 1em 2px 7px;
-}
 .pctb_editconf_sconf {
-	padding: 2px 1em 2px 0;
+	float: right;
+	padding: 1px 2px 0 8px;
 	font-size: smaller;
 	white-space: nowrap;
 }
@@ -1211,8 +1203,8 @@ div.pctbnrev {
 	clear: both;
 }
 div.pctbelt {
-	padding: 2px 6px;
-	margin: 2px 0;
+	padding: 2px 6px 3px;
+	margin: 4px 0;
 }
 .ctable_elt {
 	-webkit-column-break-inside: avoid;

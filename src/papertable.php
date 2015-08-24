@@ -1218,58 +1218,49 @@ class PaperTable {
             }
         }
 
+        echo $this->editable_papt("pcconf", "PC conflicts"),
+            "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
+            '<div class="papv">',
+            Ht::hidden("has_pcconf", 1),
+            '<div class="ctable pctb_ctable">';
         foreach ($pcm as $id => $p) {
-            $pctclass = "";
-            if ($show_colors) {
-                $tags = Contact::roles_all_contact_tags($p->roles, $p->contactTags);
-                if (($color = TagInfo::color_classes($tags)))
-                    $pctclass = " " . $color;
-            }
             $label = Ht::label(Text::name_html($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(titleWords($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
 
-            $c = '<tr>';
+            echo '<div class="ctable_elt pctbelt';
+            if ($show_colors) {
+                $tags = Contact::roles_all_contact_tags($p->roles, $p->contactTags);
+                if (($color = TagInfo::color_classes($tags)))
+                    echo ' ', $color;
+            }
+            echo '">';
+
             if ($selectors) {
-                $c = '<td class="pctb_editconf_sname' . $pctclass . '">' . $label . '</td><td class="pctb_editconf_sconf' . $pctclass . '">';
+                echo '<div class="pctb_editconf_sconf">';
                 $extra["id"] = "pcc$id";
                 if ($ct->is_author())
-                    $c .= "<strong>Author</strong>";
+                    echo "<strong>Author</strong>";
                 else if ($ct->is_conflict() && !$ct->is_author_mark()) {
                     if (!$this->admin)
-                        $c .= "<strong>Conflict</strong>";
+                        echo "<strong>Conflict</strong>";
                     else
-                        $c .= Ht::select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
+                        echo Ht::select("pcc$id", $ctypes, CONFLICT_CHAIRMARK, $extra);
                 } else
-                    $c .= Ht::select("pcc$id", $ctypes, $ct->value, $extra);
-                $c .= "</td>";
+                    echo Ht::select("pcc$id", $ctypes, $ct->value, $extra);
+                echo '</div>', $label;
             } else {
                 $checked = $ct->is_conflict();
                 $disabled = $checked && ($ct->is_author() || (!$ct->is_author_mark() && !$this->admin));
-                $pcconfs[] = '<td class="pctb_editconf_cconf' . $pctclass . '">'
-                    . Ht::checkbox_h("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
-                                     $checked, array("id" => "pcc$id", "disabled" => $disabled))
-                    . '&nbsp;</td><td class="pctb_editconf_cname' . $pctclass . '">' . $label . '</td>';
+                echo '<table><tr><td>',
+                    Ht::checkbox_h("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
+                                   $checked, array("id" => "pcc$id", "disabled" => $disabled)),
+                    '&nbsp;</td><td>', $label, '</td></tr></table>';
             }
-            $c .= "</tr>\n";
-
-            $pcconfs[] = $c;
+            echo '<hr class="c" />', "</div>\n";
         }
-
-        $cols = $selectors ? 2 : 3;
-        $n = intval(count($pcconfs) + $cols - 1) / $cols;
-        echo $this->editable_papt("pcconf", "PC conflicts"),
-            "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
-            "<div class='papv' style='padding-left:0'>",
-            "<table class='pctb'><tr><td class='pctbcolleft'><table>",
-            Ht::hidden("has_pcconf", 1);
-        for ($i = 0; $i < count($pcconfs); $i++) {
-            if (($i % $n) == 0 && $i)
-                echo '</table></td><td class="pctbcolmid"><table>';
-            echo $pcconfs[$i];
-        }
-        echo "</table></td></tr></table></div>\n\n";
+        echo "</div>\n</div>\n\n";
     }
 
     private function papstripPCConflicts() {
