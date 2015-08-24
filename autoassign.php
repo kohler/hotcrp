@@ -503,7 +503,7 @@ if (count($rev_rounds) > 1) {
 } else if (!@$rev_rounds["unnamed"])
     echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $Conf->current_round_name()),
         '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
-        '<span style="font-size:smaller">Assignment round: ',
+        '<span style="font-size:smaller">Review round: ',
         ($_REQUEST["rev_roundtag"] ? : "unnamed"), '</span></div>';
 echo "<div class='g'></div>\n";
 

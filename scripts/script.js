@@ -1291,35 +1291,47 @@ function plactions_dofold() {
 
 
 // assignment selection
-var selassign_blur = 0;
-
-function foldassign(which) {
-    var folder = $$("foldass" + which);
-    if (folder.className.indexOf("foldo") < 0 && selassign_blur != which) {
-        fold("ass" + which, false);
-        $$("pcs" + which).focus();
-    }
-    selassign_blur = 0;
-    return false;
+var assigntable = (function () {
+var state = [], blurring = 0;
+function close(which) {
+    return function () {
+        if (state[0] == which && state[1])
+            state[1] = state[1].remove() && null;
+    };
 }
-
-function selassign(elt, which) {
-    var folder = $$("folderass" + which);
-    if (elt) {
-        $$("ass" + which).className = "pctbname" + elt.value + " pctbl";
-        folder.firstChild.className = "rt" + elt.value;
-        folder.firstChild.innerHTML = '<span class="rti">' +
-            (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3] + "</span>";
-        hiliter(folder.firstChild);
+return {
+    open: function (which) {
+        if ((state[0] != which || !state[1]) && blurring != which) {
+            state[1] && state[1].remove();
+            var h = $("#assignmentselector").html().replace(/\$/g, which);
+            state = [which, make_bubble({content: h, dir: "l", color: "tooltip"})];
+            state[1].near("#folderass" + which);
+            $("#pcs" + which + "_selector").val(+$("#pcs" + which).val());
+        }
+        if (blurring != which)
+            $$("pcs" + which + "_selector").focus();
+        return false;
+    },
+    sel: function (elt, which) {
+        var folder = $$("folderass" + which);
+        if (elt) {
+            $("#pcs" + which).val(elt.value);
+            $$("ass" + which).className = "pctbname pctbname" + elt.value;
+            folder.firstChild.className = "rt" + elt.value;
+            folder.firstChild.innerHTML = '<span class="rti">' +
+                (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3] + "</span>";
+            hiliter(folder.firstChild);
+        }
+        if (folder && elt !== 0)
+            folder.focus();
+        setTimeout(close(which), 50);
+        if (elt === 0 && state) {
+            blurring = which;
+            setTimeout(function () { blurring = 0; }, 300)
+        }
     }
-    if (folder && elt !== 0)
-        folder.focus();
-    setTimeout("fold(\"ass" + which + "\", true)", 50);
-    if (elt === 0) {
-        selassign_blur = which;
-        setTimeout("selassign_blur = 0;", 300);
-    }
-}
+};
+})();
 
 function save_review_round(elt) {
     var form = jQuery(elt).closest("form");
@@ -2664,7 +2676,7 @@ function expand_near(epos, color) {
 return function (content, bubopt) {
     if (!bubopt && content && typeof content === "object") {
         bubopt = content;
-        content = null;
+        content = bubopt.content;
     } else if (!bubopt)
         bubopt = {};
     else if (typeof bubopt === "string")
@@ -2832,7 +2844,7 @@ return function (content, bubopt) {
     var bubble = {
         near: function (epos, reference) {
             var i, off;
-            if (epos.tagName || epos.jquery)
+            if (typeof epos === "string" || epos.tagName || epos.jquery)
                 epos = $(epos).geometry(true);
             for (i = 0; i < 4; ++i)
                 if (!(lcdir[i] in epos) && (lcdir[i ^ 2] in epos))

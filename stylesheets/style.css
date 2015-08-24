@@ -1181,8 +1181,10 @@ span.asspref-1 {
 }
 .pctbnrev {
 	font-size: 69%;
-	padding-bottom: 2px;
 	padding-right: 1em;
+}
+td.pctbnrev {
+	padding-bottom: 2px;
 }
 .pctbass {
 	padding-right: 0.45em;
@@ -1196,6 +1198,37 @@ span.asspref-1 {
 }
 .pctbcolmid {
 	border-left: 1px dotted #cec1ff;
+}
+
+div.pctbass {
+	float: right;
+	padding-right: 0;
+}
+div.pctbname {
+	float: left;
+}
+div.pctbnrev {
+	clear: both;
+}
+div.pctbelt {
+	padding: 2px 6px;
+	margin: 2px 0;
+}
+.ctable_elt {
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
+}
+.ctable {
+	-webkit-columns: 300px 4;
+	-moz-columns: 300px 4;
+	columns: 300px 4;
+	-webkit-column-gap: 18px;
+	-moz-column-gap: 18px;
+	column-gap: 18px;
+}
+.pctb_ctable {
+	margin: 0 -6px;
 }
 
 /* review type/assignment blocks */

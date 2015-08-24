@@ -511,22 +511,32 @@ if ($Me->can_administer($prow)) {
     // PC conflicts row
     echo '<div class="papcard_sep"></div>',
         Ht::form($loginUrl, array("id" => "ass")), '<div class="aahc">',
-        "<div class='papt'><span class='papfn'>PC review assignments</span>",
-        '<hr class="c" /></div>',
-        "<div class='paphint'>Review preferences display as &ldquo;P#&rdquo;";
+        "<h3 style=\"margin-top:0\">PC review assignments</h3>",
+        '<p>';
+
+    $rev_roundtag = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
+    $rev_rounds = $Conf->round_selector_options();
+    $x = array();
+    if (count($rev_rounds) > 1)
+        $x[] = 'Review round:&nbsp; '
+            . Ht::select("rev_roundtag", $rev_rounds, $rev_roundtag ? : "unnamed");
+    else if (!@$rev_rounds["unnamed"])
+        $x[] = 'Review round: ' . $rev_roundtag
+            . Ht::hidden("rev_roundtag", $rev_roundtag);
     if ($Conf->has_topics())
-        echo ", topic scores as &ldquo;T#&rdquo;";
-    echo ".";
+        $x[] = "Review preferences display as “P#”, topic scores as “T#”.";
+    else
+        $x[] = "Review preferences display as “P#”.";
+    echo join(' <span class="barsep">·</span> ', $x), '</p>';
 
-    $rev_roundtag = $Conf->setting_data("rev_roundtag");
-    if (count($Conf->round_list()) > 1 || $rev_roundtag)
-        echo "<br />", Ht::hidden("rev_roundtag", $rev_roundtag),
-            'Current review round: &nbsp;', htmlspecialchars($rev_roundtag ? : "(no name)"),
-            ' <span class="barsep">·</span> <a href="', hoturl("settings", "group=reviews#rounds"), '">Configure rounds</a>';
+    echo '<div id="assignmentselector" style="display:none">',
+        Ht::select("pcs\$", array(0 => "None", REVIEW_PRIMARY => "Primary",
+                                  REVIEW_SECONDARY => "Secondary",
+                                  REVIEW_PC => "Optional", -1 => "Conflict"),
+                   "@", array("id" => "pcs\$_selector", "size" => 5, "onchange" => "assigntable.sel(this,\$)", "onclick" => "assigntable.sel(null,\$)", "onblur" => "assigntable.sel(0,\$)")),
+        '</div>';
 
-    echo "</div><div class='papv' style='padding-left:0'>";
-
-    $pctexts = array();
+    echo '<div class="ctable pctb_ctable">';
     foreach (pcMembers() as $pc) {
         $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow))
@@ -534,14 +544,11 @@ if ($Me->can_administer($prow)) {
 
         // first, name and assignment
         $color = TagInfo::color_classes($pc->all_contact_tags());
-        $color = ($color ? " class='${color}'" : "");
-        $pctext = "      <tr$color>";
+        echo '<div class="ctable_elt pctbelt' . ($color ? " $color" : "") . '">';
         if ($p->conflictType >= CONFLICT_AUTHOR) {
-            $pctext .= "<td id='ass$p->contactId' class='pctbname-2 pctbl taghl nw'>"
-                . Text::name_html($pc)
-                . "</td><td class='pctbass'>"
-                . review_type_icon(-2)
-                . "</td>";
+            echo '<div class="pctbass">' . review_type_icon(-2) . '</div>'
+                . '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl nw">'
+                . $pc->name_html() . '</div>';
         } else {
             if ($p->conflictType > 0)
                 $revtype = -1;
@@ -549,66 +556,44 @@ if ($Me->can_administer($prow)) {
                 $revtype = $p->reviewType;
             else
                 $revtype = ($p->refused ? -3 : 0);
-            $title = ($revtype == -3 ? "' title='Review previously declined" : "");
-            $pctext .= "<td id='ass$p->contactId' class='pctbname$revtype pctbl'>"
-                . '<span class="taghl nw">' . Text::name_html($pc) . '</span>';
+            $title = ($p->refused ? "Review previously declined" : "Assignment");
+            // NB manualassign.php also uses the "pcs$contactId" convention
+            echo '<div class="pctbass">'
+                . '<div id="foldass' . $p->contactId . '" class="foldc" style="position:relative">'
+                . '<a id="folderass' . $p->contactId . '" href="#" onclick="return assigntable.open(' . $p->contactId . ')">'
+                . review_type_icon($revtype, false, $title)
+                . Ht::img("_.gif", ">", array("class" => "next")) . '</a>'
+                . '</a>&nbsp;'
+                . Ht::hidden("pcs$p->contactId", $p->conflictType == 0 ? $p->reviewType : -1, array("id" => "pcs$p->contactId"))
+                . '</div></div>';
+
+            echo '<div id="ass' . $p->contactId . '" class="pctbname pctbname' . $revtype . '">'
+                . '<span class="taghl nw">' . $pc->name_html() . '</span>';
             if ($p->conflictType == 0
                 && ($p->reviewerPreference || $p->reviewerExpertise
                     || $p->topicInterestScore))
-                $pctext .= unparse_preference_span($p);
-            $pctext .= "</td><td class='pctbass'>"
-                . "<div id='foldass$p->contactId' class='foldc' style='position: relative'><a id='folderass$p->contactId' href='javascript:void foldassign($p->contactId)'>"
-                . review_type_icon($revtype, false, "Assignment")
-                . Ht::img("_.gif", ">", array("class" => "next"))
-                . "</a>&nbsp;";
-            // NB manualassign.php also uses the "pcs$contactId" convention
-            $pctext .= Ht::select("pcs$p->contactId",
-                             array(0 => "None", REVIEW_PRIMARY => "Primary",
-                                   REVIEW_SECONDARY => "Secondary",
-                                   REVIEW_PC => "Optional",
-                                   -1 => "Conflict"),
-                             ($p->conflictType == 0 ? $p->reviewType : -1),
-                             array("id" => "pcs$p->contactId",
-                                   "class" => "fx",
-                                   "size" => 5,
-                                   "onchange" => "selassign(this, $p->contactId)",
-                                   "onclick" => "selassign(null, $p->contactId)",
-                                   "onblur" => "selassign(0, $p->contactId)",
-                                   "style" => "position: absolute"))
-                . "</div></td>";
+                echo unparse_preference_span($p);
+            echo '</div>';
         }
-        $pctext .= "</tr>\n";
 
         // then, number of reviews
-        $pctext .= "      <tr$color><td class='pctbnrev pctbl' colspan='2'>";
+        echo '<div class="pctbnrev">';
         $numReviews = strlen($p->allReviews);
         $numPrimary = preg_match_all("|" . REVIEW_PRIMARY . "|", $p->allReviews, $matches);
         if (!$numReviews)
-            $pctext .= "0 reviews";
+            echo "0 reviews";
         else {
-            $pctext .= "<a class='q' href=\""
+            echo "<a class='q' href=\""
                 . hoturl("search", "q=re:" . urlencode($pc->email)) . "\">"
                 . plural($numReviews, "review") . "</a>";
             if ($numPrimary && $numPrimary < $numReviews)
-                $pctext .= "&nbsp; (<a class='q' href=\""
+                echo "&nbsp; (<a class='q' href=\""
                     . hoturl("search", "q=pri:" . urlencode($pc->email))
                     . "\">$numPrimary primary</a>)";
         }
-        $pctext .= "</td></tr>\n";
-
-        $pctexts[] = $pctext;
+        echo "</div><hr class=\"c\" /></div>\n";
     }
-
-    echo "<table class='pctb'><tr><td class='pctbcolleft'><table>\n";
-
-    $n = intval((count($pctexts) + 2) / 3);
-    for ($i = 0; $i != count($pctexts); ++$i) {
-        if (($i % $n) == 0 && $i)
-            echo "    </table></td><td class='pctbcolmid'><table>\n";
-        echo $pctexts[$i];
-    }
-
-    echo "    </table></td></tr></table></div>\n\n",
+    echo "</div>\n",
         "<div class='aa' style='margin-bottom:0'>",
         Ht::submit("update", "Save assignments", array("class" => "bb")),
         " &nbsp;", Ht::submit("cancel", "Cancel"),
