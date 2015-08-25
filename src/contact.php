@@ -637,7 +637,7 @@ class Contact {
             $v = simplify_whitespace($v);
         else if (@self::$save_fields[$k])
             $v = trim($v);
-        if ($this->$k !== $v) {
+        if ($this->$k !== $v || !$this->contactId) {
             $this->$k = $v;
             if ($k !== "unaccentedName" || $Conf->sversion >= 90) {
                 $qf[$k] = "$k=?";
