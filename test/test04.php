@@ -121,6 +121,7 @@ xassert(!!$acct);
 $te = user("te@_.com");
 xassert(!!$te);
 xassert_eqq($te->firstName, "Te");
-xassert($te->check_password("isdevitch"));
+if (function_exists("password_needs_rehash"))
+    xassert($te->check_password("isdevitch"));
 
 xassert_exit();
