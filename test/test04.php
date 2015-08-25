@@ -105,4 +105,22 @@ if (function_exists("password_needs_rehash")) {
     xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
 }
 
+// insert someone into the contactdb
+$result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo (firstName, lastName, email, affiliation, password) values ('Te', 'Thamrongrattanarit', 'te@_.com', 'Brandeis University', ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm')");
+assert(!!$result);
+Dbl::free($result);
+xassert(!user("te@_.com"));
+$u = Contact::contactdb_find_by_email("te@_.com");
+xassert(!!$u);
+xassert_eqq($u->firstName, "Te");
+
+// inserting them should succeed and borrow their data
+$us = new UserStatus(array("send_email" => false));
+$acct = $us->save((object) array("email" => "te@_.com"));
+xassert(!!$acct);
+$te = user("te@_.com");
+xassert(!!$te);
+xassert_eqq($te->firstName, "Te");
+xassert($te->check_password("isdevitch"));
+
 xassert_exit();

@@ -316,14 +316,24 @@ class UserStatus {
             $old_cdb_user = Contact::contactdb_find_by_email($old_user->email);
         else if (is_string(@$cj->email) && $cj->email)
             $old_cdb_user = Contact::contactdb_find_by_email($cj->email);
-        $old_user = $old_user ? : $old_cdb_user;
+        $user = $old_user ? : $old_cdb_user;
 
-        $this->normalize($cj, $old_user);
+        $this->normalize($cj, $user);
         if ($this->nerrors)
             return false;
         $this->check_invariants($cj);
 
-        $user = $old_user ? : new Contact;
+        // borrow name, affiliation from cdb
+        if (!$old_user && $old_cdb_user) {
+            if (!isset($cj->firstName) && !isset($cj->lastName) && $old_cdb_user->firstName)
+                $cj->firstName = $old_cdb_user->firstName;
+            if (!isset($cj->firstName) && !isset($cj->lastName) && $old_cdb_user->lastName)
+                $cj->lastName = $old_cdb_user->lastName;
+            if (!isset($cj->affiliation) && $old_cdb_user->affiliation)
+                $cj->affiliation = $old_cdb_user->affiliation;
+        }
+
+        $user = $user ? : new Contact;
         if (($send = $this->send_email) === null)
             $send = !$old_cdb_user;
         if ($user->save_json($cj, $actor, $send))
