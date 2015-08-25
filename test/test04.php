@@ -121,6 +121,8 @@ xassert(!!$acct);
 $te = user("te@_.com");
 xassert(!!$te);
 xassert_eqq($te->firstName, "Te");
+xassert_eqq($te->lastName, "Thamrongrattanarit");
+xassert_eqq($te->affiliation, "Brandeis University");
 if (function_exists("password_needs_rehash"))
     xassert($te->check_password("isdevitch"));
 
