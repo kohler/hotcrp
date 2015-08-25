@@ -846,6 +846,7 @@ div.settings_revfieldpos, div.settings_revfieldview, div.settings_revfieldedit {
 div.settings_revfieldpos {
 	font-weight: bold;
 	padding-right: 0.5em;
+	min-width: 24px;
 }
 div.settings_revfield {
 	margin: 18px 0;

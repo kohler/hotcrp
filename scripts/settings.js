@@ -187,7 +187,7 @@ function check_this_change() {
 function fill_order() {
     var i, $c = $("#reviewform_container")[0], $n;
     for (i = 1, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling) {
-        $($n).find(".settings_revfieldpos").html(i + ".");
+        $($n).find(".settings_revfieldpos").html(String.fromCharCode(64 + i) + ".");
         $($n).find(".revfield_order").val(i);
     }
     $c = $("#reviewform_removedcontainer")[0];
@@ -375,7 +375,7 @@ function append_field(fid, pos) {
     }
 
     $f = $(revfield_template.replace(/\$/g, fid));
-    $f.find(".settings_revfieldpos").html(pos + ".");
+    $f.find(".settings_revfieldpos").html(String.fromCharCode(64 + pos) + ".");
 
     if (fieldmap[fid]) {
         $j = $f.find(".reviewfield_option_class_prefix");
