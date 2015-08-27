@@ -422,7 +422,7 @@ function append_field(fid, pos) {
 }
 
 function rfs(fieldmapj, originalj, samplesj, errors, request) {
-    var i, fid;
+    var i, fid, $j;
     fieldmap = fieldmapj;
     original = originalj;
     samples = samplesj;
@@ -446,8 +446,11 @@ function rfs(fieldmapj, originalj, samplesj, errors, request) {
         $("#" + i).val(request[i]);
         hiliter("reviewform_container");
     }
-    for (i in errors || {})
-        $(".errloc_" + i).addClass("error");
+    for (i in errors || {}) {
+        $j = $(".errloc_" + i);
+        $j.addClass("error");
+        foldup($j[0], null, {n: 2, f: false});
+    }
 };
 
 function do_add(fid) {

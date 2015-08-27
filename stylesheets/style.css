@@ -1001,8 +1001,7 @@ td.padl, th.padl, div.padl {
 td.padlb, th.padlb, div.padlb {
 	padding-left: 2em;
 }
-div.error, div.error input, td.error, td.error input, input.error,
-tr.error > td, tr.error > td input {
+div.error, td.error, tr.error > td {
 	font-weight: bold;
 	color: #ff0000;
 }
@@ -1012,7 +1011,13 @@ span.setting_error, label.setting_error, input.setting_error {
 td.lentry.error input, div.error input {
 	font-weight: normal;
 }
+div.error > div.f-c {
+	color: #ff0000;
+}
+input.error,
+div.error input, td.error input, tr.error > td input,
 div.error textarea, td.error textarea, tr.error > td textarea,
+div.error > div.f-c,
 span.error {
 	color: #ff0000;
 }
