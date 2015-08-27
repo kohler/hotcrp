@@ -21,6 +21,7 @@ function rf_check_options($fid, $fj) {
 
     $opts = array();
     $lowonum = 10000;
+    $allow_empty = false;
 
     foreach (explode("\n", $text) as $line) {
         $line = trim($line);
@@ -31,7 +32,9 @@ function rf_check_options($fid, $fj) {
                 $onum = ($letters ? ord($m[1]) : (int) $m[1]);
                 $lowonum = min($lowonum, $onum);
                 $opts[$onum] = $m[2];
-            } else
+            } else if (preg_match('/^No entry$/i', $line))
+                $allow_empty = true;
+            else
                 return false;
         }
     }
@@ -56,6 +59,8 @@ function rf_check_options($fid, $fj) {
         $fj->option_letter = chr($lowonum);
     }
     $fj->options = array_values($seqopts);
+    if ($allow_empty)
+        $fj->allow_empty = true;
     return true;
 }
 
@@ -182,7 +187,10 @@ are better). For example:</p>
 2. Weak reject
 3. Weak accept
 4. Accept</pre>
-<p>Or use consecutive capital letters (lower letters are better).</p></div>');
+<p>Or use consecutive capital letters (lower letters are better).</p>
+<p>Normally score fields are mandatory: a review cannot be submitted with a
+missing score. Add a line “<tt>No entry</tt>” to the options to make a
+score field optional.</p></div>');
 
     $Conf->footerScript("review_form_settings("
                         . json_encode($fmap) . ","

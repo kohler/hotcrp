@@ -109,6 +109,7 @@ function options_to_text(fieldj) {
     for (i = 0; i != fieldj.options.length; ++i, cc += ccdelta)
         t.push(String.fromCharCode(cc) + ". " + fieldj.options[i]);
     fieldj.option_letter && t.reverse();
+    fieldj.allow_empty && t.push("No entry");
     t.length && t.push(""); // get a trailing newline
     return t.join("\n");
 }

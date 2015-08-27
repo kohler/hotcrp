@@ -32,6 +32,7 @@ class ReviewField {
     public $display_order;
     public $option_class_prefix = "sv";
     public $round_mask = 0;
+    public $allow_empty = false;
     private $analyzed = false;
 
     static private $view_score_map = array("secret" => VIEWSCORE_ADMINONLY,
@@ -85,6 +86,8 @@ class ReviewField {
             }
             if (@$j->option_class_prefix)
                 $this->option_class_prefix = $j->option_class_prefix;
+            if (@$j->allow_empty)
+                $this->allow_empty = true;
         }
         $this->analyzed = false;
     }
@@ -108,6 +111,8 @@ class ReviewField {
             }
             if ($this->option_class_prefix !== "sv")
                 $j->option_class_prefix = $this->option_class_prefix;
+            if ($this->allow_empty)
+                $j->allow_empty = true;
         }
         if ($this->round_mask)
             $j->round_mask = $this->round_mask;
@@ -278,6 +283,11 @@ class ReviewField {
         $Conf->footerScript("$(scorechart)", "scorechart");
 
         return $retstr;
+    }
+
+    public function parse_is_empty($text) {
+        return $text === "" || $text === "0" || $text[0] === "("
+            || strcasecmp($text, "No entry") == 0;
     }
 
     public function parse_value($text, $strict) {
@@ -550,8 +560,11 @@ class ReviewForm {
             echo '<div class="revev">';
             if ($f->has_options) {
                 echo '<select name="', $field, '" onchange="hiliter(this)">';
+                $noentry = $f->allow_empty ? "No entry" : "(Your choice here)";
                 if (!$f->parse_value($fval, true))
-                    echo '<option value="0" selected="selected">(Your choice here)</option>';
+                    echo '<option value="0" selected="selected">', $noentry, '</option>';
+                else if ($f->allow_empty)
+                    echo '<option value="0">', $noentry, '</option>';
                 foreach ($f->options as $num => $what) {
                     echo '<option value="', $num, '"';
                     if ($num == $fval)
@@ -598,8 +611,9 @@ class ReviewForm {
             }
             if ($f->has_options) {
                 $fval = trim($fval);
-                if ($fval === "" || $fval === "0" || $fval[0] === "(") {
-                    if ($submit && $f->view_score >= VIEWSCORE_PC) {
+                if ($f->parse_is_empty($fval)) {
+                    if ($submit && $f->view_score >= VIEWSCORE_PC
+                        && !$f->allow_empty) {
                         $provide[] = $f->name;
                         $ReviewFormError[$field] = 1;
                     }
@@ -679,7 +693,9 @@ class ReviewForm {
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {
                 $fval = $req[$field];
                 if ($f->has_options) {
-                    if (!($fval = $f->parse_value($fval, false)))
+                    if ($f->parse_is_empty($fval))
+                        $fval = 0;
+                    else if (!($fval = $f->parse_value($fval, false)))
                         continue;
                 } else {
                     $fval = rtrim($fval);
@@ -981,11 +997,15 @@ $blind\n";
                     $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y))) . "\n";
                     $first = false;
                 }
-                if ($f->option_letter)
+                if ($f->allow_empty)
+                    $x .= "==-==          No entry\n==-== Enter your choice:\n";
+                else if ($f->option_letter)
                     $x .= "==-== Enter the letter of your choice:\n";
                 else
                     $x .= "==-== Enter the number of your choice:\n";
-                if ($fval == "")
+                if ($fval == "" && $f->allow_empty)
+                    $fval = "No entry";
+                else
                     $fval = "(Your choice here)";
             }
             $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
@@ -1342,7 +1362,9 @@ $blind\n";
                 . '</div><div class="revv';
             if ($f->has_options) {
                 if (!$fval || !isset($f->options[$fval]))
-                    $x .= "\"><span class='rev_${field} rev_unknown'>Unknown</span>";
+                    $x .= "\"><span class='rev_${field} rev_unknown'>"
+                        . ($f->allow_empty ? "No entry" : "Unknown")
+                        . "</span>";
                 else
                     $x .= "\"><span class='rev_${field}'>"
                         . $f->unparse_value($fval, ReviewField::VALUE_REV_NUM)
