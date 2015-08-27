@@ -848,7 +848,7 @@ div.settings_revfieldpos {
 	padding-right: 0.5em;
 	min-width: 24px;
 }
-div.settings_revfield {
+div.settings_revfield, div.settings_revfieldremoved {
 	margin: 18px 0;
 }
 div.settings_revfieldedit {
@@ -857,9 +857,11 @@ div.settings_revfieldedit {
 div.settings_revfieldview, div.settings_revfieldedit {
 	position: relative;
 }
-div.settings_revfn {
+.settings_revfn {
 	font-weight: bold;
 	color: #555555;
+}
+div.settings_revfn {
 	float: left;
 }
 div.settings_revvis, div.settings_revrounds, div.settings_reveditor {

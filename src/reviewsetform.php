@@ -199,8 +199,8 @@ submitted. Add a line “<tt>No entry</tt>” to make the score optional.</p></d
                         . json_encode($req) . ")");
 
     echo Ht::hidden("has_reviewform", 1),
+        "<div id=\"reviewform_removedcontainer\"></div>",
         "<div id=\"reviewform_container\"></div>",
-        "<div id=\"reviewform_removedcontainer\" style=\"display:none\"></div>",
         Ht::button("Add score field", array("onclick" => "review_form_settings.add(1)")),
         "<span class='sep'></span>",
         Ht::button("Add text field", array("onclick" => "review_form_settings.add(0)"));

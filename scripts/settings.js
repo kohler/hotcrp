@@ -215,10 +215,12 @@ function fill_field(fid, fieldj) {
 }
 
 function remove() {
-    var $f = $(this).closest(".settings_revfield");
+    var $f = $(this).closest(".settings_revfield"),
+        fid = $f.attr("hotcrp_revfield");
     $f.find(".revfield_order").val(0);
-    $f.detach().appendTo("#reviewform_removedcontainer");
-    check_change($f.attr("hotcrp_revfield"));
+    $f.detach().hide().appendTo("#reviewform_removedcontainer");
+    check_change(fid);
+    $("#reviewform_removedcontainer").append('<div id="revfieldremoved_' + fid + '" class="settings_revfieldremoved"><span class="settings_revfn" style="text-decoration:line-through">' + escape_entities($f.find("#shortName_" + fid).val()) + '</span>&nbsp; (field removed)</div>');
     fill_order();
 }
 
@@ -369,8 +371,10 @@ function move_field(event) {
 
 function append_field(fid, pos) {
     var $f = $("#revfield_" + fid), i, $j;
+    $("#revfieldremoved_" + fid).remove();
+
     if ($f.length) {
-        $f.detach().appendTo("#reviewform_container");
+        $f.detach().show().appendTo("#reviewform_container");
         fill_order();
         return;
     }
@@ -454,19 +458,20 @@ function rfs(fieldmapj, originalj, samplesj, errors, request) {
     }
 };
 
-function do_add(fid) {
+function do_add(fid, focus) {
     fieldorder.push(fid);
     original[fid] = original[fid] || {};
     original[fid].position = fieldorder.length;
     append_field(fid, fieldorder.length);
     $("#revfieldview_" + fid).find("button").click();
+    focus && $("#shortName_" + fid).focus();
     hiliter("reviewform_container");
     return true;
 }
 
 rfs.add = function (has_options, fid) {
     if (fid)
-        return do_add(fid);
+        return do_add(fid, false);
     // prefer recently removed fields
     var $c = $("#reviewform_removedcontainer")[0], $n, x = [], i;
     for (i = 0, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling)
@@ -478,7 +483,7 @@ rfs.add = function (has_options, fid) {
     x.sort(function (a, b) { return a[1] - b[1]; });
     for (i = 0; i != x.length; ++i)
         if (!fieldmap[x[i][0]] == !has_options)
-            return do_add(x[i][0]);
+            return do_add(x[i][0], true);
     alert("You’ve reached the maximum number of " + (has_options ? "score fields." : "text fields."));
 };
 
