@@ -188,9 +188,8 @@ are better). For example:</p>
 3. Weak accept
 4. Accept</pre>
 <p>Or use consecutive capital letters (lower letters are better).</p>
-<p>Normally score fields are mandatory: a review cannot be submitted with a
-missing score. Add a line “<tt>No entry</tt>” to the options to make a
-score field optional.</p></div>');
+<p>Normally scores are mandatory: a review with a missing score cannot be
+submitted. Add a line “<tt>No entry</tt>” to make the score optional.</p></div>');
 
     $Conf->footerScript("review_form_settings("
                         . json_encode($fmap) . ","
