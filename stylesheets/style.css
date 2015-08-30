@@ -44,9 +44,7 @@ html {
 	border-bottom: 1px solid #f33360;
 	border-right: 1px solid #f33360;
 	border-bottom-right-radius: 4px;
-	background-color: #ffc9d6; /* #ed6182; */
-	background-repeat: repeat-x;
-	background-position: bottom;
+	background: #ffc9d6; /* #ed6182; */
 }
 #header_site, #footer_crp a {
 	color: #f33360;
@@ -1991,8 +1989,11 @@ div.papmode, div.papmodex {
 	float: left;
 	text-align: center;
 	font-size: smaller;
-	padding: 0.5ex 5px 0.6ex 5px;
+	padding: 3.5px 5px 4px 5px;
 	margin: 0 5px;
+}
+div.papmode {
+	padding-top: 4.5px;
 }
 div.papmodex {
 	background: white;
