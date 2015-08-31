@@ -359,7 +359,7 @@ fi
 
 if [ "$createdb" = y -o "$createuser" = y ]; then
     $qecho "Granting $DBUSER access to $DBNAME..."
-    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1    
+    eval $MYSQL $mycreatedb_args $myargs $FLAGS mysql <<__EOF__ || exit 1
 DELETE FROM db WHERE db='$DBNAME' AND User='$DBUSER';
 
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX,
