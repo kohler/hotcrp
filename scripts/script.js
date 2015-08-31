@@ -63,6 +63,10 @@ function hoturl_clean(x, page_component) {
 
 function hoturl(page, options) {
     var k, t, a, m, x, anchor = "", want_forceShow;
+    if (siteurl == null || siteurl_suffix == null) {
+        siteurl = siteurl_suffix = "";
+        log_jserror("missing siteurl");
+    }
     x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
     if ((m = x.o.match(/^(.*?)(#.*)$/))) {
         x.o = m[1];
