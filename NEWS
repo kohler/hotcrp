@@ -1,5 +1,34 @@
 HotCRP NEWS
 
+Version 2.96
+
+* New improved look.
+
+* Support per-review-round review fields: a review in round R2 can
+  look different from one in round R1, for instance. Note that each
+  reviewer can still only enter one review per paper.
+
+* Add `HIGHLIGHT` search keyword.
+
+* Improved autocompletion for searches.
+
+* Add glyphs for when you're a lead and/or shepherd to paper lists.
+
+* The settings UI support configuring whether PDF submissions are required.
+
+* Add an autoassigner that chooses a sensible discussion order,
+  reducing conflict churn.
+
+* Formulas support dec:, re:REVIEWERNAME, re:REVIEWERTAG.
+
+* Score fields on review forms can be configured to allow "No entry".
+
+* Fixes to password reset, autoassigner, many others.
+
+* Thanks to all contributors and users, especially John Wilkes and
+  Jeff Mogul. Emery Berger also suggested a feature or two.
+
+
 Version 2.95   19.Jun.2015
 
 * Graphs!!!!!
