@@ -78,6 +78,7 @@ class Multiconference {
     }
 
     static function fail_bad_options() {
+        global $Opt;
         $errors = array();
         if (@$Opt["multiconference"] && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
@@ -91,13 +92,13 @@ class Multiconference {
             $errors[] = "Error: Unable to load options file `" . HOTCRP_OPTIONS . "`";
         else if (!@$Opt["loaded"])
             $errors[] = "Error: Unable to load options file";
-        else if (@$Opt["missing"])
+        if (@$Opt["missing"])
             $errors[] = "Error: Unable to load options from " . commajoin($Opt["missing"]);
         self::fail_message($errors);
     }
 
     static function fail_bad_database() {
-        global $Conf;
+        global $Conf, $Opt;
         $errors = array();
         if (@$Opt["multiconference"] && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
