@@ -11,6 +11,7 @@ class HotCRPDocument {
     private $dtype;
     private $option = null;
     private $no_database = false;
+    private $no_filestore = false;
     static private $_s3_document = false;
 
     public function __construct($dtype, $option = null) {
@@ -23,6 +24,10 @@ class HotCRPDocument {
 
     public function set_no_database_storage() {
         $this->no_database = true;
+    }
+
+    public function set_no_file_storage() {
+        $this->no_filestore = true;
     }
 
     public static function unparse_dtype($dtype) {
@@ -198,6 +203,8 @@ class HotCRPDocument {
 
     public function filestore_pattern($doc, $docinfo) {
         global $Opt, $ConfSitePATH, $ConfFilestore;
+        if ($this->no_filestore)
+            return false;
         if ($ConfFilestore === null) {
             $fdir = defval($Opt, "docstore");
             if (!$fdir)
@@ -280,5 +287,4 @@ class HotCRPDocument {
         }
         return hoturl("doc", $f);
     }
-
 }
