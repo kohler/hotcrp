@@ -34,6 +34,13 @@ class Mimetype {
             return null;
     }
 
+    static function lookup_extension($extension) {
+        foreach (self::$alltypes as $t)
+            if ($t->extension == $extension)
+                return $t;
+        return null;
+    }
+
     static function type($type) {
         if (($x = self::lookup($type)))
             return $x->mimetype;
@@ -87,7 +94,6 @@ class Mimetype {
         else
             return null;
     }
-
 }
 
 Mimetype::register("text/plain", "txt", Mimetype::TXT, "text");
