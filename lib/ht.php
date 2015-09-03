@@ -26,7 +26,7 @@ class Ht {
             foreach ($js as $k => $v)
                 if (!@self::$_bad_js[$k] && $k !== "disabled"
                     && $v !== null && $v !== false)
-                    $x .= " $k=\"" . str_replace("\"", "'", $v) . "\"";
+                    $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
             if (@$js["disabled"])
                 $x .= " disabled=\"disabled\"";
         }
