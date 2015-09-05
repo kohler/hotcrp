@@ -24,7 +24,7 @@ class ScoreInfo {
                 $this->add($value, $key);
         } else if (is_string($data) && $data !== "") {
             foreach (preg_split('/[\s,]+/', $data) as $s)
-                if (($s = cvtint($s)) > 0)
+                if (($i = cvtint($s)) > 0)
                     $this->add($i);
         }
     }
