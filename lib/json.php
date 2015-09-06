@@ -44,7 +44,7 @@ class Json {
     static private $error_description;
 
     private static function set_error(&$x, $etype, $desc = null) {
-        if ($x !== null) {
+        if ($x !== null && !self::$error_type) {
             self::$error_type = $etype;
             $prefix = substr(self::$error_input, 0,
                              strlen(self::$error_input) - strlen($x));
