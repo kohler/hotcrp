@@ -176,7 +176,7 @@ class Json {
             return self::set_error($x, JSON_ERROR_SYNTAX);
     }
 
-    static function escape_encode($x) {
+    static function encode_escape($x) {
         if (is_array($x))
             $x = $x[0];
         return self::$string_map[$x];
@@ -195,7 +195,7 @@ class Json {
             return (string) $x;
         else if (is_string($x)) {
             $pat = ($options & JSON_UNESCAPED_SLASHES) ? '/[\\"\000-\037]/' : ',[\\"/\000-\037],';
-            return "\"" . preg_replace_callback($pat, "Json::escape_encode", $x) . "\"";
+            return "\"" . preg_replace_callback($pat, "Json::encode_escape", $x) . "\"";
         } else if (is_object($x) || is_array($x)) {
             $as_object = null;
             $as_array = array();

@@ -159,6 +159,15 @@ function xassert_array_eqq($a, $b) {
         trigger_error("Array assertion failed, $problem at " . assert_location() . "\n", E_USER_WARNING);
 }
 
+function xassert_match($a, $b) {
+    ++Xassert::$n;
+    if (is_string($a) && preg_match($b, $a))
+        ++Xassert::$nsuccess;
+    else
+        trigger_error("Assertion " . var_export($a, true) . " ~= " . $b
+                      . " failed at " . assert_location() . "\n", E_USER_WARNING);
+}
+
 function search_json($user, $text, $cols = "id") {
     $pl = new PaperList(new PaperSearch($user, $text));
     return $pl->text_json($cols);

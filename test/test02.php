@@ -68,4 +68,21 @@ xassert_eqq(substr("", 0, 1), false);
 $s = "";
 xassert_eqq(@$s[0], "");
 
+// Json tests
+xassert_eqq(json_encode(Json::decode("{}")), "{}");
+xassert_eqq(json_encode(Json::decode('"\\u0030"')), '"0"');
+xassert_eqq(Json::encode("\n"), '"\\n"');
+xassert_eqq(Json::encode("\007"), '"\\u0007"');
+xassert_eqq(json_encode(Json::decode('{"1":"1"}')), '{"1":"1"}');
+$x = Json::decode_landmarks('{
+    "a": ["b", "c"],
+    "b": {
+        "c": "d"
+    }
+}', "x.txt");
+xassert_match($x->a[0], ",^x.txt:2(?::|\$),");
+xassert_match($x->a[1], ",^x.txt:2(?::|\$),");
+xassert_match($x->b->c, ",^x.txt:4(?::|\$),");
+xassert_match($x->b->__LANDMARK__, ",^x.txt:3(?::|\$),");
+
 xassert_exit();

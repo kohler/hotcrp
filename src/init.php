@@ -143,6 +143,7 @@ function __autoload($class_name) {
                                "HotCRPDocument" => "src/hotcrpdocument.php",
                                "HotCRPMailer" => "src/hotcrpmailer.php",
                                "Ht" => "lib/ht.php",
+                               "Json" => "lib/json.php",
                                "ListSorter" => "src/listsorter.php",
                                "LoginHelper" => "lib/login.php",
                                "Mailer" => "lib/mailer.php",
