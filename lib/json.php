@@ -9,6 +9,7 @@
 @define("JSON_ERROR_CTRL_CHAR", 3);
 @define("JSON_ERROR_SYNTAX", 4);
 @define("JSON_ERROR_UTF8", 5);
+@define("JSON_ERROR_EMPTY_KEY", 100);
 
 @define("JSON_FORCE_OBJECT", 1);
 @define("JSON_PRETTY_PRINT", 8);
@@ -100,8 +101,9 @@ class Json {
         } else if ($x[0] === "{") {
             if ($depth < 0)
                 return self::set_error($x, JSON_ERROR_DEPTH);
-            $arr = array();
+            $arr = $assoc ? array() : (object) array();
             $x = substr($x, 1);
+            $n = 0;
             while (1) {
                 if (!is_string($x))
                     return self::set_error($x, JSON_ERROR_SYNTAX);
@@ -109,7 +111,7 @@ class Json {
                 if ($x[0] === "}") {
                     $x = substr($x, 1);
                     break;
-                } else if (count($arr)) {
+                } else if ($n) {
                     if ($x[0] !== ",")
                         return self::set_error($x, JSON_ERROR_SYNTAX);
                     $x = substr($x, 1);
@@ -118,14 +120,19 @@ class Json {
                 $k = self::decode_part($x, $assoc, $depth - 1, $options);
                 if (!is_string($k) || !is_string($x))
                     return self::set_error($x, JSON_ERROR_SYNTAX);
+                if ($k === "" && is_object($arr))
+                    return self::set_error($x, JSON_ERROR_EMPTY_KEY);
+
                 $x = ltrim($x);
                 if ($x[0] !== ":")
                     return self::set_error($x, JSON_ERROR_SYNTAX);
                 $x = substr($x, 1);
                 $v = self::decode_part($x, $assoc, $depth - 1, $options);
-                $arr[$k] = $v;
+
+                is_array($arr) ? ($arr[$k] = $v) : ($arr->{$k} = $v);
+                ++$n;
             }
-            return $assoc ? $arr : (object) $arr;
+            return $arr;
         } else if ($x[0] === "[") {
             if ($depth < 0)
                 return self::set_error($x, JSON_ERROR_DEPTH);
@@ -231,7 +238,8 @@ class Json {
                   JSON_ERROR_STATE_MISMATCH => "Underflow or the modes mismatch",
                   JSON_ERROR_CTRL_CHAR => "Unexpected control character found",
                   JSON_ERROR_SYNTAX => "Syntax error, malformed JSON",
-                  JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded");
+                  JSON_ERROR_UTF8 => "Malformed UTF-8 characters, possibly incorrectly encoded",
+                  JSON_ERROR_EMPTY_KEY => "Empty keys are not supported");
         $error = self::last_error();
         $error = array_key_exists($error, $errors) ? $errors[$error] : "Unknown error ({$error})";
         if ($error) {
