@@ -24,6 +24,7 @@ mode=
 makeuser=
 makeusercols=
 makeuservals=
+makeuserpassword=true
 pwuser=
 pwvalue=
 cmdlinequery=
@@ -68,6 +69,7 @@ while [ $# -gt 0 ]; do
             colvalue=`echo "$1" | tail -c +$collen`
             makeusercols="$makeusercols,$colname"
             makeuservals="$makeuservals,'`echo "$colvalue" | sql_quote`'"
+            test "$colname" = password && makeuserpassword=false
         elif [ "$mode" = "" ]; then
             mode=cmdlinequery
             cmdlinequery="$1"
@@ -120,7 +122,11 @@ elif test "$mode" = showopt; then
         if test -n "$optopt"; then eval "echo $optopt"; else eval "echo $opt"; fi
     fi
 elif test "$mode" = makeuser; then
-    echo "insert into ContactInfo (email,password$makeusercols) values ('`echo "$makeuser" | sql_quote`',''$makeuservals)" | eval "$MYSQL $myargs -N $FLAGS $dbname"
+    if $makeuserpassword; then
+        makeusercols="$makeusercols,password"
+        makeuservals="$makeuservals,''"
+    fi
+    echo "insert into ContactInfo (email$makeusercols) values ('`echo "$makeuser" | sql_quote`'$makeuservals)" | eval "$MYSQL $myargs -N $FLAGS $dbname"
 elif test "$mode" = cmdlinequery; then
     if test -n "$PASSWORDFILE"; then ( sleep 0.3; rm -f $PASSWORDFILE ) & fi
     echo "$cmdlinequery" | eval "$MYSQL $myargs $FLAGS $dbname"
