@@ -227,5 +227,6 @@ class Navigation {
             self::redirect($x);
         }
     }
-
 }
+
+Navigation::analyze();

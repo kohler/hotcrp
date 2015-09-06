@@ -3,7 +3,8 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("src/initweb.php");
+require_once("lib/navigation.php");
+
 if (Navigation::page() !== "index") {
     $page = Navigation::page();
     if (is_readable("$page.php")
@@ -16,7 +17,7 @@ if (Navigation::page() !== "index") {
         include("cacheable.php");
         exit;
     } else
-        go(hoturl("index"));
+        Navigation::redirect_site("index");
 }
 
 require_once("pages/home.php");

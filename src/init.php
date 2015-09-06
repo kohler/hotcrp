@@ -110,7 +110,6 @@ function set_path_variables() {
             $ConfSitePATH = "/var/www/html";
     }
     require_once("$ConfSitePATH/lib/navigation.php");
-    Navigation::analyze();
     if (@$ConfSiteBase === null)
         $ConfSiteBase = Navigation::siteurl();
     if (@$ConfSiteSuffix === null)
