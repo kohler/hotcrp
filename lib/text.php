@@ -129,7 +129,7 @@ class Text {
         if ($r->name && $r->email)
             return "$r->name <$r->email>";
         else
-            return $r->name ? $r->name : $r->email;
+            return $r->name ? : $r->email;
     }
 
     static function user_html(/* ... */) {
@@ -143,7 +143,7 @@ class Text {
         if ($r->name)
             return htmlspecialchars($r->name) . ($e ? " " . $e : "");
         else
-            return $e ? $e : "[No name]";
+            return $e ? : "[No name]";
     }
 
     static function user_html_nolink(/* ... */) {
@@ -153,7 +153,7 @@ class Text {
         if ($r->name)
             return htmlspecialchars($r->name) . ($e ? " " . $e : "");
         else
-            return $e ? $e : "[No name]";
+            return $e ? : "[No name]";
     }
 
     static function name_text(/* ... */) {
@@ -162,7 +162,7 @@ class Text {
 	if ($r->nameAmbiguous && $r->name && $r->email)
             return "$r->name <$r->email>";
         else
-            return $r->name ? $r->name : $r->email;
+            return $r->name ? : $r->email;
     }
 
     static function name_html(/* ... */) {
