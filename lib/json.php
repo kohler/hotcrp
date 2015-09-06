@@ -56,6 +56,8 @@ class Json {
     }
 
     static function decode_escape($e) {
+        if (is_array($e))
+            $e = $e[0];
         if ($e[1] === "u") {
             $v = intval(substr($e, 2), 16);
             if ($v < 0x80)
@@ -71,6 +73,7 @@ class Json {
         } else
             return self::$string_unmap[$e];
     }
+
 
     private static function decode_part(&$x, $assoc, $depth, $options) {
         $x = ltrim($x);
@@ -89,7 +92,7 @@ class Json {
             preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)(.*)\z,s', $x, $m);
             if ($m[2][0] === "\"") {
                 $x = substr($m[2], 1);
-                return preg_replace_callback(',(\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4})),', 'Json::decode_escape', $m[1]);
+                return preg_replace_callback(',\\\\(?:["\\\\/bfnrt]|u[0-9a-fA-F]{4}),', 'Json::decode_escape', $m[1]);
             } else {
                 $x = $m[2];
                 return self::set_error($x, JSON_ERROR_SYNTAX);
@@ -157,6 +160,8 @@ class Json {
     }
 
     static function escape_encode($x) {
+        if (is_array($x))
+            $x = $x[0];
         return self::$string_map[$x];
     }
 
@@ -172,7 +177,7 @@ class Json {
         else if (is_int($x) || is_float($x))
             return (string) $x;
         else if (is_string($x)) {
-            $pat = ($options & JSON_UNESCAPED_SLASHES) ? '/([\\"\000-\037])/' : ',([\\"/\000-\037]),';
+            $pat = ($options & JSON_UNESCAPED_SLASHES) ? '/[\\"\000-\037]/' : ',[\\"/\000-\037],';
             return "\"" . preg_replace_callback($pat, "Json::escape_encode", $x) . "\"";
         } else if (is_object($x) || is_array($x)) {
             $as_object = null;
