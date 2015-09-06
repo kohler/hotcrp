@@ -56,6 +56,16 @@ class Json {
         return ($x = null);
     }
 
+    private static function landmark(&$x, $filename) {
+        if ($x !== null) {
+            $prefix = substr(self::$error_input, 0,
+                             strlen(self::$error_input) - strlen($x));
+            return $filename . ":" . (1 + preg_match_all(',\r\n?|\n,s', $prefix)) . ":" . strlen($prefix);
+        } else
+            return null;
+    }
+
+
     static function decode_escape($e) {
         if (is_array($e))
             $e = $e[0];
@@ -226,6 +236,104 @@ class Json {
         self::$error_input = null;
         return $x === null ? null : $v;
     }
+
+
+    private static function decode_landmarks_part(&$x, $filename, $assoc, $depth) {
+        $x = ltrim($x);
+        if ($x === "")
+            return self::set_error($x, JSON_ERROR_SYNTAX);
+        else if (preg_match('/\A(?:null|false|true|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[Ee][-+]?\d+)?)(.*)\z/s', $x, $m)) {
+            $l = self::landmark($x, $filename);
+            $x = $m[1];
+            return $l;
+        } else if ($x[0] === "\"") {
+            $l = self::landmark($x, $filename);
+            preg_match(',\A"((?:[^\\\\"\000-\037]|\\\\["\\\\/bfnrt]|\\\\u[0-9a-fA-F]{4})*)(.*)\z,s', $x, $m);
+            if ($m[2][0] === "\"") {
+                $x = substr($m[2], 1);
+                return $l;
+            } else {
+                $x = $m[2];
+                return self::set_error($x, JSON_ERROR_SYNTAX);
+            }
+        } else if ($x[0] === "{") {
+            $l = self::landmark($x, $filename);
+            if ($depth < 0)
+                return self::set_error($x, JSON_ERROR_DEPTH);
+            $arr = $assoc ? array() : (object) array();
+            $x = substr($x, 1);
+            $n = 0;
+            while (1) {
+                if (!is_string($x))
+                    return self::set_error($x, JSON_ERROR_SYNTAX);
+                $x = ltrim($x);
+                if ($x[0] === "}") {
+                    $x = substr($x, 1);
+                    break;
+                } else if ($n) {
+                    if ($x[0] !== ",")
+                        return self::set_error($x, JSON_ERROR_SYNTAX);
+                    $x = substr($x, 1);
+                }
+
+                $k = self::decode_part($x, $assoc, $depth - 1, 0);
+                if (!is_string($k) || !is_string($x))
+                    return self::set_error($x, JSON_ERROR_SYNTAX);
+                if ($k === "" && is_object($arr))
+                    return self::set_error($x, JSON_ERROR_EMPTY_KEY);
+
+                $x = ltrim($x);
+                if ($x[0] !== ":")
+                    return self::set_error($x, JSON_ERROR_SYNTAX);
+                $x = substr($x, 1);
+                $v = self::decode_landmarks_part($x, $filename, $assoc, $depth - 1);
+
+                is_array($arr) ? ($arr[$k] = $v) : ($arr->{$k} = $v);
+                ++$n;
+            }
+            is_array($arr) ? ($arr["__LANDMARK__"] = $l) : ($arr->__LANDMARK__ = $l);
+            return $arr;
+        } else if ($x[0] === "[") {
+            $l = self::landmark($x, $filename);
+            if ($depth < 0)
+                return self::set_error($x, JSON_ERROR_DEPTH);
+            $arr = array();
+            $x = substr($x, 1);
+            while (1) {
+                if (!is_string($x))
+                    return self::set_error($x, JSON_ERROR_SYNTAX);
+                $x = ltrim($x);
+                if ($x[0] === "]") {
+                    $x = substr($x, 1);
+                    break;
+                } else if (count($arr)) {
+                    if ($x[0] !== ",")
+                        return self::set_error($x, JSON_ERROR_SYNTAX);
+                    $x = substr($x, 1);
+                }
+
+                $v = self::decode_landmarks_part($x, $filename, $assoc, $depth - 1);
+                $arr[] = $v;
+            }
+            return $arr;
+        } else if ($x[0] === "]" || $x[0] === "}")
+            return self::set_error($x, JSON_ERROR_STATE_MISMATCH);
+        else if (ord($x[0]) < 32)
+            return self::set_error($x, JSON_ERROR_CTRL_CHAR);
+        else
+            return self::set_error($x, JSON_ERROR_SYNTAX);
+    }
+
+    static function decode_landmarks($x, $filename, $assoc = false, $depth = 512) {
+        self::$error_type = JSON_ERROR_NONE;
+        self::$error_input = $x;
+        $v = self::decode_landmarks_part($x, $filename, $assoc, $depth);
+        if ($x !== null && $x !== false && !ctype_space($x))
+            self::set_error($x, JSON_ERROR_SYNTAX, var_export($x, true));
+        self::$error_input = null;
+        return $x === null ? null : $v;
+    }
+
 
     static function last_error() {
         return self::$error_type;
