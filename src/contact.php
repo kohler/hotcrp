@@ -2750,7 +2750,7 @@ class Contact {
             $dl->rev->rounds = array();
             $dl->rev->roundsuf = array();
             foreach ($Conf->defined_round_list() as $i => $round_name) {
-                $dl->rev->rounds[] = $i ? $round_name : 0;
+                $dl->rev->rounds[] = $i ? $round_name : "unnamed";
                 $dl->rev->roundsuf[] = $i ? ".$round_name" : "";
             }
         }

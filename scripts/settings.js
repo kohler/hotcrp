@@ -388,7 +388,7 @@ function append_field(fid, pos) {
             text = [];
             for (j = 0; j < rname.length; ++j)
                 if (i & (1 << j))
-                    text.push(rname[j] || "unnamed");
+                    text.push(rname[j]);
             if (!text.length)
                 $j.append("<option value=\"\">All rounds</option>");
             else if (text.length == 1)
