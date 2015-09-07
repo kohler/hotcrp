@@ -251,8 +251,11 @@ jQuery(\"#homeacct input[name='action']\").on('click',login_type);jQuery(login_t
 // Submissions
 $papersub = $Conf->setting("papersub");
 $homelist = ($Me->privChair || ($Me->isPC && $papersub) || ($Me->is_reviewer() && $papersub));
+$home_hr = "<hr class=\"home\" />\n";
+$nhome_hr = 0;
+
 if ($homelist) {
-    echo "<div class='homegrp' id='homelist'>\n";
+    echo ($nhome_hr ? $home_hr : ""), '<div class="homegrp" id="homelist">';
 
     // Lists
     echo Ht::form_div(hoturl("search"), array("method" => "get")),
@@ -266,9 +269,8 @@ if ($homelist) {
         " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),
-        "</div></form>
-</div>
-<hr class='home' />\n";
+        "</div></form></div>\n";
+    ++$nhome_hr;
 }
 
 
@@ -307,7 +309,7 @@ function reviewTokenGroup($non_reviews) {
 
 // Review assignment
 if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
-    echo "<div class='homegrp' id='homerev'>\n";
+    echo ($nhome_hr ? $home_hr : ""), "<div class='homegrp' id='homerev'>\n";
     $all_review_fields = ReviewForm::all_fields();
     $merit_field = @$all_review_fields["overAllMerit"];
     $merit_noptions = $merit_field ? count($merit_field->options) : 0;
@@ -466,13 +468,14 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             $Conf->footerScript("foldup(jQuery(\"#homeactivity\")[0],null,{n:20})");
     }
 
-    echo "<hr class='home' /></div>\n";
+    echo "</div>\n";
+    ++$nhome_hr;
 }
 
 // Authored papers
 if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
     || !$Me->is_reviewer()) {
-    echo "<div class='homegrp' id='homeau'>";
+    echo ($nhome_hr ? $home_hr : ""), '<div class="homegrp" id="homeau">';
 
     // Overview
     if ($Me->is_author())
@@ -540,7 +543,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
             "</span>";
     }
 
-    echo "<hr class='home' /></div>\n";
+    echo "</div>\n";
 }
 
 
