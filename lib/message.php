@@ -47,7 +47,7 @@ class Message {
             self::load();
         if (!($m = @self::$messages[$name])
             && ($p = strrpos($name, ".")))
-            $m = self::$messages[substr($name, 0, $p)];
+            $m = @self::$messages[substr($name, 0, $p)];
         if ($m && isset($m->html))
             return $m->html;
         else if ($m && isset($m->text))
