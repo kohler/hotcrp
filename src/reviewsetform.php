@@ -121,7 +121,10 @@ function rf_update() {
                 $fj->option_class_prefix = $prefixes[$prefix_index];
         }
 
-        $fj->round_mask = cvtint(@$_REQUEST["round_mask_$fid"], 0);
+        $fj->round_mask = 0;
+        if (($rlist = @$_REQUEST["round_list_$fid"]))
+            foreach (explode(" ", trim($rlist)) as $round_name)
+                $fj->round_mask |= 1 << $Conf->round_number($round_name, false);
     }
 
     if ($shortNameError)

@@ -2744,23 +2744,21 @@ class Contact {
         $revtypes = array();
         if ($this->is_reviewer()
             && ($rev_open = @+$set["rev_open"]) > 0
-            && $rev_open <= $Now) {
+            && $rev_open <= $Now)
             $dl->rev->open = true;
+        if ($this->is_reviewer()) {
             $dl->rev->rounds = array();
             $dl->rev->roundsuf = array();
-            if ($this->privChair)
-                $dl->rev->roundidx = array();
+            foreach ($Conf->defined_round_list() as $i => $round_name) {
+                $dl->rev->rounds[] = $i ? $round_name : 0;
+                $dl->rev->roundsuf[] = $i ? ".$round_name" : "";
+            }
+        }
+        if (@$dl->rev->open) {
             $grace = @$set["rev_grace"];
-            $cur_round = $Conf->current_round_name();
-            foreach ($Conf->round_list() as $i => $round_name) {
-                if ($i ? $round_name === ";" : !$Conf->round0_defined())
-                    continue;
+            foreach ($Conf->defined_round_list() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
                 $jsuf = $i ? ".$round_name" : "";
-                $dl->rev->rounds[] = $i ? $round_name : 0;
-                $dl->rev->roundsuf[] = $jsuf;
-                if ($this->privChair)
-                    $dl->rev->roundidx[] = $i;
                 foreach (array("pcrev", "extrev") as $rt) {
                     if ($rt == "pcrev" && !$this->isPC)
                         continue;
@@ -2774,11 +2772,7 @@ class Contact {
                         $dlround->done = $s;
                     $dlround->grace = "rev_grace";
                 }
-                if ($cur_round == $round_name)
-                    $cur_round = false;
             }
-            if ($this->privChair && $cur_round)
-                $dl->rev->rounds[] = $cur_round;
             // blindness
             $rb = $Conf->review_blindness();
             if ($rb === Conference::BLIND_ALWAYS)

@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Message {
-
     private static $messages = null;
 
     private static function load_one($f) {
@@ -55,5 +54,4 @@ class Message {
         else
             return false;
     }
-
 }

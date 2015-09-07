@@ -177,7 +177,7 @@ function check_change(fid) {
         || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
         || ((j = $("#option_class_prefix_" + fid)) && j.length
             && j.val() != option_class_prefix(fieldj))
-        || ($("#round_mask_" + fid).val() || 0) != (fieldj.round_mask || 0))
+        || ($("#round_list_" + fid).val() || "") != (fieldj.round_list || []).join(" "))
         hiliter("reviewform_container");
 }
 
@@ -209,7 +209,7 @@ function fill_field(fid, fieldj) {
     $("#option_class_prefix_" + fid).val(option_class_prefix(fieldj));
     $("#revfield_" + fid + " textarea").trigger("change");
     $("#revfieldview_" + fid).html("").append(create_field_view(fid, fieldj));
-    $("#round_mask_" + fid).val(fieldj.round_mask || 0);
+    $("#round_list_" + fid).val((fieldj.round_list || []).join(" "));
     check_change(fid);
     return false;
 }
@@ -262,7 +262,7 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
     </div>\
     <div class="f-ix reviewrow_rounds">\
       <div class="f-c">Rounds</div>\
-      <select name="round_mask_$" id="round_mask_$" class="reviewfield_round_mask"></select>\
+      <select name="round_list_$" id="round_list_$" class="reviewfield_round_list"></select>\
     </div>\
     <hr class="c" />\
   </div>\
@@ -326,19 +326,10 @@ function create_field_view(fid, fieldj) {
     x ? $x.text(x) : $x.remove();
 
     x = "";
-    if (fieldj.round_mask && hotcrp_status.rev.roundidx) {
-        x = [];
-        for (i = 0; (1 << i) <= fieldj.round_mask; ++i)
-            if ((fieldj.round_mask & (1 << i))
-                && (j = hotcrp_status.rev.roundidx.indexOf(i)) >= 0)
-                x.push(hotcrp_status.rev.rounds[j] || "unnamed");
-        if (x.length == 1)
-            x = "(round " + x[0] + " only)";
-        else if (x.length)
-            x = "(rounds " + commajoin(x) + ")";
-        else
-            x = "";
-    }
+    if ((fieldj.round_list || []).length == 1)
+        x = "(" + fieldj.round_list[0] + " only)";
+    else if ((fieldj.round_list || []).length > 1)
+        x = "(" + commajoin(fieldj.round_list) + ")";
     $x = $f.find(".settings_revrounds");
     x ? $x.text(x) : $x.remove();
 
@@ -389,25 +380,21 @@ function append_field(fid, pos) {
     } else
         $f.find(".reviewrow_options").remove();
 
-    if (hotcrp_status.rev && hotcrp_status.rev.roundidx
-        && hotcrp_status.rev.roundidx.length > 1) {
-        var rname = hotcrp_status.rev.rounds, ridx = hotcrp_status.rev.roundidx,
-            v, j, text;
-        $j = $f.find(".reviewfield_round_mask");
-        for (i = 0; i < (1 << ridx.length) - 1;
-             i = next_lexicographic_permutation(i, ridx.length)) {
-            v = 0, text = [];
-            for (j = 0; j < ridx.length; ++j)
-                if (i & (1 << j)) {
-                    v |= 1 << ridx[j];
+    if (hotcrp_status.rev && (hotcrp_status.rev.rounds || []).length > 1) {
+        var rname = hotcrp_status.rev.rounds, v, j, text;
+        $j = $f.find(".reviewfield_round_list");
+        for (i = 0; i < (1 << rname.length) - 1;
+             i = next_lexicographic_permutation(i, rname.length)) {
+            text = [];
+            for (j = 0; j < rname.length; ++j)
+                if (i & (1 << j))
                     text.push(rname[j] || "unnamed");
-                }
-            if (v == 0)
-                $j.append("<option value=\"0\">All rounds</option>");
-            else if (!(v & (v - 1)))
-                $j.append("<option value=\"" + v + "\">" + text[0] + " only</option>");
+            if (!text.length)
+                $j.append("<option value=\"\">All rounds</option>");
+            else if (text.length == 1)
+                $j.append("<option value=\"" + text[0] + "\">" + text[0] + " only</option>");
             else
-                $j.append("<option value=\"" + v + "\">" + commajoin(text) + "</option>");
+                $j.append("<option value=\"" + text.join(" ") + "\">" + commajoin(text) + "</option>");
         }
     } else
         $f.find(".reviewrow_rounds").remove();

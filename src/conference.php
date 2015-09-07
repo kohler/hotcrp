@@ -544,6 +544,14 @@ class Conference {
         return $this->_round0_defined_cache;
     }
 
+    function defined_round_list() {
+        $r = array();
+        foreach ($this->rounds as $i => $round_name)
+            if ($i ? $round_name !== ";" : $this->round0_defined())
+                $r[$i] = $round_name;
+        return $r;
+    }
+
     function round_name($roundno, $expand = false) {
         if ($roundno > 0) {
             if (($rname = @$this->rounds[$roundno]) && $rname !== ";")

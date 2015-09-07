@@ -93,6 +93,7 @@ class ReviewField {
     }
 
     public function unparse_json() {
+        global $Conf;
         $j = (object) array("name" => $this->name);
         if ($this->description)
             $j->description = $this->description;
@@ -114,8 +115,12 @@ class ReviewField {
             if ($this->allow_empty)
                 $j->allow_empty = true;
         }
-        if ($this->round_mask)
-            $j->round_mask = $this->round_mask;
+        if ($this->round_mask) {
+            $j->round_list = array();
+            foreach ($Conf->round_list() as $i => $round_name)
+                if ($this->round_mask & (1 << $i))
+                    $j->round_list[] = $i ? $round_name : "unnamed";
+        }
         return $j;
     }
 
