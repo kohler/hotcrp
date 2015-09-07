@@ -70,7 +70,7 @@ h1 {
 }
 #header_page.header_page_submission {
 	float: none;
-	padding: 1em 0 0;
+	padding: 14px 0 0;
 	position: relative;
 	z-index: 1;
 }
@@ -88,7 +88,7 @@ h1.paptitle {
 table.vbar {
 	float: right;
 	font-size: smaller;
-	margin: 6px 24px 0 0;
+	margin: 8px 24px 0 0;
 }
 body#home table.vbar {
 	margin-top: -4px;
