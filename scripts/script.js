@@ -11,17 +11,6 @@ function $$(id) {
     return document.getElementById(id);
 }
 
-window.escape_entities = (function () {
-    var re = /[&<>\"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
-    return function (s) {
-        if (s === null || typeof s === "number")
-            return s;
-        return s.replace(re, function (match) {
-            return rep[match];
-        });
-    };
-})();
-
 function serialize_object(x) {
     if (typeof x === "string")
         return x;
@@ -35,6 +24,7 @@ function serialize_object(x) {
         return "";
 }
 
+
 function bind_append(f, args) {
     return function () {
         var a = Array.prototype.slice.call(arguments);
@@ -43,6 +33,422 @@ function bind_append(f, args) {
     };
 }
 
+// callback combination
+function add_callback(cb1, cb2) {
+    if (cb1 && cb2)
+        return function () {
+            cb1.apply(this, arguments);
+            cb2.apply(this, arguments);
+        };
+    else
+        return cb1 || cb2;
+}
+
+function staged_foreach(a, f, backwards) {
+    var i = (backwards ? a.length - 1 : 0);
+    var step = (backwards ? -1 : 1);
+    var stagef = function () {
+        var x;
+        for (x = 0; i >= 0 && i < a.length && x < 100; i += step, ++x)
+            f(a[i]);
+        if (i < a.length)
+            setTimeout(stagef, 0);
+    };
+    stagef();
+}
+
+
+// promises
+function Promise(value) {
+    this.value = value;
+    this.state = value === undefined ? false : 1;
+    this.c = [];
+}
+Promise.prototype.then = function (yes, no) {
+    var next = new Promise;
+    this.c.push([no, yes, next]);
+    if (this.state !== false)
+        this._resolve();
+    else if (this.on) {
+        this.on(this);
+        this.on = null;
+    }
+    return next;
+};
+Promise.prototype._resolve = function () {
+    var i, x, f, v;
+    for (i in this.c) {
+        x = this.c[i];
+        f = x[this.state];
+        if ($.isFunction(f)) {
+            try {
+                v = f(this.value);
+                x[2].fulfill(v);
+            } catch (e) {
+                x[2].reject(e);
+            }
+        } else
+            x[2][this.state ? "fulfill" : "reject"](this.value);
+    }
+    this.c = [];
+};
+Promise.prototype.fulfill = function (value) {
+    if (this.state === false) {
+        this.value = value;
+        this.state = 1;
+        this._resolve();
+    }
+};
+Promise.prototype.reject = function (reason) {
+    if (this.state === false) {
+        this.value = reason;
+        this.state = 0;
+        this._resolve();
+    }
+};
+Promise.prototype.onThen = function (f) {
+    this.on = add_callback(this.on, f);
+    return this;
+};
+
+
+// error logging
+function log_jserror(errormsg, error, noconsole) {
+    if (!error && errormsg instanceof Error) {
+        error = errormsg;
+        errormsg = {"error": error.toString()};
+    } else if (typeof errormsg === "string")
+        errormsg = {"error": errormsg};
+    if (error && error.fileName && !errormsg.url)
+        errormsg.url = error.fileName;
+    if (error && error.lineNumber && !errormsg.lineno)
+        errormsg.lineno = error.lineNumber;
+    if (error && error.columnNumber && !errormsg.colno)
+        errormsg.colno = error.columnNumber;
+    if (error && error.stack)
+        errormsg.stack = error.stack;
+    jQuery.ajax({
+        url: hoturl("api", "fn=jserror"),
+        type: "POST", cache: false, data: errormsg
+    });
+    if (error && !noconsole && typeof console === "object" && console.error)
+        console.error(errormsg.error);
+}
+
+(function () {
+    var old_onerror = window.onerror, nerrors_logged = 0;
+    window.onerror = function (errormsg, url, lineno, colno, error) {
+        if (++nerrors_logged <= 10) {
+            var x = {"error": errormsg, "url": url, "lineno": lineno};
+            if (colno)
+                x.colno = colno;
+            log_jserror(x, error, true);
+        }
+        return old_onerror ? old_onerror.apply(this, arguments) : false;
+    };
+})();
+
+
+// geometry
+jQuery.fn.extend({
+    geometry: function (outer) {
+        var g, d;
+        if (this[0] == window)
+            g = {left: this.scrollLeft(), top: this.scrollTop()};
+        else if (this.length == 1 && this[0].getBoundingClientRect) {
+            g = jQuery.extend({}, this[0].getBoundingClientRect());
+            if ((d = window.pageXOffset))
+                g.left += d, g.right += d;
+            if ((d = window.pageYOffset))
+                g.top += d, g.bottom += d;
+            if (!("width" in g)) {
+                g.width = g.right - g.left;
+                g.height = g.bottom - g.top;
+            }
+            return g;
+        } else
+            g = this.offset();
+        if (g) {
+            g.width = outer ? this.outerWidth() : this.width();
+            g.height = outer ? this.outerHeight() : this.height();
+            g.right = g.left + g.width;
+            g.bottom = g.top + g.height;
+        }
+        return g;
+    },
+    scrollIntoView: function () {
+        var p = this.geometry(), w = jQuery(window).geometry();
+        if (p.top < w.top)
+            this[0].scrollIntoView();
+        else if (p.bottom > w.bottom)
+            this[0].scrollIntoView(false);
+        return this;
+    }
+});
+
+function geometry_translate(g, dx, dy) {
+    if (typeof dx === "object")
+        dy = dx.top, dx = dx.left;
+    g = jQuery.extend({}, g);
+    g.top += dy;
+    g.right += dx;
+    g.bottom += dy;
+    g.left += dx;
+    return g;
+}
+
+
+// text transformation
+window.escape_entities = (function () {
+    var re = /[&<>\"]/g, rep = {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"};
+    return function (s) {
+        if (s === null || typeof s === "number")
+            return s;
+        return s.replace(re, function (match) {
+            return rep[match];
+        });
+    };
+})();
+
+function text_to_html(text) {
+    var n = document.createElement("div");
+    n.appendChild(document.createTextNode(text));
+    return n.innerHTML;
+}
+
+function plural_noun(n, what) {
+    if (jQuery.isArray(n))
+        n = n.length;
+    if (n == 1)
+        return what;
+    if (what == "this")
+        return "these";
+    if (/^.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])$/.test(what)) {
+        if (what.substr(-1) == "y")
+            return what.substr(0, what.length - 1) + "ies";
+        else
+            return what + "es";
+    } else
+        return what + "s";
+}
+
+function plural(n, what) {
+    if (jQuery.isArray(n))
+        n = n.length;
+    return n + " " + plural_noun(n, what);
+}
+
+function ordinal(n) {
+    if (n >= 1 && n <= 3)
+        return n + ["st", "nd", "rd"][Math.floor(n - 1)];
+    else
+        return n + "th";
+}
+
+function commajoin(a, joinword) {
+    joinword = joinword || "and";
+    if (a.length == 0)
+        return "";
+    else if (a.length == 1)
+        return a[0];
+    else if (a.length == 2)
+        return a[0] + " " + joinword + " " + a[1];
+    else
+        return a.slice(0, a.length - 1).join(", ") + ", " + joinword + " " + a[a.length - 1];
+}
+
+function sprintf(fmt) {
+    var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
+        arg, argno, conv, pad, t = "";
+    for (wordno = 0, argno = 1; wordno != words.length; ++wordno) {
+        word = words[wordno];
+        if (word.charAt(0) != "%")
+            t += word;
+        else if (word.charAt(1) == "%")
+            t += "%";
+        else {
+            arg = arguments[argno];
+            ++argno;
+            conv = word.match(/^%(-?)(\d*|\*?)(?:|[.](\d*))(\w)/);
+            if (conv[2] == "*") {
+                conv[2] = arg.toString();
+                arg = arguments[argno];
+                ++argno;
+            }
+            if (conv[4] >= "e" && conv[4] <= "g" && conv[3] == null)
+                conv[3] = 6;
+            if (conv[4] == "g") {
+                arg = Number(arg).toPrecision(conv[3]).toString();
+                arg = arg.replace(/[.](\d*[1-9])?0+(|e.*)$/,
+                                  function (match, p1, p2) {
+                                      return (p1 == null ? "" : "." + p1) + p2;
+                                  });
+            } else if (conv[4] == "f")
+                arg = Number(arg).toFixed(conv[3]);
+            else if (conv[4] == "e")
+                arg = Number(arg).toExponential(conv[3]);
+            else if (conv[4] == "d")
+                arg = Math.floor(arg);
+            else if (conv[4] == "o")
+                arg = Math.floor(arg).toString(8);
+            else if (conv[4] == "x")
+                arg = Math.floor(arg).toString(16);
+            else if (conv[4] == "X")
+                arg = Math.floor(arg).toString(16).toUpperCase();
+            arg = arg.toString();
+            if (conv[2] !== "" && conv[2] !== "0") {
+                pad = conv[2].charAt(0) === "0" ? "0" : " ";
+                while (arg.length < parseInt(conv[2], 10))
+                    arg = conv[1] ? arg + pad : pad + arg;
+            }
+            t += arg;
+        }
+    }
+    return t;
+}
+
+window.strftime = (function () {
+    function pad(num, str, n) {
+        str += num.toString();
+        return str.length <= n ? str : str.substr(str.length - n);
+    }
+    var unparsers = {
+        a: function (d) { return (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getDay()]; },
+        A: function (d) { return (["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[d.getDay()]; },
+        d: function (d) { return pad(d.getDate(), "0", 2); },
+        e: function (d, alt) { return pad(d.getDate(), alt ? "" : " ", 2); },
+        u: function (d) { return d.getDay() || 7; },
+        w: function (d) { return d.getDay(); },
+        b: function (d) { return (["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])[d.getMonth()]; },
+        B: function (d) { return (["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])[d.getMonth()]; },
+        h: function (d) { return unparsers.b(d); },
+        m: function (d) { return pad(d.getMonth() + 1, "0", 2); },
+        y: function (d) { return d.getFullYear() % 100; },
+        Y: function (d) { return d.getFullYear(); },
+        H: function (d) { return pad(d.getHours(), "0", 2); },
+        k: function (d, alt) { return pad(d.getHours(), alt ? "" : " ", 2); },
+        I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
+        l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt ? "" : " ", 2); },
+        M: function (d) { return pad(d.getMinutes(), "0", 2); },
+        p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
+        P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
+        r: function (d, alt) {
+            if (alt && d.getSeconds())
+                return strftime("%#l:%M:%S%P", d);
+            else if (alt && d.getMinutes())
+                return strftime("%#l:%M%P", d);
+            else if (alt)
+                return strftime("%#l%P", d);
+            else
+                return strftime("%I:%M:%S %p", d);
+        },
+        R: function (d, alt) {
+            if (alt && d.getSeconds())
+                return strftime("%H:%M:%S", d);
+            else
+                return strftime("%H:%M", d);
+        },
+        S: function (d) { return pad(d.getSeconds(), "0", 2); },
+        T: function (d) { return strftime("%H:%M:%S", d); },
+        /* XXX z Z */
+        D: function (d) { return strftime("%m/%d/%y", d); },
+        F: function (d) { return strftime("%Y-%m-%d", d); },
+        s: function (d) { return Math.trunc(d.getTime() / 1000); },
+        n: function (d) { return "\n"; },
+        t: function (d) { return "\t"; },
+        "%": function (d) { return "%"; }
+    };
+    return function(fmt, d) {
+        var words = fmt.split(/(%#?\S)/), wordno, word, alt, f, t = "";
+        if (d == null)
+            d = new Date;
+        else if (typeof d == "number")
+            d = new Date(d * 1000);
+        for (wordno = 0; wordno != words.length; ++wordno) {
+            word = words[wordno];
+            alt = word.charAt(1) == "#";
+            if (word.charAt(0) == "%"
+                && (f = unparsers[word.charAt(1 + alt)]))
+                t += f(d, alt);
+            else
+                t += word;
+        }
+        return t;
+    };
+})();
+
+
+// events
+function event_stop(evt) {
+    if (evt.stopPropagation)
+        evt.stopPropagation();
+    else
+        evt.cancelBubble = true;
+}
+
+function event_prevent(evt) {
+    if (evt.preventDefault)
+        evt.preventDefault();
+    else
+        evt.returnValue = false;
+}
+
+var event_key = (function () {
+var key_map = {"Spacebar": " ", "Esc": "Escape"},
+    code_map = {
+        "9": "Tab", "13": "Enter", "16": "Shift", "17": "Control", "18": "Option",
+        "27": "Escape", "186": ":", "219": "[", "221": "]"
+    };
+return function (evt) {
+    if (evt.key != null)
+        return key_map[evt.key] || evt.key;
+    var code = evt.charCode || evt.keyCode;
+    if (code)
+        return code_map[code] || String.fromCharCode(code);
+    else
+        return "";
+};
+})();
+
+function event_modkey(evt) {
+    return (evt.shiftKey ? 1 : 0) + (evt.ctrlKey ? 2 : 0) + (evt.altKey ? 4 : 0) + (evt.metaKey ? 8 : 0);
+}
+event_modkey.SHIFT = 1;
+event_modkey.CTRL = 2;
+event_modkey.ALT = 4;
+event_modkey.META = 8;
+
+
+// localStorage
+var wstorage = function () { return false; };
+try {
+    if (window.localStorage && window.JSON)
+        wstorage = function (is_session, key, value) {
+            try {
+                var s = is_session ? window.sessionStorage : window.localStorage;
+                if (typeof key === "undefined")
+                    return !!s;
+                else if (typeof value === "undefined")
+                    return s.getItem(key);
+                else if (value === null)
+                    return s.removeItem(key);
+                else if (typeof value === "object")
+                    return s.setItem(key, JSON.stringify(value));
+                else
+                    return s.setItem(key, value);
+            } catch (err) {
+                return false;
+            }
+        };
+} catch (err) {
+}
+wstorage.json = function (is_session, key) {
+    var x = wstorage(is_session, key);
+    return x ? jQuery.parseJSON(x) : false;
+};
+
+
+// hoturl
 function hoturl_add(url, component) {
     return url + (url.indexOf("?") < 0 ? "?" : "&") + component;
 }
@@ -135,292 +541,459 @@ function hoturl_absolute_base() {
 }
 
 
-function log_jserror(errormsg, error, noconsole) {
-    if (!error && errormsg instanceof Error) {
-        error = errormsg;
-        errormsg = {"error": error.toString()};
-    } else if (typeof errormsg === "string")
-        errormsg = {"error": errormsg};
-    if (error && error.fileName && !errormsg.url)
-        errormsg.url = error.fileName;
-    if (error && error.lineNumber && !errormsg.lineno)
-        errormsg.lineno = error.lineNumber;
-    if (error && error.columnNumber && !errormsg.colno)
-        errormsg.colno = error.columnNumber;
-    if (error && error.stack)
-        errormsg.stack = error.stack;
-    jQuery.ajax({
-        url: hoturl("api", "fn=jserror"),
-        type: "POST", cache: false, data: errormsg
-    });
-    if (error && !noconsole && typeof console === "object" && console.error)
-        console.error(errormsg.error);
-}
+// rangeclick
+function rangeclick(evt, elt, kind) {
+    elt = elt || this;
+    var jelt = jQuery(elt), jform = jelt.closest("form"), kindsearch;
+    if ((kind = kind || jelt.attr("rangetype")))
+        kindsearch = "[rangetype~='" + kind + "']";
+    else
+        kindsearch = "[name='" + elt.name + "']";
+    var cbs = jform.find("input[type=checkbox]" + kindsearch);
 
-(function () {
-    var old_onerror = window.onerror, nerrors_logged = 0;
-    window.onerror = function (errormsg, url, lineno, colno, error) {
-        if (++nerrors_logged <= 10) {
-            var x = {"error": errormsg, "url": url, "lineno": lineno};
-            if (colno)
-                x.colno = colno;
-            log_jserror(x, error, true);
-        }
-        return old_onerror ? old_onerror.apply(this, arguments) : false;
-    };
-})();
-
-
-jQuery.fn.extend({
-    geometry: function (outer) {
-        var g, d;
-        if (this[0] == window)
-            g = {left: this.scrollLeft(), top: this.scrollTop()};
-        else if (this.length == 1 && this[0].getBoundingClientRect) {
-            g = jQuery.extend({}, this[0].getBoundingClientRect());
-            if ((d = window.pageXOffset))
-                g.left += d, g.right += d;
-            if ((d = window.pageYOffset))
-                g.top += d, g.bottom += d;
-            if (!("width" in g)) {
-                g.width = g.right - g.left;
-                g.height = g.bottom - g.top;
-            }
-            return g;
-        } else
-            g = this.offset();
-        if (g) {
-            g.width = outer ? this.outerWidth() : this.width();
-            g.height = outer ? this.outerHeight() : this.height();
-            g.right = g.left + g.width;
-            g.bottom = g.top + g.height;
-        }
-        return g;
-    },
-    scrollIntoView: function () {
-        var p = this.geometry(), w = jQuery(window).geometry();
-        if (p.top < w.top)
-            this[0].scrollIntoView();
-        else if (p.bottom > w.bottom)
-            this[0].scrollIntoView(false);
-        return this;
+    var lastelt = jform.data("rangeclick_last_" + kindsearch),
+        thispos, lastpos, i, j, x;
+    for (i = 0; i != cbs.length; ++i) {
+        if (cbs[i] == elt)
+            thispos = i;
+        if (cbs[i] == lastelt)
+            lastpos = i;
     }
-});
+    jform.data("rangeclick_last_" + kindsearch, elt);
 
-function geometry_translate(g, dx, dy) {
-    if (typeof dx === "object")
-        dy = dx.top, dx = dx.left;
-    g = jQuery.extend({}, g);
-    g.top += dy;
-    g.right += dx;
-    g.bottom += dy;
-    g.left += dx;
-    return g;
+    if (evt.shiftKey && lastelt) {
+        if (lastpos <= thispos) {
+            i = lastpos;
+            j = thispos - 1;
+        } else {
+            i = thispos + 1;
+            j = lastpos;
+        }
+        for (; i <= j; ++i)
+            cbs[i].checked = elt.checked;
+    }
+
+    return true;
 }
 
 
-function plural_noun(n, what) {
-    if (jQuery.isArray(n))
-        n = n.length;
-    if (n == 1)
-        return what;
-    if (what == "this")
-        return "these";
-    if (/^.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])$/.test(what)) {
-        if (what.substr(-1) == "y")
-            return what.substr(0, what.length - 1) + "ies";
+// bubbles and tooltips
+var make_bubble = (function () {
+var capdir = ["Top", "Right", "Bottom", "Left"],
+    lcdir = ["top", "right", "bottom", "left"],
+    dir_to_taildir = {
+        "0": 0, "1": 1, "2": 2, "3": 3,
+        "t": 0, "r": 1, "b": 2, "l": 3,
+        "n": 0, "e": 1, "s": 2, "w": 3
+    },
+    SPACE = 8;
+
+function cssbc(dir) {
+    return "border" + capdir[dir] + "Color";
+}
+
+function cssbw(dir) {
+    return "border" + capdir[dir] + "Width";
+}
+
+var roundpixel = Math.round;
+if (window.devicePixelRatio && window.devicePixelRatio > 1)
+    roundpixel = (function (dpr) {
+        return function (x) { return Math.round(x * dpr) / dpr; };
+    })(window.devicePixelRatio);
+
+function to_rgba(c) {
+    var m = c.match(/^rgb\((.*)\)$/);
+    return m ? "rgba(" + m[1] + ", 1)" : c;
+}
+
+function make_model(color) {
+    return $('<div style="display:none" class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo(document.body);
+}
+
+function calculate_sizes(color) {
+    var j = make_model(color), tail = j.children();
+    var sizes = [tail.width(), tail.height()];
+    j.remove();
+    return sizes;
+}
+
+function expand_near(epos, color) {
+    var dir, x, j = make_model(color);
+    epos = jQuery.extend({}, epos);
+    for (dir = 0; dir < 4; ++dir)
+        if ((x = j.css("margin" + capdir[dir])) && (x = parseFloat(x)))
+            epos[lcdir[dir]] += (dir == 0 || dir == 3 ? -x : x);
+    j.remove();
+    return epos;
+}
+
+return function (content, bubopt) {
+    if (!bubopt && content && typeof content === "object") {
+        bubopt = content;
+        content = bubopt.content;
+    } else if (!bubopt)
+        bubopt = {};
+    else if (typeof bubopt === "string")
+        bubopt = {color: bubopt};
+
+    var nearpos = null, dirspec = bubopt.dir || "r", dir = null,
+        color = bubopt.color ? " " + bubopt.color : "";
+
+    var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
+    document.body.appendChild(bubdiv);
+    if (bubopt["pointer-events"])
+        $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
+    var bubch = bubdiv.childNodes;
+    var sizes = null;
+    var divbw = null;
+
+    function change_tail_direction() {
+        var bw = [0, 0, 0, 0];
+        divbw = parseFloat($(bubdiv).css(cssbw(dir)));
+        divbw !== divbw && (divbw = 0); // eliminate NaN
+        bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
+        bw[dir^2] = sizes[1] + "px";
+        bubch[0].style.borderWidth = bw.join(" ");
+        bw[dir^1] = bw[dir^3] = Math.max(sizes[0] / 2 - 0.77*divbw, 0) + "px";
+        bw[dir^2] = Math.max(sizes[1] - 0.77*divbw, 0) + "px";
+        bubch[2].style.borderWidth = bw.join(" ");
+
+        var i, yc;
+        for (i = 1; i <= 3; ++i)
+            bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
+        bubch[0].style[lcdir[dir]] = (-sizes[1]) + "px";
+        bubch[2].style[lcdir[dir]] = (-sizes[1] + divbw) + "px";
+
+        for (i = 0; i < 3; i += 2)
+            bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
+            bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
+
+        yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
+            return (0.75 * p1 + 0.25) + ")";
+        });
+        bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
+        bubch[2].style[cssbc(dir^2)] = yc;
+    }
+
+    function constrain(za, z0, z1, bdim, noconstrain) {
+        var z = za - bdim / 2, size = sizes[0];
+        if (!noconstrain && z < z0 + SPACE)
+            z = Math.min(za - size, z0 + SPACE);
+        else if (!noconstrain && z + bdim > z1 - SPACE)
+            z = Math.max(za + size - bdim, z1 - SPACE - bdim);
+        return z;
+    }
+
+    function errlog(d, ya, y, wpos, bpos, err) {
+        var ex = [d, divbw, ya, y];
+        if (window.JSON)
+            ex.push(JSON.stringify({"n": nearpos, "w": wpos, "b": bpos}));
+        log_jserror({"error": ex.join(" ")}, err);
+    }
+
+    function make_bpos(wpos, ds) {
+        var bj = $(bubdiv);
+        bj.css("maxWidth", "");
+        var bpos = bj.geometry(true);
+        var lw = nearpos.left - wpos.left, rw = wpos.right - nearpos.right;
+        var xw = Math.max(ds === 1 ? 0 : lw, ds === 3 ? 0 : rw);
+        var wb = wpos.width;
+        if ((ds === "h" || ds === 1 || ds === 3) && xw > 100)
+            wb = Math.min(wb, xw);
+        if (wb < bpos.width - 3*SPACE) {
+            bj.css("maxWidth", wb - 3*SPACE);
+            bpos = bj.geometry(true);
+        }
+        return bpos;
+    }
+
+    function show() {
+        var noflip = /!/.test(dirspec), noconstrain = /\*/.test(dirspec),
+            ds = dirspec.replace(/[!*]/g, "");
+        if (dir_to_taildir[ds] != null)
+            ds = dir_to_taildir[ds];
+        if (!sizes)
+            sizes = calculate_sizes(color);
+
+        var wpos = $(window).geometry();
+        var bpos = make_bpos(wpos, ds);
+        var size = sizes[0];
+        var bw = bpos.width + size, bh = bpos.height + size;
+
+        if (ds === "a" || ds === "") {
+            if (bh > Math.max(nearpos.top - wpos.top, wpos.bottom - nearpos.bottom))
+                ds = "h";
+            else
+                ds = "v";
+        }
+        if ((ds === "v" || ds === 0 || ds === 2) && !noflip
+            && nearpos.bottom + bh > wpos.bottom - 3*SPACE
+            && nearpos.top - bh < wpos.top + 3*SPACE
+            && (nearpos.left - bw >= wpos.left + 3*SPACE
+                || nearpos.right + bw <= wpos.right - 3*SPACE))
+            ds = "h";
+        if ((ds === "v" && nearpos.bottom + bh > wpos.bottom - 3*SPACE
+             && nearpos.top - bh > wpos.top + 3*SPACE)
+            || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom)
+            || (ds === 2 && (noflip || nearpos.top - bh >= wpos.top + SPACE)))
+            ds = 2;
+        else if (ds === "v" || ds === 0 || ds === 2)
+            ds = 0;
+        else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
+                  && nearpos.right + bw < wpos.right - 3*SPACE)
+                 || (ds === 1 && !noflip && nearpos.left - bw < wpos.left)
+                 || (ds === 3 && (noflip || nearpos.right + bw <= wpos.right - SPACE)))
+            ds = 3;
         else
-            return what + "es";
-    } else
-        return what + "s";
-}
+            ds = 1;
 
-function plural(n, what) {
-    if (jQuery.isArray(n))
-        n = n.length;
-    return n + " " + plural_noun(n, what);
-}
+        if (ds !== dir) {
+            dir = ds;
+            change_tail_direction();
+        }
 
-function ordinal(n) {
-    if (n >= 1 && n <= 3)
-        return n + ["st", "nd", "rd"][Math.floor(n - 1)];
-    else
-        return n + "th";
-}
+        var x, y, xa, ya, d;
+        if (dir & 1) {
+            ya = (nearpos.top + nearpos.bottom) / 2;
+            y = constrain(ya, wpos.top, wpos.bottom, bpos.height, noconstrain);
+            d = roundpixel(ya - y - size / 2);
+            try {
+                bubch[0].style.top = d + "px";
+                bubch[2].style.top = (d + 0.77*divbw) + "px";
+            } catch (err) {
+                errlog(d, ya, y, wpos, bpos, err);
+            }
 
-function commajoin(a, joinword) {
-    joinword = joinword || "and";
-    if (a.length == 0)
-        return "";
-    else if (a.length == 1)
-        return a[0];
-    else if (a.length == 2)
-        return a[0] + " " + joinword + " " + a[1];
-    else
-        return a.slice(0, a.length - 1).join(", ") + ", " + joinword + " " + a[a.length - 1];
-}
+            if (dir == 1)
+                x = nearpos.left - bpos.width - sizes[1] - 1;
+            else
+                x = nearpos.right + sizes[1];
+        } else {
+            xa = (nearpos.left + nearpos.right) / 2;
+            x = constrain(xa, wpos.left, wpos.right, bpos.width, noconstrain);
+            d = roundpixel(xa - x - size / 2);
+            try {
+                bubch[0].style.left = d + "px";
+                bubch[2].style.left = (d + 0.77*divbw) + "px";
+            } catch (err) {
+                errlog(d, xa, x, wpos, bpos, err);
+            }
 
+            if (dir == 0)
+                y = nearpos.bottom + sizes[1];
+            else
+                y = nearpos.top - bpos.height - sizes[1] - 1;
+        }
 
-function event_stop(evt) {
-    if (evt.stopPropagation)
-        evt.stopPropagation();
-    else
-        evt.cancelBubble = true;
-}
+        bubdiv.style.left = roundpixel(x) + "px";
+        bubdiv.style.top = roundpixel(y) + "px";
+        bubdiv.style.visibility = "visible";
+    }
 
-function event_prevent(evt) {
-    if (evt.preventDefault)
-        evt.preventDefault();
-    else
-        evt.returnValue = false;
-}
+    function remove() {
+        bubdiv && bubdiv.parentElement.removeChild(bubdiv);
+        bubdiv = null;
+    }
 
-var event_key = (function () {
-var key_map = {"Spacebar": " ", "Esc": "Escape"},
-    code_map = {
-        "9": "Tab", "13": "Enter", "16": "Shift", "17": "Control", "18": "Option",
-        "27": "Escape", "186": ":", "219": "[", "221": "]"
+    var bubble = {
+        near: function (epos, reference) {
+            var i, off;
+            if (typeof epos === "string" || epos.tagName || epos.jquery)
+                epos = $(epos).geometry(true);
+            for (i = 0; i < 4; ++i)
+                if (!(lcdir[i] in epos) && (lcdir[i ^ 2] in epos))
+                    epos[lcdir[i]] = epos[lcdir[i ^ 2]];
+            if (reference && (reference = $(reference)) && reference.length
+                && reference[0] != window)
+                epos = geometry_translate(epos, reference.geometry());
+            if (!epos.exact)
+                epos = expand_near(epos, color);
+            nearpos = epos;
+            show();
+            return bubble;
+        },
+        at: function (x, y, reference) {
+            return bubble.near({top: y, left: x, exact: true}, reference);
+        },
+        dir: function (dir) {
+            dirspec = dir;
+            return bubble;
+        },
+        remove: remove,
+        color: function (newcolor) {
+            newcolor = newcolor ? " " + newcolor : "";
+            if (color !== newcolor) {
+                color = newcolor;
+                bubdiv.className = "bubble" + color;
+                bubch[0].className = "bubtail bubtail0" + color;
+                bubch[2].className = "bubtail bubtail1" + color;
+                dir = sizes = null;
+                nearpos && show();
+            }
+            return bubble;
+        },
+        html: function (content) {
+            var n = bubch[1];
+            if (content === undefined)
+                return n.innerHTML;
+            nearpos && $(bubdiv).css({maxWidth: "", left: "", top: ""});
+            if (typeof content == "string")
+                n.innerHTML = content;
+            else {
+                while (n.childNodes.length)
+                    n.removeChild(n.childNodes[0]);
+                if (content)
+                    n.appendChild(content);
+            }
+            nearpos && show();
+            return bubble;
+        },
+        text: function (text) {
+            if (text === undefined)
+                return $(bubch[1]).text();
+            else
+                return bubble.html(text ? text_to_html(text) : text);
+        },
+        hover: function (enter, leave) {
+            jQuery(bubdiv).hover(enter, leave);
+            return bubble;
+        },
+        removeOn: function (jq, event) {
+            jQuery(jq).on(event, remove);
+            return bubble;
+        },
+        self: function () {
+            return bubdiv ? jQuery(bubdiv) : null;
+        }
     };
-return function (evt) {
-    if (evt.key != null)
-        return key_map[evt.key] || evt.key;
-    var code = evt.charCode || evt.keyCode;
-    if (code)
-        return code_map[code] || String.fromCharCode(code);
-    else
-        return "";
+
+    content && bubble.html(content);
+    return bubble;
 };
 })();
 
-function event_modkey(evt) {
-    return (evt.shiftKey ? 1 : 0) + (evt.ctrlKey ? 2 : 0) + (evt.altKey ? 4 : 0) + (evt.metaKey ? 8 : 0);
-}
-event_modkey.SHIFT = 1;
-event_modkey.CTRL = 2;
-event_modkey.ALT = 4;
-event_modkey.META = 8;
 
+function tooltip(elt) {
+    var j = $(elt), near, tt;
 
-function sprintf(fmt) {
-    var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
-        arg, argno, conv, pad, t = "";
-    for (wordno = 0, argno = 1; wordno != words.length; ++wordno) {
-        word = words[wordno];
-        if (word.charAt(0) != "%")
-            t += word;
-        else if (word.charAt(1) == "%")
-            t += "%";
-        else {
-            arg = arguments[argno];
-            ++argno;
-            conv = word.match(/^%(-?)(\d*|\*?)(?:|[.](\d*))(\w)/);
-            if (conv[2] == "*") {
-                conv[2] = arg.toString();
-                arg = arguments[argno];
-                ++argno;
-            }
-            if (conv[4] >= "e" && conv[4] <= "g" && conv[3] == null)
-                conv[3] = 6;
-            if (conv[4] == "g") {
-                arg = Number(arg).toPrecision(conv[3]).toString();
-                arg = arg.replace(/[.](\d*[1-9])?0+(|e.*)$/,
-                                  function (match, p1, p2) {
-                                      return (p1 == null ? "" : "." + p1) + p2;
-                                  });
-            } else if (conv[4] == "f")
-                arg = Number(arg).toFixed(conv[3]);
-            else if (conv[4] == "e")
-                arg = Number(arg).toExponential(conv[3]);
-            else if (conv[4] == "d")
-                arg = Math.floor(arg);
-            else if (conv[4] == "o")
-                arg = Math.floor(arg).toString(8);
-            else if (conv[4] == "x")
-                arg = Math.floor(arg).toString(16);
-            else if (conv[4] == "X")
-                arg = Math.floor(arg).toString(16).toUpperCase();
-            arg = arg.toString();
-            if (conv[2] !== "" && conv[2] !== "0") {
-                pad = conv[2].charAt(0) === "0" ? "0" : " ";
-                while (arg.length < parseInt(conv[2], 10))
-                    arg = conv[1] ? arg + pad : pad + arg;
-            }
-            t += arg;
-        }
+    function jqnear(attr) {
+        var x = j.attr(attr);
+        if (x && x.charAt(0) == ">")
+            return j.find(x.substr(1));
+        else if (x)
+            return $(x);
+        else
+            return $();
     }
-    return t;
+
+    var content = j.attr("hottooltip") || jqnear("hottooltipcontent").html();
+    if (!content)
+        return null;
+
+    if ((tt = window.global_tooltip)) {
+        if (tt.elt !== elt || tt.content !== content)
+            tt.erase();
+        else
+            return tt;
+    }
+
+    var dir = j.attr("hottooltipdir") || "v",
+        bub = make_bubble(content, {color: "tooltip", dir: dir}),
+        to = null, refcount = 0;
+    function erase() {
+        to = clearTimeout(to);
+        bub.remove();
+        j.removeData("hotcrp_tooltip");
+        if (window.global_tooltip === tt)
+            window.global_tooltip = null;
+    }
+    tt = {
+        enter: function () {
+            to = clearTimeout(to);
+            ++refcount;
+        },
+        exit: function () {
+            var delay = j.attr("hottooltiptype") == "focus" ? 0 : 200;
+            to = clearTimeout(to);
+            if (--refcount == 0)
+                to = setTimeout(erase, delay);
+        },
+        erase: erase, elt: elt, content: content
+    };
+    j.data("hotcrp_tooltip", tt);
+    near = jqnear("hottooltipnear")[0] || elt;
+    bub.near(near).hover(tt.enter, tt.exit);
+    return window.global_tooltip = tt;
 }
 
-var strftime = (function () {
-    function pad(num, str, n) {
-        str += num.toString();
-        return str.length <= n ? str : str.substr(str.length - n);
-    }
-    var unparsers = {
-        a: function (d) { return (["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getDay()]; },
-        A: function (d) { return (["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])[d.getDay()]; },
-        d: function (d) { return pad(d.getDate(), "0", 2); },
-        e: function (d, alt) { return pad(d.getDate(), alt ? "" : " ", 2); },
-        u: function (d) { return d.getDay() || 7; },
-        w: function (d) { return d.getDay(); },
-        b: function (d) { return (["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])[d.getMonth()]; },
-        B: function (d) { return (["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])[d.getMonth()]; },
-        h: function (d) { return unparsers.b(d); },
-        m: function (d) { return pad(d.getMonth() + 1, "0", 2); },
-        y: function (d) { return d.getFullYear() % 100; },
-        Y: function (d) { return d.getFullYear(); },
-        H: function (d) { return pad(d.getHours(), "0", 2); },
-        k: function (d, alt) { return pad(d.getHours(), alt ? "" : " ", 2); },
-        I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
-        l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt ? "" : " ", 2); },
-        M: function (d) { return pad(d.getMinutes(), "0", 2); },
-        p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
-        P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
-        r: function (d, alt) {
-            if (alt && d.getSeconds())
-                return strftime("%#l:%M:%S%P", d);
-            else if (alt && d.getMinutes())
-                return strftime("%#l:%M%P", d);
-            else if (alt)
-                return strftime("%#l%P", d);
-            else
-                return strftime("%I:%M:%S %p", d);
-        },
-        R: function (d, alt) {
-            if (alt && d.getSeconds())
-                return strftime("%H:%M:%S", d);
-            else
-                return strftime("%H:%M", d);
-        },
-        S: function (d) { return pad(d.getSeconds(), "0", 2); },
-        T: function (d) { return strftime("%H:%M:%S", d); },
-        /* XXX z Z */
-        D: function (d) { return strftime("%m/%d/%y", d); },
-        F: function (d) { return strftime("%Y-%m-%d", d); },
-        s: function (d) { return Math.trunc(d.getTime() / 1000); },
-        n: function (d) { return "\n"; },
-        t: function (d) { return "\t"; },
-        "%": function (d) { return "%"; }
-    };
-    return function(fmt, d) {
-        var words = fmt.split(/(%#?\S)/), wordno, word, alt, f, t = "";
-        if (d == null)
-            d = new Date;
-        else if (typeof d == "number")
-            d = new Date(d * 1000);
-        for (wordno = 0; wordno != words.length; ++wordno) {
-            word = words[wordno];
-            alt = word.charAt(1) == "#";
-            if (word.charAt(0) == "%"
-                && (f = unparsers[word.charAt(1 + alt)]))
-                t += f(d, alt);
-            else
-                t += word;
+function tooltip_enter(evt) {
+    var j = $(this), x, text;
+    var tt = j.data("hotcrp_tooltip");
+    if (!tt && !window.disable_tooltip)
+        tt = tooltip(this);
+    if (tt)
+        tt.enter();
+}
+
+function tooltip_leave(evt) {
+    var j = $(this), tt;
+    if ((tt = j.data("hotcrp_tooltip")))
+        tt.exit();
+}
+
+function add_tooltip() {
+    var j = jQuery(this);
+    if (j.attr("hottooltiptype") == "focus")
+        j.on("focus", tooltip_enter).on("blur", tooltip_leave);
+    else
+        j.hover(tooltip_enter, tooltip_leave);
+}
+
+jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });
+
+
+// temporary text
+window.mktemptext = (function () {
+function setclass(e, on) {
+    jQuery(e).toggleClass("temptext", on);
+}
+function blank() {
+}
+
+return function (e, text) {
+    if (typeof this === "object" && typeof this.tagName === "string"
+        && this.tagName.toUpperCase() == "INPUT") {
+        text = typeof e === "number" ? this.getAttribute("hottemptext") : e;
+        e = this;
+    } else if (typeof e === "string")
+        e = $$(e);
+    var onfocus = e.onfocus || blank, onblur = e.onblur || blank;
+    e.onfocus = function (evt) {
+        if (this.value == text) {
+            this.value = "";
+            setclass(this, false);
         }
-        return t;
+        onfocus.call(this, evt);
     };
+    e.onblur = function (evt) {
+        if (this.value == "" || this.value == text) {
+            this.value = text;
+            setclass(this, true);
+        }
+        onblur.call(this, evt);
+    };
+    jQuery(e).on("change", function () {
+        setclass(this, this.value == "" || this.value == text);
+    });
+    if (e.value == "")
+        e.value = text;
+    setclass(e, e.value == text);
+};
 })();
 
+
+// initialization
 window.setLocalTime = (function () {
 var servhr24, showdifference = false;
 function setLocalTime(elt, servtime) {
@@ -449,42 +1022,6 @@ setLocalTime.initialize = function (servzone, hr24) {
 };
 return setLocalTime;
 })();
-
-
-
-function text_to_html(text) {
-    var n = document.createElement("div");
-    n.appendChild(document.createTextNode(text));
-    return n.innerHTML;
-}
-
-
-var wstorage = function () { return false; };
-try {
-    if (window.localStorage && window.JSON)
-        wstorage = function (is_session, key, value) {
-            try {
-                var s = is_session ? window.sessionStorage : window.localStorage;
-                if (typeof key === "undefined")
-                    return !!s;
-                else if (typeof value === "undefined")
-                    return s.getItem(key);
-                else if (value === null)
-                    return s.removeItem(key);
-                else if (typeof value === "object")
-                    return s.setItem(key, JSON.stringify(value));
-                else
-                    return s.setItem(key, value);
-            } catch (err) {
-                return false;
-            }
-        };
-} catch (err) {
-}
-wstorage.json = function (is_session, key) {
-    var x = wstorage(is_session, key);
-    return x ? jQuery.parseJSON(x) : false;
-};
 
 
 window.hotcrp_deadlines = (function ($) {
@@ -1182,40 +1719,6 @@ function paperselCheck() {
     return false;
 }
 
-function rangeclick(evt, elt, kind) {
-    elt = elt || this;
-    var jelt = jQuery(elt), jform = jelt.closest("form"), kindsearch;
-    if ((kind = kind || jelt.attr("rangetype")))
-        kindsearch = "[rangetype~='" + kind + "']";
-    else
-        kindsearch = "[name='" + elt.name + "']";
-    var cbs = jform.find("input[type=checkbox]" + kindsearch);
-
-    var lastelt = jform.data("rangeclick_last_" + kindsearch),
-        thispos, lastpos, i, j, x;
-    for (i = 0; i != cbs.length; ++i) {
-        if (cbs[i] == elt)
-            thispos = i;
-        if (cbs[i] == lastelt)
-            lastpos = i;
-    }
-    jform.data("rangeclick_last_" + kindsearch, elt);
-
-    if (evt.shiftKey && lastelt) {
-        if (lastpos <= thispos) {
-            i = lastpos;
-            j = thispos - 1;
-        } else {
-            i = thispos + 1;
-            j = lastpos;
-        }
-        for (; i <= j; ++i)
-            cbs[i].checked = elt.checked;
-    }
-
-    return true;
-}
-
 function pc_tags_members(tag) {
     var pc_tags = pc_tags_json, answer = [], pc, tags;
     tag = " " + tag + " ";
@@ -1432,59 +1935,6 @@ author_change.delta = function (e, delta) {
     }
     return false;
 };
-
-
-function staged_foreach(a, f, backwards) {
-    var i = (backwards ? a.length - 1 : 0);
-    var step = (backwards ? -1 : 1);
-    var stagef = function () {
-        var x;
-        for (x = 0; i >= 0 && i < a.length && x < 100; i += step, ++x)
-            f(a[i]);
-        if (i < a.length)
-            setTimeout(stagef, 0);
-    };
-    stagef();
-}
-
-// temporary text
-window.mktemptext = (function () {
-function setclass(e, on) {
-    jQuery(e).toggleClass("temptext", on);
-}
-function blank() {
-}
-
-return function (e, text) {
-    if (typeof this === "object" && typeof this.tagName === "string"
-        && this.tagName.toUpperCase() == "INPUT") {
-        text = typeof e === "number" ? this.getAttribute("hottemptext") : e;
-        e = this;
-    } else if (typeof e === "string")
-        e = $$(e);
-    var onfocus = e.onfocus || blank, onblur = e.onblur || blank;
-    e.onfocus = function (evt) {
-        if (this.value == text) {
-            this.value = "";
-            setclass(this, false);
-        }
-        onfocus.call(this, evt);
-    };
-    e.onblur = function (evt) {
-        if (this.value == "" || this.value == text) {
-            this.value = text;
-            setclass(this, true);
-        }
-        onblur.call(this, evt);
-    };
-    jQuery(e).on("change", function () {
-        setclass(this, this.value == "" || this.value == text);
-    });
-    if (e.value == "")
-        e.value = text;
-    setclass(e, e.value == text);
-};
-})();
 
 
 // check marks for ajax saves
@@ -2230,72 +2680,6 @@ function shortcut(top_elt) {
 }
 
 
-// callback combination
-function add_callback(cb1, cb2) {
-    if (cb1 && cb2)
-        return function () {
-            cb1.apply(this, arguments);
-            cb2.apply(this, arguments);
-        };
-    else
-        return cb1 || cb2;
-}
-
-
-// promises
-function Promise(value) {
-    this.value = value;
-    this.state = value === undefined ? false : 1;
-    this.c = [];
-}
-Promise.prototype.then = function (yes, no) {
-    var next = new Promise;
-    this.c.push([no, yes, next]);
-    if (this.state !== false)
-        this._resolve();
-    else if (this.on) {
-        this.on(this);
-        this.on = null;
-    }
-    return next;
-};
-Promise.prototype._resolve = function () {
-    var i, x, f, v;
-    for (i in this.c) {
-        x = this.c[i];
-        f = x[this.state];
-        if ($.isFunction(f)) {
-            try {
-                v = f(this.value);
-                x[2].fulfill(v);
-            } catch (e) {
-                x[2].reject(e);
-            }
-        } else
-            x[2][this.state ? "fulfill" : "reject"](this.value);
-    }
-    this.c = [];
-};
-Promise.prototype.fulfill = function (value) {
-    if (this.state === false) {
-        this.value = value;
-        this.state = 1;
-        this._resolve();
-    }
-};
-Promise.prototype.reject = function (reason) {
-    if (this.state === false) {
-        this.value = reason;
-        this.state = 0;
-        this._resolve();
-    }
-};
-Promise.prototype.onThen = function (f) {
-    this.on = add_callback(this.on, f);
-    return this;
-};
-
-
 // tags
 function strnatcmp(a, b) {
     var cmp = a.toLowerCase().replace(/"/g, "")
@@ -2623,381 +3007,6 @@ return function () {
 };
 
 })();
-
-
-var make_bubble = (function () {
-var capdir = ["Top", "Right", "Bottom", "Left"],
-    lcdir = ["top", "right", "bottom", "left"],
-    dir_to_taildir = {
-        "0": 0, "1": 1, "2": 2, "3": 3,
-        "t": 0, "r": 1, "b": 2, "l": 3,
-        "n": 0, "e": 1, "s": 2, "w": 3
-    },
-    SPACE = 8;
-
-function cssbc(dir) {
-    return "border" + capdir[dir] + "Color";
-}
-
-function cssbw(dir) {
-    return "border" + capdir[dir] + "Width";
-}
-
-var roundpixel = Math.round;
-if (window.devicePixelRatio && window.devicePixelRatio > 1)
-    roundpixel = (function (dpr) {
-        return function (x) { return Math.round(x * dpr) / dpr; };
-    })(window.devicePixelRatio);
-
-function to_rgba(c) {
-    var m = c.match(/^rgb\((.*)\)$/);
-    return m ? "rgba(" + m[1] + ", 1)" : c;
-}
-
-function make_model(color) {
-    return $('<div style="display:none" class="bubble' + color + '"><div class="bubtail bubtail0' + color + '"></div></div>').appendTo(document.body);
-}
-
-function calculate_sizes(color) {
-    var j = make_model(color), tail = j.children();
-    var sizes = [tail.width(), tail.height()];
-    j.remove();
-    return sizes;
-}
-
-function expand_near(epos, color) {
-    var dir, x, j = make_model(color);
-    epos = jQuery.extend({}, epos);
-    for (dir = 0; dir < 4; ++dir)
-        if ((x = j.css("margin" + capdir[dir])) && (x = parseFloat(x)))
-            epos[lcdir[dir]] += (dir == 0 || dir == 3 ? -x : x);
-    j.remove();
-    return epos;
-}
-
-return function (content, bubopt) {
-    if (!bubopt && content && typeof content === "object") {
-        bubopt = content;
-        content = bubopt.content;
-    } else if (!bubopt)
-        bubopt = {};
-    else if (typeof bubopt === "string")
-        bubopt = {color: bubopt};
-
-    var nearpos = null, dirspec = bubopt.dir || "r", dir = null,
-        color = bubopt.color ? " " + bubopt.color : "";
-
-    var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
-    document.body.appendChild(bubdiv);
-    if (bubopt["pointer-events"])
-        $(bubdiv).css({"pointer-events": bubopt["pointer-events"]});
-    var bubch = bubdiv.childNodes;
-    var sizes = null;
-    var divbw = null;
-
-    function change_tail_direction() {
-        var bw = [0, 0, 0, 0];
-        divbw = parseFloat($(bubdiv).css(cssbw(dir)));
-        divbw !== divbw && (divbw = 0); // eliminate NaN
-        bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
-        bw[dir^2] = sizes[1] + "px";
-        bubch[0].style.borderWidth = bw.join(" ");
-        bw[dir^1] = bw[dir^3] = Math.max(sizes[0] / 2 - 0.77*divbw, 0) + "px";
-        bw[dir^2] = Math.max(sizes[1] - 0.77*divbw, 0) + "px";
-        bubch[2].style.borderWidth = bw.join(" ");
-
-        var i, yc;
-        for (i = 1; i <= 3; ++i)
-            bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
-        bubch[0].style[lcdir[dir]] = (-sizes[1]) + "px";
-        bubch[2].style[lcdir[dir]] = (-sizes[1] + divbw) + "px";
-
-        for (i = 0; i < 3; i += 2)
-            bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
-            bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
-
-        yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
-            return (0.75 * p1 + 0.25) + ")";
-        });
-        bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
-        bubch[2].style[cssbc(dir^2)] = yc;
-    }
-
-    function constrain(za, z0, z1, bdim, noconstrain) {
-        var z = za - bdim / 2, size = sizes[0];
-        if (!noconstrain && z < z0 + SPACE)
-            z = Math.min(za - size, z0 + SPACE);
-        else if (!noconstrain && z + bdim > z1 - SPACE)
-            z = Math.max(za + size - bdim, z1 - SPACE - bdim);
-        return z;
-    }
-
-    function errlog(d, ya, y, wpos, bpos, err) {
-        var ex = [d, divbw, ya, y];
-        if (window.JSON)
-            ex.push(JSON.stringify({"n": nearpos, "w": wpos, "b": bpos}));
-        log_jserror({"error": ex.join(" ")}, err);
-    }
-
-    function make_bpos(wpos, ds) {
-        var bj = $(bubdiv);
-        bj.css("maxWidth", "");
-        var bpos = bj.geometry(true);
-        var lw = nearpos.left - wpos.left, rw = wpos.right - nearpos.right;
-        var xw = Math.max(ds === 1 ? 0 : lw, ds === 3 ? 0 : rw);
-        var wb = wpos.width;
-        if ((ds === "h" || ds === 1 || ds === 3) && xw > 100)
-            wb = Math.min(wb, xw);
-        if (wb < bpos.width - 3*SPACE) {
-            bj.css("maxWidth", wb - 3*SPACE);
-            bpos = bj.geometry(true);
-        }
-        return bpos;
-    }
-
-    function show() {
-        var noflip = /!/.test(dirspec), noconstrain = /\*/.test(dirspec),
-            ds = dirspec.replace(/[!*]/g, "");
-        if (dir_to_taildir[ds] != null)
-            ds = dir_to_taildir[ds];
-        if (!sizes)
-            sizes = calculate_sizes(color);
-
-        var wpos = $(window).geometry();
-        var bpos = make_bpos(wpos, ds);
-        var size = sizes[0];
-        var bw = bpos.width + size, bh = bpos.height + size;
-
-        if (ds === "a" || ds === "") {
-            if (bh > Math.max(nearpos.top - wpos.top, wpos.bottom - nearpos.bottom))
-                ds = "h";
-            else
-                ds = "v";
-        }
-        if ((ds === "v" || ds === 0 || ds === 2) && !noflip
-            && nearpos.bottom + bh > wpos.bottom - 3*SPACE
-            && nearpos.top - bh < wpos.top + 3*SPACE
-            && (nearpos.left - bw >= wpos.left + 3*SPACE
-                || nearpos.right + bw <= wpos.right - 3*SPACE))
-            ds = "h";
-        if ((ds === "v" && nearpos.bottom + bh > wpos.bottom - 3*SPACE
-             && nearpos.top - bh > wpos.top + 3*SPACE)
-            || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom)
-            || (ds === 2 && (noflip || nearpos.top - bh >= wpos.top + SPACE)))
-            ds = 2;
-        else if (ds === "v" || ds === 0 || ds === 2)
-            ds = 0;
-        else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
-                  && nearpos.right + bw < wpos.right - 3*SPACE)
-                 || (ds === 1 && !noflip && nearpos.left - bw < wpos.left)
-                 || (ds === 3 && (noflip || nearpos.right + bw <= wpos.right - SPACE)))
-            ds = 3;
-        else
-            ds = 1;
-
-        if (ds !== dir) {
-            dir = ds;
-            change_tail_direction();
-        }
-
-        var x, y, xa, ya, d;
-        if (dir & 1) {
-            ya = (nearpos.top + nearpos.bottom) / 2;
-            y = constrain(ya, wpos.top, wpos.bottom, bpos.height, noconstrain);
-            d = roundpixel(ya - y - size / 2);
-            try {
-                bubch[0].style.top = d + "px";
-                bubch[2].style.top = (d + 0.77*divbw) + "px";
-            } catch (err) {
-                errlog(d, ya, y, wpos, bpos, err);
-            }
-
-            if (dir == 1)
-                x = nearpos.left - bpos.width - sizes[1] - 1;
-            else
-                x = nearpos.right + sizes[1];
-        } else {
-            xa = (nearpos.left + nearpos.right) / 2;
-            x = constrain(xa, wpos.left, wpos.right, bpos.width, noconstrain);
-            d = roundpixel(xa - x - size / 2);
-            try {
-                bubch[0].style.left = d + "px";
-                bubch[2].style.left = (d + 0.77*divbw) + "px";
-            } catch (err) {
-                errlog(d, xa, x, wpos, bpos, err);
-            }
-
-            if (dir == 0)
-                y = nearpos.bottom + sizes[1];
-            else
-                y = nearpos.top - bpos.height - sizes[1] - 1;
-        }
-
-        bubdiv.style.left = roundpixel(x) + "px";
-        bubdiv.style.top = roundpixel(y) + "px";
-        bubdiv.style.visibility = "visible";
-    }
-
-    function remove() {
-        bubdiv && bubdiv.parentElement.removeChild(bubdiv);
-        bubdiv = null;
-    }
-
-    var bubble = {
-        near: function (epos, reference) {
-            var i, off;
-            if (typeof epos === "string" || epos.tagName || epos.jquery)
-                epos = $(epos).geometry(true);
-            for (i = 0; i < 4; ++i)
-                if (!(lcdir[i] in epos) && (lcdir[i ^ 2] in epos))
-                    epos[lcdir[i]] = epos[lcdir[i ^ 2]];
-            if (reference && (reference = $(reference)) && reference.length
-                && reference[0] != window)
-                epos = geometry_translate(epos, reference.geometry());
-            if (!epos.exact)
-                epos = expand_near(epos, color);
-            nearpos = epos;
-            show();
-            return bubble;
-        },
-        at: function (x, y, reference) {
-            return bubble.near({top: y, left: x, exact: true}, reference);
-        },
-        dir: function (dir) {
-            dirspec = dir;
-            return bubble;
-        },
-        remove: remove,
-        color: function (newcolor) {
-            newcolor = newcolor ? " " + newcolor : "";
-            if (color !== newcolor) {
-                color = newcolor;
-                bubdiv.className = "bubble" + color;
-                bubch[0].className = "bubtail bubtail0" + color;
-                bubch[2].className = "bubtail bubtail1" + color;
-                dir = sizes = null;
-                nearpos && show();
-            }
-            return bubble;
-        },
-        html: function (content) {
-            var n = bubch[1];
-            if (content === undefined)
-                return n.innerHTML;
-            nearpos && $(bubdiv).css({maxWidth: "", left: "", top: ""});
-            if (typeof content == "string")
-                n.innerHTML = content;
-            else {
-                while (n.childNodes.length)
-                    n.removeChild(n.childNodes[0]);
-                if (content)
-                    n.appendChild(content);
-            }
-            nearpos && show();
-            return bubble;
-        },
-        text: function (text) {
-            if (text === undefined)
-                return $(bubch[1]).text();
-            else
-                return bubble.html(text ? text_to_html(text) : text);
-        },
-        hover: function (enter, leave) {
-            jQuery(bubdiv).hover(enter, leave);
-            return bubble;
-        },
-        removeOn: function (jq, event) {
-            jQuery(jq).on(event, remove);
-            return bubble;
-        },
-        self: function () {
-            return bubdiv ? jQuery(bubdiv) : null;
-        }
-    };
-
-    content && bubble.html(content);
-    return bubble;
-};
-})();
-
-
-function tooltip(elt) {
-    var j = $(elt), near, tt;
-
-    function jqnear(attr) {
-        var x = j.attr(attr);
-        if (x && x.charAt(0) == ">")
-            return j.find(x.substr(1));
-        else if (x)
-            return $(x);
-        else
-            return $();
-    }
-
-    var content = j.attr("hottooltip") || jqnear("hottooltipcontent").html();
-    if (!content)
-        return null;
-
-    if ((tt = window.global_tooltip)) {
-        if (tt.elt !== elt || tt.content !== content)
-            tt.erase();
-        else
-            return tt;
-    }
-
-    var dir = j.attr("hottooltipdir") || "v",
-        bub = make_bubble(content, {color: "tooltip", dir: dir}),
-        to = null, refcount = 0;
-    function erase() {
-        to = clearTimeout(to);
-        bub.remove();
-        j.removeData("hotcrp_tooltip");
-        if (window.global_tooltip === tt)
-            window.global_tooltip = null;
-    }
-    tt = {
-        enter: function () {
-            to = clearTimeout(to);
-            ++refcount;
-        },
-        exit: function () {
-            var delay = j.attr("hottooltiptype") == "focus" ? 0 : 200;
-            to = clearTimeout(to);
-            if (--refcount == 0)
-                to = setTimeout(erase, delay);
-        },
-        erase: erase, elt: elt, content: content
-    };
-    j.data("hotcrp_tooltip", tt);
-    near = jqnear("hottooltipnear")[0] || elt;
-    bub.near(near).hover(tt.enter, tt.exit);
-    return window.global_tooltip = tt;
-}
-
-function tooltip_enter(evt) {
-    var j = $(this), x, text;
-    var tt = j.data("hotcrp_tooltip");
-    if (!tt && !window.disable_tooltip)
-        tt = tooltip(this);
-    if (tt)
-        tt.enter();
-}
-
-function tooltip_leave(evt) {
-    var j = $(this), tt;
-    if ((tt = j.data("hotcrp_tooltip")))
-        tt.exit();
-}
-
-function add_tooltip() {
-    var j = jQuery(this);
-    if (j.attr("hottooltiptype") == "focus")
-        j.on("focus", tooltip_enter).on("blur", tooltip_leave);
-    else
-        j.hover(tooltip_enter, tooltip_leave);
-}
-
-jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });
 
 
 window.add_edittag_ajax = (function () {
