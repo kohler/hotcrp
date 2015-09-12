@@ -103,7 +103,7 @@ class ContactList {
             $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
             $revViewScore = $this->contact->aggregated_view_score_bound();
             $f = ReviewForm::field($score);
-            if ($f->view_score <= $revViewScore
+            if (!$f || $f->view_score <= $revViewScore
                 || !$f->has_options
                 || !$this->contact->can_view_aggregated_review_identity())
                 return false;
