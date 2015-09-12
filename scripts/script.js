@@ -26,15 +26,11 @@ function serialize_object(x) {
     if (typeof x === "string")
         return x;
     else if (x) {
-        var k, v, a = [], anchor = "";
+        var k, v, a = [];
         for (k in x)
-            if ((v = x[k]) != null) {
-                if (k === "anchor")
-                    anchor = "#" + encodeURIComponent(v);
-                else
-                    a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
-            }
-        return a.join("&") + anchor;
+            if ((v = x[k]) != null)
+                a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+        return a.join("&");
     } else
         return "";
 }
@@ -53,7 +49,8 @@ function hoturl_add(url, component) {
 
 function hoturl_clean(x, page_component) {
     var m;
-    if (x.o && x.last !== false && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
+    if (x.o && x.last !== false
+        && (m = x.o.match(new RegExp("^(.*)(?:^|&)" + page_component + "(?:&|$)(.*)$")))) {
         x.t += "/" + m[2];
         x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
         x.last = m[2];
@@ -68,9 +65,10 @@ function hoturl(page, options) {
         log_jserror("missing siteurl");
     }
     x = {t: siteurl + page + siteurl_suffix, o: serialize_object(options)};
-    if ((m = x.o.match(/^(.*?)(#.*)$/))) {
-        x.o = m[1];
-        anchor = m[2];
+    if ((m = x.o.match(/^(.*?)#(.*)()$/))
+        || (m = x.o.match(/^(.*?)(?:^|&)anchor=(.*?)(?:&|$)(.*)$/))) {
+        x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
+        anchor = "#" + m[2];
     }
     if (page === "paper") {
         hoturl_clean(x, "p=(\\d+)");
