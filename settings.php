@@ -2164,12 +2164,23 @@ function doTagsGroup() {
         "<div class=\"smg\"></div>\n";
     do_track("", 0);
     $tracknum = 2;
-    if (($trackj = $Conf->setting_json("tracks")))
-        foreach ($trackj as $trackname => $x)
-            if ($trackname !== "_") {
+    $trackj = $Conf->setting_json("tracks") ? : (object) array();
+    // existing tracks
+    foreach ($trackj as $trackname => $x)
+        if ($trackname !== "_") {
+            do_track($trackname, $tracknum);
+            ++$tracknum;
+        }
+    // new tracks (if error prevented saving)
+    if (count($Error) > 0)
+        for ($i = 1; isset($_POST["name_track$i"]); ++$i) {
+            $trackname = trim($_POST["name_track$i"]);
+            if (!isset($trackj->$trackname)) {
                 do_track($trackname, $tracknum);
                 ++$tracknum;
             }
+        }
+    // catchall track
     do_track("_", 1);
     echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
 }
