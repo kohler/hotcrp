@@ -835,6 +835,11 @@ class Conference {
             if ($any)
                 trigger_error($Opt["dbName"] . " invariant error: text option with empty text");
         }
+
+        // no funky PaperConflict entries
+        $any = $this->invariantq("select paperId from PaperConflict where conflictType<=0 limit 1");
+        if ($any)
+            trigger_error($Opt["dbName"] . " invariant error: PaperConflict with zero conflictType");
     }
 
 
