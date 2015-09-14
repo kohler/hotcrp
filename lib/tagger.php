@@ -370,7 +370,7 @@ class Tagger {
                 && $m[1] !== $this->_contactId . "~")
                 return $this->set_error("Format error: #{$tag} is an invalid tag.");
         }
-        if ($m[3] !== "")
+        if ($m[3] !== "" && ($flags & self::NOVALUE))
             return $this->set_error("Tag values aren’t allowed here.");
         if (!($flags & self::ALLOWRESERVED)
             && (!strcasecmp("none", $m[2]) || !strcasecmp("any", $m[2])))
