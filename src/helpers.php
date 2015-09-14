@@ -337,6 +337,11 @@ function redirectSelf($extra = array()) {
     go(selfHref($extra, array("raw" => true)));
 }
 
+function json_exit($json) {
+    global $Conf;
+    $Conf->ajaxExit($json);
+}
+
 function foldbutton($foldtype, $foldnum = 0) {
     $foldnumid = ($foldnum ? ",$foldnum" : "");
     return '<a href="#" class="q" onclick="return fold(\''

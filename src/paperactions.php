@@ -189,7 +189,7 @@ class PaperActions {
         return $ret;
     }
 
-    static function all_tags($papersel = null) {
+    static function alltags_api() {
         global $Conf, $Me, $OK;
         if (!$Me->isPC)
             $Conf->ajaxExit(array("ok" => false));

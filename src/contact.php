@@ -2597,7 +2597,7 @@ class Contact {
     }
 
     function can_view_tags(PaperInfo $prow = null, $forceShow = null) {
-        // see also PaperActions::all_tags
+        // see also PaperActions::alltags_api
         global $Conf;
         if (!$prow)
             return $this->isPC;

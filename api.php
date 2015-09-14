@@ -5,40 +5,24 @@
 
 require_once("src/initweb.php");
 
-// backward compatibility
+// argument cleaning
 if (!isset($_GET["fn"])) {
-    if (Navigation::path_component(0))
-        $_GET["fn"] = Navigation::path_component(0);
-    else if (isset($_GET["jserror"]))
-        $_GET["fn"] = "jserror";
+    if (($fn = Navigation::path_component(0, true)))
+        $_GET["fn"] = $fn;
     else if (isset($_GET["track"]))
         $_GET["fn"] = "track";
     else
         $_GET["fn"] = "status";
-} else if ($_GET["fn"] === "deadlines")
+}
+if ($_GET["fn"] === "deadlines")
     $_GET["fn"] = "status";
+if (!isset($_GET["p"]) && ($p = Navigation::path_component(1, true))
+    && ctype_digit($p))
+    $_GET["p"] = (string) intval($p);
 
-if ($_GET["fn"] === "trackerstatus") { // used by hotcrp-comet
-    $tracker = MeetingTracker::lookup();
-    $a = array("tracker_status" => MeetingTracker::tracker_status($tracker));
-    if ($tracker && $tracker->position_at)
-        $a["tracker_status_at"] = $tracker->position_at;
-    $a["ok"] = true;
-    $Conf->ajaxExit($a);
-}
-
-if ($_GET["fn"] === "status" && !$Me->has_database_account()
-    && ($key = $Me->capability("tracker_kiosk"))) {
-    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
-    if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 172800) {
-        if ($kiosks->$key->update_at < $Now - 3600) {
-            $kiosks->$key->update_at = $Now;
-            $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
-        }
-        $Me->is_tracker_kiosk = true;
-        $Me->tracker_kiosk_show_papers = $kiosks->$key->show_papers;
-    }
-}
+// requests
+if ($_GET["fn"] === "trackerstatus") // used by hotcrp-comet
+    MeetingTracker::trackerstatus_api();
 
 if ($_GET["fn"] === "jserror") {
     $url = defval($_REQUEST, "url", "");
@@ -74,23 +58,6 @@ if ($_GET["fn"] === "jserror") {
     $Conf->ajaxExit(array("ok" => true));
 }
 
-if ($_GET["fn"] === "track" && $Me->privChair && check_post()) {
-    // arguments: IDENTIFIER LISTNUM [POSITION] -OR- stop
-    if ($_REQUEST["track"] === "stop")
-        MeetingTracker::clear();
-    else {
-        $args = preg_split('/\s+/', $_REQUEST["track"]);
-        if (count($args) >= 2
-            && ($xlist = SessionList::lookup($args[1]))) {
-            $position = null;
-            if (count($args) >= 3 && ctype_digit($args[2]))
-                $position = array_search((int) $args[2], $xlist->ids);
-            MeetingTracker::update($xlist, $args[0], $position);
-        }
-    }
-} else if (@$_GET["fn"] === "track")
-    $Conf->ajaxExit(array("ok" => false));
-
 if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
     if (($base = @$_GET["base"]) !== null)
         $Conf->set_siteurl($base);
@@ -114,12 +81,8 @@ if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
 } else if ($_GET["fn"] === "events")
     $Conf->ajaxExit(array("ok" => false));
 
-if ($_GET["fn"] === "alltags") {
-    if ($Me->isPC)
-        PaperActions::all_tags(null);
-    else
-        $Conf->ajaxExit(array("ok" => false));
-}
+if ($_GET["fn"] === "alltags")
+    PaperActions::alltags_api();
 
 if ($_GET["fn"] === "searchcompletion") {
     $s = new PaperSearch($Me, "");
@@ -127,12 +90,28 @@ if ($_GET["fn"] === "searchcompletion") {
 }
 
 
+// from here on: `status` and `track` requests
+if ($_GET["fn"] === "track")
+    MeetingTracker::track_api($Me); // may fall through to act like `status`
+
+if (!$Me->has_database_account()
+    && ($key = $Me->capability("tracker_kiosk"))) {
+    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
+    if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 172800) {
+        if ($kiosks->$key->update_at < $Now - 3600) {
+            $kiosks->$key->update_at = $Now;
+            $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
+        }
+        $Me->is_tracker_kiosk = true;
+        $Me->tracker_kiosk_show_papers = $kiosks->$key->show_papers;
+    }
+}
+
 if (@$_GET["p"] && ctype_digit($_GET["p"])) {
     $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])), $Me);
     if ($CurrentProw && !$Me->can_view_paper($CurrentProw))
         $CurrentProw = null;
 }
-
 
 $j = $Me->my_deadlines($CurrentProw);
 

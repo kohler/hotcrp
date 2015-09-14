@@ -210,4 +210,29 @@ class MeetingTracker {
             return "off";
     }
 
+    static function trackerstatus_api() {
+        $tracker = self::lookup();
+        $a = array("ok" => true, "tracker_status" => self::tracker_status($tracker));
+        if ($tracker && $tracker->position_at)
+            $a["tracker_status_at"] = $tracker->position_at;
+        json_exit($a);
+    }
+
+    static function track_api($user) {
+        if (!$user->privChair || !check_post())
+            json_exit(array("ok" => false));
+        // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
+        if ($_REQUEST["track"] === "stop")
+            self::clear();
+        else {
+            $args = preg_split('/\s+/', $_REQUEST["track"]);
+            if (count($args) >= 2
+                && ($xlist = SessionList::lookup($args[1]))) {
+                $position = null;
+                if (count($args) >= 3 && ctype_digit($args[2]))
+                    $position = array_search((int) $args[2], $xlist->ids);
+                self::update($xlist, $args[0], $position);
+            }
+        }
+    }
 }
