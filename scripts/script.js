@@ -673,7 +673,7 @@ return function (content, bubopt) {
             return (0.75 * p1 + 0.25) + ")";
         });
         bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
-        bubch[2].style[cssbc(dir^2)] = yc;
+        assign_style_property(bubch[2], cssbc(dir^2), yc);
     }
 
     function constrain(za, z0, z1, bdim, noconstrain) {
@@ -990,6 +990,25 @@ return function (e, text) {
         e.value = text;
     setclass(e, e.value == text);
 };
+})();
+
+
+// style properties
+// IE8 can't handle rgba and throws exceptions. Those exceptions
+// clutter my inbox. XXX Revisit in mid-2016.
+window.assign_style_property = (function () {
+var e = document.createElement("div");
+try {
+    e.style.outline = "4px solid rgba(9,9,9,0.3)";
+    return function (elt, property, value) {
+        elt.style[property] = value;
+    };
+} catch (err) {
+    return function (elt, property, value) {
+        value = value.replace(/\brgba\((.*?),\s*[\d.]+\)/, "rgb($1)");
+        elt.style[property] = value;
+    };
+}
 })();
 
 
@@ -1947,8 +1966,8 @@ function make_outline_flasher(elt, rgba, duration) {
         h.interval = null;
     }
     if (rgba) {
-        duration = duration || 7000;
-        hold_duration = duration * 0.28;
+        duration = duration || 3000;
+        hold_duration = duration * 0.6;
         h.start = (new Date).getTime();
         h.interval = setInterval(function () {
             var now = (new Date).getTime(), delta = now - h.start, opacity = 0;
@@ -1961,7 +1980,7 @@ function make_outline_flasher(elt, rgba, duration) {
                 clearInterval(h.interval);
                 h.interval = null;
             } else
-                elt.style.outline = "4px solid rgba(" + rgba + ", " + opacity + ")";
+                assign_style_property(elt, "outline", "4px solid rgba(" + rgba + ", " + opacity + ")");
         }, 13);
     }
 }
