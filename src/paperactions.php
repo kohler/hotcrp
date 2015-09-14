@@ -193,22 +193,38 @@ class PaperActions {
         global $Conf, $Me, $OK;
         if (!$Me->isPC)
             $Conf->ajaxExit(array("ok" => false));
-        $ajax = defval($_REQUEST, "ajax", false);
-        $q = "select distinct tag from PaperTag t";
-        $where = array();
-        if (!$Me->allow_administer(null)) {
-            $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
-            $where[] = "coalesce(pc.conflictType,0)<=0";
+
+        $need_paper = $conflict_where = false;
+        $where = $args = array();
+
+        if ($Me->allow_administer(null)) {
+            $need_paper = true;
+            if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
+                $conflict_where = "(p.managerContactId=0 or pc.conflictType is null)";
+        } else if ($Conf->check_track_sensitivity("view")) {
+            $where[] = "t.paperId ?a";
+            $args[] = $Conf->list_pc_viewable_papers($Me);
+            if (!$Conf->setting("tag_seeall"))
+                $conflict_where = "pc.conflictType is null";
+        } else {
+            $need_paper = true;
+            if (!$Conf->setting("tag_seeall"))
+                $conflict_where = "pc.conflictType is null";
         }
-        if ($papersel)
-            $where[] = "t.paperId in (" . join(",", mkarray($papersel)) . ")";
-        else {
+
+        $q = "select distinct tag from PaperTag t";
+        if ($need_paper) {
             $q .= " join Paper p on (p.paperId=t.paperId)";
             $where[] = "p.timeSubmitted>0";
         }
+        if ($conflict_where) {
+            $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
+            $where[] = $conflict_where;
+        }
         $q .= " where " . join(" and ", $where);
+
         $tags = array();
-        $result = Dbl::qe_raw($q);
+        $result = Dbl::qe_apply($q, $args);
         while (($row = edb_row($result))) {
             $twiddle = strpos($row[0], "~");
             if ($twiddle === false
