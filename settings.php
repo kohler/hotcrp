@@ -1016,15 +1016,18 @@ function save_resp_rounds($set) {
             $roundnames[] = $rname;
             $roundnames_set[strtolower($rname)] = $i;
         }
+    }
 
-        if (($v = parse_value("resp_open_$i", setting_info("resp_open"))) !== null)
-            $Values["resp_open_$i"] = $v < 0 ? null : $v;
-        if (($v = parse_value("resp_done_$i", setting_info("resp_done"))) !== null)
-            $Values["resp_done_$i"] = $v < 0 ? null : $v;
-        if (($v = parse_value("resp_words_$i", setting_info("resp_words"))) !== null)
-            $Values["resp_words_$i"] = $v < 0 ? null : $v;
-        if (($v = parse_value("msg.resp_instrux_$i", setting_info("msg.resp_instrux"))) !== null)
-            $Values["msg.resp_instrux_$i"] = $v;
+    foreach ($roundnames_set as $i) {
+        $isuf = $i ? "_$i" : "";
+        if (($v = parse_value("resp_open$isuf", setting_info("resp_open"))) !== null)
+            $Values["resp_open$isuf"] = $v < 0 ? null : $v;
+        if (($v = parse_value("resp_done$isuf", setting_info("resp_done"))) !== null)
+            $Values["resp_done$isuf"] = $v < 0 ? null : $v;
+        if (($v = parse_value("resp_words$isuf", setting_info("resp_words"))) !== null)
+            $Values["resp_words$isuf"] = $v < 0 ? null : $v;
+        if (($v = parse_value("msg.resp_instrux$isuf", setting_info("msg.resp_instrux"))) !== null)
+            $Values["msg.resp_instrux$isuf"] = $v;
     }
 
     if (count($roundnames) > 1 || $roundnames[0] !== 1)
@@ -1155,7 +1158,6 @@ if (isset($_REQUEST["update"]) && check_post()) {
         foreach (explode(" ", value_or_setting_data("resp_rounds")) as $i => $rname) {
             $isuf = $i ? "_$i" : "";
             if (@$Values["resp_open$isuf"] && @$Values["resp_done$isuf"]
-                && $Values["resp_done$isuf"] >= $Now
                 && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
                 $Error[] = unparse_setting_error($SettingInfo->resp_open, "Must come before " . setting_info("resp_done", "name") . ".");
                 $Highlight["resp_open$isuf"] = $Highlight["resp_done$isuf"] = true;
