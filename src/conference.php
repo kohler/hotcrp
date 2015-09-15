@@ -962,27 +962,6 @@ class Conference {
 
     // times
 
-    function printableInterval($amt) {
-        if ($amt > 259200 /* 3 days */) {
-            $amt = ceil($amt / 86400);
-            $what = "day";
-        } else if ($amt > 28800 /* 8 hours */) {
-            $amt = ceil($amt / 3600);
-            $what = "hour";
-        } else if ($amt > 3600 /* 1 hour */) {
-            $amt = ceil($amt / 1800) / 2;
-            $what = "hour";
-        } else if ($amt > 180) {
-            $amt = ceil($amt / 60);
-            $what = "minute";
-        } else if ($amt > 0) {
-            $amt = ceil($amt);
-            $what = "second";
-        } else
-            return "past";
-        return plural($amt, $what);
-    }
-
     static function _dateFormat($long) {
         global $Opt;
         if (!isset($Opt["_dateFormatInitialized"])) {

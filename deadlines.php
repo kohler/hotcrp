@@ -32,10 +32,7 @@ echo "</p>
 function printDeadline($dl, $time, $phrase, $description) {
     global $Conf;
     echo "<dt><strong>", $phrase, "</strong>: ", $Conf->printableTime($time, "span") , "</dt>\n",
-        "<dd>", $description, ($description ? "<br />" : "");
-    if ($time > $dl->now)
-        echo "<strong>Time left</strong>: less than " . $Conf->printableInterval($time - $dl->now);
-    echo "</dd>\n";
+        "<dd>", $description, ($description ? "<br />" : ""), "</dd>";
 }
 
 // If you change these, also change Contact::has_reportable_deadline().
