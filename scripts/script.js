@@ -246,15 +246,16 @@ function ordinal(n) {
 }
 
 function commajoin(a, joinword) {
+    var l = a.length;
     joinword = joinword || "and";
-    if (a.length == 0)
+    if (l == 0)
         return "";
-    else if (a.length == 1)
+    else if (l == 1)
         return a[0];
-    else if (a.length == 2)
+    else if (l == 2)
         return a[0] + " " + joinword + " " + a[1];
     else
-        return a.slice(0, a.length - 1).join(", ") + ", " + joinword + " " + a[a.length - 1];
+        return a.slice(0, l - 1).join(", ") + ", " + joinword + " " + a[l - 1];
 }
 
 function sprintf(fmt) {
@@ -305,6 +306,14 @@ function sprintf(fmt) {
         }
     }
     return t;
+}
+
+function now_msec() {
+    return (new Date).getTime();
+}
+
+function now_sec() {
+    return now_msec() / 1000;
 }
 
 window.strftime = (function () {
@@ -376,6 +385,39 @@ window.strftime = (function () {
         return t;
     };
 })();
+
+function unparse_interval(t, now, format) {
+    now = now || now_sec();
+    format = format || 0;
+    var d = Math.abs(now - t), unit = 0;
+    if (d >= 2592000) { // 30d
+        if (!(format & 1))
+            return strftime((format & 4 ? "" : "on ") + "%#e %b %Y", t);
+        unit = 5;
+    } else if (d >= 259200) // 3d
+        unit = 4;
+    else if (d >= 28800)
+        unit = 3;
+    else if (d >= 3630)
+        unit = 2;
+    else if (d >= 180.5)
+        unit = 1;
+    var x = [1, 60, 1800, 3600, 86400, 604800][unit];
+    d = Math.ceil((d - x / 2) / x);
+    if (unit == 2)
+        d /= 2;
+    if (format & 4)
+        d += "smhhdw".charAt(unit);
+    else
+        d += [" second", " minute", " hour", " hour", " day", " week"][unit] + (d == 1 ? "" : "s");
+    if (format & 2)
+        return d;
+    else
+        return t < now ? d + " ago" : "in " + d;
+}
+unparse_interval.NO_DATE = 1;
+unparse_interval.NO_PREP = 2;
+unparse_interval.SHORT = 4;
 
 
 // events
@@ -1049,10 +1091,8 @@ var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
 // deadline display
 function display_main(is_initial) {
     // this logic is repeated in the back end
-    var s = "", amt, what = null, x, subtype,
-        browser_now = (new Date).getTime() / 1000,
-        time_since_load = browser_now - +dl.load,
-        now = +dl.now + time_since_load,
+    var s = "", x, subtype, browser_now = now_sec(),
+        now = +dl.now + (browser_now - +dl.load),
         elt = $$("maindeadline");
 
     if (!elt)
@@ -1078,41 +1118,22 @@ function display_main(is_initial) {
 
     if (dlname) {
         s = "<a href=\"" + escape_entities(hoturl("deadlines")) + "\">" + dlname + "</a> ";
-        amt = dltime - now;
-        if (!dltime || amt <= 0)
+        if (!dltime || dltime < now)
             s += "is NOW";
-        else {
-            s += "in ";
-            if (amt > 259200 /* 3 days */) {
-                amt = Math.ceil(amt / 86400);
-                what = "day";
-            } else if (amt > 28800 /* 8 hours */) {
-                amt = Math.ceil(amt / 3600);
-                what = "hour";
-            } else if (amt > 3600 /* 1 hour */) {
-                amt = Math.ceil(amt / 1800) / 2;
-                what = "hour";
-            } else if (amt > 180) {
-                amt = Math.ceil(amt / 60);
-                what = "minute";
-            } else {
-                amt = Math.ceil(amt);
-                what = "second";
-            }
-            s += amt + " " + what + (amt == 1 ? "" : "s");
-        }
-        if (!dltime || dltime - now <= 180)
-            s = "<span class='impending'>" + s + "</span>";
+        else
+            s += unparse_interval(dltime, now);
+        if (!dltime || dltime - now < 180.5)
+            s = '<span class="impending">' + s + '</span>';
     }
 
     elt.innerHTML = s;
     elt.style.display = s ? (elt.tagName.toUpperCase() == "SPAN" ? "inline" : "block") : "none";
 
-    if (!redisplay_timeout) {
-        if (what == "second")
+    if (!redisplay_timeout && dlname) {
+        if (!dltime || dltime - now < 180.5)
             redisplay_timeout = setTimeout(redisplay_main, 250);
-        else if (what == "minute")
-            redisplay_timeout = setTimeout(redisplay_main, 15000);
+        else if (dltime - now <= 3600)
+            redisplay_timeout = setTimeout(redisplay_main, (Math.min(now + 15, dltime - 180.25) - now) * 1000);
     }
 }
 
@@ -1158,7 +1179,7 @@ function tracker_show_elapsed() {
     if (!dl.tracker || dl.tracker_hidden || !dl.tracker.position_at)
         return;
 
-    var now = (new Date).getTime() / 1000;
+    var now = now_sec();
     var delta = now - (dl.tracker.position_at + dl.load - dl.now);
     var s = Math.round(delta);
     if (s >= 3600)
@@ -1173,7 +1194,7 @@ function tracker_show_elapsed() {
 
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"), mytracker,
-        body, pid, trackerstate, t = "", i, e, now = (new Date).getTime();
+        body, pid, trackerstate, t = "", i, e, now = now_msec();
 
     // tracker button
     mytracker = dl.tracker && (i = window_trackerstate())
@@ -1301,7 +1322,7 @@ var comet_store = (function () {
         var x = v && $.parseJSON(v);
         if (!x || typeof x !== "object")
             x = {};
-        if (!x.updated_at || x.updated_at + 10 < (new Date).getTime() / 1000
+        if (!x.updated_at || x.updated_at + 10 < now_sec()
             || (x.tracker_status != dl.tracker_status && x.at < dl.now))
             x.expired = true;
         else if (x.tracker_status != dl.tracker_status)
@@ -1318,7 +1339,7 @@ var comet_store = (function () {
     function site_store() {
         stored_at = dl.now;
         wstorage(false, site_key(), {at: stored_at, tracker_status: dl.tracker_status,
-                                     updated_at: (new Date).getTime() / 1000});
+                                     updated_at: now_sec()});
         setTimeout(function () {
             if (comet_sent_at)
                 site_store();
@@ -1357,7 +1378,7 @@ var comet_store = (function () {
 $(window).on("unload", function () { comet_store(-1); });
 
 function comet_tracker() {
-    var at = (new Date).getTime(),
+    var at = now_msec(),
         timeout = (comet_nsuccess ? 298000 : Math.floor(1000 + Math.random() * 1000));
 
     // correct tracker_site URL to be a full URL if necessary
@@ -1377,7 +1398,7 @@ function comet_tracker() {
     comet_sent_at = at;
 
     function success(data, status, xhr) {
-        var now = (new Date).getTime();
+        var now = now_msec();
         if (comet_sent_at != at)
             return;
         comet_sent_at = null;
@@ -1421,7 +1442,7 @@ function load(dlx, is_initial) {
     if (dlx)
         window.hotcrp_status = dl = dlx;
     if (!dl.load)
-        dl.load = (new Date).getTime() / 1000;
+        dl.load = now_sec();
     has_tracker = !!dl.tracker;
     if (dl.tracker)
         had_tracker_at = dl.load;
@@ -1968,9 +1989,9 @@ function make_outline_flasher(elt, rgba, duration) {
     if (rgba) {
         duration = duration || 3000;
         hold_duration = duration * 0.6;
-        h.start = (new Date).getTime();
+        h.start = now_msec();
         h.interval = setInterval(function () {
-            var now = (new Date).getTime(), delta = now - h.start, opacity = 0;
+            var now = now_msec(), delta = now - h.start, opacity = 0;
             if (delta < hold_duration)
                 opacity = 0.5;
             else if (delta <= duration)
@@ -2633,7 +2654,7 @@ function shortcut(top_elt) {
                     return true;
             }
         // call function
-        var keymap, time = new Date().getTime();
+        var keymap, time = now_msec();
         if (current_keys && last_key_at && time - last_key_at <= 600)
             keymap = current_keys;
         else
@@ -3658,11 +3679,11 @@ function check_version(url, versionstr) {
             jQuery.get(siteurl + "checkupdates.php",
                        {data: JSON.stringify(json)}, updateverifycb);
         else if (json && json.status)
-            wstorage(false, "hotcrp_version_check", {at: (new Date).getTime(), version: versionstr});
+            wstorage(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
     }
     try {
         if ((x = wstorage.json(false, "hotcrp_version_check"))
-            && x.at >= (new Date).getTime() - 600000 /* 10 minutes */
+            && x.at >= now_msec() - 600000 /* 10 minutes */
             && x.version == versionstr)
             return;
     } catch (x) {
