@@ -402,10 +402,10 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
 
 /* grouped quadtree */
 // mark bounds of each node
-function grouped_quadtree_mark_bounds(q, ordinal) {
+function grouped_quadtree_mark_bounds(q, ordinalf) {
     var b = [Infinity, -Infinity, -Infinity, Infinity], p, i;
-    ordinal = ordinal || (function () { var m = 0; return function () { return ++m; }; })();
-    q.ordinal = ordinal();
+    ordinalf = ordinalf || (function () { var m = 0; return function () { return ++m; }; })();
+    q.ordinal = ordinalf();
     for (p = q.point; p; p = p.next)
         if (q.point.maxr == null || p.r > q.point.maxr) {
             b[0] = Math.min(b[0], p[1] - p.r);
@@ -416,7 +416,7 @@ function grouped_quadtree_mark_bounds(q, ordinal) {
         }
     for (i = 0; i < 4; ++i)
         if ((p = q.nodes[i])) {
-            grouped_quadtree_mark_bounds(p, ordinal);
+            grouped_quadtree_mark_bounds(p, ordinalf);
             b[0] = Math.min(b[0], p.bounds[0]);
             b[1] = Math.max(b[1], p.bounds[1]);
             b[2] = Math.max(b[2], p.bounds[2]);
