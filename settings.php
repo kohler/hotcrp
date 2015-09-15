@@ -1320,12 +1320,16 @@ function setting_class($name) {
     return @$Highlight[$name] ? "setting_error" : null;
 }
 
-function setting_label($name, $text, $islabel = null) {
+function setting_label($name, $text, $label = null) {
     global $Highlight;
-    if (@$Highlight[$name])
-        $text = "<span class=\"setting_error\">$text</span>";
-    if ($islabel !== false)
-        $text = Ht::label($text, $islabel ? : $name);
+    $name1 = is_array($name) ? $name[0] : $name;
+    foreach (is_array($name) ? $name : array($name) as $n)
+        if (@$Highlight[$n]) {
+            $text = '<span class="setting_error">' . $text . '</span>';
+            break;
+        }
+    if ($label !== false)
+        $text = Ht::label($text, $label ? : $name1);
     return $text;
 }
 
@@ -1654,7 +1658,7 @@ function doOptGroupOption($o) {
         setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
         "</div>",
         "<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, array("hottemptext" => "(Enter new option)", "size" => 50, "id" => "optn$id")),
+        Ht::entry("optn$id", $o->name, setting_js("optn$id", array("hottemptext" => "(Enter new option)", "size" => 50))),
         "</div>\n",
         "  <div class='f-i'>",
         "<div class='f-c'>",
@@ -2042,16 +2046,17 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
 
     echo "<tr hotcrp_fold=\"1\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">",
         "<td class=\"lxcaption\">",
-        setting_label("${type}_track$tnum", $question, "${type}_track$tnum"),
+        setting_label(array("{$type}_track$tnum", "{$type}tag_track$tnum"),
+                      $question, "{$type}_track$tnum"),
         "</td>",
         "<td>",
-        Ht::select("${type}_track$tnum", array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"), $tclass,
-                   array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})")),
+        Ht::select("{$type}_track$tnum",
+                   array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"),
+                   $tclass,
+                   setting_js("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
-                  array("class" => "fx",
-                        "id" => "${type}tag_track$tnum",
-                        "hottemptext" => "(tag)")),
+                  setting_js("{$type}tag_track$tnum", array("class" => "fx", "hottemptext" => "(tag)"))),
         "</td></tr>";
 }
 
@@ -2063,8 +2068,8 @@ function do_track($trackname, $tnum) {
     if ($trackname === "_")
         echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
     else
-        echo "For papers with tag &nbsp;",
-            Ht::entry("name_track$tnum", $trackname, array("id" => "name_track$tnum", "hottemptext" => "(tag)")), ":";
+        echo setting_label("name_track$tnum", "For papers with tag &nbsp;"),
+            Ht::entry("name_track$tnum", $trackname, setting_js("name_track$tnum", array("hottemptext" => "(tag)"))), ":";
     echo "</div>\n";
 
     $t = $Conf->setting_json("tracks");
