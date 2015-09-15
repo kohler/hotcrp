@@ -1091,7 +1091,7 @@ var dl, dlname, dltime, reload_timeout, reload_nerrors = 0, redisplay_timeout;
 // deadline display
 function display_main(is_initial) {
     // this logic is repeated in the back end
-    var s = "", x, subtype, browser_now = now_sec(),
+    var s = "", i, x, subtype, browser_now = now_sec(),
         now = +dl.now + (browser_now - +dl.load),
         elt = $$("maindeadline");
 
@@ -1115,6 +1115,15 @@ function display_main(is_initial) {
                 break;
             }
     }
+    if (!dlname && dl.is_author && dl.resp)
+        for (i in dl.resp.roundsuf) {
+            x = dl["resp" + dl.resp.roundsuf[i]];
+            if (x.open && (+dl.now <= +x.done ? now - 120 <= +x.done : x.ingrace)) {
+                dlname = (dl.resp.rounds[i] == "1" ? "Response" : dl.resp.rounds[i] + " response") + " deadline";
+                dltime = +x.done;
+                break;
+            }
+        }
 
     if (dlname) {
         s = "<a href=\"" + escape_entities(hoturl("deadlines")) + "\">" + dlname + "</a> ";

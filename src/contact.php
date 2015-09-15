@@ -2694,6 +2694,8 @@ class Contact {
                              "rev" => (object) array());
         if ($this->privChair)
             $dl->is_admin = true;
+        if ($this->is_author())
+            $dl->is_author = true;
 
         // submissions
         $dl->sub->open = @+$set["sub_open"] > 0;
