@@ -213,10 +213,11 @@ class PaperTable {
 
     private function editable_papt($what, $name, $extra = array()) {
         global $Error;
-        $c = '<div ';
-        if (@$extra["id"])
-            $c .= 'id="' . $extra["id"] . '" ';
-        $c .= 'class="papt';
+        if (($id = @$extra["id"]))
+            $c = '<div class="papeg papg_' . $id . '"><div id="' . $id . '" ';
+        else
+            $c = '<div class="papeg"><div ';
+        $c .= 'class="papet';
         if (isset($Error[$what]))
             $c .= " error";
         return $c . '"><span class="papfn">' . $name
@@ -322,7 +323,7 @@ class PaperTable {
 
     private function editable_title() {
         echo $this->editable_papt("title", "Title"),
-            "<div class='papv'>", $this->entryData("title"), "</div>\n\n";
+            '<div class="papev">', $this->entryData("title"), "</div></div>\n\n";
     }
 
     static function pdfStamps($data) {
@@ -442,8 +443,8 @@ class PaperTable {
         if (count($accepts))
             echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
         if (@$opt->description)
-            echo "<div class='paphint'>", $opt->description, "</div>";
-        echo "<div class='papv'>";
+            echo '<div class="paphint">', $opt->description, "</div>";
+        echo '<div class="papev">';
 
         // current version, if any
         $doc = null;
@@ -494,7 +495,7 @@ class PaperTable {
         if ($documentType == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);
 
-        echo $uploader, "</div>\n\n";
+        echo $uploader, "</div>";
     }
 
     private function echo_editable_submission($flags) {
@@ -502,12 +503,12 @@ class PaperTable {
             $this->echo_editable_document(PaperOption::find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
         else
             $this->echo_editable_document(PaperOption::find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+        echo "</div>\n\n";
     }
 
-    private function editable_abstract() {
-        echo '<div class="pg">',
-            $this->editable_papt("abstract", "Abstract"),
-            '<div class="papv abstract">',
+    private function echo_editable_abstract() {
+        echo $this->editable_papt("abstract", "Abstract"),
+            '<div class="papev abstract">',
             $this->entryData("abstract", "p"),
             "</div></div>\n\n";
     }
@@ -554,7 +555,7 @@ class PaperTable {
         if ($Conf->submission_blindness() == Conference::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo " Any author with an account on this site can edit the submission.</div>",
-            '<div class="papv"><table id="auedittable" class="auedittable">',
+            '<div class="papev"><table id="auedittable" class="auedittable">',
             '<thead><tr><th></th><th>Name</th><th>Email</th><th>Affiliation</th><th style="width:100%"></th></tr></thead>',
             '<tbody>';
         self::echo_editable_authors_tr(' hotautemplate="true" style="display:none"', '$', "", "", "");
@@ -579,7 +580,7 @@ class PaperTable {
         do {
             self::echo_editable_authors_tr("", $n, "", "", "");
         } while (++$n <= 5);
-        echo "</tbody></table></div>\n\n";
+        echo "</tbody></table></div></div>\n\n";
     }
 
     private function authorData($table, $type, $viewAs = null, $prefix = "") {
@@ -867,8 +868,8 @@ class PaperTable {
         if (!$Me->privChair)
             return;
         echo $this->editable_papt("contactAuthor", "Contact"),
-            "<div class='paphint'>You can add more contacts after you register the submission.</div>",
-            "<div class='papv'>";
+            '<div class="paphint">You can add more contacts after you register the submission.</div>',
+            '<div class="papev">';
         $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
         $name = $name === "Name" ? "" : $name;
         $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
@@ -887,7 +888,7 @@ class PaperTable {
                             "class" => $class, "onchange" => "hiliter(this)")),
             '</td></tr></table>';
         $Conf->footerScript("mktemptext('newcontact_name','Name');mktemptext('newcontact_email','Email')");
-        echo "</div>\n\n";
+        echo "</div></div>\n\n";
     }
 
     private function editable_contact_author($always_unfold) {
@@ -898,21 +899,21 @@ class PaperTable {
         $cerror = @$Error["contactAuthor"] || @$Error["contacts"];
         $open = $cerror || $always_unfold
             || ($this->useRequest && @$_REQUEST["setcontacts"] == 2);
-        echo '<div id="foldcontactauthors" class="',
+        echo '<div id="foldcontactauthors" class="papeg ',
             ($open ? "foldo" : "foldc"),
-            '"><div class="papt childfold fn0" ',
+            '"><div class="papet childfold fn0" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
-            '><span class="papfn"><a class="q" href="#" ',
+            '><span class="papfn"><a class="qq" href="#" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
             ' title="Edit contacts">', expander(true), 'Contacts</a></span><hr class="c" /></div>',
-            '<div class="papt fx0',
+            '<div class="papet fx0',
             ($cerror ? " error" : ""),
             '"><span class="papfn">',
             ($always_unfold ? "" : expander(false)),
             'Contacts</span><hr class="c" /></div>';
 
         // Non-editable version
-        echo '<div class="papv fn0">';
+        echo '<div class="papev fn0">';
         foreach ($autable as $au)
             if (@$au[4]) {
                 echo '<span class="autblentry_long">', Text::user_html($au);
@@ -932,7 +933,7 @@ class PaperTable {
         echo '<div class="paphint fx0">',
             'Contacts are HotCRP users who can edit paper information and view reviews. Paper authors with HotCRP accounts are always contacts, but you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.',
             '</div>';
-        echo '<div class="papv fx0">';
+        echo '<div class="papev fx0">';
         echo '<table>';
         $title = "Authors";
         foreach ($autable as $au) {
@@ -988,8 +989,8 @@ class PaperTable {
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
-            "<div class='paphint'>", htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
-            "<div class='papv'></div>\n\n";
+            '<div class="paphint">', htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+            "</div>\n\n";
     }
 
     private function editable_collaborators() {
@@ -1012,9 +1013,9 @@ class PaperTable {
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
         echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>",
-            "<div class='papv'>",
+            '<div class="papev">',
             $this->entryData("collaborators"),
-            "</div>\n\n";
+            "</div></div>\n\n";
     }
 
     private function _papstripBegin($foldid = null, $folded = null, $extra = null) {
@@ -1085,10 +1086,10 @@ class PaperTable {
         if (($topicTable = topicTable($this->prow, $topicMode))) {
             echo $this->editable_papt("topics", "Topics"),
                 '<div class="paphint">Select any topics that apply to your paper.</div>',
-                '<div class="papv">',
+                '<div class="papev">',
                 Ht::hidden("has_topics", 1),
                 $topicTable,
-                "</div>\n\n";
+                "</div></div>\n\n";
         }
     }
 
@@ -1097,7 +1098,7 @@ class PaperTable {
                                   . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
         if ($o->description)
             echo "<div class='paphint'>", $o->description, "</div>";
-        echo "<div class='papv'>", Ht::hidden("has_opt$o->id", 1);
+        echo '<div class="papev">', Ht::hidden("has_opt$o->id", 1);
         if (($prow = $this->prow) && ($optx = $prow->option($o->id))) {
             $docclass = new HotCRPDocument($o->id, $o);
             foreach ($optx->documents($prow) as $doc) {
@@ -1112,7 +1113,8 @@ class PaperTable {
             }
         }
         echo "<div id='opt", $o->id, "_new'></div>",
-            Ht::js_button("Attach file", "addattachment($o->id)"), "</div>";
+            Ht::js_button("Add attachment", "addattachment($o->id)"),
+            "</div></div>\n\n";
     }
 
     private function editable_options($display_types) {
@@ -1142,37 +1144,36 @@ class PaperTable {
                 $myval = $optx->data;
             else
                 $myval = $optx->value;
-            echo Ht::hidden("has_$optid", 1);
 
             if ($o->type === "checkbox") {
                 echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)),
                                           array("id" => "{$optid}_div"));
                 if (@$o->description)
-                    echo "<div class='paphint'>", $o->description, "</div>";
-                echo "<div class='papv'></div>\n\n";
+                    echo '<div class="paphint">', $o->description, "</div>";
                 Ht::stash_script("jQuery('#{$optid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
             } else if (!$o->is_document()) {
                 echo $this->editable_papt($optid, htmlspecialchars($o->name));
                 if (@$o->description)
-                    echo "<div class='paphint'>", $o->description, "</div>";
+                    echo '<div class="paphint">', $o->description, "</div>";
+                echo '<div class="papev">';
                 if ($o->type === "selector")
-                    echo "<div class='papv'>", Ht::select("opt$o->id", $o->selector, $myval, array("onchange" => "hiliter(this)")), "</div>\n\n";
+                    echo Ht::select("opt$o->id", $o->selector, $myval, array("onchange" => "hiliter(this)"));
                 else if ($o->type === "radio") {
-                    echo "<div class='papv'>";
                     $myval = isset($o->selector[$myval]) ? $myval : 0;
                     foreach ($o->selector as $val => $text) {
                         echo Ht::radio("opt$o->id", $val, $val == $myval, array("onchange" => "hiliter(this)"));
                         echo "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
                     }
-                    echo "</div>\n\n";
                 } else if ($o->type === "numeric")
-                    echo "<div class='papv'><input type='text' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' /></div>\n\n";
+                    echo "<input type='text' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' />";
                 else if ($o->type === "text" && @$o->display_space <= 1)
-                    echo "<div class='papv'><input type='text' class='papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' /></div>\n\n";
+                    echo "<input type='text' class='papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' />";
                 else if ($o->type === "text")
-                    echo "<div class='papv'><textarea class='papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea></div>\n\n";
+                    echo "<textarea class='papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea>";
+                echo "</div>";
             } else
                 $this->echo_editable_document($o, $optx ? $optx->value : 0, 0);
+            echo Ht::hidden("has_$optid", 1), "</div>\n\n";
         }
     }
 
@@ -1220,7 +1221,7 @@ class PaperTable {
 
         echo $this->editable_papt("pcconf", "PC conflicts"),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
-            '<div class="papv">',
+            '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
             '<div class="ctable pctb_ctable">';
         foreach ($pcm as $id => $p) {
@@ -1260,7 +1261,7 @@ class PaperTable {
             }
             echo '<hr class="c" />', "</div>\n";
         }
-        echo "</div>\n</div>\n\n";
+        echo "</div>\n</div></div>\n\n";
     }
 
     private function papstripPCConflicts() {
@@ -1790,7 +1791,7 @@ class PaperTable {
                     . Ht::submit("delete", "Delete paper", array("class" => "bb")));
         }
 
-        echo Ht::actions($buttons);
+        echo Ht::actions($buttons, array("class" => "aab"));
         if ($this->admin && !$top) {
             $v = defval($_REQUEST, "emailNote", "");
             echo "  <div class='g'></div>\n  <table>\n",
@@ -1916,20 +1917,21 @@ class PaperTable {
         global $Conf, $Me;
         $prow = $this->prow;
 
-        $spacer = "<div class='g'></div>\n\n";
         echo $form, "<div class='aahc'>";
         $this->canUploadFinal = $prow && $prow->outcome > 0
             && (!($whyNot = $Me->perm_submit_final_paper($prow, true))
                 || @$whyNot["deadline"] === "final_done");
 
         if (($m = $this->editMessage()))
-            echo $m, $spacer;
+            echo $m, '<div class="g"></div>';
         if ($this->quit) {
             echo "</div></form>";
             return;
         }
 
         $this->echoActions(true);
+        echo '<div>';
+
         $this->editable_title();
         $this->echo_editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
         $this->editable_options(array("near_submission" => true));
@@ -1944,11 +1946,9 @@ class PaperTable {
             && $this->editable !== "f")
             $this->editable_anonymity();
 
-        echo $spacer;
-        $this->editable_abstract();
+        $this->echo_editable_abstract();
 
         // Topics and options
-        echo $spacer;
         $this->editable_topics();
         $this->editable_options(array("normal" => true, "highlight" => true));
 
@@ -1959,7 +1959,7 @@ class PaperTable {
         }
 
         // Submit button
-        echo $spacer;
+        echo "</div>";
         $this->echo_editable_complete($this->prow ? $this->prow->paperStorageId : 0);
         $this->echoActions(false);
 

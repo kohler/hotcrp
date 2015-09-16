@@ -2272,24 +2272,20 @@ div.paptab_abstract {
 div.paptab div.pavt {
 	font-size: smaller;
 }
-div.papt {
-	padding: 0.25em 1em 0.25em 8px;
-	background: #eaeaff; /*#ffeaee;*/
-}
 div.pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px;
 }
-span.papfn, span.pavfn, span.psfn, .revfn {
+.papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;
 }
-div.papt span.papfn, div.pavt span.pavfn {
+.papt .papfn, .papet .papfn, .pavt .pavfn {
 	float: left;
 }
-body#paper_edit span.papfn {
-	font-size: smaller;
+.papet > .papfn {
+	color: #414178;
 }
-div.papt span.papfnh {
+.papfnh {
 	font-variant: normal;
 	font-weight: normal;
 	text-transform: none;
@@ -2297,16 +2293,6 @@ div.papt span.papfnh {
 }
 div.papt span.hint {
 	float: right;
-}
-div.paphint {
-	font-size: smaller;
-	margin-bottom: 0.5ex;
-	color: #555555;
-	background: #f8f8f6;
-	padding: 0.2em 1em 0.3em 8px;
-}
-div.papv {
-	padding: 2px 0 1em 7px;
 }
 
 div.pg {
@@ -2409,10 +2395,10 @@ table.revoff span.revfn {
 	float: none;
 	padding: 0 1em 5px 0;
 }
-div.revev {
+div.papev, div.revev {
 	margin: 5px 0;
 }
-div.revhint {
+div.paphint, div.revhint {
 	font-size: 90%;
 	color: #555555;
 	max-width: 640px;
@@ -2428,7 +2414,7 @@ div.rvl div.rv {
 div.rvr div.rv {
 	padding-left: 10px;
 }
-div.rveg {
+div.papeg, div.rveg {
 	margin: 16px 0 24px;
 }
 div.rvg {
