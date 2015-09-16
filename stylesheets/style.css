@@ -2375,7 +2375,7 @@ div.revcard_head {
 }
 div.revcard_body {
 	background: #ffffff;
-	padding: 8px 12px;
+	padding: 10px 12px;
 	border-radius: 2px;
 }
 div.revcard_head h3 {
@@ -2385,15 +2385,14 @@ div.revcard_head h3 {
 span.revinfo {
 	font-size: smaller;
 }
-.revvt, .revet {
-	margin: 0.25em -5px;
-	padding: 0 1em 0 5px;
-}
 .revvt {
 	font-size: smaller;
 }
+.rvg .revvt {
+	margin-bottom: 2px;
+}
 .revet > .revfn {
-	color: #555555;
+	color: #784141;
 }
 .revfn, .revvis {
 	float: left;
@@ -2401,9 +2400,6 @@ span.revinfo {
 .revvis {
 	padding-left: 1em;
 	color: #999999;
-}
-div.revv {
-	padding: 2px 0 1em 7px;
 }
 table.revoff {
 	margin: 0.2em 0 0.5em 0;
@@ -2419,9 +2415,8 @@ div.revev {
 div.revhint {
 	font-size: 90%;
 	color: #555555;
-	padding: 0.2em 1em 0.3em 5px;
-	margin: 0 -5px;
 	max-width: 640px;
+	margin: 2px 0;
 }
 div.rvl, div.rvr {
 	width: 50%;
@@ -2433,19 +2428,19 @@ div.rvl div.rv {
 div.rvr div.rv {
 	padding-left: 10px;
 }
-div.rv div.revv {
-	padding: 0;
+div.rveg {
+	margin: 16px 0 24px;
 }
 div.rvg {
 	border-top: 1px solid #ffecef;
-	padding-top: 5px;
+	padding: 8px 0;
 }
 div.rvg:first-child {
 	border-top: 0 none;
 	padding-top: 0;
 }
-div.rv {
-	padding-bottom: 8px;
+div.rvg:last-child {
+	padding-bottom: 0;
 }
 
 /* review ratings */

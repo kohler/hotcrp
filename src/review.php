@@ -535,7 +535,7 @@ class ReviewForm {
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
         global $ReviewFormError, $Conf;
         $revViewScore = $contact->view_score_bound($prow, $rrow);
-        echo '<div>';
+        echo '<div class="rve">';
         foreach ($this->forder as $field => $f) {
             if ($f->view_score <= $revViewScore
                 || ($f->round_mask && !$f->is_round_visible($rrow)))
@@ -547,7 +547,7 @@ class ReviewForm {
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$field);
 
-            echo '<div class="rv rvg rv_', $field, '"><div class="revet';
+            echo '<div class="rv rveg rv_', $field, '"><div class="revet';
             if (isset($ReviewFormError[$field]))
                 echo " error";
             echo '"><div class="revfn">', $f->name_html, '</div>';
