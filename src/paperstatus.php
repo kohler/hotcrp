@@ -304,9 +304,10 @@ class PaperStatus {
 
     private function normalize_string($pj, $k, $simplify) {
         if (@$pj->$k !== null)
-            if (is_string($pj->$k))
-                $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
-            else {
+            if (is_string($pj->$k)) {
+                $str = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
+                $pj->$k = convert_to_utf8($str);
+            } else {
                 $this->set_error_html($k, "Format error [$k]");
                 unset($pj, $k);
             }
@@ -376,6 +377,7 @@ class PaperStatus {
             } else if ($o->type == "text") {
                 if (!is_string($oa))
                     $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be a text string.");
+                $pj->options->$id = convert_to_utf8($oa);
             } else if ($o->has_document()) {
                 if ($o->is_document() && !is_object($oa))
                     $oa = null;
@@ -595,7 +597,7 @@ class PaperStatus {
                 . (@$au->last ? $au->last : (@$au->lastName ? $au->lastName : "")) . "\t"
                 . (@$au->email ? $au->email : "") . "\t"
                 . (@$au->affiliation ? $au->affiliation : "") . "\n";
-        return $x;
+        return convert_to_utf8($x);
     }
 
     static function topics_sql($pj) {
