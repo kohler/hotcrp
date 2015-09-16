@@ -1252,8 +1252,8 @@ $blind\n";
         global $Conf;
 
         if (isset($tf["err"]) && count($tf["err"]) > 0) {
-            $Conf->msg("There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>",
-                       defval($tf, 'anyErrors') ? "merror" : "warning");
+            $Conf->msg(defval($tf, 'anyErrors') ? "merror" : "warning",
+                       "There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
         }
 
         $confirm = array();
@@ -1279,7 +1279,7 @@ $blind\n";
             $confirm[] = self::_paperCommaJoin("Ignored blank review form*| for paper* ", $tf["ignoredBlank"], $single) . ".";
         // self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
         if (count($confirm))
-            $Conf->msg("<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>", $nconfirm ? "confirm" : "warning");
+            $Conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
     }
 
     private function webDisplayRows($prow, $rrow, $contact) {
@@ -1641,14 +1641,12 @@ $blind\n";
 
         // administrator?
         if ($rrow && !$Me->is_my_review($rrow) && $admin)
-            echo "<div class=\"xmsg xinfo\">This isn’t your review, but as an administrator you can still make changes.</div>\n";
+            echo Ht::xmsg("info", "This isn’t your review, but as an administrator you can still make changes.");
 
         // delegate?
         if ($rrow && !$rrow->reviewSubmitted
             && $rrow->contactId == $Me->contactId
             && $rrow->reviewType == REVIEW_SECONDARY) {
-            echo "<div class=\"xmsg xinfo\">";
-
             $ndelegated = 0;
             foreach ($rrows as $rr)
                 if ($rr->reviewType == REVIEW_EXTERNAL
@@ -1656,12 +1654,12 @@ $blind\n";
                     $ndelegated++;
 
             if ($ndelegated == 0)
-                echo "As a secondary reviewer, you can <a href=\"", hoturl("assign", "p=$rrow->paperId"), "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
+                $t = "As a secondary reviewer, you can <a href=\"" . hoturl("assign", "p=$rrow->paperId") . "\">delegate this review to an external reviewer</a>, but if your external reviewer declines to review the paper, you should complete this review yourself.";
             else if ($rrow->reviewNeedsSubmit == 0)
-                echo "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
+                $t = "A delegated external reviewer has submitted their review, but you can still complete your own if you’d like.";
             else
-                echo "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
-            echo "</div>\n";
+                $t = "Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
+            echo Ht::xmsg("info", $t);
         }
 
         // top save changes

@@ -2114,49 +2114,46 @@ class Conference {
     // Message routines
     //
 
-    function msg($text, $type) {
+    function msg($type, $text) {
         if (PHP_SAPI == "cli") {
             if ($type === "xmerror" || $type === "merror")
                 fwrite(STDERR, "$text\n");
             else if ($type === "xwarning" || $type === "mxwarning"
                      || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
-        } else {
-            if ($type[0] == "x")
-                $type = "xmsg $type";
-            $text = "<div class=\"$type\">$text</div>\n";
-            if ($this->save_messages) {
-                ensure_session();
-                $this->save_session_array("msgs", true, $text);
-            } else
-                echo $text;
-        }
+        } else if ($this->save_messages) {
+            ensure_session();
+            $this->save_session_array("msgs", true, array($type, $text));
+        } else if ($type[0] == "x")
+            echo Ht::xmsg($text, $type);
+        else
+            echo "<div class=\"$type\">$text</div>";
     }
 
     function infoMsg($text, $minimal = false) {
-        $this->msg($text, $minimal ? "xinfo" : "info");
+        $this->msg($minimal ? "xinfo" : "info", $text);
     }
 
     function warnMsg($text, $minimal = false) {
-        $this->msg($text, $minimal ? "xwarning" : "warning");
+        $this->msg($minimal ? "xwarning" : "warning", $text);
     }
 
     function confirmMsg($text, $minimal = false) {
-        $this->msg($text, $minimal ? "xconfirm" : "confirm");
+        $this->msg($minimal ? "xconfirm" : "confirm", $text);
     }
 
     function errorMsg($text, $minimal = false) {
-        $this->msg($text, $minimal ? "xmerror" : "merror");
+        $this->msg($minimal ? "xmerror" : "merror", $text);
         return false;
     }
 
     function post_missing_msg() {
-        $this->msg("Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.", "merror");
+        $this->msg("merror", "Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.");
     }
 
     function errorMsgExit($text) {
         if ($text)
-            $this->msg($text, "merror");
+            $this->msg("merror", $text);
         $this->footer();
         exit;
     }
@@ -2403,9 +2400,9 @@ class Conference {
         if (@$Opt["maintenance"])
             echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
         if (($msgs = $this->session("msgs")) && count($msgs)) {
-            foreach ($msgs as $m)
-                echo $m;
             $this->save_session("msgs", null);
+            foreach ($msgs as $m)
+                $this->msg($m[0], $m[1]);
         }
         $this->save_messages = false;
         echo "</div>\n";
@@ -2476,17 +2473,15 @@ class Conference {
         $t = "";
         $msgs = $this->session("msgs", array());
         $this->save_session("msgs", null);
-        foreach ($msgs as $msg)
-            if (preg_match('|\A<div class="(.*?)">([\s\S]*)</div>\s*\z|', $msg, $m)) {
-                if ($m[1] == "merror" && !isset($values["error"]))
-                    $values["error"] = $m[2];
-                if ($div && $m[1][0] == "x")
-                    $t .= "<div class=\"$m[1]\">$m[2]</div>\n";
-                else if ($div)
-                    $t .= "<div class=\"xmsg x$m[1]\">$m[2]</div>\n";
-                else
-                    $t .= "<span class=\"$m[1]\">$m[2]</span>\n";
-            }
+        foreach ($msgs as $msg) {
+            if (($msg[0] === "merror" || $msg[0] === "xmerror")
+                && !isset($values["error"]))
+                $values["error"] = $msg[1];
+            if ($div)
+                $t .= Ht::xmsg($msg[0], $msg[1]);
+            else
+                $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
+        }
         if (!isset($values["response"]) && $t !== "")
             $values["response"] = $t;
         if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])

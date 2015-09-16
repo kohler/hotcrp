@@ -89,27 +89,26 @@ function save_comment($text, $is_response, $roundnum) {
             $cinfo = new CommentInfo($cur_response, $prow);
             $ok = true;
         } else
-            $confirm = '<div class="xmsg xmerror">A response was entered concurrently by another user. Reload to see it.</div>';
+            $confirm = Ht::xmsg("error", "A response was entered concurrently by another user. Reload to see it.");
     }
     if (!$ok)
         /* nada */;
     else if ($is_response && (!$cinfo->commentId || ($cinfo->commentType & COMMENTTYPE_DRAFT))) {
-        $confirm = '<div class="xmsg xwarning">';
         if ($cinfo->commentId)
-            $confirm .= 'Response saved. <strong>This draft response will not be shown to reviewers.</strong>';
+            $confirm = 'Response saved. <strong>This draft response will not be shown to reviewers.</strong>';
         else
-            $confirm .= 'Response deleted.';
+            $confirm = 'Response deleted.';
         $isuf = $roundnum ? "_$roundnum" : "";
         if (($dl = $Conf->printableTimeSetting("resp_done$isuf")) != "N/A")
             $confirm .= " You have until $dl to submit the response.";
-        $confirm .= '</div>';
+        $confirm = Ht::xmsg("warning", $confirm);
     } else if ($is_response) {
         $rname = $Conf->resp_round_text($roundnum);
-        $confirm = '<div class="xmsg xconfirm">' . ($rname ? "$rname response" : "Response") . ' submitted.</div>';
+        $confirm = Ht::xmsg("confirm", ($rname ? "$rname response" : "Response") . ' submitted.');
     } else if ($cinfo->commentId)
-        $confirm = '<div class="xmsg xconfirm">Comment saved.</div>';
+        $confirm = Ht::xmsg("confirm", "Comment saved.");
     else
-        $confirm = '<div class="xmsg xconfirm">Comment deleted.</div>';
+        $confirm = Ht::xmsg("confirm", "Comment deleted.");
 
     $j = array("ok" => $ok);
     if ($cinfo->commentId)

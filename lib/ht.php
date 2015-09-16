@@ -365,13 +365,6 @@ class Ht {
         return "<a" . self::extra($js) . ">" . $html . "</a>";
     }
 
-    static function popup($idpart, $content, $form = null, $actions = null) {
-        if ($form && $actions)
-            $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
-        self::stash_html("<div id=\"popup_$idpart\" class=\"popupc\">"
-                         . $content . ($form ? $form : "") . "</div>");
-    }
-
     static function link_urls($html) {
         return preg_replace('@((?:https?|ftp)://(?:[^\s<>"&]|&amp;)*[^\s<>"().,:;&])(["().,:;]*)(?=[\s<>&]|\z)@s',
                             '<a href="$1" rel="noreferrer">$1</a>$2', $html);
@@ -415,4 +408,21 @@ class Ht {
         return $stash;
     }
 
+
+    static function popup($idpart, $content, $form = null, $actions = null) {
+        if ($form && $actions)
+            $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
+        self::stash_html("<div id=\"popup_$idpart\" class=\"popupc\">"
+                         . $content . ($form ? $form : "") . "</div>");
+    }
+
+    static function xmsg($type, $content) {
+        if (substr($type, 0, 1) === "x")
+            $type = substr($type, 1);
+        if ($type === "error")
+            $type = "merror";
+        return '<div class="xmsg x' . $type . '"><div class="xmsg0"></div>'
+            . '<div class="xmsgc">' . $content . '</div>'
+            . '<div class="xmsg1"></div></div>';
+    }
 }
