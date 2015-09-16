@@ -304,10 +304,9 @@ class PaperStatus {
 
     private function normalize_string($pj, $k, $simplify) {
         if (@$pj->$k !== null)
-            if (is_string($pj->$k)) {
-                $str = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
-                $pj->$k = convert_to_utf8($str);
-            } else {
+            if (is_string($pj->$k))
+                $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
+            else {
                 $this->set_error_html($k, "Format error [$k]");
                 unset($pj, $k);
             }
@@ -377,7 +376,6 @@ class PaperStatus {
             } else if ($o->type == "text") {
                 if (!is_string($oa))
                     $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be a text string.");
-                $pj->options->$id = convert_to_utf8($oa);
             } else if ($o->has_document()) {
                 if ($o->is_document() && !is_object($oa))
                     $oa = null;
@@ -590,14 +588,14 @@ class PaperStatus {
             $this->set_warning_html("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
     }
 
-    static function author_information($pj) {
+    static private function author_information($pj) {
         $x = "";
         foreach (($pj && @$pj->authors ? $pj->authors : array()) as $au)
             $x .= (@$au->first ? $au->first : (@$au->firstName ? $au->firstName : "")) . "\t"
                 . (@$au->last ? $au->last : (@$au->lastName ? $au->lastName : "")) . "\t"
                 . (@$au->email ? $au->email : "") . "\t"
                 . (@$au->affiliation ? $au->affiliation : "") . "\n";
-        return convert_to_utf8($x);
+        return $x;
     }
 
     static function topics_sql($pj) {
@@ -735,14 +733,16 @@ class PaperStatus {
 
         // update Paper table
         $q = array();
-        foreach (array("title", "abstract", "collaborators") as $k)
-            if (!$old_pj || (@$pj->$k !== null && @$old_pj->$k != $pj->$k))
-                $q[] = "$k='" . sqlq((string) @$pj->$k) . "'";
+        foreach (array("title", "abstract", "collaborators") as $k) {
+            $v = convert_to_utf8((string) @$pj->$k);
+            if (!$old_pj || $v !== (string) @$old_pj->$k)
+                $q[] = "$k='" . sqlq($v) . "'";
+        }
 
         if (!$old_pj || @$pj->authors !== null) {
-            $autext = self::author_information($pj);
+            $autext = convert_to_utf8(self::author_information($pj));
             $old_autext = self::author_information($old_pj);
-            if ($autext != $old_autext || !$old_pj)
+            if ($autext !== $old_autext || !$old_pj)
                 $q[] = "authorInformation='" . sqlq($autext) . "'";
         }
 
@@ -852,7 +852,7 @@ class PaperStatus {
         if (@$pj->topics) {
             $topics = self::topics_sql($pj);
             $old_topics = self::topics_sql($old_pj);
-            if ($topics != $old_topics) {
+            if ($topics !== $old_topics) {
                 $result = Dbl::qe_raw("delete from PaperTopic where paperId=$pj->id");
                 if ($topics)
                     $result = Dbl::qe_raw("insert into PaperTopic (topicId,paperId) values $topics");
@@ -861,9 +861,9 @@ class PaperStatus {
 
         // update PaperOption
         if (@$pj->options) {
-            $options = self::options_sql($pj);
+            $options = convert_to_utf8(self::options_sql($pj));
             $old_options = self::options_sql($old_pj);
-            if ($options != $old_options) {
+            if ($options !== $old_options) {
                 $result = Dbl::qe_raw("delete from PaperOption where paperId=$pj->id");
                 if ($options)
                     $result = Dbl::qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
@@ -873,8 +873,8 @@ class PaperStatus {
         // update PaperConflict
         $conflict = self::conflicts_array($pj, $old_pj);
         $old_conflict = self::conflicts_array($old_pj, null);
-        if (join(",", array_keys($conflict)) != join(",", array_keys($old_conflict))
-            || join(",", array_values($conflict)) != join(",", array_values($old_conflict))) {
+        if (join(",", array_keys($conflict)) !== join(",", array_keys($old_conflict))
+            || join(",", array_values($conflict)) !== join(",", array_values($old_conflict))) {
             $q = array();
             foreach ($conflict as $email => $type)
                 $q[] = "'" . sqlq($email) . "'";
