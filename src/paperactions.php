@@ -200,15 +200,15 @@ class PaperActions {
         if ($Me->allow_administer(null)) {
             $need_paper = true;
             if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
-                $conflict_where = "(p.managerContactId=0 or pc.conflictType is null)";
+                $conflict_where = "(p.managerContactId=0 or p.managerContactId=$Me->contactId or pc.conflictType is null)";
         } else if ($Conf->check_track_sensitivity("view")) {
             $where[] = "t.paperId ?a";
-            $args[] = $Conf->list_pc_viewable_papers($Me);
-            if (!$Conf->setting("tag_seeall"))
-                $conflict_where = "pc.conflictType is null";
+            $args[] = $Me->list_submitted_papers_with_viewable_tags();
         } else {
             $need_paper = true;
-            if (!$Conf->setting("tag_seeall"))
+            if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
+                $conflict_where = "(p.managerContactId=$Me->contactId or pc.conflictType is null)";
+            else if (!$Conf->setting("tag_seeall"))
                 $conflict_where = "pc.conflictType is null";
         }
 

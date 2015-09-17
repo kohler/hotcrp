@@ -522,26 +522,6 @@ class Conference {
         return $this->_track_review_sensitivity;
     }
 
-    function list_pc_viewable_papers($contact) {
-        assert(!!$contact->isPC);
-        $pids = array();
-        if ($this->check_track_sensitivity("view")) {
-            $result = Dbl::qe("select Paper.paperId, PaperTags.paperTags
-                from Paper
-                left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag where tag ?a group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)
-                where timeSubmitted>0", $this->_track_tags);
-            while ($result && ($prow = $result->fetch_object("PaperInfo")))
-                if ($this->check_tracks($prow, $contact, "view"))
-                    $pids[] = (int) $prow->paperId;
-        } else {
-            $result = Dbl::qe("select Paper.paperId from Paper where timeSubmitted>0");
-            while (($row = edb_row($result)))
-                $pids[] = (int) $row[0];
-        }
-        Dbl::free($result);
-        return $pids;
-    }
-
 
 
     function has_rounds() {
