@@ -68,3 +68,6 @@ div.helplist_item {
 input, textarea {
 	max-width: 100%;
 }
+table.pltable {
+	font-size: smaller;
+}
