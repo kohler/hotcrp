@@ -345,7 +345,7 @@ class Tagger {
     public function check($tag, $flags = 0) {
         if (!($this->contact && $this->contact->privChair))
             $flags |= self::NOCHAIR;
-        if ($tag[0] === "#")
+        if (@$tag[0] === "#")
             $tag = substr($tag, 1);
         if ($tag === "")
             return $this->set_error("Empty tag.");
