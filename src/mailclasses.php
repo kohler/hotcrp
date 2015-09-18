@@ -18,7 +18,7 @@ class MailRecipients {
 
         $this->sel = array();
         if ($contact->privChair) {
-            $this->sel["au"] = "All contact authors";
+            $this->sel["au"] = "All contact authors (submitted or unsubmitted)";
             $this->sel["s"] = "Contact authors of submitted papers";
             $this->sel["unsub"] = "Contact authors of unsubmitted papers";
 
