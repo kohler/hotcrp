@@ -2379,12 +2379,12 @@ class Conference {
         echo "<div id=\"initialmsgs\">\n";
         if (@$Opt["maintenance"])
             echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
+        $this->save_messages = false;
         if (($msgs = $this->session("msgs")) && count($msgs)) {
             $this->save_session("msgs", null);
             foreach ($msgs as $m)
                 $this->msg($m[0], $m[1]);
         }
-        $this->save_messages = false;
         echo "</div>\n";
 
         $this->headerPrinted = true;
