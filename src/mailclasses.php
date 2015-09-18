@@ -39,20 +39,28 @@ class MailRecipients {
                     }
             }
 
+            $by_dec = array();
             foreach ($Conf->decision_map() as $dnum => $dname) {
                 $k = "dec:$dname";
                 if ($dnum && (@$dec_pcount[$dnum] > 0 || $type == $k))
-                    $this->sel[$k] = "Contact authors of " . htmlspecialchars($dname) . " papers";
+                    $by_dec[$k] = "Contact authors of " . htmlspecialchars($dname) . " papers";
             }
-            if (@$dec_pcount[0] > 0 || $type == "dec:none")
-                $this->sel["dec:none"] = "Contact authors of undecided papers";
-            if ($type == "dec:any")
-                $this->sel["dec:any"] = "Contact authors of decided papers";
             if (@$dec_tcount[1] > 0 || $type == "dec:yes")
-                $this->sel["dec:yes"] = "Contact authors of accept-class papers";
+                $by_dec["dec:yes"] = "Contact authors of accept-class papers";
             if (@$dec_tcount[-1] > 0 || $type == "dec:no")
-                $this->sel["dec:no"] = "Contact authors of reject-class papers";
+                $by_dec["dec:no"] = "Contact authors of reject-class papers";
+            if (@$dec_pcount[0] > 0 || $type == "dec:none")
+                $by_dec["dec:none"] = "Contact authors of undecided papers";
+            if ($type == "dec:any")
+                $by_dec["dec:any"] = "Contact authors of decided papers";
+            if (count($by_dec)) {
+                $this->sel["bydec_group"] = array("optgroup", "Contact authors by decision");
+                foreach ($by_dec as $k => $v)
+                    $this->sel[$k] = $v;
+                $this->sel["bydec_group_end"] = array("optgroup");
+            }
 
+            $this->sel["rev_group"] = array("optgroup", "Reviewers");
             $this->sel["rev"] = "Reviewers";
             $this->sel["crev"] = "Reviewers with complete reviews";
             $this->sel["uncrev"] = "Reviewers with incomplete reviews";
@@ -73,18 +81,25 @@ class MailRecipients {
                 $this->sel["newpcrev"] = "PC reviewers with new review assignments";
             $this->sel["extrev"] = "External reviewers";
             $this->sel["uncextrev"] = "External reviewers with incomplete reviews";
+            $this->sel["rev_group_end"] = array("optgroup");
+        }
 
+        $this->sel["myextrev"] = "Your requested reviewers";
+        $this->sel["uncmyextrev"] = "Your requested reviewers with incomplete reviews";
+
+        $this->sel["pc_group"] = array("optgroup", "Program committee");
+        if ($contact->privChair) {
             if ($row && $row->any_lead)
                 $this->sel["lead"] = "Discussion leads";
             if ($row && $row->any_shepherd)
                 $this->sel["shepherd"] = "Shepherds";
         }
-        $this->sel["myextrev"] = "Your requested reviewers";
-        $this->sel["uncmyextrev"] = "Your requested reviewers with incomplete reviews";
         $this->sel["pc"] = "Program committee";
         foreach (pcTags() as $t)
             if ($t != "pc")
                 $this->sel["pc:$t"] = "PC members tagged “{$t}”";
+        $this->sel["pc_group_end"] = array("optgroup");
+
         if ($contact->privChair)
             $this->sel["all"] = "All users";
 
