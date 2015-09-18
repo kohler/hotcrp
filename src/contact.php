@@ -1541,7 +1541,8 @@ class Contact {
             // check PC tracking
             $tracks = $Conf->has_tracks();
             $isPC = $this->isPC
-                && (!$tracks || $Conf->check_tracks($prow, $this, "view"));
+                && (!$tracks || $ci->review_type >= REVIEW_PC
+                    || $Conf->check_tracks($prow, $this, "view"));
 
             // check whether PC privileges apply
             $ci->allow_pc_broad = $ci->allow_administer || $isPC;
@@ -2624,7 +2625,8 @@ class Contact {
                 where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId)";
             $result = Dbl::qe($q, $Conf->track_tags());
             while ($result && ($prow = $result->fetch_object("PaperInfo")))
-                if ($prow->reviewType || $Conf->check_tracks($prow, $this, "view"))
+                if ((int) $prow->reviewType >= REVIEW_PC
+                    || $Conf->check_tracks($prow, $this, "view"))
                     $pids[] = (int) $prow->paperId;
             Dbl::free($result);
             return $pids;
