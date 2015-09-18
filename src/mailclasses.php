@@ -18,9 +18,9 @@ class MailRecipients {
 
         $this->sel = array();
         if ($contact->privChair) {
-            $this->sel["au"] = "All contact authors (submitted or unsubmitted)";
             $this->sel["s"] = "Contact authors of submitted papers";
             $this->sel["unsub"] = "Contact authors of unsubmitted papers";
+            $this->sel["au"] = "All contact authors";
 
             // map "somedec:no"/"somedec:yes" to real decisions
             $result = Dbl::qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
