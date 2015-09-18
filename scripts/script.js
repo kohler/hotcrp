@@ -1745,27 +1745,23 @@ function papersel(value, name) {
 
 var papersel_check_safe = false;
 function paperselCheck() {
-    var ins, i, e, values, check_safe = papersel_check_safe;
+    var e, values, check_safe = papersel_check_safe;
     papersel_check_safe = false;
     if ((e = $$("sel_papstandin")))
         e.parentNode.removeChild(e);
-    ins = document.getElementsByTagName("input");
-    for (i = 0, values = []; i < ins.length; i++)
-        if ((e = ins[i]).name == "pap[]") {
-            if (e.checked)
-                return true;
-            else
-                values.push(e.value);
-        }
-    if (check_safe) {
+    if ($(this).find("input[name='pap[]']:checked").length)
+        /* OK */;
+    else if (check_safe) {
         e = document.createElement("div");
         e.id = "sel_papstandin";
+        values = $(this).find("input[name='pap[]']").map(function () { return this.value; }).get();
         e.innerHTML = '<input type="hidden" name="pap" value="' + values.join(" ") + "\" />";
         $$("sel").appendChild(e);
-        return true;
+    } else {
+        alert("Select one or more papers first.");
+        return false;
     }
-    alert("Select one or more papers first.");
-    return false;
+    return true;
 }
 
 function pc_tags_members(tag) {
