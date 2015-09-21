@@ -1069,7 +1069,7 @@ $blind\n";
                 $y = defval($f->options, $fval, "");
                 $sn = $f->name . ":";
                 /* "(1-" . count($f->options) . "):"; */
-                if (!$lastNumeric)
+                if ($lastNumeric === false)
                     $x .= "\n";
                 if (strlen($sn) > 38 + strlen($fval))
                     $x .= $sn . "\n" . prefix_word_wrap($fval . ". ", $y, 39 + strlen($fval)) . "\n";
