@@ -275,14 +275,10 @@ class SearchTerm {
 }
 
 
-class SearchReviewValue {
-    public $countexpr;
-    public $contactsql;
-    private $_contactset;
-    public $fieldsql;
-    public $compar = 0;
-    public $allowed = 0;
-    public $view_score;
+class CountMatcher {
+    private $_countexpr;
+    private $compar = 0;
+    private $allowed = 0;
 
     static public $opmap = array("" => 2, "#" => 2, "=" => 2, "==" => 2,
                                  "!" => 5, "!=" => 5, "≠" => 5,
@@ -290,20 +286,12 @@ class SearchReviewValue {
                                  "≥" => 6, ">=" => 6, ">" => 4);
     static public $oparray = array(false, "<", "=", "<=", ">", "!=", ">=", false);
 
-    function __construct($countexpr, $contacts = null, $fieldsql = null,
-                         $view_score = null) {
-        $this->countexpr = $countexpr;
-        if (!$contacts || is_string($contacts))
-            $this->contactsql = $contacts;
-        else
-            $this->contactsql = sql_in_numeric_set($contacts);
-        $this->_contactset = $contacts;
-        $this->fieldsql = $fieldsql;
-        if (preg_match('/\A([=!<>]=?|≠|≤|≥)(-?\d+)\z/', $countexpr, $m)) {
+    function __construct($countexpr) {
+        $this->_countexpr = $countexpr;
+        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?\d+)\z/', $countexpr, $m)) {
             $this->allowed |= self::$opmap[$m[1]];
             $this->compar = (int) $m[2];
         }
-        $this->view_score = $view_score;
     }
     function test($n) {
         return self::compare($n, $this->allowed, $this->compar);
@@ -324,42 +312,75 @@ class SearchReviewValue {
         else
             return false;
     }
+    public function countexpr() {
+        return $this->_countexpr;
+    }
     public function conservative_countexpr() {
         if ($this->allowed & 1)
             return ">=0";
         else
             return ($this->allowed & 2 ? ">=" : ">") . $this->compar;
     }
-    static function negate_countexpr($countexpr) {
-        $t = new SearchReviewValue($countexpr);
+    static function negate_countexpr_string($str) {
+        $t = new CountMatcher($str);
         if ($t->allowed)
             return self::$oparray[$t->allowed ^ 7] . $t->compar;
         else
-            return $countexpr;
+            return $str;
     }
-    function restrictContact($contactid) {
-        if (!$this->_contactset)
-            $cset = array($contactid);
-        else if (!is_array($this->_contactset))
-            $cset = $this->_contactset . " and \3=$contactid";
-        else if (in_array($contactid, $this->_contactset))
-            $cset = array($contactid);
-        else
-            return null;
-        return new SearchReviewValue($this->countexpr, $cset, $this->fieldsql);
-    }
-    function contactWhere($fieldname) {
-        return str_replace("\3", $fieldname, "\3" . $this->contactsql);
-    }
-    static function any() {
-        return new SearchReviewValue(">0", null);
-    }
-    static function canonical_comparator($text) {
-        $text = trim($text);
-        if (($x = self::$opmap[$text]))
+    static function canonical_comparator($str) {
+        if (($x = self::$opmap[trim($str)]))
             return self::$oparray[$x];
         else
             return false;
+    }
+}
+
+class CommentTagMatcher extends CountMatcher {
+    public $tag;
+
+    function __construct($countexpr, $tag) {
+        parent::__construct($countexpr);
+        $this->tag = $tag;
+    }
+}
+
+class ContactCountMatcher extends CountMatcher {
+    private $_contacts = null;
+
+    function __construct($countexpr, $contacts) {
+        parent::__construct($countexpr);
+        assert($contacts === null || is_array($contacts) || is_int($contacts));
+        $this->_contacts = $contacts;
+        if (is_int($this->_contacts))
+            $this->_contacts = array($this->_contacts);
+    }
+    function has_contacts() {
+        return $this->_contacts !== null;
+    }
+    function contact_set() {
+        return $this->_contacts;
+    }
+    function contact_match_sql($fieldname) {
+        if ($this->_contacts === null)
+            return "true";
+        else
+            return $fieldname . sql_in_numeric_set($this->_contacts);
+    }
+    function test_contact($cid) {
+        return $this->_contacts === null || in_array($cid, $this->_contacts);
+    }
+}
+
+class ReviewSearchMatcher extends ContactCountMatcher {
+    public $fieldsql;
+    public $view_score;
+
+    function __construct($countexpr, $contacts = null, $fieldsql = null,
+                         $view_score = null) {
+        parent::__construct($countexpr, $contacts);
+        $this->fieldsql = $fieldsql;
+        $this->view_score = $view_score;
     }
 }
 
@@ -898,7 +919,7 @@ class PaperSearch {
         else if (ctype_digit($text))
             return array("", "=" . $text);
         else if (preg_match('/\A(.*?)([=!<>]=?|≠|≤|≥)\s*(\d+)\z/s', $text, $m))
-            return array($m[1], SearchReviewValue::canonical_comparator($m[2]) . $m[3]);
+            return array($m[1], CountMatcher::canonical_comparator($m[2]) . $m[3]);
         else
             return array($text, ">0");
     }
@@ -986,7 +1007,7 @@ class PaperSearch {
             $contacts = $this->_reviewerMatcher($m[0], $quoted, true);
         else
             $contacts = $this->_reviewerMatcher($m[0], $quoted, false);
-        $value = new SearchReviewValue($m[1], $contacts);
+        $value = new ReviewSearchMatcher($m[1], $contacts);
         $qt[] = new SearchTerm("re", $rt | self::F_XVIEW, $value);
     }
 
@@ -1032,14 +1053,14 @@ class PaperSearch {
         }
 
         $contacts = $this->_reviewerMatcher($m[0], $quoted, $pc_only);
-        $value = new SearchReviewValue($m[1], $contacts);
+        $value = new ContactCountMatcher($m[1], $contacts);
         if ($this->privChair
             || (is_array($contacts) && count($contacts) == 1 && $contacts[0] == $this->cid))
             $qt[] = new SearchTerm("conflict", 0, $value);
         else {
             $qt[] = new SearchTerm("conflict", self::F_XVIEW, $value);
-            if (($newvalue = $value->restrictContact($this->cid)))
-                $qt[] = new SearchTerm("conflict", 0, $newvalue);
+            if ($value->test_contact($this->cid))
+                $qt[] = new SearchTerm("conflict", 0, new ContactCountMatcher($m[1], $this->cid));
         }
     }
 
@@ -1057,13 +1078,15 @@ class PaperSearch {
         } else {
             $result = Dbl::qe("select distinct contactId from PaperReview where paperId in (" . join(", ", array_keys($args)) . ")");
             $contacts = Dbl::fetch_first_columns($result);
-            $qt[] = new SearchTerm("conflict", 0, new SearchReviewValue(">0", $contacts));
+            $qt[] = new SearchTerm("conflict", 0, new ContactCountMatcher(">0", $contacts));
         }
     }
 
     private function _search_comment_tag($rt, $tag, $rvalue, $round, &$qt) {
-        $value = new SearchReviewValue($rvalue, $tag !== "none" ? $tag : "any");
-        $term = new SearchTerm("cmttag", $rt, $value);
+        $xtag = $tag;
+        if ($xtag === "none")
+            $xtag = "any";
+        $term = new SearchTerm("cmttag", $rt, new CommentTagMatcher($rvalue, $xtag));
         if ($round !== null)
             $term->commentRound = $round;
         if ($tag === "none")
@@ -1124,8 +1147,8 @@ class PaperSearch {
                        || !pcTags($tags[0]))
                 return;
         }
-        $contacts = ($m[0] === "" ? null : $contacts = $this->_reviewerMatcher($m[0], $quoted, false));
-        $value = new SearchReviewValue($m[1], $contacts);
+        $contacts = ($m[0] === "" ? null : $this->_reviewerMatcher($m[0], $quoted, false));
+        $value = new ContactCountMatcher($m[1], $contacts);
         $term = new SearchTerm("cmt", $rt | self::F_XVIEW, $value);
         if ($round !== null)
             $term->commentRound = $round;
@@ -1154,7 +1177,7 @@ class PaperSearch {
             else if (preg_match('/\A(\d*?)([=!<>]=?|≠|≤|≥)?\s*([A-Za-z]|\d+)\z/s', $word, $m)) {
                 if ($m[1] === "")
                     $m[1] = 1;
-                $m[2] = SearchReviewValue::canonical_comparator($m[2]);
+                $m[2] = CountMatcher::canonical_comparator($m[2]);
                 if ($f->option_letter != (ctype_digit($m[3]) == false))
                     $value = "$field=-1"; // XXX
                 else {
@@ -1218,7 +1241,7 @@ class PaperSearch {
                 $value = "$field like '%" . sqlq_for_like($word) . "%'";
         }
 
-        $value = new SearchReviewValue($countexpr, $contacts, $value, $f->view_score);
+        $value = new ReviewSearchMatcher($countexpr, $contacts, $value, $f->view_score);
         $qt[] = new SearchTerm("re", self::F_COMPLETE | self::F_XVIEW, $value);
         return true;
     }
@@ -1243,7 +1266,7 @@ class PaperSearch {
         else if ($m[2] === "")
             list($m[1], $m[3]) = array("1", $m[1]);
         $mx = array((int) $m[1] ? ">=" . $m[1] : "=0");
-        $compar = SearchReviewValue::canonical_comparator($m[2]);
+        $compar = CountMatcher::canonical_comparator($m[2]);
         if ($m[3] !== "")
             $mx[] = "preference" . $compar . $m[3];
         if ($m[4] !== "")
@@ -1251,14 +1274,14 @@ class PaperSearch {
 
         // since 0 preferences are not stored, we must negate the sense of the
         // comparison if a preference of 0 might match
-        $scratch = new SearchReviewValue($mx[1]);
+        $scratch = new CountMatcher($mx[1]);
         if ($scratch->test(0))
             foreach ($mx as &$mxv)
-                $mxv = SearchReviewValue::negate_countexpr($mxv);
+                $mxv = CountMatcher::negate_countexpr_string($mxv); // XXX bogus
 
         // PC members can only search their own preferences; we enforce
         // this restriction below in clauseTermSetRevpref.
-        $value = new SearchReviewValue($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
+        $value = new ReviewSearchMatcher($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
         $qt[] = new SearchTerm("revpref", $this->privChair ? 0 : self::F_NONCONFLICT, $value);
     }
 
@@ -1335,7 +1358,7 @@ class PaperSearch {
             && $m[1] !== "any" && $m[1] !== "none"
             && ($m[2] !== "" || $m[3] !== "")) {
             $tagword = $m[1];
-            $compar = array(null, SearchReviewValue::canonical_comparator($m[3]) . $m[4]);
+            $compar = array(null, CountMatcher::canonical_comparator($m[3]) . $m[4]);
         } else {
             $tagword = $word;
             $compar = array(null);
@@ -1390,7 +1413,7 @@ class PaperSearch {
             $oname = $m[1];
             if ($m[2][0] === ":" || $m[2][0] === "#")
                 $m[2] = substr($m[2], 1);
-            $ocompar = SearchReviewValue::canonical_comparator($m[2]);
+            $ocompar = CountMatcher::canonical_comparator($m[2]);
             $oval = strtolower(simplify_whitespace($m[3]));
         } else {
             $oname = $word;
@@ -1445,7 +1468,7 @@ class PaperSearch {
                     if ($oval === "any")
                         $qo[] = array($o, "!=", 0, $oval);
                     else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m)) {
-                        if (SearchReviewValue::compare(0, $ocompar, $m[1]))
+                        if (CountMatcher::compare(0, $ocompar, $m[1]))
                             $qo[] = array($o, "=", 0);
                         $qo[] = array($o, ">0", "special", "attachment-count", $ocompar, $m[1]);
                     } else
@@ -1544,7 +1567,7 @@ class PaperSearch {
             if ($m[2] === "")
                 $m[2] = ($m[3] == 0 ? "=" : ">=");
             else
-                $m[2] = SearchReviewValue::canonical_comparator($m[2]);
+                $m[2] = CountMatcher::canonical_comparator($m[2]);
             $nqt = count($qt);
 
             // resolve rating type
@@ -2161,11 +2184,11 @@ class PaperSearch {
     // apply rounds to reviewer searches
     function _queryMakeAdjustedReviewSearch($roundterm) {
         if ($this->limitName === "r" || $this->limitName === "rout")
-            $value = new SearchReviewValue(">0", array($this->cid));
+            $value = new ReviewSearchMatcher(">0", array($this->cid));
         else if ($this->limitName === "req" || $this->limitName === "reqrevs")
-            $value = new SearchReviewValue(">0", null, "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL);
+            $value = new ReviewSearchMatcher(">0", null, "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL);
         else
-            $value = new SearchReviewValue(">0");
+            $value = new ReviewSearchMatcher(">0");
         $rt = $this->privChair ? 0 : self::F_NONCONFLICT;
         if (!$this->amPC)
             $rt |= self::F_REVIEWER;
@@ -2233,11 +2256,11 @@ class PaperSearch {
             $this->regex[$x[0]][] = $x[1];
         }
         if ($top && $qe->type === "re" && !$this->_reviewer_fixed && !$highlight) {
-            if ($this->_reviewer === false) {
-                $v = $qe->value->contactsql;
-                if ($v[0] === "=")
-                    $this->_reviewer = (int) substr($v, 1);
-            } else
+            if ($this->_reviewer === false
+                && ($v = $qe->value->contact_set())
+                && count($v) == 1)
+                $this->_reviewer = $v[0];
+            else
                 $this->_reviewer = null;
         }
         if ($top && ($x = $qe->get("contradiction_warning")))
@@ -2439,7 +2462,7 @@ class PaperSearch {
         }
         $q = array();
         $this->_clauseTermSetFlags($t, $sqi, $q);
-        $q[] = "coalesce($thistab.count,0)" . $t->value->countexpr;
+        $q[] = "coalesce($thistab.count,0)" . $t->value->countexpr();
         $sqi->add_column($thistab . "_matches", "$thistab.count");
         $t->link = $thistab . "_matches";
         return "(" . join(" and ", $q) . ")";
@@ -2500,8 +2523,8 @@ class PaperSearch {
                                        $sqi, $f);
         } else if ($tt === "re") {
             $extrawhere = array();
-            if ($t->value->contactsql)
-                $extrawhere[] = $t->value->contactWhere("r.contactId");
+            if ($t->value->has_contacts())
+                $extrawhere[] = $t->value->contact_match_sql("r.contactId");
             if ($t->value->fieldsql)
                 $extrawhere[] = $t->value->fieldsql;
             $extrawhere = join(" and ", $extrawhere);
@@ -2512,19 +2535,20 @@ class PaperSearch {
             $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $sqi);
         } else if ($tt === "revpref") {
             $extrawhere = array();
-            if ($t->value->contactsql)
-                $extrawhere[] = $t->value->contactWhere("contactId");
+            if ($t->value->has_contacts())
+                $extrawhere[] = $t->value->contact_match_sql("contactId");
             if ($t->value->fieldsql)
                 $extrawhere[] = $t->value->fieldsql;
             $extrawhere = join(" and ", $extrawhere);
             $thistab = "Revpref_" . count($sqi->tables);
             $f[] = $this->_clauseTermSetRevpref($thistab, $extrawhere, $t, $sqi);
         } else if ($tt === "conflict") {
-            $this->_clauseTermSetTable($t, "\3" . $t->value->contactsql, $t->value->countexpr, "Conflict",
+            $this->_clauseTermSetTable($t, $t->value->contact_set(),
+                                       $t->value->countexpr(), "Conflict",
                                        "PaperConflict", "contactId", "",
                                        $sqi, $f);
         } else if ($tt === "cmt") {
-            if ($t->value->contactsql)
+            if ($t->value->has_contacts())
                 $thistab = "Comments_" . count($sqi->tables);
             else {
                 $rtype = $t->flags & (self::F_ALLOWCOMMENT | self::F_ALLOWRESPONSE | self::F_AUTHORCOMMENT | self::F_ALLOWDRAFT | self::F_REQUIREDRAFT);
@@ -2532,13 +2556,13 @@ class PaperSearch {
                 if (@$t->commentRound !== null)
                     $thistab .= "_" . $t->commentRound;
             }
-            $f[] = $this->_clauseTermSetComments($thistab, $t->value->contactWhere("contactId"), $t, $sqi);
+            $f[] = $this->_clauseTermSetComments($thistab, $t->value->contact_match_sql("contactId"), $t, $sqi);
         } else if ($tt === "cmttag") {
             $thistab = "TaggedComments_" . count($sqi->tables);
-            if ($t->value->contactsql === "any")
+            if ($t->value->tag === "any")
                 $match = "is not null";
             else
-                $match = "like '% " . sqlq($t->value->contactsql) . " %'";
+                $match = "like '% " . sqlq($t->value->tag) . " %'";
             $f[] = $this->_clauseTermSetComments($thistab, "commentTags $match", $t, $sqi);
         } else if ($tt === "pn") {
             $q = array();
@@ -2661,7 +2685,7 @@ class PaperSearch {
                         if (($count_only
                              ? $this->contact->can_count_review($row, $rrow, true)
                              : $this->contact->can_view_review($row, $rrow, true))
-                            && (!$t->value->contactsql
+                            && (!$t->value->has_contacts()
                                 || $this->contact->can_view_review_identity($row, $rrow, true))
                             && (!isset($t->value->view_score)
                                 || $t->value->view_score > $this->contact->view_score_bound($row, $rrow)))
@@ -2750,7 +2774,7 @@ class PaperSearch {
                     if (is_array($expr))
                         $ans = in_array($row->$fieldname, $expr);
                     else
-                        $ans = SearchReviewValue::compare_string($row->$fieldname, $expr);
+                        $ans = CountMatcher::compare_string($row->$fieldname, $expr);
                 }
                 return $ans;
             }
@@ -2771,7 +2795,7 @@ class PaperSearch {
             if (@$t->value[2] === "special") {
                 $ov = $row->option($t->value[0]->id);
                 if ($t->value[3] === "attachment-count")
-                    return SearchReviewValue::compare(count($ov->values), $t->value[4], $t->value[5]);
+                    return CountMatcher::compare(count($ov->values), $t->value[4], $t->value[5]);
                 else if ($t->value[3] === "attachment-name") {
                     $reg = self::analyze_field_preg($t->value[4]);
                     foreach ($ov->documents($row) as $doc)
