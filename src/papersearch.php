@@ -1132,7 +1132,7 @@ class PaperSearch {
         $qt[] = $term;
     }
 
-    function _searchReviews($word, $f, &$qt, $quoted, $noswitch = false) {
+    private function _search_review_field($word, $f, &$qt, $quoted, $noswitch = false) {
         global $Opt;
         $countexpr = ">0";
         $contacts = null;
@@ -1193,15 +1193,15 @@ class PaperSearch {
                        : preg_match('/\A\s*(\d+)\s*(-|\.\.\.?)\s*(\d+)\s*\z/s', $word, $m)) {
                 $qo = array();
                 if ($m[2] === "-" || $m[2] === "") {
-                    $this->_searchReviews($contactword . $m[1], $f, $qo, $quoted);
-                    $this->_searchReviews($contactword . $m[3], $f, $qo, $quoted);
+                    $this->_search_review_field($contactword . $m[1], $f, $qo, $quoted);
+                    $this->_search_review_field($contactword . $m[3], $f, $qo, $quoted);
                 } else
-                    $this->_searchReviews($contactword . ">=" . $m[1], $f, $qo, $quoted, true);
-                if ($this->_searchReviews($contactword . "<" . $m[1], $f, $qo, $quoted, true))
+                    $this->_search_review_field($contactword . ">=" . $m[1], $f, $qo, $quoted, true);
+                if ($this->_search_review_field($contactword . "<" . $m[1], $f, $qo, $quoted, true))
                     $qo[count($qo) - 1] = SearchTerm::make_not($qo[count($qo) - 1]);
                 else
                     array_pop($qo);
-                if ($this->_searchReviews($contactword . ">" . $m[3], $f, $qo, $quoted, true))
+                if ($this->_search_review_field($contactword . ">" . $m[3], $f, $qo, $quoted, true))
                     $qo[count($qo) - 1] = SearchTerm::make_not($qo[count($qo) - 1]);
                 else
                     array_pop($qo);
@@ -1862,7 +1862,7 @@ class PaperSearch {
         // Finally, look for a review field.
         if ($keyword && !isset(self::$_keywords[$keyword]) && count($qt) == 0) {
             if (($field = ReviewForm::field_search($keyword)))
-                $this->_searchReviews($word, $field, $qt, $quoted);
+                $this->_search_review_field($word, $field, $qt, $quoted);
             else if (!$this->_search_options("$keyword:$word", $qt, false)
                      && $report_error)
                 $this->warn("Unrecognized keyword “" . htmlspecialchars($keyword) . "”.");
