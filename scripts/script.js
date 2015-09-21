@@ -2214,7 +2214,7 @@ function visibility_change() {
 }
 
 function count_words(text) {
-    return ((text || "").match(/\S+/g) || []).length;
+    return ((text || "").match(/[^-\s.,;:<>!*_~`#|]\S*/g) || []).length;
 }
 
 function count_words_split(text, wlimit) {
