@@ -707,7 +707,7 @@ class ReviewForm {
                     if ($fval != "")
                         $fval .= "\n";
                     // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                    $req[$field] = convert_to_utf8($fval);
+                    $fval = convert_to_utf8($fval);
                 }
                 if ($rrow && strcmp($rrow->$field, $fval) != 0
                     && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)
