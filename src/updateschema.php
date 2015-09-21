@@ -699,4 +699,29 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 96
         && $Conf->ql("alter table ContactInfo add `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0'"))
         update_schema_version($Conf, 97);
+    if ($Conf->settings["allowPaperOption"] == 97
+        && $Conf->ql("alter table PaperReview add `reviewWordCount` int(11) DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive add `reviewWordCount` int(11)  DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive drop key `reviewId`")
+        && $Conf->ql("alter table PaperReviewArchive drop key `contactPaper`")
+        && $Conf->ql("alter table PaperReviewArchive drop key `reviewSubmitted`")
+        && $Conf->ql("alter table PaperReviewArchive drop key `reviewNeedsSubmit`")
+        && $Conf->ql("alter table PaperReviewArchive drop key `reviewType`")
+        && $Conf->ql("alter table PaperReviewArchive drop key `requestedBy`"))
+        update_schema_version($Conf, 98);
+    if ($Conf->settings["allowPaperOption"] == 98) {
+        $rf = new ReviewForm($Conf->review_form_json());
+        do {
+            $q = array();
+            $result = $Conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
+            while (($rrow = edb_orow($result)))
+                $q[] = "update PaperReview set reviewWordCount="
+                    . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
+            Dbl::free($result);
+            $Conf->dblink->multi_query(join(";", $q));
+            while ($Conf->dblink->more_results())
+                Dbl::free($Conf->dblink->next_result());
+        } while (count($q) == 32);
+        update_schema_version($Conf, 99);
+    }
 }

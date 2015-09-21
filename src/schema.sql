@@ -252,6 +252,7 @@ CREATE TABLE `PaperReview` (
   `fixability` tinyint(4) NOT NULL DEFAULT '0',
   `textField7` mediumtext,
   `textField8` mediumtext,
+  `reviewWordCount` int(11) DEFAULT NULL,
   PRIMARY KEY (`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
@@ -308,15 +309,10 @@ CREATE TABLE `PaperReviewArchive` (
   `fixability` tinyint(4) NOT NULL DEFAULT '0',
   `textField7` mediumtext,
   `textField8` mediumtext,
+  `reviewWordCount` int(11) DEFAULT NULL,
   PRIMARY KEY (`reviewArchiveId`),
   UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
-  KEY `reviewId` (`reviewId`),
-  KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `paperId` (`paperId`),
-  KEY `reviewSubmitted` (`reviewSubmitted`),
-  KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
-  KEY `reviewType` (`reviewType`),
-  KEY `requestedBy` (`requestedBy`)
+  KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
@@ -500,7 +496,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 97);
+insert into Settings (name, value) values ('allowPaperOption', 99);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

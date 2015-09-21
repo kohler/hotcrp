@@ -334,17 +334,6 @@ class ReviewForm {
     static private $cache = null;
     static private $review_author_seen = null;
 
-    static public function get($unused = null) {
-        global $Conf;
-        if (!self::$cache)
-            self::$cache = new ReviewForm;
-        return self::$cache;
-    }
-
-    static public function clear_cache() {
-        self::$cache = null;
-    }
-
     static public function fmap_sorter($a, $b) {
         if ($a->displayed != $b->displayed)
             return $a->displayed ? -1 : 1;
@@ -354,42 +343,7 @@ class ReviewForm {
             return strcmp($a->id, $b->id);
     }
 
-    static public function all_fields() {
-        $rf = self::get();
-        return $rf->forder;
-    }
-
-    static public function field($fid) {
-        $rf = self::get();
-        $f = @$rf->fmap[$fid];
-        return $f && $f->displayed ? $f : null;
-    }
-
-    static public function field_search($name) {
-        $rf = self::get();
-        $f = @$rf->fmap[$name];
-        if ($f && $f->displayed)
-            return $f;
-        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-        for ($i = 0; $i < count($a); ++$i)
-            $a[$i] = preg_quote($a[$i], "/");
-        $field = null;
-        foreach ($rf->forder as $f) {
-            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
-                return $f;
-            for ($i = 0; $i < count($a); ++$i)
-                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
-                    && !preg_match("{\\b$a[$i]}i", $f->name))
-                    break;
-            if ($i == count($a))
-                $field = ($field === null ? $f : false);
-        }
-        return $field;
-    }
-
-    function __construct() {
-        global $Conf;
-
+    public function __construct($rfj) {
         // prototype fields
         $fmap = array();
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
@@ -403,7 +357,6 @@ class ReviewForm {
             $this->fmap[$fid] = new ReviewField($fid, true);
 
         // parse JSON
-        $rfj = $Conf->review_form_json();
         if (!$rfj)
             $rfj = json_decode('{
 "overAllMerit":{"name":"Overall merit","position":1,"view_score":1,
@@ -449,6 +402,50 @@ class ReviewForm {
                 if (count($fs) > 1)
                     $fdupes = array_merge($fdupes, $fs);
         }
+    }
+
+    static public function get($unused = null) {
+        global $Conf;
+        if (!self::$cache)
+            self::$cache = new ReviewForm($Conf->review_form_json());
+        return self::$cache;
+    }
+
+    static public function clear_cache() {
+        self::$cache = null;
+    }
+
+    static public function all_fields() {
+        $rf = self::get();
+        return $rf->forder;
+    }
+
+    static public function field($fid) {
+        $rf = self::get();
+        $f = @$rf->fmap[$fid];
+        return $f && $f->displayed ? $f : null;
+    }
+
+    static public function field_search($name) {
+        $rf = self::get();
+        $f = @$rf->fmap[$name];
+        if ($f && $f->displayed)
+            return $f;
+        $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        for ($i = 0; $i < count($a); ++$i)
+            $a[$i] = preg_quote($a[$i], "/");
+        $field = null;
+        foreach ($rf->forder as $f) {
+            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
+                return $f;
+            for ($i = 0; $i < count($a); ++$i)
+                if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
+                    && !preg_match("{\\b$a[$i]}i", $f->name))
+                    break;
+            if ($i == count($a))
+                $field = ($field === null ? $f : false);
+        }
+        return $field;
     }
 
     private function get_deprecated($table, $element) {
@@ -529,6 +526,8 @@ class ReviewForm {
             reviewToken, reviewAuthorNotified";
         if ($Conf->sversion >= 92)
             $x .= ", reviewAuthorSeen";
+        if ($Conf->sversion >= 98)
+            $x .= ", reviewWordCount";
         return $x;
     }
 
@@ -680,6 +679,15 @@ class ReviewForm {
         }
     }
 
+    function word_count($rrow) {
+        $wc = 0;
+        foreach ($this->forder as $field => $f)
+            if ($rrow->$field
+                && (!$f->round_mask || $f->is_round_visible($rrow)))
+                $wc += count_words($rrow->$field);
+        return $wc;
+    }
+
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
         global $Conf, $Opt;
         $newsubmit = @$req["ready"] && !@$req["unready"]
@@ -693,6 +701,7 @@ class ReviewForm {
 
         $q = array();
         $diff_view_score = VIEWSCORE_FALSE;
+        $wc = 0;
         foreach ($this->forder as $field => $f)
             if (isset($req[$field])
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {
@@ -708,6 +717,7 @@ class ReviewForm {
                         $fval .= "\n";
                     // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                     $fval = convert_to_utf8($fval);
+                    $wc += count_words($fval);
                 }
                 if ($rrow && strcmp($rrow->$field, $fval) != 0
                     && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)
@@ -755,6 +765,9 @@ class ReviewForm {
             && isset($req["version"]) && ctype_digit($req["version"])
             && $req["version"] > defval($rrow, "reviewEditVersion"))
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
+        if ($rrow && $diff_view_score > VIEWSCORE_FALSE
+            && $Conf->sversion >= 98)
+            $q[] = "reviewWordCount=" . $wc;
 
         // notification
         $notification_bound = $now - 10800;

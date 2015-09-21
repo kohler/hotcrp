@@ -57,6 +57,10 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
         return $prefix . "\n" . $out;
 }
 
+function count_words($text) {
+    return preg_match_all('/[^-\s.,;:<>!*_~`#|]\S*/', $text);
+}
+
 
 // email and MIME helpers
 
