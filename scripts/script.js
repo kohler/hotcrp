@@ -25,14 +25,6 @@ function serialize_object(x) {
 }
 
 
-function bind_append(f, args) {
-    return function () {
-        var a = Array.prototype.slice.call(arguments);
-        a.push.apply(a, args);
-        return f.apply(this, a);
-    };
-}
-
 // callback combination
 function add_callback(cb1, cb2) {
     if (cb1 && cb2)
@@ -2683,8 +2675,6 @@ function shortcut(top_elt) {
 
 
     function add(key, f) {
-        if (arguments.length > 2)
-            f = bind_append(f, Array.prototype.slice.call(arguments, 2));
         if (key) {
             if (typeof key === "string")
                 key = [key];
