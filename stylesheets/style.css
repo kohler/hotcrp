@@ -222,7 +222,7 @@ table, tr, td {
 /* footer */
 div#footer {
 	margin-top: 36px;
-	padding: 0 24px 3px 12px;
+	padding: 0 24px 8px 12px;
 	clear: both;
 }
 div#footer_crp {
@@ -1022,7 +1022,7 @@ span.error {
 	color: #ff0000;
 }
 .dimerror, .wordsovertext {
-	color: #9c4848;
+	color: #903030;
 }
 
 
