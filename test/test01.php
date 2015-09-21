@@ -356,6 +356,22 @@ xassert_assign($Admin, false, "paper,tag\n9,~private\n10,~~chair\n");
 assert_search_papers($user_chair, "#none", "11 12 14 15 16 18");
 assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18");
 
+// comment searches
+assert_search_papers($user_chair, "cmt:any", "1");
+$comment2 = new CommentInfo(null, $paper18);
+$c2ok = $comment2->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
+xassert($c2ok);
+assert_search_papers($user_chair, "cmt:any", "1 18");
+assert_search_papers($user_chair, "cmt:any>1", "");
+$comment3 = new CommentInfo(null, $paper18);
+$c3ok = $comment3->save(array("text" => "test", "visibility" => "a", "blind" => false, "tags" => "redcmt"), $user_mgbaker);
+xassert($c3ok);
+assert_search_papers($user_chair, "cmt:any>1", "18");
+assert_search_papers($user_chair, "cmt:jon", "");
+assert_search_papers($user_chair, "cmt:mgbaker", "1 18");
+assert_search_papers($user_chair, "cmt:mgbaker>1", "18");
+assert_search_papers($user_chair, "cmt:#redcmt", "18");
+
 /*$result = Dbl::qe("select paperId, tag, tagIndex from PaperTag order by paperId, tag");
 $tags = array();
 while ($result && ($row = $result->fetch_row()))

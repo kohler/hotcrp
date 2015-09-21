@@ -912,16 +912,19 @@ class PaperSearch {
 
     static function _matchCompar($text, $quoted) {
         $text = trim($text);
+        $compar = null;
+        if (preg_match('/\A(.*?)([=!<>]=?|≠|≤|≥)\s*(\d+)\z/s', $text, $m)) {
+            $text = $m[1];
+            $compar = $m[2] . $m[3];
+        }
         if (($text === "any" || $text === "" || $text === "yes") && !$quoted)
-            return array("", ">0");
+            return array("", $compar ? : ">0");
         else if (($text === "none" || $text === "no") && !$quoted)
             return array("", "=0");
-        else if (ctype_digit($text))
+        else if (!$compar && ctype_digit($text))
             return array("", "=" . $text);
-        else if (preg_match('/\A(.*?)([=!<>]=?|≠|≤|≥)\s*(\d+)\z/s', $text, $m))
-            return array($m[1], CountMatcher::canonical_comparator($m[2]) . $m[3]);
         else
-            return array($text, ">0");
+            return array($text, $compar ? : ">0");
     }
 
     static private function _tautology($m) {
