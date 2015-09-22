@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Navigation {
-
     private static $protocol;           // "http://" or "https://"
     private static $server;             // "PROTOCOL://SITE[:PORT]"
     private static $sitedir;            // "/PATH", does not include $page, ends in /
@@ -14,7 +13,7 @@ class Navigation {
     private static $sitedir_relative;
     private static $php_suffix;
 
-    public static function analyze($index_name = "index.php") {
+    public static function analyze($index_name = "index") {
         if (PHP_SAPI == "cli")
             return;
 
@@ -33,58 +32,52 @@ class Navigation {
             $x .= ":" . $port;
         self::$server = $x;
 
-        $script_name = $_SERVER["SCRIPT_FILENAME"];
-        $index_len = strlen($index_name);
-        $is_index = strlen($script_name) > $index_len
-            && substr($script_name, strlen($script_name) - $index_len) === $index_name;
+        // detect $sitedir
+        $sfilename = $_SERVER["SCRIPT_FILENAME"]; // pathname
+        $sfile = substr($sfilename, strrpos($sfilename, "/") + 1);
 
-        self::$path = "";
-        if (@$_SERVER["PATH_INFO"])
-            self::$path = $_SERVER["PATH_INFO"];
-
-        preg_match(',\A([^\?\#]*)(.*)\z,', $_SERVER["REQUEST_URI"], $m);
-        self::$query = $m[2];
-
-        // beware: PATH_INFO is URL-decoded, REQUEST_URI is not.
-        // be careful; make sure $site and $page are not URL-decoded.
-        $sitepage = urldecode($m[1]);
-        $sitepage = substr($sitepage, 0, strlen($sitepage) - strlen(self::$path));
-        if (substr($m[1], 0, strlen($sitepage)) !== $sitepage) {
-            $sitepage = $m[1];
-            for ($nslashes = substr_count(self::$path, "/"); $nslashes > 0; --$nslashes)
-                $sitepage = substr($sitepage, 0, strrpos($sitepage, "/"));
+        $sname = $_SERVER["SCRIPT_NAME"]; // URL-decoded
+        $sname_slash = strrpos($sname, "/");
+        if (substr($sname, $sname_slash + 1) !== $sfile) {
+            if ($sname[strlen($sname) - 1] !== "/")
+                $sname .= "/";
+            $sname_slash = strlen($sname) - 1;
         }
 
-        if ($is_index) {
-            if (preg_match(',\A(.*/)(index(?:[.]php)?)\z,i', $sitepage, $m)) {
-                $sitepage = $m[1];
-                if (self::$path && self::$path !== "/")
-                    self::$path = "/" . $m[2] . self::$path;
-            }
-            $site = $sitepage;
-            if (preg_match(',\A/([^/]+?)(?:[.]php)?(|/.*)\z,', self::$path, $m)) {
-                $site .= "/";
-                self::$page = $m[1];
-                self::$path = $m[2];
-            } else {
-                $site .= self::$path;
-                self::$page = "index";
-                self::$path = "";
-            }
-        } else {
-            preg_match(',\A(.*/)([^/]*?)(?:[.]php)?/?\z,i', $sitepage, $m);
-            $site = $m[1];
-            self::$page = $m[2];
+        $uri = $_SERVER["REQUEST_URI"]; // URL-encoded
+        if (substr($uri, 0, $sname_slash) === substr($sname, 0, $sname_slash))
+            $uri_slash = $sname_slash;
+        else {
+            // URL-encoded prefix != URL-decoded prefix
+            for ($nslash = substr_count(substr($sname, 0, $sname_slash), "/"),
+                 $uri_slash = 0;
+                 $nslash > 0; --$nslash)
+                $uri_slash = strpos($uri, "/", $uri_slash + 1);
         }
-        self::$sitedir = $site;
-        if (self::$sitedir === ""
-            || self::$sitedir[strlen(self::$sitedir) - 1] !== "/")
-            self::$sitedir .= "/";
+        if ($uri_slash === false || $uri_slash > strlen($uri))
+            $uri_slash = strlen($uri);
 
-        self::$sitedir_relative = str_repeat("../", substr_count(self::$path, "/"));
-        if (self::$sitedir_relative === ""
-            && self::$sitedir !== $site)
+        self::$sitedir = substr($uri, 0, $uri_slash) . "/";
+
+        // separate $page, $path, $query
+        $uri_suffix = substr($uri, $uri_slash);
+        preg_match(',\A(/[^/\?\#]*|)([^\?\#]*)(.*)\z,',
+                   substr($uri, $uri_slash), $m);
+        if ($m[1] !== "" && $m[1] !== "/")
+            self::$page = urldecode(substr($m[1], 1));
+        else
+            self::$page = $index_name;
+        self::$path = urldecode($m[2]);
+        self::$query = $m[3];
+
+        // detect $sitedir_relative
+        $path_slash = substr_count(self::$path, "/");
+        if ($path_slash)
+            self::$sitedir_relative = str_repeat("../", $path_slash);
+        else if ($uri_slash >= strlen($uri))
             self::$sitedir_relative = self::$sitedir;
+        else
+            self::$sitedir_relative = "";
 
         self::$php_suffix = ".php";
         if (substr(@$_SERVER["SERVER_SOFTWARE"], 0, 5) === "nginx"
