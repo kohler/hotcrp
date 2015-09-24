@@ -1,12 +1,12 @@
 HotCRP NEWS
 
-Version 2.96
+Version 2.96   24.Sep.2015
 
 * New improved look.
 
-* Support per-review-round review fields: a review in round R2 can
-  look different from one in round R1, for instance. Note that each
-  reviewer can still only enter one review per paper.
+* Support per-review-round review fields: a review in round R2 can look
+  different from one in round R1, for instance. Note that each reviewer can
+  enter at most one review per paper (not one review per round).
 
 * Add `HIGHLIGHT` search keyword.
 
@@ -16,8 +16,8 @@ Version 2.96
 
 * The settings UI support configuring whether PDF submissions are required.
 
-* Add an autoassigner that chooses a sensible discussion order,
-  reducing conflict churn.
+* Add an autoassigner that chooses a sensible discussion order, reducing
+  conflict churn.
 
 * Formulas support dec:, re:REVIEWERNAME, re:REVIEWERTAG.
 
@@ -25,8 +25,8 @@ Version 2.96
 
 * Fixes to password reset, autoassigner, many others.
 
-* Thanks to all contributors and users, especially John Wilkes and
-  Jeff Mogul. Emery Berger also suggested a feature or two.
+* Thanks to all contributors and users, especially John Wilkes and Jeff Mogul.
+  Emery Berger also suggested a feature or two.
 
 
 Version 2.95   19.Jun.2015

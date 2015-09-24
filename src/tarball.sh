@@ -1,4 +1,4 @@
-export VERSION=2.95
+export VERSION=2.96
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*, *//;s/[;)].*//'`
@@ -78,9 +78,11 @@ users.php
 batch/.htaccess
 batch/adddoc.php
 batch/addusers.php
+batch/checkinvariants.php
 batch/killinactivedoc.php
-batch/s3check.php
+batch/s3test.php
 batch/s3transfer.php
+batch/s3verifyall.php
 batch/savepapers.php
 batch/updatecontactdb.php
 
