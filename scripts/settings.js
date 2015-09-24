@@ -411,6 +411,7 @@ function append_field(fid, pos) {
     $f.appendTo("#reviewform_container");
 
     fill_field(fid, original[fid]);
+    $f.find(".hottooltip").each(add_tooltip);
 }
 
 function rfs(fieldmapj, originalj, samplesj, errors, request) {
