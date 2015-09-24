@@ -85,4 +85,15 @@ xassert_match($x->a[1], ",^x.txt:2(?::|\$),");
 xassert_match($x->b->c, ",^x.txt:4(?::|\$),");
 xassert_match($x->b->__LANDMARK__, ",^x.txt:3(?::|\$),");
 
+// obscure_time tests
+$t = $Conf->parse_time("1 Sep 2010 00:00:01");
+$t0 = $Conf->obscure_time($t);
+xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
+xassert_eqq($Conf->printableTime($t0), "1 Sep 2010 12pm EDT");
+
+$t = $Conf->parse_time("1 Sep 2010 23:59:59");
+$t0 = $Conf->obscure_time($t);
+xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
+xassert_eqq($Conf->printableTime($t0), "1 Sep 2010 12pm EDT");
+
 xassert_exit();

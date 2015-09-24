@@ -131,9 +131,13 @@ class CommentInfo {
             if (!$idable)
                 $cj->author_hidden = true;
         }
-        if ($this->timeModified > 0) {
+        if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;
-            $cj->modified_at_text = $Conf->printableTime($this->timeModified);
+            $cj->modified_at_text = $Conf->printableTime($cj->modified_at);
+        } else if ($this->timeModified > 0) {
+            $cj->modified_at = $Conf->obscure_time($this->timeModified);
+            $cj->modified_at_text = $Conf->unparse_time_obscure($cj->modified_at);
+            $cj->modified_at_obscured = true;
         }
 
         // text
@@ -171,9 +175,12 @@ class CommentInfo {
         if (strlen($crow->shortTitle) != strlen($crow->title))
             $t .= "...";
         $t .= "</a>";
-        if ($contact->can_view_comment_identity($crow, $crow, false))
+        if ($contact->can_view_comment_identity($crow, $crow, false)) {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
-        $t .= ' <span class="barsep">·</span> <span class="hint">posted</span> ' . $Conf->parseableTime($crow->timeModified, false);
+            $time = $Conf->parseableTime($crow->timeModified, false);
+        } else
+            $time = $Conf->unparse_time_obscure($Conf->obscure_time($crow->timeModified));
+        $t .= ' <span class="barsep">·</span> <span class="hint">posted</span> ' . $time;
         $t .= '</small><br /><a class="q" ' . substr($a, 3)
             . ">" . htmlspecialchars($crow->shortComment);
         if (strlen($crow->shortComment) < strlen($crow->comment))

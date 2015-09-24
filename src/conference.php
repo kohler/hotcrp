@@ -942,7 +942,7 @@ class Conference {
 
     // times
 
-    static function _dateFormat($long) {
+    static function _dateFormat($type) {
         global $Opt;
         if (!isset($Opt["_dateFormatInitialized"])) {
             if (!isset($Opt["time24hour"]) && isset($Opt["time24Hour"]))
@@ -957,6 +957,8 @@ class Conference {
             }
             if (!isset($Opt["dateFormatLong"]))
                 $Opt["dateFormatLong"] = "l " . $Opt["dateFormat"];
+            if (!isset($Opt["dateFormatObscure"]))
+                $Opt["dateFormatObscure"] = "j M Y";
             if (!isset($Opt["timestampFormat"]))
                 $Opt["timestampFormat"] = $Opt["dateFormat"];
             if (!isset($Opt["dateFormatSimplifier"])) {
@@ -969,9 +971,11 @@ class Conference {
                 $Opt["dateFormatTimezone"] = null;
             $Opt["_dateFormatInitialized"] = true;
         }
-        if ($long == "timestamp")
+        if ($type == "timestamp")
             return $Opt["timestampFormat"];
-        else if ($long)
+        else if ($type == "obscure")
+            return $Opt["dateFormatObscure"];
+        else if ($type)
             return $Opt["dateFormatLong"];
         else
             return $Opt["dateFormat"];
@@ -1015,17 +1019,19 @@ class Conference {
         return strtotime($d, $reference);
     }
 
-    function _printableTime($value, $long, $useradjust, $preadjust = null) {
+    function _printableTime($value, $type, $useradjust, $preadjust = null) {
         global $Opt;
         if ($value <= 0)
             return "N/A";
-        $t = date(self::_dateFormat($long), $value);
+        $t = date(self::_dateFormat($type), $value);
         if ($Opt["dateFormatSimplifier"])
             $t = preg_replace($Opt["dateFormatSimplifier"], "", $t);
-        if ($Opt["dateFormatTimezone"] === null)
-            $t .= " " . date("T", $value);
-        else if ($Opt["dateFormatTimezone"])
-            $t .= " " . $Opt["dateFormatTimezone"];
+        if ($type !== "obscure") {
+            if ($Opt["dateFormatTimezone"] === null)
+                $t .= " " . date("T", $value);
+            else if ($Opt["dateFormatTimezone"])
+                $t .= " " . $Opt["dateFormatTimezone"];
+        }
         if ($preadjust)
             $t .= $preadjust;
         if ($useradjust) {
@@ -1038,6 +1044,16 @@ class Conference {
     }
     function printableTime($value, $useradjust = false, $preadjust = null) {
         return $this->_printableTime($value, true, $useradjust, $preadjust);
+    }
+    function obscure_time($timestamp) {
+        $timestamp = (int) ($timestamp + 0.5);
+        $offset = 0;
+        if (($zone = timezone_open(date_default_timezone_get())))
+            $offset = $zone->getOffset(new DateTime("@$timestamp"));
+        return $timestamp - (($timestamp + $offset) % 86400) + 43200;
+    }
+    function unparse_time_obscure($value, $useradjust = false, $preadjust = null) {
+        return $this->_printableTime($value, "obscure", $useradjust, $preadjust);
     }
     function printableTimestamp($value, $useradjust = false, $preadjust = null) {
         return $this->_printableTime($value, "timestamp", $useradjust, $preadjust);

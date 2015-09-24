@@ -17,3 +17,4 @@ $Opt["debugShowSensitiveEmail"] = true;
 $Opt["emailFrom"] = "you@example.com";
 $Opt["disablePS"] = true;
 $Opt["smartScoreCompare"] = true;
+$Opt["timezone"] = "America/New_York";
