@@ -230,16 +230,16 @@ class Ht {
 
     static function entry($name, $value, $js = null) {
         $js = $js ? $js : array();
-        if (($temp = @$js["hottemptext"])) {
+        if (($temp = @$js["placeholder"])) {
             if ($value === null || $value === "" || $value === $temp)
                 $js["class"] = trim(defval($js, "class", "") . " temptext");
             if ($value === null || $value === "")
                 $value = $temp;
-            $temp = ' hottemptext="' . htmlspecialchars($temp) . '"';
+            $temp = ' placeholder="' . htmlspecialchars($temp) . '"';
             self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
         } else
             $temp = "";
-        unset($js["hottemptext"]);
+        unset($js["placeholder"]);
         $type = @$js["type"] ? : "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'

@@ -1395,7 +1395,7 @@ function doRadio($name, $varr) {
 }
 
 function render_entry($name, $v, $size = 30, $temptext = "") {
-    return Ht::entry($name, $v, setting_js($name, array("size" => $size, "hottemptext" => $temptext)));
+    return Ht::entry($name, $v, setting_js($name, array("size" => $size, "placeholder" => $temptext)));
 }
 
 function doTextRow($name, $text, $v, $size = 30,
@@ -1660,7 +1660,7 @@ function doOptGroupOption($o) {
         setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
         "</div>",
         "<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, setting_js("optn$id", array("hottemptext" => "(Enter new option)", "size" => 50))),
+        Ht::entry("optn$id", $o->name, setting_js("optn$id", array("placeholder" => "(Enter new option)", "size" => 50))),
         "</div>\n",
         "  <div class='f-i'>",
         "<div class='f-c'>",
@@ -2058,7 +2058,7 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
                    setting_js("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
-                  setting_js("{$type}tag_track$tnum", array("class" => "fx", "hottemptext" => "(tag)"))),
+                  setting_js("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
         "</td></tr>";
 }
 
@@ -2071,7 +2071,7 @@ function do_track($trackname, $tnum) {
         echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
     else
         echo setting_label("name_track$tnum", "For papers with tag &nbsp;"),
-            Ht::entry("name_track$tnum", $trackname, setting_js("name_track$tnum", array("hottemptext" => "(tag)"))), ":";
+            Ht::entry("name_track$tnum", $trackname, setting_js("name_track$tnum", array("placeholder" => "(tag)"))), ":";
     echo "</div>\n";
 
     $t = $Conf->setting_json("tracks");

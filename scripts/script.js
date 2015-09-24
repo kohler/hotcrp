@@ -998,7 +998,7 @@ function blank() {
 return function (e, text) {
     if (typeof this === "object" && typeof this.tagName === "string"
         && this.tagName.toUpperCase() == "INPUT") {
-        text = typeof e === "number" ? this.getAttribute("hottemptext") : e;
+        text = typeof e === "number" ? this.getAttribute("placeholder") : e;
         e = this;
     } else if (typeof e === "string")
         e = $$(e);
@@ -1511,7 +1511,7 @@ return {
 var hotcrp_load = {
     time: setLocalTime.initialize,
     temptext: function () {
-        jQuery("input[hottemptext]").each(mktemptext);
+        jQuery("input[placeholder]").each(mktemptext);
     }
 };
 

@@ -34,7 +34,7 @@ function settings_add_track() {
     j = jQuery("#trackgroup" + i);
     j.html(jQuery("#trackgroup0").html().replace(/_track0/g, "_track" + i));
     hiliter_children(j);
-    j.find("input[hottemptext]").each(mktemptext);
+    j.find("input[placeholder]").each(mktemptext);
 }
 
 
@@ -237,7 +237,7 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
 <div id="revfieldview_$" class="settings_revfieldview fn2"></div>\
 <div id="revfieldedit_$" class="settings_revfieldedit fx2">\
   <div class="f-i errloc_shortName_$">\
-    <input name="shortName_$" id="shortName_$" type="text" class="hottemptext" size="50" style="font-weight:bold" hottemptext="Field name" />\
+    <input name="shortName_$" id="shortName_$" type="text" size="50" style="font-weight:bold" placeholder="Field name" />\
   </div>\
   <div class="f-i">\
     <button id="moveup_$" class="revfield_moveup" type="button">Move up</button><span class="sep"></span>\
@@ -308,7 +308,7 @@ function view_unfold(event) {
     foldup(this, event, {n: 2, f: false});
     var $f = $(this).closest(".settings_revfield");
     $f.find("textarea").css("height", "auto").autogrow();
-    $f.find("input[hottemptext]").each(mktemptext);
+    $f.find("input[placeholder]").each(mktemptext);
 }
 
 function create_field_view(fid, fieldj) {
@@ -486,7 +486,7 @@ function settings_add_resp_round() {
     j = jQuery("#response_" + i);
     j.html(jQuery("#response_n").html().replace(/_n\"/g, "_" + i + "\""));
     hiliter_children(j);
-    j.find("input[hottemptext]").each(mktemptext);
+    j.find("input[placeholder]").each(mktemptext);
     j.find("textarea").css({height: "auto"}).autogrow().val(jQuery("#response_n textarea").val());
     return false;
 }

@@ -522,7 +522,7 @@ echo "<span class='fx8'>:</span><br /><div class='fx8'>";
 $q = defval($_REQUEST, "q", "(All)");
 echo "Search&nbsp; ",
     Ht::entry("q", @$_REQUEST["q"],
-              array("id" => "q", "hottemptext" => "(All)",
+              array("id" => "q", "placeholder" => "(All)",
                     "class" => "hotcrp_searchbox", "size" => 36,
                     "title" => "Enter paper numbers or search terms")),
     " &nbsp;in &nbsp;",
@@ -534,7 +534,7 @@ if (!@$_REQUEST["newrev_since"] && ($t = $Conf->setting("pcrev_informtime")))
     $_REQUEST["newrev_since"] = $Conf->parseableTime($t, true);
 echo 'Assignments since:&nbsp; ',
     Ht::entry("newrev_since", @$_REQUEST["newrev_since"],
-              array("hottemptext" => "(all)", "size" => 30)),
+              array("placeholder" => "(all)", "size" => 30)),
     '</div>';
 
 echo '<div class="fx9 g"></div></div>';

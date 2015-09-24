@@ -265,7 +265,7 @@ if ($homelist) {
     $q = defval($_REQUEST, "q", "(All)");
     echo Ht::entry("q", $q,
                    array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
-                         "class" => "hotcrp_searchbox", "hottemptext" => "(All)")),
+                         "class" => "hotcrp_searchbox", "placeholder" => "(All)")),
         " &nbsp;in&nbsp; ",
         PaperSearch::searchTypeSelector($tOpt, key($tOpt), 0), "
     &nbsp; ", Ht::submit("Search"),

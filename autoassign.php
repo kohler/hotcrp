@@ -433,7 +433,7 @@ echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
     $_REQUEST["q"] = join(" ", $papersel);
 echo Ht::entry_h("q", $_REQUEST["q"],
-                 array("id" => "autoassignq", "hottemptext" => "(All)",
+                 array("id" => "autoassignq", "placeholder" => "(All)",
                        "size" => 40, "title" => "Enter paper numbers or search terms",
                        "class" => "hotcrp_searchbox",
                        "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
