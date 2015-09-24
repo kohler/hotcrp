@@ -2518,6 +2518,10 @@ class Contact {
             || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
     }
 
+    function can_view_comment_time(PaperInfo $prow, $crow) {
+        return $this->can_view_comment_identity($prow, $crow, true);
+    }
+
     function can_view_some_draft_response() {
         return $this->is_manager() || $this->is_author();
     }

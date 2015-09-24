@@ -175,12 +175,14 @@ class CommentInfo {
         if (strlen($crow->shortTitle) != strlen($crow->title))
             $t .= "...";
         $t .= "</a>";
-        if ($contact->can_view_comment_identity($crow, $crow, false)) {
-            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
+        $idable = $contact->can_view_comment_identity($crow, $crow, false);
+        if ($idable || $contact->can_view_comment_time($crow, $crow))
             $time = $Conf->parseableTime($crow->timeModified, false);
-        } else
+        else
             $time = $Conf->unparse_time_obscure($Conf->obscure_time($crow->timeModified));
-        $t .= ' <span class="barsep">·</span> <span class="hint">posted</span> ' . $time;
+        $t .= ' <span class="barsep">·</span> ' . $time;
+        if ($idable)
+            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
         $t .= '</small><br /><a class="q" ' . substr($a, 3)
             . ">" . htmlspecialchars($crow->shortComment);
         if (strlen($crow->shortComment) < strlen($crow->comment))

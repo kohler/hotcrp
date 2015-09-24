@@ -1720,9 +1720,13 @@ $blind\n";
         if (strlen($rrow->shortTitle) != strlen($rrow->title))
             $t .= "...";
         $t .= "</a>";
+        if ($contact->can_view_review_time($rrow, $rrow))
+            $time = $Conf->parseableTime($rrow->reviewModified, false);
+        else
+            $time = $Conf->unparse_time_obscure($Conf->obscure_time($rrow->reviewModified));
+        $t .= $barsep . $time;
         if ($contact->can_view_review_identity($rrow, $rrow, false))
             $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
-        $t .= $barsep . "<span class='hint'>submitted</span> " . $Conf->parseableTime($rrow->reviewSubmitted, false);
         $t .= "</small><br /><a class='q'" . substr($a, 3) . ">";
 
         $revViewScore = $contact->view_score_bound($rrow, $rrow);
