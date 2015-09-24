@@ -28,7 +28,7 @@ class LoginHelper {
         $Me = $Me->activate();
     }
 
-    static function http_auth_check() {
+    static function check_http_auth() {
         global $Conf, $Opt, $Me;
         assert(isset($Opt["httpAuthLogin"]));
 
