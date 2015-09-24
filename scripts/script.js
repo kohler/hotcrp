@@ -1270,7 +1270,7 @@ function display_tracker() {
 }
 
 function tracker(start) {
-    var trackerstate, list = "";
+    var trackerstate;
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
@@ -1291,7 +1291,8 @@ function tracker(start) {
     else if (trackerstate && trackerstate[0] != siteurl)
         trackerstate = null;
     if (trackerstate) {
-        if (hotcrp_list)
+        var list = "";
+        if (hotcrp_list && /^p\//.test(hotcrp_list.id))
             list = hotcrp_list.num || hotcrp_list.id;
         var req = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)

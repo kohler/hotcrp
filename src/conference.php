@@ -2239,8 +2239,10 @@ class Conference {
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($CurrentList
-            && ($list = SessionList::lookup($CurrentList)))
-            Ht::stash_script("hotcrp_list={num:$CurrentList,id:\"" . addcslashes($list->listid, "\n\r\\\"/") . "\"};");
+            && ($list = SessionList::lookup($CurrentList))) {
+            $list = array("num" => $CurrentList, "id" => $list->listid);
+            Ht::stash_script("hotcrp_list=" . json_encode($list) . ";");
+        }
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
         $huser = (object) array();
