@@ -728,7 +728,7 @@ class PreferenceListPaperColumn extends PaperColumn {
         global $Conf;
         if ($this->topics && !$Conf->has_topics())
             $this->topics = false;
-        if (!$pl->contact->privChair)
+        if (!$pl->contact->is_manager())
             return false;
         if ($visible) {
             $pl->qopts["allReviewerPreference"] = $pl->qopts["allConflictType"] = 1;
