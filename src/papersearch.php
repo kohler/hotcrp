@@ -370,17 +370,50 @@ class ContactCountMatcher extends CountMatcher {
     function test_contact($cid) {
         return $this->_contacts === null || in_array($cid, $this->_contacts);
     }
+    function add_contact($cid) {
+        if ($this->_contacts === null)
+            $this->_contacts = array();
+        if (!in_array($cid, $this->_contacts))
+            $this->_contacts[] = $cid;
+    }
 }
 
 class ReviewSearchMatcher extends ContactCountMatcher {
-    public $fieldsql;
-    public $view_score;
+    const COMPLETE = 1;
+    const INCOMPLETE = 2;
+    const INPROGRESS = 3;
+
+    public $review_type = 0;
+    public $completeness = 0;
+    public $fieldsql = null;
+    public $view_score = null;
+    public $round = null;
+    public $rate = null;
 
     function __construct($countexpr, $contacts = null, $fieldsql = null,
                          $view_score = null) {
         parent::__construct($countexpr, $contacts);
         $this->fieldsql = $fieldsql;
         $this->view_score = $view_score;
+    }
+    function simple_name() {
+        global $reviewTypeName;
+        if (!$this->has_contacts() && $this->fieldsql === null
+            && $this->round === null && $this->rate === null) {
+            $name = $this->review_type ? $reviewTypeName[$this->review_type] : "All";
+            $x = array("", "Complete", "Incomplete", "Inprogress");
+            return $name . $x[$this->completeness];
+        } else
+            return false;
+    }
+}
+
+class RevprefSearchMatcher extends ContactCountMatcher {
+    public $fieldsql;
+
+    function __construct($countexpr, $contacts = null, $fieldsql = null) {
+        parent::__construct($countexpr, $contacts);
+        $this->fieldsql = $fieldsql;
     }
 }
 
@@ -593,10 +626,6 @@ class ContactSearch {
 
 class PaperSearch {
 
-    const F_REVIEWTYPEMASK = 0x00007;
-    const F_COMPLETE = 0x00008;
-    const F_INCOMPLETE = 0x00010;
-    const F_INPROGRESS = 0x00020;
     const F_NONCONFLICT = 0x00040;
     const F_AUTHOR = 0x00080;
     const F_REVIEWER = 0x00100;
@@ -990,12 +1019,6 @@ class PaperSearch {
             $rt = REVIEW_SECONDARY;
         else if (str_ends_with($rtype, "ext"))
             $rt = REVIEW_EXTERNAL;
-        if (str_starts_with($rtype, "c"))
-            $rt |= self::F_COMPLETE;
-        if (str_starts_with($rtype, "i"))
-            $rt |= self::F_INCOMPLETE;
-        if (str_starts_with($rtype, "p") && $rtype !== "pri")
-            $rt |= self::F_INPROGRESS;
 
         $m = self::_matchCompar($word, $quoted);
         if (($qr = self::_tautology($m))) {
@@ -1006,12 +1029,19 @@ class PaperSearch {
 
         if ($m[0] === "")
             $contacts = null;
-        else if (($rt & self::F_REVIEWTYPEMASK) >= REVIEW_PC)
+        else if ($rt >= REVIEW_PC)
             $contacts = $this->_reviewerMatcher($m[0], $quoted, true);
         else
             $contacts = $this->_reviewerMatcher($m[0], $quoted, false);
         $value = new ReviewSearchMatcher($m[1], $contacts);
-        $qt[] = new SearchTerm("re", $rt | self::F_XVIEW, $value);
+        $value->review_type = $rt;
+        if (str_starts_with($rtype, "c"))
+            $value->completeness = ReviewSearchMatcher::COMPLETE;
+        if (str_starts_with($rtype, "i"))
+            $value->completeness = ReviewSearchMatcher::INCOMPLETE;
+        if (str_starts_with($rtype, "p") && $rtype !== "pri")
+            $value->completeness = ReviewSearchMatcher::INPROGRESS;
+        $qt[] = new SearchTerm("re", self::F_XVIEW, $value);
     }
 
     static public function decision_matcher($word, $quoted = null) {
@@ -1245,7 +1275,8 @@ class PaperSearch {
         }
 
         $value = new ReviewSearchMatcher($countexpr, $contacts, $value, $f->view_score);
-        $qt[] = new SearchTerm("re", self::F_COMPLETE | self::F_XVIEW, $value);
+        $value->completeness = ReviewSearchMatcher::COMPLETE;
+        $qt[] = new SearchTerm("re", self::F_XVIEW, $value);
         return true;
     }
 
@@ -1284,7 +1315,7 @@ class PaperSearch {
 
         // PC members can only search their own preferences; we enforce
         // this restriction below in clauseTermSetRevpref.
-        $value = new ReviewSearchMatcher($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
+        $value = new RevprefSearchMatcher($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
         $qt[] = new SearchTerm("revpref", $this->privChair ? 0 : self::F_NONCONFLICT, $value);
     }
 
@@ -2185,13 +2216,17 @@ class PaperSearch {
     }
 
     // apply rounds to reviewer searches
+    static private $adjustments = array("round", "rate");
+
     function _queryMakeAdjustedReviewSearch($roundterm) {
+        $value = new ReviewSearchMatcher(">0");
         if ($this->limitName === "r" || $this->limitName === "rout")
-            $value = new ReviewSearchMatcher(">0", array($this->cid));
+            $value->add_contact($this->cid);
         else if ($this->limitName === "req" || $this->limitName === "reqrevs")
-            $value = new ReviewSearchMatcher(">0", null, "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL);
-        else
-            $value = new ReviewSearchMatcher(">0");
+            $value->fieldsql = "requestedBy=" . $this->cid . " and reviewType=" . REVIEW_EXTERNAL;
+        foreach (self::$adjustments as $adj)
+            if (isset($roundterm->value[$adj]))
+                $value->$adj = $roundterm->value[$adj];
         $rt = $this->privChair ? 0 : self::F_NONCONFLICT;
         if (!$this->amPC)
             $rt |= self::F_REVIEWER;
@@ -2203,26 +2238,25 @@ class PaperSearch {
             return $term;
     }
 
-    function _queryAdjustReviews($qe, $revadj) {
+    private function _query_adjust_reviews($qe, $revadj) {
         $applied = $first_applied = 0;
-        $adjustments = array("round", "rate");
         if ($qe->type === "not")
-            $this->_queryAdjustReviews($qe->value, $revadj);
+            $this->_query_adjust_reviews($qe->value, $revadj);
         else if ($qe->type === "and" || $qe->type === "and2") {
             $myrevadj = ($qe->value[0]->type === "revadj" ? $qe->value[0] : null);
             if ($myrevadj) {
                 $used_revadj = false;
-                foreach ($adjustments as $adj)
+                foreach (self::$adjustments as $adj)
                     if (!isset($myrevadj->value[$adj]) && isset($revadj->value[$adj])) {
                         $myrevadj->value[$adj] = $revadj->value[$adj];
                         $used_revadj = true;
                     }
             }
 
-            $rdown = $myrevadj ? $myrevadj : $revadj;
+            $rdown = $myrevadj ? : $revadj;
             for ($i = 0; $i < count($qe->value); ++$i)
                 if ($qe->value[$i]->type !== "revadj")
-                    $this->_queryAdjustReviews($qe->value[$i], $rdown);
+                    $this->_query_adjust_reviews($qe->value[$i], $rdown);
 
             if ($myrevadj && !isset($myrevadj->used_revadj)) {
                 $qe->value[0] = $this->_queryMakeAdjustedReviewSearch($myrevadj);
@@ -2231,11 +2265,11 @@ class PaperSearch {
             }
         } else if ($qe->type === "or" || $qe->type === "then") {
             for ($i = 0; $i < count($qe->value); ++$i)
-                $this->_queryAdjustReviews($qe->value[$i], $revadj);
+                $this->_query_adjust_reviews($qe->value[$i], $revadj);
         } else if ($qe->type === "re" && $revadj) {
-            foreach ($adjustments as $adj)
+            foreach (self::$adjustments as $adj)
                 if (isset($revadj->value[$adj]))
-                    $qe->set($adj, $revadj->value[$adj]);
+                    $qe->value->$adj = $revadj->value[$adj];
             $revadj->used_revadj = true;
         } else if ($qe->get_float("used_revadj")) {
             $revadj && $revadj->used_revadj = true;
@@ -2411,43 +2445,51 @@ class PaperSearch {
         $where[] = $rate;
     }
 
-    private function _clauseTermSetReviews($thistab, $extrawhere, $t, $sqi) {
+    private function _clauseTermSetReviews($t, $sqi) {
+        $rsm = $t->value;
+        if (($thistab = $rsm->simple_name()))
+            $thistab = "Reviews_" . $thistab;
+        else
+            $thistab = "Reviews_" . count($sqi->tables);
+
         if (!isset($sqi->tables[$thistab])) {
             $where = array();
             $reviewtable = "PaperReview r";
-            if ($t->flags & self::F_REVIEWTYPEMASK)
-                $where[] = "reviewType=" . ($t->flags & self::F_REVIEWTYPEMASK);
-            if ($t->flags & self::F_COMPLETE)
+            if ($rsm->review_type)
+                $where[] = "reviewType=" . $rsm->review_type;
+            if ($rsm->completeness === ReviewSearchMatcher::COMPLETE)
                 $where[] = "reviewSubmitted>0";
-            else if ($t->flags & self::F_INCOMPLETE)
+            else if ($rsm->completeness === ReviewSearchMatcher::INCOMPLETE)
                 $where[] = "reviewNeedsSubmit>0";
-            else if ($t->flags & self::F_INPROGRESS) {
+            else if ($rsm->completeness === ReviewSearchMatcher::INPROGRESS) {
                 $where[] = "reviewNeedsSubmit>0";
                 $where[] = "reviewModified>0";
             }
-            $rrnegate = $t->get("revadjnegate");
-            if (($x = $t->get("round")) !== null) {
-                if (count($x) == 0)
-                    $where[] = $rrnegate ? "true" : "false";
+            if ($rsm->round !== null) {
+                if (count($rsm->round) == 0)
+                    $where[] = "false";
                 else
-                    $where[] = "reviewRound " . ($rrnegate ? "not " : "") . "in (" . join(",", $x) . ")";
+                    $where[] = "reviewRound" . sql_in_numeric_set($rsm->round);
             }
-            if (($x = $t->get("rate")) !== null)
-                $this->_clauseTermSetRating($reviewtable, $where, $rrnegate ? "(not $x)" : $x);
-            if ($extrawhere)
-                $where[] = $extrawhere;
+            if ($rsm->rate !== null)
+                $this->_clauseTermSetRating($reviewtable, $where, $rsm->rate);
+            if ($rsm->has_contacts())
+                $where[] = $rsm->contact_match_sql("r.contactId");
+            if ($rsm->fieldsql)
+                $where[] = $rsm->fieldsql;
             $wheretext = "";
             if (count($where))
                 $wheretext = " where " . join(" and ", $where);
             $sqi->add_table($thistab, array("left join", "(select r.paperId, count(r.reviewId) count, group_concat(r.reviewId, ' ', r.contactId, ' ', r.reviewType, ' ', coalesce(r.reviewSubmitted,0), ' ', r.reviewNeedsSubmit, ' ', r.requestedBy, ' ', r.reviewToken, ' ', r.reviewBlind) info from $reviewtable$wheretext group by paperId)"));
             $sqi->add_column($thistab . "_info", $thistab . ".info");
         }
+
         $q = array();
         $this->_clauseTermSetFlags($t, $sqi, $q);
         // Make the database query conservative (so change equality
         // constraints to >= constraints, and ignore <=/</!= constraints).
         // We'll do the precise query later.
-        $q[] = "coalesce($thistab.count,0)" . $t->value->conservative_countexpr();
+        $q[] = "coalesce($thistab.count,0)" . $rsm->conservative_countexpr();
         $t->link = $thistab;
         return "(" . join(" and ", $q) . ")";
     }
@@ -2525,17 +2567,7 @@ class PaperSearch {
                                        " and " . $this->contact->actAuthorSql("%"),
                                        $sqi, $f);
         } else if ($tt === "re") {
-            $extrawhere = array();
-            if ($t->value->has_contacts())
-                $extrawhere[] = $t->value->contact_match_sql("r.contactId");
-            if ($t->value->fieldsql)
-                $extrawhere[] = $t->value->fieldsql;
-            $extrawhere = join(" and ", $extrawhere);
-            if ($extrawhere === "" && $t->get("round") === null && $t->get("rate") === null)
-                $thistab = "Numreviews_" . ($t->flags & (self::F_REVIEWTYPEMASK | self::F_COMPLETE | self::F_INCOMPLETE));
-            else
-                $thistab = "Reviews_" . count($sqi->tables);
-            $f[] = $this->_clauseTermSetReviews($thistab, $extrawhere, $t, $sqi);
+            $f[] = $this->_clauseTermSetReviews($t, $sqi);
         } else if ($tt === "revpref") {
             $extrawhere = array();
             if ($t->value->has_contacts())
@@ -2890,7 +2922,7 @@ class PaperSearch {
 
         // apply review rounds (top down, needs separate step)
         if ($this->reviewAdjust) {
-            $qe = $this->_queryAdjustReviews($qe, null);
+            $qe = $this->_query_adjust_reviews($qe, null);
             if ($this->_reviewAdjustError)
                 $this->warn("Unexpected use of “round:” or “rate:” ignored.  Stick to the basics, such as “re:reviewername round:roundname”.");
         }
