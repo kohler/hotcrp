@@ -1,6 +1,7 @@
 HotCRP NEWS
-
-Version 2.96   24.Sep.2015
+===========
+
+## Version 2.96 - 24.Sep.2015
 
 * New improved look.
 
@@ -28,8 +29,8 @@ Version 2.96   24.Sep.2015
 * Thanks to all contributors and users, especially John Wilkes and Jeff Mogul.
   Emery Berger also suggested a feature or two.
 
-
-Version 2.95   19.Jun.2015
+
+## Version 2.95 - 19.Jun.2015
 
 * Graphs!!!!!
 
@@ -54,8 +55,8 @@ Version 2.95   19.Jun.2015
 
 * Hundreds of bug fixes and minor improvements, and some performance work.
 
-
-Version 2.94   15.Mar.2015
+
+## Version 2.94 - 15.Mar.2015
 
 * Add buzzer, a discussion status page based on the tracker. Many
   tracker stability improvements.
@@ -73,8 +74,8 @@ Version 2.94   15.Mar.2015
   John Tang Boyland, Sandhya Dwarkadas, Steve Blackburn, Erez Zadok,
   Dan Tsafrir, Peter Sewell, Gail Murphy, George Candea, and others.
 
-
-Version 2.93   2.Oct.2014
+
+## Version 2.93 - 2.Oct.2014
 
 * Improve autoassigner to spread out user unhappiness.
 
@@ -112,20 +113,20 @@ Version 2.93   2.Oct.2014
   Krishnamurthi, Nickolai Zeldovich, Michele Nelson, `mutax`, Fred
   Douglis, and others.
 
-
-Version 2.92   13.May.2014
+
+## Version 2.92 - 13.May.2014
 
 * Bug fixes for bugs reported by Shriram Krishnamurthi, Aditya Akella,
   Yoshi Kohno, Garth Gibson.
 
-
-Version 2.91   1.May.2014
+
+## Version 2.91 - 1.May.2014
 
 * Bug fixes to profile editing and submission options problems
   reported by Lars Eggert and Kevin Fu.
 
-
-Version 2.90   25.Apr.2014
+
+## Version 2.90 - 25.Apr.2014
 
 * Major refactoring release.
 
@@ -138,15 +139,15 @@ Version 2.90   25.Apr.2014
   including tags, and give users a chance to confirm uploaded
   assignments.
 
-* Add "has:final", "has:paper", "has:comment", "has:response", and
-  "has:OPTION" search options.
+* Add `has:final`, `has:paper`, `has:comment`, `has:response`, and
+  `has:OPTION` search options.
 
-* Support multiple "sort:" keywords, such as "sort:overall-merit
-  sort:title"; and support complex sorters, such as ‘sort:"overall
-  merit by variance"’.
+* Support multiple `sort:` keywords, such as `sort:overall-merit
+  sort:title`; and support complex sorters, such as `sort:"overall
+  merit by variance"`.
 
 * Add support for a "timestamp" column, hidden by default. So you can
-  search for "sort:timestamp" and "show:timestamp".
+  search for `sort:timestamp` and `show:timestamp`.
 
 * Add a test suite.
 
@@ -159,8 +160,8 @@ Version 2.90   25.Apr.2014
   Gibson, Colin Scott, Chris Kanich, Adrian Sampson, Fred Douglis,
   Kevin Fu, Soheil Hassas Yeganeh, Robby Findler, and Johannes Dahse.
 
-
-Version 2.61   14.Aug.2013
+
+## Version 2.61 - 14.Aug.2013
 
 * Correct some XSS errors and one SQL injection error reported by
   Johannes Dahse using a static checking tool of his design. The XSS
@@ -172,8 +173,8 @@ Version 2.61   14.Aug.2013
 * Other small bug fixes, including fixes to the packaging of 2.60.
   Thanks to Anil Madhavapeddy and Peter Sewell.
 
-
-Version 2.60   19.Jul.2013
+
+## Version 2.60 - 19.Jul.2013
 
 * Major new feature: Paper managers. Administrators can assign PC
   members to "manage" individual papers. These PC members gain admin
@@ -186,19 +187,19 @@ Version 2.60   19.Jul.2013
   type.
 
 * Add Search > Download > PC review preferences and Search > Download
-  > ACM CMS report.
+  \> ACM CMS report.
 
 * Add multiline text entry options.
 
 * Tags and search keywords are not case sensitive.
 
-* Many bug fixes, including to score searches like "ovemer:AC".
+* Many bug fixes, including to score searches like `ovemer:AC`.
 
 * Thanks to Peter Sewell, Sarita Adve, Josh Simons, John Heidemann,
   and Jeff Mogul.
 
-
-Version 2.59   14.Jun.2013
+
+## Version 2.59 - 14.Jun.2013
 
 * Bug fix: "Monitor external reviews" works. Reported by Peter Sewell.
 
@@ -207,48 +208,48 @@ Version 2.59   14.Jun.2013
   rounds for conflicted papers. Don't show accept status via "Accepted
   papers" searches. Reported by Nickolai Zeldovich and Jeff Mogul.
 
-
-Version 2.58   23.Mar.2013
+
+## Version 2.58 - 23.Mar.2013
 
 * More information leak plugging: explicit search for review fields
   that should be hidden from authors, and review rounds. Reported by
   John Heidemann.
 
-
-Version 2.57   16.Mar.2013
+
+## Version 2.57 - 16.Mar.2013
 
 * Bug fix: The search page's score graphs exposed score values for
   authored papers during the rebuttal phase. This is normally OK, but
   it's not OK if authors aren't supposed to see the scores. Reported
   by Jitu Padhye and Srini Seshan.
 
-* Bug fix: "au:" searches work for non-chairs. Broken since 2011!
+* Bug fix: `au:` searches work for non-chairs. Broken since 2011!
 
 * Add a random-walk-based paper ranking method (John Douceur).
 
-
-Version 2.56   29.Jan.2013
+
+## Version 2.56 - 29.Jan.2013
 
 * This is a major refactoring release. Internals, particularly for
   paper list display, are cleaner and more extensible. But bugs are
   likely.
 
 * New drag-and-drop mode for setting tag orders. Search for
-  'editsort:#TAGNAME'. This mode is suggested for paper ranks.
+  `editsort:#TAGNAME`. This mode is suggested for paper ranks.
 
 * New popup help for setting tags and searching for tags.
 
-* Search for 'show:#TAGNAME' to show a particular tag. Search for
-  'edit:#TAGNAME' to edit tag values. Search for 'edit:tag:TAGNAME' to
+* Search for `show:#TAGNAME` to show a particular tag. Search for
+  `edit:#TAGNAME` to edit tag values. Search for `edit:tag:TAGNAME` to
   edit a tag with checkboxes.
 
-* Search for 'show:SCORE' or 'show:FORMULANAME' to add a score or
-  formula to the display, or 'hide:' to remove it from the display.
-  You may also 'show:' or 'hide:' title, status, statusfull, revtype,
+* Search for `show:SCORE` or `show:FORMULANAME` to add a score or
+  formula to the display, or `hide:` to remove it from the display.
+  You may also `show:` or `hide:` title, status, statusfull, revtype,
   revstat, revsubmitted, revdelegation, assrev, topicscore, topics,
   revpref, allrevpref, desirability, reviewers, authors, collab, tags,
   abstract, lead, shepherd, pcconf (depending on your access rights).
-  These should be documented. You may also search for 'edit:revpref'
+  These should be documented. You may also search for `edit:revpref`
   to edit review preferences.
 
 * Improvements to paper search for accented names. E.g., searching for
@@ -263,13 +264,13 @@ Version 2.56   29.Jan.2013
 
 * Thanks to Jeff Mogul and John Douceur.
 
-
-Version 2.55   31.Dec.2012
+
+## Version 2.55 - 31.Dec.2012
 
 * Minor bugfix release.
 
-
-Version 2.54   30.Dec.2012
+
+## Version 2.54 - 30.Dec.2012
 
 * Fix bug in 2.53 where long papers could not be uploaded. Kamin
   Whitehouse report.
@@ -278,35 +279,35 @@ Version 2.54   30.Dec.2012
 
 * Some other bug fixes.
 
-
-Version 2.53   26.Dec.2012
+
+## Version 2.53 - 26.Dec.2012
 
 * Support sending mail to PC members about their new review assignments.
 
-* Add HTTP authentication option: $Opt["httpAuthLogin"].
+* Add HTTP authentication option: `$Opt["httpAuthLogin"]`.
 
 * Bug fixes to bulk account creation, among others.
 
 * Thanks to Adam Allred, Lujo Bauer, John Douceur, Gernot Heiser,
   Petros Maniatis, Jeff Mogul, Antoine Picard, and Anthony Riley.
 
-
-Version 2.52   23.Jul.2012
+
+## Version 2.52 - 23.Jul.2012
 
 * Allow chairs to change all PC conflicts on papers' Edit screens.
 
 * Other bug fixes and improvements.
 
-
-Version 2.51   22.Jun.2012
+
+## Version 2.51 - 22.Jun.2012
 
 * Fix bug with setting tags on per-paper pages (caused by cross-site
   request forgery protection).
 
 * Other fixes and improvements.
 
-
-Version 2.50   10.May.2012
+
+## Version 2.50 - 10.May.2012
 
 * Fix database error on response submissions (a problem since v2.48).
   Problem reported by Robby Findler.
@@ -315,18 +316,18 @@ Version 2.50   10.May.2012
 
 * Other fixes and improvements.
 
-* Thanks to Dan Tsafrir, Wilshon Hsieh, Giuliano Casale, and Geoff Voelker.
+* Thanks to Dan Tsafrir, Wilson Hsieh, Giuliano Casale, and Geoff Voelker.
 
-
-Version 2.49   29.Mar.2012
+
+## Version 2.49 - 29.Mar.2012
 
 * Add update notification. Chairs' browsers contact an updates server,
   hotcrp.lcdf.org/updates, to check whether the HotCRP installation should
   be updated. If you don't want chairs' browsers to contact hotcrp.lcdf.org
-  with version information, set $Opt["updatesSite"] = false.
+  with version information, set `$Opt["updatesSite"] = false`.
 
-
-Version 2.48   28.Mar.2012
+
+## Version 2.48 - 28.Mar.2012
 
 * Correct major information exposure with author-view capabilities.
   Author-view capability URLs, when entered by users not otherwise logged
@@ -335,7 +336,7 @@ Version 2.48   28.Mar.2012
 
 * Support video submissions.
 
-* Columnar search display. Try "1-10 THEN 2-20 VIEW:compactcolumns".
+* Columnar search display. Try `1-10 THEN 2-20 VIEW:compactcolumns`.
 
 * Other bug fixes and improvements.
 
@@ -343,8 +344,8 @@ Version 2.48   28.Mar.2012
   Hsieh, Gernot Heiser, Jeff Mogul, George Candea, John Regehr, of course
   Jane-Ellen Long, and others.
 
-
-Version 2.47   14.Dec.2011
+
+## Version 2.47 - 14.Dec.2011
 
 * Add author-view capabilities. These parameters, when appended to any
   HotCRP URL, grant the client the right to view a paper like an author.
@@ -365,8 +366,8 @@ Version 2.47   14.Dec.2011
 * UI improvements and bug fixes for review preferences, bulk account
   creation, mail tool, the "PC chairs must approve external reviewers"
   setting, Chrome compatibility, offline reviewing, mod_rewrite
-  configuration bugs, and paper URLs. And "#tagname" is a valid search
-  string for "tag:tagname".
+  configuration bugs, and paper URLs. And `#tagname` is a valid search
+  string for `tag:tagname`.
 
 * Information leak fixes: accept author lists, PC chair approvals for
   external reviewers.
@@ -374,19 +375,19 @@ Version 2.47   14.Dec.2011
 * Thanks to Lars Eggert, Michael Hicks, John Wilkes, Jane-Ellen Long, Jeff
   Mogul, Clay Shepard, Gareth Gale, and Amit Sahai.
 
-
-Version 2.46   5.Aug.2011
+
+## Version 2.46 - 5.Aug.2011
 
 * Support multiple final-version uploads.
 
 * Usability improvements: allow uploading conflict assignments; new tag
   colors: "bold", "italic", "big", "small"; more consistent reviewer
-  searches, e.g. "lead:me"; etc.
+  searches, e.g. `lead:me`; etc.
 
 * Other bug fixes.
 
-
-Version 2.45   24.Apr.2011
+
+## Version 2.45 - 24.Apr.2011
 
 * New, improved visual appearance for paper pages.
 
@@ -412,38 +413,38 @@ Version 2.45   24.Apr.2011
   Stefan Savage, Jane-Ellen Long, Philippe Bonet, Christoph Mayer, Manolis
   Stamatogiannakis, and Michael Hicks.
 
-
-Version 2.44   8.Feb.2011
+
+## Version 2.44 - 8.Feb.2011
 
 * Correct recent bugs: improve Ajax return values (which lacked "b"
   characters due to a quoting mishap); do not ask authors for responses
   when responses are not open; don't include HTML in textual email.
 
 * Other small improvements: add conflict types to PC conflict reports; CSV
-  reports; fix searches for terms like "re:heavy=0"; fix negated search
+  reports; fix searches for terms like `re:heavy=0`; fix negated search
   terms; add paper option display type.
 
 * Thanks especially to Jeff Mogul and John Byers.
 
-
-Version 2.43   3.Jan.2011
+
+## Version 2.43 - 3.Jan.2011
 
 * Correct 2.41 bug that could cause SQL errors on the home page when users
   had many comments to view.  Double ouch!  Apologies to Tony Del Porto and
   Usenix.
 
-
-Version 2.42   2.Jan.2011
 
-* Correct 2.41 bug that broke "ovemer:3" searches (ouch).
+## Version 2.42 - 2.Jan.2011
 
-* Add searches like "ovemer:pc>3", which check scores given by subsets of
+* Correct 2.41 bug that broke `ovemer:3` searches (ouch).
+
+* Add searches like `ovemer:pc>3`, which check scores given by subsets of
   reviewers.
 
 * Style nits (paragraph breaks in abstracts, reviewer icon alignment).
 
-
-Version 2.41   13.Dec.2010
+
+## Version 2.41 - 13.Dec.2010
 
 * The "Recent activity" on the home page includes information about
   submitted reviews as well as submitted comments (frequent request,
@@ -459,18 +460,18 @@ Version 2.41   13.Dec.2010
 
 * Search improvements
 
-** Add support for "cmt:REVIEWERNAME".
+  * Add support for `cmt:REVIEWERNAME`.
 
-** Add support for "re:me", "re:pc", and "re:-PCTAG".
+  * Add support for `re:me`, `re:pc`, and `re:-PCTAG`.
 
-** Improve "conflict:" support.
+  * Improve `conflict:` support.
 
-** "tag:FOO*BAR" searches for any tag that matches FOO*BAR, using glob
-   matching.
+  * `tag:FOO*BAR` searches for any tag that matches FOO*BAR, using glob
+    matching.
 
-** Allow comma- as well as space-separated paper lists.
+  * Allow comma- as well as space-separated paper lists.
 
-** Always show all display options ("More>>" distracted).
+  * Always show all display options ("More>>" distracted).
 
 * Assignment bug fixes and improvements: autoassign lead/shepherd no longer
   resets existing assignments; autoassign lead/shepherd gains more options.
@@ -496,18 +497,18 @@ Version 2.41   13.Dec.2010
   Petros Efstathopoulos, Stephanie Weinrich, David A. Padua, and David
   Andersen.
 
-
-Version 2.40   30.Jul.2010
 
-* Search expression improvements: Allow parenthesized expressions, "AND"
-  keywords, and "THEN" searches.  "THEN" is the lowest precedence operator.
-  It is like "OR", but can only appear at the top level, and also affects
-  the sort order -- in a search like "a THEN b", the papers matching "a"
-  will appear in the list before the papers matching "b".
+## Version 2.40 - 30.Jul.2010
+
+* Search expression improvements: Allow parenthesized expressions, `AND`
+  keywords, and `THEN` searches.  `THEN` is the lowest precedence operator.
+  It is like `OR`, but can only appear at the top level, and also affects
+  the sort order -- in a search like `a THEN b`, the papers matching `a`
+  will appear in the list before the papers matching `b`.
 
 * New features: PC member tags appear in user search; PC member tags work
-  in "conflict:" searches; allow searches like "conflict>2"; "conflict:me"
-  searches for your own conflicts; allow searches like "5-1".
+  in `conflict:` searches; allow searches like `conflict>2`; `conflict:me`
+  searches for your own conflicts; allow searches like `5-1`.
 
 * Bug fixes: Support Postfix mailers on UNIX; fix formulas (previously,
   adding a formula appeared to do nothing); paper list sort order does not
@@ -519,8 +520,8 @@ Version 2.40   30.Jul.2010
 * Thanks to Geoff Voelker, Stephanie Weirich, Umesh Shankar, Jane-Ellen
   Long, and Dana Randall.
 
-
-Version 2.39   20.May.2010
+
+## Version 2.39 - 20.May.2010
 
 * PC member tags.  Each PC member can be associated with a list of tags,
   which use the same format as paper tags.  This list is only set by
@@ -531,14 +532,14 @@ Version 2.39   20.May.2010
 * Add "PC can see all reviews" > "Yes, once they've completed all their
   assigned reviews" option.
 
-* Support score range searches like ovemer:BC and ovemer:1-3.
+* Support score range searches like `ovemer:BC` and `ovemer:1-3`.
 
 * Various bug fixes and tweaks to avoid misleading hurried users.
 
 * Thanks especially to Jeff Mogul and Ian Goldberg.
 
-
-Version 2.38   27.Jan.2010
+
+## Version 2.38 - 27.Jan.2010
 
 * Add "Recent comments" section to the home page for PC members.  This
   lists recent viewable comments, newest comments first.
@@ -547,7 +548,7 @@ Version 2.38   27.Jan.2010
   invalid UTF-8 means Windows 1252/ISO-8859-1).
 
 * Many bug fixes, including SQL errors when saving all-zero preferences,
-  searches for letter scores (i.e. "revexp:X"), manual conflict
+  searches for letter scores (i.e. `revexp:X`), manual conflict
   assignments, sending email to contact authors when a chair withdraws a
   paper, and actually sending email to users "watching" a paper's comments.
 
@@ -557,38 +558,38 @@ Version 2.38   27.Jan.2010
 * Thanks especially to Alex Aiken, and to David Evans, John Ousterhout,
   Tony Del Porto, Jane-Ellen Long, and Casey Henderson.
 
-
-Version 2.37   19.Dec.2009
+
+## Version 2.37 - 19.Dec.2009
 
 * Bug-fix release.
 
-
-Version 2.36   17.Dec.2009
+
+## Version 2.36 - 17.Dec.2009
 
 * Formulas
 
-** PC members and administrators can define formula columns for search
-   results, which might show, for example, the sum of a paper's overall
-   merit scores, or average overall merit weighted by reviewer expertise.
-   See help for more details.
+  * PC members and administrators can define formula columns for search
+    results, which might show, for example, the sum of a paper's overall merit
+    scores, or average overall merit weighted by reviewer expertise. See help
+    for more details.
 
 * Paper ranking improvements
 
-** Improve Schulze-method rank calculation by weighting preferences
-   differently.  Specifically, if few voters specified any preference
-   involving paper A, then weight those preferences heavily.  This deflates
-   the margins for frequently-reviewed papers and, as a result, preserves
-   preferences for infrequently-reviewed papers.  Without a weighting like
-   this, multi-round conferences might see papers eliminated in early
-   rounds unexpectedly rise to the top.  Based on observations from SOSP.
+  * Improve Schulze-method rank calculation by weighting preferences
+    differently.  Specifically, if few voters specified any preference
+    involving paper A, then weight those preferences heavily.  This deflates
+    the margins for frequently-reviewed papers and, as a result, preserves
+    preferences for infrequently-reviewed papers.  Without a weighting like
+    this, multi-round conferences might see papers eliminated in early rounds
+    unexpectedly rise to the top.  Based on observations from SOSP.
 
-** Hugely faster rank calculation.
+  * Hugely faster rank calculation.
 
-** Report incremental progress for rank calculation.
+  * Report incremental progress for rank calculation.
 
-** Add options for calculating ranks: select which ranking method you want
-   to use using the UI.  Also, you can define a gapless order or calculate
-   a rank using a different source tag.
+  * Add options for calculating ranks: select which ranking method you want to
+    use using the UI.  Also, you can define a gapless order or calculate a
+    rank using a different source tag.
 
 * Rename "Define sequential" to "Define gapless order."
 
@@ -606,15 +607,15 @@ Version 2.36   17.Dec.2009
   Gareth Gale, Alex Aiken, Benjamin Pierce, Tom Anderson, Mike Freedman,
   and John P. John.
 
-
-Version 2.35   7.Oct.2009
+
+## Version 2.35 - 7.Oct.2009
 
 * Paper options: Support numeric values, text values, and PDF uploads.
 
 * Account display/profile page: Usability improvements, add links between
   people, support bulk upload of many users at once.
 
-* "conflict:pc" search returns all PC conflict papers.
+* `conflict:pc` search returns all PC conflict papers.
 
 * Web review forms default to "ready for others to see."
 
@@ -638,8 +639,8 @@ Version 2.35   7.Oct.2009
   Aiken.  Special thanks to John Heidemann for providing patches! in
   addition to bug reports and feature requests.
 
-
-Version 2.34   21.Mar.2009
+
+## Version 2.34 - 21.Mar.2009
 
 * Tag colors!  After a Dan Wallach suggestion.  Tag a paper "red" and it
   shows up as red in paper lists.  Or instruct the system that "reject"
@@ -651,27 +652,27 @@ Version 2.34   21.Mar.2009
 
 * Add help for paper rankings.
 
-* Add <label> elements for all checkboxes and radio buttons.
+* Add `<label>` elements for all checkboxes and radio buttons.
 
 * Translate HTML in review descriptions to text for offline forms.  (Only
-  simple cases like <ul> lists.)
+  simple cases like `<ul>` lists.)
 
-* Include "[%CONFSHORTNAME%]" prefix in paper registration emails.
+* Include `[%CONFSHORTNAME%]` prefix in paper registration emails.
 
 * Bug fixes to per-paper tag setting, account creation, "Override conflict"
   links, conference titles containing slashes, review viewing, and XHTML.
 
 * Thanks to Stefan Lorenz and John Wilkes.
 
-
-Version 2.33   15.Feb.2009
+
+## Version 2.33 - 15.Feb.2009
 
 * Re-fix "Don't assign (X) and (Y) to the same paper."
 
-
-Version 2.32   15.Feb.2009
 
-* Add "au:pc" search, which returns papers whose contact authors contain at
+## Version 2.32 - 15.Feb.2009
+
+* Add `au:pc` search, which returns papers whose contact authors contain at
   least one PC member.
 
 * Bug fixes: Correctly quote passwords sent in mail URLs, and fix "Don't
@@ -682,8 +683,8 @@ Version 2.32   15.Feb.2009
 
 * Thanks to John Wilkes, Jeff Mogul, Stefan Lorenz, and Benjamin Pierce.
 
-
-Version 2.31   26.Jan.2009
+
+## Version 2.31 - 26.Jan.2009
 
 * Administrators can delete users.
 
@@ -694,31 +695,31 @@ Version 2.31   26.Jan.2009
   message when adding the first voting tag.  Display improvements.
   Slightly better support for browsers without Javascript.
 
-
-Version 2.30   7.Jan.2009
 
-* Add chair-only tags: double-twiddle tags, like "~~tag", are only visible
+## Version 2.30 - 7.Jan.2009
+
+* Add chair-only tags: double-twiddle tags, like `~~tag`, are only visible
   to and changeable by chairs and administrators.  Andrew Myers idea.
 
 * Bug fix: Advanced search > With *any* of the words works.  Reported by
   John Wilkes.
 
-* Other UI tweaks.  Additional options $Opt["extraFooter"] (Jeff Mogul) and
-  $Opt["noPapers"] (C. Craig Ross).
+* Other UI tweaks.  Additional options `$Opt["extraFooter"]` (Jeff Mogul) and
+  `$Opt["noPapers"]` (C. Craig Ross).
 
-
-Version 2.29   1.Jan.2009
+
+## Version 2.29 - 1.Jan.2009
 
 * Bug fix release.  Fixes bugs in tag search and tag setting, some reported
   by John Wilkes.
 
-
-Version 2.28   20.Dec.2008
+
+## Version 2.28 - 20.Dec.2008
 
 * Allow periods in email addresses (Jeff Mogul).
 
-
-Version 2.27   16.Dec.2008
+
+## Version 2.27 - 16.Dec.2008
 
 * Search results: Add tons of Display options, load them all by Ajax, and
   chairs gain a "Make these options the default" link.
@@ -739,8 +740,8 @@ Version 2.27   16.Dec.2008
 * Thanks to Anton Cohen, Benjamin Pierce, Alan Parry, Margo Seltzer, Mark
   Gebhart, Paolo Faraboschi, John Wilkes, Dina Papagiannaki, and others.
 
-
-Version 2.26   27.Oct.2008
+
+## Version 2.26 - 27.Oct.2008
 
 * Submitters can be forced to define what type of conflict a PC member has.
   Requested by Dina Papagiannaki.
@@ -757,15 +758,15 @@ Version 2.26   27.Oct.2008
   "Add ordered" can insert papers into an existing tag order at a specific
   point.
 
-* Search bug fixes: "1-10 OR foo" works correctly, as does "1-10 -6".
+* Search bug fixes: `1-10 OR foo` works correctly, as does `1-10 -6`.
 
 * Search list PDF icons link to final papers when they are available (Fred
   Douglis request).
 
 * Many help and usability improvements inspired by Benjamin Pierce requests.
 
-
-Version 2.25   22.Sep.2008
+
+## Version 2.25 - 22.Sep.2008
 
 * Many bug fixes for new-style paper views.
 
@@ -786,7 +787,7 @@ Version 2.25   22.Sep.2008
   voting and IRV.  Special thanks to Andrew Myers for answering questions
   and providing a useful test case.
 
-* Search for specific submission option values with "opt:name=value".
+* Search for specific submission option values with `opt:name=value`.
 
 * External reviewer request emails include "accept review" and "refuse
   review" links that, when clicked, record the reviewer's choice.  ("Accept
@@ -799,129 +800,128 @@ Version 2.25   22.Sep.2008
 
 * Thanks also to Benjamin Pierce, Richard Gass, Michael Vrable, and others.
 
-
-Version 2.24   22.Aug.2008
+
+## Version 2.24 - 22.Aug.2008
 
 * Major changes
 
-** New paper display.  Paper, review, and comment views are unified into a
-   single display format.  The paper view shows initial words of abstract
-   and compressed author list; both are easily unfoldable.  Tags,
-   discussion leads, shepherds, review preferences, PC conflicts, and other
-   PC-type information appear in a strip down the left hand side.  Paper
-   views summarize comment counts and comment authorship.  I think this is
-   a huge improvement.
+  * New paper display.  Paper, review, and comment views are unified into a
+    single display format.  The paper view shows initial words of abstract and
+    compressed author list; both are easily unfoldable.  Tags, discussion
+    leads, shepherds, review preferences, PC conflicts, and other PC-type
+    information appear in a strip down the left hand side.  Paper views
+    summarize comment counts and comment authorship.  I think this is a huge
+    improvement.
 
-** Voting tags.  Chairs can define tags used for voting, with vote
-   allotments, as in "vote#20".  PC members vote for papers by assigning
-   the corresponding twiddle tag, as in "~vote#1".  The system prevents
-   users from going over their allotments, and automagically maintains a
-   public "vote" tag that sums users' votes.
+  * Voting tags.  Chairs can define tags used for voting, with vote
+    allotments, as in `vote#20`.  PC members vote for papers by assigning the
+    corresponding twiddle tag, as in `~vote#1`.  The system prevents users
+    from going over their allotments, and automagically maintains a public
+    `vote` tag that sums users' votes.
 
-** Ranking tag.  Preliminary support for paper rankings via the tags system.
+  * Ranking tag.  Preliminary support for paper rankings via the tags system.
 
-** Review ratings are searchable and gain more options.  The current set of
-   ratings is "Average, Very helpful, Not complete, Not convincing, Not
-   constructive, Not correct."  (Is this too many?)  The home page reports
-   a user's rated reviews.  Searching for "rate:+" finds positively rated
-   reviews, "rate:-" negatively rated reviews, and e.g. "rate:convincing"
-   finds "not convincing" rated reviews.  Robbert van Renesse feedback was
-   very helpful.
+  * Review ratings are searchable and gain more options.  The current set of
+    ratings is "Average, Very helpful, Not complete, Not convincing, Not
+    constructive, Not correct."  (Is this too many?)  The home page reports a
+    user's rated reviews.  Searching for `rate:+` finds positively rated
+    reviews, `rate:-` negatively rated reviews, and e.g. `rate:convincing`
+    finds "not convincing" rated reviews.  Robbert van Renesse feedback was
+    very helpful.
 
 * New features and new behavior
 
-** New search syntax: Support partial word matches, as in "foo*" or
-   "bl*ah".  Search for a tag in reverse order with "rorder:tag".  Search
-   within tag orders with, for instance, "tag:pcrating#2" or
-   "tag:pcrating#>2" (Rich Draves request).  Search for incomplete reviews
-   with "ire:whatever" (Rich Draves request).  Chairs and administrators
-   can search other users' twiddle tags, as in "tag:frank~vote".
+  * New search syntax: Support partial word matches, as in `foo*` or `bl*ah`.
+    Search for a tag in reverse order with `rorder:tag`.  Search within tag
+    orders with, for instance, `tag:pcrating#2` or `tag:pcrating#>2` (Rich
+    Draves request).  Search for incomplete reviews with `ire:whatever` (Rich
+    Draves request).  Chairs and administrators can search other users'
+    twiddle tags, as in `tag:frank~vote`.
 
-** Ordered tags: The "define ordered" and "add ordered" tag actions skip
-   order steps; for example, they might assign order 1, 3, 4, 7, 8, 10.
-   This hides information from conflicted PC members, since they can no
-   longer infer conflicted papers' positions by looking for gaps.  New
-   "Define sequential" and "Add sequential" actions do the old sequential
-   style.
+  * Ordered tags: The "define ordered" and "add ordered" tag actions skip
+    order steps; for example, they might assign order 1, 3, 4, 7, 8, 10. This
+    hides information from conflicted PC members, since they can no longer
+    infer conflicted papers' positions by looking for gaps.  New "Define
+    sequential" and "Add sequential" actions do the old sequential style.
 
-** Search highlight improvements: Searching only highlights terms in the
-   relevant fields; for example, "au:john" won't highlight "john" in the
-   title.  Also automagically unfold any field that contains a highlight.
+  * Search highlight improvements: Searching only highlights terms in the
+    relevant fields; for example, `au:john` won't highlight "john" in the
+    title.  Also automagically unfold any field that contains a highlight.
 
-** Offline reviewing improvements.  Blank review forms ignored on upload,
-   rather than causing warnings (Rebecca Isaacs request).  Supposedly
-   "ready" review forms that lack required fields are saved anyway, they're
-   just not marked as "ready" (Rebecca Isaacs request).  The system detects
-   and rejects attempts to upload an offline form after a review is edited
-   online (Fred Douglis report).  Clarify where numeric scores are entered
-   (Benjamin Pierce request).
+  * Offline reviewing improvements.  Blank review forms ignored on upload,
+    rather than causing warnings (Rebecca Isaacs request).  Supposedly "ready"
+    review forms that lack required fields are saved anyway, they're just not
+    marked as "ready" (Rebecca Isaacs request).  The system detects and
+    rejects attempts to upload an offline form after a review is edited online
+    (Fred Douglis report).  Clarify where numeric scores are entered (Benjamin
+    Pierce request).
 
-** Paper assignment UI improvements.  Reorder fields, make submission
-   behavior clearer.  Automatic assignment: can shift-click on PC member
-   ranges.  Show topic interest scores and preferences as "Txxx Pyyy".
-   Automatic assignment can clear existing assignments.  Bug fixes.
-   (Benjamin Pierce and Jeff Mogul requests)
+  * Paper assignment UI improvements.  Reorder fields, make submission
+    behavior clearer.  Automatic assignment: can shift-click on PC member
+    ranges.  Show topic interest scores and preferences as "Txxx Pyyy".
+    Automatic assignment can clear existing assignments.  Bug fixes. (Benjamin
+    Pierce and Jeff Mogul requests)
 
-** Comment visibility changes.  Users can mark a comment as "tied to
-   reviews," which means that PC members who haven't read the reviews can't
-   see the comment either.  This is more useful, arguably, than hiding
-   comments from external reviewers.  (Robbert van Renesse request)
+  * Comment visibility changes.  Users can mark a comment as "tied to
+    reviews," which means that PC members who haven't read the reviews can't
+    see the comment either.  This is more useful, arguably, than hiding
+    comments from external reviewers.  (Robbert van Renesse request)
 
-** A tweak to Minshall score improves its behavior when papers have
-   different numbers of reviews (Terence Kelly report).
+  * A tweak to Minshall score improves its behavior when papers have different
+    numbers of reviews (Terence Kelly report).
 
-** External reviewers can use review tokens, since owning a review token
-   confers the right to view the corresponding paper.
+  * External reviewers can use review tokens, since owning a review token
+    confers the right to view the corresponding paper.
 
 * Bug fixes and minor UI improvements
 
-** The "Reviewers can see decisions" setting also applies to the PC.
+  * The "Reviewers can see decisions" setting also applies to the PC.
 
-** "Merge accounts" bug fixes.
+  * "Merge accounts" bug fixes.
 
-** PC members always count as reviewers, even if they haven't had any
-   reviews assigned yet (Laurel Krieger report).
+  * PC members always count as reviewers, even if they haven't had any reviews
+    assigned yet (Laurel Krieger report).
 
-** Paper lists never show conflicted PC members counts of reviews
-   (Fred Douglis report).
+  * Paper lists never show conflicted PC members counts of reviews (Fred
+    Douglis report).
 
-** Mail tool: Include %COMMENTS% in mails even when sending mail before
-   reviews are visible in the site.  This is the same as the %REVIEWS%
-   behavior.  (Jeff Mogul report)  Also, issue a warning about sending mail
-   with %REVIEWS% or %COMMENTS% when reviews aren't visible on the site.
+  * Mail tool: Include `%COMMENTS%` in mails even when sending mail before
+    reviews are visible in the site.  This is the same as the `%REVIEWS%`
+    behavior.  (Jeff Mogul report)  Also, issue a warning about sending mail
+    with `%REVIEWS%` or `%COMMENTS%` when reviews aren't visible on the site.
 
-** Mail tool: If authors can see reviews only after finishing their own,
-   then the mail tool will hide reviews and comments from authors who have
-   not finished their own reviews.  And include a warning.
+  * Mail tool: If authors can see reviews only after finishing their own, then
+    the mail tool will hide reviews and comments from authors who have not
+    finished their own reviews.  And include a warning.
 
-** Mail tool: JavaScript discourages users from clicking on the "Send"
-   button too early (Robbert van Renesse, Rich Draves report).
+  * Mail tool: JavaScript discourages users from clicking on the "Send" button
+    too early (Robbert van Renesse, Rich Draves report).
 
-** Mail tool: Report how many emails remain to be sent.
+  * Mail tool: Report how many emails remain to be sent.
 
-** Mail tool: Add "Discussion leads" and "Shepherds" recipient types (Jeff
-   Mogul request).
+  * Mail tool: Add "Discussion leads" and "Shepherds" recipient types (Jeff
+    Mogul request).
 
-** Mail tool: The action log tracks sent mail (Jeff Mogul request).
+  * Mail tool: The action log tracks sent mail (Jeff Mogul request).
 
-** "Refuse review" reason field is bigger (Benjamin Pierce report).
+  * "Refuse review" reason field is bigger (Benjamin Pierce report).
 
-** Search bug fix: "order:~privatetag" works (Rich Draves report).
+  * Search bug fix: `order:~privatetag` works (Rich Draves report).
 
-** Search: Add Download > Discussion leads and Download > Shepherds (Jeff
-   Mogul request).
+  * Search: Add Download > Discussion leads and Download > Shepherds (Jeff
+    Mogul request).
 
-** Search: Add Display options > Row numbers (Rich Draves request).
+  * Search: Add Display options > Row numbers (Rich Draves request).
 
-** Search: Tag order searches gain an explicit search column heading so that
-   the sort order can be reversed.  Request and UI ideas from Rich Draves.
+  * Search: Tag order searches gain an explicit search column heading so that
+    the sort order can be reversed.  Request and UI ideas from Rich Draves.
 
-** Settings: Validate XHTML, preventing cross-site scripting bugs.
+  * Settings: Validate XHTML, preventing cross-site scripting bugs.
 
 * Special thanks to Robbert van Renesse.
 
-
-Version 2.23   22.Jul.2008
+
+## Version 2.23 - 22.Jul.2008
 
 * Do not infinite loop when sending mail to non-ASCII names associated with
   long email addresses.  Reported by Robbert van Renesse and Rich Draves.
@@ -932,15 +932,15 @@ Version 2.23   22.Jul.2008
 * Correct PHP warnings and make compatible with older PHPs.  Reported by
   Jeonghee Shin.
 
-
-Version 2.22   15.Jul.2008
+
+## Version 2.22 - 15.Jul.2008
 
 * Appearance fixes: use default controls in most cases.
 
 * Aggregated information about review ratings are provided on the PC
   details page.
 
-* Allow searches of review fields and scores.  For example, "ove-mer:2>=2"
+* Allow searches of review fields and scores.  For example, `ove-mer:2>=2`
   searches for papers that have at least 2 overall merit scores that are
   greater than or equal to 2.  Requested by Rich Draves and Robbert van
   Renesse.
@@ -950,13 +950,13 @@ Version 2.22   15.Jul.2008
 
 * Improve some messages and help text.
 
-
-Version 2.21   11.May.2008
+
+## Version 2.21 - 11.May.2008
 
 * Further improve validation and Internet Explorer 6 compatibility.
 
-
-Version 2.20   11.May.2008
+
+## Version 2.20 - 11.May.2008
 
 * Improve Internet Explorer 6 compatibility.  Reported by Terence Kelly.
   Includes Drew McLellan's supersleight for transparent PNG support
@@ -970,16 +970,16 @@ Version 2.20   11.May.2008
 
 * Bug fixes to preference list, English, and createdb script.
 
-
-Version 2.19   6.May.2008
+
+## Version 2.19 - 6.May.2008
 
 * Provide visible feedback on Ajax forms.
 
 * Improve manual assignments page with better conflict listings (Rebecca
   Isaacs).
 
-
-Version 2.18   5.May.2008
+
+## Version 2.18 - 5.May.2008
 
 * Record PC feedback about whether reviews were helpful.  PC members and,
   optionally, external reviewers can rate one another's reviews.  Hopefully
@@ -989,7 +989,7 @@ Version 2.18   5.May.2008
   positive. It does not report who gave the ratings, and it never shows
   rating counts to authors.
 
-* The $Opt["emailSender"] option lets you set the envelope sender in sent
+* The `$Opt["emailSender"]` option lets you set the envelope sender in sent
   mail (Robbert van Renesse).
 
 * Add review tokens, which allow reviewers to edit reviews anonymously.
@@ -1005,14 +1005,14 @@ Version 2.18   5.May.2008
 * When a paper is withdrawn, its reviewers no longer need to complete their
   reviews (Stefan Savage).
 
-
-Version 2.17   23.Apr.2008
+
+## Version 2.17 - 23.Apr.2008
 
 * IMPORTANT: Continue reviewer identity leak fix via search rewrite.
 
-* Rewrite search again.  Search now works like Google search.  "-word"
-  excludes "word" matches from the search.  "word1 OR word2" searches for
-  either "word1" or "word2" (the OR must be uppercase).  The default search
+* Rewrite search again.  Search now works like Google search.  `-word`
+  excludes `word` matches from the search.  `word1 OR word2` searches for
+  either `word1` or `word2` (the OR must be uppercase).  The default search
   box returns papers that match ALL the words.  Searches in title,
   abstract, and authors match whole words, not portions of words.  The
   process of building up and executing a query is cleaner and comes closer
@@ -1021,16 +1021,16 @@ Version 2.17   23.Apr.2008
 * Paper lists report "0" reviews for papers that never got a review (rather
   than "0/1").
 
-
-Version 2.16   21.Apr.2008
+
+## Version 2.16 - 21.Apr.2008
 
 * IMPORTANT: Reviewer identity leak fix.
 
 * Improve usability with tooltips and appearance improvements (inspired by
   John Wilkes).
 
-
-Version 2.15   9.Apr.2008
+
+## Version 2.15 - 9.Apr.2008
 
 * Improve homepage with a right-hand sidebar.
 
@@ -1058,10 +1058,10 @@ Version 2.15   9.Apr.2008
 
 * Bug fix: Authors can see review form guidance.
 
-* Bug fix: Searching for "cre:>0", etc. works.
+* Bug fix: Searching for `cre:>0`, etc. works.
 
-
-Version 2.14   12.Mar.2008
+
+## Version 2.14 - 12.Mar.2008
 
 * Review field options can take lettered values, such as A-D or X-Z, as
   well as numeric values.
@@ -1090,8 +1090,8 @@ Version 2.14   12.Mar.2008
 
 * Thanks to Michael Vrable, Stefan Savage, and Scott Rose.
 
-
-Version 2.13   22.Jan.2008
+
+## Version 2.13 - 22.Jan.2008
 
 * Add support for paper format checking with Geoff Voelker's banal script.
   Thanks to Geoff for the script and debugging support, and to Harald
@@ -1107,7 +1107,7 @@ Version 2.13   22.Jan.2008
 * Hide comments from reviewers that should not be seen by reviewers.
 
 * URL improvements.  Remove .php suffix with mod_rewrite; replace
-  "paperId=" with "p=", "reviewId=" with "r=", "commentId=" with "c=".
+  `paperId=` with `p=`, `reviewId=` with `r=`, `commentId=` with `c=`.
 
 * Bug fixes and memory reduction fixes.  Especially speed up first-time
   loads by reporting the correct Content-Length for gzipped content
@@ -1115,10 +1115,10 @@ Version 2.13   22.Jan.2008
 
 * Thanks also to Matthew Frank, Joseph Tucek, and Bernhard Ager.
 
-
-Version 2.12   30.Dec.2007
 
-* Introduce "twiddle tags", such as "~tag", which are visible only to the
+## Version 2.12 - 30.Dec.2007
+
+* Introduce "twiddle tags", such as `~tag`, which are visible only to the
   PC members that created them.  Based on a request from Matthew Frank.
 
 * Add an optional note to the reviewer that PC members can supply with
@@ -1129,7 +1129,7 @@ Version 2.12   30.Dec.2007
 * Automatic paper assignment can avoid assigning two PC members to the same
   paper.  Based on a request from Matthew Frank.
 
-* Add %SHEPHERD%, etc. to the mail tool (Jon Crowcroft).
+* Add `%SHEPHERD%`, etc. to the mail tool (Jon Crowcroft).
 
 * UI improvements.  Especially including a one-page signin process that
   allows people who haven't yet logged in to see public conference
@@ -1142,8 +1142,8 @@ Version 2.12   30.Dec.2007
 * Thanks to Matthew Frank, Mike Colagrasso, David Black-Schaffer, Ken
   Birman, and Jon Crowcroft.
 
-
-Version 2.11   27.Oct.2007
+
+## Version 2.11 - 27.Oct.2007
 
 * Mail tool allows sending mail to contact authors or reviewers for
   selected papers.
@@ -1154,8 +1154,8 @@ Version 2.11   27.Oct.2007
 * Some fixes to MIME support, PHP uninitialized variable warnings, and
   paper downloads when submissions are closed (bug report from V. Arun).
 
-
-Version 2.10   24.Oct.2007
+
+## Version 2.10 - 24.Oct.2007
 
 * Add some support for MIME extensions; message bodies are marked UTF-8,
   and message headers containing UTF-8 characters are quoted according to
@@ -1164,8 +1164,8 @@ Version 2.10   24.Oct.2007
 * Fix a couple bugs in 2.9 having to do with sending email, entering
   unrequested reviews, and other things.
 
-
-Version 2.9   20.Oct.2007
+
+## Version 2.9 - 20.Oct.2007
 
 * Add a setting allowing PC members to see tags even for conflicted papers.
 
@@ -1173,12 +1173,12 @@ Version 2.9   20.Oct.2007
 
 * Multiple independent paper lists will improve quicklink navigation.
 
-* Add "notag:" searches.
+* Add `notag:` searches.
 
 * Setting description improvements.
 
-
-Version 2.8   11.Oct.2007
+
+## Version 2.8 - 11.Oct.2007
 
 * Bug fix: Do not reveal authors' identities via responses.
 
@@ -1198,15 +1198,15 @@ Version 2.8   11.Oct.2007
 
 * Other behavior improvements.
 
-
-Version 2.7   23.Aug.2007
+
+## Version 2.7 - 23.Aug.2007
 
 * Email notification for comments.  Authors, reviewers, and PC members can
   request email notification when comments are added to a paper they are
   interested in.  The system tracks a global preference and per-paper
   preferences, so one can say "no notifications in general, but notify me
   about paper 4".  Notification is on by default.  Requires schema changes;
-  see the file 'Code/updateschema.sql'.
+  see the file `Code/updateschema.sql`.
 
 * PC members and reviewers can view a paper's comments before they finish
   their own reviews for that paper.
@@ -1218,13 +1218,13 @@ Version 2.7   23.Aug.2007
 
 * Support "External reviewers" mail class (Jim Larus).
 
-* Add 'Code/updateschema.sql'.
+* Add `Code/updateschema.sql`.
 
 * Fix database-creation bugs introduced in Version 2.4 (!), plus some old
   bugs.
 
-
-Version 2.6   20.Aug.2007
+
+## Version 2.6 - 20.Aug.2007
 
 * New way to collect author information.  Author information is entered
   using separate text fields for Name, Email, and Affiliation.  If a user's
@@ -1238,13 +1238,13 @@ Version 2.6   20.Aug.2007
 
 * Style changes, especially on settings pages.
 
-
-Version 2.5   12.Aug.2007
+
+## Version 2.5 - 12.Aug.2007
 
 * Optionally collect users' addresses and phone numbers.
 
-
-Version 2.4   12.Aug.2007
+
+## Version 2.4 - 12.Aug.2007
 
 * Allow setting an info message that appears on the homepage.
 
@@ -1255,8 +1255,8 @@ Version 2.4   12.Aug.2007
 
 * Style changes.
 
-
-Version 2.3   16.Jul.2007
+
+## Version 2.3 - 16.Jul.2007
 
 * New action log display includes search.
 
@@ -1264,20 +1264,20 @@ Version 2.3   16.Jul.2007
 
 * Other fixes.
 
-
-Version 2.2   11.Jul.2007
+
+## Version 2.2 - 11.Jul.2007
 
 * Download a text file with reviewer names and emails (Frans).
 
 * Better offline reviewing.
 
-
-Version 2.1   10.Jul.2007
+
+## Version 2.1 - 10.Jul.2007
 
 * IE compatibility.
 
-
-Version 2.0   9.Jul.2007
+
+## Version 2.0 - 9.Jul.2007
 
 * New mail system.
 
@@ -1292,8 +1292,8 @@ Version 2.0   9.Jul.2007
 
 * Thanks to Akos Ledeczi.
 
-
-Version 2.0b9   16.Jun.2007
+
+## Version 2.0b9 - 16.Jun.2007
 
 * More Ajax.
 
@@ -1318,8 +1318,8 @@ Version 2.0b9   16.Jun.2007
 
 * Thanks to Bernhard Ager, Frans Kaashoek, and Fernando Pereira.
 
-
-Version 2.0b8   11.Mar.2007
+
+## Version 2.0b8 - 11.Mar.2007
 
 * Fix policy leak: Do not reveal reviewer identities if reviews are always
   anonymous!
@@ -1328,8 +1328,8 @@ Version 2.0b8   11.Mar.2007
 
 * Thanks to Jeff Chase.
 
-
-Version 2.0b7   3.Mar.2007
+
+## Version 2.0b7 - 3.Mar.2007
 
 * Fix policy leak: When sending email, include only information the
   recipient can see.
@@ -1349,8 +1349,8 @@ Version 2.0b7   3.Mar.2007
 
 * Thanks to Bernhard Ager, Jeff Chase, Frans Kaashoek, and Andrew Myers.
 
-
-Version 2.0b6   1.Feb.2007
+
+## Version 2.0b6 - 1.Feb.2007
 
 * Fix policy leak: PC members cannot see PC-only fields on review forms for
   their authored papers.
@@ -1360,8 +1360,8 @@ Version 2.0b6   1.Feb.2007
 
 * Other fixes.
 
-
-Version 2.0b5   27.Jan.2007
+
+## Version 2.0b5 - 27.Jan.2007
 
 * Improve tags and help.
 
@@ -1371,8 +1371,8 @@ Version 2.0b5   27.Jan.2007
 
 * Other fixes.
 
-
-Version 2.0b4   13.Jan.2007
+
+## Version 2.0b4 - 13.Jan.2007
 
 * Add automatic assignments.
 
@@ -1388,12 +1388,12 @@ Version 2.0b4   13.Jan.2007
 
 * Other fixes.
 
-
-Version 2.0b3   10.Dec.2006
+
+## Version 2.0b3 - 10.Dec.2006
 
 * Move to Conference Settings pages from deadline settings.
 
-* New search settings, such as "re:<4".
+* New search settings, such as `re:<4`.
 
 * More help.
 
@@ -1401,12 +1401,12 @@ Version 2.0b3   10.Dec.2006
 
 * Other fixes.
 
-
-Version 2.0b2   1.Dec.2006
+
+## Version 2.0b2 - 1.Dec.2006
 
 * Internal updates.
 
-
-Version 2.0b1   28.Nov.2006
+
+## Version 2.0b1 - 28.Nov.2006
 
 * Initial release.
