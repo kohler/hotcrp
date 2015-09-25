@@ -327,16 +327,19 @@ function searchQuickref() {
     _searchQuickrefRow("", "re:fdabek", "“fdabek” in reviewer name/email");
     if ($retag)
         _searchQuickrefRow("", "re:#$retag", "has a reviewer tagged “#" . $retag . "”");
-    _searchQuickrefRow("", "cre:fdabek", "“fdabek” (in reviewer name/email) has completed a review");
     _searchQuickrefRow("", "re:4", "four reviewers (assigned and/or completed)");
     if ($retag)
         _searchQuickrefRow("", "re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
-    _searchQuickrefRow("", "cre:<3", "less than three completed reviews");
-    _searchQuickrefRow("", "ire:>0", "at least one incomplete review");
-    _searchQuickrefRow("", "pri:>=1", "at least one primary reviewer (“cpri:”, “ipri:”, and reviewer name/email also work)");
-    _searchQuickrefRow("", "sec:pai", "“pai” (reviewer name/email) is secondary reviewer (“csec:”, “isec:”, and review counts also work)");
+    _searchQuickrefRow("", "re:complete<3", "less than three completed reviews<br /><span class=\"hint\">Use “cre:<3” for short.</span>");
+    _searchQuickrefRow("", "re:incomplete>0", "at least one incomplete review");
+    _searchQuickrefRow("", "re:inprogress", "at least one in-progress review (started, but not completed)");
+    _searchQuickrefRow("", "re:primary>=2", "at least two primary reviewers");
+    _searchQuickrefRow("", "re:secondary", "at least one secondary reviewer");
+    _searchQuickrefRow("", "re:external", "at least one external reviewer");
+    _searchQuickrefRow("", "re:primary:fdabek:complete", "“fdabek” has completed a primary review");
     if (($r = meaningful_round_name()))
-        _searchQuickrefRow("", "round:$r", "review assignment is “" . htmlspecialchars($r) . "”");
+        _searchQuickrefRow("", "re:$r", "review in round “" . htmlspecialchars($r) . "”");
+    _searchQuickrefRow("", "re:words<100", "has a complete review with less than 100 words");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
         _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "has:cmt", "at least one visible reviewer comment (not including authors’ response)");

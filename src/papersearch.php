@@ -334,6 +334,13 @@ class CountMatcher {
         else
             return false;
     }
+    static function canonicalize($countexpr) {
+        $x = new CountMatcher($countexpr);
+        if ($x->allowed)
+            return self::$oparray[$x->allowed] . $x->compar;
+        else
+            return false;
+    }
 }
 
 class CommentTagMatcher extends CountMatcher {
@@ -381,7 +388,7 @@ class ContactCountMatcher extends CountMatcher {
 class ReviewSearchMatcher extends ContactCountMatcher {
     const COMPLETE = 1;
     const INCOMPLETE = 2;
-    const INPROGRESS = 3;
+    const INPROGRESS = 4;
 
     public $review_type = 0;
     public $completeness = 0;
@@ -389,6 +396,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     public $view_score = null;
     public $round = null;
     public $rate = null;
+    public $wordcountexpr = null;
 
     function __construct($countexpr, $contacts = null, $fieldsql = null,
                          $view_score = null) {
@@ -399,10 +407,16 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     function simple_name() {
         global $reviewTypeName;
         if (!$this->has_contacts() && $this->fieldsql === null
-            && $this->round === null && $this->rate === null) {
+            && $this->round === null && $this->rate === null
+            && $this->wordcountexpr === null) {
             $name = $this->review_type ? $reviewTypeName[$this->review_type] : "All";
-            $x = array("", "Complete", "Incomplete", "Inprogress");
-            return $name . $x[$this->completeness];
+            if ($this->completeness & self::COMPLETE)
+                $name .= "Complete";
+            if ($this->completeness & self::INCOMPLETE)
+                $name .= "Incomplete";
+            if ($this->completeness & self::INPROGRESS)
+                $name .= "Inprogress";
+            return $name;
         } else
             return false;
     }
@@ -1031,6 +1045,7 @@ class PaperSearch {
         $contacts = null;
         $rounds = null;
         $count = ">0";
+        $wordcount = null;
 
         $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/';
 
@@ -1049,11 +1064,14 @@ class PaperSearch {
                 $qword = $m[2];
             } else if (preg_match('/\A(complete|done|incomplete|inprogress)' . $tailre, $qword, $m)) {
                 if ($m[1] === "complete" || $m[1] === "done")
-                    $completeness = ReviewSearchMatcher::COMPLETE;
+                    $completeness |= ReviewSearchMatcher::COMPLETE;
                 else if ($m[1] === "incomplete")
-                    $completeness = ReviewSearchMatcher::INCOMPLETE;
+                    $completeness |= ReviewSearchMatcher::INCOMPLETE;
                 else
-                    $completeness = ReviewSearchMatcher::INPROGRESS;
+                    $completeness |= ReviewSearchMatcher::INPROGRESS;
+                $qword = $m[2];
+            } else if (preg_match('/\Awords((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
+                $wordcount = CountMatcher::canonicalize($m[1]);
                 $qword = $m[2];
             } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $qword, $m)
                        && ($m[1] === "unnamed"
@@ -1062,7 +1080,7 @@ class PaperSearch {
                     $rounds = array();
                 $rounds[] = $round;
                 $qword = $m[2];
-            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))(?:\z|:|(?=[=!<>]|≠|≤|≥))(.*)\z/', $qword, $m)) {
+            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $qword, $m)) {
                 if (($quoted = $m[1][0] === "\""))
                     $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
                 $contacts = $m[1];
@@ -1078,6 +1096,8 @@ class PaperSearch {
             $qt[] = $qr;
             return;
         }
+        if ($completeness == 0 && $wordcount)
+            $completeness = ReviewSearchMatcher::COMPLETE;
 
         if ($contacts)
             $contacts = $this->_reviewerMatcher($contacts, $quoted, $rt >= REVIEW_PC);
@@ -1085,6 +1105,7 @@ class PaperSearch {
         $value->review_type = $rt;
         $value->completeness = $completeness;
         $value->round = $rounds;
+        $value->wordcountexpr = $wordcount;
         $qt[] = new SearchTerm("re", self::F_XVIEW, $value);
     }
 
@@ -2491,6 +2512,7 @@ class PaperSearch {
     }
 
     private function _clauseTermSetReviews($t, $sqi) {
+        global $Conf;
         $rsm = $t->value;
         if (($thistab = $rsm->simple_name()))
             $thistab = "Reviews_" . $thistab;
@@ -2502,14 +2524,15 @@ class PaperSearch {
             $reviewtable = "PaperReview r";
             if ($rsm->review_type)
                 $where[] = "reviewType=" . $rsm->review_type;
-            if ($rsm->completeness === ReviewSearchMatcher::COMPLETE)
-                $where[] = "reviewSubmitted>0";
-            else if ($rsm->completeness === ReviewSearchMatcher::INCOMPLETE)
-                $where[] = "reviewNeedsSubmit>0";
-            else if ($rsm->completeness === ReviewSearchMatcher::INPROGRESS) {
-                $where[] = "reviewNeedsSubmit>0";
-                $where[] = "reviewModified>0";
-            }
+            $cwhere = array();
+            if ($rsm->completeness & ReviewSearchMatcher::COMPLETE)
+                $cwhere[] = "reviewSubmitted>0";
+            if ($rsm->completeness & ReviewSearchMatcher::INCOMPLETE)
+                $cwhere[] = "reviewNeedsSubmit>0";
+            if ($rsm->completeness & ReviewSearchMatcher::INPROGRESS)
+                $cwhere[] = "(reviewNeedsSubmit>0 and reviewModified>0)";
+            if (count($cwhere))
+                $where[] = "(" . join(" or ", $cwhere) . ")";
             if ($rsm->round !== null) {
                 if (count($rsm->round) == 0)
                     $where[] = "false";
@@ -2522,6 +2545,8 @@ class PaperSearch {
                 $where[] = $rsm->contact_match_sql("r.contactId");
             if ($rsm->fieldsql)
                 $where[] = $rsm->fieldsql;
+            if ($rsm->wordcountexpr && $Conf->sversion >= 99)
+                $where[] = "reviewWordCount" . $rsm->wordcountexpr;
             $wheretext = "";
             if (count($where))
                 $wheretext = " where " . join(" and ", $where);
