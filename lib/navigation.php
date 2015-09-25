@@ -39,7 +39,7 @@ class Navigation {
         $sname = $_SERVER["SCRIPT_NAME"]; // URL-decoded
         $sname_slash = strrpos($sname, "/");
         if (substr($sname, $sname_slash + 1) !== $sfile) {
-            if ($sname[strlen($sname) - 1] !== "/")
+            if ($sname === "" || $sname[strlen($sname) - 1] !== "/")
                 $sname .= "/";
             $sname_slash = strlen($sname) - 1;
         }
