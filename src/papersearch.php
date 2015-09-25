@@ -956,10 +956,10 @@ class PaperSearch {
             return array($text, $compar ? : ">0");
     }
 
-    static private function _tautology($m) {
-        if ($m[1] === "<0")
+    static private function _tautology($compar) {
+        if ($compar === "<0")
             return new SearchTerm("f");
-        else if ($m[1] === ">=0")
+        else if ($compar === ">=0")
             return new SearchTerm("t");
         else
             return null;
@@ -1011,36 +1011,80 @@ class PaperSearch {
             return $this->_reviewerMatcher($text, $quoted, true);
     }
 
-    function _searchReviewer($word, $rtype, &$qt, $quoted) {
-        $rt = 0;
-        if (str_ends_with($rtype, "pri"))
-            $rt = REVIEW_PRIMARY;
-        else if (str_ends_with($rtype, "sec"))
-            $rt = REVIEW_SECONDARY;
-        else if (str_ends_with($rtype, "ext"))
-            $rt = REVIEW_EXTERNAL;
+    function _searchReviewer($qword, $keyword, &$qt) {
+        global $Conf;
+        if (preg_match('/\A(.*)(pri|sec|ext)\z/', $keyword, $m)) {
+            $qword = $m[2] . ":" . $qword;
+            $keyword = $m[1];
+        }
 
-        $m = self::_matchCompar($word, $quoted);
-        if (($qr = self::_tautology($m))) {
+        if (str_starts_with($keyword, "c"))
+            $qword = "complete:" . $qword;
+        else if (str_starts_with($keyword, "i"))
+            $qword = "incomplete:" . $qword;
+        else if (str_starts_with($keyword, "p"))
+            $qword = "inprogress:" . $qword;
+
+        $rt = 0;
+        $completeness = 0;
+        $quoted = false;
+        $contacts = null;
+        $rounds = null;
+        $count = ">0";
+
+        $tailre = '(?:\z|:|(?=[=!<>]=?|≠|≤|≥))(.*)\z/';
+
+        while ($qword !== "") {
+            if (preg_match('/\A((?:[=!<>]=?|≠|≤|≥|)\d+|any|none|yes|no)' . $tailre, $qword, $m)) {
+                $count = self::_matchCompar($m[1], false);
+                $count = $count[1];
+                $qword = $m[2];
+            } else if (preg_match('/\A(pri|primary|sec|secondary|ext|external)' . $tailre, $qword, $m)) {
+                if ($m[1][0] === "p")
+                    $rt = REVIEW_PRIMARY;
+                else if ($m[1][0] === "s")
+                    $rt = REVIEW_SECONDARY;
+                else
+                    $rt = REVIEW_EXTERNAL;
+                $qword = $m[2];
+            } else if (preg_match('/\A(complete|done|incomplete|inprogress)' . $tailre, $qword, $m)) {
+                if ($m[1] === "complete" || $m[1] === "done")
+                    $completeness = ReviewSearchMatcher::COMPLETE;
+                else if ($m[1] === "incomplete")
+                    $completeness = ReviewSearchMatcher::INCOMPLETE;
+                else
+                    $completeness = ReviewSearchMatcher::INPROGRESS;
+                $qword = $m[2];
+            } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $qword, $m)
+                       && ($m[1] === "unnamed"
+                           || ($round = $Conf->round_number($m[1], false)))) {
+                if ($rounds === null)
+                    $rounds = array();
+                $rounds[] = $round;
+                $qword = $m[2];
+            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))(?:\z|:|(?=[=!<>]|≠|≤|≥))(.*)\z/', $qword, $m)) {
+                if (($quoted = $m[1][0] === "\""))
+                    $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+                $contacts = $m[1];
+                $qword = $m[2];
+            } else {
+                $count = "<0";
+                break;
+            }
+        }
+
+        if (($qr = self::_tautology($count))) {
             $qr->set_float("used_revadj", true);
             $qt[] = $qr;
             return;
         }
 
-        if ($m[0] === "")
-            $contacts = null;
-        else if ($rt >= REVIEW_PC)
-            $contacts = $this->_reviewerMatcher($m[0], $quoted, true);
-        else
-            $contacts = $this->_reviewerMatcher($m[0], $quoted, false);
-        $value = new ReviewSearchMatcher($m[1], $contacts);
+        if ($contacts)
+            $contacts = $this->_reviewerMatcher($contacts, $quoted, $rt >= REVIEW_PC);
+        $value = new ReviewSearchMatcher($count, $contacts);
         $value->review_type = $rt;
-        if (str_starts_with($rtype, "c"))
-            $value->completeness = ReviewSearchMatcher::COMPLETE;
-        if (str_starts_with($rtype, "i"))
-            $value->completeness = ReviewSearchMatcher::INCOMPLETE;
-        if (str_starts_with($rtype, "p") && $rtype !== "pri")
-            $value->completeness = ReviewSearchMatcher::INPROGRESS;
+        $value->completeness = $completeness;
+        $value->round = $rounds;
         $qt[] = new SearchTerm("re", self::F_XVIEW, $value);
     }
 
@@ -1080,7 +1124,7 @@ class PaperSearch {
 
     private function _search_conflict($word, &$qt, $quoted, $pc_only) {
         $m = self::_matchCompar($word, $quoted);
-        if (($qr = self::_tautology($m))) {
+        if (($qr = self::_tautology($m[1]))) {
             $qt[] = $qr;
             return;
         }
@@ -1130,7 +1174,7 @@ class PaperSearch {
     private function _search_comment($word, $ctype, &$qt, $quoted) {
         global $Conf;
         $m = self::_matchCompar($word, $quoted);
-        if (($qr = self::_tautology($m))) {
+        if (($qr = self::_tautology($m[1]))) {
             $qt[] = $qr;
             return;
         }
@@ -1563,7 +1607,7 @@ class PaperSearch {
         else if ($lword === "manager" || $lword === "admin" || $lword === "administrator")
             $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
         else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword))
-            $this->_searchReviewer(">0", $lword, $qt, $quoted);
+            $this->_searchReviewer(">0", $lword, $qt);
         else if ($lword === "lead")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
         else if ($lword === "shep" || $lword === "shepherd")
@@ -1771,6 +1815,7 @@ class PaperSearch {
         else if ($word === "NONE")
             return new SearchTerm("f");
 
+        $qword = $word;
         $quoted = ($word[0] === '"');
         $negated = false;
         if ($quoted)
@@ -1790,9 +1835,9 @@ class PaperSearch {
         if ($keyword ? $keyword === "co" : isset($this->fields["co"]))
             $this->_searchField($word, "co", $qt);
         if ($keyword ? $keyword === "re" : isset($this->fields["re"]))
-            $this->_searchReviewer($word, "re", $qt, $quoted);
+            $this->_searchReviewer($qword, "re", $qt);
         else if ($keyword && @self::$_canonical_review_keywords[$keyword])
-            $this->_searchReviewer($word, $keyword, $qt, $quoted);
+            $this->_searchReviewer($qword, $keyword, $qt);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
             $this->_search_comment($word, $keyword, $qt, $quoted);
         if ($keyword === "revpref" && $this->amPC)
@@ -1930,7 +1975,7 @@ class PaperSearch {
     }
 
     static public function pop_word(&$str) {
-        $wordre = '/\A\s*(?:"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:"[^"]*"?[^\s()]*|[^"\s()]+)/s';
+        $wordre = '/\A\s*(?:"[^"]*"?|[a-zA-Z][a-zA-Z0-9]*:(?:"[^"]*(?:"|\z)|[^"\s()]*)+|[^"\s()]+)/s';
 
         if (!preg_match($wordre, $str, $m))
             return ($str = "");
@@ -2268,7 +2313,7 @@ class PaperSearch {
                 $this->_query_adjust_reviews($qe->value[$i], $revadj);
         } else if ($qe->type === "re" && $revadj) {
             foreach (self::$adjustments as $adj)
-                if (isset($revadj->value[$adj]))
+                if (isset($revadj->value[$adj]) && !isset($qe->value->$adj))
                     $qe->value->$adj = $revadj->value[$adj];
             $revadj->used_revadj = true;
         } else if ($qe->get_float("used_revadj")) {
