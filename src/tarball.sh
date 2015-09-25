@@ -44,7 +44,7 @@ mkdistdir <<EOF
 .htaccess
 .user.ini
 LICENSE
-NEWS
+NEWS.md
 README.md
 api.php
 assign.php
