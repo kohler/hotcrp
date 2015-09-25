@@ -1063,13 +1063,16 @@ Confidence score with choices X, Y, and Z:</p>
     _alternateRow("", "tagval:<em>tagname</em>", "The value of tag <em>tagname</em>, or null if this paper doesn’t have that tag");
     _alternateRow("Submitted reviews", "overall-merit", "This review’s Overall merit score");
     _alternateRow("", "OveMer", "Abbreviations are also accepted");
-    _alternateRow("", "isprimary", "True for primary reviews");
-    _alternateRow("", "issecondary", "True for secondary reviews");
-    _alternateRow("", "isexternal", "True for external reviews");
-    _alternateRow("", "ispc", "True for PC reviews");
+    _alternateRow("", "re:primary", "True for primary reviews");
+    _alternateRow("", "re:secondary", "True for secondary reviews");
+    _alternateRow("", "re:external", "True for external reviews");
+    _alternateRow("", "re:pc", "True for PC reviews");
     _alternateRow("", "re:sylvia", "True if reviewer matches “sylvia”");
     if (($retag = meaningful_pc_tag()))
         _alternateRow("", "re:#$retag", "True if reviewer has tag “#{$retag}”");
+    _alternateRow("", "re:round", "Review round");
+    _alternateRow("", "re:type", "Review type");
+    _alternateRow("", "re:words", "Review word count");
     _alternateRow("Review preferences", "pref", "Review preference");
     _alternateRow("", "prefexp", "Predicted expertise");
     echo "</table>\n";

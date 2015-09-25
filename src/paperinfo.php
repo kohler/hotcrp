@@ -487,17 +487,20 @@ class PaperInfo {
         return array();
     }
 
-    private function review_cid_array($basek, $k) {
+    private function review_cid_int_array($basek, $k) {
         if (!property_exists($this, $k) || !property_exists($this, "reviewContactIds"))
             $this->load_scores($basek, $k, "contactId", "reviewContactIds");
-        if ($this->$k)
-            return array_combine(explode(",", $this->reviewContactIds),
-                                 explode(",", $this->$k));
-        return array();
+        if ($this->$k) {
+            $x = array();
+            foreach (explode(",", $this->$k) as $v)
+                $x[] = $v === "" ? null : (int) $v;
+            return array_combine(explode(",", $this->reviewContactIds), $x);
+        } else
+            return array();
     }
 
     public function review_ordinals() {
-        return $this->review_cid_array("reviewOrdinal", "reviewOrdinals");
+        return $this->review_cid_int_array("reviewOrdinal", "reviewOrdinals");
     }
 
     public function review_ordinal($cid) {
@@ -506,12 +509,30 @@ class PaperInfo {
     }
 
     public function submitted_review_types() {
-        return $this->review_cid_array("reviewType", "reviewTypes");
+        return $this->review_cid_int_array("reviewType", "reviewTypes");
+    }
+
+    public function submitted_review_word_counts() {
+        return $this->review_cid_int_array("reviewWordCount", "reviewWordCounts");
+    }
+
+    public function review_word_count($cid) {
+        $wc = $this->submitted_review_word_counts();
+        return @$wc[$cid];
+    }
+
+    public function submitted_review_rounds() {
+        return $this->review_cid_int_array("reviewRound", "reviewRounds");
+    }
+
+    public function review_round($cid) {
+        $rr = $this->submitted_review_rounds();
+        return @$rr[$cid];
     }
 
     public function scores($fid) {
         $fid = is_object($fid) ? $fid->id : $fid;
-        return $this->review_cid_array($fid, "{$fid}Scores");
+        return $this->review_cid_int_array($fid, "{$fid}Scores");
     }
 
     public function score($fid, $cid) {

@@ -548,7 +548,7 @@ class Conference {
         $r = array();
         foreach ($this->rounds as $i => $round_name)
             if ($i ? $round_name !== ";" : $this->round0_defined())
-                $r[$i] = $round_name;
+                $r[$i] = $i ? $round_name : "unnamed";
         return $r;
     }
 
@@ -1579,6 +1579,14 @@ class Conference {
         if (@$options["reviewTypes"]) {
             $cols[] = "R_submitted.reviewTypes";
             $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
+        }
+        if (@$options["reviewRounds"]) {
+            $cols[] = "R_submitted.reviewRounds";
+            $j .= ", group_concat(reviewRound order by reviewId) reviewRounds";
+        }
+        if (@$options["reviewWordCounts"] && $this->sversion >= 99) {
+            $cols[] = "R_submitted.reviewWordCounts";
+            $j .= ", group_concat(reviewWordCount order by reviewId) reviewWordCounts";
         }
         if (@$options["reviewOrdinals"]) {
             $cols[] = "R_submitted.reviewOrdinals";

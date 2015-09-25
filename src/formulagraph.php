@@ -187,7 +187,7 @@ class FormulaGraph {
     }
 
     public function axis_info_settings($axis) {
-        global $Conf;
+        global $Conf, $reviewTypeName;
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = array();
         if ($axis == "y" && $this->type == self::FBARCHART)
@@ -211,6 +211,10 @@ class FormulaGraph {
             $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
             $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
+        else if ($format === "revround")
+            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($Conf->defined_round_list()) . ")" . $rticks;
+        else if ($format === "revtype")
+            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($reviewTypeName) . ")" . $rticks;
         return join(",", $t);
     }
 }

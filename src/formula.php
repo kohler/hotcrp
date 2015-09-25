@@ -209,18 +209,29 @@ class ConstantFexpr extends Fexpr {
         return $this->format === false ? $this->x : false;
     }
     public function resolve_constants_neighbor($e) {
+        global $Conf;
         if ($this->format !== false || !($e instanceof Fexpr)
             || $e->resolve_constants())
             return;
         $format = $e->format();
-        if ($format instanceof PrefFexpr && $this->x >= "X" && $this->x <= "Z") {
+        $letter = "";
+        if (strlen($this->x) == 1 && ctype_alpha($this->x))
+            $letter = strtoupper($this->x);
+        if ($format instanceof PrefFexpr && $letter >= "X" && $letter <= "Z")
             $this->x = 89 - ord($word);
-            $this->format = $format;
-        } else if ($format instanceof ReviewField
-                   && ($x = $format->parse_value($this->x, true))) {
+        else if ($format instanceof ReviewField && $letter
+                 && ($x = $format->parse_value($letter, true)))
             $this->x = $x;
-            $this->format = $format;
-        }
+        else if ($format === "revround"
+                 && (($round = $Conf->round_number($this->x, false))
+                     || $this->x === "unnamed"))
+            $this->x = $round;
+        else if ($format === "revtype"
+                 && ($rt = ReviewSearchMatcher::parse_review_type($this->x)))
+            $this->x = $rt;
+        else
+            return;
+        $this->format = $format;
     }
     public function compile(FormulaCompiler $state) {
         return $this->x;
@@ -408,6 +419,29 @@ class RevtypeFexpr extends Fexpr {
     }
 }
 
+class ReviewRoundFexpr extends Fexpr {
+    public function format() {
+        return "revround";
+    }
+    public function view_score(Contact $contact) {
+        return VIEWSCORE_PC;
+    }
+    public function compile(FormulaCompiler $state) {
+        $state->datatype |= self::ASUBREV;
+        if ($state->looptype == self::LMY)
+            $rt = $state->define_gvar("myrevround", "\$prow->review_round(\$contact->contactId)");
+        else {
+            $view_score = $state->contact->permissive_view_score_bound();
+            if (VIEWSCORE_PC <= $view_score)
+                return "null";
+            $state->queryOptions["reviewRounds"] = true;
+            $rt = $state->define_gvar("revrounds", "\$prow->submitted_review_rounds()");
+            return "@{$rt}[" . $state->_rrow_cid() . "]";
+        }
+        return $rt;
+    }
+}
+
 class ConflictFexpr extends Fexpr {
     private $ispc;
     public function __construct($ispc) {
@@ -431,9 +465,22 @@ class ConflictFexpr extends Fexpr {
     }
 }
 
-class ReviewerFexpr extends Fexpr {
+class ReviewFexpr extends Fexpr {
+    public function view_score(Contact $contact) {
+        global $Conf;
+        if (!$Conf->setting("rev_blind"))
+            return VIEWSCORE_AUTHOR;
+        else if ($Conf->setting("pc_seeblindrev"))
+            return VIEWSCORE_REVIEWERONLY;
+        else
+            return VIEWSCORE_PC;
+    }
+}
+
+class ReviewerFexpr extends ReviewFexpr {
     private $arg;
     private $flags;
+    private $istag;
     public function __construct($arg) {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && pcTags($arg));
@@ -442,15 +489,7 @@ class ReviewerFexpr extends Fexpr {
         return "bool";
     }
     public function view_score(Contact $contact) {
-        global $Conf;
-        if ($this->istag)
-            return VIEWSCORE_PC;
-        else if (!$Conf->setting("rev_blind"))
-            return VIEWSCORE_AUTHOR;
-        else if ($Conf->setting("pc_seeblindrev"))
-            return VIEWSCORE_REVIEWERONLY;
-        else
-            return VIEWSCORE_PC;
+        return $this->istag ? VIEWSCORE_PC : parent::view_score($contact);
     }
     public function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
@@ -473,6 +512,23 @@ class ReviewerFexpr extends Fexpr {
             $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", array(" . join(", ", $cs->ids) . ")) !== false : null)";
         }
         return $e;
+    }
+}
+
+class ReviewWordCountFexpr extends ReviewFexpr {
+    public function compile(FormulaCompiler $state) {
+        $state->datatype |= self::ASUBREV;
+        if ($state->looptype == self::LMY)
+            $rt = $state->define_gvar("myrevwordcount", "\$prow->review_word_count(\$contact->contactId)");
+        else {
+            $view_score = $state->contact->permissive_view_score_bound();
+            if (VIEWSCORE_PC <= $view_score)
+                return "null";
+            $state->queryOptions["reviewWordCounts"] = true;
+            $rt = $state->define_gvar("revwordcounts", "\$prow->submitted_review_word_counts()");
+            return "@{$rt}[" . $state->_rrow_cid() . "]";
+        }
+        return $rt;
     }
 }
 
@@ -703,10 +759,13 @@ class Formula {
         if ((string) $this->expression === "")
             $this->_error_html[] = "Empty formula.";
         else if ($t !== "" || !$e) {
-            $prefix = substr($this->expression, 0, strlen($this->expression) - strlen($t));
-            $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($prefix) . "<span style='color:red;text-decoration:underline'>" . htmlspecialchars(substr($this->expression, strlen($prefix))) . "</span>”.";
+            $pfx = substr($this->expression, 0, strlen($this->expression) - strlen($t));
+            if (strlen($pfx) == strlen($this->expression))
+                $this->_error_html[] = "Parse error at end of formula “" . htmlspecialchars($pfx) . "”.";
+            else
+                $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($pfx) . "<span style='color:red;text-decoration:underline'>☞" . htmlspecialchars(substr($this->expression, strlen($pfx))) . "</span>”.";
         } else if (($x = $e->resolve_constants()))
-            $this->_error_html[] = "Illegal formula: can’t resolve “" . htmlspecialchars($x) . "” to a score.";
+            $this->_error_html[] = "Parse error: can’t resolve “" . htmlspecialchars($x) . "”.";
         else {
             $state = new FormulaCompiler($Me);
             $e->compile($state);
@@ -779,6 +838,7 @@ class Formula {
     const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.@+!*\/?])+)';
 
     private function _parse_expr(&$t, $level, $in_qc) {
+        global $Conf;
         if (($t = ltrim($t)) === "")
             return null;
 
@@ -854,8 +914,41 @@ class Formula {
             $e = new TagFexpr($m[1], true);
             $t = $m[2];
         } else if (preg_match('/\A(?:r|re|rev|review)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
-            $e = new ReviewerFexpr($m[1]);
+            $ex = $m[1];
             $t = $m[2];
+            $e = null;
+            $tailre = '(?:\z|:)(.*)\z/s';
+            while ($ex !== "") {
+                if (preg_match('/\A(pri|primary|sec|secondary|ext|external|pc|pcre|pcrev)' . $tailre, $ex, $m)) {
+                    $rt = ReviewSearchMatcher::parse_review_type($m[1]);
+                    $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
+                    $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
+                    $ex = $m[2];
+                } else if (preg_match('/\Awords' . $tailre, $ex, $m)) {
+                    $ee = new ReviewWordCountFexpr;
+                    $ex = $m[1];
+                } else if (preg_match('/\Atype' . $tailre, $ex, $m)) {
+                    $ee = new RevtypeFexpr;
+                    $ex = $m[1];
+                } else if (preg_match('/\Around' . $tailre, $ex, $m)) {
+                    $ee = new ReviewRoundFexpr;
+                    $ex = $m[1];
+                } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $ex, $m)
+                           && (($round = $Conf->round_number($m[1], false))
+                               || $m[1] === "unnamed")) {
+                    $ee = new Fexpr("==", new ReviewRoundFexpr, new ConstantFexpr($round, "revround"));
+                    $ex = $m[2];
+                } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $ex, $m)) {
+                    if (($quoted = $m[1][0] === "\""))
+                        $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+                    $ee = new ReviewerFexpr($m[1]);
+                    $ex = $m[2];
+                } else {
+                    $ee = new ConstantFexpr("false", "bool");
+                    $ex = "";
+                }
+                $e = $e ? new Fexpr("&&", $e, $ee) : $ee;
+            }
         } else if (preg_match('/\A(my|all|any|avg|count|min|max|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
@@ -867,21 +960,18 @@ class Formula {
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
             $e = new ConstantFexpr("null");
             $t = $m[1];
+        } else if (preg_match('/\Arevtype\b(.*)\z/s', $t, $m)) {
+            $e = new RevtypeFexpr;
+            $t = $m[1];
+        } else if (preg_match('/\A(?:revround|round)\b(.*)\z/s', $t, $m)) {
+            $e = new ReviewRoundFexpr;
+            $t = $m[1];
+        } else if (preg_match('/\Are(?:|v|view)words\b(.*)\z/s', $t, $m)) {
+            $e = new ReviewWordCountFexpr;
+            $t = $m[1];
         } else if (preg_match('/\A(?:is)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
-            $op = "==";
-            if ($m[1] == "pri" || $m[1] == "primary")
-                $rt = REVIEW_PRIMARY;
-            else if ($m[1] == "sec" || $m[1] == "secondary")
-                $rt = REVIEW_SECONDARY;
-            else if ($m[1] == "ext" || $m[1] == "external")
-                $rt = REVIEW_EXTERNAL;
-            else if ($m[1] == "pc" || $m[1] == "pcre" || $m[1] == "pcrev") {
-                $rt = REVIEW_PC;
-                $op = ">=";
-            } else {
-                $rt = 0;
-                $op = ">=";
-            }
+            $rt = ReviewSearchMatcher::parse_review_type($m[1]);
+            $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
             $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
             $t = $m[2];
         } else if (preg_match('/\Atopicscore\b(.*)\z/s', $t, $m)) {
@@ -899,7 +989,7 @@ class Formula {
         } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/s', $t, $m)) {
             $e = new PrefFexpr(true);
             $t = $m[1];
-        } else if (preg_match('/\A([a-zA-Z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
+        } else if (preg_match('/\A([A-Za-z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
                    && $m[1] !== "\"\"") {
             $field = $m[1];
             $t = $m[2];
@@ -908,8 +998,8 @@ class Formula {
             if (($f = ReviewForm::field_search($field))
                 && $f->has_options)
                 $e = new ScoreFexpr($f);
-            else if (!$quoted && strlen($field) === 1 && ctype_alpha($field))
-                $e = new ConstantFexpr(strtoupper($field), false);
+            else if (!$quoted)
+                $e = new ConstantFexpr($field, false);
             else
                 return null;
         } else

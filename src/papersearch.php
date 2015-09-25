@@ -422,6 +422,20 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         } else
             return false;
     }
+    static function parse_review_type($type) {
+        $type = strtolower($type);
+        if ($type === "pri" || $type === "primary")
+            return REVIEW_PRIMARY;
+        else if ($type === "sec" || $type === "secondary")
+            return REVIEW_SECONDARY;
+        else if ($type === "ext" || $type === "external")
+            return REVIEW_EXTERNAL;
+        else if ($type === "pc" || $type === "pcre" || $type === "pcrev"
+                 || $type === "optional")
+            return REVIEW_PC;
+        else
+            return 0;
+    }
 }
 
 class RevprefSearchMatcher extends ContactCountMatcher {
@@ -1058,12 +1072,7 @@ class PaperSearch {
                 $count = $count[1];
                 $qword = $m[2];
             } else if (preg_match('/\A(pri|primary|sec|secondary|ext|external)' . $tailre, $qword, $m)) {
-                if ($m[1][0] === "p")
-                    $rt = REVIEW_PRIMARY;
-                else if ($m[1][0] === "s")
-                    $rt = REVIEW_SECONDARY;
-                else
-                    $rt = REVIEW_EXTERNAL;
+                $rt = ReviewSearchMatcher::parse_review_type($m[1]);
                 $qword = $m[2];
             } else if (preg_match('/\A(complete|done|incomplete|inprogress)' . $tailre, $qword, $m)) {
                 if ($m[1] === "complete" || $m[1] === "done")
@@ -1077,8 +1086,8 @@ class PaperSearch {
                 $wordcount = CountMatcher::canonicalize($m[1]);
                 $qword = $m[2];
             } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $qword, $m)
-                       && ($m[1] === "unnamed"
-                           || ($round = $Conf->round_number($m[1], false)))) {
+                       && (($round = $Conf->round_number($m[1], false))
+                           || $m[1] === "unnamed")) {
                 if ($rounds === null)
                     $rounds = array();
                 $rounds[] = $round;
