@@ -289,9 +289,10 @@ class CountMatcher {
     function __construct($countexpr) {
         $this->_countexpr = $countexpr;
         if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?\d+)\z/', $countexpr, $m)) {
-            $this->allowed |= self::$opmap[$m[1]];
+            $this->allowed = self::$opmap[$m[1]];
             $this->compar = (int) $m[2];
-        }
+        } else
+            error_log(caller_landmark() . ": bogus countexpr $countexpr");
     }
     function test($n) {
         return self::compare($n, $this->allowed, $this->compar);
@@ -313,7 +314,10 @@ class CountMatcher {
             return false;
     }
     public function countexpr() {
-        return $this->_countexpr;
+        if ($this->allowed)
+            return self::$oparray[$this->allowed] . $this->compar;
+        else
+            return $this->_countexpr;
     }
     public function conservative_countexpr() {
         if ($this->allowed & 1)
@@ -336,10 +340,7 @@ class CountMatcher {
     }
     static function canonicalize($countexpr) {
         $x = new CountMatcher($countexpr);
-        if ($x->allowed)
-            return self::$oparray[$x->allowed] . $x->compar;
-        else
-            return false;
+        return $x->allowed ? $x->countexpr() : false;
     }
 }
 
@@ -357,10 +358,7 @@ class ContactCountMatcher extends CountMatcher {
 
     function __construct($countexpr, $contacts) {
         parent::__construct($countexpr);
-        assert($contacts === null || is_array($contacts) || is_int($contacts));
-        $this->_contacts = $contacts;
-        if (is_int($this->_contacts))
-            $this->_contacts = array($this->_contacts);
+        $this->set_contacts($contacts);
     }
     function has_contacts() {
         return $this->_contacts !== null;
@@ -382,6 +380,10 @@ class ContactCountMatcher extends CountMatcher {
             $this->_contacts = array();
         if (!in_array($cid, $this->_contacts))
             $this->_contacts[] = $cid;
+    }
+    function set_contacts($contacts) {
+        assert($contacts === null || is_array($contacts) || is_int($contacts));
+        $this->_contacts = is_int($contacts) ? array($contacts) : $contacts;
     }
 }
 
@@ -423,11 +425,11 @@ class ReviewSearchMatcher extends ContactCountMatcher {
 }
 
 class RevprefSearchMatcher extends ContactCountMatcher {
-    public $fieldsql;
+    public $preference_match = null;
+    public $expertise_match = null;
 
-    function __construct($countexpr, $contacts = null, $fieldsql = null) {
+    function __construct($countexpr, $contacts) {
         parent::__construct($countexpr, $contacts);
-        $this->fieldsql = $fieldsql;
     }
 }
 
@@ -639,15 +641,17 @@ class ContactSearch {
 }
 
 class PaperSearch {
+    const F_MANAGER = 0x0001;
+    const F_NONCONFLICT = 0x0002;
+    const F_AUTHOR = 0x0004;
+    const F_REVIEWER = 0x0008;
 
-    const F_NONCONFLICT = 0x00040;
-    const F_AUTHOR = 0x00080;
-    const F_REVIEWER = 0x00100;
     const F_AUTHORCOMMENT = 0x00200;
     const F_ALLOWRESPONSE = 0x00400;
     const F_ALLOWCOMMENT = 0x00800;
     const F_ALLOWDRAFT = 0x01000;
     const F_REQUIREDRAFT = 0x02000;
+
     const F_FALSE = 0x10000;
     const F_XVIEW = 0x20000;
 
@@ -997,8 +1001,7 @@ class PaperSearch {
         return $this->contact_match[] = new ContactSearch($type, $text, $me_cid);
     }
 
-    private function _reviewerMatcher($word, $quoted, $pc_only,
-                                      $limited = false) {
+    private function _reviewerMatcher($word, $quoted, $pc_only) {
         $type = 0;
         if ($pc_only)
             $type |= ContactSearch::F_PC;
@@ -1347,10 +1350,9 @@ class PaperSearch {
 
     private function _search_revpref($word, &$qt, $quoted) {
         $contacts = null;
-        if (preg_match('/\A(.*?[^:=<>!])([:=!<>]|≠|≤|≥)(.*)\z/s', $word, $m)
+        if (preg_match('/\A(.*?[^:=<>!])([:=!<>]=?|≠|≤|≥)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
-            $contacts = $this->_reviewerMatcher($m[1], $quoted, true,
-                                                !$this->privChair);
+            $contacts = $this->_reviewerMatcher($m[1], $quoted, true);
             $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
         }
 
@@ -1363,25 +1365,26 @@ class PaperSearch {
         if ($m[1] === "")
             $m[1] = "1";
         else if ($m[2] === "")
-            list($m[1], $m[3]) = array("1", $m[1]);
-        $mx = array((int) $m[1] ? ">=" . $m[1] : "=0");
-        $compar = CountMatcher::canonical_comparator($m[2]);
+            $m = array($m[0], "1", "=", $m[1], "");
+
+        // PC members can only search their own preferences.
+        // Admins can search papers they administer.
+        $value = new RevprefSearchMatcher((int) $m[1] ? ">=" . $m[1] : "=0", $contacts);
         if ($m[3] !== "")
-            $mx[] = "preference" . $compar . $m[3];
+            $value->preference_match = new CountMatcher($m[2] . $m[3]);
         if ($m[4] !== "")
-            $mx[] = "expertise" . $compar . (121 - ord(strtolower($m[4])));
-
-        // since 0 preferences are not stored, we must negate the sense of the
-        // comparison if a preference of 0 might match
-        $scratch = new CountMatcher($mx[1]);
-        if ($scratch->test(0))
-            foreach ($mx as &$mxv)
-                $mxv = CountMatcher::negate_countexpr_string($mxv); // XXX bogus
-
-        // PC members can only search their own preferences; we enforce
-        // this restriction below in clauseTermSetRevpref.
-        $value = new RevprefSearchMatcher($mx[0], $contacts, join(" and ", array_slice($mx, 1)));
-        $qt[] = new SearchTerm("revpref", $this->privChair ? 0 : self::F_NONCONFLICT, $value);
+            $value->expertise_match = new CountMatcher($m[2] . (121 - ord(strtolower($m[4]))));
+        if ($this->privChair)
+            $qt[] = new SearchTerm("revpref", 0, $value);
+        else {
+            if ($this->contact->is_manager())
+                $qt[] = new SearchTerm("revpref", self::F_MANAGER, $value);
+            if ($value->test_contact($this->cid)) {
+                $xvalue = clone $value;
+                $xvalue->set_contacts($this->cid);
+                $qt[] = new SearchTerm("revpref", 0, $xvalue);
+            }
+        }
     }
 
     private function _search_formula($word, &$qt, $quoted) {
@@ -2377,9 +2380,21 @@ class PaperSearch {
     // QUERY EVALUATION makes it precise.
 
     private function _clauseTermSetFlags($t, $sqi, &$q) {
+        global $Conf;
         $flags = $t->flags;
         $this->needflags |= $flags;
 
+        if ($flags & self::F_MANAGER) {
+            if ($Conf->has_any_manager() && $this->privChair)
+                $q[] = "(managerContactId=$this->cid or (managerContactId=0 and PaperConflict.conflictType is null))";
+            else if ($this->privChair)
+                $q[] = "true";
+            else if ($this->contact->is_manager())
+                $q[] = "managerContactId=$this->cid";
+            else
+                $q[] = "false";
+            $sqi->add_rights_columns();
+        }
         if ($flags & self::F_NONCONFLICT)
             $q[] = "PaperConflict.conflictType is null";
         if ($flags & self::F_AUTHOR)
@@ -2564,17 +2579,35 @@ class PaperSearch {
         return "(" . join(" and ", $q) . ")";
     }
 
-    private function _clauseTermSetRevpref($thistab, $extrawhere, $t, $sqi) {
-        if (!isset($sqi->tables[$thistab])) {
+    private function _clauseTermSetRevpref($t, $sqi) {
+        $thistab = "Revpref_" . count($sqi->tables);
+        $rsm = $t->value;
+
+        if ($rsm->preference_match
+            && $rsm->preference_match->test(0)
+            && !$rsm->expertise_match) {
+            $q = "select Paper.paperId, count(ContactInfo.contactId) as count"
+                . " from Paper join ContactInfo"
+                . " left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=ContactInfo.contactId)"
+                . " where coalesce(preference,0)" . $rsm->preference_match->countexpr()
+                . " and " . ($rsm->has_contacts() ? $rsm->contact_match_sql("ContactInfo.contactId") : "(roles&" . Contact::ROLE_PC . ")!=0")
+                . " group by Paper.paperId";
+        } else {
             $where = array();
-            $reviewtable = "PaperReviewPreference";
-            if ($extrawhere)
-                $where[] = $extrawhere;
-            $wheretext = "";
+            if ($rsm->has_contacts())
+                $where[] = $rsm->contact_match_sql("contactId");
+            if ($rsm->preference_match)
+                $where[] = "preference" . $rsm->preference_match->countexpr();
+            if ($rsm->expertise_match)
+                $where[] = "expertise" . $rsm->expertise_match->countexpr();
+            $q = "select paperId, count(PaperReviewPreference.preference) as count"
+                . " from PaperReviewPreference";
             if (count($where))
-                $wheretext = " where " . join(" and ", $where);
-            $sqi->add_table($thistab, array("left join", "(select paperId, count(PaperReviewPreference.preference) as count from $reviewtable$wheretext group by paperId)"));
+                $q .= " where " . join(" and ", $where);
+            $q .= " group by paperId";
         }
+        $sqi->add_table($thistab, array("left join", "($q)"));
+
         $q = array();
         $this->_clauseTermSetFlags($t, $sqi, $q);
         $q[] = "coalesce($thistab.count,0)" . $t->value->countexpr();
@@ -2639,14 +2672,7 @@ class PaperSearch {
         } else if ($tt === "re") {
             $f[] = $this->_clauseTermSetReviews($t, $sqi);
         } else if ($tt === "revpref") {
-            $extrawhere = array();
-            if ($t->value->has_contacts())
-                $extrawhere[] = $t->value->contact_match_sql("contactId");
-            if ($t->value->fieldsql)
-                $extrawhere[] = $t->value->fieldsql;
-            $extrawhere = join(" and ", $extrawhere);
-            $thistab = "Revpref_" . count($sqi->tables);
-            $f[] = $this->_clauseTermSetRevpref($thistab, $extrawhere, $t, $sqi);
+            $f[] = $this->_clauseTermSetRevpref($t, $sqi);
         } else if ($tt === "conflict") {
             $this->_clauseTermSetTable($t, $t->value->contact_set(),
                                        $t->value->countexpr(), "Conflict",
@@ -2753,6 +2779,9 @@ class PaperSearch {
 
     private function _clauseTermCheckFlags($t, $row) {
         $flags = $t->flags;
+        if (($flags & self::F_MANAGER)
+            && !$this->contact->can_administer($row, true))
+            return false;
         if (($flags & self::F_AUTHOR)
             && !$this->contact->actAuthorView($row))
             return false;
@@ -3065,7 +3094,7 @@ class PaperSearch {
             $filters[] = "Paper.managerContactId=0";
 
         // add common tables: conflicts, my own review, paper blindness
-        if ($this->needflags & (self::F_NONCONFLICT | self::F_AUTHOR)) {
+        if ($this->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR)) {
             $sqi->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId=$this->cid"));
             $sqi->add_column("conflictType", "PaperConflict.conflictType");
         }
