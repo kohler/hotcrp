@@ -2211,7 +2211,7 @@ function count_words(text) {
 }
 
 function count_words_split(text, wlimit) {
-    var re = new RegExp("^((?:\\s*[^-\\s.,;:<>!*_~`#|]\\S*){" + wlimit + "}\\s*)([\\s\\S]*)$"),
+    var re = new RegExp("^((?:[-\\s.,;:<>!*_~`#|]*[^-\\s.,;:<>!*_~`#|]\\S*(?:\\s|$)\\s*){" + wlimit + "})([^]*)$"),
         m = re.exec(text || "");
     return m ? [m[1], m[2]] : [text || "", ""];
 }
