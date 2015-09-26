@@ -250,6 +250,16 @@ function commajoin(a, joinword) {
         return a.slice(0, l - 1).join(", ") + ", " + joinword + " " + a[l - 1];
 }
 
+function count_words(text) {
+    return ((text || "").match(/[^-\s.,;:<>!*_~`#|]\S*/g) || []).length;
+}
+
+function count_words_split(text, wlimit) {
+    var re = new RegExp("^((?:[-\\s.,;:<>!*_~`#|]*[^-\\s.,;:<>!*_~`#|]\\S*(?:\\s|$)\\s*){" + wlimit + "})([^]*)$"),
+        m = re.exec(text || "");
+    return m ? [m[1], m[2]] : [text || "", ""];
+}
+
 function sprintf(fmt) {
     var words = fmt.split(/(%(?:%|-?(?:\d*|\*?)(?:[.]\d*)?[sdefgoxX]))/), wordno, word,
         arg, argno, conv, pad, t = "";
@@ -2204,16 +2214,6 @@ function visibility_change() {
     var j = $(this).closest(".cmtvistable"),
         dofold = !j.find("input[name=visibility][value=au]").is(":checked");
     fold(j[0], dofold, 2);
-}
-
-function count_words(text) {
-    return ((text || "").match(/[^-\s.,;:<>!*_~`#|]\S*/g) || []).length;
-}
-
-function count_words_split(text, wlimit) {
-    var re = new RegExp("^((?:[-\\s.,;:<>!*_~`#|]*[^-\\s.,;:<>!*_~`#|]\\S*(?:\\s|$)\\s*){" + wlimit + "})([^]*)$"),
-        m = re.exec(text || "");
-    return m ? [m[1], m[2]] : [text || "", ""];
 }
 
 function make_update_words(jq, wlimit) {
