@@ -251,11 +251,11 @@ function commajoin(a, joinword) {
 }
 
 function count_words(text) {
-    return ((text || "").match(/[^-\s.,;:<>!*_~`#|]\S*/g) || []).length;
+    return ((text || "").match(/[^-\s.,;:<>!?*_~`#|]\S*/g) || []).length;
 }
 
 function count_words_split(text, wlimit) {
-    var re = new RegExp("^((?:[-\\s.,;:<>!*_~`#|]*[^-\\s.,;:<>!*_~`#|]\\S*(?:\\s|$)\\s*){" + wlimit + "})([^]*)$"),
+    var re = new RegExp("^((?:[-\\s.,;:<>!?*_~`#|]*[^-\\s.,;:<>!?*_~`#|]\\S*(?:\\s|$)\\s*){" + wlimit + "})([^]*)$"),
         m = re.exec(text || "");
     return m ? [m[1], m[2]] : [text || "", ""];
 }

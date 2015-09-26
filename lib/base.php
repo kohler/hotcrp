@@ -58,7 +58,7 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
 }
 
 function count_words($text) {
-    return preg_match_all('/[^-\s.,;:<>!*_~`#|]\S*/', $text);
+    return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
 }
 
 
