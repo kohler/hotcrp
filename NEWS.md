@@ -1,6 +1,14 @@
 HotCRP NEWS
 ===========
 
+## Version 2.97 - 28.Sep.2015
+
+* Add `re:words` search term and formula term.
+
+* Fix bug where the response word counting feature could break some browsers
+  (a regular expression's backtracking went exponential).
+
+
 ## Version 2.96 - 24.Sep.2015
 
 * New improved look.
