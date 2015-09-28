@@ -2610,15 +2610,18 @@ function make_selector_shortcut(type) {
     }
     return function (evt) {
         var e = $$("fold" + type);
-        e.className += " psfocus";
-        foldup(e, null, {f: false});
-        jQuery(e).scrollIntoView();
-        e = find(e);
-        e.focus();
-        e.addEventListener("blur", end, false);
-        e.addEventListener("change", end, false);
-        event_stop(evt);
-        return true;
+        if (e) {
+            e.className += " psfocus";
+            foldup(e, null, {f: false});
+            jQuery(e).scrollIntoView();
+            e = find(e);
+            e.focus();
+            e.addEventListener("blur", end, false);
+            e.addEventListener("change", end, false);
+            event_stop(evt);
+            return true;
+        }
+        return false;
     }
 }
 
