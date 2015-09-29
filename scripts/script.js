@@ -4074,12 +4074,12 @@ function make_info(n, c, sv) {
         var svx = sv + (Math.floor(fm(val) * 8.99) + 1);
         if (!sccolor[svx]) {
             var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo(document.body), m;
-            sccolor[sv] = [0, 0, 0];
+            sccolor[svx] = [0, 0, 0];
             if ((m = /^rgba?\((\d+),(\d+),(\d+)[,)]/.exec(j.css("color").replace(/\s+/g, ""))))
-                sccolor[sv] = [+m[1], +m[2], +m[3]];
+                sccolor[svx] = [+m[1], +m[2], +m[3]];
             j.remove();
         }
-        return sccolor[sv];
+        return sccolor[svx];
     }
     return {
         fm: fm,
