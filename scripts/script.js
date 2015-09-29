@@ -4234,9 +4234,9 @@ function scorechart1_s2(sc, parent) {
 }
 
 function scorechart1() {
-    var sc = this.getAttribute("hotcrpscorechart"), e;
+    var sc = this.getAttribute("data-scorechart"), e;
     if (this.firstChild
-        && this.firstChild.getAttribute("hotcrpscorechart") === sc)
+        && this.firstChild.getAttribute("data-scorechart") === sc)
         return;
     while (this.firstChild)
         this.removeChild(this.firstChild);
@@ -4249,14 +4249,14 @@ function scorechart1() {
         e.src = hoturl("scorechart", sc);
         e.alt = this.getAttribute("title");
     }
-    e.setAttribute("hotcrpscorechart", sc);
+    e.setAttribute("data-scorechart", sc);
     this.insertBefore(e, null);
 }
 
 return function (j) {
     if (j == null || j === $)
-        j = $(".scorechart:empty");
-    j.each(scorechart1);
+        j = $(".need-scorechart");
+    j.each(scorechart1).removeClass("need-scorechart").addClass("scorechart");
 }
 })(jQuery);
 

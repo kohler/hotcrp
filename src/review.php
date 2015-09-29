@@ -271,10 +271,10 @@ class ReviewField {
         if ($style == 1) {
             $width = 5 * $max + 3;
             $height = 5 * max(3, max($v->v)) + 3;
-            $retstr = "<div class=\"scorechart\" style=\"width:${width}px;height:${height}px\" hotcrpscorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
+            $retstr = "<div class=\"need-scorechart\" style=\"width:${width}px;height:${height}px\" data-scorechart=\"$args&amp;s=1\" title=\"$avgtext\"></div>";
         } else if ($style == 2) {
             $retstr = "<div class=\"sc\">"
-                . "<div class=\"scorechart\" style=\"width:64px;height:8px\" hotcrpscorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
+                . "<div class=\"need-scorechart\" style=\"width:64px;height:8px\" data-scorechart=\"$args&amp;s=2\" title=\"$avgtext\"></div>"
                 . "<br />";
             if ($this->option_letter) {
                 for ($key = $max; $key >= 1; $key--)
