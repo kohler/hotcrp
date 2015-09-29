@@ -46,7 +46,7 @@ if (!isset(HelpTopic::$list[$topic]))
 if ($topic === "topics")
     $Conf->header("Help", "help", actionBar());
 else
-    $Conf->header("Help &nbsp;|&nbsp; <strong>" . HelpTopic::$list[$topic]->name . "</strong>", "help", actionBar());
+    $Conf->header("Help &nbsp;&#x2215;&nbsp; <strong>" . HelpTopic::$list[$topic]->name . "</strong>", "help", actionBar());
 
 
 function _alternateRow($caption, $entry, $next = null) {

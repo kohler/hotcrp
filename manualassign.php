@@ -107,7 +107,7 @@ else if (isset($_REQUEST["update"]))
     $Conf->errorMsg("You need to select a reviewer.");
 
 
-$Conf->header("Assignments", "assignpc", actionBar());
+$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Manual</strong>", "assignpc", actionBar());
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmodex"><a href="', hoturl("manualassign"), '">Manual</a></div>',

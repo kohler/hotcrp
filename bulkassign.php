@@ -77,7 +77,7 @@ if (isset($_REQUEST["saveassignment"]) && check_post()) {
 }
 
 
-$Conf->header("Assignments", "bulkassign", actionBar());
+$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Upload</strong>", "bulkassign", actionBar());
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
@@ -157,9 +157,8 @@ if (isset($_REQUEST["saveassignment"]) && check_post()
 }
 
 
-echo "<h2 style='margin-top:1em'>Upload assignments</h2>\n\n";
-
-echo Ht::form_div(hoturl_post("bulkassign", "upload=1"));
+echo Ht::form_div(hoturl_post("bulkassign", "upload=1"),
+                  array("divstyle" => "margin-top:1em"));
 
 // Upload
 echo '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" />',
