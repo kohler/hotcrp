@@ -233,22 +233,23 @@ class Ht {
         return self::submit($name, $text, $js);
     }
 
-    static function entry($name, $value, $js = null) {
-        $js = $js ? $js : array();
+    private static function apply_placeholder(&$value, &$js) {
         if (($temp = @$js["placeholder"])) {
             if ($value === null || $value === "" || $value === $temp)
                 $js["class"] = trim(defval($js, "class", "") . " temptext");
             if ($value === null || $value === "")
                 $value = $temp;
-            $temp = ' placeholder="' . htmlspecialchars($temp) . '"';
             self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
-        } else
-            $temp = "";
-        unset($js["placeholder"]);
+        }
+    }
+
+    static function entry($name, $value, $js = null) {
+        $js = $js ? $js : array();
+        self::apply_placeholder($value, $js);
         $type = @$js["type"] ? : "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
-            . self::extra($js) . $temp . ' />';
+            . self::extra($js) . ' />';
     }
 
     static function entry_h($name, $value, $js = null) {
@@ -266,6 +267,7 @@ class Ht {
 
     static function textarea($name, $value, $js = null) {
         $js = $js ? $js : array();
+        self::apply_placeholder($value, $js);
         return '<textarea name="' . $name . '"' . self::extra($js)
             . '>' . htmlspecialchars($value === null ? "" : $value)
             . '</textarea>';

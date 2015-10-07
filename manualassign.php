@@ -170,15 +170,17 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
 
 // Paper selection
 $q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
-echo "<tr><td>Paper selection: &nbsp;</td>",
-    "<td><input id='manualassignq' class='temptextoff' type='text' size='40' name='q' value=\"", htmlspecialchars($q), "\" onchange='hiliter(this)' title='Enter paper numbers or search terms' /> &nbsp;in &nbsp;";
+echo "<tr><td>Paper selection: &nbsp;</td><td>",
+    Ht::entry_h("q", $q,
+                array("id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
+                      "title" => "Paper numbers or search terms")),
+    " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)"));
 else
     echo join("", $tOpt);
 echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
-$Conf->footerScript("mktemptext('manualassignq','(All)')");
 
 echo Ht::radio("kind", "a", $kind == "a",
                array("onchange" => "hiliter(this)")),

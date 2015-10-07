@@ -999,40 +999,24 @@ jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });
 
 // temporary text
 window.mktemptext = (function () {
-function setclass(e, on) {
-    jQuery(e).toggleClass("temptext", on);
-}
-function blank() {
+function ttaction(e, what) {
+    var $e = $(e), p = $e.attr("placeholder"), v = $e.val();
+    if (what > 0 && v === p)
+        $e.val("");
+    if (what < 0 && (v === "" | v === p))
+        $e.val(p);
+    $e.toggleClass("temptext", what <= 0 && (v === "" || v === p));
 }
 
-return function (e, text) {
-    if (typeof this === "object" && typeof this.tagName === "string"
-        && this.tagName.toUpperCase() == "INPUT") {
-        text = typeof e === "number" ? this.getAttribute("placeholder") : e;
+function ttfocus()  { ttaction(this, 1);  }
+function ttblur()   { ttaction(this, -1); }
+function ttchange() { ttaction(this, 0);  }
+
+return function (e) {
+    if (typeof e === "number")
         e = this;
-    } else if (typeof e === "string")
-        e = $$(e);
-    var onfocus = e.onfocus || blank, onblur = e.onblur || blank;
-    e.onfocus = function (evt) {
-        if (this.value == text) {
-            this.value = "";
-            setclass(this, false);
-        }
-        onfocus.call(this, evt);
-    };
-    e.onblur = function (evt) {
-        if (this.value == "" || this.value == text) {
-            this.value = text;
-            setclass(this, true);
-        }
-        onblur.call(this, evt);
-    };
-    jQuery(e).on("change", function () {
-        setclass(this, this.value == "" || this.value == text);
-    });
-    if (e.value == "")
-        e.value = text;
-    setclass(e, e.value == text);
+    $(e).on("focus", ttfocus).on("blur", ttblur).on("change", ttchange);
+    ttaction(e, -1);
 };
 })();
 
@@ -1522,7 +1506,7 @@ return {
 var hotcrp_load = {
     time: setLocalTime.initialize,
     temptext: function () {
-        jQuery("input[placeholder]").each(mktemptext);
+        jQuery("input[placeholder], textarea[placeholder]").each(mktemptext);
     }
 };
 
@@ -2978,7 +2962,7 @@ return function (url) {
             elt.onfocus = rp_focus;
             elt.onchange = rp_change;
             elt.onkeypress = rp_keypress;
-            mktemptext(elt, "0");
+            mktemptext(elt);
         }
     });
 };

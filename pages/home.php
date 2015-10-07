@@ -262,8 +262,7 @@ if ($homelist) {
         '<h4><a class="qq" href="', hoturl("search"), '">Search</a>: &nbsp;&nbsp;</h4>';
 
     $tOpt = PaperSearch::search_types($Me);
-    $q = defval($_REQUEST, "q", "(All)");
-    echo Ht::entry("q", $q,
+    echo Ht::entry("q", @$_REQUEST["q"],
                    array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
                          "class" => "hotcrp_searchbox", "placeholder" => "(All)")),
         " &nbsp;in&nbsp; ",

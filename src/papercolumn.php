@@ -711,7 +711,8 @@ class PreferencePaperColumn extends PaperColumn {
         else if ($row->reviewerConflictType > 0)
             return "N/A";
         else
-            return "<input type='text' size='4' name='revpref$row->paperId' id='revpref$row->paperId' value=\"$pref\" tabindex='2' />";
+            return '<input id="revpref' . $row->paperId . '" name="revpref' . $row->paperId
+                . '" value="' . $pref . '" type="text" size="4" tabindex="2" placeholder="0" />';
     }
     public function text($pl, $row) {
         return @($row->reviewerPreference + 0);

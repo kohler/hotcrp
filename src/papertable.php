@@ -871,23 +871,17 @@ class PaperTable {
             '<div class="paphint">You can add more contacts after you register the submission.</div>',
             '<div class="papev">';
         $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
-        $name = $name === "Name" ? "" : $name;
         $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
-        $email = $email === "Email" ? "" : $email;
-        list($name, $email, $class) = $email
-            ? array($name, $email, "temptextoff")
-            : array("Name", "Email", "temptext");
         echo '<table><tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
                       array("id" => "newcontact_name", "size" => 30,
-                            "class" => $class, "onchange" => "hiliter(this)")),
+                            "onchange" => "hiliter(this)", "placeholder" => "Name")),
             '&nbsp;&nbsp;',
             Ht::entry('newcontact_email', $email,
                       array("id" => "newcontact_email", "size" => 20,
-                            "class" => $class, "onchange" => "hiliter(this)")),
+                            "onchange" => "hiliter(this)", "placeholder" => "Email")),
             '</td></tr></table>';
-        $Conf->footerScript("mktemptext('newcontact_name','Name');mktemptext('newcontact_email','Email')");
         echo "</div></div>\n\n";
     }
 
@@ -963,23 +957,19 @@ class PaperTable {
         }
         $checked = $this->useRequest ? @$_REQUEST["newcontact"] : true;
         $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
-        $name = $name === "Name" ? "" : $name;
         $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
-        $email = $email === "Email" ? "" : $email;
-        list($name, $email, $class) = $email
-            ? array($name, $email, "temptextoff")
-            : array("Name", "Email", "temptext");
         echo '<tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
                       array("id" => "newcontact_name", "size" => 30,
-                            "class" => $class, "onchange" => "hiliter(this)")),
+                            "onchange" => "hiliter(this)", "placeholder" => "Name",
+                            "class" => $cerror ? "error" : null)),
             '&nbsp;&nbsp;',
             Ht::entry('newcontact_email', $email,
                       array("id" => "newcontact_email", "size" => 20,
-                            "class" => $class, "onchange" => "hiliter(this)")),
+                            "onchange" => "hiliter(this)", "placeholder" => "Email",
+                            "class" => $cerror ? "error" : null)),
             '</td></tr>';
-        $Conf->footerScript("mktemptext('newcontact_name','Name');mktemptext('newcontact_email','Email')");
         echo '</table>', Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")), "</div></div>\n\n";
     }
 
@@ -1756,14 +1746,16 @@ class PaperTable {
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>\n"
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
-    . "<textarea id='withdrawreason' class='temptext' name='reason' rows='3' cols='40' style='width:99%'>Optional explanation</textarea>$override
-    <div class='popup_actions' style='margin-top:10px'>\n"
+    . Ht::textarea("reason", null,
+                   array("id" => "withdrawreason", "rows" => 3, "cols" => 40,
+                         "style" => "width:99%", "placeholder" => "Optional explanation"))
+    . $override
+    . "<div class='popup_actions' style='margin-top:10px'>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . Ht::js_button("Cancel", "popup(null,'w',1)")
     . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
     . "</div></div></form></div>");
-            $Conf->footerScript("mktemptext('withdrawreason','Optional explanation')");
         }
         if ($b) {
             if (!$Me->can_withdraw_paper($prow))
@@ -1798,11 +1790,9 @@ class PaperTable {
                 "    <tr><td>",
                 Ht::checkbox("doemail", 1, true), "&nbsp;",
                 Ht::label("Email authors, including:"), "&nbsp; ",
-                "<input id='emailNote' type='text' class='temptext' name='emailNote' size='30' value=\"",
-                htmlspecialchars($v === "" ? "Optional explanation" : $v),
-                "\" />",
+                Ht::entry("emailNote", $v,
+                          array("id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation")),
                 "</td></tr>\n  </table>\n";
-            $Conf->footerScript("mktemptext('emailNote','Optional explanation')");
         }
     }
 

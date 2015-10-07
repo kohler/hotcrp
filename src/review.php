@@ -1503,12 +1503,13 @@ $blind\n";
             $Conf->footerHtml("<div id='popup_ref' class='popupc'>
   <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>
   " . Ht::form_div($reviewPostLink) . Ht::hidden("refuse", "refuse")
-    . "<textarea id='refusereviewreason' class='temptext' name='reason' rows='3' cols='40'>Optional explanation</textarea>
-    <div class='popup_actions'>"
+    . Ht::textarea("reason", null,
+                   array("id" => "refusereviewreason", "rows" => 3, "cols" => 40,
+                         "placeholder" => "Optional explanation"))
+    . '<div class="popup_actions">'
     . Ht::js_button("Cancel", "popup(null,'ref',1)")
     . Ht::submit("Decline review", array("class" => "bb"))
     . "</div></div></form></div>", "declinereviewform");
-            $Conf->footerScript("mktemptext('refusereviewreason','Optional explanation')", "declinereviewform_temptext");
             $buttons[] = "";
         }
 

@@ -442,7 +442,6 @@ if (count($tOpt) > 1)
 else
     echo join("", $tOpt);
 echo " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
-$Conf->footerScript("mktemptext('autoassignq','(All)')");
 if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
 <div class='g'></div>";

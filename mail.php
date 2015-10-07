@@ -519,7 +519,6 @@ echo '<table class="fx9"><tr><td>',
                         "onchange" => "fold('psel', !this.checked, 8)")),
     "&nbsp;</td><td>", Ht::label("Choose individual papers", "plimit");
 echo "<span class='fx8'>:</span><br /><div class='fx8'>";
-$q = defval($_REQUEST, "q", "(All)");
 echo "Search&nbsp; ",
     Ht::entry("q", @$_REQUEST["q"],
               array("id" => "q", "placeholder" => "(All)",
@@ -543,7 +542,6 @@ $Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8);"
                     . "setmailpsel(\$\$(\"recipients\"))");
 
 echo "</td></tr>\n";
-$Conf->footerScript("mktemptext('q','(All)')");
 
 // ** CC, REPLY-TO
 if ($Me->privChair) {
