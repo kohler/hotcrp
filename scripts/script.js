@@ -4304,44 +4304,35 @@ function textarea_shadow($self) {
 }
 
 (function ($) {
-$.fn.autogrow = function (options) {
+$.fn.autogrow = function () {
 	return this.filter("textarea").each(function () {
-	    var self	     = this;
-	    var $self	     = $(self);
-	    var minHeight    = $self.height();
-	    var noFlickerPad = $self.hasClass('autogrow-short') ? 0 : parseInt($self.css('lineHeight')) || 0;
-        var settings = $.extend({
-            preGrowCallback: null,
-            postGrowCallback: null
-        }, options);
+        var $self = $(this);
+        if ($self.data("autogrowing"))
+            return;
 
-        var shadow = textarea_shadow($self);
+        var shadow, minHeight, lineHeight;
         var update = function (event) {
-            var val = self.value;
+            var width = $self.width();
+            if (width <= 0)
+                return;
+            if (!shadow) {
+                shadow = textarea_shadow($self);
+                minHeight = $self.height();
+                lineHeight = shadow.text("!").height();
+            }
 
             // Did enter get pressed?  Resize in this keydown event so that the flicker doesn't occur.
-            if (event && event.data && event.data.event === 'keydown' && event.keyCode === 13) {
+            var val = $self[0].value;
+            if (event && event.type == "keydown" && event.keyCode === 13)
                 val += "\n";
-            }
+            shadow.css("width", width).text(val + "...");
 
-            shadow.css('width', $self.width());
-            shadow.text(val + (noFlickerPad === 0 ? '...' : '')); // Append '...' to resize pre-emptively.
-
-            var newHeight=Math.max(shadow.height() + noFlickerPad, minHeight);
-            if(settings.preGrowCallback!=null){
-                newHeight=settings.preGrowCallback($self,shadow,newHeight,minHeight);
-            }
-
-            $self.height(newHeight);
-
-            if(settings.postGrowCallback!=null){
-                settings.postGrowCallback($self);
-            }
+            var wh = Math.max($(window).height() - 4 * lineHeight, 4 * lineHeight);
+            $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
         }
 
-        $self.on("change keyup", update).keydown({event:'keydown'}, update);
+        $self.on("change keyup keydown", update).data("autogrowing", true);
         $(window).resize(update);
-
         update();
 	});
 };
