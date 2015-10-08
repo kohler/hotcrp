@@ -127,15 +127,19 @@ class UserStatus {
         return $res;
     }
 
-    function normalize($cj, $old_user) {
+    static function normalize_name($cj) {
+        $cj_user = isset($cj->user) ? Text::split_name($cj->user, true) : null;
+        $cj_name = Text::analyze_name($cj);
+        foreach (array("firstName", "lastName", "email") as $i => $k)
+            if ($cj_name->$k !== "" && $cj_name->$k !== false)
+                $cj->$k = $cj_name->$k;
+            else if ($cj_user && $cj_user[$i])
+                $cj->$k = $cj_user[$i];
+    }
+
+    private function normalize($cj, $old_user) {
         // Errors prevent saving
         global $Conf, $Now;
-
-        // Regularize names
-        $name = Text::analyze_name($cj);
-        foreach (array("firstName", "lastName", "email") as $k)
-            if ($name->$k !== "" && $name->$k !== false)
-                $cj->$k = $name->$k;
 
         // Canonicalize keys
         foreach (array("preferredEmail" => "preferred_email",
@@ -298,6 +302,7 @@ class UserStatus {
     function save($cj, $old_user = null, $actor = null) {
         global $Conf, $Me, $Now;
         assert(is_object($cj));
+        self::normalize_name($cj);
 
         if (!$old_user && is_int(@$cj->id) && $cj->id)
             $old_user = Contact::find_by_id($cj->id);

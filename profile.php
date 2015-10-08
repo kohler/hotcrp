@@ -182,19 +182,20 @@ function save_user($cj, $user_status) {
     global $Conf, $Acct, $Me, $Opt, $OK, $newProfile;
 
     // check for missing fields
-    foreach (array("firstName", "lastName", "email") as $field)
-        if (!isset($cj->$field))
-            $user_status->set_error($field, "Required field “${field}” is missing.");
+    UserStatus::normalize_name($cj);
+    if ($newProfile && !isset($cj->email)) {
+        $user_status->set_error($field, "Email address required.");
+        return false;
+    }
 
     // check email
     if ($newProfile || $cj->email != $Acct->email) {
         if (Contact::id_by_email($cj->email)) {
-            $msg = htmlspecialchars($cj->email);
+            $msg = htmlspecialchars($cj->email) . " has already registered an account.";
             if ($Me->privChair)
-                $msg = "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">" . $msg . "</a>";
-            $msg = "An account is already registered with email address “${msg}”.";
+                $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
             if (!$newProfile)
-                $msg .= "You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
+                $msg .= " You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
             return $user_status->set_error("email", $msg);
         } else if (Contact::external_login()) {
             if ($cj->email === "")
@@ -234,13 +235,26 @@ function parseBulkFile($text, $filename) {
     $filename = $filename ? "$filename:" : "line ";
     $success = array();
 
+    if (!preg_match('/\A[^\r\n]*(?:,|\A)(?:user|email)(?:[,\r\n]|\z)/', $text)
+        && !preg_match('/\A[^\r\n]*,[^\r\n]*,/', $text)) {
+        $tarr = CsvParser::split_lines($text);
+        foreach ($tarr as &$t) {
+            if (($t = trim($t)) && $t[0] !== "#" && $t[0] !== "%")
+                $t = CsvGenerator::quote($t);
+            $t .= "\n";
+        }
+        unset($t);
+        $text = join("", $tarr);
+    }
+
     $csv = new CsvParser($text);
     $csv->set_comment_chars("#%");
     $line = $csv->next();
-    if ($line && array_search("email", $line) !== false)
+    if ($line && (array_search("email", $line) !== false
+                  || array_search("user", $line) !== false))
         $csv->set_header($line);
     else {
-        $csv->set_header(array("name", "email", "affiliation"));
+        $csv->set_header(array("user"));
         $csv->unshift($line);
     }
 
@@ -304,7 +318,7 @@ function parseBulkFile($text, $filename) {
     else if (count($success))
         $successMsg = "Created " . plural($success, "account") . ": " . commajoin($success) . ".";
     if (count($errors))
-        $errorMsg = "were errors while parsing the uploaded account file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>";
+        $errorMsg = "were errors while parsing the new accounts. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>";
     if (count($success) && count($errors))
         $Conf->confirmMsg($successMsg . "<br />However, there $errorMsg");
     else if (count($success))
@@ -324,6 +338,14 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
     else
         parseBulkFile($text, $_FILES["bulk"]["name"]);
     $Acct = new Contact;
+    $_REQUEST["bulkentry"] = "";
+    redirectSelf(array("anchor" => "bulk"));
+} else if (isset($_REQUEST["bulkregister"]) && $newProfile) {
+    if (@$_REQUEST["bulkentry"]
+        && $_REQUEST["bulkentry"] !== "Enter users one per line")
+        parseBulkFile($_REQUEST["bulkentry"], "");
+    $Acct = new Contact;
+    redirectSelf(array("anchor" => "bulk"));
 } else if (isset($_REQUEST["register"])) {
     $cj = (object) array();
     web_request_as_json($cj);
@@ -820,18 +842,24 @@ if ($newProfile) {
         Ht::password("chromefooler", "", array("style" => "display:none"));
     create_modes(true);
 
-    echo '<table class="pt_buttons"><tr>',
-        '<td class="ptb_button"><input type="file" name="bulk" size="30" /></td>',
-        '<td class="ptb_button">', Ht::submit("bulkregister", "Save accounts"), '</td>',
-        '</tr></table>';
+    echo '<div class="f-contain"><div class="f-i">',
+        '<div class="f-e">', Ht::textarea("bulkentry", @$_REQUEST["bulkentry"],
+                                          array("rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line")),
+        '</div></div></div>';
 
-    echo "<p>Upload a CSV file with one line per account. The header must define an <code>email</code> field. Example:</p>\n",
+    echo '<div class="g"><strong>OR</strong> &nbsp;',
+        '<input type="file" name="bulk" size="30" /></div>';
+
+    echo '<div>', Ht::submit("bulkregister", "Save accounts"), '</div>';
+
+    echo "<p>Enter or upload CSV data for new users, including a header to explain your format. For example:</p>\n",
         '<pre class="entryexample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc
 "Adams, John Quincy",quincy@whitehouse.gov
 </pre>', "\n",
-        '<p>Other fields include:</p><table>',
+        '<p>Or just enter an email address per line.</p>',
+        '<p>Supported CSV fields include:</p><table>',
         '<tr><td class="lmcaption"><code>name</code></td>',
           '<td>User name</td></tr>',
         '<tr><td class="lmcaption"><code>first</code></td>',
@@ -854,6 +882,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
 }
 
 
-$Conf->footerScript("hiliter_children('#accountform');jQuery('textarea').autogrow()");
-$Conf->footerScript("crpfocus(\"account\")");
+$Conf->footerScript('hiliter_children("#accountform");$("textarea").autogrow()');
+if ($newProfile)
+    $Conf->footerScript('if(/bulk/.test(location.hash))fold("bulk",false,9)');
+$Conf->footerScript('crpfocus("account")');
 $Conf->footer();
