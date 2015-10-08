@@ -288,7 +288,7 @@ function parseBulkFile($text, $filename) {
         }
         $cj->id = "new";
 
-        $ustatus = new UserStatus;
+        $ustatus = new UserStatus(array("send_email" => true));
         if (($saved_user = save_user($cj, $ustatus)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
