@@ -196,7 +196,7 @@ echo "<table class='fx'><tr><td>",
     Ht::checkbox("requestreview_notify", 1, true),
     "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
 <tr><td></td><td>",
-    Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20)),
+    Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true")),
     "</td></tr></table>\n";
 
 echo '<div class="g"></div>', Ht::submit("Upload"), "</div>";

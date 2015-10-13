@@ -334,9 +334,9 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
     else if (defval($_REQUEST, "refuse") == "1"
              || defval($_REQUEST, "decline") == "1") {
         $Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId) . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>"
-                          . Ht::hidden("refuse", "refuse")
-                          . "  <textarea name='reason' rows='3' cols='40'></textarea>
-  <span class='sep'></span>"
+                          . Ht::hidden("refuse", "refuse") . "  "
+                          . Ht::textarea("reason", "", array("rows" => 3, "cols" => 40, "spellcheck" => "true"))
+                          . "\n  <span class='sep'></span>"
                           . Ht::submit("Decline review")
                           . "</div></form>");
     } else {

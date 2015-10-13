@@ -630,8 +630,10 @@ $reqbody = $null_mailer->expand_template("requestreview", false);
 if (strpos($reqbody["body"], "%REASON%") !== false) {
     echo "<div class='f-i'>
   <div class='f-c'>Note to reviewer <span class='f-cx'>(optional)</span></div>
-  <div class='f-e'><textarea class='papertext' name='reason' rows='2' cols='60' tabindex='1'>", htmlspecialchars(defval($_REQUEST, "reason", "")), "</textarea></div>
-<hr class=\"c\" /></div>\n\n";
+  <div class='f-e'>",
+        Ht::textarea("reason", @$_REQUEST["reason"],
+                array("class" => "papertext", "rows" => 2, "cols" => 60, "tabindex" => 1, "spellcheck" => "true")),
+        "</div><hr class=\"c\" /></div>\n\n";
 }
 
 echo "<div class='f-i'>\n",

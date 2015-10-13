@@ -3,10 +3,6 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $textAreaRows;
-$textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5,
-                      "collaborators" => 5);
-
 class PaperTable {
 
     const ENABLESUBMIT = 8;
@@ -33,6 +29,8 @@ class PaperTable {
     private $canUploadFinal;
     private $admin;
     private $quit = false;
+
+    static private $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5, "collaborators" => 5);
 
     function __construct($prow) {
         global $Conf, $Me;
@@ -287,7 +285,6 @@ class PaperTable {
     }
 
     private function entryData($fieldName, $authorTable = false) {
-        global $textAreaRows;
         $this->entryMatches = 0;
 
         if ($this->useRequest && isset($_REQUEST[$fieldName]))
@@ -297,15 +294,20 @@ class PaperTable {
         else
             $text = "";
 
-        if ($this->matchPreg && isset($textAreaRows[$fieldName])
-            && !$this->editable && isset($this->matchPreg[$fieldName]))
+        if ($this->editable)
+            return Ht::textarea($fieldName, $text,
+                    array("class" => "papertext", "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "onchange" => "hiliter(this)",
+                          "spellcheck" => $fieldName === "abstract" ? "true" : null));
+
+        if ($this->matchPreg && isset(self::$textAreaRows[$fieldName])
+            && isset($this->matchPreg[$fieldName]))
             $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
         else
             $text = htmlspecialchars($text);
 
-        if ($authorTable === "col" && !$this->editable)
+        if ($authorTable === "col")
             $text = nl2br($text);
-        else if ($authorTable === "p" && !$this->editable) {
+        else if ($authorTable === "p") {
             $pars = preg_split("/\n([ \t\r\v\f]*\n)+/", $text);
             $text = "";
             for ($i = 0; $i < count($pars); ++$i) {
@@ -316,8 +318,6 @@ class PaperTable {
             }
         }
 
-        if ($this->editable)
-            $text = "<textarea class='papertext' name='$fieldName' rows='" . $textAreaRows[$fieldName] . "' cols='60' onchange='hiliter(this)'>" . $text . "</textarea>";
         return $text;
     }
 
@@ -1159,7 +1159,7 @@ class PaperTable {
                 else if ($o->type === "text" && @$o->display_space <= 1)
                     echo "<input type='text' class='papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' />";
                 else if ($o->type === "text")
-                    echo "<textarea class='papertext' name='$optid' rows='5' cols='60' onchange='hiliter(this)'>", htmlspecialchars($myval), "</textarea>";
+                    echo Ht::textarea($optid, $myval, array("class" => "papertext", "rows" => 5, "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"));
                 echo "</div>";
             } else
                 $this->echo_editable_document($o, $optx ? $optx->value : 0, 0);
@@ -1748,7 +1748,7 @@ class PaperTable {
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
     . Ht::textarea("reason", null,
                    array("id" => "withdrawreason", "rows" => 3, "cols" => 40,
-                         "style" => "width:99%", "placeholder" => "Optional explanation"))
+                         "style" => "width:99%", "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . $override
     . "<div class='popup_actions' style='margin-top:10px'>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))

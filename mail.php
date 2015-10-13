@@ -561,9 +561,10 @@ if ($Me->privChair) {
 echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
     "<tt>[", htmlspecialchars($Opt["shortName"]), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
 
- <tr><td></td><td class='mhb'>
-  <textarea class='tt' rows='20' name='emailBody' cols='80'>", htmlspecialchars($_REQUEST["emailBody"]), "</textarea>
- </td></tr>
+ <tr><td></td><td class='mhb'>\n",
+    Ht::textarea("emailBody", $_REQUEST["emailBody"],
+            array("class" => "tt", "rows" => 20, "cols" => 80, "spellcheck" => "true")),
+    "</td></tr>
 </table></div>\n\n";
 
 

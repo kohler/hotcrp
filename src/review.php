@@ -577,7 +577,10 @@ class ReviewForm {
                 }
                 echo "</select>";
             } else {
-                echo '<textarea name="' . $field . '" class="reviewtext" onchange="hiliter(this)" rows="' . $f->display_space . '" cols="60">' . htmlspecialchars($fval) . '</textarea>';
+                echo Ht::textarea($field, $fval,
+                        array("class" => "reviewtext", "rows" => $f->display_space,
+                              "cols" => 60, "onchange" => "hiliter(this)",
+                              "spellcheck" => "true"));
             }
             echo "</div></div>\n";
         }
@@ -1505,7 +1508,7 @@ $blind\n";
   " . Ht::form_div($reviewPostLink) . Ht::hidden("refuse", "refuse")
     . Ht::textarea("reason", null,
                    array("id" => "refusereviewreason", "rows" => 3, "cols" => 40,
-                         "placeholder" => "Optional explanation"))
+                         "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . '<div class="popup_actions">'
     . Ht::js_button("Cancel", "popup(null,'ref',1)")
     . Ht::submit("Decline review", array("class" => "bb"))

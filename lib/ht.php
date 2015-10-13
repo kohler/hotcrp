@@ -11,25 +11,35 @@ class Ht {
     private static $_stash = "";
     private static $_stash_inscript = false;
     private static $_stash_map = array();
-    private static $_bad_js = array("accept-charset" => true,
-                                    "action" => true,
-                                    "enctype" => true,
-                                    "method" => true,
-                                    "name" => true,
-                                    "optionstyles" => true,
-                                    "type" => true,
-                                    "value" => true);
+    const ATTR_SKIP = 1;
+    const ATTR_BOOL = 2;
+    const ATTR_BOOLTEXT = 3;
+    private static $_attr_type = array("accept-charset" => self::ATTR_SKIP,
+                                       "action" => self::ATTR_SKIP,
+                                       "disabled" => self::ATTR_BOOL,
+                                       "enctype" => self::ATTR_SKIP,
+                                       "method" => self::ATTR_SKIP,
+                                       "name" => self::ATTR_SKIP,
+                                       "optionstyles" => self::ATTR_SKIP,
+                                       "spellcheck" => self::ATTR_BOOLTEXT,
+                                       "type" => self::ATTR_SKIP,
+                                       "value" => self::ATTR_SKIP);
 
     static function extra($js) {
         $x = "";
-        if ($js) {
-            foreach ($js as $k => $v)
-                if (!@self::$_bad_js[$k] && $k !== "disabled"
-                    && $v !== null && $v !== false)
+        if ($js)
+            foreach ($js as $k => $v) {
+                $t = @self::$_attr_type[$k];
+                if ($v === null || $t === self::ATTR_SKIP
+                    || ($v === false && $t !== self::ATTR_BOOLTEXT))
+                    /* nothing */;
+                else if ($t === self::ATTR_BOOL)
+                    $x .= ($v ? " $k=\"$k\"" : "");
+                else if ($t === self::ATTR_BOOLTEXT && is_bool($v))
+                    $x .= " $k=\"" . ($v ? "true" : "false") . "\"";
+                else
                     $x .= " $k=\"" . str_replace("\"", "&quot;", $v) . "\"";
-            if (@$js["disabled"])
-                $x .= " disabled=\"disabled\"";
-        }
+            }
         return $x;
     }
 
