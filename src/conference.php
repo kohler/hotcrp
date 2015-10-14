@@ -2199,7 +2199,7 @@ class Conference {
     }
 
     private function header_head($title) {
-        global $Me, $ConfSiteBase, $ConfSiteSuffix, $ConfSitePATH,
+        global $Me, $ConfSiteBase, $ConfSitePATH,
             $Opt, $CurrentList, $CurrentProw;
         echo "<!DOCTYPE html>
 <html>
@@ -2259,7 +2259,7 @@ class Conference {
         Ht::stash_html($this->make_script_file($jquery, true) . "\n");
 
         // Javascript settings to set before script.js
-        Ht::stash_script("siteurl=\"$ConfSiteBase\";siteurl_suffix=\"$ConfSiteSuffix\"");
+        Ht::stash_script("siteurl=\"$ConfSiteBase\";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($CurrentList

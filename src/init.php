@@ -99,9 +99,9 @@ $allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",
                             "pfdisplay", "pldisplay", "ppldisplay");
 
 
-// set $ConfSitePATH (path to conference site), $ConfSiteBase, and $ConfSiteSuffix
+// set $ConfSitePATH (path to conference site), $ConfSiteBase
 function set_path_variables() {
-    global $ConfSitePATH, $ConfSiteBase, $ConfSiteSuffix;
+    global $ConfSitePATH, $ConfSiteBase;
     if (!@$ConfSitePATH) {
         $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
         while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php"))
@@ -112,8 +112,6 @@ function set_path_variables() {
     require_once("$ConfSitePATH/lib/navigation.php");
     if (@$ConfSiteBase === null)
         $ConfSiteBase = Navigation::siteurl();
-    if (@$ConfSiteSuffix === null)
-        $ConfSiteSuffix = Navigation::php_suffix();
 }
 set_path_variables();
 

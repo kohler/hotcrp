@@ -101,7 +101,7 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-        global $ConfSiteSuffix, $Opt;
+        global $Opt;
         $len = strlen($what);
 
         // generic expansions: OPT, URLENC
@@ -156,7 +156,7 @@ class Mailer {
             return hoturl_absolute_nodefaults($a[0], isset($a[1]) ? $a[1] : "");
         }
         if ($what == "%PHP%")
-            return $ConfSiteSuffix;
+            return Navigation::php_suffix();
         if (preg_match('/\A%(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             if ($this->recipient)
                 return $this->expand_user($this->recipient, $m[1]);

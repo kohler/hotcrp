@@ -126,8 +126,8 @@ function hoturl_defaults($options = array()) {
 }
 
 function hoturl_site_relative($page, $options = null) {
-    global $ConfSiteSuffix, $Me, $paperTable, $CurrentList, $_hoturl_defaults;
-    $t = $page . $ConfSiteSuffix;
+    global $Me, $paperTable, $CurrentList, $_hoturl_defaults;
+    $t = $page . Navigation::php_suffix();
     $list = $CurrentList;
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
@@ -202,17 +202,17 @@ function hoturl_site_relative($page, $options = null) {
 }
 
 function hoturl($page, $options = null) {
-    global $ConfSiteBase, $ConfSiteSuffix;
+    global $ConfSiteBase;
     $t = hoturl_site_relative($page, $options);
-    if ($page !== "index" || substr($t, 5 + strlen($ConfSiteSuffix), 1) == "/")
+    if ($page !== "index")
         return $ConfSiteBase . $t;
-    else {
-        $trail = substr($t, 5 + strlen($ConfSiteSuffix));
-        if ($ConfSiteBase !== "")
-            return $ConfSiteBase . $trail;
-        else
-            return Navigation::site_path() . $trail;
-    }
+    $trail = substr($t, 5 + strlen(Navigation::php_suffix()));
+    if (@$trail[0] === "/")
+        return $ConfSiteBase . $t;
+    else if ($ConfSiteBase !== "")
+        return $ConfSiteBase . $trail;
+    else
+        return Navigation::site_path() . $trail;
 }
 
 function hoturl_post($page, $options = null) {
