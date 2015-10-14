@@ -32,7 +32,7 @@ foreach ($arg["_"] as $fn) {
         $ok = 2;
     } else {
         $doc = (object) array("sha1" => sha1($content, true));
-        if (!($extensions && preg_match('/\.(\w+)\z/', $fn, $m)
+        if (!($extensions && preg_match('/(\.\w+)\z/', $fn, $m)
               && ($doc->mimetype = Mimetype::lookup_extension($m[1]))))
             $doc->mimetype = Mimetype::sniff($content);
         $s3fn = HotCRPDocument::s3_filename($doc);

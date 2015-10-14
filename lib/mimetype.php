@@ -7,15 +7,26 @@ class Mimetype {
     const TXT = 1;
     const PDF = 2;
 
+    public $mimetypeid;
+    public $mimetype;
+    public $extension;
+    public $description;
+
     static $tmap = array();
     static $alltypes = array();
 
-    static function register($type, $extension, $id, $description = "") {
-        $m = (object) array("mimetype" => $type,
-                            "extension" => $extension,
-                            "mimetypeid" => $id,
-                            "description" => $description);
-        self::$tmap[$type] = self::$tmap[$extension] = self::$tmap[$id] = $m;
+    public function __construct($id, $type, $extension, $description = null) {
+        $this->mimetypeid = (int) $id;
+        $this->mimetype = $type;
+        $this->extension = $extension;
+        $this->description = $description;
+    }
+
+    static function register($id, $type, $extension, $description = null) {
+        $m = new Mimetype($id, $type, $extension, $description);
+        self::$tmap[$type] = self::$tmap[$id] = $m;
+        if ($extension)
+            self::$tmap[$extension] = $m;
         self::$alltypes[] = $m;
     }
 
@@ -36,7 +47,7 @@ class Mimetype {
 
     static function lookup_extension($extension) {
         foreach (self::$alltypes as $t)
-            if ($t->extension == $extension)
+            if ($t->extension === $extension)
                 return $t;
         return null;
     }
@@ -54,7 +65,7 @@ class Mimetype {
 
     static function extension($type) {
         if (($x = self::lookup($type)) && $x->extension)
-            return "." . $x->extension;
+            return $x->extension;
         else
             return "";
     }
@@ -71,7 +82,7 @@ class Mimetype {
             if ($x && $x->description)
                 return $x->description;
             else if ($x && $x->extension)
-                return "." . $x->extension;
+                return $x->extension;
             else if ($x)
                 return $x->mimetype;
             else
@@ -96,14 +107,14 @@ class Mimetype {
     }
 }
 
-Mimetype::register("text/plain", "txt", Mimetype::TXT, "text");
-Mimetype::register("application/pdf", "pdf", Mimetype::PDF, "PDF");
-Mimetype::register("application/postscript", "ps", 3, "PostScript");
-Mimetype::register("application/vnd.ms-powerpoint", "ppt", 4, "PowerPoint");
-Mimetype::register("application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx", 5, "PowerPoint");
-Mimetype::register("video/mp4", "mp4", 6);
-Mimetype::register("video/x-msvideo", "avi", 7);
-Mimetype::register("application/json", "json", 8);
+Mimetype::register(Mimetype::TXT, "text/plain", ".txt", "text");
+Mimetype::register(Mimetype::PDF, "application/pdf", ".pdf", "PDF");
+Mimetype::register(3, "application/postscript", ".ps", "PostScript");
+Mimetype::register(4, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
+Mimetype::register(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
+Mimetype::register(6, "video/mp4", ".mp4");
+Mimetype::register(7, "video/x-msvideo", ".avi");
+Mimetype::register(8, "application/json", ".json");
 
 Mimetype::register_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
 Mimetype::register_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
