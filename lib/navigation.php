@@ -67,6 +67,9 @@ class Navigation {
             self::$page = urldecode(substr($m[1], 1));
         else
             self::$page = $index_name;
+        if (($pagelen = strlen(self::$page)) > 4
+            && substr(self::$page, $pagelen - 4) === ".php")
+            self::$page = substr(self::$page, 0, $pagelen - 4);
         self::$path = urldecode($m[2]);
         self::$query = $m[3];
 
