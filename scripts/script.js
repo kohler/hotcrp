@@ -4304,36 +4304,39 @@ function textarea_shadow($self) {
 }
 
 (function ($) {
-$.fn.autogrow = function () {
-	return this.filter("textarea").each(function () {
-        var $self = $(this);
-        if ($self.data("autogrowing"))
+function do_autogrow($self) {
+    if ($self.data("autogrowing")) {
+        $self.data("autogrowing")();
+        return;
+    }
+
+    var shadow, minHeight, lineHeight;
+    var update = function (event) {
+        var width = $self.width();
+        if (width <= 0)
             return;
-
-        var shadow, minHeight, lineHeight;
-        var update = function (event) {
-            var width = $self.width();
-            if (width <= 0)
-                return;
-            if (!shadow) {
-                shadow = textarea_shadow($self);
-                minHeight = $self.height();
-                lineHeight = shadow.text("!").height();
-            }
-
-            // Did enter get pressed?  Resize in this keydown event so that the flicker doesn't occur.
-            var val = $self[0].value;
-            if (event && event.type == "keydown" && event.keyCode === 13)
-                val += "\n";
-            shadow.css("width", width).text(val + "...");
-
-            var wh = Math.max($(window).height() - 4 * lineHeight, 4 * lineHeight);
-            $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
+        if (!shadow) {
+            shadow = textarea_shadow($self);
+            minHeight = $self.height();
+            lineHeight = shadow.text("!").height();
         }
 
-        $self.on("change keyup keydown", update).data("autogrowing", true);
-        $(window).resize(update);
-        update();
-	});
+        // Did enter get pressed?  Resize in this keydown event so that the flicker doesn't occur.
+        var val = $self[0].value;
+        if (event && event.type == "keydown" && event.keyCode === 13)
+            val += "\n";
+        shadow.css("width", width).text(val + "...");
+
+        var wh = Math.max($(window).height() - 4 * lineHeight, 4 * lineHeight);
+        $self.height(Math.min(wh, Math.max(shadow.height(), minHeight)));
+    }
+
+    $self.on("change keyup keydown", update).data("autogrowing", update);
+    $(window).resize(update);
+    update();
+}
+$.fn.autogrow = function () {
+    this.filter("textarea").each(function () { do_autogrow($(this)); });
+	return this;
 };
 })(jQuery);
