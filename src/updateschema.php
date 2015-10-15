@@ -724,4 +724,16 @@ function updateSchema($Conf) {
         } while (count($q) == 32);
         update_schema_version($Conf, 99);
     }
+    if ($Conf->settings["allowPaperOption"] == 99
+        && $Conf->ql("alter table ContactInfo ENGINE=InnoDB")
+        && $Conf->ql("alter table Paper ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperComment ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperConflict ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperOption ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperReview ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperStorage ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperTag ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperTopic ENGINE=InnoDB")
+        && $Conf->ql("alter table Settings ENGINE=InnoDB"))
+        update_schema_version($Conf, 100);
 }

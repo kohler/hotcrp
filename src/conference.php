@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Conference {
-
     public $dblink = null;
 
     var $settings;
@@ -94,7 +93,7 @@ class Conference {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 99) {
+        if ($this->settings["allowPaperOption"] < 100) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -2601,5 +2600,4 @@ class Conference {
     public function message_default_html($name) {
         return Message::default_html($this->message_name($name));
     }
-
 }
