@@ -510,12 +510,12 @@ class Tagger {
                             $v[] = Text::name_html($pcm) . ($count > 1 ? " ($count)" : "");
                 if (count($v))
                     $close = '" title="PC votes: ' . join(", ", $v) . $close;
-                $link = "rorder:%23";
+                $link = "#$base showsort:-#$base";
             } else if ($base[0] === "~" && TagInfo::is_vote(substr($lbase, 1)))
-                $link = "rorder:%23";
+                $link = "#$base showsort:-#$base";
             else
-                $link = ($base === $tag ? "%23" : "order:%23");
-            $tx = "<a class=\"qq nw\" href=\"" . hoturl("search", "q=$link$base") . $close . "#" . $base . "</a>" . substr($tag, strlen($base));
+                $link = ($base === $tag ? "#" : "order:#") . $base;
+            $tx = "<a class=\"qq nw\" href=\"" . hoturl("search", ["q" => $link]) . $close . "#" . $base . "</a>" . substr($tag, strlen($base));
             if (isset($byhighlight[$lbase])) {
                 $byhighlight[$lbase] .= "<strong>" . $tx . "</strong> ";
                 $anyhighlight = true;
