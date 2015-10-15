@@ -14,7 +14,7 @@ CREATE TABLE `ActionLog` (
   UNIQUE KEY `logId` (`logId`),
   KEY `contactId` (`contactId`),
   KEY `paperId` (`paperId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -34,7 +34,7 @@ CREATE TABLE `Capability` (
   PRIMARY KEY (`capabilityId`),
   UNIQUE KEY `capabilityId` (`capabilityId`),
   UNIQUE KEY `salt` (`salt`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -69,7 +69,7 @@ CREATE TABLE `ContactInfo` (
   UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
   UNIQUE KEY `email` (`email`),
   KEY `fullName` (`lastName`,`firstName`,`email`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -89,7 +89,7 @@ CREATE TABLE `Formula` (
   `timeModified` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`formulaId`),
   UNIQUE KEY `formulaId` (`formulaId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -109,7 +109,7 @@ CREATE TABLE `MailLog` (
   `subject` text,
   `emailBody` text,
   PRIMARY KEY (`mailId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -147,7 +147,7 @@ CREATE TABLE `Paper` (
   KEY `timeSubmitted` (`timeSubmitted`),
   KEY `leadContactId` (`leadContactId`),
   KEY `shepherdContactId` (`shepherdContactId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -175,7 +175,7 @@ CREATE TABLE `PaperComment` (
   KEY `paperId` (`paperId`),
   KEY `contactPaper` (`contactId`,`paperId`),
   KEY `timeModified` (`timeModified`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -190,7 +190,7 @@ CREATE TABLE `PaperConflict` (
   `conflictType` tinyint(1) NOT NULL DEFAULT '0',
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   UNIQUE KEY `contactPaperConflict` (`contactId`,`paperId`,`conflictType`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -205,7 +205,7 @@ CREATE TABLE `PaperOption` (
   `value` int(11) NOT NULL DEFAULT '0',
   `data` varbinary(32768),
   KEY `paperOption` (`paperId`,`optionId`,`value`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -262,7 +262,7 @@ CREATE TABLE `PaperReview` (
   KEY `reviewType` (`reviewType`),
   KEY `reviewRound` (`reviewRound`),
   KEY `requestedBy` (`requestedBy`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -313,7 +313,7 @@ CREATE TABLE `PaperReviewArchive` (
   PRIMARY KEY (`reviewArchiveId`),
   UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
   KEY `paperId` (`paperId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -329,7 +329,7 @@ CREATE TABLE `PaperReviewPreference` (
   `expertise` int(4) DEFAULT NULL,
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -346,7 +346,7 @@ CREATE TABLE `PaperReviewRefused` (
   KEY `paperId` (`paperId`),
   KEY `contactId` (`contactId`),
   KEY `requestedBy` (`requestedBy`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -373,7 +373,7 @@ CREATE TABLE `PaperStorage` (
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
   KEY `paperId` (`paperId`),
   KEY `mimetype` (`mimetype`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -387,7 +387,7 @@ CREATE TABLE `PaperTag` (
   `tag` varchar(40) NOT NULL,		# see TAG_MAXLEN in header.php
   `tagIndex` int(11) NOT NULL DEFAULT '0',
   UNIQUE KEY `paperTag` (`paperId`,`tag`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -400,7 +400,7 @@ CREATE TABLE `PaperTopic` (
   `topicId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   UNIQUE KEY `paperTopic` (`paperId`,`topicId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -415,7 +415,7 @@ CREATE TABLE `PaperWatch` (
   `watch` int(11) NOT NULL DEFAULT '0',
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -430,7 +430,7 @@ CREATE TABLE `ReviewRating` (
   `rating` tinyint(1) NOT NULL DEFAULT '0',
   UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
   UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -448,7 +448,7 @@ CREATE TABLE `ReviewRequest` (
   UNIQUE KEY `paperEmail` (`paperId`,`email`),
   KEY `paperId` (`paperId`),
   KEY `requestedBy` (`requestedBy`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -462,7 +462,7 @@ CREATE TABLE `Settings` (
   `value` int(11) NOT NULL,
   `data` varbinary(32767) DEFAULT NULL,
   UNIQUE KEY `name` (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -477,7 +477,7 @@ CREATE TABLE `TopicArea` (
   PRIMARY KEY (`topicId`),
   UNIQUE KEY `topicId` (`topicId`),
   KEY `topicName` (`topicName`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -491,12 +491,12 @@ CREATE TABLE `TopicInterest` (
   `topicId` int(11) NOT NULL,
   `interest` int(1) DEFAULT NULL,
   UNIQUE KEY `contactTopic` (`contactId`,`topicId`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 99);
+insert into Settings (name, value) values ('allowPaperOption', 101);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

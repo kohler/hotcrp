@@ -736,4 +736,18 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperTopic ENGINE=InnoDB")
         && $Conf->ql("alter table Settings ENGINE=InnoDB"))
         update_schema_version($Conf, 100);
+    if ($Conf->settings["allowPaperOption"] == 100
+        && $Conf->ql("alter table ActionLog ENGINE=InnoDB")
+        && $Conf->ql("alter table Capability ENGINE=InnoDB")
+        && $Conf->ql("alter table Formula ENGINE=InnoDB")
+        && $Conf->ql("alter table MailLog ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperReviewArchive ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperReviewPreference ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperReviewRefused ENGINE=InnoDB")
+        && $Conf->ql("alter table PaperWatch ENGINE=InnoDB")
+        && $Conf->ql("alter table ReviewRating ENGINE=InnoDB")
+        && $Conf->ql("alter table ReviewRequest ENGINE=InnoDB")
+        && $Conf->ql("alter table TopicArea ENGINE=InnoDB")
+        && $Conf->ql("alter table TopicInterest ENGINE=InnoDB"))
+        update_schema_version($Conf, 101);
 }
