@@ -83,16 +83,16 @@ class HotCRPDocument {
         $otype = ($this->option ? $this->option->type : "pdf");
         $mimetypes = array();
         if (PaperOption::type_takes_pdf($otype))
-            $mimetypes[] = Mimetype::lookup("pdf");
+            $mimetypes[] = Mimetype::lookup(".pdf");
         if (!$this->option && !defval($Opt, "disablePS"))
-            $mimetypes[] = Mimetype::lookup("ps");
+            $mimetypes[] = Mimetype::lookup(".ps");
         if ($otype == "slides") {
-            $mimetypes[] = Mimetype::lookup("ppt");
-            $mimetypes[] = Mimetype::lookup("pptx");
+            $mimetypes[] = Mimetype::lookup(".ppt");
+            $mimetypes[] = Mimetype::lookup(".pptx");
         }
         if ($otype == "video") {
-            $mimetypes[] = Mimetype::lookup("mp4");
-            $mimetypes[] = Mimetype::lookup("avi");
+            $mimetypes[] = Mimetype::lookup(".mp4");
+            $mimetypes[] = Mimetype::lookup(".avi");
         }
         return $mimetypes;
     }
