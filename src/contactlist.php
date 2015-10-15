@@ -749,7 +749,7 @@ class ContactList {
                 $x = "  <tr class=\"plx $trclass\">";
                 if ($firstcallout > 0)
                     $x .= "<td colspan=\"$firstcallout\"></td>";
-                $tt = $x . "<td colspan=\"" . ($lastcallout - $firstcallout)
+                $tt = $x . "<td class=\"plx\" colspan=\"" . ($lastcallout - $firstcallout)
                     . "\">" . $tt . "</td></tr>\n";
             }
 
@@ -797,10 +797,10 @@ class ContactList {
                     if ($fdef[1] != 1)
                         continue;
                     else if (!isset($anyData[$fieldId])) {
-                        $x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
+                        $x .= "    <th class=\"pl pl_$fdef[0]\"></th>\n";
                         continue;
                     }
-                    $x .= "    <th class=\"pl_$fdef[0]\">";
+                    $x .= "    <th class=\"pl pl_$fdef[0]\">";
                     $ftext = $this->header($fieldId, $ord++);
                     if ($this->sortField == null && $fieldId == 1)
                         $this->sortField = $fieldId;
@@ -816,10 +816,10 @@ class ContactList {
             } else {
                 foreach ($fieldDef as $fieldId => $fdef)
                     if ($fdef[1] == 1 && isset($anyData[$fieldId]))
-                        $x .= "    <th class=\"pl_$fdef[0]\">"
+                        $x .= "    <th class=\"pl pl_$fdef[0]\">"
                             . $this->header($fieldId, $ord++) . "</th>\n";
                     else if ($fdef[1] == 1)
-                        $x .= "    <th class=\"pl_$fdef[0]\"></th>\n";
+                        $x .= "    <th class=\"pl pl_$fdef[0]\"></th>\n";
             }
 
             $x .= "  </tr></thead>\n";

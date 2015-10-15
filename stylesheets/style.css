@@ -1571,8 +1571,8 @@ th.pl {
 td.pl {
 	padding: 3px 0.4em 3px 0;
 }
-th.pl:first-child, td.pl:first-child {
-	padding-left: 0.4em;
+th.pl:first-child, td.pl:first-child, td.plx:first-child {
+	padding-left: 6px;
 }
 
 td.pl.pl_title, td.pl.pl_text, td.pl.pls {
