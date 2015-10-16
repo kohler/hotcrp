@@ -6,6 +6,8 @@
 class Mimetype {
     const TXT = 1;
     const PDF = 2;
+    const PS = 3;
+    const PPT = 4;
 
     public $mimetypeid;
     public $mimetype;
@@ -97,11 +99,11 @@ class Mimetype {
 
     static function sniff($content) {
         if (strncmp("%PDF-", $content, 5) == 0)
-            return self::type("pdf");
+            return "application/pdf";
         else if (strncmp("%!PS-", $content, 5) == 0)
-            return self::type("ps");
+            return "application/postscript";
         else if (substr($content, 512, 4) == "\x00\x6E\x1E\xF0")
-            return self::type("ppt");
+            return "application/vnd.ms-powerpoint";
         else
             return null;
     }
@@ -109,8 +111,8 @@ class Mimetype {
 
 Mimetype::register(Mimetype::TXT, "text/plain", ".txt", "text");
 Mimetype::register(Mimetype::PDF, "application/pdf", ".pdf", "PDF");
-Mimetype::register(3, "application/postscript", ".ps", "PostScript");
-Mimetype::register(4, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
+Mimetype::register(Mimetype::PS, "application/postscript", ".ps", "PostScript");
+Mimetype::register(Mimetype::PPT, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
 Mimetype::register(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
 Mimetype::register(6, "video/mp4", ".mp4");
 Mimetype::register(7, "video/x-msvideo", ".avi");
