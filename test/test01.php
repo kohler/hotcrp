@@ -1,5 +1,5 @@
 <?php
-// test01.php -- HotCRP tests
+// test01.php -- HotCRP tests: permissions, assignments, search
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 

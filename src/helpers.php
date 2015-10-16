@@ -262,7 +262,8 @@ function fileUploaded(&$var) {
         return false;
     switch ($var['error']) {
     case UPLOAD_ERR_OK:
-        return is_uploaded_file($var['tmp_name']);
+        return is_uploaded_file($var['tmp_name'])
+            || (PHP_SAPI === "cli" && @$var["tmp_name_safe"]);
     case UPLOAD_ERR_NO_FILE:
         return false;
     case UPLOAD_ERR_INI_SIZE:

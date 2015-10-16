@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperStatus {
-
     private $uploaded_documents;
     private $errf;
     private $errmsg;
@@ -107,8 +106,6 @@ class PaperStatus {
             $pj->submitted_at = (int) $prow->timeSubmitted;
         else if ($prow->timeSubmitted == -100 && $prow->timeWithdrawn > 0)
             $pj->submitted_at = 1000000000;
-        if ($prow->timestamp > 0)
-            $pj->updated_at = (int) $prow->timestamp;
 
         $can_view_authors = !$this->view_contact
             || $this->view_contact->can_view_authors($prow, $this->forceShow);
@@ -138,7 +135,7 @@ class PaperStatus {
                 $pj->authors[] = $aux;
             }
 
-            $pj->contacts = array();
+            $other_contacts = array();
             foreach ($contacts as $conf)
                 if ($conf->conflictType >= CONFLICT_AUTHOR) {
                     $aux = (object) array("email" => $conf->email);
@@ -148,8 +145,10 @@ class PaperStatus {
                         $aux->last = $conf->lastName;
                     if ($conf->affiliation)
                         $aux->affiliation = $conf->affiliation;
-                    $pj->contacts[] = $aux;
+                    $other_contacts[] = $aux;
                 }
+            if (count($other_contacts))
+                $pj->contacts = $other_contacts;
         }
 
         if ($Conf->submission_blindness() == Conference::BLIND_OPTIONAL)
@@ -512,49 +511,48 @@ class PaperStatus {
             foreach ($old_pj->contacts as $conf)
                 $old_contacts[strtolower($conf->email)] = true;
 
-        // Contacts
-        $contacts = @$pj->contacts;
-        if ($contacts === null)
-            $contacts = $old_pj ? @$old_pj->contacts : null;
-        if ($contacts === null)
-            $contacts = array();
-        else if (is_object($contacts) || is_array($contacts))
-            $contacts = (array) $contacts;
-        else {
-            $this->set_error_html("contacts", "Format error [contacts]");
-            $contacts = array();
-        }
-        $pj->contacts = array();
-        $pj->bad_contacts = array();
         // verify emails on authors marked as contacts
+        $pj->bad_contacts = array();
         foreach (@$pj->authors ? : array() as $au)
             if (@$au->contact
                 && (!@$au->email
                     || !$this->valid_contact(strtolower($au->email), $old_contacts)))
                 $pj->bad_contacts[] = $au;
-        // verify emails on explicitly named contacts
-        foreach ($contacts as $k => $v) {
-            if (!$v)
-                continue;
-            if ($v === true)
-                $v = (object) array();
-            else if (is_string($v) && is_int($k)) {
-                $v = trim($v);
-                if ($this->valid_contact(strtolower($v), $old_contacts))
-                    $v = (object) array("email" => $v);
-                else
-                    $v = Text::analyze_name($v);
-            }
-            if (is_object($v) && !@$v->email && is_string($k))
-                $v->email = $k;
-            if (is_object($v) && @$v->email) {
-                $lemail = strtolower($v->email);
-                if ($this->valid_contact($lemail, $old_contacts))
-                    $pj->contacts[] = (object) array_merge((array) @$au_by_email[$lemail], (array) $v);
-                else
-                    $pj->bad_contacts[] = $v;
-            } else
+
+        // Contacts
+        $contacts = @$pj->contacts;
+        if ($contacts !== null) {
+            if (is_object($contacts) || is_array($contacts))
+                $contacts = (array) $contacts;
+            else {
                 $this->set_error_html("contacts", "Format error [contacts]");
+                $contacts = array();
+            }
+            $pj->contacts = array();
+            // verify emails on explicitly named contacts
+            foreach ($contacts as $k => $v) {
+                if (!$v)
+                    continue;
+                if ($v === true)
+                    $v = (object) array();
+                else if (is_string($v) && is_int($k)) {
+                    $v = trim($v);
+                    if ($this->valid_contact(strtolower($v), $old_contacts))
+                        $v = (object) array("email" => $v);
+                    else
+                        $v = Text::analyze_name($v);
+                }
+                if (is_object($v) && !@$v->email && is_string($k))
+                    $v->email = $k;
+                if (is_object($v) && @$v->email) {
+                    $lemail = strtolower($v->email);
+                    if ($this->valid_contact($lemail, $old_contacts))
+                        $pj->contacts[] = (object) array_merge((array) @$au_by_email[$lemail], (array) $v);
+                    else
+                        $pj->bad_contacts[] = $v;
+                } else
+                    $this->set_error_html("contacts", "Format error [contacts]");
+            }
         }
     }
 
@@ -658,13 +656,15 @@ class PaperStatus {
         else
             $c = $old_pj ? $old_pj->authors : array();
         foreach ($c as $au)
-            if (@$au->email)
+            if (@$au->email && @$au->contact)
+                $x[strtolower($au->email)] = CONFLICT_CONTACTAUTHOR;
+            else if (@$au->email)
                 $x[strtolower($au->email)] = CONFLICT_AUTHOR;
 
         if ($pj && @$pj->contacts !== null)
             $c = $pj->contacts;
         else
-            $c = $old_pj ? $old_pj->contacts : array();
+            $c = $old_pj ? (@$old_pj->contacts ? : []) : [];
         foreach ($c as $v) {
             $lemail = strtolower($v->email);
             $x[$lemail] = max((int) @$x[$lemail], CONFLICT_CONTACTAUTHOR);
@@ -735,7 +735,7 @@ class PaperStatus {
         $q = array();
         foreach (array("title", "abstract", "collaborators") as $k) {
             $v = convert_to_utf8((string) @$pj->$k);
-            if (!$old_pj || $v !== (string) @$old_pj->$k)
+            if (!$old_pj || (@$pj->$k !== null && $v !== (string) @$old_pj->$k))
                 $q[] = "$k='" . sqlq($v) . "'";
         }
 
@@ -899,5 +899,4 @@ class PaperStatus {
     function error_fields() {
         return $this->errf;
     }
-
 }

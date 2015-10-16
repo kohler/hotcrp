@@ -180,7 +180,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
 }
 
 
-// extract a “JSON” paper frm the posted form
+// extract a “JSON” paper from the posted form
 function paper_json_clone($pj) {
     if (!$pj)
         return (object) array();
@@ -406,11 +406,12 @@ function update_paper($pj, $opj, $action, $diffs) {
     }
 
     // note differences in contacts
-    $contacts = $ocontacts = array();
-    foreach (@$pj->contacts ? : array() as $v)
+    $contacts = $ocontacts = [];
+    foreach (@$pj->contacts ? : [] as $v)
         $contacts[] = strtolower(is_string($v) ? $v : $v->email);
-    foreach ($opj ? $opj->contacts : array() as $v)
-        $ocontacts[] = strtolower($v->email);
+    if ($opj && @$opj->contacts)
+        foreach ($opj->contacts as $v)
+            $ocontacts[] = strtolower($v->email);
     sort($contacts);
     sort($ocontacts);
     if (json_encode($contacts) !== json_encode($ocontacts))
