@@ -8,8 +8,10 @@ if (isset($arg["h"]) || isset($arg["help"])) {
     exit(0);
 }
 
-if (!$Conf->setting_data("s3_bucket"))
-    die("* S3 is not configured for this conference\n");
+if (!$Conf->setting_data("s3_bucket")) {
+    fwrite(STDERR, "* S3 is not configured for this conference\n");
+    exit(1);
+}
 
 $s3doc = HotCRPDocument::s3_document();
 

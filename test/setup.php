@@ -10,9 +10,14 @@ define("HOTCRP_TESTHARNESS", true);
 require_once("$ConfSitePATH/src/init.php");
 $Opt["disablePrintEmail"] = true;
 
+function die_hard($message) {
+    fwrite(STDERR, $message);
+    exit(1);
+}
+
 // Initialize from an empty database.
 if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql")))
-    die("* Can't reinitialize database.\n" . $Conf->dblink->error);
+    die_hard("* Can't reinitialize database.\n" . $Conf->dblink->error);
 while ($Conf->dblink->more_results())
     Dbl::free($Conf->dblink->next_result());
 // No setup phase.
@@ -21,7 +26,7 @@ $Conf->load_settings();
 // Contactdb.
 if (($cdb = Contact::contactdb())) {
     if (!$cdb->multi_query(file_get_contents("$ConfSitePATH/test/cdb-schema.sql")))
-        die("* Can't reinitialize contact database.\n" . $cdb->error);
+        die_hard("* Can't reinitialize contact database.\n" . $cdb->error);
     while ($cdb->more_results())
         Dbl::free($cdb->next_result());
 }
@@ -34,16 +39,16 @@ $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC,
 // Load data.
 $json = json_decode(file_get_contents("$ConfSitePATH/test/db.json"));
 if (!$json)
-    die("* test/testdb.json error: " . json_last_error_msg() . "\n");
+    die_hard("* test/testdb.json error: " . json_last_error_msg() . "\n");
 foreach ($json->contacts as $c) {
     $us = new UserStatus;
     if (!$us->save($c))
-        die("* failed to create user $c->email\n");
+        die_hard("* failed to create user $c->email\n");
 }
 foreach ($json->papers as $p) {
     $ps = new PaperStatus;
     if (!$ps->save($p))
-        die("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->error_html())) . "\n");
+        die_hard("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->error_html())) . "\n");
 }
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse($json->assignments_1, null, null);

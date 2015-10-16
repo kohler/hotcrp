@@ -13,8 +13,10 @@ if (isset($arg["a"]) || isset($arg["active"]))
     $active = array_flip($Conf->active_document_ids());
 $kill = isset($arg["k"]) || isset($arg["kill"]);
 
-if (!$Conf->setting_data("s3_bucket"))
-    die("* S3 is not configured for this conference\n");
+if (!$Conf->setting_data("s3_bucket")) {
+    fwrite(STDERR, "* S3 is not configured for this conference\n");
+    exit(1);
+}
 
 $result = $Conf->qe("select paperStorageId from PaperStorage where paperStorageId>1");
 $sids = array();

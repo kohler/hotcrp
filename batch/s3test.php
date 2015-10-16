@@ -11,8 +11,10 @@ if (isset($arg["h"]) || isset($arg["help"])) {
 $quiet = isset($arg["q"]) || isset($arg["quiet"]);
 $extensions = isset($arg["e"]) || isset($arg["extensions"]);
 
-if (!$Conf->setting_data("s3_bucket"))
-    die("* S3 is not configured for this conference\n");
+if (!$Conf->setting_data("s3_bucket")) {
+    fwrite(STDERR, "* S3 is not configured for this conference\n");
+    exit(1);
+}
 if (count($arg["_"]) == 0)
     $arg["_"] = array("-");
 
