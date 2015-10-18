@@ -1020,7 +1020,7 @@ function unparseReviewOrdinal($ord) {
     } else if ($ord <= 26)
         return chr($ord + 64);
     else
-        return chr(intval(($ord - 1) / 26) + 65) . chr(($ord % 26) + 64);
+        return chr(intval(($ord - 1) / 26) + 64) . chr((($ord - 1) % 26) + 65);
 }
 
 function utf8_prefix_at_word_boundary($s, $len) {
