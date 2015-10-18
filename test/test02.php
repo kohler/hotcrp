@@ -96,4 +96,11 @@ $t0 = $Conf->obscure_time($t);
 xassert_eqq($Conf->unparse_time_obscure($t0), "1 Sep 2010");
 xassert_eqq($Conf->printableTime($t0), "1 Sep 2010 12pm EDT");
 
+// review ordinal tests
+foreach ([1 => "A", 26 => "Z", 27 => "AA", 28 => "AB", 51 => "AY", 52 => "AZ",
+          53 => "BA", 54 => "BB", 702 => "ZZ"] as $n => $t) {
+    xassert_eqq(unparseReviewOrdinal($n), $t);
+    xassert_eqq(parseReviewOrdinal($t), $n);
+}
+
 xassert_exit();

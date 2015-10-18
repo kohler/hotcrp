@@ -1001,12 +1001,13 @@ function actionBar($mode = null, $prow = null) {
 
 function parseReviewOrdinal($text) {
     $text = strtoupper($text);
-    if (preg_match('/^[A-Z]$/', $text))
-        return ord($text) - 64;
-    else if (preg_match('/^([A-Z])([A-Z])$/', $text, $m))
-        return (ord($m[0]) - 64) * 26 + ord($m[1]) - 64;
-    else
-        return -1;
+    if (ctype_alpha($text)) {
+        if (strlen($text) == 1)
+            return ord($text) - 64;
+        else if (strlen($text) == 2)
+            return (ord($text[0]) - 64) * 26 + ord($text[1]) - 64;
+    }
+    return -1;
 }
 
 function unparseReviewOrdinal($ord) {
