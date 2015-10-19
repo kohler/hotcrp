@@ -213,9 +213,9 @@ function downloadView($prow, $rr, $editable) {
     global $rf, $Me, $Conf;
     if ($editable && $prow->reviewType > 0
         && (!$rr || $rr->contactId == $Me->contactId))
-        return $rf->textForm($prow, $rr, $Me, $_REQUEST, true) . "\n";
+        return $rf->textForm($prow, $rr, $Me, $_REQUEST) . "\n";
     else if ($editable)
-        return $rf->textForm($prow, $rr, $Me, null, true) . "\n";
+        return $rf->textForm($prow, $rr, $Me, null) . "\n";
     else
         return $rf->pretty_text($prow, $rr, $Me) . "\n";
 }

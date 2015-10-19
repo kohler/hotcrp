@@ -26,18 +26,10 @@ if (isset($_REQUEST["downloadForm"])) {
 if (isset($_REQUEST["uploadForm"])
     && fileUploaded($_FILES["uploadedFile"])
     && check_post()) {
-    $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
-    while (($req = $rf->parseTextForm($tf))) {
-        if (($prow = $Conf->paperRow($req["paperId"], $Me, $whyNot))
-            && !($whyNot = $Me->perm_submit_review($prow, null))) {
-            $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
-                                           "rev_tokens" => $Me->review_tokens(),
-                                           "first" => true));
-            if ($rf->checkRequestFields($req, $rrow, $tf))
-                $rf->save_review($req, $rrow, $prow, $Me, $tf);
-        } else
-            $rf->tfError($tf, true, whyNotText($whyNot, "review"));
-    }
+    $tf = $rf->beginTextForm($_FILES["uploadedFile"]["tmp_name"],
+                             $_FILES["uploadedFile"]["name"]);
+    while (($req = $rf->parseTextForm($tf)))
+        $rf->check_save_review($req, $tf, $Me);
     $rf->textFormMessages($tf);
     // Uploading forms may have completed the reviewer's task; recheck roles.
     Contact::update_rights();

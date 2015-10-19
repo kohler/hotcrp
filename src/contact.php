@@ -2292,6 +2292,14 @@ class Contact {
                 && (!$submit || $this->override_deadlines($rights)));
     }
 
+    function can_create_review_from(PaperInfo $prow, Contact $user) {
+        $rights = $this->rights($prow);
+        return $rights->can_administer
+            && ($prow->timeSubmitted > 0 || $rights->rights_force)
+            && (!$user->isPC || $user->can_accept_review_assignment($prow))
+            && ($Conf->time_review(null, true, true) || $this->override_deadlines($rights));
+    }
+
     function perm_review(PaperInfo $prow, $rrow, $submit = false) {
         if ($this->can_review($prow, $rrow, $submit))
             return null;

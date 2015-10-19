@@ -599,6 +599,7 @@ class ReviewForm {
             $e .= " (paper #" . $tf['paperId'] . ")";
         $tf[$isError ? 'anyErrors' : 'anyWarnings'] = true;
         $tf['err'][] = "<span class='lineno'>" . $e . ":</span> " . $text;
+        return false;
     }
 
     function checkRequestFields(&$req, $rrow, &$tf = null) {
@@ -870,6 +871,56 @@ class ReviewForm {
         return $result;
     }
 
+    private function reviewer_error($req, &$tf, $msg = null) {
+        if (!$msg)
+            $msg = "Can’t submit a review for this reviewer.";
+        $msg = htmlspecialchars($req["reviewerEmail"]) . ": " . $msg;
+        return $this->tfError($tf, true, $msg . "<br /><span class=\"hint\">You may be mistakenly submitting a review form intended for someone else. Remove the form’s “Reviewer:” line to enter your own review.</span>", "reviewerEmail");
+    }
+
+    function check_save_review($req, &$tf, $contact) {
+        global $Conf;
+
+        // look up reviewer
+        $Reviewer = $contact;
+        if (isset($req["reviewerEmail"])
+            && strcasecmp($req["reviewerEmail"], $contact->email) != 0
+            && !($Reviewer = Contact::find_by_email($req["reviewerEmail"])))
+            return $this->reviewer_error($req, $tf, $contact->privChair ? "No such user." : null);
+
+        // look up paper & review rows, check review permission
+        if (!($prow = $Conf->paperRow($req["paperId"], $contact, $whyNot)))
+            return $this->tfError($tf, true, whyNotText($whyNot, "review"));
+        $rrow_args = ["paperId" => $prow->paperId, "first" => true,
+            "contactId" => $Reviewer->contactId, "rev_tokens" => $contact->review_tokens()];
+        $rrow = $Conf->reviewRow($rrow_args);
+        $new_rrid = false;
+        if ($contact !== $Reviewer && !$rrow) {
+            if (!$contact->can_create_review_from($prow, $Reviewer))
+                return $this->reviewer_error($req, $tf);
+            $new_rrid = $contact->assign_review($prow->paperId, $Reviewer->contactId, $Reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
+            if (!$new_rrid)
+                return $this->tfError($tf, true, "Internal error while creating review.");
+            $rrow = $Conf->reviewRow($rrow_args);
+        }
+        if (($whyNot = $contact->perm_submit_review($prow, $rrow))) {
+            if ($contact === $Reviewer || $contact->can_view_review_identity($prow, $rrow))
+                return $this->tfError($tf, true, whyNotText($whyNot, "review"));
+            else
+                return $this->reviewer_error($req, $tf);
+        }
+
+        // actually check review and save
+        if ($this->checkRequestFields($req, $rrow, $tf)) {
+            $this->save_review($req, $rrow, $prow, $contact, $tf);
+            return true;
+        } else {
+            if ($new_rrid)
+                $contact->assign_review($prow->paperId, $Reviewer->contactId, 0);
+            return false;
+        }
+    }
+
 
     static function textFormHeader($type) {
         global $Opt;
@@ -911,7 +962,7 @@ class ReviewForm {
         }
     }
 
-    function textForm($prow, $rrow, $contact, $req = null, $alwaysMyReview = false) {
+    function textForm($prow, $rrow, $contact, $req = null) {
         global $Conf, $Opt;
 
         $rrow_contactId = 0;
@@ -919,10 +970,10 @@ class ReviewForm {
             $rrow_contactId = $rrow->reviewContactId;
         else if (isset($rrow) && isset($rrow->contactId))
             $rrow_contactId = $rrow->contactId;
-        $myReview = $alwaysMyReview
-            || (!$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId);
+        $myReview = !$rrow || $rrow_contactId == 0 || $rrow_contactId == $contact->contactId;
         $revViewScore = $prow ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
         self::check_review_author_seen($prow, $rrow, $contact);
+        $viewable_identity = !$prow || $contact->can_view_review_identity($prow, $rrow, true);
 
         $x = "==+== =====================================================================\n";
         //$x .= "$prow->paperId:$myReview:$revViewScore:$rrow->contactId:$rrow->reviewContactId;;$prow->conflictType;;$prow->reviewType\n";
@@ -933,30 +984,27 @@ class ReviewForm {
         else if ($rrow && isset($rrow->reviewOrdinal))
             $x .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= "\n";
-        if ($myReview && $rrow && defval($rrow, "reviewEditVersion"))
+        if ($rrow && defval($rrow, "reviewEditVersion") && $viewable_identity)
             $x .= "==+== Version " . $rrow->reviewEditVersion . "\n";
-        if (!$myReview && $prow)
-            $x .= prefix_word_wrap("==-== Paper: ", $prow->title, "==-==        ") . "\n";
-        if (!$prow || $contact->can_view_review_identity($prow, $rrow, null)) {
-            if ($rrow && isset($rrow->reviewFirstName))
+        if (!$prow || $viewable_identity) {
+            if ($rrow && isset($rrow->reviewEmail))
                 $x .= "==+== Reviewer: " . Text::user_text($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail) . "\n";
-            else if ($rrow && isset($rrow->lastName))
+            else if ($rrow && isset($rrow->email))
                 $x .= "==+== Reviewer: " . Text::user_text($rrow) . "\n";
-            else if ($myReview)
+            else
                 $x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
         }
         if ($rrow && $rrow->reviewModified && $contact->can_view_review_time($prow, $rrow))
             $x .= "==-== Updated " . $Conf->printableTime($rrow->reviewModified) . "\n";
 
-        if ($myReview) {
-            if ($prow)
-                $x .= "\n==+== Paper #$prow->paperId\n";
-            else
-                $x .= "\n==+== Paper Number\n\n(Enter paper number here)\n";
-            if ($prow)
-                $x .= prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ") . "\n";
-            $x .= "
-==+== Review Readiness
+        if ($prow)
+            $x .= "\n==+== Paper #$prow->paperId\n"
+                . prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ") . "\n\n";
+        else
+            $x .= "\n==+== Paper Number\n\n(Enter paper number here)\n\n";
+
+        if ($viewable_identity) {
+            $x .= "==+== Review Readiness
 ==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
@@ -993,8 +1041,6 @@ $blind\n";
                 $fval = "$fval. " . $f->options[$fval];
             else if (!$fval)
                 $fval = "";
-            if (!$myReview && $fval == "")
-                continue;
 
             $x .= "\n==+== " . chr(64 + $i) . ". " . $f->name;
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
@@ -1010,7 +1056,7 @@ $blind\n";
                     $d = self::cleanDescription($d);
                 $x .= prefix_word_wrap("==-==    ", $d, "==-==    ");
             }
-            if ($f->has_options && $myReview) {
+            if ($f->has_options) {
                 $first = true;
                 foreach ($f->options as $num => $value) {
                     $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
