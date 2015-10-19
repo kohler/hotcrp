@@ -327,6 +327,7 @@ function parseBulkFile($text, $filename) {
         $Conf->errorMsg("There $errorMsg");
     else
         $Conf->warnMsg("Nothing to do.");
+    return count($errors) == 0;
 }
 
 if (!check_post())
@@ -341,10 +342,13 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
     $_REQUEST["bulkentry"] = "";
     redirectSelf(array("anchor" => "bulk"));
 } else if (isset($_REQUEST["bulkregister"]) && $newProfile) {
+    $success = true;
     if (@$_REQUEST["bulkentry"]
         && $_REQUEST["bulkentry"] !== "Enter users one per line")
-        parseBulkFile($_REQUEST["bulkentry"], "");
+        $success = parseBulkFile($_REQUEST["bulkentry"], "");
     $Acct = new Contact;
+    if (!$success)
+        $Conf->save_session("profile_bulkentry", array($Now, $_REQUEST["bulkentry"]));
     redirectSelf(array("anchor" => "bulk"));
 } else if (isset($_REQUEST["register"])) {
     $cj = (object) array();
@@ -842,8 +846,15 @@ if ($newProfile) {
         Ht::password("chromefooler", "", array("style" => "display:none"));
     create_modes(true);
 
+    $bulkentry = @$_REQUEST["bulkentry"];
+    if ($bulkentry === null
+        && ($session_bulkentry = $Conf->session("profile_bulkentry"))
+        && is_array($session_bulkentry) && $session_bulkentry[0] > $Now - 5) {
+        $bulkentry = $session_bulkentry[1];
+        $Conf->save_session("profile_bulkentry", null);
+    }
     echo '<div class="f-contain"><div class="f-i">',
-        '<div class="f-e">', Ht::textarea("bulkentry", @$_REQUEST["bulkentry"],
+        '<div class="f-e">', Ht::textarea("bulkentry", $bulkentry,
                                           array("rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line")),
         '</div></div></div>';
 
