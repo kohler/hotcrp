@@ -825,9 +825,9 @@ class ReviewForm {
         }
 
         // potentially email chair, reviewers, and authors
-        if ($submit
-            && ($notify || $notify_author)
-            && ($notify_rrow = $Conf->reviewRow(array("reviewId" => $reviewId)))) {
+        if ($submit)
+            $rrow = $Conf->reviewRow(["reviewId" => $reviewId]);
+        if ($submit && ($notify || $notify_author) && $rrow) {
             $tmpl = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $submitter = $contact;
             if ($contactId != $submitter->contactId)
@@ -835,9 +835,9 @@ class ReviewForm {
 
             // construct mail
             $this->mailer_info = array("template" => $tmpl,
-                    "rrow" => $notify_rrow,
+                    "rrow" => $rrow,
                     "reviewer_contact" => $submitter,
-                    "reviewNumber" => $prow->paperId . unparseReviewOrdinal($notify_rrow->reviewOrdinal),
+                    "reviewNumber" => $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal),
                     "check_function" => "HotCRPMailer::check_can_view_review",
                     "diff_view_score" => $diff_view_score);
             $this->mailer_preps = array();
@@ -854,16 +854,17 @@ class ReviewForm {
             $Conf->q("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
 
         if ($tf !== null) {
+            $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
             if ($newsubmit)
-                $tf["newlySubmitted"][] = "#$prow->paperId";
+                $tf["newlySubmitted"][] = $what;
             else if ($diff_view_score > VIEWSCORE_FALSE && $submit)
-                $tf["updated"][] = "#$prow->paperId";
+                $tf["updated"][] = $what;
             else if ($diff_view_score > VIEWSCORE_FALSE)
-                $tf["savedDraft"][] = "#$prow->paperId";
+                $tf["savedDraft"][] = $what;
             else
-                $tf["unchanged"][] = "#$prow->paperId";
+                $tf["unchanged"][] = $what;
             if ($notify_author)
-                $tf["authorNotified"][] = "#$prow->paperId";
+                $tf["authorNotified"][] = $what;
         }
 
         return $result;
@@ -1277,22 +1278,22 @@ $blind\n";
         if (isset($tf["confirm"]) && count($tf["confirm"]) > 0)
             $confirm = array_merge($confirm, $tf["confirm"]);
         if (isset($tf["newlySubmitted"]) && count($tf["newlySubmitted"]) > 0)
-            $confirm[] = self::_paperCommaJoin("Review* submitted| for paper* ", $tf["newlySubmitted"], $single) . ".";
+            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["newlySubmitted"], $single) . " submitted.";
         if (isset($tf["updated"]) && count($tf["updated"]) > 0)
-            $confirm[] = self::_paperCommaJoin("Review* updated| for paper* ", $tf["updated"], $single) . ".";
+            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["updated"], $single) . " updated.";
         if (isset($tf["savedDraft"]) && count($tf["savedDraft"]) > 0) {
             if ($single)
                 $confirm[] = "Draft review saved. However, this version is marked as not ready for others to see. Please finish the review and submit again.";
             else
-                $confirm[] = self::_paperCommaJoin("Draft review* saved| for paper* ", $tf["savedDraft"], $single) . ".";
+                $confirm[] = self::_paperCommaJoin("Draft review*| for paper* ", $tf["savedDraft"], $single) . " saved.";
         }
         $nconfirm = count($confirm);
         if (isset($tf["authorNotified"]) && count($tf["authorNotified"]) > 0)
-            $confirm[] = self::_paperCommaJoin("Notified authors| of paper* ", $tf["authorNotified"], $single) . " about updated " . pluralx(count($tf["authorNotified"]), "review") . ".";
+            $confirm[] = self::_paperCommaJoin("Notified authors| about updated review*| ", $tf["authorNotified"], $single) . ".";
         if (isset($tf["unchanged"]) && count($tf["unchanged"]) > 0)
-            $confirm[] = self::_paperCommaJoin("Review*| for paper* ", $tf["unchanged"], $single) . " unchanged.";
+            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["unchanged"], $single) . " unchanged.";
         if (isset($tf["ignoredBlank"]) && count($tf["ignoredBlank"]) > 0)
-            $confirm[] = self::_paperCommaJoin("Ignored blank review form*| for paper* ", $tf["ignoredBlank"], $single) . ".";
+            $confirm[] = self::_paperCommaJoin("Ignored blank review form*| ", $tf["ignoredBlank"], $single) . ".";
         // self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
         if (count($confirm))
             $Conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
