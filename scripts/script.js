@@ -3942,7 +3942,7 @@ function unload_list() {
 }
 function row_click(e) {
     var j = $(e.target);
-    if (j.hasClass("pl_id") || j.hasClass("pl_title") || j.hasClass("pl_status"))
+    if (j.hasClass("pl_id") || j.hasClass("pl_title"))
         $(this).find("a.pnum")[0].click();
 }
 function prepare() {
