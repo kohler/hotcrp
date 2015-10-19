@@ -28,15 +28,15 @@ if (isset($_REQUEST["uploadForm"])
     && check_post()) {
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
     while (($req = $rf->parseTextForm($tf))) {
-	if (($prow = $Conf->paperRow($req["paperId"], $Me, $whyNot))
-	    && !($whyNot = $Me->perm_submit_review($prow, null))) {
-	    $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
-					   "rev_tokens" => $Me->review_tokens(),
-					   "first" => true));
-	    if ($rf->checkRequestFields($req, $rrow, $tf))
-		$rf->save_review($req, $rrow, $prow, $Me, $tf);
-	} else
-	    $rf->tfError($tf, true, whyNotText($whyNot, "review"));
+        if (($prow = $Conf->paperRow($req["paperId"], $Me, $whyNot))
+            && !($whyNot = $Me->perm_submit_review($prow, null))) {
+            $rrow = $Conf->reviewRow(array("paperId" => $prow->paperId, "contactId" => $Me->contactId,
+                                           "rev_tokens" => $Me->review_tokens(),
+                                           "first" => true));
+            if ($rf->checkRequestFields($req, $rrow, $tf))
+                $rf->save_review($req, $rrow, $prow, $Me, $tf);
+        } else
+            $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     }
     $rf->textFormMessages($tf);
     // Uploading forms may have completed the reviewer's task; recheck roles.
@@ -51,17 +51,17 @@ function saveTagIndexes($tag, $filename, &$settings, &$titles, &$linenos, &$erro
 
     $result = $Conf->qe($Conf->paperQuery($Me, array("paperId" => array_keys($settings))));
     while (($row = PaperInfo::fetch($result, $Me)))
-	if ($settings[$row->paperId] !== null
+        if ($settings[$row->paperId] !== null
             && !$Me->can_change_tag($row, $tag, null, 1)) {
-	    $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
-	    unset($settings[$row->paperId]);
-	} else if ($titles[$row->paperId] !== ""
-		   && strcmp($row->title, $titles[$row->paperId]) != 0
-		   && strcasecmp($row->title, simplify_whitespace($titles[$row->paperId])) != 0)
-	    $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match";
+            $errors[$linenos[$row->paperId]] = "You cannot rank paper #$row->paperId.";
+            unset($settings[$row->paperId]);
+        } else if ($titles[$row->paperId] !== ""
+                   && strcmp($row->title, $titles[$row->paperId]) != 0
+                   && strcasecmp($row->title, simplify_whitespace($titles[$row->paperId])) != 0)
+            $errors[$linenos[$row->paperId]] = "Warning: Title doesn’t match";
 
     if (!$tag)
-	defappend($Error["tags"], "No tag defined");
+        defappend($Error["tags"], "No tag defined");
     else if (count($settings)) {
         $x = array("paper,tag,lineno");
         foreach ($settings as $pid => $value)
@@ -79,14 +79,14 @@ function setTagIndexes() {
     global $Conf, $Me, $Error;
     $filename = null;
     if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"])) {
-	if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
-	    $Conf->errorMsg("Internal error: cannot read file.");
-	    return;
-	}
-	$filename = @$_FILES["file"]["name"];
+        if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
+            $Conf->errorMsg("Internal error: cannot read file.");
+            return;
+        }
+        $filename = @$_FILES["file"]["name"];
     } else if (!($text = defval($_REQUEST, "data"))) {
-	$Conf->errorMsg("Choose a file first.");
-	return;
+        $Conf->errorMsg("Choose a file first.");
+        return;
     }
 
     $RealMe = $Me;
@@ -97,33 +97,33 @@ function setTagIndexes() {
     $lineno = 1;
     $settings = $titles = $linenos = $errors = array();
     foreach (explode("\n", rtrim(cleannl($text))) as $l) {
-	if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
-	    if (!$tag)
-		$tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
-	    ++$lineno;
-	    continue;
-	} else if ($l == "" || $l[0] == "#") {
-	    ++$lineno;
-	    continue;
-	}
-	if (preg_match('/\A\s*?([Xx=]|>*|\([-\d]+\))\s+(\d+)\s*(.*?)\s*\z/', $l, $m)) {
-	    if (isset($settings[$m[2]]))
-		$errors[$lineno] = "Paper #$m[2] already given on line " . $linenos[$m[2]];
-	    if ($m[1] == "X" || $m[1] == "x")
-		$settings[$m[2]] = null;
-	    else if ($m[1] == "" || $m[1] == ">")
-		$settings[$m[2]] = $curIndex = $curIndex + 1;
-	    else if ($m[1][0] == "(")
-		$settings[$m[2]] = $curIndex = substr($m[1], 1, -1);
-	    else if ($m[1] == "=")
-		$settings[$m[2]] = $curIndex;
-	    else
-		$settings[$m[2]] = $curIndex = $curIndex + strlen($m[1]);
-	    $titles[$m[2]] = $m[3];
-	    $linenos[$m[2]] = $lineno;
-	} else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
-	    if (count($settings) && $Me)
-		saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
+        if (substr($l, 0, 4) == "Tag:" || substr($l, 0, 6) == "# Tag:") {
+            if (!$tag)
+                $tag = $tagger->check(trim(substr($l, ($l[0] == "#" ? 6 : 4))), Tagger::NOVALUE);
+            ++$lineno;
+            continue;
+        } else if ($l == "" || $l[0] == "#") {
+            ++$lineno;
+            continue;
+        }
+        if (preg_match('/\A\s*?([Xx=]|>*|\([-\d]+\))\s+(\d+)\s*(.*?)\s*\z/', $l, $m)) {
+            if (isset($settings[$m[2]]))
+                $errors[$lineno] = "Paper #$m[2] already given on line " . $linenos[$m[2]];
+            if ($m[1] == "X" || $m[1] == "x")
+                $settings[$m[2]] = null;
+            else if ($m[1] == "" || $m[1] == ">")
+                $settings[$m[2]] = $curIndex = $curIndex + 1;
+            else if ($m[1][0] == "(")
+                $settings[$m[2]] = $curIndex = substr($m[1], 1, -1);
+            else if ($m[1] == "=")
+                $settings[$m[2]] = $curIndex;
+            else
+                $settings[$m[2]] = $curIndex = $curIndex + strlen($m[1]);
+            $titles[$m[2]] = $m[3];
+            $linenos[$m[2]] = $lineno;
+        } else if ($RealMe->privChair && preg_match('/\A\s*<\s*([^<>]*?(|<[^<>]*>))\s*>\s*\z/', $l, $m)) {
+            if (count($settings) && $Me)
+                saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
             $ret = ContactSearch::make_pc($m[1], $RealMe);
             $Me = null;
             if (count($ret->ids) == 1)
@@ -132,28 +132,28 @@ function setTagIndexes() {
                 $errors[$lineno] = htmlspecialchars($m[1]) . " matches no PC member";
             else
                 $errors[$lineno] = htmlspecialchars($m[1]) . " matches more than one PC member, give a full email address to disambiguate";
-	} else if (trim($l) !== "")
-	    $errors[$lineno] = "Syntax error";
-	++$lineno;
+        } else if (trim($l) !== "")
+            $errors[$lineno] = "Syntax error";
+        ++$lineno;
     }
 
     if (count($settings) && $Me)
-	saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
+        saveTagIndexes($tag, $filename, $settings, $titles, $linenos, $errors);
     $Me = $RealMe;
 
     if (count($errors)) {
-	ksort($errors);
+        ksort($errors);
         if ($filename)
             foreach ($errors as $lineno => &$error)
                 $error = '<span class="lineno">' . htmlspecialchars($filename) . ':' . $lineno . ':</span> ' . $error;
         $Error["tags"] = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>';
     }
     if (isset($Error["tags"]))
-	$Conf->errorMsg($Error["tags"]);
+        $Conf->errorMsg($Error["tags"]);
     else if (isset($_REQUEST["setvote"]))
-	$Conf->confirmMsg("Votes saved.");
+        $Conf->confirmMsg("Votes saved.");
     else
-	$Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
+        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
 }
 if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
     && $Me->is_reviewer() && check_post())
@@ -171,7 +171,7 @@ $Conf->header("Offline reviewing", "offline", actionBar());
 
 if ($Me->is_reviewer()) {
     if (!$Conf->time_review_open())
-	$Conf->infoMsg("The site is not open for review.");
+        $Conf->infoMsg("The site is not open for review.");
     $Conf->infoMsg("Use this page to download a blank review form, or to upload review forms you’ve already filled out.");
     if (!$Me->can_clickthrough("review"))
         PaperTable::echo_review_clickthrough();
@@ -186,7 +186,7 @@ echo "<tr><td><h3>Download forms</h3>\n<div>";
 if ($Me->is_reviewer()) {
     echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=r&amp;p=all"), "'>Your reviews</a><br />\n";
     if ($Me->has_outstanding_review())
-	echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=rout&amp;p=all"), "'>Your incomplete reviews</a><br />\n";
+        echo "<a href='", hoturl("search", "get=revform&amp;q=&amp;t=rout&amp;p=all"), "'>Your incomplete reviews</a><br />\n";
     echo "<a href='", hoturl("offline", "downloadForm=1"), "'>Blank form</a></div>
 <div class='g'></div>
 <span class='hint'><strong>Tip:</strong> Use <a href='", hoturl("search", "q="), "'>Search</a> &gt; Download to choose individual papers.\n";
@@ -201,7 +201,7 @@ if ($Me->is_reviewer()) {
         "<input type='file' name='uploadedFile' accept='text/plain' size='30' $disabled/>&nbsp; ",
         Ht::submit("Go", array("disabled" => !!$disabled));
     if ($pastDeadline && $Me->privChair)
-	echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
+        echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> You may upload a file containing several forms.</span>";
     echo "</div></form></td>\n";
 }
@@ -212,10 +212,10 @@ echo "</tr>\n";
 if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
     $ranktag = $Conf->setting_data("tag_rank");
     echo "<tr><td><div class='g'></div></td></tr>\n",
-	"<tr><td><h3>Download ranking file</h3>\n<div>";
+        "<tr><td><h3>Download ranking file</h3>\n<div>";
     echo "<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=r&amp;p=all"), "\">Your reviews</a>";
     if ($Me->isPC)
-	echo "<br />\n<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a>";
+        echo "<br />\n<a href=\"", hoturl("search", "get=rank&amp;tag=%7E$ranktag&amp;q=&amp;t=s&amp;p=all"), "\">All submitted papers</a>";
     echo "</div></td>\n";
 
     $disabled = ($pastDeadline && !$Me->privChair ? " disabled='disabled'" : "");
@@ -225,7 +225,7 @@ if ($Conf->setting("tag_rank") && $Me->is_reviewer()) {
         "<input type='file' name='file' accept='text/plain' size='30' $disabled/>&nbsp; ",
         Ht::submit("Go", array("disabled" => !!$disabled));
     if ($pastDeadline && $Me->privChair)
-	echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
+        echo "<br />", Ht::checkbox("override"), "&nbsp;", Ht::label("Override&nbsp;deadlines");
     echo "<br /><span class='hint'><strong>Tip:</strong> Use “<a href='", hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), "'>editsort:#~$ranktag</a>” to drag and drop your ranking.</span>";
     echo "<br /><span class='hint'><strong>Tip:</strong> “<a href='", hoturl("search", "q=order:%7E$ranktag"), "'>order:~$ranktag</a>” searches by your ranking.</span>";
     echo "</div></form></td>\n";
