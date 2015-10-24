@@ -1216,6 +1216,7 @@ div.pctbelt {
 	-webkit-column-break-inside: avoid;
 	page-break-inside: avoid;
 	break-inside: avoid;
+	margin: 0 6px;
 }
 .ctable {
 	-webkit-columns: 300px 4;
@@ -1224,6 +1225,7 @@ div.pctbelt {
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
+	margin: 0 -6px;
 }
 .pctb_ctable {
 	margin: 0 -6px -4px;
