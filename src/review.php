@@ -1301,8 +1301,8 @@ $blind\n";
             return preg_replace('/\|.*/', "", $pl);
         $pids = array();
         foreach ($a as &$x)
-            if (preg_match('/\A(#?)(\d+)\z/', $x, $m)) {
-                $x = "<a href=\"" . hoturl("paper", "p=$m[2]") . "\">" . $x . "</a>";
+            if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
+                $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "review$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
                 $pids[] = $m[2];
             }
         $t = str_replace("|", "", $pl) . commajoin($a);
