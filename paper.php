@@ -200,10 +200,12 @@ function request_to_json($opj, $action) {
             $pj->$k = $_POST[$k];
 
     // Authors
+    $bad_author = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
     $authors = array();
     foreach ($_POST as $k => $v)
         if (preg_match('/^au(name|email|aff)(\d+)$/', $k, $m)
-            && ($v = simplify_whitespace($v)) !== "") {
+            && ($v = simplify_whitespace($v)) !== ""
+            && $v !== $bad_author[$m[1]]) {
             $au = $authors[$m[2]] = (@$authors[$m[2]] ? : (object) array());
             $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
             $au->$x = $v;

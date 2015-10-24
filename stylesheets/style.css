@@ -1487,9 +1487,6 @@ th.pl.pl_logid, td.pl.pl_logid {
 table.setreviewform th {
 	border-bottom: 1px solid #999999;
 }
-table.auedittable {
-	width: 100%;
-}
 table.setreviewform th, table.auedittable th {
 	font-size: smaller;
 }

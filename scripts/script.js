@@ -1926,12 +1926,13 @@ function authorfold(prefix, relative, n) {
 }
 
 function author_change(e, force) {
-    var j = $(e), tr = j.closest("tr");
-    if (force || $.trim(j.val()) != "") {
+    var $e = $(e), tr = $e.closest("tr");
+    if (force || $.trim($e.val()) != "") {
         if (tr[0].nextSibling == null) {
             var n = tr.siblings().length;
             var h = tr.siblings().first().html().replace(/\$/g, n + 1);
-            tr.after("<tr>" + h + "</tr>");
+            $("<tr>" + h + "</tr>").insertAfter(tr)
+                .find("input[placeholder]").each(mktemptext);
         } else if (tr[0].nextSibling.className == "aueditc")
             tr[0].nextSibling.className = "auedito";
     }
