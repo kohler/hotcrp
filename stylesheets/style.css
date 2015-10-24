@@ -1088,7 +1088,7 @@ input.textlite-tt, textarea.tt {
 .reviewtext, div#popup_ref textarea {
 	width: 99%;
 }
-.reviewtext {
+.papertext, .reviewtext {
 	max-width: 640px;
 }
 textarea[name=comment] {
