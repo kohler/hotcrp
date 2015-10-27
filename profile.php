@@ -184,7 +184,7 @@ function save_user($cj, $user_status) {
     // check for missing fields
     UserStatus::normalize_name($cj);
     if ($newProfile && !isset($cj->email)) {
-        $user_status->set_error($field, "Email address required.");
+        $user_status->set_error("email", "Email address required.");
         return false;
     }
 
