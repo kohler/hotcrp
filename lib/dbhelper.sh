@@ -147,9 +147,9 @@ set_myargs () {
         myargs_redacted="$myargs -p<REDACTED>"
         PASSWORDFILE="`mktemp -q /tmp/hotcrptmp.XXXXXX`"
         if test -n "$PASSWORDFILE"; then
-            echo "[client]" >> "$PASSWORDFILE"
-            echo "password = $2" >> "$PASSWORDFILE"
+            echo "[client]" > "$PASSWORDFILE"
             chmod 600 "$PASSWORDFILE" # should be redundant
+            echo "password = $2" >> "$PASSWORDFILE"
             myargs=" --defaults-extra-file=$PASSWORDFILE$myargs"
             trap "rm -f $PASSWORDFILE" EXIT 2>/dev/null
         else
