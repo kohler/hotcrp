@@ -107,19 +107,13 @@ if (!$Me->has_database_account()
     }
 }
 
-$current_pid = 0;
 if (@$_GET["p"] && ctype_digit($_GET["p"])) {
-    $current_pid = intval($_GET["p"]);
-    $CurrentProw = $Conf->paperRow(["paperId" => $current_pid], $Me);
+    $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])), $Me);
     if ($CurrentProw && !$Me->can_view_paper($CurrentProw))
         $CurrentProw = null;
 }
 
 $j = $Me->my_deadlines($CurrentProw);
-if ($current_pid && !isset($j->perm))
-    $j->perm = (object) array();
-if ($current_pid && !isset($j->perm->$current_pid))
-    $j->perm->$current_pid = (object) array();
 
 if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
