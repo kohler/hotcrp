@@ -210,7 +210,7 @@ class Autoassigner {
                         continue;
                     foreach ($bp as $cid2 => $x)
                         if ($this->prefs[$cid2][$pid] <= self::POLDASSIGN)
-                            $this->prefs[$cid][$pid] = self::PNOASSIGN;
+                            $this->prefs[$cid2][$pid] = self::PNOASSIGN;
                 }
             }
 
