@@ -1214,7 +1214,7 @@ class PaperList {
             if ($this->sortable && $url) {
                 global $ConfSiteBase;
                 $sortUrl = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-                $q = '<a class="pl_sort hottooltip" rel="nofollow" hottooltipdir="b" href="' . $sortUrl;
+                $q = '<a class="pl_sort hottooltip" rel="nofollow" data-hottooltip-dir="b" href="' . $sortUrl;
             } else
                 $sortUrl = false;
 
@@ -1251,11 +1251,11 @@ class PaperList {
                          && $sortUrl)
                         || $defsortname == $this->sorters[0]->type)) {
                     $tooltip = $this->sorters[0]->reverse ? "Forward sort" : "Reverse sort";
-                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" hottooltip="' . $tooltip . '" hottooltipdir="b" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
+                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
                 } else if ($fdef->sorter && $sortUrl)
-                    $colhead .= $q . urlencode($fdef->name) . "\" hottooltip=\"$tooltip\">" . $ftext . "</a>";
+                    $colhead .= $q . urlencode($fdef->name) . "\" data-hottooltip=\"$tooltip\">" . $ftext . "</a>";
                 else if ($defsortname)
-                    $colhead .= $q . urlencode($defsortname) . "\" hottooltip=\"$tooltip\">" . $ftext . "</a>";
+                    $colhead .= $q . urlencode($defsortname) . "\" data-hottooltip=\"$tooltip\">" . $ftext . "</a>";
                 else
                     $colhead .= $ftext;
                 if ($titleextra && $fdef->cssname == "title") {
@@ -1281,7 +1281,7 @@ class PaperList {
             foreach ($options["attributes"] as $n => $v)
                 $enter .= "\" $n=\"$v";
         if ($this->listNumber)
-            $enter .= '" hotcrp_list="' . $this->listNumber;
+            $enter .= '" data-hotcrp-list="' . $this->listNumber;
         $enter .= "\">\n";
         $exit = "</table>";
 

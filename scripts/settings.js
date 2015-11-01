@@ -268,11 +268,11 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
   </div>\
   <div class="f-i errloc_description_$">\
     <div class="f-c">Description</div>\
-    <textarea name="description_$" id="description_$" class="reviewtext hottooltip" rows="6" hottooltipcontent="#review_form_caption_description" hottooltipdir="l" hottooltiptype="focus"></textarea>\
+    <textarea name="description_$" id="description_$" class="reviewtext hottooltip" rows="6" data-hottooltip-content-selector="#review_form_caption_description" data-hottooltip-dir="l" data-hottooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i errloc_options_$ reviewrow_options">\
     <div class="f-c">Options</div>\
-    <textarea name="options_$" id="options_$" class="reviewtext hottooltip" rows="6" hottooltipcontent="#review_form_caption_options" hottooltipdir="l" hottooltiptype="focus"></textarea>\
+    <textarea name="options_$" id="options_$" class="reviewtext hottooltip" rows="6" data-hottooltip-content-selector="#review_form_caption_options" data-hottooltip-dir="l" data-hottooltip-type="focus"></textarea>\
   </div>\
 </div><hr class="c" /></div>';
 

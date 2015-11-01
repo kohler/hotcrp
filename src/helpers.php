@@ -663,7 +663,7 @@ function quicklinks($id, $baseUrl, $args, $listtype) {
     SessionList::change($CurrentList, array("timestamp" => $Now));
 
     $args["ls"] = null;
-    $x = '<td class="quicklinks nw has_hotcrp_list" hotcrp_list="' . $CurrentList . '">';
+    $x = '<td class="quicklinks nw has_hotcrp_list" data-hotcrp-list="' . $CurrentList . '">';
     if ($k > 0)
         $x .= _one_quicklink($list->ids[$k - 1], $baseUrl, $args, $listtype, true);
     if (@$list->description) {
@@ -685,7 +685,7 @@ function goPaperForm($baseUrl = null, $args = array()) {
     if ($Me->is_empty())
         return "";
     $x = Ht::form_div(hoturl($baseUrl ? : "paper", array("ls" => null)),
-                      array("method" => "get", "class" => "gopaper" . ($CurrentList ? " has_hotcrp_list" : ""), "hotcrp_list" => $CurrentList));
+                      array("method" => "get", "class" => "gopaper" . ($CurrentList ? " has_hotcrp_list" : ""), "data-hotcrp-list" => $CurrentList));
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(User)"));
     else
@@ -992,7 +992,7 @@ function actionBar($mode = null, $prow = null) {
     if ($quicklinks_txt)
         $x .= $quicklinks_txt;
     if ($quicklinks_txt && $Me->privChair && $listtype == "p")
-        $x .= "  <td id=\"trackerconnect\" class=\"nowrap\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+        $x .= "  <td id=\"trackerconnect\" class=\"nowrap\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" data-hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
 
     $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
 

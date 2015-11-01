@@ -135,7 +135,7 @@ class PaperTable {
 
         $t = '<div id="header_page" class="header_page_submission';
         if ($prow && $paperTable && $CurrentList)
-            $t .= ' has_hotcrp_list" hotcrp_list="' . $CurrentList;
+            $t .= ' has_hotcrp_list" data-hotcrp-list="' . $CurrentList;
         $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {
@@ -273,7 +273,7 @@ class PaperTable {
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
                 . "<a class=\"xx hottooltip\" href=\"" . selfHref(array("atab" => $what))
-                . "\" onclick=\"return foldup(this,event$foldnumarg)\" hottooltip=\"Edit\">"
+                . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-hottooltip=\"Edit\">"
                 . "<span style='display:inline-block;position:relative;width:15px'>"
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
@@ -332,10 +332,10 @@ class PaperTable {
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
-            $t[] = "<span class='nowrap hottooltip' hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->printableTimestamp($tm) . "</span>";
+            $t[] = "<span class='nowrap hottooltip' data-hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->printableTimestamp($tm) . "</span>";
         $sha1 = defval($data, "sha1");
         if ($sha1)
-            $t[] = "<span class='nowrap hottooltip' hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
+            $t[] = "<span class='nowrap hottooltip' data-hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
         if (count($t) > 0)
             return "<span class='hint'>" . join(" <span class='barsep'>·</span> ", $t) . "</span>";
         else
@@ -557,7 +557,7 @@ class PaperTable {
         echo " Any author with an account on this site can edit the submission.</div>",
             '<div class="papev"><table id="auedittable" class="auedittable">',
             '<tbody>';
-        self::echo_editable_authors_tr(' hotautemplate="true" style="display:none"', '$', "", "", "");
+        self::echo_editable_authors_tr(' data-hotautemplate="true" style="display:none"', '$', "", "", "");
 
         $blankAu = array("", "", "", "");
         if ($this->useRequest) {
@@ -1449,14 +1449,14 @@ class PaperTable {
             $totval = "";
         return '<div class="hotcrp_tag_hideempty floatright" style="display:' . ($totval ? "block" : "none")
             . '"><a class="qq" href="' . hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
-            . '<span class="has_hotcrp_tag_indexof" hotcrp_tag_indexof="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
+            . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
     }
 
     private function papstrip_tag_entry_title($start, $tag, $value) {
         $title = $start . '<span class="fn hotcrp_tag_hideempty"';
         if ($value === "")
             $title .= ' style="display:none"';
-        return $title . '>: <span class="has_hotcrp_tag_indexof" hotcrp_tag_indexof="' . $tag . '">' . $value . '</span></span>';
+        return $title . '>: <span class="is-tag-index" data-tag-base="' . $tag . '">' . $value . '</span></span>';
     }
 
     private function papstripRank($tag) {
@@ -1467,7 +1467,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "overall", false);
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
-        echo Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
+        echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag rank", "~$tag", $myval),
@@ -1476,8 +1476,8 @@ class PaperTable {
             Ht::entry("tagindex", $myval,
                       array("id" => "fold{$id}_d", "size" => 4, "tabindex" => 1,
                             "onchange" => "save_tag_index(this)",
-                            "class" => "has_hotcrp_tag_indexof",
-                            "hotcrp_tag_indexof" => "~$tag")),
+                            "class" => "is-tag-index",
+                            "data-tag-base" => "~$tag")),
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
             " <div class='hint' style='margin-top:4px'><strong>Tip:</strong> <a href='", hoturl("search", "q=" . urlencode("editsort:#~$tag")), "'>Search “editsort:#~{$tag}”</a> to drag and drop your ranking, or <a href='", hoturl("offline"), "'>use offline reviewing</a> to rank many papers at once.</div>",
@@ -1492,7 +1492,7 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "total", true);
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
-        echo Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
+        echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag votes", "~$tag", $myval),
@@ -1501,8 +1501,8 @@ class PaperTable {
             Ht::entry("tagindex", $myval,
                       array("id" => "fold{$id}_d", "size" => 4, "tabindex" => 1,
                             "onchange" => "save_tag_index(this)",
-                            "class" => "has_hotcrp_tag_indexof",
-                            "hotcrp_tag_indexof" => "~$tag")),
+                            "class" => "is-tag-index",
+                            "data-tag-base" => "~$tag")),
             " &nbsp;of $allotment",
             ' <span class="barsep">·</span> ',
             '<a href="', hoturl("search", "q=" . urlencode("editsort:#~$tag")), '">Edit all</a>',
@@ -1517,15 +1517,15 @@ class PaperTable {
         $totmark = $this->papstrip_tag_float($tag, "total", true);
 
         $this->papstrip_tag_entry(null, null);
-        echo Ht::form_div("", array("id" => "{$id}form", "hotcrp_tag" => "~$tag", "onsubmit" => "return false"));
+        echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
         if (isset($_REQUEST["forceShow"]))
             echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
         echo $this->papt($id,
                          Ht::checkbox("tagindex", "0", $myval !== "",
                                       array("id" => "fold" . $id . "_d", "tabindex" => 1,
                                             "onchange" => "save_tag_index(this)",
-                                            "class" => "has_hotcrp_tag_indexof",
-                                            "hotcrp_tag_indexof" => "~$tag",
+                                            "class" => "is-tag-index",
+                                            "data-tag-base" => "~$tag",
                                             "style" => "padding-left:0;margin-left:0;margin-top:0"))
                          . "&nbsp;" . Ht::label("#$tag vote"),
                          array("type" => "ps", "float" => $totmark)),
@@ -1691,7 +1691,7 @@ class PaperTable {
             else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn papers has passed.";
                 if ($this->admin)
-                    $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", array("hotoverridetext" => $b, "hotoverridesubmit" => "revive")), "(admin only)");
+                    $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", array("data-override-text" => $b, "data-override-submit" => "revive")), "(admin only)");
             }
             return array($b);
         }
@@ -1719,7 +1719,7 @@ class PaperTable {
             if (!$whyNot)
                 $buttons[] = array(Ht::submit($updater, "Save changes", array("class" => "bb")), "");
             else if ($this->admin)
-                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("hotoverridetext" => whyNotText($whyNot, $prow ? "update" : "register"), "hotoverridesubmit" => $updater)), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("data-override-text" => whyNotText($whyNot, $prow ? "update" : "register"), "data-override-submit" => $updater)), "(admin only)");
             else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
             else if ($Conf->timeFinalizePaper($prow))

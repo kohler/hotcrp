@@ -170,8 +170,8 @@ class ReviewField {
     }
 
     public function web_abbreviation() {
-        return '<span class="hottooltip" hottooltip="' . $this->name_html
-            . '" hottooltipdir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
+        return '<span class="hottooltip" data-hottooltip="' . $this->name_html
+            . '" data-hottooltip-dir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
     }
 
     public function value_class($value) {
@@ -210,7 +210,7 @@ class ReviewField {
         $attr = "";
         if ($scclass & self::VALUE_TOOLTIP) {
             $klass .= " hottooltip";
-            $attr = ' hottooltip="' . htmlspecialchars($this->options[$value]) . '" hottooltipdir="l"';
+            $attr = ' data-hottooltip="' . htmlspecialchars($this->options[$value]) . '" data-hottooltip-dir="l"';
         }
         return "<span class=\"$klass\"$attr>$x</span>";
     }
@@ -1307,7 +1307,7 @@ $blind\n";
             }
         $t = str_replace("|", "", $pl) . commajoin($a);
         if (count($pids) > 1)
-            $t = '<span class="has_hotcrp_list" hotcrp_list="p/s/' . join("+", $pids) . '">' . $t . '</span>';
+            $t = '<span class="has_hotcrp_list" data-hotcrp-list="p/s/' . join("+", $pids) . '">' . $t . '</span>';
         return $t;
     }
 
@@ -1392,7 +1392,7 @@ $blind\n";
                 $n = preg_replace("/\\s+/", "&nbsp;", $n);
 
             if ($f->has_options || $f->description) {
-                $c = '<div class="revfn hottooltip" hottooltipdir="l" hottooltipcontent="#scorehelp_' . $field . '">' . $n . '</div>';
+                $c = '<div class="revfn hottooltip" data-hottooltip-dir="l" data-hottooltip-content-selector="#scorehelp_' . $field . '">' . $n . '</div>';
                 if (!isset($scoreHelps[$field])) {
                     $scoreHelps[$field] = true;
                     $help = '<div id="scorehelp_' . $field . '" style="display:none">';
@@ -1568,10 +1568,10 @@ $blind\n";
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
             if (!$submitted) {
-                $buttons[] = array(Ht::js_button("Submit review", "override_deadlines(this)", array("class" => "bb", "hotoverridetext" => $override_text, "hotoverridesubmit" => "submitreview")), "(admin only)");
-                $buttons[] = array(Ht::js_button("Save as draft", "override_deadlines(this)", array("hotoverridetext" => $override_text, "hotoverridesubmit" => "savedraft")), "(admin only)");
+                $buttons[] = array(Ht::js_button("Submit review", "override_deadlines(this)", array("class" => "bb", "data-override-text" => $override_text, "data-override-submit" => "submitreview")), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save as draft", "override_deadlines(this)", array("data-override-text" => $override_text, "data-override-submit" => "savedraft")), "(admin only)");
             } else
-                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("class" => "bb", "hotoverridetext" => $override_text, "hotoverridesubmit" => "submitreview")), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("class" => "bb", "data-override-text" => $override_text, "data-override-submit" => "submitreview")), "(admin only)");
         } else if (!$submitted) {
             $buttons[] = Ht::submit("submitreview", "Submit review", array("class" => "bb"));
             $buttons[] = Ht::submit("savedraft", "Save as draft");

@@ -182,7 +182,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 else if ($rr->$fid) {
                     if (!@$score_header[$fid])
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore rs_' . $fid . ' hottooltip" hottooltip="' . htmlspecialchars($f->value_description($rr->$fid)) . '" hottooltipdir="l" hottooltipnear=">span">'
+                    $scores[$fid] = '<td class="revscore rs_' . $fid . ' hottooltip" data-hottooltip="' . htmlspecialchars($f->value_description($rr->$fid)) . '" data-hottooltip-dir="l" data-hottooltip-near=">span">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 } else if (@$score_header[$fid] === null)
@@ -266,7 +266,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         if ($score_header_text)
             $t .= " reviewers_scores";
         if ($CurrentList)
-            $t .= " has_hotcrp_list\" hotcrp_list=\"$CurrentList";
+            $t .= " has_hotcrp_list\" data-hotcrp-list=\"$CurrentList";
         $t .= "\">\n";
         if ($score_header_text)
             $t .= '<tr><td class="empty" colspan="2"></td>'
@@ -438,7 +438,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     if (($CurrentList = $saved_list) && ($pret || $t))
-        return '<div class="has_hotcrp_list" hotcrp_list="' . $CurrentList . '">'
+        return '<div class="has_hotcrp_list" data-hotcrp-list="' . $CurrentList . '">'
             . $pret . $t . '</div>';
     else
         return $pret . $t;

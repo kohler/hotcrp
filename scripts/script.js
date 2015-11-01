@@ -589,8 +589,8 @@ function hoturl_absolute_base() {
 function rangeclick(evt, elt, kind) {
     elt = elt || this;
     var jelt = jQuery(elt), jform = jelt.closest("form"), kindsearch;
-    if ((kind = kind || jelt.attr("rangetype")))
-        kindsearch = "[rangetype~='" + kind + "']";
+    if ((kind = kind || jelt.attr("data-range-type")))
+        kindsearch = "[data-range-type~='" + kind + "']";
     else
         kindsearch = "[name='" + elt.name + "']";
     var cbs = jform.find("input[type=checkbox]" + kindsearch);
@@ -931,7 +931,8 @@ function tooltip(elt) {
             return $();
     }
 
-    var content = j.attr("hottooltip") || jqnear("hottooltipcontent").html();
+    var content = j.attr("data-hottooltip") ||
+        jqnear("data-hottooltip-content-selector").html();
     if (!content)
         return null;
 
@@ -942,7 +943,7 @@ function tooltip(elt) {
             return tt;
     }
 
-    var dir = j.attr("hottooltipdir") || "v",
+    var dir = j.attr("data-hottooltip-dir") || "v",
         bub = make_bubble(content, {color: "tooltip", dir: dir}),
         to = null, refcount = 0;
     function erase() {
@@ -958,7 +959,7 @@ function tooltip(elt) {
             ++refcount;
         },
         exit: function () {
-            var delay = j.attr("hottooltiptype") == "focus" ? 0 : 200;
+            var delay = j.attr("data-hottooltip-type") == "focus" ? 0 : 200;
             to = clearTimeout(to);
             if (--refcount == 0)
                 to = setTimeout(erase, delay);
@@ -966,7 +967,7 @@ function tooltip(elt) {
         erase: erase, elt: elt, content: content
     };
     j.data("hotcrp_tooltip", tt);
-    near = jqnear("hottooltipnear")[0] || elt;
+    near = jqnear("data-hottooltip-near")[0] || elt;
     bub.near(near).hover(tt.enter, tt.exit);
     return window.global_tooltip = tt;
 }
@@ -988,7 +989,7 @@ function tooltip_leave(evt) {
 
 function add_tooltip() {
     var j = jQuery(this);
-    if (j.attr("hottooltiptype") == "focus")
+    if (j.attr("data-hottooltip-type") == "focus")
         j.on("focus", tooltip_enter).on("blur", tooltip_leave);
     else
         j.hover(tooltip_enter, tooltip_leave);
@@ -1197,10 +1198,10 @@ function display_tracker() {
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
             e.className = "btn btn-danger hottooltip";
-            e.setAttribute("hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
+            e.setAttribute("data-hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
         } else {
             e.className = "btn btn-default hottooltip";
-            e.setAttribute("hottooltip", "Start meeting tracker");
+            e.setAttribute("data-hottooltip", "Start meeting tracker");
         }
     }
 
@@ -1240,8 +1241,8 @@ function display_tracker() {
         mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
 
     if (dl.is_admin) {
-        t += '<div class="hottooltip" id="trackerlogo" hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
-        t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" hottooltip="Stop meeting tracker">x</a></div>';
+        t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
+        t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="trackerlogo"></div>';
     if (dl.tracker && dl.tracker.position_at)
@@ -1952,7 +1953,7 @@ author_change.delta = function (e, delta) {
         else if (!sib) {
             if ((sib = tr.previousSibling)) {
                 $(tr).remove();
-                if ($(sib).siblings().first().is("[hotautemplate]"))
+                if ($(sib).siblings().first().is("[data-hotautemplate]"))
                     $(sib).find("input").each(function () {author_change(this);});
             }
             break;
@@ -3518,7 +3519,7 @@ function popup(anchor, which, dofold, populate) {
 function override_deadlines(elt, callback) {
     var ejq = jQuery(elt);
     var djq = jQuery('<div class="popupo"><p>'
-                     + (ejq.attr("hotoverridetext") || "")
+                     + (ejq.attr("data-override-text") || "")
                      + " Are you sure you want to override the deadline?</p>"
                      + '<form><div class="popup_actions">'
                      + '<button type="button" name="cancel">Cancel</button>'
@@ -3532,7 +3533,7 @@ function override_deadlines(elt, callback) {
             callback();
         else {
             var fjq = ejq.closest("form");
-            fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("hotoverridesubmit") + '" value="1" /><input type="hidden" name="override" value="1" />');
+            fjq.children("div").first().append('<input type="hidden" name="' + ejq.attr("data-override-submit") + '" value="1" /><input type="hidden" name="override" value="1" />');
             fjq[0].submit();
         }
         djq.remove();
@@ -3891,9 +3892,9 @@ save_tags.success = function (data) {
         jQuery("#foldtags .psv .fn").prepend(data.response);
     if (!jQuery("#foldtags textarea").is(":visible"))
         jQuery("#foldtags textarea").val(data.tags_edit_text);
-    jQuery(".has_hotcrp_tag_indexof").each(function () {
+    jQuery(".is-tag-index").each(function () {
         var j = jQuery(this), res = "",
-            t = j.attr("hotcrp_tag_indexof") + "#", i;
+            t = j.attr("data-tag-base") + "#", i;
         if (t.charAt(0) == "~" && t.charAt(1) != "~")
             t = hotcrp_user.cid + t;
         for (i = 0; i != data.tags.length; ++i)
@@ -3934,7 +3935,7 @@ function add_list() {
     var j = $(this), href = j.attr("href"), prefix = siteurl + "paper/", $hl, ls;
     if (href && href.substring(0, prefix.length) === prefix
         && ($hl = j.closest(".has_hotcrp_list")).length
-        && (ls = $hl.attr("hotcrp_list")))
+        && (ls = $hl.attr("data-hotcrp-list")))
         set_cookie(ls);
     return true;
 }
@@ -3969,7 +3970,7 @@ jQuery(".hotradiorelation input, .hotradiorelation select").on("click keypress",
 
 
 function save_tag_index(e) {
-    var j = jQuery(e).closest("form"), tag = j.attr("hotcrp_tag"),
+    var j = jQuery(e).closest("form"), tag = j.attr("data-tag-base"),
         indexelt = j.find("input[name='tagindex']"), index = "";
     if (indexelt.is("input[type='checkbox']"))
         index = indexelt.is(":checked") ? indexelt.val() : "";
