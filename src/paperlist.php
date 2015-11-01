@@ -784,13 +784,13 @@ class PaperList {
             $rstate->foldinfo["wholerow"] = true;
         }
 
-        $tb = "  <tr class=\"pl $trclass\" hotcrpid=\"$row->paperId\" hotcrptitlehint=\"" . htmlspecialchars(titleWords($row->title, 60));
+        $tb = "  <tr class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(titleWords($row->title, 60));
         if ($this->_row_id_pattern)
             $tb .= "\" id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern);
         $t = $tb . "\">\n" . $t . "  </tr>\n";
 
         if ($tt !== "") {
-            $t .= "  <tr class=\"plx $trclass\" hotcrpid=\"$row->paperId\">";
+            $t .= "  <tr class=\"plx $trclass\" data-pid=\"$row->paperId\">";
             if ($rstate->skipcallout > 0)
                 $t .= "<td colspan=\"$rstate->skipcallout\"></td>";
             $t .= "<td class=\"plx\" colspan=\"" . ($rstate->ncol - $rstate->skipcallout) . "\">$tt</td></tr>\n";

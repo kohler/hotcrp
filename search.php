@@ -1221,7 +1221,7 @@ if (isset($_REQUEST["q"])) {
             $pl->papersel[$pid] = 1;
     }
     $pl_text = $pl->table_html($Search->limitName, array("class" => "pltable_full",
-                           "attributes" => array("hotcrp_foldsession" => 'pldisplay.$')));
+                           "attributes" => array("data-fold-session" => 'pldisplay.$')));
     $pldisplay = $pl->display;
 } else
     $pl = null;

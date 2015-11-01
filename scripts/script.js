@@ -1599,7 +1599,7 @@ function fold(elt, dofold, foldtype) {
     }
 
     // check for session
-    if ((opentxt = elt.getAttribute("hotcrp_foldsession")))
+    if ((opentxt = elt.getAttribute("data-fold-session")))
         jQuery.get(hoturl("sessionvar", "j=1&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
 
     return false;
@@ -1608,7 +1608,7 @@ function fold(elt, dofold, foldtype) {
 function foldup(e, event, opts) {
     var dofold = false, attr, m, foldnum;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
-           && (!e.getAttribute || !e.getAttribute("hotcrp_fold")))
+           && (!e.getAttribute || !e.getAttribute("data-fold")))
         e = e.parentNode;
     if (!e)
         return true;
@@ -1627,7 +1627,7 @@ function foldup(e, event, opts) {
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);
-    if ((attr = e.getAttribute(dofold ? "onfold" : "onunfold")))
+    if ((attr = e.getAttribute(dofold ? "data-onfold" : "data-onunfold")))
         (new Function("foldnum", attr)).call(e, opts);
     return m;
 }
@@ -2806,7 +2806,7 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
                     escape_entities(t.substring(str.length));
             else
                 t = escape_entities(t);
-            res.push('<div class="autocomplete" autocomplete="' +
+            res.push('<div class="autocomplete" data-autocomplete="' +
                      tt.substring(str.length).replace(/\"/g, "&quot;") + '">' + pfx + t + '</div>');
             interesting = interesting || str !== tt;
         }
@@ -2856,7 +2856,7 @@ function taghelp(elt, klass, cleanf) {
     function docomplete($ac) {
         var common = null, attr, i, j, start, text;
         for (i = 0; i != $ac.length; ++i) {
-            attr = $ac[i].getAttribute("autocomplete");
+            attr = $ac[i].getAttribute("data-autocomplete");
             if (common === null)
                 common = attr;
             else {
@@ -3112,8 +3112,8 @@ function PaperRow(l, r, index) {
             this.tagvalue = parse_tagvalue(inputs[i].value);
             break;
         }
-    this.id = rows[l].getAttribute("hotcrpid");
-    if ((i = rows[l].getAttribute("hotcrptitlehint")))
+    this.id = rows[l].getAttribute("data-pid");
+    if ((i = rows[l].getAttribute("data-title-hint")))
         this.titlehint = i;
 }
 PaperRow.prototype.top = function () {
@@ -3429,7 +3429,7 @@ return function (active_dragtag) {
             if (elt.name.substr(0, 5 + dragtag.length) == "tag:" + dragtag + " ") {
                 var x = document.createElement("span"), id = elt.name.substr(5 + dragtag.length);
                 x.className = "dragtaghandle";
-                x.setAttribute("hotcrpid", id);
+                x.setAttribute("data-pid", id);
                 x.setAttribute("title", "Drag to change order");
                 elt.parentElement.insertBefore(x, elt.nextSibling);
                 x.onmousedown = tag_mousedown;

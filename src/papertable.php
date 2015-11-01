@@ -1348,7 +1348,7 @@ class PaperTable {
         $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") === "tags");
 
         $this->_papstripBegin("tags", !$unfolded,
-                              array("onunfold" => "Miniajax.submit('tagreportform')"));
+                              array("data-onunfold" => "Miniajax.submit('tagreportform')"));
         $color = TagInfo::color_classes($viewable);
         echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">';
 

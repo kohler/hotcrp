@@ -783,7 +783,7 @@ class ContactList {
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
         if ($foldclasses && $foldsession)
-            $x .= "\" hotcrp_foldsession=\"$foldsession";
+            $x .= "\" data-fold-session=\"$foldsession";
         $x .= "\">\n";
 
         if ($this->showHeader) {

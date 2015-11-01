@@ -196,7 +196,7 @@ $search = new PaperSearch($Me, array("t" => "rable",
 $pl = new PaperList($search, array("sort" => true, "list" => true, "foldtype" => "pf", "reviewer" => $reviewer_contact));
 $pl_text = $pl->table_html("editReviewPreference",
                 array("class" => "pltable_full",
-                      "attributes" => array("hotcrp_foldsession" => "pfdisplay.$"),
+                      "attributes" => array("data-fold-session" => "pfdisplay.$"),
                       "footer_extra" => "<div id='plactr'>" . Ht::submit("update", "Save changes", array("class" => "hb")) . "</div>"));
 SessionList::change($pl->listNumber, array("revprefs" => true));
 

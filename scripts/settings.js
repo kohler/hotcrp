@@ -216,7 +216,7 @@ function fill_field(fid, fieldj) {
 
 function remove() {
     var $f = $(this).closest(".settings_revfield"),
-        fid = $f.attr("hotcrp_revfield");
+        fid = $f.attr("data-revfield");
     $f.find(".revfield_order").val(0);
     $f.detach().hide().appendTo("#reviewform_removedcontainer");
     check_change(fid);
@@ -232,7 +232,7 @@ function samples_change() {
         fill_field(this, samples[val]);
 }
 
-var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain fold2c errloc_$" hotcrp_revfield="$" hotcrp_fold="1">\
+var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain fold2c errloc_$" data-revfield="$" data-fold="true">\
 <div id="revfieldpos_$" class="settings_revfieldpos"></div>\
 <div id="revfieldview_$" class="settings_revfieldview fn2"></div>\
 <div id="revfieldedit_$" class="settings_revfieldedit fx2">\
@@ -348,7 +348,7 @@ function create_field_view(fid, fieldj) {
 function move_field(event) {
     var isup = $(this).hasClass("revfield_moveup"),
         $f = $(this).closest(".settings_revfield").detach(),
-        fid = $f.attr("hotcrp_revfield"),
+        fid = $f.attr("data-revfield"),
         pos = $f.find(".revfield_order").val() | 0,
         $c = $("#reviewform_container")[0], $n, i;
     for (i = 1, $n = $c.firstChild;
@@ -463,7 +463,7 @@ rfs.add = function (has_options, fid) {
     // prefer recently removed fields
     var $c = $("#reviewform_removedcontainer")[0], $n, x = [], i;
     for (i = 0, $n = $c.firstChild; $n; ++i, $n = $n.nextSibling)
-        x.push([$n.getAttribute("hotcrp_revfield"), i]);
+        x.push([$n.getAttribute("data-revfield"), i]);
     // otherwise prefer fields that have ever been defined
     for (fid in fieldmap)
         if ($.inArray(fid, fieldorder) < 0)
