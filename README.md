@@ -249,6 +249,13 @@ Each conference needs its own database. Create one using the
 Also, make sure Apache uses the HotCRP install directory for all
 relevant URLs.
 
+For apache installations, `mod_rewrite` must be configured to serve
+each conference path from the HotCRP subdirectory, or additional `Alias`
+lines must to be added to `httpd.conf` e.g.
+
+        Alias /conference1 /home/kohler/hotcrp
+        Alias /conference2 /home/kohler/hotcrp
+
 You can also set $Opt["multiconferenceAnalyzer"] to a regular
 expression, a space, and a replacement pattern. HotCRP matches the
 full input URL to the regex, then uses the replacement pattern as the
