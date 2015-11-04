@@ -155,6 +155,7 @@ class ZipDocument {
                 header("Content-Length: " . filesize($result));
             // flush all output buffers to avoid holding large files in memory
             DocumentHelper::hyperflush();
+            set_time_limit(180); // large zip files might download slowly
             readfile($result);
             $result = (object) array("error" => false);
         }
@@ -386,7 +387,7 @@ class DocumentHelper {
     }
 
     static function upload($docclass, $upload, $docinfo) {
-        global $Conf, $Opt, $OK;
+        global $Conf, $Opt;
         if (is_object($upload)) {
             $doc = clone $upload;
             self::prepare_content($docclass, $doc);
