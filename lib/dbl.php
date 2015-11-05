@@ -75,7 +75,9 @@ class Dbl {
             $dblink = new mysqli($dbhost, $dbuser, $dbpass);
 
         if ($dblink && !mysqli_connect_errno() && $dblink->select_db($dbname)) {
-            $dblink->set_charset("utf8");
+            // We send binary strings to MySQL, so we don't want warnings
+            // about non-UTF-8 data
+            $dblink->set_charset("binary");
             // The necessity of the following line is explosively terrible
             // (the default is 1024/!?))(U#*@$%&!U
             $dblink->query("set group_concat_max_len=4294967295");
