@@ -8,7 +8,7 @@ CREATE TABLE `ActionLog` (
   `contactId` int(11) NOT NULL,
   `paperId` int(11) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `ipaddr` varchar(16) DEFAULT NULL,
+  `ipaddr` varbinary(32) DEFAULT NULL,
   `action` varbinary(4096) NOT NULL,
   PRIMARY KEY (`logId`),
   UNIQUE KEY `logId` (`logId`),
@@ -100,9 +100,9 @@ CREATE TABLE `Formula` (
 DROP TABLE IF EXISTS `MailLog`;
 CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL AUTO_INCREMENT,
-  `recipients` varchar(200) NOT NULL,
-  `q` varchar(4096) DEFAULT NULL,
-  `t` varchar(200) DEFAULT NULL,
+  `recipients` varbinary(200) NOT NULL,
+  `q` varbinary(4096) DEFAULT NULL,
+  `t` varbinary(200) DEFAULT NULL,
   `paperIds` text,
   `cc` text,
   `replyto` text,
@@ -138,7 +138,7 @@ CREATE TABLE `Paper` (
   `capVersion` int(1) NOT NULL DEFAULT '0',
   # next 3 fields copied from PaperStorage to reduce joins
   `size` int(11) NOT NULL DEFAULT '0',
-  `mimetype` varchar(80) NOT NULL DEFAULT '',
+  `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `timestamp` int(11) NOT NULL DEFAULT '0',
   `withdrawReason` varbinary(1024) DEFAULT NULL,
   PRIMARY KEY (`paperId`),
@@ -359,13 +359,13 @@ CREATE TABLE `PaperStorage` (
   `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `paperId` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL,
-  `mimetype` varchar(80) NOT NULL DEFAULT '',
+  `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `paper` longblob,
   `compression` tinyint(1) NOT NULL DEFAULT '0',
   `sha1` varbinary(20) NOT NULL DEFAULT '',
   `documentType` int(3) NOT NULL DEFAULT '0',
-  `filename` varchar(255) DEFAULT NULL,
-  `infoJson` varchar(255) DEFAULT NULL,
+  `filename` varbinary(255) DEFAULT NULL,
+  `infoJson` varbinary(8192) DEFAULT NULL,
   `size` bigint(11) DEFAULT NULL,
   `filterType` int(3) DEFAULT NULL,
   `originalStorageId` int(11) DEFAULT NULL,
@@ -496,7 +496,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 101);
+insert into Settings (name, value) values ('allowPaperOption', 102);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

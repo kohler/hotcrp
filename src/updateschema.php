@@ -750,4 +750,14 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table TopicArea ENGINE=InnoDB")
         && $Conf->ql("alter table TopicInterest ENGINE=InnoDB"))
         update_schema_version($Conf, 101);
+    if ($Conf->settings["allowPaperOption"] == 101
+        && $Conf->ql("alter table ActionLog modify `ipaddr` varbinary(32) DEFAULT NULL")
+        && $Conf->ql("alter table MailLog modify `recipients` varbinary(200) NOT NULL")
+        && $Conf->ql("alter table MailLog modify `q` varbinary(4096) DEFAULT NULL")
+        && $Conf->ql("alter table MailLog modify `t` varbinary(200) DEFAULT NULL")
+        && $Conf->ql("alter table Paper modify `mimetype` varbinary(80) NOT NULL DEFAULT ''")
+        && $Conf->ql("alter table PaperStorage modify `mimetype` varbinary(80) NOT NULL DEFAULT ''")
+        && $Conf->ql("alter table PaperStorage modify `filename` varbinary(255) DEFAULT NULL")
+        && $Conf->ql("alter table PaperStorage modify `infoJson` varbinary(8192) DEFAULT NULL"))
+        update_schema_version($Conf, 102);
 }
