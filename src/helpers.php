@@ -521,7 +521,7 @@ class SessionList {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
         $l = @$lists[$idx];
-        if ($l && $l->cid == ($Me ? $Me->contactId : 0) && !$replace)
+        if ($l && @$l->cid == ($Me ? $Me->contactId : 0) && !$replace)
             $l = clone $l;
         else
             $l = (object) array();
@@ -547,8 +547,9 @@ class SessionList {
                 return $i;
             else if (!$empty)
                 $empty = $i;
-        $Conf->save_session_array("l", $empty ? : $oldest, (object) array());
-        return $empty ? : $oldest;
+        $idx = $empty ? : $oldest;
+        $Conf->save_session_array("l", $idx, (object) array("cid" => $cid));
+        return $idx;
     }
     static function create($listid, $ids, $description, $url) {
         global $Me, $Now;
