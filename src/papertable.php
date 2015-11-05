@@ -32,7 +32,7 @@ class PaperTable {
 
     static private $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5, "collaborators" => 5);
 
-    function __construct($prow) {
+    function __construct($prow, $mode = null) {
         global $Conf, $Me;
 
         $this->prow = $prow;
@@ -65,7 +65,8 @@ class PaperTable {
             || $Me->allow_administer($prow))
             $ms["assign"] = true;
         $ms["api"] = true;
-        $mode = @$_REQUEST["m"] ? : @$_REQUEST["mode"];
+        if (!$mode)
+            $mode = @$_REQUEST["m"] ? : @$_REQUEST["mode"];
         if ($mode === "pe")
             $mode = "edit";
         else if ($mode === "view" || $mode === "r")

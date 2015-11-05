@@ -454,8 +454,7 @@ if (isset($_REQUEST["settags"]) && check_post()) {
 
 
 // paper table
-$paperTable = new PaperTable($prow);
-$paperTable->mode = "assign";
+$paperTable = new PaperTable($prow, "assign");
 $paperTable->initialize(false, false);
 
 confHeader();
