@@ -363,6 +363,14 @@ class Dbl {
         }
         self::$log_queries = false;
     }
+
+    static function utf8ci(/* [$dblink,] $qstr */) {
+        $args = func_get_args();
+        $dblink = count($args) > 1 ? $args[0] : self::$default_dblink;
+        $utf8 = $dblink->server_version >= 50503 ? "utf8mb4" : "utf8";
+        $qstr = count($args) > 1 ? $args[1] : $args[0];
+        return "_" . $utf8 . $qstr . " collate " . $utf8 . "_general_ci";
+    }
 }
 
 // number of rows returned by a select query, or 'false' if result is an error

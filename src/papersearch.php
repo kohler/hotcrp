@@ -1348,7 +1348,7 @@ class PaperSearch {
             else if ($word === "none")
                 $value = "$field=''";
             else
-                $value = "$field like '%" . sqlq_for_like($word) . "%'";
+                $value = "$field like " . Dbl::utf8ci("'%" . sqlq_for_like($word) . "%'");
         }
 
         $value = new ReviewSearchMatcher($countexpr, $contacts, $value, $f->view_score);
@@ -2439,7 +2439,7 @@ class PaperSearch {
         else {
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
-            $q[] = "convert(Paper.$field using utf8) like '%$v%'";
+            $q[] = "Paper.$field like " . Dbl::utf8ci("'%$v%'");
             $f[] = "(" . join(" and ", $q) . ")";
         }
         $t->link = $field;
@@ -2702,7 +2702,7 @@ class PaperSearch {
             if ($t->value->tag === "any")
                 $match = "is not null";
             else
-                $match = "like '% " . sqlq($t->value->tag) . " %'";
+                $match = "like " . Dbl::utf8ci("'% " . sqlq($t->value->tag) . " %'");
             $f[] = $this->_clauseTermSetComments($thistab, "commentTags $match", $t, $sqi);
         } else if ($tt === "pn") {
             $q = array();

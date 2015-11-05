@@ -75,7 +75,7 @@ if ($_REQUEST["acct"]) {
         $result = Dbl::qe("select contactId, email from ContactInfo where contactId ?a", $ids);
         while (($row = edb_row($result))) {
             $where[] = "contactId=$row[0]";
-            $where[] = "action like _utf8'% " . sqlq_for_like($row[1]) . "%' collate utf8_general_ci";
+            $where[] = "action like " . Dbl::utf8ci("'% " . sqlq_for_like($row[1]) . "%'");
         }
     }
     if (count($where))
@@ -91,7 +91,7 @@ if (($str = $_REQUEST["q"])) {
     while (($str = ltrim($str)) != "") {
         preg_match('/^("[^"]+"?|[^"\s]+)/s', $str, $m);
         $str = substr($str, strlen($m[0]));
-        $where[] = "action like _utf8'%" . sqlq_for_like($m[0]) . "%' collate utf8_general_ci";
+        $where[] = "action like " . Dbl::utf8ci("'%" . sqlq_for_like($m[0]) . "%'");
     }
     $wheres[] = "(" . join(" or ", $where) . ")";
 }
