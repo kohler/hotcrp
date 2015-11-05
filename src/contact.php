@@ -820,7 +820,7 @@ class Contact {
 
     static function email_authored_papers($email, $reg) {
         $aupapers = array();
-        $result = Dbl::q("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($email) . "\t%'");
+        $result = Dbl::q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($email) . "\t%'"));
         while (($row = edb_orow($result))) {
             cleanAuthor($row);
             foreach ($row->authorTable as $au)

@@ -647,7 +647,7 @@ class ContactList {
         // PC tags
         $queryOptions = array();
         if (substr($listname, 0, 3) == "pc:") {
-            $queryOptions["where"] = "(u.contactTags like '% " . sqlq_for_like(substr($listname, 3)) . " %')";
+            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 3)) . " %'") . ")";
             $listname = "pc";
         }
 
@@ -846,7 +846,7 @@ class ContactList {
         // PC tags
         $queryOptions = array();
         if (substr($listname, 0, 3) == "pc:") {
-            $queryOptions["where"] = "(u.contactTags like '% " . sqlq_for_like(substr($listname, 3)) . " %')";
+            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 3)) . " %'") . ")";
             $listname = "pc";
         }
 

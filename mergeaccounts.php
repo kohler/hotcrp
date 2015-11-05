@@ -65,7 +65,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
             crpmergeone("Paper", "managerContactId", $oldid, $newid);
 
             // paper authorship
-            $result = $Conf->qe("select paperId, authorInformation from Paper where authorInformation like '%\t" . sqlq_for_like($MiniMe->email) . "\t%'");
+            $result = $Conf->qe("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($MiniMe->email) . "\t%'"));
             $qs = array();
             while (($row = edb_row($result))) {
                 $row[1] = str_ireplace("\t" . $MiniMe->email . "\t", "\t" . $Me->email . "\t", $row[1]);
