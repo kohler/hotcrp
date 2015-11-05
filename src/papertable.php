@@ -2268,13 +2268,14 @@ class PaperTable {
                 // preserve current list
                 if (@$pl->matchPreg)
                     $Conf->save_session("temp_matchPreg", $pl->matchPreg);
+                $pl = $curpl;
             } else {
                 // make new list
-                $listno = SessionList::allocate($pl->listid);
-                SessionList::change($listno, $pl);
+                $pl->listno = SessionList::allocate($pl->listid);
+                SessionList::change($pl->listno, $pl, true);
             }
             unset($_REQUEST["ls"]);
-            setcookie("hotcrp_ls", $listno, $Now + 2);
+            setcookie("hotcrp_ls", $pl->listno, $Now + 2);
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;

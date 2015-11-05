@@ -516,11 +516,11 @@ class SessionList {
         } else
             return null;
     }
-    static function change($idx, $delta) {
+    static function change($idx, $delta, $replace = false) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
         $l = @$lists[$idx];
-        if ($l && $l->cid == ($Me ? $Me->contactId : 0))
+        if ($l && $l->cid == ($Me ? $Me->contactId : 0) && !$replace)
             $l = clone $l;
         else
             $l = (object) array();
@@ -546,7 +546,8 @@ class SessionList {
                 return $i;
             else if (!$empty)
                 $empty = $i;
-        return $empty ? $empty : $oldest;
+        $Conf->save_session_array("l", $empty ? : $oldest, (object) array());
+        return $empty ? : $oldest;
     }
     static function create($listid, $ids, $description, $url) {
         global $Me, $Now;
@@ -642,9 +643,9 @@ class SessionList {
             $list = null;
 
         // save list changes
-        if ($list && !$listno) {
-            $listno = self::allocate($list->listid);
-            self::change($listno, $list);
+        if ($list && !@$list->listno) {
+            $list->listno = self::allocate($list->listid);
+            self::change($list->listno, $list, true);
         }
         if ($list) {
             self::change($listno, ["timestamp" => $Now]);
