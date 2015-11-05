@@ -2261,8 +2261,9 @@ class PaperTable {
             $pl = $search->session_list_object();
             $_REQUEST["paperId"] = $_REQUEST["p"] = $pl->ids[0];
             // check if the paper is in the current list
-            if (@($listno = $_REQUEST["ls"])
-                && ($curpl = SessionList::lookup($listno))
+            if (($curpl = SessionList::requested())
+                && @$curpl->listno
+                && str_starts_with($curpl->listid, "p")
                 && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
                 && array_search($pl->ids[0], $curpl->ids) !== false) {
                 // preserve current list
