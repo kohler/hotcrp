@@ -662,7 +662,7 @@ class SessionList {
             self::change($list->listno, $list, true);
         }
         if ($list) {
-            self::change($listno, ["timestamp" => $Now]);
+            self::change($list->listno, ["timestamp" => $Now]);
             $list->id_position = $k;
         }
         self::$active_listid = $listid;
