@@ -106,8 +106,7 @@ class PaperTable {
 
         $this->matchPreg = array();
         $matcher = array();
-        if ($CurrentList > 0 && @($l = SessionList::lookup($CurrentList))
-            && @$l->matchPreg)
+        if (($l = SessionList::active()) && @$l->matchPreg)
             $matcher = self::_combine_match_preg($matcher, $l->matchPreg);
         if (($mpreg = $Conf->session("temp_matchPreg"))) {
             $matcher = self::_combine_match_preg($matcher, $mpreg);
@@ -131,12 +130,12 @@ class PaperTable {
     }
 
     static public function do_header($paperTable, $id, $action_mode) {
-        global $Conf, $CurrentList, $Me;
+        global $Conf, $Me;
         $prow = $paperTable ? $paperTable->prow : null;
 
         $t = '<div id="header_page" class="header_page_submission';
-        if ($prow && $paperTable && $CurrentList)
-            $t .= ' has_hotcrp_list" data-hotcrp-list="' . $CurrentList;
+        if ($prow && $paperTable && ($list = SessionList::active()))
+            $t .= ' has_hotcrp_list" data-hotcrp-list="' . $list->listno;
         $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {
@@ -1417,7 +1416,7 @@ class PaperTable {
     }
 
     function papstripReviewPreference() {
-        global $Conf, $CurrentList;
+        global $Conf;
         $this->_papstripBegin();
         echo $this->papt("revpref", "Review preference", array("type" => "ps")),
             "<div class='psv'>",
@@ -1432,8 +1431,7 @@ class PaperTable {
             " <span id='revprefformresult'></span>",
             "</div></form></div></div>\n";
         $Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
-        if ($CurrentList && ($l = SessionList::lookup($CurrentList))
-            && @$l->revprefs && $this->mode === "p")
+        if (($l = SessionList::active()) && @$l->revprefs && $this->mode === "p")
             $Conf->footerScript("crpfocus('revprefform',null,3)");
     }
 

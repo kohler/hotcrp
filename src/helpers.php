@@ -273,7 +273,7 @@ function fileUploaded(&$var) {
 }
 
 function selfHref($extra = array(), $options = null) {
-    global $CurrentList, $Opt;
+    global $Opt;
     // clean parameters from pathinfo URLs
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
         if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
@@ -287,8 +287,9 @@ function selfHref($extra = array(), $options = null) {
     foreach ($extra as $key => $value)
         if ($key != "anchor" && $value !== null)
             $param .= "&$key=" . urlencode($value);
-    if ($CurrentList && !isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra))
-        $param .= "&ls=" . $CurrentList;
+    if (!isset($_REQUEST["ls"]) && !array_key_exists("ls", $extra)
+        && ($list = SessionList::active()))
+        $param .= "&ls=" . $list->listno;
 
     $param = $param ? substr($param, 1) : "";
     if (!$options || !@$options["site_relative"])
@@ -500,6 +501,8 @@ function decorateNumber($n) {
 
 
 class SessionList {
+    static private $active_listid = null;
+    static private $active_list = null;
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
@@ -508,6 +511,7 @@ class SessionList {
             $l = clone $l;
             if (is_string(@$l->ids))
                 $l->ids = json_decode($l->ids);
+            $l->listno = (int) $idx;
             return $l;
         } else
             return null;
@@ -551,31 +555,104 @@ class SessionList {
                               "url" => $url, "timestamp" => $Now,
                               "cid" => $Me ? $Me->contactId : 0);
     }
-}
-
-function _tryNewList($opt, $listtype, $sort = null) {
-    global $Conf, $Me;
-    if ($listtype == "u" && $Me->privChair) {
-        $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
-        $q = "select contactId from ContactInfo";
-        if ($searchtype == "pc")
-            $q .= " where (roles&" . Contact::ROLE_PC . ")!=0";
-        $result = Dbl::ql("$q order by lastName, firstName, email");
-        $a = array();
-        while (($row = edb_row($result)))
-            $a[] = (int) $row[0];
-        Dbl::free($result);
-        return SessionList::create("u/" . $searchtype, $a,
-                                   ($searchtype == "pc" ? "Program committee" : "Users"),
-                                   hoturl_site_relative_raw("users", "t=$searchtype"));
-    } else {
-        $search = new PaperSearch($Me, $opt);
-        $x = $search->session_list_object($sort);
-        if ($sort || $search->has_sort()) {
-            $pl = new PaperList($search, array("sort" => $sort));
-            $x->ids = $pl->id_array();
+    static private function try_list($opt, $listtype, $sort = null) {
+        global $Conf, $Me;
+        if ($listtype == "u" && $Me->privChair) {
+            $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
+            $q = "select contactId from ContactInfo";
+            if ($searchtype == "pc")
+                $q .= " where (roles&" . Contact::ROLE_PC . ")!=0";
+            $result = Dbl::ql("$q order by lastName, firstName, email");
+            $a = array();
+            while (($row = edb_row($result)))
+                $a[] = (int) $row[0];
+            Dbl::free($result);
+            return self::create("u/" . $searchtype, $a,
+                                ($searchtype == "pc" ? "Program committee" : "Users"),
+                                hoturl_site_relative_raw("users", "t=$searchtype"));
+        } else {
+            $search = new PaperSearch($Me, $opt);
+            $x = $search->session_list_object($sort);
+            if ($sort || $search->has_sort()) {
+                $pl = new PaperList($search, array("sort" => $sort));
+                $x->ids = $pl->id_array();
+            }
+            return $x;
         }
-        return $x;
+    }
+    static public function active($listtype = null, $id = null) {
+        global $CurrentProw, $Me, $Now;
+
+        // check current-list cache
+        if (!$listtype && self::$active_list)
+            return self::$active_list;
+        else if (!$listtype) {
+            $listtype = "p";
+            $id = $CurrentProw ? $CurrentProw->paperId : null;
+        }
+        if (!$id)
+            return null;
+        $listid = "$id/$listtype";
+        if (self::$active_listid === $listid)
+            return self::$active_list;
+
+        // look up list ID
+        $listdesc = @$_REQUEST["ls"];
+        if (isset($_COOKIE["hotcrp_ls"])) {
+            $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
+            setcookie("hotcrp_ls", "", $Now - 86400);
+        }
+
+        $listno = cvtint($listdesc, null);
+        if ($listno && ($xlist = self::lookup($listno))
+            && str_starts_with($xlist->listid, $listtype)
+            && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0)))
+            $list = $xlist;
+        else {
+            $listno = 0;
+            $list = null;
+        }
+
+        // look up list description
+        if (!$list && $listdesc && $listtype === "p") {
+            if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
+                $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
+                                       $listtype, $m[3]);
+            if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
+                $list = self::try_list(["t" => $listdesc], $listtype);
+            if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
+                $list = self::try_list(["t" => $m[1], "q" => $m[2]], $listtype);
+            if (!$list)
+                $list = self::try_list(["q" => $listdesc], $listtype);
+        }
+
+        // look up ID in list; try new lists if not found
+        $k = false;
+        if ($list)
+            $k = array_search($id, $list->ids);
+        if ($k === false) {
+            $list = self::try_list([], $listtype);
+            $k = array_search($id, $list->ids);
+        }
+        if ($k === false && $Me->privChair) {
+            $list = self::try_list(["t" => "all"], $listtype);
+            $k = array_search($id, $list->ids);
+        }
+        if ($k === false)
+            $list = null;
+
+        // save list changes
+        if ($list && !$listno) {
+            $listno = self::allocate($list->listid);
+            self::change($listno, $list);
+        }
+        if ($list) {
+            self::change($listno, ["timestamp" => $Now]);
+            $list->id_position = $k;
+        }
+        self::$active_listid = $listid;
+        self::$active_list = $list;
+        return $list;
     }
 }
 
@@ -601,84 +678,37 @@ function _one_quicklink($id, $baseUrl, $urlrest, $listtype, $isprev) {
 }
 
 function quicklinks($id, $baseUrl, $args, $listtype) {
-    global $Me, $Conf, $ConfSiteBase, $CurrentList, $Now;
+    global $Me, $Conf, $ConfSiteBase;
 
-    $list = false;
-    $CurrentList = null;
-
-    $listdesc = @$_REQUEST["ls"];
-    if (isset($_COOKIE["hotcrp_ls"])) {
-        $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
-        setcookie("hotcrp_ls", "", $Now - 86400);
-    }
-    $listno = cvtint($listdesc, null);
-    if ($listno && ($xlist = SessionList::lookup($listno))
-        && str_starts_with($xlist->listid, $listtype)
-        && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0))) {
-        $list = $xlist;
-        $CurrentList = $listno;
-    } else if ($listdesc && $listtype == "p") {
-        if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
-            $list = _tryNewList(array("t" => $m[1],
-                                      "q" => urldecode($m[2])),
-                                $listtype, $m[3]);
-        if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
-            $list = _tryNewList(array("t" => $listdesc), $listtype);
-        if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
-            $list = _tryNewList(array("t" => $m[1], "q" => $m[2]), $listtype);
-        if (!$list)
-            $list = _tryNewList(array("q" => $listdesc), $listtype);
-    }
-
-    $k = false;
-    if ($list)
-        $k = array_search($id, $list->ids);
-
-    if ($k === false && !isset($_REQUEST["list"])) {
-        $CurrentList = null;
-        $list = _tryNewList(array(), $listtype);
-        $k = array_search($id, $list->ids);
-        if ($k === false && $Me->privChair) {
-            $list = _tryNewList(array("t" => "all"), $listtype);
-            $k = array_search($id, $list->ids);
-        }
-        if ($k === false)
-            $list = false;
-    }
-
+    $list = SessionList::active($listtype, $id);
     if (!$list)
         return "";
 
-    if (!$CurrentList) {
-        $CurrentList = SessionList::allocate($list->listid);
-        SessionList::change($CurrentList, $list);
-    }
-    SessionList::change($CurrentList, array("timestamp" => $Now));
-
     $args["ls"] = null;
-    $x = '<td class="quicklinks nw has_hotcrp_list" data-hotcrp-list="' . $CurrentList . '">';
-    if ($k > 0)
-        $x .= _one_quicklink($list->ids[$k - 1], $baseUrl, $args, $listtype, true);
+    $x = '<td class="quicklinks nw has_hotcrp_list" data-hotcrp-list="' . $list->listno . '">';
+    if ($list->id_position > 0)
+        $x .= _one_quicklink($list->ids[$list->id_position - 1], $baseUrl, $args, $listtype, true);
     if (@$list->description) {
-        $x .= ($k > 0 ? "&nbsp;&nbsp;" : "");
+        $x .= ($list->id_position > 0 ? "&nbsp;&nbsp;" : "");
         if (@$list->url)
             $x .= '<a id="quicklink_list" class="x" href="' . $ConfSiteBase . htmlspecialchars($list->url) . "\">" . $list->description . "</a>";
         else
             $x .= '<span id="quicklink_list">' . $list->description . '</span>';
     }
-    if (isset($list->ids[$k + 1])) {
-        $x .= ($k > 0 || @$list->description ? "&nbsp;&nbsp;" : "");
-        $x .= _one_quicklink($list->ids[$k + 1], $baseUrl, $args, $listtype, false);
+    if (isset($list->ids[$list->id_position + 1])) {
+        $x .= ($list->id_position > 0 || @$list->description ? "&nbsp;&nbsp;" : "");
+        $x .= _one_quicklink($list->ids[$list->id_position + 1], $baseUrl, $args, $listtype, false);
     }
     return $x . '</td>';
 }
 
 function goPaperForm($baseUrl = null, $args = array()) {
-    global $Conf, $Me, $CurrentList;
+    global $Conf, $Me;
     if ($Me->is_empty())
         return "";
+    $list = SessionList::active();
     $x = Ht::form_div(hoturl($baseUrl ? : "paper", array("ls" => null)),
-                      array("method" => "get", "class" => "gopaper" . ($CurrentList ? " has_hotcrp_list" : ""), "data-hotcrp-list" => $CurrentList));
+                      array("method" => "get", "class" => "gopaper" . ($list ? " has_hotcrp_list" : ""), "data-hotcrp-list" => $list ? $list->listno : null));
     if ($baseUrl == "profile")
         $x .= Ht::entry("u", "(User)", array("id" => "quicksearchq", "size" => 10, "placeholder" => "(User)"));
     else
@@ -952,7 +982,7 @@ function whyNotText($whyNot, $action) {
 }
 
 function actionBar($mode = null, $prow = null) {
-    global $Me, $Conf, $CurrentList;
+    global $Me, $Conf;
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");
 
     $paperArg = "p=*";

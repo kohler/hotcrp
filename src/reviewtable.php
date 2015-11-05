@@ -42,7 +42,7 @@ function _retract_review_request_form($prow, $rr) {
 
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
-    global $Conf, $Me, $CurrentList;
+    global $Conf, $Me;
 
     $subrev = array();
     $nonsubrev = array();
@@ -262,8 +262,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         $t = "<table class=\"reviewers";
         if ($score_header_text)
             $t .= " reviewers_scores";
-        if ($CurrentList)
-            $t .= " has_hotcrp_list\" data-hotcrp-list=\"$CurrentList";
+        if (($list = SessionList::active()))
+            $t .= " has_hotcrp_list\" data-hotcrp-list=\"" . $list->listno;
         $t .= "\">\n";
         if ($score_header_text)
             $t .= '<tr><td class="empty" colspan="2"></td>'
@@ -288,8 +288,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
 // links below review table
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
-    global $Conf, $Me, $CurrentList;
-
+    global $Conf, $Me;
     $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
@@ -432,8 +431,8 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
-    if ($CurrentList && ($pret || $t))
-        return '<div class="has_hotcrp_list" data-hotcrp-list="' . $CurrentList . '">'
+    if (($list = SessionList::active()) && ($pret || $t))
+        return '<div class="has_hotcrp_list" data-hotcrp-list="' . $list->listno . '">'
             . $pret . $t . '</div>';
     else
         return $pret . $t;

@@ -88,10 +88,10 @@ $reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
                           "fixability", "interestToCommunity", "longevity",
                           "likelyPresentation", "suitableForShort");
 
-global $OK, $Now, $CurrentList, $CurrentProw;
+global $OK, $Now, $CurrentProw;
 $OK = 1;
 $Now = time();
-$CurrentList = $CurrentProw = null;
+$CurrentProw = null;
 
 global $allowedSessionVars;
 $allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",

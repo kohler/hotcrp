@@ -2198,8 +2198,7 @@ class Conference {
     }
 
     private function header_head($title) {
-        global $Me, $ConfSiteBase, $ConfSitePATH,
-            $Opt, $CurrentList, $CurrentProw;
+        global $Me, $ConfSiteBase, $ConfSitePATH, $Opt, $CurrentProw;
         echo "<!DOCTYPE html>
 <html>
 <head>
@@ -2261,9 +2260,8 @@ class Conference {
         Ht::stash_script("siteurl=\"$ConfSiteBase\";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
-        if ($CurrentList
-            && ($list = SessionList::lookup($CurrentList))) {
-            $list = array("num" => $CurrentList, "id" => $list->listid);
+        if (($list = SessionList::active())) {
+            $list = array("num" => $list->listno, "id" => $list->listid);
             Ht::stash_script("hotcrp_list=" . json_encode($list) . ";");
         }
         if (($urldefaults = hoturl_defaults()))
