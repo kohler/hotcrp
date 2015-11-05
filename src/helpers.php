@@ -606,13 +606,16 @@ class SessionList {
 
             // look up list description
             if (!$list && $listdesc) {
+                $listtype = "p";
+                if (Navigation::page() === "profile" || Navigation::page() === "users")
+                    $listtype = "u";
                 if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
                     $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
-                                           $listtype, $m[3]);
+                                           "p", $m[3]);
+                if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
+                    $list = self::try_list(["t" => $m[1], "q" => $m[2]], "p");
                 if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
                     $list = self::try_list(["t" => $listdesc], $listtype);
-                if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
-                    $list = self::try_list(["t" => $m[1], "q" => $m[2]], $listtype);
                 if (!$list)
                     $list = self::try_list(["q" => $listdesc], $listtype);
             }
@@ -639,7 +642,7 @@ class SessionList {
 
         // start with requested list
         $list = self::requested();
-        if ($list && !str_starts_with($list->listid, $listtype))
+        if ($list && !str_starts_with((string) @$list->listid, $listtype))
             $list = null;
 
         // look up ID in list; try new lists if not found
