@@ -107,7 +107,7 @@ class PaperList {
             $this->viewmap->compactcolumns = $this->viewmap->columns = true;
         if ($this->viewmap->column || $this->viewmap->col)
             $this->viewmap->columns = true;
-        if ($this->viewmap->stat || $this->viewmap->stats)
+        if ($this->viewmap->stat || $this->viewmap->stats || $this->viewmap->totals)
             $this->viewmap->statistics = true;
     }
 
@@ -952,7 +952,7 @@ class PaperList {
         // add explicitly requested columns
         $specials = array_flip(array("cc", "compact", "compactcolumn", "compactcolumns",
                                      "column", "col", "columns", "sort",
-                                     "stat", "stats", "statistics"));
+                                     "stat", "stats", "statistics", "totals"));
         $viewmap_add = array();
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {

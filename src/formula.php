@@ -236,6 +236,9 @@ class ConstantFexpr extends Fexpr {
     public function compile(FormulaCompiler $state) {
         return $this->x;
     }
+    public static function zero() {
+        return new ConstantFexpr("0");
+    }
 }
 
 class NegateFexpr extends Fexpr {
@@ -379,6 +382,16 @@ class DecisionFexpr extends Fexpr {
         if ($state->check_gvar('$decision'))
             $state->gstmt[] = "\$decision = \$contact->can_view_decision(\$prow, \$forceShow) ? (int) \$prow->outcome : 0;";
         return '$decision';
+    }
+}
+
+class TimeFieldFexpr extends Fexpr {
+    private $field;
+    public function __construct($field) {
+        $this->field = $field;
+    }
+    public function compile(FormulaCompiler $state) {
+        return "((int) \$prow->" . $this->field . ")";
     }
 }
 
@@ -837,6 +850,20 @@ class Formula {
 
     const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.@+!*\/?])+)';
 
+    static private function field_search_fexpr($fval) {
+        $fn = null;
+        for ($i = 0; $i < count($fval); $i += 2) {
+            list($k, $v) = [$fval[$i], $fval[$i + 1]];
+            $fx = ($k === "outcome" ? new DecisionFexpr : new TimeFieldFexpr($k));
+            if (is_string($v))
+                $fx = new Fexpr(str_replace("0", "", $v), $fx, ConstantFexpr::zero());
+            else
+                $fx = new InFexpr($fx, $v);
+            $fn = $fn ? new Fexpr("&&", $fn, $fx) : $fx;
+        }
+        return $fn;
+    }
+
     private function _parse_expr(&$t, $level, $in_qc) {
         global $Conf;
         if (($t = ltrim($t)) === "")
@@ -895,16 +922,14 @@ class Formula {
             $e = new ConstantFexpr("\$prow->paperId");
             $t = $m[1];
         } else if (preg_match('/\A(?:dec|decision):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
-            $value = PaperSearch::decision_matcher($m[1]);
-            if (is_string($value))
-                $e = new Fexpr(str_replace("0", "", $value),
-                               new DecisionFexpr, new ConstantFexpr("0"));
-            else
-                $e = new InFexpr(new DecisionFexpr, $value);
+            $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($m[1])]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new DecisionFexpr;
             $t = $m[1];
+        } else if (preg_match('/\A(?:is|status):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
+            $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($m[1]));
+            $t = $m[2];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], false);
@@ -969,7 +994,7 @@ class Formula {
         } else if (preg_match('/\Are(?:|v|view)words\b(.*)\z/s', $t, $m)) {
             $e = new ReviewWordCountFexpr;
             $t = $m[1];
-        } else if (preg_match('/\A(?:is)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
             $rt = ReviewSearchMatcher::parse_review_type($m[1]);
             $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
             $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));

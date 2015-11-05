@@ -1121,7 +1121,7 @@ class PaperSearch {
         $qt[] = new SearchTerm("re", self::F_XVIEW, $value);
     }
 
-    static public function decision_matcher($word, $quoted = null) {
+    static public function matching_decisions($word, $quoted = null) {
         global $Conf;
         if ($quoted === null && ($quoted = ($word && $word[0] === '"')))
             $word = str_replace('"', '', $word);
@@ -1140,19 +1140,34 @@ class PaperSearch {
         return array_keys(Text::simple_search($word, $Conf->decision_map(), $flags));
     }
 
-    private function _search_decision($word, &$qt, $quoted, $allow_status) {
+    static public function status_field_matcher($word, $quoted = null) {
+        if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
+            return ["timeWithdrawn", ">0"];
+        else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
+            return ["timeSubmitted", ">0"];
+        else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
+            return ["timeSubmitted", "<=0", "timeWithdrawn", "<=0"];
+        else if (strcasecmp($word, "active") == 0)
+            return ["timeWithdrawn", "<=0"];
+        else
+            return ["outcome", self::matching_decisions($word, $quoted)];
+    }
+
+    private function _search_status($word, &$qt, $quoted, $allow_status) {
         global $Conf;
-        $value = self::decision_matcher($word, $quoted);
-        if (is_array($value) && count($value) == 0) {
+        if ($allow_status)
+            $fval = self::status_field_matcher($word, $quoted);
+        else
+            $fval = ["outcome", self::matching_decisions($word, $quoted)];
+        if (is_array($fval[1]) && count($fval[1]) == 0) {
             $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
-            $value[] = -10000000;
+            $fval[1][] = -10000000;
         }
 
-        $value = array("outcome", $value);
-        if ($this->amPC && $Conf->timePCViewDecision(true))
-            $qt[] = new SearchTerm("pf", 0, $value);
-        else
-            $qt[] = new SearchTerm("pf", self::F_XVIEW, $value);
+        $flags = 0;
+        if ($fval[0] === "outcome" && !($this->amPC && $Conf->timePCViewDecision(true)))
+            $flags = self::F_XVIEW;
+        $qt[] = new SearchTerm("pf", $flags, $fval);
     }
 
     private function _search_conflict($word, &$qt, $quoted, $pc_only) {
@@ -1646,7 +1661,7 @@ class PaperSearch {
         else if ($lword === "shep" || $lword === "shepherd")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
         else if ($lword === "dec" || $lword === "decision")
-            $this->_search_decision("yes", $qt, false, false);
+            $this->_search_status("yes", $qt, false, false);
         else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
             /* OK */;
         else {
@@ -1908,20 +1923,10 @@ class PaperSearch {
         }
         if ($keyword === "option")
             $this->_search_options($word, $qt, true);
-        if ($keyword === "status" || $keyword === "is") {
-            if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
-                $qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", ">0"));
-            else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
-                $qt[] = new SearchTerm("pf", 0, array("timeSubmitted", ">0"));
-            else if (strcasecmp($word, "unsubmitted") == 0 || strcasecmp($word, "unsubmit") == 0 || strcasecmp($word, "unsub") == 0)
-                $qt[] = new SearchTerm("pf", 0, array("timeSubmitted", "<=0", "timeWithdrawn", "<=0"));
-            else if (strcasecmp($word, "active") == 0)
-                $qt[] = new SearchTerm("pf", 0, array("timeWithdrawn", "<=0"));
-            else
-                $this->_search_decision($word, $qt, $quoted, true);
-        }
+        if ($keyword === "status" || $keyword === "is")
+            $this->_search_status($word, $qt, $quoted, true);
         if ($keyword === "decision")
-            $this->_search_decision($word, $qt, $quoted, false);
+            $this->_search_status($word, $qt, $quoted, false);
         if ($keyword === "conflict" && $this->amPC)
             $this->_search_conflict($word, $qt, $quoted, false);
         if ($keyword === "pcconflict" && $this->amPC)
@@ -3615,5 +3620,4 @@ class PaperSearch {
 
         return $res;
     }
-
 }
