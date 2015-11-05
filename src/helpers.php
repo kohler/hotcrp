@@ -126,9 +126,8 @@ function hoturl_defaults($options = array()) {
 }
 
 function hoturl_site_relative($page, $options = null) {
-    global $Me, $paperTable, $CurrentList, $_hoturl_defaults;
+    global $Me, $paperTable, $_hoturl_defaults;
     $t = $page . Navigation::php_suffix();
-    $list = $CurrentList;
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
     if ($options && is_array($options)) {
@@ -138,8 +137,6 @@ function hoturl_site_relative($page, $options = null) {
                 $x .= ($x === "" ? "" : "&amp;") . $k . "=" . urlencode($v);
             else if ($v !== null)
                 $anchor = "#" . urlencode($v);
-            else if ($k === "ls")
-                $list = null;
         $options = $x;
     } else if (preg_match('/\A(.*?)(#.*)\z/', $options, $m))
         list($options, $anchor) = array($m[1], $m[2]);
@@ -158,10 +155,6 @@ function hoturl_site_relative($page, $options = null) {
         && $paperTable->prow->has_conflict($Me)
         && !preg_match($are . 'forceShow=/', $options))
         $options .= "&amp;forceShow=1";
-    // append list links if appropriate
-    if ($is_paper_page && @$paperTable && $paperTable->prow
-        && $list && !preg_match($are . 'ls=/', $options))
-        $options .= "&amp;ls=$list";
     // create slash-based URLs if appropriate
     if ($options) {
         if ($page == "review"

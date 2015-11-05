@@ -43,8 +43,6 @@ function _retract_review_request_form($prow, $rr) {
 // reviewer information
 function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     global $Conf, $Me, $CurrentList;
-    $saved_list = $CurrentList;
-    $CurrentList = null;
 
     $subrev = array();
     $nonsubrev = array();
@@ -257,7 +255,6 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     }
 
     // completion
-    $CurrentList = $saved_list;
     if (count($nonsubrev) + count($subrev)) {
         if ($want_requested_by)
             array_unshift($score_header, '<th class="revsl">Requester</th>');
@@ -292,8 +289,6 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 // links below review table
 function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me, $CurrentList;
-    $saved_list = $CurrentList;
-    $CurrentList = null;
 
     $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
@@ -437,7 +432,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
-    if (($CurrentList = $saved_list) && ($pret || $t))
+    if ($CurrentList && ($pret || $t))
         return '<div class="has_hotcrp_list" data-hotcrp-list="' . $CurrentList . '">'
             . $pret . $t . '</div>';
     else
