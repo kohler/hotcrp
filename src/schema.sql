@@ -242,16 +242,16 @@ CREATE TABLE `PaperReview` (
   `grammar` tinyint(1) NOT NULL DEFAULT '0',
   `likelyPresentation` tinyint(1) NOT NULL DEFAULT '0',
   `suitableForShort` tinyint(1) NOT NULL DEFAULT '0',
-  `paperSummary` mediumtext,
-  `commentsToAuthor` mediumtext,
-  `commentsToPC` mediumtext,
-  `commentsToAddress` mediumtext,
-  `weaknessOfPaper` mediumtext,
-  `strengthOfPaper` mediumtext,
+  `paperSummary` mediumblob,
+  `commentsToAuthor` mediumblob,
+  `commentsToPC` mediumblob,
+  `commentsToAddress` mediumblob,
+  `weaknessOfPaper` mediumblob,
+  `strengthOfPaper` mediumblob,
   `potential` tinyint(4) NOT NULL DEFAULT '0',
   `fixability` tinyint(4) NOT NULL DEFAULT '0',
-  `textField7` mediumtext,
-  `textField8` mediumtext,
+  `textField7` mediumblob,
+  `textField8` mediumblob,
   `reviewWordCount` int(11) DEFAULT NULL,
   PRIMARY KEY (`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
@@ -299,16 +299,16 @@ CREATE TABLE `PaperReviewArchive` (
   `grammar` tinyint(1) NOT NULL DEFAULT '0',
   `likelyPresentation` tinyint(1) NOT NULL DEFAULT '0',
   `suitableForShort` tinyint(1) NOT NULL DEFAULT '0',
-  `paperSummary` mediumtext,
-  `commentsToAuthor` mediumtext,
-  `commentsToPC` mediumtext,
-  `commentsToAddress` mediumtext,
-  `weaknessOfPaper` mediumtext,
-  `strengthOfPaper` mediumtext,
+  `paperSummary` mediumblob,
+  `commentsToAuthor` mediumblob,
+  `commentsToPC` mediumblob,
+  `commentsToAddress` mediumblob,
+  `weaknessOfPaper` mediumblob,
+  `strengthOfPaper` mediumblob,
   `potential` tinyint(4) NOT NULL DEFAULT '0',
   `fixability` tinyint(4) NOT NULL DEFAULT '0',
-  `textField7` mediumtext,
-  `textField8` mediumtext,
+  `textField7` mediumblob,
+  `textField8` mediumblob,
   `reviewWordCount` int(11) DEFAULT NULL,
   PRIMARY KEY (`reviewArchiveId`),
   UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
@@ -496,7 +496,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 102);
+insert into Settings (name, value) values ('allowPaperOption', 103);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

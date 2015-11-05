@@ -760,4 +760,22 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperStorage modify `filename` varbinary(255) DEFAULT NULL")
         && $Conf->ql("alter table PaperStorage modify `infoJson` varbinary(8192) DEFAULT NULL"))
         update_schema_version($Conf, 102);
+    if ($Conf->settings["allowPaperOption"] == 102
+        && $Conf->ql("alter table PaperReview modify `paperSummary` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `commentsToAuthor` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `commentsToPC` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `commentsToAddress` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `weaknessOfPaper` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `strengthOfPaper` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `textField7` mediumblob")
+        && $Conf->ql("alter table PaperReview modify `textField8` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `paperSummary` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `commentsToAuthor` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `commentsToPC` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `commentsToAddress` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `weaknessOfPaper` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `strengthOfPaper` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `textField7` mediumblob")
+        && $Conf->ql("alter table PaperReviewArchive modify `textField8` mediumblob"))
+        update_schema_version($Conf, 103);
 }
