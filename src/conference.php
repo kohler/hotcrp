@@ -2199,6 +2199,10 @@ class Conference {
 
     private function header_head($title) {
         global $Me, $ConfSiteBase, $ConfSitePATH, $Opt, $CurrentProw;
+        // load session list and clear its cookie
+        $list = SessionList::active();
+        SessionList::set_requested(0);
+
         echo "<!DOCTYPE html>
 <html>
 <head>
@@ -2260,10 +2264,8 @@ class Conference {
         Ht::stash_script("siteurl=\"$ConfSiteBase\";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
-        if (($list = SessionList::active())) {
-            $list = array("num" => $list->listno, "id" => $list->listid);
-            Ht::stash_script("hotcrp_list=" . json_encode($list) . ";");
-        }
+        if ($list)
+            Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
         $huser = (object) array();

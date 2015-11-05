@@ -2275,7 +2275,7 @@ class PaperTable {
                 SessionList::change($pl->listno, $pl, true);
             }
             unset($_REQUEST["ls"]);
-            setcookie("hotcrp_ls", $pl->listno, $Now + 2);
+            SessionList::set_requested($pl->listno);
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
             return true;

@@ -503,6 +503,7 @@ function decorateNumber($n) {
 class SessionList {
     static private $active_listid = null;
     static private $active_list = null;
+    static private $requested_list = false;
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
@@ -581,6 +582,44 @@ class SessionList {
             return $x;
         }
     }
+    static public function set_requested($listno) {
+        global $Now;
+        if ($listno)
+            setcookie("hotcrp_ls", $listno, $Now + 2, Navigation::site_path());
+        else if (isset($_COOKIE["hotcrp_ls"]))
+            setcookie("hotcrp_ls", "", $Now - 86400, Navigation::site_path());
+    }
+    static public function requested() {
+        global $Me;
+        if (self::$requested_list === false) {
+            // look up list ID
+            $listdesc = @$_REQUEST["ls"];
+            if (isset($_COOKIE["hotcrp_ls"]))
+                $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
+
+            $list = null;
+            if (($listno = cvtint($listdesc, null))
+                && ($xlist = self::lookup($listno))
+                && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0)))
+                $list = $xlist;
+
+            // look up list description
+            if (!$list && $listdesc) {
+                if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
+                    $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
+                                           $listtype, $m[3]);
+                if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
+                    $list = self::try_list(["t" => $listdesc], $listtype);
+                if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
+                    $list = self::try_list(["t" => $m[1], "q" => $m[2]], $listtype);
+                if (!$list)
+                    $list = self::try_list(["q" => $listdesc], $listtype);
+            }
+
+            self::$requested_list = $list;
+        }
+        return self::$requested_list;
+    }
     static public function active($listtype = null, $id = null) {
         global $CurrentProw, $Me, $Now;
 
@@ -597,35 +636,10 @@ class SessionList {
         if (self::$active_listid === $listid)
             return self::$active_list;
 
-        // look up list ID
-        $listdesc = @$_REQUEST["ls"];
-        if (isset($_COOKIE["hotcrp_ls"])) {
-            $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
-            setcookie("hotcrp_ls", "", $Now - 86400);
-        }
-
-        $listno = cvtint($listdesc, null);
-        if ($listno && ($xlist = self::lookup($listno))
-            && str_starts_with($xlist->listid, $listtype)
-            && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0)))
-            $list = $xlist;
-        else {
-            $listno = 0;
+        // start with requested list
+        $list = self::requested();
+        if ($list && !str_starts_with($list->listid, $listtype))
             $list = null;
-        }
-
-        // look up list description
-        if (!$list && $listdesc && $listtype === "p") {
-            if (preg_match('_\Ap/([^/]*)/([^/]*)/?(.*)\z_', $listdesc, $m))
-                $list = self::try_list(["t" => $m[1], "q" => urldecode($m[2])],
-                                       $listtype, $m[3]);
-            if (!$list && preg_match('/\A[a-z]+\z/', $listdesc))
-                $list = self::try_list(["t" => $listdesc], $listtype);
-            if (!$list && preg_match('/\A(all|s):(.*)\z/s', $listdesc, $m))
-                $list = self::try_list(["t" => $m[1], "q" => $m[2]], $listtype);
-            if (!$list)
-                $list = self::try_list(["q" => $listdesc], $listtype);
-        }
 
         // look up ID in list; try new lists if not found
         $k = false;
