@@ -19,12 +19,12 @@ class PaperTable {
 
     var $editable;
     var $useRequest;
-    private $npapstrip;
+    private $npapstrip = 0;
     private $npapstrip_tag_entry;
     private $allFolded;
     private $foldState;
     private $matchPreg;
-    private $watchCheckbox;
+    private $watchCheckbox = WATCH_COMMENT;
     private $entryMatches;
     private $canUploadFinal;
     private $admin;
@@ -77,24 +77,6 @@ class PaperTable {
             $this->mode = key($ms);
         if (@$ms["re"] && isset($_REQUEST["reviewId"]))
             $this->mode = "re";
-    }
-
-    private static function _combine_match_preg($m1, $m) {
-        if (!is_array($m))
-            $m = array("abstract" => $m, "title" => $m,
-                       "authorInformation" => $m, "collaborators" => $m);
-        foreach ($m as $k => $v)
-            if (!@$m1[$k])
-                $m1[$k] = $v;
-        return $m1;
-    }
-
-    function initialize($editable, $useRequest) {
-        global $Conf, $CurrentList;
-
-        $this->editable = $editable;
-        $this->useRequest = $useRequest;
-        $this->npapstrip = 0;
 
         $this->foldState = 1023;
         foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v)
@@ -121,8 +103,21 @@ class PaperTable {
                 $this->matchPreg[$k] = $v;
         if (count($this->matchPreg) == 0)
             $this->matchPreg = null;
+    }
 
-        $this->watchCheckbox = WATCH_COMMENT;
+    private static function _combine_match_preg($m1, $m) {
+        if (!is_array($m))
+            $m = array("abstract" => $m, "title" => $m,
+                       "authorInformation" => $m, "collaborators" => $m);
+        foreach ($m as $k => $v)
+            if (!@$m1[$k])
+                $m1[$k] = $v;
+        return $m1;
+    }
+
+    function initialize($editable, $useRequest) {
+        $this->editable = $editable;
+        $this->useRequest = $useRequest;
     }
 
     function can_view_reviews() {
@@ -160,8 +155,12 @@ class PaperTable {
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
-                . ' &nbsp; <span class="ptitle">' . htmlspecialchars($prow->title) . '</span>'
-                . '</span></a>';
+                . ' &nbsp; <span class="ptitle">';
+            if ($paperTable && $paperTable->matchPreg && isset($paperTable->matchPreg["title"]))
+                $t .= Text::highlight($prow->title, $paperTable->matchPreg["title"], $paperTable->entryMatches);
+            else
+                $t .= htmlspecialchars($prow->title);
+            $t .= '</span></span></a>';
         }
 
         $t .= '</h1></div></div>';

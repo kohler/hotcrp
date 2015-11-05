@@ -642,10 +642,6 @@ if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
 }
 
 
-// page header
-confHeader();
-
-
 // prepare paper table
 if ($paperTable->mode == "edit") {
     $editable = $newPaper || $Me->can_update_paper($prow, true);
@@ -662,6 +658,7 @@ if (@$Error["author"])
 $paperTable->initialize($editable, $editable && $useRequest);
 
 // produce paper table
+confHeader();
 $paperTable->paptabBegin();
 
 if ($paperTable->mode === "edit")
