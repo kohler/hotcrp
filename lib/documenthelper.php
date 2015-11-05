@@ -174,16 +174,19 @@ class DocumentHelper {
         list($table, $idcol, $cols, $check_contents) = $dbinfo;
         $while = "while storing document in database";
 
-        $a = array();
+        $a = $ks = $vs = array();
         foreach ($cols as $k => $v)
-            if ($k !== $idcol)
-                $a[] = "`" . $k . "`='" . sqlq(substr($v, 0, $N)) . "'";
+            if ($k !== $idcol) {
+                $ks[] = "`$k`=?";
+                $vs[] = substr($v, 0, $N);
+            }
 
-        if (isset($cols[$idcol]))
-            $q = "update $table set " . join(",", $a) . " where $idcol='" . sqlq($cols[$idcol]);
-        else
-            $q = "insert into $table set " . join(",", $a);
-        if (!($result = Dbl::query_raw($q))) {
+        if (isset($cols[$idcol])) {
+            $q = "update $table set " . join(",", $ks) . " where $idcol=?";
+            $vs[] = $cols[$idcol];
+        } else
+            $q = "insert into $table set " . join(",", $ks);
+        if (!($result = Dbl::query_apply($q, $vs))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }
