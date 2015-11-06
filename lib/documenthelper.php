@@ -178,7 +178,7 @@ class ZipDocument {
     }
 
     private function create() {
-        global $Opt;
+        global $Now, $Opt;
 
         // maybe cache zipfile in docstore
         $zip_filename = "$this->tmpdir/_hotcrp.zip";
@@ -197,8 +197,11 @@ class ZipDocument {
             // look for zipfile
             $zfn = $Opt["docstore"] . "/tmp/" . $zipfile_sha1 . ".zip";
             if (DocumentHelper::prepare_docstore($Opt["docstore"], $zfn)) {
-                if (file_exists($zfn))
+                if (file_exists($zfn)) {
+                    if (($mtime = @filemtime($zfn)) < $Now - 21600)
+                        @touch($zfn);
                     return $zfn;
+                }
                 $zip_filename = $zfn;
             }
         }
