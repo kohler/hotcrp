@@ -281,13 +281,29 @@ class DocumentHelper {
         return array($fdir, $xfpath . $fpath);
     }
 
+    private static function _make_fpath_parents($fdir, $fpath) {
+        $lastslash = strrpos($fpath, "/");
+        $container = substr($fpath, 0, $lastslash);
+        while (str_ends_with($container, "/"))
+            $container = substr($container, 0, strlen($container) - 1);
+        if (!is_dir($container)) {
+            if (strlen($container) < strlen($fdir)
+                || !($parent = self::_make_fpath_parents($fdir, $container))
+                || !@mkdir($container, 0770))
+                return false;
+            if (!@chmod($container, 02770 & fileperms($parent))) {
+                @rmdir($container);
+                return false;
+            }
+        }
+        return $container;
+    }
+
     private static function _store_filestore($fsinfo, $doc) {
         list($fdir, $fpath) = $fsinfo;
 
-        if (!is_dir($fdir) && !@mkdir($fdir, 0700)) {
-            @rmdir($fdir);
+        if (!self::_make_fpath_parents($fdir, $fpath))
             return false;
-        }
 
         // Ensure an .htaccess file exists, even if someone else made the
         // filestore directory
@@ -296,19 +312,6 @@ class DocumentHelper {
             && file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
             @unlink("$fdir/.htaccess");
             return false;
-        }
-
-        // Create subdirectory
-        $pos = strlen($fdir) + 1;
-        while ($pos < strlen($fpath)
-               && ($pos = strpos($fpath, "/", $pos)) !== false) {
-            $superdir = substr($fpath, 0, $pos);
-            if (!is_dir($superdir)) {
-                $fmode = fileperms($fdir);
-                if (!@mkdir($superdir, 0770) || !@chmod($superdir, 02770 & $fmode))
-                    return false;
-            }
-            ++$pos;
         }
 
         // Write contents
