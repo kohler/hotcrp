@@ -3,16 +3,13 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $ConfFilestore;
-$ConfFilestore = null;
-
 class HotCRPDocument {
-
     private $dtype;
     private $option = null;
     private $no_database = false;
     private $no_filestore = false;
     static private $_s3_document = false;
+    static private $_docstore = null;
 
     public function __construct($dtype, $option = null) {
         $this->dtype = $dtype;
@@ -202,13 +199,13 @@ class HotCRPDocument {
     }
 
     public function filestore_pattern($doc, $docinfo) {
-        global $Opt, $ConfSitePATH, $ConfFilestore;
+        global $Opt, $ConfSitePATH;
         if ($this->no_filestore)
             return false;
-        if ($ConfFilestore === null) {
+        if (self::$_docstore === null) {
             $fdir = defval($Opt, "docstore");
             if (!$fdir)
-                return ($ConfFilestore = false);
+                return (self::$_docstore = false);
             if ($fdir === true)
                 $fdir = "docs";
             if ($fdir[0] !== "/")
@@ -222,9 +219,9 @@ class HotCRPDocument {
                 $fpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
             $fpath .= "/%h%x";
 
-            $ConfFilestore = array($fdir, $fpath);
+            self::$_docstore = array($fdir, $fpath);
         }
-        return $ConfFilestore;
+        return self::$_docstore;
     }
 
     public function filestore_check($doc) {
