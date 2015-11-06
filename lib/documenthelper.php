@@ -318,6 +318,7 @@ class DocumentHelper {
         }
         @chmod($fpath, 0660 & ~umask());
         $doc->filestore = $fpath;
+        $doc->filestore_root = $fdir;
         return true;
     }
 
@@ -441,6 +442,7 @@ class DocumentHelper {
         $fsinfo = self::_filestore($docclass, $doc, null);
         if ($fsinfo && is_readable($fsinfo[1])) {
             $doc->filestore = $fsinfo[1];
+            $doc->filestore_root = $fsinfo[0];
             return true;
         }
         if (!isset($doc->content) && !$docclass->load_content($doc))
@@ -454,6 +456,27 @@ class DocumentHelper {
         flush();
         while (@ob_end_flush())
             /* do nothing */;
+    }
+
+    private static function download_filestore($doc) {
+        global $Opt, $zlib_output_compression;
+        if (($dar = @$Opt["docstoreAccelRedirect"])
+            && ($fsroot = @$doc->filestore_root)) {
+            if ($fsroot && !str_ends_with($fsroot, "/"))
+                $fsroot .= "/";
+            if ($fsroot && str_starts_with($doc->filestore, $fsroot)
+                && ($tail = substr($doc->filestore, strlen($fsroot)))
+                && preg_match(',\A[^/]+,', $tail)) {
+                if (!str_ends_with($dar, "/"))
+                    $dar .= "/";
+                header("X-Accel-Redirect: $dar$tail");
+                return;
+            }
+        }
+        if (!$zlib_output_compression)
+            header("Content-Length: " . filesize($doc->filestore));
+        self::hyperflush();
+        readfile($doc->filestore);
     }
 
     static function download($doc, $downloadname = null, $attachment = null) {
@@ -487,12 +510,9 @@ class DocumentHelper {
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
-        if (isset($doc->filestore)) {
-            if (!$zlib_output_compression)
-                header("Content-Length: " . filesize($doc->filestore));
-            self::hyperflush();
-            readfile($doc->filestore);
-        } else {
+        if (isset($doc->filestore))
+            self::download_filestore($doc);
+        else {
             if (!$zlib_output_compression)
                 header("Content-Length: " . strlen($doc->content));
             echo $doc->content;
