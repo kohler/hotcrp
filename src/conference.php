@@ -243,7 +243,7 @@ class Conference {
     }
 
     private function crosscheck_options() {
-        global $Opt, $ConfSiteBase;
+        global $Opt, $ConfSiteBase, $ConfSitePATH;
 
         // set longName, downloadPrefix, etc.
         $confid = $Opt["confid"];
@@ -261,9 +261,8 @@ class Conference {
         // expand ${confid}, ${confshortname}
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",
                        "paperSite", "defaultPaperSite", "contactName",
-                       "contactEmail") as $k)
-            if (isset($Opt[$k]) && is_string($Opt[$k])
-                && strpos($Opt[$k], "$") !== false) {
+                       "contactEmail", "docstore") as $k)
+            if (is_string(@$Opt[$k]) && strpos($Opt[$k], "$") !== false) {
                 $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
                 $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $Opt["shortName"], $Opt[$k]);
             }
@@ -305,14 +304,16 @@ class Conference {
             $Opt["scriptAssetsUrl"] = $Opt["assetsUrl"];
         Ht::$img_base = $Opt["assetsUrl"] . "images/";
 
-        // set docstore from filestore
+        // set docstore
         if (@$Opt["docstore"] === true)
             $Opt["docstore"] = "docs";
-        else if (!@$Opt["docstore"] && @$Opt["filestore"]) {
+        else if (!@$Opt["docstore"] && @$Opt["filestore"]) { // backwards compat
             if (($Opt["docstore"] = $Opt["filestore"]) === true)
                 $Opt["docstore"] = "filestore";
             $Opt["docstoreSubdir"] = @$Opt["filestoreSubdir"];
         }
+        if (@$Opt["docstore"] && $Opt["docstore"][0] !== "/")
+            $Opt["docstore"] = $ConfSitePATH . "/" . $Opt["docstore"];
 
         // handle timezone
         if (function_exists("date_default_timezone_set")) {

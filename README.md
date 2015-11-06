@@ -242,7 +242,7 @@ exist. To ignore nonexistent options files, use wildcards:
 `${confid}` replacement is also performed on these $Opt settings:
 dbName, dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
 paperSite, defaultPaperSite, contactName, contactEmail, emailFrom,
-emailSender, emailCc, and emailReplyTo.
+emailSender, emailCc, emailReplyTo, and docstore.
 
 Each conference needs its own database. Create one using the
 `lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
