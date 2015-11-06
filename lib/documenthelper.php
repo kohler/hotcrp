@@ -3,8 +3,18 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class ZipDocument {
+class ZipDocumentFile {
+    public $filename;
+    public $filestore;
+    public $sha1;
+    function __construct($filename, $filestore, $sha1) {
+        $this->filename = $filename;
+        $this->filestore = $filestore;
+        $this->sha1 = $sha1;
+    }
+}
 
+class ZipDocument {
     private $tmpdir;
     private $files;
     public $warnings;
@@ -13,6 +23,7 @@ class ZipDocument {
     private $mimetype;
     private $headers;
     private $start_time;
+    private $filestore;
 
     function __construct($downloadname, $mimetype = "application/zip") {
         $this->tmpdir = null;
@@ -31,20 +42,11 @@ class ZipDocument {
         $this->recurse = false;
         $this->headers = false;
         $this->start_time = time();
-    }
-
-    static private function _add_done($doc, $result) {
-        if (@$doc->_content_reset)
-            unset($doc->content, $doc->_content_reset);
-        return $result;
+        $this->filestore = array();
     }
 
     private function _add($doc, $filename, $check_filename) {
-        if ($this->tmpdir === null)
-            if (($this->tmpdir = tempdir()) === false) {
-                $this->warnings[] = "Could not create temporary directory.";
-                return false;
-            }
+        // check filename
         if (!$filename && is_object($doc) && isset($doc->filename))
             $filename = $doc->filename;
         if (!$filename
@@ -53,9 +55,11 @@ class ZipDocument {
             $this->warnings[] = "$filename: Bad filename.";
             return false;
         }
+
+        // load document
         if (is_string($doc))
             $doc = (object) array("content" => $doc);
-        else if (!isset($doc->filestore) && !isset($doc->content)) {
+        if (!isset($doc->filestore) && !isset($doc->content)) {
             if ($doc->docclass && DocumentHelper::load($doc->docclass, $doc))
                 $doc->_content_reset = true;
             else {
@@ -66,14 +70,35 @@ class ZipDocument {
                 return false;
             }
         }
-        $fn = $filename;
+
+        // add document to filestore list
+        if (is_array($this->filestore) && isset($doc->filestore)
+            && ($sha1 = DocumentHelper::binary_sha1($doc)) !== null) {
+            $this->filestore[] = new ZipDocumentFile($filename, $doc->filestore, $sha1);
+            return self::_add_done($doc, true);
+        }
+
+        // At this point, we will definitely create a new zipfile.
+
+        // construct temporary directory
+        if ($this->tmpdir === null)
+            if (($this->tmpdir = tempdir()) === false) {
+                $this->warnings[] = "Could not create temporary directory.";
+                return self::_add_done($doc, false);
+            }
         $zip_filename = "$this->tmpdir/";
+
+        // populate with contents of filestore list, if any
+        if (!$this->_add_filestore())
+            return self::_add_done($doc, false);
+
+        // construct subdirectories
+        $fn = $filename;
         while (($p = strpos($fn, "/")) !== false) {
             $zip_filename .= substr($fn, 0, $p);
             if (!is_dir($zip_filename)
                 && (file_exists($zip_filename) || !@mkdir($zip_filename, 0777))) {
                 $this->warnings[] = "$filename: Couldn’t save document to this name.";
-                error_log(join(" ", $this->warnings));
                 return self::_add_done($doc, false);
             }
             $zip_filename .= "/";
@@ -84,6 +109,8 @@ class ZipDocument {
             return self::_add_done($doc, false);
         }
         $zip_filename .= $fn;
+
+        // store file in temporary directory
         if (isset($doc->filestore)
             && @symlink($doc->filestore, $zip_filename))
             /* OK */;
@@ -98,12 +125,16 @@ class ZipDocument {
                 return self::_add_done($doc, false);
             }
         }
+
+        // track files to pass to `zip`
         $zip_filename = substr($zip_filename, strlen($this->tmpdir) + 1);
         if (($p = strpos($zip_filename, "/")) !== false) {
             $zip_filename = substr($zip_filename, 0, $p);
             $this->recurse = true;
         }
         $this->files[$zip_filename] = true;
+
+        // complete
         if (time() - $this->start_time >= 0) {
             set_time_limit(30);
             if (!$this->headers) {
@@ -112,6 +143,22 @@ class ZipDocument {
             }
         }
         return self::_add_done($doc, true);
+    }
+
+    static private function _add_done($doc, $result) {
+        if (@$doc->_content_reset)
+            unset($doc->content, $doc->_content_reset);
+        return $result;
+    }
+
+    private function _add_filestore() {
+        if (($filestore = $this->filestore) !== null) {
+            $this->filestore = null;
+            foreach ($filestore as $f)
+                if (!$this->_add($f, $f->filename, false))
+                    return false;
+        }
+        return true;
     }
 
     public function add($doc, $filename = null) {
@@ -132,37 +179,58 @@ class ZipDocument {
 
     private function create() {
         global $Opt;
+
+        // maybe cache zipfile in docstore
+        $zip_filename = "$this->tmpdir/_hotcrp.zip";
+        if (count($this->filestore) > 0 && @$Opt["docstore"]
+            && @$Opt["docstoreAccelRedirect"]) {
+            // calculate sha1 for zipfile contents
+            usort($this->filestore, function ($a, $b) {
+                return strcmp($a->filename, $b->filename);
+            });
+            $sha1_input = count($this->filestore) . "\n";
+            foreach ($this->filestore as $f)
+                $sha1_input .= $f->filename . "\n" . $f->sha1 . "\n";
+            if (count($this->warnings))
+                $sha1_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
+            $zipfile_sha1 = sha1($sha1_input, false);
+            // look for zipfile
+            $zfn = $Opt["docstore"] . "/tmp/" . $zipfile_sha1 . ".zip";
+            if (DocumentHelper::prepare_docstore($Opt["docstore"], $zfn)) {
+                if (file_exists($zfn))
+                    return $zfn;
+                $zip_filename = $zfn;
+            }
+        }
+
+        // actually run zip
         if (!($zipcmd = defval($Opt, "zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
+        $this->_add_filestore();
         if (count($this->warnings))
             $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
         set_time_limit(60);
-        $out = system("cd $this->tmpdir; $zipcmd $opts _hotcrp.zip '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
+        $out = system("cd $this->tmpdir; $zipcmd $opts '$zip_filename' '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
         if ($status != 0)
             return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-        if (!file_exists("$this->tmpdir/_hotcrp.zip"))
+        if (!file_exists($zip_filename))
             return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-        return "$this->tmpdir/_hotcrp.zip";
+        return $zip_filename;
     }
 
     public function download() {
         global $Opt, $zlib_output_compression;
         $result = $this->create();
         if (is_string($result)) {
-            $this->download_headers();
-            if (!$zlib_output_compression && !headers_sent())
-                header("Content-Length: " . filesize($result));
-            // flush all output buffers to avoid holding large files in memory
-            DocumentHelper::hyperflush();
             set_time_limit(180); // large zip files might download slowly
-            readfile($result);
+            $this->download_headers();
+            DocumentHelper::download_file($result);
             $result = (object) array("error" => false);
         }
         $this->clean();
         return $result;
     }
-
 }
 
 class DocumentHelper {
@@ -299,29 +367,30 @@ class DocumentHelper {
         return $container;
     }
 
-    private static function _store_filestore($fsinfo, $doc) {
-        list($fdir, $fpath) = $fsinfo;
-
-        if (!self::_make_fpath_parents($fdir, $fpath))
+    public static function prepare_docstore($parent, $path) {
+        if (!self::_make_fpath_parents($parent, $path))
             return false;
-
         // Ensure an .htaccess file exists, even if someone else made the
         // filestore directory
-        $htaccess = "$fdir/.htaccess";
+        $htaccess = "$parent/.htaccess";
         if (!is_file($htaccess)
             && file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
-            @unlink("$fdir/.htaccess");
+            @unlink($htaccess);
             return false;
         }
+        return true;
+    }
 
-        // Write contents
+    private static function _store_filestore($fsinfo, $doc) {
+        list($fdir, $fpath) = $fsinfo;
+        if (!self::prepare_docstore($fdir, $fpath))
+            return false;
         if (file_put_contents($fpath, $doc->content) != strlen($doc->content)) {
             @unlink($fpath);
             return false;
         }
         @chmod($fpath, 0660 & ~umask());
         $doc->filestore = $fpath;
-        $doc->filestore_root = $fdir;
         return true;
     }
 
@@ -445,7 +514,6 @@ class DocumentHelper {
         $fsinfo = self::_filestore($docclass, $doc, null);
         if ($fsinfo && is_readable($fsinfo[1])) {
             $doc->filestore = $fsinfo[1];
-            $doc->filestore_root = $fsinfo[0];
             return true;
         }
         if (!isset($doc->content) && !$docclass->load_content($doc))
@@ -461,14 +529,13 @@ class DocumentHelper {
             /* do nothing */;
     }
 
-    private static function download_filestore($doc) {
+    static function download_file($filename) {
         global $Opt, $zlib_output_compression;
-        if (($dar = @$Opt["docstoreAccelRedirect"])
-            && ($fsroot = @$doc->filestore_root)) {
-            if ($fsroot && !str_ends_with($fsroot, "/"))
-                $fsroot .= "/";
-            if ($fsroot && str_starts_with($doc->filestore, $fsroot)
-                && ($tail = substr($doc->filestore, strlen($fsroot)))
+        if (($dar = @$Opt["docstoreAccelRedirect"]) && ($ds = @$Opt["docstore"])) {
+            if (!str_ends_with($ds, "/"))
+                $ds .= "/";
+            if (str_starts_with($filename, $ds)
+                && ($tail = substr($filename, strlen($ds)))
                 && preg_match(',\A[^/]+,', $tail)) {
                 if (!str_ends_with($dar, "/"))
                     $dar .= "/";
@@ -477,9 +544,9 @@ class DocumentHelper {
             }
         }
         if (!$zlib_output_compression)
-            header("Content-Length: " . filesize($doc->filestore));
+            header("Content-Length: " . filesize($filename));
         self::hyperflush();
-        readfile($doc->filestore);
+        readfile($filename);
     }
 
     static function download($doc, $downloadname = null, $attachment = null) {
@@ -514,7 +581,7 @@ class DocumentHelper {
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
         if (isset($doc->filestore))
-            self::download_filestore($doc);
+            self::download_file($doc->filestore);
         else {
             if (!$zlib_output_compression)
                 header("Content-Length: " . strlen($doc->content));
