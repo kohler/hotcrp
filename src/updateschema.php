@@ -778,4 +778,8 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperReviewArchive modify `textField7` mediumblob")
         && $Conf->ql("alter table PaperReviewArchive modify `textField8` mediumblob"))
         update_schema_version($Conf, 103);
+    if ($Conf->settings["allowPaperOption"] == 103
+        && $Conf->ql("alter table Paper modify `title` varbinary(256) DEFAULT NULL")
+        && $Conf->ql("alter table Paper drop key `title`"))
+        update_schema_version($Conf, 104);
 }

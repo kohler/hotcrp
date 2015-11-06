@@ -120,7 +120,7 @@ CREATE TABLE `MailLog` (
 DROP TABLE IF EXISTS `Paper`;
 CREATE TABLE `Paper` (
   `paperId` int(11) NOT NULL AUTO_INCREMENT,
-  `title` varchar(200) DEFAULT NULL,
+  `title` varbinary(256) DEFAULT NULL,
   `authorInformation` varbinary(8192) DEFAULT NULL,
   `abstract` varbinary(16384) DEFAULT NULL,
   `collaborators` varbinary(8192) DEFAULT NULL,
@@ -143,7 +143,6 @@ CREATE TABLE `Paper` (
   `withdrawReason` varbinary(1024) DEFAULT NULL,
   PRIMARY KEY (`paperId`),
   UNIQUE KEY `paperId` (`paperId`),
-  KEY `title` (`title`),
   KEY `timeSubmitted` (`timeSubmitted`),
   KEY `leadContactId` (`leadContactId`),
   KEY `shepherdContactId` (`shepherdContactId`)
