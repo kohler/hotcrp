@@ -3,8 +3,6 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-require_once("src/initweb.php");
-
 // argument cleaning
 if (!isset($_GET["fn"])) {
     if (($fn = Navigation::path_component(0, true)))
@@ -19,6 +17,13 @@ if ($_GET["fn"] === "deadlines")
 if (!isset($_GET["p"]) && ($p = Navigation::path_component(1, true))
     && ctype_digit($p))
     $_GET["p"] = (string) intval($p);
+
+// maybe prevent session creation
+global $Me;
+if ($_GET["fn"] === "trackerstatus")
+    $Me = false;
+
+require_once("src/initweb.php");
 
 // requests
 if ($_GET["fn"] === "trackerstatus") // used by hotcrp-comet

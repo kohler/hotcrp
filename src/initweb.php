@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("init.php");
-global $Conf, $Opt;
+global $Conf, $Me, $Opt;
 
 // Check for obsolete pages
 // These are pages that we've removed from the source. But some user might
@@ -28,13 +28,23 @@ if ($zlib_output_compression) {
     header("Vary: Accept-Encoding", false);
 }
 
-// Set up sessions
+// Mark as already expired to discourage caching, but allow the browser
+// to cache for history buttons
+session_cache_limiter("");
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Cache-Control: private");
+
+// Don't set up a session if $Me is false
+if ($Me === false)
+    return;
+
+
+// Set up session
 $Opt["globalSessionLifetime"] = ini_get("session.gc_maxlifetime");
 if (!isset($Opt["sessionLifetime"]))
     $Opt["sessionLifetime"] = 86400;
 ini_set("session.gc_maxlifetime", $Opt["sessionLifetime"]);
 ensure_session();
-
 
 // Initialize user
 function initialize_user() {
@@ -88,7 +98,6 @@ function initialize_user() {
     }
 }
 
-global $Me;
 initialize_user();
 
 
@@ -98,9 +107,3 @@ if (isset($_SESSION["redirect_error"])) {
     $Error = $_SESSION["redirect_error"];
     unset($_SESSION["redirect_error"]);
 }
-
-// Mark as already expired to discourage caching, but allow the browser
-// to cache for history buttons
-session_cache_limiter("");
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Cache-Control: private");
