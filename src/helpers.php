@@ -547,9 +547,7 @@ class SessionList {
                 return $i;
             else if (!$empty)
                 $empty = $i;
-        $idx = $empty ? : $oldest;
-        $Conf->save_session_array("l", $idx, (object) array("cid" => $cid));
-        return $idx;
+        return $empty ? : $oldest;
     }
     static function create($listid, $ids, $description, $url) {
         global $Me, $Now;

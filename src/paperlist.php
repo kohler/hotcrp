@@ -1316,7 +1316,7 @@ class PaperList {
             if (isset($_REQUEST["sort"]))
                 $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
             $sl->url = $url;
-            SessionList::change($this->listNumber, $sl);
+            SessionList::change($this->listNumber, $sl, true);
         }
 
         $this->ids = $rstate->ids;
