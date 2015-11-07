@@ -1142,8 +1142,14 @@ function redisplay_main() {
 // tracker
 var has_tracker, had_tracker_at, tracker_timer, tracker_refresher;
 
-function window_trackerstate() {
+function tracker_window_state() {
     return wstorage.json(true, "hotcrp-tracking");
+}
+
+function is_my_tracker() {
+    var ts;
+    return dl.tracker && (ts = tracker_window_state())
+        && dl.tracker.trackerid == ts[1];
 }
 
 var tracker_map = [["is_manager", "Administrator"],
@@ -1189,12 +1195,11 @@ function tracker_show_elapsed() {
 }
 
 function display_tracker() {
-    var mne = $$("tracker"), mnspace = $$("trackerspace"), mytracker,
+    var mne = $$("tracker"), mnspace = $$("trackerspace"),
+        mytracker = is_my_tracker(),
         body, pid, trackerstate, t = "", i, e, now = now_msec();
 
     // tracker button
-    mytracker = dl.tracker && (i = window_trackerstate())
-        && dl.tracker.trackerid == i[1];
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
             e.className = "btn btn-danger hottooltip";
@@ -1209,7 +1214,7 @@ function display_tracker() {
     has_tracker = !!dl.tracker;
     if (has_tracker)
         had_tracker_at = now;
-    else if (window_trackerstate())
+    else if (tracker_window_state())
         wstorage(true, "hotcrp-tracking", null);
     if (!dl.tracker || dl.tracker_hidden) {
         if (mne)
@@ -1271,7 +1276,7 @@ function tracker(start) {
     if (start < 0) {
         $.ajax({
             url: hoturl_post("api", "fn=track&track=stop"),
-            type: "POST", success: load, timeout: 10000
+            type: "POST", success: load_success, timeout: 10000
         });
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
@@ -1280,7 +1285,7 @@ function tracker(start) {
     }
     if (!wstorage() || start < 0)
         return false;
-    trackerstate = window_trackerstate();
+    trackerstate = tracker_window_state();
     if (start && (!trackerstate || trackerstate[0] != siteurl))
         trackerstate = [siteurl, Math.floor(Math.random() * 100000)];
     else if (trackerstate && trackerstate[0] != siteurl)
@@ -1294,7 +1299,7 @@ function tracker(start) {
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         $.ajax({
             url: hoturl_post("api", "fn=track&track=" + req),
-            type: "POST", success: load, timeout: 10000
+            type: "POST", success: load_success, timeout: 10000
         });
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
@@ -1446,7 +1451,8 @@ function load(dlx, is_initial) {
     display_main(is_initial);
     var evt = $.Event("hotcrp_deadlines");
     $(window).trigger(evt, [dl]);
-    if (!evt.isDefaultPrevented() && had_tracker_at)
+    if (!evt.isDefaultPrevented() && had_tracker_at
+        && (!is_initial || !is_my_tracker()))
         display_tracker();
     if (had_tracker_at)
         comet_store(1);
@@ -1478,6 +1484,10 @@ function reload_success(data) {
 function reload_error(xhr, status, err) {
     ++reload_nerrors;
     reload_timeout = setTimeout(reload, 10000 * Math.min(reload_nerrors, 60));
+}
+
+function load_success(data) {
+    load(data);
 }
 
 function reload() {
