@@ -2477,16 +2477,18 @@ class Conference {
         else if (is_object($values))
             $values = get_object_vars($values);
         $t = "";
-        $msgs = $this->session("msgs", array());
-        $this->save_session("msgs", null);
-        foreach ($msgs as $msg) {
-            if (($msg[0] === "merror" || $msg[0] === "xmerror")
-                && !isset($values["error"]))
-                $values["error"] = $msg[1];
-            if ($div)
-                $t .= Ht::xmsg($msg[0], $msg[1]);
-            else
-                $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
+        if (session_id() !== ""
+            && ($msgs = $this->session("msgs", array()))) {
+            $this->save_session("msgs", null);
+            foreach ($msgs as $msg) {
+                if (($msg[0] === "merror" || $msg[0] === "xmerror")
+                    && !isset($values["error"]))
+                    $values["error"] = $msg[1];
+                if ($div)
+                    $t .= Ht::xmsg($msg[0], $msg[1]);
+                else
+                    $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
+            }
         }
         if (!isset($values["response"]) && $t !== "")
             $values["response"] = $t;

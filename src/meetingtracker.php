@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class MeetingTracker {
-
     static function lookup() {
         global $Conf, $Now;
         $tracker = $Conf->setting_json("tracker");
