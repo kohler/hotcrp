@@ -508,8 +508,8 @@ class DocumentHelper {
     }
 
     static function load($docclass, $doc) {
-        if (is_string(@$docj->content)
-            || is_string(@$docj->content_base64)
+        if (is_string(@$doc->content)
+            || is_string(@$doc->content_base64)
             || (is_string(@$doc->content_file) && is_readable($doc->content_file))
             || (is_string(@$doc->file) && is_readable($doc->file))
             || (is_string(@$doc->filestore) && is_readable($doc->filestore)))
