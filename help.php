@@ -656,8 +656,8 @@ Without tracks, all PC members are treated equally.
 With tracks, PC members with different tags can have different rights to
 view or review papers, depending on the papers’ tags.</p>
 
-<p>Set up tracks on the <a href=\"" . hoturl("settings", "group=tags#tracks") . "\">Settings &gt;
-Reviews</a> page.</p>");
+<p>Set up tracks on the <a href=\"" . hoturl("settings", "group=tracks") . "\">Settings &gt;
+Tracks</a> page.</p>");
 
     _subhead("Examples", "
 <p>An <em>external review committee</em> is a subset of the PC that may bid on
@@ -668,7 +668,7 @@ for papers they have reviewed. To set this up:</p>
 
 <ul>
 <li>Give external review committee members the “erc” tag.</li>
-<li>Under “Tracks” on Settings &gt; Reviews, “For papers not on other
+<li>On Settings &gt; Tracks, “For papers not on other
 tracks,” select “Who can view reviews? &gt; PC members without tag: erc”
 and “Who can review without an assignment? &gt; PC members without tag: erc”.</li>
 </ul>
@@ -681,7 +681,7 @@ papers. To set this up:</p>
 <ul>
 <li>Give PC-paper review committee members the “pcrc” tag.</li>
 <li>Give PC papers the “pcrc” tag.</li>
-<li>Under “Tracks” on Settings &gt; Reviews, add a track for tag “pcrc”.
+<li>On Settings &gt; Tracks, add a track for tag “pcrc”.
   For all permissions, select “PC members with tag: pcrc”.</li>
 <li>For papers not on other tracks, for all permissions, select
   “PC members without tag: pcrc”.</li>
