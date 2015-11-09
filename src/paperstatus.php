@@ -285,7 +285,7 @@ class PaperStatus {
         $docclass = new HotCRPDocument($dtype);
         $upload = null;
         if (!$docid && DocumentHelper::load($docclass, $docj))
-            $upload = DocumentHelper::upload(new HotCRPDocument($dtype), $docj,
+            $upload = DocumentHelper::upload($docclass, $docj,
                                              (object) array("paperId" => $paperid));
         if ($docid)
             $docj->docid = $docid;
