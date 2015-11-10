@@ -203,15 +203,9 @@ class HotCRPDocument {
         if ($this->no_filestore)
             return false;
         if (self::$_docstore === null) {
-            $fdir = defval($Opt, "docstore");
+            $fdir = @$Opt["docstore"];
             if (!$fdir)
                 return (self::$_docstore = false);
-            if ($fdir === true)
-                $fdir = "docs";
-            if ($fdir[0] !== "/")
-                $fdir = "$ConfSitePATH/$fdir";
-            if (@$Opt["multiconference"])
-                $fdir = str_replace("*", $Opt["confid"], $fdir);
 
             $fpath = $fdir;
             $use_subdir = defval($Opt, "docstoreSubdir", false);
