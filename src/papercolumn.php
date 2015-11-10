@@ -309,7 +309,6 @@ class AuthorsPaperColumn extends PaperColumn {
         foreach ($affaus as &$ax)
             if ($ax[1] === "" && $anyaff)
                 $ax[1] = "unaffiliated";
-            error_log(json_encode($affaus));
         return $affaus;
     }
     public function content_empty($pl, $row) {
