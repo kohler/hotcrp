@@ -13,7 +13,7 @@ class Countries {
 "Andorra",
 "Anguilla",
 "Antarctica",
-"Antigua And Barbuda",
+"Antigua and Barbuda",
 "Argentina",
 
 "Armenia",
@@ -268,10 +268,8 @@ class Countries {
 "United Arab Emirates",
 "United Kingdom",
 
-"United States",
 "United States Minor Outlying Islands",
 "Uruguay",
-"USA",
 "Uzbekistan",
 "Vanuatu",
 
