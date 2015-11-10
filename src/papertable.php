@@ -83,9 +83,6 @@ class PaperTable {
             if (!$Conf->session("foldpaper$k", 1))
                 $this->foldState &= ~(1 << $v);
 
-        $this->allFolded = $this->mode === "re" || $this->mode === "assign"
-            || ($this->mode !== "edit" && (count($this->rrows) || count($this->crows)));
-
         $this->matchPreg = array();
         $matcher = array();
         if (($l = SessionList::active()) && @$l->matchPreg)
@@ -118,6 +115,8 @@ class PaperTable {
     function initialize($editable, $useRequest) {
         $this->editable = $editable;
         $this->useRequest = $useRequest;
+        $this->allFolded = $this->mode === "re" || $this->mode === "assign"
+            || ($this->mode !== "edit" && (count($this->rrows) || count($this->crows)));
     }
 
     function can_view_reviews() {
