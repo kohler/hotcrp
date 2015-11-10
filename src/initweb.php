@@ -59,15 +59,13 @@ function initialize_user() {
         $_SESSION["trueuser"] = $_SESSION["user"];
     if (is_string(@$_SESSION["trueuser"])) {
         $userwords = explode(" ", $_SESSION["trueuser"]);
-        $_SESSION["trueuser"] = (object) array("contactId" => $userwords[0], "dsn" => $userwords[1], "email" => @$userwords[2]);
+        $_SESSION["trueuser"] = (object) array("email" => @$userwords[2]);
     }
 
     // load current user
     $Me = null;
     $trueuser = @$_SESSION["trueuser"];
-    if ($trueuser && $trueuser->dsn == $Conf->dsn)
-        $Me = Contact::find_by_id($trueuser->contactId);
-    if (!$Me && $trueuser && $trueuser->email)
+    if ($trueuser && $trueuser->email)
         $Me = Contact::find_by_email($trueuser->email);
     if (!$Me)
         $Me = new Contact($trueuser);
