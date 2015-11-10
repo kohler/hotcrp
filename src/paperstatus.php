@@ -115,17 +115,16 @@ class PaperStatus {
                 $contacts[strtolower($conf->email)] = $conf;
 
             $pj->authors = array();
-            cleanAuthor($prow);
-            foreach ($prow->authorTable as $au) {
+            foreach ($prow->author_list() as $au) {
                 $aux = (object) array();
-                if ($au[2])
-                    $aux->email = $au[2];
-                if ($au[0])
-                    $aux->first = $au[0];
-                if ($au[1])
-                    $aux->last = $au[1];
-                if ($au[3])
-                    $aux->affiliation = $au[3];
+                if ($au->email)
+                    $aux->email = $au->email;
+                if ($au->firstName)
+                    $aux->first = $au->firstName;
+                if ($au->lastName)
+                    $aux->last = $au->lastName;
+                if ($au->affiliation)
+                    $aux->affiliation = $au->affiliation;
                 if (($lemail = strtolower(@$aux->email ? : ""))
                     && ($conf = @$contacts[$lemail])
                     && $conf->conflictType >= CONFLICT_AUTHOR) {

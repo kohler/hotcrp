@@ -821,20 +821,17 @@ class Contact {
     static function email_authored_papers($email, $reg) {
         $aupapers = array();
         $result = Dbl::q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($email) . "\t%'"));
-        while (($row = edb_orow($result))) {
-            cleanAuthor($row);
-            foreach ($row->authorTable as $au)
-                if (strcasecmp($au[2], $email) == 0) {
+        while (($row = PaperInfo::fetch($result, null)))
+            foreach ($row->author_list() as $au)
+                if (strcasecmp($au->email, $email) == 0) {
                     $aupapers[] = $row->paperId;
-                    if ($reg && !@$reg->firstName && $au[0])
-                        $reg->firstName = $au[0];
-                    if ($reg && !@$reg->lastName && $au[1])
-                        $reg->lastName = $au[1];
-                    if ($reg && !@$reg->affiliation && $au[3])
-                        $reg->affiliation = $au[3];
-                    break;
+                    if ($reg && !@$reg->firstName && $au->firstName)
+                        $reg->firstName = $au->firstName;
+                    if ($reg && !@$reg->lastName && $au->lastName)
+                        $reg->lastName = $au->lastName;
+                    if ($reg && !@$reg->affiliation && $au->affiliation)
+                        $reg->affiliation = $au->affiliation;
                 }
-        }
         return $aupapers;
     }
 

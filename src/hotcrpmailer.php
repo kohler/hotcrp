@@ -156,13 +156,13 @@ class HotCRPMailer extends Mailer {
         if ($this->row && $this->row->paperId > 0) {
             $e1 = (string) @$contact->email;
             $e2 = (string) @$contact->preferredEmail;
-            cleanAuthor($this->row);
-            foreach ($this->row->authorTable as $au)
-                if (($au[0] || $au[1]) && $au[2]
-                    && (strcasecmp($au[2], $e1) == 0 || strcasecmp($au[2], $e2) == 0)) {
-                    $r->firstName = $au[0];
-                    $r->lastName = $au[1];
-                    $r->name = trim("$au[0] $au[1]");
+            foreach ($this->row->author_list() as $au)
+                if (($au->firstName || $au->lastName) && $au->email
+                    && (strcasecmp($au->email, $e1) == 0
+                        || strcasecmp($au->email, $e2) == 0)) {
+                    $r->firstName = $au->firstName;
+                    $r->lastName = $au->lastName;
+                    $r->name = $au->name();
                     return;
                 }
         }
@@ -254,8 +254,7 @@ class HotCRPMailer extends Mailer {
                 && !$this->row->has_author($this->permissionContact)
                 && !$this->permissionContact->can_view_authors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
-            cleanAuthor($this->row);
-            return rtrim($this->row->renderedAuthorInformation);
+            return rtrim($this->row->pretty_text_author_list());
         }
         if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
             && $this->permissionContact->actAuthorView($this->row))

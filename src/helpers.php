@@ -469,27 +469,6 @@ function actas_link($cid, $contact = null) {
         . '">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
 }
 
-function authorTable($aus, $viewAs = null) {
-    global $Conf;
-    $out = "";
-    if (!is_array($aus))
-        $aus = explode("\n", $aus);
-    foreach ($aus as $aux) {
-        $au = trim(is_array($aux) ? Text::user_html($aux) : $aux);
-        if ($au != '') {
-            if (strlen($au) > 30)
-                $out .= "<span class='autblentry_long'>";
-            else
-                $out .= "<span class='autblentry'>";
-            $out .= $au;
-            if ($viewAs !== null && is_array($aux) && count($aux) >= 2 && $viewAs->email != $aux[2] && $viewAs->privChair)
-                $out .= " " . actas_link($aux[2], $aux);
-            $out .= "</span> ";
-        }
-    }
-    return $out;
-}
-
 function decorateNumber($n) {
     if ($n < 0)
         return "&#8722;" . (-$n);
@@ -1319,60 +1298,6 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
     // store list in $_SESSION
     $Conf->save_session($sessionvar, $x);
     return $x;
-}
-
-
-function cleanAuthor($row) {
-    if (!$row || isset($row->authorTable))
-        return;
-    $row->authorTable = array();
-    if (strpos($row->authorInformation, "\t") === false) {
-        foreach (explode("\n", $row->authorInformation) as $line)
-            if ($line != "") {
-                $email = $aff = "";
-                if (($p1 = strpos($line, '<')) !== false) {
-                    $p2 = strpos($line, '>', $p1);
-                    if ($p2 === false)
-                        $p2 = strlen($line);
-                    $email = substr($line, $p1 + 1, $p2 - ($p1 + 1));
-                    $line = substr($line, 0, $p1) . substr($line, $p2 + 1);
-                }
-                if (($p1 = strpos($line, '(')) !== false) {
-                    $p2 = strpos($line, ')', $p1);
-                    if ($p2 === false)
-                        $p2 = strlen($line);
-                    $aff = substr($line, $p1 + 1, $p2 - ($p1 + 1));
-                    $line = substr($line, 0, $p1) . substr($line, $p2 + 1);
-                    if (!$email && strpos($aff, '@') !== false
-                        && preg_match('_^\S+@\S+\.\S+$_', $aff)) {
-                        $email = $aff;
-                        $aff = '';
-                    }
-                }
-                $a = Text::split_name($line);
-                $a[2] = $email;
-                $a[3] = $aff;
-                $row->authorTable[] = $a;
-            }
-    } else {
-        $info = "";
-        foreach (explode("\n", $row->authorInformation) as $line)
-            if ($line != "") {
-                $row->authorTable[] = $a = explode("\t", $line);
-                if ($a[0] && $a[1])
-                    $info .= "$a[0] $a[1]";
-                else if ($a[0] || $a[1])
-                    $info .= $a[0] . $a[1];
-                else
-                    $info .= $a[2];
-                if ($a[3])
-                    $info .= " (" . $a[3] . ")";
-                else if ($a[2] && ($a[0] || $a[1]))
-                    $info .= " <" . $a[2] . ">";
-                $info .= "\n";
-            }
-        $row->renderedAuthorInformation = $info;
-    }
 }
 
 

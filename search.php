@@ -111,10 +111,8 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
             $text .= prefix_word_wrap($n, $prow->title, $l) . "\n";
             $text .= "---------------------------------------------------------------------------\n";
             $l = strlen($text);
-            if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a")) {
-                cleanAuthor($prow);
-                $text .= prefix_word_wrap("Authors: ", $prow->renderedAuthorInformation, 14);
-            }
+            if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a"))
+                $text .= prefix_word_wrap("Authors: ", $prow->pretty_text_author_list(), 14);
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
                 $text .= prefix_word_wrap("Topics: ", $tt, 14) . "\n";
@@ -444,16 +442,11 @@ if ($getaction == "authors" && SearchActions::any()
     while (($prow = PaperInfo::fetch($result, $Me))) {
         if (!$Me->can_view_authors($prow, true))
             continue;
-        cleanAuthor($prow);
-        foreach ($prow->authorTable as $au) {
-            if ($au[0] && $au[1])
-                $a = $au[0] . " " . $au[1];
-            else
-                $a = $au[0] . $au[1];
-            $line = array($prow->paperId, $prow->title, $a, $au[2], $au[3]);
+        foreach ($prow->author_list() as $au) {
+            $line = array($prow->paperId, $prow->title, $au->name(), $au->email, $au->affiliation);
 
             if ($Me->privChair) {
-                $key = $au[2] ? $prow->paperId . " " . $au[2] : "XXX";
+                $key = $au->email ? $prow->paperId . " " . $au->email : "XXX";
                 if (isset($contactline[$key])) {
                     unset($contactline[$key]);
                     $line[] = "contact_author";
@@ -673,10 +666,8 @@ function downloadRevpref($extended) {
             $t .= "," . unparse_preference($prow);
         $t .= "," . $prow->title . "\n";
         if ($extended) {
-            if ($Rev->can_view_authors($prow, false)) {
-                cleanAuthor($prow);
-                $t .= prefix_word_wrap("#  Authors: ", $prow->renderedAuthorInformation, "#           ");
-            }
+            if ($Rev->can_view_authors($prow, false))
+                $t .= prefix_word_wrap("#  Authors: ", $prow->pretty_text_author_list(), "#           ");
             $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ") . "\n";
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
@@ -850,12 +841,11 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
                    "auemail" => array(),
                    "auaff" => array(),
                    "notes" => "");
-        cleanAuthor($row);
-        foreach ($row->authorTable as $au) {
-            $email = $au[2] ? : "unknown";
-            $x["auname"][] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $email;
+        foreach ($row->author_list() as $au) {
+            $email = $au->email ? : "unknown";
+            $x["auname"][] = $au->name() ? : $email;
             $x["auemail"][] = $email;
-            $x["auaff"][] = $au[3] ? : "unaffiliated";
+            $x["auaff"][] = $au->affiliation ? : "unaffiliated";
         }
         foreach (array("auname", "auemail", "auaff") as $k)
             $x[$k] = join("; ", $x[$k]);

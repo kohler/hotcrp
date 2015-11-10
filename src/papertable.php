@@ -180,7 +180,6 @@ class PaperTable {
                 $this->foldState &= ~64;
         }
         if ($this->matchPreg && $this->prow && ($this->foldState & 256)) {
-            cleanAuthor($this->prow);
             $data = $this->entryData("authorInformation");
             if ($this->entryMatches)
                 $this->foldState &= ~(256 | 512);
@@ -282,7 +281,7 @@ class PaperTable {
         return $c;
     }
 
-    private function entryData($fieldName, $authorTable = false) {
+    private function entryData($fieldName, $table_type = false) {
         $this->entryMatches = 0;
 
         if ($this->useRequest && isset($_REQUEST[$fieldName]))
@@ -303,9 +302,9 @@ class PaperTable {
         else
             $text = htmlspecialchars($text);
 
-        if ($authorTable === "col")
+        if ($table_type === "col")
             $text = nl2br($text);
-        else if ($authorTable === "p") {
+        else if ($table_type === "p") {
             $pars = preg_split("/\n([ \t\r\v\f]*\n)+/", $text);
             $text = "";
             for ($i = 0; $i < count($pars); ++$i) {
@@ -546,7 +545,6 @@ class PaperTable {
 
     private function editable_authors() {
         global $Conf;
-        cleanAuthor($this->prow);
 
         echo $this->editable_papt("authorInformation", "Authors"),
             "<div class='paphint'>List the authors one per line, including email addresses and affiliations.";
@@ -562,16 +560,14 @@ class PaperTable {
             for ($n = 1; @$_POST["auname$n"] || @$_POST["auemail$n"] || @$_POST["auaff$n"]; ++$n)
                 self::echo_editable_authors_tr("", $n, (string) @$_POST["auname$n"], (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
         } else {
-            $authorTable = $this->prow ? $this->prow->authorTable : array();
-            for ($n = 1; $n <= count($authorTable); ++$n) {
-                $au = $authorTable[$n - 1];
-                if ($au[0] && $au[1] && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au[1]))
-                    $auname = $au[1] . ", " . $au[0];
-                else if ($au[0] && $au[1])
-                    $auname = $au[0] . " " . $au[1];
+            $aulist = $this->prow ? $this->prow->author_list() : array();
+            for ($n = 1; $n <= count($aulist); ++$n) {
+                $au = $aulist[$n - 1];
+                if ($au->firstName && $au->lastName && !preg_match('@^\s*(v[oa]n\s+|d[eu]\s+)?\S+(\s+jr.?|\s+sr.?|\s+i+)?\s*$@i', $au->lastName))
+                    $auname = $au->lastName . ", " . $au->firstName;
                 else
-                    $auname = $au[0] . $au[1];
-                self::echo_editable_authors_tr("", $n, $auname, $au[2], $au[3]);
+                    $auname = $au->name();
+                self::echo_editable_authors_tr("", $n, $auname, $au->email, $au->affiliation);
             }
         }
         do {
@@ -599,26 +595,24 @@ class PaperTable {
 
         } else {
             foreach ($table as $au) {
-                if (is_object($au))
-                    $au = array($au->firstName, $au->lastName, $au->email, $au->affiliation, @$au->contactId);
                 $nm1 = $nm2 = $nm3 = 0;
                 $n = $e = $t = "";
-                $n = trim(Text::highlight("$au[0] $au[1]", $highpreg, $nm1));
-                if ($au[2] !== "") {
-                    $e = Text::highlight($au[2], $highpreg, $nm2);
-                    $e = '&lt;<a href="mailto:' . htmlspecialchars($au[2])
+                $n = trim(Text::highlight("$au->firstName $au->lastName", $highpreg, $nm1));
+                if ($au->email !== "") {
+                    $e = Text::highlight($au->email, $highpreg, $nm2);
+                    $e = '&lt;<a href="mailto:' . htmlspecialchars($au->email)
                         . '">' . $e . '</a>&gt;';
                 }
                 $t = ($n === "" ? $e : $n);
-                if ($au[3] !== "")
-                    $t .= ' <span class="auaff">(' . Text::highlight($au[3], $highpreg, $nm3) . ')</span>';
+                if ($au->affiliation !== "")
+                    $t .= ' <span class="auaff">(' . Text::highlight($au->affiliation, $highpreg, $nm3) . ')</span>';
                 if ($n !== "" && $e !== "")
                     $t .= " " . $e;
                 $this->entryMatches += $nm1 + $nm2 + $nm3;
                 $t = trim($t);
-                if ($au[2] !== "" && $viewAs !== null && $viewAs->email !== $au[2]
-                    && $viewAs->privChair && @$au[4])
-                    $t .= " <a href=\"" . selfHref(array("actas" => $au[2])) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
+                if ($au->email !== "" && $au->contactId
+                    && $viewAs !== null && $viewAs->email !== $au->email && $viewAs->privChair)
+                    $t .= " <a href=\"" . selfHref(array("actas" => $au->email)) . "\">" . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($au))) . "</a>";
                 $names[] = '<p class="odname">' . $prefix . $t . '</p>';
                 $prefix = "";
             }
@@ -629,8 +623,7 @@ class PaperTable {
     private function _analyze_authors() {
         global $Conf;
         // clean author information
-        cleanAuthor($this->prow);
-        $autable = $this->prow->authorTable;
+        $aulist = $this->prow->author_list();
 
         // find contact author information, combine with author table
         $result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
@@ -639,16 +632,16 @@ class PaperTable {
         $contacts = array();
         while (($row = edb_orow($result))) {
             $match = -1;
-            for ($i = 0; $match < 0 && $i < count($autable); ++$i)
-                if (strcasecmp($autable[$i][2], $row->email) == 0)
+            for ($i = 0; $match < 0 && $i < count($aulist); ++$i)
+                if (strcasecmp($aulist[$i]->email, $row->email) == 0)
                     $match = $i;
             if (($row->firstName !== "" || $row->lastName !== "") && $match < 0) {
                 $contact_n = $row->firstName . " " . $row->lastName;
                 $contact_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($row->firstName) . "\\b.*\\b" . preg_quote($row->lastName) . "\\b}i");
-                for ($i = 0; $match < 0 && $i < count($autable); ++$i) {
-                    $f = $autable[$i][0];
-                    $l = $autable[$i][1];
-                    if (($f !== "" || $l !== "") && $autable[$i][2] === "") {
+                for ($i = 0; $match < 0 && $i < count($aulist); ++$i) {
+                    $f = $aulist[$i]->firstName;
+                    $l = $aulist[$i]->lastName;
+                    if (($f !== "" || $l !== "") && $aulist[$i]->email === "") {
                         $author_n = $f . " " . $l;
                         $author_preg = str_replace("\\.", "\\S*", "{\\b" . preg_quote($f) . "\\b.*\\b" . preg_quote($l) . "\\b}i");
                         if (preg_match($contact_preg, $author_n)
@@ -658,9 +651,9 @@ class PaperTable {
                 }
             }
             if ($match >= 0) {
-                if ($autable[$match][2] === "")
-                    $this->prow->authorTable[$match][2] = $row->email;
-                $this->prow->authorTable[$match][4] = $row->contactId;
+                if ($aulist[$match]->email === "")
+                    $aulist[$match]->email = $row->email;
+                $aulist[$match]->contactId = (int) $row->contactId;
             } else {
                 Contact::set_sorter($row);
                 $contacts[] = $row;
@@ -668,7 +661,7 @@ class PaperTable {
         }
 
         uasort($contacts, "Contact::compare");
-        return array($this->prow->authorTable, $contacts);
+        return array($aulist, $contacts);
     }
 
     private function paptabAuthors($skip_contacts) {
@@ -684,10 +677,10 @@ class PaperTable {
         }
 
         // clean author information
-        list($autable, $contacts) = $this->_analyze_authors();
+        list($aulist, $contacts) = $this->_analyze_authors();
 
         // "author" or "authors"?
-        $auname = pluralx(count($autable), "Author");
+        $auname = pluralx(count($aulist), "Author");
         if (!$viewable)
             $auname = "$auname (deblinded)";
 
@@ -722,10 +715,10 @@ class PaperTable {
                 '</a><div class="fx8">';
         if ($this->allFolded)
             echo '<div class="fn9">',
-                $this->authorData($autable, "last", null, $inauthors),
+                $this->authorData($aulist, "last", null, $inauthors),
                 ' <a href="#" onclick="return aufoldup(event)">[details]</a>',
                 '</div><div class="fx9">';
-        echo $this->authorData($autable, "col", $Me, $inauthors);
+        echo $this->authorData($aulist, "col", $Me, $inauthors);
         if ($this->allFolded)
             echo '</div>';
         if (!$viewable)
@@ -885,7 +878,7 @@ class PaperTable {
     private function editable_contact_author($always_unfold) {
         global $Conf, $Me, $Error;
         $paperId = $this->prow->paperId;
-        list($autable, $contacts) = $this->_analyze_authors();
+        list($aulist, $contacts) = $this->_analyze_authors();
 
         $cerror = @$Error["contactAuthor"] || @$Error["contacts"];
         $open = $cerror || $always_unfold
@@ -905,11 +898,11 @@ class PaperTable {
 
         // Non-editable version
         echo '<div class="papev fn0">';
-        foreach ($autable as $au)
-            if (@$au[4]) {
+        foreach ($aulist as $au)
+            if ($au->contactId) {
                 echo '<span class="autblentry_long">', Text::user_html($au);
-                if ($Me->privChair && $au[4] != $Me->contactId)
-                    echo '&nbsp;', actas_link($au[2], $au);
+                if ($Me->privChair && $au->contactId != $Me->contactId)
+                    echo '&nbsp;', actas_link($au->email, $au);
                 echo '</span><br />';
             }
         foreach ($contacts as $au) {
@@ -927,13 +920,13 @@ class PaperTable {
         echo '<div class="papev fx0">';
         echo '<table>';
         $title = "Authors";
-        foreach ($autable as $au) {
-            if (!@$au[4] && (!$au[2] || !validate_email($au[2])))
+        foreach ($aulist as $au) {
+            if (!$au->contactId && (!$au->email || !validate_email($au->email)))
                 continue;
-            $control = "contact_" . html_id_encode($au[2]);
-            $checked = $this->useRequest ? !!@$_REQUEST[$control] : @$au[4];
+            $control = "contact_" . html_id_encode($au->email);
+            $checked = $this->useRequest ? !!@$_REQUEST[$control] : $au->contactId;
             echo '<tr><td class="lcaption">', $title, '</td><td>';
-            if (@$au[4])
+            if ($au->contactId)
                 echo Ht::checkbox(null, null, true, array("disabled" => true)),
                     Ht::hidden($control, Text::name_text($au));
             else
@@ -2342,7 +2335,6 @@ class PaperTable {
         }
         if (!isset($_REQUEST["paperId"]))
             $_REQUEST["paperId"] = $prow->paperId;
-        cleanAuthor($prow);
         return $prow;
     }
 

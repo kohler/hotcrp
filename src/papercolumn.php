@@ -295,27 +295,27 @@ class AuthorsPaperColumn extends PaperColumn {
         $lastaff = "";
         $anyaff = false;
         $aus = $affaus = array();
-        foreach ($row->authorTable as $au) {
-            if ($au[3] != $lastaff && count($aus)) {
+        foreach ($row->author_list() as $au) {
+            if ($au->affiliation != $lastaff && count($aus)) {
                 $affaus[] = array($aus, $lastaff);
                 $aus = array();
-                $anyaff = $anyaff || ($au[3] != "");
+                $anyaff = $anyaff || ($au->affiliation != "");
             }
-            $lastaff = $au[3];
-            $aus[] = $au[0] || $au[1] ? trim("$au[0] $au[1]") : $au[2];
+            $lastaff = $au->affiliation;
+            $aus[] = $au->name();
         }
         if (count($aus))
             $affaus[] = array($aus, $lastaff);
         foreach ($affaus as &$ax)
             if ($ax[1] === "" && $anyaff)
                 $ax[1] = "unaffiliated";
+            error_log(json_encode($affaus));
         return $affaus;
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_authors($row, true);
     }
     public function content($pl, $row, $rowidx) {
-        cleanAuthor($row);
         $aus = array();
         $highlight = defval($pl->search->matchPreg, "authorInformation", "");
         if ($this->aufull) {
@@ -329,13 +329,13 @@ class AuthorsPaperColumn extends PaperColumn {
             }
             return commajoin($affaus);
         } else if (!$highlight) {
-            foreach ($row->authorTable as $au)
-                $aus[] = Text::abbrevname_html($au);
+            foreach ($row->author_list() as $au)
+                $aus[] = $au->abbrevname_html();
             return join(", ", $aus);
         } else {
-            foreach ($row->authorTable as $au) {
-                $first = htmlspecialchars($au[0]);
-                $x = Text::highlight(trim("$au[0] $au[1]"), $highlight, $nm);
+            foreach ($row->author_list() as $au) {
+                $first = htmlspecialchars($au->firstName);
+                $x = Text::highlight($au->name(), $highlight, $nm);
                 if ((!$nm || substr($x, 0, strlen($first)) == $first)
                     && ($initial = Text::initial($first)) != "")
                     $x = $initial . substr($x, strlen($first));
@@ -347,7 +347,6 @@ class AuthorsPaperColumn extends PaperColumn {
     public function text($pl, $row) {
         if (!$pl->contact->can_view_authors($row, true))
             return "";
-        cleanAuthor($row);
         if ($this->aufull) {
             $affaus = $this->full_authors($row);
             foreach ($affaus as &$ax)
@@ -355,8 +354,8 @@ class AuthorsPaperColumn extends PaperColumn {
             return commajoin($affaus);
         } else {
             $aus = array();
-            foreach ($row->authorTable as $au)
-                $aus[] = Text::abbrevname_text($au);
+            foreach ($row->author_list() as $au)
+                $aus[] = $au->abbrevname_text();
             return join(", ", $aus);
         }
     }

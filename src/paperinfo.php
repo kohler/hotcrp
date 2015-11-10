@@ -60,6 +60,40 @@ class PaperContactInfo {
     }
 }
 
+class PaperInfo_Author {
+    public $firstName;
+    public $lastName;
+    public $email;
+    public $affiliation;
+    public $contactId = null;
+
+    public function __construct($line) {
+        $a = explode("\t", $line);
+        $this->firstName = @$a[0];
+        $this->lastName = @$a[1];
+        $this->email = @$a[2];
+        $this->affiliation = @$a[3];
+    }
+    public function name() {
+        if ($this->firstName && $this->lastName)
+            return $this->firstName . " " . $this->lastName;
+        else
+            return $this->lastName ? : $this->firstName;
+    }
+    public function abbrevname_text() {
+        if ($this->lastName) {
+            $u = "";
+            if ($this->firstName && ($u = Text::initial($this->firstName)) != "")
+                $u .= " "; // non-breaking space
+            return $u . $this->lastName;
+        } else
+            return $this->firstName ? : $this->email ? : "???";
+    }
+    public function abbrevname_html() {
+        return htmlspecialchars($this->abbrevname_text());
+    }
+}
+
 class PaperInfo {
     public $paperId;
     public $title;
@@ -73,6 +107,7 @@ class PaperInfo {
 
     private $_contact_info = array();
     private $_contact_info_rights_version = 0;
+    private $_author_array = null;
     private $_prefs_array = null;
     private $_review_id_array = null;
     private $_topics_array = null;
@@ -156,6 +191,27 @@ class PaperInfo {
         $l = $this->pretty_text_title_indent($width);
         return prefix_word_wrap("Paper #{$this->paperId}: ",
                                 $this->title, $l) . "\n";
+    }
+
+    public function author_list() {
+        if (!isset($this->_author_array)) {
+            $this->_author_array = array();
+            foreach (explode("\n", $this->authorInformation) as $line)
+                if ($line != "")
+                    $this->_author_array[] = new PaperInfo_Author($line);
+        }
+        return $this->_author_array;
+    }
+
+    public function pretty_text_author_list() {
+        $info = "";
+        foreach ($this->author_list() as $au) {
+            $info .= $au->name() ? : $au->email;
+            if ($au->affiliation)
+                $info .= " (" . $au->affiliation . ")";
+            $info .= "\n";
+        }
+        return $info;
     }
 
     public function conflict_type($contact = null) {
