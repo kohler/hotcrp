@@ -1399,10 +1399,9 @@ $blind\n";
                     if ($f->description)
                         $help .= '<p>' . $f->description . '</p>';
                     if ($f->has_options) {
-                        $help .= '<p>Choices are:<br />';
+                        $help .= '<p style="margin-bottom:0">Choices are:</p>';
                         foreach ($f->options as $val => $text)
-                            $help .= $f->unparse_value($val, ReviewField::VALUE_REV_NUM | ReviewField::VALUE_DARK) . '&nbsp;' . htmlspecialchars($text) . '<br />';
-                        $help .= '</p>';
+                            $help .= '<div class="od">' . $f->unparse_value($val, ReviewField::VALUE_REV_NUM | ReviewField::VALUE_DARK) . '&nbsp;' . htmlspecialchars($text) . '</div>';
                     }
                     $Conf->footerHtml($help . '</div>');
                 }
