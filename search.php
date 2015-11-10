@@ -113,7 +113,7 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
             $l = strlen($text);
             if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a")) {
                 cleanAuthor($prow);
-                $text .= prefix_word_wrap("Authors: ", $prow->authorInformation, 14) . "\n";
+                $text .= prefix_word_wrap("Authors: ", $prow->renderedAuthorInformation, 14);
             }
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
@@ -675,7 +675,7 @@ function downloadRevpref($extended) {
         if ($extended) {
             if ($Rev->can_view_authors($prow, false)) {
                 cleanAuthor($prow);
-                $t .= prefix_word_wrap("#  Authors: ", $prow->authorInformation, "#           ");
+                $t .= prefix_word_wrap("#  Authors: ", $prow->renderedAuthorInformation, "#           ");
             }
             $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ") . "\n";
             if ($prow->topicIds != "") {

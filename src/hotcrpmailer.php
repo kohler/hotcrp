@@ -255,7 +255,7 @@ class HotCRPMailer extends Mailer {
                 && !$this->permissionContact->can_view_authors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");
             cleanAuthor($this->row);
-            return rtrim($this->row->authorInformation);
+            return rtrim($this->row->renderedAuthorInformation);
         }
         if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
             && $this->permissionContact->actAuthorView($this->row))

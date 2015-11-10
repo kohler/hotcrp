@@ -1371,7 +1371,7 @@ function cleanAuthor($row) {
                     $info .= " <" . $a[2] . ">";
                 $info .= "\n";
             }
-        $row->authorInformation = $info;
+        $row->renderedAuthorInformation = $info;
     }
 }
 
