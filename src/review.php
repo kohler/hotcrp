@@ -448,41 +448,6 @@ class ReviewForm {
         return $field;
     }
 
-    private function get_deprecated($table, $element) {
-        trigger_error(caller_landmark(2) . ": ReviewForm->$table deprecated", E_USER_NOTICE);
-        $x = array();
-        foreach ($this->fmap as $f)
-            $x[$f->id] = $f->$element;
-        return $x;
-    }
-
-    public function __get($name) {
-        if ($name == "description")
-            $x = $this->get_deprecated($name, "description");
-        else if ($name == "fieldRows")
-            $x = $this->get_deprecated($name, "display_space");
-        else if ($name == "authorView")
-            $x = $this->get_deprecated($name, "view_score");
-        else if ($name == "abbrevName")
-            $x = $this->get_deprecated($name, "abbreviation");
-        else if ($name == "shortName")
-            $x = $this->get_deprecated($name, "name");
-        else if ($name == "fieldOrder") {
-            trigger_error(caller_landmark() . ": ReviewForm->$name deprecated", E_USER_NOTICE);
-            $x = array();
-            foreach ($this->forder as $f)
-                $x[] = $f->id;
-        } else if ($name == "reviewFields") {
-            trigger_error(caller_landmark() . ": ReviewForm->$name deprecated", E_USER_NOTICE);
-            $x = array();
-            foreach ($this->fmap as $f)
-                $x[$f->id] = $f->has_options ? ($f->option_letter ? $f->option_letter : 1) : 0;
-        } else
-            return null;
-        $this->$name = $x;
-        return $x;
-    }
-
     static function make_abbreviation($name, $abbrdetail, $abbrtype) {
         $name = str_replace("'", "", $name);
         if ($abbrdetail == 0)
