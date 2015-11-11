@@ -918,8 +918,11 @@ return function (content, bubopt) {
 })();
 
 
-function tooltip(elt) {
-    var j = $(elt), near, tt;
+function tooltip(info) {
+    var j, near, tt;
+    if (info.tagName)
+        info = {element: info};
+    j = $(info.element);
 
     function jqnear(attr) {
         var x = j.attr(attr);
@@ -931,20 +934,27 @@ function tooltip(elt) {
             return $();
     }
 
-    var content = j.attr("data-hottooltip") ||
-        jqnear("data-hottooltip-content-selector").html();
-    if (!content)
+    if (info.content == null)
+        info.content = j.attr("data-hottooltip") ||
+            jqnear("data-hottooltip-content-selector").html();
+    if (info.dir == null)
+        info.dir = j.attr("data-hottooltip-dir") || "v";
+    if (info.type == null)
+        info.type = j.attr("data-hottooltip-type");
+    if (info.near == null)
+        info.near = jqnear("data-hottooltip-near")[0];
+
+    if (!info.content || window.disable_tooltip)
         return null;
 
     if ((tt = window.global_tooltip)) {
-        if (tt.elt !== elt || tt.content !== content)
+        if (tt.elt !== info.element || tt.content !== info.content)
             tt.erase();
         else
             return tt;
     }
 
-    var dir = j.attr("data-hottooltip-dir") || "v",
-        bub = make_bubble(content, {color: "tooltip", dir: dir}),
+    var bub = make_bubble(info.content, {color: "tooltip", dir: info.dir}),
         to = null, refcount = 0;
     function erase() {
         to = clearTimeout(to);
@@ -959,32 +969,26 @@ function tooltip(elt) {
             ++refcount;
         },
         exit: function () {
-            var delay = j.attr("data-hottooltip-type") == "focus" ? 0 : 200;
+            var delay = info.type == "focus" ? 0 : 200;
             to = clearTimeout(to);
             if (--refcount == 0)
                 to = setTimeout(erase, delay);
         },
-        erase: erase, elt: elt, content: content
+        erase: erase, elt: info.element, content: info.content
     };
     j.data("hotcrp_tooltip", tt);
-    near = jqnear("data-hottooltip-near")[0] || elt;
-    bub.near(near).hover(tt.enter, tt.exit);
+    bub.near(info.near || info.element).hover(tt.enter, tt.exit);
     return window.global_tooltip = tt;
 }
 
 function tooltip_enter(evt) {
-    var j = $(this), x, text;
-    var tt = j.data("hotcrp_tooltip");
-    if (!tt && !window.disable_tooltip)
-        tt = tooltip(this);
-    if (tt)
-        tt.enter();
+    var tt = $(this).data("hotcrp_tooltip") || tooltip(this);
+    tt && tt.enter();
 }
 
 function tooltip_leave(evt) {
-    var j = $(this), tt;
-    if ((tt = j.data("hotcrp_tooltip")))
-        tt.exit();
+    var tt = $(this).data("hotcrp_tooltip");
+    tt && tt.exit();
 }
 
 function add_tooltip() {
