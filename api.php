@@ -72,12 +72,12 @@ if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
     $entries = $Conf->reviewerActivity($Me, $from, 10);
     $when = $from;
     $rows = array();
+    $rf = ReviewForm::get();
     foreach ($entries as $which => $xr)
         if ($xr->isComment) {
             $rows[] = CommentInfo::unparse_flow_entry($xr, $Me, "");
             $when = $xr->timeModified;
         } else {
-            $rf = ReviewForm::get($xr);
             $rows[] = $rf->reviewFlowEntry($Me, $xr, "");
             $when = $xr->reviewSubmitted;
         }

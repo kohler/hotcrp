@@ -196,7 +196,7 @@ submitted. Add a line “<tt>No entry</tt>” to make the score optional.</p></d
 
     $Conf->footerScript("review_form_settings("
                         . json_encode($fmap) . ","
-                        . json_encode($rf->unparse_json()) . ","
+                        . json_encode($rf->unparse_full_json()) . ","
                         . json_encode($samples) . ","
                         . json_encode($Error) . ","
                         . json_encode($req) . ")");

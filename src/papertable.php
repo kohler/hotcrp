@@ -8,7 +8,8 @@ class PaperTable {
     const ENABLESUBMIT = 8;
 
     var $prow;
-    var $rrows = null;
+    private $all_rrows = null;
+    private $viewable_rrows = null;
     var $crows = null;
     private $mycrows;
     private $can_view_reviews = false;
@@ -18,7 +19,7 @@ class PaperTable {
     private $allreviewslink;
 
     var $editable;
-    var $useRequest;
+    private $useRequest;
     private $npapstrip = 0;
     private $npapstrip_tag_entry;
     private $allFolded;
@@ -116,7 +117,8 @@ class PaperTable {
         $this->editable = $editable;
         $this->useRequest = $useRequest;
         $this->allFolded = $this->mode === "re" || $this->mode === "assign"
-            || ($this->mode !== "edit" && (count($this->rrows) || count($this->crows)));
+            || ($this->mode !== "edit"
+                && (count($this->all_rrows) || count($this->crows)));
     }
 
     function can_view_reviews() {
@@ -2022,9 +2024,9 @@ class PaperTable {
 
         $t = "";
         if ($rtable)
-            $t .= reviewTable($this->prow, $this->rrows, $this->mycrows,
+            $t .= reviewTable($this->prow, $this->all_rrows, $this->mycrows,
                               $editrrow, $this->mode);
-        $t .= reviewLinks($this->prow, $this->rrows, $this->mycrows,
+        $t .= reviewLinks($this->prow, $this->all_rrows, $this->mycrows,
                           $editrrow, $this->mode, $this->allreviewslink);
         if (($empty = ($t === "")))
             $t = $ifempty;
@@ -2057,8 +2059,8 @@ class PaperTable {
 
         // text format link
         $viewable = array();
-        foreach ($this->rrows as $rr)
-            if ($rr->reviewModified > 0 && $Me->can_view_review($prow, $rr, null)) {
+        foreach ($this->viewable_rrows as $rr)
+            if ($rr->reviewModified > 0) {
                 $viewable[] = "reviews";
                 break;
             }
@@ -2075,18 +2077,13 @@ class PaperTable {
                 " in plain text</u></a></div></div>\n";
 
         $opt = array("edit" => false);
-        foreach ($this->rrows as $rr)
-            if ($rr->reviewSubmitted
-                && $Me->can_view_review($prow, $rr, null)) {
-                $rf = ReviewForm::get($rr);
-                $rf->show($prow, $this->rrows, $rr, $opt);
-            }
-        foreach ($this->rrows as $rr)
-            if (!$rr->reviewSubmitted && $rr->reviewModified > 0
-                && $Me->can_view_review($prow, $rr, null)) {
-                $rf = ReviewForm::get($rr);
-                $rf->show($prow, $this->rrows, $rr, $opt);
-            }
+        $rf = ReviewForm::get();
+        foreach ($this->viewable_rrows as $rr)
+            if ($rr->reviewSubmitted)
+                $rf->show($prow, $this->all_rrows, $rr, $opt);
+        foreach ($this->viewable_rrows as $rr)
+            if (!$rr->reviewSubmitted && $rr->reviewModified > 0)
+                $rf->show($prow, $this->all_rrows, $rr, $opt);
     }
 
     function paptabComments() {
@@ -2126,7 +2123,7 @@ class PaperTable {
         }
 
         $m = array();
-        if ($this->rrows
+        if ($this->all_rrows
             && ($whyNot = $Me->perm_view_review($this->prow, null, null)))
             $m[] = "You can’t see the reviews for this paper. " . whyNotText($whyNot, "review");
         if ($this->prow && $this->prow->reviewType && !$Conf->time_review_open()) {
@@ -2157,7 +2154,7 @@ class PaperTable {
         } else if ($whyNot && isset($whyNot["reviewNotComplete"])
                    && ($Me->isPC || $Conf->setting("extrev_view"))) {
             $nother = 0;
-            foreach ($this->rrows as $rr)
+            foreach ($this->all_rrows as $rr)
                 if (!$Me->is_my_review($rr) && $rr->reviewSubmitted)
                     $nother++;
             if ($nother > 0)
@@ -2193,8 +2190,8 @@ class PaperTable {
         if ($opt["edit"] && !$Me->can_clickthrough("review"))
             self::echo_review_clickthrough();
 
-        $rf = ReviewForm::get($this->editrrow);
-        $rf->show($prow, $this->rrows, $this->editrrow, $opt);
+        $rf = ReviewForm::get();
+        $rf->show($prow, $this->all_rrows, $this->editrrow, $opt);
         Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
                          "reviewtext_autogrow");
     }
@@ -2346,22 +2343,27 @@ class PaperTable {
             $sel["ratings"] = true;
             $sel["myRating"] = $Me->contactId;
         }
-        $this->rrows = $Conf->reviewRow($sel, $whyNot);
+        $this->all_rrows = $Conf->reviewRow($sel, $whyNot);
+
+        $this->viewable_rrows = array();
+        foreach ($this->all_rrows as $rrow)
+            if ($Me->can_view_review($this->prow, $rrow, null))
+                $this->viewable_rrows[] = $rrow;
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")
             $rrid = substr($rrid, 1);
 
         $this->rrow = $myrrow = null;
-        foreach ($this->rrows as $rr) {
-            if ($rrid !== "") {
-                if (strcmp($rr->reviewId, $rrid) == 0
-                    || ($rr->reviewOrdinal && strcmp($rr->paperId . unparseReviewOrdinal($rr->reviewOrdinal), $rrid) == 0))
-                    $this->rrow = $rr;
-            }
-            if ($rr->contactId == $Me->contactId
-                || (!$myrrow && $Me->is_my_review($rr)))
-                $myrrow = $rr;
+        foreach ($this->viewable_rrows as $rrow) {
+            if ($rrid !== ""
+                && (strcmp($rrow->reviewId, $rrid) == 0
+                    || ($rrow->reviewOrdinal
+                        && strcmp($rrow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal), $rrid) == 0)))
+                $this->rrow = $rrow;
+            if ($rrow->contactId == $Me->contactId
+                || (!$myrrow && $Me->is_my_review($rrow)))
+                $myrrow = $rrow;
         }
 
         $this->editrrow = $this->rrow ? : $myrrow;
@@ -2396,17 +2398,16 @@ class PaperTable {
             && !$Me->can_view_review($prow, $this->rrow, null)
             && $Me->can_review($prow, $this->rrow, false))  {
             $this->mode = "re";
-            foreach ($this->rrows as $rr)
+            foreach ($this->all_rrows as $rr)
                 if ($rr->contactId == $Me->contactId
                     || (!$this->editrrow && $Me->is_my_review($rr)))
                     $this->editrrow = $rr;
         }
-        if ($this->mode === "p" && $prow && !count($this->rrows)
+        if ($this->mode === "p" && $prow && !count($this->viewable_rrows)
             && !count($this->mycrows)
             && $prow->has_author($Me)
             && !$Me->allow_administer($prow)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))
             $this->mode = "edit";
     }
-
 }

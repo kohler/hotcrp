@@ -101,12 +101,11 @@ class HotCRPMailer extends Mailer {
             $Conf->au_seerev = Conference::AUSEEREV_YES;
 
         $text = "";
+        $rf = ReviewForm::get();
         foreach ($rrows as $row)
             if ($row->reviewSubmitted
-                && $this->permissionContact->can_view_review($this->row, $row, false)) {
-                $rf = ReviewForm::get($row);
+                && $this->permissionContact->can_view_review($this->row, $row, false))
                 $text .= $rf->pretty_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
-            }
 
         $Conf->au_seerev = $au_seerev;
         if ($text === "" && $au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE

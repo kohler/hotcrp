@@ -225,6 +225,7 @@ if (($getaction == "revform" || $getaction == "revformz")
 
     $texts = array();
     $errors = array();
+    $rf = ReviewForm::get();
     while (($row = PaperInfo::fetch($result, $Me))) {
         $whyNot = $Me->perm_review($row, null);
         if ($whyNot && !isset($whyNot["deadline"])
@@ -237,7 +238,6 @@ if (($getaction == "revform" || $getaction == "revformz")
                 if (!isset($whyNot["deadline"]))
                     defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotToText($t)) . "\n\n", "==-== "));
             }
-            $rf = ReviewForm::get($row);
             defappend($texts[$row->paperId], $rf->textForm($row, $row, $Me, null) . "\n");
         }
     }
@@ -254,13 +254,12 @@ if (($getaction == "rev" || $getaction == "revz") && SearchActions::any()) {
     $errors = array();
     if ($Me->privChair)
         $_REQUEST["forceShow"] = 1;
+    $rf = ReviewForm::get();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (($whyNot = $Me->perm_view_review($row, null, null)))
             $errors[whyNotText($whyNot, "view review")] = true;
-        else if ($row->reviewSubmitted) {
-            $rf = ReviewForm::get($row);
+        else if ($row->reviewSubmitted)
             defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $Me) . "\n");
-        }
     }
 
     $crows = $Conf->comment_rows($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "allComments" => 1, "reviewerName" => 1)), $Me);
@@ -603,6 +602,7 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
     $errors = array();
     $texts = $any_scores = array();
     $any_decision = $any_reviewer_identity = false;
+    $rf = ReviewForm::get();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (!$row->reviewSubmitted)
             /* skip */;
@@ -612,7 +612,6 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
             $a = array("paper" => $row->paperId, "title" => $row->title, "blind" => $row->blind);
             if ($row->outcome && $Me->can_view_decision($row, true))
                 $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
-            $rf = ReviewForm::get($row);
             $view_bound = $Me->view_score_bound($row, $row, true);
             $my_scores = false;
             foreach ($rf->forder as $field => $f)

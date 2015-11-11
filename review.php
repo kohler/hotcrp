@@ -224,22 +224,18 @@ function downloadForm($editable) {
     else if ($editable)
         $rrows = array();
     else {
-        $rrows = $paperTable->rrows;
+        $rrows = $paperTable->viewable_rrows;
         $explicit = false;
     }
-    $downrrows = array();
-    foreach ($rrows as $rr)
-        if ($Me->can_view_review($prow, $rr, null))
-            $downrrows[] = $rr;
     $text = "";
-    foreach ($downrrows as $rr)
+    foreach ($rrows as $rr)
         if ($rr->reviewSubmitted)
             $text .= downloadView($prow, $rr, $editable);
-    foreach ($downrrows as $rr)
+    foreach ($rrows as $rr)
         if (!$rr->reviewSubmitted
             && ($explicit || $rr->reviewModified))
             $text .= downloadView($prow, $rr, $editable);
-    if (count($downrrows) == 0 && $editable)
+    if (count($rrows) == 0 && $editable)
         $text .= downloadView($prow, null, $editable);
     if (!$explicit) {
         $paperTable->resolveComments();
@@ -252,10 +248,10 @@ function downloadForm($editable) {
         return $Conf->errorMsg(whyNotText($whyNot ? : array("fail" => 1), "review"));
     }
     if ($editable)
-        $text = ReviewForm::textFormHeader(count($downrrows) > 1) . $text;
-    $filename = (count($downrrows) > 1 ? "reviews" : "review") . "-" . $prow->paperId;
-    if (count($downrrows) == 1 && $downrrows[0]->reviewSubmitted)
-        $filename .= unparseReviewOrdinal($downrrows[0]->reviewOrdinal);
+        $text = ReviewForm::textFormHeader(count($rrows) > 1) . $text;
+    $filename = (count($rrows) > 1 ? "reviews" : "review") . "-" . $prow->paperId;
+    if (count($rrows) == 1 && $rrows[0]->reviewSubmitted)
+        $filename .= unparseReviewOrdinal($rrows[0]->reviewOrdinal);
     downloadText($text, $filename, !$editable);
     exit;
 }

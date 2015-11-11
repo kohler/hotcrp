@@ -404,7 +404,7 @@ class ReviewForm {
         }
     }
 
-    static public function get($unused = null) {
+    static public function get() {
         global $Conf;
         if (!self::$cache)
             self::$cache = new ReviewForm($Conf->review_form_json());
@@ -474,10 +474,21 @@ class ReviewForm {
         }
     }
 
-    public function unparse_json() {
+    public function unparse_full_json() {
         $fmap = array();
         foreach ($this->fmap as $fid => $f)
             $fmap[$fid] = $f->unparse_json();
+        return $fmap;
+    }
+
+    public function unparse_json($round_mask, $view_score_bound) {
+        $fmap = array();
+        foreach ($this->fmap as $fid => $f)
+            if ($f->displayed
+                && (!$round_mask || !$f->round_mask
+                    || ($f->round_mask & $round_mask))
+                && $f->view_score <= $view_score_bound)
+                $fmap[$fid] = $f->unparse_json();
         return $fmap;
     }
 
