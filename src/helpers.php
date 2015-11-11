@@ -464,7 +464,7 @@ function topicTable($prow, $active = 0) {
 function actas_link($cid, $contact = null) {
     global $Conf;
     $contact = !$contact && is_object($cid) ? $cid : $contact;
-    $cid = is_object($contact) ? $cid->email : $cid;
+    $cid = is_object($contact) ? $contact->email : $cid;
     return '<a href="' . selfHref(array("actas" => $cid))
         . '">' . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($contact))) . '</a>';
 }
