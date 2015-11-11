@@ -180,7 +180,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 else if ($rr->$fid) {
                     if (!@$score_header[$fid])
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore rs_' . $fid . ' hottooltip" data-hottooltip="' . htmlspecialchars($f->value_description($rr->$fid)) . '" data-hottooltip-dir="l" data-hottooltip-near=">span">'
+                    $scores[$fid] = '<td class="revscore rs_' . $fid . '">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 } else if (@$score_header[$fid] === null)
@@ -280,6 +280,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $t .= '<td colspan="' . count($score_header) . '"></td>';
             $t .= "</tr>\n";
         }
+        if ($score_header_text)
+            $Conf->footerScript("review_form.score_tooltips($(\"table.reviewers_scores\"))", "score_tooltips");
         return $t . "</table>\n" . $notetxt;
     } else
         return $notetxt;

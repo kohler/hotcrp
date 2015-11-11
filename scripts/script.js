@@ -924,8 +924,7 @@ function tooltip(info) {
         info = {element: info};
     j = $(info.element);
 
-    function jqnear(attr) {
-        var x = j.attr(attr);
+    function jqnear(x) {
         if (x && x.charAt(0) == ">")
             return j.find(x.substr(1));
         else if (x)
@@ -936,13 +935,15 @@ function tooltip(info) {
 
     if (info.content == null)
         info.content = j.attr("data-hottooltip") ||
-            jqnear("data-hottooltip-content-selector").html();
+            jqnear(j.attr("data-hottooltip-content-selector")).html();
     if (info.dir == null)
         info.dir = j.attr("data-hottooltip-dir") || "v";
     if (info.type == null)
         info.type = j.attr("data-hottooltip-type");
     if (info.near == null)
-        info.near = jqnear("data-hottooltip-near")[0];
+        info.near = j.attr("data-hottooltip-near");
+    if (info.near)
+        info.near = jqnear(info.near)[0];
 
     if (!info.content || window.disable_tooltip)
         return null;
@@ -2104,6 +2105,46 @@ HtmlCollector.prototype.clear = function () {
     this.html = "";
 };
 
+
+// reviews
+window.review_form = (function ($) {
+var formj;
+
+function tooltip_enter(evt) {
+    var j = $(this), tt = j.data("hotcrp_tooltip");
+    if (!tt) {
+        var field = this.className.match(/\brs_(\w+)/)[1], score;
+        if (formj[field]
+            && formj[field].score_info
+            && (score = formj[field].score_info.parse(j.find("span.sv").text())))
+            tt = tooltip({
+                content: formj[field].options[score - 1],
+                dir: "l", near: ">span", element: this
+            });
+    }
+    tt && tt.enter();
+}
+
+return {
+    set_form: function (j) {
+        var i, f;
+        formj = $.extend(formj || {}, j);
+        for (i in formj) {
+            f = formj[i];
+            if (f.options)
+                f.score_info = make_score_info(f.options.length, f.option_letter, f.option_class_prefix);
+        }
+    },
+    score_tooltips: function (j) {
+        j.find(".revscore").each(function () {
+            $(this).hover(tooltip_enter, tooltip_leave);
+        });
+    }
+};
+})($);
+
+
+// comments
 window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
               pc: "shown only to PC reviewers",
@@ -4052,11 +4093,16 @@ function numeric_unparser(val) {
     return val.toFixed(val == Math.round(val) ? 0 : 2);
 }
 
+function numeric_parser(text) {
+    return parseInt(text, 10);
+}
+
 function make_letter_unparser(n, c) {
+    c = c.charCodeAt(0);
     return function (val, count) {
         if (val < 0.8 || val > n + 0.2)
             return val.toFixed(2);
-        var ord1 = c.charCodeAt(0) - Math.ceil(val) + 1;
+        var ord1 = c - Math.ceil(val) + 1;
         var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
         count = count || 2;
         val = Math.trunc(count * val + 0.5) - count * Math.trunc(val);
@@ -4072,8 +4118,21 @@ function make_letter_unparser(n, c) {
     };
 }
 
+function make_letter_parser(n, c) {
+    c = c.charCodeAt(0);
+    return function (text) {
+        var ch;
+        text = text.toUpperCase();
+        if (text.length == 1 && (ch = text.charCodeAt(0)) >= c && ch < c + n)
+            return n - (ch - c);
+        else
+            return null;
+    };
+}
+
 function make_info(n, c, sv) {
     var fm = make_fm(n);
+    sv = sv || "sv";
     function rgb_array(val) {
         var svx = sv + (Math.floor(fm(val) * 8.99) + 1);
         if (!sccolor[svx]) {
@@ -4092,7 +4151,8 @@ function make_info(n, c, sv) {
             var x = rgb_array(val);
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
-        unparse: c ? make_letter_unparser(n, c) : numeric_unparser
+        unparse: c ? make_letter_unparser(n, c) : numeric_unparser,
+        parse: c ? make_letter_parser(n, c) : numeric_parser
     };
 }
 
@@ -4102,7 +4162,6 @@ return function (n, c, sv) {
         info[name] = make_info(n, c || "", sv || "sv");
     return info[name];
 };
-
 })(jQuery);
 
 

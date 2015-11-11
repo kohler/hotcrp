@@ -2557,10 +2557,10 @@ class Contact {
         return $this->can_administer($prow, $forceShow);
     }
 
-    // A review field is visible only if viewScore > view_score_bound.
+    // A review field is visible only if its view_score > view_score_bound.
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
-        // Returns the maximum authorView score for an invisible review
-        // field.  Values for authorView are:
+        // Returns the maximum view_score for an invisible review
+        // field. Values are:
         //   VIEWSCORE_ADMINONLY     -2   admin can view
         //   VIEWSCORE_REVIEWERONLY  -1   admin and review author can view
         //   VIEWSCORE_PC             0   admin and PC/any reviewer can view

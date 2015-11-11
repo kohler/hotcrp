@@ -487,7 +487,7 @@ class ReviewForm {
             if ($f->displayed
                 && (!$round_mask || !$f->round_mask
                     || ($f->round_mask & $round_mask))
-                && $f->view_score <= $view_score_bound)
+                && $f->view_score > $view_score_bound)
                 $fmap[$fid] = $f->unparse_json();
         return $fmap;
     }

@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperTable {
-
     const ENABLESUBMIT = 8;
 
     var $prow;
@@ -2346,9 +2345,17 @@ class PaperTable {
         $this->all_rrows = $Conf->reviewRow($sel, $whyNot);
 
         $this->viewable_rrows = array();
+        $round_mask = 0;
+        $min_view_score = VIEWSCORE_MAX;
         foreach ($this->all_rrows as $rrow)
-            if ($Me->can_view_review($this->prow, $rrow, null))
+            if ($Me->can_view_review($this->prow, $rrow, null)) {
                 $this->viewable_rrows[] = $rrow;
+                if ($rrow->reviewRound !== null)
+                    $round_mask |= 1 << (int) $rrow->reviewRound;
+                $min_view_score = min($min_view_score, $Me->view_score_bound($this->prow, $rrow));
+            }
+        $rf = ReviewForm::get();
+        $Conf->footerScript("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score)) . ")");
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")
