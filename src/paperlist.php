@@ -998,7 +998,8 @@ class PaperList {
             foreach ($this->search->sorters as $sorter) {
                 if ($sorter->type
                     && ($field = PaperColumn::lookup($sorter->type))
-                    && $field->prepare($this, PaperColumn::PREP_SORT))
+                    && $field->prepare($this, PaperColumn::PREP_SORT)
+                    && $field->comparator)
                     $sorter->field = $field;
                 else if ($sorter->type) {
                     if ($this->contact->can_view_tags(null)
