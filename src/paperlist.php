@@ -130,7 +130,7 @@ class PaperList {
             else
                 $code .= "if (!\$x && \$a->_then_sort_info == {$s->thenmap})";
             $code .= " { \$s = \$magic_sort_info[$i]; "
-                . "\$x = $rev\$s->field->" . $s->field->sorter
+                . "\$x = $rev\$s->field->" . $s->field->comparator
                 . "(\$a, \$b, \$s); }\n";
         }
 
@@ -1252,7 +1252,7 @@ class PaperList {
                         || $defsortname == $this->sorters[0]->type)) {
                     $tooltip = $this->sorters[0]->reverse ? "Forward sort" : "Reverse sort";
                     $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
-                } else if ($fdef->sorter && $sortUrl)
+                } else if ($fdef->comparator && $sortUrl)
                     $colhead .= $q . urlencode($fdef->name) . "\" data-hottooltip=\"$tooltip\">" . $ftext . "</a>";
                 else if ($defsortname)
                     $colhead .= $q . urlencode($defsortname) . "\" data-hottooltip=\"$tooltip\">" . $ftext . "</a>";

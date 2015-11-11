@@ -457,12 +457,12 @@ class Tagger {
         return $x;
     }
 
-    public function sorter($a, $b) {
+    public function tag_compare($a, $b) {
         return strcasecmp($this->trim_for_sort($a), $this->trim_for_sort($b));
     }
 
     public function sort(&$tags) {
-        usort($tags, array($this, "sorter"));
+        usort($tags, array($this, "tag_compare"));
     }
 
     public function unparse_and_link($viewable, $alltags, $highlight = false,

@@ -75,7 +75,7 @@ class PaperColumn extends Column {
 
     public function sort_prepare($pl, &$rows, $sorter) {
     }
-    public function id_sorter($a, $b) {
+    public function id_compare($a, $b) {
         return $a->paperId - $b->paperId;
     }
 
@@ -111,7 +111,7 @@ class PaperColumn extends Column {
 class IdPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("id", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("minimal" => true, "sorter" => "id_sorter"));
+                            array("minimal" => true, "comparator" => "id_compare"));
     }
     public function header($pl, $row, $ordinal) {
         return "ID";
@@ -174,9 +174,9 @@ class SelectorPaperColumn extends PaperColumn {
 class TitlePaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("minimal" => true, "sorter" => "title_sorter"));
+                            array("minimal" => true, "comparator" => "title_compare"));
     }
-    public function title_sorter($a, $b) {
+    public function title_compare($a, $b) {
         return strcasecmp($a->title, $b->title);
     }
     public function header($pl, $row, $ordinal) {
@@ -196,7 +196,7 @@ class StatusPaperColumn extends PaperColumn {
     private $is_long;
     public function __construct($name, $is_long, $extra = 0) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("cssname" => "status", "sorter" => "status_sorter"));
+                            array("cssname" => "status", "comparator" => "status_compare"));
         $this->is_long = $is_long;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
@@ -204,7 +204,7 @@ class StatusPaperColumn extends PaperColumn {
         foreach ($rows as $row)
             $row->_status_sort_info = ($pl->contact->can_view_decision($row, $force) ? $row->outcome : -10000);
     }
-    public function status_sorter($a, $b) {
+    public function status_compare($a, $b) {
         $x = $b->_status_sort_info - $a->_status_sort_info;
         $x = $x ? $x : ($a->timeWithdrawn > 0) - ($b->timeWithdrawn > 0);
         $x = $x ? $x : ($b->timeSubmitted > 0) - ($a->timeSubmitted > 0);
@@ -235,7 +235,7 @@ class StatusPaperColumn extends PaperColumn {
 class ReviewStatusPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("revstat", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("sorter" => "review_status_sorter"));
+                            array("comparator" => "review_status_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -256,7 +256,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
                     + $row->num_reviews_started($pl->contact) / 1000.0;
         }
     }
-    public function review_status_sorter($a, $b) {
+    public function review_status_compare($a, $b) {
         $av = $a->_review_status_sort_info;
         $bv = $b->_review_status_sort_info;
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
@@ -435,7 +435,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     protected $xreviewer;
     public function __construct($name) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("sorter" => "reviewer_type_sorter"));
+                            array("comparator" => "reviewer_type_compare"));
     }
     public function analyze($pl, &$rows) {
         // PaperSearch is responsible for access control checking use of
@@ -479,7 +479,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
                     $row->_reviewer_type_sort_info = 0;
         }
     }
-    public function reviewer_type_sorter($a, $b) {
+    public function reviewer_type_compare($a, $b) {
         return $b->_reviewer_type_sort_info - $a->_reviewer_type_sort_info;
     }
     public function header($pl, $row, $ordinal) {
@@ -549,7 +549,7 @@ class ReviewDelegationPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("revdelegation", Column::VIEW_COLUMN,
                             array("cssname" => "text",
-                                  "sorter" => "review_delegation_sorter"));
+                                  "comparator" => "review_delegation_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
@@ -559,7 +559,7 @@ class ReviewDelegationPaperColumn extends PaperColumn {
         $pl->qopts["reviewLimitSql"] = "PaperReview.requestedBy=" . $pl->reviewer_cid();
         return true;
     }
-    public function review_delegation_sorter($a, $b) {
+    public function review_delegation_compare($a, $b) {
         $x = strcasecmp($a->reviewLastName, $b->reviewLastName);
         $x = $x ? $x : strcasecmp($a->reviewFirstName, $b->reviewFirstName);
         return $x ? $x : strcasecmp($a->reviewEmail, $b->reviewEmail);
@@ -617,7 +617,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
 class DesirabilityPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("desirability", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("sorter" => "desirability_sorter"));
+                            array("comparator" => "desirability_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->privChair)
@@ -626,7 +626,7 @@ class DesirabilityPaperColumn extends PaperColumn {
             $pl->qopts["desirability"] = 1;
         return true;
     }
-    public function desirability_sorter($a, $b) {
+    public function desirability_compare($a, $b) {
         return $b->desirability - $a->desirability;
     }
     public function header($pl, $row, $ordinal) {
@@ -643,7 +643,7 @@ class DesirabilityPaperColumn extends PaperColumn {
 class TopicScorePaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("topicscore", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("sorter" => "topic_score_sorter"));
+                            array("comparator" => "topic_score_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
@@ -655,7 +655,7 @@ class TopicScorePaperColumn extends PaperColumn {
         }
         return true;
     }
-    public function topic_score_sorter($a, $b) {
+    public function topic_score_compare($a, $b) {
         return $b->topicInterestScore - $a->topicInterestScore;
     }
     public function header($pl, $row, $ordinal) {
@@ -673,7 +673,7 @@ class PreferencePaperColumn extends PaperColumn {
     private $editable;
     public function __construct($name, $editable) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("sorter" => "preference_sorter"));
+                            array("comparator" => "preference_compare"));
         $this->editable = $editable;
     }
     public function prepare(PaperList $pl, $visible) {
@@ -691,7 +691,7 @@ class PreferencePaperColumn extends PaperColumn {
         }
         return true;
     }
-    public function preference_sorter($a, $b) {
+    public function preference_compare($a, $b) {
         $x = $b->reviewerPreference - $a->reviewerPreference;
         return $x ? $x : $b->topicInterestScore - $a->topicInterestScore;
     }
@@ -903,7 +903,7 @@ class TagPaperColumn extends PaperColumn {
     protected $editable = false;
     static private $sortf_ctr = 0;
     public function __construct($name, $tag, $is_value) {
-        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE, array("sorter" => "tag_sorter"));
+        parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE, array("comparator" => "tag_compare"));
         $this->dtag = $tag;
         $this->is_value = $is_value;
         $this->cssname = ($this->is_value ? "tagval" : "tag");
@@ -949,7 +949,7 @@ class TagPaperColumn extends PaperColumn {
             else if (($row->$sortf = $this->_tag_value($row)) === null)
                 $row->$sortf = $empty;
     }
-    public function tag_sorter($a, $b, $sorter) {
+    public function tag_compare($a, $b, $sorter) {
         $sortf = $sorter->sortf;
         return $a->$sortf < $b->$sortf ? -1 :
             ($a->$sortf == $b->$sortf ? 0 : 1);
@@ -1027,7 +1027,7 @@ class ScorePaperColumn extends PaperColumn {
     private static $registered = array();
     public function __construct($score) {
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            array("sorter" => "score_sorter"));
+                            array("comparator" => "score_compare"));
         $this->minimal = true;
         $this->cssname = "score";
         $this->score = $score;
@@ -1081,7 +1081,7 @@ class ScorePaperColumn extends PaperColumn {
             }
         $this->_textual_sort = ScoreInfo::sort_by_strcmp($sorter->score);
     }
-    public function score_sorter($a, $b) {
+    public function score_compare($a, $b) {
         $sortinfo = $this->_sortinfo;
         if ($this->_textual_sort)
             $x = strcmp($b->$sortinfo, $a->$sortinfo);
@@ -1136,7 +1136,7 @@ class FormulaPaperColumn extends PaperColumn {
     public $statistics;
     public function __construct($name, $formula) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
-                            array("minimal" => true, "sorter" => "formula_sorter"));
+                            array("minimal" => true, "comparator" => "formula_compare"));
         $this->cssname = "formula";
         $this->formula = $formula;
         if ($formula && @$formula->formulaId)
@@ -1196,7 +1196,7 @@ class FormulaPaperColumn extends PaperColumn {
         foreach ($rows as $row)
             $row->$sorter = $formulaf($row, null, $pl->contact, "s");
     }
-    public function formula_sorter($a, $b) {
+    public function formula_compare($a, $b) {
         $sorter = $this->formula_sorter;
         $as = $a->$sorter;
         $bs = $b->$sorter;
@@ -1286,9 +1286,9 @@ class TagReportPaperColumn extends PaperColumn {
 class TimestampPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("timestamp", Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("sorter" => "update_time_sorter"));
+                            array("comparator" => "update_time_compare"));
     }
-    public function update_time_sorter($a, $b) {
+    public function update_time_compare($a, $b) {
         $at = max($a->timeFinalSubmitted, $a->timeSubmitted, 0);
         $bt = max($b->timeFinalSubmitted, $b->timeSubmitted, 0);
         return $at > $bt ? -1 : ($at == $bt ? 0 : 1);
@@ -1313,10 +1313,10 @@ class NumericOrderPaperColumn extends PaperColumn {
     private $order;
     public function __construct($order) {
         parent::__construct("numericorder", Column::VIEW_NONE,
-                            array("sorter" => "numeric_order_sorter"));
+                            array("comparator" => "numeric_order_compare"));
         $this->order = $order;
     }
-    public function numeric_order_sorter($a, $b) {
+    public function numeric_order_compare($a, $b) {
         return @$this->order[$a->paperId] - @$this->order[$b->paperId];
     }
 }

@@ -17,7 +17,7 @@ class Column {
     public $foldable;
     public $completable;
     public $view;
-    public $sorter;
+    public $comparator;
     public $minimal;
 
     public function __construct($name, $flags, $extra) {
@@ -26,7 +26,7 @@ class Column {
         $this->foldable = ($flags & self::FOLDABLE) != 0;
         $this->completable = ($flags & self::COMPLETABLE) != 0;
         $this->view = $flags & self::VIEWMASK;
-        $this->sorter = defval($extra, "sorter", false);
+        $this->comparator = defval($extra, "comparator", false);
         $this->minimal = defval($extra, "minimal", false);
     }
 }

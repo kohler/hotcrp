@@ -325,7 +325,7 @@ class ReviewForm {
     static private $cache = null;
     static private $review_author_seen = null;
 
-    static public function fmap_sorter($a, $b) {
+    static public function fmap_compare($a, $b) {
         if ($a->displayed != $b->displayed)
             return $a->displayed ? -1 : 1;
         else if ($a->displayed)
@@ -374,7 +374,7 @@ class ReviewForm {
         $n = 0;
         foreach ($forder as $f)
             $f->display_order = ++$n;
-        uasort($this->fmap, "ReviewForm::fmap_sorter");
+        uasort($this->fmap, "ReviewForm::fmap_compare");
         $this->forder = array();
         foreach ($this->fmap as $f)
             if ($f->displayed)
