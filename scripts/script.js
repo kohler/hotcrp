@@ -2110,17 +2110,36 @@ HtmlCollector.prototype.clear = function () {
 window.review_form = (function ($) {
 var formj;
 
-function tooltip_enter(evt) {
+function score_tooltip_enter(evt) {
     var j = $(this), tt = j.data("hotcrp_tooltip");
     if (!tt) {
-        var field = this.className.match(/\brs_(\w+)/)[1], score;
-        if (formj[field]
-            && formj[field].score_info
-            && (score = formj[field].score_info.parse(j.find("span.sv").text())))
+        var fieldj = formj[this.className.match(/\brs_(\w+)/)[1]], score;
+        if (fieldj && fieldj.score_info
+            && (score = fieldj.score_info.parse(j.find("span.sv").text())))
             tt = tooltip({
-                content: formj[field].options[score - 1],
+                content: fieldj.options[score - 1],
                 dir: "l", near: ">span", element: this
             });
+    }
+    tt && tt.enter();
+}
+
+function score_header_tooltip_enter(evt) {
+    var j = $(this), tt = j.data("hotcrp_tooltip"), rv;
+    if (!tt && (rv = j.closest(".rv")[0])) {
+        var fieldj = formj[rv.className.match(/\brv_(\w+)/)[1]];
+        if (fieldj && (fieldj.description || fieldj.options)) {
+            var d = "", si, vo;
+            if (fieldj.description)
+                d += "<p>" + fieldj.description + "</p>";
+            if (fieldj.options) {
+                d += "<div class=\"od\">Choices are:</div>";
+                for (si = 0, vo = fieldj.score_info.value_order();
+                     si < vo.length; ++si)
+                    d += "<div class=\"od\"><span class=\"rev_num " + fieldj.score_info.className(vo[si]) + " dark\">" + fieldj.score_info.unparse(vo[si]) + ".</span>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
+            }
+            tt = tooltip({content: d, dir: "l", element: this});
+        }
     }
     tt && tt.enter();
 }
@@ -2137,7 +2156,12 @@ return {
     },
     score_tooltips: function (j) {
         j.find(".revscore").each(function () {
-            $(this).hover(tooltip_enter, tooltip_leave);
+            $(this).hover(score_tooltip_enter, tooltip_leave);
+        });
+    },
+    score_header_tooltips: function (j) {
+        j.find(".rv .revfn").each(function () {
+            $(this).hover(score_header_tooltip_enter, tooltip_leave);
         });
     }
 };
@@ -4101,7 +4125,7 @@ function make_letter_unparser(n, c) {
     return function (val, count) {
         if (val < 0.8 || val > n + 0.2)
             return val.toFixed(2);
-        var ord1 = c - Math.ceil(val) + 1;
+        var ord1 = c + n - Math.ceil(val);
         var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
         count = count || 2;
         val = Math.trunc(count * val + 0.5) - count * Math.trunc(val);
@@ -4128,11 +4152,20 @@ function make_letter_parser(n, c) {
     };
 }
 
+function make_value_order(n, c) {
+    var o = [], i;
+    for (i = c ? n : 1; i >= 1 && i <= n; i += (c ? -1 : 1))
+        o.push(i);
+    return o;
+}
+
 function make_info(n, c, sv) {
     var fm = make_fm(n);
-    sv = sv || "sv";
+    function fm9(val) {
+        return Math.floor(fm(val) * 8.99) + 1;
+    }
     function rgb_array(val) {
-        var svx = sv + (Math.floor(fm(val) * 8.99) + 1);
+        var svx = sv + fm9(val);
         if (!sccolor[svx]) {
             var j = $('<span style="display:none" class="svb ' + svx + '"></span>').appendTo(document.body), m;
             sccolor[svx] = [0, 0, 0];
@@ -4150,7 +4183,9 @@ function make_info(n, c, sv) {
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
         unparse: c ? make_letter_unparser(n, c) : numeric_unparser,
-        parse: c ? make_letter_parser(n, c) : numeric_parser
+        parse: c ? make_letter_parser(n, c) : numeric_parser,
+        value_order: function () { return make_value_order(n, c); },
+        className: function (val) { return sv + fm9(val); }
     };
 }
 
@@ -4210,13 +4245,16 @@ function analyze_sc(sc) {
     if ((m = /(?:^|[&;])h=(\d+)(?:[&;]|$)/.exec(sc)))
         anal.h = parseInt(m[1], 10);
 
-    if ((m = /(?:^|[&;])c=([A-Z])(?:[&;]|$)/.exec(sc)))
+    x = 0;
+    if ((m = /(?:^|[&;])c=([A-Z])(?:[&;]|$)/.exec(sc))) {
         anal.c = m[1].charCodeAt(0);
+        x = String.fromCharCode(anal.c + 2 - anal.v.length);
+    }
 
     if ((m = /(?:^|[&;])sv=([^;&]*)(?:[&;]|$)/.exec(sc)))
         anal.sv = decodeURIComponent(m[1]);
 
-    anal.fx = make_score_info(vs.length, anal.c, anal.sv);
+    anal.fx = make_score_info(vs.length, x, anal.sv);
     return anal;
 }
 

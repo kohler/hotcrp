@@ -202,8 +202,9 @@ class FormulaGraph {
             $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
         } else if ($format instanceof ReviewField && $format->option_letter) {
             $t[] = $axis . "flip:true";
+            $n = count($format->options);
             $t[] = $axis . "tick_setup:hotcrp_graphs.option_letter_ticks("
-                    . count($format->options) . ",\"" . chr($format->option_letter - 1) . "\")";
+                    . $n . ",\"" . chr($format->option_letter - $n) . "\")";
         } else if ($format === "dec")
             $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;

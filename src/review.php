@@ -8,15 +8,11 @@
 //         "display_space":ROWS,"view_score":AUTHORVIEW,
 //         "options":[DESCRIPTION,...],"option_letter":LEVELCHAR}}
 
-global $scoreHelps;
-$scoreHelps = array();
-
 class ReviewField {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
     const VALUE_DARK = 4;
-    const VALUE_TOOLTIP = 8;
 
     public $id;
     public $name;
@@ -207,12 +203,7 @@ class ReviewField {
         }
         if ($scclass & self::VALUE_DARK)
             $klass .= " dark";
-        $attr = "";
-        if ($scclass & self::VALUE_TOOLTIP) {
-            $klass .= " hottooltip";
-            $attr = ' data-hottooltip="' . htmlspecialchars($this->options[$value]) . '" data-hottooltip-dir="l"';
-        }
-        return "<span class=\"$klass\"$attr>$x</span>";
+        return "<span class=\"$klass\">$x</span>";
     }
 
     public function value_description($value) {
@@ -1322,7 +1313,7 @@ $blind\n";
     }
 
     private function webDisplayRows($prow, $rrow, $contact) {
-        global $scoreHelps, $Conf;
+        global $Conf;
         $revViewScore = $contact->view_score_bound($prow, $rrow);
 
         // Which fields are options?
@@ -1367,22 +1358,9 @@ $blind\n";
             if (preg_match("/\\A\\S+\\s+\\S+\\z/", $n))
                 $n = preg_replace("/\\s+/", "&nbsp;", $n);
 
-            if ($f->has_options || $f->description) {
-                $c = '<div class="revfn hottooltip" data-hottooltip-dir="l" data-hottooltip-content-selector="#scorehelp_' . $field . '">' . $n . '</div>';
-                if (!isset($scoreHelps[$field])) {
-                    $scoreHelps[$field] = true;
-                    $help = '<div id="scorehelp_' . $field . '" style="display:none">';
-                    if ($f->description)
-                        $help .= '<p>' . $f->description . '</p>';
-                    if ($f->has_options) {
-                        $help .= '<p style="margin-bottom:0">Choices are:</p>';
-                        foreach ($f->options as $val => $text)
-                            $help .= '<div class="od">' . $f->unparse_value($val, ReviewField::VALUE_REV_NUM | ReviewField::VALUE_DARK) . '&nbsp;' . htmlspecialchars($text) . '</div>';
-                    }
-                    $Conf->footerHtml($help . '</div>');
-                }
-            } else
-                $c = '<div class="revfn">' . $n . '</div>';
+            $c = '<div class="revfn">' . $n . '</div>';
+            if ($f->has_options || $f->description)
+                $Conf->footerScript("review_form.score_header_tooltips($(\".revcard\"))", "score_header_tooltips");
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
                 $c .= '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
