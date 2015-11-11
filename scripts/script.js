@@ -4098,7 +4098,6 @@ function numeric_parser(text) {
 }
 
 function make_letter_unparser(n, c) {
-    c = c.charCodeAt(0);
     return function (val, count) {
         if (val < 0.8 || val > n + 0.2)
             return val.toFixed(2);
@@ -4119,7 +4118,6 @@ function make_letter_unparser(n, c) {
 }
 
 function make_letter_parser(n, c) {
-    c = c.charCodeAt(0);
     return function (text) {
         var ch;
         text = text.toUpperCase();
@@ -4157,6 +4155,8 @@ function make_info(n, c, sv) {
 }
 
 return function (n, c, sv) {
+    if (typeof c === "string")
+        c = c.charCodeAt(0);
     var name = n + "/" + (c || "") + "/" + (sv || "sv");
     if (!info[name])
         info[name] = make_info(n, c || "", sv || "sv");
