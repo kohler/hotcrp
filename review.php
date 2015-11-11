@@ -27,7 +27,6 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
 if ($Me->is_empty())
     $Me->escape();
 $rf = ReviewForm::get();
-$useRequest = isset($_REQUEST["after_login"]);
 
 
 // header
@@ -161,19 +160,16 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
-    if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow))) {
+    if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
         $Conf->errorMsg(whyNotText($whyNot, "review"));
-        $useRequest = true;
-    } else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
+    else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
         $tf = array("singlePaper" => true);
         if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me, $tf)) {
             $rf->textFormMessages($tf);
             redirectSelf();             // normally does not return
             loadRows();
-        } else
-            $useRequest = true;
-    } else
-        $useRequest = true;
+        }
+    }
 }
 
 
