@@ -829,10 +829,10 @@ class PaperList {
         $t = $fdef->header($this, $ord);
 
         $sort_url = $q = false;
+        $sort_class = "pl_sort";
         if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
             global $ConfSiteBase;
             $sort_url = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-            $q = '<a class="pl_sort hottooltip" rel="nofollow" data-hottooltip-dir="b" href="' . $sort_url;
         }
 
         $defsortname = null;
@@ -847,18 +847,26 @@ class PaperList {
         }
         if ($tooltip && strpos($t, "hottooltip") !== false)
             $tooltip = "";
-        if (count($this->sorters)
-            && $this->sorters[0]->thenmap === null
-            && ((($fdef->name == $this->sorters[0]->type
-                  || $fdef->name == "edit" . $this->sorters[0]->type)
+
+        $s0 = @$this->sorters[0];
+        if ($s0 && $s0->thenmap === null
+            && ((($fdef->name == $s0->type || $fdef->name == "edit" . $s0->type)
                  && $sort_url)
-                || $defsortname == $this->sorters[0]->type)) {
-            $tooltip = $this->sorters[0]->reverse ? "Forward sort" : "Reverse sort";
-            $t = '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sort_url . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $t . "</a>";
+                || $defsortname == $s0->type)) {
+            $tooltip = $s0->reverse ? "Forward sort" : "Reverse sort";
+            $sort_class = "pl_sort_def" . ($s0->reverse ? "_rev" : "");
+            $sort_url .= urlencode($s0->type . ($s0->reverse ? "" : " reverse"));
         } else if ($fdef->comparator && $sort_url)
-            $t = $q . urlencode($fdef->name) . "\" data-hottooltip=\"$tooltip\">" . $t . "</a>";
+            $sort_url .= urlencode($fdef->name);
         else if ($defsortname)
-            $t = $q . urlencode($defsortname) . "\" data-hottooltip=\"$tooltip\">" . $t . "</a>";
+            $sort_url .= urlencode($defsortname);
+        else
+            $sort_url = false;
+
+        if ($sort_url && $tooltip)
+            $t = '<a class="' . $sort_class . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sort_url . '">' . $t . '</a>';
+        else if ($sort_url)
+            $t = '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
         return $t;
     }
 
