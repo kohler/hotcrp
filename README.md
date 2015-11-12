@@ -240,10 +240,9 @@ To turn on multiconference support:
 
         $Opt["multiconferenceAnalyzer"] = '\w+://([^./]+)\.crap\.com\.?/ conf_$1';
 
-3. Set HotCRP options to tell HotCRP how to find the options relevant for each
-   conference. The most flexible mechanism is to use `$Opt["include"]` to
-   include a conference-specific options file. For example (note the single
-   quotes):
+3. Set HotCRP options to locate the options relevant for each conference. The
+   best mechanism is to use `$Opt["include"]` to include a conference-specific
+   options file. For example (note the single quotes):
 
         $Opt["include"] = 'conf/options-${confid}.php';
 
