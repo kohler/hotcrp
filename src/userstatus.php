@@ -45,7 +45,7 @@ class UserStatus {
         foreach (["email", "firstName", "lastName", "affiliation"] as $k)
             if ($user->$k !== null && $user->$k !== "")
                 $cj->$k = $user->$k;
-            else if ($cdb_user->$k !== null && $cdb_user->$k !== "")
+            else if ($cdb_user && $cdb_user->$k !== null && $cdb_user->$k !== "")
                 $cj->$k = $cdb_user->$k;
 
         // keys that come from user
