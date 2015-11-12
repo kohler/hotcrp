@@ -231,7 +231,9 @@ class ReviewField {
 
     public function unparse_average($value) {
         assert($this->has_options);
-        if (!$this->option_letter)
+        if ($value <= 0.8)
+            return "";
+        else if (!$this->option_letter)
             return sprintf("%0.2f", $value);
         else
             return self::unparse_letter($this->option_letter, $value);
