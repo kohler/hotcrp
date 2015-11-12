@@ -834,7 +834,6 @@ class PaperList {
             $sort_url = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
             $q = '<a class="pl_sort hottooltip" rel="nofollow" data-hottooltip-dir="b" href="' . $sort_url;
         }
-        error_log($this->sortable);
 
         $defsortname = null;
         if (isset($fdef->is_selector) && $sort_url
