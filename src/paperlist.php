@@ -762,8 +762,8 @@ class PaperList {
                         $tt .= " fx2";
                         $rstate->has_anonau = true;
                     }
-                } else if ($fdef->foldnum)
-                    $tt .= " fx" . $fdef->foldnum;
+                } else if ($fdef->foldable)
+                    $tt .= " fx" . $fdef->foldable;
                 $tt .= "\">";
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
