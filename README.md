@@ -225,37 +225,41 @@ The conference ID can only contain characters in `[-_.A-Za-z0-9]`, and
 it must not start with a period. HotCRP will check for funny
 conference IDs and replace them with `__invalid__`.
 
-To turn on multiconference support, set $Opt["multiconference"] to
-true in `conf/options.php`. You will then need to tell HotCRP how to
-find the options relevant for each conference. The most flexible
-mechanism is to use $Opt["include"] to include a conference-specific
-options file. For example (note the single quotes):
+To turn on multiconference support:
 
-    $Opt["include"] = 'conf/options-${confid}.php';
+1. Set your Web server to use the HotCRP install directory for all relevant
+   URLs. For Apache, this may require an `Alias` directive per conference.
 
-The `${confid}` substring is replaced with the conference ID. HotCRP
-will refuse to proceed if the conference-specific options file doesn’t
-exist. To ignore nonexistent options files, use wildcards:
+2. Set `$Opt["multiconference"]` to true in `conf/options.php`. This will set
+   the conference ID to the last directory component as described above.
+   Alternately, set `$Opt["multiconferenceAnalyzer"]` to a regular expression,
+   a space, and a replacement pattern. HotCRP matches the full input URL to
+   the regex, then uses the replacement pattern as the conference ID. For
+   example, this setting will use "conf_CONFNAME" as the conference ID for a
+   URL like "http://CONFNAME.crap.com/":
 
-    $Opt["include"] = 'conf/[o]ptions-${confid}.php';
+        $Opt["multiconferenceAnalyzer"] = '\w+://([^./]+)\.crap\.com\.?/ conf_$1';
 
-`${confid}` replacement is also performed on these $Opt settings:
-dbName, dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite,
-paperSite, defaultPaperSite, contactName, contactEmail, emailFrom,
-emailSender, emailCc, emailReplyTo, and docstore.
+3. Set HotCRP options to tell HotCRP how to find the options relevant for each
+   conference. The most flexible mechanism is to use `$Opt["include"]` to
+   include a conference-specific options file. For example (note the single
+   quotes):
 
-Each conference needs its own database. Create one using the
-`lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
-Also, make sure Apache uses the HotCRP install directory for all
-relevant URLs.
+        $Opt["include"] = 'conf/options-${confid}.php';
 
-You can also set $Opt["multiconferenceAnalyzer"] to a regular
-expression, a space, and a replacement pattern. HotCRP matches the
-full input URL to the regex, then uses the replacement pattern as the
-conference ID. For example, this setting will use "conf_CONFNAME" as
-the conference ID for a URL like "http://CONFNAME.crap.com/":
+    The `${confid}` substring is replaced with the conference ID. HotCRP will
+refuse to proceed if the conference-specific options file doesn’t exist. To
+ignore nonexistent options files, use wildcards:
 
-    $Opt["multiconferenceAnalyzer"] = '\w+://([^./]+)[.]crap[.]com[.]?/ conf_$1';
+        $Opt["include"] = 'conf/[o]ptions-${confid}.php';
+
+    `${confid}` replacement is also performed on these $Opt settings: dbName,
+dbUser, dbPassword, sessionName, downloadPrefix, conferenceSite, paperSite,
+defaultPaperSite, contactName, contactEmail, emailFrom, emailSender, emailCc,
+emailReplyTo, and docstore.
+
+4. Each conference needs its own database. Create one using the
+   `lib/createdb.sh` script (the `-c CONFIGFILE` option will be useful).
 
 License
 -------
