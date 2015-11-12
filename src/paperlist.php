@@ -5,17 +5,18 @@
 
 class PaperListRenderState {
     public $ids = array();
-    public $foldinfo = array();
+    public $row_folded = null;
+    public $has_openau = false;
+    public $has_anonau = false;
     public $colorindex = 0;
     public $hascolors = false;
     public $skipcallout;
     public $ncol;
     public $last_trclass = "";
     public $headingstart = array(0);
-    public function __construct($ncol, $skipcallout, $foldau) {
+    public function __construct($ncol, $skipcallout) {
         $this->ncol = $ncol;
         $this->skipcallout = $skipcallout;
-        $this->foldinfo["authors"] = $foldau;
     }
 }
 
@@ -686,6 +687,8 @@ class PaperList {
         $fname = $field;
         if (is_object($field) || ($field = PaperColumn::lookup($field)))
             $fname = $field->foldable ? $field->name : null;
+        if ($fname === "authors")
+            $fname = "au";
         return $fname
             && !defval($_REQUEST, "show$fname")
             && ($this->viewmap->$fname === false
@@ -721,73 +724,66 @@ class PaperList {
         foreach ($fieldDef as $fdef) {
             if ($fdef->view != Column::VIEW_COLUMN)
                 continue;
-            $td = "    <td class=\"pl pl_$fdef->cssname";
-            if ($fdef->foldable)
-                $td .= " fx$fdef->foldable";
-            if ($fdef->content_empty($this, $row)) {
-                $t .= $td . "\"></td>\n";
-                continue;
-            }
-            if ($fdef->foldable && !isset($rstate->foldinfo[$fdef->name]))
-                $rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
-            if ($fdef->foldable && $rstate->foldinfo[$fdef->name]) {
-                $t .= $td . "\" id=\"$fdef->name.$row->paperId\"></td>\n";
-                $this->any[$fdef->name] = true;
+            $empty = $fdef->content_empty($this, $row);
+            if ($fdef->is_folded) {
+                if (!$empty)
+                    $fdef->has_content = true;
             } else {
-                $c = $fdef->content($this, $row, $rowidx);
-                $t .= $td . "\">" . $c . "</td>\n";
-                if ($c !== "")
-                    $this->any[$fdef->name] = true;
+                $t .= "<td class=\"pl pl_$fdef->cssname";
+                if ($fdef->foldable)
+                    $t .= " fx$fdef->foldable";
+                $t .= "\">";
+                if (!$empty
+                    && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
+                    $t .= $c;
+                    $fdef->has_content = true;
+                }
+                $t .= "</td>";
             }
         }
 
         // extension columns
         $tt = "";
         foreach ($fieldDef as $fdef) {
-            if ($fdef->view != Column::VIEW_ROW
-                || $fdef->content_empty($this, $row))
+            if ($fdef->view != Column::VIEW_ROW)
                 continue;
-
-            // track foldedness
-            $this->any[$fdef->name] = true;
-            if ($fdef->foldable && !isset($rstate->foldinfo[$fdef->name]))
-                $rstate->foldinfo[$fdef->name] = $this->is_folded($fdef);
-
-            $tc = "";
-            if ($fdef->name == "authors") {
-                if ($this->contact->can_view_authors($row, false)) {
-                    $tc = " fx1";
-                    $this->any->openau = true;
-                } else {
-                    $tc = " fx1 fx2";
-                    $this->any->anonau = true;
+            $empty = $fdef->content_empty($this, $row);
+            $is_authors = $fdef->name === "authors";
+            if ($fdef->is_folded && !$is_authors) {
+                if (!$empty)
+                    $fdef->has_content = true;
+            } else {
+                $tt .= "<div class=\"pl_$fdef->cssname";
+                if ($is_authors) {
+                    $tt .= " fx1";
+                    if ($this->contact->can_view_authors($row, false))
+                        $rstate->has_openau = true;
+                    else {
+                        $tt .= " fx2";
+                        $rstate->has_anonau = true;
+                    }
+                } else if ($fdef->foldnum)
+                    $tt .= " fx" . $fdef->foldnum;
+                $tt .= "\">";
+                if (!$empty
+                    && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
+                    $tt .= "<h6>" . $fdef->header($this, -1) . ":</h6> " . $c;
+                    $fdef->has_content = true;
                 }
-            }
-
-            if ($fdef->foldable && $rstate->foldinfo[$fdef->name]) {
-                $tt .= "<div id=\"$fdef->name.$row->paperId\"";
-                if ($tc)
-                    $tt .= " class=\"pl_{$fdef->cssname}$tc\"";
-                $tt .= "></div>";
-            } else if (($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                if ($fdef->foldable && $tc === "")
-                    $tc = " fx" . $fdef->foldable;
-                $tt .= "<div id=\"$fdef->name.$row->paperId\" class=\"pl_"
-                    . $fdef->cssname . $tc . "\"><h6>"
-                    . $fdef->header($this, $row, -1)
-                    . ":</h6> " . $c . "</div>";
+                $tt .= "</div>";
             }
         }
 
         if (isset($row->folded) && $row->folded) {
             $trclass .= " fx3";
-            $rstate->foldinfo["wholerow"] = true;
-        }
+            $rstate->row_folded = true;
+        } else if ($rstate->row_folded)
+            $rstate->row_folded = false;
 
         $tb = "  <tr class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(titleWords($row->title, 60));
         if ($this->_row_id_pattern)
             $tb .= "\" id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern);
-        $t = $tb . "\">\n" . $t . "  </tr>\n";
+        $t = $tb . "\">" . $t . "</tr>\n";
 
         if ($tt !== "") {
             $t .= "  <tr class=\"plx $trclass\" data-pid=\"$row->paperId\">";
@@ -826,36 +822,87 @@ class PaperList {
         return $thenval;
     }
 
+    private function _field_title($fdef, $ord) {
+        if ($fdef->view != Column::VIEW_COLUMN)
+            return $fdef->header($this, -1);
+
+        $t = $fdef->header($this, $ord);
+
+        $sort_url = $q = false;
+        if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
+            global $ConfSiteBase;
+            $sort_url = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
+            $q = '<a class="pl_sort hottooltip" rel="nofollow" data-hottooltip-dir="b" href="' . $sort_url;
+        }
+        error_log($this->sortable);
+
+        $defsortname = null;
+        if (isset($fdef->is_selector) && $sort_url
+            && $this->default_sort_column->name !== "id")
+            $defsortname = $this->default_sort_column->name;
+
+        $tooltip = "";
+        if ($defsortname == "searchsort") {
+            $tooltip = "Sort by search term order";
+            $t = "#";
+        }
+        if ($tooltip && strpos($t, "hottooltip") !== false)
+            $tooltip = "";
+        if (count($this->sorters)
+            && $this->sorters[0]->thenmap === null
+            && ((($fdef->name == $this->sorters[0]->type
+                  || $fdef->name == "edit" . $this->sorters[0]->type)
+                 && $sort_url)
+                || $defsortname == $this->sorters[0]->type)) {
+            $tooltip = $this->sorters[0]->reverse ? "Forward sort" : "Reverse sort";
+            $t = '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sort_url . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $t . "</a>";
+        } else if ($fdef->comparator && $sort_url)
+            $t = $q . urlencode($fdef->name) . "\" data-hottooltip=\"$tooltip\">" . $t . "</a>";
+        else if ($defsortname)
+            $t = $q . urlencode($defsortname) . "\" data-hottooltip=\"$tooltip\">" . $t . "</a>";
+        return $t;
+    }
+
     private function _analyze_folds($rstate, $fieldDef) {
         global $Conf;
-        $classes = $jsmap = $jsloadmap = $jsnotitlemap = array();
-        foreach ($fieldDef as $fdef)
-            if ($fdef->foldable && $fdef->name !== "authors"
-                && isset($rstate->foldinfo[$fdef->name])) {
-                $closed = $rstate->foldinfo[$fdef->name];
-                $classes[] = "fold$fdef->foldable" . ($closed ? "c" : "o");
-                $jsmap[] = "\"$fdef->name\":$fdef->foldable";
-                if ($closed && $this->any[$fdef->name])
-                    $jsloadmap[] = "\"$fdef->name\":true";
-                if ($fdef->view == Column::VIEW_COLUMN)
-                    $jsnotitlemap[] = "\"$fdef->name\":true";
+        $classes = $jsmap = $jscol = array();
+        $has_sel = false;
+        $ord = 0;
+        foreach ($fieldDef as $fdef) {
+            $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef, $ord)];
+            if ($fdef->cssname != $fdef->name)
+                $j["cssname"] = $fdef->cssname;
+            if ($fdef->view == Column::VIEW_COLUMN) {
+                $j["column"] = true;
+                ++$ord;
             }
+            if ($fdef->is_folded && $fdef->has_content)
+                $j["loadable"] = true;
+            if ($fdef->is_folded && $fdef->name !== "authors")
+                $j["missing"] = true;
+            if ($fdef->foldable)
+                $j["foldnum"] = $fdef->foldable;
+            $jscol[] = $j;
+            if ($fdef->foldable && $fdef->name !== "authors") {
+                $classes[] = "fold$fdef->foldable" . ($fdef->is_folded ? "c" : "o");
+                $jsmap[] = "\"$fdef->name\":$fdef->foldable";
+            }
+            if (isset($fdef->is_selector))
+                $has_sel = true;
+        }
         // authorship requires special handling
-        if ($this->any->openau || $this->any->anonau) {
+        if ($rstate->has_openau || $rstate->has_anonau) {
             $classes[] = "fold1" . ($this->is_folded("au") ? "c" : "o");
             $jsmap[] = "\"au\":1,\"aufull\":4";
-            if (@$rstate->foldinfo["authors"])
-                $jsloadmap[] = "\"au\":true";
-            $jsloadmap[] = "\"aufull\":true";
         }
-        if ($this->any->anonau) {
+        if ($rstate->has_anonau) {
             $classes[] = "fold2" . ($this->is_folded("anonau") ? "c" : "o");
             $jsmap[] = "\"anonau\":2";
         }
         // total folding, row number folding
-        if (isset($rstate->foldinfo["wholerow"]))
+        if ($rstate->row_folded)
             $classes[] = "fold3c";
-        if ($this->any->sel) {
+        if ($has_sel) {
             $jsmap[] = "\"rownum\":6";
             $classes[] = "fold6" . ($this->is_folded("rownum") ? "c" : "o");
         }
@@ -865,41 +912,37 @@ class PaperList {
         }
         if (count($jsmap))
             $Conf->footerScript("foldmap.pl={" . join(",", $jsmap) . "};");
-        if (count($jsloadmap)) {
-            $args = array();
-            if ($this->search->q)
-                $args["q"] = $this->search->q;
-            if ($this->search->qt)
-                $args["qt"] = $this->search->qt;
-            $args["t"] = $this->search->limitName;
-            $args["pap"] = join(" ", $rstate->ids);
-            $Conf->footerScript("plinfo.needload({" . join(",", $jsloadmap) . "},"
-                                . json_encode($args) . ");");
-        }
-        if (count($jsnotitlemap))
-            $Conf->footerScript("plinfo.notitle={" . join(",", $jsnotitlemap) . "};");
+        $args = array();
+        if ($this->search->q)
+            $args["q"] = $this->search->q;
+        if ($this->search->qt)
+            $args["qt"] = $this->search->qt;
+        $args["t"] = $this->search->limitName;
+        $args["pap"] = join(" ", $rstate->ids);
+        $Conf->footerScript("plinfo.needload(" . json_encode($args) . ");");
+        $Conf->footerScript("plinfo.set_fields(" . json_encode($jscol) . ");");
         return $classes;
     }
 
     private function _make_title_header_extra($rstate, $fieldDef, $show_links) {
         global $Conf;
         $titleextra = "";
-        if (isset($rstate->foldinfo["wholerow"]))
-            $titleextra .= "<span class='sep'></span><a class='fn3' href=\"javascript:void fold('pl',0,3)\">Show all papers</a>";
-        if (($this->any->openau || $this->any->anonau) && $show_links) {
+        if (isset($rstate->row_folded))
+            $titleextra .= '<span class="sep"></span><a class="fn3" href="#" onclick="return fold(\'pl\',0,3)">Show all papers</a><a class="fx3" href="#" onclick="return fold(\'pl\',1,3)">Hide unlikely conflicts</a>';
+        if (($rstate->has_openau || $rstate->has_anonau) && $show_links) {
             $titleextra .= "<span class='sep'></span>";
             if ($Conf->submission_blindness() == Conference::BLIND_NEVER)
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
-            else if ($this->contact->privChair && $this->any->anonau && !$this->any->openau)
+            else if ($this->contact->privChair && $rstate->has_anonau && !$rstate->has_openau)
                 $titleextra .= '<a class="fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
-            else if ($this->contact->privChair && $this->any->anonau)
+            else if ($this->contact->privChair && $rstate->has_anonau)
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',true)">Show non-anonymous authors</a><a class="fx1 fn2" href="#" onclick="return plinfo(\'anonau\',false)">Show all authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';
             else
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show non-anonymous authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
         }
-        if ($this->any->tags && $show_links)
+        if ($show_links)
             foreach ($fieldDef as $fdef)
-                if ($fdef->name == "tags" && $fdef->foldable) {
+                if ($fdef->name == "tags" && $fdef->foldable && $fdef->has_content) {
                     $titleextra .= "<span class='sep'></span>";
                     $titleextra .= "<a class='fn$fdef->foldable' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->foldable' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
                 }
@@ -1040,8 +1083,12 @@ class PaperList {
     private function _prepare_columns($field_list) {
         $field_list2 = array();
         foreach ($field_list as $fdef)
-            if ($fdef && $fdef->prepare($this, $this->is_folded($fdef) ? 0 : 1))
-                $field_list2[] = $fdef;
+            if ($fdef) {
+                $fdef->is_folded = $this->is_folded($fdef);
+                $fdef->has_content = false;
+                if ($fdef->prepare($this, $fdef->is_folded ? 0 : 1))
+                    $field_list2[] = $fdef;
+            }
         return $field_list2;
     }
 
@@ -1174,7 +1221,7 @@ class PaperList {
                 ++$next_fold;
             }
             if ($fdef->view == Column::VIEW_COLUMN)
-                $ncol++;
+                ++$ncol;
         }
 
         // prepare entry
@@ -1191,7 +1238,7 @@ class PaperList {
                 ++$skipcallout;
 
         // create render state
-        $rstate = new PaperListRenderState($ncol, $skipcallout, $this->is_folded("au"));
+        $rstate = new PaperListRenderState($ncol, $skipcallout);
 
         // collect row data
         $body = array();
@@ -1207,66 +1254,30 @@ class PaperList {
         $colhead = "";
         $url = $this->search->url_site_relative_raw();
         if (!defval($options, "noheader")) {
-            $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">\n";
+            $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
             $ord = 0;
             $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
                                                           defval($options, "header_links"));
 
-            if ($this->sortable && $url) {
-                global $ConfSiteBase;
-                $sortUrl = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-                $q = '<a class="pl_sort hottooltip" rel="nofollow" data-hottooltip-dir="b" href="' . $sortUrl;
-            } else
-                $sortUrl = false;
-
             foreach ($fieldDef as $fdef) {
-                if ($fdef->view != Column::VIEW_COLUMN)
+                if ($fdef->view != Column::VIEW_COLUMN
+                    || $fdef->is_folded)
                     continue;
-                if (!$this->any[$fdef->name]) {
-                    $colhead .= "    <th class=\"pl pl_$fdef->cssname\"></th>\n";
-                    continue;
-                }
-                $colhead .= "    <th class=\"pl pl_$fdef->cssname";
+                $colhead .= "<th class=\"pl pl_$fdef->cssname";
                 if ($fdef->foldable)
                     $colhead .= " fx" . $fdef->foldable;
                 $colhead .= "\">";
-                $ftext = $fdef->header($this, null, $ord++);
-
-                if (isset($fdef->is_selector) && $sortUrl
-                    && $this->default_sort_column->name !== "id")
-                    $defsortname = $this->default_sort_column->name;
-                else
-                    $defsortname = null;
-
-                $tooltip = "";
-                if ($defsortname == "searchsort") {
-                    $tooltip = "Sort by search term order";
-                    $ftext = "#";
-                }
-                if ($tooltip && strpos($ftext, "hottooltip") !== false)
-                    $tooltip = "";
-                if (count($this->sorters)
-                    && $this->sorters[0]->thenmap === null
-                    && ((($fdef->name == $this->sorters[0]->type
-                          || $fdef->name == "edit" . $this->sorters[0]->type)
-                         && $sortUrl)
-                        || $defsortname == $this->sorters[0]->type)) {
-                    $tooltip = $this->sorters[0]->reverse ? "Forward sort" : "Reverse sort";
-                    $colhead .= '<a class="pl_sort_def' . ($this->sorters[0]->reverse ? "_rev" : "") . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sortUrl . urlencode($this->sorters[0]->type . ($this->sorters[0]->reverse ? "" : " reverse")) . '">' . $ftext . "</a>";
-                } else if ($fdef->comparator && $sortUrl)
-                    $colhead .= $q . urlencode($fdef->name) . "\" data-hottooltip=\"$tooltip\">" . $ftext . "</a>";
-                else if ($defsortname)
-                    $colhead .= $q . urlencode($defsortname) . "\" data-hottooltip=\"$tooltip\">" . $ftext . "</a>";
-                else
-                    $colhead .= $ftext;
+                if ($fdef->has_content)
+                    $colhead .= $this->_field_title($fdef, $ord);
                 if ($titleextra && $fdef->cssname == "title") {
                     $colhead .= $titleextra;
                     $titleextra = false;
                 }
-                $colhead .= "</th>\n";
+                $colhead .= "</th>";
+                ++$ord;
             }
 
-            $colhead .= "  </tr>\n </thead>\n";
+            $colhead .= "</tr>\n </thead>\n";
         }
 
         // table skeleton including fold classes
@@ -1320,8 +1331,18 @@ class PaperList {
             SessionList::change($this->listNumber, $sl, true);
         }
 
-        $this->ids = $rstate->ids;
+        foreach ($fieldDef as $fdef)
+            if ($fdef->has_content) {
+                $fname = $fdef->name;
+                $this->any->$fname = true;
+            }
+        if ($rstate->has_openau)
+            $this->any->openau = true;
+        if ($rstate->has_anonau)
+            $this->any->anonau = true;
+
         $this->_resolve_footers();
+        $this->ids = $rstate->ids;
         return $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
     }
 
@@ -1344,7 +1365,7 @@ class PaperList {
 
         // output field data
         $data = array();
-        if (($x = $fdef->header($this, null, 0)))
+        if (($x = $fdef->header($this, 0)))
             $data["$fname.headerhtml"] = $x;
         $m = array();
         foreach ($rows as $rowidx => $row) {
@@ -1355,6 +1376,8 @@ class PaperList {
         }
         $data["$fname.html"] = $m;
 
+        if ($fdef->has_content)
+            $this->any->$fname = true;
         return $data;
     }
 

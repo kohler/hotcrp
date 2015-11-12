@@ -1539,7 +1539,7 @@ class AutoassignmentPaperColumn extends PaperColumn {
         parent::__construct("autoassignment", Column::VIEW_ROW,
                             array("cssname" => "autoassignment"));
     }
-    public function header($pl, $row, $ordinal) {
+    public function header($pl, $ordinal) {
         return self::$header;
     }
     public function content_empty($pl, $row) {

@@ -19,6 +19,8 @@ class Column {
     public $view;
     public $comparator;
     public $minimal;
+    public $is_folded = false;
+    public $has_content = false;
 
     public function __construct($name, $flags, $extra) {
         $this->name = $name;
