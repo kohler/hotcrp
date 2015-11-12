@@ -35,17 +35,26 @@ class UserStatus {
         global $Conf;
         if (!$user)
             return null;
-        $user->contactdb_merge();
 
         $cj = (object) array();
         if ($user->contactId)
             $cj->id = $user->contactId;
-        foreach (array("email" => "email", "preferredEmail" => "preferred_email",
-                       "firstName" => "firstName", "lastName" => "lastName",
-                       "affiliation" => "affiliation", "collaborators" => "collaborators",
-                       "voicePhoneNumber" => "phone") as $uk => $jk)
+
+        // keys that might come from user or contactdb
+        $cdb_user = $user->contactdb_user();
+        foreach (["email", "firstName", "lastName", "affiliation"] as $k)
+            if ($user->$k !== null && $user->$k !== "")
+                $cj->$k = $user->$k;
+            else if ($cdb_user->$k !== null && $cdb_user->$k !== "")
+                $cj->$k = $cdb_user->$k;
+
+        // keys that come from user
+        foreach (["preferredEmail" => "preferred_email",
+                  "collaborators" => "collaborators",
+                  "voicePhoneNumber" => "phone"] as $uk => $jk)
             if ($user->$uk !== null && $user->$uk !== "")
                 $cj->$jk = $user->$uk;
+
         if ($user->is_disabled())
             $cj->disabled = true;
 
@@ -182,6 +191,16 @@ class UserStatus {
                 && strtolower($old_user->email) !== strtolower($cj->email)
                 && Contact::id_by_email($cj->email))
                 $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+        }
+
+        // Contactdb information
+        if ($old_user && !$old_user->contactId) {
+            if (!isset($cj->firstName) && !isset($cj->lastName)) {
+                $cj->firstName = $old_user->firstName;
+                $cj->lastName = $old_user->lastName;
+            }
+            if (!isset($cj->affiliation))
+                $cj->affiliation = $old_user->affiliation;
         }
 
         // Preferred email

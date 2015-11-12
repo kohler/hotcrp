@@ -395,18 +395,6 @@ class Contact {
             return false;
     }
 
-    public function contactdb_merge() {
-        global $Opt, $Now;
-        if (!($dblink = self::contactdb())
-            || !$this->has_email()
-            || !($cdb_user = self::contactdb_find_by_email($this->email)))
-            return false;
-        foreach (array("firstName", "lastName", "affiliation") as $k)
-            if ($cdb_user->$k && !$this->$k)
-                $this->$k = $cdb_user->$k;
-        return true;
-    }
-
     public function is_actas_user() {
         return $this->activated_
             && ($trueuser = @$_SESSION["trueuser"])
@@ -666,16 +654,6 @@ class Contact {
             $this->_save_assign_field("voicePhoneNumber", $cj->phone, $qf, $qv);
         $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $qf, $qv);
         self::set_sorter($this);
-
-        // contactdb transfers
-        if (!isset($cj->firstName) && !isset($cj->lastName) && !$this->contactId) {
-            if ($this->firstName)
-                $this->_save_assign_field("firstName", $this->firstName, $qf, $qv);
-            if ($this->lastName)
-                $this->_save_assign_field("lastName", $this->lastName, $qf, $qv);
-        }
-        if (!isset($cj->affiliation) && $this->affiliation && !$this->contactId)
-            $this->_save_assign_field("affiliation", $this->affiliation, $qf, $qv);
 
         // Follow
         if (isset($cj->follow)) {
