@@ -1118,8 +1118,7 @@ function chair() {
 <ol>
 
 <li><p><strong><a href='" . hoturl("settings", "group=users") . "'>Set up PC
-  member accounts</a></strong> and decide whether to collect authors’
-  snail-mail addresses and phone numbers.</li>
+  member accounts</a></strong>.</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
   policies</a></strong>, including whether submission is blind, whether
