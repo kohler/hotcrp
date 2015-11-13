@@ -2482,15 +2482,13 @@ div.cmtadminvis, div.cmtcolor {
 	margin: 0 -5px;
 	padding: 2px 5px;
 }
-div.cmtauvis .cmtv {
-	padding-left: 34px;
-}
-div.cmtauvis .cmtv div.aahc,
-div.cmtauvis .cmtv .cmtmsg {
-	margin-left: -34px;
-}
 div.cmtauvis .cmtnumhead {
+	background: #e6e1cf;
 	font-weight: bold;
+	border-radius: 5px;
+	padding: 1px 3px;
+	margin-top: -1px;
+	margin-left: -1px;
 }
 div.cmtadminvis {
 	background: #f3f3f3;
@@ -2560,7 +2558,7 @@ div.revtext, div.cmttext {
 }
 .cmtnumhead {
 	display: inline-block;
-	padding-right: 0.75em;
+	margin-right: 0.75em;
 }
 .cmtname, .cmttime, .cmttags, .cmtvis {
 	display: inline-block;
