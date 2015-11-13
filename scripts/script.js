@@ -3894,6 +3894,8 @@ function show_loading(type, which) {
 
 function plinfo(type, dofold, which) {
     var elt, f = fields[type];
+    if (!f)
+        log_jserror("plinfo missing type " + type);
     which = which || "pl";
     if (dofold && dofold !== true && dofold.checked !== undefined)
         dofold = !dofold.checked;
