@@ -185,9 +185,9 @@ class ReviewField {
         if (!$this->has_options)
             return $value;
         else if (!$value)
-            return "";
+            return null;
         else if (!$this->option_letter)
-            $x = $value;
+            $x = (int) $value;
         else if (is_int($value) || ctype_digit($value))
             $x = chr($this->option_letter - (int) $value);
         else {
@@ -305,12 +305,6 @@ class ReviewField {
 }
 
 class ReviewForm {
-    const WEB_OPTIONS = 1;
-    const WEB_FULL = 2;
-    const WEB_LEFT = 4;
-    const WEB_RIGHT = 8;
-    const WEB_FINAL = 32;
-
     public $fmap = array();
     public $forder;
     public $fieldName;
@@ -1275,7 +1269,7 @@ $blind\n";
         $pids = array();
         foreach ($a as &$x)
             if (preg_match('/\A(#?)(\d+)([A-Z]*)\z/', $x, $m)) {
-                $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "review$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
+                $x = "<a href=\"" . hoturl("paper", ["p" => $m[2], "anchor" => $m[3] ? "r$m[2]$m[3]" : null]) . "\">" . $x . "</a>";
                 $pids[] = $m[2];
             }
         $t = str_replace("|", "", $pl) . commajoin($a);
@@ -1316,90 +1310,6 @@ $blind\n";
         // self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
         if (count($confirm))
             $Conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
-    }
-
-    private function webDisplayRows($prow, $rrow, $contact) {
-        global $Conf;
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
-
-        // Which fields are options?
-        $fshow = array();
-        $fdisp = array();
-        foreach ($this->forder as $field => $f) {
-            $fval = $rrow->$field;
-            if ($f->view_score > $revViewScore
-                && ($f->has_options || $fval != "")
-                && (!$f->round_mask || $f->is_round_visible($rrow))) {
-                $fshow[] = $f;
-                $fdisp[] = ($f->has_options ? self::WEB_OPTIONS : 0);
-            }
-        }
-
-        // Group fields into positions on the left or right
-        foreach ($fdisp as $i => &$disp) {
-            if (!($disp & self::WEB_OPTIONS))
-                $disp |= self::WEB_FULL;
-            else if ($i > 0 && ($fdisp[$i-1] & self::WEB_LEFT))
-                $disp |= self::WEB_RIGHT;
-            else if ($i+1 < count($fdisp) && ($fdisp[$i+1] & self::WEB_OPTIONS))
-                $disp |= self::WEB_LEFT;
-            else
-                $disp |= self::WEB_FULL;
-            if ($i + 1 == count($fdisp)
-                || ($i + 2 == count($fdisp) && ($disp & self::WEB_LEFT)))
-                $disp |= self::WEB_FINAL;
-        }
-        unset($disp);
-
-        // Actually display
-        $x = "";
-        foreach ($fshow as $fnum => $f) {
-            $disp = $fdisp[$fnum];
-            $field = $f->id;
-            $fval = $rrow->$field;
-            if ($f->has_options && $fval)
-                $fval = $f->unparse_value($fval);
-
-            $n = $f->name_html;
-            if (preg_match("/\\A\\S+\\s+\\S+\\z/", $n))
-                $n = preg_replace("/\\s+/", "&nbsp;", $n);
-
-            $c = '<div class="revfn">' . $n . '</div>';
-            if ($f->has_options || $f->description)
-                $Conf->footerScript("review_form.score_header_tooltips($(\".revcard\"))", "score_header_tooltips");
-            if ($f->view_score < VIEWSCORE_REVIEWERONLY)
-                $c .= '<div class="revvis">(secret)</div>';
-            else if ($f->view_score < VIEWSCORE_PC)
-                $c .= '<div class="revvis">(shown only to chairs)</div>';
-            else if ($f->view_score < VIEWSCORE_AUTHOR)
-                $c .= '<div class="revvis">(hidden from authors)</div>';
-
-            if ($disp & self::WEB_LEFT)
-                $x .= '<div class="rvg">';
-            $x .= '<div class="rv';
-            if ($disp & self::WEB_LEFT)
-                $x .= ' rvl';
-            else if ($disp & self::WEB_RIGHT)
-                $x .= ' rvr';
-            else
-                $x .= ' rvg';
-            $x .= '" data-rf="' . $f->uid . '"><div class="revvt">' . $c . '<hr class="c" />'
-                . '</div><div class="revv';
-            if ($f->has_options) {
-                if (!$fval || !isset($f->options[$fval]))
-                    $x .= ' rev_unknown">'
-                        . ($f->allow_empty ? "No entry" : "Unknown");
-                else
-                    $x .= '">' . $f->unparse_value($fval, ReviewField::VALUE_REV_NUM)
-                        . " " . htmlspecialchars($f->options[$fval]);
-            } else
-                $x .= ' revtext">' . Ht::link_urls(htmlspecialchars($fval));
-            $x .= "</div></div>";
-            if ($disp & self::WEB_RIGHT)
-                $x .= '<hr class="c" /></div>';
-        }
-
-        return "<div class='rvtab'>" . $x . "</div>\n";
     }
 
     function webGuidanceRows($revViewScore, $extraclass="") {
@@ -1489,9 +1399,9 @@ $blind\n";
         if (defval($options, "editmessage"))
             echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
 
-        echo '<hr class="c" /></div><div class="revcard_body">',
-            $this->webDisplayRows($prow, $rrow, $Me),
-            "</div></div>\n\n";
+        echo '<hr class="c" /></div><div class="revcard_body"></div></div>', "\n\n";
+
+        $Conf->echoScript("review_form.render_review(\$(\"#r$reviewOrdinal .revcard_body\"), " . json_encode($this->unparse_review_json($prow, $rrow, $Me)) . ");");
     }
 
     private function _review_buttons($prow, $rrow, $type, $reviewPostLink) {
@@ -1574,7 +1484,7 @@ $blind\n";
             if ($rrow)
                 echo Ht::hidden("version", defval($rrow, "reviewEditVersion", 0) + 1);
         }
-        echo '<div class="revcard"><div class="revcard_head">';
+        echo '<div class="revcard" id="r', $reviewOrdinal, '"><div class="revcard_head">';
 
         // Links
         if ($rrow) {
@@ -1591,10 +1501,10 @@ $blind\n";
 
         echo "<h3>";
         if ($rrow) {
-            echo '<a href="', hoturl("review", "r=$reviewOrdinal" . $forceShow), '" name="review', $reviewOrdinal, '" class="',
+            echo '<a href="', hoturl("review", "r=$reviewOrdinal" . $forceShow), '" class="',
                 ($editmode ? 'q">Edit ' : 'u">'), "Review";
             if ($rrow->reviewSubmitted)
-                echo "&nbsp;#", $prow->paperId, unparseReviewOrdinal($rrow->reviewOrdinal);
+                echo "&nbsp;#", $reviewOrdinal;
             echo "</a>";
         } else
             echo "Write Review";
@@ -1713,12 +1623,26 @@ $blind\n";
         Ht::stash_script('hiliter_children("form.revcard")', "form_revcard");
     }
 
+    function unparse_review_json($prow, $rrow, $contact) {
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
+        $r = array();
+        foreach ($this->forder as $fid => $f)
+            if ($f->view_score > $revViewScore
+                && (!$f->round_mask || $f->is_round_visible($rrow))) {
+                if ($f->has_options)
+                    $r[$f->uid] = $f->unparse_value($rrow->$fid);
+                else
+                    $r[$f->uid] = $rrow->$fid;
+            }
+        return $r;
+    }
+
 
     function reviewFlowEntry($contact, $rrow, $trclass) {
         // See also CommentInfo::unparse_flow_entry
         global $Conf;
         $barsep = " <span class='barsep'>·</span> ";
-        $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#review" . unparseReviewOrdinal($rrow)) . "'";
+        $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . "'";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
             . Ht::img("review24.png", "[Review]", "dlimg")
             . "</a></td><td class='pl_activityid pnum'>"

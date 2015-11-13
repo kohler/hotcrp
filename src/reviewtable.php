@@ -100,9 +100,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                      && $Me->can_review($prow, $rr)))
             $t .= '<td><a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a></td>';
         else if (Navigation::page() !== "paper")
-            $t .= '<td><a href="' . hoturl("paper", "p=$prow->paperId#review$rlink") . '">' . $id . '</a></td>';
+            $t .= '<td><a href="' . hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a></td>';
         else
-            $t .= '<td><a href="#review' . $rlink . '">' . $id . '</a></td>';
+            $t .= '<td><a href="#r' . $rlink . '">' . $id . '</a></td>';
 
         // primary/secondary glyph
         if ($conflictType > 0 && !$admin)

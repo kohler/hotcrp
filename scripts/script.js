@@ -2108,7 +2108,7 @@ HtmlCollector.prototype.clear = function () {
 
 // reviews
 window.review_form = (function ($) {
-var formj;
+var formj, form_order;
 
 function score_tooltip_enter(evt) {
     var j = $(this), tt = j.data("hotcrp_tooltip");
@@ -2144,26 +2144,73 @@ function score_header_tooltip_enter(evt) {
     tt && tt.enter();
 }
 
+function score_header_tooltips(j) {
+    j.find(".rv .revfn").each(function () {
+        $(this).hover(score_header_tooltip_enter, tooltip_leave);
+    });
+}
+
+function render_review(j, rrow) {
+    var view_order = $.grep(form_order, function (f) {
+        return f.options || rrow[f.uid];
+    });
+    var t = "", i, f, x, nextf, last_display = 0, display;
+    for (i = 0; i != view_order.length; ++i) {
+        f = view_order[i];
+        nextf = view_order[i + 1];
+        if (last_display != 1 && f.options && nextf && nextf.options) {
+            display = 1;
+            t += '<div class="rvg">';
+        } else
+            display = last_display == 1 ? 2 : 0;
+
+        t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
+            '"><div class="revvt"><div class="revfn">' + f.name_html + '</div>';
+        if (f.view_score != "author")
+            t += '<div class="revvis">(' +
+                (({secret: "secret", admin: "shown only to chairs",
+                   pc: "hidden from authors"})[f.view_score] || f.view_score) +
+                ')</div>';
+        t += '<hr class="c" /></div><div class="revv';
+
+        if (!f.options)
+            t += ' revtext">' + link_urls(escape_entities(rrow[f.uid]));
+        else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid])))
+            t += '">' + f.score_info.unparse_revnum(x) + " " +
+                escape_entities(f.options[x - 1]);
+        else
+            t += ' rev_unknown">' + (f.allow_empty ? "No entry" : "Unknown");
+
+        t += '</div></div>';
+        if (display == 2)
+            t += '<hr class="c" /></div>';
+        last_display = display;
+    }
+    j.html(t);
+    score_header_tooltips(j);
+}
+
 return {
     set_form: function (j) {
         var i, f;
         formj = $.extend(formj || {}, j);
         for (i in formj) {
             f = formj[i];
+            f.uid = i;
+            f.name_html = escape_entities(f.name);
             if (f.options)
                 f.score_info = make_score_info(f.options.length, f.option_letter, f.option_class_prefix);
         }
+        form_order = $.map(formj, function (v) { return v; });
+        form_order.sort(function (a, b) { return a.position - b.position; });
     },
     score_tooltips: function (j) {
         j.find(".revscore").each(function () {
             $(this).hover(score_tooltip_enter, tooltip_leave);
         });
     },
-    score_header_tooltips: function (j) {
-        j.find(".rv .revfn").each(function () {
-            $(this).hover(score_header_tooltip_enter, tooltip_leave);
-        });
-    }
+    score_header_tooltips: score_header_tooltips,
+    render_review: render_review
 };
 })($);
 
@@ -4193,7 +4240,7 @@ function make_value_order(n, c) {
 }
 
 function make_info(n, c, sv) {
-    var fm = make_fm(n);
+    var fm = make_fm(n), unparse;
     function fm9(val) {
         return Math.floor(fm(val) * 8.99) + 1;
     }
@@ -4208,6 +4255,7 @@ function make_info(n, c, sv) {
         }
         return sccolor[svx];
     }
+    unparse = c ? make_letter_unparser(n, c) : numeric_unparser;
     return {
         fm: fm,
         rgb_array: rgb_array,
@@ -4215,7 +4263,14 @@ function make_info(n, c, sv) {
             var x = rgb_array(val);
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
-        unparse: c ? make_letter_unparser(n, c) : numeric_unparser,
+        unparse: unparse,
+        unparse_revnum: function (val) {
+            if (val >= 1 && val <= n)
+                return '<span class="rev_num sv ' + sv + fm9(val) + '">' +
+                    unparse(val) + '.</span>';
+            else
+                return '(???)';
+        },
         parse: c ? make_letter_parser(n, c) : numeric_parser,
         value_order: function () { return make_value_order(n, c); },
         className: function (val) { return sv + fm9(val); }

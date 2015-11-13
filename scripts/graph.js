@@ -226,7 +226,7 @@ function clicker(pids) {
             x.push(m);
     }
     if (x.length == 1 && pids.length == 1 && /[A-Z]$/.test(pids[0]))
-        url = hoturl("paper", {p: x[0], anchor: "review" + pids[0]});
+        url = hoturl("paper", {p: x[0], anchor: "r" + pids[0]});
     else if (x.length == 1)
         url = hoturl("paper", {p: x[0]});
     else

@@ -216,15 +216,15 @@ class PaperList {
         $doreview = isset($row->reviewId) && isset($row->reviewFirstName);
         if ($doreview) {
             $rord = unparseReviewOrdinal($row);
-            if ($pt != "paper" || $row->reviewSubmitted <= 0) {
+            if ($pt == "paper" && $row->reviewSubmitted > 0)
+                $pl .= "#r" . $rord;
+            else {
                 $pl .= "&amp;r=" . $rord;
                 if ($row->reviewSubmitted > 0)
                     $pl .= "&amp;m=r";
             }
         } else if ($pt === "review")
             $pt = "paper";
-        if ($doreview && $row->reviewSubmitted > 0)
-            $pl .= "#review" . $rord;
         return hoturl($pt, $pl);
     }
 
@@ -292,7 +292,7 @@ class PaperList {
             if ($ranal->needsSubmit)
                 $link = hoturl("review", "r=" . unparseReviewOrdinal($row));
             else
-                $link = hoturl("paper", "p=" . $row->paperId . "#review" . unparseReviewOrdinal($row));
+                $link = hoturl("paper", "p=" . $row->paperId . "#r" . unparseReviewOrdinal($row));
             $ranal->link1 = "<a href=\"$link\">";
             $ranal->link2 = "</a>";
             if ($row->reviewRound)
