@@ -708,8 +708,8 @@ Each round is given a name, such as “R1” or “lastround”
 (we suggest very short names like “R1”).
 Configure rounds on the <a href='" . hoturl("settings", "group=reviews#rounds")
 . "'>settings page</a>.
-To search for any paper with a round “R2” review assignment, <a href='" . hoturl("search", "q=round:R2") . "'>search for “round:R2”</a>.
-To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername+round:R1") . "'>search for “re:membername round:R1”</a>.</p>
+To search for any paper with a round “R2” review assignment, <a href='" . hoturl("search", "q=re:R2") . "'>search for re:R2”</a>.
+To list a PC member’s round “R1” review assignments, <a href='" . hoturl("search", "q=re:membername:R1") . "'>search for “re:membername:R1”</a>.</p>
 
 <p>Different rounds usually share the same review form, but you can also
 mark review fields as appearing only in certain rounds. First configure
