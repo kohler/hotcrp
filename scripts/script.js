@@ -2113,7 +2113,7 @@ var formj;
 function score_tooltip_enter(evt) {
     var j = $(this), tt = j.data("hotcrp_tooltip");
     if (!tt) {
-        var fieldj = formj[this.className.match(/\brs_(\w+)/)[1]], score;
+        var fieldj = formj[this.getAttribute("data-rf")], score;
         if (fieldj && fieldj.score_info
             && (score = fieldj.score_info.parse(j.find("span.sv").text())))
             tt = tooltip({
@@ -2127,7 +2127,7 @@ function score_tooltip_enter(evt) {
 function score_header_tooltip_enter(evt) {
     var j = $(this), tt = j.data("hotcrp_tooltip"), rv;
     if (!tt && (rv = j.closest(".rv")[0])) {
-        var fieldj = formj[rv.className.match(/\brv_(\w+)/)[1]];
+        var fieldj = formj[rv.getAttribute("data-rf")];
         if (fieldj && (fieldj.description || fieldj.options)) {
             var d = "", si, vo;
             if (fieldj.description)

@@ -180,7 +180,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 else if ($rr->$fid) {
                     if (!@$score_header[$fid])
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
-                    $scores[$fid] = '<td class="revscore rs_' . $fid . '">'
+                    $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid . '">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
                 } else if (@$score_header[$fid] === null)

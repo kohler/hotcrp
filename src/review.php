@@ -15,6 +15,7 @@ class ReviewField {
     const VALUE_DARK = 4;
 
     public $id;
+    public $uid;
     public $name;
     public $name_html;
     public $description;
@@ -310,7 +311,7 @@ class ReviewForm {
     const WEB_RIGHT = 8;
     const WEB_FINAL = 32;
 
-    public $fmap;
+    public $fmap = array();
     public $forder;
     public $fieldName;
     private $mailer_info;
@@ -338,7 +339,6 @@ class ReviewForm {
 
     public function __construct($rfj) {
         // prototype fields
-        $fmap = array();
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
                        "commentsToAddress", "weaknessOfPaper",
                        "strengthOfPaper", "textField7", "textField8") as $fid)
@@ -383,7 +383,7 @@ class ReviewForm {
                 $this->forder[$f->id] = $f;
 
         // set field abbreviations; try to ensure uniqueness
-        $fdupes = $forder;
+        $fdupes = $this->forder;
         for ($abbrdetail = 0; $abbrdetail < 5 && count($fdupes); ++$abbrdetail) {
             $fmap = array();
             foreach ($fdupes as $f) {
@@ -395,6 +395,9 @@ class ReviewForm {
                 if (count($fs) > 1)
                     $fdupes = array_merge($fdupes, $fs);
         }
+        $useabbr = !count($dupes);
+        foreach ($this->forder as $f)
+            $f->uid = $useabbr ? $f->abbreviation : $f->id;
     }
 
     static public function get() {
@@ -469,19 +472,20 @@ class ReviewForm {
 
     public function unparse_full_json() {
         $fmap = array();
-        foreach ($this->fmap as $fid => $f)
-            $fmap[$fid] = $f->unparse_json();
+        foreach ($this->fmap as $f)
+            $fmap[$f->id] = $f->unparse_json();
         return $fmap;
     }
 
     public function unparse_json($round_mask, $view_score_bound) {
         $fmap = array();
-        foreach ($this->fmap as $fid => $f)
+        foreach ($this->fmap as $f)
             if ($f->displayed
                 && (!$round_mask || !$f->round_mask
                     || ($f->round_mask & $round_mask))
-                && $f->view_score > $view_score_bound)
-                $fmap[$fid] = $f->unparse_json();
+                && $f->view_score > $view_score_bound) {
+                $fmap[$f->uid] = $f->unparse_json();
+            }
         return $fmap;
     }
 
@@ -515,7 +519,7 @@ class ReviewForm {
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$field);
 
-            echo '<div class="rv rveg rv_', $field, '"><div class="revet';
+            echo '<div class="rv rveg" data-rf="', $f->uid, '"><div class="revet';
             if (isset($ReviewFormError[$field]))
                 echo " error";
             echo '"><div class="revfn">', $f->name_html, '</div>';
@@ -1379,18 +1383,15 @@ $blind\n";
                 $x .= ' rvr';
             else
                 $x .= ' rvg';
-            $x .= ' rv_' . $field . '"><div class="revvt">' . $c . '<hr class="c" />'
+            $x .= '" data-rf="' . $f->uid . '"><div class="revvt">' . $c . '<hr class="c" />'
                 . '</div><div class="revv';
             if ($f->has_options) {
                 if (!$fval || !isset($f->options[$fval]))
-                    $x .= "\"><span class='rev_${field} rev_unknown'>"
-                        . ($f->allow_empty ? "No entry" : "Unknown")
-                        . "</span>";
+                    $x .= ' rev_unknown">'
+                        . ($f->allow_empty ? "No entry" : "Unknown");
                 else
-                    $x .= "\"><span class='rev_${field}'>"
-                        . $f->unparse_value($fval, ReviewField::VALUE_REV_NUM)
-                        . " " . htmlspecialchars($f->options[$fval])
-                        . "</span>";
+                    $x .= '">' . $f->unparse_value($fval, ReviewField::VALUE_REV_NUM)
+                        . " " . htmlspecialchars($f->options[$fval]);
             } else
                 $x .= ' revtext">' . Ht::link_urls(htmlspecialchars($fval));
             $x .= "</div></div>";
