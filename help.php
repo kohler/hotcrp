@@ -1118,7 +1118,12 @@ function chair() {
 <ol>
 
 <li><p><strong><a href='" . hoturl("settings", "group=users") . "'>Set up PC
-  member accounts</a></strong>.</p></li>
+  member accounts</a></strong>. Many PCs are divided into classes, such as
+  “heavy” and “light”, or “PC” and “ERC”. Mark these classes with user tags.
+  It’s also useful to configure <a href='" . hoturl("settings",
+  "group=tags") . "'>tag colors</a> so that PC member names are displayed
+  differently based on class (for instance, heavy PC member names might appear
+  in <b>bold</b>).</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
   policies</a></strong>, including whether submission is blind, whether
