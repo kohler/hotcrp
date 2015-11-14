@@ -389,7 +389,7 @@ function searchQuickref() {
     $t = "Review&nbsp;fields";
     if (count($farr[0])) {
         $r = $farr[0][0];
-        _searchQuickrefRow($t, "$r->abbreviation1:$r->typical_score", "at least one completed review has $r->name_html score $r->typical_score");
+        _searchQuickrefRow($t, $r->abbreviation1() . ":$r->typical_score", "at least one completed review has $r->name_html score $r->typical_score");
         _searchQuickrefRow("", "$r->abbreviation:$r->typical_score", "other abbreviations accepted");
         if (count($farr[0]) > 1) {
             $r2 = $farr[0][1];
@@ -417,7 +417,7 @@ function searchQuickref() {
     }
     if (count($farr[1])) {
         $r = $farr[1][0];
-        _searchQuickrefRow($t, "$r->abbreviation1:finger", "at least one completed review has “finger” in the $r->name_html field");
+        _searchQuickrefRow($t, $r->abbreviation1() . ":finger", "at least one completed review has “finger” in the $r->name_html field");
         _searchQuickrefRow($t, "$r->abbreviation:finger", "other abbreviations accepted");
         _searchQuickrefRow($t, "$r->abbreviation:any", "at least one completed review has text in the $r->name_html field");
     }

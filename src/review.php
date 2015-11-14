@@ -144,22 +144,19 @@ class ReviewField {
     }
 
     public function analyze() {
-        if (!$this->analyzed) {
-            $this->abbreviation1 = ReviewForm::make_abbreviation($this->name, 0, 1);
-            if ($this->has_options) {
-                $scores = array_keys($this->options);
-                if (count($scores) == 1) {
-                    $this->typical_score = $scores[0];
-                    unset($this->typical_score_range);
-                } else {
-                    $off = count($scores) == 2 ? 0 : 1;
-                    $this->typical_score0 = $scores[$off];
-                    $this->typical_score = $scores[$off + 1];
-                    if ($this->option_letter)
-                        $this->typical_score_range = $this->typical_score0 . $this->typical_score;
-                    else
-                        $this->typical_score_range = $this->typical_score0 . "-" . $this->typical_score;
-                }
+        if ($this->has_options && !$this->analyzed) {
+            $scores = array_keys($this->options);
+            if (count($scores) == 1) {
+                $this->typical_score = $scores[0];
+                unset($this->typical_score_range);
+            } else {
+                $off = count($scores) == 2 ? 0 : 1;
+                $this->typical_score0 = $scores[$off];
+                $this->typical_score = $scores[$off + 1];
+                if ($this->option_letter)
+                    $this->typical_score_range = $this->typical_score0 . $this->typical_score;
+                else
+                    $this->typical_score_range = $this->typical_score0 . "-" . $this->typical_score;
             }
             $this->analyzed = true;
         }
@@ -169,6 +166,34 @@ class ReviewField {
     public function web_abbreviation() {
         return '<span class="hottooltip" data-hottooltip="' . $this->name_html
             . '" data-hottooltip-dir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
+    }
+
+    static function make_abbreviation($name, $abbrdetail, $abbrtype) {
+        $name = str_replace("'", "", $name);
+
+        // try to filter out noninteresting words
+        if ($abbrdetail < 2) {
+            $xname = preg_replace('/\b(?:a|an|be|for|in|of|the|this|to|with)\b/i', '', $name);
+            $name = $xname ? : $name;
+        }
+
+        // only letters & digits
+        if ($abbrdetail == 0)
+            $name = preg_replace('/\(.*?\)/', ' ', $name);
+        $xname = preg_replace('/[-\s,.?!()\[\]\{\}_]+/', " ", " $name ");
+        // drop extraneous words
+        $xname = preg_replace('/\A(' . str_repeat(' \S+', max(3, $abbrdetail)) . ' ).*\z/', '$1', $xname);
+        if ($abbrtype == 1)
+            return strtolower(str_replace(" ", "-", trim($xname)));
+        else {
+            // drop lowercase letters from words
+            $xname = str_replace(" ", "", ucwords($xname));
+            return preg_replace('/([A-Z][a-z][a-z])[a-z]*/', '$1', $xname);
+        }
+    }
+
+    public function abbreviation1() {
+        return self::make_abbreviation($this->name, 0, 1);
     }
 
     public function value_class($value) {
@@ -381,7 +406,7 @@ class ReviewForm {
         for ($abbrdetail = 0; $abbrdetail < 5 && count($fdupes); ++$abbrdetail) {
             $fmap = array();
             foreach ($fdupes as $f) {
-                $f->abbreviation = self::make_abbreviation($f->name, $abbrdetail, 0);
+                $f->abbreviation = ReviewField::make_abbreviation($f->name, $abbrdetail, 0);
                 $fmap[$f->abbreviation][] = $f;
             }
             $fdupes = array();
@@ -436,32 +461,6 @@ class ReviewForm {
                 $field = ($field === null ? $f : false);
         }
         return $field;
-    }
-
-    static function make_abbreviation($name, $abbrdetail, $abbrtype) {
-        $name = str_replace("'", "", $name);
-        if ($abbrdetail == 0)
-            $name = preg_replace('/\(.*?\)/', ' ', $name);
-
-        // try to filter out noninteresting words
-        if ($abbrdetail < 2) {
-            $xname = trim(preg_replace('/\b(?:a|an|be|for|in|of|the|this|to|with)\b/i', '', $name));
-            $name = $xname ? : $name;
-        }
-
-        $a = preg_split("/[-\s,.?!()\[\]]+/", ucwords($name));
-
-        // truncate
-        array_splice($a, min(max(3, $abbrdetail), count($a)));
-
-        // abbreviate
-        if ($abbrtype == 1)
-            return strtolower(join("-", $a));
-        else {
-            foreach ($a as &$w)
-                $w = substr($w, 0, 3);
-            return join("", $a);
-        }
     }
 
     public function unparse_full_json() {
