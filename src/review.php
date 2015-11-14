@@ -389,7 +389,7 @@ class ReviewForm {
                 if (count($fs) > 1)
                     $fdupes = array_merge($fdupes, $fs);
         }
-        $useabbr = !count($dupes);
+        $useabbr = !count($fdupes);
         foreach ($this->forder as $f)
             $f->uid = $useabbr ? $f->abbreviation : $f->id;
     }
