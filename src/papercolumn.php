@@ -1060,7 +1060,6 @@ class ScorePaperColumn extends PaperColumn {
             return false;
         if ($visible) {
             $pl->qopts["scores"][$this->score] = true;
-            $pl->qopts["need_javascript"] = true;
             $this->max_score = count($this->form_field->options);
         }
         return true;

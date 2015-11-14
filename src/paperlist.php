@@ -37,6 +37,7 @@ class PaperList {
     public $live_table;
 
     private $sortable;
+    private $foldable;
     var $listNumber;
     private $_paper_link_page;
     private $viewmap;
@@ -65,6 +66,8 @@ class PaperList {
             $this->sorters[] = ListSorter::parse_sorter($_REQUEST["sort"]);
         else
             $this->sorters[] = ListSorter::parse_sorter("");
+
+        $this->foldable = $this->sortable || !!@$args["foldable"];
 
         $this->_paper_link_page = "";
         if (isset($_REQUEST["linkto"])
@@ -499,7 +502,7 @@ class PaperList {
         }
 
         if ($want_plactions_dofold)
-            $Conf->footerScript("plactions_dofold()");
+            Ht::stash_script("plactions_dofold()");
 
         // Linelinks container
         $foot = '<tr class="pl_footrow">';
@@ -918,7 +921,7 @@ class PaperList {
             $classes[] = "fold5" . (defval($_REQUEST, "forceShow") ? "o" : "c");
         }
         if (count($jsmap))
-            $Conf->footerScript("foldmap.pl={" . join(",", $jsmap) . "};");
+            Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
         $args = array();
         if ($this->search->q)
             $args["q"] = $this->search->q;
@@ -926,8 +929,8 @@ class PaperList {
             $args["qt"] = $this->search->qt;
         $args["t"] = $this->search->limitName;
         $args["pap"] = join(" ", $rstate->ids);
-        $Conf->footerScript("plinfo.needload(" . json_encode($args) . ");");
-        $Conf->footerScript("plinfo.set_fields(" . json_encode($jscol) . ");");
+        Ht::stash_script("plinfo.needload(" . json_encode($args) . ");"
+                         . "plinfo.set_fields(" . json_encode($jscol) . ");");
         return $classes;
     }
 
@@ -1231,11 +1234,6 @@ class PaperList {
                 ++$ncol;
         }
 
-        // prepare entry
-        $enter = "";
-        if (@$this->qopts["need_javascript"] && $this->live_table)
-            $enter .= Ht::take_stash();
-
         // count non-callout columns
         $skipcallout = 0;
         foreach ($fieldDef as $fdef)
@@ -1288,8 +1286,11 @@ class PaperList {
         }
 
         // table skeleton including fold classes
-        $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter .= "<table class=\"pltable plt_" . htmlspecialchars($listname);
+        $foldclasses = array();
+        if ($this->foldable)
+            $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
+        $enter = ($this->live_table ? Ht::take_stash() : "")
+            . "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if (defval($options, "class"))
             $enter .= " " . $options["class"];
         if ($this->listNumber)

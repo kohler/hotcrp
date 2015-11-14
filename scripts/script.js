@@ -4011,7 +4011,7 @@ function doremovedocument(elt) {
     var name = elt.id.replace(/^remover_/, ""), e, estk, tn, i;
     if (!(e = $$("remove_" + name))) {
         e = document.createElement("span");
-        e.innerHTML = "<input type='hidden' id='remove_" + name + "' name='remove_" + name + "' value='' />";
+        e.innerHTML = '<input type="hidden" id="remove_' + name + '" name="remove_' + name + '" value="" />';
         elt.parentNode.insertBefore(e.firstChild, elt);
         e = $$("remove_" + name);
     }

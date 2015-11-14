@@ -1202,8 +1202,7 @@ $Conf->header("Search", "search", actionBar());
 $Conf->echoScript(); // need the JS right away
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
-    $pl = new PaperList($Search, array("sort" => true, "list" => true, "row_id_pattern" => "p#",
-                                       "display" => defval($_REQUEST, "display")));
+    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")]);
     if (check_post()) {
         $pl->papersel = array();
         foreach (SearchActions::selection() as $pid)

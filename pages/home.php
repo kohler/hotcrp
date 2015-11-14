@@ -452,7 +452,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($Me->has_review()) {
-        $plist = new PaperList(new PaperSearch($Me, array("q" => "re:me")), array("list" => true));
+        $plist = new PaperList(new PaperSearch($Me, ["q" => "re:me"]), ["list" => true]);
         $ptext = $plist->table_html("reviewerHome");
         if ($plist->count > 0)
             echo "<div class='fx'><div class='g'></div>", $ptext, "</div>";
@@ -493,7 +493,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     $plist = null;
     if ($Me->is_author()) {
-        $plist = new PaperList(new PaperSearch($Me, array("t" => "a")), array("list" => true));
+        $plist = new PaperList(new PaperSearch($Me, ["t" => "a"]), ["list" => true]);
         $ptext = $plist->table_html("authorHome", array("noheader" => true));
         if ($plist->count > 0)
             echo "<div class='g'></div>\n", $ptext;
