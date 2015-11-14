@@ -252,6 +252,7 @@ CREATE TABLE `PaperReview` (
   `textField7` mediumblob,
   `textField8` mediumblob,
   `reviewWordCount` int(11) DEFAULT NULL,
+  `reviewFormat` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
@@ -309,6 +310,7 @@ CREATE TABLE `PaperReviewArchive` (
   `textField7` mediumblob,
   `textField8` mediumblob,
   `reviewWordCount` int(11) DEFAULT NULL,
+  `reviewFormat` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`reviewArchiveId`),
   UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
   KEY `paperId` (`paperId`)
@@ -495,7 +497,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 104);
+insert into Settings (name, value) values ('allowPaperOption', 105);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

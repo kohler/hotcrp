@@ -1623,6 +1623,7 @@ $blind\n";
     }
 
     function unparse_review_json($prow, $rrow, $contact) {
+        global $Conf;
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         $r = array();
         foreach ($this->forder as $fid => $f)
@@ -1633,6 +1634,10 @@ $blind\n";
                 else
                     $r[$f->uid] = $rrow->$fid;
             }
+        if (($round = $Conf->round_name($rrow->reviewRound)))
+            $r["_round"] = $round;
+        if ($rrow->reviewFormat)
+            $r["_format"] = $rrow->reviewFormat;
         return $r;
     }
 

@@ -782,4 +782,8 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table Paper modify `title` varbinary(256) DEFAULT NULL")
         && $Conf->ql("alter table Paper drop key `title`"))
         update_schema_version($Conf, 104);
+    if ($Conf->settings["allowPaperOption"] == 104
+        && $Conf->ql("alter table PaperReview add `reviewFormat` tinyint(1) DEFAULT NULL")
+        && $Conf->ql("alter table PaperReviewArchive add `reviewFormat` tinyint(1) DEFAULT NULL"))
+        update_schema_version($Conf, 105);
 }
