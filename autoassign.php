@@ -603,7 +603,7 @@ for ($i = 1; $i <= 50; $i++) {
         echo "or &nbsp;";
     echo "</td><td class='lentry'>", $selector_text;
     if ($i == 1)
-        echo " &nbsp;to the same paper &nbsp;(<a href='javascript:void authorfold(\"bp\",1,1)'>More</a> | <a href='javascript:void authorfold(\"bp\",1,-1)'>Fewer</a>)";
+        echo " &nbsp;to the same paper &nbsp;(<a href='#' onclick='return authorfold(\"bp\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"bp\",1,-1)'>Fewer</a>)";
     echo "</td></tr>\n";
 }
 echo "</table>", Ht::hidden("bpcount", 50, array("id" => "bpcount"));

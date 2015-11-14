@@ -951,7 +951,7 @@ class PaperList {
             foreach ($fieldDef as $fdef)
                 if ($fdef->name == "tags" && $fdef->foldable && $fdef->has_content) {
                     $titleextra .= "<span class='sep'></span>";
-                    $titleextra .= "<a class='fn$fdef->foldable' href='javascript:void plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->foldable' href='javascript:void plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
+                    $titleextra .= "<a class='fn$fdef->foldable' href='#' onclick='return plinfo(\"tags\",0)'>Show tags</a><a class='fx$fdef->foldable' href='#' onclick='return plinfo(\"tags\",1)'>Hide tags</a><span id='tagsloadformresult'></span>";
                 }
         return $titleextra ? "<span class='pl_titleextra'>$titleextra</span>" : "";
     }

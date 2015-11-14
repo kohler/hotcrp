@@ -203,6 +203,13 @@ class PaperInfo {
         return $this->_author_array;
     }
 
+    public function parse_author_list() {
+        $ai = "";
+        foreach ($this->_author_array as $au)
+            $ai .= $au->firstName . "\t" . $au->lastName . "\t" . $au->email . "\t" . $au->affiliation . "\n";
+        return ($this->authorInformation = $ai);
+    }
+
     public function pretty_text_author_list() {
         $info = "";
         foreach ($this->author_list() as $au) {

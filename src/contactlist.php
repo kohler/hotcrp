@@ -481,7 +481,7 @@ class ContactList {
         $t = "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
             . "\"><tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
             . Ht::img("_.gif", "^^", array("class" => "placthook")) . "</td>\n";
-        $t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='javascript:void papersel(true)'>select all " . $this->count . "</a>), then ";
+        $t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='#' onclick='return papersel(true)'>select all " . $this->count . "</a>), then ";
 
         // Begin linelinks
         $types = array("nameemail" => "Names and emails");
