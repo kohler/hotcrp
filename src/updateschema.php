@@ -786,4 +786,7 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperReview add `reviewFormat` tinyint(1) DEFAULT NULL")
         && $Conf->ql("alter table PaperReviewArchive add `reviewFormat` tinyint(1) DEFAULT NULL"))
         update_schema_version($Conf, 105);
+    if ($Conf->settings["allowPaperOption"] == 105
+        && $Conf->ql("alter table PaperComment add `commentFormat` tinyint(1) DEFAULT NULL"))
+        update_schema_version($Conf, 106);
 }

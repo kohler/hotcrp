@@ -93,7 +93,7 @@ class Conference {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 105) {
+        if ($this->settings["allowPaperOption"] < 106) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -2289,7 +2289,13 @@ class Conference {
             Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
-        Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
+        if (!@$Opt["noJavascript"])
+            Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
+
+        // other scripts
+        if (@$Opt["javascripts"])
+            foreach ($Opt["javascripts"] as $file)
+                Ht::stash_html($this->make_script_file($file) . "\n");
 
         if ($stash)
             Ht::stash_html($stash);

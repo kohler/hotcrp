@@ -2106,6 +2106,35 @@ HtmlCollector.prototype.clear = function () {
 };
 
 
+// text rendering
+window.render_text = (function () {
+var renderers = {"0": function (text) {
+    return link_urls(escape_entities(text));
+}};
+function f(format, text /* arguments... */) {
+    var x = null, i, a;
+    if (format && renderers[format]) {
+        try {
+            a = [text];
+            for (i = 2; i < arguments.length; ++i)
+                a.push(arguments[i]);
+            x = renderers[format].apply(null, a);
+        } catch (e) {
+            console.log(e);
+        }
+    }
+    if (x === null)
+        return {format: 0, content: renderers[0](text)};
+    else
+        return {format: format, content: x};
+}
+f.add_renderer = function (format, renderer) {
+    renderers[format] = renderer;
+};
+return f;
+})();
+
+
 // reviews
 window.review_form = (function ($) {
 var formj, form_order;
@@ -2173,9 +2202,10 @@ function render_review(j, rrow) {
                 ')</div>';
         t += '<hr class="c" /></div><div class="revv';
 
-        if (!f.options)
-            t += ' revtext">' + link_urls(escape_entities(rrow[f.uid]));
-        else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid])))
+        if (!f.options) {
+            x = render_text(rrow.format, rrow[f.uid], f.uid);
+            t += ' revtext' + (x.format || "") + '">' + x.content;
+        } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid])))
             t += '">' + f.score_info.unparse_revnum(x) + " " +
                 escape_entities(f.options[x - 1]);
         else
@@ -2209,7 +2239,6 @@ return {
             $(this).hover(score_tooltip_enter, tooltip_leave);
         });
     },
-    score_header_tooltips: score_header_tooltips,
     render_review: render_review
 };
 })($);
@@ -2267,7 +2296,7 @@ function edit_allowed(cj) {
         return hotcrp_status.perm[hotcrp_paperid].can_comment === true;
 }
 
-function fill_editing(hc, cj) {
+function render_editing(hc, cj) {
     var bnote = "";
     ++idctr;
     if (!edit_allowed(cj))
@@ -2392,7 +2421,7 @@ function beforeunload() {
 
 function make_editor() {
     var x = analyze(this), te;
-    fill(x.j, x.cj, true);
+    render_cmt(x.j, x.cj, true);
     te = x.j.find("textarea")[0];
     te.focus();
     if (te.setSelectionRange)
@@ -2430,7 +2459,7 @@ function save_editor(elt, action, really) {
         if (!data.ok)
             x.j.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror">' + data.error + '</div>' : data.msg);
         else if (data.cmt)
-            fill(x.j, data.cmt, editing_response, data.msg);
+            render_cmt(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
         if (x.cid === "new" && data.ok && cmts["new"])
@@ -2454,17 +2483,16 @@ function delete_editor() {
 
 function cancel_editor() {
     var x = analyze(this);
-    fill(x.j, x.cj, false);
+    render_cmt(x.j, x.cj, false);
 }
 
 function cj_cid(cj) {
     return cj.is_new ? "new" + (cj.response ? "resp_" + cj.response : "") : cj.cid;
 }
 
-function fill(j, cj, editing, msg) {
-    var hc = new HtmlCollector, hcid = new HtmlCollector, cmtfn, textj, t, chead,
-        wlimit, cid = cj_cid(cj);
-    cmts[cid] = cj;
+function render_cmt(j, cj, editing, msg) {
+    var hc = new HtmlCollector, hcid = new HtmlCollector, t, chead;
+    cmts[cj_cid(cj)] = cj;
     if (cj.response) {
         chead = j.closest(".cmtcard").find(".cmtcard_head");
         chead.find(".cmtinfo").remove();
@@ -2517,30 +2545,42 @@ function fill(j, cj, editing, msg) {
              && cj.author_email.toLowerCase() != hotcrp_user.email.toLowerCase())
         hc.push('<div class="xmsg xinfo">You didn’t write this comment, but as an administrator you can still make changes.</div>');
     if (editing)
-        fill_editing(hc, cj);
+        render_editing(hc, cj);
     else
         hc.push('<div class="cmttext"></div>');
 
     // render
     j.html(hc.render());
+
+    // fill body
     if (editing)
         activate_editing(j, cj);
     else {
-        textj = j.find(".cmttext").text(cj.text || "");
         (cj.response ? chead.parent() : j).find("a.cmteditor").click(make_editor);
-        if (cj.response && resp_rounds[cj.response] && (wlimit = resp_rounds[cj.response].words) > 0) {
-            var wc = count_words(cj.text);
-            if (wc > wlimit) {
-                chead.append('<div class="cmtthead words wordsover">' + plural(wc, "word") + '</div>');
-                wc = count_words_split(cj.text, wlimit);
-                textj.text(wc[0]);
-                textj.append('<span class="wordsovertext"></span>').find(".wordsovertext").text(wc[1]);
-            } else
-                chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
-        }
-        textj.html(link_urls(textj.html()));
+        render_cmt_text(j.find(".cmttext"), cj, chead);
     }
+
     return j;
+}
+
+function render_cmt_text(textj, cj, chead) {
+    var t = render_text(cj.format, cj.text || ""), wlimit, wc;
+    if (t.format)
+        textj.removeClass("cmttext").addClass("cmttext" + t.format);
+    if (cj.response && resp_rounds[cj.response]
+        && (wlimit = resp_rounds[cj.response].words) > 0) {
+        wc = count_words(cj.text);
+        chead.append('<div class="cmtthead words">' + plural(wc, "word") + '</div>');
+        if (wc > wlimit) {
+            chead.find(".words").addClass("wordsover");
+            wc = count_words_split(cj.text, wlimit);
+            textj.html(render_text(cj.format, wc[0]).content);
+            textj.css({
+                "background-image": "linear-gradient(to bottom, rgba(245,236,236,0), rgba(245,236,236,0) " + (textj.height() - 10) + "px, #f5ecec " + textj.height() + "px, #f5ecec)"
+            });
+        }
+    }
+    textj.html(t.content);
 }
 
 function add(cj, editing) {
@@ -2566,7 +2606,7 @@ function add(cj, editing) {
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
         editing = true;
-    fill(j, cj, editing);
+    render_cmt(j, cj, editing);
 }
 
 function edit_response(respround) {

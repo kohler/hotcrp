@@ -142,6 +142,8 @@ class CommentInfo {
 
         // text
         $cj->text = $this->comment;
+        if ($this->commentFormat)
+            $cj->format = (int) $this->commentFormat;
         return $cj;
     }
 

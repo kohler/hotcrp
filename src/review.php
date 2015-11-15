@@ -402,21 +402,17 @@ class ReviewForm {
                 $this->forder[$f->id] = $f;
 
         // set field abbreviations; try to ensure uniqueness
-        $fdupes = $this->forder;
-        for ($abbrdetail = 0; $abbrdetail < 5 && count($fdupes); ++$abbrdetail) {
+        for ($detail = 0; $detail < 5; ++$detail) {
             $fmap = array();
-            foreach ($fdupes as $f) {
-                $f->abbreviation = ReviewField::make_abbreviation($f->name, $abbrdetail, 0);
-                $fmap[$f->abbreviation][] = $f;
+            foreach ($this->forder as $f) {
+                $f->abbreviation = ReviewField::make_abbreviation($f->name, $detail, 0);
+                $fmap[$f->abbreviation] = true;
             }
-            $fdupes = array();
-            foreach ($fmap as $fs)
-                if (count($fs) > 1)
-                    $fdupes = array_merge($fdupes, $fs);
+            if (count($fmap) == count($this->forder))
+                break;
         }
-        $useabbr = !count($fdupes);
         foreach ($this->forder as $f)
-            $f->uid = $useabbr ? $f->abbreviation : $f->id;
+            $f->uid = $detail < 5 ? $f->abbreviation : $f->id;
     }
 
     static public function get() {
@@ -1635,9 +1631,9 @@ $blind\n";
                     $r[$f->uid] = $rrow->$fid;
             }
         if (($round = $Conf->round_name($rrow->reviewRound)))
-            $r["_round"] = $round;
+            $r["round"] = $round;
         if ($rrow->reviewFormat)
-            $r["_format"] = $rrow->reviewFormat;
+            $r["format"] = $rrow->reviewFormat;
         return $r;
     }
 

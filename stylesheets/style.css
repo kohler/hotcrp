@@ -2551,10 +2551,12 @@ div.aahc.alert div.aab {
 	background: linear-gradient(to bottom, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%),
 		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%);
 }
-div.revtext, div.cmttext {
-	white-space: pre-wrap;
+div.revtext, div.cmttext, div.revtext1, div.cmttext1 {
 	max-width: 640px;
 	line-height: 125%;
+}
+div.revtext, div.cmttext {
+	white-space: pre-wrap;
 }
 .cmtnumhead {
 	display: inline-block;
