@@ -5,6 +5,7 @@
 
 // argument cleaning
 if (!isset($_GET["fn"])) {
+    require_once("lib/navigation.php");
     if (($fn = Navigation::path_component(0, true)))
         $_GET["fn"] = $fn;
     else if (isset($_GET["track"]))
