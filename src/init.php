@@ -127,7 +127,6 @@ function __autoload($class_name) {
                                "CleanHTML" => "lib/cleanhtml.php",
                                "Column" => "lib/column.php",
                                "CommentInfo" => "src/commentinfo.php",
-                               "CommentViewState" => "src/commentinfo.php",
                                "Conflict" => "src/conflict.php",
                                "ContactColumns" => "src/contactcolumns.php",
                                "ContactSearch" => "src/papersearch.php",

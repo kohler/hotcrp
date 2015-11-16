@@ -2093,16 +2093,15 @@ class PaperTable {
         if ((count($this->mycrows) || $Me->can_comment($prow, null)
              || $Conf->time_author_respond())
             && !$this->allreviewslink) {
-            $cv = new CommentViewState;
             $s = "";
             $needresp = array();
             if ($prow->has_author($Me))
                 $needresp = $Conf->time_author_respond();
             foreach ($this->mycrows as $cr) {
-                $cj = $cr->unparse_json($Me, $cv);
+                $cj = $cr->unparse_json($Me);
                 if ($cr->commentType & COMMENTTYPE_RESPONSE)
                     unset($needresp[(int) @$cr->commentRound]);
-                $s .= "papercomment.add(" . json_encode($cr->unparse_json($Me, $cv)) . ");\n";
+                $s .= "papercomment.add(" . json_encode($cj) . ");\n";
             }
             if ($Me->can_comment($prow, null))
                 $s .= "papercomment.add({is_new:true,editable:true});\n";

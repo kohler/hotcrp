@@ -3,13 +3,20 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class CommentViewState {
-    public $ordinals = array();
-}
-
 class CommentInfo {
     public $commentId = 0;
+    public $paperId;
+    public $timeModified;
+    public $timeNotified;
+    public $comment;
     public $commentType = COMMENTTYPE_REVIEWER;
+    public $replyTo;
+    public $paperStorageId;
+    public $ordinal;
+    public $authorOrdinal;
+    public $commentTags;
+    public $commentRound;
+    public $commentFormat;
 
     static private $watching;
     static private $visibility_map = array(COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc", COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au");
@@ -21,12 +28,16 @@ class CommentInfo {
     }
 
     private function merge($x) {
+        global $Conf;
         if ($x)
             foreach ($x as $k => $v)
                 $this->$k = $v;
-        $this->commentId = (int) @$this->commentId;
-        $this->commentType = (int) @$this->commentType;
-        $this->commentRound = (int) @$this->commentRound;
+        $this->commentId = (int) $this->commentId;
+        $this->paperId = (int) $this->paperId;
+        $this->commentType = (int) $this->commentType;
+        $this->commentRound = (int) $this->commentRound;
+        if ($Conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
+            $this->authorOrdinal = $this->ordinal;
     }
 
     static public function fetch($result, $prow) {
@@ -59,18 +70,15 @@ class CommentInfo {
         }
     }
 
-    private function _ordinal($viewstate) {
+    private function _ordinal() {
         if (($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
             || $this->commentType < COMMENTTYPE_PCONLY)
             return null;
-        $p = ($this->commentType >= COMMENTTYPE_AUTHOR ? "A" : "");
-        if ($viewstate) {
-            $last_ordinal = (int) @$viewstate->ordinals[$p];
-            if (!@$this->ordinal)
-                $this->ordinal = $last_ordinal + 1;
-            $viewstate->ordinals[$p] = max($this->ordinal, $last_ordinal);
-        }
-        return @$this->ordinal ? $p . $this->ordinal : null;
+        else if ($this->commentType >= COMMENTTYPE_AUTHOR)
+            list($p, $a) = ["A", $this->authorOrdinal];
+        else
+            list($p, $a) = ["", $this->ordinal];
+        return $a ? $p . $a : null;
     }
 
     private static function _user($x) {
@@ -84,7 +92,7 @@ class CommentInfo {
         return self::_user($this);
     }
 
-    public function unparse_json($contact, $viewstate = null) {
+    public function unparse_json($contact) {
         global $Conf;
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
             return false;
@@ -103,7 +111,7 @@ class CommentInfo {
         $cj = (object) array("cid" => $this->commentId);
         if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
-        $cj->ordinal = $this->_ordinal($viewstate);
+        $cj->ordinal = $this->_ordinal();
         $cj->visibility = self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY];
         if ($this->commentType & COMMENTTYPE_BLIND)
             $cj->blind = true;
@@ -192,6 +200,25 @@ class CommentInfo {
         return $t . "</a></td></tr>";
     }
 
+
+    static private function commenttype_needs_ordinal($ctype) {
+        return !($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
+            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY;
+    }
+
+    private function save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn) {
+        global $Conf;
+        $okey = "ordinal";
+        if ($ctype >= COMMENTTYPE_AUTHOR && $Conf->sversion >= 107)
+            $okey = "authorOrdinal";
+        $q = "update $Table, (select coalesce(max($Table.$okey),0) maxOrdinal
+    from $LinkTable
+    left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn)
+    where $LinkTable.$LinkColumn={$this->prow->$LinkColumn}
+    group by $LinkTable.$LinkColumn) t
+set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
+        Dbl::qe($q);
+    }
 
     public function save($req, $contact) {
         global $Conf, $Now;
@@ -294,27 +321,9 @@ class CommentInfo {
         $contact->log_activity("Comment $cmtid " . ($text !== "" ? "saved" : "deleted"), $this->prow->$LinkColumn);
 
         // ordinal
-        if ((!$this->commentId || !$this->ordinal
-             || ($this->commentType >= COMMENTTYPE_AUTHOR) != ($ctype >= COMMENTTYPE_AUTHOR))
-            && !($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
-            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY
-            && $text !== "") {
-            $q = "update $Table,
-	(select coalesce(count(commentId),0) commentCount,
-		coalesce(max($Table.ordinal),0) maxOrdinal
-	     from $LinkTable
-	     left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and ";
-            if ($ctype >= COMMENTTYPE_AUTHOR)
-                $q .= "commentType>=" . COMMENTTYPE_AUTHOR;
-            else
-                $q .= "commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR;
-            $q .= " and commentId!=$cmtid)
-	     where $LinkTable.$LinkColumn={$this->prow->$LinkColumn}
-             group by $LinkTable.$LinkColumn) t
-	set ordinal=greatest(t.commentCount+1,t.maxOrdinal+1)
-	where commentId=$cmtid";
-            Dbl::qe($q);
-        }
+        if (self::commenttype_needs_ordinal($ctype) && $text !== ""
+            && !($ctype >= COMMENTTYPE_AUTHOR ? $this->authorOrdinal : $this->ordinal))
+            $this->save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn);
 
         // reload
         if ($text !== "") {

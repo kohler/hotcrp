@@ -789,4 +789,41 @@ function updateSchema($Conf) {
     if ($Conf->settings["allowPaperOption"] == 105
         && $Conf->ql("alter table PaperComment add `commentFormat` tinyint(1) DEFAULT NULL"))
         update_schema_version($Conf, 106);
+    if ($Conf->settings["allowPaperOption"] == 106
+        && $Conf->ql("alter table PaperComment add `authorOrdinal` int(11) NOT NULL default '0'")
+        && $Conf->ql("update PaperComment set authorOrdinal=ordinal where commentType>=" . COMMENTTYPE_AUTHOR))
+        update_schema_version($Conf, 107);
+
+    // repair missing comment ordinals; reset incorrect `ordinal`s for
+    // author-visible comments
+    if ($Conf->settings["allowPaperOption"] == 107) {
+        $result = Dbl::ql($Conf->dblink, "select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " order by commentId");
+        while (($row = edb_row($result))) {
+            Dbl::ql("update PaperComment,
+(select coalesce(count(commentId),0) commentCount from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
+    where Paper.paperId=$row[0] group by Paper.paperId) t
+set ordinal=(t.commentCount+1) where commentId=$row[1]");
+        }
+
+        $result = Dbl::ql($Conf->dblink, "select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
+        while (($row = edb_row($result))) {
+            Dbl::ql("update PaperComment,
+(select coalesce(count(commentId),0) commentCount from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
+    where Paper.paperId=$row[0] group by Paper.paperId) t
+set authorOrdinal=(t.commentCount+1) where commentId=$row[1]");
+        }
+
+        $result = Dbl::ql($Conf->dblink, "select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
+        while (($row = edb_row($result))) {
+            Dbl::ql("update PaperComment,
+(select coalesce(max(ordinal),0) maxOrdinal from Paper
+    left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
+    where Paper.paperId=$row[0] group by Paper.paperId) t
+set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
+        }
+
+        update_schema_version($Conf, 108);
+    }
 }
