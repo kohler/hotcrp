@@ -4236,7 +4236,7 @@ function make_letter_unparser(n, c) {
         var ord1 = c + n - Math.ceil(val);
         var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
         count = count || 2;
-        val = Math.trunc(count * val + 0.5) - count * Math.trunc(val);
+        val = Math.floor(count * val + 0.5) - count * Math.floor(val);
         if (val == 0 || val == count)
             return val ? ch2 : ch1;
         else if (val == count / 2)
