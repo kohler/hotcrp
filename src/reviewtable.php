@@ -314,7 +314,6 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $cnames = array();
         foreach ($crows as $cr)
             if ($Me->can_view_comment($prow, $cr, null)) {
-                $cids[] = $cr->commentId;
                 if ($Me->can_view_comment_identity($prow, $cr, null))
                     $n = Text::abbrevname_html($cr->user());
                 else
@@ -331,6 +330,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                     else
                         $n = "<i>Response</i>$n";
                 }
+                $cids[] = $cid = CommentInfo::unparse_html_id($cr);
                 $tclass = "cmtlink";
                 if ($cr->commentTags
                     && ($color = TagInfo::color_classes($cr->commentTags))) {
@@ -338,10 +338,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                         $tclass .= " cmtlinkcolor";
                     $tclass .= " $color taghl";
                 }
-                $cnames[] = '<a class="' . $tclass . '" href="#comment' . $cr->commentId . '">' . $n . '</a>';
+                $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
             }
         if (count($cids) > 0)
-            $pret = '<div class="revnotes"><a href="#comment' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nw">' . join(',</span> <span class="nw">', $cnames) . "</span></div>";
+            $pret = '<div class="revnotes"><a href="#' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nw">' . join(',</span> <span class="nw">', $cnames) . "</span></div>";
     }
 
     $t = "";
@@ -392,7 +392,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // new comment
     $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $mode);
     if (!$allreviewslink && !$nocmt && $Me->can_comment($prow, null)) {
-        $x = "<a href=\"" . selfHref(array("c" => "new")) . '#commentnew" onclick="return open_new_comment(1)" class="xx">'
+        $x = '<a href="#cnew" onclick="return papercomment.edit_new()" class="xx">'
             . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
@@ -402,24 +402,19 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
         && ($rrounds = $Conf->time_author_respond()))
         foreach ($rrounds as $i => $rname) {
-            $cid = array("newresp_$rname", "Add");
+            $cid = ($i ? $rname : "") . "response";
+            $what = "Add";
             if ($crows)
                 foreach ($crows as $cr)
                     if (($cr->commentType & COMMENTTYPE_RESPONSE) && $cr->commentRound == $i) {
-                        $cid = array("comment$cr->commentId", "Edit");
+                        $what = "Edit";
                         if ($cr->commentType & COMMENTTYPE_DRAFT)
-                            $cid[1] = "Edit draft";
+                            $what = "Edit draft";
                     }
-            if ($rrow || $conflictType < CONFLICT_AUTHOR)
-                $x = '<a href="' . hoturl("paper", "p=$prow->paperId#$cid[0]") . '"';
-            else
-                $x = '<a href="#' . $cid[0]
-                    . '" onclick=\'return papercomment.edit_response('
-                    . json_encode($rname) . ')\'';
-            $x .= ' class="xx">'
-                . Ht::img("comment24.png", "[$cid[1] response]", "dlimg") . "&nbsp;"
+            $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_response(' . json_encode($rname) . ')\' class="xx">'
+                . Ht::img("comment24.png", "[$what response]", "dlimg") . "&nbsp;"
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
-                . $cid[1] . ($i ? " $rname" : "") . ' response</u></a>';
+                . $what . ($i ? " $rname" : "") . ' response</u></a>';
             $t .= ($t === "" ? "" : $xsep) . $x;
         }
 

@@ -70,15 +70,31 @@ class CommentInfo {
         }
     }
 
-    private function _ordinal() {
-        if (($this->commentType & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
-            || $this->commentType < COMMENTTYPE_PCONLY)
-            return null;
-        else if ($this->commentType >= COMMENTTYPE_AUTHOR)
-            list($p, $a) = ["A", $this->authorOrdinal];
+    static private function commenttype_needs_ordinal($ctype) {
+        return !($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
+            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY;
+    }
+
+    public function unparse_ordinal() {
+        $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
+        $o = $is_author ? $this->authorOrdinal : $this->ordinal;
+        if (self::commenttype_needs_ordinal($this->commentType) && $o)
+            return ($is_author ? "A" : "") . $o;
         else
-            list($p, $a) = ["", $this->ordinal];
-        return $a ? $p . $a : null;
+            return null;
+    }
+
+    static public function unparse_html_id($cr) {
+        global $Conf;
+        $is_author = $cr->commentType >= COMMENTTYPE_AUTHOR;
+        $o = $is_author ? $cr->authorOrdinal : $cr->ordinal;
+        if (self::commenttype_needs_ordinal($cr->commentType) && $o)
+            return ($is_author ? "cA" : "c") . $o;
+        else if ($cr->commentType & COMMENTTYPE_RESPONSE) {
+            $rname = $cr->commentRound ? $Conf->resp_round_name($cr->commentRound) : "";
+            return $rname . "response";
+        } else
+            return "cx" . $cr->commentId;
     }
 
     private static function _user($x) {
@@ -111,7 +127,7 @@ class CommentInfo {
         $cj = (object) array("cid" => $this->commentId);
         if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
-        $cj->ordinal = $this->_ordinal();
+        $cj->ordinal = $this->unparse_ordinal();
         $cj->visibility = self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY];
         if ($this->commentType & COMMENTTYPE_BLIND)
             $cj->blind = true;
@@ -176,7 +192,7 @@ class CommentInfo {
     static public function unparse_flow_entry($crow, $contact, $trclass) {
         // See also ReviewForm::reviewFlowEntry
         global $Conf;
-        $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#comment$crow->commentId") . "\"";
+        $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#" . self::unparse_html_id($crow)) . "\"";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
             . Ht::img("comment24.png", "[Comment]", "dlimg")
             . '</a></td><td class="pl_activityid pnum">'
@@ -200,11 +216,6 @@ class CommentInfo {
         return $t . "</a></td></tr>";
     }
 
-
-    static private function commenttype_needs_ordinal($ctype) {
-        return !($ctype & (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT))
-            && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY;
-    }
 
     private function save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn) {
         global $Conf;

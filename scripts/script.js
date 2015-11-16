@@ -2031,23 +2031,6 @@ function setajaxcheck(elt, rv) {
     }
 }
 
-// open new comment
-function open_new_comment(sethash) {
-    var x = $$("commentnew"), ta;
-    ta = x ? x.getElementsByTagName("textarea") : null;
-    if (ta && ta.length) {
-        fold(x, 0);
-        setTimeout(function () {
-            var j = jQuery("#commentnew").scrollIntoView();
-            j.find("textarea")[0].focus();
-        }, 0);
-    } else if ((ta = jQuery(x).find("a.cmteditor")[0]))
-        ta.click();
-    if (sethash)
-        location.hash = "#commentnew";
-    return false;
-}
-
 function link_urls(t) {
     var re = /((?:https?|ftp):\/\/(?:[^\s<>\"&]|&amp;)*[^\s<>\"().,:;&])([\"().,:;]*)(?=[\s<>&]|$)/g;
     return t.replace(re, function (m, a, b) {
@@ -2256,8 +2239,8 @@ var detwiddle = new RegExp("^" + (hotcrp_user.cid ? hotcrp_user.cid : "") + "~")
 function comment_identity_time(cj) {
     var t = [], res = [], x, i, tag;
     if (cj.ordinal)
-        t.push('<div class="cmtnumhead"><a class="qq" href="#comment'
-               + cj.cid + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
+        t.push('<div class="cmtnumhead"><a class="qq" href="#' + cj_cid(cj)
+               + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
                + cj.ordinal + '</span></a></div>');
     if (cj.author && cj.author_hidden)
         t.push('<div id="foldcid' + cj.cid + '" class="cmtname fold4c">'
@@ -2396,40 +2379,24 @@ function activate_editing(j, cj) {
 }
 
 function analyze(e) {
-    var j = $(e).closest(".cmtg"), cid;
+    var j = $(e).closest(".cmtg");
     if (!j.length)
         j = $(e).closest(".cmtcard").find(".cmtg");
-    cid = j.closest(".cmtid")[0].id.substr(7);
-    if (/^\d+$/.test(cid))
-        return {j: j, cid: +cid, cj: cmts[cid]};
-    else
-        return {j: j, cid: cid, cj: cmts[cid], is_new: true};
+    return {j: j, cj: cmts[j.closest(".cmtid")[0].id]};
 }
 
 function beforeunload() {
-    var i, cj = $(".cmtg textarea"), x, ta;
-    for (i = 0; i != cj.length; ++i) {
-        x = analyze(cj[i]);
-        if ($.trim($(cj[i]).val()) !== (x.cj.text || "")) {
-            if (cj.is_new)
-                return "Your new comment has not been saved. If you leave this page now, your comment will be lost.";
-            else
-                return "The edits you’ve made to a comment have not been saved. If you leave this page now, your edits will be lost.";
-        }
+    var i, $cs = $(".cmtg textarea[name='comment']"), x, text, text2;
+    for (i = 0; i != $cs.length; ++i) {
+        x = analyze($cs[i]);
+        text = $($cs[i]).val().replace(/\s+$/, "");
+        if (text === (x.cj.text || ""))
+            continue;
+        text = text.replace(/\r\n?/g, "\n");
+        text2 = (x.cj.text || "").replace(/\r\n?/g, "\n");
+        if (text !== text2)
+            return "Your comment edits have not been saved. If you leave this page now, they will be lost.";
     }
-}
-
-function make_editor() {
-    var x = analyze(this), te;
-    render_cmt(x.j, x.cj, true);
-    te = x.j.find("textarea")[0];
-    te.focus();
-    if (te.setSelectionRange)
-        te.setSelectionRange(te.value.length, te.value.length);
-    x.j.scrollIntoView();
-    has_unload || $(window).on("beforeunload.papercomment", beforeunload);
-    has_unload = true;
-    return false;
 }
 
 function save_editor(elt, action, really) {
@@ -2441,29 +2408,33 @@ function save_editor(elt, action, really) {
         return;
     }
     var ctype = x.cj.response ? "response=" + x.cj.response : "comment=1";
-    var url = hoturl_post("comment", "p=" + hotcrp_paperid
-                          + "&c=" + (x.is_new ? "new" : x.cid) + "&ajax=1&"
+    if (x.cj.cid)
+        ctype += "&c=" + x.cj.cid;
+    var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&ajax=1&"
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + ctype);
     x.j.find("button").prop("disabled", true);
     $.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
-        var editing_response = x.cj.response && edit_allowed(x.cj);
-        if (data.ok && !data.cmt && !x.is_new)
-            delete cmts[x.cid];
+        var editing_response = x.cj.response && edit_allowed(x.cj),
+            cid = cj_cid(x.cj), data_cid;
+        if (data.ok && !data.cmt && !x.cj.is_new)
+            delete cmts[cid];
         if (editing_response && data.ok && !data.cmt)
-            data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true,
-                        cid: "newresp_" + x.cj.response};
-        if (data.ok && (x.is_new || (data.cmt && data.cmt.is_new)))
-            x.j.closest(".cmtid")[0].id = "comment" + data.cmt.cid;
+            data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true, cid: cid};
+        if (data.ok && cid !== (data_cid = cj_cid(data.cmt))) {
+            x.j.closest(".cmtid")[0].id = data_cid;
+            if (cid !== "cnew")
+                delete cmts[cid];
+            else if (cmts.cnew)
+                papercomment.add(cmts.cnew);
+        }
         if (!data.ok)
             x.j.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror">' + data.error + '</div>' : data.msg);
         else if (data.cmt)
             render_cmt(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
-        if (x.cid === "new" && data.ok && cmts["new"])
-            papercomment.add(cmts["new"]);
     });
 }
 
@@ -2487,7 +2458,12 @@ function cancel_editor() {
 }
 
 function cj_cid(cj) {
-    return cj.is_new ? "new" + (cj.response ? "resp_" + cj.response : "") : cj.cid;
+    if (cj.response)
+        return (cj.response == 1 ? "" : cj.response) + "response";
+    else if (cj.is_new)
+        return "cnew";
+    else
+        return "c" + (cj.ordinal || "x" + cj.cid);
 }
 
 function render_cmt(j, cj, editing, msg) {
@@ -2584,11 +2560,11 @@ function render_cmt_text(textj, cj, chead) {
 }
 
 function add(cj, editing) {
-    var cid = cj_cid(cj), j = $("#comment" + cid);
+    var cid = cj_cid(cj), j = $("#" + cid);
     if (!j.length) {
         if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
             if (cj.response)
-                cmtcontainer = '<div id="comment' + cid +
+                cmtcontainer = '<div id="' + cid +
                     '" class="cmtcard cmtid response responseround_' + cj.response +
                     '"><div class="cmtcard_head"><h3>' +
                     (cj.response == "1" ? "Response" : cj.response + " Response") +
@@ -2601,7 +2577,7 @@ function add(cj, editing) {
         if (cj.response)
             j = $('<div class="cmtg"></div>');
         else
-            j = $('<div id="comment' + cid + '" class="cmtg cmtid"></div>');
+            j = $('<div id="' + cid + '" class="cmtg cmtid"></div>');
         j.appendTo(cmtcontainer.find(".cmtcard_body"));
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
@@ -2609,30 +2585,40 @@ function add(cj, editing) {
     render_cmt(j, cj, editing);
 }
 
-function edit_response(respround) {
-    respround = respround || 1;
-    var j = $(".responseround_" + respround + " a.cmteditor");
-    if (j.length)
-        j[0].click();
-    else {
-        j = $(".responseround_" + respround + " textarea[name=comment]");
-        if (j.length) {
-            j[0].focus();
-            location.hash = "#" + j.closest("div.cmtid")[0].id;
-        } else {
-            add({is_new: true, response: respround, editable: true}, true);
-            setTimeout(function () { location.hash = "#commentnewresp_" + respround; }, 0);
-        }
-    }
+function make_editor() {
+    var x = analyze(this);
+    if (!x.j.find("textarea[name='comment']").length)
+        render_cmt(x.j, x.cj, true);
+    location.hash = "#" + cj_cid(x.cj);
+    return finish_make_editor(x.j);
+}
+
+function add_editing(respround) {
+    var cid = "cnew", j;
+    if (respround)
+        cid = ((respround || 1) == 1 ? "" : respround) + "response";
+    if (!$$(cid) && respround)
+        add({is_new: true, response: respround, editable: true}, true);
+    $$(cid) || log_jserror("bad add_editing " + cid);
+    return make_editor.call($$(cid));
+}
+
+function finish_make_editor(j) {
+    j.scrollIntoView();
+    var te = j.find("textarea[name='comment']")[0];
+    te.focus();
+    if (te.setSelectionRange)
+        te.setSelectionRange(te.value.length, te.value.length);
+    has_unload || $(window).on("beforeunload.papercomment", beforeunload);
+    has_unload = true;
     return false;
 }
 
-function set_resp_round(rname, rinfo) {
-    resp_rounds[rname] = rinfo;
-}
-
 return {
-    add: add, edit_response: edit_response, set_resp_round: set_resp_round
+    add: add,
+    set_resp_round: function (rname, rinfo) { resp_rounds[rname] = rinfo; },
+    edit_response: function (respround) { return add_editing(respround); },
+    edit_new: function () { return add_editing(false); }
 };
 })(jQuery);
 
@@ -2659,8 +2645,8 @@ function quicklink_shortcut(evt, key) {
 }
 
 function comment_shortcut() {
-    if ($$("commentnew")) {
-        open_new_comment();
+    if ($$("cnew")) {
+        papercomment.edit_new();
         return true;
     } else
         return false;
