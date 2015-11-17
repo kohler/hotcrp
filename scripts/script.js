@@ -2373,10 +2373,10 @@ function make_update_words(jq, wlimit) {
 
 function activate_editing(j, cj) {
     var elt, tags = [], i;
-    j.find("textarea").text(cj.text || "").autogrow();
+    j.find("textarea[name=comment]").text(cj.text || "").autogrow();
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
-    j.find("textarea[name=commenttags]").val(tags.join(" "));
+    j.find("textarea[name=commenttags]").text(tags.join(" ")).autogrow();
     j.find("select[name=visibility]").val(cj.visibility || "rev");
     if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
         elt.checked = true;
