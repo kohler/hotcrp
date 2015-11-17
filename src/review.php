@@ -1629,8 +1629,10 @@ $blind\n";
             }
         if (($round = $Conf->round_name($rrow->reviewRound)))
             $r["round"] = $round;
-        if ($rrow->reviewFormat)
-            $r["format"] = $rrow->reviewFormat;
+        if (($fmt = $rrow->reviewFormat) === null)
+            $fmt = Conf::$gDefaultFormat;
+        if ($fmt)
+            $r["format"] = $fmt;
         return $r;
     }
 

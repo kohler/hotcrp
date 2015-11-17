@@ -31,6 +31,8 @@ class Conf {
 
     static public $gShortName;
     static public $gLongName;
+    static public $gDefaultFormat;
+    static private $gFormatInfo;
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -338,6 +340,10 @@ class Conf {
             $Opt["safePasswords"] = 1;
         if (!isset($Opt["contactdb_safePasswords"]))
             $Opt["contactdb_safePasswords"] = $Opt["safePasswords"];
+
+        // set defaultFormat
+        self::$gDefaultFormat = (int) @$Opt["defaultFormat"];
+        self::$gFormatInfo = null;
     }
 
     function setting($name, $defval = false) {
@@ -687,6 +693,20 @@ class Conf {
             if (!strcasecmp($x, $rname))
                 return $i;
         return false;
+    }
+
+
+    function format_info() {
+        global $Opt;
+        if (self::$gFormatInfo === null) {
+            if (is_array(@$Opt["formatInfo"]))
+                self::$gFormatInfo = $Opt["formatInfo"];
+            else if (is_string(@$Opt["formatInfo"]))
+                self::$gFormatInfo = json_decode($Opt["formatInfo"], true);
+            if (!self::$gFormatInfo)
+                self::$gFormatInfo = array();
+        }
+        return self::$gFormatInfo;
     }
 
 
@@ -2341,6 +2361,8 @@ class Conf {
         // deadlines settings
         if ($Me)
             Ht::stash_script("hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($CurrentProw)) . ")");
+        if (self::$gDefaultFormat)
+            Ht::stash_script("render_text.set_default_format(" . self::$gDefaultFormat . ")");
 
         // meeting tracker
         $trackerowner = $Me && $Me->privChair

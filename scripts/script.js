@@ -2091,11 +2091,13 @@ HtmlCollector.prototype.clear = function () {
 
 // text rendering
 window.render_text = (function () {
-var renderers = {"0": function (text) {
+var default_format = 0, renderers = {"0": function (text) {
     return link_urls(escape_entities(text));
 }};
 function f(format, text /* arguments... */) {
     var x = null, i, a;
+    if (format == null)
+        format = default_format;
     if (format && renderers[format]) {
         try {
             a = [text];
@@ -2113,6 +2115,14 @@ function f(format, text /* arguments... */) {
 }
 f.add_renderer = function (format, renderer) {
     renderers[format] = renderer;
+};
+f.format_description = function (format) {
+    if (format == null)
+        format = default_format;
+    return renderers[format] ? renderers[format].description : null;
+};
+f.set_default_format = function (format) {
+    default_format = format;
 };
 return f;
 })();
@@ -2280,11 +2290,13 @@ function edit_allowed(cj) {
 }
 
 function render_editing(hc, cj) {
-    var bnote = "";
+    var bnote = "", fmtnote;
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
+    if ((fmtnote = render_text.format_description(cj.format)))
+        hc.push(fmtnote);
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
     if (!cj.response) {
         // tags

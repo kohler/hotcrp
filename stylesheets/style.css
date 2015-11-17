@@ -1094,6 +1094,13 @@ input.textlite-tt, textarea.tt {
 textarea[name=comment] {
 	min-height: 5em;
 }
+div.formatdescription {
+	font-size: 69%;
+	max-width: 640px;
+	text-align: right;
+	color: #666666;
+	padding-bottom: 3px;
+}
 
 div.prevpaperlink, table.floatleft {
 	float: left;

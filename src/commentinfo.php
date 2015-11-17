@@ -166,8 +166,10 @@ class CommentInfo {
 
         // text
         $cj->text = $this->comment;
-        if ($this->commentFormat)
-            $cj->format = (int) $this->commentFormat;
+        if (($fmt = $this->commentFormat) === null)
+            $fmt = Conf::$gDefaultFormat;
+        if ($fmt)
+            $cj->format = (int) $fmt;
         return $cj;
     }
 
