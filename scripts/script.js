@@ -2240,7 +2240,7 @@ return {
 // comments
 window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
-              pc: "shown only to PC reviewers",
+              pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
 var cmts = {}, cmtcontainer = null, has_unload = false;
 var idctr = 0, resp_rounds = {};
@@ -2275,9 +2275,8 @@ function comment_identity_time(cj) {
     return t.join("");
 }
 
-function make_visibility(hc, caption, value, label, rest) {
-    hc.push('<tr><td>' + caption + '</td><td>'
-            + '<input type="radio" name="visibility" value="' + value + '" tabindex="1" id="htctlcv' + value + idctr + '" />&nbsp;</td>'
+function make_visibility(hc, value, label, rest) {
+    hc.push('<tr><td><input type="radio" name="visibility" value="' + value + '" tabindex="1" id="htctlcv' + value + idctr + '" />&nbsp;</td>'
             + '<td><label for="htctlcv' + value + idctr + '">' + label + '</label>' + (rest || "") + '</td></tr>');
 }
 
@@ -2299,11 +2298,13 @@ function render_editing(hc, cj) {
         hc.push(fmtnote);
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
     if (!cj.response) {
-        // tags
-        hc.push('<table style="float:right"><tr><td>Tags: &nbsp; </td><td><input name="commenttags" size="40" tabindex="1" /></td></tr></table>');
-
         // visibility
-        hc.push('<table class="cmtvistable fold2o">', '</table>');
+        hc.push('<div class="cmteditinfo f-i fold2o">', '<hr class="c" /></div>');
+        hc.push('<div class="f-ix">', '</div>');
+        hc.push('<div class="f-c" style="font-size:inherit">Visibility</div>');
+        hc.push('<div class="f-e">', '</div>');
+        hc.push('<table class="cmtvistable">', '</table>');
+
         var lsuf = "", tsuf = "";
         if (hotcrp_status.rev.blind === true)
             lsuf = " (anonymous to authors)";
@@ -2312,11 +2313,16 @@ function render_editing(hc, cj) {
                 '<label for="htctlcb' + idctr + '">Anonymous to authors</label>)';
         var au_allowseerev = hotcrp_status.perm[hotcrp_paperid].some_author_can_view_review;
         tsuf += '<br><span class="fx2 hint">' + (au_allowseerev ? "Authors will be notified immediately." : "Authors cannot view comments at the moment.") + '</span>';
-        make_visibility(hc, "Visibility: &nbsp; ", "au", "Authors and reviewers" + lsuf, tsuf);
-        make_visibility(hc, "", "rev", "PC and external reviewers");
-        make_visibility(hc, "", "pc", "PC reviewers only");
-        make_visibility(hc, "", "admin", "Administrators only");
-        hc.pop();
+        make_visibility(hc, "au", "Visible to authors" + lsuf, tsuf);
+        make_visibility(hc, "rev", "Hidden from authors");
+        make_visibility(hc, "pc", "Hidden from authors and external reviewers");
+        make_visibility(hc, "admin", "Administrators only");
+        hc.pop_n(3);
+
+        // tags
+        hc.push('<div class="f-ix" style="margin-left:4em"><div class="f-c" style="font-size:inherit">Tags</div>', '</div>')
+        hc.push('<textarea name="commenttags" tabindex="1" cols="40" rows="1"></textarea>');
+        hc.pop_n(2);
 
         // actions
         hc.push('<hr class="c" /><div class="aab" style="margin-bottom:0">', '<hr class="c" /></div>');
@@ -2347,7 +2353,7 @@ function render_editing(hc, cj) {
 }
 
 function visibility_change() {
-    var j = $(this).closest(".cmtvistable"),
+    var j = $(this).closest(".cmteditinfo"),
         dofold = !j.find("input[name=visibility][value=au]").is(":checked");
     fold(j[0], dofold, 2);
 }
@@ -2372,7 +2378,7 @@ function activate_editing(j, cj) {
     j.find("textarea").text(cj.text || "").autogrow();
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
-    j.find("input[name=commenttags]").val(tags.join(" "));
+    j.find("textarea[name=commenttags]").val(tags.join(" "));
     if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "rev") + "]")[0]))
         elt.checked = true;
     if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
@@ -2383,7 +2389,7 @@ function activate_editing(j, cj) {
     j.find("button[name=delete]").click(delete_editor);
     j.find("button[name=savedraft]").click(savedraft_editor);
     if ((cj.visibility || "rev") !== "au")
-        fold(j.find(".cmtvistable")[0], true, 2);
+        fold(j.find(".cmteditinfo")[0], true, 2);
     j.find("input[name=visibility]").on("change", visibility_change);
     if (cj.response && resp_rounds[cj.response].words > 0)
         make_update_words(j, resp_rounds[cj.response].words);

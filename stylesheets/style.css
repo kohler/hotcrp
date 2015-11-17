@@ -956,7 +956,7 @@ div.f-ii {
 	clear: both;
 }
 div.f-i {
-	margin: 1ex 0;
+	margin: 0.5em 0;
 	width: auto;
 }
 div.f-ix {
@@ -1092,14 +1092,14 @@ input.textlite-tt, textarea.tt {
 	max-width: 640px;
 }
 textarea[name=comment] {
-	min-height: 5em;
+	min-height: 10em;
 }
 div.formatdescription {
 	font-size: 69%;
 	max-width: 640px;
 	text-align: right;
 	color: #666666;
-	padding-bottom: 3px;
+	padding-bottom: 5px;
 }
 
 div.prevpaperlink, table.floatleft {
@@ -2598,6 +2598,9 @@ div.format0 {
 }
 .cmtnumhead span.cmtnumat {
 	color: #aaaaaa;
+}
+.cmteditinfo {
+	font-size: smaller;
 }
 div.cmtev {
 	padding: 5px 0 1em 2px;
