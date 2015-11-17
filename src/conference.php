@@ -2289,12 +2289,12 @@ class Conference {
             Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
-        if (!@$Opt["noJavascript"])
+        if (!@$Opt["noDefaultScript"])
             Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
 
         // other scripts
-        if (@$Opt["javascripts"])
-            foreach ($Opt["javascripts"] as $file)
+        if (@$Opt["scripts"])
+            foreach ($Opt["scripts"] as $file)
                 Ht::stash_html($this->make_script_file($file) . "\n");
 
         if ($stash)
