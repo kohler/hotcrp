@@ -1554,7 +1554,7 @@ class Contact {
             $ci->allow_author_view = $ci->act_author_view || $ci->allow_administer;
 
             // check blindness
-            $bs = $Conf->setting("sub_blind");
+            $bs = $Conf->submission_blindness();
             $ci->nonblind = $bs == Conf::BLIND_NEVER
                 || ($bs == Conf::BLIND_OPTIONAL
                     && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))

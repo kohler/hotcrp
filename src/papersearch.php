@@ -3132,7 +3132,7 @@ class PaperSearch {
                         || $limit === "rable");
         if ($need_filter) {
             $sqi->add_rights_columns();
-            if ($Conf->setting("sub_blind") == Conf::BLIND_OPTIONAL)
+            if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL)
                 $sqi->add_column("paperBlind", "Paper.blind");
         }
 
