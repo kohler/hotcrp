@@ -2552,7 +2552,27 @@ div.aahc.alert div.aab {
 		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%);
 }
 div.revtext, div.cmttext {
+	position: relative;
 	line-height: 125%;
+}
+div.cmttext.has_wordsover {
+	background-color: #f5ecec;
+}
+div.wordsover_mark {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	padding-bottom: 5px;
+	background: #ffffff;
+	background: linear-gradient(to top, rgba(255,255,255,0), #ffffff 10px);
+}
+div.wordsover_allowed {
+	visibility: hidden;
+}
+div.wordsover_content {
+	position: relative;
+	z-index: 1;
 }
 div.revtext.format0, div.cmttext.format0 {
 	max-width: 640px;

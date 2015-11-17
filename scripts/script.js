@@ -2540,8 +2540,9 @@ function render_cmt(j, cj, editing, msg) {
 }
 
 function render_cmt_text(textj, cj, chead) {
-    var t = render_text(cj.format, cj.text || ""), wlimit, wc;
-    textj.addClass("format" + (t.format || 0));
+    var t = render_text(cj.format, cj.text || ""), wlimit, wc,
+        fmt = "format" + (t.format || 0);
+    textj.addClass(fmt);
     if (cj.response && resp_rounds[cj.response]
         && (wlimit = resp_rounds[cj.response].words) > 0) {
         wc = count_words(cj.text);
@@ -2549,10 +2550,9 @@ function render_cmt_text(textj, cj, chead) {
         if (wc > wlimit) {
             chead.find(".words").addClass("wordsover");
             wc = count_words_split(cj.text, wlimit);
-            textj.html(render_text(cj.format, wc[0]).content);
-            textj.css({
-                "background-image": "linear-gradient(to bottom, rgba(245,236,236,0), rgba(245,236,236,0) " + (textj.height() - 10) + "px, #f5ecec " + textj.height() + "px, #f5ecec)"
-            });
+            textj.addClass("has_wordsover").removeClass(fmt).prepend('<div class="wordsover_mark"><div class="wordsover_allowed ' + fmt + '"></div></div><div class="wordsover_content ' + fmt + '"></div>');
+            textj.find(".wordsover_allowed").html(render_text(cj.format, wc[0]).content);
+            textj = textj.find(".wordsover_content");
         }
     }
     textj.html(t.content);
