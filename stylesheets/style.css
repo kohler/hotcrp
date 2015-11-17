@@ -2574,7 +2574,7 @@ div.wordsover_content {
 	position: relative;
 	z-index: 1;
 }
-div.revtext.format0, div.cmttext.format0 {
+div.format0 {
 	max-width: 640px;
 	white-space: pre-wrap;
 }
