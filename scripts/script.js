@@ -2187,7 +2187,7 @@ function render_review(j, rrow) {
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
-            t += ' revtext' + (x.format || "") + '">' + x.content;
+            t += ' revtext format' + (x.format || 0) + '">' + x.content;
         } else if (rrow[f.uid] && (x = f.score_info.parse(rrow[f.uid])))
             t += '">' + f.score_info.unparse_revnum(x) + " " +
                 escape_entities(f.options[x - 1]);
@@ -2541,8 +2541,7 @@ function render_cmt(j, cj, editing, msg) {
 
 function render_cmt_text(textj, cj, chead) {
     var t = render_text(cj.format, cj.text || ""), wlimit, wc;
-    if (t.format)
-        textj.removeClass("cmttext").addClass("cmttext" + t.format);
+    textj.addClass("format" + (t.format || 0));
     if (cj.response && resp_rounds[cj.response]
         && (wlimit = resp_rounds[cj.response].words) > 0) {
         wc = count_words(cj.text);
