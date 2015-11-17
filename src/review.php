@@ -655,7 +655,7 @@ class ReviewForm {
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
-        global $Conf, $Opt;
+        global $Conf;
         $newsubmit = @$req["ready"] && !@$req["unready"]
             && (!$rrow || !$rrow->reviewSubmitted);
         $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);

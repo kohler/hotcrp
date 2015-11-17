@@ -223,7 +223,6 @@ class ZipDocument {
     }
 
     public function download() {
-        global $Opt, $zlib_output_compression;
         $result = $this->create();
         if (is_string($result)) {
             set_time_limit(180); // large zip files might download slowly
@@ -466,7 +465,7 @@ class DocumentHelper {
     }
 
     static function upload($docclass, $upload, $docinfo) {
-        global $Conf, $Opt;
+        global $Conf;
         if (is_object($upload)) {
             $doc = clone $upload;
             self::prepare_content($docclass, $doc);

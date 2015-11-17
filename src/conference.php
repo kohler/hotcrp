@@ -897,7 +897,6 @@ class Conference {
     }
 
     function db_error_html($getdb = true, $while = "") {
-        global $Opt;
         $text = "<p>Database error";
         if ($while)
             $text .= " $while";
@@ -1317,7 +1316,6 @@ class Conference {
     }
 
     function storePaper($uploadId, $prow, $final) {
-        global $Opt;
         $paperId = (is_numeric($prow) ? $prow : $prow->paperId);
 
         $doc = $this->storeDocument($uploadId, $paperId, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);

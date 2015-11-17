@@ -325,7 +325,7 @@ class PaperTable {
     }
 
     static function pdfStamps($data) {
-        global $Conf, $Opt;
+        global $Conf;
 
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
@@ -418,13 +418,13 @@ class PaperTable {
         $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
     }
 
-    private function echo_editable_document($opt, $storageId, $flags) {
+    private function echo_editable_document($docx, $storageId, $flags) {
         global $Conf, $Me, $Opt;
 
         $prow = $this->prow;
-        $docclass = new HotCRPDocument($opt->id, $opt);
-        $documentType = $opt->id;
-        $optionType = $opt->type;
+        $docclass = new HotCRPDocument($docx->id, $docx);
+        $documentType = $docx->id;
+        $optionType = $docx->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
         $banal = $Conf->setting("sub_banal")
             && ($optionType === null || $optionType === "pdf")
@@ -439,9 +439,9 @@ class PaperTable {
 
         $accepts = $docclass->mimetypes();
         if (count($accepts))
-            echo $this->editable_papt($opt->abbr, htmlspecialchars($opt->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
-        if (@$opt->description)
-            echo '<div class="paphint">', $opt->description, "</div>";
+            echo $this->editable_papt($docx->abbr, htmlspecialchars($docx->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
+        if (@$docx->description)
+            echo '<div class="paphint">', $docx->description, "</div>";
         echo '<div class="papev">';
 
         // current version, if any
@@ -855,7 +855,7 @@ class PaperTable {
     }
 
     private function editable_new_contact_author() {
-        global $Me, $Conf, $Opt;
+        global $Me, $Conf;
         if (!$Me->privChair)
             return;
         echo $this->editable_papt("contactAuthor", "Contact"),

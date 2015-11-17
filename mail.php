@@ -204,7 +204,7 @@ class MailSender {
     }
 
     private function send_prep($prep) {
-        global $Conf, $Opt;
+        global $Conf;
 
         $cbkey = "c" . join("_", $prep->contacts) . "p" . $prep->paperId;
         if ($this->sending && !defval($_REQUEST, $cbkey))

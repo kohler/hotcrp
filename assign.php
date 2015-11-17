@@ -214,7 +214,7 @@ if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post()) 
 
 // add review requests
 function requestReviewChecks($themHtml, $reqId) {
-    global $Conf, $Me, $Opt, $prow;
+    global $Conf, $Me, $prow;
 
     // check for outstanding review request
     $result = Dbl::qe_raw("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId");
@@ -240,7 +240,7 @@ function requestReviewChecks($themHtml, $reqId) {
 }
 
 function requestReview($email) {
-    global $Conf, $Me, $Error, $Opt, $prow;
+    global $Conf, $Me, $Error, $prow;
 
     $Them = Contact::create(array("name" => @$_REQUEST["name"], "email" => $email));
     if (!$Them) {
@@ -293,7 +293,7 @@ function requestReview($email) {
 }
 
 function proposeReview($email) {
-    global $Conf, $Me, $Opt, $prow;
+    global $Conf, $Me, $prow;
 
     $email = trim($email);
     $name = trim(defval($_REQUEST, "name", ""));
@@ -344,7 +344,7 @@ function unassignedAnonymousContact() {
 }
 
 function createAnonymousReview() {
-    global $Conf, $Me, $Now, $Opt, $prow, $rrows;
+    global $Conf, $Me, $Now, $prow, $rrows;
 
     Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ContactInfo write, PaperConflict read, ActionLog write");
 
