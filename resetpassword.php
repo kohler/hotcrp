@@ -65,13 +65,13 @@ if (!isset($_POST["autopassword"])
     || !preg_match("/\\A[-0-9A-Za-z@_+=]*\\z/", $_POST["autopassword"]))
     $_POST["autopassword"] = Contact::random_password();
 
-$confname = $Opt["longName"];
-if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
-    $confname .= " (" . $Opt["shortName"] . ")";
+$confname = Conf::$gLongName;
+if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
+    $confname .= " (" . Conf::$gShortName . ")";
 echo "<div class='homegrp'>
 Welcome to the ", htmlspecialchars($confname), " submissions site.";
 if (isset($Opt["conferenceSite"]))
-    echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
+    echo " For general information about ", htmlspecialchars(Conf::$gShortName), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
 
 echo "</div>
 <hr class='home' />

@@ -128,17 +128,17 @@ class Mailer {
 
         // expansions that do not require a recipient
         if ($what == "%CONFNAME%") {
-            $t = $Opt["longName"];
-            if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
-                $t .= " (" . $Opt["shortName"] . ")";
+            $t = Conf::$gLongName;
+            if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
+                $t .= " (" . Conf::$gShortName . ")";
             return $t;
         }
         if ($what == "%CONFSHORTNAME%")
-            return $Opt["shortName"];
+            return Conf::$gShortName;
         if ($what == "%CONFLONGNAME%")
-            return $Opt["longName"];
+            return Conf::$gLongName;
         if ($what == "%SIGNATURE%")
-            return @$Opt["emailSignature"] ? : "- " . $Opt["shortName"] . " Submissions";
+            return @$Opt["emailSignature"] ? : "- " . Conf::$gShortName . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
             return $this->expand_user(Contact::site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")

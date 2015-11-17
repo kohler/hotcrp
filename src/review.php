@@ -885,8 +885,7 @@ class ReviewForm {
 
 
     static function textFormHeader($type) {
-        global $Opt;
-        $x = "==+== " . $Opt["shortName"] . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
+        $x = "==+== " . Conf::$gShortName . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
         $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
 ==-== " . hoturl_absolute_raw("offline") . "\n\n";
@@ -925,7 +924,7 @@ class ReviewForm {
     }
 
     function textForm($prow, $rrow, $contact, $req = null) {
-        global $Conf, $Opt;
+        global $Conf;
 
         $rrow_contactId = 0;
         if (isset($rrow) && isset($rrow->reviewContactId))
@@ -975,7 +974,7 @@ Ready\n";
                 if ($rrow && !$rrow->reviewBlind)
                     $blind = "Open";
                 $x .= "\n==+== Review Anonymity
-==-== " . $Opt["shortName"] . " allows either anonymous or open review.
+==-== " . Conf::$gShortName . " allows either anonymous or open review.
 ==-== Enter \"Open\" if you want to expose your name to authors:
 
 $blind\n";
@@ -1042,7 +1041,7 @@ $blind\n";
     }
 
     function pretty_text($prow, $rrow, $contact, $no_update_review_author_seen = false) {
-        global $Conf, $Opt;
+        global $Conf;
         assert($prow !== null && $rrow !== null);
 
         $rrow_contactId = @$rrow->reviewContactId ? : (@$rrow->contactId ? : 0);
@@ -1050,7 +1049,7 @@ $blind\n";
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";
-        $n = $Opt["shortName"] . " Review";
+        $n = Conf::$gShortName . " Review";
         if (@$rrow->reviewOrdinal)
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
@@ -1127,8 +1126,6 @@ $blind\n";
     }
 
     function parseTextForm(&$tf) {
-        global $Opt;
-
         $text = $tf['text'];
         $lineno = $tf['lineno'];
         $tf['firstLineno'] = $lineno + 1;
@@ -1154,9 +1151,9 @@ $blind\n";
 
                 $anyDirectives++;
                 if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
-                    && $m[1] != trim($Opt["shortName"])) {
+                    && $m[1] != Conf::$gShortName) {
                     $this->garbageMessage($tf, $lineno, $garbage);
-                    self::tfError($tf, true, "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars(trim($Opt["shortName"])) . " " . $m[2] . "</code>” and upload again.)", $lineno);
+                    self::tfError($tf, true, "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars(Conf::$gShortName) . " " . $m[2] . "</code>” and upload again.)", $lineno);
                     return null;
                 } else if (preg_match('/^==\+== Begin Review/i', $line)) {
                     if ($nfields > 0)
@@ -1204,7 +1201,7 @@ $blind\n";
                         $nfields++;
                     } else {
                         $this->garbageMessage($tf, $lineno, $garbage);
-                        self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . htmlspecialchars($Opt["shortName"]) . " reviews.  Ignoring this section.", $lineno);
+                        self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . htmlspecialchars(Conf::$gShortName) . " reviews.  Ignoring this section.", $lineno);
                         $field = null;
                     }
                     $mode = 1;
@@ -1599,7 +1596,7 @@ $blind\n";
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
-                '<div class="revhint">', htmlspecialchars($Opt["shortName"]), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
+                '<div class="revhint">', htmlspecialchars(Conf::$gShortName), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
                 '<div class="g"></div>', "\n";
         }
 

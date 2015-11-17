@@ -29,6 +29,9 @@ class Conf {
     private $_topic_separator_cache = null;
     public $dsn = null;
 
+    static public $gShortName;
+    static public $gLongName;
+
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
     const BLIND_ALWAYS = 2;
@@ -257,6 +260,8 @@ class Conf {
             $Opt["shortName"] = $Opt["longName"];
         if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
             $Opt["downloadPrefix"] = $confid . "-";
+        self::$gShortName = $Opt["shortName"];
+        self::$gLongName = $Opt["longName"];
 
         // expand ${confid}, ${confshortname}
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",

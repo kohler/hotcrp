@@ -280,7 +280,7 @@ set_memory_limit();
 
 // Create the conference
 global $Conf;
-if (!@$Conf)
+if (!$Conf)
     $Conf = new Conf(Dbl::make_dsn($Opt));
 if (!$Conf->dblink)
     Multiconference::fail_bad_database();

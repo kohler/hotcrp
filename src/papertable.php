@@ -965,12 +965,12 @@ class PaperTable {
     }
 
     private function editable_anonymity() {
-        global $Conf, $Opt;
+        global $Conf;
         $blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$this->prow || $this->prow->blind));
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
-            '<div class="paphint">', htmlspecialchars($Opt["shortName"]), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+            '<div class="paphint">', htmlspecialchars(Conf::$gShortName), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
             "</div>\n\n";
     }
 
@@ -1271,7 +1271,7 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name, $showedit, $wholefold) {
-        global $Conf, $Me, $Opt;
+        global $Conf, $Me;
         $editable = ($type === "manager" ? $Me->privChair : $Me->can_administer($this->prow));
 
         $field = $type . "ContactId";

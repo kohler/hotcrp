@@ -80,7 +80,7 @@ if (isset($_REQUEST["monreq"]))
 else
     $Conf->header("Mail", "mail", actionBar());
 
-$subjectPrefix = "[" . $Opt["shortName"] . "] ";
+$subjectPrefix = "[" . Conf::$gShortName . "] ";
 
 
 class MailSender {
@@ -559,7 +559,7 @@ if ($Me->privChair) {
 
 // ** SUBJECT
 echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
-    "<tt>[", htmlspecialchars($Opt["shortName"]), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
+    "<tt>[", htmlspecialchars(Conf::$gShortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
 
  <tr><td></td><td class='mhb'>\n",
     Ht::textarea("emailBody", $_REQUEST["emailBody"],

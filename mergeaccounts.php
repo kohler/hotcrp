@@ -165,7 +165,7 @@ if ($MergeError)
 else
     $Conf->infoMsg(
 "You may have multiple accounts registered with the "
-. $Opt["shortName"] . " conference; perhaps "
+. Conf::$gShortName . " conference; perhaps "
 . "multiple people asked you to review a paper using "
 . "different email addresses. "
 . "If you have been informed of multiple accounts, "

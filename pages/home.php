@@ -180,14 +180,14 @@ if (($v = $Conf->message_html("home")))
 
 // Sign in
 if (!$Me->has_email() || isset($_REQUEST["signin"])) {
-    $confname = $Opt["longName"];
-    if ($Opt["shortName"] && $Opt["shortName"] != $Opt["longName"])
-        $confname .= " (" . $Opt["shortName"] . ")";
+    $confname = Conf::$gLongName;
+    if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
+        $confname .= " (" . Conf::$gShortName . ")";
     echo '<div class="homegrp">
 Welcome to the ', htmlspecialchars($confname), " submissions site.
 Sign in to submit or review papers.";
     if (isset($Opt["conferenceSite"]))
-        echo " For general information about ", htmlspecialchars($Opt["shortName"]), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
+        echo " For general information about ", htmlspecialchars(Conf::$gShortName), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
     $passwordFocus = ($email_class == "" && $password_class != "");
     echo '</div>
 <hr class="home" />

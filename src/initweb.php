@@ -47,7 +47,7 @@ ensure_session();
 
 // Initialize user
 function initialize_user() {
-    global $Conf, $Opt, $Me;
+    global $Conf, $Me;
 
     // backwards compat: set $_SESSION["user"] from $_SESSION["Me"]
     if (!isset($_SESSION["user"]) && isset($_SESSION["Me"])) {
