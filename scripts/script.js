@@ -2275,10 +2275,6 @@ function comment_identity_time(cj) {
     return t.join("");
 }
 
-function make_visibility(hc, value, label, rest) {
-    hc.push('<tr><td><input type="radio" name="visibility" value="' + value + '" tabindex="1" id="htctlcv' + value + idctr + '" />&nbsp;</td>'
-            + '<td><label for="htctlcv' + value + idctr + '">' + label + '</label>' + (rest || "") + '</td></tr>');
-}
 
 function edit_allowed(cj) {
     if (cj.response) {
@@ -2301,27 +2297,29 @@ function render_editing(hc, cj) {
         // visibility
         hc.push('<div class="cmteditinfo f-i fold2o">', '<hr class="c" /></div>');
         hc.push('<div class="f-ix">', '</div>');
-        hc.push('<div class="f-c" style="font-size:inherit">Visibility</div>');
+        hc.push('<div class="f-c">Visibility</div>');
         hc.push('<div class="f-e">', '</div>');
-        hc.push('<table class="cmtvistable">', '</table>');
-
-        var lsuf = "", tsuf = "";
-        if (hotcrp_status.rev.blind === true)
-            lsuf = " (anonymous to authors)";
-        else if (hotcrp_status.rev.blind)
-            tsuf = ' &nbsp; (<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '">&nbsp;' +
-                '<label for="htctlcb' + idctr + '">Anonymous to authors</label>)';
+        hc.push('<select name="visibility" tabindex="1">', '</select>');
+        hc.push('<option value="au">Visible to authors'
+                + (hotcrp_status.rev.blind === true ? " (anonymous to authors)" : "")
+                + '</option>');
+        hc.push('<option value="rev">Hidden from authors</option>');
+        hc.push('<option value="pc">Hidden from authors and external reviewers</option>');
+        hc.push('<option value="admin">Administrators only</option>');
+        hc.pop();
+        hc.push('<div class="fx2 hint">', '</div>');
+        if (hotcrp_status.rev.blind && hotcrp_status.rev.blind !== true)
+            hc.push('<input type="checkbox" name="blind" value="1" tabindex="1" id="htctlcb' + idctr + '" />&nbsp;<label for="htctlcb' + idctr + '">Anonymous to authors</label><br />\n');
         var au_allowseerev = hotcrp_status.perm[hotcrp_paperid].some_author_can_view_review;
-        tsuf += '<br><span class="fx2 hint">' + (au_allowseerev ? "Authors will be notified immediately." : "Authors cannot view comments at the moment.") + '</span>';
-        make_visibility(hc, "au", "Visible to authors" + lsuf, tsuf);
-        make_visibility(hc, "rev", "Hidden from authors");
-        make_visibility(hc, "pc", "Hidden from authors and external reviewers");
-        make_visibility(hc, "admin", "Administrators only");
+        if (au_allowseerev)
+            hc.push('Authors will be notified immediately.');
+        else
+            hc.push('Authors cannot view comments at the moment.');
         hc.pop_n(3);
 
         // tags
-        hc.push('<div class="f-ix" style="margin-left:4em"><div class="f-c" style="font-size:inherit">Tags</div>', '</div>')
-        hc.push('<textarea name="commenttags" tabindex="1" cols="40" rows="1"></textarea>');
+        hc.push('<div class="f-ix" style="margin-left:4em"><div class="f-c">Tags</div>', '</div>')
+        hc.push('<textarea name="commenttags" tabindex="1" cols="40" rows="1" style="font-size:smaller"></textarea>');
         hc.pop_n(2);
 
         // actions
@@ -2354,7 +2352,7 @@ function render_editing(hc, cj) {
 
 function visibility_change() {
     var j = $(this).closest(".cmteditinfo"),
-        dofold = !j.find("input[name=visibility][value=au]").is(":checked");
+        dofold = j.find("select[name=visibility]").val() != "au";
     fold(j[0], dofold, 2);
 }
 
@@ -2379,8 +2377,7 @@ function activate_editing(j, cj) {
     for (i in cj.tags || [])
         tags.push(cj.tags[i].replace(detwiddle, "~"));
     j.find("textarea[name=commenttags]").val(tags.join(" "));
-    if ((elt = j.find("input[name=visibility][value=" + (cj.visibility || "rev") + "]")[0]))
-        elt.checked = true;
+    j.find("select[name=visibility]").val(cj.visibility || "rev");
     if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
         elt.checked = true;
     j.find("button[name=submit]").click(submit_editor);
@@ -2390,7 +2387,7 @@ function activate_editing(j, cj) {
     j.find("button[name=savedraft]").click(savedraft_editor);
     if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmteditinfo")[0], true, 2);
-    j.find("input[name=visibility]").on("change", visibility_change);
+    j.find("select[name=visibility]").on("change", visibility_change);
     if (cj.response && resp_rounds[cj.response].words > 0)
         make_update_words(j, resp_rounds[cj.response].words);
     hiliter_children(j);
