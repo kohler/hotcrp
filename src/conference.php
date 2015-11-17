@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class Conference {
+class Conf {
     public $dblink = null;
 
     var $settings;
@@ -917,7 +917,7 @@ class Conference {
     function query_error_handler($dblink, $query) {
         global $OK;
         if (PHP_SAPI == "cli")
-            fwrite(STDERR, caller_landmark(1, "/^(?:Dbl::|Conference::q|call_user_func)/") . ": database error: $dblink->error in $query\n");
+            fwrite(STDERR, caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/") . ": database error: $dblink->error in $query\n");
         else
             $this->errorMsg($this->db_error_html(true, Ht::pre_text_wrap($query)));
         $OK = false;
@@ -926,7 +926,7 @@ class Conference {
     function qe($query, $while = "", $suggestRetry = false) {
         global $OK;
         if ($while || $suggestRetry)
-            error_log(caller_landmark() . ": bad call to Conference::qe");
+            error_log(caller_landmark() . ": bad call to Conf::qe");
         $result = $this->dblink->query($query);
         if ($result === false) {
             if (PHP_SAPI == "cli")
@@ -2397,7 +2397,7 @@ class Conference {
 
         $renderf = @$Opt["headerRenderer"];
         if (!$renderf)
-            $renderf = "Conference::echo_header";
+            $renderf = "Conf::echo_header";
         if (is_array($renderf)) {
             require_once($renderf[0]);
             $renderf = $renderf[1];

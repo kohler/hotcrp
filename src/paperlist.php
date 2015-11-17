@@ -362,7 +362,7 @@ class PaperList {
         if ($this->contact->privChair)
             $sel_opt["authors"] = "Authors &amp; contacts";
         else if ($this->contact->has_review()
-                 && $Conf->submission_blindness() != Conference::BLIND_ALWAYS)
+                 && $Conf->submission_blindness() != Conf::BLIND_ALWAYS)
             $sel_opt["authors"] = "Authors";
         $sel_opt["topics"] = "Topics";
         if ($this->contact->privChair) {
@@ -941,7 +941,7 @@ class PaperList {
             $titleextra .= '<span class="sep"></span><a class="fn3" href="#" onclick="return fold(\'pl\',0,3)">Show all papers</a><a class="fx3" href="#" onclick="return fold(\'pl\',1,3)">Hide unlikely conflicts</a>';
         if (($rstate->has_openau || $rstate->has_anonau) && $show_links) {
             $titleextra .= "<span class='sep'></span>";
-            if ($Conf->submission_blindness() == Conference::BLIND_NEVER)
+            if ($Conf->submission_blindness() == Conf::BLIND_NEVER)
                 $titleextra .= '<a class="fn1" href="#" onclick="return plinfo(\'au\',false)">Show authors</a><a class="fx1" href="#" onclick="return plinfo(\'au\',true)">Hide authors</a>';
             else if ($this->contact->privChair && $rstate->has_anonau && !$rstate->has_openau)
                 $titleextra .= '<a class="fn1 fn2" href="#" onclick="return plinfo(\'au\',false)||plinfo(\'anonau\',false)">Show authors</a><a class="fx1 fx2" href="#" onclick="return plinfo(\'au\',true)||plinfo(\'anonau\',true)">Hide authors</a>';

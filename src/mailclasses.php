@@ -198,14 +198,14 @@ class MailRecipients {
         } else {
             $needpaper = $needconflict = true;
             $needreview = false;
-            if ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE) {
+            if ($Conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
                 $cols[] = "(coalesce(PaperReview.contactId,0)!=0) has_review";
                 $cols[] = "coalesce(PaperReview.has_outstanding_review,0) has_outstanding_review";
                 $joins[] = "left join (select contactId, max(reviewNeedsSubmit) has_outstanding_review from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
             }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
-            if ($Conf->au_seerev == Conference::AUSEEREV_TAGS) {
+            if ($Conf->au_seerev == Conf::AUSEEREV_TAGS) {
                 $joins[] = "left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)";
                 $cols[] = "PaperTags.paperTags";
             }

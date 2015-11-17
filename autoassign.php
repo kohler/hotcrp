@@ -173,7 +173,7 @@ class AutoassignerInterface {
         $this->reviewtype = $r;
 
         if ($this->atype_review && $_REQUEST["rev_roundtag"] !== ""
-            && ($err = Conference::round_name_error($_REQUEST["rev_roundtag"]))) {
+            && ($err = Conf::round_name_error($_REQUEST["rev_roundtag"]))) {
             $Error["rev_roundtag"] = true;
             return $Conf->errorMsg($err);
         }

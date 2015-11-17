@@ -147,16 +147,16 @@ $rf->save_review($revreq,
 assert_search_papers($user_mgbaker, "re:varghese", "1");
 
 // check comment identity
-xassert($Conf->setting("au_seerev") == Conference::AUSEEREV_NO);
+xassert($Conf->setting("au_seerev") == Conf::AUSEEREV_NO);
 $comment1 = new CommentInfo(null, $paper1);
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
 xassert($c1ok);
 xassert(!$user_van->can_view_comment($paper1, $comment1, false));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
-$Conf->save_setting("au_seerev", Conference::AUSEEREV_YES);
+$Conf->save_setting("au_seerev", Conf::AUSEEREV_YES);
 xassert($user_van->can_view_comment($paper1, $comment1, false));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
-$Conf->save_setting("rev_blind", Conference::BLIND_OPTIONAL);
+$Conf->save_setting("rev_blind", Conf::BLIND_OPTIONAL);
 xassert($user_van->can_view_comment($paper1, $comment1, false));
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
 $c1ok = $comment1->save(array("text" => "test", "visibility" => "a", "blind" => false), $user_mgbaker);
@@ -164,10 +164,10 @@ xassert($c1ok);
 xassert($user_van->can_view_comment_identity($paper1, $comment1, false));
 $Conf->save_setting("rev_blind", null);
 xassert(!$user_van->can_view_comment_identity($paper1, $comment1, false));
-$Conf->save_setting("au_seerev", Conference::AUSEEREV_NO);
+$Conf->save_setting("au_seerev", Conf::AUSEEREV_NO);
 
 // check comment/review visibility when reviews are incomplete
-$Conf->save_setting("pc_seeallrev", Conference::PCSEEREV_UNLESSINCOMPLETE);
+$Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
 Contact::update_rights();
 $review1 = $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId));
 xassert(!$user_wilma->has_review());
@@ -201,7 +201,7 @@ xassert(!$user_varghese->can_view_review($paper1, $review2, false));
 xassert($user_marina->can_view_review($paper1, $review1, false));
 xassert($user_marina->can_view_review($paper1, $review2, false));
 
-$Conf->save_setting("pc_seeallrev", Conference::PCSEEREV_UNLESSANYINCOMPLETE);
+$Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSANYINCOMPLETE);
 Contact::update_rights();
 xassert($user_wilma->can_view_review($paper1, $review1, false));
 xassert($user_wilma->can_view_review($paper1, $review2, false));

@@ -970,7 +970,7 @@ class ReviewForm {
 ==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
-            if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL) {
+            if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL) {
                 $blind = "Anonymous";
                 if ($rrow && !$rrow->reviewBlind)
                     $blind = "Open";
@@ -1594,7 +1594,7 @@ $blind\n";
         }
 
         // blind?
-        if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL) {
+        if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL) {
             echo '<div class="revet"><span class="revfn">',
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),

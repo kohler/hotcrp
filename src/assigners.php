@@ -356,7 +356,7 @@ class ReviewAssigner extends Assigner {
             $round = @$state->defaults["round"];
         if ($round && (strcasecmp($round, "any") != 0 || $this->rtype > 0)) {
             if (($roundname = $Conf->sanitize_round_name($round)) === false)
-                return Conference::round_name_error($round);
+                return Conf::round_name_error($round);
         } else
             $roundname = null;
         $rtype = $this->rtype;

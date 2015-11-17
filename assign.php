@@ -134,7 +134,7 @@ function handle_set_round() {
     $rname = trim((string) $_POST["round"]);
     $round = $Conf->sanitize_round_name($rname);
     if ($round === false)
-        $Conf->ajaxExit(array("ok" => false, "error" => Conference::round_name_error($rname)));
+        $Conf->ajaxExit(array("ok" => false, "error" => Conf::round_name_error($rname)));
 
     // assign round
     $rnum = $Conf->round_number($rname, true);

@@ -609,7 +609,7 @@ function save_decisions($set) {
                 && ($k === "decn" || ($dnum = cvtint(substr($k, 3), 0)))
                 && ($k !== "decn" || trim($dname) !== "")) {
                 $dname = simplify_whitespace($dname);
-                if (($derror = Conference::decision_name_error($dname))) {
+                if (($derror = Conf::decision_name_error($dname))) {
                     $Error[] = htmlspecialchars($derror);
                     $Highlight[$k] = true;
                 } else if (isset($dec_revmap[strtolower($dname)])) {
@@ -887,7 +887,7 @@ function save_rounds($set) {
                 $round_deleted = $i;
         } else if ($rname === "")
             /* ignore */;
-        else if (($rerror = Conference::round_name_error($rname))) {
+        else if (($rerror = Conf::round_name_error($rname))) {
             $Error[] = $rerror;
             $Highlight["roundname_$i"] = true;
         } else if ($i == 0)
@@ -910,7 +910,7 @@ function save_rounds($set) {
     // round deadlines
     foreach ($Conf->round_list() as $i => $rname) {
         $suffix = $i ? "_$i" : "";
-        foreach (Conference::$review_deadlines as $k)
+        foreach (Conf::$review_deadlines as $k)
             $Values[$k . $suffix] = null;
     }
     $rtransform = array();
@@ -932,7 +932,7 @@ function save_rounds($set) {
             if (($osuffix = @$rtransform[$i]) === null)
                 $osuffix = $isuffix;
             $ndeadlines = 0;
-            foreach (Conference::$review_deadlines as $k) {
+            foreach (Conf::$review_deadlines as $k) {
                 $v = parse_value($k . $isuffix, setting_info($k));
                 $Values[$k . $osuffix] = $v < 0 ? null : $v;
                 $ndeadlines += $v > 0;
@@ -971,7 +971,7 @@ function save_rounds($set) {
         $rname = @$roundnames[substr($t, 1) - 1];
         if ($rname && $rname !== ";")
             $Values["rev_roundtag"] = array(1, $rname);
-    } else if (!($rerror = Conference::round_name_error($t)))
+    } else if (!($rerror = Conf::round_name_error($t)))
         $Values["rev_roundtag"] = array(1, $t);
     else {
         $Error[] = $rerror;
@@ -991,7 +991,7 @@ function save_resp_rounds($set) {
         $rname = @trim($_POST["resp_roundname"]);
         if ($rname === "" || $rname === "none" || $rname === "1")
             /* do nothing */;
-        else if (($rerror = Conference::resp_round_name_error($rname))) {
+        else if (($rerror = Conf::resp_round_name_error($rname))) {
             $Error[] = $rerror;
             $Highlight["resp_roundname"] = true;
         } else {
@@ -1006,7 +1006,7 @@ function save_resp_rounds($set) {
             $rname = $old_roundnames[$i];
         if ($rname === "")
             continue;
-        else if (($rerror = Conference::resp_round_name_error($rname))) {
+        else if (($rerror = Conf::resp_round_name_error($rname))) {
             $Error[] = $rerror;
             $Highlight["resp_roundname_$i"] = true;
         } else if (@$roundnames_set[strtolower($rname)] !== null) {
@@ -1190,22 +1190,22 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $Highlight["rev_open"] = true;
             break;
         }
-    if (value_or_setting("au_seerev") != Conference::AUSEEREV_NO
-        && value_or_setting("au_seerev") != Conference::AUSEEREV_TAGS
+    if (value_or_setting("au_seerev") != Conf::AUSEEREV_NO
+        && value_or_setting("au_seerev") != Conf::AUSEEREV_TAGS
         && $Conf->setting("pcrev_soft") > 0
         && $Now < $Conf->setting("pcrev_soft")
         && count($Error) == 0)
         $Warning[] = "Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.";
     if (value("final_open")
         && (!value("final_done") || value("final_done") > $Now)
-        && value_or_setting("seedec") != Conference::SEEDEC_ALL)
+        && value_or_setting("seedec") != Conf::SEEDEC_ALL)
         $Warning[] = "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”";
-    if (value("seedec") == Conference::SEEDEC_ALL
-        && value_or_setting("au_seerev") == Conference::AUSEEREV_NO)
+    if (value("seedec") == Conf::SEEDEC_ALL
+        && value_or_setting("au_seerev") == Conf::AUSEEREV_NO)
         $Warning[] = "Authors can see decisions, but not reviews. This is sometimes unintentional.";
     if (has_value("msg.clickthrough_submit"))
         $Values["clickthrough_submit"] = null;
-    if (value_or_setting("au_seerev") == Conference::AUSEEREV_TAGS
+    if (value_or_setting("au_seerev") == Conf::AUSEEREV_TAGS
         && !value_or_setting_data("tag_au_seerev")
         && !@$Highlight["tag_au_seerev"]) {
         $Warning[] = "You haven’t set any review visibility tags.";
@@ -1554,10 +1554,10 @@ function doSubGroup() {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
-    doRadio("sub_blind", array(Conference::BLIND_ALWAYS => "Yes—submissions are anonymous",
-                               Conference::BLIND_NEVER => "No—author names are visible to reviewers",
-                               Conference::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
-                               Conference::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
+    doRadio("sub_blind", array(Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
+                               Conf::BLIND_NEVER => "No—author names are visible to reviewers",
+                               Conf::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
+                               Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
     doDateRow("sub_reg", "Registration deadline", "sub_sub");
@@ -1904,9 +1904,9 @@ function doRevGroup() {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
-    doRadio("rev_blind", array(Conference::BLIND_ALWAYS => "Yes—reviews are anonymous",
-                               Conference::BLIND_NEVER => "No—reviewer names are visible to authors",
-                               Conference::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
+    doRadio("rev_blind", array(Conf::BLIND_ALWAYS => "Yes—reviews are anonymous",
+                               Conf::BLIND_NEVER => "No—reviewer names are visible to authors",
+                               Conf::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
     doCheckbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
@@ -2002,10 +2002,10 @@ function doRevGroup() {
     echo "<h3 class=\"settings g\">Visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeallrev", array(Conference::PCSEEREV_YES => "Yes",
-                                  Conference::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
-                                  Conference::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conference::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
+    doRadio("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
+                                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
+                                  Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
+                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
 
     echo "<div class='g'></div>\n";
     echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
@@ -2205,14 +2205,14 @@ function doDecGroup() {
     if (!$Conf->setting("au_seerev", 0)
         && $Conf->timeAuthorViewReviews())
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
-    $opts = array(Conference::AUSEEREV_NO => $no_text,
-                  Conference::AUSEEREV_YES => "Yes");
-    if (value("au_seerev") == Conference::AUSEEREV_UNLESSINCOMPLETE
+    $opts = array(Conf::AUSEEREV_NO => $no_text,
+                  Conf::AUSEEREV_YES => "Yes");
+    if (value("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
         && !@$Opt["allow_auseerev_unlessincomplete"])
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (@$Opt["allow_auseerev_unlessincomplete"])
-        $opts[Conference::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conference::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", setting_data("tag_au_seerev"), 24);
+        $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", setting_data("tag_au_seerev"), 24);
     doRadio("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
@@ -2262,10 +2262,10 @@ function doDecGroup() {
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
         "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
-    doRadio("seedec", array(Conference::SEEDEC_ADMIN => "Only administrators",
-                            Conference::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
-                            Conference::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
-                            Conference::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
+    doRadio("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
+                            Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
+                            Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
+                            Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";

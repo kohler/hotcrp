@@ -98,7 +98,7 @@ class HotCRPMailer extends Mailer {
 
         // save old au_seerev setting, and reset it so authors can see them.
         if (!($au_seerev = $Conf->au_seerev))
-            $Conf->au_seerev = Conference::AUSEEREV_YES;
+            $Conf->au_seerev = Conf::AUSEEREV_YES;
 
         $text = "";
         $rf = ReviewForm::get();
@@ -108,7 +108,7 @@ class HotCRPMailer extends Mailer {
                 $text .= $rf->pretty_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
 
         $Conf->au_seerev = $au_seerev;
-        if ($text === "" && $au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
+        if ($text === "" && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
             && count($rrows))
             $text = "[Reviews are hidden since you have incomplete reviews of your own.]\n";
         return $text;
@@ -120,7 +120,7 @@ class HotCRPMailer extends Mailer {
 
         // save old au_seerev setting, and reset it so authors can see them.
         if (!($au_seerev = $Conf->au_seerev))
-            $Conf->au_seerev = Conference::AUSEEREV_YES;
+            $Conf->au_seerev = Conf::AUSEEREV_YES;
 
         $text = "";
         foreach ($crows as $crow)

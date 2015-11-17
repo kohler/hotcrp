@@ -633,7 +633,7 @@ class PaperInfo {
             $need = array("contactId", "reviewContactIds",
                           "requestedBy", "reviewRequestedBys",
                           "reviewType", "reviewTypes");
-            if ($Conf->review_blindness() == Conference::BLIND_OPTIONAL)
+            if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL)
                 array_push($need, "reviewBlind", "reviewBlinds");
             if ($contact->review_tokens())
                 array_push($need, "reviewToken", "reviewTokens");

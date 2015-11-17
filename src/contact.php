@@ -487,7 +487,7 @@ class Contact {
         if ($this->contactTags)
             return strpos($this->contactTags, " $t ") !== false;
         if ($this->contactTags === false) {
-            trigger_error(caller_landmark(1, "/^Conference::/") . ": Contact $this->email contactTags missing");
+            trigger_error(caller_landmark(1, "/^Conf::/") . ": Contact $this->email contactTags missing");
             $this->contactTags = null;
         }
         return false;
@@ -1555,10 +1555,10 @@ class Contact {
 
             // check blindness
             $bs = $Conf->setting("sub_blind");
-            $ci->nonblind = $bs == Conference::BLIND_NEVER
-                || ($bs == Conference::BLIND_OPTIONAL
+            $ci->nonblind = $bs == Conf::BLIND_NEVER
+                || ($bs == Conf::BLIND_OPTIONAL
                     && !(isset($prow->paperBlind) ? $prow->paperBlind : $prow->blind))
-                || ($bs == Conference::BLIND_UNTILREVIEW
+                || ($bs == Conf::BLIND_UNTILREVIEW
                     && $ci->review_type > 0
                     && $ci->review_submitted > 0)
                 || ($prow->outcome > 0
@@ -1909,7 +1909,7 @@ class Contact {
         return $this->is_manager()
             || $this->is_author()
             || ($this->is_reviewer()
-                && ($Conf->submission_blindness() != Conference::BLIND_ALWAYS
+                && ($Conf->submission_blindness() != Conf::BLIND_ALWAYS
                     || $Conf->timeReviewerViewAcceptedAuthors()));
     }
 
@@ -1984,7 +1984,7 @@ class Contact {
 
     public static function can_some_author_view_submitted_review(PaperInfo $prow) {
         global $Conf;
-        if ($Conf->au_seerev == Conference::AUSEEREV_TAGS)
+        if ($Conf->au_seerev == Conf::AUSEEREV_TAGS)
             return $prow->has_any_tag($Conf->tag_au_seerev);
         else
             return $Conf->au_seerev != 0;
@@ -1992,11 +1992,11 @@ class Contact {
 
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
         global $Conf;
-        return $Conf->au_seerev == Conference::AUSEEREV_YES
-            || ($Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
+        return $Conf->au_seerev == Conf::AUSEEREV_YES
+            || ($Conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
                 && (!$this->has_review()
                     || !$this->has_outstanding_review()))
-            || ($Conf->au_seerev == Conference::AUSEEREV_TAGS
+            || ($Conf->au_seerev == Conf::AUSEEREV_TAGS
                 && $prow->has_any_tag($Conf->tag_au_seerev));
     }
 
@@ -2030,9 +2030,9 @@ class Contact {
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
                 && $pc_seeallrev > 0 // see also timePCViewAllReviews()
-                && ($pc_seeallrev != Conference::PCSEEREV_UNLESSANYINCOMPLETE
+                && ($pc_seeallrev != Conf::PCSEEREV_UNLESSANYINCOMPLETE
                     || !$this->has_outstanding_review())
-                && ($pc_seeallrev != Conference::PCSEEREV_UNLESSINCOMPLETE
+                && ($pc_seeallrev != Conf::PCSEEREV_UNLESSINCOMPLETE
                     || !$rights->review_type)
                 && $pc_trackok)
             || ($rights->review_type
@@ -2061,7 +2061,7 @@ class Contact {
                  && !$rights->review_type)
             $whyNot["permission"] = 1;
         else if ($rights->act_author_view
-                 && $Conf->au_seerev == Conference::AUSEEREV_UNLESSINCOMPLETE
+                 && $Conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
                  && $this->has_outstanding_review()
                  && $this->has_review())
             $whyNot["reviewsOutstanding"] = 1;
@@ -2078,7 +2078,7 @@ class Contact {
         else if (!$rrowSubmitted)
             $whyNot["reviewNotSubmitted"] = 1;
         else if ($rights->allow_pc
-                 && $pc_seeallrev == Conference::PCSEEREV_UNLESSANYINCOMPLETE
+                 && $pc_seeallrev == Conf::PCSEEREV_UNLESSANYINCOMPLETE
                  && $this->has_outstanding_review())
             $whyNot["reviewsOutstanding"] = 1;
         else if (!$Conf->time_review_open())
@@ -2739,11 +2739,11 @@ class Contact {
             $dl->sub->update = $set["sub_update"];
 
         $sb = $Conf->submission_blindness();
-        if ($sb === Conference::BLIND_ALWAYS)
+        if ($sb === Conf::BLIND_ALWAYS)
             $dl->sub->blind = true;
-        else if ($sb === Conference::BLIND_OPTIONAL)
+        else if ($sb === Conf::BLIND_OPTIONAL)
             $dl->sub->blind = "optional";
-        else if ($sb === Conference::BLIND_UNTILREVIEW)
+        else if ($sb === Conf::BLIND_UNTILREVIEW)
             $dl->sub->blind = "until-review";
 
         // responses
@@ -2809,9 +2809,9 @@ class Contact {
             }
             // blindness
             $rb = $Conf->review_blindness();
-            if ($rb === Conference::BLIND_ALWAYS)
+            if ($rb === Conf::BLIND_ALWAYS)
                 $dl->rev->blind = true;
-            else if ($rb === Conference::BLIND_OPTIONAL)
+            else if ($rb === Conf::BLIND_OPTIONAL)
                 $dl->rev->blind = "optional";
         }
 
