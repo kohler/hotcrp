@@ -2328,10 +2328,9 @@ div.papcard_body, div.pedcard_body {
 	padding: 8px 12px;
 	border-radius: 2px;
 }
-div.papcard_sep {
-	background: #cec1ff;
-	padding: 1px 0;
-	margin: 8px -12px;
+hr.papcard_sep {
+	background-color: #cec1ff;
+	margin: 1em 0;
 }
 div.pedcard_head {
 	padding: 3px 12px 4px;

@@ -1996,7 +1996,7 @@ class PaperTable {
             $this->echoActions(false);
             echo "</form>";
         } else if (!$this->editable && $Me->actAuthorView($prow) && !$Me->contactId) {
-            echo '<div class="papcard_sep"></div>',
+            echo '<hr class="papcard_sep" />',
                 "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }
 
@@ -2005,7 +2005,7 @@ class PaperTable {
 
     private function _paptabSepContaining($t) {
         if ($t !== "")
-            echo '<div class="papcard_sep"></div>', $t;
+            echo '<hr class="papcard_sep" />', $t;
     }
 
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
