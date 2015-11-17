@@ -493,8 +493,24 @@ class ReviewForm {
         return $x;
     }
 
+    private static function format_description($rrow, $text) {
+        if (($format = $rrow ? $rrow->reviewFormat : null) === null)
+            $format = Conf::$gDefaultFormat;
+        $format_info = Conf::format_info();
+        if (($f = @$format_info[$format])) {
+            if ($text && @$f["description_text"])
+                return $f["description_text"];
+            $t = @$f["description"];
+            if ($text && $t)
+                $t = self::cleanDescription($t);
+            return $t;
+        }
+        return null;
+    }
+
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
         global $ReviewFormError, $Conf;
+        $format_description = self::format_description($rrow, false);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         echo '<div class="rve">';
         foreach ($this->forder as $field => $f) {
@@ -539,6 +555,10 @@ class ReviewForm {
                 }
                 echo "</select>";
             } else {
+                if ($format_description) {
+                    echo $format_description;
+                    $format_description = null;
+                }
                 echo Ht::textarea($field, $fval,
                         array("class" => "reviewtext", "rows" => $f->display_space,
                               "cols" => 60, "onchange" => "hiliter(this)",
@@ -892,7 +912,7 @@ class ReviewForm {
         return $x;
     }
 
-    function cleanDescription($d) {
+    static function cleanDescription($d) {
         $d = preg_replace('|\s*<\s*br\s*/?\s*>\s*(?:<\s*/\s*br\s*>\s*)?|si', "\n", $d);
         $d = preg_replace('|\s*<\s*li\s*>|si', "\n* ", $d);
         $d = preg_replace(',<(?:[^"\'>]|".*?"|\'.*?\')*>,s', "", $d);
@@ -983,6 +1003,7 @@ $blind\n";
 
         $i = 0;
         $numericMessage = 0;
+        $format_description = self::format_description($rrow, true);
         foreach ($this->forder as $field => $f) {
             $i++;
             if ($f->view_score <= $revViewScore
@@ -1034,6 +1055,9 @@ $blind\n";
                     $fval = "No entry";
                 else
                     $fval = "(Your choice here)";
+            } else if ($format_description) {
+                $x .= prefix_word_wrap("==-== ", $format_description, "==-== ") . "\n";
+                $format_description = null;
             }
             $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
         }
