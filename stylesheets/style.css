@@ -2562,7 +2562,10 @@ div.revtext, div.cmttext {
 	line-height: 125%;
 }
 div.cmttext.has_wordsover {
-	background-color: #f5ecec;
+	margin: 0 -4px -3px;
+	padding: 0 4px 3px;
+	background: #f5ecec;
+	background: linear-gradient(to right, #f5ecec, #f5ecec 648px, rgba(245,236,236,0) 648px);
 }
 div.wordsover_mark {
 	position: absolute;
