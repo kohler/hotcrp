@@ -1,6 +1,19 @@
 HotCRP NEWS
 ===========
 
+## Version 2.98 - 19.Nov.2015
+
+* MySQL improvements: Use InnoDB; set the connection charset to binary, which
+  is required on newer MySQL instances; support emoji in reviews.
+
+* Fix problem when there are more than 26 reviews (Emery Berger report).
+
+* Fix problem with Apache+mod_rewrite installations.
+
+* Use more HTML5 attributes, improve Firefox rendering speed, more bug fixes
+  and improvements.
+
+
 ## Version 2.97 - 28.Sep.2015
 
 * Add `re:words` search term and formula term.
