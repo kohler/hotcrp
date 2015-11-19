@@ -2121,6 +2121,11 @@ f.format_description = function (format) {
         format = default_format;
     return renderers[format] ? renderers[format].description : null;
 };
+f.format_can_preview = function (format) {
+    if (format == null)
+        format = default_format;
+    return renderers[format] ? renderers[format].can_preview : false;
+};
 f.set_default_format = function (format) {
     default_format = format;
 };
@@ -2285,17 +2290,19 @@ function edit_allowed(cj) {
 }
 
 function render_editing(hc, cj) {
-    var bnote = "", fmtnote;
+    var bnote = "", fmtnote, x;
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
     hc.push('<form class="shortcutok"><div class="aahc" style="font-weight:normal;font-style:normal">', '</div></form>');
+    hc.push('<div class="cmtpreview" style="display:none"></div>');
+    hc.push('<div class="cmtnopreview">');
     if ((fmtnote = render_text.format_description(cj.format)))
         hc.push(fmtnote);
-    hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60"></textarea>');
+    hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea></div>');
     if (!cj.response) {
         // visibility
-        hc.push('<div class="cmteditinfo f-i fold2o">', '<hr class="c" /></div>');
+        hc.push('<div class="cmteditinfo f-i fold2o">', '<hr class="c"></div>');
         hc.push('<div class="f-ix">', '</div>');
         hc.push('<div class="f-c">Visibility</div>');
         hc.push('<div class="f-e">', '</div>');
@@ -2323,30 +2330,28 @@ function render_editing(hc, cj) {
         hc.pop_n(2);
 
         // actions
-        hc.push('<hr class="c" /><div class="aab" style="margin-bottom:0">', '<hr class="c" /></div>');
+        hc.push('<hr class="c"><div class="aab" style="margin-bottom:0">', '<hr class="c"></div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button>' + bnote + '</div>');
-        hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
-        if (!cj.is_new) {
-            hc.push('<div class="aabutsep">&nbsp;</div>');
-            hc.push('<div class="aabut"><button type="button" name="delete">Delete comment</button></div>');
-        }
     } else {
         // actions
         // XXX allow_administer
         hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
-        hc.push('<div class="clear"></div><div class="aab" style="margin-bottom:0">', '<div class="clear"></div></div>');
+        hc.push('<hr class="c"><div class="aab" style="margin-bottom:0">', '<hr class="c"></div>');
         if (cj.is_new || cj.draft)
             hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button>' + bnote + '</div>');
-        hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
-        if (!cj.is_new) {
-            hc.push('<div class="aabutsep">&nbsp;</div>');
-            hc.push('<div class="aabut"><button type="button" name="delete">Delete response</button></div>');
-        }
-        if (resp_rounds[cj.response].words > 0) {
-            hc.push('<div class="aabutsep">&nbsp;</div>');
-            hc.push('<div class="aabut"><div class="words"></div></div>');
-        }
+    }
+    if (render_text.format_can_preview(cj.format))
+        hc.push('<div class="aabut"><button type="button" name="preview">Preview</button></div>');
+    hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
+    if (!cj.is_new) {
+        hc.push('<div class="aabutsep">&nbsp;</div>');
+        x = cj.response ? "Delete response" : "Delete comment";
+        hc.push('<div class="aabut"><button type="button" name="delete">' + x + '</button></div>');
+    }
+    if (cj.response && resp_rounds[cj.response].words > 0) {
+        hc.push('<div class="aabutsep">&nbsp;</div>');
+        hc.push('<div class="aabut"><div class="words"></div></div>');
     }
 }
 
@@ -2371,6 +2376,18 @@ function make_update_words(jq, wlimit) {
         jq.find("textarea").on("input", setwc).each(setwc);
 }
 
+function make_preview() {
+    var x = analyze(this), taj = x.j.find("textarea[name=comment]"),
+        previewon = taj.is(":visible"), t;
+    if (previewon) {
+        t = render_text(x.cj.format, taj.val());
+        x.j.find(".cmtpreview").html('<div class="format' + (t.format || 0) + '">' + t.content + '</div>');
+    }
+    x.j.find(".cmtnopreview").toggle(!previewon);
+    x.j.find(".cmtpreview").toggle(previewon);
+    x.j.find("button[name=preview]").html(previewon ? "Edit" : "Preview");
+}
+
 function activate_editing(j, cj) {
     var elt, tags = [], i;
     j.find("textarea[name=comment]").text(cj.text || "").autogrow();
@@ -2388,6 +2405,7 @@ function activate_editing(j, cj) {
     if ((cj.visibility || "rev") !== "au")
         fold(j.find(".cmteditinfo")[0], true, 2);
     j.find("select[name=visibility]").on("change", visibility_change);
+    j.find("button[name=preview]").click(make_preview);
     if (cj.response && resp_rounds[cj.response].words > 0)
         make_update_words(j, resp_rounds[cj.response].words);
     hiliter_children(j);
