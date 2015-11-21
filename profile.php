@@ -77,6 +77,7 @@ if (!$Acct
     redirectSelf();
 }
 
+$need_highlight = false;
 if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
     && $Acct->has_email()
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
@@ -86,13 +87,18 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
         foreach ($prow->author_list() as $au)
             if (strcasecmp($au->email, $Acct->email) == 0
                 && ($au->firstName || $au->lastName || $au->affiliation)) {
-                if (!$Acct->firstName && $au->firstName)
+                if (!$Acct->firstName && $au->firstName) {
                     $Acct->firstName = $au->firstName;
-                if (!$Acct->lastName && $au->lastName)
+                    $need_highlight = true;
+                }
+                if (!$Acct->lastName && $au->lastName) {
                     $Acct->lastName = $au->lastName;
-                if (!$Acct->affiliation && $au->affiliation)
+                    $need_highlight = true;
+                }
+                if (!$Acct->affiliation && $au->affiliation) {
                     $Acct->affiliation = $au->affiliation;
-                ++$UserStatus->nerrors;
+                    $need_highlight = true;
+                }
             }
 }
 
@@ -519,8 +525,9 @@ if ($newProfile)
     $Conf->header("Create account", "account", actionBar("account"));
 else
     $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
-$useRequest = (!$Acct->has_database_account() && isset($_REQUEST["watchcomment"]))
-    || $UserStatus->nerrors;
+$useRequest = !$Acct->has_database_account() && isset($_REQUEST["watchcomment"]);
+if ($UserStatus->nerrors)
+    $need_highlight = $useRequest = true;
 
 if (!$UserStatus->nerrors && @$Conf->session("freshlogin") === "redirect") {
     $Conf->save_session("freshlogin", null);
@@ -582,7 +589,7 @@ if ($newProfile)
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
-    '<div class="profiletext aahc', ($UserStatus->nerrors ? " alert" : "") , "\">\n",
+    '<div class="profiletext aahc', ($need_highlight ? " alert" : ""), "\">\n",
     // Don't want chrome to autofill the password changer.
     // But chrome defaults to autofilling the password changer
     // unless we supply an earlier password input.
@@ -833,7 +840,7 @@ if ($newProfile) {
     echo '</div><div class="fx9">';
     echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
                   array("id" => "accountform", "autocomplete" => "off")),
-        "<div class='profiletext aahc", ($UserStatus->nerrors ? " alert" : "") , "'>\n",
+        "<div class='profiletext aahc", ($UserStatus->nerrors ? " alert" : ""), "'>\n",
         // Don't want chrome to autofill the password changer.
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.
