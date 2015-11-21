@@ -84,6 +84,7 @@ class UserStatus {
 
         if (($tags = $user->all_contact_tags())) {
             $tagger = new Tagger;
+            $tags = $tagger->viewable($tags);
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 
@@ -276,7 +277,7 @@ class UserStatus {
             $tagger = new Tagger;
             $cj->tags = array();
             foreach ($tag_array as $t)
-                if ($tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR))
+                if ($tagger->check($t, Tagger::NOPRIVATE))
                     $cj->tags[] = $t;
                 else
                     $this->set_error("tags", $tagger->error_html);

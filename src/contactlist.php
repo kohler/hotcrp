@@ -35,6 +35,7 @@ class ContactList {
     var $count;
     var $any;
     var $contact;
+    private $tagger;
     var $scoreMax;
     var $limit;
     public $have_folds = array();
@@ -57,6 +58,7 @@ class ContactList {
         $this->sortable = $sortable;
 
         $this->contact = $contact;
+        $this->tagger = new Tagger($this->contact);
         $this->contactLinkArgs = "";
         $this->listNumber = $contact->privChair;
     }
@@ -394,10 +396,12 @@ class ContactList {
             return '<div class="has_hotcrp_list" data-hotcrp-list="' . $ls . '">'
                 . join(", ", $m) . '</div>';
         case self::FIELD_TAGS:
-            if (!$this->contact->isPC || !$row->contactTags)
-                return "";
-            $tagger = new Tagger;
-            return $tagger->unparse($row->contactTags);
+            if ($this->contact->isPC) {
+                $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
+                if ($tags && ($tags = $this->tagger->viewable($tags)))
+                    return $this->tagger->unparse($tags);
+            }
+            return "";
         case self::FIELD_COLLABORATORS:
             if (!$this->contact->isPC || !($row->roles & Contact::ROLE_PC))
                 return "";
@@ -714,7 +718,7 @@ class ContactList {
             $trclass = "k" . ($this->count % 2);
             if ($show_colors) {
                 $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
-                if (($m = TagInfo::color_classes($tags))) {
+                if ($tags && ($m = $this->tagger->viewable_color_classes($tags))) {
                     if (TagInfo::classes_have_colors($m)) {
                         $trclass = $m;
                         $hascolors = true;

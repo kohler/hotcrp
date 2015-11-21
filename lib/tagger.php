@@ -410,6 +410,10 @@ class Tagger {
         return $tags;
     }
 
+    public function viewable_color_classes($tags) {
+        return TagInfo::color_classes($this->viewable($tags));
+    }
+
     public function paper_editable($prow) {
         $tags = $this->viewable($prow->all_tags_text());
         if ($tags !== "") {

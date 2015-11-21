@@ -148,8 +148,7 @@ class PaperTable {
                 $t .= ' has_hotcrp_tag_classes';
                 if (($tags = $prow->all_tags_text())) {
                     $tagger = new Tagger;
-                    $viewable = $tagger->viewable($tags);
-                    if (($color = TagInfo::color_classes($viewable)))
+                    if (($color = $tagger->viewable_color_classes($tags)))
                         $t .= ' ' . $color;
                 }
             }
@@ -1170,6 +1169,7 @@ class PaperTable {
 
         $selectors = $Conf->setting("sub_pcconfsel");
         $show_colors = $Me->can_view_reviewer_tags($this->prow);
+        $tagger = $show_colors ? new Tagger : null;
 
         $conflict = array();
         if ($this->useRequest) {
@@ -1212,9 +1212,8 @@ class PaperTable {
             $ct = defval($conflict, $id, $nonct);
 
             echo '<div class="ctable_elt pctbelt';
-            if ($show_colors
-                && ($color = TagInfo::color_classes($p->all_contact_tags())))
-                echo ' ', $color;
+            if ($show_colors && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
+                echo ' ', $classes;
             echo '">';
 
             if ($selectors) {
@@ -1251,11 +1250,11 @@ class PaperTable {
 
         $pcconf = array();
         $pcm = pcMembers();
+        $tagger = new Tagger;
         foreach ($this->prow->pc_conflicts() as $id => $x) {
             $p = $pcm[$id];
             $text = "<p class=\"odname\">" . Text::name_html($p) . "</p>";
-            if ($Me->isPC && $p->contactTags
-                && ($classes = TagInfo::color_classes($p->contactTags)))
+            if ($Me->isPC && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
                 $text = "<div class=\"pscopen $classes taghl\">$text</div>";
             $pcconf[$p->sort_position] = $text;
         }

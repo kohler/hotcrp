@@ -1432,7 +1432,8 @@ class PaperSearch {
         $ret = array("");
         $twiddle = strpos($tagword, "~");
         if ($this->privChair && $twiddle > 0 && !ctype_digit(substr($tagword, 0, $twiddle))) {
-            $ret = ContactSearch::make_pc(substr($tagword, 0, $twiddle), $this->cid)->ids;
+            $c = substr($tagword, 0, $twiddle);
+            $ret = ContactSearch::make_pc($c, $this->cid)->ids;
             if (count($ret) == 0)
                 $this->warn("“" . htmlspecialchars($c) . "” doesn’t match a PC email.");
             $tagword = substr($tagword, $twiddle);

@@ -534,13 +534,14 @@ if ($Me->can_administer($prow)) {
         '</div>';
 
     echo '<div class="ctable pctb_ctable">';
+    $tagger = new Tagger($Me);
     foreach (pcMembers() as $pc) {
         $p = $pcx[$pc->contactId];
         if (!$pc->can_accept_review_assignment_ignore_conflict($prow))
             continue;
 
         // first, name and assignment
-        $color = TagInfo::color_classes($pc->all_contact_tags());
+        $color = $tagger->viewable_color_classes($pc->all_contact_tags());
         echo '<div class="ctable_elt pctbelt' . ($color ? " $color" : "") . '">';
         if ($p->conflictType >= CONFLICT_AUTHOR) {
             echo '<div class="pctbass">', review_type_icon(-2),
