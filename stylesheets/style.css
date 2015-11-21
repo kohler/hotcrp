@@ -2896,6 +2896,18 @@ span.sv-blpu6.dark, span.sv-publ4.dark { color: #6b79d7; }
 span.sv-blpu7.dark, span.sv-publ3.dark { color: #7873d8; }
 span.sv-blpu8.dark, span.sv-publ2.dark { color: #866dd7; }
 span.sv-blpu9.dark, span.sv-publ1.dark { color: #9565d5; }
+span.sv-viridis1, span.sv-viridisr9 { color: #440154; }
+span.sv-viridis2, span.sv-viridisr8 { color: #472c7a; }
+span.sv-viridis3, span.sv-viridisr7 { color: #3b518b; }
+span.sv-viridis4, span.sv-viridisr6 { color: #2c718e; }
+span.sv-viridis5, span.sv-viridisr5 { color: #21908d; }
+span.sv-viridis6, span.sv-viridisr4 { color: #27ad81; }
+span.sv-viridis7, span.sv-viridisr3 { color: #5cc863; }
+span.sv-viridis8, span.sv-viridisr2 { color: #aadc32; }
+span.sv-viridis9, span.sv-viridisr1 { color: #dbcb39; /* #fde725 */ }
+span.sv-viridis1.dark, span.sv-viridisr9.dark { color: #b01cd4; }
+span.sv-viridis2.dark, span.sv-viridisr8.dark { color: #6d3ec7; }
+span.sv-viridis3.dark, span.sv-viridisr7.dark { color: #506dba; }
 span.sc_sum {
 	font-size: smaller;
 }

@@ -92,7 +92,8 @@ return {init: init, add: add, kill: kill};
 window.review_form_settings = (function () {
 var fieldmap, fieldorder, original, samples,
     colors = ["sv", "Red to green", "svr", "Green to red",
-              "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue"];
+              "sv-blpu", "Blue to purple", "sv-publ", "Purple to blue",
+              "sv-viridis", "Purple to yellow", "sv-viridisr", "Yellow to purple"];
 
 function get_fid(elt) {
     return elt.id.replace(/^.*_/, "");

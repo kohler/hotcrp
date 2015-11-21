@@ -112,7 +112,7 @@ function rf_update() {
             $fj->options = array_values($f->options); // default
             if (!rf_check_options($fid, $fj) && $pos > 0)
                 $optionError = $Error["options_$fid"] = true;
-            $prefixes = array("sv", "svr", "sv-blpu", "sv-publ");
+            $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
             $sv = defval($_REQUEST, "option_class_prefix_$fid", "sv");
             $prefix_index = array_search($sv, $prefixes) ? : 0;
             if (@$_REQUEST["option_class_prefix_flipped_$fid"])
