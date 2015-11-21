@@ -200,11 +200,13 @@ class FormulaGraph {
         $rticks = ($axis == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($axis == "x" && $this->fx_query) {
             $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
-        } else if ($format instanceof ReviewField && $format->option_letter) {
-            $t[] = $axis . "flip:true";
+        } else if ($format instanceof ReviewField) {
+            if ($format->option_letter)
+                $t[] = $axis . "flip:true";
             $n = count($format->options);
+            $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
             $t[] = $axis . "tick_setup:hotcrp_graphs.option_letter_ticks("
-                    . $n . ",\"" . chr($format->option_letter - $n) . "\")";
+                    . $n . "," . json_encode($ol) . "," . json_encode($format->option_class_prefix) . ")";
         } else if ($format === "dec")
             $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;

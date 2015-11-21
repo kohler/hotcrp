@@ -4249,7 +4249,7 @@ function make_fm(n) {
         return function (i) { return 1; };
     else {
         n = 1 / (n - 1);
-        return function (i) { return (i - 1) * n; };
+        return function (i) { return (+i - 1) * n; };
     }
 }
 
@@ -4302,7 +4302,7 @@ function make_value_order(n, c) {
 function make_info(n, c, sv) {
     var fm = make_fm(n), unparse;
     function fm9(val) {
-        return Math.floor(fm(val) * 8.99) + 1;
+        return Math.max(Math.min(Math.floor(fm(val) * 8.99) + 1, 9), 1);
     }
     function rgb_array(val) {
         var svx = sv + fm9(val);
@@ -4328,8 +4328,7 @@ function make_info(n, c, sv) {
             if (val >= 1 && val <= n)
                 return '<span class="rev_num sv ' + sv + fm9(val) + '">' +
                     unparse(val) + '.</span>';
-            else
-                return '(???)';
+            return '(???)';
         },
         parse: c ? make_letter_parser(n, c) : numeric_parser,
         value_order: function () { return make_value_order(n, c); },

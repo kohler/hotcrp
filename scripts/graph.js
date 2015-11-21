@@ -541,6 +541,9 @@ hotcrp_graphs.scatter = function (args) {
 
     make_axes(svg, width, height, xAxis, yAxis, args);
 
+    args.xtick_setup && args.xtick_setup.rewrite && args.xtick_setup.rewrite(svg.select(".x.axis"));
+    args.ytick_setup && args.ytick_setup.rewrite && args.ytick_setup.rewrite(svg.select(".y.axis"));
+
     svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
         .attr("height", height + margin.bottom)
         .style({"fill": "none", "pointer-events": "all"})
@@ -704,17 +707,24 @@ hotcrp_graphs.formulas_add_qrow = function () {
     j.find(".hotcrp_searchbox").each(function () { taghelp(this, "taghelp_q", taghelp_q); });
 };
 
-hotcrp_graphs.option_letter_ticks = function (n, c) {
-    return function (axis, extent) {
-        var split = 2,
-            count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1,
-            info = make_score_info(n, c);
+hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
+    var info = make_score_info(n, c, sv), split = 2;
+    function format(axis, extent) {
+        var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
         if (count > 11)
             split = 1, count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
-        axis.ticks(count).tickFormat(function (value) {
-            return info.unparse(value, split);
+        if (c)
+            axis.ticks(count);
+    };
+    format.rewrite = function (axis) {
+        $(axis[0]).find("g.tick text").each(function () {
+            var $self = $(this);
+            $self.css({fill: info.rgb($self.text())});
+            if (c)
+                $self.text(info.unparse($self.text(), split));
         });
     };
+    return format;
 };
 
 hotcrp_graphs.named_integer_ticks = function (map) {
