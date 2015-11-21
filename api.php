@@ -42,7 +42,11 @@ if ($_GET["fn"] === "jserror") {
         $url .= ": ";
     $errormsg = trim((string) @$_REQUEST["error"]);
     if ($errormsg) {
-        $suffix = ($Me->email ? ", user $Me->email" : "");
+        $suffix = "";
+        if ($Me->email)
+            $suffix .= ", user " . $Me->email;
+        if (@$_SERVER["REMOTE_ADDR"])
+            $suffix .= ", host " . $_SERVER["REMOTE_ADDR"];
         error_log("JS error: $url$errormsg$suffix");
         if (isset($_REQUEST["stack"])) {
             $stack = array();
