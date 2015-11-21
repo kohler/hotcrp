@@ -8,13 +8,15 @@ class ContactColumns {
     private $checkbox;
     private $min_color_index = -1;
     private $a = array();
+    private $tagger;
     public function __construct($ncol = 3, $checkbox = null) {
         $this->ncol = $ncol;
         $this->checkbox = $checkbox;
+        $this->tagger = new Tagger;
     }
     public function add($pc, $after, $nextrow = null) {
         $count = count($this->a) + 1;
-        $color = TagInfo::color_classes($pc->all_contact_tags());
+        $color = $this->tagger->viewable_color_classes($pc->all_contact_tags());
         if (TagInfo::classes_have_colors($color) && $this->min_color_index < 0)
             $this->min_color_index = $count - 1;
         $color = $color ? ' class="' . $color . '"' : "";

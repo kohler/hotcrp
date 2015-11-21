@@ -548,11 +548,12 @@ $pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
 $pctags = pcTags();
 if (count($pctags)) {
     $tagsjson = array();
+    $tagger = new Tagger;
     foreach (pcMembers() as $pc)
-        $tagsjson[] = "\"$pc->contactId\":\"" . strtolower($pc->all_contact_tags()) . "\"";
-    $Conf->footerScript("pc_tags_json={" . join(",", $tagsjson) . "};");
+        $tagsjson[$pc->contactId] = " " . trim(strtolower($tagger->viewable($pc->all_contact_tags()))) . " ";
+    $Conf->footerScript("pc_tags_json=" . json_encode($tagsjson) . ";");
     foreach ($pctags as $tagname => $pctag)
-        if ($tagname !== "pc")
+        if ($tagname !== "pc" && $tagger->viewable($tagname))
             $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");
 }
 $pctyp_sel[] = array("__flip__", -1, "flip");
