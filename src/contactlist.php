@@ -396,15 +396,8 @@ class ContactList {
         case self::FIELD_TAGS:
             if (!$this->contact->isPC || !$row->contactTags)
                 return "";
-            $t = $row->contactTags;
-            if (strpos($t, "~") !== false) {
-                $t = str_replace(" " . $this->contact->contactId . "~", " ~", " $t ");
-                if ($this->contact->privChair)
-                    $t = trim(preg_replace('/ \d+~\S+/', '', $t));
-                else
-                    $t = trim(preg_replace('/ [\d~]+~\S+/', '', $t));
-            }
-            return trim($t);
+            $tagger = new Tagger;
+            return $tagger->unparse($row->contactTags);
         case self::FIELD_COLLABORATORS:
             if (!$this->contact->isPC || !($row->roles & Contact::ROLE_PC))
                 return "";
@@ -645,9 +638,11 @@ class ContactList {
         global $Conf, $contactListFields;
 
         // PC tags
+        $limit_suffix = "";
         $queryOptions = array();
         if (substr($listname, 0, 3) == "pc:") {
-            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 3)) . " %'") . ")";
+            $limit_suffix = substr($listname, 2);
+            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 3)) . "#%'") . ")";
             $listname = "pc";
         }
 
@@ -833,9 +828,9 @@ class ContactList {
             . "\">" . $body . "</tbody></table>";
 
         if ($this->listNumber) {
-            $l = SessionList::create("u/" . $this->limit, $ids,
+            $l = SessionList::create("u/" . $this->limit . $limit_suffix, $ids,
                                      ($listtitle ? $listtitle : "Users"),
-                                     hoturl_site_relative_raw("users", "t=$this->limit"));
+                                     hoturl_site_relative_raw("users", "t=$this->limit$limit_suffix"));
             SessionList::change($this->listNumber, $l, true);
         }
 
