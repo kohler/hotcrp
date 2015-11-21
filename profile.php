@@ -465,9 +465,7 @@ function contact_value($key, $field = null) {
     else if ($field == "password") {
         $v = $Acct->plaintext_password();
         return htmlspecialchars($v ? : "");
-    } else if ($key == "contactTags")
-        return htmlspecialchars($Acct->all_contact_tags());
-    else if ($field !== false) {
+    } else if ($field !== false) {
         $v = $field ? $Acct->$field : $Acct->$key;
         return htmlspecialchars($v === null ? "" : $v);
     } else
@@ -749,9 +747,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 
 
     if ($Me->privChair || @$formcj->tags) {
-        if (is_object(@$formcj->tags))
-            $tags = array_keys(get_object_vars($formcj->tags));
-        else if (is_array(@$formcj->tags))
+        if (is_array(@$formcj->tags))
             $tags = $formcj->tags;
         else
             $tags = array();

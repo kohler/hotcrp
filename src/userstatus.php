@@ -82,8 +82,10 @@ class UserStatus {
                 $cj->follow->allfinal = true;
         }
 
-        if (($tags = $user->all_contact_tags()))
-            $cj->tags = explode(" ", trim($tags));
+        if (($tags = $user->all_contact_tags())) {
+            $tagger = new Tagger;
+            $cj->tags = explode(" ", $tagger->unparse($tags));
+        }
 
         if (($user->roles & Contact::ROLE_PC)
             && $user->contactId
@@ -264,11 +266,19 @@ class UserStatus {
 
         // Tags
         if (@$cj->tags !== null) {
-            $cj->tags = $this->make_keyed_object($cj->tags, "tags");
-            $cj->bad_tags = array();
+            $tag_array = array();
+            if (is_string($cj->tags))
+                $tag_array = preg_split("/[\s,]+/", $cj->tags);
+            else if (is_array($cj->tags))
+                $tag_array = $cj->tags;
+            else
+                $this->set_error("tags", "Format error [tags]");
             $tagger = new Tagger;
-            foreach ((array) $cj->tags as $k => $v)
-                if ($v && !$tagger->check($k, Tagger::NOPRIVATE | Tagger::NOVALUE | Tagger::NOCHAIR))
+            $cj->tags = array();
+            foreach ($tag_array as $t)
+                if ($tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR))
+                    $cj->tags[] = $t;
+                else
                     $this->set_error("tags", $tagger->error_html);
         }
 

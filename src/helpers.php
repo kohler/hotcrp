@@ -1185,9 +1185,11 @@ function pcMembers() {
                 $by_name_text[$name_text] = $row;
             }
             if ($row->contactTags)
-                foreach (explode(" ", $row->contactTags) as $t)
-                    if ($t !== "")
-                        $pctags[strtolower($t)] = $t;
+                foreach (explode(" ", $row->contactTags) as $t) {
+                    list($tag, $value) = TagInfo::split_index($t);
+                    if ($tag)
+                        $pctags[strtolower($tag)] = $tag;
+                }
         }
         uasort($pc, "Contact::compare");
         ksort($pctags);

@@ -538,7 +538,7 @@ class ContactSearch {
         if (isset($pctags[$x])) {
             $a = array();
             foreach (pcMembers() as $cid => $pc)
-                if (stripos($pc->contactTags, " $x ") !== false)
+                if ($pc->has_tag($x))
                     $a[] = $cid;
             if ($neg && ($this->type & self::F_PC))
                 return array_diff(array_keys(pcMembers()), $a);
@@ -1002,7 +1002,7 @@ class PaperSearch {
             return array_keys(pcMembers());
         $a = array();
         foreach (pcMembers() as $cid => $pc)
-            if (stripos($pc->contactTags, " $tag ") !== false)
+            if ($pc->has_tag($tag))
                 $a[] = $cid;
         return $a;
     }

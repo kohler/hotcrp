@@ -1769,7 +1769,7 @@ function paperselCheck() {
 
 function pc_tags_members(tag) {
     var pc_tags = pc_tags_json, answer = [], pc, tags;
-    tag = " " + tag + " ";
+    tag = " " + tag + "#";
     for (pc in pc_tags)
         if (pc_tags[pc].indexOf(tag) >= 0)
             answer.push(pc);

@@ -485,7 +485,7 @@ class Contact {
 
     function has_tag($t) {
         if ($this->contactTags)
-            return strpos($this->contactTags, " $t ") !== false;
+            return stripos($this->contactTags, " $t#") !== false;
         if ($this->contactTags === false) {
             trigger_error(caller_landmark(1, "/^Conf::/") . ": Contact $this->email contactTags missing");
             $this->contactTags = null;
@@ -493,10 +493,17 @@ class Contact {
         return false;
     }
 
+    function tag_value($t) {
+        if ($this->contactTags
+            && ($p = stripos($this->contactTags, " $t#")) !== false)
+            return (int) substr($this->contactTags, $p + strlen($t) + 2);
+        return false;
+    }
+
     static function roles_all_contact_tags($roles, $tags) {
         $t = "";
         if ($roles & self::ROLE_PC)
-            $t = " pc";
+            $t = " pc#0";
         if ($tags)
             return $t . $tags;
         else
@@ -670,11 +677,13 @@ class Contact {
         // Tags
         if (isset($cj->tags)) {
             $tags = array();
-            foreach ($cj->tags as $t => $v)
-                if ($v && strtolower($t) !== "pc")
-                    $tags[$t] = true;
+            foreach ($cj->tags as $t) {
+                list($tag, $value) = TagInfo::split_index($t);
+                if (strcasecmp($tag, "pc") != 0)
+                    $tags[$tag] = $tag . "#" . ($value ? : 0);
+            }
             ksort($tags);
-            $t = count($tags) ? " " . join(" ", array_keys($tags)) . " " : "";
+            $t = count($tags) ? " " . join(" ", $tags) . " " : "";
             $this->_save_assign_field("contactTags", $t, $qf, $qv);
         }
 

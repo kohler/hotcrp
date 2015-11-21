@@ -494,6 +494,7 @@ class ReviewerFexpr extends ReviewFexpr {
     private $arg;
     private $flags;
     private $istag;
+    private static $tagmap = array();
     public function __construct($arg) {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && pcTags($arg));
@@ -514,17 +515,27 @@ class ReviewerFexpr extends ReviewFexpr {
         }
         if (!($flags & ContactSearch::F_QUOTED)
             && ($arg[0] === "#" || pcTags($arg))
-            && $state->contact->can_view_reviewer_tags())
-            $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
-        $cs = new ContactSearch($flags, $arg, $state->contact);
-        if ($flags & ContactSearch::F_TAG) {
+            && $state->contact->can_view_reviewer_tags()) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
-            $e = "($cvt ? array_search(" . $state->_rrow_cid() . ", array(" . join(", ", $cs->ids) . ")) !== false : null)";
+            $tag = ($arg[0] === "#" ? substr($arg, 1) : $arg);
+            $e = "($cvt ? ReviewerFexpr::check_tagmap(" . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
         } else {
+            $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
+            $cs = new ContactSearch($flags, $arg, $state->contact);
             // XXX information leak?
             $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", array(" . join(", ", $cs->ids) . ")) !== false : null)";
         }
         return $e;
+    }
+    public static function check_tagmap($cid, $tag) {
+        if (@($a = self::$tagmap[$tag]) === null) {
+            $a = array();
+            foreach (pcMembers() as $pc)
+                if (($v = $pc->tag_value($tag)) !== false)
+                    $a[$pc->contactId] = $v ? : true;
+            self::$tagmap[$tag] = $a;
+        }
+        return @$a[$cid] ? : false;
     }
 }
 

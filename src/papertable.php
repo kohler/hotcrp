@@ -1212,11 +1212,9 @@ class PaperTable {
             $ct = defval($conflict, $id, $nonct);
 
             echo '<div class="ctable_elt pctbelt';
-            if ($show_colors) {
-                $tags = Contact::roles_all_contact_tags($p->roles, $p->contactTags);
-                if (($color = TagInfo::color_classes($tags)))
-                    echo ' ', $color;
-            }
+            if ($show_colors
+                && ($color = TagInfo::color_classes($p->all_contact_tags())))
+                echo ' ', $color;
             echo '">';
 
             if ($selectors) {

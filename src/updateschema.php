@@ -826,4 +826,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
 
         update_schema_version($Conf, 108);
     }
+
+    // contact tags format change
+    if ($Conf->settings["allowPaperOption"] == 108
+        && Dbl::ql("update ContactInfo set contactTags=substr(replace(contactTags, ' ', '#0 ') from 3)")
+        && Dbl::ql("update ContactInfo set contactTags=replace(contactTags, '#0#0 ', '#0 ')"))
+        update_schema_version($Conf, 109);
 }
