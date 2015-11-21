@@ -74,7 +74,7 @@ class PaperOption {
             return $a->id - $b->id;
     }
 
-    static function option_list(Conference $c = null) {
+    static function option_list(Conf $c = null) {
         global $Conf;
         if (self::$list === null) {
             self::$list = array();
