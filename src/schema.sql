@@ -388,7 +388,7 @@ DROP TABLE IF EXISTS `PaperTag`;
 CREATE TABLE `PaperTag` (
   `paperId` int(11) NOT NULL,
   `tag` varchar(40) NOT NULL,		# see TAG_MAXLEN in header.php
-  `tagIndex` int(11) NOT NULL DEFAULT '0',
+  `tagIndex` float NOT NULL DEFAULT '0',
   UNIQUE KEY `paperTag` (`paperId`,`tag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -499,7 +499,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 109);
+insert into Settings (name, value) values ('allowPaperOption', 110);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

@@ -370,7 +370,7 @@ if ($getaction == "votes" && SearchActions::any() && defval($_REQUEST, "tag")
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
             if ($Me->can_view_tags($row, true))
-                arrayappend($texts[$row->paperId], array($showtag, (int) $row->tagIndex, $row->paperId, $row->title));
+                arrayappend($texts[$row->paperId], array($showtag, (float) $row->tagIndex, $row->paperId, $row->title));
         downloadCSV(SearchActions::reorder($texts), array("tag", "votes", "paper", "title"), "votes");
         exit;
     } else

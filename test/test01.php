@@ -265,6 +265,9 @@ $assignset->parse("paper,action,tag,index
 assert_search_papers($user_chair, "#green", "3 9 13 17");
 $assignset->execute();
 assert_search_papers($user_chair, "#green", "2 13 17");
+assert_search_papers($user_chair, "#green>0", "2");
+assert_search_papers($user_chair, "#green=1", "2");
+assert_search_papers($user_chair, "#green=0", "13 17");
 
 $assignset = new AssignmentSet($Admin, true);
 $assignset->parse("paper,action,tag,index

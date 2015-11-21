@@ -88,7 +88,7 @@ class TagInfo {
         else if ($pos == strlen($tag) - 1)
             return array(substr($tag, 0, $pos), false);
         else
-            return array(substr($tag, 0, $pos), (int) substr($tag, $pos + 1));
+            return array(substr($tag, 0, $pos), (float) substr($tag, $pos + 1));
     }
 
     public static function split($taglist) {
@@ -349,7 +349,7 @@ class Tagger {
             $tag = substr($tag, 1);
         if ($tag === "")
             return $this->set_error("Empty tag.");
-        if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-\d|)\d*)\z/', $tag, $m))
+        if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m))
             return $this->set_error("Format error: #" . htmlspecialchars($tag) . " is an invalid tag.");
         if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false)
             return $this->set_error("Wildcards aren’t allowed in tag names.");

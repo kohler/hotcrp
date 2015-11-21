@@ -797,27 +797,27 @@ function updateSchema($Conf) {
     // repair missing comment ordinals; reset incorrect `ordinal`s for
     // author-visible comments
     if ($Conf->settings["allowPaperOption"] == 107) {
-        $result = Dbl::ql($Conf->dblink, "select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " order by commentId");
+        $result = $Conf->ql("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " order by commentId");
         while (($row = edb_row($result))) {
-            Dbl::ql("update PaperComment,
+            $Conf->ql("update PaperComment,
 (select coalesce(count(commentId),0) commentCount from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
     where Paper.paperId=$row[0] group by Paper.paperId) t
 set ordinal=(t.commentCount+1) where commentId=$row[1]");
         }
 
-        $result = Dbl::ql($Conf->dblink, "select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
+        $result = $Conf->ql("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
         while (($row = edb_row($result))) {
-            Dbl::ql("update PaperComment,
+            $Conf->ql("update PaperComment,
 (select coalesce(count(commentId),0) commentCount from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
     where Paper.paperId=$row[0] group by Paper.paperId) t
 set authorOrdinal=(t.commentCount+1) where commentId=$row[1]");
         }
 
-        $result = Dbl::ql($Conf->dblink, "select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
+        $result = $Conf->ql("select paperId, commentId from PaperComment where ordinal=authorOrdinal and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_AUTHOR . " order by commentId");
         while (($row = edb_row($result))) {
-            Dbl::ql("update PaperComment,
+            $Conf->ql("update PaperComment,
 (select coalesce(max(ordinal),0) maxOrdinal from Paper
     left join PaperComment on (PaperComment.paperId=Paper.paperId and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " and commentId<$row[1])
     where Paper.paperId=$row[0] group by Paper.paperId) t
@@ -829,7 +829,10 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
 
     // contact tags format change
     if ($Conf->settings["allowPaperOption"] == 108
-        && Dbl::ql("update ContactInfo set contactTags=substr(replace(contactTags, ' ', '#0 ') from 3)")
-        && Dbl::ql("update ContactInfo set contactTags=replace(contactTags, '#0#0 ', '#0 ')"))
+        && $Conf->ql("update ContactInfo set contactTags=substr(replace(contactTags, ' ', '#0 ') from 3)")
+        && $Conf->ql("update ContactInfo set contactTags=replace(contactTags, '#0#0 ', '#0 ')"))
         update_schema_version($Conf, 109);
+    if ($Conf->settings["allowPaperOption"] == 109
+        && $Conf->ql("alter table PaperTag modify `tagIndex` float NOT NULL DEFAULT '0'"))
+        update_schema_version($Conf, 110);
 }

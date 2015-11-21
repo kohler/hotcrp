@@ -553,7 +553,7 @@ class NextTagAssigner {
             $index = count($indexes) ? $indexes[count($indexes) - 1] : 0;
             $index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
         }
-        $this->first_index = $this->next_index = $index;
+        $this->first_index = $this->next_index = ceil($index);
     }
     private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
     public function next_index($isseq) {
@@ -616,7 +616,7 @@ class TagAssigner extends Assigner {
         if ($xindex === null)
             $xindex = @$req["value"];
         if ($xindex !== null && ($xindex = trim($xindex)) !== "") {
-            $tag = preg_replace(',\A(#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+|any|all|none|clear)\z,i', '$1', $tag);
+            $tag = preg_replace(',\A(#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);
             if (!preg_match(',\A(?:[=!<>]=?|#|≠|≤|≥),i', $xindex))
                 $xindex = "#" . $xindex;
             $tag .= $xindex;
@@ -672,7 +672,7 @@ class TagAssigner extends Assigner {
         if ($this->isadd === self::NEXT || $this->isadd === self::NEXTSEQ)
             $index = $this->apply_next_index($pid, $tag, $state, $m);
         else
-            $index = $m[3] ? cvtint($m[4], 0) : null;
+            $index = $m[3] ? cvtnum($m[4], 0) : null;
 
         // save assignment
         $ltag = strtolower($tag);
@@ -690,7 +690,7 @@ class TagAssigner extends Assigner {
     }
     private function apply_next_index($pid, $tag, $state, $m) {
         $ltag = strtolower($tag);
-        $index = cvtint($m[3] ? $m[4] : null, null);
+        $index = cvtnum($m[3] ? $m[4] : null, null);
         // NB ignore $index on second & subsequent nexttag assignments
         if (!($fin = @$state->finishers["seqtag $ltag"]))
             $fin = $state->finishers["seqtag $ltag"] =
@@ -763,7 +763,7 @@ class TagAssigner extends Assigner {
         $total = 0;
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
-                $total += $is_vote ? (int) $x["_index"] : 1;
+                $total += $is_vote ? (float) $x["_index"] : 1;
         $state->add(array("type" => "tag", "pid" => $pid, "ltag" => strtolower($vtag),
                           "_tag" => $vtag, "_index" => $total, "_vote" => true));
     }

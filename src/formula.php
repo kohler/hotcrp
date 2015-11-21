@@ -336,7 +336,7 @@ class TagFexpr extends Fexpr {
         $e_tag = $tagger->check($this->tag);
         $t_tags = $state->define_gvar("tags", "\$contact->can_view_tags(\$prow, \$forceShow) ? \$prow->all_tags_text() : \"\"");
         $t_tagpos = $state->define_gvar("tagpos_{$this->tag}", "stripos($t_tags, \" $e_tag#\")");
-        $t_tagval = $state->define_gvar("tagval_{$this->tag}", "($t_tagpos !== false ? (int) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : false)");
+        $t_tagval = $state->define_gvar("tagval_{$this->tag}", "($t_tagpos !== false ? (float) substr($t_tags, $t_tagpos + " . (strlen($e_tag) + 2) . ") : false)");
         if ($this->isvalue)
             return $t_tagval;
         else
@@ -859,7 +859,7 @@ class Formula {
             return array($t, "", $t);
     }
 
-    const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.@+!*\/?])+)';
+    const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.@+!*\/?~])+)';
 
     static private function field_search_fexpr($fval) {
         $fn = null;

@@ -496,7 +496,7 @@ class Contact {
     function tag_value($t) {
         if ($this->contactTags
             && ($p = stripos($this->contactTags, " $t#")) !== false)
-            return (int) substr($this->contactTags, $p + strlen($t) + 2);
+            return (float) substr($this->contactTags, $p + strlen($t) + 2);
         return false;
     }
 

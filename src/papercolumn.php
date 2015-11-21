@@ -932,7 +932,7 @@ class TagPaperColumn extends PaperColumn {
         if (($p = strpos($row->paperTags, $this->ctag)) === false)
             return null;
         else
-            return (int) substr($row->paperTags, $p + strlen($this->ctag));
+            return (float) substr($row->paperTags, $p + strlen($this->ctag));
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         global $Conf;
