@@ -1,6 +1,13 @@
 HotCRP NEWS
 ===========
 
+## Version 2.99 - 21.Nov.2015
+
+* Support real-valued tag indexes and tag indexes for PC members.
+
+* Fix some bugs in 2.98.
+
+
 ## Version 2.98 - 19.Nov.2015
 
 * MySQL improvements: Use InnoDB; set the connection charset to binary, which
