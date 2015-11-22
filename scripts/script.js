@@ -2091,45 +2091,47 @@ HtmlCollector.prototype.clear = function () {
 
 // text rendering
 window.render_text = (function () {
-var default_format = 0, renderers = {"0": function (text) {
-    return link_urls(escape_entities(text));
-}};
-function f(format, text /* arguments... */) {
-    var x = null, i, a;
-    if (format == null)
+var default_format = 0, renderers = {
+    "0": {format: 0, render: function (text) {
+        return link_urls(escape_entities(text));
+    }}
+};
+
+function lookup(format) {
+    if (format == null || !renderers[format])
         format = default_format;
-    if (format && renderers[format]) {
+    return renderers[format] || renderers[0];
+}
+
+var render_text = function (format, text /* arguments... */) {
+    var x = null, a, i, r = lookup(format);
+    if (r.format) {
+        a = [text];
+        for (i = 2; i < arguments.length; ++i)
+            a.push(arguments[i]);
+        r = lookup(format);
         try {
-            a = [text];
-            for (i = 2; i < arguments.length; ++i)
-                a.push(arguments[i]);
-            x = renderers[format].apply(null, a);
+            return {format: r.format, content: r.render.apply(null, a)};
         } catch (e) {
-            console.log(e);
         }
     }
-    if (x === null)
-        return {format: 0, content: renderers[0](text)};
-    else
-        return {format: format, content: x};
-}
-f.add_renderer = function (format, renderer) {
-    renderers[format] = renderer;
+    return {format: 0, content: renderers[0](text)};
 };
-f.format_description = function (format) {
-    if (format == null)
-        format = default_format;
-    return renderers[format] ? renderers[format].description : null;
-};
-f.format_can_preview = function (format) {
-    if (format == null)
-        format = default_format;
-    return renderers[format] ? renderers[format].can_preview : false;
-};
-f.set_default_format = function (format) {
-    default_format = format;
-};
-return f;
+$.extend(render_text, {
+    add_format: function (x) {
+        x.format && (renderers[x.format] = x);
+    },
+    format_description: function (format) {
+        return lookup(format).description || null;
+    },
+    format_can_preview: function (format) {
+        return lookup(format).can_preview || false;
+    },
+    set_default_format: function (format) {
+        default_format = format;
+    }
+});
+return render_text;
 })();
 
 
