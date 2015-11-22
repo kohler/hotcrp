@@ -30,8 +30,7 @@ if ($zlib_output_compression) {
 
 // Mark as already expired to discourage caching, but allow the browser
 // to cache for history buttons
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Cache-Control: private");
+header("Cache-Control: max-age=0,must-revalidate,private");
 
 // Don't set up a session if $Me is false
 if ($Me === false)
