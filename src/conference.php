@@ -1648,6 +1648,7 @@ class Conf {
 
         if ($reviewerQuery || $scoresQuery) {
             $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
+            $cols[] = ($this->sversion >= 105 ? "PaperReview.reviewFormat" : "null") . " as reviewFormat";
             foreach (ReviewForm::all_fields() as $f)
                 if ($reviewerQuery || $f->has_options)
                     $cols[] = "PaperReview.$f->id as $f->id";
