@@ -3925,7 +3925,7 @@ function set(f, elt, text, which) {
 
 function make_callback(dofold, type, which) {
     return function (rv) {
-        var f = fields[type], i, x, elt, eltx, h6 = "";
+        var f = fields[type], i, x, elt, h6 = "";
         if (f.title && !f.column)
             h6 = "<h6>" + f.title + ":</h6> ";
         x = rv[f.name + ".html"] || {};

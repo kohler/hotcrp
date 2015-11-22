@@ -113,6 +113,8 @@ class PaperList {
             $this->viewmap->columns = true;
         if ($this->viewmap->stat || $this->viewmap->stats || $this->viewmap->totals)
             $this->viewmap->statistics = true;
+        if ($this->viewmap->authors)
+            $this->viewmap->au = true;
     }
 
     function _sort($rows) {
@@ -765,6 +767,7 @@ class PaperList {
                         $tt .= " fx2";
                         $rstate->has_anonau = true;
                     }
+                    $tt .= "\" id=\"authors." . $row->paperId;
                 } else if ($fdef->foldable)
                     $tt .= " fx" . $fdef->foldable;
                 $tt .= "\">";
@@ -1362,6 +1365,8 @@ class PaperList {
         // field is never folded, no sorting
         $fname = $fdef->name;
         $this->viewmap->$fname = true;
+        if ($fname === "authors")
+            $this->viewmap->au = true;
         assert(!$this->is_folded($fdef));
         $this->sorters = array();
 
