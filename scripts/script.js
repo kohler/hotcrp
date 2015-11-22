@@ -2091,11 +2091,11 @@ HtmlCollector.prototype.clear = function () {
 
 // text rendering
 window.render_text = (function () {
-var default_format = 0, renderers = {
-    "0": {format: 0, render: function (text) {
-        return link_urls(escape_entities(text));
-    }}
-};
+function render0(text) {
+    return link_urls(escape_entities(text));
+}
+
+var default_format = 0, renderers = {"0": {format: 0, render: render0}};
 
 function lookup(format) {
     if (format == null || !renderers[format])
@@ -2115,7 +2115,7 @@ var render_text = function (format, text /* arguments... */) {
         } catch (e) {
         }
     }
-    return {format: 0, content: renderers[0](text)};
+    return {format: 0, content: render0(text)};
 };
 $.extend(render_text, {
     add_format: function (x) {
