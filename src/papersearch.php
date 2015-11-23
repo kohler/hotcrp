@@ -1386,10 +1386,12 @@ class PaperSearch {
             return;
         }
 
+        if ($m[1] !== "" && $m[2] === "")
+            $m = array($m[0], "1", "=", $m[1], "");
         if ($m[1] === "")
             $m[1] = "1";
-        else if ($m[2] === "")
-            $m = array($m[0], "1", "=", $m[1], "");
+        if ($m[2] === "")
+            $m[2] = "=";
 
         // PC members can only search their own preferences.
         // Admins can search papers they administer.
