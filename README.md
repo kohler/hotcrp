@@ -9,8 +9,12 @@ smart paper search and an extensive tagging facility. It is widely
 used in computer science conferences and for internal review processes
 at several large companies.
 
-HotCRP also has weaknesses. It requires that you run your own server,
-and multitrack conference support requires manual intervention.
+HotCRP also has weaknesses. Complicated multitrack conferences (with
+different deadlines per track) should use other software.
+
+HotCRP is the open-source version of the software running on
+[hotcrp.com](https://hotcrp.com). If you want to run HotCRP without setting up
+your own server, use hotcrp.com.
 
 Prerequisites
 -------------
@@ -70,16 +74,32 @@ tables, so you may need `sudo lib/createdb.sh OPTIONS`. Run
 `lib/createdb.sh --help` for more information. You will need to
 decide on a name for your database (no spaces allowed).
 
-    The username and password information for the conference database
-is stored in `conf/options.php`, which HotCRP marks as
-world-unreadable. You must ensure that your web server can read this
-file, for instance by changing its group.
+    The username and password information for the conference database is
+stored in `conf/options.php`, which HotCRP marks as world-unreadable. You must
+ensure that your PHP can read this file.
 
 2. Edit `conf/options.php`, which is annotated to guide you.
 (`lib/createdb.sh` creates this file based on `src/distoptions.php`.)
 
 3. Configure your web server to access HotCRP. The right way to do this
 depends on which server you’re running.
+
+    **Nginx**: Configure Nginx to access `php-fpm` for anything under
+the HotCRP URL path. All accesses should be redirected to `index.php`.
+This example, which would go in a `server` block, makes `/testconf`
+point at a HotCRP installation in /home/kohler/hotcrp (assuming that
+the running `php-fpm` is listening on port 9000):
+
+        location /testconf/ {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_split_path_info ^(/testconf)(/.*)$;
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+            fastcgi_param SCRIPT_FILENAME /home/kohler/hotcrp/index.php;
+            include fastcgi_params;
+        }
+
+    You may also set up separate `location` blocks so that Nginx
+serves files under `images/`, `scripts/`, and `stylesheets/` directly.
 
     **Apache**: Generally you must add a `<Directory>` to `httpd.conf`
 (or one of its inclusions) for the HotCRP directory, and an `Alias`
@@ -105,30 +125,12 @@ makes `/testconf` point at a HotCRP installation in
         Alias /testconf /home/kohler/hotcrp
 
     Note that the first argument to Alias should NOT end in a slash.
-The `AllowOverride all` directive is required. If you get an Error
-500, see “Configuration notes”.
+The `AllowOverride all` directive is required.
 
     Everything under HotCRP’s URL path (here, `/testconf`) should be
 served by HotCRP. This normally happens automatically. However, if
 the URL path is `/`, you may need to turn off your server’s default
 handlers for subdirectories such as `/doc`.
-
-    **Nginx**: Configure Nginx to access `php-fpm` for anything under
-the HotCRP URL path. All accesses should be redirected to `index.php`.
-This example, which would go in a `server` block, makes `/testconf`
-point at a HotCRP installation in /home/kohler/hotcrp (assuming that
-the running `php-fpm` is listening on port 9000):
-
-        location /testconf/ {
-            fastcgi_pass 127.0.0.1:9000;
-            fastcgi_split_path_info ^(/testconf)(/.*)$;
-            fastcgi_param PATH_INFO $fastcgi_path_info;
-            fastcgi_param SCRIPT_FILENAME /home/kohler/hotcrp/index.php;
-            include fastcgi_params;
-        }
-
-    You may also set up separate `location` blocks so that Nginx
-serves files under `images/`, `scripts/`, and `stylesheets/` directly.
 
 4. Update the systemwide setting for PHP’s `session.gc_maxlifetime`
 configuration variable. This provides an upper bound on HotCRP session
@@ -159,11 +161,6 @@ On Linux try something like `sudo /etc/init.d/mysql restart`.
 
 6. Sign in to the site to create an account. The first account created
 automatically receives system administrator privilege.
-
-    If your server configuration doesn’t let .htaccess files set
-options, Apache will report an “Error 500” when you try to load
-HotCRP. Change your Apache configuration to `AllowOverride All` in the
-HotCRP directory, as our example does above.
 
 You can set up everything else through the web site itself.
 
