@@ -277,9 +277,9 @@ class UserStatus {
             $tagger = new Tagger;
             $cj->tags = array();
             foreach ($tag_array as $t)
-                if ($tagger->check($t, Tagger::NOPRIVATE))
+                if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE))
                     $cj->tags[] = $t;
-                else
+                else if ($t !== "")
                     $this->set_error("tags", $tagger->error_html);
         }
 
