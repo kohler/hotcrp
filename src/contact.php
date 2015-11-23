@@ -383,7 +383,7 @@ class Contact {
             where email=?", $Opt["dbName"], $this->email);
         $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
         if (!$row) {
-            Dbl::ql_apply($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country);
+            Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country);
             $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
             $this->contactdb_user_ = false;
         }
