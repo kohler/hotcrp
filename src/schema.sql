@@ -52,7 +52,7 @@ CREATE TABLE `ContactInfo` (
   `preferredEmail` varchar(120) DEFAULT NULL,
   `affiliation` varchar(2048) NOT NULL DEFAULT '',
   `voicePhoneNumber` varchar(256) DEFAULT NULL,
-  `faxPhoneNumber` varchar(256) DEFAULT NULL,
+  `country` varbinary(256) DEFAULT NULL,
   `password` varbinary(2048) NOT NULL,
   `passwordTime` int(11) NOT NULL DEFAULT '0',
   `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0',
@@ -499,7 +499,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 110);
+insert into Settings (name, value) values ('allowPaperOption', 111);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

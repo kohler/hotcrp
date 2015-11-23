@@ -3,9 +3,7 @@
 // This list of countries taken from Amazon.com's address entries, 2007.
 class Countries {
 
-    public static $list = array("United States",
-
-"Afghanistan",
+    public static $list = array("Afghanistan",
 "Albania",
 "Algeria",
 
@@ -267,7 +265,7 @@ class Countries {
 "Ukraine",
 "United Arab Emirates",
 "United Kingdom",
-
+"United States of America",
 "United States Minor Outlying Islands",
 "Uruguay",
 "Uzbekistan",

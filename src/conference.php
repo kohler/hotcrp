@@ -98,7 +98,7 @@ class Conf {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 110) {
+        if ($this->settings["allowPaperOption"] < 111) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);

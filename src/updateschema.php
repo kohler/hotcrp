@@ -180,6 +180,15 @@ function update_schema_unaccented_name($Conf) {
     return true;
 }
 
+function update_schema_transfer_country($Conf) {
+    $result = Dbl::ql($Conf->dblink, "select * from ContactInfo where `data` is not null and `data`!='{}'");
+    while ($result && ($c = $result->fetch_object("Contact"))) {
+        if (($country = $c->data("country")))
+            Dbl::ql($Conf->dblink, "update ContactInfo set country=? where contactId=?", $country, $c->contactId);
+    }
+    return true;
+}
+
 function update_schema_version($Conf, $n) {
     if ($Conf->ql("update Settings set value=$n where name='allowPaperOption'")) {
         $Conf->settings["allowPaperOption"] = $n;
@@ -835,4 +844,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->settings["allowPaperOption"] == 109
         && $Conf->ql("alter table PaperTag modify `tagIndex` float NOT NULL DEFAULT '0'"))
         update_schema_version($Conf, 110);
+    if ($Conf->settings["allowPaperOption"] == 110
+        && $Conf->ql("alter table ContactInfo drop `faxPhoneNumber`")
+        && $Conf->ql("alter table ContactInfo add `country` varbinary(256) default null")
+        && update_schema_transfer_country($Conf))
+        update_schema_version($Conf, 111);
 }

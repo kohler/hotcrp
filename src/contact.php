@@ -18,7 +18,8 @@ class Contact {
     var $email = "";
     var $preferredEmail = "";
     var $sorter = "";
-    var $affiliation = "";
+    public $affiliation = "";
+    public $country = null;
     var $collaborators;
     var $voicePhoneNumber;
 
@@ -92,7 +93,8 @@ class Contact {
         else
             $this->unaccentedName = Text::unaccented_name($name);
         $this->name_html_ = null;
-        foreach (array("email", "preferredEmail", "affiliation", "voicePhoneNumber") as $k)
+        foreach (array("email", "preferredEmail", "affiliation",
+                       "voicePhoneNumber", "country") as $k)
             if (isset($user->$k))
                 $this->$k = simplify_whitespace($user->$k);
         if (isset($user->collaborators)) {
@@ -381,9 +383,7 @@ class Contact {
             where email=?", $Opt["dbName"], $this->email);
         $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
         if (!$row) {
-            $qf = "firstName=?, lastName=?, email=?, affiliation=?";
-            $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation);
-            Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation);
+            Dbl::ql_apply($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country);
             $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
             $this->contactdb_user_ = false;
         }
@@ -404,7 +404,7 @@ class Contact {
     public function update_trueuser($always) {
         if (($trueuser = @$_SESSION["trueuser"])
             && strcasecmp($trueuser->email, $this->email) == 0) {
-            foreach (array("firstName", "lastName", "affiliation") as $k)
+            foreach (array("firstName", "lastName", "affiliation", "country") as $k)
                 if ($this->$k && ($always || !@$trueuser->$k))
                     $trueuser->$k = $this->$k;
             return true;
@@ -624,19 +624,25 @@ class Contact {
     }
 
 
-    static private $save_fields = array("firstName" => 2, "lastName" => 2, "email" => 1, "affiliation" => 1, "preferredEmail" => 1, "voicePhoneNumber" => 1);
+    static private $save_fields = array("firstName" => 6, "lastName" => 6, "email" => 1, "affiliation" => 6, "country" => 6, "preferredEmail" => 1, "voicePhoneNumber" => 1, "unaccentedName" => 0);
 
-    private function _save_assign_field($k, $v, &$qf, &$qv) {
+    private function _save_assign_field($k, $v, &$qf, &$qv, &$cdbq) {
         global $Conf;
-        if (@self::$save_fields[$k] == 2)
+        $fieldtype = (int) @self::$save_fields[$k];
+        if ($fieldtype & 2)
             $v = simplify_whitespace($v);
-        else if (@self::$save_fields[$k])
+        else if ($fieldtype & 1)
             $v = trim($v);
         if ($this->$k !== $v || !$this->contactId) {
             $this->$k = $v;
-            if ($k !== "unaccentedName" || $Conf->sversion >= 90) {
-                $qf[$k] = "$k=?";
-                $qv[] = $v;
+            $qf[$k] = "$k=?";
+            $qv[] = $v;
+            if ($fieldtype & 4) {
+                if (@$cdbq["only_default"])
+                    $cdbq["k"][] = "$k=if(coalesce($k,'')!='',$k,?)";
+                else
+                    $cdbq["k"][] = "$k=?";
+                $cdbq["v"][] = $v;
             }
         }
     }
@@ -646,20 +652,26 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $qf = $qv = array();
+        $qf = $qv = $cdbq = array();
 
         $aupapers = null;
         if (strtolower($cj->email) !== @strtolower($old_email))
             $aupapers = self::email_authored_papers($cj->email, $cj);
 
+        // check whether this user is changing themselves
+        $changing_other = false;
+        if (self::contactdb()
+            && (strcasecmp($this->email, $Me->email) != 0 || $Me->is_actas_user()))
+            $changing_other = $cdbq["only_default"] = true;
+
         // Main fields
         foreach (array("firstName", "lastName", "email", "affiliation",
-                       "collaborators", "preferredEmail") as $k)
+                       "collaborators", "preferredEmail", "country") as $k)
             if (isset($cj->$k))
-                $this->_save_assign_field($k, $cj->$k, $qf, $qv);
+                $this->_save_assign_field($k, $cj->$k, $qf, $qv, $cdbq);
         if (isset($cj->phone))
-            $this->_save_assign_field("voicePhoneNumber", $cj->phone, $qf, $qv);
-        $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $qf, $qv);
+            $this->_save_assign_field("voicePhoneNumber", $cj->phone, $qf, $qv, $cdbq);
+        $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $qf, $qv, $cdbq);
         self::set_sorter($this);
 
         // Follow
@@ -671,7 +683,7 @@ class Contact {
                 $w |= WATCH_ALLCOMMENTS;
             if (@$cj->follow->allfinal)
                 $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
-            $this->_save_assign_field("defaultWatch", $w, $qf, $qv);
+            $this->_save_assign_field("defaultWatch", $w, $qf, $qv, $cdbq);
         }
 
         // Tags
@@ -684,7 +696,7 @@ class Contact {
             }
             ksort($tags);
             $t = count($tags) ? " " . join(" ", $tags) . " " : "";
-            $this->_save_assign_field("contactTags", $t, $qf, $qv);
+            $this->_save_assign_field("contactTags", $t, $qf, $qv, $cdbq);
         }
 
         // Disabled
@@ -692,17 +704,20 @@ class Contact {
 
         // Data
         $data = (object) array();
-        foreach (array("address", "city", "state", "zip", "country") as $k)
-            if (($x = @$cj->$k))
-                $data->$k = $x;
+        foreach (array("address", "city", "state", "zip") as $k)
+            if (($x = @$cj->$k)) {
+                while (is_array($x) && $x[count($x) - 1] === "")
+                    array_pop($x);
+                $data->$k = $x ? : null;
+            }
         $this->merge_data($data);
-        $qf[] = "data=?";
-        if (!$this->data_ || is_string($this->data_))
-            $qv[] = $this->data_ ? : null;
+        $datastr = null;
+        if ($this->data_ && is_string($this->data_))
+            $datastr = $this->data_;
         else if (is_object($this->data_))
-            $qv[] = json_encode($this->data_);
-        else
-            $qv[] = null;
+            $datastr = json_encode($this->data_);
+        $qf[] = "data=?";
+        $qv[] = $datastr !== "{}" ? $datastr : null;
 
         // If inserting, set initial password and creation time
         if ($inserting) {
@@ -750,20 +765,18 @@ class Contact {
 
         // Update contact database
         if (($cdb = self::contactdb())) {
-            $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?";
-            $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation);
+            $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?";
+            $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country);
             if ($this->password && ($this->password[0] !== " " || substr($this->password, 0, 2) === " \$")) {
                 $q .= ", password=?";
                 $qv[] = $this->password;
             }
             $q .= " on duplicate key update ";
-            $cf = array();
-            foreach (array("firstName", "lastName", "affiliation") as $k)
-                if (isset($qf[$k]))
-                    $cf[] = "$k=values($k)";
-            if (!count($cf))
-                $cf[] = "firstName=firstName";
-            $q .= join(", ", $cf);
+            if (count($cdbq["k"])) {
+                $q .= join(", ", $cdbq["k"]);
+                $qv = array_merge($qv, $cdbq["v"]);
+            } else
+                $q .= "firstName=firstName";
             $result = Dbl::ql_apply($cdb, $q, $qv);
             Dbl::free($result);
             $this->contactdb_user_ = false;

@@ -621,10 +621,10 @@ else if (!$newProfile) {
 echofield(1, "firstName", "First&nbsp;name", textinput("firstName", contact_value("firstName"), 24));
 echofield(3, "lastName", "Last&nbsp;name", textinput("lastName", contact_value("lastName"), 24));
 echofield(0, "affiliation", "Affiliation", textinput("affiliation", contact_value("affiliation"), 52));
-
+echofield(0, false, "Country", Countries::selector("country", contact_value("country")));
 
 $data = $Acct->data();
-$any_address = $data && @($data->address || $data->city || $data->state || $data->zip || $data->country);
+$any_address = $data && @($data->address || $data->city || $data->state || $data->zip);
 if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echo "<div style='margin-top:20px'></div>\n";
     echofield(0, false, "Address line 1", textinput("addressLine1", value("addressLine1", @$data->address ? @$data->address[0] : null), 52));
@@ -632,7 +632,6 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
     echofield(0, false, "City", textinput("city", value("city", @$data->city), 52));
     echofield(1, false, "State/Province/Region", textinput("state", value("state", @$data->state), 24));
     echofield(3, false, "ZIP/Postal code", textinput("zipCode", value("zipCode", @$data->zip), 12));
-    echofield(0, false, "Country", Countries::selector("country", (isset($_REQUEST["country"]) ? $_REQUEST["country"] : @$data->country)));
     echofield(0, false, "Phone <span class='f-cx'>(optional)</span>", textinput("voicePhoneNumber", contact_value("voicePhoneNumber"), 24));
 }
 
