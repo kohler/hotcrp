@@ -1164,7 +1164,8 @@ class Contact {
 
         $cdbu = $this->contactdb_user();
         $cdbok = false;
-        if ($cdbu && ($hash = $cdbu->password) && $cdbu->allow_contactdb_password()) {
+        if ($cdbu && ($hash = $cdbu->password)
+            && $cdbu->allow_contactdb_password()) {
             $cdbok = self::check_hashed_password($input, $hash, $this->email);
             if ($cdbok && self::check_password_encryption($hash, true)) {
                 $hash = self::hash_password($input, true);
@@ -1182,7 +1183,8 @@ class Contact {
         }
 
         $localok = false;
-        if ($this->contactId && ($hash = $this->password) && !$this->passwordIsCdb) {
+        if ($this->contactId && ($hash = $this->password)
+            && (!$this->passwordIsCdb || !$cdbu)) {
             $localok = self::check_hashed_password($input, $hash, $this->email);
             if ($localok && self::check_password_encryption($hash, false)) {
                 $hash = self::hash_password($input, false);
