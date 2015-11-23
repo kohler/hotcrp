@@ -1855,7 +1855,7 @@ function echo_round($rnum, $nameval, $review_count, $deletable) {
     $default_rname = "unnamed";
     if ($nameval === "(new round)" || $rnum === '$')
         $default_rname = "(new round)";
-    echo '<div class="mg" hotroundnum="', $rnum, '"><div>',
+    echo '<div class="mg" data-round-number="', $rnum, '"><div>',
         setting_label($rname, "Round"), ' &nbsp;',
         render_entry($rname, $nameval, 12, $default_rname);
     echo '<div class="inb" style="min-width:7em;margin-left:2em">';
@@ -1867,6 +1867,8 @@ function echo_round($rnum, $nameval, $review_count, $deletable) {
             Ht::hidden("deleteround_$rnum", ""),
             Ht::js_button("Delete round", "review_round_settings.kill(this)"),
             '</div>';
+    if ($rnum === '$')
+        echo '<div class="hint">Names like “R1” and “R2” work well.</div>';
     echo '</div>';
 
     // deadlines

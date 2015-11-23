@@ -57,26 +57,26 @@ function add() {
     jQuery("#round_container").show();
     jQuery("#roundtable").append(jQuery("#newround").html().replace(/\$/g, i));
     if (++added == 1 && i == 1)
-        jQuery("div[hotroundnum=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
+        jQuery("div[data-round-number=" + i + "] > :first-child").append('<div class="hint">Example name: “R1”</div>');
     jQuery("#rev_roundtag").append('<option value="#' + i + '" id="rev_roundtag_' + i + '">(new round)</option>');
-    jQuery("div[hotroundnum=" + i + "] input.temptext").each(mktemptext);
+    jQuery("div[data-round-number=" + i + "] input.temptext").each(mktemptext);
     jQuery("#roundname_" + i).focus().on("input change", namechange);
 }
 
 function kill(e) {
-    var divj = jQuery(e).closest("div[hotroundnum]"),
-        roundnum = divj.attr("hotroundnum"),
+    var divj = jQuery(e).closest("div[data-round-number]"),
+        roundnum = divj.attr("data-round-number"),
         vj = divj.find("input[name=deleteround_" + roundnum + "]"),
         ej = divj.find("input[name=roundname_" + roundnum + "]");
     if (vj.val()) {
         vj.val("");
-        ej.val(ej.attr("hotroundname"));
+        ej.val(ej.attr("data-round-name"));
         ej.removeClass("dim").prop("disabled", false);
         jQuery(e).html("Delete round");
     } else {
         vj.val(1);
         var x = ej.val();
-        ej.attr("hotroundname", x);
+        ej.attr("data-round-name", x);
         ej.val(x == "(no name)" ? "(deleted)" : "(" + ej.val() + " deleted)")
             .addClass("dim").prop("disabled", true);
         jQuery(e).html("Restore round");
