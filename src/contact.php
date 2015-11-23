@@ -660,7 +660,7 @@ class Contact {
 
         // check whether this user is changing themselves
         $changing_other = false;
-        if (self::contactdb()
+        if (self::contactdb() && $Me
             && (strcasecmp($this->email, $Me->email) != 0 || $Me->is_actas_user()))
             $changing_other = $cdbq["only_default"] = true;
 
@@ -772,7 +772,7 @@ class Contact {
                 $qv[] = $this->password;
             }
             $q .= " on duplicate key update ";
-            if (count($cdbq["k"])) {
+            if (count(@$cdbq["k"])) {
                 $q .= join(", ", $cdbq["k"]);
                 $qv = array_merge($qv, $cdbq["v"]);
             } else
