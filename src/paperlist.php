@@ -264,6 +264,15 @@ class PaperList {
             return "";
     }
 
+    public function maybe_conflict_nooverride($row, $text, $visible) {
+        if ($visible)
+            return $text;
+        else if ($this->contact->allow_administer($row))
+            return '<span class="fx5">' . $text . '</span>';
+        else
+            return "";
+    }
+
     public function _contentPC($row, $contactId, $visible) {
         $pcm = pcMembers();
         if (isset($pcm[$contactId]))
