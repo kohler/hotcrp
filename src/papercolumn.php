@@ -172,9 +172,17 @@ class SelectorPaperColumn extends PaperColumn {
 }
 
 class TitlePaperColumn extends PaperColumn {
+    private $has_badges = false;
     public function __construct() {
         parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "title_compare"));
+    }
+    public function prepare(PaperList $pl, $visible) {
+        $this->has_badges = $pl->contact->can_view_tags(null)
+            && TagInfo::has_badges();
+        if ($this->has_badges)
+            $pl->qopts["tags"] = 1;
+        return true;
     }
     public function title_compare($a, $b) {
         return strcasecmp($a->title, $b->title);
@@ -185,7 +193,14 @@ class TitlePaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $href = $pl->_paperLink($row);
         $x = Text::highlight($row->title, defval($pl->search->matchPreg, "title"));
-        return "<a href=\"$href\" class=\"ptitle taghl\" tabindex=\"5\">" . $x . "</a>" . $pl->_contentDownload($row);
+        $badge = "";
+        if ($this->has_badges && $pl->contact->can_view_tags($row, true)
+            && (string) $row->paperTags !== ""
+            && ($t = $pl->tagger->viewable($row->paperTags)) !== ""
+            && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
+            $t = $pl->maybeConflict($row, $t, $pl->contact->can_view_tags($row, false));
+        return "<a href=\"$href\" class=\"ptitle taghl\" tabindex=\"5\">"
+            . $x . "</a>" . $pl->_contentDownload($row) . $t;
     }
     public function text($pl, $row) {
         return $row->title;

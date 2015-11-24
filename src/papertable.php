@@ -144,13 +144,16 @@ class PaperTable {
             $t .= '">' . $title;
         } else {
             $title = "#" . $prow->paperId;
+            $tagger = null;
+            $viewable_tags = "";
             if ($Me->can_view_tags($prow)) {
-                $t .= ' has_hotcrp_tag_classes';
                 if (($tags = $prow->all_tags_text())) {
                     $tagger = new Tagger;
-                    if (($color = $tagger->viewable_color_classes($tags)))
-                        $t .= ' ' . $color;
+                    $viewable_tags = $tagger->viewable($tags);
                 }
+                $t .= ' has_hotcrp_tag_classes';
+                if (($color = $tagger->viewable_color_classes($viewable_tags)))
+                    $t .= ' ' . $color;
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
@@ -160,6 +163,8 @@ class PaperTable {
             else
                 $t .= htmlspecialchars($prow->title);
             $t .= '</span></span></a>';
+            if ($viewable_tags)
+                $t .= $tagger->unparse_badges_html($viewable_tags);
         }
 
         $t .= '</h1></div></div>';

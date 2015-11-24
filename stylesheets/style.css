@@ -1975,6 +1975,29 @@ tr.purpletag, tr.graytag, tr.whitetag {
 	background-color: inherit;
 }
 
+.badge {
+	display: inline-block;
+	font-size: 69%;
+	line-height: 100%;
+	margin: 0 0.75em;
+	padding: 2px 0.3em 3px;
+	border-radius: 0.3em;
+	position: relative;
+	bottom: 1px;
+	white-space: nowrap;
+}
+a.qq:hover > .badge {
+	text-decoration: underline;
+}
+.blackbadge {
+	background: black;
+	color: white;
+}
+.whitebadge {
+	background: white;
+	border: 1px solid black;
+}
+
 .graytext {
 	color: #999999;
 }

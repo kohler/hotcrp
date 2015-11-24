@@ -172,8 +172,6 @@ src/updateschema.php
 src/useractions.php
 src/userstatus.php
 
-Code/.htaccess
-
 extra/hotcrp.vim
 
 images/.htaccess
