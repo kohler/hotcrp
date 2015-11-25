@@ -152,7 +152,7 @@ class PaperTable {
                     $viewable_tags = $tagger->viewable($tags);
                 }
                 $t .= ' has_hotcrp_tag_classes';
-                if (($color = $tagger->viewable_color_classes($viewable_tags)))
+                if ($tagger && ($color = $tagger->viewable_color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
