@@ -198,9 +198,9 @@ class TitlePaperColumn extends PaperColumn {
             && (string) $row->paperTags !== ""
             && ($t = $pl->tagger->viewable($row->paperTags)) !== ""
             && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
-            $t = $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
+            $badge = $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
         return "<a href=\"$href\" class=\"ptitle taghl\" tabindex=\"5\">"
-            . $x . "</a>" . $pl->_contentDownload($row) . $t;
+            . $x . "</a>" . $pl->_contentDownload($row) . $badge;
     }
     public function text($pl, $row) {
         return $row->title;
