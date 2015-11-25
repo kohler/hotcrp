@@ -707,8 +707,19 @@ class PreferencePaperColumn extends PaperColumn {
         return true;
     }
     public function preference_compare($a, $b) {
-        $x = $b->reviewerPreference - $a->reviewerPreference;
-        return $x ? $x : $b->topicInterestScore - $a->topicInterestScore;
+        list($ap, $bp) = [(float) $a->reviewerPreference, (float) $b->reviewerPreference];
+        if ($ap != $bp)
+            return $ap < $bp ? 1 : -1;
+        list($ae, $be) = [$a->reviewerExpertise, $b->reviewerExpertise];
+        if ($ae !== $be) {
+            if (($ae === null) !== ($be === null))
+                return $ae === null ? 1 : -1;
+            return (float) $ae < (float) $be ? 1 : -1;
+        }
+        list($at, $bt) = [(float) $a->topicInterestScore, (float) $b->topicInterestScore];
+        if ($at != $bt)
+            return $at < $bt ? 1 : -1;
+        return 0;
     }
     public function header($pl, $ordinal) {
         return "Preference";
