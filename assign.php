@@ -479,7 +479,7 @@ if ($Conf->setting("extrev_chairreq")) {
 $t = reviewTable($prow, $rrows, null, null, "assign", $proposals);
 $t .= reviewLinks($prow, $rrows, null, null, "assign", $allreviewslink);
 if ($t !== "")
-    echo '<div class="papcard_sep"></div>', $t;
+    echo '<hr class="papcard_sep" />', $t;
 
 
 // PC assignments
@@ -506,7 +506,7 @@ if ($Me->can_administer($prow)) {
         $pcx[$row->contactId] = $row;
 
     // PC conflicts row
-    echo '<div class="papcard_sep"></div>',
+    echo '<hr class="papcard_sep" />',
         Ht::form($loginUrl, array("id" => "ass")), '<div class="aahc">',
         "<h3 style=\"margin-top:0\">PC review assignments</h3>",
         '<p>';
