@@ -387,6 +387,23 @@ function save_tags($set, $what) {
         $v = array(1, join(" ", $vs));
         if ($any_set && $Conf->setting_data("tag_color") !== $v[1])
             $Values["tag_color"] = $v;
+
+        $vs = array();
+        $any_set = false;
+        foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
+            if (isset($_POST["tag_badge_" . $k])) {
+                $any_set = true;
+                foreach (preg_split('/,*\s+/', $_POST["tag_badge_" . $k]) as $t)
+                    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                        $vs[] = $t . "=" . $k;
+                    else if ($t !== "") {
+                        $Error[] = ucfirst($k) . " badge style tag: " . $tagger->error_html;
+                        $Highlight["tag_badge_" . $k] = true;
+                    }
+            }
+        $v = array(1, join(" ", $vs));
+        if ($any_set && $Conf->setting_data("tag_badge") !== $v[1])
+            $Values["tag_badge"] = $v;
     }
 
     if (!$set && $what == "tag_au_seerev" && isset($_POST["tag_au_seerev"])) {
@@ -2159,6 +2176,24 @@ function doTagsGroup() {
             $v = "";
         $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
     }
+
+    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_badge", ""), $m,
+                   PREG_SET_ORDER);
+    $tag_badges = array();
+    foreach ($m as $x)
+        $tag_badges[$x[2]][] = $x[1];
+    foreach (["black" => "black badge", "red" => "red badge", "green" => "green badge",
+              "blue" => "blue badge", "white" => "white badge"]
+             as $k => $desc) {
+        if (count($Error) > 0)
+            $v = defval($_POST, "tag_badge_$k", "");
+        else if (isset($tag_badges[$k]))
+            $v = join(" ", $tag_badges[$k]);
+        else
+            $v = "";
+        $tag_colors_rows[] = "<tr class='k1'><td class='lxcaption'></td><td class='lxcaption'><span class='badge {$k}badge' style='margin:0'>$desc</span><td class='lentry' style='font-size:10.5pt'><input type='text' name='tag_badge_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+    }
+
     echo Ht::hidden("has_tag_color", 1),
         '<h3 class="settings g">Styles and colors</h3>',
         "<div class='hint'>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</div>",

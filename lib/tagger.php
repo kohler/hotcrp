@@ -70,6 +70,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
 class TagInfo {
     const BASIC_COLORS = "red|orange|yellow|green|blue|purple|gray|white|bold|italic|underline|strikethrough|big|small|dim";
     const BASIC_COLORS_PLUS = "red|orange|yellow|green|blue|purple|violet|grey|gray|white|bold|italic|underline|strikethrough|big|small|dim";
+    const BASIC_BADGES = "normal|red|green|blue|white";
 
     private static $tagmap = null;
     private static $colorre = null;
@@ -494,7 +495,7 @@ class Tagger {
         foreach ($m as $mx)
             if (($t = $dt->check($mx[1])) && $t->badges) {
                 $tag = $this->unparse(trim($mx[0]));
-                $b = '<span class="badge ' . $t->badges[0] . 'badge">' . $tag . '</span>';
+                $b = '<span class="badge ' . $t->badges[0] . 'badge">#' . $tag . '</span>';
                 if (($link = $this->link($tag)))
                     $b = '<a class="qq" href="' . $link . '">' . $b . '</a>';
                 $x .= $b;

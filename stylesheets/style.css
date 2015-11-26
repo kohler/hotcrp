@@ -1985,17 +1985,29 @@ tr.purpletag, tr.graytag, tr.whitetag {
 	position: relative;
 	bottom: 1px;
 	white-space: nowrap;
+	background: #333333;
+	color: white;
+	font-weight: 500;
 }
 a.qq:hover > .badge {
 	text-decoration: underline;
 }
-.blackbadge {
-	background: black;
-	color: white;
-}
 .whitebadge {
 	background: white;
-	border: 1px solid black;
+	color: #333333;
+	border: 1px solid #333333;
+	padding: 1px 0.2em 2px;
+}
+.redbadge {
+	background: #ee0000;
+}
+.greenbadge {
+	background: #009900;
+	color: #333333;
+}
+.bluebadge {
+	background: #0000ff;
+	color: white;
 }
 
 .graytext {
