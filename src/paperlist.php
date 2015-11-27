@@ -67,7 +67,8 @@ class PaperList {
         else
             $this->sorters[] = ListSorter::parse_sorter("");
 
-        $this->foldable = $this->sortable || !!@$args["foldable"];
+        $this->foldable = $this->sortable || !!@$args["foldable"]
+            || $this->contact->privChair /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
         if (isset($_REQUEST["linkto"])
