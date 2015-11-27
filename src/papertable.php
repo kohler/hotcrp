@@ -1291,6 +1291,7 @@ class PaperTable {
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv">';
         $colors = "";
+        $p = null;
         if ($value && ($p = @$pc[$value]))
             $n = $p->name_html();
         else
