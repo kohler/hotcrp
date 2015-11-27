@@ -33,7 +33,7 @@ class ContactColumns {
                 . Ht::checkbox($name, $pc->contactId, $checked, $js)
                 . '&nbsp;</td>';
         }
-        $name = Text::name_html($pc);
+        $name = $pc->name_html();
         if ($this->checkbox)
             $name = Ht::label($name);
         $t .= '<td class="' . ($this->checkbox ? '' : 'pctbl ') . 'pctbname">'

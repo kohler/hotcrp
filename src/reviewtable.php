@@ -125,9 +125,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= ($rtype ? "<td>$rtype</td>" : '<td class="empty"></td>');
         } else {
             if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
-                $u = @$pcm[$rr->contactId] ? : $rr;
-                if ($mode === "assign")
-                    $n = Text::user_html($rr);
+                if (($u = @$pcm[$rr->contactId]))
+                    $n = $u->name_html();
                 else
                     $n = Text::name_html($rr);
             } else

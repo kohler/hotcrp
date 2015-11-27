@@ -397,7 +397,7 @@ class ReviewAssigner extends Assigner {
                                   $item->deleted() ? null : $item["_notify"]);
     }
     function unparse_display() {
-        $t = Text::name_html($this->contact) . ' ';
+        $t = $this->contact->name_html() . ' ';
         if ($this->rtype) {
             $t .= review_type_icon($this->rtype, true);
             if ($this->round)
@@ -470,7 +470,7 @@ class LeadAssigner extends Assigner {
     function unparse_display() {
         if (!$this->cid)
             return "remove $this->type";
-        $t = Text::name_html($this->contact);
+        $t = $this->contact->name_html();
         if ($this->isadd)
             $t .= " ($this->type)";
         else
@@ -518,7 +518,7 @@ class ConflictAssigner extends Assigner {
                                     $item->deleted() ? 0 : $item["_ctype"]);
     }
     function unparse_display() {
-        $t = Text::name_html($this->contact) . ' ';
+        $t = $this->contact->name_html() . ' ';
         if ($this->ctype)
             $t .= review_type_icon(-1);
         else
@@ -865,7 +865,7 @@ class PreferenceAssigner extends Assigner {
     function unparse_display() {
         if (!$this->cid)
             return "remove all preferences";
-        return Text::name_html($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
+        return $this->contact->name_html() . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
     function add_locks(&$locks) {
         $locks["PaperReviewPreference"] = "write";

@@ -1211,7 +1211,7 @@ class PaperTable {
             Ht::hidden("has_pcconf", 1),
             '<div class="ctable pctb_ctable">';
         foreach ($pcm as $id => $p) {
-            $label = Ht::label(Text::name_html($p), "pcc$id", array("class" => "taghl"));
+            $label = Ht::label($p->name_html(), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(titleWords($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
@@ -1258,7 +1258,7 @@ class PaperTable {
         $tagger = new Tagger;
         foreach ($this->prow->pc_conflicts() as $id => $x) {
             $p = $pcm[$id];
-            $text = "<p class=\"odname\">" . Text::name_html($p) . "</p>";
+            $text = "<p class=\"odname\">" . $p->name_html() . "</p>";
             if ($Me->isPC && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
                 $text = "<div class=\"pscopen $classes taghl\">$text</div>";
             $pcconf[$p->sort_position] = $text;
@@ -1290,10 +1290,10 @@ class PaperTable {
         }
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
             '<div class="psv"><p class="fn odname">';
-        if ($value)
-            echo Text::name_html(@$pc[$value] ? : "Unknown!");
+        if ($value && ($p = @$pc[$value]))
+            echo $p->name_html();
         else
-            echo "";
+            echo $value ? "Unknown!" : "";
         echo '</p>';
 
         if ($editable) {

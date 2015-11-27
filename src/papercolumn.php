@@ -499,7 +499,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
     public function header($pl, $ordinal) {
         if ($this->xreviewer)
-            return Text::name_html($this->xreviewer) . "<br />Review</span>";
+            return $this->xreviewer->name_html() . "<br />Review</span>";
         else
             return "Review";
     }
