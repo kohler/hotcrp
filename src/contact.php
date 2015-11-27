@@ -1930,6 +1930,7 @@ class Contact {
     }
 
     function can_view_some_authors() {
+        global $Conf;
         return $this->is_manager()
             || $this->is_author()
             || ($this->is_reviewer()
