@@ -857,7 +857,7 @@ class PCConflictListPaperColumn extends PaperColumn {
         $y = array();
         foreach (pcMembers() as $id => $pc)
             if (@$conf[$id])
-                $y[] = $pc->name_html();
+                $y[] = $pc->reviewer_html();
         return join(", ", $y);
     }
 }
