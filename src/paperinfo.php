@@ -126,6 +126,7 @@ class PaperInfo {
                 $cid = property_exists($this, "contactId") ? $this->contactId : null;
             else
                 $cid = is_object($contact) ? $contact->contactId : $contact;
+            $this->_contact_info_rights_version = Contact::$rights_version;
             $this->assign_contact_info($this, $cid);
         }
         if (property_exists($this, "paperTags") && $this->paperTags === null)
