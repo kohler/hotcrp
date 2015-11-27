@@ -335,7 +335,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 if ($cr->commentTags
                     && ($color = TagInfo::color_classes($cr->commentTags))) {
                     if (TagInfo::classes_have_colors($color))
-                        $tclass .= " cmtlinkcolor";
+                        $tclass .= " tagcolorspan";
                     $tclass .= " $color taghl";
                 }
                 $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';

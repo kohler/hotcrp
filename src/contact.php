@@ -15,6 +15,7 @@ class Contact {
     public $unaccentedName = "";
     public $nameAmbiguous = null;
     private $name_html_ = null;
+    private $reviewer_html_ = null;
     var $email = "";
     var $preferredEmail = "";
     var $sorter = "";
@@ -92,7 +93,7 @@ class Contact {
             $this->unaccentedName = $name->unaccentedName;
         else
             $this->unaccentedName = Text::unaccented_name($name);
-        $this->name_html_ = null;
+        $this->name_html_ = $this->reviewer_html_ = null;
         foreach (array("email", "preferredEmail", "affiliation",
                        "voicePhoneNumber", "country") as $k)
             if (isset($user->$k))
@@ -446,6 +447,23 @@ class Contact {
         if ($this->name_html_ === null)
             $this->name_html_ = Text::name_html($this);
         return $this->name_html_;
+    }
+
+    function reviewer_html() {
+        if ($this->reviewer_html_ === null) {
+            global $Me;
+            $this->reviewer_html_ = $this->name_html();
+            if ($Me->isPC && $this->contactTags) {
+                $tagger = new Tagger;
+                if (($viewable = $tagger->viewable($this->contactTags))
+                    && ($colors = TagInfo::color_classes($viewable))) {
+                    if (TagInfo::classes_have_colors($colors))
+                        $colors = "tagcolorspan " . $colors;
+                    $this->reviewer_html_ = '<span class="' . $colors . '">' . $this->reviewer_html_ . '</span>';
+                }
+            }
+        }
+        return $this->reviewer_html_;
     }
 
     function has_email() {

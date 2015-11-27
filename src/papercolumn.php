@@ -778,7 +778,7 @@ class PreferenceListPaperColumn extends PaperColumn {
                 if ($this->topics)
                     $pref[2] = $row->topic_interest_score($pc);
                 if (($pspan = unparse_preference_span($pref)) !== "")
-                    $ts[] = '<span class="nw">' . $pc->name_html() . $pspan . '</span>';
+                    $ts[] = '<span class="nw">' . $pc->reviewer_html() . $pspan . '</span>';
             }
         return join(", ", $ts);
     }
@@ -791,9 +791,9 @@ class ReviewerListPaperColumn extends PaperColumn {
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
-        $this->topics = $Conf->has_topics();
         if (!$pl->contact->can_view_some_review_identity(null))
             return false;
+        $this->topics = $Conf->has_topics();
         if ($visible) {
             $pl->qopts["reviewList"] = 1;
             if ($pl->contact->privChair)
@@ -812,13 +812,17 @@ class ReviewerListPaperColumn extends PaperColumn {
         if ($pl->contact->privChair) {
             $prefs = $row->reviewer_preferences();
             $topics = $this->topics ? $row->topics() : null;
-            $pcm = pcMembers();
         }
+        if ($pl->contact->isPC)
+            $pcm = pcMembers();
         $x = array();
         foreach ($pl->review_list[$row->paperId] as $xrow)
             if ($xrow->lastName) {
                 $ranal = $pl->_reviewAnalysis($xrow);
-                $n = Text::name_html($xrow);
+                if ($pcm && ($p = @$pcm[$xrow->contactId]))
+                    $n = $p->reviewer_html();
+                else
+                    $n = Text::name_html($xrow);
                 if ($xrow->reviewType >= REVIEW_SECONDARY)
                     $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
                 if ($prefs || $topics) {

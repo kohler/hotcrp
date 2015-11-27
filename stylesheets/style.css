@@ -2659,10 +2659,13 @@ div.cmthint {
 }
 .cmtlink {
 	display: inline-block;
-	padding: 1px 0 2px;
+	padding-top: 1px;
+	padding-bottom: 2px;
 }
-.cmtlink.cmtlinkcolor {
-	padding: 1px 2px 2px;
+.tagcolorspan {
+	display: inline-block;
+	padding-left: 2px;
+	padding-right: 2px;
 }
 
 .words {
