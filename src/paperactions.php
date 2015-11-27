@@ -68,7 +68,7 @@ class PaperActions {
     }
 
     private static function set_paper_pc($prow, $value, $contact, $ajax, $type) {
-        global $Conf, $Error, $OK;
+        global $Conf, $Error, $Me, $OK;
 
         // canonicalize $value
         if ($value === "0" || $value === 0 || $value === "none")
@@ -96,8 +96,14 @@ class PaperActions {
             $Error[$type] = true;
         }
 
-        if ($ajax)
-            $Conf->ajaxExit(array("ok" => $OK && !@$Error[$type], "result" => $OK && $pc ? Text::name_html($pc) : "None"));
+        if ($ajax) {
+            $result = ["ok" => $OK && !@$Error[$type], "result" => $OK && $pc ? $pc->name_html() : "None"];
+            if ($Me->can_view_reviewer_tags($prow)) {
+                $tagger = new Tagger;
+                $result["color_classes"] = $pc ? $tagger->viewable_color_classes($pc->contactTags) : "";
+            }
+            $Conf->ajaxExit($result);
+        }
         return $OK && !@$Error[$type];
     }
 

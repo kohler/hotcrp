@@ -1289,12 +1289,22 @@ class PaperTable {
             $this->_papstripBegin(null, true);
         }
         echo $this->papt($type, $name, array("type" => "ps", "fold" => $editable ? $type : false, "folded" => true)),
-            '<div class="psv"><p class="fn odname">';
+            '<div class="psv">';
+        $colors = "";
         if ($value && ($p = @$pc[$value]))
-            echo $p->name_html();
+            $n = $p->name_html();
         else
-            echo $value ? "Unknown!" : "";
-        echo '</p>';
+            $n = $value ? "Unknown!" : "";
+        $text = '<p class="fn odname">' . $n . '</p>';
+        if ($Me->can_view_reviewer_tags($this->prow)) {
+            $classes = "";
+            if ($p && $p->contactTags) {
+                $tagger = new Tagger;
+                $classes = $tagger->viewable_color_classes($p->contactTags);
+            }
+            echo '<div class="pscopen taghl', rtrim(" $classes"), '">', $text, '</div>';
+        } else
+            echo $text;
 
         if ($editable) {
             $sel = pc_members_selector_options(true, $this->prow, $value);

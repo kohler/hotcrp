@@ -2745,6 +2745,8 @@ function make_pseditor(type, url) {
                     val = saveval;
                     var p = folde.getElementsByTagName("p")[0];
                     p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
+                    if (data.color_classes != null)
+                        $(p).closest("div.taghl").removeClass().addClass("taghl pscopen " + data.color_classes);
                 } else
                     done(false, data.error);
             },
