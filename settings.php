@@ -2182,8 +2182,8 @@ function doTagsGroup() {
     $tag_badges = array();
     foreach ($m as $x)
         $tag_badges[$x[2]][] = $x[1];
-    foreach (["black" => "black badge", "red" => "red badge", "green" => "green badge",
-              "blue" => "blue badge", "white" => "white badge"]
+    foreach (["black" => "black label", "red" => "red label", "green" => "green label",
+              "blue" => "blue label", "white" => "white label"]
              as $k => $desc) {
         if (count($Error) > 0)
             $v = defval($_POST, "tag_badge_$k", "");
@@ -2191,7 +2191,7 @@ function doTagsGroup() {
             $v = join(" ", $tag_badges[$k]);
         else
             $v = "";
-        $tag_colors_rows[] = "<tr class='k1'><td class='lxcaption'></td><td class='lxcaption'><span class='badge {$k}badge' style='margin:0'>$desc</span><td class='lentry' style='font-size:10.5pt'><input type='text' name='tag_badge_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+        $tag_colors_rows[] = "<tr class='k0'><td class='lxcaption'></td><td class='lxcaption'><span class='badge {$k}badge' style='margin:0'>$desc</span><td class='lentry' style='font-size:10.5pt'><input type='text' name='tag_badge_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
     }
 
     echo Ht::hidden("has_tag_color", 1),

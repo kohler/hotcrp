@@ -1979,7 +1979,7 @@ tr.purpletag, tr.graytag, tr.whitetag {
 	display: inline-block;
 	font-size: 69%;
 	line-height: 100%;
-	margin: 0 0.75em;
+	margin-left: 0.75em;
 	padding: 2px 0.3em 3px;
 	border-radius: 0.3em;
 	position: relative;
@@ -1988,6 +1988,10 @@ tr.purpletag, tr.graytag, tr.whitetag {
 	background: #333333;
 	color: white;
 	font-weight: 500;
+}
+h1 .badge {
+	font-size: 51%;
+	bottom: 2px;
 }
 a.qq:hover > .badge {
 	text-decoration: underline;
@@ -2003,7 +2007,7 @@ a.qq:hover > .badge {
 }
 .greenbadge {
 	background: #009900;
-	color: #333333;
+	color: #111111;
 }
 .bluebadge {
 	background: #0000ff;
