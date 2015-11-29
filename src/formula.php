@@ -875,7 +875,7 @@ class Formula {
             return array($t, "", $t);
     }
 
-    const ARGUMENT_REGEX = '((?:"[^"]*"|[-:#a-zA-Z0-9_.@+!*\/?~])+)';
+    const ARGUMENT_REGEX = '((?:"[^"]*"|[-#a-zA-Z0-9_.@+!*\/?~]|:(?=\S))+)';
 
     static private function field_search_fexpr($fval) {
         $fn = null;
