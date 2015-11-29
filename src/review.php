@@ -753,7 +753,7 @@ class ReviewForm {
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
         if ($diff_view_score > VIEWSCORE_FALSE && $Conf->sversion >= 98)
             $q[] = "reviewWordCount=" . $wc;
-        if (isset($req["reviewFormat"]) && $Conf->sversion >= 114
+        if (isset($req["reviewFormat"]) && $Conf->sversion >= 104
             && @$Opt["formatInfo"]) {
             $fmt = null;
             foreach ($Opt["formatInfo"] as $k => $f)
