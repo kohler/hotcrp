@@ -751,8 +751,7 @@ class ReviewForm {
             && isset($req["version"]) && ctype_digit($req["version"])
             && $req["version"] > defval($rrow, "reviewEditVersion"))
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
-        if ($rrow && $diff_view_score > VIEWSCORE_FALSE
-            && $Conf->sversion >= 98)
+        if ($diff_view_score > VIEWSCORE_FALSE && $Conf->sversion >= 98)
             $q[] = "reviewWordCount=" . $wc;
 
         // notification
