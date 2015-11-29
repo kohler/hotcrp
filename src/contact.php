@@ -2165,10 +2165,11 @@ class Contact {
     }
 
     function can_view_aggregated_review_identity() {
-        global $Conf;
+        /*global $Conf;
         return $this->privChair
             || ($this->isPC
-                && (!$Conf->setting("pc_seeblindrev") || !$Conf->is_review_blind(null)));
+                && (!$Conf->setting("pc_seeblindrev") || !$Conf->is_review_blind(null)));*/
+        return $this->isPC;
     }
 
     function can_view_review_round(PaperInfo $prow, $rrow, $forceShow = null) {
