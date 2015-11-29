@@ -491,6 +491,19 @@ class ReviewFexpr extends Fexpr {
 }
 
 class ReviewerFexpr extends ReviewFexpr {
+    public function format() {
+        return "reviewer";
+    }
+    public function view_score(Contact $contact) {
+        return VIEWSCORE_PC;
+    }
+    public function compile(FormulaCompiler $state) {
+        $state->datatype |= self::ASUBREV;
+        return '($contact->can_view_review_identity($prow, null, $forceShow) ? ' . $state->_rrow_cid() . ' : null)';
+    }
+}
+
+class ReviewerMatchFexpr extends ReviewFexpr {
     private $arg;
     private $flags;
     private $istag;
@@ -518,7 +531,7 @@ class ReviewerFexpr extends ReviewFexpr {
             && $state->contact->can_view_reviewer_tags()) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = ($arg[0] === "#" ? substr($arg, 1) : $arg);
-            $e = "($cvt ? ReviewerFexpr::check_tagmap(" . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
+            $e = "($cvt ? ReviewerMatchFexpr::check_tagmap(" . $state->_rrow_cid() . ", " . json_encode($tag) . ") : null)";
         } else {
             $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
             $cs = new ContactSearch($flags, $arg, $state->contact);
@@ -539,7 +552,10 @@ class ReviewerFexpr extends ReviewFexpr {
     }
 }
 
-class ReviewWordCountFexpr extends ReviewFexpr {
+class ReviewWordCountFexpr extends Fexpr {
+    public function view_score(Contact $contact) {
+        return VIEWSCORE_PC;
+    }
     public function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
@@ -963,6 +979,9 @@ class Formula {
                 } else if (preg_match('/\Awords' . $tailre, $ex, $m)) {
                     $ee = new ReviewWordCountFexpr;
                     $ex = $m[1];
+                } else if (preg_match('/\Areviewer' . $tailre, $ex, $m)) {
+                    $ee = new ReviewerFexpr;
+                    $ex = $m[1];
                 } else if (preg_match('/\Atype' . $tailre, $ex, $m)) {
                     $ee = new RevtypeFexpr;
                     $ex = $m[1];
@@ -977,7 +996,7 @@ class Formula {
                 } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $ex, $m)) {
                     if (($quoted = $m[1][0] === "\""))
                         $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
-                    $ee = new ReviewerFexpr($m[1]);
+                    $ee = new ReviewerMatchFexpr($m[1]);
                     $ex = $m[2];
                 } else {
                     $ee = new ConstantFexpr("false", "bool");
