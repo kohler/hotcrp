@@ -675,7 +675,7 @@ class ReviewForm {
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
-        global $Conf;
+        global $Conf, $Opt;
         $newsubmit = @$req["ready"] && !@$req["unready"]
             && (!$rrow || !$rrow->reviewSubmitted);
         $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
@@ -753,6 +753,17 @@ class ReviewForm {
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
         if ($diff_view_score > VIEWSCORE_FALSE && $Conf->sversion >= 98)
             $q[] = "reviewWordCount=" . $wc;
+        if (isset($req["reviewFormat"]) && $Conf->sversion >= 114
+            && @$Opt["formatInfo"]) {
+            $fmt = null;
+            foreach ($Opt["formatInfo"] as $k => $f)
+                if (@$f["name"] && strcasecmp($f["name"], $req["reviewFormat"]) == 0)
+                    $fmt = (int) $k;
+            if (!$fmt && $req["reviewFormat"]
+                && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
+                $fmt = 0;
+            $q[] = "reviewFormat=" . ($fmt === null ? "null" : $fmt);
+        }
 
         // notification
         $notification_bound = $now - 10800;
@@ -1213,6 +1224,9 @@ $blind\n";
                 } else if (preg_match('/^==\+== Review Anonymity\s*/i', $line)) {
                     $field = "anonymity";
                     $mode = 1;
+                } else if (preg_match('/^==\+== Review Format\s*/i', $line)) {
+                    $field = "reviewFormat";
+                    $mode = 1;
                 } else if (preg_match('/^==\+== [A-Z]\.\s*(.*?)\s*$/', $line, $match)) {
                     $fname = $match[1];
                     if (!isset($this->fieldName[strtolower($fname)]))
@@ -1257,6 +1271,8 @@ $blind\n";
             $req["ready"] = strcasecmp(trim($req["readiness"]), "Ready") == 0;
         if (isset($req["anonymity"]))
             $req["blind"] = strcasecmp(trim($req["anonymity"]), "Open") != 0;
+        if (isset($req["reviewFormat"]))
+            $req["reviewFormat"] = trim($req["reviewFormat"]);
 
         if (isset($req["paperId"]))
             /* OK */;
