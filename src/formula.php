@@ -48,6 +48,10 @@ class Fexpr {
             && count($this->args) >= 1
             && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
+        else if ($this->op === "atminof" || $this->op === "atmaxof"
+                 && count($this->args) >= 2
+                 && $this->args[1] instanceof Fexpr)
+            return $this->args[1]->format();
         else if ($this->op === "greatest" || $this->op === "least"
                  || $this->op === "?:" || $this->op === "&&" || $this->op === "||") {
             $format = false;
@@ -170,11 +174,21 @@ class Fexpr {
             return self::cast_bool($t);
         }
 
-        if (count($this->args) == 1 && $op == "min")
-            return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ < ~r~) ? ~l~ : ~r~)", $this);
+        if (count($this->args) == 1 && ($op == "min" || $op == "max")) {
+            $opx = ($op == "min" ? "<" : ">");
+            return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ $opx ~r~) ? ~l~ : ~r~)", $this);
+        }
 
-        if (count($this->args) == 1 && $op == "max")
-            return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ > ~r~) ? ~l~ : ~r~)", $this);
+        if (count($this->args) == 2 && ($op == "atminof" || $op == "atmaxof")) {
+            $opx = ($op == "atminof" ? "<" : ">");
+            $t = $state->_compile_loop("[null, [null]]",
+"if (~l~ !== null && (~r~[0] === null || ~l~ $opx ~r~[0])) {
+  ~r~[0] = ~l~;
+  ~r~[1] = [~l1~];
+} else if (~l~ !== null && ~l~ == ~r~[0])
+  ~r~[1][] = ~l1~;", $this);
+            return "{$t}[1][count({$t}[1]) > 1 ? mt_rand(0, count({$t}[1]) - 1) : 0]";
+        }
 
         if (count($this->args) == 1 && $op == "count")
             return $state->_compile_loop("0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $this);
@@ -183,17 +197,17 @@ class Fexpr {
             return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)", $this);
 
         if (count($this->args) == 1 && ($op == "avg" || $op == "wavg")) {
-            $t = $state->_compile_loop("array(0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~, ~r~[1] + 1) : ~r~)", $this);
+            $t = $state->_compile_loop("[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)", $this);
             return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
         }
 
         if (count($this->args) == 2 && $op == "wavg") {
-            $t = $state->_compile_loop("array(0, 0)", "(~l~ !== null && ~l1~ !== null ? array(~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~) : ~r~)", $this);
+            $t = $state->_compile_loop("[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)", $this);
             return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
         }
 
         if (count($this->args) == 1 && preg_match('/\A(var(?:iance)?|std(?:d?ev)?)(|_pop|_samp|[_.][ps])\z/', $op, $m)) {
-            $t = $state->_compile_loop("array(0, 0, 0)", "(~l~ !== null ? array(~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1) : ~r~)", $this);
+            $t = $state->_compile_loop("[0, 0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
             $ispop = preg_match('/\A(?:|_pop|[_.]p)\z/', $m[2]);
             if ($m[1][0] == "v" && !$ispop)
                 return "(${t}[2] > 1 ? ${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1)) : (${t}[2] ? 0 : null))";
@@ -283,7 +297,7 @@ class InFexpr extends Fexpr {
     }
     public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
-        return "(array_search($t, array(" . join(", ", $this->values) . ")) !== false)";
+        return "(array_search($t, [" . join(", ", $this->values) . "]) !== false)";
     }
 }
 
@@ -554,7 +568,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
             $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
             $cs = new ContactSearch($flags, $arg, $state->contact);
             // XXX information leak?
-            $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", array(" . join(", ", $cs->ids) . ")) !== false : null)";
+            $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
         }
         return $e;
     }
@@ -642,14 +656,14 @@ class FormulaCompiler {
     public function _add_review_prefs() {
         if ($this->check_gvar('$allrevprefs')) {
             $this->queryOptions["allReviewerPreference"] = true;
-            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : array();";
+            $this->gstmt[] = "\$allrevprefs = \$contact->can_view_review(\$prow, null, \$forceShow) ? \$prow->reviewer_preferences() : [];";
         }
         return '$allrevprefs';
     }
     public function _add_conflicts() {
         if ($this->check_gvar('$conflicts')) {
             $this->queryOptions["allConflictType"] = true;
-            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow, \$forceShow) ? \$prow->conflicts() : array();";
+            $this->gstmt[] = "\$conflicts = \$contact->can_view_conflicts(\$prow, \$forceShow) ? \$prow->conflicts() : [];";
         }
         return '$conflicts';
     }
@@ -713,7 +727,7 @@ class FormulaCompiler {
         } else if (count($g))
             return $g[0];
         else
-            return $this->define_gvar("trivial_loop", "array(0)");
+            return $this->define_gvar("trivial_loop", "[0]");
     }
     public function _compile_loop($initial_value, $combiner, Fexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
@@ -726,7 +740,11 @@ class FormulaCompiler {
             $t = $this->_addltemp($ee->compile($this));
             $combiner = str_replace("~l" . ($i ? : "") . "~", $t, $combiner);
         }
-        $this->lstmt[] = "$t_result = $combiner;";
+
+        if (preg_match('/[;}]\s*\z/', $combiner))
+            $this->lstmt[] = str_replace("\n", str_pad("\n", $this->indent + 1), $combiner);
+        else
+            $this->lstmt[] = "$t_result = $combiner;";
 
         $t_looper = "\$i$p";
 
@@ -1035,7 +1053,7 @@ class Formula {
                 }
                 $e = $e ? new Fexpr("&&", $e, $ee) : $ee;
             }
-        } else if (preg_match('/\A(my|all|any|avg|count|min|max|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(my|all|any|avg|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;

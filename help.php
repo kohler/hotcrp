@@ -1105,6 +1105,8 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "stddev_samp(<em>e</em>), var_samp(<em>e</em>)", "Sample standard deviation, sample variance");
     _alternateRow("", "any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
     _alternateRow("", "all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
+    _alternateRow("", "atminof(<em>x</em>, <em>e</em>)", "Value of <em>e</em> when <em>x</em> is minimized");
+    _alternateRow("", "atmaxof(<em>x</em>, <em>e</em>)", "Value of <em>e</em> when <em>x</em> is maximized");
     _alternateRow("", "my(<em>e</em>)", "Calculate <em>e</em> for your review");
     echo "</table>\n";
 
