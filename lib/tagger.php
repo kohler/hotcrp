@@ -319,6 +319,8 @@ class TagInfo {
                 $classes[] = self::canonical_color($tag) . "tag";
         if ($colors_only)
             $classes = array_filter($classes, "TagInfo::classes_have_colors");
+        if (count($classes) > 1)
+            $classes = array_unique($classes);
         return join(" ", $classes);
     }
 
