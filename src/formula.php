@@ -3,10 +3,21 @@
 // HotCRP is Copyright (c) 2009-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class Fexpr_Error {
+    public $expr;
+    public $error_html;
+    public function __construct($expr, $error_html) {
+        $this->expr = $expr;
+        $this->error_html = $error_html;
+    }
+}
+
 class Fexpr {
     public $op;
     public $args = array();
     public $text;
+    public $left_landmark;
+    public $right_landmark;
 
     const ASUBREV = 1;
     const APREF = 2;
@@ -23,6 +34,10 @@ class Fexpr {
     }
     public function add($x) {
         $this->args[] = $x;
+    }
+    public function set_landmark($left, $right) {
+        $this->left_landmark = $left;
+        $this->right_landmark = $right;
     }
 
     public function format() {
@@ -51,18 +66,18 @@ class Fexpr {
             return null;
     }
 
-    public function resolve_constants() {
+    public function typecheck() {
         // comparison operators help us resolve
         if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
             && count($this->args) === 2) {
             list($a0, $a1) = $this->args;
             if ($a0 instanceof ConstantFexpr)
-                $a0->resolve_constants_neighbor($a1);
+                $a0->typecheck_neighbor($a1);
             if ($a1 instanceof ConstantFexpr)
-                $a1->resolve_constants_neighbor($a0);
+                $a1->typecheck_neighbor($a0);
         }
         foreach ($this->args as $a)
-            if ($a instanceof Fexpr && ($x = $a->resolve_constants()))
+            if ($a instanceof Fexpr && ($x = $a->typecheck()))
                 return $x;
         return false;
     }
@@ -205,13 +220,16 @@ class ConstantFexpr extends Fexpr {
     public function format() {
         return $this->format;
     }
-    public function resolve_constants() {
-        return $this->format === false ? $this->x : false;
+    public function typecheck() {
+        if ($this->format !== false)
+            return false;
+        else
+            return new Fexpr_Error($this, "unresolved constant “" . htmlspecialchars($this->x) . "”");
     }
-    public function resolve_constants_neighbor($e) {
+    public function typecheck_neighbor($e) {
         global $Conf;
         if ($this->format !== false || !($e instanceof Fexpr)
-            || $e->resolve_constants())
+            || $e->typecheck())
             return;
         $format = $e->format();
         $letter = "";
@@ -795,18 +813,26 @@ class Formula {
             return !!$this->_parse;
 
         $t = $this->expression;
+        $expr_len = strlen($this->expression);
         $e = $this->_parse_ternary($t, false);
         if ((string) $this->expression === "")
             $this->_error_html[] = "Empty formula.";
         else if ($t !== "" || !$e) {
-            $pfx = substr($this->expression, 0, strlen($this->expression) - strlen($t));
-            if (strlen($pfx) == strlen($this->expression))
-                $this->_error_html[] = "Parse error at end of formula “" . htmlspecialchars($pfx) . "”.";
+            $pfx = substr($this->expression, 0, $expr_len - strlen($t));
+            if (strlen($pfx) == $expr_len)
+                $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($pfx) . "” at end.";
             else
-                $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($pfx) . "<span style='color:red;text-decoration:underline'>☞" . htmlspecialchars(substr($this->expression, strlen($pfx))) . "</span>”.";
-        } else if (($x = $e->resolve_constants()))
-            $this->_error_html[] = "Parse error: can’t resolve “" . htmlspecialchars($x) . "”.";
-        else {
+                $this->_error_html[] = "Parse error in formula “" . htmlspecialchars($pfx) . '<span style="color:red;text-decoration:underline">☞' . htmlspecialchars(substr($this->expression, strlen($pfx))) . "</span>”.";
+        } else if (($err = $e->typecheck())) {
+            $xe = $err->expr;
+            $this->_error_html[] = "Type error in formula “"
+                . htmlspecialchars(substr($this->expression, 0, $expr_len + $xe->left_landmark))
+                . '<span style="color:red;text-decoration:underline">'
+                . htmlspecialchars(substr($this->expression, $expr_len + $xe->left_landmark, $xe->right_landmark - $xe->left_landmark))
+                . '</span>'
+                . htmlspecialchars(substr($this->expression, $expr_len + $xe->right_landmark))
+                . '”: ' . $err->error_html;
+        } else {
             $state = new FormulaCompiler($Me);
             $e->compile($state);
             if ($state->datatype && !$this->allowReview)
@@ -829,6 +855,7 @@ class Formula {
     }
 
     private function _parse_ternary(&$t, $in_qc) {
+        $lpos = -strlen($t);
         $e = $this->_parse_expr($t, 0, $in_qc);
         if (!$e || ($t = ltrim($t)) === "" || $t[0] !== "?")
             return $e;
@@ -836,8 +863,11 @@ class Formula {
         if (($e1 = $this->_parse_ternary($t, true)) !== null)
             if (($t = ltrim($t)) !== "" && $t[0] === ":") {
                 $t = substr($t, 1);
-                if (($e2 = $this->_parse_ternary($t, $in_qc)))
-                    return new Fexpr("?:", $e, $e1, $e2);
+                if (($e2 = $this->_parse_ternary($t, $in_qc))) {
+                    $e = new Fexpr("?:", $e, $e1, $e2);
+                    $e->set_landmark($lpos, -strlen($t));
+                    return $e;
+                }
             }
         return null;
     }
@@ -895,6 +925,7 @@ class Formula {
         global $Conf;
         if (($t = ltrim($t)) === "")
             return null;
+        $lpos = -strlen($t);
 
         if ($t[0] === "(") {
             $t = substr($t, 1);
@@ -1060,6 +1091,8 @@ class Formula {
         } else
             return null;
 
+        $e->set_landmark($lpos, -strlen($t));
+
         while (1) {
             if (($t = ltrim($t)) === "")
                 return $e;
@@ -1084,6 +1117,7 @@ class Formula {
             if (!($e2 = $this->_parse_expr($t, @self::$_oprassoc[$op] ? $opprec : $opprec + 1, $in_qc)))
                 return null;
             $e = new Fexpr($op, $e, $e2);
+            $e->set_landmark($lpos, -strlen($t));
         }
     }
 
