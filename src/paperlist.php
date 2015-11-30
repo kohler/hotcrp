@@ -631,46 +631,23 @@ class PaperList {
         return $field_list;
     }
 
+    static public function review_list_compar($a, $b) {
+        if (!$a->reviewOrdinal !== !$b->reviewOrdinal)
+            return $a->reviewOrdinal ? -1 : 1;
+        if ($a->reviewOrdinal != $b->reviewOrdinal)
+            return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
+        return strcmp($a->sorter, $b->sorter);
+    }
+
     private function _rows($field_list) {
         global $Conf;
         if (!$field_list)
             return null;
 
-        // prepare review query (see also search > getaction == "reviewers")
-        $this->review_list = array();
-        if (isset($this->qopts["reviewList"])) {
-            $result = Dbl::qe_raw("select Paper.paperId, reviewId, reviewType,
-                reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
-                reviewOrdinal,
-                PaperReview.contactId, lastName, firstName, email
-                from Paper
-                join PaperReview using (paperId)
-                join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-                where " . ($this->search->limitName != 'a' ? "timeSubmitted>0" : "paperId=-1") . "
-                order by lastName, firstName, email");
-            while (($row = edb_orow($result)))
-                $this->review_list[$row->paperId][] = $row;
-        }
-
-        // prepare PC topic interests
-        if (isset($this->qopts["allReviewerPreference"])) {
-            $ord = 0;
-            $pcm = pcMembers();
-            foreach ($pcm as $pc) {
-                $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
-                $pc->topicInterest = array();
-            }
-            $result = Dbl::qe_raw("select contactId, topicId, " . $Conf->query_topic_interest()
-                                  . " from TopicInterest");
-            while (($row = edb_row($result)))
-                $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
-        }
-
+        // prepare query text
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
         if (!count($this->qopts["scores"]))
             unset($this->qopts["scores"]);
-
-        // prepare query text
         $pq = $Conf->paperQuery($this->contact, $this->qopts);
 
         // make query
@@ -681,7 +658,41 @@ class PaperList {
         // fetch rows
         $rows = array();
         while (($row = PaperInfo::fetch($result, $this->contact)))
-            $rows[] = $row;
+            $rows[$row->paperId] = $row;
+
+        // prepare review query (see also search > getaction == "reviewers")
+        $this->review_list = array();
+        if (isset($this->qopts["reviewList"]) && count($rows)) {
+            $result = Dbl::qe("select Paper.paperId, reviewId, reviewType,
+                reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
+                reviewOrdinal,
+                PaperReview.contactId, lastName, firstName, email
+                from Paper
+                join PaperReview using (paperId)
+                join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
+                where paperId?a", array_keys($rows));
+            while (($row = edb_orow($result))) {
+                Contact::set_sorter($row);
+                $this->review_list[$row->paperId][] = $row;
+            }
+            foreach ($this->review_list as &$revlist)
+                usort($revlist, "PaperList::review_list_compar");
+            unset($revlist);
+        }
+
+        // prepare PC topic interests
+        if (isset($this->qopts["allReviewerPreference"])) {
+            $ord = 0;
+            $pcm = pcMembers();
+            foreach ($pcm as $pc) {
+                $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
+                $pc->topicInterest = array();
+            }
+            $result = Dbl::qe("select contactId, topicId, " . $Conf->query_topic_interest()
+                              . " from TopicInterest");
+            while (($row = edb_row($result)))
+                $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
+        }
 
         // analyze rows (usually noop)
         foreach ($field_list as $fdef)

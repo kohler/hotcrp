@@ -816,23 +816,21 @@ class ReviewerListPaperColumn extends PaperColumn {
         if ($pl->contact->isPC)
             $pcm = pcMembers();
         $x = array();
-        foreach ($pl->review_list[$row->paperId] as $xrow)
-            if ($xrow->lastName) {
-                $ranal = $pl->_reviewAnalysis($xrow);
-                if ($pcm && ($p = @$pcm[$xrow->contactId]))
-                    $n = $p->reviewer_html();
-                else
-                    $n = Text::name_html($xrow);
-                if ($xrow->reviewType >= REVIEW_SECONDARY)
-                    $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
-                if ($prefs || $topics) {
-                    $pref = @$prefs[$xrow->contactId];
-                    if ($topics)
-                        $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
-                    $n .= unparse_preference_span($pref);
-                }
-                $x[] = '<span class="nw">' . $n . '</span>';
+        foreach ($pl->review_list[$row->paperId] as $xrow) {
+            $ranal = $pl->_reviewAnalysis($xrow);
+            if ($pcm && ($p = @$pcm[$xrow->contactId]))
+                $n = $p->reviewer_html();
+            else
+                $n = Text::name_html($xrow);
+            $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
+            if ($prefs || $topics) {
+                $pref = @$prefs[$xrow->contactId];
+                if ($topics)
+                    $pref[2] = $row->topic_interest_score((int) $xrow->contactId);
+                $n .= unparse_preference_span($pref);
             }
+            $x[] = '<span class="nw">' . $n . '</span>';
+        }
         return $pl->maybeConflict($row, join(", ", $x),
                                   $pl->contact->can_view_review_identity($row, null, false));
     }
