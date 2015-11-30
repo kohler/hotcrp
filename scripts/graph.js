@@ -2,48 +2,6 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-/* pattern fill functions */
-window.make_pattern_fill = (function () {
-var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 4, "greentag": 5, "bluetag": 6, "purpletag": 7, "graytag": 8};
-return function (classes, class_prefix) {
-    if (!classes || classes.indexOf(" ") < 0)
-        return null;
-    var index = class_prefix + classes;
-    if (fmap[index])
-        return fmap[index];
-    // check canonical pattern name
-    var tags = classes.split(/\s+/).sort(function (a, b) {
-        return cmap[a] && cmap[b] ? cmap[a] - cmap[b] : a.localeCompare(b);
-    }), i;
-    for (i = 0; i < tags.length; )
-        if (!cmap[tags[i]] || (i && tags[i] == tags[i - 1]))
-            tags.splice(i, 1);
-        else
-            ++i;
-    var canonical_index = class_prefix + tags.join(" ");
-    if (fmap[canonical_index]) {
-        fmap[index] = fmap[canonical_index];
-        return fmap[index];
-    }
-    // create pattern
-    var id = "svgpat__" + canonical_index.replace(/\s+/g, "__"),
-        size = 12 + Math.max(0, tags.length - 2) * 3,
-        sw = size / tags.length,
-        t = '<svg width="0" height="0"><defs><pattern id="' + id + '" patternUnits="userSpaceOnUse" width="' + size + '" height="' + size + '">';
-    for (var i = 0; i < tags.length; ++i) {
-        var x = $('<span class="' + class_prefix + tags[i] + '"></span>').appendTo(document.body),
-            color = x.css("fill") || x.css("backgroundColor");
-        x.remove();
-
-        t += '<path d="' + ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>' +
-            '<path d="' + ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>';
-    }
-    $("div.body").prepend(t + '</pattern></defs></svg>');
-    fmap[index] = fmap[canonical_index] = "url(#" + id + ")";
-    return fmap[index];
-};
-})();
-
 var hotcrp_graphs = (function ($, d3) {
 
 function pathNodeMayBeNearer(pathNode, point, dist) {

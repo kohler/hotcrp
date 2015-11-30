@@ -2513,8 +2513,10 @@ function render_cmt(j, cj, editing, msg) {
     t = [];
     if (cj.visibility && !cj.response)
         t.push("cmt" + cj.visibility + "vis");
-    if (cj.color_classes)
+    if (cj.color_classes) {
+        make_pattern_fill(cj.color_classes);
         t.push("cmtcolor " + cj.color_classes);
+    }
     if (t.length)
         hc.push('<div class="' + t.join(" ") + '">', '</div>');
 
@@ -2745,8 +2747,10 @@ function make_pseditor(type, url) {
                     val = saveval;
                     var p = folde.getElementsByTagName("p")[0];
                     p.innerHTML = data.result || edite.options[edite.selectedIndex].innerHTML;
-                    if (data.color_classes != null)
+                    if (data.color_classes != null) {
+                        make_pattern_fill(data.color_classes);
                         $(p).closest("div.taghl").removeClass().addClass("taghl pscopen " + data.color_classes);
+                    }
                 } else
                     done(false, data.error);
             },
@@ -4021,6 +4025,68 @@ return plinfo;
 })();
 
 
+/* pattern fill functions */
+window.make_pattern_fill = (function () {
+var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 4, "greentag": 5, "bluetag": 6, "purpletag": 7, "graytag": 8},
+    params = {
+        "": {size: 34, css: "backgroundColor", incr: 8, rule: true},
+        "gdot ": {size: 12, css: "fill", incr: 3, pattern: true}
+    }, style;
+return function (classes, class_prefix) {
+    if (!classes || classes.indexOf(" ") < 0)
+        return null;
+    class_prefix = class_prefix || "";
+    var index = class_prefix + classes;
+    if (index in fmap)
+        return fmap[index];
+    // check canonical pattern name
+    var tags = classes.split(/\s+/).sort(function (a, b) {
+        return cmap[a] && cmap[b] ? cmap[a] - cmap[b] : a.localeCompare(b);
+    }), i;
+    for (i = 0; i < tags.length; )
+        if (!cmap[tags[i]] || (i && tags[i] == tags[i - 1]))
+            tags.splice(i, 1);
+        else
+            ++i;
+    var canonical_index = class_prefix + tags.join(" ");
+    if (canonical_index in fmap || tags.length <= 1) {
+        fmap[index] = fmap[canonical_index] || null;
+        return fmap[index];
+    }
+    // create pattern
+    var param = params[class_prefix] || params[""],
+        id = "svgpat__" + canonical_index.replace(/\s+/g, "__"),
+        size = param.size + Math.max(0, tags.length - 2) * param.incr,
+        sw = size / tags.length, t = "";
+    for (var i = 0; i < tags.length; ++i) {
+        var x = $('<div class="' + class_prefix + tags[i] + '"></div>').appendTo(document.body),
+            color = x.css(param.css);
+        x.remove();
+
+        t += '<path d="' + ["M", sw * i, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>' +
+            '<path d="' + ["M", sw * i + size, 0, "l", -size, size, "l", sw, 0, "l", size, -size].join(" ") + '" fill="' + color + '"></path>';
+    }
+    if (param.pattern)
+        $("div.body").prepend('<svg width="0" height="0"><defs><pattern id="' + id
+                              + '" patternUnits="userSpaceOnUse" width="' + size
+                              + '" height="' + size + '">' + t
+                              + '</pattern></defs></svg>');
+    if (param.rule && window.btoa) {
+        style || (style = $("<style></style>").appendTo("head")[0].sheet);
+        t = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size +
+            '" height="' + size + '">' + t + '</svg>';
+        t = 'background-image: url(data:image/svg+xml;base64,' + btoa(t) +
+            '); background-attachment: fixed;'
+        x = "." + tags.join(".") + (class_prefix ? $.trim("." + class_prefix) : "");
+        style.insertRule(x + " { " + t + " }", 0);
+        style.insertRule(x + ".psc { " + t + " }", 0);
+    }
+    fmap[index] = fmap[canonical_index] = "url(#" + id + ")";
+    return fmap[index];
+};
+})();
+
+
 function savedisplayoptions() {
     $$("scoresortsave").value = $$("scoresort").value;
     Miniajax.submit("savedisplayoptionsform", function (rv) {
@@ -4108,6 +4174,7 @@ function save_tags() {
     });
 }
 save_tags.success = function (data) {
+    data.tags_color && make_pattern_fill(data.tags_color, "", true);
     jQuery(".has_hotcrp_tag_classes").each(function () {
         var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
         this.className = t + " " + (data.tags_color || "");

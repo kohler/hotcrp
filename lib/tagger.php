@@ -76,6 +76,8 @@ class TagInfo {
     private static $colorre = null;
     private static $badgere = null;
 
+    private static $multicolor_map = [];
+
     public static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0
                      || ($pos = strpos($tag, "=")) > 0))
@@ -321,7 +323,14 @@ class TagInfo {
             $classes = array_filter($classes, "TagInfo::classes_have_colors");
         if (count($classes) > 1)
             $classes = array_unique($classes);
-        return join(" ", $classes);
+        $key = join(" ", $classes);
+        // This seems out of place---it's redundant if we're going to
+        // generate JSON, for example---but it is convenient.
+        if (count($classes) > 1 && !@self::$multicolor_map[$key]) {
+            Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
+            self::$multicolor_map[$key] = true;
+        }
+        return $key;
     }
 
     public static function classes_have_colors($classes) {

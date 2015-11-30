@@ -1217,7 +1217,7 @@ class PaperList {
         // need tags for row coloring
         if ($this->contact->can_view_tags(null))
             $this->qopts["tags"] = 1;
-        $this->live_table = !@$options["no_javascript"];
+        $this->live_table = true;
 
         // get column list, check sort
         $field_list = $this->_list_columns($listname);
@@ -1313,7 +1313,7 @@ class PaperList {
         $foldclasses = array();
         if ($this->foldable)
             $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter = ($this->live_table ? Ht::take_stash() : "")
+        $enter = Ht::take_stash()
             . "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if (defval($options, "class"))
             $enter .= " " . $options["class"];
