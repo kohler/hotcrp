@@ -4174,10 +4174,10 @@ function save_tags() {
     });
 }
 save_tags.success = function (data) {
-    data.tags_color && make_pattern_fill(data.tags_color, "", true);
+    data.color_classes && make_pattern_fill(data.color_classes, "", true);
     jQuery(".has_hotcrp_tag_classes").each(function () {
         var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
-        this.className = t + " " + (data.tags_color || "");
+        this.className = t + " " + (data.color_classes || "");
     });
     jQuery("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
     if (data.response)

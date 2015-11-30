@@ -319,7 +319,7 @@ class PaperInfo {
         return (object) array("tags" => TagInfo::split($viewable),
                               "tags_edit_text" => $tagger->unparse($editable),
                               "tags_view_html" => $tags_view_html,
-                              "tags_color" => TagInfo::color_classes($viewable));
+                              "color_classes" => TagInfo::color_classes($viewable));
     }
 
     private function load_topics() {
