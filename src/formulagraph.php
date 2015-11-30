@@ -111,7 +111,7 @@ class FormulaGraph {
                         if (@$defaultstyles[$s] !== "") {
                             $c = "";
                             if (@$prow->paperTags && $Me->can_view_tags($prow))
-                                $c = TagInfo::color_classes($tagger->viewable($prow->paperTags), true);
+                                $c = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2);
                             if ($c !== "" && (@$defaultstyles[$s] ? : $c) !== $c)
                                 $c = "";
                             $defaultstyles[$s] = $c;
@@ -122,7 +122,7 @@ class FormulaGraph {
                         $d[] = $s;
                     else if ($s !== "plain"
                              && @$prow->paperTags && $Me->can_view_tags($prow)
-                             && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), true)))
+                             && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
                         $d[] = $color;
                 }
                 foreach ($revs as $rcid) {

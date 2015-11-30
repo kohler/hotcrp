@@ -304,7 +304,7 @@ class TagInfo {
         return self::$colorre;
     }
 
-    public static function color_classes($tags, $colors_only = false) {
+    public static function color_classes($tags, $color_type_bit = 1) {
         if (is_array($tags))
             $tags = join(" ", $tags);
         if (!$tags || $tags === " ")
@@ -319,16 +319,18 @@ class TagInfo {
                     $classes[] = $k . "tag";
             } else
                 $classes[] = self::canonical_color($tag) . "tag";
-        if ($colors_only)
+        if ($color_type_bit > 1)
             $classes = array_filter($classes, "TagInfo::classes_have_colors");
         if (count($classes) > 1)
             $classes = array_unique($classes);
         $key = join(" ", $classes);
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
-        if (count($classes) > 1 && !@self::$multicolor_map[$key]) {
-            Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
-            self::$multicolor_map[$key] = true;
+        if (count($classes) > 1
+            && !@(self::$multicolor_map[$key] & $color_type_bit)) {
+            if ($color_type_bit == 1)
+                Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
+            self::$multicolor_map[$key] |= $color_type_bit;
         }
         return $key;
     }
