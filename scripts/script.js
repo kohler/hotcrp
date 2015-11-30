@@ -3062,7 +3062,9 @@ function taghelp(elt, klass, cleanf) {
                 kill();
             else
                 setTimeout(display, 1);
-        }
+            return true;
+        } else
+            return false;
     }
 
     function kp(evt) {
@@ -3072,8 +3074,8 @@ function taghelp(elt, klass, cleanf) {
             hiding = true;
             return true;
         }
-        if (k == "Tab" && tagdiv && !m) {
-            docomplete(tagdiv.self().find(".autocomplete"));
+        if (k == "Tab" && tagdiv && !m
+            && docomplete(tagdiv.self().find(".autocomplete"))) {
             evt.preventDefault();
             return false;
         }
