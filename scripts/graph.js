@@ -584,17 +584,24 @@ hotcrp_graphs.scatter = function (args) {
     }
 };
 
-function data_to_barchart(data, isfraction) {
+function data_to_barchart(data, isfraction, septags) {
     data = data.map(function (d) {
-        var i, x = [], z = null;
+        var i, x = [], z = null, val, tags;
         for (i = 0; i < d.d.length; ++i) {
-            if (!z || z[4] != d.d[i][0]) {
-                z = [d.x, d.group, i, i, d.d[i][0], []];
+            tags = null;
+            val = d.d[i];
+            if (typeof val === "object") {
+                tags = val[0];
+                val = val[1];
+            }
+            if (!z || (septags && z[4] != tags)) {
+                z = [d.x, d.group, i, i, tags, []];
                 z.groupLabel = d.groupLabel;
                 x.push(z);
-            }
+            } else if (z[4] != tags)
+                z[4] = null;
             z[3] = i + 1;
-            z[5].push(d.d[i][1]);
+            z[5].push(val);
         }
         if (isfraction) {
             z = 1 / d.d.length;
@@ -609,7 +616,7 @@ hotcrp_graphs.barchart = function (args) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom,
-        data = data_to_barchart(args.data, !!args.yfraction);
+        data = data_to_barchart(args.data, !!args.yfraction, true);
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ge = d3.extent(data, function (d) { return d[1]; }),

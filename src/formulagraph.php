@@ -178,7 +178,7 @@ class FormulaGraph {
                         $x->groupLabel = $this->queries[$d[1]];
                     $ndata[] = $x;
                 }
-                $x->d[] = array(@$d[3], $d[2]);
+                $x->d[] = @$d[3] ? [@$d[3], $d[2]] : $d[2];
             }
             $data = $ndata;
         }
