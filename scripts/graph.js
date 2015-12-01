@@ -153,12 +153,13 @@ function seq_to_cdf(seq) {
 
 
 function expand_extent(e, delta) {
-    if (e[1] - e[0] >= 10 && e[0] == 1)
-        return [0, e[1]];
-    else if (e[1] - e[0] < 10)
-        return [e[0] - delta, e[1] + delta];
-    else
-        return e;
+    if (e[0] > 0 && e[0] < e[1] / 11)
+        e[0] = 0;
+    if (e[1] - e[0] < 10) {
+        e[0] && (e[0] -= delta);
+        e[1] += delta;
+    }
+    return e;
 }
 
 
