@@ -174,6 +174,11 @@ function make_axes(svg, width, height, xAxis, yAxis, args) {
         .attr("transform", "rotate(-90)")
         .attr("y", 6).attr("dy", ".71em")
         .style(css).text(args.ylabel || "");
+
+    if (args.xtick_setup && args.xtick_setup.rewrite)
+        args.xtick_setup.rewrite(svg.select(".x.axis"));
+    if (args.ytick_setup && args.ytick_setup.rewrite)
+        args.ytick_setup.rewrite(svg.select(".y.axis"));
 }
 
 function pid_sorter(a, b) {
@@ -506,9 +511,6 @@ hotcrp_graphs.scatter = function (args) {
     var hovers = svg.selectAll(".gdot_hover0, .gdot_hover1").style("display", "none");
 
     make_axes(svg, width, height, xAxis, yAxis, args);
-
-    args.xtick_setup && args.xtick_setup.rewrite && args.xtick_setup.rewrite(svg.select(".x.axis"));
-    args.ytick_setup && args.ytick_setup.rewrite && args.ytick_setup.rewrite(svg.select(".y.axis"));
 
     svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
         .attr("height", height + margin.bottom)
