@@ -196,7 +196,7 @@ class Contact {
     }
 
     static public function compare($a, $b) {
-        return strcasecmp($a->sorter, $b->sorter);
+        return strnatcasecmp($a->sorter, $b->sorter);
     }
 
     static public function site_contact() {
