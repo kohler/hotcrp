@@ -9,11 +9,11 @@ require_once("src/papersearch.php");
 $Graph = @$_REQUEST["g"];
 if (!$Graph
     && preg_match(',\A/(\w+)(/|\z),', Navigation::path(), $m))
-    $Graph = $m[1];
+    $Graph = $_REQUEST["g"] = $m[1];
 $Subgraph = @$_REQUEST["subg"];
 if (!$Subgraph
     && preg_match(',\A/\w+/(.+?)/?\z,', Navigation::path()))
-    $Subgraph = $m[2];
+    $Subgraph = $_REQUEST["subg"] = $m[2];
 
 // collect allowed graphs
 $Graphs = array();
