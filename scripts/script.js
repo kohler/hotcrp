@@ -955,7 +955,7 @@ function tooltip(info) {
             return tt;
     }
 
-    var bub = make_bubble(info.content, {color: "tooltip", dir: info.dir}),
+    var bub = make_bubble(info.content, {color: "tooltip dark", dir: info.dir}),
         to = null, refcount = 0;
     function erase() {
         to = clearTimeout(to);
@@ -1857,7 +1857,7 @@ return {
         if ((state[0] != which || !state[1]) && blurring != which) {
             state[1] && state[1].remove();
             var h = $("#assignmentselector").html().replace(/\$/g, which);
-            state = [which, make_bubble({content: h, dir: "l", color: "tooltip"})];
+            state = [which, make_bubble({content: h, dir: "l", color: "tooltip dark"})];
             state[1].near("#folderass" + which);
             $("#pcs" + which + "_selector").val(+$("#pcs" + which).val());
         }
@@ -2165,7 +2165,7 @@ function score_header_tooltip_enter(evt) {
                 d += "<div class=\"od\">Choices are:</div>";
                 for (si = 0, vo = fieldj.score_info.value_order();
                      si < vo.length; ++si)
-                    d += "<div class=\"od\"><span class=\"rev_num " + fieldj.score_info.className(vo[si]) + " dark\">" + fieldj.score_info.unparse(vo[si]) + ".</span>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
+                    d += "<div class=\"od\"><span class=\"rev_num " + fieldj.score_info.className(vo[si]) + "\">" + fieldj.score_info.unparse(vo[si]) + ".</span>&nbsp;" + escape_entities(fieldj.options[vo[si] - 1]) + "</div>";
             }
             tt = tooltip({content: d, dir: "l", element: this});
         }
@@ -4397,6 +4397,12 @@ function make_info(n, c, sv) {
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
         unparse: unparse,
+        unparse_html: function (val) {
+            if (val >= 1 && val <= n)
+                return '<span class="sv ' + sv + fm9(val) + '">' +
+                    unparse(val) + '</span>';
+            return val;
+        },
         unparse_revnum: function (val) {
             if (val >= 1 && val <= n)
                 return '<span class="rev_num sv ' + sv + fm9(val) + '">' +

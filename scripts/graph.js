@@ -585,8 +585,7 @@ function data_sort(data) {
     data.sort(function (a, b) {
         return d3.ascending(a[0], b[0]) || d3.ascending(a[1], b[1])
             || (a[3] || "").localeCompare(b[3] || "")
-            || d3.ascending(parseInt(a[2], 10), parseInt(b[2], 10))
-            || a[2].localeCompare(b[2]);
+            || pid_sorter(a[2], b[2]);
     });
     return data;
 }
@@ -770,37 +769,46 @@ hotcrp_graphs.boxplot = function (args) {
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    svg.selectAll(".gbox.whiskerl").data(data)
-      .enter().append("line", "rect")
-        .attr("x1", function (d) { return x(d[0]); })
-        .attr("x2", function (d) { return x(d[0]); })
-        .attr("y1", function (d) { return y(d.q[0]); })
-        .attr("y2", function (d) { return y(d.q[1]); })
-        .attr("class", function (d) { return "gbox whiskerl " + (d.c||""); });
+    function place_whisker(l, sel) {
+        sel.attr("x1", function (d) { return x(d[0]); })
+            .attr("x2", function (d) { return x(d[0]); })
+            .attr("y1", function (d) { return y(d.q[l]); })
+            .attr("y2", function (d) { return y(d.q[l + 1]); });
+    }
 
-    svg.selectAll(".gbox.whiskerh").data(data)
-      .enter().append("line", "rect")
-        .attr("x1", function (d) { return x(d[0]); })
-        .attr("x2", function (d) { return x(d[0]); })
-        .attr("y1", function (d) { return y(d.q[3]); })
-        .attr("y2", function (d) { return y(d.q[4]); })
-        .attr("class", function (d) { return "gbox whiskerh " + (d.c||""); });
+    function place_box(sel) {
+        sel.attr("x", function (d) { return x(d[0]) - barwidth / 2; })
+            .attr("y", function (d) {
+                return Math.min(y(d.q[3]), y(d.q[1]) - 2);
+            })
+            .attr("width", barwidth)
+            .attr("height", function (d) {
+                return Math.max(y(d.q[1]) - y(d.q[3]), 4);
+            });
+    }
 
-    svg.selectAll(".gbox.box").data(data)
-      .enter().append("rect")
-        .attr("x", function (d) { return x(d[0]) - barwidth / 2; })
-        .attr("y", function (d) { return y(d.q[3]); })
-        .attr("width", barwidth)
-        .attr("height", function (d) { return y(d.q[1]) - y(d.q[3]); })
-        .attr("class", function (d) { return "gbox box " + (d.c||""); });
+    function place_median(sel) {
+        sel.attr("x1", function (d) { return x(d[0]) - barwidth / 2; })
+            .attr("x2", function (d) { return x(d[0]) + barwidth / 2; })
+            .attr("y1", function (d) { return y(d.q[2]); })
+            .attr("y2", function (d) { return y(d.q[2]); });
+    }
 
-    svg.selectAll(".gbox.median").data(data)
-      .enter().append("line")
-        .attr("x1", function (d) { return x(d[0]) - barwidth / 2; })
-        .attr("x2", function (d) { return x(d[0]) + barwidth / 2; })
-        .attr("y1", function (d) { return y(d.q[2]); })
-        .attr("y2", function (d) { return y(d.q[2]); })
-        .attr("class", function (d) { return "gbox median " + (d.c||""); });
+    place_whisker(0, svg.selectAll(".gbox.whiskerl").data(data)
+            .enter().append("line")
+            .attr("class", function (d) { return "gbox whiskerl " + (d.c||""); }));
+
+    place_whisker(3, svg.selectAll(".gbox.whiskerh").data(data)
+            .enter().append("line")
+            .attr("class", function (d) { return "gbox whiskerh " + (d.c||""); }));
+
+    place_box(svg.selectAll(".gbox.box").data(data)
+            .enter().append("rect")
+            .attr("class", function (d) { return "gbox box " + (d.c||""); }));
+
+    place_median(svg.selectAll(".gbox.median").data(data)
+            .enter().append("line")
+            .attr("class", function (d) { return "gbox median " + (d.c||""); }));
 
     svg.selectAll(".gbox.outlier").data(d3.merge(data.map(function (d) {
           return d.d.filter(function (y) { return y < d.q[0] || y > d.q[4]; })
@@ -811,50 +819,51 @@ hotcrp_graphs.boxplot = function (args) {
         .attr("r", 2)
         .attr("class", function (d) { return "gbox outlier " + d[2]; });
 
-    /*function place(sel, close) {
-        return sel.attr("d", function (d) {
-            return ["M", x(d[0]) + gdelta + barwidth * d[1], y(d[2]),
-                    "V", y(d[3]), "h", barwidth,
-                    "V", y(d[2])].join(" ") + (close || "");
-        });
-    }
-
-    place(svg.selectAll(".gbar").data(data)
-          .enter().append("path")
-            .attr("class", function (d) {
-                return d[4] ? "gbar " + d[4] : "gbar";
-            })
-            .style("fill", function (d) { return make_pattern_fill(d[4], "gdot "); }));*/
-
     make_axes(svg, width, height, xAxis, yAxis, args);
 
-    /*svg.append("path").attr("class", "gbar gbar_hover0");
-    svg.append("path").attr("class", "gbar gbar_hover1");
-    var hovers = svg.selectAll(".gbar_hover0, .gbar_hover1")
-        .style("display", "none").style("pointer-events", "none");
+    svg.append("line").attr("class", "gbox whiskerl gbox_hover0");
+    svg.append("line").attr("class", "gbox whiskerh gbox_hover0");
+    svg.append("rect").attr("class", "gbox box gbox_hover0");
+    svg.append("line").attr("class", "gbox median gbox_hover0");
+    svg.append("line").attr("class", "gbox whiskerl gbox_hover1");
+    svg.append("line").attr("class", "gbox whiskerh gbox_hover1");
+    svg.append("rect").attr("class", "gbox box gbox_hover1");
+    svg.append("line").attr("class", "gbox median gbox_hover1");
+    var hovers = svg.selectAll(".gbox_hover0, .gbox_hover1")
+        .style("display", "none").style("ponter-events", "none");
 
-    svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
+    svg.selectAll(".gbox").on("mouseover", mouseover).on("mouseout", mouseout)
         .on("click", mouseclick);
 
     var hovered_data, hubble;
     function mouseover() {
         var p = d3.select(this).data()[0];
         if (p != hovered_data) {
-            if (p)
-                place(hovers.datum(p), "Z").style("display", null);
-            else
+            if (p) {
+                hovers.style("display", null).datum(p);
+                place_whisker(0, hovers.filter(".whiskerl"));
+                place_whisker(3, hovers.filter(".whiskerh"));
+                place_box(hovers.filter(".box"));
+                place_median(hovers.filter(".median"));
+            } else
                 hovers.style("display", "none");
             svg.style("cursor", p ? "pointer" : null);
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
-            if (!p.sorted) {
-                p[5].sort(pid_sorter);
-                p.sorted = true;
+            hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
+            if (!p.x) {
+                var yformat = function (value) { return value; };
+                if (args.yticks && args.yticks.unparse_html)
+                    yformat = args.yticks.unparse_html;
+                p.x = [];
+                for (var i = 0; i < p.p.length; ++i)
+                    p.x.push('<span class="nw">' + p.p[i]
+                             + " (" + yformat(p.d[i]) + ")</span>");
+                p.x.sort(pid_sorter);
+                p.x = "<p>#" + p.x.join(", #") + "</p>";
             }
-            hubble.html("<p>#" + p[5].join(", #") + "</p>")
-                .dir("l").near(this);
+            hubble.html(p.x).dir("l").near(hovers.filter(".box").node());
         }
     }
 
@@ -865,8 +874,8 @@ hotcrp_graphs.boxplot = function (args) {
     }
 
     function mouseclick() {
-        clicker(hovered_data ? hovered_data[5] : null);
-    }*/
+        clicker(hovered_data ? hovered_data.p : null);
+    }
 };
 
 hotcrp_graphs.formulas_add_qrow = function () {
@@ -896,6 +905,7 @@ hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
                 $self.text(info.unparse($self.text(), split));
         });
     };
+    format.unparse_html = info.unparse_html;
     return format;
 };
 
@@ -929,6 +939,9 @@ hotcrp_graphs.named_integer_ticks = function (map) {
                 container.attr("height", +container.attr("height") + (w - BOTTOM_MARGIN));
             }
         };
+    format.unparse_html = function (value) {
+        return map[value] != null ? text_to_html(map[value]) : value;
+    };
     return format;
 };
 

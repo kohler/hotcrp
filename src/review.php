@@ -12,7 +12,6 @@ class ReviewField {
     const VALUE_NONE = 0;
     const VALUE_SC = 1;
     const VALUE_REV_NUM = 2;
-    const VALUE_DARK = 4;
 
     public $id;
     public $uid;
@@ -227,8 +226,6 @@ class ReviewField {
             $klass = "rev_num $klass";
             $x .= ".";
         }
-        if ($scclass & self::VALUE_DARK)
-            $klass .= " dark";
         return "<span class=\"$klass\">$x</span>";
     }
 
