@@ -197,6 +197,8 @@ function clicker(pids) {
     var m, x, i, url;
     if (!pids)
         return;
+    if (typeof pids !== "object")
+        pids = [pids];
     for (i = 0, x = []; i < pids.length; ++i) {
         m = parseInt(pids[i], 10);
         if (!x.length || x[x.length - 1] != m)
@@ -794,6 +796,12 @@ hotcrp_graphs.boxplot = function (args) {
             .attr("y2", function (d) { return y(d.q[2]); });
     }
 
+    function place_outlier(sel) {
+        sel.attr("cx", function (d) { return x(d[0]); })
+            .attr("cy", function (d) { return y(d[1]); })
+            .attr("r", 2);
+    }
+
     place_whisker(0, svg.selectAll(".gbox.whiskerl").data(data)
             .enter().append("line")
             .attr("class", function (d) { return "gbox whiskerl " + (d.c||""); }));
@@ -810,14 +818,15 @@ hotcrp_graphs.boxplot = function (args) {
             .enter().append("line")
             .attr("class", function (d) { return "gbox median " + (d.c||""); }));
 
-    svg.selectAll(".gbox.outlier").data(d3.merge(data.map(function (d) {
-          return d.d.filter(function (y) { return y < d.q[0] || y > d.q[4]; })
-              .map(function (y) { return [d[0], y, d.c||""]; });
-      }))).enter().append("circle")
-        .attr("cx", function (d) { return x(d[0]); })
-        .attr("cy", function (d) { return y(d[1]); })
-        .attr("r", 2)
-        .attr("class", function (d) { return "gbox outlier " + d[2]; });
+    place_outlier(svg.selectAll(".gbox.outlier")
+            .data(d3.merge(data.map(function (d) {
+                var nd = [];
+                for (var i = 0; i < d.d.length; ++i)
+                    if (d.d[i] < d.q[0] || d.d[i] > d.q[4])
+                        nd.push({"0": d[0], "1": d.d[i], p: d.p[i], base: d});
+                return nd;
+            }))).enter().append("circle")
+            .attr("class", function (d) { return "gbox outlier " + (d.base.c||""); }));
 
     make_axes(svg, width, height, xAxis, yAxis, args);
 
@@ -825,44 +834,67 @@ hotcrp_graphs.boxplot = function (args) {
     svg.append("line").attr("class", "gbox whiskerh gbox_hover0");
     svg.append("rect").attr("class", "gbox box gbox_hover0");
     svg.append("line").attr("class", "gbox median gbox_hover0");
+    svg.append("circle").attr("class", "gbox outlier gbox_hover0");
     svg.append("line").attr("class", "gbox whiskerl gbox_hover1");
     svg.append("line").attr("class", "gbox whiskerh gbox_hover1");
     svg.append("rect").attr("class", "gbox box gbox_hover1");
     svg.append("line").attr("class", "gbox median gbox_hover1");
+    svg.append("circle").attr("class", "gbox outlier gbox_hover1");
     var hovers = svg.selectAll(".gbox_hover0, .gbox_hover1")
         .style("display", "none").style("ponter-events", "none");
 
-    svg.selectAll(".gbox").on("mouseover", mouseover).on("mouseout", mouseout)
-        .on("click", mouseclick);
+    svg.selectAll(".gbox").on("mouseout", mouseout).on("click", mouseclick);
+    svg.selectAll(".gbox").filter(":not(.outlier)").on("mouseover", mouseover);
+    svg.selectAll(".gbox.outlier").on("mouseover", mouseover_outlier);
+
+    function make_tooltip(ps, ds) {
+        var yformat = function (value) { return value; };
+        if (args.yticks && args.yticks.unparse_html)
+            yformat = args.yticks.unparse_html;
+        var x = [];
+        for (var i = 0; i < ps.length; ++i)
+            x.push(ps[i] + " (" + yformat(ds[i]) + ")");
+        x.sort(pid_sorter);
+        return '<p><span class="nw">#' + x.join(',</span> <span class="nw">#') + '</span></p>';
+    }
 
     var hovered_data, hubble;
     function mouseover() {
         var p = d3.select(this).data()[0];
         if (p != hovered_data) {
+            hovers.style("display", "none");
             if (p) {
-                hovers.style("display", null).datum(p);
+                hovers.filter(":not(.outlier)").style("display", null).datum(p);
                 place_whisker(0, hovers.filter(".whiskerl"));
                 place_whisker(3, hovers.filter(".whiskerh"));
                 place_box(hovers.filter(".box"));
                 place_median(hovers.filter(".median"));
-            } else
-                hovers.style("display", "none");
+            }
             svg.style("cursor", p ? "pointer" : null);
             hovered_data = p;
         }
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
-            if (!p.x) {
-                var yformat = function (value) { return value; };
-                if (args.yticks && args.yticks.unparse_html)
-                    yformat = args.yticks.unparse_html;
-                p.x = [];
-                for (var i = 0; i < p.p.length; ++i)
-                    p.x.push(p.p[i] + " (" + yformat(p.d[i]) + ")");
-                p.x.sort(pid_sorter);
-                p.x = '<p><span class="nw">#' + p.x.join(',</span> <span class="nw">#') + '</span></p>';
-            }
-            hubble.html(p.x).dir("l").near(hovers.filter(".box").node());
+            if (!p.th)
+                p.th = make_tooltip(p.p, p.d);
+            hubble.html(p.th).dir("l").near(hovers.filter(".box").node());
+        }
+    }
+
+    function mouseover_outlier() {
+        var p = d3.select(this).data()[0];
+        if (p != hovered_data) {
+            hovers.style("display", "none");
+            if (p)
+                place_outlier(hovers.filter(".outlier").style("display", null).datum(p));
+            svg.style("cursor", p ? "pointer" : null);
+            hovered_data = p;
+        }
+        if (p) {
+            hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
+            if (!p.th)
+                p.th = make_tooltip([p.p], [p[1]]);
+            hubble.html(p.th).dir("l").near(hovers.filter(".outlier").node());
         }
     }
 
