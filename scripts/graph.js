@@ -718,9 +718,12 @@ function data_to_boxplot(data, septags) {
     }, []);
 
     data.map(function (d) {
-        d.q = [d3.quantile(d.d, 0.05), d3.quantile(d.d, 0.25),
-               d3.quantile(d.d, 0.5), d3.quantile(d.d, 0.75),
-               d3.quantile(d.d, 0.95)];
+        d.q = [d.d[0], d3.quantile(d.d, 0.25), d3.quantile(d.d, 0.5),
+               d3.quantile(d.d, 0.75), d.d[d.d.length - 1]];
+        if (d.d.length > 20) {
+            d.q[0] = d3.quantile(d.d, 0.05);
+            d.q[4] = d3.quantile(d.d, 0.95);
+        }
     });
 
     return data;
@@ -792,7 +795,7 @@ hotcrp_graphs.boxplot = function (args) {
         .attr("class", function (d) { return "gbox median " + (d.c||""); });
 
     svg.selectAll(".gbox.outlier").data(d3.merge(data.map(function (d) {
-          return d.d.filter(function (y) { return y < d.q05 || y > d.q95; })
+          return d.d.filter(function (y) { return y < d.q[0] || y > d.q[4]; })
               .map(function (y) { return [d[0], y, d.c||""]; });
       }))).enter().append("circle")
         .attr("cx", function (d) { return x(d[0]); })
