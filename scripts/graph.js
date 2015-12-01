@@ -858,10 +858,9 @@ hotcrp_graphs.boxplot = function (args) {
                     yformat = args.yticks.unparse_html;
                 p.x = [];
                 for (var i = 0; i < p.p.length; ++i)
-                    p.x.push('<span class="nw">' + p.p[i]
-                             + " (" + yformat(p.d[i]) + ")</span>");
+                    p.x.push(p.p[i] + " (" + yformat(p.d[i]) + ")");
                 p.x.sort(pid_sorter);
-                p.x = "<p>#" + p.x.join(", #") + "</p>";
+                p.x = '<p><span class="nw">#' + p.x.join(',</span> <span class="nw">#') + '</span></p>';
             }
             hubble.html(p.x).dir("l").near(hovers.filter(".box").node());
         }
