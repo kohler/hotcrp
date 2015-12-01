@@ -806,7 +806,7 @@ hotcrp_graphs.boxplot = function (args) {
       }))).enter().append("circle")
         .attr("cx", function (d) { return x(d[0]); })
         .attr("cy", function (d) { return y(d[1]); })
-        .attr("r", barwidth / 4)
+        .attr("r", Math.max(3, barwidth / 4))
         .attr("class", function (d) { return "gbox outlier " + d[2]; });
 
     /*function place(sel, close) {
