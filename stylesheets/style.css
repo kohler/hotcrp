@@ -1599,6 +1599,11 @@ td.pl.pl_revtype {
 }
 div.pl_revtype_round {
 	margin-right: -1.2em;
+	display: inline-block;
+}
+div.pl_revtype_haslead {
+	margin-left: -0.8em;
+	white-space: nowrap;
 }
 
 th.pll {

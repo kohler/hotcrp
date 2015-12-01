@@ -523,11 +523,12 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $t = "";
         $x = null;
         if (!$this->xreviewer && $row->leadContactId && $row->leadContactId == $pl->contact->contactId)
-            $x[] = '<span class="rtlead" title="Lead"><span class="rti">L</div></div>';
+            $x[] = '<span class="rtlead" title="Lead"><span class="rti">L</span></span>';
         if (!$this->xreviewer && $row->shepherdContactId && $row->shepherdContactId == $pl->contact->contactId)
-            $x[] = '<span class="rtshep" title="Shepherd"><span class="rti">S</div></div>';
+            $x[] = '<span class="rtshep" title="Shepherd"><span class="rti">S</span></span>';
         if ($x)
-            $t .= ($t ? '&nbsp;' : '') . join('&nbsp;', $x);
+            $t = '<div class="pl_revtype_haslead">' . join('&nbsp;', $x)
+               . ($t ? '&nbsp;' . $t : '') . '</div>';
         return $t;
     }
 }
