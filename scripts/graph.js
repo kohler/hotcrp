@@ -568,14 +568,16 @@ hotcrp_graphs.scatter = function (args) {
 };
 
 function data_quantize_x(data) {
-    data.sort(function (a, b) { return d3.ascending(a[0], b[0]); });
-    var epsilon = (data[data.length - 1][0] - data[0][0]) / 5000, active = null;
-    data.forEach(function (d) {
-        if (active !== null && Math.abs(active - d[0]) <= epsilon)
-            d[0] = active;
-        else
-            active = d[0];
-    });
+    if (data.length) {
+        data.sort(function (a, b) { return d3.ascending(a[0], b[0]); });
+        var epsilon = (data[data.length - 1][0] - data[0][0]) / 5000, active = null;
+        data.forEach(function (d) {
+            if (active !== null && Math.abs(active - d[0]) <= epsilon)
+                d[0] = active;
+            else
+                active = d[0];
+        });
+    }
     return data;
 }
 
