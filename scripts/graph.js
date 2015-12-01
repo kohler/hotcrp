@@ -561,21 +561,34 @@ hotcrp_graphs.scatter = function (args) {
     }
 };
 
-function data_to_barchart(data, isfraction, septags) {
-    data = data_to_scatter(data);
+function data_quantize_x(data) {
+    data.sort(function (a, b) { return d3.ascending(a[0], b[0]); });
+    var epsilon = (data[data.length - 1][0] - data[0][0]) / 5000, active = null;
+    data.forEach(function (d) {
+        if (active !== null && Math.abs(active - d[0]) <= epsilon)
+            d[0] = active;
+        else
+            active = d[0];
+    });
+    return data;
+}
+
+function data_sort(data) {
     data.sort(function (a, b) {
         return d3.ascending(a[0], b[0]) || d3.ascending(a[1], b[1])
             || (a[3] || "").localeCompare(b[3] || "")
             || d3.ascending(parseInt(a[2], 10), parseInt(b[2], 10))
             || a[2].localeCompare(b[2]);
     });
+    return data;
+}
 
-    var epsilon = (data[data.length - 1][0] - data[0][0]) / 5000,
-        active = null, count = 0;
+function data_to_barchart(data, isfraction, septags) {
+    data = data_sort(data_quantize_x(data_to_scatter(data)));
+
+    var active = null, count = 0;
     data = data.reduce(function (newdata, d) {
-        if (active && Math.abs(active[0] - d[0]) <= epsilon && active[1] == d[1])
-            d[0] = active[0];
-        else
+        if (active && (active[0] != d[0] || active[1] != d[1]))
             active = null;
         if (!active || (septags && active[4] != d[3])) {
             var count = active ? active[3] : 0;
@@ -604,7 +617,7 @@ hotcrp_graphs.barchart = function (args) {
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ge = d3.extent(data, function (d) { return d[1]; }),
-        ye = [0, d3.extent(data, function (d) { return d[3]; })[1]],
+        ye = [0, d3.max(data, function (d) { return d[3]; })],
         deltae = d3.extent(data, function (d, i) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
@@ -686,6 +699,163 @@ hotcrp_graphs.barchart = function (args) {
     function mouseclick() {
         clicker(hovered_data ? hovered_data[5] : null);
     }
+};
+
+function data_to_boxplot(data, septags) {
+    data = data_sort(data_quantize_x(data_to_scatter(data)));
+
+    var active = null, count = 0;
+    data = data.reduce(function (newdata, d) {
+        if (!active || active[0] != d[0] || (septags && active[4] != d[3])) {
+            active = {"0": d[0], ymin: d[1], c: d[3], d: [], p: []};
+            newdata.push(active);
+        } else if (active[2] != d[3])
+            active.c = null;
+        active.ymax = d[1];
+        active.d.push(d[1]);
+        active.p.push(d[2]);
+        return newdata;
+    }, []);
+
+    data.map(function (d) {
+        d.q = [d3.quantile(d.d, 0.05), d3.quantile(d.d, 0.25),
+               d3.quantile(d.d, 0.5), d3.quantile(d.d, 0.75),
+               d3.quantile(d.d, 0.95)];
+    });
+
+    return data;
+}
+
+hotcrp_graphs.boxplot = function (args) {
+    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = $(args.selector).width() - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom,
+        data = data_to_boxplot(args.data, !!args.yfraction, true);
+
+    var xe = d3.extent(data, function (d) { return d[0]; }),
+        ye = [d3.min(data, function (d) { return d.ymin; }),
+              d3.max(data, function (d) { return d.ymax; })],
+        deltae = d3.extent(data, function (d, i) {
+            var delta = i ? d[0] - data[i-1][0] : 0;
+            return delta || Infinity;
+        }),
+        x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
+                .domain(expand_extent(xe, xe[1] - xe[0] < 10 ? 0.2 : 0)),
+        y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
+                .domain(ye);
+
+    var barwidth = width/40;
+    if (deltae[0] != Infinity)
+        barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 10);
+
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    args.xtick_setup && args.xtick_setup(xAxis, xe);
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+    args.ytick_setup && args.ytick_setup(yAxis, ye);
+
+    var svg = d3.select(args.selector).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.selectAll(".gbox.whiskerl").data(data)
+      .enter().append("line", "rect")
+        .attr("x1", function (d) { return x(d[0]); })
+        .attr("x2", function (d) { return x(d[0]); })
+        .attr("y1", function (d) { return y(d.q[0]); })
+        .attr("y2", function (d) { return y(d.q[1]); })
+        .attr("class", function (d) { return "gbox whiskerl " + (d.c||""); });
+
+    svg.selectAll(".gbox.whiskerh").data(data)
+      .enter().append("line", "rect")
+        .attr("x1", function (d) { return x(d[0]); })
+        .attr("x2", function (d) { return x(d[0]); })
+        .attr("y1", function (d) { return y(d.q[3]); })
+        .attr("y2", function (d) { return y(d.q[4]); })
+        .attr("class", function (d) { return "gbox whiskerh " + (d.c||""); });
+
+    svg.selectAll(".gbox.box").data(data)
+      .enter().append("rect")
+        .attr("x", function (d) { return x(d[0]) - barwidth / 2; })
+        .attr("y", function (d) { return y(d.q[3]); })
+        .attr("width", barwidth)
+        .attr("height", function (d) { return y(d.q[1]) - y(d.q[3]); })
+        .attr("class", function (d) { return "gbox box " + (d.c||""); });
+
+    svg.selectAll(".gbox.median").data(data)
+      .enter().append("line")
+        .attr("x1", function (d) { return x(d[0]) - barwidth / 2; })
+        .attr("x2", function (d) { return x(d[0]) + barwidth / 2; })
+        .attr("y1", function (d) { return y(d.q[2]); })
+        .attr("y2", function (d) { return y(d.q[2]); })
+        .attr("class", function (d) { return "gbox median " + (d.c||""); });
+
+    svg.selectAll(".gbox.outlier").data(d3.merge(data.map(function (d) {
+          return d.d.filter(function (y) { return y < d.q05 || y > d.q95; })
+              .map(function (y) { return [d[0], y, d.c||""]; });
+      }))).enter().append("circle")
+        .attr("cx", function (d) { return x(d[0]); })
+        .attr("cy", function (d) { return y(d[1]); })
+        .attr("r", barwidth / 4)
+        .attr("class", function (d) { return "gbox outlier " + d[2]; });
+
+    /*function place(sel, close) {
+        return sel.attr("d", function (d) {
+            return ["M", x(d[0]) + gdelta + barwidth * d[1], y(d[2]),
+                    "V", y(d[3]), "h", barwidth,
+                    "V", y(d[2])].join(" ") + (close || "");
+        });
+    }
+
+    place(svg.selectAll(".gbar").data(data)
+          .enter().append("path")
+            .attr("class", function (d) {
+                return d[4] ? "gbar " + d[4] : "gbar";
+            })
+            .style("fill", function (d) { return make_pattern_fill(d[4], "gdot "); }));*/
+
+    make_axes(svg, width, height, xAxis, yAxis, args);
+
+    /*svg.append("path").attr("class", "gbar gbar_hover0");
+    svg.append("path").attr("class", "gbar gbar_hover1");
+    var hovers = svg.selectAll(".gbar_hover0, .gbar_hover1")
+        .style("display", "none").style("pointer-events", "none");
+
+    svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
+        .on("click", mouseclick);
+
+    var hovered_data, hubble;
+    function mouseover() {
+        var p = d3.select(this).data()[0];
+        if (p != hovered_data) {
+            if (p)
+                place(hovers.datum(p), "Z").style("display", null);
+            else
+                hovers.style("display", "none");
+            svg.style("cursor", p ? "pointer" : null);
+            hovered_data = p;
+        }
+        if (p) {
+            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            if (!p.sorted) {
+                p[5].sort(pid_sorter);
+                p.sorted = true;
+            }
+            hubble.html("<p>#" + p[5].join(", #") + "</p>")
+                .dir("l").near(this);
+        }
+    }
+
+    function mouseout() {
+        hovers.style("display", "none");
+        hubble && hubble.remove();
+        hovered_data = hubble = null;
+    }
+
+    function mouseclick() {
+        clicker(hovered_data ? hovered_data[5] : null);
+    }*/
 };
 
 hotcrp_graphs.formulas_add_qrow = function () {

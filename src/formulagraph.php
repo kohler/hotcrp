@@ -6,8 +6,9 @@
 class FormulaGraph {
     const SCATTER = 0;
     const CDF = 1;
-    const BARCHART = 2;
+    const BARCHART = 2; /* NB is bitmask */
     const FBARCHART = 3;
+    const BOXPLOT = 4;
 
     public $type = self::SCATTER;
     public $fx;
@@ -36,8 +37,13 @@ class FormulaGraph {
         } else if (preg_match('/\A(?:frac|fraction)\z/i', $fy)) {
             $this->type = self::FBARCHART;
             $this->fy = new Formula("0", true);
-        } else
+        } else {
+            if (preg_match('/\A(?:box|boxplot)\s+(.*)\z/i', $fy, $m)) {
+                $this->type = self::BOXPLOT;
+                $fy = $m[1];
+            }
             $this->fy = new Formula($fy, true);
+        }
 
         if ($this->fx->error_html()) {
             $this->error_html[] = "X axis formula: " . $this->fx->error_html();
@@ -155,7 +161,7 @@ class FormulaGraph {
                     continue;
                 if ($reviewf)
                     $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
-                if ($this->type || $this->fx_query) {
+                if (($this->type & self::BARCHART) || $this->fx_query) {
                     foreach ($queries as $q) {
                         $d[$xi] = $q;
                         $data[$s][] = $d;

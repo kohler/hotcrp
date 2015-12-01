@@ -124,10 +124,14 @@ if ($Graph == "formula") {
         $data = $fg->data();
         if ($fg->type == FormulaGraph::CDF)
             $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',ylabel:"CDF"}); })');
-        else if ($fg->type)
-            $Conf->echoScript('jQuery(function () { hotcrp_graphs.barchart({selector:"#hotgraph",data:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',' . $fg->axis_info_settings("y") . '}); })');
-        else
-            $Conf->echoScript('jQuery(function () { hotcrp_graphs.scatter({selector:"#hotgraph",data:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',' . $fg->axis_info_settings("y") . '}); })');
+        else {
+            $gtype = "scatter";
+            if ($fg->type & FormulaGraph::BARCHART)
+                $gtype = "barchart";
+            else if ($fg->type == FormulaGraph::BOXPLOT)
+                $gtype = "boxplot";
+            $Conf->echoScript('jQuery(function () { hotcrp_graphs.' . $gtype . '({selector:"#hotgraph",data:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',' . $fg->axis_info_settings("y") . '}); })');
+        }
     } else
         echo "<h2>Formulas</h2>\n";
 

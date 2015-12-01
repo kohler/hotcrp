@@ -2962,56 +2962,56 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	stroke-width: 0.5px;
 }
 
-.gdot, .gbar {
+.gdot, .gbar, .gbox {
 	stroke: rgba(70, 130, 180, 0.8);
 	fill: rgba(70, 130, 180, 0.2);
 }
-.gcdf.whitetag, .gdot.whitetag, .gbar.whitetag {
+.gcdf.whitetag, .gdot.whitetag, .gbar.whitetag, .gbox.whitetag {
 	stroke: rgba(255, 255, 255, 0.8);
 }
-.gdot.whitetag, .gbar.whitetag {
+.gdot.whitetag, .gbar.whitetag, .gbox.whitetag {
 	fill: rgba(255, 255, 255, 0.6);
 }
-.gcdf.redtag, .gdot.redtag, .gbar.redtag {
+.gcdf.redtag, .gdot.redtag, .gbar.redtag, .gbox.redtag {
 	stroke: rgba(245, 51, 51, 0.8);
 }
-.gdot.redtag, .gbar.redtag {
+.gdot.redtag, .gbar.redtag, .gbox.redtag {
 	fill: rgba(245, 51, 51, 0.2);
 }
-.gcdf.orangetag, .gdot.orangetag, .gbar.orangetag {
+.gcdf.orangetag, .gdot.orangetag, .gbar.orangetag, .gbox.orangetag {
 	stroke: rgba(214, 136, 0, 0.8);
 }
-.gdot.orangetag, .gbar.orangetag {
+.gdot.orangetag, .gbar.orangetag, .gbox.orangetag {
 	fill: rgba(214, 136, 0, 0.2);
 }
-.gcdf.yellowtag, .gdot.yellowtag, .gbar.yellowtag {
+.gcdf.yellowtag, .gdot.yellowtag, .gbar.yellowtag, .gbox.yellowtag {
 	stroke: rgba(191, 186, 38, 0.8);
 }
-.gdot.yellowtag, .gbar.yellowtag {
+.gdot.yellowtag, .gbar.yellowtag, .gbox.yellowtag {
 	fill: rgba(221, 216, 85, 0.3);
 }
-.gcdf.greentag, .gdot.greentag, .gbar.greentag {
+.gcdf.greentag, .gdot.greentag, .gbar.greentag, .gbox.greentag {
 	stroke: rgba(13, 185, 13, 0.8);
 }
-.gdot.greentag, .gbar.greentag {
+.gdot.greentag, .gbar.greentag, .gbox.greentag {
 	fill: rgba(13, 195, 13, 0.2);
 }
-.gcdf.bluetag, .gdot.bluetag, .gbar.bluetag {
+.gcdf.bluetag, .gdot.bluetag, .gbar.bluetag, .gbox.bluetag {
 	stroke: rgba(47, 47, 202, 0.8);
 }
-.gdot.bluetag, .gbar.bluetag {
+.gdot.bluetag, .gbar.bluetag, .gbox.bluetag {
 	fill: rgba(47, 47, 202, 0.2);
 }
-.gcdf.purpletag, .gdot.purpletag, .gbar.purpletag {
+.gcdf.purpletag, .gdot.purpletag, .gbar.purpletag, .gbox.purpletag {
 	stroke: rgba(150, 44, 186, 0.8);
 }
-.gdot.purpletag, .gbar.purpletag {
+.gdot.purpletag, .gbar.purpletag, .gbox.purpletag {
 	fill: rgba(150, 44, 186, 0.2);
 }
-.gcdf.graytag, .gdot.graytag, .gbar.graytag {
+.gcdf.graytag, .gdot.graytag, .gbar.graytag, .gbox.graytag {
 	stroke: rgba(120, 120, 120, 0.8);
 }
-.gdot.graytag, .gbar.graytag {
+.gdot.graytag, .gbar.graytag, .gbox.graytag {
 	fill: rgba(120, 120, 120, 0.2);
 }
 
