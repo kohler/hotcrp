@@ -57,7 +57,9 @@ class Fexpr {
             $format = false;
             for ($i = ($this->op === "?:" ? 1 : 0); $i < count($this->args); ++$i) {
                 $a = $this->args[$i];
-                $f = $a instanceof Fexpr ? $a->format() : false;
+                $f = false;
+                if ($a instanceof Fexpr && !$a->is_null())
+                    $f = $a->format();
                 if ($f !== false && ($format === false || $format === $f))
                     $format = $f;
                 else
@@ -68,6 +70,10 @@ class Fexpr {
             return "bool";
         else
             return null;
+    }
+
+    public function is_null() {
+        return false;
     }
 
     public function typecheck() {
@@ -230,6 +236,9 @@ class ConstantFexpr extends Fexpr {
         parent::__construct("");
         $this->x = $x;
         $this->format = $format;
+    }
+    public function is_null() {
+        return $this->x === "null";
     }
     public function format() {
         return $this->format;

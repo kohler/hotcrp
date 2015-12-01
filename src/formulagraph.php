@@ -17,6 +17,7 @@ class FormulaGraph {
     private $queries = array();
     private $query_styles = array();
     private $papermap = array();
+    private $reviewers = array();
     public $error_html = array();
     public $errf = array();
 
@@ -134,7 +135,6 @@ class FormulaGraph {
         global $Me;
         $data = [];
         $tagger = new Tagger($Me);
-        $xi = $this->fx_query ? 0 : 1;
 
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
@@ -163,7 +163,7 @@ class FormulaGraph {
                     $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
                 if (($this->type & self::BARCHART) || $this->fx_query) {
                     foreach ($queries as $q) {
-                        $d[$xi] = $q;
+                        $d[$this->fx_query ? 0 : 1] = $q;
                         $data[$s][] = $d;
                     }
                 } else
@@ -171,7 +171,43 @@ class FormulaGraph {
             }
         }
 
+        error_log($this->fx->result_format());
+        if ($this->fx->result_format() === "reviewer"
+            || $this->fy->result_format() === "reviewer")
+            $this->_scatter_fix_reviewers($data);
+
         return $data;
+    }
+
+    private function _scatter_fix_reviewers(&$data) {
+        $xi = !$this->fx_query
+            && $this->fx->result_format() === "reviewer";
+        $yi = !($this->type & self::BARCHART)
+            && $this->fy->result_format() === "reviewer";
+        $reviewer_cids = [];
+        foreach ($data as $dx)
+            foreach ($dx as $d) {
+                $xi && $d[0] && ($reviewer_cids[$d[0]] = true);
+                $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
+            }
+
+        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", array_keys($reviewer_cids));
+        $this->reviewers = [];
+        while ($result && ($c = $result->fetch_object("Contact")))
+            $this->reviewers[$c->contactId] = $c;
+        Dbl::free($result);
+        uasort($this->reviewers, "Contact::compare");
+        $i = 0;
+        foreach ($this->reviewers as $c)
+            $c->graph_index = ++$i;
+
+        foreach ($data as &$dx) {
+            foreach ($dx as &$d) {
+                $xi && $d[0] && ($d[0] = $this->reviewers[$d[0]]->graph_index);
+                $yi && $d[1] && ($d[1] = $this->reviewers[$d[1]]->graph_index);
+            }
+            unset($d);
+        }
     }
 
     public function data() {
@@ -184,8 +220,6 @@ class FormulaGraph {
             $reviewf = $fyf;
         else
             $reviewf = null;
-
-        $defaultstyles = array();
 
         // load data
         $paperIds = array_keys($this->papermap);
@@ -218,25 +252,31 @@ class FormulaGraph {
         $format = $f->result_format();
         $rticks = ($axis == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($axis == "x" && $this->fx_query) {
-            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
         } else if ($format instanceof ReviewField) {
             if ($format->option_letter)
                 $t[] = $axis . "flip:true";
             $n = count($format->options);
             $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
-            $t[] = $axis . "tick_setup:hotcrp_graphs.option_letter_ticks("
+            $t[] = $axis . "ticks:hotcrp_graphs.option_letter_ticks("
                     . $n . "," . json_encode($ol) . "," . json_encode($format->option_class_prefix) . ")";
+        } else if ($format === "reviewer") {
+            $x = [];
+            foreach ($this->reviewers as $r)
+                $x[$r->graph_index] = $r->name_html();
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
+                    . json_encode($x) . ")" . $rticks;
         } else if ($format === "dec")
-            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks("
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;
         else if ($format === "bool")
-            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
-            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
         else if ($format === "revround")
-            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($Conf->defined_round_list()) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($Conf->defined_round_list()) . ")" . $rticks;
         else if ($format === "revtype")
-            $t[] = $axis . "tick_setup:hotcrp_graphs.named_integer_ticks(" . json_encode($reviewTypeName) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($reviewTypeName) . ")" . $rticks;
         return join(",", $t);
     }
 }

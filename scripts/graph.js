@@ -3,6 +3,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 var hotcrp_graphs = (function ($, d3) {
+var BOTTOM_MARGIN = 30;
 
 function pathNodeMayBeNearer(pathNode, point, dist) {
     function oob(l, t, r, b) {
@@ -152,7 +153,12 @@ function seq_to_cdf(seq) {
 
 
 function expand_extent(e, delta) {
-    return [e[0] - delta, e[1] + delta];
+    if (e[1] - e[0] >= 10 && e[0] == 1)
+        return [0, e[1]];
+    else if (e[1] - e[0] < 10)
+        return [e[0] - delta, e[1] + delta];
+    else
+        return e;
 }
 
 
@@ -175,10 +181,10 @@ function make_axes(svg, width, height, xAxis, yAxis, args) {
         .attr("y", 6).attr("dy", ".71em")
         .style(css).text(args.ylabel || "");
 
-    if (args.xtick_setup && args.xtick_setup.rewrite)
-        args.xtick_setup.rewrite(svg.select(".x.axis"));
-    if (args.ytick_setup && args.ytick_setup.rewrite)
-        args.ytick_setup.rewrite(svg.select(".y.axis"));
+    if (args.xticks && args.xticks.rewrite)
+        args.xticks.rewrite(svg.select(".x.axis"), svg);
+    if (args.yticks && args.yticks.rewrite)
+        args.yticks.rewrite(svg.select(".y.axis"), svg);
 }
 
 function pid_sorter(a, b) {
@@ -216,7 +222,7 @@ var hotcrp_graphs = {};
 //        series: [{d: [ARRAY], label: STRING, className: STRING}],
 //        xlabel: STRING, ylabel: STRING, xtick_format: STRING}
 function hotcrp_graphs_cdf(args) {
-    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom;
 
@@ -257,7 +263,7 @@ function hotcrp_graphs_cdf(args) {
 
     // axes
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xtick_setup && args.xtick_setup(xAxis, x.domain());
+    args.xticks && args.xticks(xAxis, x.domain());
     args.xtick_format && xAxis.tickFormat(args.xtick_format);
     var yAxis = d3.svg.axis().scale(y).orient("left");
     var line = d3.svg.line().x(function (d) {return x(d[0]);})
@@ -477,7 +483,7 @@ function data_to_scatter(data) {
 }
 
 hotcrp_graphs.scatter = function (args) {
-    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom,
         data = data_to_scatter(args.data);
@@ -485,16 +491,16 @@ hotcrp_graphs.scatter = function (args) {
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = d3.extent(data, function (d) { return d[1]; }),
         x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
-                .domain(expand_extent(xe, xe[1] - xe[0] < 10 ? 0.3 : 0)),
+                .domain(expand_extent(xe, 0.3)),
         y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
-                .domain(expand_extent(ye, ye[1] - ye[0] < 10 ? 0.3 : 0)),
+                .domain(expand_extent(ye, 0.3)),
         rf = function (d) { return d.r - 1; };
     data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xtick_setup && args.xtick_setup(xAxis, xe);
+    args.xticks && args.xticks(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.ytick_setup && args.ytick_setup(yAxis, ye);
+    args.yticks && args.yticks(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -610,7 +616,7 @@ function data_to_barchart(data, isfraction, septags) {
 }
 
 hotcrp_graphs.barchart = function (args) {
-    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom,
         data = data_to_barchart(args.data, !!args.yfraction, true);
@@ -623,7 +629,7 @@ hotcrp_graphs.barchart = function (args) {
             return delta || Infinity;
         }),
         x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
-                .domain(expand_extent(xe, xe[1] - xe[0] < 10 ? 0.2 : 0)),
+                .domain(expand_extent(xe, 0.2)),
         y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
                 .domain(ye);
 
@@ -633,9 +639,9 @@ hotcrp_graphs.barchart = function (args) {
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xtick_setup && args.xtick_setup(xAxis, xe);
+    args.xticks && args.xticks(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.ytick_setup && args.ytick_setup(yAxis, ye);
+    args.yticks && args.yticks(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -730,7 +736,7 @@ function data_to_boxplot(data, septags) {
 }
 
 hotcrp_graphs.boxplot = function (args) {
-    var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom,
         data = data_to_boxplot(args.data, !!args.yfraction, true);
@@ -743,7 +749,7 @@ hotcrp_graphs.boxplot = function (args) {
             return delta || Infinity;
         }),
         x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
-                .domain(expand_extent(xe, xe[1] - xe[0] < 10 ? 0.2 : 0)),
+                .domain(expand_extent(xe, 0.2)),
         y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
                 .domain(ye);
 
@@ -752,9 +758,9 @@ hotcrp_graphs.boxplot = function (args) {
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 10);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xtick_setup && args.xtick_setup(xAxis, xe);
+    args.xticks && args.xticks(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.ytick_setup && args.ytick_setup(yAxis, ye);
+    args.yticks && args.yticks(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -879,7 +885,7 @@ hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
             split = 1, count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
         if (c)
             axis.ticks(count);
-    };
+    }
     format.rewrite = function (axis) {
         $(axis[0]).find("g.tick text").each(function () {
             var $self = $(this);
@@ -891,13 +897,36 @@ hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
     return format;
 };
 
+function get_max_tick_width(axis) {
+    return d3.max($(axis[0]).find("g.tick text").map(function () {
+        return $(this).width();
+    }));
+}
+
 hotcrp_graphs.named_integer_ticks = function (map) {
-    return function (axis, extent) {
+    function format(axis, extent) {
         var count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
         axis.ticks(count).tickFormat(function (value) {
             return map[value];
         });
-    };
+    }
+    if (d3.values(map).length > 10)
+        format.rewrite = function (axis) {
+            var w = get_max_tick_width(axis);
+            if (w > 100) {
+                $(axis[0]).find("g.tick text").css("font-size", "smaller");
+                w = get_max_tick_width(axis);
+            }
+            axis.selectAll("g.tick text").style("text-anchor", "end")
+                .attr("dx", "-0.8em").attr("dy", ".15em")
+                .attr("transform", "rotate(-65)");
+            w = w * Math.sin(1.13446) + 20; // 65 degrees in radians
+            if (w > BOTTOM_MARGIN && axis.classed("x")) {
+                var container = $(axis[0]).closest("svg");
+                container.attr("height", +container.attr("height") + (w - BOTTOM_MARGIN));
+            }
+        };
+    return format;
 };
 
 hotcrp_graphs.rotate_ticks = function (angle) {
