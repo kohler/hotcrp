@@ -98,7 +98,7 @@ class Conf {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 111) {
+        if ($this->settings["allowPaperOption"] < 112) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -845,6 +845,11 @@ class Conf {
         $any = $this->invariantq("select paperId from PaperConflict where conflictType<=0 limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: PaperConflict with zero conflictType");
+
+        // no null submitted reviewWordCounts
+        $any = $this->invariantq("select reviewId from PaperReview where reviewSubmitted>0 and reviewWordCount is null");
+        if ($any)
+            trigger_error($Opt["dbName"] . " invariant error: submitted PaperReview with null reviewWordCount");
     }
 
 

@@ -189,6 +189,21 @@ function update_schema_transfer_country($Conf) {
     return true;
 }
 
+function update_schema_review_word_counts($Conf) {
+    $rf = new ReviewForm($Conf->review_form_json());
+    do {
+        $q = array();
+        $result = $Conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
+        while (($rrow = edb_orow($result)))
+            $q[] = "update PaperReview set reviewWordCount="
+                . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
+        Dbl::free($result);
+        $Conf->dblink->multi_query(join(";", $q));
+        while ($Conf->dblink->more_results())
+            Dbl::free($Conf->dblink->next_result());
+    } while (count($q) == 32);
+}
+
 function update_schema_version($Conf, $n) {
     if ($Conf->ql("update Settings set value=$n where name='allowPaperOption'")) {
         $Conf->settings["allowPaperOption"] = $n;
@@ -719,18 +734,7 @@ function updateSchema($Conf) {
         && $Conf->ql("alter table PaperReviewArchive drop key `requestedBy`"))
         update_schema_version($Conf, 98);
     if ($Conf->settings["allowPaperOption"] == 98) {
-        $rf = new ReviewForm($Conf->review_form_json());
-        do {
-            $q = array();
-            $result = $Conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
-            while (($rrow = edb_orow($result)))
-                $q[] = "update PaperReview set reviewWordCount="
-                    . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
-            Dbl::free($result);
-            $Conf->dblink->multi_query(join(";", $q));
-            while ($Conf->dblink->more_results())
-                Dbl::free($Conf->dblink->next_result());
-        } while (count($q) == 32);
+        update_schema_review_word_counts($Conf);
         update_schema_version($Conf, 99);
     }
     if ($Conf->settings["allowPaperOption"] == 99
@@ -849,4 +853,8 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $Conf->ql("alter table ContactInfo add `country` varbinary(256) default null")
         && update_schema_transfer_country($Conf))
         update_schema_version($Conf, 111);
+    if ($Conf->settings["allowPaperOption"] == 111) {
+        update_schema_review_word_counts($Conf);
+        update_schema_version($Conf, 112);
+    }
 }
