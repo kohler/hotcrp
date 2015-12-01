@@ -74,6 +74,100 @@ class FormulaGraph {
         return $a[2] - $b[2];
     }
 
+    private function _cdf_data($result, $fxf, $reviewf) {
+        global $Me;
+        $data = [];
+        $query_color_classes = [];
+        $tagger = new Tagger($Me);
+
+        while (($prow = PaperInfo::fetch($result, $Me))) {
+            if (!$Me->can_view_paper($prow))
+                continue;
+            if ($reviewf)
+                $revs = $reviewf($prow, null, $Me, "loop");
+            else
+                $revs = array(null);
+            $queries = @$this->papermap[$prow->paperId];
+            foreach ($queries as $q)
+                if (@$query_color_classes[$q] !== "") {
+                    $c = "";
+                    if (@$prow->paperTags && $Me->can_view_tags($prow))
+                        $c = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2);
+                    if ($c !== "" && (@$query_color_classes[$q] ? : $c) !== $c)
+                        $c = "";
+                    $query_color_classes[$q] = $c;
+                }
+            foreach ($revs as $rcid)
+                if (($x = $fxf($prow, $rcid, $Me)) !== null) {
+                    if ($this->fx_query) {
+                        foreach ($queries as $q)
+                            $data[0][] = $q;
+                    } else {
+                        foreach ($queries as $q)
+                            $data[$q][] = $x;
+                    }
+                }
+        }
+
+        foreach ($data as $q => &$d) {
+            $d = (object) ["d" => $d];
+            $s = @$this->query_styles[$q];
+            if ($s && $s !== "default" && $s !== "plain")
+                $d->className = $s;
+            else if ($s && @$query_color_classes[$style])
+                $d->className = $query_color_classes[$style];
+            if (@$this->queries[$q])
+                $d->label = $this->queries[$q];
+        }
+        unset($d);
+
+        return $data;
+    }
+
+    private function _scatter_data($result, $fxf, $fyf, $reviewf) {
+        global $Me;
+        $data = [];
+        $tagger = new Tagger($Me);
+        $xi = $this->fx_query ? 0 : 1;
+
+        while (($prow = PaperInfo::fetch($result, $Me))) {
+            if (!$Me->can_view_paper($prow))
+                continue;
+            $queries = @$this->papermap[$prow->paperId];
+            $s = @$this->query_styles[(int) $queries[0]];
+            if ($s && $s !== "default" && $s !== "plain")
+                /* keep $s as style */;
+            else if ($s !== "plain"
+                     && @$prow->paperTags && $Me->can_view_tags($prow)
+                     && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
+                $s = $color;
+            else
+                $s = "";
+            $d = array(0, 0, $prow->paperId);
+            if ($reviewf)
+                $revs = $reviewf($prow, null, $Me, "loop");
+            else
+                $revs = array(null);
+            foreach ($revs as $rcid) {
+                $d[0] = $fxf($prow, $rcid, $Me);
+                $d[1] = $fyf($prow, $rcid, $Me);
+                if ($d[0] === null || $d[1] === null)
+                    continue;
+                if ($reviewf)
+                    $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
+                if ($this->type || $this->fx_query) {
+                    foreach ($queries as $q) {
+                        $d[$xi] = $q;
+                        $data[$s][] = $d;
+                    }
+                } else
+                    $data[$s][] = $d;
+            }
+        }
+
+        return $data;
+    }
+
     public function data() {
         global $Conf, $Me;
         $fxf = $this->fx->compile_function($Me);
@@ -95,94 +189,13 @@ class FormulaGraph {
         $this->fx->add_query_options($queryOptions, $Me);
         $this->fy->add_query_options($queryOptions, $Me);
         $result = Dbl::qe_raw($Conf->paperQuery($Me, $queryOptions));
-        $data = array();
-        $tagger = new Tagger($Me);
-        $xi = $this->fx_query ? 0 : 1;
-        while (($prow = PaperInfo::fetch($result, $Me)))
-            if ($Me->can_view_paper($prow)) {
-                if ($reviewf)
-                    $revs = $reviewf($prow, null, $Me, "loop");
-                else
-                    $revs = array(null);
-                $d = array(0, 0, $prow->paperId);
-                $style = @$this->papermap[$prow->paperId];
-                if ($this->type == self::CDF) {
-                    foreach ($style as $s)
-                        if (@$defaultstyles[$s] !== "") {
-                            $c = "";
-                            if (@$prow->paperTags && $Me->can_view_tags($prow))
-                                $c = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2);
-                            if ($c !== "" && (@$defaultstyles[$s] ? : $c) !== $c)
-                                $c = "";
-                            $defaultstyles[$s] = $c;
-                        }
-                } else {
-                    $s = @$this->query_styles[(int) $style[0]];
-                    if ($s && $s !== "default" && $s !== "plain")
-                        $d[] = $s;
-                    else if ($s !== "plain"
-                             && @$prow->paperTags && $Me->can_view_tags($prow)
-                             && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
-                        $d[] = $color;
-                }
-                foreach ($revs as $rcid) {
-                    $d[0] = $fxf($prow, $rcid, $Me);
-                    $d[1] = $fyf($prow, $rcid, $Me);
-                    if ($reviewf)
-                        $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
-                    if ($d[0] === null || $d[1] === null)
-                        /* skip */;
-                    else if ($this->type == self::CDF && $this->fx_query) {
-                        foreach ($style as $s)
-                            $data[0][] = $s;
-                    } else if ($this->type == self::CDF) {
-                        foreach ($style as $s)
-                            $data[$s][] = $d[0];
-                    } else if ($this->type) {
-                        foreach ($style as $s) {
-                            $d[$xi] = $s;
-                            $data[] = $d;
-                        }
-                    } else if ($this->fx_query) {
-                        foreach ($style as $s) {
-                            $d[0] = $s;
-                            $data[] = $d;
-                        }
-                    } else
-                        $data[] = $d;
-                }
-            }
+
+        if ($this->type == self::CDF)
+            $data = $this->_cdf_data($result, $fxf, $reviewf);
+        else
+            $data = $this->_scatter_data($result, $fxf, $fyf, $reviewf);
+
         Dbl::free($result);
-
-        if ($this->type == self::CDF) {
-            foreach ($data as $style => &$d) {
-                $d = (object) array("d" => $d);
-                $s = @$this->query_styles[$style];
-                if ($s && $s !== "default" && $s !== "plain")
-                    $d->className = $s;
-                else if ($s && @$defaultstyles[$style])
-                    $d->className = $defaultstyles[$style];
-                if (@$this->queries[$style])
-                    $d->label = $this->queries[$style];
-            }
-            unset($d);
-        } else if ($this->type) {
-            usort($data, "FormulaGraph::barchart_compare");
-            $epsilon = ($data[count($data) - 1][0] - $data[0][0]) / 5000;
-            $ndata = array();
-            $x = null;
-            foreach ($data as $d) {
-                if (!$x || abs($x->x - $d[0]) > $epsilon || $x->group != $d[1]) {
-                    $x = (object) array("x" => $d[0], "group" => $d[1], "d" => array());
-                    if (@$this->queries[$d[1]])
-                        $x->groupLabel = $this->queries[$d[1]];
-                    $ndata[] = $x;
-                }
-                $x->d[] = @$d[3] ? [@$d[3], $d[2]] : $d[2];
-            }
-            $data = $ndata;
-        }
-
         return $data;
     }
 

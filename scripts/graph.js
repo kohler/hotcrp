@@ -467,11 +467,20 @@ function grouped_quadtree(data, xs, ys, rf) {
     return {data: nd, quadtree: q};
 }
 
+function data_to_scatter(data) {
+    if (!$.isArray(data)) {
+        for (var i in data)
+            i && data[i].forEach(function (d) { d.push(i); });
+        data = d3.merge(d3.values(data));
+    }
+    return data;
+}
+
 hotcrp_graphs.scatter = function (args) {
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = $(args.selector).width() - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom,
-        data = args.data;
+        data = data_to_scatter(args.data);
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = d3.extent(data, function (d) { return d[1]; }),
@@ -553,31 +562,38 @@ hotcrp_graphs.scatter = function (args) {
 };
 
 function data_to_barchart(data, isfraction, septags) {
-    data = data.map(function (d) {
-        var i, x = [], z = null, val, tags;
-        for (i = 0; i < d.d.length; ++i) {
-            tags = null;
-            val = d.d[i];
-            if (typeof val === "object") {
-                tags = val[0];
-                val = val[1];
-            }
-            if (!z || (septags && z[4] != tags)) {
-                z = [d.x, d.group, i, i, tags, []];
-                z.groupLabel = d.groupLabel;
-                x.push(z);
-            } else if (z[4] != tags)
-                z[4] = null;
-            z[3] = i + 1;
-            z[5].push(val);
-        }
-        if (isfraction) {
-            z = 1 / d.d.length;
-            x.forEach(function (m) { m[2] *= z; m[3] *= z; });
-        }
-        return x;
+    data = data_to_scatter(data);
+    data.sort(function (a, b) {
+        return d3.ascending(a[0], b[0]) || d3.ascending(a[1], b[1])
+            || (a[3] || "").localeCompare(b[3] || "")
+            || d3.ascending(parseInt(a[2], 10), parseInt(b[2], 10))
+            || a[2].localeCompare(b[2]);
     });
-    return Array.prototype.concat.apply([], data);
+
+    var epsilon = (data[data.length - 1][0] - data[0][0]) / 5000,
+        active = null, count = 0;
+    data = data.reduce(function (newdata, d) {
+        if (active && Math.abs(active[0] - d[0]) <= epsilon && active[1] == d[1])
+            d[0] = active[0];
+        else
+            active = null;
+        if (!active || (septags && active[4] != d[3])) {
+            var count = active ? active[3] : 0;
+            active = [d[0], d[1], count, count, d[3], []];
+            newdata.push(active);
+        } else if (active[4] != d[3])
+            active[4] = null;
+        ++active[3];
+        active[5].push(d[2]);
+        return newdata;
+    }, []);
+
+    if (isfraction) {
+        var maxy = {};
+        data.forEach(function (d) { maxy[d[0]] = d[3]; });
+        data.forEach(function (d) { d[2] /= maxy[d[0]]; d[3] /= maxy[d[0]]; });
+    }
+    return data;
 }
 
 hotcrp_graphs.barchart = function (args) {

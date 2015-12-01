@@ -321,8 +321,10 @@ class TagInfo {
                 $classes[] = self::canonical_color($tag) . "tag";
         if ($color_type_bit > 1)
             $classes = array_filter($classes, "TagInfo::classes_have_colors");
-        if (count($classes) > 1)
+        if (count($classes) > 1) {
+            sort($classes);
             $classes = array_unique($classes);
+        }
         $key = join(" ", $classes);
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
