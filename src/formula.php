@@ -57,9 +57,9 @@ class Fexpr {
             $format = false;
             for ($i = ($this->op === "?:" ? 1 : 0); $i < count($this->args); ++$i) {
                 $a = $this->args[$i];
-                $f = false;
-                if ($a instanceof Fexpr && !$a->is_null())
-                    $f = $a->format();
+                if ($a instanceof Fexpr && $a->is_null())
+                    continue;
+                $f = $a instanceof Fexpr ? $a->format() : false;
                 if ($f !== false && ($format === false || $format === $f))
                     $format = $f;
                 else
