@@ -42,7 +42,7 @@ class ReviewTimes {
                     $r[$cid] = $data;
                 else {
                     do {
-                        $ncid = mt_rand(1, 2 * count(pcMembers()));
+                        $ncid = mt_rand(1, 10 * count(pcMembers()));
                     } while (isset($who[$ncid]));
                     $who[$ncid] = true;
                     $r["x" . $ncid] = $data;
