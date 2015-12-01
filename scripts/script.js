@@ -741,7 +741,7 @@ return function (content, bubopt) {
         bj.css("maxWidth", "");
         var bpos = bj.geometry(true);
         var lw = nearpos.left - wpos.left, rw = wpos.right - nearpos.right;
-        var xw = Math.max(ds === 1 ? 0 : lw, ds === 3 ? 0 : rw);
+        var xw = Math.max(ds == 3 ? 0 : lw, ds == 1 ? 0 : rw);
         var wb = wpos.width;
         if ((ds === "h" || ds === 1 || ds === 3) && xw > 100)
             wb = Math.min(wb, xw);
