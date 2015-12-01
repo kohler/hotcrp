@@ -502,6 +502,8 @@ class Contact {
     }
 
     function has_tag($t) {
+        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0)
+            return true;
         if ($this->contactTags)
             return stripos($this->contactTags, " $t#") !== false;
         if ($this->contactTags === false) {
@@ -512,6 +514,8 @@ class Contact {
     }
 
     function tag_value($t) {
+        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0)
+            return 0.0;
         if ($this->contactTags
             && ($p = stripos($this->contactTags, " $t#")) !== false)
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
