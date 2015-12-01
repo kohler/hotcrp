@@ -171,7 +171,6 @@ class FormulaGraph {
             }
         }
 
-        error_log($this->fx->result_format());
         if ($this->fx->result_format() === "reviewer"
             || $this->fy->result_format() === "reviewer")
             $this->_scatter_fix_reviewers($data);
