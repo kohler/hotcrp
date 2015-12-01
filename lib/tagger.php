@@ -332,7 +332,7 @@ class TagInfo {
             && !@(self::$multicolor_map[$key] & $color_type_bit)) {
             if ($color_type_bit == 1)
                 Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
-            self::$multicolor_map[$key] |= $color_type_bit;
+            self::$multicolor_map[$key] = (int) @self::$multicolor_map[$key] | $color_type_bit;
         }
         return $key;
     }
