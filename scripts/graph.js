@@ -753,9 +753,9 @@ hotcrp_graphs.boxplot = function (args) {
         y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
                 .domain(ye);
 
-    var barwidth = width/40;
+    var barwidth = width/80;
     if (deltae[0] != Infinity)
-        barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 10);
+        barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
     args.xticks && args.xticks(xAxis, xe);
