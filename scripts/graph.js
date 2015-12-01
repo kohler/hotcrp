@@ -910,7 +910,8 @@ hotcrp_graphs.named_integer_ticks = function (map) {
             return map[value];
         });
     }
-    if (d3.values(map).length > 10)
+    if (d3.max(d3.values(map).map(function (s) { return s.length; })) > 4
+        || d3.values(map).length > 30)
         format.rewrite = function (axis) {
             var w = get_max_tick_width(axis);
             if (w > 100) {
