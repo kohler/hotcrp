@@ -1101,7 +1101,7 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "avg(<em>e</em>)", "Average (mean)");
     _alternateRow("", "wavg(<em>e</em>, <em>weight</em>)", "Weighted average; equals “sum(<em>e</em> * <em>weight</em>) / sum(<em>weight</em>)”");
     _alternateRow("", "median(<em>e</em>)", "Median");
-    _alternateRow("", "quantile(<em>e</em>, <em>q</em>)", "Quantile; 0≤<em>q</em>≤1, <em>q</em>=0 is min, 0.5 is median, 1 is max");
+    _alternateRow("", "quantile(<em>e</em>, <em>p</em>)", "Quantile; 0≤<em>p</em>≤1; 0 yields min, 0.5 median, 1 max");
     _alternateRow("", "stddev(<em>e</em>)", "Population standard deviation");
     _alternateRow("", "var(<em>e</em>)", "Population variance");
     _alternateRow("", "stddev_samp(<em>e</em>), var_samp(<em>e</em>)", "Sample standard deviation, sample variance");
