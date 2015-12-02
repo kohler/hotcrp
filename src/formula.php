@@ -16,6 +16,7 @@ class Fexpr {
     public $op;
     public $args = array();
     public $text;
+    public $format_ = false;
     public $left_landmark;
     public $right_landmark;
 
@@ -30,6 +31,10 @@ class Fexpr {
 
     public function __construct($op = null) {
         $this->op = $op;
+        if ($this->op === "trunc")
+            $this->op = "floor";
+        if ($this->op === "average" || $this->op === "mean")
+            $this->op = "avg";
         $this->args = array_slice(func_get_args(), 1);
     }
     public function add($x) {
@@ -41,10 +46,29 @@ class Fexpr {
     }
 
     public function format() {
+        return $this->format_;
+    }
+    public function format_comparator($cmp) {
+        global $Opt;
+        if ($this->format_ && $this->format_ instanceof ReviewField
+            && $this->format_->option_letter && !@$Opt["smartScoreCompare"]) {
+            if ($cmp[0] == "<")
+                return ">" . substr($cmp, 1);
+            if ($cmp[0] == ">")
+                return "<" . substr($cmp, 1);
+        }
+        return $cmp;
+    }
+    public function is_null() {
+        return false;
+    }
+
+    private function typecheck_format() {
         if (($this->op === "max" || $this->op === "min"
              || $this->op === "avg" || $this->op === "wavg"
-             || $this->op === "round" || $this->op === "trunc"
-             || $this->op === "floor" || $this->op === "ceil")
+             || $this->op === "round" || $this->op === "floor"
+             || $this->op === "ceil" || $this->op === "median"
+             || $this->op === "quantile")
             && count($this->args) >= 1
             && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
@@ -72,10 +96,6 @@ class Fexpr {
             return null;
     }
 
-    public function is_null() {
-        return false;
-    }
-
     public function typecheck() {
         // comparison operators help us resolve
         if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op)
@@ -89,6 +109,8 @@ class Fexpr {
         foreach ($this->args as $a)
             if ($a instanceof Fexpr && ($x = $a->typecheck()))
                 return $x;
+        if ($this->format_ === false)
+            $this->format_ = $this->typecheck_format();
         return false;
     }
 
@@ -113,6 +135,18 @@ class Fexpr {
         return "($t !== null ? (bool) $t : null)";
     }
 
+    public static function quantile($a, $p) {
+        // The “R-7” quantile implementation
+        if (count($a) === 0 || $p < 0 || $p > 1)
+            return null;
+        $ix = (count($a) - 1) * $p + 1;
+        $i = (int) $ix;
+        $v = $a[$i - 1];
+        if (($e = $ix - $i))
+            $v += $e * ($a[$i] - $v);
+        return $v;
+    }
+
     public function compile(FormulaCompiler $state) {
         $op = $this->op;
         if ($op == "?:") {
@@ -134,15 +168,19 @@ class Fexpr {
                 return "($t1 ? $t2 : $t1)";
             else if ($op == "||")
                 return "($t1 ? : $t2)";
-            else
+            else {
+                if (Formula::$opprec[$op] == 8)
+                    $op = $this->args[0]->format_comparator($op);
                 return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
+            }
         }
 
         if ($op == "greatest" || $op == "least") {
+            $cmp = $this->format_comparator($op == "greatest" ? ">" : "<");
             $t1 = $state->_addltemp($this->args[0]->compile($state), true);
             for ($i = 1; $i < count($this->args); ++$i) {
                 $t2 = $state->_addltemp($this->args[$i]->compile($state));
-                $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 " . ($op == "greatest" ? ">" : "<") . " $t1) ? $t2 : $t1);";
+                $state->lstmt[] = "$t1 = ($t1 === null || ($t2 !== null && $t2 $cmp $t1) ? $t2 : $t1);";
             }
             return $t1;
         }
@@ -156,14 +194,11 @@ class Fexpr {
                 return "($t1 !== null ? log($t1) : null)";
         }
 
-        if (count($this->args) >= 1 && ($op == "round" || $op == "trunc"
-                                        || $op == "floor" || $op == "ceil")) {
+        if (count($this->args) >= 1 && ($op == "round" || $op == "floor" || $op == "ceil")) {
             $t1 = $state->_addltemp($this->args[0]->compile($state));
             $t2 = "1";
             if (count($this->args) == 2)
                 $t2 = $state->_addltemp($this->args[1]->compile($state));
-            if ($op == "trunc")
-                $op = "floor";
             return "($t1 !== null && $t2 !== null ? $op($t1 / $t2) * $t2 : null)";
         }
 
@@ -171,7 +206,7 @@ class Fexpr {
             return $state->_compile_my($this->args[0]);
 
         if (count($this->args) == 1 && $op == "all") {
-            $t = $state->_compile_loop("null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $this);
+            $t = $state->_compile_loop("null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $this, 1);
             return self::cast_bool($t);
         }
 
@@ -181,14 +216,14 @@ class Fexpr {
         }
 
         if (count($this->args) == 1 && ($op == "min" || $op == "max")) {
-            $opx = ($op == "min" ? "<" : ">");
-            return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ $opx ~r~) ? ~l~ : ~r~)", $this);
+            $cmp = $this->format_comparator($op == "min" ? "<" : ">");
+            return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)", $this);
         }
 
         if (count($this->args) == 2 && ($op == "atminof" || $op == "atmaxof")) {
-            $opx = ($op == "atminof" ? "<" : ">");
+            $cmp = $this->args[0]->format_comparator($op == "atminof" ? "<" : ">");
             $t = $state->_compile_loop("[null, [null]]",
-"if (~l~ !== null && (~r~[0] === null || ~l~ $opx ~r~[0])) {
+"if (~l~ !== null && (~r~[0] === null || ~l~ $cmp ~r~[0])) {
   ~r~[0] = ~l~;
   ~r~[1] = [~l1~];
 } else if (~l~ !== null && ~l~ == ~r~[0])
@@ -204,7 +239,20 @@ class Fexpr {
 
         if (count($this->args) == 1 && ($op == "avg" || $op == "wavg")) {
             $t = $state->_compile_loop("[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)", $this);
-            return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
+            return "({$t}[1] ? {$t}[0] / {$t}[1] : null)";
+        }
+
+        if ((count($this->args) == 1 && $op == "median")
+            || (count($this->args) == 2 && $op == "quantile")) {
+            if ($op == "median")
+                $q = "0.5";
+            else {
+                $q = $state->_addltemp($this->args[1]->compile($state));
+                if ($this->format_comparator("<") == ">")
+                    $q = "1 - $q";
+            }
+            $t = $state->_compile_loop("[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);", $this);
+            return "Fexpr::quantile($t, $q)";
         }
 
         if (count($this->args) == 2 && $op == "wavg") {
@@ -231,34 +279,29 @@ class Fexpr {
 
 class ConstantFexpr extends Fexpr {
     private $x;
-    private $format;
     public function __construct($x, $format = null) {
         parent::__construct("");
         $this->x = $x;
-        $this->format = $format;
+        $this->format_ = $format;
     }
     public function is_null() {
         return $this->x === "null";
     }
-    public function format() {
-        return $this->format;
-    }
     public function typecheck() {
-        if ($this->format !== false)
+        if ($this->format_ !== false)
             return false;
-        else
-            return new Fexpr_Error($this, "unresolved constant “" . htmlspecialchars($this->x) . "”");
+        return new Fexpr_Error($this, "unresolved constant “" . htmlspecialchars($this->x) . "”");
     }
     public function typecheck_neighbor($e) {
         global $Conf;
-        if ($this->format !== false || !($e instanceof Fexpr)
+        if ($this->format_ !== false || !($e instanceof Fexpr)
             || $e->typecheck())
             return;
         $format = $e->format();
         $letter = "";
         if (strlen($this->x) == 1 && ctype_alpha($this->x))
             $letter = strtoupper($this->x);
-        if ($format instanceof PrefFexpr && $letter >= "X" && $letter <= "Z")
+        if ($format === "expertise" && $letter >= "X" && $letter <= "Z")
             $this->x = 89 - ord($word);
         else if ($format instanceof ReviewField && $letter
                  && ($x = $format->parse_value($letter, true)))
@@ -272,7 +315,7 @@ class ConstantFexpr extends Fexpr {
             $this->x = $rt;
         else
             return;
-        $this->format = $format;
+        $this->format_ = $format;
     }
     public function compile(FormulaCompiler $state) {
         return $this->x;
@@ -285,9 +328,7 @@ class ConstantFexpr extends Fexpr {
 class NegateFexpr extends Fexpr {
     public function __construct(Fexpr $e) {
         parent::__construct("!", $e);
-    }
-    public function format() {
-        return "bool";
+        $this->format_ = "bool";
     }
     public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -300,9 +341,7 @@ class InFexpr extends Fexpr {
     public function __construct(Fexpr $e, array $values) {
         parent::__construct("in", $e);
         $this->values = $values;
-    }
-    public function format() {
-        return "bool";
+        $this->format_ = "bool";
     }
     public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -314,10 +353,7 @@ class ScoreFexpr extends Fexpr {
     private $field;
     public function __construct(ReviewField $field) {
         parent::__construct("rf");
-        $this->field = $field;
-    }
-    public function format() {
-        return $this->field;
+        $this->field = $this->format_ = $field;
     }
     public function view_score(Contact $contact) {
         return $this->field->view_score;
@@ -339,9 +375,7 @@ class PrefFexpr extends Fexpr {
     private $isexpertise;
     public function __construct($isexpertise) {
         $this->isexpertise = $isexpertise;
-    }
-    public function format() {
-        return $this->isexpertise ? $this : null;
+        $this->format_ = $this->isexpertise ? "expertise" : null;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -362,9 +396,7 @@ class TagFexpr extends Fexpr {
     public function __construct($tag, $isvalue) {
         $this->tag = $tag;
         $this->isvalue = $isvalue;
-    }
-    public function format() {
-        return $this->isvalue ? null : "bool";
+        $this->format_ = $isvalue ? null : "bool";
     }
     public function view_score(Contact $contact) {
         $tagger = new Tagger($contact);
@@ -388,10 +420,9 @@ class TagFexpr extends Fexpr {
 class OptionFexpr extends Fexpr {
     private $option;
     public function __construct(PaperOption $option) {
-        $this->option = $option;
-    }
-    public function format() {
-        return $this->option->type === "checkbox" ? "bool" : $this->option;
+        $this->option = $this->format_ = $option;
+        if ($this->option->type === "checkbox")
+            $this->format_ = "bool";
     }
     public function compile(FormulaCompiler $state) {
         $id = $this->option->id;
@@ -411,8 +442,8 @@ class OptionFexpr extends Fexpr {
 }
 
 class DecisionFexpr extends Fexpr {
-    public function format() {
-        return "dec";
+    public function __construct() {
+        $this->format_ = "dec";
     }
     public function view_score(Contact $contact) {
         global $Conf;
@@ -451,8 +482,8 @@ class TopicScoreFexpr extends Fexpr {
 }
 
 class RevtypeFexpr extends Fexpr {
-    public function format() {
-        return "revtype";
+    public function __construct() {
+        $this->format_ = "revtype";
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -474,8 +505,8 @@ class RevtypeFexpr extends Fexpr {
 }
 
 class ReviewRoundFexpr extends Fexpr {
-    public function format() {
-        return "revround";
+    public function __construct() {
+        $this->format_ = "revround";
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -500,9 +531,7 @@ class ConflictFexpr extends Fexpr {
     private $ispc;
     public function __construct($ispc) {
         $this->ispc = $ispc;
-    }
-    public function format() {
-        return "bool";
+        $this->format_ = "bool";
     }
     public function compile(FormulaCompiler $state) {
         // XXX the actual search is different
@@ -532,8 +561,8 @@ class ReviewFexpr extends Fexpr {
 }
 
 class ReviewerFexpr extends ReviewFexpr {
-    public function format() {
-        return "reviewer";
+    public function __construct() {
+        $this->format_ = "reviewer";
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -552,9 +581,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     public function __construct($arg) {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && pcTags($arg));
-    }
-    public function format() {
-        return "bool";
+        $this->format_ = "bool";
     }
     public function view_score(Contact $contact) {
         return $this->istag ? VIEWSCORE_PC : parent::view_score($contact);
@@ -745,9 +772,10 @@ class FormulaCompiler {
         $this->looptype = Fexpr::LALL;
         $this->datatype = 0;
 
-        foreach ($e->args as $i => $ee) {
-            $t = $this->_addltemp($ee->compile($this));
-            $combiner = str_replace("~l" . ($i ? : "") . "~", $t, $combiner);
+        preg_match_all('/~l(\d*)~/', $combiner, $m);
+        foreach (array_unique($m[1]) as $i) {
+            $t = $this->_addltemp($e->args[(int) $i]->compile($this));
+            $combiner = str_replace("~l{$i}~", $t, $combiner);
         }
 
         if (preg_match('/[;}]\s*\z/', $combiner))
@@ -800,7 +828,7 @@ class Formula {
         "*" => 11, "/" => 11, "%" => 11,
         "+" => 10, "-" => 10,
         "<<" => 9, ">>" => 9,
-        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8, "≤" => 8, "≥" => 8,
+        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8, "≤" => 8, "≥" => 8, // XXX value matters
         "=" => 7, "==" => 7, "!=" => 7, "≠" => 7,
         "&" => 6,
         "^" => 5,
@@ -1062,7 +1090,7 @@ class Formula {
                 }
                 $e = $e ? new Fexpr("&&", $e, $ee) : $ee;
             }
-        } else if (preg_match('/\A(my|all|any|avg|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
@@ -1182,7 +1210,7 @@ class Formula {
             return "";
         else if ($x === true)
             return "✓";
-        else if ($this->_format instanceof PrefFexpr)
+        else if ($this->_format === "expertise")
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
             return ReviewField::unparse_letter($this->_format->option_letter, $x);
