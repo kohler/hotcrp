@@ -2570,10 +2570,10 @@ div.revpreview, div.cmtpreview {
 		linear-gradient(to top, rgba(248,246,227,0), #f8f6e3 4px, #f8f6e3 51%, transparent 51%);
 }
 div.cmttext.has_wordsover {
-	margin: 0 -4px -3px;
-	padding: 0 4px 3px;
+	margin: 0 -5px -3px;
+	padding: 0 5px 3px;
 	background: #f5ecec;
-	background: linear-gradient(to right, #f5ecec, #f5ecec 648px, rgba(245,236,236,0) 648px);
+	background: linear-gradient(to right, #f5ecec, #f5ecec 650px, rgba(245,236,236,0) 650px);
 }
 div.wordsover_mark {
 	position: absolute;
