@@ -1169,10 +1169,10 @@ function tracker_paper_columns(idx, paper) {
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="trackerpid">';
     if (paper.pid)
-        t += '<a href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
+        t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
     t += '</td><td class="trackerbody">';
     if (paper.title)
-        x.push('<a href="' + url + '">' + text_to_html(paper.title) + '</a>');
+        x.push('<a class="uu" href="' + url + '">' + text_to_html(paper.title) + '</a>');
     for (i = 0; i != tracker_map.length; ++i)
         if (paper[tracker_map[i][0]])
             x.push('<span class="tracker' + tracker_map[i][0] + '">' + tracker_map[i][1] + '</span>');

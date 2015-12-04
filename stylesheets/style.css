@@ -2680,7 +2680,7 @@ div.aabut .words {
 	left: 7px;
 	padding: 5px 0 0 5px;
 	border-radius: 10px;
-	color: #0b622b;
+	color: #0b522b;
 }
 #trackerlogo:before {
 	content: "\261e";
@@ -2692,8 +2692,8 @@ div.aabut .words {
 	color: #e33355;
 	animation: 3s 0s infinite normal trackernomatchlogo;
 }
-#tracker.nomatch .tracker0 .trackerdesc {
-	color: #e33355;
+#tracker.nomatch .tracker0 {
+	color: #b31028;
 }
 @keyframes trackernomatchlogo {
 	from, to { left: 7px; }
