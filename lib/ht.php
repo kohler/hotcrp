@@ -78,7 +78,8 @@ class Ht {
             unset($extra["divstyle"]);
         }
         $div .= '>';
-        if (@$extra["method"] === "get" && ($qpos = strpos($action, "?")) !== false) {
+        if (@strcasecmp($extra["method"], "get") == 0
+            && ($qpos = strpos($action, "?")) !== false) {
             if (($hpos = strpos($action, "#", $qpos + 1)) === false)
                 $hpos = strlen($action);
             foreach (preg_split('/(?:&amp;|&)/', substr($action, $qpos + 1, $hpos - $qpos - 1)) as $m)
