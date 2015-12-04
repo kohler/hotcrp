@@ -1145,7 +1145,8 @@ function redisplay_main() {
 
 
 // tracker
-var has_tracker, had_tracker_at, tracker_timer, tracker_refresher;
+var has_tracker, had_tracker_at, last_tracker_html,
+    tracker_timer, tracker_refresher;
 
 function tracker_window_state() {
     return wstorage.json(true, "hotcrp-tracking");
@@ -1199,10 +1200,31 @@ function tracker_show_elapsed() {
                                1000 - (delta * 1000) % 1000);
 }
 
+function tracker_html(mytracker) {
+    var t = "";
+    if (dl.is_admin) {
+        t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
+        t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
+    } else
+        t += '<div id="trackerlogo"></div>';
+    if (dl.tracker && dl.tracker.position_at)
+        t += '<div style="float:right" id="trackerelapsed"></div>';
+    if (!dl.tracker.papers || !dl.tracker.papers[0]) {
+        t += "<a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a>";
+    } else {
+        t += "<table class=\"trackerinfo\"><tbody><tr class=\"tracker0\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
+        t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
+        for (var i = 1; i < dl.tracker.papers.length; ++i)
+            t += "</tr><tr class=\"tracker" + i + "\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
+        t += "</tr></tbody></table>";
+    }
+    return t + '<hr class="c" />';
+}
+
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"),
         mytracker = is_my_tracker(),
-        body, pid, trackerstate, t = "", i, e, now = now_msec();
+        body, trackerstate, t, i, e, now = now_msec();
 
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
@@ -1240,38 +1262,24 @@ function display_tracker() {
         mne = document.createElement("div");
         mne.id = "tracker";
         body.insertBefore(mne, body.firstChild);
+        last_tracker_html = null;
     }
 
-    pid = 0;
-    if (dl.tracker.papers && dl.tracker.papers[0])
-        pid = dl.tracker.papers[0].pid;
-    if (mytracker)
-        mne.className = "active";
-    else
-        mne.className = (pid && pid != hotcrp_paperid ? "nomatch" : "match");
-
-    if (dl.is_admin) {
-        t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
-        t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
-    } else
-        t += '<div id="trackerlogo"></div>';
-    if (dl.tracker && dl.tracker.position_at)
-        t += '<div style="float:right" id="trackerelapsed"></div>';
-    if (!dl.tracker.papers || !dl.tracker.papers[0]) {
-        t += "<a href=\"" + siteurl + dl.tracker.url + "\">Discussion list</a>";
-    } else {
-        t += "<table class=\"trackerinfo\"><tbody><tr class=\"tracker0\"><td rowspan=\"" + dl.tracker.papers.length + "\">";
-        t += "</td>" + tracker_paper_columns(0, dl.tracker.papers[0]);
-        for (i = 1; i < dl.tracker.papers.length; ++i)
-            t += "</tr><tr class=\"tracker" + i + "\">" + tracker_paper_columns(i, dl.tracker.papers[i]);
-        t += "</tr></tbody></table>";
+    t = tracker_html(mytracker);
+    if (t !== last_tracker_html) {
+        last_tracker_html = t;
+        if (mytracker)
+            mne.className = "active";
+        else if (dl.tracker.papers && dl.tracker.papers[0].pid != hotcrp_paperid)
+            mne.className = "nomatch";
+        else
+            mne.className = "match";
+        mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
+        $(mne).find(".hottooltip").each(add_tooltip);
+        mnspace.style.height = mne.offsetHeight + "px";
     }
-    t += '<hr class="c" />';
-    mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
-    $(mne).find(".hottooltip").each(add_tooltip);
     if (dl.tracker && dl.tracker.position_at)
         tracker_show_elapsed();
-    mnspace.style.height = mne.offsetHeight + "px";
 }
 
 function tracker(start) {
