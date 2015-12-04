@@ -168,7 +168,7 @@ class FormulaGraph {
                     continue;
                 if ($reviewer_color) {
                     $s = "";
-                    if (($p = $pcm[$d[0]]))
+                    if (($p = @$pcm[$d[0]]))
                         $s = TagInfo::color_classes($tagger->viewable($p->contactTags));
                 }
                 if ($reviewf)
