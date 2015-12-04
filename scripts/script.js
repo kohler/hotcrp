@@ -4038,7 +4038,8 @@ window.make_pattern_fill = (function () {
 var fmap = {}, cmap = {"whitetag": 1, "redtag": 2, "orangetag": 3, "yellowtag": 4, "greentag": 5, "bluetag": 6, "purpletag": 7, "graytag": 8},
     params = {
         "": {size: 34, css: "backgroundColor", incr: 8, rule: true},
-        "gdot ": {size: 12, css: "fill", incr: 3, pattern: true}
+        "gdot ": {size: 12, css: "fill", incr: 3, pattern: true},
+        "glab ": {size: 20, css: "fill", incr: 6, pattern: true}
     }, style;
 return function (classes, class_prefix) {
     if (!classes || classes.indexOf(" ") < 0)

@@ -717,10 +717,10 @@ function data_to_boxplot(data, septags) {
     var active = null, count = 0;
     data = data.reduce(function (newdata, d) {
         if (!active || active[0] != d[0] || (septags && active[4] != d[3])) {
-            active = {"0": d[0], ymin: d[1], c: d[3], d: [], p: []};
+            active = {"0": d[0], ymin: d[1], c: d[3] || "", d: [], p: []};
             newdata.push(active);
-        } else if (active[2] != d[3])
-            active.c = null;
+        } else if (active.c != d[3])
+            active.c = "";
         active.ymax = d[1];
         active.d.push(d[1]);
         active.p.push(d[2]);
@@ -805,19 +805,20 @@ hotcrp_graphs.boxplot = function (args) {
 
     place_whisker(0, svg.selectAll(".gbox.whiskerl").data(data)
             .enter().append("line")
-            .attr("class", function (d) { return "gbox whiskerl " + (d.c||""); }));
+            .attr("class", function (d) { return "gbox whiskerl " + d.c; }));
 
     place_whisker(3, svg.selectAll(".gbox.whiskerh").data(data)
             .enter().append("line")
-            .attr("class", function (d) { return "gbox whiskerh " + (d.c||""); }));
+            .attr("class", function (d) { return "gbox whiskerh " + d.c; }));
 
     place_box(svg.selectAll(".gbox.box").data(data)
             .enter().append("rect")
-            .attr("class", function (d) { return "gbox box " + (d.c||""); }));
+            .attr("class", function (d) { return "gbox box " + d.c; })
+            .style("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
 
     place_median(svg.selectAll(".gbox.median").data(data)
             .enter().append("line")
-            .attr("class", function (d) { return "gbox median " + (d.c||""); }));
+            .attr("class", function (d) { return "gbox median " + d.c; }));
 
     place_outlier(svg.selectAll(".gbox.outlier")
             .data(d3.merge(data.map(function (d) {
@@ -827,7 +828,7 @@ hotcrp_graphs.boxplot = function (args) {
                         nd.push({"0": d[0], "1": d.d[i], p: d.p[i], base: d});
                 return nd;
             }))).enter().append("circle")
-            .attr("class", function (d) { return "gbox outlier " + (d.base.c||""); }));
+            .attr("class", function (d) { return "gbox outlier " + d.base.c; }));
 
     make_axes(svg, width, height, xAxis, yAxis, args);
 
@@ -948,27 +949,50 @@ function get_max_tick_width(axis) {
 }
 
 hotcrp_graphs.named_integer_ticks = function (map) {
+    function mtext(value) {
+        var m = map[value];
+        return typeof m === "object" ? m.text : m;
+    }
+    function mclasses(value) {
+        var m = map[value];
+        return (typeof m === "object" && m.color_classes) || "";
+    }
     function format(axis, extent) {
         var count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
-        axis.ticks(count).tickFormat(function (value) {
-            return map[value];
-        });
+        axis.ticks(count).tickFormat(mtext);
     }
-    if (d3.max(d3.values(map).map(function (s) { return s.length; })) > 4
-        || d3.values(map).length > 30)
+    var want_tilt = d3.values(map).length > 30
+        || d3.max(d3.keys(map).map(function (k) { return mtext(k).length; })) > 4;
+    var want_mclasses = d3.keys(map).some(function (k) { return mclasses(k); });
+    if (want_tilt || want_mclasses)
         format.rewrite = function (axis) {
             var w = get_max_tick_width(axis);
             if (w > 100) {
                 $(axis[0]).find("g.tick text").css("font-size", "smaller");
                 w = get_max_tick_width(axis);
             }
-            axis.selectAll("g.tick text").style("text-anchor", "end")
-                .attr("dx", "-0.8em").attr("dy", ".15em")
-                .attr("transform", "rotate(-65)");
-            w = w * Math.sin(1.13446) + 20; // 65 degrees in radians
-            if (w > BOTTOM_MARGIN && axis.classed("x")) {
-                var container = $(axis[0]).closest("svg");
-                container.attr("height", +container.attr("height") + (w - BOTTOM_MARGIN));
+            if (want_tilt)
+                axis.selectAll("g.tick text").style("text-anchor", "end")
+                    .attr("dx", "-9px").attr("dy", "2px");
+            if (want_mclasses)
+                axis.selectAll("g.tick text").filter(mclasses).each(function (i) {
+                    var c = mclasses(i);
+                    d3.select(this).attr("class", "taghl " + c);
+                    var b = this.getBBox();
+                    d3.select(this.parentNode).insert("rect", "text")
+                        .attr("x", b.x - 3).attr("y", b.y)
+                        .attr("width", b.width + 6).attr("height", b.height + 1)
+                        .attr("class", "glab " + c)
+                        .style("fill", make_pattern_fill(c, "glab "));
+                });
+            if (want_tilt) {
+                axis.selectAll("g.tick text, g.tick rect")
+                    .attr("transform", "rotate(-65)");
+                w = w * Math.sin(1.13446) + 20; // 65 degrees in radians
+                if (w > BOTTOM_MARGIN && axis.classed("x")) {
+                    var container = $(axis[0]).closest("svg");
+                    container.attr("height", +container.attr("height") + (w - BOTTOM_MARGIN));
+                }
             }
         };
     format.unparse_html = function (value) {

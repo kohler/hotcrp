@@ -135,19 +135,26 @@ class FormulaGraph {
         global $Me;
         $data = [];
         $tagger = new Tagger($Me);
+        $want_reviewer_color = $this->fx->result_format() === "reviewer"
+            && ($this->type & self::BOXPLOT);
+        if ($want_reviewer_color)
+            $pcm = pcMembers();
 
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
                 continue;
             $queries = @$this->papermap[$prow->paperId];
             $s = @$this->query_styles[(int) $queries[0]];
-            if ($s && $s !== "default" && $s !== "plain")
-                /* keep $s as style */;
-            else if ($s !== "plain"
-                     && @$prow->paperTags && $Me->can_view_tags($prow)
-                     && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
-                $s = $color;
-            else
+            $reviewer_color = false;
+            if ($want_reviewer_color && (!$s || $s === "default")
+                && $Me->can_view_reviewer_tags($prow))
+                $reviewer_color = true;
+            if (!$s || $s === "default") {
+                $s = "";
+                if (@$prow->paperTags && $Me->can_view_tags($prow)
+                    && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
+                    $s = $color;
+            } else if ($s === "plain")
                 $s = "";
             $d = array(0, 0, $prow->paperId);
             if ($reviewf)
@@ -159,6 +166,11 @@ class FormulaGraph {
                 $d[1] = $fyf($prow, $rcid, $Me);
                 if ($d[0] === null || $d[1] === null)
                     continue;
+                if ($reviewer_color) {
+                    $s = "";
+                    if (($p = $pcm[$d[0]]))
+                        $s = TagInfo::color_classes($tagger->viewable($p->contactTags));
+                }
                 if ($reviewf)
                     $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
                 if (($this->type & self::BARCHART) || $this->fx_query) {
@@ -239,7 +251,7 @@ class FormulaGraph {
     }
 
     public function axis_info_settings($axis) {
-        global $Conf, $reviewTypeName;
+        global $Conf, $Me, $reviewTypeName;
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = array();
         if ($axis == "y" && $this->type == self::FBARCHART)
@@ -261,8 +273,15 @@ class FormulaGraph {
                     . $n . "," . json_encode($ol) . "," . json_encode($format->option_class_prefix) . ")";
         } else if ($format === "reviewer") {
             $x = [];
-            foreach ($this->reviewers as $r)
-                $x[$r->graph_index] = $r->name_html();
+            $tagger = new Tagger($Me);
+            foreach ($this->reviewers as $r) {
+                $name = $r->name_html(); // XXX should be text
+                if ($Me->can_view_reviewer_tags()
+                    && ($colors = $tagger->viewable_color_classes($r->contactTags)))
+                    $x[$r->graph_index] = ["text" => $name, "color_classes" => $colors];
+                else
+                    $x[$r->graph_index] = $name;
+            }
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($x) . ")" . $rticks;
         } else if ($format === "dec")
