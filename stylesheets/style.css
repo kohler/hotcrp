@@ -2653,29 +2653,56 @@ div.aabut .words {
         z-index: 8;
 }
 #tracker.active {
-        background: rgba(100, 255, 100, 0.9);
+	background: rgba(100, 255, 100, 0.9);
 }
 #tracker.match {
-        background: rgba(255, 255, 200, 0.9);
+	background: rgba(221, 250, 238, 0.9);
 }
 #tracker.nomatch {
-	background: rgba(255, 100, 100, 0.9);
+	background: rgba(252, 177, 185, 0.9);
 }
 #tracker .trackerholder {
 	padding: 0.5em 1em 0.5em 0.8em;
-        border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+	border-bottom: 1px solid #6a936a;
+	color: #3d3d57;
+}
+#tracker.nomatch .trackerholder {
+	border-bottom: 1px solid #f33360;
+}
+#tracker .trackerinfo {
+	margin-left: 48px;
+	line-height: 125%;
 }
 #trackerlogo {
 	float: left;
-	padding-right: 10px;
+	position: absolute;
+	top: 1px;
+	left: 7px;
+	padding: 5px 0 0 5px;
+	border-radius: 10px;
+	color: #0b622b;
 }
 #trackerlogo:before {
 	content: "\261e";
 	font-size: 300%;
 	line-height: 24px;
 }
-.trackerinfo {
-	line-height: 125%;
+#tracker.nomatch #trackerlogo {
+	/*background: rgba(255, 220, 215, 0.9);*/
+	color: #e33355;
+	animation: 3s 0s infinite normal trackernomatchlogo;
+}
+#tracker.nomatch .tracker0 .trackerdesc {
+	color: #e33355;
+}
+@keyframes trackernomatchlogo {
+	from, to { left: 7px; }
+	9% { left: 0px; animation-timing-function: ease-in; }
+	16% { left: 11px; animation-timing-function: ease-out; }
+	21% { left: 3px; animation-timing-function: ease-in; }
+	26% { left: 9px; animation-timing-function: ease-out; }
+	29% { left: 5px; animation-timing-function: ease-in; }
+	31% { left: 7px; animation-timing-function: ease-out; }
 }
 #tracker .tracker1, #tracker .tracker2, #tracker .tracker3,
 #tracker .tracker4, #tracker .tracker5 {
