@@ -114,6 +114,9 @@ a.q, a.u {
 a.qq, a.uu, a.maillink {
 	color: inherit;
 }
+a.q:active, a.u:active, a.qq:active, a.uu:active, a.maillink:active {
+	color: red;
+}
 a.q, a.qq, a.x, a.xx,
 div.papmodex > a, div.papmodex:hover > a.xx, div.leftmenu_item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
