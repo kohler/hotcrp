@@ -663,10 +663,10 @@ $paperTable->paptabBegin();
 
 if ($paperTable->mode === "edit")
     $paperTable->paptabEndWithReviewMessage();
-else if ($paperTable->mode === "re")
-    $paperTable->paptabEndWithEditableReview();
 else {
-    if ($paperTable->can_view_reviews())
+    if ($paperTable->mode === "re")
+        $paperTable->paptabEndWithEditableReview();
+    else if ($paperTable->can_view_reviews())
         $paperTable->paptabEndWithReviews();
     else
         $paperTable->paptabEndWithReviewMessage();

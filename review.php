@@ -398,12 +398,12 @@ if (!$viewAny && !$editAny
     && (!$paperTable->rrow
         || !$Me->can_view_review($prow, $paperTable->rrow, null)))
     $paperTable->paptabEndWithReviewMessage();
-else if ($paperTable->mode === "re")
-    $paperTable->paptabEndWithEditableReview();
-else
-    $paperTable->paptabEndWithReviews();
-
-if ($paperTable->mode != "edit")
+else {
+    if ($paperTable->mode === "re")
+        $paperTable->paptabEndWithEditableReview();
+    else
+        $paperTable->paptabEndWithReviews();
     $paperTable->paptabComments();
+}
 
 $Conf->footer();
