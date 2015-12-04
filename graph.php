@@ -135,7 +135,7 @@ if ($Graph == "formula") {
     } else
         echo "<h2>Formulas</h2>\n";
 
-    echo Ht::form_div(hoturl("graph", "g=formula"), array("method" => "GET"));
+    echo Ht::form_div(hoturl("graph", "g=formula"), array("method" => "get"));
     echo '<table>';
     // X axis
     echo '<tr><td class="lcaption"><label for="fx">X axis</label></td>',
