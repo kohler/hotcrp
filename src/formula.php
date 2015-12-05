@@ -1110,6 +1110,9 @@ class Formula {
         } else if (preg_match('/\A(?:revround|round)\b(.*)\z/s', $t, $m)) {
             $e = new ReviewRoundFexpr;
             $t = $m[1];
+        } else if (preg_match('/\Areviewer\b(.*)\z/s', $t, $m)) {
+            $e = new ReviewerFexpr;
+            $t = $m[1];
         } else if (preg_match('/\Are(?:|v|view)words\b(.*)\z/s', $t, $m)) {
             $e = new ReviewWordCountFexpr;
             $t = $m[1];
