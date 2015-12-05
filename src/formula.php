@@ -603,8 +603,11 @@ class ReviewerMatchFexpr extends ReviewFexpr {
         } else {
             $flags |= ContactSearch::F_TAG | ContactSearch::F_NOUSER;
             $cs = new ContactSearch($flags, $arg, $state->contact);
-            // XXX information leak?
-            $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
+            if ($cs->ids)
+                // XXX information leak?
+                $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
+            else
+                $e = "null";
         }
         return $e;
     }
