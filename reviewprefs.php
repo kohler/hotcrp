@@ -238,8 +238,7 @@ echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'>
 
 $show_data = array();
 if (!$Conf->subBlindAlways()
-    && ($Conf->subBlindNever() || $pl->any->openau)
-    && $pl->count)
+    && ($Conf->subBlindNever() || $pl->any->openau))
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showau", 1, strpos($pldisplay, " au ") !== false,
                 array("disabled" => (!$Conf->subBlindNever() && !$pl->any->openau),
@@ -268,7 +267,7 @@ if ($pl->any->topics)
     $show_data[] = '<span class="sep">'
         . Ht::checkbox("showtopics", 1, strpos($pldisplay, " topics ") !== false, array("onchange" => "plinfo('topics',this)"))
         . "&nbsp;" . Ht::label("Topics") . '</span>';
-if (count($show_data))
+if (count($show_data) && $pl->count)
     echo '<tr><td class="lxcaption"><strong>Show:</strong> &nbsp;',
         '</td><td colspan="2" class="lentry">',
         join('', $show_data), '</td></tr>';
