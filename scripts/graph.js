@@ -866,13 +866,16 @@ hotcrp_graphs.boxplot = function (args) {
     svg.selectAll(".gbox").filter(":not(.outlier)").on("mouseover", mouseover);
     svg.selectAll(".gbox.outlier").on("mouseover", mouseover_outlier);
 
-    function make_tooltip(ps, ds) {
-        var yformat = args.yticks.unparse_html;
+    function make_tooltip(p, ps, ds) {
+        var yformat = args.yticks.unparse_html, t, x = [];
+        t = '<p>' + text_to_html(args.xticks.unparse_html.call(xAxis, p[0]));
+        if (!p.outlierof)
+            t += " : median " + yformat.call(yAxis, p.q[2]);
         var x = [];
         for (var i = 0; i < ps.length; ++i)
             x.push(ps[i] + " (" + yformat.call(yAxis, ds[i]) + ")");
         x.sort(pid_sorter);
-        return '<p><span class="nw">#' + x.join(',</span> <span class="nw">#') + '</span></p>';
+        return t + '</p><p><span class="nw">#' + x.join(',</span> <span class="nw">#') + '</span></p>';
     }
 
     var hovered_data, hubble;
@@ -893,7 +896,7 @@ hotcrp_graphs.boxplot = function (args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
             if (!p.th)
-                p.th = make_tooltip(p.p, p.d);
+                p.th = make_tooltip(p, p.p, p.d);
             hubble.html(p.th).dir("l").near(hovers.filter(".box").node());
         }
     }
@@ -910,7 +913,7 @@ hotcrp_graphs.boxplot = function (args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
             if (!p.th)
-                p.th = make_tooltip([p.p], [p[1]]);
+                p.th = make_tooltip(p, [p.p], [p[1]]);
             hubble.html(p.th).dir("l").near(hovers.filter(".outlier").node());
         }
     }
@@ -987,7 +990,7 @@ hotcrp_graphs.named_integer_ticks = function (map) {
         this.ticks(count).tickFormat(mtext);
     }
     function unparse_html(value) {
-        return map[value] != null ? text_to_html(map[value]) : value;
+        return map[value] != null ? text_to_html(mtext(value)) : value;
     };
     function search(value) {
         var m = map[value];
