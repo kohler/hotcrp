@@ -168,6 +168,8 @@ class Fexpr {
                 return "($t1 ? $t2 : $t1)";
             else if ($op == "||")
                 return "($t1 ? : $t2)";
+            else if ($op == "/" || $op == "%")
+                return "($t1 !== null && $t2 ? $t1 $op $t2 : null)";
             else {
                 if (Formula::$opprec[$op] == 8)
                     $op = $this->args[0]->format_comparator($op);
@@ -196,10 +198,12 @@ class Fexpr {
 
         if (count($this->args) >= 1 && ($op == "round" || $op == "floor" || $op == "ceil")) {
             $t1 = $state->_addltemp($this->args[0]->compile($state));
-            $t2 = "1";
-            if (count($this->args) == 2)
+            if (count($this->args) == 1)
+                return "($t1 !== null ? $op($t1) : null)";
+            else {
                 $t2 = $state->_addltemp($this->args[1]->compile($state));
-            return "($t1 !== null && $t2 !== null ? $op($t1 / $t2) * $t2 : null)";
+                return "($t1 !== null && $t2 ? $op($t1 / $t2) * $t2 : null)";
+            }
         }
 
         if (count($this->args) == 1 && $op == "my")
