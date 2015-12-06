@@ -558,7 +558,7 @@ class PaperList {
     private function _list_columns($listname) {
         switch ($listname) {
         case "a":
-            return "id title statusfull revstat scores";
+            return "id title statusfull revstat authors collab abstract topics reviewers shepherd scores";
         case "authorHome":
             return "id title statusfull";
         case "s":
