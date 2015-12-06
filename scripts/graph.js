@@ -206,11 +206,14 @@ function clicker(pids) {
             x.push(m);
     }
     if (x.length == 1 && pids.length == 1 && /[A-Z]$/.test(pids[0]))
-        url = hoturl("paper", {p: x[0], anchor: "r" + pids[0]});
+        clicker_go(hoturl("paper", {p: x[0], anchor: "r" + pids[0]}));
     else if (x.length == 1)
-        url = hoturl("paper", {p: x[0]});
+        clicker_go(hoturl("paper", {p: x[0]}));
     else
-        url = hoturl("search", {q: x.join(" ")});
+        clicker_go(hoturl("search", {q: x.join(" ")}));
+}
+
+function clicker_go(url) {
     if (d3.event.metaKey)
         window.open(url, "_blank");
     else
@@ -825,10 +828,10 @@ hotcrp_graphs.boxplot = function (args) {
                 var nd = [];
                 for (var i = 0; i < d.d.length; ++i)
                     if (d.d[i] < d.q[0] || d.d[i] > d.q[4])
-                        nd.push({"0": d[0], "1": d.d[i], p: d.p[i], base: d});
+                        nd.push({"0": d[0], "1": d.d[i], p: d.p[i], outlierof: d});
                 return nd;
             }))).enter().append("circle")
-            .attr("class", function (d) { return "gbox outlier " + d.base.c; }));
+            .attr("class", function (d) { return "gbox outlier " + d.outlierof.c; }));
 
     make_axes(svg, width, height, xAxis, yAxis, args);
 
@@ -907,7 +910,13 @@ hotcrp_graphs.boxplot = function (args) {
     }
 
     function mouseclick() {
-        clicker(hovered_data ? hovered_data.p : null);
+        var s;
+        if (hovered_data && !hovered_data.outlierof
+            && args.xticks && args.xticks.search
+            && (s = args.xticks.search(hovered_data[0])))
+            clicker_go(hoturl("search", {"q": s}));
+        else
+            clicker(hovered_data ? hovered_data.p : null);
     }
 };
 

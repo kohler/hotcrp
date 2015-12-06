@@ -275,12 +275,12 @@ class FormulaGraph {
             $x = [];
             $tagger = new Tagger($Me);
             foreach ($this->reviewers as $r) {
-                $name = $r->name_html(); // XXX should be text
+                $rd = ["text" => $r->name_html(), // XXX should be text
+                       "search" => "re:" . $r->email];
                 if ($Me->can_view_reviewer_tags()
                     && ($colors = $tagger->viewable_color_classes($r->contactTags)))
-                    $x[$r->graph_index] = ["text" => $name, "color_classes" => $colors];
-                else
-                    $x[$r->graph_index] = $name;
+                    $rd["color_classes"] = $colors;
+                $x[$r->graph_index] = $rd;
             }
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($x) . ")" . $rticks;
