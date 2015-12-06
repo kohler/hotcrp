@@ -119,7 +119,7 @@ class FormulaGraph {
         foreach ($data as $q => &$d) {
             $d = (object) ["d" => $d];
             $s = @$this->query_styles[$q];
-            if ($s && $s !== "default" && $s !== "plain")
+            if ($s && $s !== "default" && $s !== "by-tag" && $s !== "plain")
                 $d->className = $s;
             else if ($s && @$query_color_classes[$style])
                 $d->className = $query_color_classes[$style];
@@ -176,10 +176,11 @@ class FormulaGraph {
             $queries = @$this->papermap[$prow->paperId];
             $s = @$this->query_styles[(int) $queries[0]];
             $reviewer_color = false;
-            if ($want_reviewer_color && (!$s || $s === "default")
+            if ($want_reviewer_color
+                && (!$s || $s === "default" || $s === "by-tag")
                 && $Me->can_view_reviewer_tags($prow))
                 $reviewer_color = true;
-            if (!$s || $s === "default") {
+            if (!$s || $s === "default" || $s === "by-tag") {
                 $s = "";
                 if (@$prow->paperTags && $Me->can_view_tags($prow)
                     && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
