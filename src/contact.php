@@ -2048,6 +2048,7 @@ class Contact {
     }
 
     public function can_view_some_review() {
+        global $Conf;
         return $this->is_reviewer()
             || ($this->is_author() && $Conf->au_seerev != 0);
     }
