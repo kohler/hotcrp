@@ -163,15 +163,15 @@ function expand_extent(e, delta) {
 }
 
 
-function make_axes(svg, width, height, xAxis, yAxis, args) {
+function make_axes(svg, xAxis, yAxis, args) {
     var css = {"text-anchor": "end", "font-size": "smaller", "pointer-events": "none"};
 
     svg.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + args.height + ")")
         .call(xAxis).call(args.xaxis_setup || function () {})
       .append("text")
-        .attr("x", width).attr("y", 0).attr("dy", "-.5em")
+        .attr("x", args.width).attr("y", 0).attr("dy", "-.5em")
         .style(css).text(args.xlabel || "");
 
     svg.append("g")
@@ -182,10 +182,8 @@ function make_axes(svg, width, height, xAxis, yAxis, args) {
         .attr("y", 6).attr("dy", ".71em")
         .style(css).text(args.ylabel || "");
 
-    if (args.xticks && args.xticks.rewrite)
-        args.xticks.rewrite(svg.select(".x.axis"), svg);
-    if (args.yticks && args.yticks.rewrite)
-        args.yticks.rewrite(svg.select(".y.axis"), svg);
+    args.xticks.rewrite.call(svg.select(".x.axis"), svg);
+    args.yticks.rewrite.call(svg.select(".y.axis"), svg);
 }
 
 function pid_sorter(a, b) {
@@ -220,6 +218,30 @@ function clicker_go(url) {
         window.location = url;
 }
 
+function d3_tickFormat(axis) { // XXX wish D3 provided this
+    var s = axis.scale();
+    return axis.tickFormat() == null ? (s.tickFormat ? s.tickFormat.apply(s, axis.ticks()) : function (x) { return x; }) : axis.tickFormat();
+}
+
+function make_axis(args) {
+    return $.extend({
+        ticks: function (extent) {},
+        rewrite: function () {},
+        unparse_html: function (value) { return d3_tickFormat(this)(value); },
+        search: function (value) { return null; }
+    }, args || {});
+}
+
+function make_args(args) {
+    args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
+                    args);
+    args.xticks = make_axis(args.xticks);
+    args.yticks = make_axis(args.yticks);
+    args.width = $(args.selector).width() - args.left - args.right;
+    args.height = 500 - args.top - args.bottom;
+    return args;
+}
+
 
 /* actual graphs */
 var hotcrp_graphs = {};
@@ -228,18 +250,16 @@ var hotcrp_graphs = {};
 //        series: [{d: [ARRAY], label: STRING, className: STRING}],
 //        xlabel: STRING, ylabel: STRING, xtick_format: STRING}
 function hotcrp_graphs_cdf(args) {
-    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
-        width = $(args.selector).width() - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    args = make_args(args);
 
-    var x = d3.scale.linear().range([0, width]);
-    var y = d3.scale.linear().range([height, 0]);
+    var x = d3.scale.linear().range([0, args.width]);
+    var y = d3.scale.linear().range([args.height, 0]);
 
     var svg = d3.select(args.selector).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", args.width + args.left + args.right)
+        .attr("height", args.height + args.top + args.bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     // massage data
     var series = args.series;
@@ -269,7 +289,7 @@ function hotcrp_graphs_cdf(args) {
 
     // axes
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks && args.xticks(xAxis, x.domain());
+    args.xticks.ticks.call(xAxis, x.domain());
     args.xtick_format && xAxis.tickFormat(args.xtick_format);
     var yAxis = d3.svg.axis().scale(y).orient("left");
     var line = d3.svg.line().x(function (d) {return x(d[0]);})
@@ -294,10 +314,10 @@ function hotcrp_graphs_cdf(args) {
     var hovers = svg.selectAll(".gcdf_hover0, .gcdf_hover1");
     hovers.style("display", "none");
 
-    make_axes(svg, width, height, xAxis, yAxis, args);
+    make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
-        .attr("height", height + margin.bottom)
+    svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
+        .attr("height", args.height + args.bottom)
         .style({"fill": "none", "pointer-events": "all"})
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout);
@@ -324,7 +344,7 @@ function hotcrp_graphs_cdf(args) {
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             hubble.text(u.label)
                 .dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
-                .at(p[0] + margin.left, p[1], this);
+                .at(p[0] + args.left, p[1], this);
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
@@ -489,30 +509,28 @@ function data_to_scatter(data) {
 }
 
 hotcrp_graphs.scatter = function (args) {
-    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
-        width = $(args.selector).width() - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom,
-        data = data_to_scatter(args.data);
+    args = make_args(args);
+    var data = data_to_scatter(args.data);
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = d3.extent(data, function (d) { return d[1]; }),
-        x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
+        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
                 .domain(expand_extent(xe, 0.3)),
-        y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
+        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
                 .domain(expand_extent(ye, 0.3)),
         rf = function (d) { return d.r - 1; };
     data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks && args.xticks(xAxis, xe);
+    args.xticks.ticks.call(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks && args.yticks(yAxis, ye);
+    args.yticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", args.width + args.left + args.right)
+        .attr("height", args.height + args.top + args.bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     function place(sel) {
         return sel.attr("r", rf)
@@ -531,10 +549,10 @@ hotcrp_graphs.scatter = function (args) {
     svg.append("circle").attr("class", "gdot gdot_hover1");
     var hovers = svg.selectAll(".gdot_hover0, .gdot_hover1").style("display", "none");
 
-    make_axes(svg, width, height, xAxis, yAxis, args);
+    make_axes(svg, xAxis, yAxis, args);
 
-    svg.append("rect").attr("x", -margin.left).attr("width", width + margin.left)
-        .attr("height", height + margin.bottom)
+    svg.append("rect").attr("x", -args.left).attr("width", args.width + args.left)
+        .attr("height", args.height + args.bottom)
         .style({"fill": "none", "pointer-events": "all"})
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout).on("click", mouseclick);
@@ -623,10 +641,8 @@ function data_to_barchart(data, isfraction, septags) {
 }
 
 hotcrp_graphs.barchart = function (args) {
-    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
-        width = $(args.selector).width() - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom,
-        data = data_to_barchart(args.data, !!args.yfraction, true);
+    args = make_args(args);
+    var data = data_to_barchart(args.data, !!args.yfraction, true);
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ge = d3.extent(data, function (d) { return d[1]; }),
@@ -635,26 +651,26 @@ hotcrp_graphs.barchart = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
+        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
                 .domain(expand_extent(xe, 0.2)),
-        y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
+        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
                 .domain(ye);
 
-    var barwidth = width/20;
+    var barwidth = args.width/20;
     if (deltae[0] != Infinity)
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0]))), 10);
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks && args.xticks(xAxis, xe);
+    args.xticks.ticks.call(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks && args.yticks(yAxis, ye);
+    args.yticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", args.width + args.left + args.right)
+        .attr("height", args.height + args.top + args.bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     function place(sel, close) {
         return sel.attr("d", function (d) {
@@ -671,7 +687,7 @@ hotcrp_graphs.barchart = function (args) {
             })
             .style("fill", function (d) { return make_pattern_fill(d[4], "gdot "); }));
 
-    make_axes(svg, width, height, xAxis, yAxis, args);
+    make_axes(svg, xAxis, yAxis, args);
 
     svg.append("path").attr("class", "gbar gbar_hover0");
     svg.append("path").attr("class", "gbar gbar_hover1");
@@ -743,10 +759,8 @@ function data_to_boxplot(data, septags) {
 }
 
 hotcrp_graphs.boxplot = function (args) {
-    var margin = {top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
-        width = $(args.selector).width() - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom,
-        data = data_to_boxplot(args.data, !!args.yfraction, true);
+    args = make_args(args);
+    var data = data_to_boxplot(args.data, !!args.yfraction, true);
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
         ye = [d3.min(data, function (d) { return d.ymin; }),
@@ -755,25 +769,25 @@ hotcrp_graphs.boxplot = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.xflip ? [width, 0] : [0, width])
+        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
                 .domain(expand_extent(xe, 0.2)),
-        y = d3.scale.linear().range(args.yflip ? [0, height] : [height, 0])
+        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
                 .domain(expand_extent(ye, 0.2));
 
-    var barwidth = width/80;
+    var barwidth = args.width/80;
     if (deltae[0] != Infinity)
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks && args.xticks(xAxis, xe);
+    args.xticks.ticks.call(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks && args.yticks(yAxis, ye);
+    args.yticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", args.width + args.left + args.right)
+        .attr("height", args.height + args.top + args.bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     function place_whisker(l, sel) {
         sel.attr("x1", function (d) { return x(d[0]); })
@@ -833,7 +847,7 @@ hotcrp_graphs.boxplot = function (args) {
             }))).enter().append("circle")
             .attr("class", function (d) { return "gbox outlier " + d.outlierof.c; }));
 
-    make_axes(svg, width, height, xAxis, yAxis, args);
+    make_axes(svg, xAxis, yAxis, args);
 
     svg.append("line").attr("class", "gbox whiskerl gbox_hover0");
     svg.append("line").attr("class", "gbox whiskerh gbox_hover0");
@@ -853,12 +867,10 @@ hotcrp_graphs.boxplot = function (args) {
     svg.selectAll(".gbox.outlier").on("mouseover", mouseover_outlier);
 
     function make_tooltip(ps, ds) {
-        var yformat = function (value) { return value; };
-        if (args.yticks && args.yticks.unparse_html)
-            yformat = args.yticks.unparse_html;
+        var yformat = args.yticks.unparse_html;
         var x = [];
         for (var i = 0; i < ps.length; ++i)
-            x.push(ps[i] + " (" + yformat(ds[i]) + ")");
+            x.push(ps[i] + " (" + yformat.call(yAxis, ds[i]) + ")");
         x.sort(pid_sorter);
         return '<p><span class="nw">#' + x.join(',</span> <span class="nw">#') + '</span></p>';
     }
@@ -912,7 +924,6 @@ hotcrp_graphs.boxplot = function (args) {
     function mouseclick() {
         var s;
         if (hovered_data && !hovered_data.outlierof
-            && args.xticks && args.xticks.search
             && (s = args.xticks.search(hovered_data[0])))
             clicker_go(hoturl("search", {"q": s}));
         else
@@ -932,23 +943,22 @@ hotcrp_graphs.formulas_add_qrow = function () {
 
 hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
     var info = make_score_info(n, c, sv), split = 2;
-    function format(axis, extent) {
+    function format(extent) {
         var count = Math.floor(extent[1] * 2) - Math.ceil(extent[0] * 2) + 1;
         if (count > 11)
             split = 1, count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
         if (c)
-            axis.ticks(count);
+            this.ticks(count);
     }
-    format.rewrite = function (axis) {
-        $(axis[0]).find("g.tick text").each(function () {
+    function rewrite(axis) {
+        $(this[0]).find("g.tick text").each(function () {
             var $self = $(this);
             $self.css({fill: info.rgb($self.text())});
             if (c)
                 $self.text(info.unparse($self.text(), split));
         });
     };
-    format.unparse_html = info.unparse_html;
-    return format;
+    return { ticks: format, rewrite: rewrite, unparse_html: info.unparse_html };
 };
 
 function get_max_tick_width(axis) {
@@ -972,35 +982,38 @@ hotcrp_graphs.named_integer_ticks = function (map) {
         var m = map[value];
         return (m && typeof m === "object" && m.color_classes) || "";
     }
-    function format(axis, extent) {
+    function format(extent) {
         var count = Math.floor(extent[1]) - Math.ceil(extent[0]) + 1;
-        axis.ticks(count).tickFormat(mtext);
+        this.ticks(count).tickFormat(mtext);
     }
-    format.unparse_html = function (value) {
+    function unparse_html(value) {
         return map[value] != null ? text_to_html(map[value]) : value;
     };
-    format.search = function (value) {
+    function search(value) {
         var m = map[value];
         return (m && typeof m === "object" && m.search) || null;
     };
 
     var want_tilt, want_mclasses;
-    function rewrite(axis) {
-        var max_width = get_max_tick_width(axis);
+    function rewrite() {
+        if (!want_tilt && !want_mclasses)
+            return;
+
+        var max_width = get_max_tick_width(this);
         if (max_width > 100) { // shrink font
-            $(axis[0]).find("g.tick text").css("font-size", "smaller");
-            max_width = get_max_tick_width(axis);
+            $(this[0]).find("g.tick text").css("font-size", "smaller");
+            max_width = get_max_tick_width(this);
         }
-        var example_height = get_sample_tick_height(axis);
+        var example_height = get_sample_tick_height(this);
 
         // apply offset first (so `mclasses` rects include offset)
         if (want_tilt)
-            axis.selectAll("g.tick text").style("text-anchor", "end")
+            this.selectAll("g.tick text").style("text-anchor", "end")
                 .attr("dx", "-9px").attr("dy", "2px");
 
         // apply classes by adding them and adding background rects
         if (want_mclasses)
-            axis.selectAll("g.tick text").filter(mclasses).each(function (i) {
+            this.selectAll("g.tick text").filter(mclasses).each(function (i) {
                 var c = mclasses(i);
                 d3.select(this).attr("class", "taghl " + c);
                 var b = this.getBBox();
@@ -1013,11 +1026,11 @@ hotcrp_graphs.named_integer_ticks = function (map) {
 
         // apply tilt rotation, enlarge container if necessary
         if (want_tilt) {
-            axis.selectAll("g.tick text, g.tick rect")
+            this.selectAll("g.tick text, g.tick rect")
                 .attr("transform", "rotate(-65)");
             max_width = max_width * Math.sin(1.13446) + 20; // 65 degrees in radians
-            if (max_width > BOTTOM_MARGIN && axis.classed("x")) {
-                var container = $(axis[0]).closest("svg");
+            if (max_width > BOTTOM_MARGIN && this.classed("x")) {
+                var container = $(this[0]).closest("svg");
                 container.attr("height", +container.attr("height") + (max_width - BOTTOM_MARGIN));
             }
         }
@@ -1025,9 +1038,9 @@ hotcrp_graphs.named_integer_ticks = function (map) {
         // prevent label overlap
         if (want_tilt) {
             var total_height = d3.values(map).length * (example_height * Math.cos(1.13446) + 5);
-            var alternation = Math.ceil(total_height / axis.node().getBBox().width - 0.1);
+            var alternation = Math.ceil(total_height / this.node().getBBox().width - 0.1);
             if (alternation > 1)
-                axis.selectAll("g.tick").each(function (i) {
+                this.selectAll("g.tick").each(function (i) {
                     if (i % alternation != 1)
                         d3.select(this).style("display", "none");
                 });
@@ -1036,10 +1049,9 @@ hotcrp_graphs.named_integer_ticks = function (map) {
     want_tilt = d3.values(map).length > 30
         || d3.max(d3.keys(map).map(function (k) { return mtext(k).length; })) > 4;
     want_mclasses = d3.keys(map).some(function (k) { return mclasses(k); });
-    if (want_tilt || want_mclasses)
-        format.rewrite = rewrite;
 
-    return format;
+    return { ticks: format, rewrite: rewrite, unparse_html: unparse_html,
+             search: search };
 };
 
 hotcrp_graphs.rotate_ticks = function (angle) {
