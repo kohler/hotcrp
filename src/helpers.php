@@ -314,11 +314,11 @@ function json_exit($json) {
     $Conf->ajaxExit($json);
 }
 
-function foldbutton($foldtype, $foldnum = 0) {
+function foldbutton($foldtype, $foldnum = 0, $content = "") {
     $foldnumid = ($foldnum ? ",$foldnum" : "");
     return '<a href="#" class="q" onclick="return fold(\''
         . $foldtype . '\',null' . $foldnumid . ')">'
-        . expander(null, $foldnum) . '</a>';
+        . expander(null, $foldnum) . $content . '</a>';
 }
 
 function expander($open, $foldnum = null) {

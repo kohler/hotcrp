@@ -19,9 +19,12 @@ class CheckFormat {
                            self::ERR_BODYFONTSIZE => "bodyfontsize",
                            self::ERR_BODYLEADING => "bodyleading");
 
-    var $msgs;
-    var $errors;
-    public $pages;
+    var $msgs = array();
+    public $errors = 0;
+    public $pages = 0;
+    public $banal_stdout;
+    public $banal_sterr;
+    public $banal_status;
 
     function __construct() {
         $this->msgs = array();
@@ -135,14 +138,21 @@ class CheckFormat {
             $banal_run .= substr($spec, $gtpos + 1) . " ";
             $spec = substr($spec, 0, $gtpos);
         }
-        exec($banal_run . escapeshellarg($filename), $bo);
+
+        $pipes = null;
+        $banal_proc = proc_open($banal_run . escapeshellarg($filename),
+            [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
+        $this->banal_stdout = stream_get_contents($pipes[1]);
+        $this->banal_stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $this->banal_status = proc_close($banal_proc);
 
         // analyze banal's output
         $pi = array();
         $papersize = null;
         $page = null;
-        for ($bi = 1; $bi < count($bo); $bi++) {
-            $b = $bo[$bi];
+        foreach (preg_split("/[\r\n]/", $this->banal_stdout) as $b) {
             if (preg_match('/^Paper size:\s+(.*?)\s*$/i', $b, $m)
                 && ($p = self::parse_dimen($m[1], 2)))
                 $papersize = $p;
@@ -365,5 +375,4 @@ class CheckFormat {
             else if ($m[0] == "info")
                 $Conf->infoMsg($m[1]);
     }
-
 }
