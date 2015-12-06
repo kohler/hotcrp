@@ -128,7 +128,37 @@ class FormulaGraph {
         }
         unset($d);
 
+        if ($this->fx->result_format() === "reviewer")
+            $this->_cdf_fix_reviewers($data);
+
         return $data;
+    }
+
+    private function _load_reviewers($reviewer_cids) {
+        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", array_keys($reviewer_cids));
+        $this->reviewers = [];
+        while ($result && ($c = $result->fetch_object("Contact")))
+            $this->reviewers[$c->contactId] = $c;
+        Dbl::free($result);
+        uasort($this->reviewers, "Contact::compare");
+        $i = 0;
+        foreach ($this->reviewers as $c)
+            $c->graph_index = ++$i;
+    }
+
+    private function _cdf_fix_reviewers(&$data) {
+        if ($this->fx_query)
+            return;
+        $reviewer_cids = [];
+        foreach ($data as $dx)
+            foreach ($dx->d as $d)
+                $reviewer_cids[$d] = true;
+        $this->_load_reviewers($reviewer_cids);
+        foreach ($data as $dx) {
+            foreach ($dx->d as &$d)
+                $d && ($d = $this->reviewers[$d]->graph_index);
+            unset($d);
+        }
     }
 
     private function _scatter_data($result, $fxf, $fyf, $reviewf) {
@@ -201,17 +231,7 @@ class FormulaGraph {
                 $xi && $d[0] && ($reviewer_cids[$d[0]] = true);
                 $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
             }
-
-        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", array_keys($reviewer_cids));
-        $this->reviewers = [];
-        while ($result && ($c = $result->fetch_object("Contact")))
-            $this->reviewers[$c->contactId] = $c;
-        Dbl::free($result);
-        uasort($this->reviewers, "Contact::compare");
-        $i = 0;
-        foreach ($this->reviewers as $c)
-            $c->graph_index = ++$i;
-
+        $this->_load_reviewers($reviewer_cids);
         foreach ($data as &$dx) {
             foreach ($dx as &$d) {
                 $xi && $d[0] && ($d[0] = $this->reviewers[$d[0]]->graph_index);
