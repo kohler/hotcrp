@@ -116,6 +116,8 @@ class PaperList {
             $this->viewmap->statistics = true;
         if ($this->viewmap->authors)
             $this->viewmap->au = true;
+        if ($this->viewmap->rownumbers)
+            $this->viewmap->rownum = true;
     }
 
     function _sort($rows) {
@@ -1028,7 +1030,7 @@ class PaperList {
     private function _view_columns($field_list) {
         // add explicitly requested columns
         $specials = array_flip(array("cc", "compact", "compactcolumn", "compactcolumns",
-                                     "column", "col", "columns", "sort",
+                                     "column", "col", "columns", "sort", "rownum", "rownumbers",
                                      "stat", "stats", "statistics", "totals"));
         $viewmap_add = array();
         foreach ($this->viewmap as $k => $v)
