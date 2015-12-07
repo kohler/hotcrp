@@ -1429,7 +1429,7 @@ $blind\n";
 
         echo '<hr class="c" /></div><div class="revcard_body"></div></div>', "\n\n";
 
-        $Conf->echoScript("review_form.render_review(\$(\"#r$reviewOrdinal .revcard_body\"), " . json_encode($this->unparse_review_json($prow, $rrow, $Me)) . ");");
+        $Conf->echoScript("review_form.render_review(\$(\"#r$reviewOrdinal .revcard_body\"), " . json_encode($this->unparse_review_json($prow, $rrow, $Me), JSON_UNESCAPED_UNICODE) . ");");
     }
 
     private function _review_buttons($prow, $rrow, $type, $reviewPostLink) {

@@ -280,11 +280,11 @@ class FormulaGraph {
         else if ($axis == "y" && $this->type == self::BARCHART)
             $t[] = "ylabel:\"# papers\"";
         else if ($axis != "x" || !$this->fx_query)
-            $t[] = "{$axis}label:" . json_encode($f->expression);
+            $t[] = "{$axis}label:" . json_encode($f->expression, JSON_UNESCAPED_UNICODE);
         $format = $f->result_format();
         $rticks = ($axis == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($axis == "x" && $this->fx_query) {
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries, JSON_UNESCAPED_UNICODE) . ")";
         } else if ($format instanceof ReviewField) {
             if ($format->option_letter)
                 $t[] = $axis . "flip:true";
@@ -304,16 +304,16 @@ class FormulaGraph {
                 $x[$r->graph_index] = $rd;
             }
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
-                    . json_encode($x) . ")" . $rticks;
+                    . json_encode($x, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
         } else if ($format === "dec")
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;
         else if ($format === "bool")
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
         else if ($format === "revround")
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($Conf->defined_round_list()) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($Conf->defined_round_list(), JSON_UNESCAPED_UNICODE) . ")" . $rticks;
         else if ($format === "revtype")
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($reviewTypeName) . ")" . $rticks;
         return join(",", $t);
