@@ -453,27 +453,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
                             array("comparator" => "reviewer_type_compare"));
     }
     public function analyze($pl, &$rows) {
-        // PaperSearch is responsible for access control checking use of
-        // `reviewerContact`, but we are careful anyway.
-        if ($pl->search->reviewer_cid()
-            && $pl->search->reviewer_cid() != $pl->contact->contactId
-            && count($rows)) {
-            $by_pid = array();
-            foreach ($rows as $row)
-                $by_pid[$row->paperId] = $row;
-            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $pl->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $pl->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
-            while (($xrow = edb_orow($result))) {
-                $prow = $by_pid[$xrow->paperId];
-                if ($pl->contact->allow_administer($prow)
-                    || $pl->contact->can_view_review_identity($prow, $xrow, true)
-                    || ($pl->contact->privChair
-                        && $xrow->conflictType > 0
-                        && !$xrow->reviewType))
-                    $prow->_xreviewer = $xrow;
-            }
-            $this->xreviewer = $pl->search->reviewer();
-        } else
-            $this->xreviewer = false;
+        $this->xreviewer = $pl->prepare_xreviewer($rows);
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         if (!$this->xreviewer) {
@@ -1053,6 +1033,7 @@ class ScorePaperColumn extends PaperColumn {
     public $score;
     public $max_score;
     private $form_field;
+    private $xreviewer;
     private static $registered = array();
     public function __construct($score) {
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
@@ -1092,6 +1073,9 @@ class ScorePaperColumn extends PaperColumn {
             $this->max_score = count($this->form_field->options);
         }
         return true;
+    }
+    public function analyze($pl, &$rows) {
+        $this->xreviewer = $pl->prepare_xreviewer($rows);
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         $this->_sortinfo = $sortinfo = "_score_sort_info." . $this->score . $sorter->score;
@@ -1147,7 +1131,12 @@ class ScorePaperColumn extends PaperColumn {
             $scores = $row->viewable_scores($this->form_field, $pl->contact, true);
         }
         if ($scores) {
-            $t = $this->form_field->unparse_graph($scores, 1, defval($row, $this->score));
+            $my_score = null;
+            if (!$this->xreviewer)
+                $my_score = @$scores[$pl->reviewer_cid()];
+            else if (isset($row->_xreviewer))
+                $my_score = @$scores[$row->_xreviewer->reviewContactId];
+            $t = $this->form_field->unparse_graph($scores, 1, $my_score);
             if ($pl->live_table && $rowidx % 16 == 15)
                 $t .= "<script>scorechart()</script>";
             return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;

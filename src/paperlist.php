@@ -33,6 +33,7 @@ class PaperList {
     public $search;
     public $tagger;
     private $_reviewer = null;
+    private $_xreviewer = false;
     public $review_list;
     public $live_table;
 
@@ -329,6 +330,31 @@ class PaperList {
         if ($ranal->round)
             $t .= "&nbsp;<span class='revround' title='Review round'>" . $ranal->round . "</span>";
         return $t;
+    }
+
+    public function prepare_xreviewer($rows) {
+        // PaperSearch is responsible for access control checking use of
+        // `reviewerContact`, but we are careful anyway.
+        if ($this->search->reviewer_cid()
+            && $this->search->reviewer_cid() != $this->contact->contactId
+            && count($rows)
+            && !$this->_xreviewer) {
+            $by_pid = array();
+            foreach ($rows as $row)
+                $by_pid[$row->paperId] = $row;
+            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $this->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
+            while (($xrow = edb_orow($result))) {
+                $prow = $by_pid[$xrow->paperId];
+                if ($this->contact->allow_administer($prow)
+                    || $this->contact->can_view_review_identity($prow, $xrow, true)
+                    || ($this->contact->privChair
+                        && $xrow->conflictType > 0
+                        && !$xrow->reviewType))
+                    $prow->_xreviewer = $xrow;
+            }
+            $this->_xreviewer = $this->search->reviewer();
+        }
+        return $this->_xreviewer;
     }
 
     private function _footer($ncol, $listname, $rstate, $extra) {
