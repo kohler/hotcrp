@@ -543,8 +543,8 @@ hotcrp_graphs.scatter = function (args) {
         .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     var annulus = d3.svg.arc()
-        .innerRadius(function (d) { return d.r0; })
-        .outerRadius(function (d) { return d.r; })
+        .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
+        .outerRadius(function (d) { return d.r - 0.5; })
         .startAngle(0)
         .endAngle(Math.PI * 2);
 
