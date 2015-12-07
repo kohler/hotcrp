@@ -671,9 +671,13 @@ hotcrp_graphs.barchart = function (args) {
         y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
                 .domain(ye);
 
-    var barwidth = args.width/20;
+    var dpr = window.devicePixelRatio || 1;
+    var barwidth = args.width / 20;
     if (deltae[0] != Infinity)
-        barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0]))), 10);
+        barwidth = Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])));
+    barwidth = Math.max(10, barwidth);
+    if (ge[1])
+        barwidth = Math.floor((barwidth - 3) * dpr) / (dpr * (ge[1] + 1));
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
