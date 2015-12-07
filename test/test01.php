@@ -342,6 +342,10 @@ assert_search_papers($user_chair, "re:huitema", "8 10");
 
 xassert_assign($Admin, true, "action,paper,user,round\nprimary,13,huitema,R1\n");
 
+// search combinations
+assert_search_papers($user_chair, "re:huitema", "8 10 13");
+assert_search_papers($user_chair, "8 10 13 re:huitema", "8 10 13");
+
 // THEN searches
 assert_search_papers($user_chair, "10-12 THEN re:huitema", "10 11 12 8 13");
 assert_search_papers($user_chair, "10-12 HIGHLIGHT re:huitema", "10 11 12");

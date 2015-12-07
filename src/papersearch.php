@@ -103,13 +103,22 @@ class SearchTerm {
         }
         return $this;
     }
+    private function _flatten_values() {
+        $qvs = array();
+        foreach ($this->value ? : array() as $qv)
+            if ($qv->type === $this->type)
+                $qvs = array_merge($qvs, $qv->value);
+            else
+                $qvs[] = $qv;
+        return $qvs;
+    }
     private function _finish_and() {
         $pn = array(array(), array());
         $revadj = null;
         $newvalue = array();
         $any = false;
 
-        foreach ($this->value ? : array() as $qv) {
+        foreach ($this->_flatten_values() as $qv)
             if ($qv->is_false()) {
                 $this->type = "f";
                 return $this;
@@ -120,11 +129,8 @@ class SearchTerm {
                 $pn[1] = array_merge($pn[1], $qv->value[1]);
             } else if ($qv->type === "revadj")
                 $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "and");
-            else if ($qv->type === "and" || $qv->type === "and2")
-                $newvalue = array_merge($newvalue, $qv->value);
             else
                 $newvalue[] = $qv;
-        }
 
         return $this->_finish_combine($newvalue, $pn, $revadj, $any);
     }
@@ -133,7 +139,7 @@ class SearchTerm {
         $revadj = null;
         $newvalue = array();
 
-        foreach ($this->value ? : array() as $qv) {
+        foreach ($this->_flatten_values() as $qv) {
             if ($qv->is_true()) {
                 $this->type = "t";
                 return $this;
@@ -143,8 +149,6 @@ class SearchTerm {
                 $pn[0] = array_merge($pn[0], array_values(array_diff($qv->value[0], $qv->value[1])));
             else if ($qv->type === "revadj")
                 $revadj = PaperSearch::_reviewAdjustmentMerge($revadj, $qv, "or");
-            else if ($qv->type === "or")
-                $newvalue = array_merge($newvalue, $qv->value);
             else
                 $newvalue[] = $qv;
         }
@@ -229,12 +233,12 @@ class SearchTerm {
         return $qr->append($term)->finish();
     }
     static function make_opstr($op, $left, $right, $opstr) {
+        $lstr = $left && !$op->unary ? $left->get_float("substr") : null;
+        $rstr = $right ? $right->get_float("substr") : null;
         $qr = new SearchTerm($op);
         if (!$op->unary)
             $qr->append($left);
         $qr = $qr->append($right)->finish();
-        $lstr = $left && !$op->unary ? $left->get_float("substr") : null;
-        $rstr = $right ? $right->get_float("substr") : null;
         if ($op->unary && $lstr !== null)
             $qr->set_float("substr", $opstr . $lstr);
         else if (!$op->unary && $lstr !== null && $rstr !== null)
