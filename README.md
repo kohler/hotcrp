@@ -13,8 +13,8 @@ HotCRP also has weaknesses. Complicated multitrack conferences (with
 different deadlines per track) should use other software.
 
 HotCRP is the open-source version of the software running on
-[hotcrp.com](https://hotcrp.com). If you want to run HotCRP without setting up
-your own server, use hotcrp.com.
+[hotcrp.com](https://hotcrp.com). If you want to run HotCRP without setting
+up your own server, use hotcrp.com.
 
 Prerequisites
 -------------
@@ -29,7 +29,8 @@ software:
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
 * pdftohtml, http://poppler.freedesktop.org/ (Only required for format
-  checking.)
+  checking. Recent pdftohtml versions are suitable for HotCRP; most versions
+  released before 2013 aren’t.)
 
 Apache is preloaded on most Linux distributions. You may need to install
 additional packages for PHP and MySQL, such as:
@@ -46,16 +47,6 @@ additional packages for PHP and MySQL, such as:
 You may need to restart the Apache web server after installing these
 packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`). If
 using nginx, you will need the php-fpm package.
-
-**pdftohtml notes**: HotCRP and the banal script use pdftohtml for
-paper format checking. As of 2013, many current Unix distributions
-ship with a suitable version of pdftohtml, such as “pdftohtml version
-0.18.4, Copyright 2005-2011 The Poppler Developers.” Older versions of
-pdftohtml may not be suitable. In particular, version 0.40a can be
-hundreds of times slower than other versions, and version 0.39 doesn’t
-understand the most current PDF standard. If your pdftohtml is bad,
-try installing Geoff Voelker’s patched version of pdftohtml; see
-http://www.sysnet.ucsd.edu/sigops/banal/download.html.
 
 **Load notes**: HotCRP requires a system with at least 256MB of
 memory, more if paper format checking is used and submission load is
@@ -270,4 +261,4 @@ Eddie Kohler, Harvard/UCLA
 
 * HotCRP is based on CRP, which was written by Dirk Grunwald,
   University of Colorado
-* banal by Geoff Voelker, UCSD
+* [banal by Geoff Voelker, UCSD](http://www.sysnet.ucsd.edu/sigops/banal/)
