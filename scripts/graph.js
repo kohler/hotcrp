@@ -405,26 +405,35 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
 
 /* grouped quadtree */
 // mark bounds of each node
-function grouped_quadtree_mark_bounds(q, ordinalf) {
-    var b = [Infinity, -Infinity, -Infinity, Infinity], p, i;
+function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
     ordinalf = ordinalf || (function () { var m = 0; return function () { return ++m; }; })();
     q.ordinal = ordinalf();
-    for (p = q.point; p; p = p.next)
-        if (q.point.maxr == null || p.r > q.point.maxr) {
-            b[0] = Math.min(b[0], p[1] - p.r);
-            b[1] = Math.max(b[1], p[0] + p.r);
-            b[2] = Math.max(b[2], p[1] + p.r);
-            b[3] = Math.min(b[3], p[0] - p.r);
-            q.point.maxr = p.r;
+
+    var b, p, i, n, ps;
+    if (q.point) {
+        for (p = q.point, ps = []; p; p = p.next)
+            ps.push(p);
+        ps.sort(function (a, b) { return d3.ascending(a.n, b.n); });
+        for (i = n = 0; i < ps.length; ++i) {
+            ps[i].r0 = i ? ps[i-1].r : 0;
+            n += ps[i].n;
+            ps[i].r = rf(n);
         }
+        p = q.point;
+        p.maxr = ps[ps.length - 1].r;
+        b = [p[1] - p.maxr, p[0] + p.maxr, p[1] + p.maxr, p[0] - p.maxr];
+    } else
+        b = [Infinity, -Infinity, -Infinity, Infinity];
+
     for (i = 0; i < 4; ++i)
         if ((p = q.nodes[i])) {
-            grouped_quadtree_mark_bounds(p, ordinalf);
+            grouped_quadtree_mark_bounds(p, rf, ordinalf);
             b[0] = Math.min(b[0], p.bounds[0]);
             b[1] = Math.max(b[1], p.bounds[1]);
             b[2] = Math.max(b[2], p.bounds[2]);
             b[3] = Math.min(b[3], p.bounds[3]);
         }
+
     q.bounds = b;
 }
 
@@ -462,14 +471,9 @@ function grouped_quadtree(data, xs, ys, rf) {
         return [[Math.min(xe[0], xe[1]), Math.min(ye[0], ye[1])],
                 [Math.max(xe[0], xe[1]), Math.max(ye[0], ye[1])]];
     }
-    var q = d3.geom.quadtree().extent(make_extent())([]),
-        d, nd = [], vp, vd, dx, dy;
-    if (rf == null)
-        rf = function (n) { return Math.sqrt(n); };
-    else if (typeof rf === "number")
-        rf = (function (f) {
-            return function (n) { return Math.sqrt(n) * f; };
-        })(rf);
+    var q = d3.geom.quadtree().extent(make_extent())([]);
+
+    var d, nd = [], vp, vd, dx, dy;
     for (var i = 0; (d = data[i]); ++i) {
         if (d[0] == null || d[1] == null)
             continue;
@@ -485,15 +489,21 @@ function grouped_quadtree(data, xs, ys, rf) {
         if (vp && vp[3] == vd[3]) {
             vp[2].push(d[2]);
             vp.n += 1;
-            vp.r = rf(vp.n);
         } else {
             vp ? vp.next = vd : q.add(vd);
             vd.n = 1;
             nd.push(vd);
-            vd.r = rf(vd.n);
         }
     }
-    grouped_quadtree_mark_bounds(q);
+
+    if (rf == null)
+        rf = Math.sqrt;
+    else if (typeof rf === "number")
+        rf = (function (f) {
+            return function (n) { return Math.sqrt(n) * f; };
+        })(rf);
+    grouped_quadtree_mark_bounds(q, rf);
+
     delete q.add;
     q.gfind = grouped_quadtree_gfind;
     return {data: nd, quadtree: q};
@@ -532,21 +542,26 @@ hotcrp_graphs.scatter = function (args) {
       .append("g")
         .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
+    var annulus = d3.svg.arc()
+        .innerRadius(function (d) { return d.r0; })
+        .outerRadius(function (d) { return d.r; })
+        .startAngle(0)
+        .endAngle(Math.PI * 2);
+
     function place(sel) {
-        return sel.attr("r", rf)
-            .attr("cx", function (d) { return d[0]; })
-            .attr("cy", function (d) { return d[1]; });
+        return sel.attr("d", annulus)
+            .attr("transform", function (d) { return "translate(" + d[0] + "," + d[1] + ")"; });
     }
 
     place(svg.selectAll(".gdot").data(data.data)
-          .enter().append("circle")
+          .enter().append("path")
             .attr("class", function (d) {
                 return d[3] ? "gdot " + d[3] : "gdot";
             })
             .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
 
-    svg.append("circle").attr("class", "gdot gdot_hover0");
-    svg.append("circle").attr("class", "gdot gdot_hover1");
+    svg.append("path").attr("class", "gdot gdot_hover0");
+    svg.append("path").attr("class", "gdot gdot_hover1");
     var hovers = svg.selectAll(".gdot_hover0, .gdot_hover1").style("display", "none");
 
     make_axes(svg, xAxis, yAxis, args);
