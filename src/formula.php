@@ -33,9 +33,11 @@ class Fexpr {
         $this->op = $op;
         if ($this->op === "trunc")
             $this->op = "floor";
-        if ($this->op === "average" || $this->op === "mean")
-            $this->op = "avg";
-        $this->args = array_slice(func_get_args(), 1);
+        $args = func_get_args();
+        if (count($args) == 2 && is_array($args[1]))
+            $this->args = $args[1];
+        else if (count($args) > 1)
+            $this->args = array_slice($args, 1);
     }
     public function add($x) {
         $this->args[] = $x;
@@ -63,21 +65,9 @@ class Fexpr {
         return false;
     }
 
-    private function typecheck_format() {
-        if (($this->op === "max" || $this->op === "min"
-             || $this->op === "avg" || $this->op === "wavg"
-             || $this->op === "round" || $this->op === "floor"
-             || $this->op === "ceil" || $this->op === "median"
-             || $this->op === "quantile")
-            && count($this->args) >= 1
-            && $this->args[0] instanceof Fexpr)
-            return $this->args[0]->format();
-        else if ($this->op === "atminof" || $this->op === "atmaxof"
-                 && count($this->args) >= 2
-                 && $this->args[1] instanceof Fexpr)
-            return $this->args[1]->format();
-        else if ($this->op === "greatest" || $this->op === "least"
-                 || $this->op === "?:" || $this->op === "&&" || $this->op === "||") {
+    public function typecheck_format() {
+        if ($this->op === "greatest" || $this->op === "least"
+            || $this->op === "?:" || $this->op === "&&" || $this->op === "||") {
             $format = false;
             for ($i = ($this->op === "?:" ? 1 : 0); $i < count($this->args); ++$i) {
                 $a = $this->args[$i];
@@ -133,18 +123,6 @@ class Fexpr {
 
     public static function cast_bool($t) {
         return "($t !== null ? (bool) $t : null)";
-    }
-
-    public static function quantile($a, $p) {
-        // The “R-7” quantile implementation
-        if (count($a) === 0 || $p < 0 || $p > 1)
-            return null;
-        $ix = (count($a) - 1) * $p + 1;
-        $i = (int) $ix;
-        $v = $a[$i - 1];
-        if (($e = $ix - $i))
-            $v += $e * ($a[$i] - $v);
-        return $v;
     }
 
     public function compile(FormulaCompiler $state) {
@@ -204,77 +182,6 @@ class Fexpr {
                 $t2 = $state->_addltemp($this->args[1]->compile($state));
                 return "($t1 !== null && $t2 ? $op($t1 / $t2) * $t2 : null)";
             }
-        }
-
-        if (count($this->args) == 1 && $op == "my")
-            return $state->_compile_my($this->args[0]);
-
-        if (count($this->args) == 1 && $op == "all") {
-            $t = $state->_compile_loop("null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", $this, 1);
-            return self::cast_bool($t);
-        }
-
-        if (count($this->args) == 1 && $op == "any") {
-            $t = $state->_compile_loop("null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", $this);
-            return self::cast_bool($t);
-        }
-
-        if (count($this->args) == 1 && ($op == "min" || $op == "max")) {
-            $cmp = $this->format_comparator($op == "min" ? "<" : ">");
-            return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)", $this);
-        }
-
-        if (count($this->args) == 2 && ($op == "atminof" || $op == "atmaxof")) {
-            $cmp = $this->args[0]->format_comparator($op == "atminof" ? "<" : ">");
-            $t = $state->_compile_loop("[null, [null]]",
-"if (~l~ !== null && (~r~[0] === null || ~l~ $cmp ~r~[0])) {
-  ~r~[0] = ~l~;
-  ~r~[1] = [~l1~];
-} else if (~l~ !== null && ~l~ == ~r~[0])
-  ~r~[1][] = ~l1~;", $this);
-            return "{$t}[1][count({$t}[1]) > 1 ? mt_rand(0, count({$t}[1]) - 1) : 0]";
-        }
-
-        if (count($this->args) == 1 && $op == "count")
-            return $state->_compile_loop("0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $this);
-
-        if (count($this->args) == 1 && $op == "sum")
-            return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)", $this);
-
-        if (count($this->args) == 1 && ($op == "avg" || $op == "wavg")) {
-            $t = $state->_compile_loop("[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)", $this);
-            return "({$t}[1] ? {$t}[0] / {$t}[1] : null)";
-        }
-
-        if ((count($this->args) == 1 && $op == "median")
-            || (count($this->args) == 2 && $op == "quantile")) {
-            if ($op == "median")
-                $q = "0.5";
-            else {
-                $q = $state->_addltemp($this->args[1]->compile($state));
-                if ($this->format_comparator("<") == ">")
-                    $q = "1 - $q";
-            }
-            $t = $state->_compile_loop("[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);", $this);
-            return "Fexpr::quantile($t, $q)";
-        }
-
-        if (count($this->args) == 2 && $op == "wavg") {
-            $t = $state->_compile_loop("[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)", $this);
-            return "(${t}[1] ? ${t}[0] / ${t}[1] : null)";
-        }
-
-        if (count($this->args) == 1 && preg_match('/\A(var(?:iance)?|std(?:d?ev)?)(|_pop|_samp|[_.][ps])\z/', $op, $m)) {
-            $t = $state->_compile_loop("[0, 0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
-            $ispop = preg_match('/\A(?:|_pop|[_.]p)\z/', $m[2]);
-            if ($m[1][0] == "v" && !$ispop)
-                return "(${t}[2] > 1 ? ${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1)) : (${t}[2] ? 0 : null))";
-            else if ($m[1][0] == "v")
-                return "(${t}[2] ? ${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2]) : null)";
-            else if (!$ispop)
-                return "(${t}[2] > 1 ? sqrt(${t}[0] / (${t}[2] - 1) - (${t}[1] * ${t}[1]) / (${t}[2] * (${t}[2] - 1))) : (${t}[2] ? 0 : null))";
-            else
-                return "(${t}[2] ? sqrt(${t}[0] / ${t}[2] - (${t}[1] * ${t}[1]) / (${t}[2] * ${t}[2])) : null)";
         }
 
         return "null";
@@ -350,6 +257,111 @@ class InFexpr extends Fexpr {
     public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
         return "(array_search($t, [" . join(", ", $this->values) . "]) !== false)";
+    }
+}
+
+class AggregateFexpr extends Fexpr {
+    static public function make($op, $args) {
+        if ($op === "average" || $op === "mean"
+            || ($op === "wavg" && count($args) == 1))
+            $op = "avg";
+        $arg_count = 1;
+        if ($op === "atminof" || $op === "atmaxof"
+            || $op === "wavg" || $op === "quantile")
+            $arg_count = 2;
+        if (count($args) == $arg_count)
+            return new AggregateFexpr($op, $args);
+        else
+            return null;
+    }
+
+    public function typecheck_format() {
+        if ($this->op === "atminof" || $this->op === "atmaxof"
+            && count($this->args) >= 2
+            && $this->args[1] instanceof Fexpr)
+            return $this->args[1]->format();
+        else if (count($this->args) >= 1
+                 && $this->args[0] instanceof Fexpr)
+            return $this->args[0]->format();
+        else
+            return null;
+    }
+
+    public static function quantile($a, $p) {
+        // The “R-7” quantile implementation
+        if (count($a) === 0 || $p < 0 || $p > 1)
+            return null;
+        $ix = (count($a) - 1) * $p + 1;
+        $i = (int) $ix;
+        $v = $a[$i - 1];
+        if (($e = $ix - $i))
+            $v += $e * ($a[$i] - $v);
+        return $v;
+    }
+
+    public function loop_info() {
+        if ($this->op == "all")
+            return ["null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", self::cast_bool("~x~")];
+        if ($this->op == "any")
+            return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
+        if ($this->op == "min" || $this->op == "max") {
+            $cmp = $this->format_comparator($this->op == "min" ? "<" : ">");
+            return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
+        }
+        if ($this->op == "atminof" || $this->op == "atmaxof") {
+            $cmp = $this->args[0]->format_comparator($this->op == "atminof" ? "<" : ">");
+            return ["[null, [null]]",
+"if (~l~ !== null && (~r~[0] === null || ~l~ $cmp ~r~[0])) {
+  ~r~[0] = ~l~;
+  ~r~[1] = [~l1~];
+} else if (~l~ !== null && ~l~ == ~r~[0])
+  ~r~[1][] = ~l1~;",
+                    "~x~[1][count(~x~[1]) > 1 ? mt_rand(0, count(~x~[1]) - 1) : 0]"];
+        }
+        if ($this->op == "count")
+            return ["0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)"];
+        if ($this->op == "sum")
+            return ["null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)"];
+        if ($this->op == "avg")
+            return ["[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)",
+                    "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
+        if ($this->op == "median" || $this->op == "quantile") {
+            if ($this->op == "median")
+                $q = "0.5";
+            else {
+                $q = $state->_addltemp($this->args[1]->compile($state));
+                if ($this->format_comparator("<") == ">")
+                    $q = "1 - $q";
+            }
+            return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
+                    "AggregateFexpr::quantile(~x~, $q)"];
+        }
+        if ($this->op == "wavg")
+            return ["[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)",
+                    "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
+        if (preg_match('/\A(var(?:iance)?|std(?:d?ev)?)(|_pop|_samp|[_.][ps])\z/', $this->op, $m)) {
+            $ispop = preg_match('/\A(?:|_pop|[_.]p)\z/', $m[2]);
+            if ($m[1][0] == "v" && !$ispop)
+                $x = "(~x~[2] > 1 ? ~x~[0] / (~x~[2] - 1) - (~x~[1] * ~x~[1]) / (~x~[2] * (~x~[2] - 1)) : (~x~[2] ? 0 : null))";
+            else if ($m[1][0] == "v")
+                $x = "(~x~[2] ? ~x~[0] / ~x~[2] - (~x~[1] * ~x~[1]) / (~x~[2] * ~x~[2]) : null)";
+            else if (!$ispop)
+                $x = "(~x~[2] > 1 ? sqrt(~x~[0] / (~x~[2] - 1) - (~x~[1] * ~x~[1]) / (~x~[2] * (~x~[2] - 1))) : (~x~[2] ? 0 : null))";
+            else
+                $x = "(~x~[2] ? sqrt(~x~[0] / ~x~[2] - (~x~[1] * ~x~[1]) / (~x~[2] * ~x~[2])) : null)";
+            return ["[0, 0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $x];
+        }
+        return null;
+    }
+
+    public function compile(FormulaCompiler $state) {
+        if ($this->op == "my")
+            return $state->_compile_my($this->args[0]);
+        else if (($li = $this->loop_info())) {
+            $t = $state->_compile_loop($li[0], $li[1], $this);
+            return @$li[2] ? str_replace("~x~", $t, $li[2]) : $t;
+        } else
+            return "null";
     }
 }
 
@@ -652,7 +664,7 @@ class FormulaCompiler {
     private $gvar = array();
     public $gstmt = array();
     public $lstmt = array();
-    public $looptype = 0;
+    public $looptype = Fexpr::LNONE;
     public $datatype = 0;
     private $lprefix = 0;
     private $maxlprefix = 0;
@@ -772,7 +784,7 @@ class FormulaCompiler {
         else
             return $this->define_gvar("trivial_loop", "[0]");
     }
-    public function _compile_loop($initial_value, $combiner, Fexpr $e) {
+    public function _compile_loop($initial_value, $combiner, AggregateFexpr $e) {
         $t_result = $this->_addltemp($initial_value, true);
         $combiner = str_replace("~r~", $t_result, $combiner);
         $p = $this->_push();
@@ -934,17 +946,17 @@ class Formula {
         return null;
     }
 
-    private function _parse_function($op, &$t, $is_aggregate) {
+    private function _parse_function($op, &$t, $agg) {
         $t = ltrim($t);
-        $e = new Fexpr($op);
+        $es = array();
 
         // collect arguments
         if ($t !== "" && $t[0] === "(") {
             while (1) {
                 $t = substr($t, 1);
-                if (!($e2 = $this->_parse_ternary($t, false)))
+                if (!($e = $this->_parse_ternary($t, false)))
                     return null;
-                $e->add($e2);
+                $es[] = $e;
                 $t = ltrim($t);
                 if ($t !== "" && $t[0] === ")")
                     break;
@@ -952,12 +964,12 @@ class Formula {
                     return null;
             }
             $t = substr($t, 1);
-        } else if (($e2 = $this->_parse_expr($t, self::$opprec["u+"], false)))
-            $e->add($e2);
+        } else if (($e = $this->_parse_expr($t, self::$opprec["u+"], false)))
+            $es[] = $e;
         else
             return null;
 
-        return $e;
+        return $agg ? AggregateFexpr::make($op, $es) : new Fexpr($op, $es);
     }
 
     static private function _pop_argument($t) {
