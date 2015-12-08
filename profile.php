@@ -893,8 +893,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
 }
 
 
-$Conf->footerScript('hiliter_children("#accountform");$("textarea").autogrow()');
 if ($newProfile)
     $Conf->footerScript('if(/bulk/.test(location.hash))fold("bulk",false,9)');
+$Conf->footerScript('hiliter_children("#accountform");$("textarea").autogrow()');
 $Conf->footerScript('crpfocus("account")');
 $Conf->footer();
