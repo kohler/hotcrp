@@ -1211,9 +1211,9 @@ function chair() {
   (usually “yes” is the right answer).</p></li>
 
 <li><p><strong><a href='" . hoturl("help", "t=tracks") . "'>Prepare tracks
-  (optional).</a></strong> The tracks feature gives chairs fine-grained
-  control over PC members’ access rights for individual papers. Examples
-  include external review committees, PC-paper review committees, and
+  (optional).</a></strong> Tracks give chairs fine-grained control over PC
+  members’ access rights for individual papers. Example situations calling for
+  tracks include external review committees, PC-paper review committees, and
   multi-track conferences.</li>
 
 <li><p><strong><a href='" . hoturl("reviewprefs") . "'>Collect review
