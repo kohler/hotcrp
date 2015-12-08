@@ -207,6 +207,7 @@ function do_tags() {
 
     // modify database
     Dbl::qe("lock tables ContactInfo write");
+    Conf::$no_invalidate_caches = true;
     $users = array();
     if ($_REQUEST["tagtype"] === "s") {
         // erase existing tags
@@ -234,6 +235,8 @@ function do_tags() {
             $errors = array_merge($errors, $us->error_messages());
     }
     Dbl::qe("unlock tables");
+    Conf::$no_invalidate_caches = false;
+    $Conf->invalidateCaches(["pc" => true]);
     // report
     if (!count($errors)) {
         $Conf->confirmMsg("Tags saved.");

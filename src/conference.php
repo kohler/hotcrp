@@ -33,6 +33,7 @@ class Conf {
     static public $gLongName;
     static public $gDefaultFormat;
     static private $gFormatInfo;
+    static public $no_invalidate_caches = false;
 
     const BLIND_NEVER = 0;
     const BLIND_OPTIONAL = 1;
@@ -885,6 +886,8 @@ class Conf {
 
     function invalidateCaches($caches = null) {
         global $OK;
+        if (self::$no_invalidate_caches)
+            return;
         $inserts = array();
         $removes = array();
         $time = time();
