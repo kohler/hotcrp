@@ -201,12 +201,14 @@ function do_tags() {
     $t1 = array();
     $errors = array();
     foreach (preg_split('/[\s,]+/', (string) @$_REQUEST["tag"]) as $t)
-        if (TagInfo::base($t) === "pc")
-            $errors[] = "The “pc” user tag is set automatically for all PC members.";
-        else if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE))
-            $t1[] = $t;
-        else if ($t !== "")
+        if ($t === "")
+            /* nada */;
+        else if (!($t = $tagger->check($t, Tagger::NOPRIVATE)))
             $errors[] = $tagger->error_html;
+        else if (TagInfo::base($t) === "pc")
+            $errors[] = "The “pc” user tag is set automatically for all PC members.";
+        else
+            $t1[] = $t;
     if (count($errors))
         return $Conf->errorMsg(join("<br>", $errors));
     else if (!count($t1))

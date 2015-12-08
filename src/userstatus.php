@@ -160,7 +160,7 @@ class UserStatus {
         $tagger = new Tagger;
         $t1 = array();
         foreach ($t0 as $t)
-            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE))
+            if ($t !== "" && ($t = $tagger->check($t, Tagger::NOPRIVATE)))
                 $t1[] = $t;
             else if ($t !== "")
                 $this->set_error($key, $tagger->error_html);
