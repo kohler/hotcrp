@@ -696,6 +696,15 @@ class Contact {
         $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $qf, $qv, $cdbq);
         self::set_sorter($this);
 
+        // Disabled
+        $disabled = $this->disabled ? 1 : 0;
+        if (isset($cj->disabled))
+            $disabled = $cj->disabled ? 1 : 0;
+        if (($this->disabled ? 1 : 0) !== $disabled || !$this->contactId) {
+            $this->disabled = $disabled;
+            $qf[] = "disabled=$disabled";
+        }
+
         // Follow
         if (isset($cj->follow)) {
             $w = 0;
@@ -720,9 +729,6 @@ class Contact {
             $t = count($tags) ? " " . join(" ", $tags) . " " : "";
             $this->_save_assign_field("contactTags", $t, $qf, $qv, $cdbq);
         }
-
-        // Disabled
-        $qf[] = "disabled=" . ($this->disabled ? 1 : 0);
 
         // Data
         $data = (object) array();

@@ -477,6 +477,14 @@ class PaperStatus {
                     $pj->$k = $Now;
             }
 
+        // Blindness
+        if (isset($pj->nonblind)) {
+            if (($x = friendly_boolean($pj->nonblind)) !== null)
+                $pj->nonblind = $x;
+            else
+                $this->set_error_html("nonblind", "Format error [nonblind]");
+        }
+
         // Topics
         $pj->bad_topics = array();
         if (@$pj->topics !== null)

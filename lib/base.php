@@ -61,6 +61,15 @@ function count_words($text) {
     return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
 }
 
+function friendly_boolean($x) {
+    if (is_bool($x))
+        return $x;
+    else if (is_string($x) || is_int($x))
+        return filter_var($x, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    else
+        return null;
+}
+
 
 // email and MIME helpers
 

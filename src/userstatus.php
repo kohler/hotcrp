@@ -266,8 +266,16 @@ class UserStatus {
             && !@$this->errf["collaborators"])
             $this->set_error("collaborators", "Format error [collaborators]");
 
+        // Disabled
+        if (isset($cj->disabled)) {
+            if (($x = friendly_boolean($cj->disabled)) !== null)
+                $cj->disabled = $x;
+            else
+                $this->set_error("disabled", "Format error [disabled]");
+        }
+
         // Follow
-        if (@$cj->follow !== null) {
+        if (isset($cj->follow)) {
             $cj->follow = $this->make_keyed_object($cj->follow, "follow");
             $cj->bad_follow = array();
             foreach ((array) $cj->follow as $k => $v)
@@ -276,7 +284,7 @@ class UserStatus {
         }
 
         // Roles
-        if (@$cj->roles !== null) {
+        if (isset($cj->roles)) {
             $cj->roles = $this->make_keyed_object($cj->roles, "roles");
             $cj->bad_roles = array();
             foreach ((array) $cj->roles as $k => $v)
@@ -286,9 +294,9 @@ class UserStatus {
         }
 
         // Tags
-        if (@$cj->tags !== null)
+        if (isset($cj->tags))
             $cj->tags = $this->make_tags_array($cj->tags, "tags");
-        if (@$cj->add_tags !== null || @$cj->remove_tags !== null) {
+        if (isset($cj->add_tags) || isset($cj->remove_tags)) {
             // collect old tags as map by base
             if (!isset($cj->tags) && $old_user)
                 $cj->tags = preg_split("/[\s,]+/", $old_user->contactTags);
@@ -317,7 +325,7 @@ class UserStatus {
         }
 
         // Topics
-        if (@$cj->topics !== null) {
+        if (isset($cj->topics)) {
             $topics = $this->make_keyed_object($cj->topics, "topics");
             $topic_map = $Conf->topic_map();
             $cj->topics = (object) array();
