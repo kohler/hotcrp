@@ -534,8 +534,7 @@ a.button {
 input.bsm, button.bsm, select.bsm {
 	font-size: smaller;
 }
-#plact input, #plact button, #plact select,
-#pplact input, #pplact button, #pplact select {
+#plact input, #plact button, #plact select {
 	font-size: 100%;
 }
 input.alert, button.alert {

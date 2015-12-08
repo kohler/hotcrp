@@ -483,9 +483,11 @@ class PaperList {
                 $t .= '<span class="fx99"><a class="q" href="#" onclick="return fold(\'placttags\')">'
                     . expander(null, 0) . "</a></span>";
             }
-            $t .= "tag<span class='fn99'>(s)</span> &nbsp;<input id='plact${nlll}_d' type='text' name='tag' value=\"" . htmlspecialchars(defval($_REQUEST, "tag", "")) . "\" size='15' onfocus='autosub(\"tagact\",this)' /> &nbsp;"
-                . Ht::submit("tagact", "Go")
-                . "</span>";
+            $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
+                . Ht::entry("tag", @$_REQUEST["tag"],
+                            array("id" => "plact{$nlll}_d", "size" => 15,
+                                  "onfocus" => "autosub('tagact',this)"))
+                . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span>';
             if ($this->contact->privChair) {
                 $t .= "<div class='fx'><div style='margin:2px 0'>"
                     . Ht::checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))

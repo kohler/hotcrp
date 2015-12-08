@@ -187,6 +187,65 @@ if ($Me->privChair && @$_REQUEST["modifygo"] && check_post() && isset($papersel)
     redirectSelf(array("modifygo" => null, "modifytype" => null));
 }
 
+function do_tags() {
+    global $Conf, $Me, $papersel;
+    // check tags
+    $tagger = new Tagger($Me);
+    $t1 = array();
+    $errors = array();
+    foreach (preg_split('/[\s,]+/', (string) @$_REQUEST["tag"]) as $t)
+        if (TagInfo::base($t) === "pc")
+            $errors[] = "The “pc” user tag is set automatically for all PC members.";
+        else if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE))
+            $t1[] = $t;
+        else if ($t !== "")
+            $errors[] = $tagger->error_html;
+    if (count($errors))
+        return $Conf->errorMsg(join("<br>", $errors));
+    else if (!count($t1))
+        return $Conf->warnMsg("Nothing to do.");
+
+    // modify database
+    Dbl::qe("lock tables ContactInfo write");
+    $users = array();
+    if ($_REQUEST["tagtype"] === "s") {
+        // erase existing tags
+        $likes = array();
+        $removes = array();
+        foreach ($t1 as $t) {
+            list($tag, $index) = TagInfo::split_index($t);
+            $removes[] = $t;
+            $likes[] = "contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like($tag) . "#%'");
+        }
+        foreach (Dbl::fetch_first_columns(Dbl::qe("select contactId from ContactInfo where " . join(" or ", $likes))) as $cid)
+            $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes);
+    }
+    // account for request
+    $key = $_REQUEST["tagtype"] === "d" ? "remove_tags" : "add_tags";
+    foreach ($papersel as $cid) {
+        if (!isset($users[(int) $cid]))
+            $users[(int) $cid] = (object) array("id" => (int) $cid, "add_tags" => [], "remove_tags" => []);
+        $users[(int) $cid]->$key = array_merge($users[(int) $cid]->$key, $t1);
+    }
+    // apply modifications
+    foreach ($users as $cid => $cj) {
+        $us = new UserStatus(array("send_email" => false));
+        if (!$us->save($cj))
+            $errors = array_merge($errors, $us->error_messages());
+    }
+    Dbl::qe("unlock tables");
+    // report
+    if (!count($errors)) {
+        $Conf->confirmMsg("Tags saved.");
+        redirectSelf(array("tagact" => null, "tag" => null));
+    } else
+        $Conf->errorMsg(join("<br>", $errors));
+}
+
+if ($Me->privChair && @$_REQUEST["tagact"] && check_post() && isset($papersel)
+    && preg_match('/\A[ads]\z/', (string) @$_REQUEST["tagtype"]))
+    do_tags();
+
 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {

@@ -190,7 +190,9 @@ class UserStatus {
             }
 
         // Email
-        if (!@$cj->email)
+        if (!@$cj->email && $old_user)
+            $cj->email = $old_user->email;
+        else if (!@$cj->email)
             $this->set_error("email", "Email is required.");
         else if (!@$this->errf["email"]
                  && !validate_email($cj->email)
@@ -407,5 +409,4 @@ class UserStatus {
             $field = $x;
         return isset($this->errf[$field]);
     }
-
 }

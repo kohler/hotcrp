@@ -476,32 +476,46 @@ class ContactList {
             return "";
 
         $t = "  <tfoot class=\"pltable" . ($hascolors ? " pltable_colored" : "")
-            . "\"><tr class='pl_footrow'>\n    <td class='pl_footselector' style='vertical-align: top'>"
-            . Ht::img("_.gif", "^^", array("class" => "placthook")) . "</td>\n";
-        $t .= "    <td id='pplact' class='pl_footer linelinks1' colspan='" . ($ncol - 1) . "'><b>Select people</b> (or <a href='#' onclick='return papersel(true)'>select all " . $this->count . "</a>), then ";
+            . "\"><tr class=\"pl_footrow\">\n    <td class=\"pl_footselector\">"
+            . Ht::img("_.gif", "^^", "placthook")
+            . "</td>\n  <td class=\"pl_footer\" colspan=\"" . ($ncol - 1) . '">'
+            . '<div id="plact" class="linelinks1">'
+            . '<a name="plact"><b>Select people</b></a> (or <a href="#" onclick="return papersel(true)">select all ' . $this->count . "</a>), then ";
 
         // Begin linelinks
         $types = array("nameemail" => "Names and emails");
         if ($this->contact->privChair)
             $types["pcinfo"] = "PC info";
-        $t .= "<span class='lll1'><a href='#' onclick='return crpfocus(\"pplact\",1)'>Download</a></span><span class='lld1'><b>:</b> &nbsp;"
-            . Ht::select("getaction", $types, null, array("id" => "pplact1_d"))
+        $nlll = 1;
+        $t .= "<span class=\"lll{$nlll}\"><a href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Download</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;"
+            . Ht::select("getaction", $types, null, array("id" => "plact{$nlll}_d"))
             . "&nbsp; " . Ht::submit("getgo", "Go", array("class" => "bsm"))
             . "</span>";
 
         $barsep = " <span class='barsep'>·</span> ";
         if ($this->contact->privChair) {
+            ++$nlll;
             $t .= $barsep;
-            $t .= "<span class='lll3'><a href='#' onclick='return crpfocus(\"pplact\",3)'>Modify</a></span><span class='lld3'><b>:</b> &nbsp;";
+            $t .= "<span class=\"lll{$nlll}\"><a href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Tag</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
+            $t .= Ht::select("tagtype", array("a" => "Add", "d" => "Remove", "s" => "Define"), @$_REQUEST["tagtype"])
+                . ' &nbsp;tag(s) &nbsp;'
+                . Ht::entry("tag", @$_REQUEST["tag"],
+                            array("id" => "plact{$nlll}_d", "size" => 15,
+                                  "onfocus" => "autosub('tagact',this)"))
+                . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span>';
+
+            ++$nlll;
+            $t .= $barsep;
+            $t .= "<span class=\"lll{$nlll}\"><a href=\"#\" onclick=\"return crpfocus('plact',{$nlll})\">Modify</a></span><span class=\"lld{$nlll}\"><b>:</b> &nbsp;";
             $t .= Ht::select("modifytype", array("disableaccount" => "Disable",
                                                  "enableaccount" => "Enable",
                                                  "resetpassword" => "Reset password",
                                                  "sendaccount" => "Send account information"),
-                             null, array("id" => "pplact3_d"))
+                             null, array("id" => "plact{$nlll}_d"))
                 . "&nbsp; " . Ht::submit("modifygo", "Go", array("class" => "bsm")) . "</span>";
         }
 
-        return $t . "</td></tr></tfoot>\n";
+        return $t . "</div></td></tr></tfoot>\n";
     }
 
     function _rows($queryOptions) {
