@@ -227,7 +227,7 @@ if (count($tOpt) > 1) {
     echo "<table id='contactsform' class='tablinks1'>
 <tr><td><div class='tlx'><div class='tld1'>";
 
-    echo Ht::form_div(hoturl("users", "t=" . $_REQUEST["t"]), array("method" => "get"));
+    echo Ht::form_div(hoturl("users"), array("method" => "get"));
     if (isset($_REQUEST["sort"]))
         echo Ht::hidden("sort", $_REQUEST["sort"]);
     echo Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "contactsform1_d")),
@@ -295,9 +295,8 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
 
 if (isset($pl->any->sel)) {
     echo Ht::form(hoturl_post("users", "t=" . $_REQUEST["t"])), "<div>";
-    foreach (array("t", "sort") as $x)
-        if (isset($_REQUEST[$x]))
-            echo Ht::hidden($x, $_REQUEST[$x]);
+    if (isset($_REQUEST["sort"]))
+        echo Ht::hidden("sort", $_REQUEST["sort"]);
 }
 echo $pl_text;
 if (isset($pl->any->sel))
