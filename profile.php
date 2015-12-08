@@ -20,7 +20,7 @@ function change_email_by_capability() {
 
     $email = $capdata->data->uemail;
     if (Contact::id_by_email($email))
-        error_go(false, "Email address " . htmlspecialchars($email) . " is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+        error_go(false, "Email address “" . htmlspecialchars($email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
 
     $Acct->change_email($email);
     $capmgr->delete($capdata);
@@ -104,7 +104,7 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
 
 
 function pc_request_as_json($cj) {
-    global $Conf, $Me, $Acct, $newProfile;
+    global $Conf, $Me, $Acct;
     if ($Me->privChair && isset($_REQUEST["pctype"])) {
         $cj->roles = (object) array();
         if (@$_REQUEST["pctype"] === "chair")
@@ -182,8 +182,10 @@ function web_request_as_json($cj) {
     }
 }
 
-function save_user($cj, $user_status) {
-    global $Conf, $Acct, $Me, $Opt, $OK, $newProfile;
+function save_user($cj, $user_status, $Acct, $allow_modification) {
+    global $Conf, $Me, $Opt, $OK, $newProfile;
+    if ($newProfile)
+        $Acct = null;
 
     // check for missing fields
     UserStatus::normalize_name($cj);
@@ -194,13 +196,17 @@ function save_user($cj, $user_status) {
 
     // check email
     if ($newProfile || $cj->email != $Acct->email) {
-        if (Contact::id_by_email($cj->email)) {
-            $msg = htmlspecialchars($cj->email) . " has already registered an account.";
-            if ($Me->privChair)
-                $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
-            if (!$newProfile)
-                $msg .= " You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
-            return $user_status->set_error("email", $msg);
+        if (($Acct = Contact::find_by_email($cj->email))) {
+            if ($allow_modification)
+                $cj->id = $Acct->contactId;
+            else {
+                $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
+                if ($Me->privChair)
+                    $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
+                if (!$newProfile)
+                    $msg .= " You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
+                return $user_status->set_error("email", $msg);
+            }
         } else if (Contact::external_login()) {
             if ($cj->email === "")
                 return $user_status->set_error("email", "Not a valid username.");
@@ -227,7 +233,7 @@ function save_user($cj, $user_status) {
     }
 
     // save account
-    return $user_status->save($cj, $newProfile ? null : $Acct, $Me);
+    return $user_status->save($cj, $Acct, $Me);
 }
 
 
@@ -307,7 +313,7 @@ function parseBulkFile($text, $filename) {
         $cj->id = "new";
 
         $ustatus = new UserStatus(array("send_email" => true));
-        if (($saved_user = save_user($cj, $ustatus)))
+        if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
         else
@@ -318,17 +324,17 @@ function parseBulkFile($text, $filename) {
     if (count($unknown_topics))
         $errors[] = "There were unrecognized topics (" . htmlspecialchars(commajoin($unknown_topics)) . ").";
     if (count($success) == 1)
-        $successMsg = "Created account " . $success[0] . ".";
+        $successMsg = "Saved account " . $success[0] . ".";
     else if (count($success))
-        $successMsg = "Created " . plural($success, "account") . ": " . commajoin($success) . ".";
+        $successMsg = "Saved " . plural($success, "account") . ": " . commajoin($success) . ".";
     if (count($errors))
-        $errorMsg = "were errors while parsing the new accounts. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>";
+        $errorMsg = "<div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>";
     if (count($success) && count($errors))
-        $Conf->confirmMsg($successMsg . "<br />However, there $errorMsg");
+        $Conf->confirmMsg($successMsg . "<br />$errorMsg");
     else if (count($success))
         $Conf->confirmMsg($successMsg);
     else if (count($errors))
-        $Conf->errorMsg("There $errorMsg");
+        $Conf->errorMsg($errorMsg);
     else
         $Conf->warnMsg("Nothing to do.");
     return count($errors) == 0;
@@ -342,7 +348,6 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
         $Conf->errorMsg("Internal error: cannot read file.");
     else
         parseBulkFile($text, $_FILES["bulk"]["name"]);
-    $Acct = new Contact;
     $_REQUEST["bulkentry"] = "";
     redirectSelf(array("anchor" => "bulk"));
 } else if (isset($_REQUEST["bulkregister"]) && $newProfile) {
@@ -350,7 +355,6 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
     if (@$_REQUEST["bulkentry"]
         && $_REQUEST["bulkentry"] !== "Enter users one per line")
         $success = parseBulkFile($_REQUEST["bulkentry"], "");
-    $Acct = new Contact;
     if (!$success)
         $Conf->save_session("profile_bulkentry", array($Now, $_REQUEST["bulkentry"]));
     redirectSelf(array("anchor" => "bulk"));
@@ -358,7 +362,7 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
     $cj = (object) array();
     web_request_as_json($cj);
     pc_request_as_json($cj);
-    $saved_user = save_user($cj, $UserStatus);
+    $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if ($UserStatus->nerrors)
         $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
@@ -514,15 +518,15 @@ function textinput($name, $value, $size, $id = false, $password = false) {
 function create_modes($hlbulk) {
     echo '<div class="psmode">',
         '<div class="', ($hlbulk ? "papmode" : "papmodex"), '">',
-        Ht::js_link("Create account", "fold('bulk',null,9)"),
+        Ht::js_link("New account", "fold('bulk',true,9)"),
         '</div><div class="', ($hlbulk ? "papmodex" : "papmode"), '">',
-        Ht::js_link("Bulk upload", "fold('bulk',null,9)"),
+        Ht::js_link("Bulk update", "fold('bulk',false,9)"),
         '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
 }
 
 
 if ($newProfile)
-    $Conf->header("Create account", "account", actionBar("account"));
+    $Conf->header("User update", "account", actionBar("account"));
 else
     $Conf->header($Me->email == $Acct->email ? "Profile" : "Account profile", "account", actionBar("account", $Acct));
 $useRequest = !$Acct->has_database_account() && isset($_REQUEST["watchcomment"]);
@@ -863,7 +867,7 @@ if ($newProfile) {
 
     echo '<div>', Ht::submit("bulkregister", "Save accounts"), '</div>';
 
-    echo "<p>Enter or upload CSV data for new users, including a header to explain your format. For example:</p>\n",
+    echo "<p>Enter or upload CSV user data, including a header to explain your format. For example:</p>\n",
         '<pre class="entryexample">
 name,email,affiliation,roles
 John Adams,john@earbox.org,UC Berkeley,pc
@@ -883,6 +887,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
           '<td>User roles: blank, “<code>pc</code>”, “<code>chair</code>”, or “<code>sysadmin</code>”</td></tr>',
         '<tr><td class="lmcaption"><code>tags</code></td>',
           '<td>PC tags (space-separated)</td></tr>',
+        '<tr><td class="lmcaption"><code>add_tags</code>, <code>remove_tags</code></td>',
+          '<td>PC tags to add or remove</td></tr>',
         '<tr><td class="lmcaption"><code>collaborators</code></td>',
           '<td>Collaborators</td></tr>',
         '<tr><td class="lmcaption"><code>follow</code></td>',
