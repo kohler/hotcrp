@@ -149,6 +149,24 @@ class UserStatus {
                 $cj->$k = $cj_user[$i];
     }
 
+    private function make_tags_array($x, $key) {
+        $t0 = array();
+        if (is_string($x))
+            $t0 = preg_split("/[\s,]+/", $x);
+        else if (is_array($x))
+            $t0 = $x;
+        else if ($x !== null)
+            $this->set_error($key, "Format error [$key]");
+        $tagger = new Tagger;
+        $t1 = array();
+        foreach ($t0 as $t)
+            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE))
+                $t1[] = $t;
+            else if ($t !== "")
+                $this->set_error($key, $tagger->error_html);
+        return $t1;
+    }
+
     private function normalize($cj, $old_user) {
         // Errors prevent saving
         global $Conf, $Now;
@@ -266,21 +284,34 @@ class UserStatus {
         }
 
         // Tags
-        if (@$cj->tags !== null) {
-            $tag_array = array();
-            if (is_string($cj->tags))
-                $tag_array = preg_split("/[\s,]+/", $cj->tags);
-            else if (is_array($cj->tags))
-                $tag_array = $cj->tags;
-            else
-                $this->set_error("tags", "Format error [tags]");
-            $tagger = new Tagger;
+        if (@$cj->tags !== null)
+            $cj->tags = $this->make_tags_array($cj->tags, "tags");
+        if (@$cj->add_tags !== null || @$cj->remove_tags !== null) {
+            // collect old tags as map by base
+            if (!isset($cj->tags) && $old_user)
+                $cj->tags = preg_split("/[\s,]+/", $old_user->contactTags);
+            else if (!isset($cj->tags))
+                $cj->tags = array();
+            $old_tags = array();
+            foreach ($cj->tags as $t)
+                if ($t !== "") {
+                    list($tag, $index) = TagInfo::split_index($t);
+                    $old_tags[$tag] = $index;
+                }
+            // process removals, then additions
+            foreach ($this->make_tags_array(@$cj->remove_tags, "remove_tags") as $t) {
+                list($tag, $index) = TagInfo::split_index($t);
+                if ($index === false || @$old_tags[$tag] == $index)
+                    unset($old_tags[$tag]);
+            }
+            foreach ($this->make_tags_array($cj->add_tags, "add_tags") as $t) {
+                list($tag, $index) = TagInfo::split_index($t);
+                $old_tags[$tag] = $index;
+            }
+            // collect results
             $cj->tags = array();
-            foreach ($tag_array as $t)
-                if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE))
-                    $cj->tags[] = $t;
-                else if ($t !== "")
-                    $this->set_error("tags", $tagger->error_html);
+            foreach ($old_tags as $tag => $index)
+                $cj->tags[] = $tag . "#" . (float) $index;
         }
 
         // Topics
