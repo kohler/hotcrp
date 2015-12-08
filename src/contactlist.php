@@ -399,7 +399,7 @@ class ContactList {
             if ($this->contact->isPC) {
                 $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
                 if ($tags && ($tags = $this->tagger->viewable($tags)))
-                    return $this->tagger->unparse($tags);
+                    return $this->tagger->unparse_hashed($tags);
             }
             return "";
         case self::FIELD_COLLABORATORS:
@@ -656,17 +656,16 @@ class ContactList {
         global $Conf, $contactListFields;
 
         // PC tags
-        $limit_suffix = "";
+        $listquery = $listname;
         $queryOptions = array();
-        if (substr($listname, 0, 3) == "pc:") {
-            $limit_suffix = substr($listname, 2);
-            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 3)) . "#%'") . ")";
-            $listname = "pc";
+        if (str_starts_with($listname, "#")) {
+            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 1)) . "#%'") . ")";
+            $listquery = "pc";
         }
 
         // get paper list
-        if (!($baseFieldId = $this->listFields($listname))) {
-            $Conf->errorMsg("There is no people list query named '" . htmlspecialchars($listname) . "'.");
+        if (!($baseFieldId = $this->listFields($listquery))) {
+            $Conf->errorMsg("There is no people list query named “" . htmlspecialchars($listquery) . "”.");
             return null;
         }
         $this->limit = array_shift($baseFieldId);
@@ -792,7 +791,7 @@ class ContactList {
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
 
-        $x = "<table id=\"foldppl\" class=\"pltable pltable_full plt_" . htmlspecialchars($listname);
+        $x = "<table id=\"foldppl\" class=\"pltable pltable_full plt_" . htmlspecialchars($listquery);
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
         if ($foldclasses && $foldsession)
@@ -846,9 +845,9 @@ class ContactList {
             . "\">" . $body . "</tbody></table>";
 
         if ($this->listNumber) {
-            $l = SessionList::create("u/" . $this->limit . $limit_suffix, $ids,
+            $l = SessionList::create("u/" . $listname, $ids,
                                      ($listtitle ? $listtitle : "Users"),
-                                     hoturl_site_relative_raw("users", "t=$this->limit$limit_suffix"));
+                                     hoturl_site_relative_raw("users", ["t" => $listname]));
             SessionList::change($this->listNumber, $l, true);
         }
 
@@ -858,14 +857,14 @@ class ContactList {
     function rows($listname) {
         // PC tags
         $queryOptions = array();
-        if (substr($listname, 0, 3) == "pc:") {
-            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 3)) . "#%'") . ")";
+        if (str_starts_with($listname, "#")) {
+            $queryOptions["where"] = "(u.contactTags like " . Dbl::utf8ci("'% " . sqlq_for_like(substr($listname, 1)) . "#%'") . ")";
             $listname = "pc";
         }
 
         // get paper list
         if (!($baseFieldId = $this->listFields($listname))) {
-            $Conf->errorMsg("There is no people list query named '" . htmlspecialchars($listname) . "'.");
+            $Conf->errorMsg("There is no people list query named “" . htmlspecialchars($listname) . "”.");
             return null;
         }
         $this->limit = array_shift($baseFieldId);

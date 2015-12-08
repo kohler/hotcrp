@@ -18,7 +18,7 @@ $tOpt["pc"] = "Program committee";
 if ($Me->isPC && count($pctags = pcTags())) {
     foreach ($pctags as $t)
         if ($t != "pc")
-            $tOpt["pc:$t"] = "#$t program committee";
+            $tOpt["#$t"] = "#$t program committee";
 }
 if ($Me->isPC)
     $tOpt["admin"] = "System administrators";
@@ -42,8 +42,15 @@ if ($Me->privChair) {
     $tOpt["all"] = "All users";
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    $Conf->errorMsg("You aren’t allowed to list those users.");
-    unset($_REQUEST["t"]);
+    if (str_starts_with($_REQUEST["t"], "pc:")
+        && isset($tOpt["#" . substr($_REQUEST["t"], 3)]))
+        $_REQUEST["t"] = "#" . substr($_REQUEST["t"], 3);
+    else if (isset($tOpt["#" . $_REQUEST["t"]]))
+        $_REQUEST["t"] = "#" . $_REQUEST["t"];
+    else {
+        $Conf->errorMsg("Unknown user collection.");
+        unset($_REQUEST["t"]);
+    }
 }
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
@@ -181,7 +188,7 @@ if ($Me->privChair && @$_REQUEST["modifygo"] && check_post() && isset($papersel)
     else if (@$_REQUEST["modifytype"] == "enableaccount")
         modify_confirm(UserActions::enable($papersel, $Me), "Accounts enabled.", true);
     else if (@$_REQUEST["modifytype"] == "resetpassword")
-        modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . $_REQUEST["t"] . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
+        modify_confirm(UserActions::reset_password($papersel, $Me), "Passwords reset. <a href=\"" . hoturl_post("users", "t=" . urlencode($_REQUEST["t"]) . "&amp;modifygo=1&amp;modifytype=sendaccount&amp;pap=" . join("+", $papersel)) . "\">Send account information to those accounts</a>", false);
     else if (@$_REQUEST["modifytype"] == "sendaccount")
         modify_confirm(UserActions::send_account_info($papersel, $Me), "Account information sent.", false);
     redirectSelf(array("modifygo" => null, "modifytype" => null));
@@ -271,15 +278,15 @@ if (isset($_REQUEST["scoresort"])
 
 if ($_REQUEST["t"] == "pc")
     $title = "Program committee";
-else if (substr($_REQUEST["t"], 0, 3) == "pc:")
-    $title = "Program committee &nbsp;|&nbsp; <strong>#" . substr($_REQUEST["t"], 3) . "</strong>";
+else if (str_starts_with($_REQUEST["t"], "#"))
+    $title = "Program committee &nbsp;|&nbsp; <strong>#" . substr($_REQUEST["t"], 1) . "</strong>";
 else
     $title = "Users";
 $Conf->header($title, "accounts", actionBar());
 
 
 $pl = new ContactList($Me, true);
-$pl_text = $pl->table_html($_REQUEST["t"], hoturl("users", "t=" . $_REQUEST["t"]),
+$pl_text = $pl->table_html($_REQUEST["t"], hoturl("users", ["t" => $_REQUEST["t"]]),
                      $tOpt[$_REQUEST["t"]], 'ppldisplay.$');
 
 
@@ -356,7 +363,7 @@ else if ($Me->privChair && $_REQUEST["t"] == "all")
 
 
 if (isset($pl->any->sel)) {
-    echo Ht::form(hoturl_post("users", "t=" . $_REQUEST["t"])), "<div>";
+    echo Ht::form(hoturl_post("users", ["t" => $_REQUEST["t"]])), "<div>";
     if (isset($_REQUEST["sort"]))
         echo Ht::hidden("sort", $_REQUEST["sort"]);
 }
