@@ -662,9 +662,9 @@ Tracks</a> page.</p>");
     _subhead("Examples", "
 <p>An <em>external review committee</em> is a subset of the PC that may bid on
 papers to review, and may be assigned reviews (using, for example, the
-<a href=\"" . hoturl("autoassign") . "\">autoassignment tool</a>), but may
-not review papers they were not assigned, and may not view reviews except
-for papers they have reviewed. To set this up:</p>
+<a href=\"" . hoturl("autoassign") . "\">autoassignment tool</a>), but may not
+self-assign reviews, and may not view reviews except for papers they have
+reviewed. To set this up:</p>
 
 <ul>
 <li>Give external review committee members the “erc” tag.</li>
@@ -1211,9 +1211,10 @@ function chair() {
   (usually “yes” is the right answer).</p></li>
 
 <li><p><strong><a href='" . hoturl("help", "t=tracks") . "'>Prepare tracks
-  (optional).</a></strong> Some conferences subdivide the PC so that different
-  sub-PCs have different permissions, or so that groups of papers are assigned
-  to different sub-PCs for review.</li>
+  (optional).</a></strong> The tracks feature gives chairs fine-grained
+  control over PC members’ access rights for individual papers. Examples
+  include external review committees, PC-paper review committees, and
+  multi-track conferences.</li>
 
 <li><p><strong><a href='" . hoturl("reviewprefs") . "'>Collect review
   preferences from the PC.</a></strong> PC members can rank-order papers they
