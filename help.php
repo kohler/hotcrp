@@ -670,7 +670,7 @@ reviewed. To set this up:</p>
 <li>Give external review committee members the “erc” tag.</li>
 <li>On Settings &gt; Tracks, “For papers not on other
 tracks,” select “Who can view reviews? &gt; PC members without tag: erc”
-and “Who can review without an assignment? &gt; PC members without tag: erc”.</li>
+and “Who can self-assign a review? &gt; PC members without tag: erc”.</li>
 </ul>
 
 <p>A <em>PC-paper review committee</em> is a subset of the PC that reviews papers
