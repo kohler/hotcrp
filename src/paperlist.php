@@ -20,6 +20,64 @@ class PaperListRenderState {
     }
 }
 
+class PaperListReviewAnalysis {
+    public $needsSubmit = false;
+    public $round = "";
+    private $row = null;
+    public function __construct($row) {
+        global $Conf;
+        if ($row->reviewId) {
+            $this->row = $row;
+            $this->needsSubmit = !@$row->reviewSubmitted;
+            if ($row->reviewRound)
+                $this->round = htmlspecialchars($Conf->round_name($row->reviewRound, true));
+        }
+    }
+    public function icon_html($includeLink) {
+        global $Conf, $reviewTypeName;
+        if (($title = @$reviewTypeName[$this->row->reviewType]))
+            $title .= " review";
+        else
+            $title = "Review";
+        if ($this->needsSubmit)
+            $title .= " (" . strtolower($this->completion_html()) . ")";
+        $t = review_type_icon($this->row->reviewType, $this->needsSubmit, $title);
+        if ($includeLink)
+            $t = $this->wrap_link($t);
+        if ($this->round)
+            $t .= '&nbsp;<span class="revround" title="Review round">' . $this->round . "</span>";
+        return $t;
+    }
+    public function completion_html() {
+        if (!$this->row)
+            return "";
+        else if (!$this->needsSubmit)
+            return "Complete";
+        else if ($this->row->reviewType == REVIEW_SECONDARY
+                 && $this->row->reviewNeedsSubmit <= 0)
+            return "Delegated";
+        else if ($this->row->reviewModified == 0)
+            return "Not&nbsp;started";
+        else
+            return "In&nbsp;progress";
+    }
+    public function status_html() {
+        $t = $this->completion_html();
+        if ($this->needsSubmit && $t !== "Delegated")
+            $t = "<strong class=\"overdue\">$t</strong>";
+        return $this->needsSubmit ? $t : $this->wrap_link($t);
+    }
+    public function wrap_link($t) {
+        if (!$this->row)
+            return $t;
+        if ($this->needsSubmit)
+            $href = hoturl("review", "r=" . unparseReviewOrdinal($this->row));
+        else
+            $href = hoturl("paper", "p=" . $this->row->paperId . "#r" . unparseReviewOrdinal($this->row));
+        return '<a href="' . $href . '">' . $t . '</a>';
+    }
+}
+
 class PaperList {
 
     // creator can set to change behavior
@@ -283,53 +341,6 @@ class PaperList {
             return $this->maybeConflict($row, $pcm[$contactId]->reviewer_html(), $visible);
         else
             return "";
-    }
-
-    function _reviewAnalysis($row) {
-        global $Conf, $reviewTypeName;
-        $ranal = (object) array("completion" => "", "delegated" => false,
-                                "needsSubmit" => false,
-                                "round" => "", "type_name" => "",
-                                "link1" => "", "link2" => "");
-        if ($row->reviewId) {
-            if (isset($reviewTypeName[$row->reviewType]))
-                $ranal->type_name = $reviewTypeName[$row->reviewType];
-            else
-                $ranal->type_name = "Review"; /* won't happen; just in case */
-            $ranal->needsSubmit = !isset($row->reviewSubmitted) || !$row->reviewSubmitted;
-            if (!$ranal->needsSubmit)
-                $ranal->completion = "Complete";
-            else if ($row->reviewType == REVIEW_SECONDARY
-                     && $row->reviewNeedsSubmit <= 0) {
-                $ranal->completion = "Delegated";
-                $ranal->delegated = true;
-            } else if ($row->reviewModified == 0)
-                $ranal->completion = "Not&nbsp;started";
-            else
-                $ranal->completion = "In&nbsp;progress";
-            if ($ranal->needsSubmit)
-                $link = hoturl("review", "r=" . unparseReviewOrdinal($row));
-            else
-                $link = hoturl("paper", "p=" . $row->paperId . "#r" . unparseReviewOrdinal($row));
-            $ranal->link1 = "<a href=\"$link\">";
-            $ranal->link2 = "</a>";
-            if ($row->reviewRound)
-                $ranal->round = htmlspecialchars($Conf->round_name($row->reviewRound, true));
-        }
-        return $ranal;
-    }
-
-    static function _reviewIcon($row, $ranal, $includeLink) {
-        global $Conf;
-        $title = $ranal->type_name . " review";
-        if ($ranal->needsSubmit)
-            $title .= " (" . strtolower($ranal->completion) . ")";
-        $t = review_type_icon($row->reviewType, $ranal->needsSubmit, $title);
-        if ($includeLink)
-            $t = $ranal->link1 . $t . $ranal->link2;
-        if ($ranal->round)
-            $t .= "&nbsp;<span class='revround' title='Review round'>" . $ranal->round . "</span>";
-        return $t;
     }
 
     public function prepare_xreviewer($rows) {

@@ -491,12 +491,12 @@ class ReviewerTypePaperColumn extends PaperColumn {
         else
             $xrow = $row;
         if ($xrow->reviewType) {
-            $ranal = $pl->_reviewAnalysis($xrow);
+            $ranal = new PaperListReviewAnalysis($xrow);
             if ($ranal->needsSubmit)
                 $pl->any->need_review = true;
-            $t = PaperList::_reviewIcon($xrow, $ranal, true);
+            $t = $ranal->icon_html(true);
             if ($ranal->round)
-                $t = "<div class='pl_revtype_round'>" . $t . "</div>";
+                $t = '<div class="pl_revtype_round">' . $t . "</div>";
         } else if ($xrow->conflictType > 0)
             $t = review_type_icon(-1);
         else
@@ -529,15 +529,10 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         if (!$row->reviewId)
             return "";
-        $ranal = $pl->_reviewAnalysis($row);
+        $ranal = new PaperListReviewAnalysis($row);
         if ($ranal->needsSubmit)
             $pl->any->need_review = true;
-        $t = $ranal->completion;
-        if ($ranal->needsSubmit && !$ranal->delegated)
-            $t = "<strong class='overdue'>$t</strong>";
-        if (!$ranal->needsSubmit)
-            $t = $ranal->link1 . $t . $ranal->link2;
-        return $t;
+        return $ranal->status_html();
     }
 }
 
@@ -798,12 +793,12 @@ class ReviewerListPaperColumn extends PaperColumn {
             $pcm = pcMembers();
         $x = array();
         foreach ($pl->review_list[$row->paperId] as $xrow) {
-            $ranal = $pl->_reviewAnalysis($xrow);
+            $ranal = new PaperListReviewAnalysis($xrow);
             if ($pcm && ($p = @$pcm[$xrow->contactId]))
                 $n = $p->reviewer_html();
             else
                 $n = Text::name_html($xrow);
-            $n .= "&nbsp;" . PaperList::_reviewIcon($xrow, $ranal, false);
+            $n .= "&nbsp;" . $ranal->icon_html(false);
             if ($prefs || $topics) {
                 $pref = @$prefs[$xrow->contactId];
                 if ($topics)
