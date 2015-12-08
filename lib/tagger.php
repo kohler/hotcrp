@@ -263,6 +263,7 @@ class TagInfo {
     }
 
     public static function canonical_color($tag) {
+        $tag = strtolower($tag);
         if ($tag === "violet")
             return "purple";
         else if ($tag === "grey")
