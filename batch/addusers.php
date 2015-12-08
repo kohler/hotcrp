@@ -49,13 +49,18 @@ if ($content === false) {
     exit(1);
 }
 
+if (is_object($content) && count((array) $content)
+    && validate_email(array_keys((array) $content)[0]))
+    $content = (array) $content;
 if (!is_array($content))
     $content = array($content);
 $status = 0;
-foreach ($content as $cj) {
+foreach ($content as $email => $cj) {
     $us = new UserStatus(array("send_email" => !isset($arg["no-email"])));
     if (!isset($cj->id) && !isset($arg["m"]))
         $cj->id = "new";
+    if (!isset($cj->email) && validate_email($email))
+        $cj->email = $email;
     $acct = $us->save($cj);
     if ($acct)
         fwrite(STDOUT, "Saved account $acct->email.\n");
