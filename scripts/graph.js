@@ -623,8 +623,8 @@ function data_quantize_x(data) {
 function data_to_barchart(data, isfraction) {
     data = data_quantize_x(data);
     data.sort(function (a, b) {
-        return d3.ascending(a[4] || 0, b[4] || 0)
-            || d3.ascending(a[0], b[0])
+        return d3.ascending(a[0], b[0])
+            || d3.ascending(a[4] || 0, b[4] || 0)
             || (a[3] || "").localeCompare(b[3] || "");
     });
 
@@ -663,7 +663,7 @@ hotcrp_graphs.barchart = function (args) {
     var barwidth = args.width / 20;
     if (deltae[0] != Infinity)
         barwidth = Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])));
-    barwidth = Math.max(6, barwidth);
+    barwidth = Math.max(5, barwidth);
     if (ge[1])
         barwidth = Math.floor((barwidth - 3) * dpr) / (dpr * (ge[1] + 1));
     var gdelta = -(ge[1] + 1) * barwidth / 2;

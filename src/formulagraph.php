@@ -137,8 +137,8 @@ class FormulaGraph {
     }
 
     private function _load_reviewers($reviewer_cids) {
-        $reviewer_cids = array_filter($reviewer_cids, "is_numeric");
-        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", array_keys($reviewer_cids));
+        $reviewer_cids = array_filter(array_keys($reviewer_cids), "is_numeric");
+        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $reviewer_cids);
         $this->reviewers = [];
         while ($result && ($c = $result->fetch_object("Contact")))
             $this->reviewers[$c->contactId] = $c;
