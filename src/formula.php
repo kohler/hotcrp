@@ -429,7 +429,7 @@ class TagFexpr extends Fexpr {
         if ($this->isvalue)
             return $t_tagval;
         else
-            return "($t_tagval !== 0 ? $t_tagval : true)";
+            return "($t_tagval !== (float) 0 ? $t_tagval : true)";
     }
 }
 
