@@ -290,7 +290,7 @@ class ContactList {
                 $t .= " <a href=\"" . hoturl("index", "actas=" . urlencode($row->email)) . "\">"
                     . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($row)))
                     . "</a>";
-            if ($row->disabled)
+            if ($row->disabled && $this->contact->isPC)
                 $t .= ' <span class="hint">(disabled)</span>';
             return $t;
         case self::FIELD_EMAIL:
@@ -739,7 +739,7 @@ class ContactList {
                         $trclass .= " $m";
                 }
             }
-            if ($row->disabled)
+            if ($row->disabled && $this->contact->isPC)
                 $trclass .= " graytext";
             $this->count++;
             $ids[] = (int) $row->contactId;
