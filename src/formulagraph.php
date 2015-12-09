@@ -375,7 +375,8 @@ class FormulaGraph {
         $t = array();
         if ($axis == "y" && $this->type == self::FBARCHART)
             $t[] = "ylabel:\"fraction of papers\",yfraction:true";
-        else if ($axis == "y" && $this->type == self::BARCHART)
+        else if ($axis == "y" && $this->type == self::BARCHART
+                 && $f->expression === "sum(1)")
             $t[] = "ylabel:\"# papers\"";
         else if ($axis != "x" || !$this->fx_query)
             $t[] = "{$axis}label:" . json_encode($f->expression, JSON_UNESCAPED_UNICODE);

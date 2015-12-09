@@ -115,8 +115,11 @@ if ($Graph == "formula") {
             /* no header */;
         else if ($fg->type == FormulaGraph::CDF)
             echo "<h2>", htmlspecialchars($fg->fx->expression), " CDF</h2>\n";
-        else if ($fg->type & FormulaGraph::BARCHART)
+        else if (($fg->type & FormulaGraph::BARCHART)
+                 && $fg->fy->expression === "sum(1)")
             echo "<h2>", htmlspecialchars($fg->fx->expression), "</h2>\n";
+        else if ($fg->type & FormulaGraph::BARCHART)
+            echo "<h2>", htmlspecialchars($fg->fy->expression), " by ", htmlspecialchars($fg->fx->expression), "</h2>\n";
         else
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. ", htmlspecialchars($fg->fx->expression), "</h2>\n";
         echo_graph();
