@@ -90,10 +90,7 @@ class FormulaGraph {
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
                 continue;
-            if ($reviewf)
-                $revs = $reviewf($prow, null, $Me, "loop");
-            else
-                $revs = array(null);
+            $revs = $reviewf ? $reviewf($prow, $Me) : [null];
             $queries = @$this->papermap[$prow->paperId];
             foreach ($queries as $q)
                 if (@$query_color_classes[$q] !== "") {
@@ -187,23 +184,21 @@ class FormulaGraph {
                     $s = $color;
             } else if ($s === "plain")
                 $s = "";
-            $d = array(0, 0, $prow->paperId);
-            if ($reviewf)
-                $revs = $reviewf($prow, null, $Me, "loop");
-            else
-                $revs = array(null);
+            $d = [0, 0, 0];
+            $revs = $reviewf ? $reviewf($prow, $Me) : [null];
             foreach ($revs as $rcid) {
                 $d[0] = $fxf($prow, $rcid, $Me);
                 $d[1] = $fyf($prow, $rcid, $Me);
                 if ($d[0] === null || $d[1] === null)
                     continue;
+                $d[2] = $prow->paperId;
+                if ($rcid && ($o = $prow->review_ordinal($rcid)))
+                    $d[2] .= unparseReviewOrdinal($o);
                 if ($reviewer_color) {
                     $s = "";
                     if (($p = @$pcm[$d[0]]))
                         $s = TagInfo::color_classes($tagger->viewable($p->contactTags));
                 }
-                if ($reviewf)
-                    $d[2] = $prow->paperId . unparseReviewOrdinal($prow->review_ordinal($rcid));
                 if (($this->type & self::BARCHART) || $this->fx_query) {
                     foreach ($queries as $q) {
                         $d[$this->fx_query ? 0 : 1] = $q;
@@ -246,12 +241,9 @@ class FormulaGraph {
         global $Conf, $Me;
         $fxf = $this->fx->compile_function($Me);
         $fyf = $this->fy->compile_function($Me);
-        if ($this->fx->needs_review())
-            $reviewf = $fxf;
-        else if ($this->fy->needs_review())
-            $reviewf = $fyf;
-        else
-            $reviewf = null;
+        $reviewf = null;
+        if ($this->fx->needs_review() || $this->fy->needs_review())
+            $reviewf = Formula::compile_indexes_function($Me, $this->fx->datatypes | $this->fy->datatypes);
 
         // load data
         $paperIds = array_keys($this->papermap);

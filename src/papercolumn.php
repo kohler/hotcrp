@@ -1206,7 +1206,7 @@ class FormulaPaperColumn extends PaperColumn {
         $formulaf = $this->formula_function;
         $this->formula_sorter = $sorter = "_formula_sort_info." . $this->formula->name;
         foreach ($rows as $row)
-            $row->$sorter = $formulaf($row, null, $pl->contact, "s");
+            $row->$sorter = $formulaf($row, null, $pl->contact, Formula::SORTABLE);
     }
     public function formula_compare($a, $b) {
         $sorter = $this->formula_sorter;

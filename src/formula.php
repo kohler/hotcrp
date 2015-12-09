@@ -668,6 +668,7 @@ class FormulaCompiler {
     public $lstmt = array();
     public $looptype = Fexpr::LNONE;
     public $datatype = 0;
+    public $all_datatypes = 0;
     private $lprefix = 0;
     private $maxlprefix = 0;
     public $indent = 2;
@@ -749,6 +750,7 @@ class FormulaCompiler {
         return $this->lprefix;
     }
     private function _pop($content) {
+        $this->all_datatypes |= $this->datatype;
         list($this->lprefix, $this->lstmt, $this->looptype, $this->datatype) = array_pop($this->_stack);
         $this->indent -= 2;
         $this->lstmt[] = $content;
@@ -768,15 +770,15 @@ class FormulaCompiler {
             return join($indent, $this->lstmt);
     }
 
-    public function loop_variable() {
+    public function loop_variable($datatype) {
         $g = array();
-        if ($this->datatype & Fexpr::APCCANREV)
+        if ($datatype & Fexpr::APCCANREV)
             $g[] = $this->_add_pc_can_review();
-        if ($this->datatype & Fexpr::ASUBREV)
+        if ($datatype & Fexpr::ASUBREV)
             $g[] = $this->_add_submitted_reviewers();
-        if ($this->datatype & Fexpr::APREF)
+        if ($datatype & Fexpr::APREF)
             $g[] = $this->_add_review_prefs();
-        if ($this->datatype & Fexpr::ACONF)
+        if ($datatype & Fexpr::ACONF)
             $g[] = $this->_add_conflicts();
         if (count($g) > 1) {
             $gx = str_replace('$', "", join("_and_", $g));
@@ -806,7 +808,7 @@ class FormulaCompiler {
 
         $t_looper = "\$i$p";
 
-        $g = $this->loop_variable();
+        $g = $this->loop_variable($this->datatype);
         $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
         if ($this->datatype == Fexpr::APREF)
             $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
@@ -834,6 +836,7 @@ class Formula {
     public $authorView = null;
     public $allowReview = false;
     private $needsReview = false;
+    public $datatypes = 0;
     public $createdBy = 0;
     public $timeModified = 0;
 
@@ -841,6 +844,7 @@ class Formula {
     private $_format;
     private $_error_html = array();
 
+    const SORTABLE = 1;
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
     public static $opprec = array(
@@ -916,6 +920,7 @@ class Formula {
             else {
                 $e->text = $this->expression;
                 $this->needsReview = !!$state->datatype;
+                $this->datatypes = $state->all_datatypes | $state->datatype;
                 $this->_format = $e->format();
             }
         }
@@ -1207,25 +1212,29 @@ class Formula {
         $state = new FormulaCompiler($contact);
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
 
-        $loop = "";
-        if ($this->needsReview) {
-            $g = $state->loop_variable();
-            $loop = "\n  if (\$format == \"loop\")
-    return array_keys($g);\n";
-        }
-
         $t = "assert(\$contact->contactId == $contact->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
-            . $loop . join("\n  ", $state->lstmt) . "\n"
+            . join("\n  ", $state->lstmt) . "\n"
             . "  \$x = $expr;\n\n"
-            . '  if ($format == "s")
-    return ($x === true ? 1 : $x);
-  else
-    return $x;' . "\n";
+            . '  if ($x === true && $format == Formula::SORTABLE)
+    return 1;
+  return $x;' . "\n";
 
-        $args = '$prow, $rrow_cid, $contact, $format = null, $forceShow = false';
+        $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
         //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        return create_function($args, $t);
+    }
+
+    static public function compile_indexes_function(Contact $contact, $datatypes) {
+        global $Conf;
+        $state = new FormulaCompiler($contact);
+        $g = $state->loop_variable($datatypes);
+        $t = "assert(\$contact->contactId == $contact->contactId);\n  "
+            . join("\n  ", $state->gstmt)
+            . "\n  return array_keys($g);\n";
+        $args = '$prow, $contact, $forceShow = false';
+        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  $t}\n"));
         return create_function($args, $t);
     }
 
@@ -1252,7 +1261,7 @@ class Formula {
             $state->queryOptions =& $queryOptions;
             $this->_parse->compile($state);
             if ($this->needsReview)
-                $state->loop_variable();
+                $state->loop_variable($state->all_datatypes);
         }
     }
 
