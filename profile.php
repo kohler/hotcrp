@@ -766,7 +766,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
             echo "<div class='", feclass("contactTags"), "'>",
                 textinput("contactTags", join(" ", $tags), 60),
                 "</div>
-  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=rev&amp;tagcolor=1#tagcolor"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
+  <div class='hint'>Example: “heavy”. Separate tags by spaces; the “pc” tag is set automatically.<br /><strong>Tip:</strong>&nbsp;Use <a href='", hoturl("settings", "group=tags"), "'>tag colors</a> to highlight subgroups in review lists.</div>\n";
         } else {
             echo join(" ", $tags), "
   <div class='hint'>Tags represent PC subgroups and are set by administrators.</div>\n";
