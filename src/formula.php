@@ -293,7 +293,12 @@ class AggregateFexpr extends Fexpr {
             && count($this->args) >= 2
             && $this->args[1] instanceof Fexpr)
             return $this->args[1]->format();
-        else if (count($this->args) >= 1
+        else if ($this->op === "all" || $this->op === "any")
+            return "bool";
+        else if (($this->op === "avg" || $this->op === "wavg"
+                  || $this->op === "min" || $this->op === "max"
+                  || $this->op === "median" || $this->op === "quantile")
+                 && count($this->args) >= 1
                  && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
         else
@@ -313,12 +318,12 @@ class AggregateFexpr extends Fexpr {
     }
 
     public function loop_info() {
-        if ($this->op == "all")
+        if ($this->op === "all")
             return ["null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", self::cast_bool("~x~")];
-        if ($this->op == "any")
+        if ($this->op === "any")
             return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
-        if ($this->op == "min" || $this->op == "max") {
-            $cmp = $this->format_comparator($this->op == "min" ? "<" : ">");
+        if ($this->op === "min" || $this->op === "max") {
+            $cmp = $this->format_comparator($this->op === "min" ? "<" : ">");
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
         }
         if ($this->op == "atminof" || $this->op == "atmaxof") {
@@ -331,15 +336,15 @@ class AggregateFexpr extends Fexpr {
   ~r~[1][] = ~l1~;",
                     "~x~[1][count(~x~[1]) > 1 ? mt_rand(0, count(~x~[1]) - 1) : 0]"];
         }
-        if ($this->op == "count")
+        if ($this->op === "count")
             return ["0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)"];
-        if ($this->op == "sum")
+        if ($this->op === "sum")
             return ["null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : ~l~) : ~r~)"];
-        if ($this->op == "avg")
+        if ($this->op === "avg")
             return ["[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)",
                     "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
-        if ($this->op == "median" || $this->op == "quantile") {
-            if ($this->op == "median")
+        if ($this->op === "median" || $this->op === "quantile") {
+            if ($this->op === "median")
                 $q = "0.5";
             else {
                 $q = $state->_addltemp($this->args[1]->compile($state));
@@ -349,7 +354,7 @@ class AggregateFexpr extends Fexpr {
             return ["[]", "if (~l~ !== null)\n  array_push(~r~, ~l~);",
                     "AggregateFexpr::quantile(~x~, $q)"];
         }
-        if ($this->op == "wavg")
+        if ($this->op === "wavg")
             return ["[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)",
                     "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
         if (preg_match('/\A(var(?:iance)?|std(?:d?ev)?)(|_pop|_samp|[_.][ps])\z/', $this->op, $m)) {
