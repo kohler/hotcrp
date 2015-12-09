@@ -201,7 +201,7 @@ class ConstantFexpr extends Fexpr {
     public function typecheck() {
         if ($this->format_ !== false)
             return false;
-        return new Fexpr_Error($this, "unresolved constant “" . htmlspecialchars($this->x) . "”");
+        return new Fexpr_Error($this, "undefined name “" . htmlspecialchars($this->x) . "”");
     }
     public function typecheck_neighbor($e) {
         global $Conf;
