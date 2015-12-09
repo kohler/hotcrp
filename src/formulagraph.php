@@ -236,7 +236,7 @@ class FormulaGraph {
                 $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
             }
         $this->_load_reviewers($reviewer_cids);
-        foreach ($data as &$d) {
+        foreach ($data as &$dx) {
             foreach ($dx as &$d) {
                 if ($xi && $d[0] && ($r = @$this->reviewers[$d[0]]))
                     $d[0] = $r->graph_index;
