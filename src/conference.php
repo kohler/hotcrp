@@ -1607,9 +1607,21 @@ class Conf {
                     $cols[] = "$myPaperReview.$fid";
                 $j .= ", group_concat($fid order by reviewId) {$fid}Scores";
             }
-        if (@$options["reviewTypes"]) {
+        if (@$options["reviewTypes"] || @$options["reviewIdentities"]) {
             $cols[] = "R_submitted.reviewTypes";
             $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
+        }
+        if (@$options["reviewIdentities"]) {
+            $cols[] = "R_submitted.reviewRequestedBys";
+            $j .= ", group_concat(requestedBy order by reviewId) reviewRequestedBys";
+            if ($this->review_blindness() == self::BLIND_OPTIONAL) {
+                $cols[] = "R_submitted.reviewBlinds";
+                $j .= ", group_concat(reviewBlind order by reviewId) reviewBlinds";
+            }
+            if ($contact && $contact->review_tokens()) {
+                $cols[] = "R_submitted.reviewTokens";
+                $j .= ", group_concat(reviewToken order by reviewId) reviewTokens";
+            }
         }
         if (@$options["reviewRounds"]) {
             $cols[] = "R_submitted.reviewRounds";
@@ -1623,7 +1635,7 @@ class Conf {
             $cols[] = "R_submitted.reviewOrdinals";
             $j .= ", group_concat(reviewOrdinal order by reviewId) reviewOrdinals";
         }
-        if (@$options["reviewTypes"] || @$options["scores"] || @$options["reviewContactIds"] || @$options["reviewOrdinals"]) {
+        if (@$options["reviewTypes"] || @$options["scores"] || @$options["reviewContactIds"] || @$options["reviewOrdinals"] || @$options["reviewIdentities"]) {
             $cols[] = "R_submitted.reviewContactIds";
             $j .= ", group_concat(contactId order by reviewId) reviewContactIds";
         }

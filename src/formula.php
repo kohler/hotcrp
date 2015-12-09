@@ -585,7 +585,8 @@ class ReviewerFexpr extends ReviewFexpr {
     }
     public function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
-        return '($contact->can_view_review_identity($prow, null, $forceShow) ? ' . $state->_rrow_cid() . ' : null)';
+        $state->queryOptions["reviewIdentities"] = true;
+        return '($prow->can_view_review_identity_of(' . $state->_rrow_cid() . ', $contact, $forceShow) ? ' . $state->_rrow_cid() . ' : null)';
     }
 }
 
@@ -604,6 +605,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     }
     public function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
+        $state->queryOptions["reviewIdentities"] = true;
         $flags = 0;
         $arg = $this->arg;
         if ($arg[0] === "\"") {
@@ -621,7 +623,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
             $cs = new ContactSearch($flags, $arg, $state->contact);
             if ($cs->ids)
                 // XXX information leak?
-                $e = "(\$contact->can_view_review_identity(\$prow, null, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
+                $e = "(\$prow->can_view_review_identity_of(" . $state->_rrow_cid() . ", \$contact, \$forceShow) ? array_search(" . $state->_rrow_cid() . ", [" . join(", ", $cs->ids) . "]) !== false : null)";
             else
                 $e = "null";
         }
