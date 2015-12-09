@@ -4,13 +4,13 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class FormulaGraph {
-    const SCATTER = 0;
-    const CDF = 1;
-    const BARCHART = 2; /* NB is bitmask */
-    const FBARCHART = 3;
-    const BOXPLOT = 4;
+    const SCATTER = 1;
+    const CDF = 2;
+    const BARCHART = 4; /* NB is bitmask */
+    const FBARCHART = 5;
+    const BOXPLOT = 8;
 
-    public $type = self::SCATTER;
+    public $type = 0;
     public $fx;
     public $fy;
     public $fx_query = false;
@@ -43,11 +43,16 @@ class FormulaGraph {
             if (preg_match('/\A(?:box|boxplot)\s+(.*)\z/i', $fy, $m)) {
                 $this->type = self::BOXPLOT;
                 $fy = $m[1];
-            } else if (preg_match('/\A(?:bars?)\s+(.+)\z/i', $fy, $m)) {
+            } else if (preg_match('/\Abars?\s+(.+)\z/i', $fy, $m)) {
                 $this->type = self::BARCHART;
+                $fy = $m[1];
+            } else if (preg_match('/\Ascatter\s+(.+)\z/i', $fy, $m)) {
+                $this->type = self::SCATTER;
                 $fy = $m[1];
             }
             $this->fy = new Formula($fy, true);
+            if (!$this->type)
+                $this->type = $this->fy->datatypes() ? self::SCATTER : self::BARCHART;
         }
 
         if ($this->fx->error_html()) {

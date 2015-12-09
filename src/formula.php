@@ -994,12 +994,12 @@ class Formula {
         } else {
             $state = new FormulaCompiler($Me);
             $e->compile($state);
+            $this->datatypes = $state->all_datatypes | $state->datatype;
             if ($state->datatype && !$this->allowReview)
                 $this->_error_html[] = "Illegal formula: can’t return a raw score, use an aggregate function.";
             else {
                 $e->text = $this->expression;
                 $this->needsReview = !!$state->datatype;
-                $this->datatypes = $state->all_datatypes | $state->datatype;
                 $this->_format = $e->format();
             }
         }
@@ -1403,5 +1403,9 @@ class Formula {
 
     public function is_sum() {
         return $this->check() && $this->_parse->op === "sum";
+    }
+
+    public function datatypes() {
+        return $this->check() ? $this->datatypes : 0;
     }
 }
