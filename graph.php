@@ -145,7 +145,7 @@ if ($Graph == "formula") {
     // Y axis
     echo '<tr><td class="lcaption"><label for="fy">Y axis</label></td>',
         '<td class="lentry" style="padding-bottom:0.8em">', Ht::entry("fy", (string) @$_REQUEST["fy"] !== "" ? $_REQUEST["fy"] : "", array("id" => "fy", "size" => 32, "class" => $fg && @$fg->errf["fy"] ? "setting_error" : "")),
-        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “boxplot <em>formula</em>”</span>',
+        '<span class="hint" style="padding-left:2em"><a href="', hoturl("help", "t=formulas"), '">Formula</a> or “cdf”, “count”, “fraction”, “box <em>formula</em>”, “bar <em>formula</em>”</span>',
         '</td></tr>';
     // Series
     echo '<tr><td class="lcaption"><label for="q">Query</label></td>',

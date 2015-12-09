@@ -18,6 +18,7 @@ class FormulaGraph {
     private $query_styles = array();
     private $papermap = array();
     private $reviewers = array();
+    private $reviewer_color = false;
     public $error_html = array();
     public $errf = array();
 
@@ -34,13 +35,16 @@ class FormulaGraph {
             $this->fy = new Formula("0", true);
         } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
             $this->type = self::BARCHART;
-            $this->fy = new Formula("0", true);
+            $this->fy = new Formula("sum(1)", true);
         } else if (preg_match('/\A(?:frac|fraction)\z/i', $fy)) {
             $this->type = self::FBARCHART;
-            $this->fy = new Formula("0", true);
+            $this->fy = new Formula("sum(1)", true);
         } else {
             if (preg_match('/\A(?:box|boxplot)\s+(.*)\z/i', $fy, $m)) {
                 $this->type = self::BOXPLOT;
+                $fy = $m[1];
+            } else if (preg_match('/\A(?:bars?)\s+(.+)\z/i', $fy, $m)) {
+                $this->type = self::BARCHART;
                 $fy = $m[1];
             }
             $this->fy = new Formula($fy, true);
@@ -53,6 +57,10 @@ class FormulaGraph {
         if ($this->fy->error_html()) {
             $this->error_html[] = "Y axis formula: " . $this->fy->error_html();
             $this->errf["fy"] = true;
+        } else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
+            $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function.";
+            $this->errf["fy"] = true;
+            $this->fy = new Formula("sum(0)", true);
         }
     }
 
@@ -60,6 +68,8 @@ class FormulaGraph {
         global $Me;
         $qn = count($this->queries);
         $this->queries[] = $q;
+        if ($style === "by-tag" || $style === "default")
+            $style = "";
         $this->query_styles[] = $style;
         $psearch = new PaperSearch($Me, array("q" => $q));
         foreach ($psearch->paperList() as $pid)
@@ -71,21 +81,16 @@ class FormulaGraph {
         }
     }
 
-    public static function barchart_compare($a, $b) {
-        if ($a[0] != $b[0])
-            return $a[0] < $b[0] ? -1 : 1;
-        if ($a[1] != $b[1])
-            return $a[1] < $b[1] ? -1 : 1;
-        if (($cmp = @strcmp($a[3], $b[3])))
-            return $cmp;
-        return $a[2] - $b[2];
-    }
-
-    private function _cdf_data($result, $fxf, $reviewf) {
+    private function _cdf_data($result) {
         global $Me;
         $data = [];
         $query_color_classes = [];
         $tagger = new Tagger($Me);
+
+        $fxf = $this->fx->compile_function($Me);
+        $reviewf = null;
+        if ($this->fx->needs_review())
+            $reviewf = Formula::compile_indexes_function($Me, $this->fx->datatypes);
 
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
@@ -116,7 +121,7 @@ class FormulaGraph {
         foreach ($data as $q => &$d) {
             $d = (object) ["d" => $d];
             $s = @$this->query_styles[$q];
-            if ($s && $s !== "default" && $s !== "by-tag" && $s !== "plain")
+            if ($s && $s !== "plain")
                 $d->className = $s;
             else if ($s && @$query_color_classes[$style])
                 $d->className = $query_color_classes[$style];
@@ -158,14 +163,24 @@ class FormulaGraph {
         }
     }
 
-    private function _scatter_data($result, $fxf, $fyf, $reviewf) {
+    private function _prepare_reviewer_color(Tagger $tagger) {
+        $this->reviewer_color = array();
+        foreach (pcMembers() as $p)
+            $this->reviewer_color[$p->contactId] = TagInfo::color_classes($tagger->viewable($p->contactTags));
+    }
+
+    private function _scatter_data($result) {
         global $Me;
         $data = [];
         $tagger = new Tagger($Me);
-        $want_reviewer_color = $this->fx->result_format() === "reviewer"
-            && ($this->type & self::BOXPLOT);
-        if ($want_reviewer_color)
-            $pcm = pcMembers();
+        if ($this->fx->result_format() === "reviewer" && ($this->type & self::BOXPLOT))
+            $this->_prepare_reviewer_color($tagger);
+
+        $fxf = $this->fx->compile_function($Me);
+        $fyf = $this->fy->compile_function($Me);
+        $reviewf = null;
+        if ($this->fx->needs_review() || $this->fy->needs_review())
+            $reviewf = Formula::compile_indexes_function($Me, $this->fx->datatypes | $this->fy->datatypes);
 
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
@@ -173,16 +188,12 @@ class FormulaGraph {
             $queries = @$this->papermap[$prow->paperId];
             $s = @$this->query_styles[(int) $queries[0]];
             $reviewer_color = false;
-            if ($want_reviewer_color
-                && (!$s || $s === "default" || $s === "by-tag")
-                && $Me->can_view_reviewer_tags($prow))
+            if ($this->reviewer_color && !$s && $Me->can_view_reviewer_tags($prow))
                 $reviewer_color = true;
-            if (!$s || $s === "default" || $s === "by-tag") {
-                $s = "";
-                if (@$prow->paperTags && $Me->can_view_tags($prow)
-                    && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
-                    $s = $color;
-            } else if ($s === "plain")
+            if (!$s && @$prow->paperTags && $Me->can_view_tags($prow)
+                && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
+                $s = $color;
+            else if ($s === "plain")
                 $s = "";
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $Me) : [null];
@@ -194,14 +205,11 @@ class FormulaGraph {
                 $d[2] = $prow->paperId;
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
                     $d[2] .= unparseReviewOrdinal($o);
-                if ($reviewer_color) {
-                    $s = "";
-                    if (($p = @$pcm[$d[0]]))
-                        $s = TagInfo::color_classes($tagger->viewable($p->contactTags));
-                }
-                if (($this->type & self::BARCHART) || $this->fx_query) {
+                if ($reviewer_color)
+                    $s = @$this->reviewer_color[$d[0]] ? : "";
+                if ($this->fx_query) {
                     foreach ($queries as $q) {
-                        $d[$this->fx_query ? 0 : 1] = $q;
+                        $d[0] = $q;
                         $data[$s][] = $d;
                     }
                 } else
@@ -219,8 +227,7 @@ class FormulaGraph {
     private function _scatter_fix_reviewers(&$data) {
         $xi = !$this->fx_query
             && $this->fx->result_format() === "reviewer";
-        $yi = !($this->type & self::BARCHART)
-            && $this->fy->result_format() === "reviewer";
+        $yi = $this->fy->result_format() === "reviewer";
         $reviewer_cids = [];
         foreach ($data as $dx)
             foreach ($dx as $d) {
@@ -228,36 +235,134 @@ class FormulaGraph {
                 $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
             }
         $this->_load_reviewers($reviewer_cids);
-        foreach ($data as &$dx) {
+        foreach ($data as &$d) {
             foreach ($dx as &$d) {
-                $xi && $d[0] && ($d[0] = $this->reviewers[$d[0]]->graph_index);
-                $yi && $d[1] && ($d[1] = $this->reviewers[$d[1]]->graph_index);
+                if ($xi && $d[0] && ($r = @$this->reviewers[$d[0]]))
+                    $d[0] = $r->graph_index;
+                if ($yi && $d[1] && ($r = @$this->reviewers[$d[1]]))
+                    $d[1] = $r->graph_index;
             }
             unset($d);
         }
     }
 
+    // combine data: [x, y, pids, style, [query]]
+
+    public static function barchart_compare($a, $b) {
+        if ((int) @$a[4] != (int) @$b[4])
+            return (int) @$a[4] - (int) @$b[4];
+        if ($a[0] != $b[0])
+            return $a[0] < $b[0] ? -1 : 1;
+        return @strcmp($a[3], $b[3]);
+    }
+
+    private function _combine_data($result) {
+        global $Me;
+        $data = [];
+        $tagger = new Tagger($Me);
+        if ($this->fx->result_format() === "reviewer")
+            $this->_prepare_reviewer_color($tagger);
+
+        $fxf = $this->fx->compile_function($Me);
+        list($fytrack, $fycombine) = $this->fy->compile_combine_functions($Me);
+        $reviewf = null;
+        if ($this->fx->needs_review() || $this->fy->datatypes)
+            $reviewf = Formula::compile_indexes_function($Me, ($this->fx->needs_review() ? $this->fx->datatypes : 0) | $this->fy->datatypes);
+
+        while (($prow = PaperInfo::fetch($result, $Me))) {
+            if (!$Me->can_view_paper($prow))
+                continue;
+            $queries = @$this->papermap[$prow->paperId];
+            $s = @$this->query_styles[(int) $queries[0]];
+            $reviewer_color = false;
+            if ($this->reviewer_color && !$s && $Me->can_view_reviewer_tags($prow))
+                $reviewer_color = true;
+            if (!$s && @$prow->paperTags && $Me->can_view_tags($prow)
+                && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
+                $s = $color;
+            else if ($s === "plain")
+                $s = "";
+            $revs = $reviewf ? $reviewf($prow, $Me) : [null];
+            foreach ($revs as $rcid) {
+                if (($x = $fxf($prow, $rcid, $Me)) === null)
+                    continue;
+                if ($reviewer_color)
+                    $s = @$this->reviewer_color[$d[0]] ? : "";
+                $d = [$x, $fytrack($prow, $rcid, $Me), $prow->paperId, $s];
+                if ($rcid && ($o = $prow->review_ordinal($rcid)))
+                    $d[2] .= unparseReviewOrdinal($o);
+                foreach ($queries as $q) {
+                    $q && ($d[4] = $q);
+                    $data[] = $d;
+                }
+            }
+        }
+
+        $is_sum = $this->fy->is_sum();
+        usort($data, "FormulaGraph::barchart_compare");
+        $ndata = [];
+        for ($i = 0; $i != count($data); $i = $j) {
+            $d = [$data[$i][0], [$data[$i][1]], [$data[$i][2]], $data[$i][3],
+                  @$data[$i][4]];
+            for ($j = $i + 1;
+                 $j != count($data) && $data[$j][0] == $d[0]
+                 && @$data[$j][4] == $d[4]
+                 && (!$is_sum || $data[$j][3] == $d[3]);
+                 ++$j) {
+                $d[1][] = $data[$j][1];
+                $d[2][] = $data[$j][2];
+                if ($d[3] && $d[3] != $data[$j][3])
+                    $d[3] = "";
+            }
+            $d[1] = $fycombine($d[1]);
+            if (!$d[4]) {
+                array_pop($d);
+                $d[3] || array_pop($d);
+            }
+            $ndata[] = $d;
+        }
+
+        if ($this->fx->result_format() === "reviewer"
+            || $this->fy->result_format() === "reviewer")
+            $this->_combine_fix_reviewers($ndata);
+
+        return $ndata;
+    }
+
+    private function _combine_fix_reviewers(&$data) {
+        $xi = $this->fx->result_format() === "reviewer";
+        $yi = $this->fy->result_format() === "reviewer";
+        $reviewer_cids = [];
+        foreach ($data as $d) {
+            $xi && $d[0] && ($reviewer_cids[$d[0]] = true);
+            $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
+        }
+        $this->_load_reviewers($reviewer_cids);
+        foreach ($data as &$d) {
+            if ($xi && $d[0] && ($r = @$this->reviewers[$d[0]]))
+                $d[0] = $r->graph_index;
+            if ($yi && $d[1] && ($r = @$this->reviewers[$d[1]]))
+                $d[1] = $r->graph_index;
+        }
+    }
+
     public function data() {
         global $Conf, $Me;
-        $fxf = $this->fx->compile_function($Me);
-        $fyf = $this->fy->compile_function($Me);
-        $reviewf = null;
-        if ($this->fx->needs_review() || $this->fy->needs_review())
-            $reviewf = Formula::compile_indexes_function($Me, $this->fx->datatypes | $this->fy->datatypes);
-
         // load data
         $paperIds = array_keys($this->papermap);
         $queryOptions = array("paperId" => $paperIds, "tags" => true);
-        if ($reviewf)
-            $queryOptions["reviewOrdinals"] = true;
         $this->fx->add_query_options($queryOptions, $Me);
         $this->fy->add_query_options($queryOptions, $Me);
+        if ($this->fx->needs_review() || $this->fy->needs_review())
+            $queryOptions["reviewOrdinals"] = true;
         $result = Dbl::qe_raw($Conf->paperQuery($Me, $queryOptions));
 
         if ($this->type == self::CDF)
-            $data = $this->_cdf_data($result, $fxf, $reviewf);
+            $data = $this->_cdf_data($result);
+        else if ($this->type & self::BARCHART)
+            $data = $this->_combine_data($result);
         else
-            $data = $this->_scatter_data($result, $fxf, $fyf, $reviewf);
+            $data = $this->_scatter_data($result);
 
         Dbl::free($result);
         return $data;

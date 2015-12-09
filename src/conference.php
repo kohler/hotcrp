@@ -29,6 +29,7 @@ class Conf {
     private $_topic_separator_cache = null;
     public $dsn = null;
 
+    static public $g;
     static public $gShortName;
     static public $gLongName;
     static public $gDefaultFormat;
@@ -2182,16 +2183,33 @@ class Conf {
         $this->msg($minimal ? "xinfo" : "info", $text);
     }
 
+    static public function m_info($text, $minimal = false) {
+        self::$g->msg($minimal ? "xinfo" : "info", $text);
+    }
+
     function warnMsg($text, $minimal = false) {
         $this->msg($minimal ? "xwarning" : "warning", $text);
+    }
+
+    static public function m_warning($text, $minimal = false) {
+        self::$g->msg($minimal ? "xwarning" : "warning", $text);
     }
 
     function confirmMsg($text, $minimal = false) {
         $this->msg($minimal ? "xconfirm" : "confirm", $text);
     }
 
+    static public function m_confirm($text, $minimal = false) {
+        self::$g->msg($minimal ? "xconfirm" : "confirm", $text);
+    }
+
     function errorMsg($text, $minimal = false) {
         $this->msg($minimal ? "xmerror" : "merror", $text);
+        return false;
+    }
+
+    static public function m_error($text, $minimal = false) {
+        self::$g->msg($minimal ? "xmerror" : "merror", $text);
         return false;
     }
 

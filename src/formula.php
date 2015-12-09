@@ -186,6 +186,19 @@ class Fexpr {
 
         return "null";
     }
+
+    public function can_combine() {
+        foreach ($this->args as $e)
+            if (!$e->can_combine())
+                return false;
+        return true;
+    }
+
+    public function compile_fragments(FormulaCompiler $state) {
+        foreach ($this->args as $e)
+            if ($e instanceof Fexpr)
+                $e->compile_fragments($state);
+    }
 }
 
 class ConstantFexpr extends Fexpr {
@@ -357,15 +370,47 @@ class AggregateFexpr extends Fexpr {
     public function compile(FormulaCompiler $state) {
         if ($this->op == "my")
             return $state->_compile_my($this->args[0]);
-        else if (($li = $this->loop_info())) {
+        if (($li = $this->loop_info())) {
             $t = $state->_compile_loop($li[0], $li[1], $this);
             return @$li[2] ? str_replace("~x~", $t, $li[2]) : $t;
-        } else
-            return "null";
+        }
+        return "null";
+    }
+
+    public function can_combine() {
+        if ($this->op == "my")
+            return $this->args[0]->can_combine();
+        if ($this->op == "quantile")
+            return $this->args[1]->can_combine();
+        return true;
+    }
+
+    public function compile_fragments(FormulaCompiler $state) {
+        foreach ($this->args as $i => $e)
+            if (($i == 0 && $this->op == "my")
+                || ($i == 1 && $this->op == "quantile"))
+                $e->compile_fragments($state);
+            else
+                $state->fragments[] = $e->compile($state);
     }
 }
 
-class ScoreFexpr extends Fexpr {
+class SubFexpr extends Fexpr {
+    public function can_combine() {
+        return false;
+    }
+}
+
+class PidFexpr extends SubFexpr {
+    public function __construct() {
+        parent::__construct("");
+    }
+    public function compile(FormulaCompiler $state) {
+        return '$prow->paperId';
+    }
+}
+
+class ScoreFexpr extends SubFexpr {
     private $field;
     public function __construct(ReviewField $field) {
         parent::__construct("rf");
@@ -387,7 +432,7 @@ class ScoreFexpr extends Fexpr {
     }
 }
 
-class PrefFexpr extends Fexpr {
+class PrefFexpr extends SubFexpr {
     private $isexpertise;
     public function __construct($isexpertise) {
         $this->isexpertise = $isexpertise;
@@ -406,7 +451,7 @@ class PrefFexpr extends Fexpr {
     }
 }
 
-class TagFexpr extends Fexpr {
+class TagFexpr extends SubFexpr {
     private $tag;
     private $isvalue;
     public function __construct($tag, $isvalue) {
@@ -433,7 +478,7 @@ class TagFexpr extends Fexpr {
     }
 }
 
-class OptionFexpr extends Fexpr {
+class OptionFexpr extends SubFexpr {
     private $option;
     public function __construct(PaperOption $option) {
         $this->option = $this->format_ = $option;
@@ -457,7 +502,7 @@ class OptionFexpr extends Fexpr {
     }
 }
 
-class DecisionFexpr extends Fexpr {
+class DecisionFexpr extends SubFexpr {
     public function __construct() {
         $this->format_ = "dec";
     }
@@ -473,7 +518,7 @@ class DecisionFexpr extends Fexpr {
     }
 }
 
-class TimeFieldFexpr extends Fexpr {
+class TimeFieldFexpr extends SubFexpr {
     private $field;
     public function __construct($field) {
         $this->field = $field;
@@ -483,7 +528,7 @@ class TimeFieldFexpr extends Fexpr {
     }
 }
 
-class TopicScoreFexpr extends Fexpr {
+class TopicScoreFexpr extends SubFexpr {
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
     }
@@ -497,7 +542,7 @@ class TopicScoreFexpr extends Fexpr {
     }
 }
 
-class RevtypeFexpr extends Fexpr {
+class RevtypeFexpr extends SubFexpr {
     public function __construct() {
         $this->format_ = "revtype";
     }
@@ -520,7 +565,7 @@ class RevtypeFexpr extends Fexpr {
     }
 }
 
-class ReviewRoundFexpr extends Fexpr {
+class ReviewRoundFexpr extends SubFexpr {
     public function __construct() {
         $this->format_ = "revround";
     }
@@ -543,7 +588,7 @@ class ReviewRoundFexpr extends Fexpr {
     }
 }
 
-class ConflictFexpr extends Fexpr {
+class ConflictFexpr extends SubFexpr {
     private $ispc;
     public function __construct($ispc) {
         $this->ispc = $ispc;
@@ -564,7 +609,7 @@ class ConflictFexpr extends Fexpr {
     }
 }
 
-class ReviewFexpr extends Fexpr {
+class ReviewFexpr extends SubFexpr {
     public function view_score(Contact $contact) {
         global $Conf;
         if (!$Conf->setting("rev_blind"))
@@ -641,7 +686,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     }
 }
 
-class ReviewWordCountFexpr extends Fexpr {
+class ReviewWordCountFexpr extends SubFexpr {
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
     }
@@ -663,20 +708,32 @@ class ReviewWordCountFexpr extends Fexpr {
 
 class FormulaCompiler {
     public $contact;
-    private $gvar = array();
-    public $gstmt = array();
-    public $lstmt = array();
-    public $looptype = Fexpr::LNONE;
-    public $datatype = 0;
+    private $gvar;
+    public $gstmt;
+    public $lstmt;
+    public $fragments = array();
+    public $combining = null;
+    public $looptype;
+    public $datatype;
     public $all_datatypes = 0;
-    private $lprefix = 0;
-    private $maxlprefix = 0;
+    private $lprefix;
+    private $maxlprefix;
     public $indent = 2;
     public $queryOptions = array();
-    private $_stack = array();
+    private $_stack;
 
     function __construct(Contact $contact) {
         $this->contact = $contact;
+        $this->clear();
+    }
+
+    public function clear() {
+        $this->gvar = $this->gstmt = $this->lstmt = array();
+        $this->looptype = Fexpr::LNONE;
+        $this->datatype = 0;
+        $this->lprefix = 0;
+        $this->maxlprefix = 0;
+        $this->_stack = array();
     }
 
     public function check_gvar($gvar) {
@@ -797,7 +854,13 @@ class FormulaCompiler {
 
         preg_match_all('/~l(\d*)~/', $combiner, $m);
         foreach (array_unique($m[1]) as $i) {
-            $t = $this->_addltemp($e->args[(int) $i]->compile($this));
+            if ($this->combining !== null) {
+                $t = "\$v{$p}";
+                if (count($this->fragments) != 1)
+                    $t .= "[{$this->combining}]";
+                ++$this->combining;
+            } else
+                $t = $this->_addltemp($e->args[(int) $i]->compile($this));
             $combiner = str_replace("~l{$i}~", $t, $combiner);
         }
 
@@ -806,13 +869,15 @@ class FormulaCompiler {
         else
             $this->lstmt[] = "$t_result = $combiner;";
 
-        $t_looper = "\$i$p";
-
-        $g = $this->loop_variable($this->datatype);
-        $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
-        if ($this->datatype == Fexpr::APREF)
-            $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
-        $loop = str_replace("~i~", "\$i$p", $loop);
+        if ($this->combining !== null)
+            $loop = "foreach (\$groups as \$v$p) " . $this->_join_lstmt(true);
+        else {
+            $g = $this->loop_variable($this->datatype);
+            $loop = "foreach ($g as \$i$p => \$v$p) " . $this->_join_lstmt(true);
+            if ($this->datatype == Fexpr::APREF)
+                $loop = str_replace("\$allrevprefs[~i~]", "\$v$p", $loop);
+            $loop = str_replace("~i~", "\$i$p", $loop);
+        }
 
         $this->_pop($loop);
         return $t_result;
@@ -846,6 +911,8 @@ class Formula {
 
     const SORTABLE = 1;
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
+
+    const DEBUG = 0;
 
     public static $opprec = array(
         "**" => 13,
@@ -1058,7 +1125,7 @@ class Formula {
             $e = new ConstantFexpr($m[1], "bool");
             $t = $m[2];
         } else if (preg_match('/\A(?:pid|paperid)\b(.*)\z/si', $t, $m)) {
-            $e = new ConstantFexpr("\$prow->paperId");
+            $e = new PidFexpr;
             $t = $m[1];
         } else if (preg_match('/\A(?:dec|decision):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
             $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($m[1])]);
@@ -1206,36 +1273,66 @@ class Formula {
     }
 
 
+    private static function compile_body($contact, FormulaCompiler $state, $expr) {
+        $t = "";
+        if ($contact)
+            $t .= "assert(\$contact->contactId == $contact->contactId);\n  ";
+        $t .= join("\n  ", $state->gstmt)
+            . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
+            . join("\n  ", $state->lstmt) . "\n";
+        if ($expr !== null)
+            $t .= "  \$x = $expr;\n\n"
+                . "  if (\$x === true && \$format == Formula::SORTABLE)\n"
+                . "    \$x = 1;\n"
+                . "  return \$x;\n";
+        return $t;
+    }
+
     public function compile_function(Contact $contact) {
-        global $Conf;
         $this->check();
         $state = new FormulaCompiler($contact);
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
-
-        $t = "assert(\$contact->contactId == $contact->contactId);\n  "
-            . join("\n  ", $state->gstmt)
-            . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
-            . join("\n  ", $state->lstmt) . "\n"
-            . "  \$x = $expr;\n\n"
-            . '  if ($x === true && $format == Formula::SORTABLE)
-    return 1;
-  return $x;' . "\n";
+        $t = self::compile_body($contact, $state, $expr);
 
         $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
-        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
         return create_function($args, $t);
     }
 
     static public function compile_indexes_function(Contact $contact, $datatypes) {
-        global $Conf;
         $state = new FormulaCompiler($contact);
         $g = $state->loop_variable($datatypes);
         $t = "assert(\$contact->contactId == $contact->contactId);\n  "
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
         $args = '$prow, $contact, $forceShow = false';
-        //$Conf->infoMsg(Ht::pre_text("function ($args) {\n  $t}\n"));
+        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  $t}\n"));
         return create_function($args, $t);
+    }
+
+    public function compile_combine_functions(Contact $contact) {
+        $this->check();
+        $state = new FormulaCompiler($contact);
+        $this->_parse && $this->_parse->compile_fragments($state);
+        $t = self::compile_body($contact, $state, null);
+        if (count($state->fragments) == 1)
+            $t .= "  return " . $state->fragments[0] . ";\n";
+        else
+            $t .= "  return [" . join(", ", $state->fragments) . "];\n";
+        $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
+        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        $outf = create_function($args, $t);
+
+        // regroup function
+        $state->clear();
+        $state->combining = 0;
+        $expr = $this->_parse ? $this->_parse->compile($state) : "0";
+        $t = self::compile_body(null, $state, $expr);
+        $args = '$groups, $format = null, $forceShow = false';
+        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        $inf = create_function($args, $t);
+
+        return [$outf, $inf];
     }
 
     public function unparse_html($x) {
@@ -1285,5 +1382,13 @@ class Formula {
 
     public function result_format() {
         return $this->check() ? $this->_format : null;
+    }
+
+    public function can_combine() {
+        return $this->check() && $this->_parse->can_combine();
+    }
+
+    public function is_sum() {
+        return $this->check() && $this->_parse->op === "sum";
     }
 }

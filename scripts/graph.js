@@ -620,48 +620,36 @@ function data_quantize_x(data) {
     return data;
 }
 
-function data_sort(data) {
+function data_to_barchart(data, isfraction) {
+    data = data_quantize_x(data);
     data.sort(function (a, b) {
-        return d3.ascending(a[0], b[0]) || d3.ascending(a[1], b[1])
-            || (a[3] || "").localeCompare(b[3] || "")
-            || pid_sorter(a[2], b[2]);
+        return d3.ascending(a[4] || 0, b[4] || 0)
+            || d3.ascending(a[0], b[0])
+            || (a[3] || "").localeCompare(b[3] || "");
     });
-    return data;
-}
 
-function data_to_barchart(data, isfraction, septags) {
-    data = data_sort(data_quantize_x(data_to_scatter(data)));
-
-    var active = null, count = 0;
-    data = data.reduce(function (newdata, d) {
-        if (active && (active[0] != d[0] || active[1] != d[1]))
-            active = null;
-        if (!active || (septags && active[4] != d[3])) {
-            var count = active ? active[3] : 0;
-            active = [d[0], d[1], count, count, d[3], []];
-            newdata.push(active);
-        } else if (active[4] != d[3])
-            active[4] = null;
-        ++active[3];
-        active[5].push(d[2]);
-        return newdata;
-    }, []);
+    for (var i = 0; i != data.length; ++i)
+        if (i && data[i-1][0] == data[i][0] && data[i-1][4] == data[i][4])
+            data[i].yoff = data[i-1].yoff + data[i-1][1];
+        else
+            data[i].yoff = 0;
 
     if (isfraction) {
         var maxy = {};
-        data.forEach(function (d) { maxy[d[0]] = d[3]; });
-        data.forEach(function (d) { d[2] /= maxy[d[0]]; d[3] /= maxy[d[0]]; });
+        data.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
+        data.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
     }
     return data;
 }
 
 hotcrp_graphs.barchart = function (args) {
     args = make_args(args);
-    var data = data_to_barchart(args.data, !!args.yfraction, true);
+    var data = data_to_barchart(args.data, !!args.yfraction);
 
     var xe = d3.extent(data, function (d) { return d[0]; }),
-        ge = d3.extent(data, function (d) { return d[1]; }),
-        ye = [0, d3.max(data, function (d) { return d[3]; })],
+        ge = d3.extent(data, function (d) { return d[4] || 0; }),
+        ye = [d3.min(data, function (d) { return d.yoff; }),
+              d3.max(data, function (d) { return d.yoff + d[1]; })],
         deltae = d3.extent(data, function (d, i) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
@@ -675,7 +663,7 @@ hotcrp_graphs.barchart = function (args) {
     var barwidth = args.width / 20;
     if (deltae[0] != Infinity)
         barwidth = Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])));
-    barwidth = Math.max(10, barwidth);
+    barwidth = Math.max(6, barwidth);
     if (ge[1])
         barwidth = Math.floor((barwidth - 3) * dpr) / (dpr * (ge[1] + 1));
     var gdelta = -(ge[1] + 1) * barwidth / 2;
@@ -693,18 +681,18 @@ hotcrp_graphs.barchart = function (args) {
 
     function place(sel, close) {
         return sel.attr("d", function (d) {
-            return ["M", x(d[0]) + gdelta + barwidth * d[1], y(d[2]),
-                    "V", y(d[3]), "h", barwidth,
-                    "V", y(d[2])].join(" ") + (close || "");
+            return ["M", x(d[0]) + gdelta + (d[4] ? barwidth * d[4] : 0), y(d.yoff),
+                    "V", y(d.yoff + d[1]), "h", barwidth,
+                    "V", y(d.yoff)].join(" ") + (close || "");
         });
     }
 
     place(svg.selectAll(".gbar").data(data)
           .enter().append("path")
             .attr("class", function (d) {
-                return d[4] ? "gbar " + d[4] : "gbar";
+                return d[3] ? "gbar " + d[3] : "gbar";
             })
-            .style("fill", function (d) { return make_pattern_fill(d[4], "gdot "); }));
+            .style("fill", function (d) { return make_pattern_fill(d[3], "gdot "); }));
 
     make_axes(svg, xAxis, yAxis, args);
 
@@ -730,10 +718,10 @@ hotcrp_graphs.barchart = function (args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
             if (!p.sorted) {
-                p[5].sort(pid_sorter);
+                p[2].sort(pid_sorter);
                 p.sorted = true;
             }
-            hubble.html("<p>#" + p[5].join(", #") + "</p>")
+            hubble.html("<p>#" + p[2].join(", #") + "</p>")
                 .dir("l").near(this);
         }
     }
@@ -745,12 +733,21 @@ hotcrp_graphs.barchart = function (args) {
     }
 
     function mouseclick() {
-        clicker(hovered_data ? hovered_data[5] : null);
+        clicker(hovered_data ? hovered_data[2] : null);
     }
 };
 
+function boxplot_sort(data) {
+    data.sort(function (a, b) {
+        return d3.ascending(a[0], b[0]) || d3.ascending(a[1], b[1])
+            || (a[3] || "").localeCompare(b[3] || "")
+            || pid_sorter(a[2], b[2]);
+    });
+    return data;
+}
+
 function data_to_boxplot(data, septags) {
-    data = data_sort(data_quantize_x(data_to_scatter(data)));
+    data = boxplot_sort(data_quantize_x(data_to_scatter(data)));
 
     var active = null, count = 0;
     data = data.reduce(function (newdata, d) {
@@ -887,7 +884,7 @@ hotcrp_graphs.boxplot = function (args) {
 
     function make_tooltip(p, ps, ds) {
         var yformat = args.yticks.unparse_html, t, x = [];
-        t = '<p>' + text_to_html(args.xticks.unparse_html.call(xAxis, p[0]));
+        t = '<p>' + args.xticks.unparse_html.call(xAxis, p[0]);
         if (!p.outlierof)
             t += " : median " + yformat.call(yAxis, p.q[2]);
         var x = [];
