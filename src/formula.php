@@ -148,6 +148,8 @@ class Fexpr {
                 return "($t1 ? : $t2)";
             else if ($op == "/" || $op == "%")
                 return "($t1 !== null && $t2 ? $t1 $op $t2 : null)";
+            else if ($op == "**")
+                return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
             else {
                 if (Formula::$opprec[$op] == 8)
                     $op = $this->args[0]->format_comparator($op);
@@ -172,6 +174,11 @@ class Fexpr {
                 return "($t1 !== null && $t2 !== null ? log($t1, $t2) : null)";
             } else
                 return "($t1 !== null ? log($t1) : null)";
+        }
+
+        if (count($this->args) >= 1 && ($op == "sqrt" || $op == "exp")) {
+            $t1 = $state->_addltemp($this->args[0]->compile($state));
+            return "($t1 !== null ? $op($t1) : null)";
         }
 
         if (count($this->args) >= 1 && ($op == "round" || $op == "floor" || $op == "ceil")) {
@@ -1192,7 +1199,7 @@ class Formula {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
-        } else if (preg_match('/\A(greatest|least|round|floor|trunc|ceil|log)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(greatest|least|round|floor|trunc|ceil|log|sqrt|pow|exp)\b(.*)\z/s', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, false)))
                 return null;
@@ -1232,7 +1239,8 @@ class Formula {
             $e = new PrefFexpr(true);
             $t = $m[1];
         } else if (preg_match('/\A([A-Za-z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
-                   && $m[1] !== "\"\"") {
+                   && $m[1] !== "\"\""
+                   && !preg_match('/\A\s*\(/', $m[2])) {
             $field = $m[1];
             $t = $m[2];
             if (($quoted = $field[0] === "\""))
