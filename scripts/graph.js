@@ -814,14 +814,15 @@ hotcrp_graphs.boxplot = function (args) {
     }
 
     function place_box(sel) {
-        sel.attr("x", function (d) { return x(d[0]) - barwidth / 2; })
-            .attr("y", function (d) {
-                return Math.min(y(d.q[3]), y(d.q[1]) - 2);
-            })
-            .attr("width", barwidth)
-            .attr("height", function (d) {
-                return Math.max(y(d.q[1]) - y(d.q[3]), 4);
-            });
+        sel.attr("d", function (d) {
+            var yq3 = y(d.q[3]), yq1 = y(d.q[1]), yq2 = y(d.q[2]);
+            if (yq1 - yq3 < 4)
+                yq3 = yq2 - 2, yq1 = yq3 + 4;
+            yq3 = Math.min(yq3, yq2 - 1);
+            yq1 = Math.max(yq1, yq2 + 1);
+            return ["M", x(d[0]) - barwidth / 2, ",", yq3, "l", barwidth, ",0",
+                    "l0,", yq1 - yq3, "l-", barwidth, ",0Z"].join("");
+        });
     }
 
     function place_median(sel) {
@@ -851,7 +852,7 @@ hotcrp_graphs.boxplot = function (args) {
             .attr("class", function (d) { return "gbox whiskerh " + d.c; }));
 
     place_box(svg.selectAll(".gbox.box").data(data)
-            .enter().append("rect")
+            .enter().append("path")
             .attr("class", function (d) { return "gbox box " + d.c; })
             .style("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
 
@@ -878,13 +879,13 @@ hotcrp_graphs.boxplot = function (args) {
 
     svg.append("line").attr("class", "gbox whiskerl gbox_hover0");
     svg.append("line").attr("class", "gbox whiskerh gbox_hover0");
-    svg.append("rect").attr("class", "gbox box gbox_hover0");
+    svg.append("path").attr("class", "gbox box gbox_hover0");
     svg.append("line").attr("class", "gbox median gbox_hover0");
     svg.append("circle").attr("class", "gbox outlier gbox_hover0");
     svg.append("path").attr("class", "gbox mean gbox_hover0");
     svg.append("line").attr("class", "gbox whiskerl gbox_hover1");
     svg.append("line").attr("class", "gbox whiskerh gbox_hover1");
-    svg.append("rect").attr("class", "gbox box gbox_hover1");
+    svg.append("path").attr("class", "gbox box gbox_hover1");
     svg.append("line").attr("class", "gbox median gbox_hover1");
     svg.append("circle").attr("class", "gbox outlier gbox_hover1");
     svg.append("path").attr("class", "gbox mean gbox_hover1");
