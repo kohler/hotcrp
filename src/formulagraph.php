@@ -10,6 +10,8 @@ class FormulaGraph {
     const FBARCHART = 5;
     const BOXPLOT = 8;
 
+    const REVIEWER_COLOR = 1;
+
     public $type = 0;
     public $fx;
     public $fy;
@@ -175,6 +177,21 @@ class FormulaGraph {
             $this->reviewer_color[$p->contactId] = TagInfo::color_classes($tagger->viewable($p->contactTags));
     }
 
+    private function _paper_style(PaperInfo $prow, Tagger $tagger) {
+        global $Me;
+        $qnum = $this->papermap[$prow->paperId][0];
+        $s = @$this->query_styles[(int) $qnum];
+        if (!$s && $this->reviewer_color && $Me->can_view_reviewer_tags($prow))
+            return self::REVIEWER_COLOR;
+        else if (!$s && @$prow->paperTags && $Me->can_view_tags($prow)
+                 && ($c = $tagger->viewable_color_classes($prow->paperTags)))
+            return $c;
+        else if ($s === "plain")
+            return "";
+        else
+            return $s;
+    }
+
     private function _scatter_data($result) {
         global $Me;
         $data = [];
@@ -191,16 +208,7 @@ class FormulaGraph {
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
                 continue;
-            $queries = @$this->papermap[$prow->paperId];
-            $s = @$this->query_styles[(int) $queries[0]];
-            $reviewer_color = false;
-            if ($this->reviewer_color && !$s && $Me->can_view_reviewer_tags($prow))
-                $reviewer_color = true;
-            if (!$s && @$prow->paperTags && $Me->can_view_tags($prow)
-                && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
-                $s = $color;
-            else if ($s === "plain")
-                $s = "";
+            $s = $this->_paper_style($prow, $tagger);
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $Me) : [null];
             foreach ($revs as $rcid) {
@@ -211,10 +219,10 @@ class FormulaGraph {
                 $d[2] = $prow->paperId;
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
                     $d[2] .= unparseReviewOrdinal($o);
-                if ($reviewer_color)
+                if ($s === self::REVIEWER_COLOR)
                     $s = @$this->reviewer_color[$d[0]] ? : "";
                 if ($this->fx_query) {
-                    foreach ($queries as $q) {
+                    foreach ($this->papermap[$prow->paperId] as $q) {
                         $d[0] = $q;
                         $data[$s][] = $d;
                     }
@@ -278,21 +286,13 @@ class FormulaGraph {
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
                 continue;
-            $queries = @$this->papermap[$prow->paperId];
-            $s = @$this->query_styles[(int) $queries[0]];
-            $reviewer_color = false;
-            if ($this->reviewer_color && !$s && $Me->can_view_reviewer_tags($prow))
-                $reviewer_color = true;
-            if (!$s && @$prow->paperTags && $Me->can_view_tags($prow)
-                && ($color = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2)))
-                $s = $color;
-            else if ($s === "plain")
-                $s = "";
+            $queries = $this->papermap[$prow->paperId];
+            $s = $this->_paper_style($prow, $tagger);
             $revs = $reviewf ? $reviewf($prow, $Me) : [null];
             foreach ($revs as $rcid) {
                 if (($x = $fxf($prow, $rcid, $Me)) === null)
                     continue;
-                if ($reviewer_color)
+                if ($s === self::REVIEWER_COLOR)
                     $s = @$this->reviewer_color[$d[0]] ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $Me), $prow->paperId, $s];
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
