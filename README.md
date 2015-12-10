@@ -50,10 +50,7 @@ using nginx, you will need the php-fpm package.
 
 **Load notes**: HotCRP requires a system with at least 256MB of
 memory, more if paper format checking is used and submission load is
-expected to be high. If you run HotCRP in a virtual machine, make sure
-you configure suitable swap space! HotCRP uses the fast, but less
-reliable, MyISAM database engine. If MySQL is killed your database may
-be corrupted.
+expected to be high.
 
 Installation
 ------------
