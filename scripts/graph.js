@@ -769,6 +769,7 @@ function data_to_boxplot(data, septags) {
             d.q[0] = d3.quantile(d.d, 0.05);
             d.q[4] = d3.quantile(d.d, 0.95);
         }
+        d.m = d3.sum(d.d) / d.d.length;
     });
 
     return data;
@@ -836,6 +837,11 @@ hotcrp_graphs.boxplot = function (args) {
             .attr("r", 2);
     }
 
+    function place_mean(sel) {
+        sel.attr("transform", function (d) { return "translate(" + x(d[0]) + "," + y(d.m) + ")"; })
+            .attr("d", "M2.2,0L0,2.2L-2.2,0L0,-2.2Z");
+    }
+
     place_whisker(0, svg.selectAll(".gbox.whiskerl").data(data)
             .enter().append("line")
             .attr("class", function (d) { return "gbox whiskerl " + d.c; }));
@@ -863,6 +869,11 @@ hotcrp_graphs.boxplot = function (args) {
             }))).enter().append("circle")
             .attr("class", function (d) { return "gbox outlier " + d.outlierof.c; }));
 
+    place_mean(svg.selectAll(".gbox.mean")
+            .data(data)
+            .enter().append("path")
+            .attr("class", function (d) { return "gbox mean " + d.c; }));
+
     make_axes(svg, xAxis, yAxis, args);
 
     svg.append("line").attr("class", "gbox whiskerl gbox_hover0");
@@ -870,11 +881,13 @@ hotcrp_graphs.boxplot = function (args) {
     svg.append("rect").attr("class", "gbox box gbox_hover0");
     svg.append("line").attr("class", "gbox median gbox_hover0");
     svg.append("circle").attr("class", "gbox outlier gbox_hover0");
+    svg.append("path").attr("class", "gbox mean gbox_hover0");
     svg.append("line").attr("class", "gbox whiskerl gbox_hover1");
     svg.append("line").attr("class", "gbox whiskerh gbox_hover1");
     svg.append("rect").attr("class", "gbox box gbox_hover1");
     svg.append("line").attr("class", "gbox median gbox_hover1");
     svg.append("circle").attr("class", "gbox outlier gbox_hover1");
+    svg.append("path").attr("class", "gbox mean gbox_hover1");
     var hovers = svg.selectAll(".gbox_hover0, .gbox_hover1")
         .style("display", "none").style("ponter-events", "none");
 
@@ -905,6 +918,7 @@ hotcrp_graphs.boxplot = function (args) {
                 place_whisker(3, hovers.filter(".whiskerh"));
                 place_box(hovers.filter(".box"));
                 place_median(hovers.filter(".median"));
+                place_mean(hovers.filter(".mean"));
             }
             svg.style("cursor", p ? "pointer" : null);
             hovered_data = p;
