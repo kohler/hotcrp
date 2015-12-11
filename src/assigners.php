@@ -282,10 +282,28 @@ class Assigner {
     function allow_special_contact($cclass, $prow, $contact) {
         return false;
     }
+    function load_keys() {
+        return [];
+    }
+    function load_state($state) {
+    }
+    function apply($pid, $contact, $req, $state) {
+    }
+    function realize($item, $cmap, $state) {
+        return null;
+    }
+    function unparse_description() {
+        return "";
+    }
+    function unparse_display(AssignmentSet $aset) {
+        return "";
+    }
     function account(&$countbycid, $nrev) {
         $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
     }
     function add_locks(&$locks) {
+    }
+    function execute($who) {
     }
     function notify_tracker() {
         return false;
@@ -396,7 +414,11 @@ class ReviewAssigner extends Assigner {
                                   $item->existed() ? $item->before["_rtype"] : 0,
                                   $item->deleted() ? null : $item["_notify"]);
     }
-    function unparse_display() {
+    function unparse_description() {
+        return "review";
+    }
+    function unparse_display(AssignmentSet $aset) {
+        $aset->show_column("reviewers");
         $t = $this->contact->reviewer_html() . ' ';
         if ($this->rtype) {
             $t .= review_type_icon($this->rtype, true);
@@ -467,7 +489,13 @@ class LeadAssigner extends Assigner {
         return new LeadAssigner($item["type"], $item["pid"], $cmap->make_id($item["_cid"]),
                                 !$item->deleted());
     }
-    function unparse_display() {
+    function unparse_description() {
+        return $this->type;
+    }
+    function unparse_display(AssignmentSet $aset) {
+        $aset->show_column($this->type);
+        if ($this->isadd)
+            $aset->show_column("reviewers");
         if (!$this->cid)
             return "remove $this->type";
         $t = $this->contact->reviewer_html();
@@ -521,7 +549,11 @@ class ConflictAssigner extends Assigner {
         return new ConflictAssigner($item["pid"], $cmap->make_id($item["cid"]),
                                     $item->deleted() ? 0 : $item["_ctype"]);
     }
-    function unparse_display() {
+    function unparse_description() {
+        return "conflict";
+    }
+    function unparse_display(AssignmentSet $aset) {
+        $aset->show_column("pcconf");
         $t = $this->contact->reviewer_html() . ' ';
         if ($this->ctype)
             $t .= review_type_icon(-1);
@@ -792,7 +824,11 @@ class TagAssigner extends Assigner {
         // actually assign
         return new TagAssigner($item["pid"], true, $item["_tag"], $index);
     }
-    function unparse_display() {
+    function unparse_description() {
+        return "tag";
+    }
+    function unparse_display(AssignmentSet $aset) {
+        $aset->show_column("tags");
         $t = "#" . htmlspecialchars($this->tag);
         if ($this->index === null)
             $t = "remove $t";
@@ -869,9 +905,13 @@ class PreferenceAssigner extends Assigner {
                                       $item->deleted() ? 0 : $item["_pref"],
                                       $item->deleted() ? null : $item["_exp"]);
     }
-    function unparse_display() {
+    function unparse_description() {
+        return "preference";
+    }
+    function unparse_display(AssignmentSet $aset) {
         if (!$this->cid)
             return "remove all preferences";
+        $aset->show_column("allrevpref");
         return $this->contact->reviewer_html() . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
     function add_locks(&$locks) {
@@ -933,6 +973,7 @@ class AssignmentSet {
     private $papers_encountered = array();
     private $unparse_search = false;
     private $unparse_columns = array();
+    private $assignment_type = null;
 
     function __construct($contact, $override = null) {
         $this->contact = $contact;
@@ -1187,11 +1228,15 @@ class AssignmentSet {
         return true;
     }
 
+    function show_column($coldesc) {
+        $this->unparse_columns[$coldesc] = true;
+    }
+
     function parse_csv_comment($line) {
         if (preg_match('/\A#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m))
             $this->unparse_search = $m[1];
         if (preg_match('/\A#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m))
-            $this->unparse_columns[] = "show:$m[1]";
+            $this->show_column($m[1]);
     }
 
     function parse($text, $filename = null, $defaults = null, $alertf = null) {
@@ -1335,6 +1380,19 @@ class AssignmentSet {
         return array(array_keys($types), $pids);
     }
 
+    function type_description() {
+        if ($this->assignment_type === null)
+            foreach ($this->assigners as $assigner) {
+                $desc = $assigner->unparse_description();
+                if ($this->assignment_type === null
+                    || $this->assignment_type === $desc)
+                    $this->assignment_type = $desc;
+                else
+                    $this->assignment_type = "";
+            }
+        return $this->assignment_type;
+    }
+
     function echo_unparse_display($papersel = null) {
         if (!$papersel) {
             $papersel = array();
@@ -1350,7 +1408,7 @@ class AssignmentSet {
 
         $bypaper = array();
         foreach ($this->assigners as $assigner)
-            if (($text = $assigner->unparse_display())) {
+            if (($text = $assigner->unparse_display($this))) {
                 $c = $assigner->contact;
                 if ($c && !isset($c->sorter))
                     Contact::set_sorter($c);
@@ -1360,7 +1418,7 @@ class AssignmentSet {
                 $assigner->account($countbycid, $nrev);
             }
 
-        AutoassignmentPaperColumn::$header = "Proposed changes";
+        AutoassignmentPaperColumn::$header = "Assignment";
         $assinfo = array();
         PaperColumn::register(new AutoassignmentPaperColumn);
         foreach ($bypaper as $pid => $list) {
@@ -1385,9 +1443,9 @@ class AssignmentSet {
             $query_order = "(" . $this->unparse_search . ") THEN HEADING:none " . join(" ", array_keys($assinfo));
         else
             $query_order = count($assinfo) ? join(" ", array_keys($assinfo)) : "NONE";
-        if (!$this->unparse_columns)
-            $this->unparse_columns[] = "show:reviewers";
-        $query_order .= " " . join(" ", $this->unparse_columns);
+        foreach ($this->unparse_columns as $k => $v)
+            $query_order .= " show:$k";
+        $query_order .= " show:autoassignment";
         $search = new PaperSearch($this->contact,
                                   array("t" => defval($_REQUEST, "t", "s"),
                                         "q" => $query_order));

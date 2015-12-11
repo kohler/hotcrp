@@ -214,11 +214,12 @@ class AutoassignerInterface {
             return ob_get_clean();
         }
 
-        echo "<h3>Proposed assignment</h3>";
-        $Conf->infoMsg("Select “Apply changes” if this looks OK.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
-
         $assignset = new AssignmentSet($Me, true);
         $assignset->parse(join("\n", $assignments));
+
+        $atype = $assignset->type_description();
+        echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
+        $Conf->infoMsg("Select “Apply changes” if this looks OK.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
         $assignset->report_errors();
         $assignset->echo_unparse_display($papersel);
 

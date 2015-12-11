@@ -119,7 +119,8 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
         else if ($assignset->is_empty())
             $Conf->warnMsg("That assignment file makes no changes.");
         else {
-            echo '<h3>Proposed assignment</h3>';
+            $atype = $assignset->type_description();
+            echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
             $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
             $assignset->echo_unparse_display();
 
