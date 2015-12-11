@@ -215,7 +215,7 @@ class AutoassignerInterface {
         }
 
         echo "<h3>Proposed assignment</h3>";
-        $Conf->infoMsg("If this looks OK to you, select “Apply changes”.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
+        $Conf->infoMsg("Select “Apply changes” if this looks OK.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
 
         $assignset = new AssignmentSet($Me, true);
         $assignset->parse(join("\n", $assignments));

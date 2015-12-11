@@ -120,7 +120,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
             $Conf->warnMsg("That assignment file makes no changes.");
         else {
             echo '<h3>Proposed assignment</h3>';
-            $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it. (You can always alter the assignment afterwards.)");
+            $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
             $assignset->echo_unparse_display();
 
             list($atypes, $apids) = $assignset->types_and_papers(true);
@@ -130,7 +130,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
                                            "assigntypes" => join(" ", $atypes),
                                            "assignpids" => join(" ", $apids)))),
                 '<div class="aahc"><div class="aa">',
-                Ht::submit("Save assignment"),
+                Ht::submit("Apply changes"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
                 Ht::hidden("default_action", $defaults["action"]),
                 Ht::hidden("rev_roundtag", $defaults["round"]),
