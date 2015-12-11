@@ -196,15 +196,15 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 
     // check email
     if ($newProfile || $cj->email != $Acct->email) {
-        if (($Acct = Contact::find_by_email($cj->email))) {
+        if (($new_acct = Contact::find_by_email($cj->email))) {
             if ($allow_modification)
-                $cj->id = $Acct->contactId;
+                $cj->id = $new_acct->contactId;
             else {
                 $msg = "Email address “" . htmlspecialchars($cj->email) . "” is already in use.";
                 if ($Me->privChair)
                     $msg = str_replace("an account", "<a href=\"" . hoturl("profile", "u=" . urlencode($cj->email)) . "\">an account</a>", $msg);
                 if (!$newProfile)
-                    $msg .= " You may want to <a href='" . hoturl("mergeaccounts") . "'>merge these accounts</a>.";
+                    $msg .= " You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.";
                 return $user_status->set_error("email", $msg);
             }
         } else if (Contact::external_login()) {
