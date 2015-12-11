@@ -47,6 +47,8 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
         $_REQUEST["t"] = "#" . substr($_REQUEST["t"], 3);
     else if (isset($tOpt["#" . $_REQUEST["t"]]))
         $_REQUEST["t"] = "#" . $_REQUEST["t"];
+    else if ($_REQUEST["t"] == "#pc")
+        $_REQUEST["t"] = "pc";
     else {
         $Conf->errorMsg("Unknown user collection.");
         unset($_REQUEST["t"]);

@@ -396,10 +396,13 @@ class ContactList {
             return '<div class="has_hotcrp_list" data-hotcrp-list="' . $ls . '">'
                 . join(", ", $m) . '</div>';
         case self::FIELD_TAGS:
-            if ($this->contact->isPC) {
-                $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
-                if ($tags && ($tags = $this->tagger->viewable($tags)))
-                    return $this->tagger->unparse_hashed($tags);
+            if ($this->contact->isPC
+                && ($tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags))
+                && ($tags = $this->tagger->viewable($tags))) {
+                $x = [];
+                foreach (TagInfo::split($tags) as $t)
+                    $x[] = '<a class="qq nw" href="' . hoturl("users", "t=%23" . TagInfo::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
+                return join(" ", $x);
             }
             return "";
         case self::FIELD_COLLABORATORS:
