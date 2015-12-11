@@ -55,7 +55,7 @@ class UserStatus {
             if ($user->$uk !== null && $user->$uk !== "")
                 $cj->$jk = $user->$uk;
 
-        if ($user->is_disabled())
+        if ($user->disabled)
             $cj->disabled = true;
 
         foreach (array("address", "city", "state", "zip", "country") as $k)

@@ -439,7 +439,7 @@ class Contact {
         return $this->contactId <= 0 && !$this->capabilities && !$this->email;
     }
 
-    function is_disabled() {
+    function is_password_disabled() {
         return $this->disabled || $this->password === "";
     }
 
@@ -820,9 +820,9 @@ class Contact {
 
         // Mark creation and activity
         if ($inserting) {
-            if ($send && !$this->is_disabled())
+            if ($send && !$this->is_password_disabled())
                 $this->sendAccountInfo("create", false);
-            $type = $this->is_disabled() ? "disabled " : "";
+            $type = $this->is_password_disabled() ? "disabled " : "";
             if ($Me && $Me->has_email() && $Me->email !== $this->email)
                 $Conf->log("Created {$type}account ($Me->email)", $this);
             else
@@ -985,7 +985,7 @@ class Contact {
         $acct = new Contact;
         if ($acct->save_json($cj, null, $send)) {
             if ($Me && $Me->privChair) {
-                $type = $acct->is_disabled() ? "disabled " : "";
+                $type = $acct->is_password_disabled() ? "disabled " : "";
                 $Conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");
             }
             return $acct;
@@ -1187,7 +1187,7 @@ class Contact {
     public function check_password($input) {
         global $Conf, $Opt;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
-        if ($this->contactId && $this->is_disabled())
+        if ($this->contactId && $this->is_password_disabled())
             return false;
 
         $cdbu = $this->contactdb_user();
