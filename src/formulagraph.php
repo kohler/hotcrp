@@ -65,7 +65,7 @@ class FormulaGraph {
             $this->error_html[] = "Y axis formula: " . $this->fy->error_html();
             $this->errf["fy"] = true;
         } else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
-            $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function.";
+            $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.";
             $this->errf["fy"] = true;
             $this->fy = new Formula("sum(0)", true);
         }
