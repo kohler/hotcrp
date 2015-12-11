@@ -1252,6 +1252,14 @@ function review_type_icon($revtype, $unfinished = null, $title = null) {
         . '"><span class="rti">' . $revtypemap[$revtype][0] . '</span></span>';
 }
 
+function review_lead_icon() {
+    return '<span class="rtlead" title="Lead"><span class="rti">L</span></span>';
+}
+
+function review_shepherd_icon() {
+    return '<span class="rtshep" title="Shepherd"><span class="rti">S</span></span>';
+}
+
 function scoreCounts($values, $max = null) {
     $merit = ($max ? array_fill(1, $max, 0) : array());
     $n = $sum = $sumsq = 0;

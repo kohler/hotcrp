@@ -215,7 +215,7 @@ class AutoassignerInterface {
         }
 
         echo "<h3>Proposed assignment</h3>";
-        $Conf->infoMsg("If this assignment looks OK to you, select “Save assignment” to apply it.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
+        $Conf->infoMsg("If this looks OK to you, select “Apply changes”.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
 
         $assignset = new AssignmentSet($Me, true);
         $assignset->parse(join("\n", $assignments));
@@ -266,7 +266,7 @@ class AutoassignerInterface {
                                        "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"],
                                        "seed" => @$_REQUEST["seed"]))),
             "<div class='aahc'><div class='aa'>\n",
-            Ht::submit("submit", "Save assignment"), "\n&nbsp;",
+            Ht::submit("submit", "Apply changes"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method") as $t)
             if (isset($_REQUEST[$t]))

@@ -471,7 +471,11 @@ class LeadAssigner extends Assigner {
         if (!$this->cid)
             return "remove $this->type";
         $t = $this->contact->reviewer_html();
-        if ($this->isadd)
+        if ($this->isadd && $this->type === "lead")
+            $t .= " " . review_lead_icon();
+        else if ($this->isadd && $this->type === "shepherd")
+            $t .= " " . review_shepherd_icon();
+        else if ($this->isadd)
             $t .= " ($this->type)";
         else
             $t = "remove $t as $this->type";
