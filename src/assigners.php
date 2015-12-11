@@ -523,6 +523,9 @@ class ConflictAssigner extends Assigner {
             $t .= review_type_icon(-1);
         else
             $t .= "(remove conflict)";
+        if (ReviewAssigner::$prefinfo
+            && ($pref = @ReviewAssigner::$prefinfo["$this->pid $this->cid"]))
+            $t .= unparse_preference_span($pref);
         return $t;
     }
     function add_locks(&$locks) {
@@ -1353,7 +1356,7 @@ class AssignmentSet {
                 $assigner->account($countbycid, $nrev);
             }
 
-        AutoassignmentPaperColumn::$header = "Proposed assignment";
+        AutoassignmentPaperColumn::$header = "Proposed changes";
         $assinfo = array();
         PaperColumn::register(new AutoassignmentPaperColumn);
         foreach ($bypaper as $pid => $list) {
