@@ -1562,7 +1562,7 @@ class PaperSearch {
             $omatches = PaperOption::option_list();
         else
             $omatches = PaperOption::search($oname);
-        // global $Conf; $Conf->infoMsg(Ht::pre_text(var_export($omatches, true)));
+        // Conf::m_info(Ht::pre_text(var_export($omatches, true)));
         if (count($omatches)) {
             foreach ($omatches as $oid => $o) {
                 // selectors handle “yes”, “”, and “no” specially
@@ -2446,12 +2446,10 @@ class PaperSearch {
             // term is negated, we say NO paper matches this clause.  (NOT no
             // paper is every paper.)  Later code will check for a substring.
             $f[] = "false";
-        else if (!ctype_alnum($v))
-            $f[] = "true";
         else {
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
-            $q[] = "Paper.$field like " . Dbl::utf8ci("'%$v%'");
+            $q[] = "true";
             $f[] = "(" . join(" and ", $q) . ")";
         }
         $t->link = $field;
@@ -3031,7 +3029,7 @@ class PaperSearch {
 
         // parse and clean the query
         $qe = $this->_searchQueryType($this->q);
-        //$Conf->infoMsg(Ht::pre_text(var_export($qe, true)));
+        //Conf::m_info(Ht::pre_text(var_export($qe, true)));
         if (!$qe)
             $qe = new SearchTerm("t");
 
@@ -3047,7 +3045,7 @@ class PaperSearch {
                 $this->warn("Unexpected use of “round:” or “rate:” ignored.  Stick to the basics, such as “re:reviewername round:roundname”.");
         }
 
-        //$Conf->infoMsg(Ht::pre_text(var_export($qe, true)));
+        //Conf::m_info(Ht::pre_text(var_export($qe, true)));
 
         // collect clauses into tables, columns, and filters
         $sqi = new SearchQueryInfo;
@@ -3059,7 +3057,7 @@ class PaperSearch {
         $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
         $this->_clauseTermSet($qe, $sqi, $filters);
-        //$Conf->infoMsg(Ht::pre_text(var_export($filters, true)));
+        //Conf::m_info(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
         if ($limit === "rable") {
@@ -3182,7 +3180,7 @@ class PaperSearch {
             $q .= "\n    where " . join("\n        and ", $filters);
         $q .= "\n    group by Paper.paperId";
 
-        //$Conf->infoMsg(Ht::pre_text_wrap($q));
+        //Conf::m_info(Ht::pre_text_wrap($q));
 
         // actually perform query
         $result = Dbl::qe_raw($q);
