@@ -950,25 +950,20 @@ class Conf {
 
     function query_error_handler($dblink, $query) {
         global $OK;
+        $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
         if (PHP_SAPI == "cli")
-            fwrite(STDERR, caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/") . ": database error: $dblink->error in $query\n");
-        else
-            $this->errorMsg($this->db_error_html(true, Ht::pre_text_wrap($query)));
+            fwrite(STDERR, "$landmark: Database error: $dblink->error in $query\n");
+        else {
+            error_log("$landmark: Database error: $dblink->error in $query");
+            $this->errorMsg("<p>" . htmlspecialchars($landmark) . ": Database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+        }
         $OK = false;
     }
 
-    function qe($query, $while = "", $suggestRetry = false) {
-        global $OK;
-        if ($while || $suggestRetry)
-            error_log(caller_landmark() . ": bad call to Conf::qe");
+    function qe($query) {
         $result = $this->dblink->query($query);
-        if ($result === false) {
-            if (PHP_SAPI == "cli")
-                fwrite(STDERR, caller_landmark() . ": " . $this->db_error_text(true, "[$query]") . "\n");
-            else
-                $this->errorMsg($this->db_error_html(true, Ht::pre_text_wrap($query)));
-            $OK = false;
-        }
+        if ($result === false)
+            $this->query_error_handler($this->dblink, $query);
         return $result;
     }
 
