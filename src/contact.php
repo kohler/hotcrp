@@ -375,22 +375,22 @@ class Contact {
 
     public function contactdb_update() {
         global $Opt, $Now;
-        if (!($dblink = self::contactdb()) || !$this->has_database_account())
+        if (!($cdb = self::contactdb()) || !$this->has_database_account())
             return false;
-        $idquery = Dbl::format_query($dblink, "select ContactInfo.contactDbId, Conferences.confid, roles
+        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles
             from ContactInfo
             left join Conferences on (Conferences.`dbname`=?)
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
             where email=?", $Opt["dbName"], $this->email);
-        $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
+        $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
         if (!$row) {
-            Dbl::ql($dblink, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country);
-            $row = Dbl::fetch_first_row(Dbl::ql_raw($dblink, $idquery));
+            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
+            $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
             $this->contactdb_user_ = false;
         }
 
         if ($row && $row[1] && (int) $row[2] != $this->all_roles()) {
-            $result = Dbl::ql($dblink, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
+            $result = Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
             return !!$result;
         } else
             return false;

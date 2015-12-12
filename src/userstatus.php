@@ -42,7 +42,8 @@ class UserStatus {
 
         // keys that might come from user or contactdb
         $cdb_user = $user->contactdb_user();
-        foreach (["email", "firstName", "lastName", "affiliation"] as $k)
+        foreach (["email", "firstName", "lastName", "affiliation",
+                  "collaborators"] as $k)
             if ($user->$k !== null && $user->$k !== "")
                 $cj->$k = $user->$k;
             else if ($cdb_user && $cdb_user->$k !== null && $cdb_user->$k !== "")
@@ -50,7 +51,6 @@ class UserStatus {
 
         // keys that come from user
         foreach (["preferredEmail" => "preferred_email",
-                  "collaborators" => "collaborators",
                   "voicePhoneNumber" => "phone"] as $uk => $jk)
             if ($user->$uk !== null && $user->$uk !== "")
                 $cj->$jk = $user->$uk;
@@ -224,6 +224,8 @@ class UserStatus {
             }
             if (!isset($cj->affiliation))
                 $cj->affiliation = $old_user->affiliation;
+            if (!isset($cj->collaborators))
+                $cj->collaborators = $old_user->collaborators;
         }
 
         // Preferred email
