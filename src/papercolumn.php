@@ -490,13 +490,12 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $xrow = $row->_xreviewer;
         else
             $xrow = $row;
+        $ranal = null;
         if ($xrow->reviewType) {
             $ranal = new PaperListReviewAnalysis($xrow);
             if ($ranal->needsSubmit)
                 $pl->any->need_review = true;
             $t = $ranal->icon_html(true);
-            if ($ranal->round)
-                $t = '<div class="pl_revtype_round">' . $t . "</div>";
         } else if ($xrow->conflictType > 0)
             $t = review_type_icon(-1);
         else
@@ -506,10 +505,15 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $x[] = review_lead_icon();
         if (!$this->xreviewer && $row->shepherdContactId && $row->shepherdContactId == $pl->contact->contactId)
             $x[] = review_shepherd_icon();
-        if ($x)
-            $t = '<div class="pl_revtype_haslead">' . join('&nbsp;', $x)
-               . ($t ? '&nbsp;' . $t : '') . '</div>';
-        return $t;
+        if ($x || ($ranal && $ranal->round)) {
+            $c = ["pl_revtype"];
+            $t && ($c[] = "hasrev");
+            $x && ($c[] = "haslead");
+            $ranal && $ranal->round && ($c[] = "hasround");
+            $t && ($x[] = $t);
+            return '<div class="' . join(" ", $c) . '">' . join('&nbsp;', $x) . '</div>';
+        } else
+            return $t;
     }
 }
 

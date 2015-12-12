@@ -45,7 +45,7 @@ class PaperListReviewAnalysis {
         if ($includeLink)
             $t = $this->wrap_link($t);
         if ($this->round)
-            $t .= '&nbsp;<span class="revround" title="Review round">' . $this->round . "</span>";
+            $t .= '<span class="revround" title="Review round">&nbsp;' . $this->round . "</span>";
         return $t;
     }
     public function completion_html() {

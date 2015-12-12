@@ -1596,16 +1596,23 @@ td.pl.pls:last-child {
 }
 
 td.pl.pl_revtype {
-	padding-left: 1.5em;
-	padding-right: 1.5em;
+	padding-left: 20px;
+	padding-right: 20px;
+	text-align: right;
 }
-div.pl_revtype_round {
-	margin-right: -1.2em;
+div.pl_revtype {
 	display: inline-block;
-}
-div.pl_revtype_haslead {
-	margin-left: -0.8em;
 	white-space: nowrap;
+}
+div.pl_revtype.hasround {
+	margin-right: -16px;
+}
+div.pl_revtype.hasrev.haslead {
+	margin-left: -16px;
+}
+div.pl_revtype span.revround {
+	display: inline-block;
+	min-width: 16px;
 }
 
 th.pll {
