@@ -602,7 +602,7 @@ class Tagger {
                     if (count($v))
                         $tx .= ' title="PC votes: ' . htmlspecialchars(join(", ", $v)) . '"';
                 }
-                $tx .= '">#' . $base . '</a>';
+                $tx .= '>#' . $base . '</a>';
             } else
                 $tx = "#" . $base;
             $tx .= substr($tag, strlen($base));
