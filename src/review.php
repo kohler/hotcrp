@@ -172,14 +172,14 @@ class ReviewField {
 
         // try to filter out noninteresting words
         if ($abbrdetail < 2) {
-            $xname = preg_replace('/\b(?:a|an|be|do|for|in|of|question|the|this|to|with|you)\b/i', '', $name);
+            $xname = preg_replace('/\b(?:a|an|be|did|do|for|in|of|question|the|this|to|with|you)\b/i', '', $name);
             $name = $xname ? : $name;
         }
 
         // only letters & digits
         if ($abbrdetail == 0)
             $name = preg_replace('/\(.*?\)/', ' ', $name);
-        $xname = preg_replace('/[-:\s,.?!()\[\]\{\}_]+/', " ", " $name ");
+        $xname = preg_replace('/[-:\s,.?!()\[\]\{\}_\/\'\"]+/', " ", " $name ");
         // drop extraneous words
         $xname = preg_replace('/\A(' . str_repeat(' \S+', max(3, $abbrdetail)) . ' ).*\z/', '$1', $xname);
         if ($abbrtype == 1)
