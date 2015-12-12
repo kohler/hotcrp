@@ -2910,9 +2910,14 @@ class Contact {
                 if (!$this->can_view_paper($prow))
                     continue;
                 $perm = $dl->perm[$prow->paperId] = (object) array();
-                $admin = $this->allow_administer($prow);
+                $rights = $this->rights($prow);
+                $admin = $rights->allow_administer;
                 if ($admin)
                     $perm->allow_administer = true;
+                if ($rights->act_author)
+                    $perm->act_author = true;
+                if ($rights->act_author_view)
+                    $perm->act_author_view = true;
                 if ($this->can_review($prow, null, false))
                     $perm->can_review = true;
                 if ($this->can_comment($prow, null, true))
