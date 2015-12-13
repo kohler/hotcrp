@@ -1338,33 +1338,6 @@ class Conf {
         return array_keys($ids);
     }
 
-    function storeDocument($uploadId, $paperId, $documentType) {
-        return DocumentHelper::upload(new HotCRPDocument($documentType),
-                                      $uploadId,
-                                      (object) array("paperId" => $paperId));
-    }
-
-    function storePaper($uploadId, $prow, $final) {
-        $paperId = (is_numeric($prow) ? $prow : $prow->paperId);
-
-        $doc = $this->storeDocument($uploadId, $paperId, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);
-        if (isset($doc->error_html)) {
-            $this->errorMsg($doc->error_html);
-            return false;
-        }
-
-        if (!$this->qe("update Paper set "
-                . ($final ? "finalPaperStorageId" : "paperStorageId") . "=" . $doc->paperStorageId
-                . ", size=" . $doc->size
-                . ", mimetype='" . sqlq($doc->mimetype)
-                . "', timestamp=" . $doc->timestamp
-                . ", sha1='" . sqlq($doc->sha1)
-                . "' where paperId=$paperId and timeWithdrawn<=0"))
-            return false;
-
-        return $doc->size;
-    }
-
     function document_result($prow, $documentType, $docid = null) {
         global $Opt;
         if (is_array($prow) && count($prow) <= 1)
