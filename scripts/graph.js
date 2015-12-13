@@ -152,11 +152,13 @@ function seq_to_cdf(seq) {
 }
 
 
-function expand_extent(e, delta) {
+function expand_extent(e, is_y) {
     if (e[0] > 0 && e[0] < e[1] / 11)
         e[0] = 0;
     if (e[1] - e[0] < 10) {
-        e[0] && (e[0] -= delta);
+        var delta = Math.min(1, e[1] - e[0]) * 0.2;
+        if (!is_y || e[0])
+            e[0] -= delta;
         e[1] += delta;
     }
     return e;
@@ -233,23 +235,23 @@ function clicker_go(url) {
         window.location = url;
 }
 
-function d3_tickFormat(axis) { // XXX wish D3 provided this
-    var s = axis.scale();
-    return axis.tickFormat() == null ? (s.tickFormat ? s.tickFormat.apply(s, axis.ticks()) : function (x) { return x; }) : axis.tickFormat();
-}
-
 function make_axis(args) {
     return $.extend({
         ticks: function (extent) {},
         rewrite: function () {},
-        unparse_html: function (value) { return d3_tickFormat(this)(value); },
+        unparse_html: function (value) {
+            if (value == Math.floor(value))
+                return value;
+            var dom = this.scale().domain(),
+                dig = Math.max(0, -Math.round(Math.log10(dom[1] - dom[0])) + 2);
+            return value.toFixed(dig);
+        },
         search: function (value) { return null; }
     }, args || {});
 }
 
 function make_args(args) {
-    args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50},
-                    args);
+    args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50}, args);
     args.xticks = make_axis(args.xticks);
     args.yticks = make_axis(args.yticks);
     args.width = $(args.selector).width() - args.left - args.right;
@@ -540,9 +542,9 @@ hotcrp_graphs.scatter = function (args) {
     var xe = d3.extent(data, proj0),
         ye = d3.extent(data, proj1),
         x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
-                .domain(expand_extent(xe, 0.3)),
+                .domain(expand_extent(xe)),
         y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
-                .domain(expand_extent(ye, 0.3)),
+                .domain(expand_extent(ye, true)),
         rf = function (d) { return d.r - 1; };
     data = grouped_quadtree(data, x, y, 4);
 
@@ -667,7 +669,7 @@ hotcrp_graphs.barchart = function (args) {
             return delta || Infinity;
         }),
         x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
-                .domain(expand_extent(xe, 0.2)),
+                .domain(expand_extent(xe)),
         y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
                 .domain(ye);
 
@@ -799,9 +801,9 @@ hotcrp_graphs.boxplot = function (args) {
             return delta || Infinity;
         }),
         x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
-                .domain(expand_extent(xe, 0.2)),
+                .domain(expand_extent(xe)),
         y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
-                .domain(expand_extent(ye, 0.2));
+                .domain(expand_extent(ye, true));
 
     var barwidth = args.width/80;
     if (deltae[0] != Infinity)
