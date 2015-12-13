@@ -186,6 +186,18 @@ function make_axes(svg, xAxis, yAxis, args) {
     args.yticks.rewrite.call(svg.select(".y.axis"), svg);
 }
 
+function proj0(d) {
+    return d[0];
+}
+
+function proj1(d) {
+    return d[1];
+}
+
+function proj2(d) {
+    return d[2];
+}
+
 function pid_sorter(a, b) {
     var d = (typeof a === "string" ? parseInt(a, 10) : a) -
             (typeof b === "string" ? parseInt(b, 10) : b);
@@ -207,8 +219,11 @@ function clicker(pids) {
         clicker_go(hoturl("paper", {p: x[0], anchor: "r" + pids[0]}));
     else if (x.length == 1)
         clicker_go(hoturl("paper", {p: x[0]}));
-    else
+    else {
+        x = d3.set(x).values();
+        x.sort(pid_sorter);
         clicker_go(hoturl("search", {q: x.join(" ")}));
+    }
 }
 
 function clicker_go(url) {
@@ -385,7 +400,7 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
         for (i in revdata.deadlines)
             if (!revdata.deadlines[i]) {
                 var subat = alldata.filter(function (d) { return d[2] == i; })
-                    .map(function (d) { return d[0]; });
+                    .map(proj0);
                 subat.sort(d3.ascending);
                 revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
             }
@@ -477,7 +492,7 @@ function grouped_quadtree(data, xs, ys, rf) {
     for (var i = 0; (d = data[i]); ++i) {
         if (d[0] == null || d[1] == null)
             continue;
-        vd = [xs(d[0]), ys(d[1]), [d[2]], d[3]];
+        vd = [xs(d[0]), ys(d[1]), [d], d[3]];
         if ((vp = q.find(vd))) {
             dx = Math.abs(vp[0] - vd[0]);
             dy = Math.abs(vp[1] - vd[1]);
@@ -487,7 +502,7 @@ function grouped_quadtree(data, xs, ys, rf) {
         while (vp && vp[3] != vd[3] && vp.next)
             vp = vp.next;
         if (vp && vp[3] == vd[3]) {
-            vp[2].push(d[2]);
+            vp[2].push(d);
             vp.n += 1;
         } else {
             vp ? vp.next = vd : q.add(vd);
@@ -522,8 +537,8 @@ hotcrp_graphs.scatter = function (args) {
     args = make_args(args);
     var data = data_to_scatter(args.data);
 
-    var xe = d3.extent(data, function (d) { return d[0]; }),
-        ye = d3.extent(data, function (d) { return d[1]; }),
+    var xe = d3.extent(data, proj0),
+        ye = d3.extent(data, proj1),
         x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
                 .domain(expand_extent(xe, 0.3)),
         y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
@@ -585,12 +600,9 @@ hotcrp_graphs.scatter = function (args) {
         }
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
-            if (!p.sorted) {
-                p[2].sort(pid_sorter);
-                p.sorted = true;
-            }
-            hubble.html("<p>#" + p[2].join(", #") + "</p>")
-                .dir("b").near(hovers.node());
+            var ps = p[2].map(proj2);
+            ps.sort(pid_sorter);
+            hubble.html("<p>#" + ps.join(", #") + "</p>").dir("b").near(hovers.node());
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
@@ -602,7 +614,7 @@ hotcrp_graphs.scatter = function (args) {
     }
 
     function mouseclick() {
-        clicker(hovered_data ? hovered_data[2] : null);
+        clicker(hovered_data ? hovered_data[2].map(proj2) : null);
     }
 };
 
@@ -646,7 +658,7 @@ hotcrp_graphs.barchart = function (args) {
     args = make_args(args);
     var data = data_to_barchart(args.data, !!args.yfraction);
 
-    var xe = d3.extent(data, function (d) { return d[0]; }),
+    var xe = d3.extent(data, proj0),
         ge = d3.extent(data, function (d) { return d[4] || 0; }),
         ye = [d3.min(data, function (d) { return d.yoff; }),
               d3.max(data, function (d) { return d.yoff + d[1]; })],
@@ -779,7 +791,7 @@ hotcrp_graphs.boxplot = function (args) {
     args = make_args(args);
     var data = data_to_boxplot(args.data, !!args.yfraction, true);
 
-    var xe = d3.extent(data, function (d) { return d[0]; }),
+    var xe = d3.extent(data, proj0),
         ye = [d3.min(data, function (d) { return d.ymin; }),
               d3.max(data, function (d) { return d.ymax; })],
         deltae = d3.extent(data, function (d, i) {
@@ -833,8 +845,7 @@ hotcrp_graphs.boxplot = function (args) {
     }
 
     function place_outlier(sel) {
-        sel.attr("cx", function (d) { return x(d[0]); })
-            .attr("cy", function (d) { return y(d[1]); })
+        sel.attr("cx", proj0).attr("cy", proj1)
             .attr("r", function (d) { return d.r; });
     }
 
@@ -864,13 +875,13 @@ hotcrp_graphs.boxplot = function (args) {
         var nd = [];
         for (var i = 0; i < d.d.length; ++i)
             if (d.d[i] < d.q[0] || d.d[i] > d.q[4])
-                nd.push({"0": d[0], "1": d.d[i], "2": d.p[i], outlierof: d});
+                nd.push([d[0], d.d[i], d.p[i], d.c]);
         return nd;
     }));
     outliers = grouped_quadtree(outliers, x, y, 2);
     place_outlier(svg.selectAll(".gbox.outlier")
-            .data(outliers).enter().append("circle")
-            .attr("class", function (d) { return "gbox outlier " + d.outlierof.c; }));
+            .data(outliers.data).enter().append("circle")
+            .attr("class", function (d) { return "gbox outlier " + d[3]; }));
 
     place_mean(svg.selectAll(".gbox.mean")
             .data(data)
@@ -901,7 +912,7 @@ hotcrp_graphs.boxplot = function (args) {
     function make_tooltip(p, ps, ds) {
         var yformat = args.yticks.unparse_html, t, x = [];
         t = '<p>' + args.xticks.unparse_html.call(xAxis, p[0]);
-        if (!p.outlierof)
+        if (p.q)
             t += " : median " + yformat.call(yAxis, p.q[2]);
         var x = [];
         for (var i = 0; i < ps.length; ++i)
@@ -946,7 +957,7 @@ hotcrp_graphs.boxplot = function (args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
             if (!p.th)
-                p.th = make_tooltip(p, p[2], [p[1]]);
+                p.th = make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1));
             hubble.html(p.th).dir("l").near(hovers.filter(".outlier").node());
         }
     }
@@ -959,11 +970,14 @@ hotcrp_graphs.boxplot = function (args) {
 
     function mouseclick() {
         var s;
-        if (hovered_data && !hovered_data.outlierof
-            && (s = args.xticks.search(hovered_data[0])))
+        if (!hovered_data)
+            clicker(null);
+        else if (!hovered_data.q)
+            clicker(hovered_data[2].map(proj2));
+        else if ((s = args.xticks.search(hovered_data[0])))
             clicker_go(hoturl("search", {"q": s}));
         else
-            clicker(hovered_data ? hovered_data.p : null);
+            clicker(hovered_data.p);
     }
 };
 
