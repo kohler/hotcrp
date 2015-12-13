@@ -835,7 +835,7 @@ hotcrp_graphs.boxplot = function (args) {
     function place_outlier(sel) {
         sel.attr("cx", function (d) { return x(d[0]); })
             .attr("cy", function (d) { return y(d[1]); })
-            .attr("r", 2);
+            .attr("r", function (d) { return d.r; });
     }
 
     function place_mean(sel) {
@@ -860,14 +860,16 @@ hotcrp_graphs.boxplot = function (args) {
             .enter().append("line")
             .attr("class", function (d) { return "gbox median " + d.c; }));
 
+    var outliers = d3.merge(data.map(function (d) {
+        var nd = [];
+        for (var i = 0; i < d.d.length; ++i)
+            if (d.d[i] < d.q[0] || d.d[i] > d.q[4])
+                nd.push({"0": d[0], "1": d.d[i], "2": d.p[i], outlierof: d});
+        return nd;
+    }));
+    outliers = grouped_quadtree(outliers, x, y, 2);
     place_outlier(svg.selectAll(".gbox.outlier")
-            .data(d3.merge(data.map(function (d) {
-                var nd = [];
-                for (var i = 0; i < d.d.length; ++i)
-                    if (d.d[i] < d.q[0] || d.d[i] > d.q[4])
-                        nd.push({"0": d[0], "1": d.d[i], p: d.p[i], outlierof: d});
-                return nd;
-            }))).enter().append("circle")
+            .data(outliers).enter().append("circle")
             .attr("class", function (d) { return "gbox outlier " + d.outlierof.c; }));
 
     place_mean(svg.selectAll(".gbox.mean")
@@ -944,7 +946,7 @@ hotcrp_graphs.boxplot = function (args) {
         if (p) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
             if (!p.th)
-                p.th = make_tooltip(p, [p.p], [p[1]]);
+                p.th = make_tooltip(p, p[2], [p[1]]);
             hubble.html(p.th).dir("l").near(hovers.filter(".outlier").node());
         }
     }
