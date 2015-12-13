@@ -251,8 +251,17 @@ class ConstantFexpr extends Fexpr {
     public function compile(FormulaCompiler $state) {
         return $this->x;
     }
-    public static function zero() {
+    public static function cnull() {
+        return new ConstantFexpr("null");
+    }
+    public static function czero() {
         return new ConstantFexpr("0");
+    }
+    public static function cfalse() {
+        return new ConstantFexpr("false", "bool");
+    }
+    public static function ctrue() {
+        return new ConstantFexpr("true", "bool");
     }
 }
 
@@ -1073,12 +1082,63 @@ class Formula {
             list($k, $v) = [$fval[$i], $fval[$i + 1]];
             $fx = ($k === "outcome" ? new DecisionFexpr : new TimeFieldFexpr($k));
             if (is_string($v))
-                $fx = new Fexpr(str_replace("0", "", $v), $fx, ConstantFexpr::zero());
+                $fx = new Fexpr(str_replace("0", "", $v), $fx, ConstantFexpr::czero());
             else
                 $fx = new InFexpr($fx, $v);
             $fn = $fn ? new Fexpr("&&", $fn, $fx) : $fx;
         }
         return $fn;
+    }
+
+    private function _reviewer_base($t) {
+        $t = strtolower($t);
+        if (preg_match('/\A(?:|r|re|rev|review)type\z/i', $t))
+            return new RevtypeFexpr;
+        else if (preg_match('/\A(?:|r|re|rev|review)round\z/i', $t))
+            return new ReviewRoundFexpr;
+        else if (preg_match('/\A(?:|r|re|rev)reviewer\z/i', $t))
+            return new ReviewerFexpr;
+        else if (preg_match('/\A(?:|r|re|rev|review)words\z/i', $t))
+            return new ReviewWordCountFexpr;
+        else
+            return null;
+    }
+
+    private function _reviewer_decoration($e0, $ex) {
+        $e1 = null;
+        $tailre = '(?:\z|:)(.*)\z/s';
+        while ($ex !== "") {
+            if (preg_match('/\A(pri|primary|sec|secondary|ext|external|pc|pcre|pcrev)' . $tailre, $ex, $m)) {
+                $rt = ReviewSearchMatcher::parse_review_type($m[1]);
+                $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
+                $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
+                $ex = $m[2];
+            } else if (preg_match('/\A(words|type|round|reviewer)' . $tailre, $ex, $m)) {
+                if ($e0)
+                    return null;
+                $e0 = $this->_reviewer_base($m[1]);
+                $ex = $m[2];
+            } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $ex, $m)
+                       && (($round = $Conf->round_number($m[1], false))
+                           || $m[1] === "unnamed")) {
+                $ee = new Fexpr("==", new ReviewRoundFexpr, new ConstantFexpr($round, "revround"));
+                $ex = $m[2];
+            } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $ex, $m)) {
+                if (($quoted = $m[1][0] === "\""))
+                    $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
+                $ee = new ReviewerMatchFexpr($m[1]);
+                $ex = $m[2];
+            } else {
+                $ee = ConstantFexpr::cfalse();
+                $ex = "";
+            }
+            if ($ee)
+                $e1 = $e1 ? new Fexpr("&&", $e1, $ee) : $ee;
+        }
+        if ($e0 && $e1)
+            return new Fexpr("?:", $e1, $e0, ConstantFexpr::cnull());
+        else
+            return $e0 ? : $e1;
     }
 
     private function _parse_expr(&$t, $level, $in_qc) {
@@ -1087,6 +1147,7 @@ class Formula {
             return null;
         $lpos = -strlen($t);
 
+        $e = null;
         if ($t[0] === "(") {
             $t = substr($t, 1);
             $e = $this->_parse_ternary($t, false);
@@ -1109,7 +1170,6 @@ class Formula {
                 $this->_error_html[] = "“" . htmlspecialchars($rest[1]) . "” doesn’t match a submission option.";
             if (!count($os->os))
                 return null;
-            $e = null;
             foreach ($os->os as $o) {
                 $ex = new OptionFexpr($o[0]);
                 if ($o[2] === "special")
@@ -1156,86 +1216,41 @@ class Formula {
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], true);
             $t = $m[2];
-        } else if (preg_match('/\A(?:r|re|rev|review)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
-            $ex = $m[1];
+        } else if (preg_match('/\A(r|re|rev|review|r(?:|e|ev|eview)type|(?:|r|re|rev|review)round|reviewer|r(?:|e|ev|eview)words)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
+            $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $m[2]);
+            $t = $m[3];
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words)|(?:round|reviewer))\b(.*)\z/is', $t, $m)) {
+            $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-            $e = null;
-            $tailre = '(?:\z|:)(.*)\z/s';
-            while ($ex !== "") {
-                if (preg_match('/\A(pri|primary|sec|secondary|ext|external|pc|pcre|pcrev)' . $tailre, $ex, $m)) {
-                    $rt = ReviewSearchMatcher::parse_review_type($m[1]);
-                    $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
-                    $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
-                    $ex = $m[2];
-                } else if (preg_match('/\Awords' . $tailre, $ex, $m)) {
-                    $ee = new ReviewWordCountFexpr;
-                    $ex = $m[1];
-                } else if (preg_match('/\Areviewer' . $tailre, $ex, $m)) {
-                    $ee = new ReviewerFexpr;
-                    $ex = $m[1];
-                } else if (preg_match('/\Atype' . $tailre, $ex, $m)) {
-                    $ee = new RevtypeFexpr;
-                    $ex = $m[1];
-                } else if (preg_match('/\Around' . $tailre, $ex, $m)) {
-                    $ee = new ReviewRoundFexpr;
-                    $ex = $m[1];
-                } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $ex, $m)
-                           && (($round = $Conf->round_number($m[1], false))
-                               || $m[1] === "unnamed")) {
-                    $ee = new Fexpr("==", new ReviewRoundFexpr, new ConstantFexpr($round, "revround"));
-                    $ex = $m[2];
-                } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $ex, $m)) {
-                    if (($quoted = $m[1][0] === "\""))
-                        $m[1] = str_replace(array('"', '*'), array('', '\*'), $m[1]);
-                    $ee = new ReviewerMatchFexpr($m[1]);
-                    $ex = $m[2];
-                } else {
-                    $ee = new ConstantFexpr("false", "bool");
-                    $ex = "";
-                }
-                $e = $e ? new Fexpr("&&", $e, $ee) : $ee;
-            }
-        } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
-        } else if (preg_match('/\A(greatest|least|round|floor|trunc|ceil|log|sqrt|pow|exp)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(greatest|least|round|floor|trunc|ceil|log|sqrt|pow|exp)\b(.*)\z/is', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, false)))
                 return null;
         } else if (preg_match('/\Anull\b(.*)\z/s', $t, $m)) {
-            $e = new ConstantFexpr("null");
+            $e = ConstantFexpr::cnull();
             $t = $m[1];
-        } else if (preg_match('/\Arevtype\b(.*)\z/s', $t, $m)) {
-            $e = new RevtypeFexpr;
-            $t = $m[1];
-        } else if (preg_match('/\A(?:revround|round)\b(.*)\z/s', $t, $m)) {
-            $e = new ReviewRoundFexpr;
-            $t = $m[1];
-        } else if (preg_match('/\Areviewer\b(.*)\z/s', $t, $m)) {
-            $e = new ReviewerFexpr;
-            $t = $m[1];
-        } else if (preg_match('/\Are(?:|v|view)words\b(.*)\z/s', $t, $m)) {
-            $e = new ReviewWordCountFexpr;
-            $t = $m[1];
-        } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/is', $t, $m)) {
             $rt = ReviewSearchMatcher::parse_review_type($m[1]);
             $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
             $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
             $t = $m[2];
-        } else if (preg_match('/\Atopicscore\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\Atopicscore\b(.*)\z/is', $t, $m)) {
             $e = new TopicScoreFexpr;
             $t = $m[1];
-        } else if (preg_match('/\Aconf(?:lict)?\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\Aconf(?:lict)?\b(.*)\z/is', $t, $m)) {
             $e = new ConflictFexpr(false);
             $t = $m[1];
-        } else if (preg_match('/\Apcconf(?:lict)?\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\Apcconf(?:lict)?\b(.*)\z/is', $t, $m)) {
             $e = new ConflictFexpr(true);
             $t = $m[1];
-        } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(?:rev)?pref\b(.*)\z/is', $t, $m)) {
             $e = new PrefFexpr(false);
             $t = $m[1];
-        } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/s', $t, $m)) {
+        } else if (preg_match('/\A(?:rev)?prefexp(?:ertise)?\b(.*)\z/is', $t, $m)) {
             $e = new PrefFexpr(true);
             $t = $m[1];
         } else if (preg_match('/\A([A-Za-z0-9_]+|\".*?\")(.*)\z/s', $t, $m)
@@ -1252,9 +1267,10 @@ class Formula {
                 $e = new ConstantFexpr($field, false);
             else
                 return null;
-        } else
-            return null;
+        }
 
+        if (!$e)
+            return null;
         $e->set_landmark($lpos, -strlen($t));
 
         while (1) {
