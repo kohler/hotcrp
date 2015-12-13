@@ -854,27 +854,33 @@ hotcrp_graphs.boxplot = function (args) {
             .attr("d", "M2.2,0L0,2.2L-2.2,0L0,-2.2Z");
     }
 
-    place_whisker(0, svg.selectAll(".gbox.whiskerl").data(data)
+    var nonoutliers = data.filter(function (d) { return d.d.length > 1; });
+
+    place_whisker(0, svg.selectAll(".gbox.whiskerl").data(nonoutliers)
             .enter().append("line")
             .attr("class", function (d) { return "gbox whiskerl " + d.c; }));
 
-    place_whisker(3, svg.selectAll(".gbox.whiskerh").data(data)
+    place_whisker(3, svg.selectAll(".gbox.whiskerh").data(nonoutliers)
             .enter().append("line")
             .attr("class", function (d) { return "gbox whiskerh " + d.c; }));
 
-    place_box(svg.selectAll(".gbox.box").data(data)
+    place_box(svg.selectAll(".gbox.box").data(nonoutliers)
             .enter().append("path")
             .attr("class", function (d) { return "gbox box " + d.c; })
             .style("fill", function (d) { return make_pattern_fill(d.c, "gdot "); }));
 
-    place_median(svg.selectAll(".gbox.median").data(data)
+    place_median(svg.selectAll(".gbox.median").data(nonoutliers)
             .enter().append("line")
             .attr("class", function (d) { return "gbox median " + d.c; }));
 
+    place_mean(svg.selectAll(".gbox.mean").data(nonoutliers)
+            .enter().append("path")
+            .attr("class", function (d) { return "gbox mean " + d.c; }));
+
     var outliers = d3.merge(data.map(function (d) {
-        var nd = [];
-        for (var i = 0; i < d.d.length; ++i)
-            if (d.d[i] < d.q[0] || d.d[i] > d.q[4])
+        var nd = [], len = d.d.length;
+        for (var i = 0; i < len; ++i)
+            if (d.d[i] < d.q[0] || d.d[i] > d.q[4] || len == 1)
                 nd.push([d[0], d.d[i], d.p[i], d.c]);
         return nd;
     }));
@@ -882,11 +888,6 @@ hotcrp_graphs.boxplot = function (args) {
     place_outlier(svg.selectAll(".gbox.outlier")
             .data(outliers.data).enter().append("circle")
             .attr("class", function (d) { return "gbox outlier " + d[3]; }));
-
-    place_mean(svg.selectAll(".gbox.mean")
-            .data(data)
-            .enter().append("path")
-            .attr("class", function (d) { return "gbox mean " + d.c; }));
 
     make_axes(svg, xAxis, yAxis, args);
 
