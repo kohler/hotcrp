@@ -113,6 +113,8 @@ class PaperList {
     public $any;
     public $error_html = array();
 
+    static public $include_stash = true;
+
     function __construct($search, $args = array()) {
         global $Conf;
         $this->search = $search;
@@ -1354,8 +1356,10 @@ class PaperList {
         $foldclasses = array();
         if ($this->foldable)
             $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
-        $enter = Ht::take_stash()
-            . "<table class=\"pltable plt_" . htmlspecialchars($listname);
+        $enter = "";
+        if (self::$include_stash)
+            $enter .= Ht::take_stash();
+        $enter .= "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if (defval($options, "class"))
             $enter .= " " . $options["class"];
         if ($this->listNumber)

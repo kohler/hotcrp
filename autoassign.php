@@ -362,8 +362,12 @@ class AutoassignerInterface {
 
         if ($this->live)
             echo $this->result_html(), "</div>\n";
-        else
-            echo '<script>$$("propass").innerHTML=', json_encode($this->result_html()), ";</script>\n";
+        else {
+            PaperList::$include_stash = false;
+            $result_html = $this->result_html();
+            echo Ht::take_stash(), '<script>$$("propass").innerHTML=',
+                json_encode($result_html), ";</script>\n";
+        }
         if ($this->autoassigner->assignments()) {
             $Conf->footer();
             exit;
