@@ -2389,7 +2389,7 @@ $settings_groups = array("info" => "Basics",
                "tags" => "Tags &amp; tracks",
                "dec" => "Decisions");
 
-$Conf->header("Settings &nbsp;|&nbsp; <strong>" . $settings_groups[$Group] . "</strong>", "settings", actionBar());
+$Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . $settings_groups[$Group] . "</strong>", "settings", actionBar());
 $Conf->echoScript(""); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 

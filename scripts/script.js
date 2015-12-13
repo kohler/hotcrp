@@ -1916,6 +1916,27 @@ function handle_clickthrough(form) {
 }
 
 
+// bad-pairs
+function badpairs_change(more) {
+    var n = $("#bpcount").val();
+    if (more) {
+        ++n;
+        $("#bptable").find("tbody").append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><select name="bpa' + n + '" onchange="badpairs_click()"></select> &nbsp;and&nbsp; <select name="bpb' + n + '" onchange="badpairs_click()"></select></td></tr>');
+        var options = $("#bptable").find("select").first().html();
+        $("#bptable").find("select[name='bpa" + n + "'], select[name='bpb" + n + "']").html(options).val(0);
+    } else if (n > 1) {
+        --n;
+        $("#bptable").find("tbody > tr:last-child").remove();
+    }
+    $("#bpcount").val(n);
+    return false;
+}
+
+function badpairs_click() {
+    var x = $$("badpairs");
+    x.checked || x.click();
+}
+
 // author entry
 var numauthorfold = [];
 function authorfold(prefix, relative, n) {

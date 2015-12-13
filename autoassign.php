@@ -588,28 +588,25 @@ function bpSelector($i, $which) {
     $selected = ($i <= $_REQUEST["bpcount"] ? defval($_REQUEST, "bp$which$i") : "0");
     if ($selected && isset($badPairSelector[$selected]))
         $numBadPairs = max($i, $numBadPairs);
-    return Ht::select("bp$which$i", $badPairSelector, $selected,
-                       array("onchange" => "if(!((x=\$\$(\"badpairs\")).checked)) x.click()"));
+    return Ht::select("bp$which$i", $badPairSelector, $selected, ["onchange" => "badpairs_click()"]);
 }
 
-echo "<div class='g'></div><div class='relative'><table id='bptable'>\n";
-for ($i = 1; $i <= 50; $i++) {
+echo "<div class='g'></div><div class='relative'><table id=\"bptable\"><tbody>\n";
+for ($i = 1; $i <= max($_REQUEST["bpcount"], 1); $i++) {
     $selector_text = bpSelector($i, "a") . " &nbsp;and&nbsp; " . bpSelector($i, "b");
-    echo "    <tr id='bp$i' class='", ($numBadPairs >= $i ? "auedito" : "aueditc"),
-        "'><td class='rentry nowrap'>";
+    echo '    <tr><td class="rentry nw">';
     if ($i == 1)
         echo Ht::checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
                            array("id" => "badpairs")),
             "&nbsp;", Ht::label("Don’t assign", "badpairs"), " &nbsp;";
     else
         echo "or &nbsp;";
-    echo "</td><td class='lentry'>", $selector_text;
+    echo '</td><td class="lentry">', $selector_text;
     if ($i == 1)
-        echo " &nbsp;to the same paper &nbsp;(<a href='#' onclick='return authorfold(\"bp\",1,1)'>More</a> | <a href='#' onclick='return authorfold(\"bp\",1,-1)'>Fewer</a>)";
+        echo ' &nbsp;to the same paper &nbsp;(<a href="#" onclick="return badpairs_change(true)">More</a> &nbsp;·&nbsp; <a href="#" onclick="return badpairs_change(false)">Fewer</a>)';
     echo "</td></tr>\n";
 }
-echo "</table>", Ht::hidden("bpcount", 50, array("id" => "bpcount"));
-$Conf->echoScript("authorfold(\"bp\",0,$numBadPairs)");
+echo "</tbody></table>", Ht::hidden("bpcount", $numBadPairs, array("id" => "bpcount"));
 echo "</div>\n";
 
 
