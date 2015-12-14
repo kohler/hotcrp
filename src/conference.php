@@ -68,6 +68,7 @@ class Conf {
         if ($this->dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler(array($this, "query_error_handler"));
+            Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|call_user_func)/";
             $this->load_settings();
         } else
             $this->crosscheck_options();

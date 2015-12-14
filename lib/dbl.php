@@ -6,10 +6,12 @@
 class Dbl_Result {
     public $affected_rows;
     public $insert_id;
+    public $warning_count;
 
     function __construct(mysqli $dblink) {
         $this->affected_rows = $dblink->affected_rows;
         $this->insert_id = $dblink->insert_id;
+        $this->warning_count = $dblink->warning_count;
     }
 }
 
@@ -26,6 +28,7 @@ class Dbl {
     static private $log_queries = false;
     static private $log_queries_limit = 0;
     static public $check_warnings = true;
+    static public $landmark_sanitizer = "/^Dbl::/";
 
     static function make_dsn($opt) {
         if (isset($opt["dsn"])) {
@@ -106,9 +109,12 @@ class Dbl {
         self::$error_handler = $callable ? : "Dbl::default_error_handler";
     }
 
+    static function landmark() {
+        return caller_landmark(1, self::$landmark_sanitizer);
+    }
+
     static function default_error_handler($dblink, $query) {
-        $landmark = caller_landmark(1, "/^Dbl::/");
-        trigger_error("$landmark: database error: $dblink->error in $query");
+        trigger_error(self::landmark() . ": database error: $dblink->error in $query");
     }
 
     static private function query_args($args, $flags, $log_location) {
@@ -116,11 +122,11 @@ class Dbl {
         $dblink = $argpos ? $args[0] : self::$default_dblink;
         if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
             || (($flags & self::F_APPLY) && count($args) > $argpos + 2))
-            trigger_error(caller_landmark(1, "/^Dbl::/") . ": wrong number of arguments");
+            trigger_error(self::landmark() . ": wrong number of arguments");
         else if (($flags & self::F_APPLY) && @$args[$argpos + 1] && !is_array($args[$argpos + 1]))
-            trigger_error(caller_landmark(1, "/^Dbl::/") . ": argument is not array");
+            trigger_error(self::landmark() . ": argument is not array");
         if ($log_location && self::$log_queries !== false) {
-            $location = caller_landmark(1, "/^Dbl::/");
+            $location = self::landmark();
             if (!@self::$log_queries[$location])
                 self::$log_queries[$location] = array(substr(simplify_whitespace($args[$argpos]), 0, 80), 0);
             ++self::$log_queries[$location][1];
@@ -158,7 +164,7 @@ class Dbl {
                 $thisarg = $argpos;
             }
             if (!array_key_exists($thisarg, $argv))
-                trigger_error(caller_landmark(1, "/^Dbl::/") . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
+                trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
             $usedargs[$thisarg] = true;
             // argument format
             $arg = @$argv[$thisarg];
@@ -227,13 +233,13 @@ class Dbl {
             if ($flags & self::F_ERROR)
                 call_user_func(self::$error_handler, $dblink, $qstr);
             else
-                error_log(caller_landmark(1, "/^Dbl::/") . ": database error: " . $dblink->error . " in $qstr");
+                error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
         }
         if (self::$check_warnings && !($flags & self::F_ALLOWERROR)
             && $dblink->warning_count) {
             $wresult = $dblink->query("show warnings");
             while ($wresult && ($wrow = $wresult->fetch_row()))
-                error_log(caller_landmark(1, "/^Dbl::/") . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
+                error_log(self::landmark() . ": database warning: $wrow[0] ($wrow[1]) $wrow[2]");
             $wresult && $wresult->close();
         }
         return $result;
