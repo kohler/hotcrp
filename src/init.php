@@ -133,7 +133,6 @@ function __autoload($class_name) {
                                "Countries" => "lib/countries.php",
                                "CsvGenerator" => "lib/csv.php",
                                "CsvParser" => "lib/csv.php",
-                               "DocumentHelper" => "lib/documenthelper.php",
                                "Filer" => "lib/documenthelper.php",
                                "Formula" => "src/formula.php",
                                "FormulaGraph" => "src/formulagraph.php",
