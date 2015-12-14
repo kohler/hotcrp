@@ -450,7 +450,7 @@ class Filer {
     function download($doc, $downloadname = null, $attachment = null) {
         if (is_object($doc) && !isset($doc->docclass))
             $doc->docclass = $this;
-        self::multidownload($doc, $downloadname, $attachment);
+        return self::multidownload($doc, $downloadname, $attachment);
     }
     static function multidownload($doc, $downloadname = null, $attachment = null) {
         global $zlib_output_compression;
