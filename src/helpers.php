@@ -64,12 +64,19 @@ if (function_exists("iconv")) {
     function mac_os_roman_to_utf8($str) {
         return iconv("Mac", "UTF-8//IGNORE", $str);
     }
-} else {
+} else if (function_exists("mb_convert_encoding")) {
     function windows_1252_to_utf8($str) {
-        return $str;            // give up
+        return mb_convert_encoding($str, "UTF-8", "Windows-1252");
     }
+}
+if (!function_exists("windows_1252_to_utf8")) {
+    function windows_1252_to_utf8($str) {
+        return UnicodeHelper::windows_1252_to_utf8($str);
+    }
+}
+if (!function_exists("mac_os_roman_to_utf8")) {
     function mac_os_roman_to_utf8($str) {
-        return $str;            // give up
+        return UnicodeHelper::mac_os_roman_to_utf8($str);
     }
 }
 
@@ -95,11 +102,11 @@ if (function_exists("iconv")) {
     function utf8_substr($str, $off, $len) {
         $x = substr($str, $off, $len);
         $poff = 0;
-        while (($n = preg_match_all("/[\200-\277]/", $x, $m, PREG_PATTERN_ORDER, $poff))) {
+        while (($n = preg_match_all("/[\200-\377]/", $x, $m, PREG_PATTERN_ORDER, $poff))) {
             $poff = strlen($x);
             $x .= substr($str, $poff, $n);
         }
-        if (preg_match("/\\A([\200-\277]+)/", substr($str, strlen($x)), $m))
+        if (preg_match("/\\A([\200-\377]+)/", substr($str, strlen($x)), $m))
             $x .= $m[1];
         return $x;
     }
