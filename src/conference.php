@@ -952,19 +952,16 @@ class Conf {
         global $OK;
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
         if (PHP_SAPI == "cli")
-            fwrite(STDERR, "$landmark: Database error: $dblink->error in $query\n");
+            fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
         else {
-            error_log("$landmark: Database error: $dblink->error in $query");
-            $this->errorMsg("<p>" . htmlspecialchars($landmark) . ": Database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+            error_log("$landmark: database error: $dblink->error in $query");
+            $this->errorMsg("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
         $OK = false;
     }
 
     function qe($query) {
-        $result = $this->dblink->query($query);
-        if ($result === false)
-            $this->query_error_handler($this->dblink, $query);
-        return $result;
+        return Dbl::qe_raw($this->dblink, $query);
     }
 
 
