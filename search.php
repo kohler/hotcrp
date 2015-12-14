@@ -880,7 +880,7 @@ if ($getaction == "json" && SearchActions::any() && $Me->privChair) {
 // download status JSON plus documents for selected papers
 function jsonattach_document($dj, $prow, $dtype, $drow) {
     global $jsonattach_zip;
-    if (DocumentHelper::load($drow->docclass, $drow)) {
+    if ($drow->docclass->load($drow)) {
         $dj->content_file = HotCRPDocument::filename($drow);
         $jsonattach_zip->add_as($drow, $dj->content_file);
     }

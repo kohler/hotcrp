@@ -232,9 +232,9 @@ function request_to_json($opj, $action) {
     // Paper upload
     if (fileUploaded($_FILES["paperUpload"])) {
         if ($action === "final")
-            $pj->final = DocumentHelper::file_upload_json("paperUpload");
+            $pj->final = Filer::file_upload_json("paperUpload");
         else if ($action === "update" || $action === "submit")
-            $pj->submission = DocumentHelper::file_upload_json("paperUpload");
+            $pj->submission = Filer::file_upload_json("paperUpload");
     }
 
     // Blindness
@@ -317,7 +317,7 @@ function request_option_to_json($pj, $o, $action) {
         $opfx = $oreq . "_";
         foreach ($_FILES as $k => $v)
             if (str_starts_with($k, $opfx))
-                $attachments[] = DocumentHelper::file_upload_json($k);
+                $attachments[] = Filer::file_upload_json($k);
         for ($i = 0; $i < count($attachments); ++$i)
             if (@$attachments[$i]->docid
                 && @$_POST["remove_{$oreq}_{$attachments[$i]->docid}"]) {
@@ -327,7 +327,7 @@ function request_option_to_json($pj, $o, $action) {
         $pj->options->$okey = $attachments;
     } else if ($o->is_document()) {
         if (fileUploaded($_FILES[$oreq]))
-            $pj->options->$okey = DocumentHelper::file_upload_json($oreq);
+            $pj->options->$okey = Filer::file_upload_json($oreq);
         else if (@$_POST["remove_$oreq"])
             unset($pj->options->$okey);
     } else

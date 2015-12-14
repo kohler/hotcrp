@@ -29,7 +29,7 @@ $paper1b->title = $paper1a->title;
 $paper1b->submitted_at = $paper1a->submitted_at;
 xassert_eqq(json_encode($paper1b), json_encode($paper1a));
 
-$doc = DocumentHelper::file_upload_json([
+$doc = Filer::file_upload_json([
         "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
         "tmp_name" => "$ConfSitePATH/src/sample.pdf",
         "tmp_name_safe" => true, "type" => "application/pdf"

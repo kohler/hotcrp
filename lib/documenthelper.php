@@ -60,7 +60,7 @@ class ZipDocument {
         if (is_string($doc))
             $doc = (object) array("content" => $doc);
         if (!isset($doc->filestore) && !isset($doc->content)) {
-            if ($doc->docclass && DocumentHelper::load($doc->docclass, $doc))
+            if ($doc->docclass && $doc->docclass->load($doc))
                 $doc->_content_reset = true;
             else {
                 if (!isset($doc->error_text))
@@ -73,7 +73,7 @@ class ZipDocument {
 
         // add document to filestore list
         if (is_array($this->filestore) && isset($doc->filestore)
-            && ($sha1 = DocumentHelper::binary_sha1($doc)) !== null) {
+            && ($sha1 = Filer::binary_sha1($doc)) !== null) {
             $this->filestore[] = new ZipDocumentFile($filename, $doc->filestore, $sha1);
             return self::_add_done($doc, true);
         }
@@ -139,7 +139,7 @@ class ZipDocument {
             set_time_limit(30);
             if (!$this->headers) {
                 $this->download_headers();
-                DocumentHelper::hyperflush();
+                Filer::hyperflush();
             }
         }
         return self::_add_done($doc, true);
@@ -196,7 +196,7 @@ class ZipDocument {
             $zipfile_sha1 = sha1($sha1_input, false);
             // look for zipfile
             $zfn = $Opt["docstore"] . "/tmp/" . $zipfile_sha1 . ".zip";
-            if (DocumentHelper::prepare_docstore($Opt["docstore"], $zfn)) {
+            if (Filer::prepare_filestore($Opt["docstore"], $zfn)) {
                 if (file_exists($zfn)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
                         @touch($zfn);
@@ -227,7 +227,7 @@ class ZipDocument {
         if (is_string($result)) {
             set_time_limit(180); // large zip files might download slowly
             $this->download_headers();
-            DocumentHelper::download_file($result);
+            Filer::download_file($result);
             $result = (object) array("error" => false);
         }
         $this->clean();
@@ -235,34 +235,124 @@ class ZipDocument {
     }
 }
 
-class DocumentHelper {
+class Filer {
+    // override these to tell Filer how to behave
+    function mimetypes($doc = null, $docinfo = null) {
+        // Return the acceptable mimetypes for $doc.
+        return [];
+    }
+    function validate_content($doc) {
+        // load() callback. Return `true` if content of $doc is up to date and
+        // need not be checked by load_content.
+        return true;
+    }
+    function load_content($doc) {
+        // load() callback. Return `true` if content was successfully loaded.
+        // On return true, at least one of `$doc->content` and
+        // `$doc->filestore` must be set.
+        return false;
+    }
+    function filestore_pattern($doc) {
+        // load()/store() callback. Return the filestore pattern suitable for
+        // `$doc`.
+        return null;
+    }
+    function dbstore($doc, $docinfo) {
+        // store() callback. Return a `Filer_Dbstore` object to tell how to
+        // store the document in the database.
+        return null;
+    }
+    function store_other($doc, $docinfo) {
+        // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
+    }
 
-    private static function _store_database($dbinfo, $doc) {
+    // main accessors
+    static function has_content($doc) {
+        return is_string(@$doc->content)
+            || is_string(@$doc->content_base64)
+            || self::content_filename($doc);
+    }
+    static function content_filename($doc) {
+        if (is_string(@$doc->content_file) && is_readable($doc->content_file))
+            return $doc->content_file;
+        if (is_string(@$doc->file) && is_readable($doc->file))
+            return $doc->file;
+        if (is_string(@$doc->filestore) && is_readable($doc->filestore))
+            return $doc->filestore;
+        return false;
+    }
+    static function content($doc) {
+        if (is_string(@$doc->content))
+            return $doc->content;
+        if (is_string(@$doc->content_base64))
+            return $doc->content = base64_decode($doc->content_base64);
+        if (($filename = self::content_filename($doc)))
+            return $doc->content = @file_get_contents($filename);
+        return false;
+    }
+    function load($doc) {
+        // Return true iff `$doc` can be loaded.
+        if (!($has_content = self::has_content($doc))
+            && ($fsinfo = $this->_filestore($doc))
+            && is_readable($fsinfo[1])) {
+            $doc->filestore = $fsinfo[1];
+            $has_content = true;
+        }
+        return ($has_content && $this->validate_content($doc))
+            || $this->load_content($doc);
+    }
+    function store($doc, $docinfo) {
+        // load content (if unloaded)
+        // XXX loading enormous documents into memory...?
+        if (!$this->load($doc, $docinfo)
+            || ($content = self::content($doc)) === null
+            || $content === false
+            || @$doc->error)
+            return false;
+        // calculate SHA-1, complain on mismatch
+        $sha1 = sha1($content, true);
+        if (isset($doc->sha1) && self::binary_sha1($doc) !== $sha1) {
+            set_error_html($doc, "Document claims checksum " . self::text_sha1($doc) . ", but has checksum " . bin2hex($sha1) . ".");
+            return false;
+        }
+        $doc->sha1 = $sha1;
+        if (!isset($doc->size))
+            $doc->size = strlen($content);
+        $content = null;
+        // actually store
+        if (($dbinfo = $this->dbstore($doc, $docinfo)))
+            $this->store_database($dbinfo, $doc);
+        $this->store_filestore($doc);
+        $this->store_other($doc, $docinfo);
+        return !@$doc->error;
+    }
+
+    // dbstore functions
+    function store_database($dbinfo, $doc) {
         global $Conf, $OK;
         $N = 400000;
-        $dbinfo[] = null;
-        list($table, $idcol, $cols, $check_contents) = $dbinfo;
+        $idcol = $dbinfo->id_column;
         $while = "while storing document in database";
 
         $a = $ks = $vs = array();
-        foreach ($cols as $k => $v)
+        foreach ($dbinfo->columns as $k => $v)
             if ($k !== $idcol) {
                 $ks[] = "`$k`=?";
                 $vs[] = substr($v, 0, $N);
             }
 
-        if (isset($cols[$idcol])) {
-            $q = "update $table set " . join(",", $ks) . " where $idcol=?";
-            $vs[] = $cols[$idcol];
+        if (isset($dbinfo->columns[$idcol])) {
+            $q = "update $dbinfo->table set " . join(",", $ks) . " where $idcol=?";
+            $vs[] = $dbinfo->columns[$idcol];
         } else
-            $q = "insert into $table set " . join(",", $ks);
+            $q = "insert into $dbinfo->table set " . join(",", $ks);
         if (!($result = Dbl::query_apply($q, $vs))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }
 
-        if (isset($cols[$idcol]))
-            $doc->$idcol = $cols[$idcol];
+        if (isset($dbinfo->columns[$idcol]))
+            $doc->$idcol = $dbinfo->columns[$idcol];
         else {
             $doc->$idcol = $result->insert_id;
             if (!$doc->$idcol) {
@@ -274,168 +364,143 @@ class DocumentHelper {
 
         for ($pos = $N; true; $pos += $N) {
             $a = array();
-            foreach ($cols as $k => $v)
+            foreach ($dbinfo->columns as $k => $v)
                 if (strlen($v) > $pos)
                     $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "')";
             if (!count($a))
                 break;
-            if (!$Conf->q("update $table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
+            if (!$Conf->q("update $dbinfo->table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
                 return;
             }
         }
 
         // check that paper storage succeeded
-        if ($check_contents
-            && (!($result = $Conf->qe("select length($check_contents) from $table where $idcol=" . $doc->$idcol))
+        if ($dbinfo->check_contents
+            && (!($result = $Conf->qe("select length($dbinfo->check_contents) from $dbinfo->table where $idcol=" . $doc->$idcol))
                 || !($row = edb_row($result))
-                || $row[0] != strlen($doc->content))) {
-            set_error_html($doc, "Failed to store your document. Usually, this is because the file you tried to upload was too big for our system. Please try again.");
+                || $row[0] != strlen(self::content($doc)))) {
+            set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");
             return;
         }
     }
 
-    private static function _mimetype($doc) {
-        return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
+    // filestore functions
+    function filestore_check($doc) {
+        $fsinfo = self::_filestore($doc);
+        return $fsinfo && is_readable($fsinfo[1]);
     }
-
-    public static function binary_sha1($doc) {
-        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
-            return $doc->sha1;
-        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
-            return hex2bin($doc->sha1);
-        else
-            return null;
-    }
-
-    public static function text_sha1($doc) {
-        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
-            return bin2hex($doc->sha1);
-        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
-            return strtolower($doc->sha1);
-        else
-            return null;
-    }
-
-    private static function _filestore($docclass, $doc, $docinfo) {
-        $fsinfo = $docclass->filestore_pattern($doc, $docinfo);
-        if (!$fsinfo)
-            return $fsinfo;
-
-        list($fdir, $fpath) = $fsinfo;
-        $sha1 = null;
-
-        $xfpath = $fdir;
-        $fpath = substr($fpath, strlen($fdir));
-        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fpath, $m)) {
-            $fpath = $m[4];
-
-            $xfpath .= $m[1];
-            if ($m[3] === "%")
-                $xfpath .= "%";
-            else if ($m[3] === "x")
-                $xfpath .= Mimetype::extension(self::_mimetype($doc));
-            else {
-                if ($sha1 === null
-                    && ($sha1 = self::text_sha1($doc)) === null)
-                    return array(null, null);
-                if ($m[2] !== "")
-                    $xfpath .= substr($sha1, 0, +$m[2]);
-                else
-                    $xfpath .= $sha1;
-            }
-        }
-
-        if ($fdir && $fdir[strlen($fdir) - 1] === "/")
-            $fdir = substr($fdir, 0, strlen($fdir) - 1);
-        return array($fdir, $xfpath . $fpath);
-    }
-
-    private static function _make_fpath_parents($fdir, $fpath) {
-        $lastslash = strrpos($fpath, "/");
-        $container = substr($fpath, 0, $lastslash);
-        while (str_ends_with($container, "/"))
-            $container = substr($container, 0, strlen($container) - 1);
-        if (!is_dir($container)) {
-            if (strlen($container) < strlen($fdir)
-                || !($parent = self::_make_fpath_parents($fdir, $container))
-                || !@mkdir($container, 0770))
-                return false;
-            if (!@chmod($container, 02770 & fileperms($parent))) {
-                @rmdir($container);
-                return false;
-            }
-        }
-        return $container;
-    }
-
-    public static function prepare_docstore($parent, $path) {
+    static function prepare_filestore($parent, $path) {
         if (!self::_make_fpath_parents($parent, $path))
             return false;
         // Ensure an .htaccess file exists, even if someone else made the
         // filestore directory
         $htaccess = "$parent/.htaccess";
         if (!is_file($htaccess)
-            && file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
+            && @file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
             @unlink($htaccess);
             return false;
         }
         return true;
     }
-
-    private static function _store_filestore($fsinfo, $doc) {
-        list($fdir, $fpath) = $fsinfo;
-        if (!self::prepare_docstore($fdir, $fpath))
+    function store_filestore($doc, $no_error = false) {
+        if (!($fsinfo = $this->_filestore($doc)))
             return false;
-        if (file_put_contents($fpath, $doc->content) != strlen($doc->content)) {
-            @unlink($fpath);
+        list($fsdir, $fspath) = $fsinfo;
+        if (!self::prepare_filestore($fsdir, $fspath)) {
+            $no_error || set_error_html($doc, "Internal error: filestore cannot be initialized");
             return false;
         }
-        @chmod($fpath, 0660 & ~umask());
-        $doc->filestore = $fpath;
+        $content = self::content($doc);
+        if (file_put_contents($fspath, $content) != strlen($content)) {
+            @unlink($fspath);
+            $no_error || set_error_html($doc, "Internal error: filestore failure");
+            return false;
+        }
+        @chmod($fspath, 0660 & ~umask());
+        $doc->filestore = $fspath;
         return true;
     }
 
-    static function prepare_content($docclass, $doc) {
-        $filename = @$doc->content_file ? : (@$doc->file ? : @$doc->filestore);
-        if ((@$doc->content === null || @$doc->content === false)
-            && @$doc->content_base64)
-            $doc->content = base64_decode($doc->content_base64);
-        if ((@$doc->content === null || @$doc->content === false)
-            && $filename)
-            $doc->content = @file_get_contents($filename);
-        if (@$doc->content === null || @$doc->content === false)
-            $docclass->load_content($doc);
-        if ((@$doc->content === null || @$doc->content === false)
-            && $filename)
-            set_error_html($doc, "File $filename not readable.");
+    // download
+    static function hyperflush() {
+        flush();
+        while (@ob_end_flush())
+            /* do nothing */;
+    }
+    static function download_file($filename) {
+        global $Opt, $zlib_output_compression;
+        if (($dar = @$Opt["docstoreAccelRedirect"]) && ($ds = @$Opt["docstore"])) {
+            if (!str_ends_with($ds, "/"))
+                $ds .= "/";
+            if (str_starts_with($filename, $ds)
+                && ($tail = substr($filename, strlen($ds)))
+                && preg_match(',\A[^/]+,', $tail)) {
+                if (!str_ends_with($dar, "/"))
+                    $dar .= "/";
+                header("X-Accel-Redirect: $dar$tail");
+                return;
+            }
+        }
+        if (!$zlib_output_compression)
+            header("Content-Length: " . filesize($filename));
+        self::hyperflush();
+        readfile($filename);
+    }
+    function download($doc, $downloadname = null, $attachment = null) {
+        if (is_object($doc) && !isset($doc->docclass))
+            $doc->docclass = $this;
+        self::multidownload($doc, $downloadname, $attachment);
+    }
+    static function multidownload($doc, $downloadname = null, $attachment = null) {
+        global $zlib_output_compression;
+        if (is_array($doc) && count($doc) == 1) {
+            $doc = $doc[0];
+            $downloadname = null;
+        }
+        if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
+            return set_error_html("Empty file.");
+        if (is_array($doc)) {
+            $z = new ZipDocument($downloadname);
+            foreach ($doc as $d)
+                $z->add($d);
+            return $z->download();
+        }
+        if (!self::has_content($doc)
+            && (!@$doc->docclass || !$doc->docclass->load($doc))) {
+            $error_html = "Don’t know how to download.";
+            if (@$doc->error && @$doc->error_html)
+                $error_html = $doc->error_html;
+            else if (@$doc->error && @$doc->error_text)
+                $error_html = htmlspecialchars($doc->error_text);
+            return set_error_html($error_html);
+        }
+
+        // Print paper
+        $doc_mimetype = self::_mimetype($doc);
+        header("Content-Type: " . Mimetype::type($doc_mimetype));
+        if ($attachment === null)
+            $attachment = !Mimetype::disposition_inline($doc_mimetype);
+        if (!$downloadname) {
+            $downloadname = $doc->filename;
+            if (($slash = strrpos($downloadname, "/")) !== false)
+                $downloadname = substr($downloadname, $slash + 1);
+        }
+        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+        // reduce likelihood of XSS attacks in IE
+        header("X-Content-Type-Options: nosniff");
+        if (($filename = self::content_filename($doc)))
+            self::download_file($filename);
+        else {
+            $content = self::content($doc);
+            if (!$zlib_output_compression)
+                header("Content-Length: " . strlen($content));
+            echo $content;
+        }
+        return (object) array("error" => false);
     }
 
-    static function store($docclass, $doc, $docinfo) {
-        // load data (if unloaded)
-        self::prepare_content($docclass, $doc);
-        // calculate SHA-1, complain on mismatch
-        if (@$doc->content) {
-            $sha1 = sha1($doc->content, true);
-            if (isset($doc->sha1) && self::binary_sha1($doc) !== $sha1)
-                set_error_html($doc, "Document claims checksum " . self::text_sha1($doc) . ", but has checksum " . bin2hex($sha1) . ".");
-            $doc->sha1 = $sha1;
-        }
-        // exit on error
-        if (@$doc->error)
-            return $doc;
-        if (!isset($doc->size) && isset($doc->content))
-            $doc->size = strlen($doc->content);
-        $docclass->prepare_storage($doc, $docinfo);
-        if (($dbinfo = $docclass->database_storage($doc, $docinfo)))
-            self::_store_database($dbinfo, $doc);
-        if (($fsinfo = self::_filestore($docclass, $doc, $docinfo))) {
-            if (!self::_store_filestore($fsinfo, $doc) && !$dbinfo)
-                set_error_html($doc, "Internal error: could not store document.");
-        }
-        return $doc;
-    }
-
+    // upload
     static function file_upload_json($upload) {
         global $Now;
         $doc = (object) array();
@@ -463,17 +528,14 @@ class DocumentHelper {
         $doc->timestamp = time();
         return $doc;
     }
-
-    static function upload($docclass, $upload, $docinfo) {
+    function upload($doc, $docinfo) {
         global $Conf;
-        if (is_object($upload)) {
-            $doc = clone $upload;
-            self::prepare_content($docclass, $doc);
-            if ((@$doc->content === null || $doc->content === false || $doc->content === "")
-                && !@$doc->error_html)
+        if (is_object($doc)) {
+            $doc = clone $doc;
+            if (!$this->load($doc) && !@$doc->error_html)
                 set_error_html($doc, "The uploaded file was empty.");
         } else
-            $doc = self::file_upload_json($upload);
+            $doc = self::file_upload_json($doc);
         if (@$doc->error)
             return $doc;
 
@@ -481,12 +543,12 @@ class DocumentHelper {
         if (!@$doc->mimetype)
             $doc->mimetype = "application/octet-stream";
         // Sniff content since MacOS browsers supply bad mimetypes.
-        if (($m = Mimetype::sniff($doc->content)))
+        if (($m = Mimetype::sniff(self::content($doc))))
             $doc->mimetype = $m;
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
 
-        $mimetypes = $docclass->mimetypes($doc, $docinfo);
+        $mimetypes = $this->mimetypes($doc, $docinfo);
         for ($i = 0; $i < count($mimetypes); ++$i)
             if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 break;
@@ -498,98 +560,98 @@ class DocumentHelper {
 
         if (!@$doc->timestamp)
             $doc->timestamp = time();
-        return self::store($docclass, $doc, $docinfo);
+        $this->store($doc, $docinfo);
+        return $doc;
     }
 
-    static function filestore_check($docclass, $doc) {
-        $fsinfo = self::_filestore($docclass, $doc, null);
-        return $fsinfo && is_readable($fsinfo[1]);
-    }
-
-    static function load($docclass, $doc) {
-        if (is_string(@$doc->content)
-            || is_string(@$doc->content_base64)
-            || (is_string(@$doc->content_file) && is_readable($doc->content_file))
-            || (is_string(@$doc->file) && is_readable($doc->file))
-            || (is_string(@$doc->filestore) && is_readable($doc->filestore)))
-            return true;
-        $fsinfo = self::_filestore($docclass, $doc, null);
-        if ($fsinfo && is_readable($fsinfo[1])) {
-            $doc->filestore = $fsinfo[1];
-            return true;
-        }
-        if (!isset($doc->content) && !$docclass->load_content($doc))
+    // SHA-1 helpers
+    static function text_sha1($doc) {
+        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
+            return bin2hex($doc->sha1);
+        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
+            return strtolower($doc->sha1);
+        else
             return false;
-        if ($fsinfo)
-            self::_store_filestore($fsinfo, $doc);
-        return true;
+    }
+    static function binary_sha1($doc) {
+        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
+            return $doc->sha1;
+        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
+            return hex2bin($doc->sha1);
+        else
+            return false;
     }
 
-    static function hyperflush() {
-        flush();
-        while (@ob_end_flush())
-            /* do nothing */;
+    // private functions
+    private static function _mimetype($doc) {
+        return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
+    private function _filestore($doc) {
+        if (!($fsinfo = $this->filestore_pattern($doc)) || @$doc->error)
+            return $fsinfo;
 
-    static function download_file($filename) {
-        global $Opt, $zlib_output_compression;
-        if (($dar = @$Opt["docstoreAccelRedirect"]) && ($ds = @$Opt["docstore"])) {
-            if (!str_ends_with($ds, "/"))
-                $ds .= "/";
-            if (str_starts_with($filename, $ds)
-                && ($tail = substr($filename, strlen($ds)))
-                && preg_match(',\A[^/]+,', $tail)) {
-                if (!str_ends_with($dar, "/"))
-                    $dar .= "/";
-                header("X-Accel-Redirect: $dar$tail");
-                return;
+        list($fdir, $fpath) = $fsinfo;
+        $sha1 = false;
+
+        $xfpath = $fdir;
+        $fpath = substr($fpath, strlen($fdir));
+        while (preg_match("/\\A(.*?)%(\d*)([%hx])(.*)\\z/", $fpath, $m)) {
+            $fpath = $m[4];
+
+            $xfpath .= $m[1];
+            if ($m[3] === "%")
+                $xfpath .= "%";
+            else if ($m[3] === "x")
+                $xfpath .= Mimetype::extension(self::_mimetype($doc));
+            else {
+                if ($sha1 === false)
+                    $sha1 = self::text_sha1($doc);
+                if ($sha1 === false
+                    && ($content = self::content($doc)) !== false)
+                    $sha1 = $doc->sha1 = sha1($content);
+                if ($sha1 === false)
+                    return array(null, null);
+                if ($m[2] !== "")
+                    $xfpath .= substr($sha1, 0, +$m[2]);
+                else
+                    $xfpath .= $sha1;
             }
         }
-        if (!$zlib_output_compression)
-            header("Content-Length: " . filesize($filename));
-        self::hyperflush();
-        readfile($filename);
+
+        if ($fdir && $fdir[strlen($fdir) - 1] === "/")
+            $fdir = substr($fdir, 0, strlen($fdir) - 1);
+        return array($fdir, $xfpath . $fpath);
     }
-
-    static function download($doc, $downloadname = null, $attachment = null) {
-        global $zlib_output_compression;
-        if (is_array($doc) && count($doc) == 1) {
-            $doc = $doc[0];
-            $downloadname = null;
+    private static function _make_fpath_parents($fdir, $fpath) {
+        if ($fdir || $fpath)
+        $lastslash = strrpos($fpath, "/");
+        $container = substr($fpath, 0, $lastslash);
+        while (str_ends_with($container, "/"))
+            $container = substr($container, 0, strlen($container) - 1);
+        if (!is_dir($container)) {
+            if (strlen($container) < strlen($fdir)
+                || !($parent = self::_make_fpath_parents($fdir, $container))
+                || !@mkdir($container, 0770))
+                return false;
+            if (!@chmod($container, 02770 & fileperms($parent))) {
+                @rmdir($container);
+                return false;
+            }
         }
-        if (!$doc || (is_object($doc) && isset($doc->size) && $doc->size == 0))
-            return set_error_html("Empty file.");
-        else if (is_array($doc)) {
-            $z = new ZipDocument($downloadname);
-            foreach ($doc as $d)
-                $z->add($d);
-            return $z->download();
-        }
-        if (!isset($doc->filestore) && !isset($doc->content)
-            && (!@$doc->docclass || !DocumentHelper::load($doc->docclass, $doc)))
-            return set_error_html("Don’t know how to download.");
-
-        // Print paper
-        $doc_mimetype = self::_mimetype($doc);
-        header("Content-Type: " . Mimetype::type($doc_mimetype));
-        if ($attachment === null)
-            $attachment = !Mimetype::disposition_inline($doc_mimetype);
-        if (!$downloadname) {
-            $downloadname = $doc->filename;
-            if (($slash = strrpos($downloadname, "/")) !== false)
-                $downloadname = substr($downloadname, $slash + 1);
-        }
-        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
-        // reduce likelihood of XSS attacks in IE
-        header("X-Content-Type-Options: nosniff");
-        if (isset($doc->filestore))
-            self::download_file($doc->filestore);
-        else {
-            if (!$zlib_output_compression)
-                header("Content-Length: " . strlen($doc->content));
-            echo $doc->content;
-        }
-        return (object) array("error" => false);
+        return $container;
     }
+}
 
+class Filer_Dbstore {
+    public $table;
+    public $id_column;
+    public $columns;
+    public $check_contents;
+
+    public function __construct($table, $id_column, $columns, $check_contents = null) {
+        $this->table = $table;
+        $this->id_column = $id_column;
+        $this->columns = $columns;
+        $this->check_contents = $check_contents;
+    }
 }

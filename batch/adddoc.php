@@ -47,4 +47,4 @@ else if (($m = Mimetype::sniff($doc->content)))
     $doc->mimetype = $m;
 else
     $doc->mimetype = "application/octet-stream";
-DocumentHelper::store($docclass, $doc, $docinfo);
+$docclass->store($doc, $docinfo);

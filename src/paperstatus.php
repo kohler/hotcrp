@@ -72,8 +72,8 @@ class PaperStatus {
                 && ($meta = json_decode($drow->infoJson)))
                 $d->metadata = $meta;
             if ($this->export_content
-                && DocumentHelper::load($drow->docclass, $drow))
-                $d->content_base64 = base64_encode($drow->content);
+                && $drow->docclass->load($drow))
+                $d->content_base64 = base64_encode(Filer::content($drow));
         }
         foreach ($this->document_callbacks as $cb)
             call_user_func($cb, $d, $prow, $dtype, $drow);
@@ -283,9 +283,8 @@ class PaperStatus {
         // if no sha1 match, upload
         $docclass = new HotCRPDocument($dtype);
         $upload = null;
-        if (!$docid && DocumentHelper::load($docclass, $docj))
-            $upload = DocumentHelper::upload($docclass, $docj,
-                                             (object) array("paperId" => $paperid));
+        if (!$docid && $docclass->load($docj))
+            $upload = $docclass->upload($docj, (object) array("paperId" => $paperid));
         if ($docid)
             $docj->docid = $docid;
         else if ($upload && @$upload->paperStorageId > 1) {

@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HotCRPDocument {
+class HotCRPDocument extends Filer {
     private $dtype;
     private $option = null;
     private $no_database = false;
@@ -117,7 +117,7 @@ class HotCRPDocument {
     }
 
     public static function s3_filename($doc) {
-        if (($sha1 = DocumentHelper::text_sha1($doc)) !== null)
+        if (($sha1 = Filer::text_sha1($doc)) !== false)
             return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
                 . Mimetype::extension($doc->mimetype);
         else
@@ -133,8 +133,8 @@ class HotCRPDocument {
         global $Opt;
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
-        if (!$trust_sha1 && DocumentHelper::binary_sha1($doc) !== sha1($doc->content, true)) {
-            error_log("S3 upload cancelled: data claims checksum " . DocumentHelper::text_sha1($doc)
+        if (!$trust_sha1 && Filer::binary_sha1($doc) !== sha1($doc->content, true)) {
+            error_log("S3 upload cancelled: data claims checksum " . Filer::text_sha1($doc)
                       . ", has checksum " . sha1($doc->content));
             return false;
         }
@@ -156,12 +156,12 @@ class HotCRPDocument {
         return $s3->status == 200;
     }
 
-    public function prepare_storage($doc, $docinfo) {
+    public function store_other($doc, $docinfo) {
         if (($s3 = self::s3_document()))
             $this->s3_store($doc, $docinfo, true);
     }
 
-    public function database_storage($doc, $docinfo) {
+    public function dbstore($doc, $docinfo) {
         global $Conf, $Opt;
         if ($this->no_database)
             return null;
@@ -194,11 +194,11 @@ class HotCRPDocument {
             else if (@$doc->original_id)
                 $columns["originalStorageId"] = $doc->original_id;
         }
-        return array("PaperStorage", "paperStorageId", $columns,
-                     @$Opt["dbNoPapers"] ? null : "paper");
+        return new Filer_Dbstore("PaperStorage", "paperStorageId", $columns,
+                                 @$Opt["dbNoPapers"] ? null : "paper");
     }
 
-    public function filestore_pattern($doc, $docinfo) {
+    public function filestore_pattern($doc) {
         global $Opt, $ConfSitePATH;
         if ($this->no_filestore)
             return false;
@@ -216,10 +216,6 @@ class HotCRPDocument {
             self::$_docstore = array($fdir, $fpath);
         }
         return self::$_docstore;
-    }
-
-    public function filestore_check($doc) {
-        return DocumentHelper::filestore_check($this, $doc);
     }
 
     public function load_content($doc) {
@@ -253,15 +249,15 @@ class HotCRPDocument {
 
         if (!$ok) {
             $num = @$doc->paperId ? " #$doc->paperId" : "";
+            $doc->error = true;
             if ($this->dtype == DTYPE_SUBMISSION)
                 $doc->error_text = "Paper$num has not been uploaded.";
             else if ($this->dtype == DTYPE_FINAL)
                 $doc->error_text = "Paper{$num}’s final copy has not been uploaded.";
-            else
-                $doc->error_text = "";
         }
 
         $doc->size = strlen($doc->content);
+        $this->store_filestore($doc, true); // silently does nothing if error || !filestore
         return $ok;
     }
 

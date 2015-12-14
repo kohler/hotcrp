@@ -326,7 +326,7 @@ class CheckFormat {
         global $Conf, $prow, $Opt;
         $result = $Conf->document_result($paperId, $documentType);
         if (!($row = $Conf->document_row($result))
-            || !DocumentHelper::load($row->docclass, $row)
+            || !$row->docclass->load($row)
             || $row->paperStorageId <= 1)
             return $this->msg("error", "No such paper.");
         if ($row->mimetype != "application/pdf")

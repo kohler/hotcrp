@@ -1411,7 +1411,7 @@ class Conf {
         $downloadname = false;
         if (count($docs) > 1)
             $downloadname = $Opt["downloadPrefix"] . pluralx(2, HotCRPDocument::unparse_dtype($documentType)) . ".zip";
-        return DocumentHelper::download($docs, $downloadname, $attachment);
+        return Filer::multidownload($docs, $downloadname, $attachment);
     }
 
     function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION, $docid = null) {
