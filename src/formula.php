@@ -1105,6 +1105,7 @@ class Formula {
     }
 
     private function _reviewer_decoration($e0, $ex) {
+        global $Conf;
         $e1 = null;
         $tailre = '(?:\z|:)(.*)\z/s';
         while ($ex !== "") {
