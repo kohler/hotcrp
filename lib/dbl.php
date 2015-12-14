@@ -3,6 +3,16 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class Dbl_Result {
+    public $affected_rows;
+    public $insert_id;
+
+    function __construct(mysqli $dblink) {
+        $this->affected_rows = $dblink->affected_rows;
+        $this->insert_id = $dblink->insert_id;
+    }
+}
+
 class Dbl {
     const F_RAW = 1;
     const F_APPLY = 2;
@@ -211,7 +221,7 @@ class Dbl {
             $qstr = self::format_query_args($dblink, $qstr, $argv);
         $result = $dblink->query($qstr);
         if ($result === true)
-            $result = $dblink;
+            $result = new Dbl_Result($dblink);
         else if ($result === false && ($flags & (self::F_LOG | self::F_ERROR))) {
             ++self::$logged_errors;
             if ($flags & self::F_ERROR)
