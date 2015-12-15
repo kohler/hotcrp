@@ -21,6 +21,7 @@ class FormulaGraph {
     private $papermap = array();
     private $reviewers = array();
     private $reviewer_color = false;
+    private $remapped_rounds = null;
     public $error_html = array();
     public $errf = array();
 
@@ -136,39 +137,7 @@ class FormulaGraph {
                 $d->label = $this->queries[$q];
         }
         unset($d);
-
-        if ($this->fx->result_format() === "reviewer")
-            $this->_cdf_fix_reviewers($data);
-
         return $data;
-    }
-
-    private function _load_reviewers($reviewer_cids) {
-        $reviewer_cids = array_filter(array_keys($reviewer_cids), "is_numeric");
-        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $reviewer_cids);
-        $this->reviewers = [];
-        while ($result && ($c = $result->fetch_object("Contact")))
-            $this->reviewers[$c->contactId] = $c;
-        Dbl::free($result);
-        uasort($this->reviewers, "Contact::compare");
-        $i = 0;
-        foreach ($this->reviewers as $c)
-            $c->graph_index = ++$i;
-    }
-
-    private function _cdf_fix_reviewers(&$data) {
-        if ($this->fx_query)
-            return;
-        $reviewer_cids = [];
-        foreach ($data as $dx)
-            foreach ($dx->d as $d)
-                $reviewer_cids[$d] = true;
-        $this->_load_reviewers($reviewer_cids);
-        foreach ($data as $dx) {
-            foreach ($dx->d as &$d)
-                $d && ($d = $this->reviewers[$d]->graph_index);
-            unset($d);
-        }
     }
 
     private function _prepare_reviewer_color(Tagger $tagger) {
@@ -196,7 +165,7 @@ class FormulaGraph {
         global $Me;
         $data = [];
         $tagger = new Tagger($Me);
-        if ($this->fx->result_format() === "reviewer" && ($this->type & self::BOXPLOT))
+        if ($this->fx->result_format() === Fexpr::FREVIEWER && ($this->type & self::BOXPLOT))
             $this->_prepare_reviewer_color($tagger);
 
         $fxf = $this->fx->compile_function($Me);
@@ -230,34 +199,7 @@ class FormulaGraph {
                     $data[$s][] = $d;
             }
         }
-
-        if ($this->fx->result_format() === "reviewer"
-            || $this->fy->result_format() === "reviewer")
-            $this->_scatter_fix_reviewers($data);
-
         return $data;
-    }
-
-    private function _scatter_fix_reviewers(&$data) {
-        $xi = !$this->fx_query
-            && $this->fx->result_format() === "reviewer";
-        $yi = $this->fy->result_format() === "reviewer";
-        $reviewer_cids = [];
-        foreach ($data as $dx)
-            foreach ($dx as $d) {
-                $xi && $d[0] && ($reviewer_cids[$d[0]] = true);
-                $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
-            }
-        $this->_load_reviewers($reviewer_cids);
-        foreach ($data as &$dx) {
-            foreach ($dx as &$d) {
-                if ($xi && $d[0] && ($r = @$this->reviewers[$d[0]]))
-                    $d[0] = $r->graph_index;
-                if ($yi && $d[1] && ($r = @$this->reviewers[$d[1]]))
-                    $d[1] = $r->graph_index;
-            }
-            unset($d);
-        }
     }
 
     // combine data: [x, y, pids, style, [query]]
@@ -274,7 +216,7 @@ class FormulaGraph {
         global $Me;
         $data = [];
         $tagger = new Tagger($Me);
-        if ($this->fx->result_format() === "reviewer")
+        if ($this->fx->result_format() === Fexpr::FREVIEWER)
             $this->_prepare_reviewer_color($tagger);
 
         $fxf = $this->fx->compile_function($Me);
@@ -327,29 +269,97 @@ class FormulaGraph {
             }
             $ndata[] = $d;
         }
-
-        if ($this->fx->result_format() === "reviewer"
-            || $this->fy->result_format() === "reviewer")
-            $this->_combine_fix_reviewers($ndata);
-
         return $ndata;
     }
 
-    private function _combine_fix_reviewers(&$data) {
-        $xi = $this->fx->result_format() === "reviewer";
-        $yi = $this->fy->result_format() === "reviewer";
-        $reviewer_cids = [];
-        foreach ($data as $d) {
-            $xi && $d[0] && ($reviewer_cids[$d[0]] = true);
-            $yi && $d[1] && ($reviewer_cids[$d[1]] = true);
+    private function _valuemap_axes($format) {
+        $axes = 0;
+        if (!$this->fx_query && $this->fx->result_format() === $format)
+            $axes |= 1;
+        if ($this->type != self::CDF && $this->fy->result_format() === $format)
+            $axes |= 2;
+        return $axes;
+    }
+
+    private function _valuemap_collect($data, $axes) {
+        assert(!!$axes);
+        $vs = [];
+        if ($this->type == self::CDF) {
+            foreach ($data as $dx)
+                foreach ($dx->d as $d)
+                    $vs[$d] = true;
+        } else if ($this->type & self::BARCHART) {
+            foreach ($data as $d) {
+                ($axes & 1) && $d[0] !== null && ($vs[$d[0]] = true);
+                ($axes & 2) && $d[1] !== null && ($vs[$d[1]] = true);
+            }
+        } else {
+            foreach ($data as $dx)
+                foreach ($dx as $d) {
+                    ($axes & 1) && $d[0] !== null && ($vs[$d[0]] = true);
+                    ($axes & 2) && $d[1] !== null && ($vs[$d[1]] = true);
+                }
         }
-        $this->_load_reviewers($reviewer_cids);
-        foreach ($data as &$d) {
-            if ($xi && $d[0] && ($r = @$this->reviewers[$d[0]]))
-                $d[0] = $r->graph_index;
-            if ($yi && $d[1] && ($r = @$this->reviewers[$d[1]]))
-                $d[1] = $r->graph_index;
+        return $vs;
+    }
+
+    private function _valuemap_rewrite(&$data, $axes, $m) {
+        assert(!!$axes);
+        if ($this->type == self::CDF) {
+            foreach ($data as $dx) {
+                foreach ($dx->d as &$d)
+                    array_key_exists($d, $m) && ($d = $m[$d]);
+                unset($d);
+            }
+        } else if ($this->type & self::BARCHART) {
+            foreach ($data as &$d) {
+                ($axes & 1) && array_key_exists($d[0], $m) && ($d[0] = $m[$d[0]]);
+                ($axes & 2) && array_key_exists($d[1], $m) && ($d[1] = $m[$d[1]]);
+            }
+        } else {
+            foreach ($data as &$dx) {
+                foreach ($dx as &$d) {
+                    ($axes & 1) && array_key_exists($d[0], $m) && ($d[0] = $m[$d[0]]);
+                    ($axes & 2) && array_key_exists($d[1], $m) && ($d[1] = $m[$d[1]]);
+                }
+                unset($d);
+            }
         }
+    }
+
+    private function _reviewer_reformat(&$data) {
+        if (!($axes = $this->_valuemap_axes(Fexpr::FREVIEWER))
+            || !($cids = $this->_valuemap_collect($data, $axes)))
+            return;
+        $cids = array_filter(array_keys($cids), "is_numeric");
+        $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
+        $this->reviewers = [];
+        while ($result && ($c = $result->fetch_object("Contact")))
+            $this->reviewers[$c->contactId] = $c;
+        Dbl::free($result);
+        uasort($this->reviewers, "Contact::compare");
+        $i = 0;
+        $m = [];
+        foreach ($this->reviewers as $c) {
+            $c->graph_index = ++$i;
+            $m[$c->contactId] = $i;
+        }
+        $this->_valuemap_rewrite($data, $axes, $m);
+    }
+
+    private function _revround_reformat(&$data) {
+        global $Conf;
+        if (!($axes = $this->_valuemap_axes(Fexpr::FREVIEWER))
+            || !($rs = $this->_valuemap_collect($data, $axes)))
+            return;
+        $i = 0;
+        $m = $this->remapped_rounds = [];
+        foreach ($Conf->defined_round_list() as $n => $rname)
+            if (in_array($n, $rs, true)) {
+                $this->remapped_rounds[++$i] = $rname;
+                $m[$n] = $i;
+            }
+        $this->_valuemap_rewrite($data, $axes, $m);
     }
 
     public function data() {
@@ -369,6 +379,8 @@ class FormulaGraph {
             $data = $this->_combine_data($result);
         else
             $data = $this->_scatter_data($result);
+        $this->_reviewer_reformat($data);
+        $this->_revround_reformat($data);
 
         Dbl::free($result);
         return $data;
@@ -396,7 +408,7 @@ class FormulaGraph {
             $ol = $format->option_letter ? chr($format->option_letter - $n) : null;
             $t[] = $axis . "ticks:hotcrp_graphs.option_letter_ticks("
                     . $n . "," . json_encode($ol) . "," . json_encode($format->option_class_prefix) . ")";
-        } else if ($format === "reviewer") {
+        } else if ($format === Fexpr::FREVIEWER) {
             $x = [];
             $tagger = new Tagger($Me);
             foreach ($this->reviewers as $r) {
@@ -409,16 +421,16 @@ class FormulaGraph {
             }
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($x, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
-        } else if ($format === "dec")
+        } else if ($format === Fexpr::FDECISION)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;
-        else if ($format === "bool")
+        else if ($format === Fexpr::FBOOL)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
-        else if ($format === "revround")
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($Conf->defined_round_list(), JSON_UNESCAPED_UNICODE) . ")" . $rticks;
-        else if ($format === "revtype")
+        else if ($format === Fexpr::FROUND)
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->remapped_rounds, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
+        else if ($format === Fexpr::FREVTYPE)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($reviewTypeName) . ")" . $rticks;
         return join(",", $t);
     }

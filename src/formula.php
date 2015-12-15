@@ -29,6 +29,13 @@ class Fexpr {
     const LMY = 1;
     const LALL = 2;
 
+    const FBOOL = 1;
+    const FROUND = 2;
+    const FREVTYPE = 3;
+    const FDECISION = 4;
+    const FPREFEXPERTISE = 5;
+    const FREVIEWER = 6;
+
     public function __construct($op = null) {
         $this->op = $op;
         if ($this->op === "trunc")
@@ -81,7 +88,7 @@ class Fexpr {
             }
             return $format ? : null;
         } else if (preg_match(',\A(?:[<>=!]=?|≤|≥|≠)\z,', $this->op))
-            return "bool";
+            return self::FBOOL;
         else
             return null;
     }
@@ -232,16 +239,16 @@ class ConstantFexpr extends Fexpr {
         $letter = "";
         if (strlen($this->x) == 1 && ctype_alpha($this->x))
             $letter = strtoupper($this->x);
-        if ($format === "expertise" && $letter >= "X" && $letter <= "Z")
+        if ($format === self::FPREFEXPERTISE && $letter >= "X" && $letter <= "Z")
             $this->x = 89 - ord($word);
         else if ($format instanceof ReviewField && $letter
                  && ($x = $format->parse_value($letter, true)))
             $this->x = $x;
-        else if ($format === "revround"
+        else if ($format === self::FROUND
                  && (($round = $Conf->round_number($this->x, false))
                      || $this->x === "unnamed"))
             $this->x = $round;
-        else if ($format === "revtype"
+        else if ($format === self::FREVTYPE
                  && ($rt = ReviewSearchMatcher::parse_review_type($this->x)))
             $this->x = $rt;
         else
@@ -258,17 +265,17 @@ class ConstantFexpr extends Fexpr {
         return new ConstantFexpr("0");
     }
     public static function cfalse() {
-        return new ConstantFexpr("false", "bool");
+        return new ConstantFexpr("false", self::FBOOL);
     }
     public static function ctrue() {
-        return new ConstantFexpr("true", "bool");
+        return new ConstantFexpr("true", self::FBOOL);
     }
 }
 
 class NegateFexpr extends Fexpr {
     public function __construct(Fexpr $e) {
         parent::__construct("!", $e);
-        $this->format_ = "bool";
+        $this->format_ = self::FBOOL;
     }
     public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -281,7 +288,7 @@ class InFexpr extends Fexpr {
     public function __construct(Fexpr $e, array $values) {
         parent::__construct("in", $e);
         $this->values = $values;
-        $this->format_ = "bool";
+        $this->format_ = self::FBOOL;
     }
     public function compile(FormulaCompiler $state) {
         $t = $state->_addltemp($this->args[0]->compile($state));
@@ -310,7 +317,7 @@ class AggregateFexpr extends Fexpr {
             && $this->args[1] instanceof Fexpr)
             return $this->args[1]->format();
         else if ($this->op === "all" || $this->op === "any")
-            return "bool";
+            return self::FBOOL;
         else if (($this->op === "avg" || $this->op === "wavg"
                   || $this->op === "min" || $this->op === "max"
                   || $this->op === "median" || $this->op === "quantile")
@@ -457,7 +464,7 @@ class PrefFexpr extends SubFexpr {
     private $isexpertise;
     public function __construct($isexpertise) {
         $this->isexpertise = $isexpertise;
-        $this->format_ = $this->isexpertise ? "expertise" : null;
+        $this->format_ = $this->isexpertise ? self::FPREFEXPERTISE : null;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -478,7 +485,7 @@ class TagFexpr extends SubFexpr {
     public function __construct($tag, $isvalue) {
         $this->tag = $tag;
         $this->isvalue = $isvalue;
-        $this->format_ = $isvalue ? null : "bool";
+        $this->format_ = $isvalue ? null : self::FBOOL;
     }
     public function view_score(Contact $contact) {
         $tagger = new Tagger($contact);
@@ -504,7 +511,7 @@ class OptionFexpr extends SubFexpr {
     public function __construct(PaperOption $option) {
         $this->option = $this->format_ = $option;
         if ($this->option->type === "checkbox")
-            $this->format_ = "bool";
+            $this->format_ = self::FBOOL;
     }
     public function compile(FormulaCompiler $state) {
         $id = $this->option->id;
@@ -525,7 +532,7 @@ class OptionFexpr extends SubFexpr {
 
 class DecisionFexpr extends SubFexpr {
     public function __construct() {
-        $this->format_ = "dec";
+        $this->format_ = self::FDECISION;
     }
     public function view_score(Contact $contact) {
         global $Conf;
@@ -565,7 +572,7 @@ class TopicScoreFexpr extends SubFexpr {
 
 class RevtypeFexpr extends SubFexpr {
     public function __construct() {
-        $this->format_ = "revtype";
+        $this->format_ = self::FREVTYPE;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -588,7 +595,7 @@ class RevtypeFexpr extends SubFexpr {
 
 class ReviewRoundFexpr extends SubFexpr {
     public function __construct() {
-        $this->format_ = "revround";
+        $this->format_ = self::FROUND;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -613,7 +620,7 @@ class ConflictFexpr extends SubFexpr {
     private $ispc;
     public function __construct($ispc) {
         $this->ispc = $ispc;
-        $this->format_ = "bool";
+        $this->format_ = self::FBOOL;
     }
     public function compile(FormulaCompiler $state) {
         // XXX the actual search is different
@@ -644,7 +651,7 @@ class ReviewFexpr extends SubFexpr {
 
 class ReviewerFexpr extends ReviewFexpr {
     public function __construct() {
-        $this->format_ = "reviewer";
+        $this->format_ = Fexpr::FREVIEWER;
     }
     public function view_score(Contact $contact) {
         return VIEWSCORE_PC;
@@ -664,7 +671,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     public function __construct($arg) {
         $this->arg = $arg;
         $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && pcTags($arg));
-        $this->format_ = "bool";
+        $this->format_ = self::FBOOL;
     }
     public function view_score(Contact $contact) {
         return $this->istag ? VIEWSCORE_PC : parent::view_score($contact);
@@ -1112,7 +1119,7 @@ class Formula {
             if (preg_match('/\A(pri|primary|sec|secondary|ext|external|pc|pcre|pcrev)' . $tailre, $ex, $m)) {
                 $rt = ReviewSearchMatcher::parse_review_type($m[1]);
                 $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
-                $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
+                $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
                 $ex = $m[2];
             } else if (preg_match('/\A(words|type|round|reviewer)' . $tailre, $ex, $m)) {
                 if ($e0)
@@ -1122,7 +1129,7 @@ class Formula {
             } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $ex, $m)
                        && (($round = $Conf->round_number($m[1], false))
                            || $m[1] === "unnamed")) {
-                $ee = new Fexpr("==", new ReviewRoundFexpr, new ConstantFexpr($round, "revround"));
+                $ee = new Fexpr("==", new ReviewRoundFexpr, new ConstantFexpr($round, Fexpr::FROUND));
                 $ex = $m[2];
             } else if (preg_match('/\A(..*?|"[^"]+(?:"|\z))' . $tailre, $ex, $m)) {
                 if (($quoted = $m[1][0] === "\""))
@@ -1195,7 +1202,7 @@ class Formula {
             $e = new ConstantFexpr($m[1] + 0.0);
             $t = $m[2];
         } else if (preg_match('/\A(false|true)\b(.*)\z/si', $t, $m)) {
-            $e = new ConstantFexpr($m[1], "bool");
+            $e = new ConstantFexpr($m[1], Fexpr::FBOOL);
             $t = $m[2];
         } else if (preg_match('/\A(?:pid|paperid)\b(.*)\z/si', $t, $m)) {
             $e = new PidFexpr;
@@ -1237,7 +1244,7 @@ class Formula {
         } else if (preg_match('/\A(?:is:?)?(rev?|pc(?:rev?)?|pri(?:mary)?|sec(?:ondary)?|ext(?:ernal)?)\b(.*)\z/is', $t, $m)) {
             $rt = ReviewSearchMatcher::parse_review_type($m[1]);
             $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
-            $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, "revtype"));
+            $e = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
             $t = $m[2];
         } else if (preg_match('/\Atopicscore\b(.*)\z/is', $t, $m)) {
             $e = new TopicScoreFexpr;
@@ -1370,7 +1377,7 @@ class Formula {
             return "";
         else if ($x === true)
             return "✓";
-        else if ($this->_format === "expertise")
+        else if ($this->_format === Fexpr::FPREFEXPERTISE)
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
             return ReviewField::unparse_letter($this->_format->option_letter, $x);

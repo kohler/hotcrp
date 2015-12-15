@@ -10,7 +10,6 @@ class Conf {
     var $settingTexts;
     public $sversion;
     private $_pc_seeall_cache = null;
-    private $_round0_defined_cache = null;
     private $_pc_see_pdf = null;
     public $au_seerev;
     public $tag_au_seerev;
@@ -22,6 +21,7 @@ class Conf {
     private $usertimeId = 1;
 
     private $rounds = null;
+    private $_defined_rounds = null;
     private $tracks = null;
     private $_track_tags = null;
     private $_track_review_sensitivity = false;
@@ -215,7 +215,7 @@ class Conf {
         // clear caches
         $this->_decisions = null;
         $this->_pc_seeall_cache = null;
-        $this->_round0_defined_cache = null;
+        $this->_defined_rounds = null;
         // digested settings
         $this->_pc_see_pdf = true;
         if (+@$this->settings["sub_freeze"] <= 0
@@ -547,23 +547,40 @@ class Conf {
     }
 
     function round0_defined() {
-        if ($this->_round0_defined_cache === null) {
-            $this->_round0_defined_cache = $this->setting("pcrev_soft") || $this->setting("pcrev_hard")
-                || $this->setting("extrev_soft") || $this->setting("extrev_hard");
-            if (!$this->_round0_defined_cache) {
-                $result = Dbl::qe("select reviewId from PaperReview where reviewRound=0 limit 1");
-                $this->_round0_defined_cache = $result && $result->num_rows;
-            }
-        }
-        return $this->_round0_defined_cache;
+        return isset($this->defined_round_list()[0]);
     }
 
     function defined_round_list() {
-        $r = array();
-        foreach ($this->rounds as $i => $round_name)
-            if ($i ? $round_name !== ";" : $this->round0_defined())
-                $r[$i] = $i ? $round_name : "unnamed";
-        return $r;
+        if ($this->_defined_rounds === null) {
+            $r = $dl = [];
+            foreach ($this->rounds as $i => $rname)
+                if (!$i || $rname !== ";") {
+                    foreach (self::$review_deadlines as $rd)
+                        if (($dl[$i] = @$this->settings[$rd . ($i ? "_$i" : "")]))
+                            break;
+                    $i && ($r[$i] = $rname);
+                }
+            if (!$dl[0]) {
+                $result = Dbl::qe("select reviewId from PaperReview where reviewRound=0 limit 1");
+                if (!$result || !$result->num_rows)
+                    unset($dl[0]);
+                Dbl::free($result);
+            }
+            array_key_exists(0, $dl) && ($r[0] = "unnamed");
+            uasort($r, function ($a, $b) use ($dl) {
+                $adl = @$dl[$a];
+                $bdl = @$dl[$b];
+                if ($adl && $bdl && $adl != $bdl)
+                    return $adl < $bdl ? -1 : 1;
+                else if (!$adl != !$dbl)
+                    return $adl ? -1 : 1;
+                else
+                    return strcmp($a !== "unnamed" ? $a : "",
+                                  $b !== "unnamed" ? $b : "");
+            });
+            $this->_defined_rounds = $r;
+        }
+        return $this->_defined_rounds;
     }
 
     function round_name($roundno, $expand = false) {
@@ -631,11 +648,8 @@ class Conf {
 
     function round_selector_options() {
         $opt = array();
-        foreach ($this->round_list() as $rnum => $rname)
-            if ($rnum == 0 && $this->round0_defined())
-                $opt["unnamed"] = "unnamed";
-            else if ($rnum && $rname !== ";")
-                $opt[$rname] = $rname;
+        foreach ($this->defined_round_list() as $rname)
+            $opt[$rname] = $rname;
         $crname = $this->current_round_name() ? : "unnamed";
         if ($crname && !@$opt[$crname])
             $opt[$crname] = $crname;
@@ -906,7 +920,7 @@ class Conf {
             PaperOption::invalidate_option_list();
         if (!$caches || isset($caches["rf"])) {
             ReviewForm::clear_cache();
-            $this->_round0_defined_cache = null;
+            $this->_defined_rounds = null;
         }
         $ok = true;
         if (count($inserts))
