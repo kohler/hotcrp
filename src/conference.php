@@ -572,7 +572,7 @@ class Conf {
                 $bdl = @$dl[$b];
                 if ($adl && $bdl && $adl != $bdl)
                     return $adl < $bdl ? -1 : 1;
-                else if (!$adl != !$dbl)
+                else if (!$adl != !$bdl)
                     return $adl ? -1 : 1;
                 else
                     return strcmp($a !== "unnamed" ? $a : "",

@@ -21,7 +21,7 @@ class FormulaGraph {
     private $papermap = array();
     private $reviewers = array();
     private $reviewer_color = false;
-    private $remapped_rounds = null;
+    private $remapped_rounds = array();
     public $error_html = array();
     public $errf = array();
 
@@ -349,13 +349,13 @@ class FormulaGraph {
 
     private function _revround_reformat(&$data) {
         global $Conf;
-        if (!($axes = $this->_valuemap_axes(Fexpr::FREVIEWER))
+        if (!($axes = $this->_valuemap_axes(Fexpr::FROUND))
             || !($rs = $this->_valuemap_collect($data, $axes)))
             return;
         $i = 0;
-        $m = $this->remapped_rounds = [];
+        $m = [];
         foreach ($Conf->defined_round_list() as $n => $rname)
-            if (in_array($n, $rs, true)) {
+            if (@$rs[$n]) {
                 $this->remapped_rounds[++$i] = $rname;
                 $m[$n] = $i;
             }
