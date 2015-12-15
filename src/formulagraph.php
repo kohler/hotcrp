@@ -28,7 +28,7 @@ class FormulaGraph {
     public function __construct($fx, $fy) {
         $fx = simplify_whitespace($fx);
         $fy = simplify_whitespace($fy);
-        if (strcasecmp($fx, "query") == 0) {
+        if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
             $this->fx = new Formula("0", true);
             $this->fx_query = true;
         } else
