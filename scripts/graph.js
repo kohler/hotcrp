@@ -735,8 +735,7 @@ hotcrp_graphs.barchart = function (args) {
                 p[2].sort(pid_sorter);
                 p.sorted = true;
             }
-            hubble.html("<p>#" + p[2].join(", #") + "</p>")
-                .dir("l").near(this);
+            hubble.html("<p>#" + p[2].join(", #") + "</p>").dir("h").near(this);
         }
     }
 
@@ -944,7 +943,7 @@ hotcrp_graphs.boxplot = function (args) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p, p.p, p.d);
-            hubble.html(p.th).dir("l").near(hovers.filter(".box").node());
+            hubble.html(p.th).dir("h").near(hovers.filter(".box").node());
         }
     }
 
@@ -961,7 +960,7 @@ hotcrp_graphs.boxplot = function (args) {
             hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1));
-            hubble.html(p.th).dir("l").near(hovers.filter(".outlier").node());
+            hubble.html(p.th).dir("h").near(hovers.filter(".outlier").node());
         }
     }
 

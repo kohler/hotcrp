@@ -720,6 +720,12 @@ return function (content, bubopt) {
         assign_style_property(bubch[2], cssbc(dir^2), yc);
     }
 
+    function constrainmid(nearpos, wpos, d0, d1, sz) {
+        var n = (nearpos[d0] + nearpos[d1]) / 2;
+        n = Math.max(n, Math.min(nearpos[d1], wpos[d0] + sz / 2 + SPACE));
+        return Math.min(n, Math.max(nearpos[d0], wpos[d1] - sz / 2 - SPACE));
+    }
+
     function constrain(za, z0, z1, bdim, noconstrain) {
         var z = za - bdim / 2, size = sizes[0];
         if (!noconstrain && z < z0 + SPACE)
@@ -784,8 +790,8 @@ return function (content, bubopt) {
             ds = 2;
         else if (ds === "v" || ds === 0 || ds === 2)
             ds = 0;
-        else if ((ds === "h" && nearpos.left - bw < wpos.left + 3*SPACE
-                  && nearpos.right + bw < wpos.right - 3*SPACE)
+        else if ((ds === "h"
+                  && nearpos.left - bw - wpos.left < wpos.right - nearpos.right - bw)
                  || (ds === 1 && !noflip && nearpos.left - bw < wpos.left)
                  || (ds === 3 && (noflip || nearpos.right + bw <= wpos.right - SPACE)))
             ds = 3;
@@ -799,7 +805,7 @@ return function (content, bubopt) {
 
         var x, y, xa, ya, d;
         if (dir & 1) {
-            ya = (nearpos.top + nearpos.bottom) / 2;
+            ya = constrainmid(nearpos, wpos, "top", "bottom", bpos.height);
             y = constrain(ya, wpos.top, wpos.bottom, bpos.height, noconstrain);
             d = roundpixel(ya - y - size / 2);
             try {
@@ -814,7 +820,7 @@ return function (content, bubopt) {
             else
                 x = nearpos.right + sizes[1];
         } else {
-            xa = (nearpos.left + nearpos.right) / 2;
+            xa = constrainmid(nearpos, wpos, "left", "right", bpos.width);
             x = constrain(xa, wpos.left, wpos.right, bpos.width, noconstrain);
             d = roundpixel(xa - x - size / 2);
             try {
