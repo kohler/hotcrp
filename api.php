@@ -68,6 +68,19 @@ if ($_GET["fn"] === "jserror") {
     $Conf->ajaxExit(array("ok" => true));
 }
 
+if ($_GET["fn"] === "setsession") {
+    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ppl)display)(|\.[a-zA-Z0-9_]+)\z/', (string) @$_REQUEST["var"], $m)) {
+        $val = @$_REQUEST["val"];
+        if ($m[2]) {
+            $on = !($val !== null && intval($val) > 0);
+            displayOptionsSet($m[1], substr($m[2], 1), $on);
+        } else
+            $Conf->save_session($m[1], $val !== null ? intval($val) : null);
+        $Conf->ajaxExit(["ok" => true]);
+    } else
+        $Conf->ajaxExit(["ok" => false]);
+}
+
 if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
     if (($base = @$_GET["base"]) !== null)
         $Conf->set_siteurl($base);

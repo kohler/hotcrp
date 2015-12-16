@@ -93,11 +93,6 @@ $OK = 1;
 $Now = time();
 $CurrentProw = null;
 
-global $allowedSessionVars;
-$allowedSessionVars = array("foldpapera", "foldpaperp", "foldpaperb",
-                            "foldpapert", "foldpscollab", "foldhomeactivity",
-                            "pfdisplay", "pldisplay", "ppldisplay");
-
 
 // set $ConfSitePATH (path to conference site), $ConfSiteBase
 function set_path_variables() {

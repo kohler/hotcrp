@@ -71,7 +71,6 @@ review.php
 reviewprefs.php
 scorechart.php
 search.php
-sessionvar.php
 settings.php
 users.php
 

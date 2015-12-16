@@ -1629,7 +1629,7 @@ function fold(elt, dofold, foldtype) {
 
     // check for session
     if ((opentxt = elt.getAttribute("data-fold-session")))
-        jQuery.get(hoturl("sessionvar", "j=1&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
+        jQuery.get(hoturl("api", "fn=setsession&var=" + opentxt.replace("$", foldtype) + "&val=" + (dofold ? 1 : 0)));
 
     return false;
 }
@@ -1652,7 +1652,7 @@ function foldup(e, event, opts) {
     if ("f" in opts && !!opts.f == !dofold)
         return false;
     if (opts.s)
-        jQuery.get(hoturl("sessionvar", "j=1&var=" + opts.s + "&val=" + (dofold ? 1 : 0)));
+        jQuery.get(hoturl("api", "fn=setsession&var=" + opts.s + "&val=" + (dofold ? 1 : 0)));
     if (event)
         event_stop(event);
     m = fold(e, dofold, foldnum);

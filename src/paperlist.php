@@ -571,9 +571,6 @@ class PaperList {
             . '<a name="plact"><b>Select papers</b></a> (or <a href="'
             . selfHref(array("selectall" => 1))
             . '#plact" onclick="return papersel(true)">select all ' . $this->count . '</a>), then&nbsp;'
-            . '<img id="foldplactsession" alt="" src="'
-            . hoturl("sessionvar", "var=foldplact&amp;val=" . $Conf->session("foldplact", 1) . "&amp;cache=1")
-            . "\" width=\"1\" height=\"1\" />"
             . $t . "</div>" . $extra . "</td>\n  </tr>";
     }
 
