@@ -179,18 +179,20 @@ if (($v = $Conf->message_html("home")))
 
 
 // Sign in
-if (!$Me->has_email() || isset($_REQUEST["signin"])) {
+if (!$Me->isPC) {
     $confname = Conf::$gLongName;
     if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
         $confname .= " (" . Conf::$gShortName . ")";
     echo '<div class="homegrp">
-Welcome to the ', htmlspecialchars($confname), " submissions site.
-Sign in to submit or review papers.";
+Welcome to the ', htmlspecialchars($confname), " submissions site.";
     if (isset($Opt["conferenceSite"]))
-        echo " For general information about ", htmlspecialchars(Conf::$gShortName), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
+        echo " For general conference information, see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">", htmlspecialchars($Opt["conferenceSite"]), "</a>.";
+    echo '</div>';
+}
+if (!$Me->has_email() || isset($_REQUEST["signin"])) {
+    echo "<div class=\"homegrp\">Sign in to submit or review papers.</div>";
     $passwordFocus = ($email_class == "" && $password_class != "");
-    echo '</div>
-<hr class="home" />
+    echo '<hr class="home" />
 <div class="homegrp foldo" id="homeacct">',
         Ht::form(hoturl_post("index")),
         '<div class="f-contain">';
@@ -209,7 +211,7 @@ Sign in to submit or review papers.";
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  array("size" => 36, "tabindex" => 1, "id" => "signin_email")),
+                  ["size" => 36, "tabindex" => 1, "id" => "signin_email", "type" => "email"]),
         '</div>
 </div>
 <div class="f-i fx">

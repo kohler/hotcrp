@@ -1078,7 +1078,8 @@ span.textlite {
 	padding: 0 4px;
 	background: #fcfcfc;
 }
-input[type=text], input[type=password], textarea {
+input[type=text], input[type=password],
+input[type=email], input[type=url], textarea {
 	font-size: 100%;
 }
 input.textlite-tt, textarea.tt {

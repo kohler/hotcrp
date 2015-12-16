@@ -48,15 +48,12 @@ $SettingInfo = array_to_object_recursive($SettingInfo);
 Contact::site_contact();
 
 $Group = defval($_REQUEST, "group");
-if ($Group === "rev" || $Group === "review")
-    $Group = "reviews";
-if ($Group === "rfo")
-    $Group = "reviewform";
-if ($Group === "tracks")
-    $Group = "tags";
-if ($Group === "acc")
-    $Group = "users";
-if (array_search($Group, array("info", "users", "msg", "sub", "opt", "reviews", "reviewform", "tags", "dec")) === false) {
+$GroupMap = ["rev" => "reviews", "review" => "reviews",
+             "rfo" => "reviewform", "tracks" => "tags",
+             "acc" => "users", "info" => "basics"];
+if (isset($GroupMap[$Group]))
+    $Group = $GroupMap[$Group];
+if (array_search($Group, array("basics", "users", "msg", "sub", "opt", "reviews", "reviewform", "tags", "dec")) === false) {
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
@@ -147,7 +144,7 @@ function parse_value($name, $info) {
     }
 
     $v = trim($_POST[$name]);
-    if (@$info->temptext && $info->temptext === $v)
+    if (@$info->placeholder && $info->placeholder === $v)
         $v = "";
     $opt_value = null;
     if (substr($name, 0, 4) === "opt.")
@@ -203,7 +200,15 @@ function parse_value($name, $info) {
         else if (validate_email($v) || $v === $opt_value)
             return ($v == "" ? 0 : array(0, $v));
         else
-            $err = unparse_setting_error($info, "Invalid email." . var_export($opt_value,true));
+            $err = unparse_setting_error($info, "Invalid email.");
+    } else if ($info->type === "urlstring") {
+        $v = trim($v);
+        if ($v === "" && @$info->optional)
+            return 0;
+        else if (preg_match(',\A(?:https?|ftp)://\S+\z,', $v))
+            return [0, $v];
+        else
+            $err = unparse_setting_error($info, "Invalid URL.");
     } else if ($info->type === "htmlstring") {
         if (($v = CleanHTML::clean($v, $err)) === false)
             $err = unparse_setting_error($info, $err);
@@ -1525,8 +1530,8 @@ function doInfoGroup() {
 
     echo '<div class="f-c">', setting_label("opt.shortName", "Conference abbreviation"), "</div>\n";
     doEntry("opt.shortName", opt_data("shortName"), 20);
-    echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>',
-        '<div class="g"></div>', "\n";
+    echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
+    echo "<div class=\"g\"></div>\n";
 
     $long = opt_data("longName");
     if ($long == opt_data("shortName"))
@@ -1534,6 +1539,11 @@ function doInfoGroup() {
     echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n";
     doEntry("opt.longName", $long, 70, "(same as abbreviation)");
     echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
+    echo "<div class=\"g\"></div>\n";
+
+    echo "<div class='f-c'>", setting_label("opt.conferenceSite", "Conference URL"), "</div>\n";
+    doEntry("opt.conferenceSite", opt_data("conferenceSite"), 70, "N/A");
+    echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
@@ -2379,7 +2389,7 @@ function doDecGroup() {
 }
 
 
-$settings_groups = array("info" => "Basics",
+$settings_groups = array("basics" => "Basics",
                "users" => "Accounts",
                "msg" => "Messages",
                "sub" => "Submissions",
@@ -2412,7 +2422,7 @@ echo "<div class='aahc'>";
 doActionArea(true);
 echo "<div>";
 
-if ($Group == "info")
+if ($Group == "basics")
     doInfoGroup();
 else if ($Group == "users")
     doAccGroup();
