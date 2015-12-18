@@ -777,14 +777,16 @@ class Contact {
         }
 
         // Initial save
-        $q = ($inserting ? "insert into" : "update")
-            . " ContactInfo set " . join(", ", $qf)
-            . ($inserting ? "" : " where contactId=$this->contactId");;
-        if (!($result = Dbl::qe_apply($Conf->dblink, $q, $qv)))
-            return $result;
-        if ($inserting)
-            $this->contactId = $this->cid = (int) $result->insert_id;
-        Dbl::free($result);
+        if (count($qf)) { // always true if $inserting
+            $q = ($inserting ? "insert into" : "update")
+                . " ContactInfo set " . join(", ", $qf)
+                . ($inserting ? "" : " where contactId=$this->contactId");;
+            if (!($result = Dbl::qe_apply($Conf->dblink, $q, $qv)))
+                return $result;
+            if ($inserting)
+                $this->contactId = $this->cid = (int) $result->insert_id;
+            Dbl::free($result);
+        }
 
         // Topics
         if (isset($cj->topics)) {
