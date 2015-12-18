@@ -26,11 +26,13 @@ class Contact {
 
     private $password = "";
     private $passwordTime = 0;
+    private $passwordUseTime = 0;
     private $passwordIsCdb;
     private $contactdb_user_ = false;
 
     public $disabled = false;
     public $activity_at = false;
+    private $updateTime = 0;
     private $data_ = null;
     private $topic_interest_map_ = null;
     var $defaultWatch = WATCH_COMMENT;
@@ -109,7 +111,8 @@ class Contact {
             $this->password = (string) $user->password;
         if (isset($user->disabled))
             $this->disabled = !!$user->disabled;
-        foreach (array("defaultWatch", "passwordTime") as $k)
+        foreach (["defaultWatch", "passwordTime", "passwordUseTime",
+                  "updateTime"] as $k)
             if (isset($user->$k))
                 $this->$k = (int) $user->$k;
         if (property_exists($user, "contactTags"))
@@ -154,7 +157,8 @@ class Contact {
             $this->passwordIsCdb = (int) $this->passwordIsCdb != 0;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
-        foreach (array("defaultWatch", "passwordTime") as $k)
+        foreach (["defaultWatch", "passwordTime", "passwordUseTime",
+                  "updateTime"] as $k)
             $this->$k = (int) $this->$k;
         if (!$this->activity_at && isset($this->lastLogin))
             $this->activity_at = (int) $this->lastLogin;
@@ -619,6 +623,15 @@ class Contact {
             Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
     }
 
+    private function data_str() {
+        $d = null;
+        if (is_string($this->data_))
+            $d = $this->data_;
+        else if (is_object($this->data_))
+            $d = json_encode($this->data_);
+        return $d === "{}" ? null : $d;
+    }
+
     function escape() {
         global $Conf;
         if (@$_REQUEST["ajax"]) {
@@ -674,7 +687,7 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $qf = $qv = $cdbq = array();
+        $qf = $qv = $cdbq = $trash_cdbq = array();
 
         $aupapers = null;
         if (strtolower($cj->email) !== @strtolower($old_email))
@@ -705,6 +718,32 @@ class Contact {
             $qf[] = "disabled=$disabled";
         }
 
+        // Data
+        $old_datastr = $this->data_str();
+        $data = (object) array();
+        foreach (array("address", "city", "state", "zip") as $k)
+            if (($x = @$cj->$k)) {
+                while (is_array($x) && $x[count($x) - 1] === "")
+                    array_pop($x);
+                $data->$k = $x ? : null;
+            }
+        $this->merge_data($data);
+        $datastr = $this->data_str();
+        if ($datastr !== $old_datastr) {
+            $qf[] = "data=?";
+            $qv[] = $datastr;
+        }
+
+        // Changes to the above fields also change the updateTime.
+        if (count($qf)) {
+            $qf[] = "updateTime=?";
+            $qv[] = $this->updateTime = $Now;
+        }
+        if (count($cdbq)) {
+            $cdbq["k"][] = "updateTime=?";
+            $cdbq["v"][] = $Now;
+        }
+
         // Follow
         if (isset($cj->follow)) {
             $w = 0;
@@ -729,23 +768,6 @@ class Contact {
             $t = count($tags) ? " " . join(" ", $tags) . " " : "";
             $this->_save_assign_field("contactTags", $t, $qf, $qv, $cdbq);
         }
-
-        // Data
-        $data = (object) array();
-        foreach (array("address", "city", "state", "zip") as $k)
-            if (($x = @$cj->$k)) {
-                while (is_array($x) && $x[count($x) - 1] === "")
-                    array_pop($x);
-                $data->$k = $x ? : null;
-            }
-        $this->merge_data($data);
-        $datastr = null;
-        if ($this->data_ && is_string($this->data_))
-            $datastr = $this->data_;
-        else if (is_object($this->data_))
-            $datastr = json_encode($this->data_);
-        $qf[] = "data=?";
-        $qv[] = $datastr !== "{}" ? $datastr : null;
 
         // If inserting, set initial password and creation time
         if ($inserting) {
@@ -1185,10 +1207,12 @@ class Contact {
     }
 
     public function check_password($input) {
-        global $Conf, $Opt;
+        global $Conf, $Opt, $Now;
         assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
         if ($this->contactId && $this->is_password_disabled())
             return false;
+        // update passwordUseTime once a month
+        $update_use_time = $Now - 31 * 86400;
 
         $cdbu = $this->contactdb_user();
         $cdbok = false;
@@ -1204,9 +1228,18 @@ class Contact {
                 && $this->password !== $hash) {
                 if (@$hash[0] == " " && @$hash[1] !== "\$")
                     $hash = self::hash_password($input, false);
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $hash, $cdbu->passwordTime, $this->contactId);
+                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where contactId=?", $hash, $cdbu->passwordTime, $Now, $this->contactId);
                 $this->password = $hash;
                 $this->passwordTime = $cdbu->passwordTime;
+                $this->passwordUseTime = $Now;
+            } else if ($cdbok && $this->contactId && $this->passwordIsCdb
+                       && $this->passwordUseTime <= $update_use_time) {
+                Dbl::ql($Conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
+                $this->passwordUseTime = $Now;
+            }
+            if ($cdbok && $cdbu->passwordUseTime <= $update_use_time) {
+                Dbl::ql(self::contactdb(), "update ContactInfo set passwordUseTime=? where contactDbId=?", $Now, $cdbu->contactDbId);
+                $cdbu->passwordUseTime = $Now;
             }
         }
 
@@ -1218,6 +1251,10 @@ class Contact {
                 $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
                 $this->password = $hash;
+            }
+            if ($localok && $this->passwordUseTime <= $update_use_time) {
+                Dbl::ql($Conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
+                $this->passwordUseTime = $Now;
             }
         }
 

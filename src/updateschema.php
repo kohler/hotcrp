@@ -857,4 +857,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         update_schema_review_word_counts($Conf);
         update_schema_version($Conf, 112);
     }
+    if ($Conf->settings["allowPaperOption"] == 112
+        && $Conf->ql("alter table ContactInfo add `passwordUseTime` int(11) NOT NULL DEFAULT '0'")
+        && $Conf->ql("alter table ContactInfo add `updateTime` int(11) NOT NULL DEFAULT '0'")
+        && $Conf->ql("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0"))
+        update_schema_version($Conf, 113);
 }
