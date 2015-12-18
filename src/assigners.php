@@ -525,6 +525,12 @@ class ConflictAssigner extends Assigner {
         parent::__construct("conflict", $pid, $contact);
         $this->ctype = $ctype;
     }
+    function check_paper($user, $prow, $state) {
+        if (!$user->can_administer($prow) && !$user->privChair)
+            return "You can’t administer paper #{$prow->paperId}.";
+        else
+            return true;
+    }
     function allow_special_contact($cclass, $prow, $contact) {
         return $cclass == "conflict" || ($cclass == "any" && !$this->ctype);
     }
