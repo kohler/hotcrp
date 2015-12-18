@@ -97,7 +97,7 @@ lib/createdb.sh
 lib/csv.php
 lib/dbhelper.sh
 lib/dbl.php
-lib/documenthelper.php
+lib/filer.php
 lib/getopt.php
 lib/ht.php
 lib/json.php
@@ -157,7 +157,7 @@ src/paperoption.php
 src/papersearch.php
 src/paperstatus.php
 src/papertable.php
-src/rank.php
+src/paperrank.php
 src/review.php
 src/reviewformlibrary.json
 src/reviewsetform.php

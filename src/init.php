@@ -112,67 +112,36 @@ set_path_variables();
 
 
 // Load code
+class SiteAutoloader {
+    static $map = ["AssignmentSet" => "src/assigners.php",
+                   "CapabilityManager" => "src/capability.php",
+                   "ContactSearch" => "src/papersearch.php",
+                   "CsvGenerator" => "lib/csv.php",
+                   "CsvParser" => "lib/csv.php",
+                   "FormulaPaperColumn" => "src/papercolumn.php",
+                   "LoginHelper" => "lib/login.php",
+                   "MimeText" => "lib/mailer.php",
+                   "NumericOrderPaperColumn" => "src/papercolumn.php",
+                   "PaperColumnErrors" => "src/papercolumn.php",
+                   "ReviewAssigner" => "src/assigners.php",
+                   "ReviewForm" => "src/review.php",
+                   "ReviewSearchMatcher" => "src/papersearch.php",
+                   "TagInfo" => "lib/tagger.php",
+                   "XlsxGenerator" => "lib/xlsx.php",
+                   "ZipDocument" => "lib/filer.php"];
+}
+
 function __autoload($class_name) {
-    global $ConfSitePATH, $ConfAutoloads;
-    if (!@$ConfAutoloads)
-        $ConfAutoloads = array("AssignmentSet" => "src/assigners.php",
-                               "Autoassigner" => "src/autoassigner.php",
-                               "CapabilityManager" => "src/capability.php",
-                               "CheckFormat" => "src/checkformat.php",
-                               "CleanHTML" => "lib/cleanhtml.php",
-                               "Column" => "lib/column.php",
-                               "CommentInfo" => "src/commentinfo.php",
-                               "Conflict" => "src/conflict.php",
-                               "ContactColumns" => "src/contactcolumns.php",
-                               "ContactSearch" => "src/papersearch.php",
-                               "Countries" => "lib/countries.php",
-                               "CsvGenerator" => "lib/csv.php",
-                               "CsvParser" => "lib/csv.php",
-                               "Filer" => "lib/documenthelper.php",
-                               "Formula" => "src/formula.php",
-                               "FormulaGraph" => "src/formulagraph.php",
-                               "FormulaPaperColumn" => "src/papercolumn.php",
-                               "HotCRPDocument" => "src/hotcrpdocument.php",
-                               "HotCRPMailer" => "src/hotcrpmailer.php",
-                               "Ht" => "lib/ht.php",
-                               "Json" => "lib/json.php",
-                               "ListSorter" => "src/listsorter.php",
-                               "LoginHelper" => "lib/login.php",
-                               "Mailer" => "lib/mailer.php",
-                               "MeetingTracker" => "src/meetingtracker.php",
-                               "Message" => "lib/message.php",
-                               "MimeText" => "lib/mailer.php",
-                               "Mimetype" => "lib/mimetype.php",
-                               "MinCostMaxFlow" => "lib/mincostmaxflow.php",
-                               "Multiconference" => "src/multiconference.php",
-                               "NumericOrderPaperColumn" => "src/papercolumn.php",
-                               "PaperActions" => "src/paperactions.php",
-                               "PaperColumn" => "src/papercolumn.php",
-                               "PaperColumnErrors" => "src/papercolumn.php",
-                               "PaperInfo" => "src/paperinfo.php",
-                               "PaperList" => "src/paperlist.php",
-                               "PaperOption" => "src/paperoption.php",
-                               "PaperRank" => "src/rank.php",
-                               "PaperSearch" => "src/papersearch.php",
-                               "PaperStatus" => "src/paperstatus.php",
-                               "PaperTable" => "src/papertable.php",
-                               "Qobject" => "lib/qobject.php",
-                               "ReviewAssigner" => "src/assigners.php",
-                               "ReviewForm" => "src/review.php",
-                               "ReviewSearchMatcher" => "src/papersearch.php",
-                               "ReviewTimes" => "src/reviewtimes.php",
-                               "S3Document" => "lib/s3document.php",
-                               "ScoreInfo" => "lib/scoreinfo.php",
-                               "SearchActions" => "src/searchactions.php",
-                               "TagInfo" => "lib/tagger.php",
-                               "Tagger" => "lib/tagger.php",
-                               "Text" => "lib/text.php",
-                               "UnicodeHelper" => "lib/unicodehelper.php",
-                               "UserActions" => "src/useractions.php",
-                               "UserStatus" => "src/userstatus.php",
-                               "XlsxGenerator" => "lib/xlsx.php",
-                               "ZipDocument" => "lib/documenthelper.php");
-    if (($f = @$ConfAutoloads[$class_name]))
+    global $ConfSitePATH;
+    $f = @SiteAutoloader::$map[$class_name];
+    if (!$f) {
+        $l = strtolower($class_name);
+        if (file_exists("$ConfSitePATH/src/$l.php"))
+            $f = "src/$l.php";
+        else if (file_exists("$ConfSitePATH/lib/$l.php"))
+            $f = "lib/$l.php";
+    }
+    if ($f)
         require_once("$ConfSitePATH/$f");
 }
 

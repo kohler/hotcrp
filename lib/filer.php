@@ -1,5 +1,5 @@
 <?php
-// documenthelper.php -- generic document helper class
+// filer.php -- generic document helper class
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
