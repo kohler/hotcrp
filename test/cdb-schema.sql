@@ -36,6 +36,8 @@ CREATE TABLE `ContactInfo` (
   `password` varbinary(2048) DEFAULT NULL,
   `activity_at` int(11) NOT NULL DEFAULT '0',
   `passwordTime` int(11) NOT NULL DEFAULT '0',
+  `passwordUseTime` int(11) NOT NULL DEFAULT '0',
+  `updateTime` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`contactDbId`),
   UNIQUE KEY `contactDbId` (`contactDbId`),
   UNIQUE KEY `contactId` (`contactDbId`),
