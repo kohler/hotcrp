@@ -1977,8 +1977,8 @@ function authorfold(prefix, relative, n) {
 }
 
 function author_change(e, force) {
-    var $e = $(e), tr = $e.closest("tr");
-    if (force || $.trim($e.val()) != "") {
+    var $e = $(e), tr = $e.closest("tr"), val = $.trim($e.val());
+    if (force || (val != "" && val !== $e.attr("placeholder"))) {
         if (tr[0].nextSibling == null) {
             var n = tr.siblings().length;
             var h = tr.siblings().first().html().replace(/\$/g, n + 1);
@@ -1992,22 +1992,21 @@ function author_change(e, force) {
 
 author_change.delta = function (e, delta) {
     var $ = jQuery, tr = $(e).closest("tr")[0], ini, inj, k,
-        link = (delta < 0 ? "previous" : "next") + "Sibling";
+        link = (delta < 0 ? "previous" : "next") + "Sibling",
+        removing = delta == Infinity;
+    if (removing) {
+        // move to last position in list, then remove
+        for (delta = 0, sib = tr[link]; sib; sib = sib[link], ++delta)
+            /* nada */;
+        $(tr).find("input[placeholder]").val("");
+    }
     while (delta) {
         var sib = tr[link];
-        if (delta < 0 && (!sib || (!sib[link] && !$(sib).is(":visible"))))
+        if (delta < 0 && (!sib || !$(sib).is(":visible")))
             break;
         hiliter(tr);
-        if (!sib && delta != Infinity)
+        if (!sib)
             sib = tr.nextSibling;
-        else if (!sib) {
-            if ((sib = tr.previousSibling)) {
-                $(tr).remove();
-                if ($(sib).siblings().first().is("[data-hotautemplate]"))
-                    $(sib).find("input").each(function () {author_change(this);});
-            }
-            break;
-        }
         ini = $(tr).find("input, select"), inj = $(sib).find("input, select");
         for (k = 0; k != ini.length; ++k) {
             var v = $(ini[k]).val();
@@ -2017,6 +2016,8 @@ author_change.delta = function (e, delta) {
         tr = sib;
         delta += delta < 0 ? 1 : -1;
     }
+    if (removing && $(tr).siblings().length > 5)
+        $(tr).remove();
     return false;
 };
 
