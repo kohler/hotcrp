@@ -2007,7 +2007,7 @@ author_change.delta = function (e, delta) {
         hiliter(tr);
         if (!sib)
             sib = tr.nextSibling;
-        ini = $(tr).find("input, select"), inj = $(sib).find("input, select");
+        ini = $(tr).find("input"), inj = $(sib).find("input");
         for (k = 0; k != ini.length; ++k) {
             var v = $(ini[k]).val();
             $(ini[k]).val($(inj[k]).val()).change();
@@ -2016,8 +2016,10 @@ author_change.delta = function (e, delta) {
         tr = sib;
         delta += delta < 0 ? 1 : -1;
     }
-    if (removing && $(tr).siblings().length > 5)
+    ini = $(tr.parentElement);
+    if (removing && $(ini).children().length > 6)
         $(tr).remove();
+    $(ini).find("tr:last-child input").each(function () { author_change(this); });
     return false;
 };
 
