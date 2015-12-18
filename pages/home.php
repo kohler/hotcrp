@@ -211,7 +211,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         '</div>
   <div class="f-e', $email_class, '">',
         Ht::entry("email", (isset($_REQUEST["email"]) ? $_REQUEST["email"] : ($password_reset ? $password_reset->email : "")),
-                  ["size" => 36, "tabindex" => 1, "id" => "signin_email", "type" => "email"]),
+                  ["size" => 36, "tabindex" => 1, "id" => "signin_email"]),
         '</div>
 </div>
 <div class="f-i fx">
