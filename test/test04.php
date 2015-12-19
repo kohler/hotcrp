@@ -106,7 +106,7 @@ if (function_exists("password_needs_rehash")) {
 }
 
 // insert someone into the contactdb
-$result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo (firstName, lastName, email, affiliation, password) values ('Te', 'Thamrongrattanarit', 'te@_.com', 'Brandeis University', ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm')");
+$result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
 assert(!!$result);
 Dbl::free($result);
 xassert(!user("te@_.com"));
@@ -125,5 +125,43 @@ xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
 if (function_exists("password_needs_rehash"))
     xassert($te->check_password("isdevitch"));
+xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+
+// changing email should work too, but not change cdb except for defaults
+$result = Dbl::qe(Contact::contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+xassert(!!$result);
+Dbl::free($result);
+$acct = $us->save((object) ["email" => "te2@_.com", "lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"], $te);
+xassert(!!$acct);
+$te = user("te@_.com");
+$te2 = user("te2@_.com");
+xassert(!$te);
+xassert(!!$te2);
+xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
+xassert_eqq($te2->affiliation, "Brandeis University");
+$te2_cdb = $te2->contactdb_user();
+xassert(!!$te2_cdb);
+xassert_eqq($te2_cdb->email, "te2@_.com");
+xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
+// if changing email, keep old value in cdb
+xassert_eqq($te2_cdb->firstName, "Te 1");
+xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 1");
+
+// changes by the chair don't affect the cdb
+$Me = user($marina);
+$te2_cdb = $te2->contactdb_user();
+Dbl::qe(Contact::contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
+$acct = $us->save((object) ["firstName" => "Wacky", "affiliation" => "String"], $te2);
+xassert(!!$acct);
+$te2 = user("te2@_.com");
+xassert(!!$te2);
+xassert_eqq($te2->firstName, "Wacky");
+xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
+xassert_eqq($te2->affiliation, "String");
+$te2_cdb = $te2->contactdb_user();
+xassert(!!$te2_cdb);
+xassert_eqq($te2_cdb->firstName, "Te 1");
+xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 1");
+xassert_eqq($te2_cdb->affiliation, "String");
 
 xassert_exit();

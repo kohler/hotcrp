@@ -31,6 +31,7 @@ CREATE TABLE `ContactInfo` (
   `email` varchar(120) NOT NULL,
   `affiliation` varchar(2048) NOT NULL DEFAULT '',
   `country` varbinary(256) DEFAULT NULL,
+  `collaborators` varbinary(8192) DEFAULT NULL,
   `disabled` tinyint(1) NOT NULL DEFAULT '0',
   `data` varbinary(32767) DEFAULT NULL,
   `password` varbinary(2048) DEFAULT NULL,

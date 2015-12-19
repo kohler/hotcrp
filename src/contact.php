@@ -3,6 +3,15 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class Contact_Update {
+    public $qv = [];
+    public $cdb_uqv = [];
+    public function __construct($inserting) {
+        if ($inserting)
+            $this->qv["firstName"] = $this->qv["lastName"] = "";
+    }
+}
+
 class Contact {
     static public $rights_version = 1;
 
@@ -659,9 +668,9 @@ class Contact {
     }
 
 
-    static private $save_fields = array("firstName" => 6, "lastName" => 6, "email" => 1, "affiliation" => 6, "country" => 6, "preferredEmail" => 1, "voicePhoneNumber" => 1, "unaccentedName" => 0);
+    static private $save_fields = array("firstName" => 6, "lastName" => 6, "email" => 1, "affiliation" => 6, "country" => 6, "preferredEmail" => 1, "voicePhoneNumber" => 1, "unaccentedName" => 0, "collaborators" => 4);
 
-    private function _save_assign_field($k, $v, &$qf, &$qv, &$cdbq) {
+    private function _save_assign_field($k, $v, Contact_Update $cu) {
         global $Conf;
         $fieldtype = (int) @self::$save_fields[$k];
         if ($fieldtype & 2)
@@ -669,16 +678,9 @@ class Contact {
         else if ($fieldtype & 1)
             $v = trim($v);
         if ($this->$k !== $v || !$this->contactId) {
-            $this->$k = $v;
-            $qf[$k] = "$k=?";
-            $qv[] = $v;
-            if ($fieldtype & 4) {
-                if (@$cdbq["only_default"])
-                    $cdbq["k"][] = "$k=if(coalesce($k,'')!='',$k,?)";
-                else
-                    $cdbq["k"][] = "$k=?";
-                $cdbq["v"][] = $v;
-            }
+            $cu->qv[$k] = $this->$k = $v;
+            if ($fieldtype & 4)
+                $cu->cdb_uqv[$k] = $v;
         }
     }
 
@@ -687,7 +689,7 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $qf = $qv = $cdbq = $trash_cdbq = array();
+        $cu = new Contact_Update($inserting);
 
         $aupapers = null;
         if (strtolower($cj->email) !== @strtolower($old_email))
@@ -697,26 +699,24 @@ class Contact {
         $changing_other = false;
         if (self::contactdb() && $Me
             && (strcasecmp($this->email, $Me->email) != 0 || $Me->is_actas_user()))
-            $changing_other = $cdbq["only_default"] = true;
+            $changing_other = true;
 
         // Main fields
         foreach (array("firstName", "lastName", "email", "affiliation",
                        "collaborators", "preferredEmail", "country") as $k)
             if (isset($cj->$k))
-                $this->_save_assign_field($k, $cj->$k, $qf, $qv, $cdbq);
+                $this->_save_assign_field($k, $cj->$k, $cu);
         if (isset($cj->phone))
-            $this->_save_assign_field("voicePhoneNumber", $cj->phone, $qf, $qv, $cdbq);
-        $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $qf, $qv, $cdbq);
+            $this->_save_assign_field("voicePhoneNumber", $cj->phone, $cu);
+        $this->_save_assign_field("unaccentedName", Text::unaccented_name($this->firstName, $this->lastName), $cu);
         self::set_sorter($this);
 
         // Disabled
         $disabled = $this->disabled ? 1 : 0;
         if (isset($cj->disabled))
             $disabled = $cj->disabled ? 1 : 0;
-        if (($this->disabled ? 1 : 0) !== $disabled || !$this->contactId) {
-            $this->disabled = $disabled;
-            $qf[] = "disabled=$disabled";
-        }
+        if (($this->disabled ? 1 : 0) !== $disabled || !$this->contactId)
+            $cu->qv["disabled"] = $this->disabled = $disabled;
 
         // Data
         $old_datastr = $this->data_str();
@@ -729,20 +729,14 @@ class Contact {
             }
         $this->merge_data($data);
         $datastr = $this->data_str();
-        if ($datastr !== $old_datastr) {
-            $qf[] = "data=?";
-            $qv[] = $datastr;
-        }
+        if ($datastr !== $old_datastr)
+            $cu->qv["data"] = $datastr;
 
         // Changes to the above fields also change the updateTime.
-        if (count($qf)) {
-            $qf[] = "updateTime=?";
-            $qv[] = $this->updateTime = $Now;
-        }
-        if (count($cdbq)) {
-            $cdbq["k"][] = "updateTime=?";
-            $cdbq["v"][] = $Now;
-        }
+        if (count($cu->qv))
+            $cu->qv["updateTime"] = $this->updateTime = $Now;
+        if (count($cu->cdb_uqv))
+            $cu->cdb_uqv["updateTime"] = $Now;
 
         // Follow
         if (isset($cj->follow)) {
@@ -753,7 +747,7 @@ class Contact {
                 $w |= WATCH_ALLCOMMENTS;
             if (@$cj->follow->allfinal)
                 $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
-            $this->_save_assign_field("defaultWatch", $w, $qf, $qv, $cdbq);
+            $this->_save_assign_field("defaultWatch", $w, $cu);
         }
 
         // Tags
@@ -766,22 +760,22 @@ class Contact {
             }
             ksort($tags);
             $t = count($tags) ? " " . join(" ", $tags) . " " : "";
-            $this->_save_assign_field("contactTags", $t, $qf, $qv, $cdbq);
+            $this->_save_assign_field("contactTags", $t, $cu);
         }
 
         // If inserting, set initial password and creation time
         if ($inserting) {
-            $qf[] = "creationTime=?";
-            $qv[] = $this->creationTime = $Now;
-            self::_create_password(self::contactdb_find_by_email($this->email), $this, $qf, $qv);
+            $cu->qv["creationTime"] = $this->creationTime = $Now;
+            $this->_create_password(self::contactdb_find_by_email($this->email), $cu);
         }
 
         // Initial save
-        if (count($qf)) { // always true if $inserting
+        if (count($cu->qv)) { // always true if $inserting
             $q = ($inserting ? "insert into" : "update")
-                . " ContactInfo set " . join(", ", $qf)
+                . " ContactInfo set "
+                . join("=?, ", array_keys($cu->qv)) . "=?"
                 . ($inserting ? "" : " where contactId=$this->contactId");;
-            if (!($result = Dbl::qe_apply($Conf->dblink, $q, $qv)))
+            if (!($result = Dbl::qe_apply($Conf->dblink, $q, array_values($cu->qv))))
                 return $result;
             if ($inserting)
                 $this->contactId = $this->cid = (int) $result->insert_id;
@@ -816,19 +810,30 @@ class Contact {
             $this->save_authored_papers($aupapers);
 
         // Update contact database
-        if (($cdb = self::contactdb())) {
-            $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?";
-            $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country);
-            if ($this->password && ($this->password[0] !== " " || substr($this->password, 0, 2) === " \$")) {
-                $q .= ", password=?";
-                $qv[] = $this->password;
-            }
-            $q .= " on duplicate key update ";
-            if (count(@$cdbq["k"])) {
-                $q .= join(", ", $cdbq["k"]);
-                $qv = array_merge($qv, $cdbq["v"]);
+        $cdbu = $this->contactDbId ? $this : $this->contactdb_user_;
+        if ($old_email !== $this->email)
+            $cdbu = null;
+        if (($cdb = self::contactdb()) && (!$cdbu || count($cu->cdb_uqv))) {
+            $qv = [];
+            if (!$cdbu) {
+                $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?";
+                $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
+                if ($this->password && ($this->password[0] !== " " || substr($this->password, 0, 2) === " \$")) {
+                    $q .= ", password=?";
+                    $qv[] = $this->password;
+                }
+                $q .= " on duplicate key update ";
             } else
+                $q = "update ContactInfo set ";
+            if (count($cu->cdb_uqv) && $changing_other)
+                $q .= join(", ", array_map(function ($k) { return "$k=if(coalesce($k,'')='',?,$k)"; }, array_keys($cu->cdb_uqv)));
+            else if (count($cu->cdb_uqv))
+                $q .= join("=?, ", array_keys($cu->cdb_uqv)) . "=?";
+            else
                 $q .= "firstName=firstName";
+            $qv = array_merge($qv, array_values($cu->cdb_uqv));
+            if ($cdbu)
+                $q .= " where contactDbId=" . $cdbu->contactDbId;
             $result = Dbl::ql_apply($cdb, $q, $qv);
             Dbl::free($result);
             $this->contactdb_user_ = false;
@@ -956,25 +961,19 @@ class Contact {
         return $acct;
     }
 
-    static private function _create_password($cdbu, $reg, &$qf, &$qv) {
+    private function _create_password($cdbu, Contact_Update $cu) {
         global $Conf, $Now;
         if ($cdbu && ($cdbu = $cdbu->contactdb_user())
             && $cdbu->allow_contactdb_password()) {
-            $qf[] = "password=?, passwordTime=?";
-            $qv[] = $reg->password = $cdbu->password;
-            $qv[] = $reg->passwordTime = $cdbu->passwordTime;
-            if ($Conf->sversion >= 97) {
-                $qf[] = "passwordIsCdb=?";
-                $qv[] = $reg->passwordIsCdb = 1;
-            }
+            $cu->qv["password"] = $this->password = $cdbu->password;
+            $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
+            if ($Conf->sversion >= 97)
+                $cu->qv["passwordIsCdb"] = 1;
         } else if (!self::external_login()) {
-            $qf[] = "password=?, passwordTime=?";
-            $qv[] = $reg->password = self::random_password();
-            $qv[] = $reg->passwordTime = $Now;
-        } else {
-            $qf[] = "password=?";
-            $qv[] = $reg->password = "";
-        }
+            $cu->qv["password"] = $this->password = self::random_password();
+            $cu->qv["passwordTime"] = $this->passwordTime = $Now;
+        } else
+            $cu->qv["password"] = $this->password = "";
     }
 
     static function create($reg, $send = false) {
