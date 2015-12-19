@@ -164,4 +164,14 @@ xassert_eqq($te2_cdb->firstName, "Te 1");
 xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 1");
 xassert_eqq($te2_cdb->affiliation, "String");
 
+// borrow from cdb
+$acct = $us->save((object) ["email" => "te@_.com"]);
+xassert(!!$acct);
+$te = user("te@_.com");
+xassert_eqq($te->email, "te@_.com");
+xassert_eqq($te->firstName, "Te");
+xassert_eqq($te->lastName, "Thamrongrattanarit");
+xassert_eqq($te->affiliation, "Brandeis University");
+xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+
 xassert_exit();
