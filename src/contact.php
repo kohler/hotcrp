@@ -6,9 +6,11 @@
 class Contact_Update {
     public $qv = [];
     public $cdb_uqv = [];
-    public function __construct($inserting) {
+    public $different_email;
+    public function __construct($inserting, $different_email) {
         if ($inserting)
             $this->qv["firstName"] = $this->qv["lastName"] = "";
+        $this->different_email = $different_email;
     }
 }
 
@@ -677,11 +679,14 @@ class Contact {
             $v = simplify_whitespace($v);
         else if ($fieldtype & 1)
             $v = trim($v);
-        if ($this->$k !== $v || !$this->contactId) {
+        // check CDB version first (in case $this === $cdbu)
+        $cdbu = $this->contactDbId ? $this : $this->contactdb_user_;
+        if (($fieldtype & 4)
+            && (!$cdbu || $cu->different_email || $cdbu->$k !== $v))
+            $cu->cdb_uqv[$k] = $v;
+        // change local version
+        if ($this->$k !== $v || !$this->contactId)
             $cu->qv[$k] = $this->$k = $v;
-            if ($fieldtype & 4)
-                $cu->cdb_uqv[$k] = $v;
-        }
     }
 
     function save_json($cj, $actor, $send) {
@@ -689,10 +694,11 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $cu = new Contact_Update($inserting);
+        $different_email = strtolower($cj->email) !== @strtolower($old_email);
+        $cu = new Contact_Update($inserting, $different_email);
 
         $aupapers = null;
-        if (strtolower($cj->email) !== @strtolower($old_email))
+        if ($different_email)
             $aupapers = self::email_authored_papers($cj->email, $cj);
 
         // check whether this user is changing themselves
@@ -735,8 +741,6 @@ class Contact {
         // Changes to the above fields also change the updateTime.
         if (count($cu->qv))
             $cu->qv["updateTime"] = $this->updateTime = $Now;
-        if (count($cu->cdb_uqv))
-            $cu->cdb_uqv["updateTime"] = $Now;
 
         // Follow
         if (isset($cj->follow)) {
@@ -811,7 +815,7 @@ class Contact {
 
         // Update contact database
         $cdbu = $this->contactDbId ? $this : $this->contactdb_user_;
-        if ($old_email !== $this->email)
+        if ($different_email)
             $cdbu = null;
         if (($cdb = self::contactdb()) && (!$cdbu || count($cu->cdb_uqv))) {
             $qv = [];
@@ -831,6 +835,8 @@ class Contact {
                 $q .= join("=?, ", array_keys($cu->cdb_uqv)) . "=?";
             else
                 $q .= "firstName=firstName";
+            if (count($cu->cdb_uqv))
+                $q .= ", updateTime=$Now";
             $qv = array_merge($qv, array_values($cu->cdb_uqv));
             if ($cdbu)
                 $q .= " where contactDbId=" . $cdbu->contactDbId;
