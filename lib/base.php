@@ -31,7 +31,7 @@ function cleannl($text) {
 }
 
 function simplify_whitespace($x) {
-    return trim(preg_replace('/\s+/', " ", $x));
+    return trim(preg_replace('/(?:\s|\xC2\xA0)+/', " ", $x));
 }
 
 function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
