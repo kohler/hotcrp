@@ -3074,7 +3074,7 @@ function taghelp(elt, klass, cleanf) {
         var $elt = jQuery(elt), shadow = textarea_shadow($elt);
         shadow.text(elt.value.substr(0, elt.selectionStart)).append("<span>.</span>");
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
-        $pos = geometry_translate($pos, -soff.left + 4, -soff.top + 4);
+        $pos = geometry_translate($pos, -soff.left + 4 - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         tagdiv.html(t).near($pos, elt);
         shadow.remove();
     }
