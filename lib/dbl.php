@@ -15,12 +15,40 @@ class Dbl_Result {
     }
 }
 
+class Dbl_MultiResult {
+    private $dblink;
+    private $flags;
+    private $qstr;
+    private $more;
+
+    function __construct(mysqli $dblink, $flags, $qstr, $result) {
+        $this->dblink = $dblink;
+        $this->flags = $flags;
+        $this->qstr = $qstr;
+        $this->more = $result;
+    }
+    function next() {
+        // XXX does processing stop at first error?
+        if ($this->more === null)
+            $this->more = $this->dblink->more_results() ? $this->dblink->next_result() : -1;
+        if ($this->more === -1)
+            return false;
+        else if ($this->more) {
+            $result = $this->dblink->store_result();
+            $this->more = null;
+        } else
+            $result = false;
+        return Dbl::do_result($this->dblink, $this->flags, $this->qstr, $result);
+    }
+}
+
 class Dbl {
     const F_RAW = 1;
     const F_APPLY = 2;
     const F_LOG = 4;
     const F_ERROR = 8;
     const F_ALLOWERROR = 16;
+    const F_MULTI = 32;
 
     static public $logged_errors = 0;
     static public $default_dblink;
@@ -118,7 +146,7 @@ class Dbl {
     }
 
     static private function query_args($args, $flags, $log_location) {
-        $argpos = is_string($args[0]) ? 0 : 1;
+        $argpos = is_object($args[0]) ? 1 : 0;
         $dblink = $argpos ? $args[0] : self::$default_dblink;
         if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
             || (($flags & self::F_APPLY) && count($args) > $argpos + 2))
@@ -131,12 +159,15 @@ class Dbl {
                 self::$log_queries[$location] = array(substr(simplify_whitespace($args[$argpos]), 0, 80), 0);
             ++self::$log_queries[$location][1];
         }
+        $q = $args[$argpos];
+        if (($flags & self::F_MULTI) && is_array($q))
+            $q = join(";", $q);
         if (count($args) === $argpos + 1)
-            return array($dblink, $args[$argpos], array());
+            return array($dblink, $q, array());
         else if ($flags & self::F_APPLY)
-            return array($dblink, $args[$argpos], $args[$argpos + 1]);
+            return array($dblink, $q, $args[$argpos + 1]);
         else
-            return array($dblink, $args[$argpos], array_slice($args, $argpos + 1));
+            return array($dblink, $q, array_slice($args, $argpos + 1));
     }
 
     static private function format_query_args($dblink, $qstr, $argv) {
@@ -225,16 +256,20 @@ class Dbl {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        $result = $dblink->query($qstr);
-        if ($result === true)
+        return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
+    }
+
+    static public function do_result($dblink, $flags, $qstr, $result) {
+        if ($result === false && $dblink->errno) {
+            if ($flags & (self::F_LOG | self::F_ERROR)) {
+                ++self::$logged_errors;
+                if ($flags & self::F_ERROR)
+                    call_user_func(self::$error_handler, $dblink, $qstr);
+                else
+                    error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
+            }
+        } else if ($result === false || $result === true)
             $result = new Dbl_Result($dblink);
-        else if ($result === false && ($flags & (self::F_LOG | self::F_ERROR))) {
-            ++self::$logged_errors;
-            if ($flags & self::F_ERROR)
-                call_user_func(self::$error_handler, $dblink, $qstr);
-            else
-                error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
-        }
         if (self::$check_warnings && !($flags & self::F_ALLOWERROR)
             && $dblink->warning_count) {
             $wresult = $dblink->query("show warnings");
@@ -243,6 +278,13 @@ class Dbl {
             $wresult && $wresult->close();
         }
         return $result;
+    }
+
+    static private function do_multi_query($args, $flags) {
+        list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
+        if (!($flags & self::F_RAW))
+            $qstr = self::format_query_args($dblink, $qstr, $argv);
+        return new Dbl_MultiResult($dblink, $flags, $qstr, $dblink->multi_query($qstr));
     }
 
     static function query(/* [$dblink,] $qstr, ... */) {
@@ -303,6 +345,18 @@ class Dbl {
 
     static function qe_apply(/* [$dblink,] $qstr, [$argv] */) {
         return self::do_query(func_get_args(), self::F_APPLY | self::F_ERROR);
+    }
+
+    static function multi_qe(/* [$dblink,] $qstr, ... */) {
+        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_ERROR);
+    }
+
+    static function multi_qe_raw(/* [$dblink,] $qstr */) {
+        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_RAW | self::F_ERROR);
+    }
+
+    static function multi_qe_apply(/* [$dblink,] $qstr, [$argv] */) {
+        return self::do_multi_query(func_get_args(), self::F_MULTI | self::F_APPLY | self::F_ERROR);
     }
 
     static function free($result) {
