@@ -387,7 +387,7 @@ class FormulaGraph {
     }
 
     public function axis_info_settings($axis) {
-        global $Conf, $Me, $reviewTypeName;
+        global $Conf, $Me;
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = array();
         if ($axis == "y" && $this->type == self::FBARCHART)
@@ -431,7 +431,7 @@ class FormulaGraph {
         else if ($format === Fexpr::FROUND)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->remapped_rounds, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
         else if ($format === Fexpr::FREVTYPE)
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($reviewTypeName) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode(ReviewForm::$revtype_names) . ")" . $rticks;
         return join(",", $t);
     }
 }

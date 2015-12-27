@@ -10,9 +10,6 @@ define("REVIEW_PRIMARY", 4);
 define("REVIEW_SECONDARY", 3);
 define("REVIEW_PC", 2);
 define("REVIEW_EXTERNAL", 1);
-global $reviewTypeName;
-$reviewTypeName = array("None", "External", "PC", "Secondary", "Primary");
-// see also review_type_icon, script:selassign
 
 define("CONFLICT_NONE", 0);
 define("CONFLICT_PCMARK", 1);
@@ -81,12 +78,6 @@ define("CAPTYPE_RESETPASSWORD", 1);
 define("CAPTYPE_CHANGEEMAIL", 2);
 
 define("ALWAYS_OVERRIDE", 9999);
-
-global $reviewScoreNames;
-$reviewScoreNames = array("overAllMerit", "technicalMerit", "novelty",
-                          "grammar", "reviewerQualification", "potential",
-                          "fixability", "interestToCommunity", "longevity",
-                          "likelyPresentation", "suitableForShort");
 
 global $OK, $Now, $CurrentProw;
 $OK = 1;

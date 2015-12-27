@@ -334,8 +334,7 @@ class ReviewAssigner extends Assigner {
     private $notify;
     static public $prefinfo = null;
     function __construct($pid, $contact, $rtype, $round, $oldtype = 0, $notify = null) {
-        global $reviewTypeName;
-        parent::__construct($rtype ? strtolower($reviewTypeName[$rtype]) : "noreview", $pid, $contact);
+        parent::__construct($rtype ? strtolower(ReviewForm::$revtype_names[$rtype]) : "noreview", $pid, $contact);
         $this->rtype = $rtype;
         $this->round = $round;
         $this->oldtype = $oldtype;

@@ -34,8 +34,8 @@ class PaperListReviewAnalysis {
         }
     }
     public function icon_html($includeLink) {
-        global $Conf, $reviewTypeName;
-        if (($title = @$reviewTypeName[$this->row->reviewType]))
+        global $Conf;
+        if (($title = @PaperReview::$revtype_names[$this->row->reviewType]))
             $title .= " review";
         else
             $title = "Review";

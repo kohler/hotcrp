@@ -411,11 +411,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         $this->view_score = $view_score;
     }
     function simple_name() {
-        global $reviewTypeName;
         if (!$this->has_contacts() && $this->fieldsql === null
             && $this->round === null && $this->rate === null
             && $this->wordcountexpr === null) {
-            $name = $this->review_type ? $reviewTypeName[$this->review_type] : "All";
+            $name = $this->review_type ? ReviewForm::$revtype_names[$this->review_type] : "All";
             if ($this->completeness & self::COMPLETE)
                 $name .= "Complete";
             if ($this->completeness & self::INCOMPLETE)

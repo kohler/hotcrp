@@ -965,7 +965,8 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
             $Me->log_activity("Remove conflicts with $mpc", SearchActions::selection());
         }
     } else if (substr($mt, 0, 6) == "assign"
-               && isset($reviewTypeName[($asstype = substr($mt, 6))])) {
+               && ($asstype = substr($mt, 6))
+               && isset(ReviewForm::$revtype_names[$asstype])) {
         Dbl::qe_raw("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write, Settings write");
         $result = Dbl::qe_raw("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where Paper.paperId" . SearchActions::sql_predicate());
         $conflicts = array();

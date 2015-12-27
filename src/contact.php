@@ -3050,7 +3050,7 @@ class Contact {
     }
 
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
-        global $Conf, $Now, $reviewTypeName;
+        global $Conf, $Now;
         $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = edb_orow($result);
         Dbl::free($result);
@@ -3087,12 +3087,12 @@ class Contact {
             return false;
 
         if ($q[0] == "d") {
-            $msg = "Removed " . $reviewTypeName[$rrow->reviewType] . " review";
+            $msg = "Removed " . ReviewForm::$revtype_names[$rrow->reviewType] . " review";
             $reviewId = 0;
         } else if ($q[0] == "u")
-            $msg = "Changed " . $reviewTypeName[$rrow->reviewType] . " review to " . $reviewTypeName[$type];
+            $msg = "Changed " . ReviewForm::$revtype_names[$rrow->reviewType] . " review to " . ReviewForm::$revtype_names[$type];
         else {
-            $msg = "Added " . $reviewTypeName[$type] . " review";
+            $msg = "Added " . ReviewForm::$revtype_names[$type] . " review";
             $reviewId = $result->insert_id;
         }
         $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);

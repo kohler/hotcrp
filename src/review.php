@@ -333,6 +333,8 @@ class ReviewForm {
     private $mailer_info;
     private $mailer_preps;
 
+    static public $revtype_names = ["None", "External", "PC", "Secondary", "Primary"];
+
     // XXX all negative ratings should have negative numbers
     static public $rating_types = array("n" => "average",
                                         1 => "very helpful",

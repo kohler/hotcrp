@@ -4,7 +4,10 @@
 // Distributed under an MIT-like license; see LICENSE
 
 function update_schema_create_review_form($Conf) {
-    global $reviewScoreNames;
+    $reviewScoreNames = ["overAllMerit", "technicalMerit", "novelty",
+                         "grammar", "reviewerQualification", "potential",
+                         "fixability", "interestToCommunity", "longevity",
+                         "likelyPresentation", "suitableForShort"];
     if (!($result = $Conf->ql("select * from ReviewFormField where fieldName!='outcome'")))
         return false;
     $rfj = (object) array();
@@ -39,7 +42,6 @@ function update_schema_create_review_form($Conf) {
 }
 
 function update_schema_create_options($Conf) {
-    global $reviewScoreNames;
     if (!($result = $Conf->ql("select * from OptionType")))
         return false;
     $opsj = (object) array();
