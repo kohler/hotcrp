@@ -225,7 +225,7 @@ class HotCRPDocument extends Filer {
         $result = null;
         if (!@$Opt["dbNoPapers"]
             && @($doc->paperStorageId > 1))
-            $result = $Conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
+            $result = Dbl::q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
         if (!$result || !($row = edb_row($result)) || $row[0] === null)
             $doc->content = "";
         else if ($row[1] == 1) {

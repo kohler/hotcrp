@@ -137,7 +137,7 @@ class HotCRPMailer extends Mailer {
         $since = "";
         if ($this->newrev_since)
             $since = " and r.timeRequested>=$this->newrev_since";
-        $result = $Conf->qe("select r.paperId, p.title
+        $result = Dbl::qe("select r.paperId, p.title
                 from PaperReview r join Paper p using (paperId)
                 where r.contactId=" . $contact->contactId . "
                 and r.timeRequested>r.timeRequestNotified$since
@@ -195,7 +195,7 @@ class HotCRPMailer extends Mailer {
         if (($what == "%NUMACCEPTED%" || $what == "%NUMSUBMITTED%")
             && $this->_statistics === null) {
             $this->_statistics = array(0, 0);
-            $result = $Conf->q("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome");
+            $result = Dbl::q("select outcome, count(paperId) from Paper where timeSubmitted>0 group by outcome");
             while (($row = edb_row($result))) {
                 $this->_statistics[0] += $row[1];
                 if ($row[0] > 0)
@@ -297,7 +297,7 @@ class HotCRPMailer extends Mailer {
             if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
                 if (!isset($this->_tags[$t])) {
                     $this->_tags[$t] = array();
-                    $result = $Conf->qe("select paperId, tagIndex from PaperTag where tag='" . sqlq($t) . "'");
+                    $result = Dbl::qe("select paperId, tagIndex from PaperTag where tag=?", $t);
                     while (($row = edb_row($result)))
                         $this->_tags[$t][$row[0]] = $row[1];
                 }
@@ -397,7 +397,7 @@ class HotCRPMailer extends Mailer {
     static function send_contacts($template, $row, $rest = array()) {
         global $Conf, $Me;
 
-        $result = $Conf->qe("select ContactInfo.contactId,
+        $result = Dbl::qe("select ContactInfo.contactId,
                 firstName, lastName, email, preferredEmail, password,
                 roles, disabled, contactTags,
                 conflictType, 0 myReviewType
@@ -434,7 +434,7 @@ class HotCRPMailer extends Mailer {
     static function send_reviewers($template, $row, $rest = array()) {
         global $Conf, $Me, $Opt;
 
-        $result = $Conf->qe("select ContactInfo.contactId,
+        $result = Dbl::qe("select ContactInfo.contactId,
                 firstName, lastName, email, preferredEmail, password,
                 roles, disabled, contactTags,
                 conflictType, reviewType myReviewType
