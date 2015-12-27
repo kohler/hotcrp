@@ -2801,7 +2801,7 @@ class PaperSearch {
             && !$this->contact->can_administer($row, true))
             return false;
         if (($flags & self::F_AUTHOR)
-            && !$this->contact->actAuthorView($row))
+            && !$this->contact->act_author_view($row))
             return false;
         if (($flags & self::F_REVIEWER)
             && $row->myReviewNeedsSubmit !== 0

@@ -1725,7 +1725,7 @@ class Contact {
             return 0;
     }
 
-    public function actAuthorView(PaperInfo $prow) {
+    public function act_author_view(PaperInfo $prow) {
         $rights = $this->rights($prow);
         return $rights->act_author_view;
     }

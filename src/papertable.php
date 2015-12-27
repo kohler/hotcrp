@@ -2008,7 +2008,7 @@ class PaperTable {
                 $this->editable_contact_author(true);
             $this->echoActions(false);
             echo "</form>";
-        } else if (!$this->editable && $Me->actAuthorView($prow) && !$Me->contactId) {
+        } else if (!$this->editable && $Me->act_author_view($prow) && !$Me->contactId) {
             echo '<hr class="papcard_sep" />',
                 "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }

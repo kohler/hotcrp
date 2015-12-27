@@ -367,7 +367,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         if ($minic->can_view_comment($prow, self::$watching, false)
             // Don't send notifications about draft responses to the chair,
             // even though the chair can see draft responses.
-            && ($tmpl !== "@responsedraftnotify" || $minic->actAuthorView($prow)))
+            && ($tmpl !== "@responsedraftnotify" || $minic->act_author_view($prow)))
             HotCRPMailer::send_to($minic, $tmpl, $prow, array("comment_row" => self::$watching));
     }
 }

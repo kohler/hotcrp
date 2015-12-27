@@ -569,7 +569,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
 }
 
 if (isset($_POST["updatecontacts"]) && check_post() && $prow) {
-    if ($Me->can_administer($prow) || $Me->actAuthorView($prow)) {
+    if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
         $ps = new PaperStatus;
         $opj = $ps->row_to_json($prow, array("docids" => true));
         $pj = paper_json_clone($opj);

@@ -103,7 +103,7 @@ xassert(!$user_mgbaker->can_administer($paper1));
 xassert(!$user_mgbaker->can_administer($paper18));
 
 // author derivation works
-xassert($user_mgbaker->actAuthorView($paper18));
+xassert($user_mgbaker->act_author_view($paper18));
 
 // simple search
 $pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));

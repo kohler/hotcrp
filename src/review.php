@@ -939,7 +939,7 @@ class ReviewForm {
     static private function check_review_author_seen($prow, $rrow, $contact,
                                                      $no_update = false) {
         global $Now;
-        if ($rrow && !@$rrow->reviewAuthorSeen && $contact->actAuthorView($prow)
+        if ($rrow && !@$rrow->reviewAuthorSeen && $contact->act_author_view($prow)
             && !$contact->is_actas_user()) {
             $rrow->reviewAuthorSeen = $Now;
             if (!$no_update) {

@@ -256,7 +256,7 @@ class HotCRPMailer extends Mailer {
             return rtrim($this->row->pretty_text_author_list());
         }
         if ($what == "%AUTHORVIEWCAPABILITY%" && isset($this->row->capVersion)
-            && $this->permissionContact->actAuthorView($this->row))
+            && $this->permissionContact->act_author_view($this->row))
             return "cap=" . $Conf->capability_text($this->row, "a");
         if ($what == "%SHEPHERD%" || $what == "%SHEPHERDNAME%"
             || $what == "%SHEPHERDEMAIL%") {
