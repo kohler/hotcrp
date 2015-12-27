@@ -639,7 +639,7 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
         $header = array_merge($header, array_keys($any_scores));
         if ($any_reviewer_identity)
             array_push($header, "revieweremail", "reviewername");
-        downloadCSV(SearchActions::reorder($texts), $header, "scores");
+        downloadCSV(SearchActions::reorder($texts), $header, "scores", ["selection" => true]);
         exit;
     } else
         $Conf->errorMsg(join("", $errors) . "No papers selected.");
@@ -730,7 +730,7 @@ function downloadAllRevpref() {
             $headers[] = "topic_score";
         if ($has_conflict)
             $headers[] = "conflict";
-        downloadCSV(SearchActions::reorder($texts), $headers, "allprefs");
+        downloadCSV(SearchActions::reorder($texts), $headers, "allprefs", ["selection" => true]);
         exit;
     }
 }
