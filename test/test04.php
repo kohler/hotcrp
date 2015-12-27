@@ -43,6 +43,7 @@ function save_password($email, $encoded_password, $iscdb = false) {
     ++$Now;
 }
 
+$user_chair = Contact::find_by_email("chair@_.com");
 $marina = "marina@poema.ru";
 
 $Opt["safePasswords"] = $Opt["contactdb_safePasswords"] = 0;
@@ -173,5 +174,33 @@ xassert_eqq($te->firstName, "Te");
 xassert_eqq($te->lastName, "Thamrongrattanarit");
 xassert_eqq($te->affiliation, "Brandeis University");
 xassert_eqq($te->collaborators, "Computational Linguistics Magazine");
+
+// create a user in cdb: create, then delete from local db
+$anna = "akhmatova@poema.ru";
+xassert(!user($anna));
+$acct = $us->save((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
+xassert(!!$acct);
+Dbl::qe("delete from ContactInfo where email=?", $anna);
+save_password($anna, "aquablouse", true);
+xassert(!user($anna));
+
+$user_estrin = user("estrin@usc.edu");
+$user_floyd = user("floyd@EE.lbl.gov");
+$user_van = user("van@ee.lbl.gov");
+
+$ps = new PaperStatus;
+$ps->save((object) [
+    "id" => 1,
+    "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,
+                  $user_floyd->email, $user_van->email, $anna]
+]);
+
+$paper1 = $Conf->paperRow(1, $user_chair);
+$user_anna = user($anna);
+xassert(!!$user_anna);
+xassert($user_anna->act_author_view($paper1));
+xassert($user_estrin->act_author_view($paper1));
+xassert($user_floyd->act_author_view($paper1));
+xassert($user_van->act_author_view($paper1));
 
 xassert_exit();
