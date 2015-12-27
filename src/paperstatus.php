@@ -125,8 +125,8 @@ class PaperStatus {
                     $aux->last = $au->lastName;
                 if ($au->affiliation)
                     $aux->affiliation = $au->affiliation;
-                if (($lemail = strtolower(@$aux->email ? : ""))
-                    && ($conf = @$contacts[$lemail])
+                $lemail = @strtolower($aux->email);
+                if ($lemail && ($conf = @$contacts[$lemail])
                     && $conf->conflictType >= CONFLICT_AUTHOR) {
                     $aux->contact = true;
                     unset($contacts[$lemail]);
@@ -440,6 +440,12 @@ class PaperStatus {
         if (@$pj->authors !== null) {
             if (!is_array($pj->authors))
                 $this->set_error_html("author", "Format error [authors]");
+            // old author information
+            $old_au_by_email = [];
+            if ($old_pj)
+                foreach (@$old_pj->authors ? : [] as $au)
+                    $old_au_by_email[strtolower($au->email)] = $au;
+            // new author information
             $curau = is_array($pj->authors) ? $pj->authors : array();
             $pj->authors = array();
             foreach ($curau as $k => $au)
@@ -449,14 +455,22 @@ class PaperStatus {
                     $aux->last = simplify_whitespace($aux->lastName);
                     $aux->email = simplify_whitespace($aux->email);
                     $aux->affiliation = simplify_whitespace($aux->affiliation);
+                    // borrow from old author information
+                    if ($aux->email && $aux->first === "" && $aux->last === ""
+                        && ($old_au = @$old_au_by_email[strtolower($aux->email)])) {
+                        $aux->first = $old_au->first;
+                        $aux->last = $old_au->last;
+                        if ($aux->affiliation === "")
+                            $aux->affiliation = $old_au->affiliation;
+                    }
                     if ($aux->first !== "" || $aux->last !== ""
                         || $aux->email !== "" || $aux->affiliation !== "")
                         $pj->authors[] = $aux;
                     else
                         $pj->bad_authors[] = $aux;
                     $aux->index = count($pj->authors) + count($pj->bad_authors);
-                    if (is_object($au) && @$au->contact)
-                        $aux->contact = true;
+                    if (is_object($au) && isset($au->contact))
+                        $aux->contact = !!$au->contact;
                     if (@$aux->email)
                         $au_by_email[strtolower($aux->email)] = $aux;
                 } else
@@ -559,6 +573,19 @@ class PaperStatus {
                 } else
                     $this->set_error_html("contacts", "Format error [contacts]");
             }
+        }
+
+        // Inherit contactness
+        if (isset($pj->authors) && $old_pj) {
+            foreach ($old_pj->authors ? : [] as $au)
+                if (@$au->contact && $au->email
+                    && ($aux = @$au_by_email[strtolower($au->email)])
+                    && !isset($aux->contact))
+                    $aux->contact = true;
+            foreach (@$old_pj->contacts ? : [] as $au)
+                if (($aux = @$au_by_email[strtolower($au->email)])
+                    && !isset($aux->contact))
+                    $aux->contact = true;
         }
     }
 
