@@ -613,17 +613,19 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
             if ($row->outcome && $Me->can_view_decision($row, true))
                 $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
             $view_bound = $Me->view_score_bound($row, $row, true);
-            $my_scores = false;
+            $this_scores = false;
             foreach ($rf->forder as $field => $f)
-                if ($f->view_score > $view_bound && $f->has_options)
-                    $a[$f->abbreviation] = $any_scores[$f->abbreviation] =
-                        $my_scores = $f->unparse_value($row->$field);
+                if ($f->view_score > $view_bound && $f->has_options
+                    && ($row->$field || $f->allow_empty)) {
+                    $a[$f->abbreviation] = $f->unparse_value($row->$field);
+                    $any_scores[$f->abbreviation] = $this_scores = true;
+                }
             if ($Me->can_view_review_identity($row, $row, true)) {
                 $any_reviewer_identity = true;
                 $a["revieweremail"] = $row->reviewEmail;
                 $a["reviewername"] = trim($row->reviewFirstName . " " . $row->reviewLastName);
             }
-            if ($my_scores)
+            if ($this_scores)
                 arrayappend($texts[$row->paperId], $a);
         }
     }
