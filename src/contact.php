@@ -2138,7 +2138,7 @@ class Contact {
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
                 && (($prow->review_not_incomplete($this)
-                     && ($Conf->settings["extrev_view"] >= 1 || $pc_trackok))
+                     && ($Conf->setting("extrev_view") >= 1 || $pc_trackok))
                     || $prow->leadContactId == $this->contactId));
     }
 
@@ -2204,7 +2204,7 @@ class Contact {
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
                 && ($rights->allow_pc
-                    || $Conf->settings["extrev_view"] >= 2))
+                    || $Conf->setting("extrev_view") >= 2))
             || !$Conf->is_review_blind($rrow);
     }
 
@@ -2596,7 +2596,7 @@ class Contact {
             || $crow_contactId == $this->contactId
             || $rights->allow_pc
             || ($rights->allow_review
-                && $Conf->settings["extrev_view"] >= 2)
+                && $Conf->setting("extrev_view") >= 2)
             || !$Conf->is_review_blind(!$crow || ($crow->commentType & COMMENTTYPE_BLIND) != 0);
     }
 
@@ -2819,7 +2819,6 @@ class Contact {
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Conf, $Opt, $Now;
-        $set = $Conf->settings;
         $dl = (object) array("now" => $Now,
                              "sub" => (object) array(),
                              "rev" => (object) array());
@@ -2829,13 +2828,16 @@ class Contact {
             $dl->is_author = true;
 
         // submissions
-        $dl->sub->open = @+$set["sub_open"] > 0;
-        $dl->sub->sub = @+$set["sub_sub"];
+        $sub_reg = setting("sub_reg");
+        $sub_update = setting("sub_update");
+        $sub_sub = setting("sub_sub");
+        $dl->sub->open = +setting("sub_open") > 0;
+        $dl->sub->sub = +$sub_sub;
         $dl->sub->grace = "sub_grace";
-        if (@$set["sub_reg"] && $set["sub_reg"] != @$set["sub_update"])
-            $dl->sub->reg = $set["sub_reg"];
-        if (@$set["sub_update"] && $set["sub_update"] != @$set["sub_sub"])
-            $dl->sub->update = $set["sub_update"];
+        if ($sub_reg && $sub_reg != $sub_update)
+            $dl->sub->reg = $sub_reg;
+        if ($sub_update && $sub_update != $sub_sub)
+            $dl->sub->update = $sub_update;
 
         $sb = $Conf->submission_blindness();
         if ($sb === Conf::BLIND_ALWAYS)
@@ -2846,7 +2848,7 @@ class Contact {
             $dl->sub->blind = "until-review";
 
         // responses
-        if (@$set["resp_active"] > 0) {
+        if (+setting("resp_active") > 0) {
             $dl->resp = (object) array("rounds" => array(), "roundsuf" => array());
             foreach ($Conf->resp_round_list() as $i => $rname) {
                 $osuf = $rname != "1" ? ".$rname" : "";
@@ -2855,19 +2857,20 @@ class Contact {
                 $k = "resp" . $osuf;
                 $dlresp = $dl->$k = @$dl->$k ? : (object) array();
                 $isuf = $i ? "_$i" : "";
-                $dlresp->open = @+$set["resp_open$isuf"];
-                $dlresp->done = @+$set["resp_done$isuf"];
+                $dlresp->open = +setting("resp_open$isuf");
+                $dlresp->done = +setting("resp_done$isuf");
                 $dlresp->grace = "resp_grace$isuf";
             }
         }
 
         // final copy deadlines
-        if (@+$set["final_open"] > 0) {
+        if (+setting("final_open") > 0) {
             $dl->final = (object) array("open" => true);
-            if (@+$set["final_soft"] > $Now)
-                $dl->final->done = $set["final_soft"];
+            $final_soft = +setting("final_soft");
+            if ($final_soft > $Now)
+                $dl->final->done = $final_soft;
             else {
-                $dl->final->done = @+$set["final_done"];
+                $dl->final->done = +setting("final_done");
                 $dl->final->ishard = true;
             }
             $dl->final->grace = "final_grace";
@@ -2876,7 +2879,7 @@ class Contact {
         // reviewer deadlines
         $revtypes = array();
         if ($this->is_reviewer()
-            && ($rev_open = @+$set["rev_open"]) > 0
+            && ($rev_open = +setting("rev_open")) > 0
             && $rev_open <= $Now)
             $dl->rev->open = true;
         if ($this->is_reviewer()) {
@@ -2888,14 +2891,15 @@ class Contact {
             }
         }
         if (@$dl->rev->open) {
-            $grace = @$set["rev_grace"];
+            $grace = setting("rev_grace");
             foreach ($Conf->defined_round_list() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
                 $jsuf = $i ? ".$round_name" : "";
                 foreach (array("pcrev", "extrev") as $rt) {
                     if ($rt == "pcrev" && !$this->isPC)
                         continue;
-                    list($s, $h) = array(@+$set["{$rt}_soft$isuf"], @+$set["{$rt}_hard$isuf"]);
+                    $s = +setting("{$rt}_soft$isuf");
+                    $h = +setting("{$rt}_hard$isuf");
                     $k = $rt . $jsuf;
                     $dlround = $dl->$k = (object) array("open" => true);
                     if ($h && ($h < $Now || $s < $Now)) {
@@ -2917,7 +2921,7 @@ class Contact {
         // grace periods: give a minute's notice of an impending grace
         // period
         foreach (get_object_vars($dl) as $dlsub) {
-            if (@$dlsub->open && @$dlsub->grace && ($grace = @$set[$dlsub->grace]))
+            if (@$dlsub->open && @$dlsub->grace && ($grace = setting($dlsub->grace)))
                 foreach (array("reg", "update", "sub", "done") as $k)
                     if (@$dlsub->$k && $dlsub->$k + 60 < $Now
                         && $dlsub->$k + $grace >= $Now) {

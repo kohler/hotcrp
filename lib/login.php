@@ -136,7 +136,7 @@ class LoginHelper {
             $reg->no_validate_email = true;
             if (!($user = Contact::create($reg)))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
-            if (defval($Conf->settings, "setupPhase", false))
+            if ($Conf->setting("setupPhase", false))
                 return self::first_user($user, $msg);
         }
 
@@ -248,7 +248,7 @@ class LoginHelper {
         $msg = "Successfully created an account for " . htmlspecialchars($_REQUEST["email"]) . ".";
 
         // handle setup phase
-        if (defval($Conf->settings, "setupPhase", false))
+        if ($Conf->setting("setupPhase", false))
             return self::first_user($user, $msg);
 
         if (Mailer::allow_send($user->email))

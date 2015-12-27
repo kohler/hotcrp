@@ -206,14 +206,6 @@ function update_schema_review_word_counts($Conf) {
     } while (count($q) == 32);
 }
 
-function update_schema_version($Conf, $n) {
-    if (Dbl::ql("update Settings set value=$n where name='allowPaperOption'")) {
-        $Conf->settings["allowPaperOption"] = $n;
-        return true;
-    } else
-        return false;
-}
-
 function updateSchema($Conf) {
     global $Opt, $OK;
     // avoid error message abut timezone, set to $Opt
@@ -221,30 +213,30 @@ function updateSchema($Conf) {
     if (function_exists("date_default_timezone_set") && @$Opt["timezone"])
         date_default_timezone_set($Opt["timezone"]);
 
-    error_log($Opt["dbName"] . ": updating schema from version " . $Conf->settings["allowPaperOption"]);
+    error_log($Opt["dbName"] . ": updating schema from version " . $Conf->sversion);
 
-    if ($Conf->settings["allowPaperOption"] == 6
+    if ($Conf->sversion == 6
         && Dbl::ql("alter table ReviewRequest add `reason` text"))
-        update_schema_version($Conf, 7);
-    if ($Conf->settings["allowPaperOption"] == 7
+        $Conf->update_schema_version(7);
+    if ($Conf->sversion == 7
         && Dbl::ql("alter table PaperReview add `textField7` mediumtext NOT NULL")
         && Dbl::ql("alter table PaperReview add `textField8` mediumtext NOT NULL")
         && Dbl::ql("insert into ReviewFormField set fieldName='textField7', shortName='Additional text field'")
         && Dbl::ql("insert into ReviewFormField set fieldName='textField8', shortName='Additional text field'"))
-        update_schema_version($Conf, 8);
-    if ($Conf->settings["allowPaperOption"] == 8
+        $Conf->update_schema_version(8);
+    if ($Conf->sversion == 8
         && Dbl::ql("alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0'")
         && Dbl::ql("alter table PaperReviewArchive add `textField7` mediumtext NOT NULL")
         && Dbl::ql("alter table PaperReviewArchive add `textField8` mediumtext NOT NULL"))
-        update_schema_version($Conf, 9);
-    if ($Conf->settings["allowPaperOption"] == 9
+        $Conf->update_schema_version(9);
+    if ($Conf->sversion == 9
         && Dbl::ql("alter table Paper add `sha1` varbinary(20) NOT NULL default ''"))
-        update_schema_version($Conf, 10);
-    if ($Conf->settings["allowPaperOption"] == 10
+        $Conf->update_schema_version(10);
+    if ($Conf->sversion == 10
         && Dbl::ql("alter table PaperReview add `reviewRound` tinyint(1) NOT NULL default '0'")
         && Dbl::ql("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'")
         && Dbl::ql("alter table PaperReview add key `reviewRound` (`reviewRound`)")
-        && update_schema_version($Conf, 11)) {
+        && $Conf->update_schema_version(11)) {
         if (count($Conf->round_list()) > 1) {
             // update review rounds (XXX locking)
             $result = Dbl::ql("select paperId, tag from PaperTag where tag like '%~%'");
@@ -265,7 +257,7 @@ function updateSchema($Conf) {
             Dbl::ql("delete from PaperTag where " . substr($x, 0, strlen($x) - 3));
         }
     }
-    if ($Conf->settings["allowPaperOption"] == 11
+    if ($Conf->sversion == 11
         && Dbl::ql("create table `ReviewRating` (
   `reviewId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
@@ -273,28 +265,28 @@ function updateSchema($Conf) {
   UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
   UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8"))
-        update_schema_version($Conf, 12);
-    if ($Conf->settings["allowPaperOption"] == 12
+        $Conf->update_schema_version(12);
+    if ($Conf->sversion == 12
         && Dbl::ql("alter table PaperReview add `reviewToken` int(11) NOT NULL default '0'"))
-        update_schema_version($Conf, 13);
-    if ($Conf->settings["allowPaperOption"] == 13
+        $Conf->update_schema_version(13);
+    if ($Conf->sversion == 13
         && Dbl::ql("alter table OptionType add `optionValues` text NOT NULL default ''"))
-        update_schema_version($Conf, 14);
-    if ($Conf->settings["allowPaperOption"] == 14
+        $Conf->update_schema_version(14);
+    if ($Conf->sversion == 14
         && Dbl::ql("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)"))
-        update_schema_version($Conf, 15);
-    if ($Conf->settings["allowPaperOption"] == 15) {
+        $Conf->update_schema_version(15);
+    if ($Conf->sversion == 15) {
         // It's OK if this fails!  Update 11 added reviewRound to
         // PaperReviewArchive (so old databases have the column), but I forgot
         // to upgrade schema.sql (so new databases lack the column).
         Dbl::ql("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'");
         $OK = true;
-        update_schema_version($Conf, 16);
+        $Conf->update_schema_version(16);
     }
-    if ($Conf->settings["allowPaperOption"] == 16
+    if ($Conf->sversion == 16
         && Dbl::ql("alter table PaperReview add `reviewEditVersion` int(1) NOT NULL default '0'"))
-        update_schema_version($Conf, 17);
-    if ($Conf->settings["allowPaperOption"] == 17
+        $Conf->update_schema_version(17);
+    if ($Conf->sversion == 17
         && Dbl::ql("alter table PaperReviewPreference add key `paperId` (`paperId`)")
         && Dbl::ql("create table PaperRank (
   `paperId` int(11) NOT NULL,
@@ -303,54 +295,54 @@ function updateSchema($Conf) {
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;"))
-        update_schema_version($Conf, 18);
-    if ($Conf->settings["allowPaperOption"] == 18
+        $Conf->update_schema_version(18);
+    if ($Conf->sversion == 18
         && Dbl::ql("alter table PaperComment add `replyTo` int(11) NOT NULL"))
-        update_schema_version($Conf, 19);
-    if ($Conf->settings["allowPaperOption"] == 19
+        $Conf->update_schema_version(19);
+    if ($Conf->sversion == 19
         && Dbl::ql("drop table PaperRank"))
-        update_schema_version($Conf, 20);
-    if ($Conf->settings["allowPaperOption"] == 20
+        $Conf->update_schema_version(20);
+    if ($Conf->sversion == 20
         && Dbl::ql("alter table PaperComment add `timeNotified` int(11) NOT NULL default '0'"))
-        update_schema_version($Conf, 21);
-    if ($Conf->settings["allowPaperOption"] == 21
+        $Conf->update_schema_version(21);
+    if ($Conf->sversion == 21
         && Dbl::ql("update PaperConflict set conflictType=8 where conflictType=3"))
-        update_schema_version($Conf, 22);
-    if ($Conf->settings["allowPaperOption"] == 22
+        $Conf->update_schema_version(22);
+    if ($Conf->sversion == 22
         && Dbl::ql("insert into ChairAssistant (contactId) select contactId from Chair on duplicate key update ChairAssistant.contactId=ChairAssistant.contactId")
         && Dbl::ql("update ContactInfo set roles=roles+2 where roles=5"))
-        update_schema_version($Conf, 23);
-    if ($Conf->settings["allowPaperOption"] == 23)
-        update_schema_version($Conf, 24);
-    if ($Conf->settings["allowPaperOption"] == 24
+        $Conf->update_schema_version(23);
+    if ($Conf->sversion == 23)
+        $Conf->update_schema_version(24);
+    if ($Conf->sversion == 24
         && Dbl::ql("alter table ContactInfo add `preferredEmail` varchar(120)"))
-        update_schema_version($Conf, 25);
-    if ($Conf->settings["allowPaperOption"] == 25) {
+        $Conf->update_schema_version(25);
+    if ($Conf->sversion == 25) {
         if ($Conf->settings["final_done"] > 0
             && !isset($Conf->settings["final_soft"])
             && Dbl::ql("insert into Settings (name, value) values ('final_soft', " . $Conf->settings["final_done"] . ") on duplicate key update value=values(value)"))
             $Conf->settings["final_soft"] = $Conf->settings["final_done"];
-        update_schema_version($Conf, 26);
+        $Conf->update_schema_version(26);
     }
-    if ($Conf->settings["allowPaperOption"] == 26
+    if ($Conf->sversion == 26
         && Dbl::ql("alter table PaperOption add `data` text")
         && Dbl::ql("alter table OptionType add `type` tinyint(1) NOT NULL default '0'")
         && Dbl::ql("update OptionType set type=2 where optionValues='\x7Fi'")
         && Dbl::ql("update OptionType set type=1 where type=0 and optionValues!=''"))
-        update_schema_version($Conf, 27);
-    if ($Conf->settings["allowPaperOption"] == 27
+        $Conf->update_schema_version(27);
+    if ($Conf->sversion == 27
         && Dbl::ql("alter table PaperStorage add `sha1` varbinary(20) NOT NULL default ''")
         && Dbl::ql("alter table PaperStorage add `documentType` int(3) NOT NULL default '0'")
         && Dbl::ql("update PaperStorage s, Paper p set s.sha1=p.sha1 where s.paperStorageId=p.paperStorageId and p.finalPaperStorageId=0 and s.paperStorageId>0")
         && Dbl::ql("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=" . DTYPE_FINAL . " where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0"))
-        update_schema_version($Conf, 28);
-    if ($Conf->settings["allowPaperOption"] == 28
+        $Conf->update_schema_version(28);
+    if ($Conf->sversion == 28
         && Dbl::ql("alter table OptionType add `sortOrder` tinyint(1) NOT NULL default '0'"))
-        update_schema_version($Conf, 29);
-    if ($Conf->settings["allowPaperOption"] == 29
+        $Conf->update_schema_version(29);
+    if ($Conf->sversion == 29
         && Dbl::ql("delete from Settings where name='pldisplay_default'"))
-        update_schema_version($Conf, 30);
-    if ($Conf->settings["allowPaperOption"] == 30
+        $Conf->update_schema_version(30);
+    if ($Conf->sversion == 30
         && Dbl::ql("DROP TABLE IF EXISTS `Formula`")
         && Dbl::ql("CREATE TABLE `Formula` (
   `formulaId` int(11) NOT NULL auto_increment,
@@ -363,36 +355,36 @@ function updateSchema($Conf) {
   UNIQUE KEY `formulaId` (`formulaId`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8"))
-        update_schema_version($Conf, 31);
-    if ($Conf->settings["allowPaperOption"] == 31
+        $Conf->update_schema_version(31);
+    if ($Conf->sversion == 31
         && Dbl::ql("alter table Formula add `createdBy` int(11) NOT NULL default '0'")
         && Dbl::ql("alter table Formula add `timeModified` int(11) NOT NULL default '0'")
         && Dbl::ql("alter table Formula drop index `name`"))
-        update_schema_version($Conf, 32);
-    if ($Conf->settings["allowPaperOption"] == 32
+        $Conf->update_schema_version(32);
+    if ($Conf->sversion == 32
         && Dbl::ql("alter table PaperComment add key `timeModified` (`timeModified`)"))
-        update_schema_version($Conf, 33);
-    if ($Conf->settings["allowPaperOption"] == 33
+        $Conf->update_schema_version(33);
+    if ($Conf->sversion == 33
         && Dbl::ql("alter table PaperComment add `paperStorageId` int(11) NOT NULL default '0'"))
-        update_schema_version($Conf, 34);
-    if ($Conf->settings["allowPaperOption"] == 34
+        $Conf->update_schema_version(34);
+    if ($Conf->sversion == 34
         && Dbl::ql("alter table ContactInfo add `contactTags` text"))
-        update_schema_version($Conf, 35);
-    if ($Conf->settings["allowPaperOption"] == 35
+        $Conf->update_schema_version(35);
+    if ($Conf->sversion == 35
         && Dbl::ql("alter table ContactInfo modify `defaultWatch` int(11) NOT NULL default '2'")
         && Dbl::ql("alter table PaperWatch modify `watch` int(11) NOT NULL default '0'"))
-        update_schema_version($Conf, 36);
-    if ($Conf->settings["allowPaperOption"] == 36
+        $Conf->update_schema_version(36);
+    if ($Conf->sversion == 36
         && Dbl::ql("alter table PaperReview add `reviewNotified` int(1) default NULL")
         && Dbl::ql("alter table PaperReviewArchive add `reviewNotified` int(1) default NULL"))
-        update_schema_version($Conf, 37);
-    if ($Conf->settings["allowPaperOption"] == 37
+        $Conf->update_schema_version(37);
+    if ($Conf->sversion == 37
         && Dbl::ql("alter table OptionType add `displayType` tinyint(1) NOT NULL default '0'"))
-        update_schema_version($Conf, 38);
-    if ($Conf->settings["allowPaperOption"] == 38
+        $Conf->update_schema_version(38);
+    if ($Conf->sversion == 38
         && Dbl::ql("update PaperComment set forReviewers=1 where forReviewers=-1"))
-        update_schema_version($Conf, 39);
-    if ($Conf->settings["allowPaperOption"] == 39
+        $Conf->update_schema_version(39);
+    if ($Conf->sversion == 39
         && Dbl::ql("CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL auto_increment,
   `recipients` varchar(200) NOT NULL,
@@ -403,101 +395,99 @@ function updateSchema($Conf) {
   `emailBody` text,
   PRIMARY KEY  (`mailId`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8"))
-        update_schema_version($Conf, 40);
-    if ($Conf->settings["allowPaperOption"] == 40
+        $Conf->update_schema_version(40);
+    if ($Conf->sversion == 40
         && Dbl::ql("alter table Paper add `capVersion` int(1) NOT NULL default '0'"))
-        update_schema_version($Conf, 41);
-    if ($Conf->settings["allowPaperOption"] == 41
+        $Conf->update_schema_version(41);
+    if ($Conf->sversion == 41
         && Dbl::ql("alter table Paper modify `mimetype` varchar(80) NOT NULL default ''")
         && Dbl::ql("alter table PaperStorage modify `mimetype` varchar(80) NOT NULL default ''"))
-        update_schema_version($Conf, 42);
-    if ($Conf->settings["allowPaperOption"] == 42
+        $Conf->update_schema_version(42);
+    if ($Conf->sversion == 42
         && Dbl::ql("alter table PaperComment add `ordinal` int(11) NOT NULL default '0'"))
-        update_schema_version($Conf, 43);
-    if ($Conf->settings["allowPaperOption"] == 42
+        $Conf->update_schema_version(43);
+    if ($Conf->sversion == 42
         && ($result = Dbl::ql("describe PaperComment `ordinal`"))
         && ($o = edb_orow($result))
         && substr($o->Type, 0, 3) == "int"
         && (!$o->Null || $o->Null == "NO")
         && (!$o->Default || $o->Default == "0"))
-        update_schema_version($Conf, 43);
-    if ($Conf->settings["allowPaperOption"] == 43
+        $Conf->update_schema_version(43);
+    if ($Conf->sversion == 43
         && Dbl::ql("alter table Paper add `withdrawReason` text"))
-        update_schema_version($Conf, 44);
-    if ($Conf->settings["allowPaperOption"] == 44
+        $Conf->update_schema_version(44);
+    if ($Conf->sversion == 44
         && Dbl::ql("alter table PaperStorage add `filename` varchar(255)"))
-        update_schema_version($Conf, 45);
-    if ($Conf->settings["allowPaperOption"] == 45
+        $Conf->update_schema_version(45);
+    if ($Conf->sversion == 45
         && Dbl::ql("alter table PaperReview add `timeRequested` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReview add `timeRequestNotified` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReviewArchive add `timeRequested` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReviewArchive add `timeRequestNotified` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReview drop column `requestedOn`")
         && Dbl::ql("alter table PaperReviewArchive drop column `requestedOn`"))
-        update_schema_version($Conf, 46);
-    if ($Conf->settings["allowPaperOption"] == 46
+        $Conf->update_schema_version(46);
+    if ($Conf->sversion == 46
         && Dbl::ql("alter table ContactInfo add `disabled` tinyint(1) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 47);
-    if ($Conf->settings["allowPaperOption"] == 47
+        $Conf->update_schema_version(47);
+    if ($Conf->sversion == 47
         && Dbl::ql("delete from ti using TopicInterest ti left join TopicArea ta using (topicId) where ta.topicId is null"))
-        update_schema_version($Conf, 48);
-    if ($Conf->settings["allowPaperOption"] == 48
+        $Conf->update_schema_version(48);
+    if ($Conf->sversion == 48
         && Dbl::ql("alter table PaperReview add `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReviewArchive add `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReviewArchive add `reviewToken` int(11) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 49);
-    if ($Conf->settings["allowPaperOption"] == 49
+        $Conf->update_schema_version(49);
+    if ($Conf->sversion == 49
         && Dbl::ql("alter table PaperOption drop index `paperOption`")
         && Dbl::ql("alter table PaperOption add index `paperOption` (`paperId`,`optionId`,`value`)"))
-        update_schema_version($Conf, 50);
-    if ($Conf->settings["allowPaperOption"] == 50
+        $Conf->update_schema_version(50);
+    if ($Conf->sversion == 50
         && Dbl::ql("alter table Paper add `managerContactId` int(11) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 51);
-    if ($Conf->settings["allowPaperOption"] == 51
+        $Conf->update_schema_version(51);
+    if ($Conf->sversion == 51
         && Dbl::ql("alter table Paper drop column `numComments`")
         && Dbl::ql("alter table Paper drop column `numAuthorComments`"))
-        update_schema_version($Conf, 52);
+        $Conf->update_schema_version(52);
     // Due to a bug in the schema updater, some databases might have
     // sversion>=53 but no `PaperComment.commentType` column. Fix them.
-    if (($Conf->settings["allowPaperOption"] == 52
-         || ($Conf->settings["allowPaperOption"] >= 53
+    if (($Conf->sversion == 52
+         || ($Conf->sversion >= 53
              && ($result = Dbl::ql("show columns from PaperComment like 'commentType'"))
              && edb_nrows($result) == 0))
         && Dbl::ql("lock tables PaperComment write, Settings write")
         && Dbl::ql("alter table PaperComment add `commentType` int(11) NOT NULL DEFAULT '0'")) {
-        if (($new_sversion = $Conf->settings["allowPaperOption"]) < 53)
-            $new_sversion = 53;
+        $new_sversion = max($Conf->sversion, 53);
         $result = Dbl::ql("show columns from PaperComment like 'forAuthors'");
-        if ((!$result
-             || edb_nrows($result) == 0
-             || (Dbl::ql("update PaperComment set commentType=" . (COMMENTTYPE_AUTHOR | COMMENTTYPE_RESPONSE) . " where forAuthors=2")
-                 && Dbl::ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_DRAFT . " where forAuthors=2 and forReviewers=0")
-                 && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_ADMINONLY . " where forAuthors=0 and forReviewers=2")
-                 && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_PCONLY . " where forAuthors=0 and forReviewers=0")
-                 && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_REVIEWER . " where forAuthors=0 and forReviewers=1")
-                 && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_AUTHOR . " where forAuthors!=0 and forAuthors!=2")
-                 && Dbl::ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_BLIND . " where blind=1")))
-            && Dbl::ql("update Settings set value=$new_sversion where name='allowPaperOption'"))
-            $Conf->settings["allowPaperOption"] = $new_sversion;
+        if (!$result
+            || edb_nrows($result) == 0
+            || (Dbl::ql("update PaperComment set commentType=" . (COMMENTTYPE_AUTHOR | COMMENTTYPE_RESPONSE) . " where forAuthors=2")
+                && Dbl::ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_DRAFT . " where forAuthors=2 and forReviewers=0")
+                && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_ADMINONLY . " where forAuthors=0 and forReviewers=2")
+                && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_PCONLY . " where forAuthors=0 and forReviewers=0")
+                && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_REVIEWER . " where forAuthors=0 and forReviewers=1")
+                && Dbl::ql("update PaperComment set commentType=" . COMMENTTYPE_AUTHOR . " where forAuthors!=0 and forAuthors!=2")
+                && Dbl::ql("update PaperComment set commentType=commentType|" . COMMENTTYPE_BLIND . " where blind=1")))
+            $Conf->update_schema_version($new_sversion);
     }
-    if ($Conf->settings["allowPaperOption"] < 53)
+    if ($Conf->sversion < 53)
         Dbl::qx_raw($Conf->dblink, "alter table PaperComment drop column `commentType`");
     Dbl::ql("unlock tables");
-    if ($Conf->settings["allowPaperOption"] == 53
+    if ($Conf->sversion == 53
         && Dbl::ql("alter table PaperComment drop column `forReviewers`")
         && Dbl::ql("alter table PaperComment drop column `forAuthors`")
         && Dbl::ql("alter table PaperComment drop column `blind`"))
-        update_schema_version($Conf, 54);
-    if ($Conf->settings["allowPaperOption"] == 54
+        $Conf->update_schema_version(54);
+    if ($Conf->sversion == 54
         && Dbl::ql("alter table PaperStorage add `infoJson` varchar(255) DEFAULT NULL"))
-        update_schema_version($Conf, 55);
-    if ($Conf->settings["allowPaperOption"] == 55
+        $Conf->update_schema_version(55);
+    if ($Conf->sversion == 55
         && Dbl::ql("alter table ContactInfo modify `password` varbinary(2048) NOT NULL"))
-        update_schema_version($Conf, 56);
-    if ($Conf->settings["allowPaperOption"] == 56
+        $Conf->update_schema_version(56);
+    if ($Conf->sversion == 56
         && Dbl::ql("alter table Settings modify `data` blob"))
-        update_schema_version($Conf, 57);
-    if ($Conf->settings["allowPaperOption"] == 57
+        $Conf->update_schema_version(57);
+    if ($Conf->sversion == 57
         && Dbl::ql("DROP TABLE IF EXISTS `Capability`")
         && Dbl::ql("CREATE TABLE `Capability` (
   `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
@@ -518,8 +508,8 @@ function updateSchema($Conf) {
   PRIMARY KEY (`capabilityValue`),
   UNIQUE KEY `capabilityValue` (`capabilityValue`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8"))
-        update_schema_version($Conf, 58);
-    if ($Conf->settings["allowPaperOption"] == 58
+        $Conf->update_schema_version(58);
+    if ($Conf->sversion == 58
         && Dbl::ql("alter table PaperReview modify `paperSummary` mediumtext DEFAULT NULL")
         && Dbl::ql("alter table PaperReview modify `commentsToAuthor` mediumtext DEFAULT NULL")
         && Dbl::ql("alter table PaperReview modify `commentsToPC` mediumtext DEFAULT NULL")
@@ -536,8 +526,8 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperReviewArchive modify `strengthOfPaper` mediumtext DEFAULT NULL")
         && Dbl::ql("alter table PaperReviewArchive modify `textField7` mediumtext DEFAULT NULL")
         && Dbl::ql("alter table PaperReviewArchive modify `textField8` mediumtext DEFAULT NULL"))
-        update_schema_version($Conf, 59);
-    if ($Conf->settings["allowPaperOption"] == 59
+        $Conf->update_schema_version(59);
+    if ($Conf->sversion == 59
         && Dbl::ql("alter table ActionLog modify `action` varbinary(4096) NOT NULL")
         && Dbl::ql("alter table ContactInfo modify `note` varbinary(4096) DEFAULT NULL")
         && Dbl::ql("alter table ContactInfo modify `collaborators` varbinary(32767) DEFAULT NULL")
@@ -560,18 +550,18 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperTopic modify `topicId` int(11) NOT NULL")
         && Dbl::ql("alter table PaperTopic modify `paperId` int(11) NOT NULL")
         && Dbl::ql("drop table if exists ChairTag"))
-        update_schema_version($Conf, 60);
-    if ($Conf->settings["allowPaperOption"] == 60
+        $Conf->update_schema_version(60);
+    if ($Conf->sversion == 60
         && Dbl::ql("insert into Settings (name,value,data) select concat('msg.',substr(name,1,length(name)-3)), value, data from Settings where name='homemsg' or name='conflictdefmsg'")
-        && Dbl::ql("update Settings set value=61 where name='allowPaperOption'")) {
+        && $Conf->update_schema_version(61)) {
         foreach (array("conflictdef", "home") as $k)
             if (isset($Conf->settingTexts["${k}msg"]))
                 $Conf->settingTexts["msg.$k"] = $Conf->settingTexts["${k}msg"];
         $Conf->settings["allowPaperOption"] = 61;
     }
-    if ($Conf->settings["allowPaperOption"] == 61
+    if ($Conf->sversion == 61
         && Dbl::ql("alter table Capability modify `data` varbinary(4096) DEFAULT NULL"))
-        update_schema_version($Conf, 62);
+        $Conf->update_schema_version(62);
     if (!isset($Conf->settings["outcome_map"])) {
         $ojson = array();
         $result = Dbl::ql("select * from ReviewFormOptions where fieldName='outcome'");
@@ -579,126 +569,126 @@ function updateSchema($Conf) {
             $ojson[$row->level] = $row->description;
         $Conf->save_setting("outcome_map", 1, $ojson);
     }
-    if ($Conf->settings["allowPaperOption"] == 62
+    if ($Conf->sversion == 62
         && isset($Conf->settings["outcome_map"]))
-        update_schema_version($Conf, 63);
+        $Conf->update_schema_version(63);
     if (!isset($Conf->settings["review_form"])
-        && $Conf->settings["allowPaperOption"] < 65)
+        && $Conf->sversion < 65)
         update_schema_create_review_form($Conf);
-    if ($Conf->settings["allowPaperOption"] == 63
+    if ($Conf->sversion == 63
         && isset($Conf->settings["review_form"]))
-        update_schema_version($Conf, 64);
-    if ($Conf->settings["allowPaperOption"] == 64
+        $Conf->update_schema_version(64);
+    if ($Conf->sversion == 64
         && Dbl::ql("drop table if exists `ReviewFormField`")
         && Dbl::ql("drop table if exists `ReviewFormOptions`"))
-        update_schema_version($Conf, 65);
+        $Conf->update_schema_version(65);
     if (!isset($Conf->settings["options"])
-        && $Conf->settings["allowPaperOption"] < 67)
+        && $Conf->sversion < 67)
         update_schema_create_options($Conf);
-    if ($Conf->settings["allowPaperOption"] == 65
+    if ($Conf->sversion == 65
         && isset($Conf->settings["options"]))
-        update_schema_version($Conf, 66);
-    if ($Conf->settings["allowPaperOption"] == 66
+        $Conf->update_schema_version(66);
+    if ($Conf->sversion == 66
         && Dbl::ql("drop table if exists `OptionType`"))
-        update_schema_version($Conf, 67);
-    if ($Conf->settings["allowPaperOption"] == 67
+        $Conf->update_schema_version(67);
+    if ($Conf->sversion == 67
         && Dbl::ql("alter table PaperComment modify `comment` varbinary(32767) DEFAULT NULL")
         && Dbl::ql("alter table PaperComment add `commentTags` varbinary(1024) DEFAULT NULL"))
-        update_schema_version($Conf, 68);
-    if ($Conf->settings["allowPaperOption"] == 68
+        $Conf->update_schema_version(68);
+    if ($Conf->sversion == 68
         && Dbl::ql("alter table PaperReviewPreference add `expertise` int(4) DEFAULT NULL"))
-        update_schema_version($Conf, 69);
-    if ($Conf->settings["allowPaperOption"] == 69
+        $Conf->update_schema_version(69);
+    if ($Conf->sversion == 69
         && Dbl::ql("alter table Paper drop column `pcPaper`"))
-        update_schema_version($Conf, 70);
-    if ($Conf->settings["allowPaperOption"] == 70
+        $Conf->update_schema_version(70);
+    if ($Conf->sversion == 70
         && Dbl::ql("alter table ContactInfo modify `voicePhoneNumber` varbinary(256) DEFAULT NULL")
         && Dbl::ql("alter table ContactInfo modify `faxPhoneNumber` varbinary(256) DEFAULT NULL")
         && Dbl::ql("alter table ContactInfo modify `collaborators` varbinary(8192) DEFAULT NULL")
         && Dbl::ql("alter table ContactInfo drop column `note`")
         && Dbl::ql("alter table ContactInfo add `data` varbinary(32767) DEFAULT NULL"))
-        update_schema_version($Conf, 71);
-    if ($Conf->settings["allowPaperOption"] == 71
+        $Conf->update_schema_version(71);
+    if ($Conf->sversion == 71
         && Dbl::ql("alter table Settings modify `name` varbinary(256) DEFAULT NULL")
         && Dbl::ql("update Settings set name=rtrim(name)"))
-        update_schema_version($Conf, 72);
-    if ($Conf->settings["allowPaperOption"] == 72
+        $Conf->update_schema_version(72);
+    if ($Conf->sversion == 72
         && Dbl::ql("update TopicInterest set interest=-2 where interest=0")
         && Dbl::ql("update TopicInterest set interest=4 where interest=2")
         && Dbl::ql("delete from TopicInterest where interest=1"))
-        update_schema_version($Conf, 73);
-    if ($Conf->settings["allowPaperOption"] == 73
+        $Conf->update_schema_version(73);
+    if ($Conf->sversion == 73
         && Dbl::ql("alter table PaperStorage add `size` bigint(11) DEFAULT NULL")
         && Dbl::ql("update PaperStorage set `size`=length(paper) where paper is not null"))
-        update_schema_version($Conf, 74);
-    if ($Conf->settings["allowPaperOption"] == 74
+        $Conf->update_schema_version(74);
+    if ($Conf->sversion == 74
         && Dbl::ql("alter table ContactInfo drop column `visits`"))
-        update_schema_version($Conf, 75);
-    if ($Conf->settings["allowPaperOption"] == 75) {
+        $Conf->update_schema_version(75);
+    if ($Conf->sversion == 75) {
         foreach (array("capability_gc", "s3_scope", "s3_signing_key") as $k)
             if (isset($Conf->settings[$k])) {
                 $Conf->save_setting("__" . $k, $Conf->settings[$k], @$Conf->settingTexts[$k]);
                 $Conf->save_setting($k, null);
             }
-        $Conf->save_setting("allowPaperOption", 76);
+        $Conf->update_schema_version(76);
     }
-    if ($Conf->settings["allowPaperOption"] == 76
+    if ($Conf->sversion == 76
         && Dbl::ql("update PaperReviewPreference set expertise=-expertise"))
-        update_schema_version($Conf, 77);
-    if ($Conf->settings["allowPaperOption"] == 77
+        $Conf->update_schema_version(77);
+    if ($Conf->sversion == 77
         && Dbl::ql("alter table MailLog add `q` varchar(4096)"))
-        update_schema_version($Conf, 78);
-    if ($Conf->settings["allowPaperOption"] == 78
+        $Conf->update_schema_version(78);
+    if ($Conf->sversion == 78
         && Dbl::ql("alter table MailLog add `t` varchar(200)"))
-        update_schema_version($Conf, 79);
-    if ($Conf->settings["allowPaperOption"] == 79
+        $Conf->update_schema_version(79);
+    if ($Conf->sversion == 79
         && Dbl::ql("alter table ContactInfo add `passwordTime` int(11) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 80);
-    if ($Conf->settings["allowPaperOption"] == 80
+        $Conf->update_schema_version(80);
+    if ($Conf->sversion == 80
         && Dbl::ql("alter table PaperReview modify `reviewRound` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperReviewArchive modify `reviewRound` int(11) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 81);
-    if ($Conf->settings["allowPaperOption"] == 81
+        $Conf->update_schema_version(81);
+    if ($Conf->sversion == 81
         && Dbl::ql("alter table PaperStorage add `filterType` int(3) DEFAULT NULL")
         && Dbl::ql("alter table PaperStorage add `originalStorageId` int(11) DEFAULT NULL"))
-        update_schema_version($Conf, 82);
-    if ($Conf->settings["allowPaperOption"] == 82
+        $Conf->update_schema_version(82);
+    if ($Conf->sversion == 82
         && Dbl::ql("update Settings set name='msg.resp_instrux' where name='msg.responseinstructions'"))
-        update_schema_version($Conf, 83);
-    if ($Conf->settings["allowPaperOption"] == 83
+        $Conf->update_schema_version(83);
+    if ($Conf->sversion == 83
         && Dbl::ql("alter table PaperComment add `commentRound` int(11) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 84);
-    if ($Conf->settings["allowPaperOption"] == 84
+        $Conf->update_schema_version(84);
+    if ($Conf->sversion == 84
         && Dbl::ql("insert ignore into Settings (name, value) select 'resp_active', value from Settings where name='resp_open'"))
-        update_schema_version($Conf, 85);
-    if ($Conf->settings["allowPaperOption"] == 85
+        $Conf->update_schema_version(85);
+    if ($Conf->sversion == 85
         && Dbl::ql("DROP TABLE IF EXISTS `PCMember`")
         && Dbl::ql("DROP TABLE IF EXISTS `ChairAssistant`")
         && Dbl::ql("DROP TABLE IF EXISTS `Chair`"))
-        update_schema_version($Conf, 86);
-    if ($Conf->settings["allowPaperOption"] == 86
+        $Conf->update_schema_version(86);
+    if ($Conf->sversion == 86
         && update_schema_transfer_address($Conf))
-        update_schema_version($Conf, 87);
-    if ($Conf->settings["allowPaperOption"] == 87
+        $Conf->update_schema_version(87);
+    if ($Conf->sversion == 87
         && Dbl::ql("DROP TABLE IF EXISTS `ContactAddress`"))
-        update_schema_version($Conf, 88);
-    if ($Conf->settings["allowPaperOption"] == 88
+        $Conf->update_schema_version(88);
+    if ($Conf->sversion == 88
         && Dbl::ql("alter table ContactInfo drop key `name`")
         && Dbl::ql("alter table ContactInfo drop key `affiliation`")
         && Dbl::ql("alter table ContactInfo drop key `email_3`")
         && Dbl::ql("alter table ContactInfo drop key `firstName_2`")
         && Dbl::ql("alter table ContactInfo drop key `lastName`"))
-        update_schema_version($Conf, 89);
-    if ($Conf->settings["allowPaperOption"] == 89
+        $Conf->update_schema_version(89);
+    if ($Conf->sversion == 89
         && update_schema_unaccented_name($Conf))
-        update_schema_version($Conf, 90);
-    if ($Conf->settings["allowPaperOption"] == 90
+        $Conf->update_schema_version(90);
+    if ($Conf->sversion == 90
         && Dbl::ql("alter table PaperReview add `reviewAuthorSeen` int(11) DEFAULT NULL"))
-        update_schema_version($Conf, 91);
-    if ($Conf->settings["allowPaperOption"] == 91
+        $Conf->update_schema_version(91);
+    if ($Conf->sversion == 91
         && Dbl::ql("alter table PaperReviewArchive add `reviewAuthorSeen` int(11) DEFAULT NULL"))
-        update_schema_version($Conf, 92);
-    if ($Conf->settings["allowPaperOption"] == 92
+        $Conf->update_schema_version(92);
+    if ($Conf->sversion == 92
         && Dbl::ql("alter table Paper drop key `titleAbstractText`")
         && Dbl::ql("alter table Paper drop key `allText`")
         && Dbl::ql("alter table Paper drop key `authorText`")
@@ -706,26 +696,26 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table Paper modify `abstract` varbinary(16384) DEFAULT NULL")
         && Dbl::ql("alter table Paper modify `collaborators` varbinary(8192) DEFAULT NULL")
         && Dbl::ql("alter table Paper modify `withdrawReason` varbinary(1024) DEFAULT NULL"))
-        update_schema_version($Conf, 93);
-    if ($Conf->settings["allowPaperOption"] == 93
+        $Conf->update_schema_version(93);
+    if ($Conf->sversion == 93
         && Dbl::ql("alter table TopicArea modify `topicName` varchar(200) DEFAULT NULL"))
-        update_schema_version($Conf, 94);
-    if ($Conf->settings["allowPaperOption"] == 94
+        $Conf->update_schema_version(94);
+    if ($Conf->sversion == 94
         && Dbl::ql("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
         foreach (PaperOption::option_list($Conf) as $opt)
             if ($opt->type === "text")
                 Dbl::ql("delete from PaperOption where optionId={$opt->id} and data=''");
-        update_schema_version($Conf, 95);
+        $Conf->update_schema_version(95);
     }
-    if ($Conf->settings["allowPaperOption"] == 95
+    if ($Conf->sversion == 95
         && Dbl::ql("alter table Capability add unique key `salt` (`salt`)")
         && Dbl::ql("update Capability join CapabilityMap using (capabilityId) set Capability.salt=CapabilityMap.capabilityValue")
         && Dbl::ql("drop table if exists `CapabilityMap`"))
-        update_schema_version($Conf, 96);
-    if ($Conf->settings["allowPaperOption"] == 96
+        $Conf->update_schema_version(96);
+    if ($Conf->sversion == 96
         && Dbl::ql("alter table ContactInfo add `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 97);
-    if ($Conf->settings["allowPaperOption"] == 97
+        $Conf->update_schema_version(97);
+    if ($Conf->sversion == 97
         && Dbl::ql("alter table PaperReview add `reviewWordCount` int(11) DEFAULT NULL")
         && Dbl::ql("alter table PaperReviewArchive add `reviewWordCount` int(11)  DEFAULT NULL")
         && Dbl::ql("alter table PaperReviewArchive drop key `reviewId`")
@@ -734,12 +724,12 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperReviewArchive drop key `reviewNeedsSubmit`")
         && Dbl::ql("alter table PaperReviewArchive drop key `reviewType`")
         && Dbl::ql("alter table PaperReviewArchive drop key `requestedBy`"))
-        update_schema_version($Conf, 98);
-    if ($Conf->settings["allowPaperOption"] == 98) {
+        $Conf->update_schema_version(98);
+    if ($Conf->sversion == 98) {
         update_schema_review_word_counts($Conf);
-        update_schema_version($Conf, 99);
+        $Conf->update_schema_version(99);
     }
-    if ($Conf->settings["allowPaperOption"] == 99
+    if ($Conf->sversion == 99
         && Dbl::ql("alter table ContactInfo ENGINE=InnoDB")
         && Dbl::ql("alter table Paper ENGINE=InnoDB")
         && Dbl::ql("alter table PaperComment ENGINE=InnoDB")
@@ -750,8 +740,8 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperTag ENGINE=InnoDB")
         && Dbl::ql("alter table PaperTopic ENGINE=InnoDB")
         && Dbl::ql("alter table Settings ENGINE=InnoDB"))
-        update_schema_version($Conf, 100);
-    if ($Conf->settings["allowPaperOption"] == 100
+        $Conf->update_schema_version(100);
+    if ($Conf->sversion == 100
         && Dbl::ql("alter table ActionLog ENGINE=InnoDB")
         && Dbl::ql("alter table Capability ENGINE=InnoDB")
         && Dbl::ql("alter table Formula ENGINE=InnoDB")
@@ -764,8 +754,8 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table ReviewRequest ENGINE=InnoDB")
         && Dbl::ql("alter table TopicArea ENGINE=InnoDB")
         && Dbl::ql("alter table TopicInterest ENGINE=InnoDB"))
-        update_schema_version($Conf, 101);
-    if ($Conf->settings["allowPaperOption"] == 101
+        $Conf->update_schema_version(101);
+    if ($Conf->sversion == 101
         && Dbl::ql("alter table ActionLog modify `ipaddr` varbinary(32) DEFAULT NULL")
         && Dbl::ql("alter table MailLog modify `recipients` varbinary(200) NOT NULL")
         && Dbl::ql("alter table MailLog modify `q` varbinary(4096) DEFAULT NULL")
@@ -774,8 +764,8 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperStorage modify `mimetype` varbinary(80) NOT NULL DEFAULT ''")
         && Dbl::ql("alter table PaperStorage modify `filename` varbinary(255) DEFAULT NULL")
         && Dbl::ql("alter table PaperStorage modify `infoJson` varbinary(8192) DEFAULT NULL"))
-        update_schema_version($Conf, 102);
-    if ($Conf->settings["allowPaperOption"] == 102
+        $Conf->update_schema_version(102);
+    if ($Conf->sversion == 102
         && Dbl::ql("alter table PaperReview modify `paperSummary` mediumblob")
         && Dbl::ql("alter table PaperReview modify `commentsToAuthor` mediumblob")
         && Dbl::ql("alter table PaperReview modify `commentsToPC` mediumblob")
@@ -792,26 +782,26 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperReviewArchive modify `strengthOfPaper` mediumblob")
         && Dbl::ql("alter table PaperReviewArchive modify `textField7` mediumblob")
         && Dbl::ql("alter table PaperReviewArchive modify `textField8` mediumblob"))
-        update_schema_version($Conf, 103);
-    if ($Conf->settings["allowPaperOption"] == 103
+        $Conf->update_schema_version(103);
+    if ($Conf->sversion == 103
         && Dbl::ql("alter table Paper modify `title` varbinary(256) DEFAULT NULL")
         && Dbl::ql("alter table Paper drop key `title`"))
-        update_schema_version($Conf, 104);
-    if ($Conf->settings["allowPaperOption"] == 104
+        $Conf->update_schema_version(104);
+    if ($Conf->sversion == 104
         && Dbl::ql("alter table PaperReview add `reviewFormat` tinyint(1) DEFAULT NULL")
         && Dbl::ql("alter table PaperReviewArchive add `reviewFormat` tinyint(1) DEFAULT NULL"))
-        update_schema_version($Conf, 105);
-    if ($Conf->settings["allowPaperOption"] == 105
+        $Conf->update_schema_version(105);
+    if ($Conf->sversion == 105
         && Dbl::ql("alter table PaperComment add `commentFormat` tinyint(1) DEFAULT NULL"))
-        update_schema_version($Conf, 106);
-    if ($Conf->settings["allowPaperOption"] == 106
+        $Conf->update_schema_version(106);
+    if ($Conf->sversion == 106
         && Dbl::ql("alter table PaperComment add `authorOrdinal` int(11) NOT NULL default '0'")
         && Dbl::ql("update PaperComment set authorOrdinal=ordinal where commentType>=" . COMMENTTYPE_AUTHOR))
-        update_schema_version($Conf, 107);
+        $Conf->update_schema_version(107);
 
     // repair missing comment ordinals; reset incorrect `ordinal`s for
     // author-visible comments
-    if ($Conf->settings["allowPaperOption"] == 107) {
+    if ($Conf->sversion == 107) {
         $result = Dbl::ql("select paperId, commentId from PaperComment where ordinal=0 and (commentType&" . (COMMENTTYPE_RESPONSE | COMMENTTYPE_DRAFT) . ")=0 and commentType>=" . COMMENTTYPE_PCONLY . " and commentType<" . COMMENTTYPE_AUTHOR . " order by commentId");
         while (($row = edb_row($result))) {
             Dbl::ql("update PaperComment,
@@ -839,29 +829,29 @@ set authorOrdinal=(t.commentCount+1) where commentId=$row[1]");
 set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         }
 
-        update_schema_version($Conf, 108);
+        $Conf->update_schema_version(108);
     }
 
     // contact tags format change
-    if ($Conf->settings["allowPaperOption"] == 108
+    if ($Conf->sversion == 108
         && Dbl::ql("update ContactInfo set contactTags=substr(replace(contactTags, ' ', '#0 ') from 3)")
         && Dbl::ql("update ContactInfo set contactTags=replace(contactTags, '#0#0 ', '#0 ')"))
-        update_schema_version($Conf, 109);
-    if ($Conf->settings["allowPaperOption"] == 109
+        $Conf->update_schema_version(109);
+    if ($Conf->sversion == 109
         && Dbl::ql("alter table PaperTag modify `tagIndex` float NOT NULL DEFAULT '0'"))
-        update_schema_version($Conf, 110);
-    if ($Conf->settings["allowPaperOption"] == 110
+        $Conf->update_schema_version(110);
+    if ($Conf->sversion == 110
         && Dbl::ql("alter table ContactInfo drop `faxPhoneNumber`")
         && Dbl::ql("alter table ContactInfo add `country` varbinary(256) default null")
         && update_schema_transfer_country($Conf))
-        update_schema_version($Conf, 111);
-    if ($Conf->settings["allowPaperOption"] == 111) {
+        $Conf->update_schema_version(111);
+    if ($Conf->sversion == 111) {
         update_schema_review_word_counts($Conf);
-        update_schema_version($Conf, 112);
+        $Conf->update_schema_version(112);
     }
-    if ($Conf->settings["allowPaperOption"] == 112
+    if ($Conf->sversion == 112
         && Dbl::ql("alter table ContactInfo add `passwordUseTime` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table ContactInfo add `updateTime` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0"))
-        update_schema_version($Conf, 113);
+        $Conf->update_schema_version(113);
 }

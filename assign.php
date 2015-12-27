@@ -391,7 +391,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
     } else if (trim($_REQUEST["email"]) === "")
         Conf::msg_error("An email address is required to request a review.");
     else {
-        if ($Conf->setting("extrev_chairreq") && !$Me->allow_administer($prow))
+        if (setting("extrev_chairreq") && !$Me->allow_administer($prow))
             $ok = proposeReview($_REQUEST["email"]);
         else
             $ok = requestReview($_REQUEST["email"]);
@@ -469,7 +469,7 @@ $paperTable->paptabBegin();
 
 // reviewer information
 $proposals = null;
-if ($Conf->setting("extrev_chairreq")) {
+if (setting("extrev_chairreq")) {
     if ($Me->allow_administer($prow))
         $q = "";
     else
@@ -608,7 +608,7 @@ echo "</div></div>\n";
 echo Ht::form($loginUrl), '<div class="revcard aahc"><div class="revcard_head">',
     "<h3>Request an external review</h3>\n",
     "<div class='hint'>External reviewers get access to their assigned papers, including ";
-if ($Conf->setting("extrev_view") >= 2)
+if (setting("extrev_view") >= 2)
     echo "the other reviewers' identities and ";
 echo "any eventual decision.  Before requesting an external review,
  you should generally check personally whether they are interested.";

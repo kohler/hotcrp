@@ -101,13 +101,13 @@ class Conf {
         Dbl::free($result);
 
         // update schema
-        if ($this->settings["allowPaperOption"] < 113) {
+        $this->sversion = $this->settings["allowPaperOption"];
+        if ($this->sversion < 113) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
             $OK = $oldOK;
         }
-        $this->sversion = $this->settings["allowPaperOption"];
         if ($this->sversion < 73)
             self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
@@ -898,6 +898,14 @@ class Conf {
                 $this->crosscheck_options();
         }
         return $change;
+    }
+
+    function update_schema_version($n) {
+        if (Dbl::ql("update Settings set value=$n where name='allowPaperOption'")) {
+            $this->sversion = $this->settings["allowPaperOption"] = $n;
+            return true;
+        } else
+            return false;
     }
 
     function invalidateCaches($caches = null) {
@@ -2644,4 +2652,17 @@ class Conf {
     public function message_default_html($name) {
         return Message::default_html($this->message_name($name));
     }
+}
+
+
+function setting($name, $defval = false) {
+    return Conf::$g->setting($name, $defval);
+}
+
+function setting_data($name, $defval = false) {
+    return Conf::$g->setting_data($name, $defval);
+}
+
+function setting_json($name, $defval = false) {
+    return Conf::$g->setting_json($name, $defval);
 }

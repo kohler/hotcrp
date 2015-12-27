@@ -647,7 +647,7 @@ as gray.</p>");
 
 
 function tracks() {
-    global $Conf, $Me;
+    global $Me;
 
     _subhead("", "
 <p>Tracks control which PC members can view and review
@@ -700,7 +700,7 @@ are actually in effect.</p>");
 
 
 function revround() {
-    global $Conf, $Me;
+    global $Me;
 
     _subhead("", "
 <p>Many conferences divide their review assignments into multiple <em>rounds</em>.
