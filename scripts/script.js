@@ -2949,15 +2949,15 @@ function strnatcmp(a, b) {
         return 1;
 }
 
-var alltags = new Promise().onThen(function (alltags) {
+var alltags = new Promise().onThen(function (p) {
     if (hotcrp_user.is_pclike)
         jQuery.get(hoturl("api", "fn=alltags"), null, function (v) {
             var tlist = (v && v.tags) || [];
             tlist.sort(strnatcmp);
-            alltags.fulfill(tlist);
+            p.fulfill(tlist);
         });
     else
-        alltags.fulfill([]);
+        p.fulfill([]);
 });
 
 function completion_item(c) {
