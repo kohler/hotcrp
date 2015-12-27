@@ -9,7 +9,6 @@ class PaperContactInfo {
     public $review_submitted = null;
     public $review_needs_submit = 1;
     public $review_token_cid = null;
-    public $topic_interest_score = null;
 
     function __construct() {
     }
