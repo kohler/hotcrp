@@ -23,11 +23,11 @@ else if (isset($_REQUEST["default"]))
 $tOpt = PaperSearch::search_types($Me);
 if (count($tOpt) == 0) {
     $Conf->header("Search", "search", actionBar());
-    $Conf->errorMsg("You are not allowed to search for papers.");
+    Conf::msg_error("You are not allowed to search for papers.");
     exit;
 }
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
-    $Conf->errorMsg("You aren’t allowed to search that paper collection.");
+    Conf::msg_error("You aren’t allowed to search that paper collection.");
     unset($_REQUEST["t"]);
 }
 if (!isset($_REQUEST["t"]))
@@ -69,7 +69,7 @@ if (($getaction == "paper" || $getaction == "final"
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (($whyNot = $Me->perm_view_paper($row, true)))
-            $Conf->errorMsg(whyNotText($whyNot, "view"));
+            Conf::msg_error(whyNotText($whyNot, "view"));
         else
             $downloads[] = $row->paperId;
     }
@@ -103,7 +103,7 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Me)) {
         if (($whyNot = $Me->perm_view_paper($prow)))
-            $Conf->errorMsg(whyNotText($whyNot, "view"));
+            Conf::msg_error(whyNotText($whyNot, "view"));
         else {
             $text = "===========================================================================\n";
             $n = "Paper #" . $prow->paperId . ": ";
@@ -158,9 +158,9 @@ function downloadReviews(&$texts, &$errors) {
     $texts = SearchActions::reorder($texts);
     if (count($texts) == 0) {
         if (count($errors) == 0)
-            $Conf->errorMsg("No papers selected.");
+            Conf::msg_error("No papers selected.");
         else
-            $Conf->errorMsg(join("<br />\n", array_keys($errors)) . "<br />Nothing to download.");
+            Conf::msg_error(join("<br />\n", array_keys($errors)) . "<br />Nothing to download.");
         return;
     }
 
@@ -337,7 +337,7 @@ function tagaction() {
             $Conf->warnMsg("Some tag assignments were ignored:<br>$errors");
             $assignset->clear_errors();
         } else
-            $Conf->errorMsg($errors);
+            Conf::msg_error($errors);
     }
     $success = $assignset->execute();
 
@@ -374,7 +374,7 @@ if ($getaction == "votes" && SearchActions::any() && defval($_REQUEST, "tag")
         downloadCSV(SearchActions::reorder($texts), array("tag", "votes", "paper", "title"), "votes");
         exit;
     } else
-        $Conf->errorMsg($tagger->error_html);
+        Conf::msg_error($tagger->error_html);
 }
 
 
@@ -415,7 +415,7 @@ if ($getaction == "rank" && SearchActions::any() && defval($_REQUEST, "tag")
         downloadText($text, "rank");
         exit;
     } else
-        $Conf->errorMsg($tagger->error_html);
+        Conf::msg_error($tagger->error_html);
 }
 
 
@@ -642,7 +642,7 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
         downloadCSV(SearchActions::reorder($texts), $header, "scores", ["selection" => true]);
         exit;
     } else
-        $Conf->errorMsg(join("", $errors) . "No papers selected.");
+        Conf::msg_error(join("", $errors) . "No papers selected.");
 }
 
 
@@ -653,7 +653,7 @@ function downloadRevpref($extended) {
     $Rev = $Me;
     if (($rev = cvtint(@$_REQUEST["reviewer"])) > 0 && $Me->privChair) {
         if (!($Rev = Contact::find_by_id($rev)))
-            return $Conf->errorMsg("No such reviewer");
+            return Conf::msg_error("No such reviewer");
     }
     $q = $Conf->paperQuery($Rev, array("paperId" => SearchActions::selection(), "topics" => 1, "reviewerPreference" => 1));
     $result = Dbl::qe_raw($q);
@@ -768,7 +768,7 @@ if ($getaction == "topics" && SearchActions::any()) {
         downloadCSV(SearchActions::reorder($texts), array("paper", "title", "topic"), "topics");
         exit;
     } else
-        $Conf->errorMsg(join("", $errors) . "No papers selected.");
+        Conf::msg_error(join("", $errors) . "No papers selected.");
 }
 
 
@@ -914,7 +914,7 @@ function search_set_decisions() {
     $o = cvtint(@$_REQUEST["decision"]);
     $decision_map = $Conf->decision_map();
     if (!isset($decision_map[$o]))
-        return $Conf->errorMsg("Bad decision value.");
+        return Conf::msg_error("Bad decision value.");
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection())));
     $success = $fails = array();
     while (($prow = PaperInfo::fetch($result, $Me)))
@@ -923,7 +923,7 @@ function search_set_decisions() {
         else
             $fails[] = "#" . $prow->paperId;
     if (count($fails))
-        $Conf->errorMsg("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
+        Conf::msg_error("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
     if (count($success)) {
         Dbl::qe("update Paper set outcome=$o where paperId ?a", $success);
         $Conf->update_paperacc_setting($o > 0);
@@ -944,7 +944,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
     $pc = ($mpc == "0" ? null : Contact::find_by_email($mpc));
 
     if (!$Me->privChair)
-        $Conf->errorMsg("Only PC chairs can set assignments and conflicts.");
+        Conf::msg_error("Only PC chairs can set assignments and conflicts.");
     else if ($mt == "auto") {
         $t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
         $q = join("+", SearchActions::selection());
@@ -955,7 +955,7 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
         else if ($OK)
             $Conf->confirmMsg("No changes.");
     } else if (!$pc)
-        $Conf->errorMsg("“" . htmlspecialchars($mpc) . "” is not a PC member.");
+        Conf::msg_error("“" . htmlspecialchars($mpc) . "” is not a PC member.");
     else if ($mt == "conflict" || $mt == "unconflict") {
         if ($mt == "conflict") {
             Dbl::qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, ?, ? from Paper where paperId" . SearchActions::sql_predicate() . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $pc->contactId, CONFLICT_CHAIRMARK);
@@ -983,9 +983,9 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
             }
         }
         if (count($conflicts))
-            $Conf->errorMsg("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
+            Conf::msg_error("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
         if (count($assigned))
-            $Conf->errorMsg("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
+            Conf::msg_error("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
         if ($nworked)
             $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
         Dbl::qe_raw("unlock tables");
@@ -1004,7 +1004,7 @@ if (isset($_REQUEST["sendmail"]) && SearchActions::any()) {
             $x = "p=" . join("+", SearchActions::selection());
         go(hoturl("mail", $x . "&t=" . urlencode($_REQUEST["t"]) . "&recipients=$r"));
     } else
-        $Conf->errorMsg("Only the PC chairs can send mail.");
+        Conf::msg_error("Only the PC chairs can send mail.");
 }
 
 
@@ -1071,28 +1071,28 @@ function saveformulas() {
 
         if ($name != "" && $expr != "") {
             if (isset($names[$name]))
-                $ok = $Conf->errorMsg("You have two formulas named “" . htmlspecialchars($name) . "”.  Please change one of the names.");
+                $ok = Conf::msg_error("You have two formulas named “" . htmlspecialchars($name) . "”.  Please change one of the names.");
             $names[$name] = true;
         }
 
         if ($name == $fdef->name && $expr == $fdef->expression)
             /* do nothing */;
         else if (!$Me->privChair && $fdef->createdBy < 0)
-            $ok = $Conf->errorMsg("You can’t change formula “" . htmlspecialchars($fdef->name) . "” because it was created by an administrator.");
+            $ok = Conf::msg_error("You can’t change formula “" . htmlspecialchars($fdef->name) . "” because it was created by an administrator.");
         else if (($name == "" || $expr == "") && $fdef->formulaId != "n")
             $changes[] = "delete from Formula where formulaId=$fdef->formulaId";
         else if ($name == "")
-            $ok = $Conf->errorMsg("Please enter a name for your new formula.");
+            $ok = Conf::msg_error("Please enter a name for your new formula.");
         else if ($expr == "")
-            $ok = $Conf->errorMsg("Please enter a definition for your new formula.");
+            $ok = Conf::msg_error("Please enter a definition for your new formula.");
         else {
             $formula = new Formula($expr);
             if (!$formula->check())
-                $ok = $Conf->errorMsg($formula->error_html());
+                $ok = Conf::msg_error($formula->error_html());
             else {
                 $exprViewScore = $formula->view_score($Me);
                 if ($exprViewScore <= $Me->permissive_view_score_bound())
-                    $ok = $Conf->errorMsg("The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view. Please define a different expression.");
+                    $ok = Conf::msg_error("The expression “" . htmlspecialchars($expr) . "” refers to paper properties that you aren’t allowed to view. Please define a different expression.");
                 else if ($fdef->formulaId == "n") {
                     $changes[] = "insert into Formula (name, heading, headingTitle, expression, authorView, createdBy, timeModified) values ('" . sqlq($name) . "', '', '', '" . sqlq($expr) . "', $exprViewScore, " . ($Me->privChair ? -$Me->contactId : $Me->contactId) . ", " . time() . ")";
                     if (!$Conf->setting("formulas"))
@@ -1126,9 +1126,9 @@ function savesearch() {
     $tagger = new Tagger;
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
         if ($name == "")
-            return $Conf->errorMsg("Saved search name missing.");
+            return Conf::msg_error("Saved search name missing.");
         else
-            return $Conf->errorMsg("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
+            return Conf::msg_error("“" . htmlspecialchars($name) . "” contains characters not allowed in saved search names.  Stick to letters, numbers, and simple punctuation.");
     }
 
     // support directly recursive definition (to e.g. change display options)
@@ -1136,7 +1136,7 @@ function savesearch() {
         if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "ss:$name")
             $_REQUEST["q"] = (isset($t->q) ? $t->q : "");
         if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
-            return $Conf->errorMsg("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
+            return Conf::msg_error("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
     }
 
     $arr = array();

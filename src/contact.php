@@ -1339,7 +1339,7 @@ class Contact {
             Mailer::send_preparation($prep);
             return $template;
         } else {
-            $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
+            Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($this->email) . " at this time.");
             return false;
         }
     }

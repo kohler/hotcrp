@@ -70,9 +70,9 @@ if (!$Acct
     || (isset($_REQUEST["profile_contactid"])
         && $_REQUEST["profile_contactid"] !== (string) $Acct->contactId)) {
     if (!$Acct)
-        $Conf->errorMsg("Invalid user.");
+        Conf::msg_error("Invalid user.");
     else if (isset($_REQUEST["register"]) || isset($_REQUEST["bulkregister"]))
-        $Conf->errorMsg("You’re logged in as a different user now, so your changes were ignored.");
+        Conf::msg_error("You’re logged in as a different user now, so your changes were ignored.");
     unset($_REQUEST["u"], $_REQUEST["register"], $_REQUEST["bulkregister"]);
     redirectSelf();
 }
@@ -225,7 +225,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                 Mailer::send_preparation($prep);
                 $Conf->warnMsg("Mail has been sent to " . htmlspecialchars($cj->email) . ". Use the link it contains to confirm your email change request.");
             } else
-                $Conf->errorMsg("Mail cannot be sent to " . htmlspecialchars($cj->email) . " at this time. Your email address was unchanged.");
+                Conf::msg_error("Mail cannot be sent to " . htmlspecialchars($cj->email) . " at this time. Your email address was unchanged.");
             // Save changes *except* for new email, by restoring old email.
             $cj->email = $Acct->email;
             $Acct->preferredEmail = $old_preferredEmail;
@@ -334,7 +334,7 @@ function parseBulkFile($text, $filename) {
     else if (count($success))
         $Conf->confirmMsg($successMsg);
     else if (count($errors))
-        $Conf->errorMsg($errorMsg);
+        Conf::msg_error($errorMsg);
     else
         $Conf->warnMsg("Nothing to do.");
     return count($errors) == 0;
@@ -345,7 +345,7 @@ if (!check_post())
 else if (isset($_REQUEST["bulkregister"]) && $newProfile
          && fileUploaded($_FILES["bulk"])) {
     if (($text = file_get_contents($_FILES["bulk"]["tmp_name"])) === false)
-        $Conf->errorMsg("Internal error: cannot read file.");
+        Conf::msg_error("Internal error: cannot read file.");
     else
         parseBulkFile($text, $_FILES["bulk"]["name"]);
     $_REQUEST["bulkentry"] = "";
@@ -364,7 +364,7 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
     pc_request_as_json($cj);
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if ($UserStatus->nerrors)
-        $Conf->errorMsg("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
+        Conf::msg_error("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
     else {
         if ($newProfile)
             $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
@@ -431,13 +431,13 @@ function textArrayPapers($pids) {
 
 if (isset($_REQUEST["delete"]) && $OK && check_post()) {
     if (!$Me->privChair)
-        $Conf->errorMsg("Only administrators can delete users.");
+        Conf::msg_error("Only administrators can delete users.");
     else if ($Acct->contactId == $Me->contactId)
-        $Conf->errorMsg("You aren’t allowed to delete yourself.");
+        Conf::msg_error("You aren’t allowed to delete yourself.");
     else if ($Acct->has_database_account()) {
         $tracks = databaseTracks($Acct->contactId);
         if (count($tracks->soleAuthor))
-            $Conf->errorMsg("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
+            Conf::msg_error("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
         else {
             foreach (array("ContactInfo",
                            "PaperComment", "PaperConflict", "PaperReview",

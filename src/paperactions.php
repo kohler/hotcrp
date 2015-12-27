@@ -46,7 +46,7 @@ class PaperActions {
             $v = unparse_preference($v);
         } else {
             $v = null;
-            $Conf->errorMsg($ajax ? "Bad preference" : "Bad preference “" . htmlspecialchars($_REQUEST["revpref"]) . "”.");
+            Conf::msg_error($ajax ? "Bad preference" : "Bad preference “" . htmlspecialchars($_REQUEST["revpref"]) . "”.");
             $Error["revpref"] = true;
         }
         if ($ajax)
@@ -81,7 +81,7 @@ class PaperActions {
             $pc = null;
 
         if ($type == "manager" ? !$contact->privChair : !$contact->can_administer($prow)) {
-            $Conf->errorMsg("You don’t have permission to set the $type.");
+            Conf::msg_error("You don’t have permission to set the $type.");
             $Error[$type] = true;
         } else if ($pc === 0
                    || ($pc && $pc->isPC && $pc->can_accept_review_assignment($prow))) {
@@ -89,10 +89,10 @@ class PaperActions {
             if ($OK && $ajax)
                 $Conf->confirmMsg("Saved");
         } else if ($pc) {
-            $Conf->errorMsg(Text::user_html($pc) . " can’t be the $type for paper #" . $prow->paperId . ".");
+            Conf::msg_error(Text::user_html($pc) . " can’t be the $type for paper #" . $prow->paperId . ".");
             $Error[$type] = true;
         } else {
-            $Conf->errorMsg("Bad $type setting “" . htmlspecialchars($value) . "”.");
+            Conf::msg_error("Bad $type setting “" . htmlspecialchars($value) . "”.");
             $Error[$type] = true;
         }
 

@@ -104,7 +104,7 @@ function saveAssignments($reviewer) {
 if (isset($_REQUEST["update"]) && $reviewer > 0 && check_post())
     saveAssignments($reviewer);
 else if (isset($_REQUEST["update"]))
-    $Conf->errorMsg("You need to select a reviewer.");
+    Conf::msg_error("You need to select a reviewer.");
 
 
 $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Manual</strong>", "assignpc", actionBar());

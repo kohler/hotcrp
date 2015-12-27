@@ -149,7 +149,7 @@ class AutoassignerInterface {
         $this->atype = @$_REQUEST["a"];
         if (!$this->atype || !@$atypes[$this->atype]) {
             $Error["ass"] = true;
-            return $Conf->errorMsg("Malformed request!");
+            return Conf::msg_error("Malformed request!");
         }
         $this->atype_review = $atypes[$this->atype] === "r";
 
@@ -159,7 +159,7 @@ class AutoassignerInterface {
             if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
                 && $r != REVIEW_PC) {
                 $Error["ass"] = true;
-                return $Conf->errorMsg("Malformed request!");
+                return Conf::msg_error("Malformed request!");
             }
         } else if ($this->atype === "clear") {
             $r = defval($_REQUEST, "cleartype", "");
@@ -167,7 +167,7 @@ class AutoassignerInterface {
                 && $r != REVIEW_PC && $r !== "conflict"
                 && $r !== "lead" && $r !== "shepherd") {
                 $Error["clear"] = true;
-                return $Conf->errorMsg("Malformed request!");
+                return Conf::msg_error("Malformed request!");
             }
         }
         $this->reviewtype = $r;
@@ -175,18 +175,18 @@ class AutoassignerInterface {
         if ($this->atype_review && $_REQUEST["rev_roundtag"] !== ""
             && ($err = Conf::round_name_error($_REQUEST["rev_roundtag"]))) {
             $Error["rev_roundtag"] = true;
-            return $Conf->errorMsg($err);
+            return Conf::msg_error($err);
         }
 
         if ($this->atype === "rev" && cvtint(@$_REQUEST["revct"], -1) <= 0) {
             $Error["rev"] = true;
-            return $Conf->errorMsg("Enter the number of reviews you want to assign.");
+            return Conf::msg_error("Enter the number of reviews you want to assign.");
         } else if ($this->atype === "revadd" && cvtint(@$_REQUEST["revaddct"], -1) <= 0) {
             $Error["revadd"] = true;
-            return $Conf->errorMsg("You must assign at least one review.");
+            return Conf::msg_error("You must assign at least one review.");
         } else if ($this->atype === "revpc" && cvtint(@$_REQUEST["revpcct"], -1) <= 0) {
             $Error["revpc"] = true;
-            return $Conf->errorMsg("You must assign at least one review.");
+            return Conf::msg_error("You must assign at least one review.");
         }
 
         if ($this->atype === "discorder") {
@@ -195,7 +195,7 @@ class AutoassignerInterface {
             $tagger = new Tagger;
             if (!($tag = $tagger->check($tag, Tagger::NOVALUE))) {
                 $Error["discordertag"] = true;
-                return $Conf->errorMsg($tagger->error_html);
+                return Conf::msg_error($tagger->error_html);
             }
             $this->discordertag = $tag;
         }
@@ -323,7 +323,7 @@ class AutoassignerInterface {
         if ($_REQUEST["pctyp"] === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
             if ($n == 0) {
-                $Conf->errorMsg("Select one or more PC members to assign.");
+                Conf::msg_error("Select one or more PC members to assign.");
                 return null;
             }
         }

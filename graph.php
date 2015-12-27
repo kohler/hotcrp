@@ -85,7 +85,7 @@ if ($Graph == "formula") {
     if (@$_REQUEST["fx"] && @$_REQUEST["fy"]) {
         $fg = new FormulaGraph($_REQUEST["fx"], $_REQUEST["fy"]);
         if (count($fg->error_html))
-            $Conf->errorMsg(join("<br/>", $fg->error_html));
+            Conf::msg_error(join("<br/>", $fg->error_html));
     }
 
     $queries = $styles = array();

@@ -11,7 +11,7 @@ function error_go($url, $message) {
     global $Conf;
     if ($url === false)
         $url = hoturl("index");
-    $Conf->errorMsg($message);
+    Conf::msg_error($message);
     go($url);
 }
 

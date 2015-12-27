@@ -1332,7 +1332,7 @@ class Formula {
         $t = self::compile_body($contact, $state, $expr);
 
         $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
-        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  // " . simplify_whitespace($this->expression) . "\n  $t}\n"));
         return create_function($args, $t);
     }
 
@@ -1343,7 +1343,7 @@ class Formula {
             . join("\n  ", $state->gstmt)
             . "\n  return array_keys($g);\n";
         $args = '$prow, $contact, $forceShow = false';
-        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  $t}\n"));
+        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  $t}\n"));
         return create_function($args, $t);
     }
 
@@ -1357,7 +1357,7 @@ class Formula {
         else
             $t .= "  return [" . join(", ", $state->fragments) . "];\n";
         $args = '$prow, $rrow_cid, $contact, $format = 0, $forceShow = false';
-        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  // fragments " . simplify_whitespace($this->expression) . "\n  $t}\n"));
         $outf = create_function($args, $t);
 
         // regroup function
@@ -1366,7 +1366,7 @@ class Formula {
         $expr = $this->_parse ? $this->_parse->compile($state) : "0";
         $t = self::compile_body(null, $state, $expr);
         $args = '$groups, $format = null, $forceShow = false';
-        self::DEBUG && Conf::m_info(Ht::pre_text("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n"));
+        self::DEBUG && Conf::msg_info(Ht::pre_text("function ($args) {\n  // combine " . simplify_whitespace($this->expression) . "\n  $t}\n"));
         $inf = create_function($args, $t);
 
         return [$outf, $inf];

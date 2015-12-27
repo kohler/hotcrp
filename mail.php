@@ -69,7 +69,7 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])) {
 } else
     $_REQUEST["q"] = "";
 if (isset($papersel) && count($papersel) == 0) {
-    $Conf->errorMsg("No papers match that search.");
+    Conf::msg_error("No papers match that search.");
     unset($papersel);
     unset($_REQUEST["check"]);
     unset($_REQUEST["send"]);
@@ -311,7 +311,7 @@ class MailSender {
 
         $q = $this->recip->query($paper_sensitive);
         if (!$q)
-            return $Conf->errorMsg("Bad recipients value");
+            return Conf::msg_error("Bad recipients value");
         $result = $Conf->qe($q);
         if (!$result)
             return;
@@ -355,7 +355,7 @@ class MailSender {
                     $Error[$reqfield] = true;
                     $emsg = Mailer::$email_fields[$lcfield] . " destination isn’t a valid email list: <blockquote><tt>" . htmlspecialchars($hline) . "</tt></blockquote> Make sure email address are separated by commas; put names in \"quotes\" and email addresses in &lt;angle brackets&gt;.";
                     if (!isset($preperrors[$emsg]))
-                        $Conf->errorMsg($emsg);
+                        Conf::msg_error($emsg);
                     $preperrors[$emsg] = true;
                 }
             } else if ($this->process_prep($prep, $last_prep, $row)) {
@@ -384,7 +384,7 @@ class MailSender {
         $this->echo_mailinfo($nrows_done, $nrows_left);
 
         if (!$this->started && !count($preperrors))
-            return $Conf->errorMsg("No users match “" . $this->recip->unparse() . "” for that search.");
+            return Conf::msg_error("No users match “" . $this->recip->unparse() . "” for that search.");
         else if (!$this->started)
             return false;
         else if (!$this->sending)

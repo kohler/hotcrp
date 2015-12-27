@@ -97,7 +97,7 @@ if (($str = $_REQUEST["q"])) {
 }
 
 if (($count = cvtint(@$_REQUEST["n"])) <= 0) {
-    $Conf->errorMsg("\"Show <i>n</i> records\" requires a number greater than 0.");
+    Conf::msg_error("\"Show <i>n</i> records\" requires a number greater than 0.");
     $Eclass["n"] = " error";
     $count = $DEFAULT_COUNT;
 }
@@ -107,7 +107,7 @@ if ($_REQUEST["date"] == "")
     $_REQUEST["date"] = "now";
 if ($_REQUEST["date"] != "now" && isset($_REQUEST["search"]))
     if (($firstDate = $Conf->parse_time($_REQUEST["date"])) === false) {
-        $Conf->errorMsg("“" . htmlspecialchars($_REQUEST["date"]) . "” is not a valid date.");
+        Conf::msg_error("“" . htmlspecialchars($_REQUEST["date"]) . "” is not a valid date.");
         $Eclass["date"] = " error";
     }
 

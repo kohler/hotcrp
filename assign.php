@@ -21,9 +21,10 @@ function confHeader() {
 }
 
 function errorMsgExit($msg) {
-    global $Conf;
     confHeader();
-    $Conf->errorMsgExit($msg);
+    $msg && Conf::msg_error($msg);
+    Conf::$g->footer();
+    exit;
 }
 
 
@@ -85,13 +86,13 @@ function retractRequest($email, $prow, $confirm = true) {
 
     // act
     if (!$row && !$row2)
-        return $Conf->errorMsg("No such review request.");
+        return Conf::msg_error("No such review request.");
     if ($row && $row->reviewModified > 0)
-        return $Conf->errorMsg("You can’t retract that review request since the reviewer has already started their review.");
+        return Conf::msg_error("You can’t retract that review request since the reviewer has already started their review.");
     if (!$Me->allow_administer($prow)
         && (($row && $row->requestedBy && $Me->contactId != $row->requestedBy)
             || ($row2 && $row2->requestedBy && $Me->contactId != $row2->requestedBy)))
-        return $Conf->errorMsg("You can’t retract that review request since you didn’t make the request in the first place.");
+        return Conf::msg_error("You can’t retract that review request since you didn’t make the request in the first place.");
 
     // at this point, success; remove the review request
     if ($row)
@@ -207,33 +208,33 @@ if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post()) 
         loadRows();
     }
 } else if (isset($_REQUEST["update"]) && defval($_REQUEST, "ajax")) {
-    $Conf->errorMsg("Only administrators can assign papers.");
+    Conf::msg_error("Only administrators can assign papers.");
     $Conf->ajaxExit(array("ok" => 0));
 }
 
 
 // add review requests
 function requestReviewChecks($themHtml, $reqId) {
-    global $Conf, $Me, $prow;
+    global $Me, $prow;
 
     // check for outstanding review request
     $result = Dbl::qe_raw("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId");
     if (!$result)
         return false;
     else if (($row = edb_orow($result)))
-        return $Conf->errorMsg(Text::user_html($row) . " has already requested a review from $themHtml.");
+        return Conf::msg_error(Text::user_html($row) . " has already requested a review from $themHtml.");
 
     // check for outstanding refusal to review
     $result = Dbl::qe_raw("select paperId, '<conflict>' from PaperConflict where paperId=$prow->paperId and contactId=$reqId union select paperId, reason from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
     if (edb_nrows($result) > 0) {
         $row = edb_row($result);
         if ($row[1] === "<conflict>")
-            return $Conf->errorMsg("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
+            return Conf::msg_error("$themHtml has a conflict registered with paper #$prow->paperId and cannot be asked to review it.");
         else if ($Me->override_deadlines($prow)) {
-            $Conf->infoMsg("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : ""));
+            Conf::msg_info("Overriding previous refusal to review paper #$prow->paperId." . ($row[1] ? "  (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : ""));
             Dbl::qe_raw("delete from PaperReviewRefused where paperId=$prow->paperId and contactId=$reqId");
         } else
-            return $Conf->errorMsg("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? " (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : "") . ($Me->allow_administer($prow) ? " As an administrator, you can override this refusal with the “Override...” checkbox." : ""));
+            return Conf::msg_error("$themHtml refused a previous request to review paper #$prow->paperId." . ($row[1] ? " (Their reason was “" . htmlspecialchars($row[1]) . "”.)" : "") . ($Me->allow_administer($prow) ? " As an administrator, you can override this refusal with the “Override...” checkbox." : ""));
     }
 
     return true;
@@ -245,10 +246,10 @@ function requestReview($email) {
     $Them = Contact::create(array("name" => @$_REQUEST["name"], "email" => $email));
     if (!$Them) {
         if (trim($email) === "" || !validate_email($email)) {
-            $Conf->errorMsg("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
+            Conf::msg_error("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
             $Error["email"] = true;
         } else
-            $Conf->errorMsg("Error while finding account for “" . htmlspecialchars(trim($email)) . ".”");
+            Conf::msg_error("Error while finding account for “" . htmlspecialchars(trim($email)) . ".”");
         return false;
     }
 
@@ -378,9 +379,9 @@ function createAnonymousReview() {
 
 if (isset($_REQUEST["add"]) && check_post()) {
     if (($whyNot = $Me->perm_request_review($prow, true)))
-        $Conf->errorMsg(whyNotText($whyNot, "request reviews for"));
+        Conf::msg_error(whyNotText($whyNot, "request reviews for"));
     else if (!isset($_REQUEST["email"]) || !isset($_REQUEST["name"]))
-        $Conf->errorMsg("An email address is required to request a review.");
+        Conf::msg_error("An email address is required to request a review.");
     else if (trim($_REQUEST["email"]) === "" && trim($_REQUEST["name"]) === ""
              && $Me->allow_administer($prow)) {
         if (!createAnonymousReview())
@@ -388,7 +389,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
         unset($_REQUEST["reason"]);
         loadRows();
     } else if (trim($_REQUEST["email"]) === "")
-        $Conf->errorMsg("An email address is required to request a review.");
+        Conf::msg_error("An email address is required to request a review.");
     else {
         if ($Conf->setting("extrev_chairreq") && !$Me->allow_administer($prow))
             $ok = proposeReview($_REQUEST["email"]);
@@ -426,7 +427,7 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
 
         $Conf->confirmMsg("Proposed reviewer denied.");
     } else
-        $Conf->errorMsg("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
+        Conf::msg_error("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
     Dbl::qx_raw("unlock tables");
     unset($_REQUEST['email']);
     unset($_REQUEST['name']);
@@ -436,7 +437,7 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
 // add primary or secondary reviewer
 if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
     if (($pcid = cvtint(@$_REQUEST["pcid"])) <= 0)
-        $Conf->errorMsg("Enter a PC member.");
+        Conf::msg_error("Enter a PC member.");
     else if (($pctype = cvtint(@$_REQUEST["pctype"])) == REVIEW_PRIMARY
              || $pctype == REVIEW_SECONDARY || $pctype == REVIEW_PC) {
         $Me->assign_review($prow->paperId, $pcid, $pctype);

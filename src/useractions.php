@@ -59,7 +59,7 @@ class UserActions {
             $user->merge_and_save_data(array("clickthrough" => array($_REQUEST["clickthrough_sha1"] => $Now)));
             $confirmed = true;
         } else if (@$_REQUEST["clickthrough_decline"])
-            $Conf->errorMsg("You can’t continue until you accept these terms.");
+            Conf::msg_error("You can’t continue until you accept these terms.");
         if (@$_REQUEST["ajax"])
             $Conf->ajaxExit(array("ok" => $confirmed));
         redirectSelf();

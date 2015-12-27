@@ -9,11 +9,10 @@
 
 require_once("src/initweb.php");
 
-function document_error($error) {
+function document_error($msg) {
     global $Conf;
     $Conf->header("Download", null, actionBar());
-    if ($error)
-        $Conf->errorMsg($error);
+    $msg && Conf::msg_error($msg);
     $Conf->footer();
     exit;
 }

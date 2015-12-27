@@ -34,7 +34,7 @@ if (isset($_REQUEST["uploadForm"])
     // Uploading forms may have completed the reviewer's task; recheck roles.
     Contact::update_rights();
 } else if (isset($_REQUEST["uploadForm"]))
-    $Conf->errorMsg("Choose a file first.");
+    Conf::msg_error("Choose a file first.");
 
 
 // upload tag indexes action
@@ -72,12 +72,12 @@ function setTagIndexes() {
     $filename = null;
     if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["file"])) {
         if (($text = file_get_contents($_FILES["file"]["tmp_name"])) === false) {
-            $Conf->errorMsg("Internal error: cannot read file.");
+            Conf::msg_error("Internal error: cannot read file.");
             return;
         }
         $filename = @$_FILES["file"]["name"];
     } else if (!($text = defval($_REQUEST, "data"))) {
-        $Conf->errorMsg("Choose a file first.");
+        Conf::msg_error("Choose a file first.");
         return;
     }
 
@@ -141,7 +141,7 @@ function setTagIndexes() {
         $Error["tags"] = '<div class="parseerr"><p>' . join("</p>\n<p>", $errors) . '</p></div>';
     }
     if (isset($Error["tags"]))
-        $Conf->errorMsg($Error["tags"]);
+        Conf::msg_error($Error["tags"]);
     else if (isset($_REQUEST["setvote"]))
         $Conf->confirmMsg("Votes saved.");
     else
@@ -155,7 +155,7 @@ if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
 $pastDeadline = !$Conf->time_review(null, $Me->isPC, true);
 
 if (!$Conf->time_review_open() && !$Me->privChair) {
-    $Conf->errorMsg("The site is not open for review.");
+    Conf::msg_error("The site is not open for review.");
     go(hoturl("index"));
 }
 

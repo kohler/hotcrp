@@ -425,7 +425,7 @@ class Mailer {
         // look up recipient; use preferredEmail if set
         $recipient = $this->recipient;
         if (!$recipient || !$recipient->email)
-            return $Conf->errorMsg("no email in Mailer::send");
+            return Conf::msg_error("no email in Mailer::send");
         if (@$recipient->preferredEmail) {
             $recipient = (object) array("email" => $recipient->preferredEmail);
             foreach (array("firstName", "lastName", "name", "fullName") as $k)
@@ -447,7 +447,7 @@ class Mailer {
                 else {
                     $prep->errors[$lcfield] = $text;
                     if (!@$rest["no_error_quit"])
-                        $Conf->errorMsg("$field destination “<tt>" . htmlspecialchars($text) . "</tt>” isn't a valid email list.");
+                        Conf::msg_error("$field destination “<tt>" . htmlspecialchars($text) . "</tt>” isn't a valid email list.");
                 }
             }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . MAILER_EOL;

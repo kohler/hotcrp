@@ -1561,7 +1561,7 @@ class PaperSearch {
             $omatches = PaperOption::option_list();
         else
             $omatches = PaperOption::search($oname);
-        // Conf::m_info(Ht::pre_text(var_export($omatches, true)));
+        // Conf::msg_info(Ht::pre_text(var_export($omatches, true)));
         if (count($omatches)) {
             foreach ($omatches as $oid => $o) {
                 // selectors handle “yes”, “”, and “no” specially
@@ -3028,7 +3028,7 @@ class PaperSearch {
 
         // parse and clean the query
         $qe = $this->_searchQueryType($this->q);
-        //Conf::m_info(Ht::pre_text(var_export($qe, true)));
+        //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
         if (!$qe)
             $qe = new SearchTerm("t");
 
@@ -3044,7 +3044,7 @@ class PaperSearch {
                 $this->warn("Unexpected use of “round:” or “rate:” ignored.  Stick to the basics, such as “re:reviewername round:roundname”.");
         }
 
-        //Conf::m_info(Ht::pre_text(var_export($qe, true)));
+        //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
 
         // collect clauses into tables, columns, and filters
         $sqi = new SearchQueryInfo;
@@ -3056,7 +3056,7 @@ class PaperSearch {
         $sqi->add_column("outcome", "Paper.outcome");
         $filters = array();
         $this->_clauseTermSet($qe, $sqi, $filters);
-        //Conf::m_info(Ht::pre_text(var_export($filters, true)));
+        //Conf::msg_info(Ht::pre_text(var_export($filters, true)));
 
         // status limitation parts
         if ($limit === "rable") {
@@ -3179,7 +3179,7 @@ class PaperSearch {
             $q .= "\n    where " . join("\n        and ", $filters);
         $q .= "\n    group by Paper.paperId";
 
-        //Conf::m_info(Ht::pre_text_wrap($q));
+        //Conf::msg_info(Ht::pre_text_wrap($q));
 
         // actually perform query
         $result = Dbl::qe_raw($q);

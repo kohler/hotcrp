@@ -634,7 +634,7 @@ class ReviewForm {
             else {
                 foreach ($outofrange as $f)
                     $oor2[] = $f->name_html;
-                $Conf->errorMsg("Bad values for " . commajoin($oor2) . ".  Please fix this and submit again.");
+                Conf::msg_error("Bad values for " . commajoin($oor2) . ".  Please fix this and submit again.");
             }
             return 0;
         }
@@ -682,7 +682,7 @@ class ReviewForm {
 
         if (!$contact->timeReview($prow, $rrow)
             && (!isset($req['override']) || !$admin))
-            return $Conf->errorMsg("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? "  Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""));
+            return Conf::msg_error("The <a href='" . hoturl("deadlines") . "'>deadline</a> for entering this review has passed." . ($admin ? "  Select the “Override deadlines” checkbox and try again if you really want to override the deadline." : ""));
 
         $q = array();
         $diff_view_score = VIEWSCORE_FALSE;

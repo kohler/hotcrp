@@ -120,7 +120,7 @@ class MailRecipients {
                 if ($this->newrev_since > $Now)
                     $Conf->warnMsg("That time is in the future.");
             } else {
-                $Conf->errorMsg("Invalid date.");
+                Conf::msg_error("Invalid date.");
                 $this->error = true;
             }
         }

@@ -38,11 +38,11 @@ if (isset($_POST["go"]) && check_post()) {
     $_POST["password"] = trim((string) @$_POST["password"]);
     $_POST["password2"] = trim((string) @$_POST["password2"]);
     if ($_POST["password"] == "")
-        $Conf->errorMsg("You must enter a password.");
+        Conf::msg_error("You must enter a password.");
     else if ($_POST["password"] !== $_POST["password2"])
-        $Conf->errorMsg("The two passwords you entered did not match.");
+        Conf::msg_error("The two passwords you entered did not match.");
     else if (!Contact::valid_password($_POST["password"]))
-        $Conf->errorMsg("Invalid password.");
+        Conf::msg_error("Invalid password.");
     else {
         $flags = 0;
         if ($_POST["password"] === @$_POST["autopassword"])

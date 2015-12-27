@@ -367,7 +367,7 @@ class CheckFormat {
         global $Conf;
         foreach ($this->msgs as $m)
             if ($m[0] == "error")
-                $Conf->errorMsg($m[1]);
+                Conf::msg_error($m[1]);
             else if ($m[0] == "warn")
                 $Conf->warnMsg($m[1]);
             else if ($m[0] == "confirm")

@@ -39,7 +39,9 @@ function errorMsgExit($msg) {
     global $Conf;
     confHeader();
     $Conf->footerScript("shortcut().add()");
-    $Conf->errorMsgExit($msg);
+    $msg && Conf::msg_error($msg);
+    Conf::$g->footer();
+    exit;
 }
 
 
@@ -104,7 +106,7 @@ if (isset($_REQUEST["uploadForm"])
     $rf->textFormMessages($tf);
     loadRows();
 } else if (isset($_REQUEST["uploadForm"]))
-    $Conf->errorMsg("Select a review form to upload.");
+    Conf::msg_error("Select a review form to upload.");
 
 
 // check review submit requirements
@@ -137,9 +139,9 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
 if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     if (!$Me->can_rate_review($prow, $paperTable->rrow)
         || !$Me->can_view_review($prow, $paperTable->rrow, null))
-        $Conf->errorMsg("You can’t rate that review.");
+        Conf::msg_error("You can’t rate that review.");
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
-        $Conf->errorMsg("Invalid rating.");
+        Conf::msg_error("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
         Dbl::qe_raw("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId");
     else
@@ -161,7 +163,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
-        $Conf->errorMsg(whyNotText($whyNot, "review"));
+        Conf::msg_error(whyNotText($whyNot, "review"));
     else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
         $tf = array("singlePaper" => true);
         if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me, $tf)) {
@@ -177,7 +179,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 if (isset($_REQUEST["deletereview"]) && check_post()
     && $Me->can_administer($prow))
     if (!$paperTable->editrrow)
-        $Conf->errorMsg("No review to delete.");
+        Conf::msg_error("No review to delete.");
     else {
         archiveReview($paperTable->editrrow);
         $result = Dbl::qe_raw("delete from PaperReview where reviewId=" . $paperTable->editrrow->reviewId);
@@ -245,7 +247,7 @@ function downloadForm($editable) {
     }
     if (!$text) {
         $whyNot = $Me->perm_view_review($prow, null, null);
-        return $Conf->errorMsg(whyNotText($whyNot ? : array("fail" => 1), "review"));
+        return Conf::msg_error(whyNotText($whyNot ? : array("fail" => 1), "review"));
     }
     if ($editable)
         $text = ReviewForm::textFormHeader(count($rrows) > 1) . $text;
@@ -318,11 +320,11 @@ function refuseReview() {
 if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
     if (!$paperTable->editrrow
         || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow)))
-        $Conf->errorMsg("This review was not assigned to you, so you can’t decline it.");
+        Conf::msg_error("This review was not assigned to you, so you can’t decline it.");
     else if ($paperTable->editrrow->reviewType >= REVIEW_SECONDARY)
-        $Conf->errorMsg("PC members can’t decline their primary or secondary reviews.  Contact the PC chairs directly if you really cannot finish this review.");
+        Conf::msg_error("PC members can’t decline their primary or secondary reviews.  Contact the PC chairs directly if you really cannot finish this review.");
     else if ($paperTable->editrrow->reviewSubmitted)
-        $Conf->errorMsg("This review has already been submitted; you can’t decline it now.");
+        Conf::msg_error("This review has already been submitted; you can’t decline it now.");
     else if (defval($_REQUEST, "refuse") == "1"
              || defval($_REQUEST, "decline") == "1") {
         $Conf->confirmMsg("<p>Select “Decline review” to decline this review (you may enter a brief explanation, if you’d like). Thank you for telling us that you cannot complete your review.</p><div class='g'></div><form method='post' action=\"" . hoturl_post("review", "p=" . $paperTable->prow->paperId . "&amp;r=" . $paperTable->editrrow->reviewId) . "\" enctype='multipart/form-data' accept-charset='UTF-8'><div class='aahc'>"
@@ -341,7 +343,7 @@ if (isset($_REQUEST["refuse"]) || isset($_REQUEST["decline"])) {
 if (isset($_REQUEST["accept"])) {
     if (!$paperTable->editrrow
         || (!$Me->is_my_review($paperTable->editrrow) && !$Me->can_administer($prow)))
-        $Conf->errorMsg("This review was not assigned to you, so you cannot confirm your intention to write it.");
+        Conf::msg_error("This review was not assigned to you, so you cannot confirm your intention to write it.");
     else {
         if ($paperTable->editrrow->reviewModified <= 0)
             Dbl::qe_raw("update PaperReview set reviewModified=1 where reviewId=" . $paperTable->editrrow->reviewId . " and coalesce(reviewModified,0)<=0");
@@ -374,7 +376,7 @@ if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
         errorMsgExit(whyNotText($whyNotPaper, "view"));
     if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
-        $Conf->errorMsg("You can’t see the reviews for this paper. "
+        Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null, null), "review"));
         go(hoturl("paper", "p=$prow->paperId"));
     }

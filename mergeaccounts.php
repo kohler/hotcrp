@@ -161,7 +161,7 @@ $Conf->header("Merge accounts", "mergeaccounts", actionBar());
 
 
 if ($MergeError)
-    $Conf->errorMsg($MergeError);
+    Conf::msg_error($MergeError);
 else
     $Conf->infoMsg(
 "You may have multiple accounts registered with the "

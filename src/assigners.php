@@ -1058,7 +1058,7 @@ class AssignmentSet {
     public function report_errors() {
         global $Conf;
         if (count($this->errors_))
-            $Conf->errorMsg('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
+            Conf::msg_error('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
     }
 
     private static function req_user_html($req) {

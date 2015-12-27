@@ -1315,7 +1315,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
                 $msgs[] = "Warning: " . $m;
         $mt = '<div class="multimessage"><div>' . join('</div><div>', $msgs) . '</div></div>';
         if (count($msgs) && $any_errors)
-            $Conf->errorMsg($mt);
+            Conf::msg_error($mt);
         else if (count($msgs))
             $Conf->warnMsg($mt);
     }

@@ -108,7 +108,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
     while (@ob_end_flush())
         /* do nothing */;
     if (($text = file_get_contents($_FILES["uploadfile"]["tmp_name"])) === false)
-        $Conf->errorMsg("Internal error: cannot read file.");
+        Conf::msg_error("Internal error: cannot read file.");
     else {
         $assignset = new AssignmentSet($Me, false);
         $defaults = assignment_defaults();

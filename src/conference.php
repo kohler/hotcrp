@@ -109,7 +109,7 @@ class Conf {
         }
         $this->sversion = $this->settings["allowPaperOption"];
         if ($this->sversion < 73)
-            $this->errorMsg("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
+            self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
         // invalidate caches after loading from backup
         if (isset($this->settings["frombackup"])
@@ -329,7 +329,7 @@ class Conf {
         if (function_exists("date_default_timezone_set")) {
             if (isset($Opt["timezone"])) {
                 if (!date_default_timezone_set($Opt["timezone"])) {
-                    $this->errorMsg("Timezone option “" . htmlspecialchars($Opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
+                    self::msg_error("Timezone option “" . htmlspecialchars($Opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
                     date_default_timezone_set("America/New_York");
                 }
             } else if (!ini_get("date.timezone") && !getenv("TZ"))
@@ -970,7 +970,7 @@ class Conf {
             fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
         else {
             error_log("$landmark: database error: $dblink->error in $query");
-            $this->errorMsg("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+            self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
         $OK = false;
     }
@@ -1430,7 +1430,7 @@ class Conf {
         global $Me;
         $result = $this->__downloadPaper($paperId, $attachment, $documentType, $docid);
         if ($result->error) {
-            $this->errorMsg($result->error_html);
+            self::msg_error($result->error_html);
             return false;
         } else
             return true;
@@ -2163,7 +2163,7 @@ class Conf {
         $this->msg($minimal ? "xinfo" : "info", $text);
     }
 
-    static public function m_info($text, $minimal = false) {
+    static public function msg_info($text, $minimal = false) {
         self::$g->msg($minimal ? "xinfo" : "info", $text);
     }
 
@@ -2171,7 +2171,7 @@ class Conf {
         $this->msg($minimal ? "xwarning" : "warning", $text);
     }
 
-    static public function m_warning($text, $minimal = false) {
+    static public function msg_warning($text, $minimal = false) {
         self::$g->msg($minimal ? "xwarning" : "warning", $text);
     }
 
@@ -2179,7 +2179,7 @@ class Conf {
         $this->msg($minimal ? "xconfirm" : "confirm", $text);
     }
 
-    static public function m_confirm($text, $minimal = false) {
+    static public function msg_confirm($text, $minimal = false) {
         self::$g->msg($minimal ? "xconfirm" : "confirm", $text);
     }
 
@@ -2188,20 +2188,13 @@ class Conf {
         return false;
     }
 
-    static public function m_error($text, $minimal = false) {
+    static public function msg_error($text, $minimal = false) {
         self::$g->msg($minimal ? "xmerror" : "merror", $text);
         return false;
     }
 
     function post_missing_msg() {
         $this->msg("merror", "Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.");
-    }
-
-    function errorMsgExit($text) {
-        if ($text)
-            $this->msg("merror", $text);
-        $this->footer();
-        exit;
     }
 
 

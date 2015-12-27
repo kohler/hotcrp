@@ -50,7 +50,7 @@ class LoginHelper {
         // check HTTP auth
         if (!isset($_SERVER["REMOTE_USER"]) || !$_SERVER["REMOTE_USER"]) {
             $Conf->header("Error", "home", actionBar());
-            $Conf->errorMsg("This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.");
+            Conf::msg_error("This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.");
             $Conf->footer();
             exit;
         }
@@ -83,9 +83,9 @@ class LoginHelper {
             || ($_REQUEST["email"] = trim($_REQUEST["email"])) == "") {
             $email_class = " error";
             if (isset($Opt["ldapLogin"]))
-                return $Conf->errorMsg("Enter your LDAP username.");
+                return Conf::msg_error("Enter your LDAP username.");
             else
-                return $Conf->errorMsg("Enter your email address.");
+                return Conf::msg_error("Enter your email address.");
         }
 
         // Check for the cookie
@@ -100,7 +100,7 @@ class LoginHelper {
                     $url .= "&$a=" . urlencode($_REQUEST[$a]);
             go("?" . $url);
         } else
-            return $Conf->errorMsg("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
+            return Conf::msg_error("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
         // do LDAP login before validation, since we might create an account
         if (isset($Opt["ldapLogin"])) {
@@ -135,7 +135,7 @@ class LoginHelper {
             $reg = Contact::safe_registration($_REQUEST);
             $reg->no_validate_email = true;
             if (!($user = Contact::create($reg)))
-                return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
+                return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
             if (defval($Conf->settings, "setupPhase", false))
                 return self::first_user($user, $msg);
         }
@@ -143,12 +143,12 @@ class LoginHelper {
         // if no user found, then fail
         if (!$user && (!$cdb_user || !$cdb_user->allow_contactdb_password())) {
             $email_class = " error";
-            return $Conf->errorMsg("No account for " . htmlspecialchars($_REQUEST["email"]) . ". Did you enter the correct email address?");
+            return Conf::msg_error("No account for " . htmlspecialchars($_REQUEST["email"]) . ". Did you enter the correct email address?");
         }
 
         // if user disabled, then fail
         if ($user && $user->is_password_disabled() && !$external_login)
-            return $Conf->errorMsg("Your account is disabled. Contact the site administrator for more information.");
+            return Conf::msg_error("Your account is disabled. Contact the site administrator for more information.");
 
         // maybe reset password
         $xuser = $user ? : $cdb_user;
@@ -167,12 +167,12 @@ class LoginHelper {
         if (!$external_login) {
             if (($password = @trim($_REQUEST["password"])) === "") {
                 $password_class = " error";
-                return $Conf->errorMsg("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
+                return Conf::msg_error("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
             }
 
             if (!$xuser->check_password($password)) {
                 $password_class = " error";
-                return $Conf->errorMsg("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
+                return Conf::msg_error("That password doesn’t match. If you’ve forgotten your password, enter your email address and use the “I forgot my password” option.");
             }
         }
 
@@ -201,7 +201,7 @@ class LoginHelper {
         global $Conf, $ConfSitePATH;
         // check for bogus configurations
         if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
-            return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP.  Logins will fail until this error is fixed.");
+            return Conf::msg_error("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP.  Logins will fail until this error is fixed.");
 
         // the body is elsewhere because we need LDAP constants, which might[?]
         // cause errors absent LDAP support
@@ -227,21 +227,21 @@ class LoginHelper {
         // check for errors
         if ($user && $user->has_database_account() && $user->activity_at > 0) {
             $email_class = " error";
-            return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
+            return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if ($cdb_user && $cdb_user->allow_contactdb_password()
                    && $cdb_user->activity_at > 0) {
             $desc = @$Opt["contactdb_description"] ? : "HotCRP";
             $email_class = " error";
-            return $Conf->errorMsg("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “I forgot my password.”");
+            return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “I forgot my password.”");
         } else if (!validate_email($_REQUEST["email"])) {
             $email_class = " error";
-            return $Conf->errorMsg("“" . htmlspecialchars($_REQUEST["email"]) . "” is not a valid email address.");
+            return Conf::msg_error("“" . htmlspecialchars($_REQUEST["email"]) . "” is not a valid email address.");
         }
 
         // create database account
         if (!$user || !$user->has_database_account()) {
             if (!($user = Contact::create(Contact::safe_registration($_REQUEST))))
-                return $Conf->errorMsg($Conf->db_error_html(true, "while adding your account"));
+                return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
         }
 
         $user->sendAccountInfo("create", true);

@@ -100,7 +100,7 @@ function rf_update() {
                 $fj->description = $f->description;
             if ($pos > 0) {
                 $Error["description_$fid"] = true;
-                $Conf->errorMsg(htmlspecialchars($sn) . " description: " . $err);
+                Conf::msg_error(htmlspecialchars($sn) . " description: " . $err);
             }
         } else if (($x = trim($x)) != "")
             $fj->description = $x;
@@ -128,9 +128,9 @@ function rf_update() {
     }
 
     if ($shortNameError)
-        $Conf->errorMsg("Each review field should have a name.  Please fix the highlighted fields and save again.");
+        Conf::msg_error("Each review field should have a name.  Please fix the highlighted fields and save again.");
     if ($optionError)
-        $Conf->errorMsg("Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+        Conf::msg_error("Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
 2. Medium quality
 3. High quality</pre>  Please fix the highlighted errors and save again.");
     if (!$shortNameError && !$optionError) {

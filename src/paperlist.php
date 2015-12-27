@@ -1262,7 +1262,7 @@ class PaperList {
         // get column list, check sort
         $field_list = $this->_list_columns($listname);
         if (!$field_list) {
-            $Conf->errorMsg("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
+            Conf::msg_error("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
             return null;
         }
         $field_list = $this->_columns($field_list, true);

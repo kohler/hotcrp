@@ -50,7 +50,7 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
     else if ($_REQUEST["t"] == "#pc")
         $_REQUEST["t"] = "pc";
     else {
-        $Conf->errorMsg("Unknown user collection.");
+        Conf::msg_error("Unknown user collection.");
         unset($_REQUEST["t"]);
     }
 }
@@ -212,7 +212,7 @@ function do_tags() {
         else
             $t1[] = $t;
     if (count($errors))
-        return $Conf->errorMsg(join("<br>", $errors));
+        return Conf::msg_error(join("<br>", $errors));
     else if (!count($t1))
         return $Conf->warnMsg("Nothing to do.");
 
@@ -253,7 +253,7 @@ function do_tags() {
         $Conf->confirmMsg("Tags saved.");
         redirectSelf(array("tagact" => null, "tag" => null));
     } else
-        $Conf->errorMsg(join("<br>", $errors));
+        Conf::msg_error(join("<br>", $errors));
 }
 
 if ($Me->privChair && @$_REQUEST["tagact"] && check_post() && isset($papersel)

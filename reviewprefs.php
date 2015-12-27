@@ -29,7 +29,7 @@ if (@$_REQUEST["reviewer"] && $Me->privChair
 }
 $reviewer = $reviewer_contact->contactId;
 if ($incorrect_reviewer)
-    $Conf->errorMsg("Reviewer " . htmlspecialchars($_REQUEST["reviewer"]) . " is not on the PC.");
+    Conf::msg_error("Reviewer " . htmlspecialchars($_REQUEST["reviewer"]) . " is not on the PC.");
 
 // choose a sensible default action (if someone presses enter on a form element)
 if (isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
@@ -48,7 +48,7 @@ if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revpr
 function savePreferences() {
     global $Conf, $Me, $OK, $reviewer, $incorrect_reviewer;
     if ($incorrect_reviewer) {
-        $Conf->errorMsg("Preferences not saved.");
+        Conf::msg_error("Preferences not saved.");
         return;
     }
 
@@ -66,9 +66,9 @@ function savePreferences() {
         }
 
     if ($error)
-        $Conf->errorMsg("Preferences must be small positive or negative integers.");
+        Conf::msg_error("Preferences must be small positive or negative integers.");
     if ($pmax == 0 && !$error)
-        $Conf->errorMsg("No reviewer preferences to update.");
+        Conf::msg_error("No reviewer preferences to update.");
     if ($pmax == 0)
         return;
 
@@ -104,14 +104,14 @@ if (isset($_REQUEST["update"]) && check_post())
 // Select papers
 if ((isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"]))
     && !SearchActions::parse_requested_selection($Me))
-    $Conf->errorMsg("No papers selected.");
+    Conf::msg_error("No papers selected.");
 SearchActions::clear_requested_selection();
 
 
 // Set multiple paper preferences
 if (isset($_REQUEST["setpaprevpref"]) && SearchActions::any() && check_post()) {
     if (!parse_preference($_REQUEST["paprevpref"]))
-        $Conf->errorMsg("Preferences must be small positive or negative integers.");
+        Conf::msg_error("Preferences must be small positive or negative integers.");
     else {
         foreach (SearchActions::selection() as $p)
             $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
@@ -124,7 +124,7 @@ if (isset($_REQUEST["setpaprevpref"]) && SearchActions::any() && check_post()) {
 function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     global $Conf;
     if (($text = file_get_contents($filename)) === false)
-        return $Conf->errorMsg("Cannot read uploaded file.");
+        return Conf::msg_error("Cannot read uploaded file.");
     $printFilename = htmlspecialchars($printFilename);
     $text = cleannl($text);
     $lineno = 0;
@@ -153,7 +153,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     }
 
     if (count($errors) > 0)
-        $Conf->errorMsg("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
+        Conf::msg_error("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
     if ($successes > 0)
         savePreferences();
 }
@@ -161,7 +161,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
     && check_post())
     parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
 else if (isset($_REQUEST["upload"]))
-    $Conf->errorMsg("Select a preferences file to upload.");
+    Conf::msg_error("Select a preferences file to upload.");
 
 
 // Search actions

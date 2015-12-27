@@ -38,12 +38,14 @@ function confHeader() {
 function errorMsgExit($msg) {
     global $Conf;
     if (@$_REQUEST["ajax"]) {
-        $Conf->errorMsg($msg);
+        Conf::msg_error($msg);
         $Conf->ajaxExit(array("ok" => false));
     } else {
         confHeader();
         $Conf->footerScript("shortcut().add()");
-        $Conf->errorMsgExit($msg);
+        $msg && Conf::msg_error($msg);
+        Conf::$g->footer();
+        exit;
     }
 }
 
@@ -163,7 +165,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         $Me->log_activity("Withdrew", $prow->paperId);
         redirectSelf();
     } else
-        $Conf->errorMsg(whyNotText($whyNot, "withdraw"));
+        Conf::msg_error(whyNotText($whyNot, "withdraw"));
 }
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
@@ -176,7 +178,7 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
         $Me->log_activity("Revived", $prow->paperId);
         redirectSelf();
     } else
-        $Conf->errorMsg(whyNotText($whyNot, "revive"));
+        Conf::msg_error(whyNotText($whyNot, "revive"));
 }
 
 
@@ -403,7 +405,7 @@ function update_paper($pj, $opj, $action, $diffs) {
 
     if (!$saved) {
         $emsg = $ps->error_html();
-        $Conf->errorMsg("There were errors in saving your paper. Please fix them and try again." . (count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
+        Conf::msg_error("There were errors in saving your paper. Please fix them and try again." . (count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
 
@@ -555,7 +557,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
             $adescription = "submit final version for";
         else
             $adescription = $prow ? "update" : "register";
-        $Conf->errorMsg(whyNotText($whyNot, $adescription));
+        Conf::msg_error(whyNotText($whyNot, $adescription));
     }
 
     // If we get here, we failed to update.
@@ -575,11 +577,11 @@ if (isset($_POST["updatecontacts"]) && check_post() && $prow) {
         if ($ps->save($pj, $opj))
             redirectSelf();
         else {
-            $Conf->errorMsg("<ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>");
+            Conf::msg_error("<ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>");
             $Error = $ps->error_fields();
         }
     } else
-        $Conf->errorMsg(whyNotText(array("permission" => 1), "update contacts for"));
+        Conf::msg_error(whyNotText(array("permission" => 1), "update contacts for"));
 
     // use request?
     $useRequest = true;
@@ -591,7 +593,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
     if ($newPaper)
         $Conf->confirmMsg("Paper deleted.");
     else if (!$Me->privChair)
-        $Conf->errorMsg("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
+        Conf::msg_error("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
     else {
         // mail first, before contact info goes away
         if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)

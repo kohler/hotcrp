@@ -39,7 +39,7 @@ function loadRows() {
     if (!$crow && $cid != "xxx" && $cid != "new"
         /* following are obsolete */
         && $cid != "response" && $cid != "newresponse") {
-        $Conf->errorMsg("No such comment.");
+        Conf::msg_error("No such comment.");
         $Conf->ajaxExit(array("ok" => false));
     }
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
@@ -123,7 +123,7 @@ function handle_response() {
     $rname = @trim($_REQUEST["response"]);
     $rnum = $Conf->resp_round_number($rname);
     if ($rnum === false && $rname)
-        return $Conf->errorMsg("No such response round “" . htmlspecialchars($rname) . "”.");
+        return Conf::msg_error("No such response round “" . htmlspecialchars($rname) . "”.");
     $rnum = (int) $rnum;
     if ($crow && @(int) $crow->commentRound !== $rnum) {
         $Conf->warnMsg("Attempt to change response round ignored.");
@@ -134,11 +134,11 @@ function handle_response() {
         $xcrow = (object) array("commentType" => COMMENTTYPE_RESPONSE,
                                 "commentRound" => $rnum);
     if (($whyNot = $Me->perm_respond($prow, $xcrow, true)))
-        return $Conf->errorMsg(whyNotText($whyNot, "respond to reviews for"));
+        return Conf::msg_error(whyNotText($whyNot, "respond to reviews for"));
 
     $text = @rtrim($_REQUEST["comment"]);
     if ($text === "" && !$crow)
-        return $Conf->errorMsg("Enter a response.");
+        return Conf::msg_error("Enter a response.");
 
     save_comment($text, true, $rnum);
 }
@@ -154,16 +154,16 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
 } else if (@$_REQUEST["submitcomment"]) {
     $text = @rtrim($_REQUEST["comment"]);
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
-        $Conf->errorMsg(whyNotText($whyNot, "comment on"));
+        Conf::msg_error(whyNotText($whyNot, "comment on"));
     else if ($text === "" && !$crow)
-        $Conf->errorMsg("Enter a comment.");
+        Conf::msg_error("Enter a comment.");
     else
         save_comment($text, false, 0);
     if (@$_REQUEST["ajax"])
         $Conf->ajaxExit(array("ok" => false));
 } else if ((@$_REQUEST["deletecomment"] || @$_REQUEST["deleteresponse"]) && $crow) {
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
-        $Conf->errorMsg(whyNotText($whyNot, "comment on"));
+        Conf::msg_error(whyNotText($whyNot, "comment on"));
     else
         save_comment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
     if (@$_REQUEST["ajax"])

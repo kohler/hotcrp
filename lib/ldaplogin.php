@@ -13,15 +13,15 @@ function ldapLoginBindFailure($ldapc) {
 	$suffix = "<br /><span class='hint'>(LDAP error $lerrno: " . htmlspecialchars(ldap_err2str($lerrno)) . ")</span>";
 
     if ($lerrno < 5)
-	return $Conf->errorMsg("LDAP protocol error.  Logins will fail until this error is fixed.$suffix");
+	return Conf::msg_error("LDAP protocol error.  Logins will fail until this error is fixed.$suffix");
     else if (defval($_REQUEST, "password", "") == "") {
 	$password_class = " error";
 	if ($lerrno == 53)
 	    $suffix = "";
-	return $Conf->errorMsg("Enter your LDAP password.$suffix");
+	return Conf::msg_error("Enter your LDAP password.$suffix");
     } else {
 	$email_class = $password_class = " error";
-	return $Conf->errorMsg("Those credentials are invalid.  Please use your LDAP username and password.$suffix");
+	return Conf::msg_error("Those credentials are invalid.  Please use your LDAP username and password.$suffix");
     }
 }
 
@@ -29,7 +29,7 @@ function ldapLoginAction() {
     global $Conf, $Opt;
 
     if (!preg_match('/\A\s*(\S+)\s+(\d+\s+)?([^*]+)\*(.*?)\s*\z/s', $Opt["ldapLogin"], $m))
-	return $Conf->errorMsg("Internal error: <code>\$Opt[\"ldapLogin\"]</code> syntax error; expected &ldquo;<code><i>LDAP-URL</i> <i>distinguished-name</i></code>&rdquo;, where <code><i>distinguished-name</i></code> contains a <code>*</code> character to be replaced by the user's email address.  Logins will fail until this error is fixed.");
+	return Conf::msg_error("Internal error: <code>\$Opt[\"ldapLogin\"]</code> syntax error; expected &ldquo;<code><i>LDAP-URL</i> <i>distinguished-name</i></code>&rdquo;, where <code><i>distinguished-name</i></code> contains a <code>*</code> character to be replaced by the user's email address.  Logins will fail until this error is fixed.");
 
     // connect to the LDAP server
     if ($m[2] == "")
@@ -37,7 +37,7 @@ function ldapLoginAction() {
     else
 	$ldapc = @ldap_connect($m[1], (int) $m[2]);
     if (!$ldapc)
-	return $Conf->errorMsg("Internal error: ldap_connect.  Logins disabled until this error is fixed.");
+	return Conf::msg_error("Internal error: ldap_connect.  Logins disabled until this error is fixed.");
     @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 3);
 
     $qemail = addcslashes($_REQUEST["email"], ',=+<>#;\"');
