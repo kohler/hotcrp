@@ -396,11 +396,11 @@ class FormulaGraph {
                  && $f->expression === "sum(1)")
             $t[] = "ylabel:\"# papers\"";
         else if ($axis != "x" || !$this->fx_query)
-            $t[] = "{$axis}label:" . json_encode($f->expression, JSON_UNESCAPED_UNICODE);
+            $t[] = "{$axis}label:" . json_encode($f->expression);
         $format = $f->result_format();
         $rticks = ($axis == "y" ? ",yaxis_setup:hotcrp_graphs.rotate_ticks(-90)" : "");
         if ($axis == "x" && $this->fx_query) {
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries, JSON_UNESCAPED_UNICODE) . ")";
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->queries) . ")";
         } else if ($format instanceof ReviewField) {
             if ($format->option_letter)
                 $t[] = $axis . "flip:true";
@@ -420,16 +420,16 @@ class FormulaGraph {
                 $x[$r->graph_index] = $rd;
             }
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
-                    . json_encode($x, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
+                    . json_encode($x) . ")" . $rticks;
         } else if ($format === Fexpr::FDECISION)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($Conf->decision_map()) . ")" . $rticks;
         else if ($format === Fexpr::FBOOL)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($format->selector) . ")" . $rticks;
         else if ($format === Fexpr::FROUND)
-            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->remapped_rounds, JSON_UNESCAPED_UNICODE) . ")" . $rticks;
+            $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode($this->remapped_rounds) . ")" . $rticks;
         else if ($format === Fexpr::FREVTYPE)
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks(" . json_encode(ReviewForm::$revtype_names) . ")" . $rticks;
         return join(",", $t);

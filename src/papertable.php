@@ -2114,12 +2114,12 @@ class PaperTable {
                 $cj = $cr->unparse_json($Me);
                 if ($cr->commentType & COMMENTTYPE_RESPONSE)
                     unset($needresp[(int) @$cr->commentRound]);
-                $s .= "papercomment.add(" . json_encode($cj, JSON_UNESCAPED_UNICODE) . ");\n";
+                $s .= "papercomment.add(" . json_encode($cj) . ");\n";
             }
             if ($Me->can_comment($prow, null))
                 $s .= "papercomment.add({is_new:true,editable:true});\n";
             foreach ($needresp as $i => $rname)
-                $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode($rname, JSON_UNESCAPED_UNICODE) . "},true);\n";
+                $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode($rname) . "},true);\n";
             echo '<div id="cmtcontainer"></div>';
             CommentInfo::echo_script($prow);
             $Conf->echoScript($s);
@@ -2367,7 +2367,7 @@ class PaperTable {
                 $min_view_score = min($min_view_score, $Me->view_score_bound($this->prow, $rrow));
             }
         $rf = ReviewForm::get();
-        $Conf->footerScript("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score), JSON_UNESCAPED_UNICODE) . ")");
+        $Conf->footerScript("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score)) . ")");
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")
