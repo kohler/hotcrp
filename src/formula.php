@@ -1125,6 +1125,7 @@ class Formula {
                 if ($e0)
                     return null;
                 $e0 = $this->_reviewer_base($m[1]);
+                $ee = null;
                 $ex = $m[2];
             } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $ex, $m)
                        && (($round = $Conf->round_number($m[1], false))
