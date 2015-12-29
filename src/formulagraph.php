@@ -395,6 +395,8 @@ class FormulaGraph {
         else if ($axis == "y" && $this->type == self::BARCHART
                  && $f->expression === "sum(1)")
             $t[] = "ylabel:\"# papers\"";
+        else if ($axis == "y" && $this->type == self::CDF)
+            $t[] = "ylabel:\"CDF\"";
         else if ($axis != "x" || !$this->fx_query)
             $t[] = "{$axis}label:" . json_encode($f->expression);
         $format = $f->result_format();

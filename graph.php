@@ -124,17 +124,18 @@ if ($Graph == "formula") {
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. ", htmlspecialchars($fg->fx->expression), "</h2>\n";
         echo_graph();
 
-        $data = $fg->data();
-        if ($fg->type == FormulaGraph::CDF)
-            $Conf->echoScript('jQuery(function () { hotcrp_graphs.cdf({selector:"#hotgraph",series:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',ylabel:"CDF"}); })');
-        else {
-            $gtype = "scatter";
-            if ($fg->type & FormulaGraph::BARCHART)
-                $gtype = "barchart";
-            else if ($fg->type == FormulaGraph::BOXPLOT)
-                $gtype = "boxplot";
-            $Conf->echoScript('jQuery(function () { hotcrp_graphs.' . $gtype . '({selector:"#hotgraph",data:' . json_encode($data) . ',' . $fg->axis_info_settings("x") . ',' . $fg->axis_info_settings("y") . '}); })');
-        }
+        $Conf->echoScript("");
+        echo '<script>hotgraph_info={data:', json_encode($fg->data()), ",\n",
+            '  selector:"#hotgraph",', $fg->axis_info_settings("x"),
+            ',', $fg->axis_info_settings("y"), "};\n";
+        $gtype = "scatter";
+        if ($fg->type & FormulaGraph::BARCHART)
+            $gtype = "barchart";
+        else if ($fg->type == FormulaGraph::BOXPLOT)
+            $gtype = "boxplot";
+        else if ($fg->type == FormulaGraph::CDF)
+            $gtype = "cdf";
+        echo '$(function () { hotcrp_graphs.', $gtype, "(hotgraph_info) });\n</script>";
     } else
         echo "<h2>Formulas</h2>\n";
 

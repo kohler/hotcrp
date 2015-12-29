@@ -92,25 +92,19 @@ function normalize_svg_path(s) {
 
         // normalize command 2: relative -> absolute
         ch = a[0];
-        if (ch >= "c" && !cb) {
-            for (i = 1; i < a.length; i += 2) {
+        if (ch >= "a" && !cb) {
+            for (i = 1; i < a.length; i += ch !== "a" ? 2 : 5) {
                 a[i] += cx;
                 a[i+1] += cy;
             }
-        } else if (ch === "a" && !cb) {
-            a[6] += cx;
-            a[7] += cy;
-        } else if (ch >= "c") {
-            for (i = 1; i < a.length; i += 2) {
+        } else if (ch >= "a") {
+            if (ch === "a")
+                a[3] += cb;
+            for (i = 1; i < a.length; i += ch !== "a" ? 2 : 5) {
                 dx = a[i], dy = a[i + 1];
                 a[i] = cx + dx * coscb + dy * sincb;
                 a[i+1] = cy + dx * sincb + dy * coscb;
             }
-        } else if (ch === "a") {
-            a[3] += cb;
-            dx = a[6], dy = a[7];
-            a[6] = cx + dx * coscb + dy * sincb;
-            a[7] = cy + dx * sincb + dy * coscb;
         }
         ch = a[0] = ch.toUpperCase();
 
@@ -404,6 +398,14 @@ function make_axis(args) {
     }, args || {});
 }
 
+function axis_domain(axis, argextent, e) {
+    if (argextent && argextent[0] != null)
+        e = [argextent[0], e[1]];
+    if (argextent && argextent[1] != null)
+        e = [e[0], argextent[1]];
+    axis.domain(e);
+}
+
 function make_args(args) {
     args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50}, args);
     args.xticks = make_axis(args.xticks);
@@ -418,7 +420,7 @@ function make_args(args) {
 var hotcrp_graphs = {};
 
 // args: {selector: JQUERYSELECTOR,
-//        series: [{d: [ARRAY], label: STRING, className: STRING}],
+//        data: [{d: [ARRAY], label: STRING, className: STRING}],
 //        xlabel: STRING, ylabel: STRING, xtick_format: STRING}
 function hotcrp_graphs_cdf(args) {
     args = make_args(args);
@@ -433,7 +435,7 @@ function hotcrp_graphs_cdf(args) {
         .attr("transform", "translate(" + args.left + "," + args.top + ")");
 
     // massage data
-    var series = args.series;
+    var series = args.data;
     if (!series.length) {
         series = d3.values(series);
         series.sort(function (a, b) {
@@ -454,9 +456,10 @@ function hotcrp_graphs_cdf(args) {
         e[1] = Math.max(e[1], d[d.length - 1][0]);
         return e;
     }, [Infinity, -Infinity]);
-    x.domain([i[0] - (i[1] - i[0])/32, i[1] + (i[1] - i[0])/32]);
+    var delta = (i[1] - i[0]) / 32;
+    axis_domain(x, args.xextent, [i[0] - delta, i[1] + delta]);
     var i = d3.max(data, function (d) { return d[d.length - 1][1]; });
-    y.domain([0, Math.ceil(i * 10) / 10]);
+    axis_domain(y, args.yextent, [0, Math.ceil(i * 10) / 10]);
 
     // axes
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
@@ -530,7 +533,7 @@ hotcrp_graphs.cdf = hotcrp_graphs_cdf;
 
 
 hotcrp_graphs.procrastination = function (selector, revdata) {
-    var args = {selector: selector, series: {}};
+    var args = {selector: selector, data: {}};
 
     // collect data
     var alldata = [], d, i, l, cid, u;
@@ -545,9 +548,9 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
             d.className = "revtimel_light";
         Array.prototype.push.apply(alldata, d.d);
         if (cid !== "conflicts")
-            args.series[cid] = d;
+            args.data[cid] = d;
     }
-    args.series.all = {d: alldata, className: "revtimel_all", priority: 2};
+    args.data.all = {d: alldata, className: "revtimel_all", priority: 2};
 
     var dlf = max_procrastination_seq;
 
@@ -562,8 +565,8 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
             }
     }
     // make cdfs
-    for (i in args.series)
-        args.series[i].d = seq_to_cdf(dlf(args.series[i].d, revdata.deadlines));
+    for (i in args.data)
+        args.data[i].d = seq_to_cdf(dlf(args.data[i].d, revdata.deadlines));
 
     if (dlf.tick_format)
         args.xtick_format = dlf.tick_format;
@@ -695,11 +698,11 @@ hotcrp_graphs.scatter = function (args) {
 
     var xe = d3.extent(data, proj0),
         ye = d3.extent(data, proj1),
-        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
-                .domain(expand_extent(xe)),
-        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
-                .domain(expand_extent(ye, true)),
+        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0]),
         rf = function (d) { return d.r - 1; };
+    axis_domain(x, args.xextent, expand_extent(xe));
+    axis_domain(y, args.yextent, expand_extent(ye, true));
     data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
@@ -822,10 +825,10 @@ hotcrp_graphs.barchart = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
-                .domain(expand_extent(xe)),
-        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
-                .domain(ye);
+        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0]);
+    axis_domain(x, args.xextent, expand_extent(xe));
+    axis_domain(y, args.yextent, ye);
 
     var dpr = window.devicePixelRatio || 1;
     var barwidth = args.width / 20;
@@ -953,10 +956,10 @@ hotcrp_graphs.boxplot = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width])
-                .domain(expand_extent(xe)),
-        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0])
-                .domain(expand_extent(ye, true));
+        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0]);
+    axis_domain(x, args.xextent, expand_extent(xe));
+    axis_domain(y, args.yextent, expand_extent(ye, true));
 
     var barwidth = args.width/80;
     if (deltae[0] != Infinity)
@@ -1131,7 +1134,7 @@ hotcrp_graphs.boxplot = function (args) {
         else if (!hovered_data.q)
             clicker(hovered_data[2].map(proj2));
         else if ((s = args.xticks.search(hovered_data[0])))
-            clicker_go(hoturl("search", {"q": s}));
+            clicker_go(hoturl("search", {q: s}));
         else
             clicker(hovered_data.p);
     }
