@@ -93,14 +93,14 @@ function normalize_svg_path(s) {
         // normalize command 2: relative -> absolute
         ch = a[0];
         if (ch >= "a" && !cb) {
-            for (i = 1; i < a.length; i += ch !== "a" ? 2 : 5) {
+            for (i = ch !== "a" ? 1 : 6; i < a.length; i += 2) {
                 a[i] += cx;
                 a[i+1] += cy;
             }
         } else if (ch >= "a") {
             if (ch === "a")
                 a[3] += cb;
-            for (i = 1; i < a.length; i += ch !== "a" ? 2 : 5) {
+            for (i = ch !== "a" ? 1 : 6; i < a.length; i += 2) {
                 dx = a[i], dy = a[i + 1];
                 a[i] = cx + dx * coscb + dy * sincb;
                 a[i+1] = cy + dx * sincb + dy * coscb;
