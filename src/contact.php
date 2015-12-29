@@ -2053,12 +2053,11 @@ class Contact {
 
     function is_my_review($rrow) {
         global $Conf;
-        if (!$rrow || !$rrow->reviewId)
+        if (!$rrow)
             return false;
-        $rrow_contactId = 0;
         if (isset($rrow->reviewContactId))
             $rrow_contactId = $rrow->reviewContactId;
-        else if (isset($rrow->contactId))
+        else
             $rrow_contactId = $rrow->contactId;
         return $rrow_contactId == $this->contactId
             || ($this->review_tokens_
