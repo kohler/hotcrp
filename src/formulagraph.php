@@ -177,7 +177,7 @@ class FormulaGraph {
         while (($prow = PaperInfo::fetch($result, $Me))) {
             if (!$Me->can_view_paper($prow))
                 continue;
-            $s = $this->_paper_style($prow, $tagger);
+            $s = $ps = $this->_paper_style($prow, $tagger);
             $d = [0, 0, 0];
             $revs = $reviewf ? $reviewf($prow, $Me) : [null];
             foreach ($revs as $rcid) {
@@ -188,7 +188,7 @@ class FormulaGraph {
                 $d[2] = $prow->paperId;
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
                     $d[2] .= unparseReviewOrdinal($o);
-                if ($s === self::REVIEWER_COLOR)
+                if ($ps === self::REVIEWER_COLOR)
                     $s = @$this->reviewer_color[$d[0]] ? : "";
                 if ($this->fx_query) {
                     foreach ($this->papermap[$prow->paperId] as $q) {
@@ -229,12 +229,12 @@ class FormulaGraph {
             if (!$Me->can_view_paper($prow))
                 continue;
             $queries = $this->papermap[$prow->paperId];
-            $s = $this->_paper_style($prow, $tagger);
+            $s = $ps = $this->_paper_style($prow, $tagger);
             $revs = $reviewf ? $reviewf($prow, $Me) : [null];
             foreach ($revs as $rcid) {
                 if (($x = $fxf($prow, $rcid, $Me)) === null)
                     continue;
-                if ($s === self::REVIEWER_COLOR)
+                if ($ps === self::REVIEWER_COLOR)
                     $s = @$this->reviewer_color[$d[0]] ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $Me), $prow->paperId, $s];
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
