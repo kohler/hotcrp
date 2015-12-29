@@ -71,7 +71,7 @@ class ContactList {
     }
 
     function selector($fieldId, &$queryOptions) {
-        global $Conf, $reviewScoreNames;
+        global $Conf;
         if (!$this->contact->isPC
             && $fieldId != self::FIELD_NAME
             && $fieldId != self::FIELD_AFFILIATION
@@ -102,7 +102,7 @@ class ContactList {
             $this->have_folds["collab"] = true;
         if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
             // XXX scoresOk
-            $score = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+            $score = ReviewField::$score_ids[$fieldId - self::FIELD_SCORE];
             $revViewScore = $this->contact->aggregated_view_score_bound();
             $f = ReviewForm::field($score);
             if (!$f || $f->view_score <= $revViewScore
@@ -176,7 +176,7 @@ class ContactList {
     }
 
     function _sort($rows) {
-        global $Conf, $reviewScoreNames;
+        global $Conf;
         switch (self::_normalizeField($this->sortField)) {
         case self::FIELD_EMAIL:
             usort($rows, array($this, "_sortEmail"));
@@ -205,7 +205,7 @@ class ContactList {
             usort($rows, array($this, "_sortPapers"));
             break;
         case self::FIELD_SCORE:
-            $scoreName = $reviewScoreNames[$this->sortField - self::FIELD_SCORE];
+            $scoreName = ReviewField::$score_ids[$this->sortField - self::FIELD_SCORE];
             $scoreMax = $this->scoreMax[$scoreName];
             $scoresort = $Conf->session("pplscoresort", "A");
             if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
@@ -225,7 +225,6 @@ class ContactList {
     }
 
     function header($fieldId, $ordinal, $row = null) {
-        global $reviewScoreNames;
         switch (self::_normalizeField($fieldId)) {
         case self::FIELD_NAME:
             return "Name";
@@ -259,7 +258,7 @@ class ContactList {
         case self::FIELD_COLLABORATORS:
             return "Collaborators";
         case self::FIELD_SCORE: {
-            $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+            $scoreName = ReviewField::$score_ids[$fieldId - self::FIELD_SCORE];
             return ReviewForm::field($scoreName)->web_abbreviation();
         }
         default:
@@ -268,7 +267,7 @@ class ContactList {
     }
 
     function content($fieldId, $row) {
-        global $Conf, $reviewScoreNames;
+        global $Conf;
         switch (self::_normalizeField($fieldId)) {
         case self::FIELD_NAME:
             $t = Text::name_html($row);
@@ -422,7 +421,7 @@ class ContactList {
                 && !$this->contact->privChair
                 && $this->limit != "req")
                 return "";
-            $scoreName = $reviewScoreNames[$fieldId - self::FIELD_SCORE];
+            $scoreName = ReviewField::$score_ids[$fieldId - self::FIELD_SCORE];
             $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
             $m = "";
             if ($v->n > 0)

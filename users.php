@@ -331,7 +331,7 @@ if (count($tOpt) > 1) {
         $revViewScore = $Me->aggregated_view_score_bound();
         foreach (ReviewForm::all_fields() as $f)
             if ($f->view_score > $revViewScore && $f->has_options) {
-                $i = array_search($f->id, $reviewScoreNames);
+                $i = array_search($f->id, ReviewField::$score_ids);
                 echo Ht::checkbox("score[]", $i, $theScores & (1 << $i)),
                     "&nbsp;", Ht::label($f->name_html), "<br />";
             }

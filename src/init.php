@@ -115,6 +115,7 @@ class SiteAutoloader {
                    "NumericOrderPaperColumn" => "src/papercolumn.php",
                    "PaperColumnErrors" => "src/papercolumn.php",
                    "ReviewAssigner" => "src/assigners.php",
+                   "ReviewField" => "src/review.php",
                    "ReviewForm" => "src/review.php",
                    "ReviewSearchMatcher" => "src/papersearch.php",
                    "TagInfo" => "lib/tagger.php",
