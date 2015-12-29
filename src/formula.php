@@ -1195,7 +1195,7 @@ class Formula {
                 $e = new NegateFexpr($e);
             $t = $rest[2];
         } else if (preg_match('/\Anot([\s(].*|)\z/i', $t, $m)) {
-            $t = $m[2];
+            $t = $m[1];
             if (!($e = $this->_parse_expr($t, self::$opprec["u!"], $in_qc)))
                 return null;
             $e = new NegateFexpr($e);
