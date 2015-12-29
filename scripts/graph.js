@@ -451,15 +451,17 @@ function hotcrp_graphs_cdf(args) {
     });
 
     // axis domains
-    var i = data.reduce(function (e, d) {
+    var xdomain = data.reduce(function (e, d) {
         e[0] = Math.min(e[0], d[0][0]);
         e[1] = Math.max(e[1], d[d.length - 1][0]);
         return e;
     }, [Infinity, -Infinity]);
-    var delta = (i[1] - i[0]) / 32;
-    axis_domain(x, args.xextent, [i[0] - delta, i[1] + delta]);
-    var i = d3.max(data, function (d) { return d[d.length - 1][1]; });
-    axis_domain(y, args.yextent, [0, Math.ceil(i * 10) / 10]);
+    xdomain = [xdomain[0] - (xdomain[1] - xdomain[0]) / 32,
+               xdomain[1] + (xdomain[1] - xdomain[0]) / 32];
+    axis_domain(x, args.xextent, xdomain);
+    axis_domain(y, args.yextent, [0, Math.ceil(d3.max(data, function (d) {
+        return d[d.length - 1][1];
+    }) * 10) / 10]);
 
     // axes
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
@@ -470,13 +472,12 @@ function hotcrp_graphs_cdf(args) {
         .y(function (d) {return y(d[1]);});
 
     // CDF lines
-    var xmax = x.domain()[1];
     data.forEach(function (d, i) {
         var klass = "gcdf";
         if (series[i].className)
             klass += " " + series[i].className;
-        if (d[d.length - 1][0] != xmax)
-            d.push([xmax, d[d.length - 1][1]]);
+        if (d[d.length - 1][0] != xdomain[1])
+            d.push([xdomain[1], d[d.length - 1][1]]);
         svg.append("path").attr("dataindex", i)
             .datum(d)
             .attr("class", klass)
@@ -501,7 +502,7 @@ function hotcrp_graphs_cdf(args) {
         var m = d3.mouse(this), p = {distance: 16};
         m.clientX = d3.event.clientX;
         m.clientY = d3.event.clientY;
-        for (i in data)
+        for (var i in data)
             if (series[i].label)
                 p = closestPoint(svg.select("[dataindex='" + i + "']").node(), m, p);
         if (p.pathNode != hovered_path) {
