@@ -131,7 +131,7 @@ function log_jserror(errormsg, error, noconsole) {
     var old_onerror = window.onerror, nerrors_logged = 0;
     window.onerror = function (errormsg, url, lineno, colno, error) {
         if (++nerrors_logged <= 10) {
-            var x = {"error": errormsg, "url": url, "lineno": lineno};
+            var x = {error: errormsg, url: url, lineno: lineno};
             if (colno)
                 x.colno = colno;
             log_jserror(x, error, true);

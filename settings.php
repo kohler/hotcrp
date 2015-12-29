@@ -1364,7 +1364,7 @@ function setting_label($name, $text, $label = null) {
     return $text;
 }
 
-function setting($name, $defval = null) {
+function xsetting($name, $defval = null) {
     global $Error, $Conf;
     if (count($Error) > 0)
         return defval($_POST, $name, $defval);
@@ -1372,7 +1372,7 @@ function setting($name, $defval = null) {
         return $Conf->setting($name, $defval);
 }
 
-function setting_data($name, $defval = "", $killval = "") {
+function xsetting_data($name, $defval = "", $killval = "") {
     global $Error, $Conf;
     if (substr($name, 0, 4) === "opt.")
         return opt_data(substr($name, 4), $defval, $killval);
@@ -1397,7 +1397,7 @@ function opt_data($name, $defval = "", $killval = "") {
 }
 
 function doCheckbox($name, $text, $tr = false, $js = null) {
-    $x = setting($name);
+    $x = xsetting($name);
     echo ($tr ? '<tr><td class="nw">' : ""),
         Ht::hidden("has_$name", 1),
         Ht::checkbox($name, 1, $x !== null && $x > 0, setting_js($name, array("onchange" => $js, "id" => "cb$name"))),
@@ -1407,7 +1407,7 @@ function doCheckbox($name, $text, $tr = false, $js = null) {
 }
 
 function doRadio($name, $varr) {
-    $x = setting($name);
+    $x = xsetting($name);
     if ($x === null || !isset($varr[$x]))
         $x = 0;
     echo "<table style=\"margin-top:0.25em\">\n";
@@ -1446,10 +1446,10 @@ function doEntry($name, $v, $size = 30, $temptext = "") {
 
 function date_value($name, $temptext, $othername = null) {
     global $Conf, $Error;
-    $x = setting($name);
+    $x = xsetting($name);
     if ($x !== null && count($Error))
         return $x;
-    if ($othername && setting($othername) == $x)
+    if ($othername && xsetting($othername) == $x)
         return $temptext;
     if ($temptext !== "N/A" && $temptext !== "none" && $x === 0)
         return "none";
@@ -1479,7 +1479,7 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
         $text = array($text, "Example: “15 min”");
         $GraceExplanation = true;
     }
-    doTextRow($name, $text, unparseGrace(setting($name)), 15, $capclass, "none");
+    doTextRow($name, $text, unparseGrace(xsetting($name)), 15, $capclass, "none");
 }
 
 function doActionArea($top) {
@@ -1494,7 +1494,7 @@ function doActionArea($top) {
 function doAccGroup() {
     global $Conf, $Me;
 
-    if (setting("acct_addr"))
+    if (xsetting("acct_addr"))
         doCheckbox("acct_addr", "Collect users’ addresses and phone numbers");
 
     echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
@@ -1512,7 +1512,7 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
     if (is_array($name))
         list($name, $defaultname) = $name;
     $default = $Conf->message_default_html($defaultname);
-    $current = setting_data($name, $default);
+    $current = xsetting_data($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" data-fold="true">',
         '<div class="', ($type ? "f-cn" : "f-cl"),
@@ -1614,25 +1614,25 @@ function doSubGroup() {
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>",
             Ht::hidden("has_banal", 1),
-            "<table id='foldbanal' class='", (setting("sub_banal") ? "foldo" : "foldc"), "'>";
+            "<table id='foldbanal' class='", (xsetting("sub_banal") ? "foldo" : "foldc"), "'>";
         doCheckbox("sub_banal", "Automated format checker<span class='fx'>:</span>", true, "void fold('banal',!this.checked)");
         echo "<tr class='fx'><td></td><td class='top'><table>";
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
         for ($i = 0; $i < 6; $i++)
             if (defval($bsetting, $i, "") == "")
                 $bsetting[$i] = "N/A";
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), setting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
-        doTextRow("sub_banal_pagelimit", "Page limit", setting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), setting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), xsetting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_pagelimit", "Page limit", xsetting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), xsetting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
         echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), setting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), setting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_columns", array("Columns", null), setting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), xsetting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), xsetting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_columns", array("Columns", null), xsetting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
         echo "</table></td></tr></table>";
     }
 
     echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
-        (setting("sub_pcconf") ? "o" : "c"), "'>\n";
+        (xsetting("sub_pcconf") ? "o" : "c"), "'>\n";
     doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
                "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
@@ -1961,7 +1961,7 @@ function doRevGroup() {
     }
 
     // prepare round selector
-    $round_value = trim(setting_data("rev_roundtag"));
+    $round_value = trim(xsetting_data("rev_roundtag"));
     $current_round_value = $Conf->setting_data("rev_roundtag", "");
     if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
         $round_value = "#0";
@@ -2266,7 +2266,7 @@ function doDecGroup() {
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (@$Opt["allow_auseerev_unlessincomplete"])
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", setting_data("tag_au_seerev"), 24);
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", xsetting_data("tag_au_seerev"), 24);
     doRadio("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
@@ -2297,13 +2297,13 @@ function doDecGroup() {
             doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption", "none");
         } else
             doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption");
-        if (setting("resp_open$isuf") === 1 && ($x = setting("resp_done$isuf")))
+        if (xsetting("resp_open$isuf") === 1 && ($x = xsetting("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
         doDateRow("resp_open$isuf", "Start time", null, "lxcaption");
         doDateRow("resp_done$isuf", "Hard deadline", null, "lxcaption");
         doGraceRow("resp_grace$isuf", "Grace period", "lxcaption");
         doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."),
-                  setting("resp_words$isuf", 500), 5, "lxcaption", "none");
+                  xsetting("resp_words$isuf", 500), 5, "lxcaption", "none");
         echo '</table><div style="padding-top:4px">';
         do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
         echo '</div></div>', "\n";
