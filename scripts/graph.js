@@ -4,6 +4,166 @@
 
 var hotcrp_graphs = (function ($, d3) {
 var BOTTOM_MARGIN = 30;
+var PATHSEG_ARGMAP = {
+    m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
+    s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
+};
+
+function svg_path_number_of_items(s) {
+    if (s instanceof SVGPathElement)
+        s = s.getAttribute("d");
+    return s.replace(/[^A-DF-Za-df-z]/g, "").length;
+}
+
+function make_svg_path_parser(s) {
+    if (s instanceof SVGPathElement)
+        s = s.getAttribute("d");
+    var i = 0, e = s.length, next_cmd;
+    return function () {
+        var a = null, j, ch;
+        while (i < e) {
+            ch = s.charAt(i);
+            if (ch == "," || ch <= " ")
+                ++i;
+            else if (ch >= "+" && ch <= "9") {
+                if (!a && next_cmd)
+                    a = [next_cmd];
+                else if (!a || a.length == PATHSEG_ARGMAP[a[0]] + 1)
+                    break;
+                for (j = i, ++i;
+                     i < e && (((ch = s.charAt(i)) >= "+" && ch <= "9" && ch !== ",")
+                               || ch === "e" || ch === "E");
+                     ++i)
+                    /* skip */;
+                a.push(+s.substring(j, i));
+            } else if (ch >= "A" && ch <= "z" && !a) {
+                a = [ch];
+                next_cmd = ch;
+                if (ch == "m" || ch == "M" || ch == "z" || ch == "Z")
+                    next_cmd = ch == "m" ? "l" : "L";
+                ++i;
+            } else
+                break;
+        }
+        return a;
+    };
+}
+
+var normalize_path_complaint = false;
+function normalize_svg_path(s) {
+    var res = [],
+        cx = 0, cy = 0, cx0 = 0, cy0 = 0, copen = false,
+        cb = 0, sincb = 0, coscb = 1,
+        i, dx, dy,
+        parser = make_svg_path_parser(s), a, ch, preva;
+    while ((a = parser())) {
+        ch = a[0];
+        // special commands: bearing, closepath
+        if (ch === "b" || ch === "B") {
+            cb = ch === "b" ? cb + a[1] : a[1];
+            coscb = Math.cos(cb);
+            sincb = Math.sin(cb);
+            continue;
+        } else if (ch === "z" || ch === "Z") {
+            preva = res.length ? res[res.length - 1] : null;
+            if (copen) {
+                if (cx != cx0 || cy != cy0)
+                    res.push(["L", cx0, cy0]);
+                res.push(["Z"]);
+                copen = false;
+            }
+            cx = cx0, cy = cy0;
+            continue;
+        }
+
+        // normalize command 1: remove horiz/vert
+        if (PATHSEG_ARGMAP[ch] == 1) {
+            if (a.length == 1)
+                a = ["L"]; // all data is missing
+            else if (ch === "h")
+                a = ["l", a[1], 0];
+            else if (ch === "H")
+                a = ["L", a[1], cy];
+            else if (ch === "v")
+                a = ["l", 0, a[1]];
+            else if (ch === "V")
+                a = ["L", cx, a[1]];
+        }
+
+        // normalize command 2: relative -> absolute
+        ch = a[0];
+        if (ch >= "c" && !cb) {
+            for (i = 1; i < a.length; i += 2) {
+                a[i] += cx;
+                a[i+1] += cy;
+            }
+        } else if (ch === "a" && !cb) {
+            a[6] += cx;
+            a[7] += cy;
+        } else if (ch >= "c") {
+            for (i = 1; i < a.length; i += 2) {
+                dx = a[i], dy = a[i + 1];
+                a[i] = cx + dx * coscb + dy * sincb;
+                a[i+1] = cy + dx * sincb + dy * coscb;
+            }
+        } else if (ch === "a") {
+            a[3] += cb;
+            dx = a[6], dy = a[7];
+            a[6] = cx + dx * coscb + dy * sincb;
+            a[7] = cy + dx * sincb + dy * coscb;
+        }
+        ch = a[0] = ch.toUpperCase();
+
+        // normalize command 3: use cx0,cy0 for missing data
+        while (a.length < PATHSEG_ARGMAP[ch] + 1)
+            a.push(cx0, cy0);
+
+        // normalize command 4: shortcut -> full
+        if (ch === "S") {
+            dx = dy = 0;
+            if (preva && preva[0] === "C")
+                dx = cx - preva[3], dy = cy - preva[4];
+            a = ["C", cx + dx, cy + dy, a[1], a[2], a[3], a[4]];
+            ch = "C";
+        } else if (ch === "T") {
+            dx = dy = 0;
+            if (preva && preva[0] === "Q")
+                dx = cx - preva[1], dy = cy - preva[2];
+            a = ["Q", cx + dx, cy + dy, a[1], a[2]];
+            ch = "Q";
+        }
+
+        // process command
+        if (!copen && ch !== "M") {
+            res.push(["M", cx, cy]);
+            copen = true;
+        }
+        if (ch === "M") {
+            cx0 = a[1];
+            cy0 = a[2];
+            copen = false;
+        } else if (ch === "L")
+            res.push(["L", cx, cy, a[1], a[2]]);
+        else if (ch === "C")
+            res.push(["C", cx, cy, a[1], a[2], a[3], a[4], a[5], a[6]]);
+        else if (ch === "Q")
+            res.push(["C", cx, cy,
+                      cx + 2 * (a[1] - cx) / 3, cy + 2 * (a[2] - cy) / 3,
+                      a[3] + 2 * (a[1] - a[3]) / 3, a[4] + 2 * (a[2] - a[4]) / 3,
+                      a[3], a[4]]);
+        else {
+            // XXX should render "A" as a bezier
+            if (++normalize_path_complaint == 1)
+                log_jserror("bad normalize_svg_path " + ch);
+            res.push(a);
+        }
+
+        preva = a;
+        cx = a[a.length - 2];
+        cy = a[a.length - 1];
+    }
+    return res;
+}
 
 function pathNodeMayBeNearer(pathNode, point, dist) {
     function oob(l, t, r, b) {
@@ -19,32 +179,26 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
             return false;
     }
     // check path
-    var npsl = pathNode.normalizedPathSegList || pathNode.pathSegList;
-    var xo, yo, x0, y0, x, y, l, t, r, b, found;
-    for (var i = 0; i < npsl.numberOfItems && !found; ++i) {
-        var item = npsl.getItem(i);
-        if (item.pathSegType == 1)
-            x = xo, y = yo;
+    var npsl = normalize_svg_path(pathNode);
+    var l, t, r, b;
+    for (var i = 0; i < npsl.length; ++i) {
+        var item = npsl[i];
+        if (item[0] === "L") {
+            l = Math.min(item[1], item[3]);
+            t = Math.min(item[2], item[4]);
+            r = Math.max(item[1], item[3]);
+            b = Math.max(item[2], item[4]);
+        } else if (item[0] === "C") {
+            l = Math.min(item[1], item[3], item[5], item[7]);
+            t = Math.min(item[2], item[4], item[6], item[8]);
+            r = Math.max(item[1], item[3], item[5], item[7]);
+            b = Math.max(item[2], item[4], item[6], item[8]);
+        } else if (item[0] === "Z" || item[0] === "M")
+            continue;
         else
-            x = item.x, y = item.y;
-        if (item.pathSegType == 2) {
-            xo = l = r = x;
-            yo = t = b = y;
-        } else if (item.pathSegType == 6) {
-            l = Math.min(x0, x, item.x1, item.x2);
-            t = Math.min(y0, y, item.y1, item.y2);
-            r = Math.max(x0, x, item.x1, item.x2);
-            b = Math.max(y0, y, item.y1, item.y2);
-        } else if (item.pathSegType == 1 || item.pathSegType == 4) {
-            l = Math.min(x0, x);
-            t = Math.min(y0, y);
-            r = Math.max(x0, x);
-            b = Math.max(y0, y);
-        } else
             return true;
         if (!oob(l, t, r, b))
             return true;
-        x0 = x, y0 = y;
     }
     return false;
 }
@@ -52,7 +206,7 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
 function closestPoint(pathNode, point, inbest) {
     // originally from Mike Bostock http://bl.ocks.org/mbostock/8027637
     var pathLength = pathNode.getTotalLength(),
-        precision = pathLength / pathNode.pathSegList.numberOfItems * .125,
+        precision = pathLength / svg_path_number_of_items(pathNode) * .125,
         best, bestLength, bestDistance2 = Infinity;
 
     if (inbest && !pathNodeMayBeNearer(pathNode, point, inbest.distance))
