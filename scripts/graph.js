@@ -1243,7 +1243,7 @@ hotcrp_graphs.named_integer_ticks = function (map) {
 
         // prevent label overlap
         if (want_tilt) {
-            var total_height = d3.values(map).length * (example_height * Math.cos(1.13446) + 5);
+            var total_height = d3.values(map).length * (example_height * Math.cos(1.13446) + 8);
             var alternation = Math.ceil(total_height / this.node().getBBox().width - 0.1);
             if (alternation > 1)
                 this.selectAll("g.tick").each(function (i) {
