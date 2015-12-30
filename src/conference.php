@@ -791,6 +791,7 @@ class Conf {
         else if ($papersub <= 0 || !$forsubmit)
             // see also settings.php
             $this->q("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
+        $this->settings["papersub"] = Dbl::fetch_ivalue("select value from Settings where name='papersub'");
     }
 
     function update_paperacc_setting($foraccept) {
@@ -798,23 +799,28 @@ class Conf {
             $this->q("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update value=value");
         else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
             $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
+        $this->settings["paperacc"] = Dbl::fetch_ivalue("select value from Settings where name='paperacc'");
     }
 
     function update_rev_tokens_setting($always) {
-        if ($always || defval($this->settings, "rev_tokens", 0) < 0)
+        if ($always || defval($this->settings, "rev_tokens", 0) < 0) {
             $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
+            $this->settings["rev_tokens"] = Dbl::fetch_ivalue("select value from Settings where name='rev_tokens'");
+        }
     }
 
     function update_paperlead_setting() {
         $this->qe("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)");
+        $this->settings["paperlead"] = Dbl::fetch_ivalue("select value from Settings where name='paperlead'");
     }
 
     function update_papermanager_setting() {
         $this->qe("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
+        $this->settings["papermanager"] = Dbl::fetch_ivalue("select value from Settings where name='papermanager'");
     }
 
-    private function invariantq($q) {
-        $result = $this->ql($q);
+    private function invariantq($q, $args = []) {
+        $result = Dbl::ql_apply($this->dblink, $q, $args);
         if ($result) {
             $any = !!$result->fetch_row();
             $result->close();
@@ -864,7 +870,7 @@ class Conf {
             trigger_error($Opt["dbName"] . " invariant error: PaperConflict with zero conflictType");
 
         // no null submitted reviewWordCounts
-        $any = $this->invariantq("select reviewId from PaperReview where reviewSubmitted>0 and reviewWordCount is null");
+        $any = $this->invariantq("select reviewId from PaperReview where reviewSubmitted>0 and reviewWordCount is null limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: submitted PaperReview with null reviewWordCount");
     }
