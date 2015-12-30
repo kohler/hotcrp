@@ -365,7 +365,43 @@ class Dbl {
     }
 
     // array of all first columns
-    static function fetch_first_columns($result) {
+    static private function do_make_result($args, $flags = self::F_ERROR) {
+        if (count($args) == 1 && !is_string($args[0]))
+            return $args[0];
+        else
+            return self::do_query($args, $flags);
+    }
+
+    static function fetch_value(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
+        $x = $result ? $result->fetch_row() : null;
+        $result && $result->close();
+        return $x ? $x[0] : null;
+    }
+
+    static function fetch_ivalue(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
+        $x = $result ? $result->fetch_row() : null;
+        $result && $result->close();
+        return $x ? (int) $x[0] : null;
+    }
+
+    static function fetch_first_row(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
+        $x = $result ? $result->fetch_row() : null;
+        $result && $result->close();
+        return $x;
+    }
+
+    static function fetch_first_object(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
+        $x = $result ? $result->fetch_object() : null;
+        $result && $result->close();
+        return $x;
+    }
+
+    static function fetch_first_columns(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
         $x = array();
         while ($result && ($row = $result->fetch_row()))
             $x[] = $row[0];
@@ -373,29 +409,17 @@ class Dbl {
         return $x;
     }
 
-    static function fetch_first_row($result) {
-        $x = $result ? $result->fetch_row() : null;
-        $result && $result->close();
-        return $x;
-    }
-
-    static function fetch_first_object($result) {
-        $x = $result ? $result->fetch_object() : null;
-        $result && $result->close();
-        return $x;
-    }
-
-    static function fetch_map($result) {
+    static function fetch_map(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
         $x = array();
-        while ($result && ($row = $result->fetch_row())) {
-            assert(count($row) == 2);
-            $x[$row[0]] = $row[1];
-        }
+        while ($result && ($row = $result->fetch_row()))
+            $x[$row[0]] = count($row) == 2 ? $row[1] : array_slice($row, 1);
         $result && $result->close();
         return $x;
     }
 
-    static function fetch_iimap($result) {
+    static function fetch_iimap(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
         $x = array();
         while ($result && ($row = $result->fetch_row())) {
             assert(count($row) == 2);
