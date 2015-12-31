@@ -722,8 +722,8 @@ return function (content, bubopt) {
 
     function constrainmid(nearpos, wpos, d0, d1, sz) {
         var n = (nearpos[d0] + nearpos[d1]) / 2;
-        n = Math.max(n, Math.min(nearpos[d1], wpos[d0] + sz / 2 + SPACE));
-        return Math.min(n, Math.max(nearpos[d0], wpos[d1] - sz / 2 - SPACE));
+        n = Math.max(n, Math.min(nearpos[d1], wpos[d0] + SPACE));
+        return Math.min(n, Math.max(nearpos[d0], wpos[d1] - SPACE));
     }
 
     function constrain(za, z0, z1, bdim, noconstrain) {
