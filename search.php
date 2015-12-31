@@ -108,14 +108,14 @@ if ($getaction == "abstract" && SearchActions::any() && defval($_REQUEST, "ajax"
             $text = "===========================================================================\n";
             $n = "Paper #" . $prow->paperId . ": ";
             $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
-            $text .= prefix_word_wrap($n, $prow->title, $l) . "\n";
+            $text .= prefix_word_wrap($n, $prow->title, $l);
             $text .= "---------------------------------------------------------------------------\n";
             $l = strlen($text);
             if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a"))
                 $text .= prefix_word_wrap("Authors: ", $prow->pretty_text_author_list(), 14);
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $text .= prefix_word_wrap("Topics: ", $tt, 14) . "\n";
+                $text .= prefix_word_wrap("Topics: ", $tt, 14);
             }
             if ($l != strlen($text))
                 $text .= "---------------------------------------------------------------------------\n";
@@ -193,7 +193,7 @@ function downloadReviews(&$texts, &$errors) {
         $text = $header;
         if (count($warnings) && $getforms) {
             foreach ($warnings as $w)
-                $text .= prefix_word_wrap("==-== ", whyNotToText($w) . "\n", "==-== ");
+                $text .= prefix_word_wrap("==-== ", whyNotToText($w), "==-== ");
             $text .= "\n";
         } else if (count($warnings))
             $text .= join("\n", $warnings) . "\n\n";
@@ -669,10 +669,10 @@ function downloadRevpref($extended) {
         if ($extended) {
             if ($Rev->can_view_authors($prow, false))
                 $t .= prefix_word_wrap("#  Authors: ", $prow->pretty_text_author_list(), "#           ");
-            $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ") . "\n";
+            $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ");
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $t .= prefix_word_wrap("#   Topics: ", $tt, "#           ") . "\n";
+                $t .= prefix_word_wrap("#   Topics: ", $tt, "#           ");
             }
             $t .= "\n";
         }

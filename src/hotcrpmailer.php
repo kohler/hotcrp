@@ -239,7 +239,7 @@ class HotCRPMailer extends Mailer {
         if ($what == "%TITLE%")
             return $this->row->title;
         if ($what == "%TITLEHINT%") {
-            if (($tw = titleWords($this->row->title)))
+            if (($tw = UnicodeHelper::utf8_abbreviate($this->row->title, 40)))
                 return "\"$tw\"";
             else
                 return "";

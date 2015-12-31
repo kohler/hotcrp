@@ -519,7 +519,7 @@ class PaperTable {
         $data = $this->entryData("abstract", "p");
         if ($this->allFolded && strlen($data) > 190) {
             $shortdata = trim(preg_replace(",</?p.*?>,", "\n", $data));
-            $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", utf8_substr($shortdata, 0, 180));
+            $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", UnicodeHelper::utf8_prefix($shortdata, 180));
             if ($shortdata !== "") { /* "" might happen if really long word */
                 echo '<div class="pg">',
                     $this->papt("abstract", "Abstract",
@@ -1213,7 +1213,7 @@ class PaperTable {
         foreach ($pcm as $id => $p) {
             $label = Ht::label($p->name_html(), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
-                $label .= '<div class="pcconfaff">' . htmlspecialchars(titleWords($p->affiliation, 60)) . '</div>';
+                $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
 
             echo '<div class="ctable_elt pctbelt';

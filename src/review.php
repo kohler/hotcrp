@@ -994,7 +994,8 @@ class ReviewForm {
 
         if ($prow)
             $x .= "\n==+== Paper #$prow->paperId\n"
-                . prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ") . "\n\n";
+                . prefix_word_wrap("==-== Title: ", $prow->title, "==-==        ")
+                . "\n";
         else
             $x .= "\n==+== Paper Number\n\n(Enter paper number here)\n\n";
 
@@ -1056,7 +1057,7 @@ $blind\n";
                 $first = true;
                 foreach ($f->options as $num => $value) {
                     $y = ($first ? "==-== Choices: " : "==-==          ") . "$num. ";
-                    $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y))) . "\n";
+                    $x .= prefix_word_wrap($y, $value, str_pad("==-==", strlen($y)));
                     $first = false;
                 }
                 if ($f->allow_empty)
@@ -1070,7 +1071,7 @@ $blind\n";
                 else
                     $fval = "(Your choice here)";
             } else if ($format_description) {
-                $x .= prefix_word_wrap("==-== ", $format_description, "==-== ") . "\n";
+                $x .= prefix_word_wrap("==-== ", $format_description, "==-== ");
                 $format_description = null;
             }
             $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
@@ -1105,7 +1106,7 @@ $blind\n";
             else
                 $n = null;
             if ($n)
-                $x .= prefix_word_wrap("Reviewer: ", $n, $prow->pretty_text_title_indent()) . "\n";
+                $x .= prefix_word_wrap("Reviewer: ", $n, $prow->pretty_text_title_indent());
         }
         $x .= "---------------------------------------------------------------------------\n\n";
 
@@ -1134,9 +1135,9 @@ $blind\n";
                 if ($lastNumeric === false)
                     $x .= "\n";
                 if (strlen($sn) > 38 + strlen($fval))
-                    $x .= $sn . "\n" . prefix_word_wrap($fval . ". ", $y, 39 + strlen($fval)) . "\n";
+                    $x .= $sn . "\n" . prefix_word_wrap($fval . ". ", $y, 39 + strlen($fval));
                 else
-                    $x .= prefix_word_wrap($sn . " " . $fval . ". ", $y, 39 + strlen($fval)) . "\n";
+                    $x .= prefix_word_wrap($sn . " " . $fval . ". ", $y, 39 + strlen($fval));
                 $lastNumeric = true;
             } else {
                 $n = "===== " . $f->name . " =====";

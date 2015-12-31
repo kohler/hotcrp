@@ -30,12 +30,48 @@ function cleannl($text) {
     return $text;
 }
 
+function is_valid_utf8($str) {
+    return !!preg_match('//u', $str);
+}
+
+if (function_exists("iconv")) {
+    function windows_1252_to_utf8($str) {
+        return iconv("Windows-1252", "UTF-8//IGNORE", $str);
+    }
+    function mac_os_roman_to_utf8($str) {
+        return iconv("Mac", "UTF-8//IGNORE", $str);
+    }
+} else if (function_exists("mb_convert_encoding")) {
+    function windows_1252_to_utf8($str) {
+        return mb_convert_encoding($str, "UTF-8", "Windows-1252");
+    }
+}
+if (!function_exists("windows_1252_to_utf8")) {
+    function windows_1252_to_utf8($str) {
+        return UnicodeHelper::windows_1252_to_utf8($str);
+    }
+}
+if (!function_exists("mac_os_roman_to_utf8")) {
+    function mac_os_roman_to_utf8($str) {
+        return UnicodeHelper::mac_os_roman_to_utf8($str);
+    }
+}
+
+function convert_to_utf8($str) {
+    if (is_valid_utf8($str))
+        return $str;
+    $pfx = substr($str, 0, 5000);
+    if (substr_count($pfx, "\r") > 1.5 * substr_count($pfx, "\n"))
+        return mac_os_roman_to_utf8($str);
+    else
+        return windows_1252_to_utf8($str);
+}
+
 function simplify_whitespace($x) {
     return trim(preg_replace('/(?:\s|\xC2\xA0)+/', " ", $x));
 }
 
-function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
-                          $prefix_right_justify = true) {
+function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
     if (is_int($indent)) {
         $indentlen = $indent;
         $indent = str_pad("", $indent);
@@ -48,13 +84,16 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75,
         $text = substr($text, 1);
     }
 
-    $out .= preg_replace("/^(?!\\Z)/m", $indent, wordwrap($text, $totWidth - $indentlen));
+    while (($line = UnicodeHelper::utf8_word_prefix($text, $totWidth - $indentlen, $text)) !== "")
+        $out .= $indent . $line . "\n";
     if (strlen($prefix) <= $indentlen) {
-        $prefix = str_pad($prefix, $indentlen, " ",
-                          ($prefix_right_justify ? STR_PAD_LEFT : STR_PAD_RIGHT));
-        return $prefix . substr($out, $indentlen);
+        $prefix = str_pad($prefix, $indentlen, " ", STR_PAD_LEFT);
+        $out = $prefix . substr($out, $indentlen);
     } else
-        return $prefix . "\n" . $out;
+        $out = $prefix . "\n" . $out;
+    if (!str_ends_with($out, "\n"))
+        $out .= "\n";
+    return $out;
 }
 
 function count_words($text) {

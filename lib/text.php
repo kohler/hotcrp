@@ -15,7 +15,6 @@ class NameInfo {
 }
 
 class Text {
-
     static private $argkeys = array("firstName", "lastName", "email",
                                     "withMiddle", "middleName", "lastFirst",
                                     "nameAmbiguous", "name");
@@ -47,7 +46,7 @@ class Text {
     static private $boring_words = array("a" => true, "an" => true, "as" => true,
                                          "by" => true, "in" => true, "on" => true,
                                          "the" => true, "through" => true,
-                                         "with" => true);
+                                         "with" => true, "is" => true);
 
     static function analyze_von($lastName) {
         if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))

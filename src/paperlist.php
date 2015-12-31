@@ -847,7 +847,7 @@ class PaperList {
         } else if ($rstate->row_folded)
             $rstate->row_folded = false;
 
-        $tb = "  <tr class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(titleWords($row->title, 60));
+        $tb = "  <tr class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($row->title, 60));
         if ($this->_row_id_pattern)
             $tb .= "\" id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern);
         $t = $tb . "\">" . $t . "</tr>\n";

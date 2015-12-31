@@ -311,7 +311,7 @@ class Mailer {
             $line = $m[3];
         }
         $text .= $line;
-        return prefix_word_wrap($info, $text, $indent, $width) . "\n";
+        return prefix_word_wrap($info, $text, $indent, $width);
     }
 
     function expand($text, $field = null) {
@@ -360,7 +360,7 @@ class Mailer {
             } else if (preg_match('/^([ \t][ \t]*.*?: )(%OPT\([\w()]+\)%)$/', $line, $m)) {
 
                 if (($yes = $this->expandvar($m[2], true)))
-                    $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), tabLength($m[1], true), $width) . "\n";
+                    $text .= prefix_word_wrap($m[1], $this->expandvar($m[2]), tabLength($m[1], true), $width);
                 else if ($yes === null)
                     $text .= $line . "\n";
             } else if (preg_match('/^([ \t][ \t]*.*?: )(%\w+(?:|\([^\)]*\))%|\S+)\s*$/', $line, $m))
@@ -368,7 +368,7 @@ class Mailer {
             else if (strpos($line, '%') !== false)
                 $text .= $this->_lineexpand($line, "", 0, $width);
             else
-                $text .= prefix_word_wrap("", $line, 0, $width) . "\n";
+                $text .= prefix_word_wrap("", $line, 0, $width);
         }
 
         // lose newlines on header expansion

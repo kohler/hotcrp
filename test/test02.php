@@ -111,4 +111,19 @@ xassert_eqq(ReviewField::make_abbreviation("novelty isn't an AWESOME", 0, 0), "N
 xassert_eqq(ReviewField::make_abbreviation("novelty isn't an AWESOME", 0, 1), "novelty-isnt-awesome");
 xassert_eqq(ReviewField::make_abbreviation("_format", 0, 1), "format");
 
+// utf8_word_prefix, etc. tests
+xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 7), "aaaaaaa");
+xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 8), "aaaaaaaa");
+xassert_eqq(UnicodeHelper::utf8_prefix("aaaaaaaa", 9), "aaaaaaaa");
+xassert_eqq(UnicodeHelper::utf8_prefix("áááááááá", 7), "ááááááá");
+xassert_eqq(UnicodeHelper::utf8_prefix("áááááááá", 8), "áááááááá");
+xassert_eqq(UnicodeHelper::utf8_prefix("áááááááá", 9), "áááááááá");
+xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 7), "a̓a̓a̓a̓a̓a̓a̓");
+xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 8), "a̓a̓a̓a̓a̓a̓a̓a̓");
+xassert_eqq(UnicodeHelper::utf8_prefix("a̓a̓a̓a̓a̓a̓a̓a̓", 9), "a̓a̓a̓a̓a̓a̓a̓a̓");
+xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 7), "aaaaaaaa");
+xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 8), "aaaaaaaa");
+xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 9), "aaaaaaaa");
+xassert_eqq(UnicodeHelper::utf8_word_prefix("aaaaaaaa bbb", 10), "aaaaaaaa");
+
 xassert_exit();

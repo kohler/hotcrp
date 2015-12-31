@@ -263,7 +263,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if (($rname = $Conf->resp_round_name($this->commentRound)) != "1")
                 $ctags .= "{$rname}response ";
         } else if (@$req->tags
-                 && preg_match_all(',\S+,', $req->tags, $m)) {
+                   && preg_match_all(',\S+,', $req->tags, $m)) {
             $tagger = new Tagger($contact);
             $ctags = array();
             foreach ($m[0] as $text)

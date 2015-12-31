@@ -189,8 +189,7 @@ class PaperInfo {
 
     public function pretty_text_title($width = 75) {
         $l = $this->pretty_text_title_indent($width);
-        return prefix_word_wrap("Paper #{$this->paperId}: ",
-                                $this->title, $l) . "\n";
+        return prefix_word_wrap("Paper #{$this->paperId}: ", $this->title, $l);
     }
 
     public function author_list() {

@@ -53,65 +53,6 @@ function cvtnum($value, $default = -1) {
     return $default;
 }
 
-function is_valid_utf8($str) {
-    return !!preg_match('//u', $str);
-}
-
-if (function_exists("iconv")) {
-    function windows_1252_to_utf8($str) {
-        return iconv("Windows-1252", "UTF-8//IGNORE", $str);
-    }
-    function mac_os_roman_to_utf8($str) {
-        return iconv("Mac", "UTF-8//IGNORE", $str);
-    }
-} else if (function_exists("mb_convert_encoding")) {
-    function windows_1252_to_utf8($str) {
-        return mb_convert_encoding($str, "UTF-8", "Windows-1252");
-    }
-}
-if (!function_exists("windows_1252_to_utf8")) {
-    function windows_1252_to_utf8($str) {
-        return UnicodeHelper::windows_1252_to_utf8($str);
-    }
-}
-if (!function_exists("mac_os_roman_to_utf8")) {
-    function mac_os_roman_to_utf8($str) {
-        return UnicodeHelper::mac_os_roman_to_utf8($str);
-    }
-}
-
-function convert_to_utf8($str) {
-    if (is_valid_utf8($str))
-        return $str;
-    $pfx = substr($str, 0, 5000);
-    if (substr_count($pfx, "\r") > 1.5 * substr_count($pfx, "\n"))
-        return mac_os_roman_to_utf8($str);
-    else
-        return windows_1252_to_utf8($str);
-}
-
-if (function_exists("iconv")) {
-    function utf8_substr($str, $off, $len) {
-        return iconv_substr($str, $off, $len, "UTF-8");
-    }
-} else if (function_exists("mb_substr")) {
-    function utf8_substr($str, $off, $len) {
-        return mb_substr($str, $off, $len, "UTF-8");
-    }
-} else {
-    function utf8_substr($str, $off, $len) {
-        $x = substr($str, $off, $len);
-        $poff = 0;
-        while (($n = preg_match_all("/[\200-\377]/", $x, $m, PREG_PATTERN_ORDER, $poff))) {
-            $poff = strlen($x);
-            $x .= substr($str, $poff, $n);
-        }
-        if (preg_match("/\\A([\200-\377]+)/", substr($str, strlen($x)), $m))
-            $x .= $m[1];
-        return $x;
-    }
-}
-
 
 // web helpers
 
@@ -1048,22 +989,6 @@ function unparseReviewOrdinal($ord) {
         return chr($ord + 64);
     else
         return chr(intval(($ord - 1) / 26) + 64) . chr((($ord - 1) % 26) + 65);
-}
-
-function utf8_prefix_at_word_boundary($s, $len) {
-    if (strlen($s) <= $len)
-        return $s;
-    $ss = utf8_substr($s, 0, $len);
-    if (($pos = strrpos($ss, " ")) > 0
-        && substr($s, strlen($ss), 1) != " ")
-        $ss = substr($ss, 0, $pos);
-    return $ss;
-}
-
-function titleWords($title, $chars = 40) {
-    if (strlen($title) <= $chars)
-        return $title;
-    return utf8_prefix_at_word_boundary($title, $chars) . "...";
 }
 
 function downloadCSV($info, $header, $filename, $options = array()) {

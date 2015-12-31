@@ -110,4 +110,28 @@ class UnicodeHelper {
             return rtrim(substr(UTF8_FROM_MAC_OS_ROMAN, 3 * (ord($m[0]) - 128), 3));
         }, $str);
     }
+
+    public static function utf8_prefix($str, $len) {
+        preg_match('/\A\X{0,' . $len . '}/u', $str, $m);
+        return $m[0];
+    }
+
+    public static function utf8_word_prefix($str, $len, &$rest = null) {
+        if (strlen($str) <= $len) {
+            $rest = "";
+            return $str;
+        }
+        if (!preg_match('/\A(\X{0,' . ($len - 1) . '}(?=\PZ)\X)\pZ+([\s\S]*)\z/u', $str, $m))
+            preg_match('/\A(\X{0,' . $len . '}\PZ*)\pZ*([\s\S]*)\z/u', $str, $m);
+        $rest = $m[2];
+        return $m[1];
+    }
+
+    public static function utf8_abbreviate($str, $len) {
+        $pfx = self::utf8_word_prefix($str, $len);
+        if (strlen($pfx) < strlen($str))
+            return "$pfx...";
+        else
+            return $pfx;
+    }
 }
