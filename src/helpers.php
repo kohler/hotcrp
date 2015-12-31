@@ -1245,9 +1245,9 @@ function pc_members_selector_options($include_none, $accept_assignment_prow = nu
 function review_type_icon($revtype, $unfinished = null, $title = null) {
     static $revtypemap = array(-3 => array("&minus;", "Refused"),
                                -2 => array("A", "Author"),
-                               -1 => array("X", "Conflict"),
-                               1 => array("R", "External review"),
-                               2 => array("R", "PC review"),
+                               -1 => array("C", "Conflict"),
+                               1 => array("E", "External review"),
+                               2 => array("P", "PC review"),
                                3 => array("2", "Secondary review"),
                                4 => array("1", "Primary review"));
     if (!$revtype)
