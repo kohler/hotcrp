@@ -625,19 +625,15 @@ function rangeclick(evt, elt, kind) {
 var make_bubble = (function () {
 var capdir = ["Top", "Right", "Bottom", "Left"],
     lcdir = ["top", "right", "bottom", "left"],
-    dir_to_taildir = {
-        "0": 0, "1": 1, "2": 2, "3": 3,
-        "t": 0, "r": 1, "b": 2, "l": 3,
-        "n": 0, "e": 1, "s": 2, "w": 3
-    },
+    szdir = ["height", "width"],
     SPACE = 8;
 
-function cssbc(dir) {
-    return "border" + capdir[dir] + "Color";
+function cssborder(dir, suffix) {
+    return "border" + capdir[dir] + suffix;
 }
 
-function cssbw(dir) {
-    return "border" + capdir[dir] + "Width";
+function cssbc(dir) {
+    return cssborder(dir, "Color");
 }
 
 var roundpixel = Math.round;
@@ -656,9 +652,14 @@ function make_model(color) {
 }
 
 function calculate_sizes(color) {
-    var j = make_model(color), tail = j.children();
-    var sizes = [tail.width(), tail.height()];
-    j.remove();
+    var $model = make_model(color), tail = $model.children(), ds, x;
+    var sizes = {"0": tail.width(), "1": tail.height()};
+    for (ds = 0; ds < 4; ++ds) {
+        sizes[lcdir[ds]] = 0;
+        if ((x = $model.css("margin" + capdir[ds])) && (x = parseFloat(x)))
+            sizes[lcdir[ds]] = x;
+    }
+    $model.remove();
     return sizes;
 }
 
@@ -694,7 +695,7 @@ return function (content, bubopt) {
 
     function change_tail_direction() {
         var bw = [0, 0, 0, 0];
-        divbw = parseFloat($(bubdiv).css(cssbw(dir)));
+        divbw = parseFloat($(bubdiv).css(cssborder(dir, "Width")));
         divbw !== divbw && (divbw = 0); // eliminate NaN
         bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
         bw[dir^2] = sizes[1] + "px";
@@ -720,26 +721,22 @@ return function (content, bubopt) {
         assign_style_property(bubch[2], cssbc(dir^2), yc);
     }
 
-    function constrainmid(nearpos, wpos, d0, d1, sz) {
-        var n = (nearpos[d0] + nearpos[d1]) / 2;
-        n = Math.max(n, Math.min(nearpos[d1], wpos[d0] + SPACE));
-        return Math.min(n, Math.max(nearpos[d0], wpos[d1] - SPACE));
+    function constrainmid(nearpos, wpos, ds, ds2) {
+        var z0 = nearpos[lcdir[ds]], z1 = nearpos[lcdir[ds^2]],
+            z = (1 - ds2) * z0 + ds2 * z1;
+        z = Math.max(z, Math.min(z1, wpos[lcdir[ds]] + SPACE));
+        return Math.min(z, Math.max(z0, wpos[lcdir[ds^2]] - SPACE));
     }
 
-    function constrain(za, z0, z1, bdim, noconstrain) {
-        var z = za - bdim / 2, size = sizes[0];
+    function constrain(za, wpos, bpos, ds, ds2, noconstrain) {
+        var z0 = wpos[lcdir[ds]], z1 = wpos[lcdir[ds^2]],
+            bdim = bpos[szdir[ds>>1]],
+            z = za - ds2 * bdim;
         if (!noconstrain && z < z0 + SPACE)
-            z = Math.min(za - size, z0 + SPACE);
+            z = Math.min(za - sizes[0], z0 + SPACE);
         else if (!noconstrain && z + bdim > z1 - SPACE)
-            z = Math.max(za + size - bdim, z1 - SPACE - bdim);
+            z = Math.max(za + sizes[0] - bdim, z1 - SPACE - bdim);
         return z;
-    }
-
-    function errlog(d, ya, y, wpos, bpos, err) {
-        var ex = [d, divbw, ya, y];
-        if (window.JSON)
-            ex.push(JSON.stringify({"n": nearpos, "w": wpos, "b": bpos}));
-        log_jserror({"error": ex.join(" ")}, err);
     }
 
     function make_bpos(wpos, ds) {
@@ -758,13 +755,49 @@ return function (content, bubopt) {
         return bpos;
     }
 
+    function parse_dirspec(dirspec, pos) {
+        var res;
+        dirspec = dirspec.replace(/[!*]/g, "");
+        if (dirspec.length > pos
+            && (res = "0123trblnesw".indexOf(dirspec.charAt(pos))) >= 0)
+            return res % 4;
+        return -1;
+    }
+
+    function csscornerradius(corner, index) {
+        var divbr = $(bubdiv).css("border" + corner + "Radius"), pos;
+        if (!divbr)
+            return 0;
+        if ((pos = divbr.indexOf(" ")) > -1)
+            divbr = index ? divbr.substring(pos + 1) : divbr.substring(0, pos);
+        return parseFloat(divbr);
+    }
+
+    function constrainradius(x, bpos, size, ds) {
+        var x0, x1;
+        if (ds & 1) {
+            x0 = csscornerradius(capdir[0] + capdir[ds], 1);
+            x1 = csscornerradius(capdir[2] + capdir[ds], 1);
+        } else {
+            x0 = csscornerradius(capdir[ds] + capdir[3], 1);
+            x1 = csscornerradius(capdir[ds] + capdir[1], 1);
+        }
+        return Math.min(Math.max(x, x0), bpos[szdir[(ds>>1)^1]] - x1 - size);
+    }
+
     function show() {
-        var noflip = /!/.test(dirspec), noconstrain = /\*/.test(dirspec),
-            ds = dirspec.replace(/[!*]/g, "");
-        if (dir_to_taildir[ds] != null)
-            ds = dir_to_taildir[ds];
         if (!sizes)
             sizes = calculate_sizes(color);
+
+        // parse dirspec
+        var noflip = /!/.test(dirspec),
+            noconstrain = /\*/.test(dirspec),
+            ds = Math.max(parse_dirspec(dirspec, 0), 0),
+            ds2 = parse_dirspec(dirspec, 1);
+        if (ds2 >= 0 && (ds2 & 1) != (ds & 1))
+            ds2 = (ds2 === 1 || ds2 === 2 ? 1 : 0);
+        else
+            ds2 = 0.5;
 
         var wpos = $(window).geometry();
         var bpos = make_bpos(wpos, ds);
@@ -777,23 +810,26 @@ return function (content, bubopt) {
             else
                 ds = "v";
         }
+        var nearedge = [nearpos.top - sizes.bottom - bh,
+                        nearpos.right + sizes.left + bw,
+                        nearpos.bottom + sizes.top + bh,
+                        nearpos.left - sizes.right - bw],
+            wedge = [wpos.top + 3*SPACE, wpos.right - 3*SPACE,
+                     wpos.bottom - 3*SPACE, wpos.left + 3*SPACE];
         if ((ds === "v" || ds === 0 || ds === 2) && !noflip
-            && nearpos.bottom + bh > wpos.bottom - 3*SPACE
-            && nearpos.top - bh < wpos.top + 3*SPACE
-            && (nearpos.left - bw >= wpos.left + 3*SPACE
-                || nearpos.right + bw <= wpos.right - 3*SPACE))
+            && nearedge[2] > wedge[2] && nearedge[0] < wedge[0]
+            && (nearedge[3] >= wedge[3] || nearedge[1] <= wedge[1]))
             ds = "h";
-        if ((ds === "v" && nearpos.bottom + bh > wpos.bottom - 3*SPACE
-             && nearpos.top - bh > wpos.top + 3*SPACE)
-            || (ds === 0 && !noflip && nearpos.bottom + bh > wpos.bottom)
-            || (ds === 2 && (noflip || nearpos.top - bh >= wpos.top + SPACE)))
+        if ((ds === "v" && nearedge[2] > wedge[2] && nearedge[0] > wedge[0])
+            || (ds === 0 && !noflip && nearedge[2] > wpos.bottom)
+            || (ds === 2 && (noflip || nearedge[0] >= wpos.top + SPACE)))
             ds = 2;
         else if (ds === "v" || ds === 0 || ds === 2)
             ds = 0;
         else if ((ds === "h"
-                  && nearpos.left - bw - wpos.left < wpos.right - nearpos.right - bw)
-                 || (ds === 1 && !noflip && nearpos.left - bw < wpos.left)
-                 || (ds === 3 && (noflip || nearpos.right + bw <= wpos.right - SPACE)))
+                  && nearedge[3] - wpos.left < wpos.right - nearedge[1])
+                 || (ds === 1 && !noflip && nearedge[3] < wpos.left)
+                 || (ds === 3 && (noflip || nearedge[1] <= wpos.right - SPACE)))
             ds = 3;
         else
             ds = 1;
@@ -804,36 +840,28 @@ return function (content, bubopt) {
         }
 
         var x, y, xa, ya, d;
-        if (dir & 1) {
-            ya = constrainmid(nearpos, wpos, "top", "bottom", bpos.height);
-            y = constrain(ya, wpos.top, wpos.bottom, bpos.height, noconstrain);
-            d = roundpixel(ya - y - size / 2);
-            try {
-                bubch[0].style.top = d + "px";
-                bubch[2].style.top = (d + 0.77*divbw) + "px";
-            } catch (err) {
-                errlog(d, ya, y, wpos, bpos, err);
-            }
+        if (ds & 1) {
+            ya = constrainmid(nearpos, wpos, 0, ds2);
+            y = constrain(ya, wpos, bpos, 0, ds2, noconstrain);
+            d = constrainradius(roundpixel(ya - y - size / 2), bpos, size, ds);
+            bubch[0].style.top = d + "px";
+            bubch[2].style.top = (d + 0.77*divbw) + "px";
 
-            if (dir == 1)
-                x = nearpos.left - bpos.width - sizes[1] - 1;
+            if (ds == 1)
+                x = nearpos.left - sizes.right - bpos.width - sizes[1] - 1;
             else
-                x = nearpos.right + sizes[1];
+                x = nearpos.right + sizes.left + sizes[1];
         } else {
-            xa = constrainmid(nearpos, wpos, "left", "right", bpos.width);
-            x = constrain(xa, wpos.left, wpos.right, bpos.width, noconstrain);
-            d = roundpixel(xa - x - size / 2);
-            try {
-                bubch[0].style.left = d + "px";
-                bubch[2].style.left = (d + 0.77*divbw) + "px";
-            } catch (err) {
-                errlog(d, xa, x, wpos, bpos, err);
-            }
+            xa = constrainmid(nearpos, wpos, 3, ds2);
+            x = constrain(xa, wpos, bpos, 3, ds2, noconstrain);
+            d = constrainradius(roundpixel(xa - x - size / 2), bpos, size, ds);
+            bubch[0].style.left = d + "px";
+            bubch[2].style.left = (d + 0.77*divbw) + "px";
 
-            if (dir == 0)
-                y = nearpos.bottom + sizes[1];
+            if (ds == 0)
+                y = nearpos.bottom + sizes.top + sizes[1];
             else
-                y = nearpos.top - bpos.height - sizes[1] - 1;
+                y = nearpos.top - sizes.bottom - bpos.height - sizes[1] - 1;
         }
 
         bubdiv.style.left = roundpixel(x) + "px";
@@ -857,8 +885,6 @@ return function (content, bubopt) {
             if (reference && (reference = $(reference)) && reference.length
                 && reference[0] != window)
                 epos = geometry_translate(epos, reference.geometry());
-            if (!epos.exact)
-                epos = expand_near(epos, color);
             nearpos = epos;
             show();
             return bubble;
@@ -3000,9 +3026,9 @@ function completion_split(elt) {
 
 function taghelp_tset(elt, displayed) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/(?:^|\s)#?([^#\s]*)$/))) {
+    if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)/);
-        return alltags.then(taghelp_completer("", m[1] + n[1], displayed));
+        return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
     } else
         return new Promise(null);
 }
@@ -3056,25 +3082,30 @@ function taghelp(elt, klass, cleanf) {
         blurring = hiding = false;
     }
 
-    function finish_display(x) {
-        if (!x)
+    function finish_display(cinfo) {
+        if (!cinfo)
             return kill();
         if (!tagdiv) {
-            tagdiv = make_bubble({dir: "t", color: "taghelp"});
+            tagdiv = make_bubble({dir: "nw", color: "taghelp"});
             tagdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", "div.autocomplete", click);
         }
         var i, n, t = '<table class="taghelp"><tbody><tr>',
-            cols = (x.list.length < 6 ? 1 : 2),
-            colheight = Math.floor((x.list.length + cols - 1) / cols);
+            cols = (cinfo.list.length < 6 ? 1 : 2),
+            colheight = Math.floor((cinfo.list.length + cols - 1) / cols);
         for (i = n = 0; i < cols; ++i, n += colheight)
-            t += '<td class="taghelp_td">' + x.list.slice(n, Math.min(n + colheight, x.list.length)).join("") + "</td>";
+            t += '<td class="taghelp_td">' + cinfo.list.slice(n, Math.min(n + colheight, cinfo.list.length)).join("") + "</td>";
         t += "</tr></tbody></table>";
 
-        var $elt = jQuery(elt), shadow = textarea_shadow($elt);
-        shadow.text(elt.value.substr(0, elt.selectionStart)).append("<span>.</span>");
+        var $elt = jQuery(elt), shadow = textarea_shadow($elt),
+            matchpos = elt.selectionStart -
+                (cinfo.prefix ? cinfo.prefix.length : 0) -
+                (cinfo.match ? cinfo.match.length : 0);
+        shadow.text(elt.value.substring(0, matchpos))
+            .append("<span>&#x2060;</span>")
+            .append(document.createTextNode(elt.value.substring(matchpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
-        $pos = geometry_translate($pos, -soff.left + 4 - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
+        $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         tagdiv.html(t).near($pos, elt);
         shadow.remove();
     }
@@ -3090,7 +3121,8 @@ function taghelp(elt, klass, cleanf) {
             if (common === null)
                 common = attr;
             else {
-                for (j = 0; attr.charAt(j) === common.charAt(j) && j < attr.length; ++j)
+                for (j = 0; attr.charAt(j) === common.charAt(j)
+                            && j < attr.length; ++j)
                     /* skip */;
                 common = common.substring(0, j);
             }
