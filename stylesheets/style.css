@@ -2156,37 +2156,47 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	width: 99%;
 }
 
-/* tag reports */
-.taghelp_p, .taghelp_s {
-	text-align: left;
-	position: absolute;
-	padding: 5px 10px;
-	font-size: smaller;
-	background: #f2f2f2;
-	border: 1px solid #dddddd;
-	box-shadow: 0 0 5px #46678c;
-	-moz-box-shadow: 0 0 5px #46678c;
-	-webkit-box-shadow: 0 0 5px #46678c;
-	z-index: 1000;
-	color: black;
+/* suggestions */
+.suggesttable {
+        -webkit-column-gap: 18px;
+        -moz-column-gap: 18px;
+        column-gap: 18px;
 }
-#taghelp_p {
-	top: 0%;
-	left: 110%;
+.suggesttable2 {
+        -webkit-columns: 100px 2;
+        -moz-columns: 100px 2;
+        columns: 100px 2;
 }
-#taghelp_q {
-	top: 110%;
+.suggesttable3 {
+        -webkit-columns: 100px 3;
+        -moz-columns: 100px 3;
+        columns: 100px 3;
 }
-.taghelp_td {
-	vertical-align: top;
-	padding-left: 2em;
+.suggesttable4 {
+        -webkit-columns: 100px 4;
+        -moz-columns: 100px 4;
+        columns: 100px 4;
 }
-.taghelp_td:first-child {
-	padding-left: 0;
+.suggesttable5 {
+        -webkit-columns: 100px 5;
+        -moz-columns: 100px 5;
+        columns: 100px 5;
 }
-.autocomplete:hover {
+.suggesttable6 {
+        -webkit-columns: 100px 6;
+        -moz-columns: 100px 6;
+        columns: 100px 6;
+}
+.suggestion {
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
+	padding: 1px 4px;
+}
+.suggestion:hover {
 	cursor: pointer;
-	background-color: #cc0000;
+	background-color: #6088d0;
+	color: white;
 }
 
 /* bubbles */
@@ -2201,6 +2211,9 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	border-radius: 4px;
 	background-color: rgba(246, 244, 189, 0.88);
 	border: 1px solid #b8af25;
+}
+.bubble > .bubcontent {
+	margin: 4px 0;
 }
 .bubble.gray {
 	background-color: rgba(246, 246, 246, 0.88);
@@ -2228,22 +2241,21 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	font-size: 75%;
 	margin: 0 8px;
 }
-.bubble.taghelp {
-	background-color: rgba(44, 44, 66, 0.95);
-	color: #ffffff;
-	border: 0 none;
+.bubble.suggest {
+	background-color: rgba(250, 250, 255, 0.95);
+	color: #333333;
+	border: 1px solid #dddddd;
+	box-shadow: 0 0 5px rgba(0,0,0,0.1);
 	font-size: smaller;
-	margin: 0 8px;
+	margin: 4px 8px;
+	padding: 2px 2px;
+	border-radius: 3px;
 }
-.tagcomplete:hover {
-	background-color: rgba(255, 0, 0, 0.95);
-	cursor: pointer;
+.bubble.suggest > .bubcontent {
+	margin: 0;
 }
 .hottooltip {
 	cursor: default;
-}
-.bubble > .bubcontent {
-	margin: 4px 0;
 }
 .bubble.tooltip > .bubcontent {
 	max-width: 560px;
@@ -2258,6 +2270,10 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .bubtail.tooltip {
 	width: 8px;
 	height: 4px;
+}
+.bubtail.suggest {
+	width: 0;
+	height: 0;
 }
 .bubcontent > p {
 	max-width: 280px;

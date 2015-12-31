@@ -3073,7 +3073,7 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
     };
 }
 
-function taghelp(elt, klass, cleanf) {
+function suggest(elt, klass, cleanf) {
     var hiding = false, blurring, tagdiv, tagfail;
 
     function kill() {
@@ -3086,16 +3086,17 @@ function taghelp(elt, klass, cleanf) {
         if (!cinfo)
             return kill();
         if (!tagdiv) {
-            tagdiv = make_bubble({dir: "nw", color: "taghelp"});
+            tagdiv = make_bubble({dir: "nw", color: "suggest"});
             tagdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
                 .on("click", "div.autocomplete", click);
         }
-        var i, n, t = '<table class="taghelp"><tbody><tr>',
-            cols = (cinfo.list.length < 6 ? 1 : 2),
-            colheight = Math.floor((cinfo.list.length + cols - 1) / cols);
-        for (i = n = 0; i < cols; ++i, n += colheight)
-            t += '<td class="taghelp_td">' + cinfo.list.slice(n, Math.min(n + colheight, cinfo.list.length)).join("") + "</td>";
-        t += "</tr></tbody></table>";
+
+        var i, ml = [10, 30, 60, 90, 120];
+        for (i = 0; i < ml.length && cinfo.list.length > ml[i]; ++i)
+            /* nada */;
+        var t = '<div class="suggesttable suggesttable' + (i + 1) +
+            '"><div class="suggestion">' +
+            cinfo.list.join('</div><div class="suggestion">') + '</div></div>';
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt),
             matchpos = elt.selectionStart -
@@ -3185,7 +3186,7 @@ function taghelp(elt, klass, cleanf) {
 
 $(function () {
     $(".hotcrp_searchbox").each(function () {
-        taghelp(this, "taghelp_q", taghelp_q);
+        suggest(this, "taghelp_q", taghelp_q);
     });
 });
 

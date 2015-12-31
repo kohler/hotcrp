@@ -1396,7 +1396,7 @@ class PaperTable {
                 "</div>",
                 "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                 "</div>";
-            $Conf->footerScript("taghelp(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
+            $Conf->footerScript("suggest(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
         } else
             echo '<div class="taghl">', ($tx === "" ? "None" : $tx), '</div>';
         echo "</div>";
