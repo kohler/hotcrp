@@ -3048,7 +3048,7 @@ function taghelp_completer(pfx, str, displayed, include_pfx) {
 }
 
 function taghelp(elt, klass, cleanf) {
-    var hiding = false, blurring, tagdiv;
+    var hiding = false, blurring, tagdiv, tagfail;
 
     function kill() {
         tagdiv && tagdiv.remove();
@@ -3110,16 +3110,21 @@ function taghelp(elt, klass, cleanf) {
     }
 
     function kp(evt) {
-        var k = event_key(evt), m = event_modkey(evt), $j;
+        var k = event_key(evt), m = event_modkey(evt);
+        if (k != "Tab" || m)
+            tagfail = false;
         if (k == "Escape" && !m) {
             kill();
             hiding = true;
             return true;
         }
-        if (k == "Tab" && tagdiv && !m
-            && docomplete(tagdiv.self().find(".autocomplete"))) {
-            evt.preventDefault();
-            return false;
+        if (k == "Tab" && tagdiv && !m) {
+            var completed = docomplete(tagdiv.self().find(".autocomplete"));
+            if (completed || !tagfail) {
+                tagfail = !completed;
+                evt.preventDefault();
+                return false;
+            }
         }
         if (k && !hiding)
             setTimeout(display, 1);
