@@ -450,7 +450,7 @@ class PaperInfo {
         $result = Dbl::qe("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $row = edb_row($result);
         $this->allReviewerPreference = $row ? $row[0] : null;
-        unset($this->_prefs_array);
+        $this->_prefs_array = null;
     }
 
     public function reviewer_preferences() {
