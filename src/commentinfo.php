@@ -137,8 +137,9 @@ class CommentInfo {
             $cj->response = $Conf->resp_round_name($this->commentRound);
 
         // tags
-        if (@$this->commentTags) {
-            $tagger = new Tagger;
+        if (@$this->commentTags
+            && $contact->can_view_comment_tags($this->prow, $this, null)) {
+            $tagger = new Tagger($contact);
             if (($tags = $tagger->viewable($this->commentTags)))
                 $cj->tags = TagInfo::split($tags);
             if ($tags && ($cc = TagInfo::color_classes($tags)))
@@ -187,6 +188,12 @@ class CommentInfo {
         $x .= center_word_wrap($n);
         if (!$no_title)
             $x .= $this->prow->pretty_text_title();
+        if ($this->commentTags
+            && $contact->can_view_comment_tags($this->prow, $this, null)) {
+            $tagger = new Tagger($contact);
+            if (($tags = $tagger->viewable($this->commentTags)))
+                $x .= center_word_wrap($tagger->unparse_hashed($tags));
+        }
         $x .= "---------------------------------------------------------------------------\n";
         return $x . $this->comment . "\n";
     }

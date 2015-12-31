@@ -2603,6 +2603,11 @@ class Contact {
         return $this->can_view_comment_identity($prow, $crow, true);
     }
 
+    function can_view_comment_tags(PaperInfo $prow, $crow, $forceShow = null) {
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->allow_pc || $rights->review_type > 0;
+    }
+
     function can_view_some_draft_response() {
         return $this->is_manager() || $this->is_author();
     }

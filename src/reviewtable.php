@@ -312,6 +312,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($crows && count($crows) > 0 && !$rrow && $mode !== "edit") {
         $cids = array();
         $cnames = array();
+        $tagger = new Tagger($Me);
         foreach ($crows as $cr)
             if ($Me->can_view_comment($prow, $cr, null)) {
                 if ($Me->can_view_comment_identity($prow, $cr, null))
@@ -333,7 +334,9 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 $cids[] = $cid = CommentInfo::unparse_html_id($cr);
                 $tclass = "cmtlink";
                 if ($cr->commentTags
-                    && ($color = TagInfo::color_classes($cr->commentTags))) {
+                    && ($tags = $tagger->viewable($cr->commentTags))
+                    && $Me->can_view_comment_tags($prow, $cr, null)
+                    && ($color = TagInfo::color_classes($tags))) {
                     if (TagInfo::classes_have_colors($color))
                         $tclass .= " tagcolorspan";
                     $tclass .= " $color taghl";
