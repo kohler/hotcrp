@@ -1091,10 +1091,10 @@ $blind\n";
         $n = Conf::$gShortName . " Review";
         if (@$rrow->reviewOrdinal)
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-        $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+        $x .= center_word_wrap($n);
         if ($rrow->reviewModified && $contact->can_view_review_time($prow, $rrow)) {
             $n = "Updated " . $Conf->printableTime($rrow->reviewModified);
-            $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+            $x .= center_word_wrap($n);
         }
         $x .= "---------------------------------------------------------------------------\n";
         $x .= $prow->pretty_text_title();
@@ -1143,7 +1143,7 @@ $blind\n";
                 $n = "===== " . $f->name . " =====";
                 if ($lastNumeric !== null)
                     $x .= "\n";
-                $x .= str_pad($n, (int) (37.5 + strlen($n) / 2), " ", STR_PAD_LEFT) . "\n";
+                $x .= center_word_wrap($n);
                 $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
                 $lastNumeric = false;
             }

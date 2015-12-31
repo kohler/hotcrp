@@ -184,7 +184,7 @@ class CommentInfo {
             $n = "Response";
         if ($contact->can_view_comment_identity($this->prow, $this, false))
             $n .= " by " . Text::user_text($this->user());
-        $x .= str_pad($n, (int) (37.5 + strlen(UnicodeHelper::deaccent($n)) / 2), " ", STR_PAD_LEFT) . "\n";
+        $x .= center_word_wrap($n);
         if (!$no_title)
             $x .= $this->prow->pretty_text_title();
         $x .= "---------------------------------------------------------------------------\n";

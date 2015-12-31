@@ -111,6 +111,10 @@ class UnicodeHelper {
         }, $str);
     }
 
+    public static function utf8_glyphlen($str) {
+        return strlen(preg_replace('/\X/u', '.', $str));
+    }
+
     public static function utf8_prefix($str, $len) {
         preg_match('/\A\X{0,' . $len . '}/u', $str, $m);
         return $m[0];

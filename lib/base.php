@@ -96,6 +96,15 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
     return $out;
 }
 
+function center_word_wrap($text, $totWidth = 75, $multi_center = false) {
+    if (strlen($text) <= $totWidth && !preg_match('/[\200-\377]/', $text))
+        return str_pad($text, (int) (($totWidth + strlen($text)) / 2), " ", STR_PAD_LEFT) . "\n";
+    $out = "";
+    while (($line = UnicodeHelper::utf8_word_prefix($text, $totWidth, $text)) !== "")
+        $out .= str_pad($line, (int) (($totWidth + UnicodeHelper::utf8_glyphlen($line)) / 2), " ", STR_PAD_LEFT) . "\n";
+    return $out;
+}
+
 function count_words($text) {
     return preg_match_all('/[^-\s.,;:<>!?*_~`#|]\S*/', $text);
 }
