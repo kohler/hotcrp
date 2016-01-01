@@ -29,7 +29,7 @@ function crpmerge_database($old_user, $new_user) {
     $oldid = $old_user->contactId;
     $newid = $new_user->contactId;
 
-    $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewArchive write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, PaperWatch write, ReviewRating write");
+    $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, PaperWatch write, ReviewRating write");
 
     crpmergeone("Paper", "leadContactId", $oldid, $newid);
     crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
@@ -66,16 +66,8 @@ function crpmerge_database($old_user, $new_user) {
     crpmergeone("PaperComment", "contactId", $oldid, $newid);
 
     // archive duplicate reviews
-    $result = $Conf->q("select PaperReview.reviewId from PaperReview join PaperReview B on (PaperReview.paperId=B.paperId and PaperReview.contactId=$oldid and B.contactId=$newid)");
-    while (($row = edb_row($result))) {
-        $fields = ReviewForm::reviewArchiveFields();
-        if (!$Conf->q("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$row[0]"))
-            $MergeError .= $Conf->db_error_html(true);
-    }
     crpmergeoneignore("PaperReview", "contactId", $oldid, $newid);
     crpmergeone("PaperReview", "requestedBy", $oldid, $newid);
-    crpmergeone("PaperReviewArchive", "contactId", $oldid, $newid);
-    crpmergeone("PaperReviewArchive", "requestedBy", $oldid, $newid);
     crpmergeoneignore("PaperReviewPreference", "contactId", $oldid, $newid);
     crpmergeone("PaperReviewRefused", "contactId", $oldid, $newid);
     crpmergeone("PaperReviewRefused", "requestedBy", $oldid, $newid);

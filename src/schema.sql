@@ -271,58 +271,6 @@ CREATE TABLE `PaperReview` (
 
 
 --
--- Table structure for table `PaperReviewArchive`
---
-
-DROP TABLE IF EXISTS `PaperReviewArchive`;
-CREATE TABLE `PaperReviewArchive` (
-  `reviewArchiveId` int(11) NOT NULL AUTO_INCREMENT,
-  `reviewId` int(11) NOT NULL,
-  `paperId` int(11) NOT NULL,
-  `contactId` int(11) NOT NULL,
-  `reviewToken` int(11) NOT NULL DEFAULT '0',
-  `reviewType` tinyint(1) NOT NULL DEFAULT '0',
-  `reviewRound` int(1) NOT NULL DEFAULT '0',
-  `requestedBy` int(11) NOT NULL DEFAULT '0',
-  `timeRequested` int(11) NOT NULL DEFAULT '0',
-  `timeRequestNotified` int(11) NOT NULL DEFAULT '0',
-  `reviewBlind` tinyint(1) NOT NULL DEFAULT '1',
-  `reviewModified` int(1) DEFAULT NULL,
-  `reviewSubmitted` int(1) DEFAULT NULL,
-  `reviewNotified` int(1) DEFAULT NULL,
-  `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0',
-  `reviewAuthorSeen` int(1) DEFAULT NULL,
-  `reviewOrdinal` int(1) DEFAULT NULL,
-  `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT '1',
-  `overAllMerit` tinyint(1) NOT NULL DEFAULT '0',
-  `reviewerQualification` tinyint(1) NOT NULL DEFAULT '0',
-  `novelty` tinyint(1) NOT NULL DEFAULT '0',
-  `technicalMerit` tinyint(1) NOT NULL DEFAULT '0',
-  `interestToCommunity` tinyint(1) NOT NULL DEFAULT '0',
-  `longevity` tinyint(1) NOT NULL DEFAULT '0',
-  `grammar` tinyint(1) NOT NULL DEFAULT '0',
-  `likelyPresentation` tinyint(1) NOT NULL DEFAULT '0',
-  `suitableForShort` tinyint(1) NOT NULL DEFAULT '0',
-  `paperSummary` mediumblob,
-  `commentsToAuthor` mediumblob,
-  `commentsToPC` mediumblob,
-  `commentsToAddress` mediumblob,
-  `weaknessOfPaper` mediumblob,
-  `strengthOfPaper` mediumblob,
-  `potential` tinyint(4) NOT NULL DEFAULT '0',
-  `fixability` tinyint(4) NOT NULL DEFAULT '0',
-  `textField7` mediumblob,
-  `textField8` mediumblob,
-  `reviewWordCount` int(11) DEFAULT NULL,
-  `reviewFormat` tinyint(1) DEFAULT NULL,
-  PRIMARY KEY (`reviewArchiveId`),
-  UNIQUE KEY `reviewArchiveId` (`reviewArchiveId`),
-  KEY `paperId` (`paperId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
---
 -- Table structure for table `PaperReviewPreference`
 --
 
@@ -501,7 +449,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 113);
+insert into Settings (name, value) values ('allowPaperOption', 114);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

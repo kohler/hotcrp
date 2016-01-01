@@ -601,7 +601,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
         // XXX email self?
 
         $error = false;
-        $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewArchive', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
+        $tables = array('Paper', 'PaperStorage', 'PaperComment', 'PaperConflict', 'PaperReview', 'PaperReviewPreference', 'PaperTopic', 'PaperTag', "PaperOption");
         foreach ($tables as $table) {
             $result = Dbl::qe_raw("delete from $table where paperId=$prow->paperId");
             $error |= ($result == false);

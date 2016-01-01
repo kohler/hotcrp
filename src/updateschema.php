@@ -850,4 +850,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql("alter table ContactInfo add `updateTime` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0"))
         $Conf->update_schema_version(113);
+    if ($Conf->sversion == 113
+        && Dbl::ql("drop table if exists `PaperReviewArchive`"))
+        $Conf->update_schema_version(114);
 }

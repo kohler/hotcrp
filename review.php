@@ -181,7 +181,6 @@ if (isset($_REQUEST["deletereview"]) && check_post()
     if (!$paperTable->editrrow)
         Conf::msg_error("No review to delete.");
     else {
-        archiveReview($paperTable->editrrow);
         $result = Dbl::qe_raw("delete from PaperReview where reviewId=" . $paperTable->editrrow->reviewId);
         if ($result) {
             $Me->log_activity("$editRrowLogname deleted", $prow);
@@ -264,20 +263,12 @@ else if (isset($_REQUEST["text"]))
 
 
 // refuse review action
-function archiveReview($rrow) {
-    global $Conf;
-    $fields = ReviewForm::reviewArchiveFields();
-    Dbl::qe_raw("insert into PaperReviewArchive ($fields) select $fields from PaperReview where reviewId=$rrow->reviewId");
-}
-
 function refuseReview() {
     global $Conf, $Opt, $Me, $prow, $paperTable;
 
-    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, PaperReviewArchive write");
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write");
 
     $rrow = $paperTable->editrrow;
-    if ($rrow->reviewModified > 0)
-        archiveReview($rrow);
     $hadToken = defval($rrow, "reviewToken", 0) != 0;
 
     $result = Dbl::qe_raw("delete from PaperReview where reviewId=$rrow->reviewId");
