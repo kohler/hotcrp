@@ -562,18 +562,18 @@ echo ")</td></tr>\n<tr><td></td><td>";
 
 $summary = [];
 $tagger = new Tagger($Me);
-$nrev = AssignmentSet::count_reviews();
-$pnrev = AssignmentSet::count_reviews($papersel);
+$nrev = new AssignmentCountSet;
+$nrev->load_rev();
 foreach (pcMembers() as $p) {
     $t = '<div class="ctelt"><div class="pc_ctelt';
     if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
         $t .= ' ' . $k;
     $t .= '"><table><tr><td class="nw">'
-        . Ht::checkbox("pcsel[]", $p->contactId, isset($pcsel[$p->contactId]),
+        . Ht::checkbox("pcs[]", $p->contactId, isset($pcsel[$p->contactId]),
                        ["id" => "pcsel" . (count($summary) + 1),
                         "onclick" => "rangeclick(event,this);$$('pctyp_sel').checked=true"])
         . '&nbsp;</td><td><span class="taghl">' . $p->name_html() . '</span>'
-        . AssignmentSet::review_count_report($nrev, $pnrev, $papersel, $deltarev, $p, "")
+        . AssignmentSet::review_count_report($nrev, null, $p, "")
         . "</td></tr></table><hr class=\"c\" />\n</div></div>";
     $summary[] = $t;
 }
