@@ -700,7 +700,7 @@ are actually in effect.</p>");
 
 
 function revround() {
-    global $Me;
+    global $Conf, $Me;
 
     _subhead("", "
 <p>Many conferences divide their review assignments into multiple <em>rounds</em>.
@@ -724,7 +724,7 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
     // get current tag settings
     if ($Me->isPC) {
         $texts = array();
-        if (($rr = $Conf->setting_data("rev_roundtag"))) {
+        if (($rr = setting_data("rev_roundtag"))) {
             $texts[] = "The current review round is “<a href=\""
                 . hoturl("search", "q=round%3A" . urlencode($rr))
                 . "\">" . htmlspecialchars($rr) . "</a>”";
@@ -744,7 +744,7 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
             sort($rounds);
         }
         if (count($rounds))
-            $texts[] = "The following review rounds are currently in use: " . commajoin($rounds) . ".";
+            $texts[] = "Review rounds currently in use: " . commajoin($rounds) . ".";
         else if (!count($texts))
             $texts[] = "So far no review rounds have been defined.";
         _subhead("Round status", join(" ", $texts));
