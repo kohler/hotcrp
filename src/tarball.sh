@@ -133,7 +133,6 @@ src/commentinfo.php
 src/conference.php
 src/conflict.php
 src/contact.php
-src/contactcolumns.php
 src/contactlist.php
 src/distoptions.php
 src/formula.php

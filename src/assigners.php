@@ -244,6 +244,33 @@ class AssignerContacts {
     }
 }
 
+class Assigner_ReviewCount {
+    public $rev = 0;
+    public $pri = 0;
+    public $sec = 0;
+    public $ass = 0;
+    public function add(Assigner_ReviewCount $ct) {
+        $xct = new Assigner_ReviewCount;
+        $xct->rev = $this->rev + $ct->rev;
+        $xct->pri = $this->pri + $ct->pri;
+        $xct->sec = $this->sec + $ct->sec;
+        $xct->ass = $this->ass + $ct->ass;
+        return $xct;
+    }
+}
+
+class Assigner_ReviewCountSet {
+    public $bypc = [];
+    public function get($offset) {
+        return @$this->bypc[$offset] ? : new Assigner_ReviewCount;
+    }
+    public function ensure($offset) {
+        if (!isset($this->bypc[$offset]))
+            $this->bypc[$offset] = new Assigner_ReviewCount;
+        return $this->bypc[$offset];
+    }
+}
+
 class Assigner {
     public $type;
     public $pid;
@@ -297,9 +324,6 @@ class Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         return "";
-    }
-    function account(&$countbycid, $nrev) {
-        $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
     }
     function add_locks(&$locks) {
     }
@@ -431,15 +455,13 @@ class ReviewAssigner extends Assigner {
             $t = 'clear ' . $t . ' review';
         return $t;
     }
-    function account(&$countbycid, $nrev) {
-        $countbycid[$this->cid] = @+$countbycid[$this->cid] + 1;
-        if ($this->cid > 0 && isset($nrev->any[$this->cid])) {
-            $delta = $this->rtype ? 1 : -1;
-            foreach (array($nrev, $nrev->pset) as $nnrev) {
-                $nnrev->any[$this->cid] += ($this->rtype != 0) - ($this->oldtype != 0);
-                $nnrev->pri[$this->cid] += ($this->rtype == REVIEW_PRIMARY) - ($this->oldtype == REVIEW_PRIMARY);
-                $nnrev->sec[$this->cid] += ($this->rtype == REVIEW_SECONDARY) - ($this->oldtype == REVIEW_SECONDARY);
-            }
+    function account(Assigner_ReviewCountSet $deltarev) {
+        if ($this->cid > 0) {
+            $ct = $deltarev->ensure($this->cid);
+            ++$ct->ass;
+            $ct->rev += ($this->rtype != 0) - ($this->oldtype != 0);
+            $ct->pri += ($this->rtype == REVIEW_PRIMARY) - ($this->oldtype == REVIEW_PRIMARY);
+            $ct->sec += ($this->rtype == REVIEW_SECONDARY) - ($this->oldtype == REVIEW_SECONDARY);
         }
     }
     function add_locks(&$locks) {
@@ -1405,11 +1427,7 @@ class AssignmentSet {
                 $papersel[$assigner->pid] = true;
             $papersel = array_keys($papersel);
         }
-
-        $nrev = self::count_reviews();
-        $nrev->pset = self::count_reviews($papersel);
         $this->set_my_conflicts();
-        $countbycid = array();
 
         $bypaper = array();
         foreach ($this->assigners as $assigner)
@@ -1420,7 +1438,6 @@ class AssignmentSet {
                 arrayappend($bypaper[$assigner->pid], (object)
                             array("text" => $text,
                                   "sorter" => $c ? $c->sorter : $text));
-                $assigner->account($countbycid, $nrev);
             }
 
         AutoassignmentPaperColumn::$header = "Assignment";
@@ -1457,15 +1474,31 @@ class AssignmentSet {
         $plist = new PaperList($search);
         echo $plist->table_html("reviewers");
 
-        echo '<div class="g"></div>';
-        echo "<h3>Assignment summary</h3>\n";
-        $ccol = new ContactColumns(3);
-        foreach (pcMembers() as $cid => $p) {
-            $nnew = @+$countbycid[$cid];
-            $ccol->add($p, ": " . plural($nnew, "assignment"),
-                       self::review_count_report($nrev, $p, $nnew ? "After assignment:&nbsp;" : ""));
+        $deltarev = new Assigner_ReviewCountSet;
+        foreach ($this->assigners as $assigner)
+            if ($assigner instanceof ReviewAssigner)
+                $assigner->account($deltarev);
+        if (count(array_intersect_key($deltarev->bypc, pcMembers()))) {
+            $summary = [];
+            $tagger = new Tagger($this->contact);
+            $nrev = self::count_reviews();
+            $pnrev = self::count_reviews($papersel);
+            foreach (pcMembers() as $p)
+                if ($deltarev->get($p->contactId)->ass) {
+                    $t = '<div class="ctelt"><div class="pc_ctelt';
+                    if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
+                        $t .= ' ' . $k;
+                    $t .= '"><span class="taghl">' . $p->name_html() . "</span>: "
+                        . plural($deltarev->get($p->contactId)->ass, "assignment")
+                        . self::review_count_report($nrev, $pnrev, $papersel, $deltarev, $p, "After assignment:&nbsp;")
+                        . "<hr class=\"c\" /></div></div>";
+                    $summary[] = $t;
+                }
+            if (count($summary))
+                echo "<div class=\"g\"></div>\n",
+                    "<h3>PC review assignment summary</h3>\n",
+                    '<div class="pc_ctable">', join("", $summary), "</div>\n";
         }
-        echo $ccol->render(), "\n";
     }
 
     function is_empty() {
@@ -1531,25 +1564,21 @@ class AssignmentSet {
     }
 
     static function count_reviews($papers = null) {
-        $nrev = (object) array("any" => array(), "pri" => array(), "sec" => array());
-        foreach (pcMembers() as $id => $pc)
-            $nrev->any[$id] = $nrev->pri[$id] = $nrev->sec[$id] = 0;
-
+        $nrev = new Assigner_ReviewCountSet;
         $q = "select c.contactId, group_concat(r.reviewType separator '')
                 from ContactInfo c
                 left join PaperReview r on (r.contactId=c.contactId)\n\t\t";
         if (!$papers)
             $q .= "left join Paper p on (p.paperId=r.paperId)
                 where (p.paperId is null or p.timeWithdrawn<=0)";
-        else {
+        else
             $q .= "where r.paperId" . sql_in_numeric_set($papers);
-            $nrev->papers = $papers;
-        }
         $result = Dbl::qe($q . " and (c.roles&" . Contact::ROLE_PC . ")!=0 group by c.contactId");
         while (($row = edb_row($result))) {
-            $nrev->any[$row[0]] = strlen($row[1]);
-            $nrev->pri[$row[0]] = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
-            $nrev->sec[$row[0]] = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
+            $ct = $nrev->ensure($row[0]);
+            $ct->rev = strlen($row[1]);
+            $ct->pri = preg_match_all("|" . REVIEW_PRIMARY . "|", $row[1], $matches);
+            $ct->sec = preg_match_all("|" . REVIEW_SECONDARY . "|", $row[1], $matches);
         }
         Dbl::free($result);
         return $nrev;
@@ -1564,34 +1593,29 @@ class AssignmentSet {
             . '">' . $word . "</a>";
     }
 
-    private static function _review_count_report_one($nrev, $pc, $xq) {
-        $na = defval($nrev->any, $pc->contactId, 0);
-        $np = defval($nrev->pri, $pc->contactId, 0);
-        $ns = defval($nrev->sec, $pc->contactId, 0);
-        $t = self::_review_count_link($na, "review", true, "re", $pc, $xq);
+    private static function _review_count_report_one($nrev, $deltarev, $pc, $xq) {
+        $ct = $nrev->get($pc->contactId);
+        if ($deltarev)
+            $ct = $ct->add($deltarev->get($pc->contactId));
+        $t = self::_review_count_link($ct->rev, "review", true, "re", $pc, $xq);
         $x = array();
-        if ($np != $na)
-            $x[] = self::_review_count_link($np, "primary", false, "pri", $pc, $xq);
-        if ($ns != 0 && $ns != $na && $np + $ns != $na)
-            $x[] = self::_review_count_link($np, "secondary", false, "sec", $pc, $xq);
+        if ($ct->pri != $ct->rev)
+            $x[] = self::_review_count_link($ct->pri, "primary", false, "pri", $pc, $xq);
+        if ($ct->sec != 0 && $ct->sec != $ct->rev && $ct->pri + $ct->sec != $ct->rev)
+            $x[] = self::_review_count_link($ct->sec, "secondary", false, "sec", $pc, $xq);
         if (count($x))
             $t .= " (" . join(", ", $x) . ")";
         return $t;
     }
 
-    static function review_count_report($nrev, $pc, $prefix) {
-        $row1 = self::_review_count_report_one($nrev, $pc, "");
-        if (defval($nrev->pset->any, $pc->contactId, 0) != defval($nrev->any, $pc->contactId, 0)) {
-            $row2 = "<span class=\"dim\">$row1 total</span>";
-            $row1 = self::_review_count_report_one($nrev->pset, $pc, " " . join(" ", $nrev->pset->papers)) . " in selection";
-        } else
-            $row2 = "";
-        if ($row2 != "" && $prefix)
-            return "<table><tr><td>$prefix</td><td>$row1</td></tr><tr><td></td><td>$row2</td></tr></table>";
-        else if ($row2 != "")
-            return $row1 . "<br />" . $row2;
+    static function review_count_report($nrev, $pnrev, $papersel, $deltarev, $pc, $prefix) {
+        $n = $nrev->get($pc->contactId)->rev;
+        if ($pnrev && $n != $pnrev->get($pc->contactId)->rev)
+            $data = self::_review_count_report_one($pnrev, $deltarev, $pc, " " . join(" ", $papersel)) . " in selection, "
+                . self::_review_count_link($n, "review", true, "re", $pc, "") . " total";
         else
-            return $prefix . $row1;
+            $data = self::_review_count_report_one($nrev, $deltarev, $pc, "");
+        return '<div class="pcrevsum">' . $prefix . $data . "</div>";
     }
 
     public static function run($contact, $text, $forceShow = null) {

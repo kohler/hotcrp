@@ -292,17 +292,6 @@ class AutoassignerInterface {
         }
         if (!$this->live) {
             $t = '<h3>Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
-            // Print current tentative assignment -- slow, so commented out
-            /*if (false && $this->autoassigner->has_tentative_assignment()) {
-                $ta = $this->autoassigner->tentative_assignment_map();
-                $ccol = new ContactColumns(3);
-                foreach (pcMembers() as $cid => $p)
-                    if (@$ta[$cid]) {
-                        ksort($ta[$cid], SORT_NUMERIC);
-                        $ccol->add($p, "#" . join(", #", array_keys($ta[$cid])));
-                    }
-                $t .= $ccol->render();
-            }*/
             echo '<script>$$("propass").innerHTML=', json_encode($t), ";</script>\n";
             flush();
             while (@ob_end_flush())
@@ -542,11 +531,11 @@ echo "</div>\n";
 // PC
 //echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
 
-echo "<h3>PC members</h3><table><tr><td>";
+echo "<h3>PC members</h3><table><tr><td class=\"nw\">";
 doRadio("pctyp", "all", "");
 echo "</td><td>", Ht::label("Use entire PC", "pctyp_all"), "</td></tr>\n";
 
-echo "<tr><td>";
+echo "<tr><td class=\"nw\">";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>", Ht::label("Use selected PC members:", "pctyp_sel"), " &nbsp; (select ";
 $pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
@@ -571,14 +560,25 @@ foreach ($pctyp_sel as $pctyp) {
 }
 echo ")</td></tr>\n<tr><td></td><td>";
 
-$ccol = new ContactColumns(3, array("name" => "pcs[]", "checked" => $pcsel,
-                                    "id" => "pcsel{{count}}",
-                                    "onclick" => "rangeclick(event,this);\$\$('pctyp_sel').checked=true"));
+$summary = [];
+$tagger = new Tagger($Me);
 $nrev = AssignmentSet::count_reviews();
-$nrev->pset = AssignmentSet::count_reviews($papersel);
-foreach (pcMembers() as $p)
-    $ccol->add($p, null, AssignmentSet::review_count_report($nrev, $p, ""));
-echo $ccol->render(), '</td></tr></table>';
+$pnrev = AssignmentSet::count_reviews($papersel);
+foreach (pcMembers() as $p) {
+    $t = '<div class="ctelt"><div class="pc_ctelt';
+    if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
+        $t .= ' ' . $k;
+    $t .= '"><table><tr><td class="nw">'
+        . Ht::checkbox("pcsel[]", $p->contactId, isset($pcsel[$p->contactId]),
+                       ["id" => "pcsel" . (count($summary) + 1),
+                        "onclick" => "rangeclick(event,this);$$('pctyp_sel').checked=true"])
+        . '&nbsp;</td><td><span class="taghl">' . $p->name_html() . '</span>'
+        . AssignmentSet::review_count_report($nrev, $pnrev, $papersel, $deltarev, $p, "")
+        . "</td></tr></table><hr class=\"c\" />\n</div></div>";
+    $summary[] = $t;
+}
+echo '<div class="pc_ctable">', join("", $summary), "</div>\n",
+    "</td></tr></table>\n";
 
 
 // Bad pairs

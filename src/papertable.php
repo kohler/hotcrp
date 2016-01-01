@@ -1209,14 +1209,14 @@ class PaperTable {
             "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
-            '<div class="ctable pctb_ctable">';
+            '<div class="pc_ctable">';
         foreach ($pcm as $id => $p) {
             $label = Ht::label($p->name_html(), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
 
-            echo '<div class="ctable_elt pctbelt';
+            echo '<div class="ctelt"><div class="pc_ctelt';
             if ($show_colors && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
                 echo ' ', $classes;
             echo '">';
@@ -1242,7 +1242,7 @@ class PaperTable {
                                    $checked, array("id" => "pcc$id", "disabled" => $disabled)),
                     '&nbsp;</td><td>', $label, '</td></tr></table>';
             }
-            echo '<hr class="c" />', "</div>\n";
+            echo '<hr class="c" />', "</div></div>";
         }
         echo "</div>\n</div></div>\n\n";
     }

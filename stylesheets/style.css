@@ -1144,7 +1144,7 @@ pre.email {
 td.rpad {
 	padding-right: 2em;
 }
-div.pcconfaff {
+div.pcconfaff, div.pcrevsum {
 	font-size: 69%;
 }
 
@@ -1177,6 +1177,9 @@ span.asspref-1 {
 	font-size: 69%;
 }
 
+.pctbname {
+	float: left;
+}
 .pctbname, .pctbname-1, .pctbname-2, .pctbname-3,
 .pctbname0, .pctbname1, .pctbname2, .pctbname3, .pctbname4 {
 	padding-right: 1em;
@@ -1190,55 +1193,37 @@ span.asspref-1 {
 .pctbnrev {
 	font-size: 69%;
 	padding-right: 1em;
-}
-td.pctbnrev {
-	padding-bottom: 2px;
-}
-.pctbass {
-	padding-right: 0.45em;
-	white-space: nowrap;
-}
-.pctbl {
-	padding-left: 7px;
-}
-.pctbcolleft, .pctbcolmid {
-	vertical-align: top;
-}
-.pctbcolmid {
-	border-left: 1px dotted #cec1ff;
-}
-
-div.pctbass {
-	float: right;
-	padding-right: 0;
-}
-div.pctbname {
-	float: left;
-}
-div.pctbnrev {
 	clear: both;
 }
-div.pctbelt {
-	padding: 2px 6px 3px;
-	margin: 0 0 4px;
+.pctbass {
+	float: right;
+	white-space: nowrap;
 }
-.ctable_elt {
-	-webkit-column-break-inside: avoid;
-	page-break-inside: avoid;
-	break-inside: avoid;
-	margin: 0 6px;
-}
-.ctable {
+.ctable, .pc_ctable {
 	-webkit-columns: 300px 4;
 	-moz-columns: 300px 4;
 	columns: 300px 4;
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
+}
+.ctable {
 	margin: 0 -6px;
 }
-.pctb_ctable {
+.pc_ctable {
 	margin: 0 -6px -4px;
+}
+.ctelt {
+	-webkit-column-break-inside: avoid;
+	page-break-inside: avoid;
+	break-inside: avoid;
+	margin: 0 6px;
+}
+.pc_ctable > .ctelt {
+	padding-bottom: 4px;
+}
+.pc_ctelt {
+	padding: 2px 6px 3px;
 }
 
 /* review type/assignment blocks */

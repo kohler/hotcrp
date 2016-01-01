@@ -394,7 +394,7 @@ function topicTable($prow, $active = 0) {
     foreach ($tmap as $tid => $tname) {
         if (!isset($allTopics[$tid]))
             continue;
-        $out .= '<div class="ctable_elt">';
+        $out .= '<div class="ctelt">';
         $tname = '<span class="topic0">' . htmlspecialchars($tname) . '</span>';
         if ($paperId <= 0 || $active >= 0) {
             $out .= '<table><tr><td>'

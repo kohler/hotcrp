@@ -534,7 +534,7 @@ if ($Me->can_administer($prow)) {
                    "@", array("id" => "pcs\$_selector", "size" => 5, "onchange" => "assigntable.sel(this,\$)", "onclick" => "assigntable.sel(null,\$)", "onblur" => "assigntable.sel(0,\$)")),
         '</div>';
 
-    echo '<div class="ctable pctb_ctable">';
+    echo '<div class="pc_ctable">';
     $tagger = new Tagger($Me);
     foreach (pcMembers() as $pc) {
         $p = $pcx[$pc->contactId];
@@ -543,7 +543,7 @@ if ($Me->can_administer($prow)) {
 
         // first, name and assignment
         $color = $tagger->viewable_color_classes($pc->all_contact_tags());
-        echo '<div class="ctable_elt pctbelt' . ($color ? " $color" : "") . '">';
+        echo '<div class="ctelt"><div class="pc_ctelt' . ($color ? " $color" : "") . '">';
         if ($p->conflictType >= CONFLICT_AUTHOR) {
             echo '<div class="pctbass">', review_type_icon(-2),
                 Ht::img("_.gif", ">", array("class" => "next", "style" => "visibility:hidden")), '&nbsp;</div>',
@@ -573,7 +573,7 @@ if ($Me->can_administer($prow)) {
                 && ($p->reviewerPreference || $p->reviewerExpertise
                     || $p->topicInterestScore))
                 echo unparse_preference_span($p);
-            echo '</div>';
+            echo '</div></div>';
         }
 
         // then, number of reviews
