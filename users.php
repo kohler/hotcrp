@@ -263,21 +263,17 @@ if ($Me->privChair && @$_REQUEST["tagact"] && check_post() && isset($papersel)
 
 // set scores to view
 if (isset($_REQUEST["redisplay"])) {
-    $Conf->save_session("ppldisplay", "");
+    $Conf->save_session("uldisplay", "");
     foreach (ContactList::$folds as $key)
-        displayOptionsSet("ppldisplay", $key, defval($_REQUEST, "show$key", 0));
-    $Conf->save_session("pplscores", 0);
-}
-if (isset($_REQUEST["score"]) && is_array($_REQUEST["score"])) {
-    $ss = 0;
-    foreach ($_REQUEST["score"] as $s)
-        $ss |= (1 << $s);
-    $Conf->save_session("pplscores", $ss);
+        displayOptionsSet("uldisplay", $key, defval($_REQUEST, "show$key", 0));
+    foreach (ReviewForm::all_fields() as $f)
+        if ($f->has_options)
+            displayOptionsSet("uldisplay", $f->id, defval($_REQUEST, "show{$f->id}", 0));
 }
 if (isset($_REQUEST["scoresort"])
     && ($_REQUEST["scoresort"] == "A" || $_REQUEST["scoresort"] == "V"
         || $_REQUEST["scoresort"] == "D"))
-    $Conf->save_session("pplscoresort", $_REQUEST["scoresort"]);
+    $Conf->save_session("scoresort", $_REQUEST["scoresort"]);
 
 
 if ($_REQUEST["t"] == "pc")
@@ -291,7 +287,7 @@ $Conf->header($title, "accounts", actionBar());
 
 $pl = new ContactList($Me, true);
 $pl_text = $pl->table_html($_REQUEST["t"], hoturl("users", ["t" => $_REQUEST["t"]]),
-                     $tOpt[$_REQUEST["t"]], 'ppldisplay.$');
+                     $tOpt[$_REQUEST["t"]], 'uldisplay.$');
 
 
 // form
@@ -316,23 +312,22 @@ if (count($tOpt) > 1) {
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
-    $Conf->footerScript('foldmap.ppl={"aff":2,"tags":3,"topics":1};');
+    $Conf->footerScript('foldmap.ul={"aff":2,"tags":3,"topics":1};');
     foreach (array("aff" => "Affiliations", "collab" => "Collaborators",
                    "tags" => "Tags", "topics" => "Topics") as $fold => $text)
         if (@$pl->have_folds[$fold] !== null) {
             echo Ht::checkbox("show$fold", 1, $pl->have_folds[$fold],
-                               array("onchange" => "fold('ppl',!this.checked,'$fold')")),
+                               array("onchange" => "fold('ul',!this.checked,'$fold')")),
                 "&nbsp;", Ht::label($text), "<br />\n";
         }
     echo "</td>";
     if (isset($pl->scoreMax)) {
         echo "<td class='pad'>";
-        $theScores = $Conf->session("pplscores", 1);
         $revViewScore = $Me->aggregated_view_score_bound();
         foreach (ReviewForm::all_fields() as $f)
             if ($f->view_score > $revViewScore && $f->has_options) {
-                $i = array_search($f->id, ReviewField::$score_ids);
-                echo Ht::checkbox("score[]", $i, $theScores & (1 << $i)),
+                $checked = strpos(displayOptionsSet("uldisplay"), $f->id) !== false;
+                echo Ht::checkbox("show{$f->id}", 1, $checked),
                     "&nbsp;", Ht::label($f->name_html), "<br />";
             }
         echo "</td>";
@@ -344,7 +339,7 @@ if (count($tOpt) > 1) {
             if (isset(ListSorter::$score_sorts[$k]))
                 $ss[$k] = ListSorter::$score_sorts[$k];
         echo "<tr><td colspan='3'><div class='g'></div><b>Sort scores by:</b> &nbsp;",
-            Ht::select("scoresort", $ss, $Conf->session("pplscoresort", "A")),
+            Ht::select("scoresort", $ss, $Conf->session("scoresort", "A")),
             "</td></tr>";
     }
     echo "</table></div></form>";

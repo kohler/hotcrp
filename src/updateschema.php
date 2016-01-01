@@ -17,7 +17,10 @@ function update_schema_create_review_form($Conf) {
         if ($row->rows > 3)
             $field->display_space = (int) $row->rows;
         $field->view_score = (int) $row->authorView;
-        if (in_array($row->fieldName, ReviewField::$score_ids)) {
+        if (in_array($row->fieldName, ["overAllMerit", "technicalMerit", "novelty",
+                                "grammar", "reviewerQualification", "potential",
+                                "fixability", "interestToCommunity", "longevity",
+                                "likelyPresentation", "suitableForShort"])) {
             $field->options = array();
             if ((int) $row->levelChar > 1)
                 $field->option_letter = (int) $row->levelChar;

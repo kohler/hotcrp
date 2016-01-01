@@ -37,11 +37,6 @@ class ReviewField {
                                            "author" => VIEWSCORE_AUTHOR);
     static private $view_score_rmap = null;
 
-    static public $score_ids = ["overAllMerit", "technicalMerit", "novelty",
-                                "grammar", "reviewerQualification", "potential",
-                                "fixability", "interestToCommunity", "longevity",
-                                "likelyPresentation", "suitableForShort"];
-
     public function __construct($id, $has_options) {
         $this->id = $id;
         $this->has_options = $has_options;

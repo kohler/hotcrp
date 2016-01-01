@@ -24,7 +24,6 @@ class ContactList {
     const FIELD_TAGS = 15;
     const FIELD_COLLABORATORS = 16;
     const FIELD_SCORE = 50;
-    const FIELD_NUMSCORES = 11;
 
     public static $folds = array("topics", "aff", "tags", "collab");
 
@@ -63,13 +62,6 @@ class ContactList {
         $this->listNumber = $contact->privChair;
     }
 
-    function _normalizeField($fieldId) {
-        if ($fieldId >= self::FIELD_SCORE && $fieldId < self::FIELD_SCORE + self::FIELD_NUMSCORES)
-            return self::FIELD_SCORE;
-        else
-            return $fieldId;
-    }
-
     function selector($fieldId, &$queryOptions) {
         global $Conf;
         if (!$this->contact->isPC
@@ -100,20 +92,18 @@ class ContactList {
             $this->have_folds["tags"] = true;
         if ($fieldId == self::FIELD_COLLABORATORS)
             $this->have_folds["collab"] = true;
-        if (self::_normalizeField($fieldId) == self::FIELD_SCORE) {
+        if (($f = ReviewForm::field($fieldId))) {
             // XXX scoresOk
-            $score = ReviewField::$score_ids[$fieldId - self::FIELD_SCORE];
             $revViewScore = $this->contact->aggregated_view_score_bound();
-            $f = ReviewForm::field($score);
-            if (!$f || $f->view_score <= $revViewScore
+            if ($f->view_score <= $revViewScore
                 || !$f->has_options
                 || !$this->contact->can_view_aggregated_review_identity())
                 return false;
             $queryOptions["reviews"] = true;
             if (!isset($queryOptions["scores"]))
                 $queryOptions["scores"] = array();
-            $queryOptions["scores"][] = $score;
-            $this->scoreMax[$score] = count($f->options);
+            $queryOptions["scores"][] = $f->id;
+            $this->scoreMax[$f->id] = count($f->options);
         }
         return true;
     }
@@ -177,7 +167,7 @@ class ContactList {
 
     function _sort($rows) {
         global $Conf;
-        switch (self::_normalizeField($this->sortField)) {
+        switch ($this->sortField) {
         case self::FIELD_EMAIL:
             usort($rows, array($this, "_sortEmail"));
             break;
@@ -204,18 +194,19 @@ class ContactList {
         case self::FIELD_REVIEW_PAPERS:
             usort($rows, array($this, "_sortPapers"));
             break;
-        case self::FIELD_SCORE:
-            $scoreName = ReviewField::$score_ids[$this->sortField - self::FIELD_SCORE];
-            $scoreMax = $this->scoreMax[$scoreName];
-            $scoresort = $Conf->session("pplscoresort", "A");
-            if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
-                $scoresort = "A";
-            foreach ($rows as $row) {
-                $scoreinfo = new ScoreInfo(@$row->$scoreName);
-                $row->_sort_info = $scoreinfo->sort_data($scoresort);
-                $row->_sort_avg = $scoreinfo->mean();
+        default:
+            if (($f = ReviewForm::field($fieldId))) {
+                $scoreMax = $this->scoreMax[$f->id];
+                $scoresort = $Conf->session("scoresort", "A");
+                if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
+                    $scoresort = "A";
+                foreach ($rows as $row) {
+                    $scoreinfo = new ScoreInfo(@$row->$fieldId);
+                    $row->_sort_info = $scoreinfo->sort_data($scoresort);
+                    $row->_sort_avg = $scoreinfo->mean();
+                }
+                usort($rows, array($this, "_sortScores"));
             }
-            usort($rows, array($this, "_sortScores"));
             break;
         }
         if ($this->reverseSort)
@@ -225,7 +216,7 @@ class ContactList {
     }
 
     function header($fieldId, $ordinal, $row = null) {
-        switch (self::_normalizeField($fieldId)) {
+        switch ($fieldId) {
         case self::FIELD_NAME:
             return "Name";
         case self::FIELD_EMAIL:
@@ -257,18 +248,17 @@ class ContactList {
             return "Tags";
         case self::FIELD_COLLABORATORS:
             return "Collaborators";
-        case self::FIELD_SCORE: {
-            $scoreName = ReviewField::$score_ids[$fieldId - self::FIELD_SCORE];
-            return ReviewForm::field($scoreName)->web_abbreviation();
-        }
         default:
-            return "&lt;$fieldId&gt;?";
+            if (($f = ReviewForm::field($fieldId)))
+                return $f->web_abbreviation();
+            else
+                return "&lt;$fieldId&gt;?";
         }
     }
 
     function content($fieldId, $row) {
         global $Conf;
-        switch (self::_normalizeField($fieldId)) {
+        switch ($fieldId) {
         case self::FIELD_NAME:
             $t = Text::name_html($row);
             if (trim($t) == "")
@@ -416,29 +406,29 @@ class ContactList {
                     $t[] = '<span class="nw">' . htmlspecialchars($collab) . '</span>';
             }
             return join("; ", $t);
-        case self::FIELD_SCORE:
+        default:
+            $f = ReviewForm::field($fieldId);
+            if (!$f)
+                return "";
             if (!($row->roles & Contact::ROLE_PC)
                 && !$this->contact->privChair
                 && $this->limit != "req")
                 return "";
-            $scoreName = ReviewField::$score_ids[$fieldId - self::FIELD_SCORE];
-            $v = scoreCounts($row->$scoreName, $this->scoreMax[$scoreName]);
+            $v = scoreCounts($row->$fieldId, $this->scoreMax[$fieldId]);
             $m = "";
             if ($v->n > 0)
-                $m = ReviewForm::field($scoreName)->unparse_graph($v, 2, 0);
+                $m = $f->unparse_graph($v, 2, 0);
             return $m;
-        default:
-            return "";
         }
     }
 
     function addScores($a) {
         global $Conf;
         if ($this->contact->isPC) {
-            $scores = $Conf->session("pplscores", 1);
-            for ($i = 0; $i < self::FIELD_NUMSCORES; $i++)
-                if ($scores & (1 << $i))
-                    array_push($a, self::FIELD_SCORE + $i);
+            foreach (ReviewForm::all_fields() as $f)
+                if ($f->has_options
+                    && strpos(displayOptionsSet("uldisplay"), " {$f->id} ") !== false)
+                    array_push($a, $f->id);
             $this->scoreMax = array();
         }
         return $a;
@@ -680,10 +670,10 @@ class ContactList {
         foreach ($baseFieldId as $fid) {
             if ($this->selector($fid, $queryOptions) === false)
                 continue;
-            $normFid = self::_normalizeField($fid);
-            $fieldDef[$fid] = $contactListFields[$normFid];
-            $acceptable_fields[$fid] = $acceptable_fields[$normFid] = true;
-            if ($contactListFields[$normFid][1] == 1)
+            if (!($fieldDef[$fid] = @$contactListFields[$fid]))
+                $fieldDef[$fid] = $contactListFields[self::FIELD_SCORE];
+            $acceptable_fields[$fid] = true;
+            if ($fieldDef[$fid][1] == 1)
                 $ncol++;
         }
 
@@ -789,11 +779,11 @@ class ContactList {
         $foldclasses = array();
         foreach (self::$folds as $k => $fold)
             if (@$this->have_folds[$fold] !== null) {
-                $this->have_folds[$fold] = strpos(displayOptionsSet("ppldisplay"), " $fold ") !== false;
+                $this->have_folds[$fold] = strpos(displayOptionsSet("uldisplay"), " $fold ") !== false;
                 $foldclasses[] = "fold" . ($k + 1) . ($this->have_folds[$fold] ? "o" : "c");
             }
 
-        $x = "<table id=\"foldppl\" class=\"pltable pltable_full plt_" . htmlspecialchars($listquery);
+        $x = "<table id=\"foldul\" class=\"pltable pltable_full plt_" . htmlspecialchars($listquery);
         if ($foldclasses)
             $x .= " " . join(" ", $foldclasses);
         if ($foldclasses && $foldsession)

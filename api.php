@@ -69,7 +69,7 @@ if ($_GET["fn"] === "jserror") {
 }
 
 if ($_GET["fn"] === "setsession") {
-    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ppl)display)(|\.[a-zA-Z0-9_]+)\z/', (string) @$_REQUEST["var"], $m)) {
+    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_]+)\z/', (string) @$_REQUEST["var"], $m)) {
         $val = @$_REQUEST["val"];
         if ($m[2]) {
             $on = !($val !== null && intval($val) > 0);

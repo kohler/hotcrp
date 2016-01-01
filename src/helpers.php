@@ -1218,15 +1218,13 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
         /* use session value */;
     else if ($sessionvar == "pldisplay")
         $x = $Conf->setting_data("pldisplay_default", "");
-    else if ($sessionvar == "ppldisplay")
-        $x = $Conf->setting_data("ppldisplay_default", "");
     else
         $x = "";
     if ($x == null || strpos($x, " ") === false) {
         if ($sessionvar == "pldisplay")
             $x = " overAllMerit ";
-        else if ($sessionvar == "ppldisplay")
-            $x = " tags ";
+        else if ($sessionvar == "uldisplay")
+            $x = " tags overAllMerit ";
         else
             $x = " ";
     }
