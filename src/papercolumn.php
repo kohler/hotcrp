@@ -3,19 +3,6 @@
 // HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class PaperColumnErrors {
-    public $error_html = array();
-    public $priority = null;
-    public function add($error_html, $priority) {
-        if ($this->priority === null || $this->priority < $priority) {
-            $this->error_html = array();
-            $this->priority = $priority;
-        }
-        if ($this->priority == $priority)
-            $this->error_html[] = $error_html;
-    }
-}
-
 class PaperColumn extends Column {
     static public $by_name = array();
     static public $factories = array();

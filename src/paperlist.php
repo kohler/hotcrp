@@ -1074,7 +1074,7 @@ class PaperList {
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
                 $f = null;
-                $err = new PaperColumnErrors;
+                $err = new ColumnErrors;
                 if ($v === "edit")
                     $f = PaperColumn::lookup("edit$k");
                 if (!$f)

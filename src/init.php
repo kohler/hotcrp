@@ -106,6 +106,7 @@ set_path_variables();
 class SiteAutoloader {
     static $map = ["AssignmentSet" => "src/assigners.php",
                    "CapabilityManager" => "src/capability.php",
+                   "ColumnErrors" => "lib/column.php",
                    "ContactSearch" => "src/papersearch.php",
                    "CsvGenerator" => "lib/csv.php",
                    "CsvParser" => "lib/csv.php",
@@ -113,7 +114,6 @@ class SiteAutoloader {
                    "LoginHelper" => "lib/login.php",
                    "MimeText" => "lib/mailer.php",
                    "NumericOrderPaperColumn" => "src/papercolumn.php",
-                   "PaperColumnErrors" => "src/papercolumn.php",
                    "ReviewAssigner" => "src/assigners.php",
                    "ReviewField" => "src/review.php",
                    "ReviewForm" => "src/review.php",
