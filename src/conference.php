@@ -2259,8 +2259,6 @@ class Conf {
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta http-equiv=\"Content-Language\" content=\"en\" />
 <meta name=\"google\" content=\"notranslate\" />\n";
-        if (strstr($title, "<") !== false)
-            $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
 
         if (isset($Opt["fontScript"]))
             echo $Opt["fontScript"];
@@ -2294,6 +2292,11 @@ class Conf {
 
         // title
         echo "<title>";
+        if ($title) {
+            $title = preg_replace("/<([^>\"']|'[^']*'|\"[^\"]*\")*>/", "", $title);
+            $title = preg_replace(",(?: |&nbsp;|\302\240)+,", " ", $title);
+            $title = str_replace("&#x2215;", "-", $title);
+        }
         if ($title)
             echo $title, " - ";
         echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
