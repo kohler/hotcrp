@@ -730,7 +730,7 @@ return function (content, bubopt) {
 
     function constrain(za, wpos, bpos, ds, ds2, noconstrain) {
         var z0 = wpos[lcdir[ds]], z1 = wpos[lcdir[ds^2]],
-            bdim = bpos[szdir[ds>>1]],
+            bdim = bpos[szdir[ds&1]],
             z = za - ds2 * bdim;
         if (!noconstrain && z < z0 + SPACE)
             z = Math.min(za - sizes[0], z0 + SPACE);
@@ -782,7 +782,7 @@ return function (content, bubopt) {
             x0 = csscornerradius(capdir[ds] + capdir[3], 1);
             x1 = csscornerradius(capdir[ds] + capdir[1], 1);
         }
-        return Math.min(Math.max(x, x0), bpos[szdir[(ds>>1)^1]] - x1 - size);
+        return Math.min(Math.max(x, x0), bpos[szdir[(ds&1)^1]] - x1 - size);
     }
 
     function show() {
