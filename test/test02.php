@@ -1,6 +1,6 @@
 <?php
 // test02.php -- HotCRP S3 and database unit tests
-// HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
 global $ConfSitePATH;

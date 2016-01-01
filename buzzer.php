@@ -1,6 +1,6 @@
 <?php
 // buzzer.php -- HotCRP buzzer page
-// HotCRP is Copyright (c) 2006-2015 Eddie Kohler and Regents of the UC
+// HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // First buzzer version by Nickolai B. Zeldovich
 // Distributed under an MIT-like license; see LICENSE
 
