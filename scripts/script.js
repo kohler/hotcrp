@@ -1950,7 +1950,7 @@ function handle_clickthrough(form) {
 
 // bad-pairs
 function badpairs_change(more) {
-    var n = $("#bpcount").val();
+    var n = $("#bptable").find("tbody > tr").length;
     if (more) {
         ++n;
         $("#bptable").find("tbody").append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><select name="bpa' + n + '" onchange="badpairs_click()"></select> &nbsp;and&nbsp; <select name="bpb' + n + '" onchange="badpairs_click()"></select></td></tr>');
@@ -1960,7 +1960,6 @@ function badpairs_change(more) {
         --n;
         $("#bptable").find("tbody > tr:last-child").remove();
     }
-    $("#bpcount").val(n);
     return false;
 }
 

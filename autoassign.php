@@ -11,18 +11,11 @@ if (!$Me->is_manager())
 if (check_post())
     header("X-Accel-Buffering: no");  // NGINX: do not hold on to file
 
+// clean request
+
 // paper selection
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) === "(All)")
     $_REQUEST["q"] = "";
-if (isset($_REQUEST["pcs"]) && is_string($_REQUEST["pcs"]))
-    $_REQUEST["pcs"] = preg_split('/\s+/', $_REQUEST["pcs"]);
-if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
-    $pcsel = array();
-    foreach ($_REQUEST["pcs"] as $p)
-        if (($p = cvtint($p)) > 0)
-            $pcsel[$p] = 1;
-} else
-    $pcsel = pcMembers();
 
 $tOpt = PaperSearch::manager_search_types($Me);
 if ($Me->privChair && !isset($_REQUEST["t"])
@@ -34,6 +27,58 @@ if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
     $_REQUEST["t"] = key($tOpt);
 }
 
+// PC selection
+if (isset($_REQUEST["pcs"]) && is_string($_REQUEST["pcs"]))
+    $_REQUEST["pcs"] = preg_split('/\s+/', $_REQUEST["pcs"]);
+if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
+    $pcsel = array();
+    foreach ($_REQUEST["pcs"] as $p)
+        if (($p = cvtint($p)) > 0)
+            $pcsel[$p] = 1;
+} else
+    $pcsel = pcMembers();
+
+if (!isset($_REQUEST["pctyp"])
+    || ($_REQUEST["pctyp"] !== "all" && $_REQUEST["pctyp"] !== "sel"))
+    $_REQUEST["pctyp"] = "all";
+
+// bad pairs
+// load defaults from last autoassignment or save entry to default
+$pcm = pcMembers();
+if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POST)) {
+    $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
+    $bpnum = 1;
+    for ($i = 0; $i < count($x) - 1; $i += 2)
+        if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
+            $_REQUEST["bpa$bpnum"] = $x[$i];
+            $_REQUEST["bpb$bpnum"] = $x[$i+1];
+            ++$bpnum;
+        }
+    if ($Conf->setting("autoassign_badpairs"))
+        $_REQUEST["badpairs"] = 1;
+} else if (count($_POST) && isset($_REQUEST["assign"]) && check_post()) {
+    $x = array();
+    for ($i = 1; isset($_REQUEST["bpa$i"]); ++$i)
+        if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")
+            && isset($pcm[$_REQUEST["bpa$i"]]) && isset($pcm[$_REQUEST["bpb$i"]])) {
+            $x[] = $_REQUEST["bpa$i"];
+            $x[] = $_REQUEST["bpb$i"];
+        }
+    if (count($x) || $Conf->setting_data("autoassign_badpairs")
+        || (!isset($_REQUEST["badpairs"]) != !$Conf->setting("autoassign_badpairs")))
+        $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($_REQUEST["badpairs"]) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
+}
+// set $badpairs array
+$badpairs = array();
+if (isset($_REQUEST["badpairs"]))
+    for ($i = 1; isset($_REQUEST["bpa$i"]); ++$i)
+        if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")) {
+            if (!isset($badpairs[$_REQUEST["bpa$i"]]))
+                $badpairs[$_REQUEST["bpa$i"]] = array();
+            $badpairs[$_REQUEST["bpa$i"]][$_REQUEST["bpb$i"]] = 1;
+        }
+
+// paper selection
 if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
     $_REQUEST["p"] = $_REQUEST["pap"];
 if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
@@ -57,51 +102,6 @@ if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !=
     unset($_REQUEST["assign"]);
     $_REQUEST["requery"] = 1;
 }
-if (!isset($_REQUEST["assign"]) && !isset($_REQUEST["requery"])
-    && isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
-    && ($_REQUEST["defaultact"] === "assign" || $_REQUEST["defaultact"] === "requery"))
-    $_REQUEST[$_REQUEST["defaultact"]] = true;
-if (!isset($_REQUEST["pctyp"]) || ($_REQUEST["pctyp"] !== "all" && $_REQUEST["pctyp"] !== "sel"))
-    $_REQUEST["pctyp"] = "all";
-
-// bad pairs
-// load defaults from last autoassignment or save entry to default
-$pcm = pcMembers();
-if (!isset($_REQUEST["bpcount"]) || !ctype_digit($_REQUEST["bpcount"]))
-    $_REQUEST["bpcount"] = "50";
-if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POST)) {
-    $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
-    $bpnum = 1;
-    for ($i = 0; $i < count($x) - 1; $i += 2)
-        if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
-            $_REQUEST["bpa$bpnum"] = $x[$i];
-            $_REQUEST["bpb$bpnum"] = $x[$i+1];
-            ++$bpnum;
-        }
-    $_REQUEST["bpcount"] = $bpnum - 1;
-    if ($Conf->setting("autoassign_badpairs"))
-        $_REQUEST["badpairs"] = 1;
-} else if (count($_POST) && isset($_REQUEST["assign"]) && check_post()) {
-    $x = array();
-    for ($i = 1; $i <= $_REQUEST["bpcount"]; ++$i)
-        if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")
-            && isset($pcm[$_REQUEST["bpa$i"]]) && isset($pcm[$_REQUEST["bpb$i"]])) {
-            $x[] = $_REQUEST["bpa$i"];
-            $x[] = $_REQUEST["bpb$i"];
-        }
-    if (count($x) || $Conf->setting_data("autoassign_badpairs")
-        || (!isset($_REQUEST["badpairs"]) != !$Conf->setting("autoassign_badpairs")))
-        $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($_REQUEST["badpairs"]) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
-}
-// set $badpairs array
-$badpairs = array();
-if (isset($_REQUEST["badpairs"]))
-    for ($i = 1; $i <= $_REQUEST["bpcount"]; ++$i)
-        if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")) {
-            if (!isset($badpairs[$_REQUEST["bpa$i"]]))
-                $badpairs[$_REQUEST["bpa$i"]] = array();
-            $badpairs[$_REQUEST["bpa$i"]][$_REQUEST["bpb$i"]] = 1;
-        }
 
 // rev_roundtag
 if (($x = $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"])) !== false)
@@ -418,9 +418,7 @@ Types of PC review:
 <dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory, may not be delegated</dd>
   <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
   <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd></dl>
-</div></div>\n",
-    Ht::hidden("defaultact", "", array("id" => "defaultact")),
-    Ht::hidden_default_submit("default", 1, array("class" => "hidden"));
+</div></div>\n";
 
 // paper selection
 echo divClass("pap"), "<h3>Paper selection</h3>";
@@ -582,21 +580,17 @@ echo '<div class="pc_ctable">', join("", $summary), "</div>\n",
 
 
 // Bad pairs
-$numBadPairs = 1;
-$badPairSelector = null;
-
 function bpSelector($i, $which) {
-    global $numBadPairs, $badPairSelector, $pcm;
+    static $badPairSelector;
     if (!$badPairSelector)
         $badPairSelector = pc_members_selector_options("(PC member)");
-    $selected = ($i <= $_REQUEST["bpcount"] ? defval($_REQUEST, "bp$which$i") : "0");
-    if ($selected && isset($badPairSelector[$selected]))
-        $numBadPairs = max($i, $numBadPairs);
-    return Ht::select("bp$which$i", $badPairSelector, $selected, ["onchange" => "badpairs_click()"]);
+    return Ht::select("bp$which$i", $badPairSelector,
+                      defval($_REQUEST, "bp$which$i") ? : "0",
+                      ["onchange" => "badpairs_click()"]);
 }
 
 echo "<div class='g'></div><div class='relative'><table id=\"bptable\"><tbody>\n";
-for ($i = 1; $i <= max($_REQUEST["bpcount"], 1); $i++) {
+for ($i = 1; $i == 1 || isset($_REQUEST["bpa$i"]); ++$i) {
     $selector_text = bpSelector($i, "a") . " &nbsp;and&nbsp; " . bpSelector($i, "b");
     echo '    <tr><td class="rentry nw">';
     if ($i == 1)
@@ -610,8 +604,7 @@ for ($i = 1; $i <= max($_REQUEST["bpcount"], 1); $i++) {
         echo ' &nbsp;to the same paper &nbsp;(<a href="#" onclick="return badpairs_change(true)">More</a> &nbsp;·&nbsp; <a href="#" onclick="return badpairs_change(false)">Fewer</a>)';
     echo "</td></tr>\n";
 }
-echo "</tbody></table>", Ht::hidden("bpcount", $numBadPairs, array("id" => "bpcount"));
-echo "</div>\n";
+echo "</tbody></table></div>\n";
 
 
 // Load balancing
