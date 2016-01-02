@@ -1227,12 +1227,13 @@ class AssignmentSet {
         else if ($cset === "reviewers")
             $cset = $this->reviewer_set();
         if ($cset) {
+            $text = "";
             if ($first && $last)
-                $text = "$last, $first <$email>";
+                $text = "$last, $first";
             else if ($first || $last)
-                $text = "$last$first <$email>";
-            else
-                $text = "<$email>";
+                $text = "$last$first";
+            if ($email)
+                $text .= " <$email>";
             $ret = ContactSearch::make_cset($text, $this->contact->cid, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
