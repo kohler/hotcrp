@@ -359,6 +359,9 @@ class Assigner {
     function unparse_display(AssignmentSet $aset) {
         return "";
     }
+    function unparse_csv(AssignmentSet $aset) {
+        return null;
+    }
     function account(AssignmentCountSet $delta) {
     }
     function add_locks(&$locks) {
@@ -491,6 +494,17 @@ class ReviewAssigner extends Assigner {
             $t = 'clear ' . $t . ' review';
         return $t;
     }
+    function unparse_csv(AssignmentSet $aset) {
+        if ($this->rtype >= REVIEW_SECONDARY)
+            $rname = strtolower(ReviewForm::$revtype_names[$this->rtype]);
+        else
+            $rname = "no";
+        $x = ["pid" => $this->pid, "action" => "{$rname}review",
+              "email" => $this->contact->email, "name" => $this->contact->name_text()];
+        if ($this->round)
+            $x["round"] = $this->round;
+        return $x;
+    }
     function account(AssignmentCountSet $deltarev) {
         if ($this->cid > 0) {
             $deltarev->rev = true;
@@ -567,6 +581,15 @@ class LeadAssigner extends Assigner {
             $t = "remove $t as $this->type";
         return $t;
     }
+    function unparse_csv(AssignmentSet $aset) {
+        $x = ["pid" => $this->pid, "action" => $this->type];
+        if ($this->isadd) {
+            $x["email"] = $this->contact->email;
+            $x["name"] = $this->contact->name_text();
+        } else
+            $x["email"] = "none";
+        return $x;
+    }
     function account(AssignmentCountSet $deltarev) {
         $k = $this->type;
         if ($this->cid > 0 && ($k === "lead" || $k === "shepherd")) {
@@ -636,6 +659,12 @@ class ConflictAssigner extends Assigner {
             && ($pref = @ReviewAssigner::$prefinfo["$this->pid $this->cid"]))
             $t .= unparse_preference_span($pref);
         return $t;
+    }
+    function unparse_csv(AssignmentSet $aset) {
+        return [
+            "pid" => $this->pid, "action" => $this->ctype ? "conflict" : "noconflict",
+            "email" => $this->contact->email, "name" => $this->contact->name_text()
+        ];
     }
     function add_locks(&$locks) {
         $locks["PaperConflict"] = "write";
@@ -911,6 +940,16 @@ class TagAssigner extends Assigner {
             $t = "add $t";
         return $t;
     }
+    function unparse_csv(AssignmentSet $aset) {
+        $t = $this->tag;
+        if ($this->index === null)
+            return ["pid" => $this->pid, "action" => "cleartag", "tag" => $t];
+        else {
+            if ($this->index)
+                $t .= "#{$this->index}";
+            return ["pid" => $this->pid, "action" => "tag", "tag" => $t];
+        }
+    }
     function add_locks(&$locks) {
         $locks["PaperTag"] = "write";
     }
@@ -987,6 +1026,15 @@ class PreferenceAssigner extends Assigner {
         $aset->show_column("allrevpref");
         return $this->contact->reviewer_html() . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
+    function unparse_csv(AssignmentSet $aset) {
+        if (!$this->pref && $this->exp === null)
+            $pref = "none";
+        else
+            $pref = unparse_preference($this->pref, $this->exp);
+        return ["pid" => $this->pid, "action" => "preference",
+                "email" => $this->contact->email, "name" => $this->contact->name_text(),
+                "preference" => $pref];
+    }
     function add_locks(&$locks) {
         $locks["PaperReviewPreference"] = "write";
     }
@@ -1005,12 +1053,15 @@ Assigner::register("none", new NullAssigner);
 Assigner::register("null", new NullAssigner);
 Assigner::register("pri", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
 Assigner::register("primary", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
+Assigner::register("primaryreview", new ReviewAssigner(0, null, REVIEW_PRIMARY, ""));
 Assigner::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
+Assigner::register("secondaryreview", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
 Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
-Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("lead", new LeadAssigner("lead", 0, null, true));
@@ -1467,13 +1518,7 @@ class AssignmentSet {
         return $this->assignment_type;
     }
 
-    function echo_unparse_display($papersel = null) {
-        if (!$papersel) {
-            $papersel = array();
-            foreach ($this->assigners as $assigner)
-                $papersel[$assigner->pid] = true;
-            $papersel = array_keys($papersel);
-        }
+    function echo_unparse_display() {
         $this->set_my_conflicts();
 
         $bypaper = array();
@@ -1547,6 +1592,18 @@ class AssignmentSet {
                     "<h3>Summary</h3>\n",
                     '<div class="pc_ctable">', join("", $summary), "</div>\n";
         }
+    }
+
+    function unparse_csv() {
+        $this->set_my_conflicts();
+        $x = (object) ["header" => [], "data" => []];
+        foreach ($this->assigners as $assigner)
+            if (($row = $assigner->unparse_csv($this))) {
+                $x->header = $x->header + $row;
+                $x->data[] = $row;
+            }
+        $x->header = array_keys($x->header);
+        return $x;
     }
 
     function restrict_papers($pids) {

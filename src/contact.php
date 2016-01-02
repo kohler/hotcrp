@@ -458,6 +458,13 @@ class Contact {
         return $this->disabled || $this->password === "";
     }
 
+    function name_text() {
+        if ($this->firstName === "" || $this->lastName === "")
+            return $this->firstName . $this->lastName;
+        else
+            return $this->firstName . " " . $this->lastName;
+    }
+
     function name_html() {
         if ($this->name_html_ === null)
             $this->name_html_ = Text::name_html($this);

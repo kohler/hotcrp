@@ -112,6 +112,16 @@ if ($scoreselector["+overAllMerit"] === "")
     unset($scoreselector["+overAllMerit"], $scoreselector["-overAllMerit"]);
 $scoreselector["x"] = "(no score preference)";
 
+// download proposed assignment
+if (isset($_REQUEST["saveassignment"]) && isset($_POST["download"])
+    && isset($_POST["assignment"])) {
+    $assignset = new AssignmentSet($Me, true);
+    $assignset->parse($_POST["assignment"]);
+    $x = $assignset->unparse_csv();
+    downloadCSV($x->data, $x->header, "assignments", ["selection" => true, "sort" => SORT_NATURAL]);
+    exit;
+}
+
 $Error = array();
 
 
@@ -232,7 +242,7 @@ class AutoassignerInterface {
         echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
         Conf::msg_info("Select “Apply changes” if this looks OK.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
         $assignset->report_errors();
-        $assignset->echo_unparse_display(SearchActions::selection());
+        $assignset->echo_unparse_display();
 
         // print preference unhappiness
         if (@$_REQUEST["profile"] && $this->atype_review) {
@@ -263,6 +273,7 @@ class AutoassignerInterface {
         echo "<div class='g'></div>",
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Apply changes"), "\n&nbsp;",
+            Ht::submit("download", "Download proposed assignments"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_roundtag", "method", "haspap") as $t)
             if (isset($_REQUEST[$t]))

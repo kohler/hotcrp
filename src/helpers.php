@@ -1000,6 +1000,8 @@ function downloadCSV($info, $header, $filename, $options = array()) {
     if (@$options["selection"])
         $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
     $csvg->add($info);
+    if (@$options["sort"])
+        $csvg->sort($options["sort"]);
     $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !defval($options, "inline"));
     $csvg->download();
 }

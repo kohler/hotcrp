@@ -160,7 +160,7 @@ class Text {
     static function name_text(/* ... */) {
         // was contactNameText
         $r = self::analyze_name_args(func_get_args());
-	if ($r->nameAmbiguous && $r->name && $r->email)
+        if ($r->nameAmbiguous && $r->name && $r->email)
             return "$r->name <$r->email>";
         else
             return $r->name ? : $r->email;

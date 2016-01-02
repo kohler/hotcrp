@@ -218,7 +218,7 @@ class CsvGenerator {
 
     private $type;
     private $lines = array();
-    private $header = false;
+    private $headerline = "";
     private $selection = null;
 
     function __construct($type = self::TYPE_COMMA) {
@@ -289,13 +289,14 @@ class CsvGenerator {
     }
 
     function set_header($header, $comment = false) {
-        assert(!count($this->lines) && !$this->header);
+        assert(!count($this->lines) && !$this->headerline);
         $this->add($header);
         if ($this->type == self::TYPE_TAB && $comment)
             $this->lines[0] = "#" . $this->lines[0];
         if ($this->selection === null && is_associative_array($header))
             $this->selection = array_keys($header);
-        $this->header = true;
+        $this->headerline = $this->lines[0];
+        $this->lines = [];
     }
 
     function set_selection($selection) {
@@ -316,13 +317,17 @@ class CsvGenerator {
         header("X-Content-Type-Options: nosniff");
     }
 
+    function sort($flags = SORT_NORMAL) {
+        sort($this->lines, $flags);
+    }
+
     function unparse() {
-        return join("", $this->lines);
+        return $this->headerline . join("", $this->lines);
     }
 
     function download() {
         global $zlib_output_compression;
-        $text = join("", $this->lines);
+        $text = $this->headerline . join("", $this->lines);
         if (!$zlib_output_compression)
             header("Content-Length: " . strlen($text));
         echo $text;
