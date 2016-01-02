@@ -2219,11 +2219,13 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	border: 2px solid red;
 	font-size: smaller;
 }
-.bubble.tooltip {
+.bubble.tooltip, .bubble.graphtip {
 	background-color: rgba(44, 44, 66, 0.95);
 	color: #ffffff;
 	border: 0 none;
 	font-size: 75%;
+}
+.bubble.tooltip {
 	margin: 0 8px;
 }
 .bubble.suggest {

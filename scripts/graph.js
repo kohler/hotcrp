@@ -515,10 +515,10 @@ function hotcrp_graphs_cdf(args) {
         }
         var u = p.pathNode ? series[p.pathNode.getAttribute("dataindex")] : null;
         if (u && u.label) {
-            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             hubble.text(u.label)
-                .dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "h" : "b")
+                .dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "r" : "b")
                 .at(p[0] + args.left, p[1], this);
         } else if (hubble)
             hubble = hubble.remove() && null;
@@ -759,7 +759,7 @@ hotcrp_graphs.scatter = function (args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             var ps = p[2].map(proj2);
             ps.sort(pid_sorter);
             hubble.html("<p>#" + ps.join(", #") + "</p>").dir("b").near(hovers.node());
@@ -888,7 +888,7 @@ hotcrp_graphs.barchart = function (args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "tooltip", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
             if (!p.sorted) {
                 p[2].sort(pid_sorter);
                 p.sorted = true;
@@ -1098,7 +1098,7 @@ hotcrp_graphs.boxplot = function (args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p, p.p, p.d);
             hubble.html(p.th).dir("h").near(hovers.filter(".box").node());
@@ -1115,7 +1115,7 @@ hotcrp_graphs.boxplot = function (args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "tooltip dark", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
             if (!p.th)
                 p.th = make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1));
             hubble.html(p.th).dir("h").near(hovers.filter(".outlier").node());

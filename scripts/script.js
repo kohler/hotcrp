@@ -653,7 +653,7 @@ function make_model(color) {
 
 function calculate_sizes(color) {
     var $model = make_model(color), tail = $model.children(), ds, x;
-    var sizes = {"0": tail.width(), "1": tail.height()};
+    var sizes = [tail.width(), tail.height()];
     for (ds = 0; ds < 4; ++ds) {
         sizes[lcdir[ds]] = 0;
         if ((x = $model.css("margin" + capdir[ds])) && (x = parseFloat(x)))
@@ -739,25 +739,44 @@ return function (content, bubopt) {
         return z;
     }
 
-    function make_bpos(wpos, ds) {
-        var bj = $(bubdiv);
-        bj.css("maxWidth", "");
-        var bpos = bj.geometry(true);
-        var lw = nearpos.left - wpos.left, rw = wpos.right - nearpos.right;
-        var xw = Math.max(ds == 3 ? 0 : lw, ds == 1 ? 0 : rw);
-        var wb = wpos.width;
+    function bpos_wconstraint(wpos, ds) {
+        var xw = Math.max(ds === 3 ? 0 : nearpos.left - wpos.left,
+                          ds === 1 ? 0 : wpos.right - nearpos.right);
         if ((ds === "h" || ds === 1 || ds === 3) && xw > 100)
-            wb = Math.min(wb, xw);
-        if (wb < bpos.width - 3*SPACE) {
-            bj.css("maxWidth", wb - 3*SPACE);
-            bpos = bj.geometry(true);
+            return Math.min(wpos.width, xw) - 3*SPACE;
+        else
+            return wpos.width - 3*SPACE;
+    }
+
+    function make_bpos(wpos, ds) {
+        var $b = $(bubdiv);
+        $b.css("maxWidth", "");
+        var bg = $b.geometry(true);
+        var wconstraint = bpos_wconstraint(wpos, ds);
+        if (wconstraint < bg.width) {
+            $b.css("maxWidth", wconstraint);
+            bg = $b.geometry(true);
         }
+        var bpos = [nearpos.top - sizes.bottom - bg.height - sizes[0],
+                    nearpos.right + sizes.left + bg.width + sizes[0],
+                    nearpos.bottom + sizes.top + bg.height + sizes[0],
+                    nearpos.left - sizes.right - bg.width - sizes[0]];
+        bpos.width = bg.width;
+        bpos.height = bg.height;
+        bpos.wconstraint = wconstraint;
+        return bpos;
+    }
+
+    function remake_bpos(bpos, wpos, ds) {
+        var wconstraint = bpos_wconstraint(wpos, ds);
+        if ((wconstraint < bpos.wconstraint && wconstraint < bpos.width)
+            || (wconstraint > bpos.wconstraint && bpos.width >= bpos.wconstraint))
+            bpos = make_bpos(wpos, ds);
         return bpos;
     }
 
     function parse_dirspec(dirspec, pos) {
         var res;
-        dirspec = dirspec.replace(/[!*]/g, "");
         if (dirspec.length > pos
             && (res = "0123trblnesw".indexOf(dirspec.charAt(pos))) >= 0)
             return res % 4;
@@ -773,7 +792,7 @@ return function (content, bubopt) {
         return parseFloat(divbr);
     }
 
-    function constrainradius(x, bpos, size, ds) {
+    function constrainradius(x, bpos, ds) {
         var x0, x1;
         if (ds & 1) {
             x0 = csscornerradius(capdir[0] + capdir[ds], 1);
@@ -782,7 +801,7 @@ return function (content, bubopt) {
             x0 = csscornerradius(capdir[ds] + capdir[3], 1);
             x1 = csscornerradius(capdir[ds] + capdir[1], 1);
         }
-        return Math.min(Math.max(x, x0), bpos[szdir[(ds&1)^1]] - x1 - size);
+        return Math.min(Math.max(x, x0), bpos[szdir[(ds&1)^1]] - x1 - sizes[0]);
     }
 
     function show() {
@@ -792,47 +811,48 @@ return function (content, bubopt) {
         // parse dirspec
         var noflip = /!/.test(dirspec),
             noconstrain = /\*/.test(dirspec),
-            ds = Math.max(parse_dirspec(dirspec, 0), 0),
-            ds2 = parse_dirspec(dirspec, 1);
-        if (ds2 >= 0 && (ds2 & 1) != (ds & 1))
+            dsx = dirspec.replace(/[^a0-3neswtrblhv]/, ""),
+            ds = parse_dirspec(dsx, 0),
+            ds2 = parse_dirspec(dsx, 1);
+        if (ds >= 0 && ds2 >= 0 && (ds2 & 1) != (ds & 1))
             ds2 = (ds2 === 1 || ds2 === 2 ? 1 : 0);
         else
             ds2 = 0.5;
+        if (ds < 0)
+            ds = /^[ahv]$/.test(dsx) ? dsx : "a";
 
         var wpos = $(window).geometry();
-        var bpos = make_bpos(wpos, ds);
-        var size = sizes[0];
-        var bw = bpos.width + size, bh = bpos.height + size;
+        var bpos = make_bpos(wpos, dsx);
 
-        if (ds === "a" || ds === "") {
-            if (bh > Math.max(nearpos.top - wpos.top, wpos.bottom - nearpos.bottom))
+        if (ds === "a") {
+            if (bpos.height + sizes[0] > Math.max(nearpos.top - wpos.top, wpos.bottom - nearpos.bottom)) {
                 ds = "h";
-            else
+                bpos = remake_bpos(bpos, wpos, ds);
+            } else
                 ds = "v";
         }
-        var nearedge = [nearpos.top - sizes.bottom - bh,
-                        nearpos.right + sizes.left + bw,
-                        nearpos.bottom + sizes.top + bh,
-                        nearpos.left - sizes.right - bw],
-            wedge = [wpos.top + 3*SPACE, wpos.right - 3*SPACE,
+
+        var wedge = [wpos.top + 3*SPACE, wpos.right - 3*SPACE,
                      wpos.bottom - 3*SPACE, wpos.left + 3*SPACE];
         if ((ds === "v" || ds === 0 || ds === 2) && !noflip
-            && nearedge[2] > wedge[2] && nearedge[0] < wedge[0]
-            && (nearedge[3] >= wedge[3] || nearedge[1] <= wedge[1]))
-            ds = "h";
-        if ((ds === "v" && nearedge[2] > wedge[2] && nearedge[0] > wedge[0])
-            || (ds === 0 && !noflip && nearedge[2] > wpos.bottom)
-            || (ds === 2 && (noflip || nearedge[0] >= wpos.top + SPACE)))
+            && bpos[2] > wedge[2] && bpos[0] < wedge[0]
+            && (bpos[3] >= wedge[3] || bpos[1] <= wedge[1])) {
+            ds = "h"
+            bpos = remake_bpos(bpos, wpos, ds);
+        }
+        if ((ds === "v" && bpos[2] > wedge[2] && bpos[0] > wedge[0])
+            || (ds === 0 && !noflip && bpos[2] > wpos.bottom)
+            || (ds === 2 && (noflip || bpos[0] >= wpos.top + SPACE)))
             ds = 2;
         else if (ds === "v" || ds === 0 || ds === 2)
             ds = 0;
-        else if ((ds === "h"
-                  && nearedge[3] - wpos.left < wpos.right - nearedge[1])
-                 || (ds === 1 && !noflip && nearedge[3] < wpos.left)
-                 || (ds === 3 && (noflip || nearedge[1] <= wpos.right - SPACE)))
+        else if ((ds === "h" && bpos[3] - wpos.left < wpos.right - bpos[1])
+                 || (ds === 1 && !noflip && bpos[3] < wpos.left)
+                 || (ds === 3 && (noflip || bpos[1] <= wpos.right - SPACE)))
             ds = 3;
         else
             ds = 1;
+        bpos = remake_bpos(bpos, wpos, ds);
 
         if (ds !== dir) {
             dir = ds;
@@ -843,7 +863,7 @@ return function (content, bubopt) {
         if (ds & 1) {
             ya = constrainmid(nearpos, wpos, 0, ds2);
             y = constrain(ya, wpos, bpos, 0, ds2, noconstrain);
-            d = constrainradius(roundpixel(ya - y - size / 2), bpos, size, ds);
+            d = constrainradius(roundpixel(ya - y - sizes[0] / 2), bpos, ds);
             bubch[0].style.top = d + "px";
             bubch[2].style.top = (d + 0.77*divbw) + "px";
 
@@ -854,7 +874,7 @@ return function (content, bubopt) {
         } else {
             xa = constrainmid(nearpos, wpos, 3, ds2);
             x = constrain(xa, wpos, bpos, 3, ds2, noconstrain);
-            d = constrainradius(roundpixel(xa - x - size / 2), bpos, size, ds);
+            d = constrainradius(roundpixel(xa - x - sizes[0] / 2), bpos, ds);
             bubch[0].style.left = d + "px";
             bubch[2].style.left = (d + 0.77*divbw) + "px";
 
