@@ -273,7 +273,7 @@ class AutoassignerInterface {
         echo "<div class='g'></div>",
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Apply changes"), "\n&nbsp;",
-            Ht::submit("download", "Download proposed assignments"), "\n&nbsp;",
+            Ht::submit("download", "Download assignment file"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_roundtag", "method", "haspap") as $t)
             if (isset($_REQUEST[$t]))
