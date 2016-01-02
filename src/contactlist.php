@@ -195,7 +195,7 @@ class ContactList {
             usort($rows, array($this, "_sortPapers"));
             break;
         default:
-            if (($f = ReviewForm::field($fieldId))) {
+            if (($f = ReviewForm::field($this->sortField))) {
                 $scoreMax = $this->scoreMax[$f->id];
                 $scoresort = $Conf->session("scoresort", "A");
                 if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
