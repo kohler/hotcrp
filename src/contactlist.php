@@ -27,8 +27,8 @@ class ContactList {
 
     public static $folds = array("topics", "aff", "tags", "collab");
 
-    var $showHeader;
-    var $sortField;
+    var $showHeader = true;
+    var $sortField = null;
     var $reverseSort;
     var $sortable;
     var $count;
@@ -43,17 +43,14 @@ class ContactList {
 
     function __construct($contact, $sortable = true) {
         global $contactListFields;
-        $this->showHeader = true;
 
         $s = ($sortable ? defval($_REQUEST, "sort", "") : "");
         $x = (strlen($s) ? $s[strlen($s)-1] : "");
         $this->reverseSort = ($x == "R");
         if ($x == "R" || $x == "N")
             $s = substr($s, 0, strlen($s) - 1);
-        if (("x" . (int) $s) == ("x" . $s))
-            $this->sortField = (int) $s;
-        else
-            $this->sortField = null;
+        if ($s !== "")
+            $this->sortField = $s;
         $this->sortable = $sortable;
 
         $this->contact = $contact;
@@ -196,7 +193,8 @@ class ContactList {
             break;
         default:
             if (($f = ReviewForm::field($this->sortField))) {
-                $scoreMax = $this->scoreMax[$f->id];
+                $fieldId = $this->sortField;
+                $scoreMax = $this->scoreMax[$fieldId];
                 $scoresort = $Conf->session("scoresort", "A");
                 if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
                     $scoresort = "A";
