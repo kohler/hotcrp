@@ -79,29 +79,23 @@ if (isset($_REQUEST["badpairs"]))
         }
 
 // paper selection
-if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
-    $_REQUEST["p"] = $_REQUEST["pap"];
-if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
-    $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
-if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && !isset($_REQUEST["requery"])) {
-    $papersel = array();
-    foreach ($_REQUEST["p"] as $p)
-        if (($p = cvtint($p)) > 0)
-            $papersel[] = $p;
-} else {
-    $papersel = array();
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
-    $papersel = $search->paperList();
-}
-sort($papersel);
-
 if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !== $_REQUEST["t"])
     || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] !== $_REQUEST["q"])) {
-    if (isset($_REQUEST["p"]) && isset($_REQUEST["assign"]))
+    if (isset($_REQUEST["assign"]))
         $Conf->infoMsg("You changed the paper search.  Please review the resulting paper list.");
     unset($_REQUEST["assign"]);
     $_REQUEST["requery"] = 1;
 }
+
+if (isset($_REQUEST["saveassignment"]) && @$_REQUEST["submit"])
+    SearchActions::parse_requested_selection($Me, "pap");
+else if (isset($_REQUEST["saveassignment"]))
+    SearchActions::parse_requested_selection($Me, "p");
+else if (@$_REQUEST["requery"] || !SearchActions::parse_requested_selection($Me)) {
+    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+    SearchActions::set_selection($search->paperList());
+}
+sort(SearchActions::$sel);
 
 // rev_roundtag
 if (($x = $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"])) !== false)
@@ -204,7 +198,7 @@ class AutoassignerInterface {
     }
 
     private function result_html() {
-        global $Conf, $Me, $papersel, $pcsel, $papersel;
+        global $Conf, $Me, $pcsel;
         $assignments = $this->autoassigner->assignments();
         ReviewAssigner::$prefinfo = $this->autoassigner->prefinfo;
         ob_start();
@@ -217,11 +211,28 @@ class AutoassignerInterface {
         $assignset = new AssignmentSet($Me, true);
         $assignset->parse(join("\n", $assignments));
 
+        list($atypes, $apids) = $assignset->types_and_papers(true);
+        $badpairs_inputs = $badpairs_arg = array();
+        for ($i = 1; $i <= 20; ++$i)
+            if (@$_REQUEST["bpa$i"] && @$_REQUEST["bpb$i"]) {
+                array_push($badpairs_inputs, Ht::hidden("bpa$i", $_REQUEST["bpa$i"]),
+                           Ht::hidden("bpb$i", $_REQUEST["bpb$i"]));
+                $badpairs_arg[] = $_REQUEST["bpa$i"] . "-" . $_REQUEST["bpb$i"];
+            }
+        echo Ht::form_div(hoturl_post("autoassign",
+                                      ["saveassignment" => 1,
+                                       "assigntypes" => join(" ", $atypes),
+                                       "assignpids" => join(" ", $apids),
+                                       "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
+                                       "profile" => @$_REQUEST["profile"],
+                                       "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"],
+                                       "seed" => @$_REQUEST["seed"]]));
+
         $atype = $assignset->type_description();
         echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
         Conf::msg_info("Select “Apply changes” if this looks OK.  (You can always alter the assignment afterwards.)  Reviewer preferences, if any, are shown as “P#”.");
         $assignset->report_errors();
-        $assignset->echo_unparse_display($papersel);
+        $assignset->echo_unparse_display(SearchActions::selection());
 
         // print preference unhappiness
         if (@$_REQUEST["profile"] && $this->atype_review) {
@@ -249,37 +260,21 @@ class AutoassignerInterface {
             echo '</p>';
         }
 
-        list($atypes, $apids) = $assignset->types_and_papers(true);
-        $badpairs_inputs = $badpairs_arg = array();
-        for ($i = 1; $i <= 20; ++$i)
-            if (@$_REQUEST["bpa$i"] && @$_REQUEST["bpb$i"]) {
-                array_push($badpairs_inputs, Ht::hidden("bpa$i", $_REQUEST["bpa$i"]),
-                           Ht::hidden("bpb$i", $_REQUEST["bpb$i"]));
-                $badpairs_arg[] = $_REQUEST["bpa$i"] . "-" . $_REQUEST["bpb$i"];
-            }
         echo "<div class='g'></div>",
-            Ht::form(hoturl_post("autoassign",
-                                 array("saveassignment" => 1,
-                                       "assigntypes" => join(" ", $atypes),
-                                       "assignpids" => join(" ", $apids),
-                                       "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
-                                       "profile" => @$_REQUEST["profile"],
-                                       "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"],
-                                       "seed" => @$_REQUEST["seed"]))),
             "<div class='aahc'><div class='aa'>\n",
             Ht::submit("submit", "Apply changes"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
-        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "bpcount", "rev_roundtag", "method") as $t)
+        foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_roundtag", "method", "haspap") as $t)
             if (isset($_REQUEST[$t]))
                 echo Ht::hidden($t, $_REQUEST[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
             join("", $badpairs_inputs),
-            Ht::hidden("p", join(" ", $papersel)), "\n";
+            Ht::hidden("p", join(" ", SearchActions::selection())), "\n";
 
         // save the assignment
         echo Ht::hidden("assignment", join("\n", $assignments)), "\n";
 
-        echo "</div></div></form>";
+        echo "</div></div></div></form>";
         return ob_get_clean();
     }
 
@@ -300,7 +295,7 @@ class AutoassignerInterface {
     }
 
     public function run() {
-        global $Conf, $Me, $papersel, $pcsel, $badpairs, $scoreselector;
+        global $Conf, $Me, $pcsel, $badpairs, $scoreselector;
         assert($this->ok);
         session_write_close(); // this might take a long time
         set_time_limit(240);
@@ -308,7 +303,7 @@ class AutoassignerInterface {
         // prepare autoassigner
         if (@$_REQUEST["seed"] && is_numeric($_REQUEST["seed"]))
             srand((int) $_REQUEST["seed"]);
-        $this->autoassigner = $autoassigner = new Autoassigner($papersel);
+        $this->autoassigner = $autoassigner = new Autoassigner(SearchActions::selection());
         if ($_REQUEST["pctyp"] === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
             if ($n == 0) {
@@ -371,9 +366,10 @@ if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
         $ai->run();
     ensure_session();
 } else if (@$_REQUEST["saveassignment"] && @$_REQUEST["submit"]
-         && isset($_REQUEST["assignment"]) && check_post()) {
+           && isset($_REQUEST["assignment"]) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->parse($_REQUEST["assignment"]);
+    $assignset->restrict_papers(SearchActions::selection());
     $assignset->execute(true);
 }
 
@@ -423,7 +419,7 @@ Types of PC review:
 // paper selection
 echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($_REQUEST["q"]))
-    $_REQUEST["q"] = join(" ", $papersel);
+    $_REQUEST["q"] = join(" ", SearchActions::selection());
 echo Ht::entry_h("q", $_REQUEST["q"],
                  array("id" => "autoassignq", "placeholder" => "(All)",
                        "size" => 40, "title" => "Enter paper numbers or search terms",
@@ -434,7 +430,7 @@ if (count($tOpt) > 1)
 else
     echo join("", $tOpt);
 echo " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
-if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
+if (isset($_REQUEST["requery"]) || isset($_REQUEST["haspap"])) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
 <div class='g'></div>";
 
@@ -442,14 +438,10 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["prevpap"])) {
                                          "urlbase" => hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
-    $plist->papersel = array_fill_keys($papersel, 1);
-    foreach (preg_split('/\s+/', defval($_REQUEST, "prevpap")) as $p)
-        if (!isset($plist->papersel[$p]))
-            $plist->papersel[$p] = 0;
-    echo $plist->table_html("reviewersSel", array("nofooter" => true));
-    echo Ht::hidden("prevt", $_REQUEST["t"]), Ht::hidden("prevq", $_REQUEST["q"]);
-    if ($plist->ids)
-        echo Ht::hidden("prevpap", join(" ", $plist->ids));
+    $plist->papersel = SearchActions::selection_map();
+    echo $plist->table_html("reviewersSel", array("nofooter" => true)),
+        Ht::hidden("prevt", $_REQUEST["t"]), Ht::hidden("prevq", $_REQUEST["q"]),
+        Ht::hidden("haspap", 1);
 }
 echo "</div>\n";
 // echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
@@ -527,8 +519,6 @@ echo "</div>\n";
 
 
 // PC
-//echo "<tr><td class='caption'></td><td class='entry'><div class='g'></div></td></tr>\n";
-
 echo "<h3>PC members</h3><table><tr><td class=\"nw\">";
 doRadio("pctyp", "all", "");
 echo "</td><td>", Ht::label("Use entire PC", "pctyp_all"), "</td></tr>\n";

@@ -635,10 +635,10 @@ class PaperList {
             return "sel id title topicscore revtype editrevpref authors abstract topics";
         case "reviewers":
             $this->_default_linkto("assign");
-            return "id title status";
+            return "selon id title status";
         case "reviewersSel":
             $this->_default_linkto("assign");
-            return "selon id title status reviewers";
+            return "sel id title status reviewers";
         default:
             return null;
         }

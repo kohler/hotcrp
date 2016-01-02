@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SearchActions {
-
     static public $sel = array();
 
     static function any() {
@@ -19,6 +18,13 @@ class SearchActions {
         return @self::$sel[$i];
     }
 
+    static function selection_map() {
+        $selmap = array();
+        foreach (self::$sel as $i => $pid)
+            $selmap[$pid] = $i + 1;
+        return $selmap;
+    }
+
     static function set_selection($papers) {
         self::$sel = $selmap = array();
         foreach ($papers as $pid)
@@ -26,17 +32,22 @@ class SearchActions {
                 self::$sel[] = $selmap[$pid] = $pid;
     }
 
-    static function parse_requested_selection($user) {
-        if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
-            $_REQUEST["p"] = $_REQUEST["pap"];
-        if (isset($_REQUEST["p"]) && $_REQUEST["p"] == "all") {
+    static function parse_requested_selection($user, $key = null) {
+        if ($key === null) {
+            $ps = isset($_POST["p"]) ? $_POST["p"] : @$_GET["p"];
+            if ($ps === null)
+                $ps = isset($_POST["pap"]) ? $_POST["pap"] : @$_GET["pap"];
+        } else
+            $ps = isset($_POST[$key]) ? $_POST[$key] : @$_GET[$key];
+        if ($user && $ps === "all") {
             $s = new PaperSearch($user, $_REQUEST);
-            $_REQUEST["p"] = $s->paperList();
-        }
-        if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
-            $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
-        if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]))
-            self::set_selection($_REQUEST["p"]);
+            $ps = $s->paperList();
+        } else if ($ps === "all")
+            $ps = null;
+        if (is_string($ps))
+            $ps = preg_split('/\s+/', $ps);
+        if (is_array($ps))
+            self::set_selection($ps);
         return self::any();
     }
 
@@ -67,5 +78,4 @@ class SearchActions {
                 $ax[$pid] = $a[$pid];
         return $ax;
     }
-
 }

@@ -1519,7 +1519,7 @@ class AssignmentSet {
                                   array("t" => defval($_REQUEST, "t", "s"),
                                         "q" => $query_order));
         $plist = new PaperList($search);
-        echo $plist->table_html("reviewers");
+        echo $plist->table_html("reviewers", ["nofooter" => 1]);
 
         $deltarev = new AssignmentCountSet;
         foreach ($this->assigners as $assigner)
@@ -1547,6 +1547,15 @@ class AssignmentSet {
                     "<h3>Summary</h3>\n",
                     '<div class="pc_ctable">', join("", $summary), "</div>\n";
         }
+    }
+
+    function restrict_papers($pids) {
+        $pids = array_flip($pids);
+        $new_assigners = [];
+        foreach ($this->assigners as $a)
+            if (isset($pids[$a->pid]))
+                $new_assigners[] = $a;
+        $this->assigners = $new_assigners;
     }
 
     function is_empty() {

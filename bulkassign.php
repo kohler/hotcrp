@@ -62,19 +62,22 @@ function finish_browser_alive() {
         $Conf->echoScript("fold('mail',null)");
 }
 
-
-if (isset($_REQUEST["saveassignment"]) && check_post()) {
-    if (isset($_REQUEST["cancel"]))
-        redirectSelf();
-    else if (isset($_POST["file"])
-             && @$_POST["assignment_size_estimate"] < 1000) {
-        $assignset = new AssignmentSet($Me, false);
-        $assignset->parse($_REQUEST["file"], @$_REQUEST["filename"],
-                          assignment_defaults());
-        if ($assignset->execute(true))
-            redirectSelf();
-    }
+function complete_assignment($callback) {
+    global $Me;
+    $assignset = new AssignmentSet($Me, false);
+    $assignset->parse($_POST["file"], @$_POST["filename"],
+                      assignment_defaults(), $callback);
+    SearchActions::parse_requested_selection($Me);
+    $assignset->restrict_papers(SearchActions::selection());
+    return $assignset->execute(true);
 }
+
+
+if (isset($_REQUEST["saveassignment"]) && check_post()
+    && (isset($_REQUEST["cancel"])
+        || (isset($_POST["file"]) && @$_POST["assignment_size_estimate"] < 1000
+            && complete_assignment(null))))
+    /*redirectSelf()*/;
 
 
 $Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Upload</strong>", "bulkassign", actionBar());
@@ -122,14 +125,16 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
             $atype = $assignset->type_description();
             echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
             $Conf->infoMsg("Select “Apply changes” if this looks OK. (You can always alter the assignment afterwards.)");
-            $assignset->echo_unparse_display();
 
             list($atypes, $apids) = $assignset->types_and_papers(true);
-            echo '<div class="g"></div>',
-                Ht::form(hoturl_post("bulkassign",
-                                     array("saveassignment" => 1,
+            echo Ht::form_div(hoturl_post("bulkassign",
+                                          ["saveassignment" => 1,
                                            "assigntypes" => join(" ", $atypes),
-                                           "assignpids" => join(" ", $apids)))),
+                                           "assignpids" => join(" ", $apids)]));
+
+            $assignset->echo_unparse_display();
+
+            echo '<div class="g"></div>',
                 '<div class="aahc"><div class="aa">',
                 Ht::submit("Apply changes"),
                 ' &nbsp;', Ht::submit("cancel", "Cancel"),
@@ -141,7 +146,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
                 Ht::hidden("requestreview_notify", @$_REQUEST["requestreview_notify"]),
                 Ht::hidden("requestreview_subject", @$_REQUEST["requestreview_subject"]),
                 Ht::hidden("requestreview_body", @$_REQUEST["requestreview_body"]),
-                '</div></div></form>', "\n";
+                '</div></div></div></form>', "\n";
             $Conf->footer();
             exit;
         }
@@ -150,10 +155,7 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
 
 if (isset($_REQUEST["saveassignment"]) && check_post()
     && isset($_POST["file"]) && @$_POST["assignment_size_estimate"] >= 1000) {
-    $assignset = new AssignmentSet($Me, false);
-    $assignset->parse($_POST["file"], @$_POST["filename"],
-                      assignment_defaults(), "keep_browser_alive");
-    $assignset->execute(true);
+    complete_assignment("keep_browser_alive");
     finish_browser_alive();
 }
 

@@ -135,7 +135,7 @@ class SelectorPaperColumn extends PaperColumn {
     private function checked($pl, $row) {
         $def = ($this->name == "selon"
                 || ($this->name == "selconf" && $row->reviewerConflictType > 0));
-        return $pl->papersel ? defval($pl->papersel, $row->paperId, $def) : $def;
+        return $pl->papersel ? !!defval($pl->papersel, $row->paperId, $def) : $def;
     }
     public function content($pl, $row, $rowidx) {
         if ($this->name == "selunlessconf" && $row->reviewerConflictType)

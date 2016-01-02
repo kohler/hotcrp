@@ -1206,11 +1206,8 @@ $Conf->echoScript(); // need the JS right away
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")]);
-    if (check_post()) {
-        $pl->papersel = array();
-        foreach (SearchActions::selection() as $pid)
-            $pl->papersel[$pid] = 1;
-    }
+    if (check_post())
+        $pl->papersel = SearchActions::selection_map();
     $pl_text = $pl->table_html($Search->limitName, array("class" => "pltable_full",
                            "attributes" => array("data-fold-session" => 'pldisplay.$')));
     $pldisplay = $pl->display;
