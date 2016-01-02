@@ -1658,7 +1658,7 @@ table.pltable_full > tbody > tr > td.pl_title {
 td.pl_title img {
 	vertical-align: text-bottom;
 }
-div.pl_autoassignment, div.pl_autoassignment h6 {
+div.pl_autoassignment > h6 {
 	font-weight: bold;
 }
 tr.pl_headrow td, tr.pl_headrow th {
