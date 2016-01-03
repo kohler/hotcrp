@@ -34,6 +34,8 @@ if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
 
 // search canonicalization
+if (isset($_REQUEST["q"]))
+    $_REQUEST["q"] = trim($_REQUEST["q"]);
 if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))

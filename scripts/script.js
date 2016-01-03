@@ -439,19 +439,51 @@ function event_prevent(evt) {
 
 var event_key = (function () {
 var key_map = {"Spacebar": " ", "Esc": "Escape"},
-    code_map = {
-        "9": "Tab", "13": "Enter", "16": "Shift", "17": "Control", "18": "Option",
-        "27": "Escape", "186": ":", "219": "[", "221": "]"
-    };
-return function (evt) {
-    if (evt.key != null)
-        return key_map[evt.key] || evt.key;
-    var code = evt.charCode || evt.keyCode;
-    if (code)
-        return code_map[code] || String.fromCharCode(code);
-    else
-        return "";
+    charCode_map = {"9": "Tab", "13": "Enter", "27": "Escape"},
+    keyCode_map = {
+        "9": "Tab", "13": "Enter", "16": "ShiftLeft", "17": "ControlLeft",
+        "18": "AltLeft", "20": "CapsLock", "27": "Escape", "33": "PageUp",
+        "34": "PageDown", "37": "ArrowLeft", "38": "ArrowUp", "39": "ArrowRight",
+        "40": "ArrowDown", "91": "OSLeft", "92": "OSRight", "93": "OSRight",
+        "224": "OSLeft", "225": "AltRight"
+    },
+    nonprintable_map = {
+        "AltLeft": true,
+        "AltRight": true,
+        "CapsLock": true,
+        "ControlLeft": true,
+        "ControlRight": true,
+        "OSLeft": true,
+        "OSRight": true,
+        "ShiftLeft": true,
+        "ShiftRight": true,
+        "ArrowLeft": true,
+        "ArrowRight": true,
+        "ArrowUp": true,
+        "ArrowDown": true,
+        "PageUp": true,
+        "PageDown": true,
+        "Escape": true,
+        "Enter": true
+    }
+function event_key(evt) {
+    var x;
+    if ((x = evt.key) != null)
+        return key_map[x] || x;
+    if ((x = evt.charCode))
+        return charCode_map[x] || String.fromCharCode(x);
+    if ((x = evt.keyCode)) {
+        if (keyCode_map[x])
+            return keyCode_map[x];
+        else if ((x >= 48 && x <= 57) || (x >= 65 && x <= 90))
+            return String.fromCharCode(x);
+    }
+    return "";
+}
+event_key.printable = function (evt) {
+    return !nonprintable_map[event_key(evt)];
 };
+return event_key;
 })();
 
 function event_modkey(evt) {
@@ -3047,7 +3079,7 @@ function taghelp_tset(elt, displayed) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^([^#\s]*)/);
-        return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
+        return alltags.then(make_suggestions(m[1], false, m[2], n[1], displayed));
     } else
         return new Promise(null);
 }
@@ -3056,37 +3088,39 @@ function taghelp_q(elt, displayed) {
     var x = completion_split(elt), m, n;
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*|#|(?:show|hide):\s*#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
-        return alltags.then(taghelp_completer(m[1], m[2] + n[1], displayed));
+        return alltags.then(make_suggestions(m[1], false, m[2], n[1], displayed));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
         n = x[1].match(/^([^\s()]*)/);
-        return search_completion.then(taghelp_completer(m[1], m[2] + n[1], displayed, true));
+        return search_completion.then(make_suggestions(m[1], true, m[2], n[1], displayed));
     } else
         return new Promise(null);
 }
 
-function taghelp_completer(pfx, str, displayed, include_pfx) {
+function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
     return function (tlist) {
-        var res = [], i, x, lstr = str.toLowerCase(), interesting = false;
-        for (i = 0; i < tlist.length; ++i) {
+        var res = [], lstr = precaret.toLowerCase();
+        for (var i = 0; i < tlist.length; ++i) {
             var titem = completion_item(tlist[i]), t = titem.s, tt = t;
             if (include_pfx) {
                 if (t.substring(0, pfx.length).toLowerCase() !== pfx)
                     continue;
                 tt = t = t.substring(pfx.length);
             }
-            if (str.length && t.substring(0, str.length).toLowerCase() !== lstr)
+            if (lstr.length && t.substring(0, lstr.length).toLowerCase() !== lstr)
                 continue;
-            else if (str.length)
-                t = "<b>" + t.substring(0, str.length) + "</b>" +
-                    escape_entities(t.substring(str.length));
+            if (lstr.length)
+                t = "<b>" + t.substring(0, precaret.length) + "</b>" +
+                    escape_entities(t.substring(lstr.length));
             else
                 t = escape_entities(t);
-            res.push('<div class="autocomplete" data-autocomplete="' +
-                     tt.substring(str.length).replace(/\"/g, "&quot;") + '">' + pfx + t + '</div>');
-            interesting = interesting || str !== tt;
+            t = '<div class="autocomplete" data-autocomplete="' +
+                tt.substring(precaret.length).replace(/\"/g, "&quot;") +
+                '">' + pfx + t + '</div>';
+            res[tt.length == precaret.length ? "unshift" : "push"](t);
         }
-        if (res.length && (interesting || displayed))
-            return {prefix: pfx, match: str, list: res};
+        if (res.length)
+            return {list: res, precaret_length: pfx.length + precaret.length,
+                    postcaret_length: postcaret.length};
         else
             return null;
     };
@@ -3107,26 +3141,26 @@ function suggest(elt, klass, cleanf) {
         if (!tagdiv) {
             tagdiv = make_bubble({dir: "nw", color: "suggest"});
             tagdiv.self().on("mousedown", function (evt) { evt.preventDefault(); })
-                .on("click", "div.autocomplete", click);
+                .on("click", "div.suggestion", click)
+                .on("mouseenter", "div.suggestion", hover);
         }
 
         var i, ml = [10, 30, 60, 90, 120];
         for (i = 0; i < ml.length && cinfo.list.length > ml[i]; ++i)
             /* nada */;
         var t = '<div class="suggesttable suggesttable' + (i + 1) +
-            '"><div class="suggestion">' +
+            '"><div class="suggestion active">' +
             cinfo.list.join('</div><div class="suggestion">') + '</div></div>';
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt),
-            matchpos = elt.selectionStart -
-                (cinfo.prefix ? cinfo.prefix.length : 0) -
-                (cinfo.match ? cinfo.match.length : 0);
+            matchpos = elt.selectionStart - cinfo.precaret_length;
         shadow.text(elt.value.substring(0, matchpos))
             .append("<span>&#x2060;</span>")
             .append(document.createTextNode(elt.value.substring(matchpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         tagdiv.html(t).near($pos, elt);
+        tagdiv.self().attr("data-autocomplete-postcaret-length", cinfo.postcaret_length);
         shadow.remove();
     }
 
@@ -3134,8 +3168,8 @@ function suggest(elt, klass, cleanf) {
         cleanf(elt, !!tagdiv).then(finish_display);
     }
 
-    function docomplete($ac) {
-        var common = null, attr, i, j, start, text;
+    function maybe_complete($ac) {
+        var common = null, attr, i, j;
         for (i = 0; i != $ac.length; ++i) {
             attr = $ac[i].getAttribute("data-autocomplete");
             if (common === null)
@@ -3147,22 +3181,42 @@ function suggest(elt, klass, cleanf) {
                 common = common.substring(0, j);
             }
         }
-        if (common.length) {
-            start = elt.selectionStart;
-            text = elt.value.substring(0, start) + common + elt.value.substring(start);
-            jQuery(elt).val(text);
-            elt.selectionStart = elt.selectionEnd = start + common.length;
-            if ($ac.length == 1)
-                kill();
-            else
-                setTimeout(display, 1);
-            return true;
-        } else
+        if (common === null)
             return false;
+        else if ($ac.length == 1)
+            return do_complete(common + " ", true);
+        else
+            return do_complete(common, false);
+    }
+
+    function do_complete(text, done) {
+        var start = elt.selectionStart;
+        var pc_len = tagdiv.self().attr("data-autocomplete-postcaret-length");
+        var val = elt.value.substring(0, start) + text + elt.value.substring(start + pc_len);
+        $(elt).val(val);
+        elt.selectionStart = elt.selectionEnd = start + text.length;
+        done ? kill() : setTimeout(display, 1);
+        return true;
+    }
+
+    function move_active(delta) {
+        var $sug = tagdiv.self().find(".suggestion"),
+            $active = tagdiv.self().find(".suggestion.active"),
+            pos;
+        if (delta < 0)
+            delta = $sug.length + delta;
+        if ($active.length) {
+            for (pos = 0; pos != $sug.length && $sug[pos] !== $active[0]; ++pos)
+                /* skip */;
+        } else
+            pos = delta > 0 ? -delta : $sug.length - 1 - delta;
+        pos = (pos + delta) % $sug.length;
+        $active.removeClass("active");
+        $($sug[pos]).addClass("active");
     }
 
     function kp(evt) {
-        var k = event_key(evt), m = event_modkey(evt);
+        var k = event_key(evt), m = event_modkey(evt), completed = null;
         if (k != "Tab" || m)
             tagfail = false;
         if (k == "Escape" && !m) {
@@ -3170,22 +3224,34 @@ function suggest(elt, klass, cleanf) {
             hiding = true;
             return true;
         }
-        if (k == "Tab" && tagdiv && !m) {
-            var completed = docomplete(tagdiv.self().find(".autocomplete"));
-            if (completed || !tagfail) {
-                tagfail = !completed;
-                evt.preventDefault();
-                return false;
-            }
+        if (k == "Tab" && !m && tagdiv)
+            completed = maybe_complete(tagdiv.self().find(".autocomplete"));
+        else if (k == "Enter" && !m && tagdiv)
+            completed = maybe_complete(tagdiv.self().find(".suggestion.active .autocomplete"));
+        if (completed !== null && (completed || !tagfail)) {
+            tagfail = !completed;
+            evt.preventDefault();
+            evt.stopPropagation();
+            return false;
         }
-        if (k && !hiding)
+        if ((k == "ArrowDown" || k == "ArrowUp") && !m && tagdiv) {
+            move_active(k == "ArrowDown" ? 1 : -1);
+            evt.preventDefault();
+            return false;
+        }
+        if (!hiding && !tagfail && (tagdiv || event_key.printable(evt)))
             setTimeout(display, 1);
         return true;
     }
 
     function click(evt) {
-        docomplete($(this));
+        maybe_complete($(this).find(".autocomplete"));
         evt.stopPropagation();
+    }
+
+    function hover(evt) {
+        tagdiv.self().find(".active").removeClass("active");
+        $(this).addClass("active");
     }
 
     function blur() {
@@ -3198,7 +3264,7 @@ function suggest(elt, klass, cleanf) {
     if (typeof elt === "string")
         elt = $$(elt);
     if (elt) {
-        jQuery(elt).on("keydown", kp).on("blur", blur);
+        $(elt).on("keydown", kp).on("blur", blur);
         elt.autocomplete = "off";
     }
 }

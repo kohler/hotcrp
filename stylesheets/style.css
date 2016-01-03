@@ -2177,9 +2177,9 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	page-break-inside: avoid;
 	break-inside: avoid;
 	padding: 1px 4px;
-}
-.suggestion:hover {
 	cursor: pointer;
+}
+.suggestion.active {
 	background-color: #6088d0;
 	color: white;
 }
