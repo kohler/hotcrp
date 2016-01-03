@@ -2572,7 +2572,7 @@ function save_editor(elt, action, really) {
             delete cmts[cid];
         if (editing_response && data.ok && !data.cmt)
             data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true, cid: cid};
-        if (data.ok && cid !== (data_cid = cj_cid(data.cmt))) {
+        if (data.ok && data.cmt && cid !== (data_cid = cj_cid(data.cmt))) {
             x.j.closest(".cmtid")[0].id = data_cid;
             if (cid !== "cnew")
                 delete cmts[cid];
