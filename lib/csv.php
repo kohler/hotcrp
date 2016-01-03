@@ -211,18 +211,25 @@ class CsvParser {
 }
 
 class CsvGenerator {
-
     const TYPE_COMMA = 0;
     const TYPE_PIPE = 1;
     const TYPE_TAB = 2;
+    const FLAG_TYPE = 3;
+    const FLAG_ALWAYS_QUOTE = 4;
 
     private $type;
+    private $flags;
     private $lines = array();
     private $headerline = "";
     private $selection = null;
 
     function __construct($type = self::TYPE_COMMA) {
-        $this->type = $type;
+        $this->type = $type & self::FLAG_TYPE;
+        $this->flags = $type;
+    }
+
+    static function always_quote($text) {
+        return '"' . str_replace('"', '""', $text) . '"';
     }
 
     static function quote($text, $quote_empty = false) {
@@ -231,7 +238,7 @@ class CsvGenerator {
         else if (preg_match('/\A[-_@\$#+A-Za-z0-9.](?:[-_@\$#+A-Za-z0-9. \t]*[-_\$#+A-Za-z0-9.]|)\z/', $text))
             return $text;
         else
-            return '"' . str_replace('"', '""', $text) . '"';
+            return self::always_quote($text);
     }
 
     function is_csv() {
@@ -278,8 +285,13 @@ class CsvGenerator {
             if (is_array($this->selection))
                 $row = $this->select($row);
             if ($this->type == self::TYPE_COMMA) {
-                foreach ($row as &$x)
-                    $x = self::quote($x);
+                if ($this->flags & self::FLAG_ALWAYS_QUOTE) {
+                    foreach ($row as &$x)
+                        $x = self::always_quote($x);
+                } else {
+                    foreach ($row as &$x)
+                        $x = self::quote($x);
+                }
                 $this->lines[] = join(",", $row) . "\n";
             } else if ($this->type == self::TYPE_TAB)
                 $this->lines[] = join("\t", $row) . "\n";
@@ -332,5 +344,4 @@ class CsvGenerator {
             header("Content-Length: " . strlen($text));
         echo $text;
     }
-
 }

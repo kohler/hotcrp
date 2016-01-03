@@ -814,51 +814,43 @@ if ($getaction == "checkformat" && $Me->privChair && SearchActions::any()) {
 
 // download ACM CMS information for selected papers
 if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
-    $xlsx = new XlsxGenerator($Opt["downloadPrefix"] . "acmcms.xlsx");
-    $xlsx->download_headers();
-    $idq = "Paper.paperId" . SearchActions::sql_predicate();
+    $idq = "p.paperId" . SearchActions::sql_predicate();
 
     // analyze paper page counts
     $pagecount = array();
-    $result = Dbl::qe_raw("select Paper.paperId, ps.infoJson from Paper join PaperStorage ps on (ps.paperStorageId=Paper.finalPaperStorageId) where Paper.finalPaperStorageId>1 and $idq");
+    $result = Dbl::qe_raw("select p.paperId, p.finalPaperStorageId, ps.infoJson from Paper p join PaperStorage ps on (ps.paperStorageId=if(p.finalPaperStorageId=0,p.paperStorageId,p.finalPaperStorageId)) where $idq");
     while (($row = edb_row($result)))
-        if ($row[1] && ($j = json_decode($row[1])) && isset($j->npages))
+        if ($row[2] && ($j = json_decode($row[2])) && isset($j->npages))
             $pagecount[$row[0]] = $j->npages;
         else {
             $cf = new CheckFormat;
-            if ($cf->analyzePaper($row[0], true))
+            if ($cf->analyzePaper($row[0], !!$row[1]))
                 $pagecount[$row[0]] = $cf->pages;
         }
 
     // generate report
-    $result = Dbl::qe_raw("select Paper.paperId, title, authorInformation from Paper where $idq");
+    $result = Dbl::qe_raw("select paperId, title, authorInformation from Paper p where $idq");
     $texts = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
-        $x = array("pid" => $Opt["downloadPrefix"] . $row->paperId,
-                   "papertype" => "",
-                   "pagecount" => defval($pagecount, $row->paperId, ""),
-                   "title" => $row->title,
-                   "auname" => array(),
-                   "auemail" => array(),
-                   "auaff" => array(),
-                   "notes" => "");
+        $papertype = "Full Paper";
+        if (isset($pagecount[$row->paperId]) && $pagecount[$row->paperId] < 5)
+            $papertype = "Short Paper";
+        $aun = $aue = [];
         foreach ($row->author_list() as $au) {
-            $email = $au->email ? : "unknown";
-            $x["auname"][] = $au->name() ? : $email;
-            $x["auemail"][] = $email;
-            $x["auaff"][] = $au->affiliation ? : "unaffiliated";
+            $aun[] = ($au->name() ? : "Unknown")
+                . ":" . ($au->affiliation ? : "Unaffiliated");
+            $aue[] = $au->email ? : "unknown@example.com";
         }
-        foreach (array("auname", "auemail", "auaff") as $k)
-            $x[$k] = join("; ", $x[$k]);
-        $texts[$row->paperId] = $x;
+        $texts[$row->paperId] = [
+            "papertype" => $papertype, "title" => $row->title,
+            "authors" => join(";", $aun), "leademail" => (string) @$aue[0],
+            "emails" => join(";", array_splice($aue, 1))
+        ];
     }
-    $xlsx->add_sheet(array("pid" => "Paper ID", "papertype" => "Paper type",
-                           "pagecount" => "Pages", "title" => "Title",
-                           "auname" => "Author names",
-                           "auemail" => "Author email addresses",
-                           "auaff" => "Author affiliations",
-                           "notes" => "Notes"), SearchActions::reorder($texts));
-    $xlsx->download();
+    $texts = SearchActions::reorder($texts);
+    downloadCSV(SearchActions::reorder($texts), false, "acmcms",
+                ["selection" => ["papertype", "title", "authors", "leademail", "emails"],
+                 "always_quote" => true]);
     exit;
 }
 

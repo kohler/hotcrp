@@ -993,8 +993,13 @@ function unparseReviewOrdinal($ord) {
 
 function downloadCSV($info, $header, $filename, $options = array()) {
     global $Opt;
-    $iscsv = defval($options, "type", "csv") == "csv" && !isset($Opt["disableCsv"]);
-    $csvg = new CsvGenerator($iscsv ? CsvGenerator::TYPE_COMMA : CsvGenerator::TYPE_TAB);
+    if (defval($options, "type", "csv") == "csv" && !isset($Opt["disableCsv"]))
+        $csvt = CsvGenerator::TYPE_COMMA;
+    else
+        $csvt = CsvGenerator::TYPE_TAB;
+    if (@$options["always_quote"])
+        $csvt |= CsvGenerator::FLAG_ALWAYS_QUOTE;
+    $csvg = new CsvGenerator($csvt);
     if ($header)
         $csvg->set_header($header, true);
     if (@$options["selection"])
