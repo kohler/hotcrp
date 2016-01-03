@@ -2540,10 +2540,11 @@ function beforeunload() {
     for (i = 0; i != $cs.length; ++i) {
         x = analyze($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
-        if (text === (x.cj.text || ""))
+        text2 = (x.cj && x.cj.text) || "";
+        if (text === text2)
             continue;
         text = text.replace(/\r\n?/g, "\n");
-        text2 = (x.cj.text || "").replace(/\r\n?/g, "\n");
+        text2 = text2.replace(/\r\n?/g, "\n");
         if (text !== text2)
             return "Your comment edits have not been saved. If you leave this page now, they will be lost.";
     }
