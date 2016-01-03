@@ -789,6 +789,10 @@ return function (content, bubopt) {
             $b.css("maxWidth", wconstraint);
             bg = $b.geometry(true);
         }
+        // bpos[D] is the furthest position in direction D, assuming
+        // the bubble was placed on that side. E.g., bpos[0] is the
+        // top of the bubble, assuming the bubble is placed over the
+        // reference.
         var bpos = [nearpos.top - sizes.bottom - bg.height - sizes[0],
                     nearpos.right + sizes.left + bg.width + sizes[0],
                     nearpos.bottom + sizes.top + bg.height + sizes[0],
@@ -866,14 +870,15 @@ return function (content, bubopt) {
 
         var wedge = [wpos.top + 3*SPACE, wpos.right - 3*SPACE,
                      wpos.bottom - 3*SPACE, wpos.left + 3*SPACE];
-        if ((ds === "v" || ds === 0 || ds === 2) && !noflip
+        if ((ds === "v" || ds === 0 || ds === 2) && !noflip && ds2 < 0
             && bpos[2] > wedge[2] && bpos[0] < wedge[0]
             && (bpos[3] >= wedge[3] || bpos[1] <= wedge[1])) {
-            ds = "h"
+            ds = "h";
             bpos = remake_bpos(bpos, wpos, ds);
         }
         if ((ds === "v" && bpos[2] > wedge[2] && bpos[0] > wedge[0])
-            || (ds === 0 && !noflip && bpos[2] > wpos.bottom)
+            || (ds === 0 && !noflip && bpos[2] > wpos.bottom
+                && wpos.top - bpos[0] < bpos[2] - wpos.bottom)
             || (ds === 2 && (noflip || bpos[0] >= wpos.top + SPACE)))
             ds = 2;
         else if (ds === "v" || ds === 0 || ds === 2)
