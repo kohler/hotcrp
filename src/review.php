@@ -526,14 +526,14 @@ class ReviewForm {
             echo '<div class="rv rveg" data-rf="', $f->uid, '"><div class="revet';
             if (isset($ReviewFormError[$field]))
                 echo " error";
-            echo '"><div class="revfn">', $f->name_html, '</div>';
+            echo '"><div class="revfn">', $f->name_html;
             if ($f->view_score < VIEWSCORE_REVIEWERONLY)
                 echo '<div class="revvis">(secret)</div>';
             else if ($f->view_score < VIEWSCORE_PC)
                 echo '<div class="revvis">(shown only to chairs)</div>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
                 echo '<div class="revvis">(hidden from authors)</div>';
-            echo '<hr class="c" /></div>';
+            echo '</div><hr class="c" /></div>';
 
             if ($f->description)
                 echo '<div class="revhint">', $f->description, "</div>";

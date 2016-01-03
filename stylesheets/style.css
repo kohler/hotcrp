@@ -2394,15 +2394,17 @@ span.revinfo {
 	font-size: smaller;
 }
 .rvg .revvt {
+	margin-right: 2em;
 	margin-bottom: 2px;
 }
 .revet > .revfn {
 	color: #683131;
 }
-.revfn, .revvis {
+.revfn {
 	float: left;
 }
 .revvis {
+	display: inline-block;
 	padding-left: 1em;
 	color: #999999;
 }

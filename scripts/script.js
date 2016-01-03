@@ -2277,13 +2277,13 @@ function render_review(j, rrow) {
             display = last_display == 1 ? 2 : 0;
 
         t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
-            '"><div class="revvt"><div class="revfn">' + f.name_html + '</div>';
+            '"><div class="revvt"><div class="revfn">' + f.name_html;
         if (f.view_score != "author")
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors"})[f.view_score] || f.view_score) +
                 ')</div>';
-        t += '<hr class="c" /></div><div class="revv';
+        t += '</div><hr class="c" /></div><div class="revv';
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
