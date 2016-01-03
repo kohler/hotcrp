@@ -172,13 +172,6 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
     $_REQUEST["noedit"] = 1;
 
 
-// paper actions
-if (isset($_REQUEST["settags"]) && check_post()) {
-    PaperActions::setTags($prow);
-    loadRows();
-}
-
-
 go(hoturl("paper", array("p" => $prow->paperId,
                          "c" => @$_REQUEST["c"],
                          "ls" => @$_REQUEST["ls"])));
