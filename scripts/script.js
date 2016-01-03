@@ -3200,20 +3200,44 @@ function suggest(elt, klass, cleanf) {
         return true;
     }
 
-    function move_active(delta) {
+    function move_active(k) {
         var $sug = tagdiv.self().find(".suggestion"),
-            $active = tagdiv.self().find(".suggestion.active"),
-            pos;
-        if (delta < 0)
-            delta = $sug.length + delta;
-        if ($active.length) {
-            for (pos = 0; pos != $sug.length && $sug[pos] !== $active[0]; ++pos)
-                /* skip */;
-        } else
-            pos = delta > 0 ? -delta : $sug.length - 1 - delta;
-        pos = (pos + delta) % $sug.length;
-        $active.removeClass("active");
-        $($sug[pos]).addClass("active");
+            $active = tagdiv.self().find(".suggestion.active").removeClass("active");
+        if (k == "ArrowUp" || k == "ArrowDown") {
+            var pos = 0;
+            while (pos != $sug.length && $sug[pos] !== $active[0])
+                ++pos;
+            if (pos == $sug.length)
+                pos -= (k == "ArrowDown");
+            pos += (k == "ArrowDown" ? 1 : $sug.length - 1);
+            $active = $($sug[pos % $sug.length]);
+        } else if (k == "ArrowLeft" || k == "ArrowRight") {
+            if (elt.selectionEnd != elt.value.length)
+                return false;
+            var $activeg = $active.geometry(), next = null,
+                nextadx = Infinity, nextady = Infinity,
+                isleft = (k == "ArrowLeft"),
+                side = (isleft ? "left" : "right");
+            for (var i = 0; i != $sug.length; ++i) {
+                var $thisg = $($sug[i]).geometry(),
+                    dx = $activeg[side] - $thisg[side],
+                    adx = Math.abs(dx),
+                    ady = Math.abs(($activeg.top + $activeg.bottom) - ($thisg.top + $thisg.bottom));
+                if ((isleft ? dx > 0 : dx < 0)
+                    && (adx < nextadx
+                        || (adx == nextadx && ady < nextady))) {
+                    next = $sug[i];
+                    nextadx = adx;
+                    nextady = ady;
+                }
+            }
+            if (next)
+                $active = $(next);
+            else if (isleft)
+                return false;
+        }
+        $active.addClass("active");
+        return true;
     }
 
     function kp(evt) {
@@ -3235,8 +3259,7 @@ function suggest(elt, klass, cleanf) {
             evt.stopPropagation();
             return false;
         }
-        if ((k == "ArrowDown" || k == "ArrowUp") && !m && tagdiv) {
-            move_active(k == "ArrowDown" ? 1 : -1);
+        if (k.substring(0, 5) == "Arrow" && !m && tagdiv && move_active(k)) {
             evt.preventDefault();
             return false;
         }
