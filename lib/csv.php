@@ -301,7 +301,7 @@ class CsvGenerator {
     }
 
     function set_header($header, $comment = false) {
-        assert(!count($this->lines) && !$this->headerline);
+        assert(!count($this->lines) && $this->headerline === "");
         $this->add($header);
         if ($this->type == self::TYPE_TAB && $comment)
             $this->lines[0] = "#" . $this->lines[0];
@@ -317,7 +317,7 @@ class CsvGenerator {
 
     function download_headers($downloadname = null, $attachment = null) {
         if ($this->is_csv())
-            header("Content-Type: text/csv; charset=utf-8; header=" . ($this->header ? "present" : "absent"));
+            header("Content-Type: text/csv; charset=utf-8; header=" . ($this->headerline !== "" ? "present" : "absent"));
         else
             header("Content-Type: text/plain; charset=utf-8");
         if ($attachment === null)
