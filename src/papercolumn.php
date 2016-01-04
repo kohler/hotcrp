@@ -780,6 +780,7 @@ class ReviewerListPaperColumn extends PaperColumn {
             $prefs = $row->reviewer_preferences();
             $topics = $this->topics ? $row->topics() : null;
         }
+        $pcm = null;
         if ($pl->contact->isPC)
             $pcm = pcMembers();
         $x = array();
