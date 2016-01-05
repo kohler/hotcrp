@@ -17,7 +17,7 @@ class Navigation {
         if (PHP_SAPI == "cli")
             return;
 
-        if ($_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off")
+        if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off")
             list($x, $xport) = array("https://", 443);
         else
             list($x, $xport) = array("http://", 80);
@@ -210,7 +210,7 @@ class Navigation {
     }
 
     public static function redirect_http_to_https($allow_http_if_localhost = false) {
-        if ((!$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")
+        if ((!isset($_SERVER["HTTPS"]) || $_SERVER["HTTPS"] == "off")
             && self::$protocol == "http://"
             && (!$allow_http_if_localhost
                 || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"

@@ -197,8 +197,14 @@ if (!defined("JSON_UNESCAPED_UNICODE"))
 function get($var, $idx, $default = null) {
     if (is_array($var))
         return array_key_exists($idx, $var) ? $var[$idx] : $default;
-    else
+    else if (is_object($var))
         return property_exists($var, $idx) ? $var->$idx : $default;
+    else if ($var === null)
+        return $default;
+    else {
+        error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        return $default;
+    }
 }
 
 function get_s($var, $idx, $default = null) {
