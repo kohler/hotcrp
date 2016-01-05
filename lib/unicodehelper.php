@@ -125,10 +125,22 @@ class UnicodeHelper {
             $rest = "";
             return $str;
         }
-        if (!preg_match('/\A(\X{0,' . ($len - 1) . '}(?=\PZ)\X)\pZ+([\s\S]*)\z/u', $str, $m))
-            preg_match('/\A(\X{0,' . $len . '}\PZ*)\pZ*([\s\S]*)\z/u', $str, $m);
+        if (!preg_match('/\A(\X{0,' . ($len - 1) . '}(?!\pZ|\s)\X)((?:\pZ|\s)+[\s\S]*)\z/u', $str, $m))
+            preg_match('/\A(\X{0,' . $len . '}(?:(?!\pZ|\s)\X)*)([\s\S]*)\z/u', $str, $m);
         $rest = $m[2];
         return $m[1];
+    }
+
+    public static function utf8_line_break(&$str, $len) {
+        if ($str === "")
+            return false;
+        $line = self::utf8_word_prefix($str, $len, $str);
+        if (($nl = strpos($line, "\n")) !== false) {
+            $str = substr($line, $nl) . $str;
+            $line = substr($line, 0, $nl);
+        }
+        $str = preg_replace('/\A(?:\pZ|[\t\f\r])*\n?/u', '', $str);
+        return $line;
     }
 
     public static function utf8_abbreviate($str, $len) {

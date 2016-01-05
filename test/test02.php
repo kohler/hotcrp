@@ -129,4 +129,13 @@ xassert_eqq(UnicodeHelper::utf8_glyphlen("aaaaaaaa"), 8);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("áááááááá"), 8);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("a̓a̓a̓a̓a̓a̓a̓a̓"), 8);
 
+xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 10),
+            "+ This is\n- a thing\n- to be\n- wrapped.\n");
+xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9),
+            "+ This is\n- a thing\n- to be\n- wrapped.\n");
+xassert_eqq(prefix_word_wrap("+ ", "This\nis\na thing\nto\nbe wrapped.", "- ", 9),
+            "+ This\n- is\n- a thing\n- to\n- be\n- wrapped.\n");
+
+xassert_eqq(!!preg_match('/\A\pZ\z/u', ' '), true);
+
 xassert_exit();

@@ -84,8 +84,8 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
         $text = substr($text, 1);
     }
 
-    while (($line = UnicodeHelper::utf8_word_prefix($text, $totWidth - $indentlen, $text)) !== "")
-        $out .= $indent . $line . "\n";
+    while (($line = UnicodeHelper::utf8_line_break($text, $totWidth - $indentlen)) !== false)
+        $out .= $indent . preg_replace('/^\pZ+/u', '', $line) . "\n";
     if (strlen($prefix) <= $indentlen) {
         $prefix = str_pad($prefix, $indentlen, " ", STR_PAD_LEFT);
         $out = $prefix . substr($out, $indentlen);
@@ -100,8 +100,10 @@ function center_word_wrap($text, $totWidth = 75, $multi_center = false) {
     if (strlen($text) <= $totWidth && !preg_match('/[\200-\377]/', $text))
         return str_pad($text, (int) (($totWidth + strlen($text)) / 2), " ", STR_PAD_LEFT) . "\n";
     $out = "";
-    while (($line = UnicodeHelper::utf8_word_prefix($text, $totWidth, $text)) !== "")
-        $out .= str_pad($line, (int) (($totWidth + UnicodeHelper::utf8_glyphlen($line)) / 2), " ", STR_PAD_LEFT) . "\n";
+    while (($line = UnicodeHelper::utf8_line_break($text, $totWidth)) !== false) {
+        $linelen = UnicodeHelper::utf8_glyphlen($line);
+        $out .= str_pad($line, (int) (($totWidth + $linelen) / 2), " ", STR_PAD_LEFT) . "\n";
+    }
     return $out;
 }
 
