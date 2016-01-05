@@ -15,7 +15,7 @@ class ZipDocumentFile {
 }
 
 class ZipDocument {
-    private $tmpdir;
+    private $tmpdir_ = null;
     private $files;
     public $warnings;
     private $recurse;
@@ -26,23 +26,28 @@ class ZipDocument {
     private $filestore;
 
     function __construct($downloadname, $mimetype = "application/zip") {
-        $this->tmpdir = null;
         $this->downloadname = $downloadname;
         $this->mimetype = $mimetype;
         $this->clean();
     }
 
     function clean() {
-        if ($this->tmpdir) {
-            exec("/bin/rm -rf $this->tmpdir");
-            $this->tmpdir = null;
-        }
+        if ($this->tmpdir_)
+            exec("/bin/rm -rf $this->tmpdir_");
+        $this->tmpdir_ = null;
         $this->files = array();
         $this->warnings = array();
         $this->recurse = false;
         $this->headers = false;
         $this->start_time = time();
         $this->filestore = array();
+    }
+
+    private function tmpdir() {
+        if ($this->tmpdir_ === null)
+            && ($this->tmpdir_ = tempdir()) === false)
+            $this->warnings[] = "Could not create temporary directory.";
+        return $this->tmpdir_;
     }
 
     private function _add($doc, $filename, $check_filename) {
@@ -81,12 +86,9 @@ class ZipDocument {
         // At this point, we will definitely create a new zipfile.
 
         // construct temporary directory
-        if ($this->tmpdir === null)
-            if (($this->tmpdir = tempdir()) === false) {
-                $this->warnings[] = "Could not create temporary directory.";
-                return self::_add_done($doc, false);
-            }
-        $zip_filename = "$this->tmpdir/";
+        if (!($tmpdir = $this->tmpdir()))
+            return self::_add_done($doc, false);
+        $zip_filename = "$tmpdir/";
 
         // populate with contents of filestore list, if any
         if (!$this->_add_filestore())
@@ -127,7 +129,7 @@ class ZipDocument {
         }
 
         // track files to pass to `zip`
-        $zip_filename = substr($zip_filename, strlen($this->tmpdir) + 1);
+        $zip_filename = substr($zip_filename, strlen($tmpdir) + 1);
         if (($p = strpos($zip_filename, "/")) !== false) {
             $zip_filename = substr($zip_filename, 0, $p);
             $this->recurse = true;
@@ -179,9 +181,11 @@ class ZipDocument {
 
     private function create() {
         global $Now, $Opt;
+        if (!($tmpdir = $this->tmpdir()))
+            return set_error_html("Could not create temporary directory.");
 
         // maybe cache zipfile in docstore
-        $zip_filename = "$this->tmpdir/_hotcrp.zip";
+        $zip_filename = "$tmpdir/_hotcrp.zip";
         if (count($this->filestore) > 0 && @$Opt["docstore"]
             && @$Opt["docstoreAccelRedirect"]) {
             // calculate sha1 for zipfile contents
@@ -214,7 +218,7 @@ class ZipDocument {
             $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
         set_time_limit(60);
-        $out = system("cd $this->tmpdir; $zipcmd $opts '$zip_filename' '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
+        $out = system("cd $tmpdir; $zipcmd $opts '$zip_filename' '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
         if ($status != 0)
             return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
         if (!file_exists($zip_filename))
@@ -428,9 +432,11 @@ class Filer {
         while (@ob_end_flush())
             /* do nothing */;
     }
-    static function download_file($filename) {
+    static function download_file($filename, $no_accel = false) {
         global $Opt, $zlib_output_compression;
-        if (($dar = @$Opt["docstoreAccelRedirect"]) && ($ds = @$Opt["docstore"])) {
+        if (($dar = @$Opt["docstoreAccelRedirect"])
+            && ($ds = @$Opt["docstore"])
+            && !$no_accel) {
             if (!str_ends_with($ds, "/"))
                 $ds .= "/";
             if (str_starts_with($filename, $ds)
@@ -490,7 +496,7 @@ class Filer {
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
         if (($filename = self::content_filename($doc)))
-            self::download_file($filename);
+            self::download_file($filename, @$doc->no_cache || @$doc->no_accel);
         else {
             $content = self::content($doc);
             if (!$zlib_output_compression)
@@ -566,18 +572,22 @@ class Filer {
 
     // SHA-1 helpers
     static function text_sha1($doc) {
-        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
-            return bin2hex($doc->sha1);
-        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
-            return strtolower($doc->sha1);
+        if (is_object($doc))
+            $doc = @$doc->sha1;
+        if (is_string($doc) && strlen($doc) === 20)
+            return bin2hex($doc);
+        else if (is_string($doc) && strlen($doc) === 40 && ctype_xdigit($doc))
+            return strtolower($doc);
         else
             return false;
     }
     static function binary_sha1($doc) {
-        if (is_string(@$doc->sha1) && strlen($doc->sha1) === 20)
-            return $doc->sha1;
-        else if (is_string(@$doc->sha1) && strlen($doc->sha1) === 40 && ctype_xdigit($doc->sha1))
-            return hex2bin($doc->sha1);
+        if (is_object($doc))
+            $doc = @$doc->sha1;
+        if (is_string($doc) && strlen($doc) === 20)
+            return $doc;
+        else if (is_string($doc) && strlen($doc) === 40 && ctype_xdigit($doc))
+            return hex2bin($doc);
         else
             return false;
     }
