@@ -64,33 +64,33 @@ class Text {
             if (is_string($v) || is_bool($v)) {
                 if ($i + $delta < 4) {
                     $k = self::$argkeys[$i + $delta];
-                    if (@$ret->$k === null)
+                    if (get($ret, $k) === null)
                         $ret->$k = $v;
                 }
             } else if (is_array($v) && isset($v[0])) {
                 for ($j = 0; $j < 3 && $j < count($v); ++$j) {
                     $k = self::$argkeys[$j];
-                    if (@$ret->$k === null)
+                    if (get($ret, $k) === null)
                         $ret->$k = $v[$j];
                 }
             } else if (is_array($v)) {
                 foreach ($v as $k => $x)
-                    if (@($mk = self::$mapkeys[$k])
-                        && @$ret->$mk === null)
+                    if (($mk = get(self::$mapkeys, $k))
+                        && get($ret, $mk) === null)
                         $ret->$mk = $x;
                 $delta = 3;
             } else if (is_object($v)) {
                 foreach (self::$mapkeys as $k => $mk)
-                    if (@$ret->$mk === null
-                        && @$v->$k !== null
-                        && (@self::$boolkeys[$mk]
+                    if (get($ret, $mk) === null
+                        && get($v, $k) !== null
+                        && (get(self::$boolkeys, $mk)
                             ? is_bool($v->$k)
                             : is_string($v->$k)))
                         $ret->$mk = $v->$k;
             }
         }
         foreach (self::$defaults as $k => $v)
-            if (@$ret->$k === null)
+            if (get($ret, $k) === null)
                 $ret->$k = $v;
         if ($ret->name && $ret->firstName === "" && $ret->lastName === "")
             list($ret->firstName, $ret->lastName) = self::split_name($ret->name);
@@ -106,7 +106,7 @@ class Text {
         }
         if ($ret->lastName === "" || $ret->firstName === "")
             $ret->name = $ret->firstName . $ret->lastName;
-        else if (@$ret->lastFirst)
+        else if (get($ret, "lastFirst"))
             $ret->name = $ret->lastName . ", " . $ret->firstName;
         else
             $ret->name = $ret->firstName . " " . $ret->lastName;

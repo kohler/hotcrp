@@ -30,12 +30,12 @@ class Message {
         global $ConfSitePATH, $Opt;
         self::$messages = array();
         self::load_one("$ConfSitePATH/src/messages.csv");
-        if (($lang = @$Opt["lang"]))
+        if (($lang = opt("lang")))
             self::load_one("$ConfSitePATH/src/messages.$lang.csv");
         self::load_one("$ConfSitePATH/conf/messages-local.csv");
         if ($lang)
             self::load_one("$ConfSitePATH/conf/messages-local.$lang.csv");
-        if (@$Opt["messages_include"])
+        if (opt("messages_include"))
             foreach (expand_includes($ConfSitePATH, $Opt["messages_include"],
                                      array("lang" => $lang)) as $f)
                 self::load_one($f);
@@ -44,9 +44,9 @@ class Message {
     public static function default_html($name) {
         if (self::$messages === null)
             self::load();
-        if (!($m = @self::$messages[$name])
+        if (!($m = get(self::$messages, $name))
             && ($p = strrpos($name, ".")))
-            $m = @self::$messages[substr($name, 0, $p)];
+            $m = get(self::$messages, substr($name, 0, $p));
         if ($m && isset($m->html))
             return $m->html;
         else if ($m && isset($m->text))

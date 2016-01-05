@@ -24,12 +24,12 @@ class Column {
 
     public function __construct($name, $flags, $extra) {
         $this->name = $name;
-        $this->cssname = defval($extra, "cssname", $name);
+        $this->cssname = get($extra, "cssname", $name);
         $this->foldable = ($flags & self::FOLDABLE) != 0;
         $this->completable = ($flags & self::COMPLETABLE) != 0;
         $this->view = $flags & self::VIEWMASK;
-        $this->comparator = defval($extra, "comparator", false);
-        $this->minimal = defval($extra, "minimal", false);
+        $this->comparator = get($extra, "comparator", false);
+        $this->minimal = get($extra, "minimal", false);
     }
 }
 

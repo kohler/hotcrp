@@ -64,7 +64,7 @@ class Dbl {
                 return $opt["dsn"];
         } else {
             list($user, $password, $host, $name) =
-                array(@$opt["dbUser"], @$opt["dbPassword"], @$opt["dbHost"], @$opt["dbName"]);
+                [get($opt, "dbUser"), get($opt, "dbPassword"), get($opt, "dbHost"), get($opt, "dbName")];
             $user = ($user !== null ? $user : $name);
             $password = ($password !== null ? $password : $name);
             $host = ($host !== null ? $host : "localhost");
@@ -98,7 +98,7 @@ class Dbl {
         if (!$dbname || $dbname === "mysql" || substr($dbname, -7) === "_schema")
             return array(null, null);
 
-        $dbsock = @$Opt["dbSocket"];
+        $dbsock = get($Opt, "dbSocket");
         if ($dbsock && $dbport === null)
             $dbport = ini_get("mysqli.default_port");
         if ($dbpass === null)
@@ -151,11 +151,12 @@ class Dbl {
         if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
             || (($flags & self::F_APPLY) && count($args) > $argpos + 2))
             trigger_error(self::landmark() . ": wrong number of arguments");
-        else if (($flags & self::F_APPLY) && @$args[$argpos + 1] && !is_array($args[$argpos + 1]))
+        else if (($flags & self::F_APPLY) && isset($args[$argpos + 1])
+                 && !is_array($args[$argpos + 1]))
             trigger_error(self::landmark() . ": argument is not array");
         if ($log_location && self::$log_queries !== false) {
             $location = self::landmark();
-            if (!@self::$log_queries[$location])
+            if (!isset(self::$log_queries[$location]))
                 self::$log_queries[$location] = array(substr(simplify_whitespace($args[$argpos]), 0, 80), 0);
             ++self::$log_queries[$location][1];
         }
@@ -190,7 +191,7 @@ class Dbl {
                 $nextpos = $rbracepos + 1;
                 $nextch = substr($qstr, $nextpos, 1);
             } else {
-                while (@$usedargs[$argpos])
+                while (get($usedargs, $argpos))
                     ++$argpos;
                 $thisarg = $argpos;
             }
@@ -198,7 +199,7 @@ class Dbl {
                 trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " not set");
             $usedargs[$thisarg] = true;
             // argument format
-            $arg = @$argv[$thisarg];
+            $arg = get($argv, $thisarg);
             if ($nextch === "a" || $nextch === "A") {
                 if ($arg === null)
                     $arg = array();

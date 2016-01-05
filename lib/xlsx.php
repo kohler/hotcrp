@@ -45,7 +45,7 @@ class XlsxGenerator {
                     }
                     $t .= " t=\"s\"><v>" . $this->sst[$x] . "</v></c>";
                 }
-                $this->widths[$col] = max(strlen($x), @($this->widths[$col] + 0));
+                $this->widths[$col] = max(strlen($x), (int) get($this->widths, $col));
             }
             ++$col;
         }
@@ -69,7 +69,7 @@ class XlsxGenerator {
             $rout[] = $this->row_data(count($rout) + 1, $row, 0);
         for ($c = $numcol = 0; $numcol != count($this->widths); ++$c)
             if (isset($this->widths[$c])) {
-                $w = @min($this->widths[$c] + 3, 120);
+                $w = min($this->widths[$c] + 3, 120);
                 $this->widths[$c] = "<col min=\"" . ($c + 1) . "\" max=\"" . ($c + 1) . "\" bestFit=\"1\" width=\"$w\"/>";
                 ++$numcol;
             }

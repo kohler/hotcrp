@@ -46,7 +46,7 @@ class Mailer {
         $this->recipient = $recipient;
         foreach (array("width", "sensitivity", "reason", "adminupdate", "notes",
                        "capability") as $k)
-            $this->$k = @$settings[$k];
+            $this->$k = get($settings, $k);
         if ($this->width === null)
             $this->width = 75;
         else if (!$this->width)
@@ -56,12 +56,12 @@ class Mailer {
 
     function expand_user($contact, $out) {
         $r = Text::analyze_name($contact);
-        if (is_object($contact) && defval($contact, "preferredEmail", "") != "")
+        if (is_object($contact) && get_s($contact, "preferredEmail") != "")
             $r->email = $contact->preferredEmail;
 
         // maybe infer username
         if ($r->firstName == "" && $r->lastName == "" && is_object($contact)
-            && ((string) @$contact->email !== "" || (string) @$contact->preferredEmail !== ""))
+            && (get_s($contact, "email") !== "" || get_s($contact, "preferredEmail") !== ""))
             $this->infer_user_name($r, $contact);
 
         if ($out == "NAME" || $out == "CONTACT")
@@ -138,7 +138,7 @@ class Mailer {
         if ($what == "%CONFLONGNAME%")
             return Conf::$gLongName;
         if ($what == "%SIGNATURE%")
-            return @$Opt["emailSignature"] ? : "- " . Conf::$gShortName . " Submissions";
+            return get($Opt, "emailSignature") ? : "- " . Conf::$gShortName . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
             return $this->expand_user(Contact::site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")
@@ -165,8 +165,8 @@ class Mailer {
         }
 
         if ($what == "%LOGINNOTICE%") {
-            if (@$Opt["disableCapabilities"])
-                return $this->expand(defval($Opt, "mailtool_loginNotice", "  To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
+            if (get($Opt, "disableCapabilities"))
+                return $this->expand(get($Opt, "mailtool_loginNotice", "  To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
             else
                 return "";
         }
@@ -198,7 +198,7 @@ class Mailer {
         if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
             $password = null;
             if (!$external_password) {
-                $pwd_plaintext = @$this->recipient->plaintext_password();
+                $pwd_plaintext = $this->recipient->plaintext_password();
                 if ($pwd_plaintext && !$this->sensitivity)
                     $password = $pwd_plaintext;
                 else if ($pwd_plaintext && $this->sensitivity === "display")
@@ -426,10 +426,10 @@ class Mailer {
         $recipient = $this->recipient;
         if (!$recipient || !$recipient->email)
             return Conf::msg_error("no email in Mailer::send");
-        if (@$recipient->preferredEmail) {
+        if (get($recipient, "preferredEmail")) {
             $recipient = (object) array("email" => $recipient->preferredEmail);
             foreach (array("firstName", "lastName", "name", "fullName") as $k)
-                if (@$this->recipient->$k)
+                if (get($this->recipient, $k))
                     $recipient->$k = $this->recipient->$k;
         }
         $prep->to = array(Text::user_email_to($recipient));
@@ -437,23 +437,23 @@ class Mailer {
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
-        if (!@$Opt["emailFromHeader"])
+        if (!get($Opt, "emailFromHeader"))
             $Opt["emailFromHeader"] = MimeText::encode_email_header("From: ", $Opt["emailFrom"]);
         $prep->headers = array("from" => $Opt["emailFromHeader"] . MAILER_EOL, "subject" => $subject . MAILER_EOL, "to" => "");
         foreach (self::$email_fields as $lcfield => $field)
-            if (($text = (string) @$m[$lcfield]) !== "" && $text !== "<none>") {
+            if (($text = get_s($m, $lcfield)) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
                     $prep->headers[$lcfield] = $hdr . MAILER_EOL;
                 else {
                     $prep->errors[$lcfield] = $text;
-                    if (!@$rest["no_error_quit"])
+                    if (!get($rest, "no_error_quit"))
                         Conf::msg_error("$field destination “<tt>" . htmlspecialchars($text) . "</tt>” isn't a valid email list.");
                 }
             }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . MAILER_EOL;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . MAILER_EOL;
 
-        if (@$prep->errors && !@$rest["no_error_quit"])
+        if (get($prep, "errors") && !get($rest, "no_error_quit"))
             return false;
         else {
             $this->decorate_preparation($prep);
@@ -464,9 +464,10 @@ class Mailer {
     static function preparation_differs($prep1, $prep2) {
         return $prep1->subject != $prep2->subject
             || $prep1->body != $prep2->body
-            || @$prep1->headers["cc"] != @$prep2->headers["cc"]
-            || @$prep1->headers["reply-to"] != @$prep2->headers["reply-to"]
-            || @$prep1->unique_preparation || @$prep2->unique_preparation;
+            || get($prep1->headers, "cc") != get($prep2->headers, "cc")
+            || get($prep1->headers, "reply-to") != get($prep2->headers, "reply-to")
+            || get($prep1, "unique_preparation")
+            || get($prep2, "unique_preparation");
     }
 
     static function merge_preparation_to($prep, $to) {
@@ -491,7 +492,7 @@ class Mailer {
         $headers["to"] = $to . MAILER_EOL;
 
         // set sendmail parameters
-        $extra = defval($Opt, "sendmailParam", "");
+        $extra = get_s($Opt, "sendmailParam");
         if (isset($Opt["emailSender"])) {
             @ini_set("sendmail_from", $Opt["emailSender"]);
             if (!isset($Opt["sendmailParam"]))
@@ -526,7 +527,7 @@ class Mailer {
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
             $text = join("", $headers) . MAILER_EOL . $prep->body;
-            if (PHP_SAPI == "cli" && !@$Opt["disablePrintEmail"])
+            if (PHP_SAPI == "cli" && !get($Opt, "disablePrintEmail"))
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             else
                 $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");

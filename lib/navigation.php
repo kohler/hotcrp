@@ -17,16 +17,16 @@ class Navigation {
         if (PHP_SAPI == "cli")
             return;
 
-        if (@$_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off")
+        if ($_SERVER["HTTPS"] && $_SERVER["HTTPS"] != "off")
             list($x, $xport) = array("https://", 443);
         else
             list($x, $xport) = array("http://", 80);
         self::$protocol = $x;
-        if (!@$_SERVER["HTTP_HOST"])
+        if (!$_SERVER["HTTP_HOST"])
             $x .= "localhost";
         else
             $x .= $_SERVER["HTTP_HOST"];
-        if (($port = @$_SERVER["SERVER_PORT"])
+        if (($port = $_SERVER["SERVER_PORT"])
             && $port != $xport
             && strpos($x, ":", 6) === false)
             $x .= ":" . $port;
@@ -83,7 +83,8 @@ class Navigation {
             self::$sitedir_relative = "";
 
         self::$php_suffix = ".php";
-        if (substr(@$_SERVER["SERVER_SOFTWARE"], 0, 5) === "nginx"
+        if ((isset($_SERVER["SERVER_SOFTWARE"])
+             && substr($_SERVER["SERVER_SOFTWARE"], 0, 5) === "nginx")
             || (function_exists("apache_get_modules")
                 && array_search("mod_rewrite", apache_get_modules()) !== false))
             self::$php_suffix = "";
@@ -94,7 +95,7 @@ class Navigation {
     }
 
     public static function host() {
-        return @$_SERVER["HTTP_HOST"];
+        return $_SERVER["HTTP_HOST"];
     }
 
     public static function site_absolute($downcase_host = false) {
@@ -209,13 +210,13 @@ class Navigation {
     }
 
     public static function redirect_http_to_https($allow_http_if_localhost = false) {
-        if ((!@$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")
+        if ((!$_SERVER["HTTPS"] || $_SERVER["HTTPS"] == "off")
             && self::$protocol == "http://"
             && (!$allow_http_if_localhost
                 || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
                     && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
             $x = "https://";
-            if (!@$_SERVER["HTTP_HOST"])
+            if (!$_SERVER["HTTP_HOST"])
                 $x .= "localhost";
             else
                 $x .= $_SERVER["HTTP_HOST"];

@@ -14,7 +14,7 @@ function ldapLoginBindFailure($ldapc) {
 
     if ($lerrno < 5)
 	return Conf::msg_error("LDAP protocol error.  Logins will fail until this error is fixed.$suffix");
-    else if (defval($_REQUEST, "password", "") == "") {
+    else if (req_s("password") == "") {
 	$password_class = " error";
 	if ($lerrno == 53)
 	    $suffix = "";
@@ -40,13 +40,13 @@ function ldapLoginAction() {
 	return Conf::msg_error("Internal error: ldap_connect.  Logins disabled until this error is fixed.");
     @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 3);
 
-    $qemail = addcslashes($_REQUEST["email"], ',=+<>#;\"');
+    $qemail = addcslashes(req_s("email"), ',=+<>#;\"');
     $dn = $m[3] . $qemail . $m[4];
 
-    $success = @ldap_bind($ldapc, $dn, defval($_REQUEST, "password", ""));
+    $success = @ldap_bind($ldapc, $dn, req_s("password"));
     if (!$success && @ldap_errno($ldapc) == 2) {
 	@ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 2);
-	$success = @ldap_bind($ldapc, $dn, defval($_REQUEST, "password", ""));
+	$success = @ldap_bind($ldapc, $dn, req_s("password"));
     }
     if (!$success)
 	return ldapLoginBindFailure($ldapc);

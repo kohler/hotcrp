@@ -121,7 +121,7 @@ class ScoreInfo {
 
     public function sort_data($sorter, $key = null) {
         if ($sorter == "Y" && $key !== null && $this->_keyed
-            && ($v = @$this->_scores[$key]))
+            && ($v = get($this->_scores, $key)))
             return ":" . $v;
         else if ($sorter == "Y" || $sorter == "C" || $sorter == "M")
             return $this->counts_string();

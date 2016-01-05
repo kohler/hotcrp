@@ -214,7 +214,7 @@ class Countries {
         if (!$country)
             $t .= " selected='selected'";
         $t .= " value=''>(Select one)</option>\n";
-        if (($x = @self::$synonyms[strtolower($country)]))
+        if (($x = get(self::$synonyms, strtolower($country))))
             $country = $x;
         foreach (self::$list as $c) {
             $t .= "<option";

@@ -29,7 +29,7 @@ class Ht {
         $x = "";
         if ($js)
             foreach ($js as $k => $v) {
-                $t = @self::$_attr_type[$k];
+                $t = get(self::$_attr_type, $k);
                 if ($v === null || $t === self::ATTR_SKIP
                     || ($v === false && $t !== self::ATTR_BOOLTEXT))
                     /* nothing */;
@@ -44,7 +44,7 @@ class Ht {
     }
 
     static function script_file($src, $js = null) {
-        if ($js && @$js["crossorigin"] && !preg_match(',\A([a-z]+:)?//,', $src))
+        if ($js && get($js, "crossorigin") && !preg_match(',\A([a-z]+:)?//,', $src))
             unset($js["crossorigin"]);
         return '<script src="' . htmlspecialchars($src) . '"' . self::extra($js) . '></script>';
     }
@@ -55,10 +55,10 @@ class Ht {
     }
 
     static function form($action, $extra = null) {
-        $method = @$extra["method"] ? : "post";
+        $method = get($extra, "method") ? : "post";
         if ($method === "get" && strpos($action, "?") !== false)
             error_log(caller_landmark() . ": GET form action $action params will be ignored");
-        $enctype = @$extra["enctype"];
+        $enctype = get($extra, "enctype");
         if (!$enctype && $method !== "get")
             $enctype = "multipart/form-data";
         $x = '<form method="' . $method . '" action="' . $action . '"';
@@ -69,16 +69,16 @@ class Ht {
 
     static function form_div($action, $extra = null) {
         $div = "<div";
-        if (($x = @$extra["divclass"])) {
+        if (($x = get($extra, "divclass"))) {
             $div .= ' class="' . $x . '"';
             unset($extra["divclass"]);
         }
-        if (($x = @$extra["divstyle"])) {
+        if (($x = get($extra, "divstyle"))) {
             $div .= ' style="' . $x . '"';
             unset($extra["divstyle"]);
         }
         $div .= '>';
-        if (@strcasecmp($extra["method"], "get") == 0
+        if (strcasecmp(get_s($extra, "method"), "get") == 0
             && ($qpos = strpos($action, "?")) !== false) {
             if (($hpos = strpos($action, "#", $qpos + 1)) === false)
                 $hpos = strlen($action);
@@ -99,17 +99,17 @@ class Ht {
     static function select($name, $opt, $selected = null, $js = null) {
         if (is_array($selected) && $js === null)
             list($js, $selected) = array($selected, null);
-        $disabled = @$js["disabled"];
+        $disabled = get($js, "disabled");
         if (is_array($disabled))
             unset($js["disabled"]);
         $x = '<select name="' . $name . '"' . self::extra($js) . ">";
         if ($selected === null || !isset($opt[$selected]))
             $selected = key($opt);
-        $optionstyles = defval($js, "optionstyles", null);
+        $optionstyles = get($js, "optionstyles", null);
         $optgroup = "";
         foreach ($opt as $value => $info) {
             if (is_array($info) && $info[0] === "optgroup")
-                $info = (object) array("type" => "optgroup", "label" => @$info[1]);
+                $info = (object) array("type" => "optgroup", "label" => get($info, 1));
             else if (is_scalar($info)) {
                 $info = (object) array("label" => $info);
                 if (is_array($disabled) && isset($disabled[$value]))
@@ -131,11 +131,11 @@ class Ht {
                 $x .= '<option value="' . $value . '"';
                 if (strcmp($value, $selected) == 0)
                     $x .= ' selected="selected"';
-                if (@$info->disabled)
+                if (get($info, "disabled"))
                     $x .= ' disabled="disabled"';
-                if (@$info->style)
+                if (get($info, "style"))
                     $x .= ' style="' . $info->style . '"';
-                if (@$info->id)
+                if (get($info, "id"))
                     $x .= ' id="' . $info->id . '"';
                 $x .= '>' . $info->label . '</option>';
             }
@@ -152,7 +152,7 @@ class Ht {
             $checked = false;
         }
         $js = $js ? $js : array();
-        if (!defval($js, "id"))
+        if (!get($js, "id"))
             $js["id"] = "htctl" . ++self::$_controlid;
         self::$_lastcontrolid = $js["id"];
         if (!isset($js["class"]))
@@ -206,7 +206,7 @@ class Ht {
             $name = $name ? " name=\"$name\"" : "";
         if ($type === "button" || preg_match("_[<>]_", $html) || isset($js["value"]))
             return "<button type=\"$type\"$name value=\""
-                . defval($js, "value", 1) . "\"" . self::extra($js)
+                . get($js, "value", 1) . "\"" . self::extra($js)
                 . ">" . $html . "</button>";
         else
             return "<input type=\"$type\"$name value=\"$html\""
@@ -240,14 +240,14 @@ class Ht {
             $text = null;
         } else if (!$js)
             $js = array();
-        $js["class"] = trim(defval($js, "class", "") . " hidden");
+        $js["class"] = trim(get_s($js, "class") . " hidden");
         return self::submit($name, $text, $js);
     }
 
     private static function apply_placeholder(&$value, &$js) {
-        if (($temp = @$js["placeholder"])) {
+        if (($temp = get($js, "placeholder"))) {
             if ($value === null || $value === "" || $value === $temp)
-                $js["class"] = trim(defval($js, "class", "") . " temptext");
+                $js["class"] = trim(get_s($js, "class") . " temptext");
             if ($value === null || $value === "")
                 $value = $temp;
             self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
@@ -257,7 +257,7 @@ class Ht {
     static function entry($name, $value, $js = null) {
         $js = $js ? $js : array();
         self::apply_placeholder($value, $js);
-        $type = @$js["type"] ? : "text";
+        $type = get($js, "type") ? : "text";
         return '<input type="' . $type . '" name="' . $name . '" value="'
             . htmlspecialchars($value === null ? "" : $value) . '"'
             . self::extra($js) . ' />';
@@ -378,7 +378,7 @@ class Ht {
             $onclick = "return " . $onclick;
         if ($onclick)
             $js["onclick"] = $onclick;
-        if (!@$js["href"])
+        if (!get($js, "href"))
             $js["href"] = "#";
         return "<a" . self::extra($js) . ">" . $html . "</a>";
     }
@@ -389,7 +389,7 @@ class Ht {
     }
 
     static function mark_stash($uniqueid) {
-        $marked = @self::$_stash_map[$uniqueid];
+        $marked = get(self::$_stash_map, $uniqueid);
         self::$_stash_map[$uniqueid] = true;
         return !$marked;
     }

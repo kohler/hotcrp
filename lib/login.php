@@ -116,7 +116,7 @@ class LoginHelper {
 
         // look up or create user in contact database
         $cdb_user = null;
-        if (@$Opt["contactdb_dsn"]) {
+        if (opt("contactdb_dsn")) {
             if ($user)
                 $cdb_user = $user->contactdb_user();
             else
@@ -165,7 +165,7 @@ class LoginHelper {
 
         // check password
         if (!$external_login) {
-            if (($password = @trim($_REQUEST["password"])) === "") {
+            if (($password = trim(req_s("password"))) === "") {
                 $password_class = " error";
                 return Conf::msg_error("Enter your password. If you’ve forgotten it, enter your email address and use the “I forgot my password” option.");
             }
@@ -230,7 +230,7 @@ class LoginHelper {
             return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . ". To retrieve your password, select “I forgot my password.”");
         } else if ($cdb_user && $cdb_user->allow_contactdb_password()
                    && $cdb_user->activity_at > 0) {
-            $desc = @$Opt["contactdb_description"] ? : "HotCRP";
+            $desc = opt("contactdb_description") ? : "HotCRP";
             $email_class = " error";
             return Conf::msg_error("An account already exists for " . htmlspecialchars($_REQUEST["email"]) . " on $desc. Sign in using your $desc password or select “I forgot my password.”");
         } else if (!validate_email($_REQUEST["email"])) {
@@ -254,7 +254,7 @@ class LoginHelper {
         if (Mailer::allow_send($user->email))
             $msg .= " A password has been emailed to you.  Return here when you receive it to complete the registration process.  If you don’t receive the email, check your spam folders and verify that you entered the correct address.";
         else {
-            if ($Opt["sendEmail"])
+            if (opt("sendEmail"))
                 $msg .= " The email address you provided seems invalid.";
             else
                 $msg .= " The conference system is not set up to mail passwords at this time.";

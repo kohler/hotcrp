@@ -17,7 +17,7 @@ class AssignmentItem implements ArrayAccess {
     }
     public function offsetGet($offset) {
         $x = $this->after ? : $this->before;
-        return @$x[$offset];
+        return isset($x[$offset]) ? $x[$offset] : null;
     }
     public function offsetSet($offset, $value) {
     }
@@ -84,7 +84,7 @@ class AssignmentState {
     }
     static private function match($x, $q) {
         foreach ($q as $k => $v) {
-            if ($v !== null && @$x[$k] != $v)
+            if ($v !== null && get($x, $k) != $v)
                 return false;
         }
         return true;
@@ -107,7 +107,7 @@ class AssignmentState {
         foreach ($this->pid_keys($q) as $pid) {
             $st = $this->pidstate($pid);
             if (($k = $this->extract_key($q)))
-                $this->do_query_remove(@$st->items[$k], $q, $remove, $res, $modified);
+                $this->do_query_remove(get($st->items, $k), $q, $remove, $res, $modified);
             else
                 foreach ($st->items as $item)
                     $this->do_query_remove($item, $q, $remove, $res, $modified);
@@ -127,8 +127,7 @@ class AssignmentState {
         $k = $this->extract_key($x);
         assert(!!$k);
         $st = $this->pidstate($x["pid"]);
-        $item = @$st->items[$k];
-        if (!$item)
+        if (!($item = get($st->items, $k)))
             $item = $st->items[$k] = new AssignmentItem(false);
         $item->after = $x;
         $item->lineno = $this->lineno;
@@ -142,12 +141,12 @@ class AssignmentState {
                 if ((!$item->before && $item->after)
                     || ($item->before && $item->after === false)
                     || ($item->before && $item->after && !self::match($item->before, $item->after)))
-                    @($diff[$pid][] = $item);
+                    $diff[$pid][] = $item;
         }
         return $diff;
     }
     public function prow($pid) {
-        if (!@($p = $this->prows[$pid])) {
+        if (!($p = get($this->prows, $pid))) {
             $this->fetch_prows($pid);
             $p = $this->prows[$pid];
         }
@@ -195,11 +194,11 @@ class AssignerContacts {
         global $Me;
         if (!$cid)
             return self::make_none();
-        if (($c = @$this->by_id[$cid]))
+        if (($c = get($this->by_id, $cid)))
             return $c;
         if ($Me && $Me->contactId > 0 && $cid == $Me->contactId)
             return $this->store($Me);
-        if (!$this->has_pc && $this->store_pc() && ($c = @$this->by_id[$cid]))
+        if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_id, $cid)))
             return $c;
         $result = Dbl::qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
         $c = $result ? $result->fetch_object("Contact") : null;
@@ -212,11 +211,11 @@ class AssignerContacts {
         global $Me;
         if (!$lemail)
             return self::make_none();
-        if (($c = @$this->by_lemail[$lemail]))
+        if (($c = get($this->by_lemail, $lemail)))
             return $c;
         if ($Me && $Me->contactId > 0 && strcasecmp($lemail, $Me->email) == 0)
             return $this->store($Me);
-        if (!$this->has_pc && $this->store_pc() && ($c = @$this->by_lemail[$lemail]))
+        if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_lemail, $lemail)))
             return $c;
         $result = Dbl::qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
         $c = $result ? $result->fetch_object("Contact") : null;
@@ -237,7 +236,7 @@ class AssignerContacts {
         $cx = $this->lookup_lemail($lemail);
         if (!$cx || $cx->contactId < 0) {
             // XXX assume that never fails:
-            $cx = Contact::create(array("email" => $c->email, "firstName" => @$c->firstName, "lastName" => @$c->lastName));
+            $cx = Contact::create(array("email" => $c->email, "firstName" => get($c, "firstName"), "lastName" => get($c, "lastName")));
             $cx = $this->store($cx);
         }
         return $cx;
@@ -265,7 +264,7 @@ class AssignmentCountSet {
     public $lead = false;
     public $shepherd = false;
     public function get($offset) {
-        return @$this->bypc[$offset] ? : new AssignmentCount;
+        return get($this->bypc, $offset) ? : new AssignmentCount;
     }
     public function ensure($offset) {
         if (!isset($this->bypc[$offset]))
@@ -318,14 +317,14 @@ class Assigner {
         $this->cid = $contact ? $contact->contactId : null;
     }
     static function register($n, $a) {
-        assert(!@self::$assigners[$n]);
+        assert(!get(self::$assigners, $n));
         self::$assigners[$n] = $a;
     }
     static function assigner_names() {
         return array_keys(self::$assigners);
     }
     static function find($n) {
-        return @self::$assigners[$n];
+        return get(self::$assigners, $n);
     }
     function check_paper($user, $prow, $state) {
         if (!$user->can_administer($prow) && !$user->privChair)
@@ -431,9 +430,9 @@ class ReviewAssigner extends Assigner {
     }
     function apply($pid, $contact, $req, $state) {
         global $Conf;
-        $round = @$req["round"];
+        $round = get($req, "round");
         if ($round === null && $this->rtype > 0)
-            $round = @$state->defaults["round"];
+            $round = get($state->defaults, "round");
         if ($round && (strcasecmp($round, "any") != 0 || $this->rtype > 0)) {
             if (($roundname = $Conf->sanitize_round_name($round)) === false)
                 return Conf::round_name_error($round);
@@ -447,7 +446,7 @@ class ReviewAssigner extends Assigner {
         // remove existing review
         $revmatch = array("type" => "review", "pid" => +$pid,
                           "cid" => $contact ? $contact->contactId : null);
-        if (!$rtype && @$req["round"] && $roundname !== null)
+        if (!$rtype && get($req, "round") && $roundname !== null)
             $revmatch["_round"] = $roundname;
         $matches = $state->remove($revmatch);
 
@@ -460,7 +459,7 @@ class ReviewAssigner extends Assigner {
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
             if ($rtype == REVIEW_EXTERNAL && !count($matches)
-                && @$state->defaults["extrev_notify"])
+                && get($state->defaults, "extrev_notify"))
                 $revmatch["_notify"] = $state->defaults["extrev_notify"];
             $state->add($revmatch);
         } else
@@ -488,7 +487,7 @@ class ReviewAssigner extends Assigner {
                 $t .= ' <span class="revround" title="Review round">'
                     . htmlspecialchars($this->round) . '</span>';
             if (self::$prefinfo
-                && ($pref = @self::$prefinfo["$this->pid $this->cid"]))
+                && ($pref = get(self::$prefinfo, "$this->pid $this->cid")))
                 $t .= unparse_preference_span($pref);
         } else
             $t = 'clear ' . $t . ' review';
@@ -656,7 +655,7 @@ class ConflictAssigner extends Assigner {
         else
             $t .= "(remove conflict)";
         if (ReviewAssigner::$prefinfo
-            && ($pref = @ReviewAssigner::$prefinfo["$this->pid $this->cid"]))
+            && ($pref = get(ReviewAssigner::$prefinfo, "$this->pid $this->cid")))
             $t .= unparse_preference_span($pref);
         return $t;
     }
@@ -749,13 +748,13 @@ class TagAssigner extends Assigner {
     }
     function apply($pid, $contact, $req, $state) {
         $state->load_type("tag", $this);
-        if (!($tag = @$req["tag"]))
+        if (!($tag = get($req, "tag")))
             return "Tag missing.";
 
         // index argument
-        $xindex = @$req["index"];
+        $xindex = get($req, "index");
         if ($xindex === null)
-            $xindex = @$req["value"];
+            $xindex = get($req, "value");
         if ($xindex !== null && ($xindex = trim($xindex)) !== "") {
             $tag = preg_replace(',\A(#?.+)(?:[=!<>]=?|#|≠|≤|≥)(?:|-?\d+(?:\.\d*)?|-?\.\d+|any|all|none|clear)\z,i', '$1', $tag);
             if (!preg_match(',\A(?:[=!<>]=?|#|≠|≤|≥),i', $xindex))
@@ -833,7 +832,7 @@ class TagAssigner extends Assigner {
         $ltag = strtolower($tag);
         $index = cvtnum($m[3] ? $m[4] : null, null);
         // NB ignore $index on second & subsequent nexttag assignments
-        if (!($fin = @$state->finishers["seqtag $ltag"]))
+        if (!($fin = get($state->finishers, "seqtag $ltag")))
             $fin = $state->finishers["seqtag $ltag"] =
                 new NextTagAssigner($state, $tag, $index, $this->isadd == self::NEXTSEQ);
         unset($fin->pidindex[$pid]);
@@ -919,7 +918,7 @@ class TagAssigner extends Assigner {
             $index = $index ? : null;
         else if (($whyNot = $state->contact->perm_change_tag($prow, $item["ltag"],
                                                              $previndex, $index, $item->override))) {
-            if (@$whyNot["otherTwiddleTag"])
+            if (get($whyNot, "otherTwiddleTag"))
                 return null;
             throw new Exception(whyNotText($whyNot, "tag"));
         }
@@ -989,18 +988,18 @@ class PreferenceAssigner extends Assigner {
         $state->load_type($this->type, $this);
 
         foreach (array("preference", "pref", "revpref") as $k)
-            if (($pref = @$req[$k]) !== null)
+            if (($pref = get($req, $k)) !== null)
                 break;
         if ($pref === null)
             return "Missing preference";
-        $pref = @trim($pref);
+        $pref = trim((string) $pref);
         if ($pref == "" || $pref == "none")
             $ppref = array(0, null);
         else if (($ppref = parse_preference($pref)) === null)
             return "Invalid preference “" . htmlspecialchars($pref) . "”";
 
         foreach (array("expertise", "revexp") as $k)
-            if (($exp = @$req[$k]) !== null)
+            if (($exp = get($req, $k)) !== null)
                 break;
         if ($exp && ($exp = trim($exp)) !== "") {
             if (($pexp = parse_preference($exp)) === null || $pexp[0])
@@ -1181,7 +1180,7 @@ class AssignmentSet {
     }
 
     private static function req_user_html($req) {
-        return Text::user_html_nolink(@$req["firstName"], @$req["lastName"], @$req["email"]);
+        return Text::user_html_nolink(get($req, "firstName"), get($req, "lastName"), get($req, "email"));
     }
 
     private static function contacts_by($what) {
@@ -1201,7 +1200,7 @@ class AssignmentSet {
 
     private static function apply_user_parts(&$req, $a) {
         foreach (array("firstName", "lastName", "email") as $i => $k)
-            if (!@$req[$k] && @$a[$i])
+            if (!get($req, $k) && get($a, $i))
                 $req[$k] = $a[$i];
     }
 
@@ -1221,15 +1220,15 @@ class AssignmentSet {
         if (isset($req["name"]))
             self::apply_user_parts($req, Text::split_name($req["name"]));
         if (isset($req["user"]) && strpos($req["user"], " ") === false) {
-            if (!@$req["email"])
+            if (!get($req, "email"))
                 $req["email"] = $req["user"];
         } else if (isset($req["user"]))
             self::apply_user_parts($req, Text::split_name($req["user"], true));
 
         // extract email, first, last
-        $first = @$req["firstName"];
-        $last = @$req["lastName"];
-        $email = trim((string) @$req["email"]);
+        $first = get($req, "firstName");
+        $last = get($req, "lastName");
+        $email = trim((string) get($req, "email"));
         $lemail = strtolower($email);
         $special = null;
         if ($lemail)
@@ -1302,9 +1301,9 @@ class AssignmentSet {
         if ($contact->contactId < 0) {
             if (!validate_email($email))
                 return $this->error("Email address “" . htmlspecialchars($email) . "” is invalid.");
-            if (!isset($contact->firstName) && @$req["firstName"])
+            if (!isset($contact->firstName) && get($req, "firstName"))
                 $contact->firstName = $req["firstName"];
-            if (!isset($contact->lastName) && @$req["lastName"])
+            if (!isset($contact->lastName) && get($req, "lastName"))
                 $contact->lastName = $req["lastName"];
         }
         return array($contact);
@@ -1344,7 +1343,7 @@ class AssignmentSet {
             $this->astate->defaults["action"] = "tag";
         if (!$has_action && array_search("preference", $csv->header()) !== false)
             $this->astate->defaults["action"] = "preference";
-        if (!$has_action && !@$this->astate->defaults["action"])
+        if (!$has_action && !get($this->astate->defaults, "action"))
             return $this->error($csv->lineno(), "“assignment” column missing");
         if (array_search("paper", $csv->header()) === false)
             return $this->error($csv->lineno(), "“paper” column missing");
@@ -1395,13 +1394,13 @@ class AssignmentSet {
 
     function apply($req) {
         // parse paper
-        $pfield = @trim($req["paper"]);
+        $pfield = trim(get_s($req, "paper"));
         $pfield_straight = false;
         if ($pfield !== "" && ctype_digit($pfield)) {
             $pids = array(intval($pfield));
             $pfield_straight = true;
         } else if ($pfield !== "") {
-            if (!($pids = @$this->searches[$pfield])) {
+            if (!($pids = get($this->searches, $pfield))) {
                 $search = new PaperSearch($this->contact, $pfield);
                 $pids = $this->searches[$pfield] = $search->paperList();
                 foreach ($search->warnings as $w)
@@ -1413,9 +1412,9 @@ class AssignmentSet {
             return $this->error("Bad paper column");
 
         // check action
-        if (($action = @$req["action"]) === null
-            && ($action = @$req["assignment"]) === null
-            && ($action = @$req["type"]) === null)
+        if (($action = get($req, "action")) === null
+            && ($action = get($req, "assignment")) === null
+            && ($action = get($req, "type")) === null)
             $action = $this->astate->defaults["action"];
         $action = strtolower(trim($action));
         if (!($assigner = Assigner::find($action)))
@@ -1430,7 +1429,7 @@ class AssignmentSet {
         // check conflicts and perform assignment
         $any_success = false;
         foreach ($pids as $p) {
-            $prow = @$this->astate->prows[$p];
+            $prow = get($this->astate->prows, $p);
             if (!$prow) {
                 $this->error("Paper $p does not exist");
                 continue;
@@ -1444,7 +1443,7 @@ class AssignmentSet {
             $this->encounter_order[$p] = $p;
 
             foreach ($contacts as $contact) {
-                if ($contact && @$contact->contactId > 0
+                if ($contact && get($contact, "contactId") > 0
                     && !$this->astate->override
                     && $prow->has_conflict($contact)
                     && !$assigner->allow_special_contact("conflict", $prow, $contact))
@@ -1671,7 +1670,7 @@ class AssignmentSet {
         foreach ($this->assigners as $assigner)
             if ($assigner->pid > 0 && $assigner->notify_tracker())
                 $pids[$assigner->pid] = true;
-        if (count($pids) && @$Opt["trackerCometSite"])
+        if (count($pids) && opt("trackerCometSite"))
             MeetingTracker::contact_tracker_comet(MeetingTracker::lookup(), array_keys($pids));
 
         return true;

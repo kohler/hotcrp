@@ -128,7 +128,7 @@ class CsvParser {
                         $line .= $this->lines[$this->pos];
                         ++$this->pos;
                         $linelen = self::linelen($line);
-                    } else if (@$line[$pos + 1] === "\"")
+                    } else if ($pos + 1 < $linelen && $line[$pos + 1] === "\"")
                         ++$pos;
                     else
                         break;
@@ -142,7 +142,7 @@ class CsvParser {
                     $pos = $linelen;
                 $field = substr($line, $bpos, $pos - $bpos);
             }
-            if (@((string) $header[$i]) !== "")
+            if ($header && get_s($header, $i) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -162,7 +162,7 @@ class CsvParser {
             if ($pos === false)
                 $pos = $linelen;
             $field = substr($line, $bpos, $pos - $bpos);
-            if (@((string) $header[$i]) !== "")
+            if (get_s($header, $i) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -184,7 +184,7 @@ class CsvParser {
             if ($pos === false)
                 $pos = $linelen;
             $field = substr($line, $bpos, $pos - $bpos);
-            if (@((string) $header[$i]) !== "")
+            if (get_s($header, $i) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -199,7 +199,7 @@ class CsvParser {
         $i = 0;
         $a = array();
         foreach ($line as $field) {
-            if (@((string) $header[$i]) !== "")
+            if (get_s($header, $i) !== "")
                 $a[$header[$i]] = $field;
             else
                 $a[$i] = $field;
@@ -255,7 +255,7 @@ class CsvGenerator {
         $selected = array();
         $i = 0;
         foreach ($this->selection as $key) {
-            $val = @(is_array($row) ? $row[$key] : $row->$key);
+            $val = get($row, $key);
             if ($val !== null) {
                 while (count($selected) < $i)
                     $selected[] = "";

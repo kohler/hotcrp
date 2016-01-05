@@ -558,7 +558,7 @@ class MinCostMaxFlow {
         // loop over buckets, pricing one node at a time
         $bi = 0;
         while ($bi < count($b) && $excess > 0) {
-            if (!@$b[$bi]) {
+            if (!get($b, $bi)) {
                 ++$bi;
                 continue;
             }
@@ -865,7 +865,7 @@ class MinCostMaxFlow {
 
 
     private function dimacs_node(&$vnames, $num, $name = "", $klass = "") {
-        if (!($v = @$vnames[$num]))
+        if (!($v = get($vnames, $num)))
             $v = $vnames[$num] = $this->add_node($name, $klass);
         return $v;
     }
@@ -881,7 +881,7 @@ class MinCostMaxFlow {
                 $next_cap = $next_cost = null;
             if (preg_match('/\An (\d+) (-?\d+|s|t)\s*\z/', $line, $m)) {
                 $issink = $m[2] === "t" || $m[2] < 0;
-                assert(!@$vnames[$m[1]]);
+                assert(!get($vnames, $m[1]));
                 $vnames[$m[1]] = $v = $issink ? $this->sink : $this->source;
                 if ($m[2] !== "s" && $m[2] !== "t") {
                     $v->excess = (int) $m[2];

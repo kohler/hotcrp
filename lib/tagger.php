@@ -63,7 +63,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
         return $a;
     }
     public function check($offset) {
-        return @$this->storage[strtolower($offset)];
+        return get($this->storage, strtolower($offset));
     }
 }
 
@@ -329,11 +329,13 @@ class TagInfo {
         $key = join(" ", $classes);
         // This seems out of place---it's redundant if we're going to
         // generate JSON, for example---but it is convenient.
-        if (count($classes) > 1
-            && !@(self::$multicolor_map[$key] & $color_type_bit)) {
-            if ($color_type_bit == 1)
-                Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
-            self::$multicolor_map[$key] = (int) @self::$multicolor_map[$key] | $color_type_bit;
+        if (count($classes) > 1) {
+            $m = (int) get(self::$multicolor_map, $key);
+            if (!($m & $color_type_bit)) {
+                if ($color_type_bit == 1)
+                    Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
+                self::$multicolor_map[$key] = $m | $color_type_bit;
+            }
         }
         return $key;
     }
@@ -393,7 +395,7 @@ class Tagger {
     public function check($tag, $flags = 0) {
         if (!($this->contact && $this->contact->privChair))
             $flags |= self::NOCHAIR;
-        if (@$tag[0] === "#")
+        if ($tag !== "" && $tag[0] === "#")
             $tag = substr($tag, 1);
         if ($tag === "")
             return $this->set_error("Empty tag.");
@@ -597,7 +599,7 @@ class Tagger {
                     $v = array();
                     $limit = TagInfo::is_vote($base) ? 1 : 0;
                     foreach (pcMembers() as $p)
-                        if (($count = defval($vote[$lbase], $p->contactId, $limit - 1)) >= $limit)
+                        if (($count = get($vote[$lbase], $p->contactId, $limit - 1)) >= $limit)
                             $v[] = Text::name_html($p) . ($count > 1 ? " ($count)" : "");
                     if (count($v))
                         $tx .= ' title="PC votes: ' . htmlspecialchars(join(", ", $v)) . '"';

@@ -25,13 +25,13 @@ class S3Document {
     static public $retry_timeout_allowance = 4; // in seconds
 
     function __construct($opt = array()) {
-        $this->s3_key = @$opt["key"];
-        $this->s3_secret = @$opt["secret"];
-        $this->s3_region = defval($opt, "region", "us-east-1");
-        $this->s3_bucket = @$opt["bucket"];
-        $this->s3_scope = @$opt["scope"];
-        $this->s3_signing_key = @$opt["signing_key"];
-        $this->fixed_time = @$opt["fixed_time"];
+        $this->s3_key = get($opt, "key");
+        $this->s3_secret = get($opt, "secret");
+        $this->s3_region = get($opt, "region", "us-east-1");
+        $this->s3_bucket = get($opt, "bucket");
+        $this->s3_scope = get($opt, "scope");
+        $this->s3_signing_key = get($opt, "signing_key");
+        $this->fixed_time = get($opt, "fixed_time");
     }
 
     private function check_scope($time) {
@@ -61,7 +61,7 @@ class S3Document {
     }
 
     public function signature($url, $hdr, $content = null) {
-        $verb = defval($hdr, "method", "GET");
+        $verb = get($hdr, "method", "GET");
         $current_time = $this->fixed_time ? : time();
 
         preg_match(',\Ahttps?://([^/?]*)([^?]*)(?:[?]?)(.*)\z,', $url, $m);
@@ -138,14 +138,14 @@ class S3Document {
 
     private function http_headers($filename, $method, $args) {
         list($content, $content_type, $user_data) =
-            array(@$args["content"], @$args["content_type"], @$args["user_data"]);
+            array(get($args, "content"), get($args, "content_type"), get($args, "user_data"));
         $content_empty = (string) $content === "";
         $url = "https://$this->s3_bucket.s3.amazonaws.com/$filename";
         $hdr = array("method" => $method,
                      "Date" => gmdate("D, d M Y H:i:s GMT", $this->fixed_time ? : time()));
         if ($user_data)
             foreach ($user_data as $key => $value) {
-                if (!@self::$known_headers[strtolower($key)])
+                if (!get(self::$known_headers, strtolower($key)))
                     $key = "x-amz-meta-$key";
                 $hdr[$key] = $value;
             }
@@ -161,7 +161,7 @@ class S3Document {
 
     private function parse_response_headers($url, $metadata) {
         $this->response_headers["url"] = $url;
-        if ($metadata && ($w = @$metadata["wrapper_data"]) && is_array($w)) {
+        if ($metadata && ($w = get($metadata, "wrapper_data")) && is_array($w)) {
             if (preg_match(',\AHTTP/[\d.]+\s+(\d+)\s+(.+)\z,', $w[0], $m)) {
                 $this->status = (int) $m[1];
                 $this->status_text = $m[2];
@@ -209,7 +209,7 @@ class S3Document {
     public function save($filename, $content, $content_type, $user_data = null) {
         $this->run($filename, "HEAD", array());
         if ($this->status != 200
-            || @$this->response_headers["content-length"] != strlen($content))
+            || get($this->response_headers, "content-length") != strlen($content))
             $this->run($filename, "PUT", array("content" => $content,
                                                "content_type" => $content_type,
                                                "user_data" => $user_data));
@@ -222,7 +222,7 @@ class S3Document {
             return null;
         if ($this->status != 200)
             trigger_error("S3 warning: GET $filename: status $this->status", E_USER_WARNING);
-        return @$this->response_headers["content"];
+        return get($this->response_headers, "content");
     }
 
     public function check($filename) {
@@ -241,7 +241,7 @@ class S3Document {
             if (isset($args[$k]))
                 $suffix .= "&" . $k . "=" . urlencode($args[$k]);
         $this->run($suffix, "GET", array());
-        return @$this->response_headers["content"];
+        return get($this->response_headers, "content");
     }
 
 }
