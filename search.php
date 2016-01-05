@@ -33,6 +33,16 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
 
+function startsWith($haystack, $needle) {
+    $length = strlen($needle);
+    return (substr($haystack, 0, $length) === $needle);
+}
+
+function endsWith($haystack, $needle) {
+    $length = strlen($needle);
+    return $length == 0 ? true : (substr($haystack, -$length) === $needle);
+}
+
 // search canonicalization
 if (isset($_REQUEST["q"]))
     $_REQUEST["q"] = trim($_REQUEST["q"]);
@@ -41,7 +51,37 @@ if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
 if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
     && !isset($_REQUEST["q"])) {
     $_REQUEST["qa"] = defval($_REQUEST, "qa", "");
-    $_REQUEST["q"] = PaperSearch::canonical_query($_REQUEST["qa"], defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
+    $query_all = $_REQUEST["qa"];
+
+    // Add all additional options.
+    foreach ($_REQUEST as $key => $value) {
+        if (startsWith($key, "qao_") && !endsWith($key, "_op")) {
+            $optName = substr($key, 4);
+            $optOp = $_REQUEST[$key . "_op"];
+            switch ($optOp) {
+                case 'IS_NUM':
+                    $query_all .= " " . $optName . ":" . $value;
+                    break;
+                case 'IS_AT_LEAST':
+                    $query_all .= " " . $optName . ":>=" . $value;
+                    break;
+                case 'IS_LESS_THAN':
+                    $query_all .= " " . $optName . ":<" . $value;
+                    break;
+                case 'IS':
+                    $query_all .= " opt:" . $optName . "=" . $value;
+                    break;
+                case 'STARTS_WITH':
+                    $query_all .= " opt:" . $optName . "=" . $value . "*";
+                    break;
+                case 'CONTAINS':
+                    $query_all .= " opt:" . $optName . "=*" . $value . "*";
+                    break;
+            }
+        }
+    }
+    
+    $_REQUEST["q"] = PaperSearch::canonical_query($query_all, defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
 } else {
     unset($_REQUEST["qa"]);
     unset($_REQUEST["qo"]);
@@ -1437,8 +1477,150 @@ echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
   <td class='lentry'><input type='text' size='40' name='qx' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qx", "")), "\" tabindex='1' /></td>
-</tr>
-<tr>
+</tr>";
+if ($opt = PaperOption::option_list()) {
+    echo "<tr>
+<td class='lxcaption'>Additional options</td>
+<td class='lentry' id='lentry_adtl_ops'>
+<input type='button' id='lentry_adtl_ops_add' onclick='search_addOption();' value='+ Add option' />";
+        
+    // From settings.php.
+    function option_search_term($oname) {
+        $owords = preg_split(',[^a-z_0-9]+,', strtolower(trim($oname)));
+        for ($i = 0; $i < count($owords); ++$i) {
+            $attempt = join("-", array_slice($owords, 0, $i + 1));
+            if (count(PaperOption::search($attempt)) == 1)
+                return $attempt;
+        }
+        return simplify_whitespace($oname);
+    }
+
+    // Add initial options. This script is actually pretty hacky :(, but it handles numberic,
+    // checkbox, and text fields. Also, this code is probably riddled with SQL injection exploits.
+    $filtered_opt = array_filter($opt, function($o) {
+        $o->search_term = option_search_term($o->name);
+        return $o->type == "numeric" || $o->type == "checkbox" || $o->type == "text";
+    });
+    echo "<script type='text/javascript'>
+        var options = " . json_encode(array_values($filtered_opt)) . ";
+        
+        var clearOptions = function(select) {
+            for (var i = select.options.length - 1; i >= 0; i--) {
+                select.remove(i);
+            }
+        };
+
+        var appendOptionToSelect = function(value, textContent, select) {
+            var el = document.createElement('option');
+            el.value = value;
+            el.textContent = textContent;
+            select.appendChild(el);
+        };
+
+        window.search_addOption = function(selectedValue, operator, type, value) {
+            var optionDiv = document.createElement('div');
+
+            // Add options.
+            var selectOpt = document.createElement('select');
+            for (var i = 0; i < options.length; i++) {
+                appendOptionToSelect(options[i].search_term, options[i].description || options[i].name, selectOpt);
+            }
+            selectOpt.value = selectedValue;
+            selectOpt.style.width = '11em';
+            selectOpt.style['margin-right'] = '0.5em';
+            optionDiv.appendChild(selectOpt);
+            
+            // Add operators.
+            var selectOp = document.createElement('select');
+            selectOp.style.width = '7em';
+            selectOp.style['margin-right'] = '0.5em';
+            optionDiv.appendChild(selectOp);
+
+            // Add value box.
+            var valueOpt = document.createElement('input');
+            valueOpt.style.width = '8em';
+            valueOpt.style['margin-right'] = '2.5em';
+
+            selectOpt.onchange = (function(_opt, _op, _value) {return function() {
+                _value.name = 'qao_' + _opt.value;
+                _op.name = 'qao_' + _opt.value + '_op';
+                
+                var type = options.filter(function(o) {return o.search_term == _opt.value;})[0].type;
+                switch (type) {
+                    case 'numeric':
+                        _value.type = 'number';
+                        _value.value = '0';
+                        _op.disabled = false;
+                        _op.style.display = '';
+                        clearOptions(_op);
+                        appendOptionToSelect('IS_NUM', 'is', _op);
+                        appendOptionToSelect('IS_AT_LEAST', 'is at least', _op);
+                        appendOptionToSelect('IS_LESS_THAN', 'is less than', _op);
+                        break;
+                    case 'checkbox':
+                        _value.type = 'checkbox';
+                        _value.checked = false;
+                        _op.disabled = true;
+                        _op.style.display = 'none';
+                        clearOptions(_op);
+                        break;
+                    default:
+                        _value.type = 'text';
+                        _value.value = '';
+                        _value.checked = false;
+                        _op.disabled = false;
+                        _op.style.display = '';
+                        clearOptions(_op);
+                        appendOptionToSelect('IS', 'is', _op);
+                        appendOptionToSelect('STARTS_WITH', 'starts with', _op);
+                        appendOptionToSelect('CONTAINS', 'contains', _op);
+                }
+            }})(selectOpt, selectOp, valueOpt);
+            selectOpt.onchange();
+            switch (type) {
+                case 'numeric':
+                    valueOpt.value = value || 0;
+                    break;
+                case 'checkbox':
+                    valueOpt.checked = !!value;
+                    break;
+                default:
+                    valueOpt.value = value || '';
+            };
+            selectOp.value = operator;
+            optionDiv.appendChild(valueOpt);
+            
+            // Add remove button.
+            var buttonRemove = document.createElement('input');
+            buttonRemove.type = 'button';
+            buttonRemove.style.width = '2em';
+            buttonRemove.value = 'x';
+            buttonRemove.onclick = function() {optionDiv.parentElement.removeChild(optionDiv);};
+            optionDiv.appendChild(buttonRemove);
+            
+            // Add the whole thing to the document.
+            var container = document.getElementById('lentry_adtl_ops');
+            var addButton = document.getElementById('lentry_adtl_ops_add');
+            container.insertBefore(optionDiv, addButton);
+        };";
+
+    // Add initial values based on passed-in parameters. Defer execution so that the button
+    // is constructed in the DOM.
+    foreach ($opt as $o) {
+        $oName = option_search_term($o->name);
+        $optArg = defval($_REQUEST, "qao_" . $oName);
+        $optArgOp = defval($_REQUEST, "qao_" . $oName . "_op");
+        if ($optArg && $optArgOp) {
+            $optArg = urldecode($optArg);
+            $optArgOp = urldecode($optArgOp);
+            echo "\nwindow.search_addOption('" . $oName . "', '" . $optArgOp . "', '" . $o->type . "', '" . $optArg . "');";
+        }
+    }
+        
+    echo "</script>";
+    echo "</td></tr>";
+}
+echo "<tr>
   <td class='lxcaption'></td>
   <td><span style='font-size: x-small'><a href='", hoturl("help", "t=search"), "'>Search help</a> <span class='barsep'>·</span> <a href='", hoturl("help", "t=keywords"), "'>Search keywords</a></span></td>
 </tr></table></div></form>";
