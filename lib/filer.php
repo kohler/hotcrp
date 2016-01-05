@@ -44,7 +44,7 @@ class ZipDocument {
     }
 
     private function tmpdir() {
-        if ($this->tmpdir_ === null)
+        if ($this->tmpdir_ === null
             && ($this->tmpdir_ = tempdir()) === false)
             $this->warnings[] = "Could not create temporary directory.";
         return $this->tmpdir_;
