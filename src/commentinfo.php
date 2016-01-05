@@ -8,6 +8,7 @@ class CommentInfo {
     public $paperId;
     public $timeModified;
     public $timeNotified;
+    public $timeDisplayed;
     public $comment;
     public $commentType = COMMENTTYPE_REVIEWER;
     public $replyTo;
@@ -99,7 +100,7 @@ class CommentInfo {
 
     private static function _user($x) {
         if (isset($x->reviewEmail))
-            return (object) array("firstName" => @$x->reviewFirstName, "lastName" => @$x->reviewLastName, "email" => @$x->reviewEmail);
+            return (object) array("firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName"), "email" => get($x, "reviewEmail"));
         else
             return $x;
     }
@@ -137,7 +138,7 @@ class CommentInfo {
             $cj->response = $Conf->resp_round_name($this->commentRound);
 
         // tags
-        if (@$this->commentTags
+        if ($this->commentTags
             && $contact->can_view_comment_tags($this->prow, $this, null)) {
             $tagger = new Tagger($contact);
             if (($tags = $tagger->viewable($this->commentTags)))
@@ -244,24 +245,27 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         global $Conf, $Now;
         if (is_array($req))
             $req = (object) $req;
-        list($Table, $LinkTable, $LinkColumn) = array($this->prow->comment_table_name(), $this->prow->table_name(), $this->prow->id_column());
+        $Table = $this->prow->comment_table_name();
+        $LinkTable = $this->prow->table_name();
+        $LinkColumn = $this->prow->id_column();
+        $req_visibility = get($req, "visibility");
 
         $is_response = !!($this->commentType & COMMENTTYPE_RESPONSE);
-        if ($is_response && @$req->submit)
+        if ($is_response && get($req, "submit"))
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR;
         else if ($is_response)
             $ctype = COMMENTTYPE_RESPONSE | COMMENTTYPE_AUTHOR | COMMENTTYPE_DRAFT;
-        else if (@$req->visibility == "a" || @$req->visibility == "au")
+        else if ($req_visibility == "a" || $req_visibility == "au")
             $ctype = COMMENTTYPE_AUTHOR;
-        else if (@$req->visibility == "p" || @$req->visibility == "pc")
+        else if ($req_visibility == "p" || $req_visibility == "pc")
             $ctype = COMMENTTYPE_PCONLY;
-        else if (@$req->visibility == "admin")
+        else if ($req_visibility == "admin")
             $ctype = COMMENTTYPE_ADMINONLY;
-        else if ($this->commentId && !isset($req->visibility))
+        else if ($this->commentId && $req_visibility === null)
             $ctype = $this->commentType;
         else // $req->visibility == "r" || $req->visibility == "rev"
             $ctype = COMMENTTYPE_REVIEWER;
-        if ($is_response ? $this->prow->blind : $Conf->is_review_blind(!!@$req->blind))
+        if ($is_response ? $this->prow->blind : $Conf->is_review_blind(!!get($req, "blind")))
             $ctype |= COMMENTTYPE_BLIND;
 
         // tags
@@ -269,7 +273,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $ctags = " response ";
             if (($rname = $Conf->resp_round_name($this->commentRound)) != "1")
                 $ctags .= "{$rname}response ";
-        } else if (@$req->tags
+        } else if (get($req, "tags")
                    && preg_match_all(',\S+,', $req->tags, $m)) {
             $tagger = new Tagger($contact);
             $ctags = array();
@@ -282,8 +286,13 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         } else
             $ctags = null;
 
+        // notifications
+        $displayed = false;
+        if (!($ctype & COMMENTTYPE_DRAFT))
+            $displayed = true;
+
         // query
-        $text = (string) @$req->text;
+        $text = get_s($req, "text");
         $q = "";
         $qv = array();
         if ($text === "" && $this->commentId) {
@@ -293,8 +302,8 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             /* do nothing */;
         else if (!$this->commentId) {
             $change = true;
-            $qa = array("contactId, $LinkColumn, commentType, comment, timeModified, timeNotified, replyTo");
-            $qb = array("$contact->contactId, {$this->prow->$LinkColumn}, $ctype, ?, $Now, $Now, 0");
+            $qa = ["contactId, $LinkColumn, commentType, comment, timeModified, replyTo"];
+            $qb = [$contact->contactId, $this->prow->$LinkColumn, $ctype, "?", $Now, 0];
             $qv[] = $text;
             if ($ctags !== null) {
                 $qa[] = "commentTags";
@@ -304,6 +313,10 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             if ($is_response) {
                 $qa[] = "commentRound";
                 $qb[] = $this->commentRound;
+            }
+            if ($displayed) {
+                $qa[] = "timeDisplayed, timeNotified";
+                $qb[] = "$Now, $Now";
             }
             $q = "insert into $Table (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
             if ($is_response) {
@@ -324,7 +337,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 || (($ctype & COMMENTTYPE_RESPONSE)
                     && !($ctype & COMMENTTYPE_DRAFT)
                     && ($this->commentType & COMMENTTYPE_DRAFT)))
-                $qa = ", timeNotified=$Now";
+                $qa .= ", timeNotified=$Now";
+            if (!$this->timeDisplayed && $displayed)
+                $qa .= ", timeDisplayed=$Now";
             $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentTags=? where commentId=$this->commentId";
             $qv[] = $text;
             $qv[] = $ctags;

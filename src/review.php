@@ -731,6 +731,8 @@ class ReviewForm {
                     $crow = edb_row($result);
                     $q[] = "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
                 }
+                Dbl::free($result);
+                $q[] = "timeDisplayed=$now";
             }
         }
 
