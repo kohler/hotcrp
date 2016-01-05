@@ -695,16 +695,6 @@ function calculate_sizes(color) {
     return sizes;
 }
 
-function expand_near(epos, color) {
-    var dir, x, j = make_model(color);
-    epos = jQuery.extend({}, epos);
-    for (dir = 0; dir < 4; ++dir)
-        if ((x = j.css("margin" + capdir[dir])) && (x = parseFloat(x)))
-            epos[lcdir[dir]] += (dir == 0 || dir == 3 ? -x : x);
-    j.remove();
-    return epos;
-}
-
 return function (content, bubopt) {
     if (!bubopt && content && typeof content === "object") {
         bubopt = content;
@@ -947,7 +937,7 @@ return function (content, bubopt) {
             return bubble;
         },
         at: function (x, y, reference) {
-            return bubble.near({top: y, left: x, exact: true}, reference);
+            return bubble.near({top: y, left: x}, reference);
         },
         dir: function (dir) {
             dirspec = dir;
