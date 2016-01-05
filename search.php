@@ -1185,7 +1185,7 @@ function savesearch() {
     // clean display settings
     if ($Conf->session("pldisplay")) {
         $acceptable = array("abstract" => 1, "topics" => 1, "tags" => 1,
-                            "rownum" => 1, "reviewers" => 1,
+                            "rownum" => 1, "reviewers" => 1, "searchopts" => 1,
                             "pcconf" => 1, "lead" => 1, "shepherd" => 1);
         if (!$Conf->subBlindAlways() || $Me->privChair)
             $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
@@ -1348,6 +1348,11 @@ if ($pl) {
         displayOptionCheckbox("anonau", 1, "Deblinded authors", array("disabled" => (!$pl || !$pl->any->anonau), "indent" => true));
     if ($pl->any->collab)
         displayOptionCheckbox("collab", 1, "Collaborators", array("indent" => true));
+
+    // Search result options
+    global $Opt;
+    if (!empty($Opt["summaryTemplate"]))
+        displayOptionCheckbox("searchopts", 1, "Searched paper options");
 
     // Abstract group
     if ($pl->any->abstract)

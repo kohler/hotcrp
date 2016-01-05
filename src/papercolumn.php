@@ -428,6 +428,44 @@ class CollabPaperColumn extends PaperColumn {
     }
 }
 
+class SearchOptsPaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("searchopts", Column::VIEW_ROW | Column::FOLDABLE);
+    }
+    public function header($pl, $row, $ordinal) {
+        return "Search Options";
+    }
+    public function content_empty($pl, $row) {
+        return false;
+    }
+    public function content($pl, $row) {
+        global $Conf;
+        $prow = edb_rows($Conf->qe("select * from PaperOption where paperId=$row->paperId"));
+        $options = PaperOption::option_list();
+        $content = "";
+        $q = explode(" ", $pl->search->q);
+        foreach ($q as $word) {
+            if (strpos($word, ':') === false)
+                continue;
+            $keyword = substr($word, 0, strpos($word, ':'));
+            $matchingKw = reset(array_filter($options, function ($o) use ($keyword) {return $o->abbr == $keyword;}));
+            if (empty($matchingKw))
+                continue;
+            $keywordId = $matchingKw->id;
+            $keywordTitle = $matchingKw->description or $matchingKw->name;
+            $keywordRow = reset(array_filter($prow, function ($k) use ($keywordId) {return $k[1] == $keywordId;}));
+            if (empty($keywordRow))
+                continue;
+            $value = !empty($keywordRow[3]) ? $keywordRow[3] : $keywordRow[2];
+            $content .= "<br><strong>$keywordTitle</strong>: $value";
+        }
+        return $content;
+    }
+    public function text($pl, $row) {
+        return content($pl, $row);
+    }
+}
+
 class AbstractPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
@@ -1440,6 +1478,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new CollabPaperColumn);
     PaperColumn::register_synonym("co", "collab");
     PaperColumn::register(new TagListPaperColumn);
+    PaperColumn::register(new SearchOptsPaperColumn);
     PaperColumn::register(new AbstractPaperColumn);
     PaperColumn::register(new LeadPaperColumn);
     PaperColumn::register(new ShepherdPaperColumn);
