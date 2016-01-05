@@ -530,6 +530,71 @@ class PaperTable {
             "</div></div>\n\n";
     }
 
+    function startsWith($haystack, $needle) {
+        return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== false;
+    }
+
+    private function paptabSummary() {
+        global $Opt;
+        $options = $this->prow->options();
+        $summaryTemplate = $Opt["summaryTemplate"];
+        if (!$summaryTemplate) {
+            return;
+        }
+        $summary = "";
+
+        // First, process all the conditionals.
+        $conditionalStart = 0;
+        $conditionalEnd = 0;
+        define("BEGIN_IF", "%%%BEGIN_IF{");
+        define("BEGIN_IF_LEN", strlen(BEGIN_IF));
+        define("BEGIN_IF_END", "}%%%");
+        define("BEGIN_IF_END_LEN", strlen(BEGIN_IF_END));
+        define("END_IF", "%%%END_IF%%%");
+        define("END_IF_LEN", strlen(END_IF));
+        while (($conditionalStart = strpos($summaryTemplate, BEGIN_IF, $conditionalEnd)) !== false) {
+            $summary .= substr($summaryTemplate, $conditionalEnd, $conditionalStart - $conditionalEnd);
+
+            // Find the ending "}%%%".
+            $varStart = $conditionalStart + BEGIN_IF_LEN;
+            $varEnd = strpos($summaryTemplate, BEGIN_IF_END, $conditionalStart);
+            $var = substr($summaryTemplate, $varStart, $varEnd - $varStart);
+            $expectedValue = true;
+            if ($var && strlen($var) > 0 && $var[0] == "!") {
+              // Handle negations.
+              $expectedValue = false;
+              $var = substr($var, 1);
+            }
+            $varOption = reset(array_filter($options, function ($o) use ($var) {return $o->option->name == $var;}));
+            $contentStart = $varEnd + BEGIN_IF_END_LEN;
+            $contentEnd = strpos($summaryTemplate, END_IF, $varEnd);
+            $conditionalEnd = $contentEnd + END_IF_LEN;
+            
+            if (($varOption && ($varOption->value || $varOption->data)) == $expectedValue) {
+                $summary .= substr($summaryTemplate, $contentStart, $contentEnd - $contentStart);
+            }
+        }
+        $summary .= substr($summaryTemplate, $conditionalEnd);
+        
+        // Now, replace all the variables.
+        $summary = preg_replace_callback('/\$\{.+?\}/', function($matches) use (&$options) {
+            $var = $matches[0];
+            $var = substr($var, 2, strlen($var) - 3);
+            $varOption = reset(array_filter($options, function ($o) use ($var) {return $o->option->name == $var;}));
+            $value = $varOption ? ($varOption->data ? $varOption->data : $varOption->value) : "[???]";
+
+            if ($varOption && $varOption->option->type == "checkbox") {
+                $value = $value ? 'Yes' : 'No';
+            }
+            return $value;
+        }, $summary);
+        
+        $options = "<b>OPTIONS HERE</b>";
+        echo "<div class='pg pgtop'>",
+            $this->papt("summary", "Summary"),
+            "<div class='pavb summary'>", $summary, "</div></div>\n\n";
+    }
+
     private function paptabAbstract() {
         $data = $this->entryData("abstract", "p");
         if ($this->allFolded && strlen($data) > 190) {
@@ -2008,6 +2073,7 @@ class PaperTable {
                 echo $m, "<div class='g'></div>\n";
             $this->paptabDownload();
             echo '<div class="paptab"><div class="paptab_abstract">';
+            $this->paptabSummary();
             $this->paptabAbstract();
             echo '</div></div><div class="paptab"><div class="paptab_authors">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"
