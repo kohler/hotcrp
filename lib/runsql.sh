@@ -38,7 +38,7 @@ while [ $# -gt 0 ]; do
     --show-password|--show-p|--show-pa|--show-pas|--show-pass|--show-passw|--show-passwo|--show-passwor)
         test "$#" -gt 1 -a -z "$mode" || usage
         pwuser="$2"; shift; mode=showpw;;
-    --set-password)
+    --set-password|--set-p|--set-pa|--set-pas|--set-pass|--set-passw|--set-passwo|--set-passwor)
         test "$#" -gt 1 -a -z "$mode" || usage
         pwuser="$2"; pwvalue="$3"; shift; shift; mode=setpw;;
     --create-user)
@@ -102,7 +102,7 @@ if test -n "$pwuser"; then
             showpwvalue=y
         fi
         pwvalue="`echo "+$pwvalue" | sed -e 's,^.,,' | sql_quote`"
-        query="update ContactInfo set password='$pwvalue' where email='$pwuser'; select row_count()"
+        query="update ContactInfo set password='$pwvalue', passwordTime=UNIX_TIMESTAMP(CURRENT_TIMESTAMP()), passwordIsCdb=0 where email='$pwuser'; select row_count()"
         nupdates="`echo "$query" | eval "$MYSQL $myargs -N $FLAGS $dbname"`"
         if [ $nupdates = 0 ]; then
             echo "no such user" 1>&2; exitval=1
