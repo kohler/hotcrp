@@ -138,6 +138,12 @@ class Fexpr {
 
     public function compile(FormulaCompiler $state) {
         $op = $this->op;
+
+        if ($op == "opt") {
+            $opt = $e->args[0];
+            return "\"$opt\"";
+        }
+
         if ($op == "?:") {
             $t = $state->_addltemp($this->args[0]->compile($state));
             $tt = $state->_addltemp($this->args[1]->compile($state));
@@ -1232,6 +1238,9 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words)|(?:round|reviewer))\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
+        } else if (preg_match('/\Aopt:(.*)/is', $t, $m) && reset(array_filter(PaperOption::option_list(), function ($o) use ($m) {return $o->abbr == $m[1];}))) {
+            $e = FormulaExpr::make("opt", $m[1]);
+            $t = null;
         } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
@@ -1319,11 +1328,29 @@ class Formula {
         $t .= join("\n  ", $state->gstmt)
             . (count($state->gstmt) && count($state->lstmt) ? "\n  " : "")
             . join("\n  ", $state->lstmt) . "\n";
-        if ($expr !== null)
-            $t .= "  \$x = $expr;\n\n"
-                . "  if (\$x === true && \$format == Formula::SORTABLE)\n"
-                . "    \$x = 1;\n"
-                . "  return \$x;\n";
+        if ($expr !== null) {
+            // This is pretty hacky, slow, and prone to breaking, but it seems
+            // to work. Basically, for custom formulas containing fields, we
+            // perform a DB lookup.
+            if (preg_match('/\$opt(\d+)/', $expr, $m)) {
+                $t .= "\$x = $m[1];" . '  $options = PaperOption::option_list();
+$matchingOption = reset(array_filter($options, function ($o) use ($x) {return $o->id == $x;}));
+if (empty($matchingOption)) {
+    $x = null;
+} else {
+    $optionId = $matchingOption->id;
+    global $Conf;
+    $orow = edb_rows($Conf->qe("select value, data from PaperOption where paperId=$prow->paperId and optionId=$optionId"));
+    $x = $orow[0] ? (!empty($orow[0][1]) ? $orow[0][1] : $orow[0][0]) : "";
+}
+return $x;' . "\n"; 
+            } else {
+                $t .= "  \$x = $expr;\n\n"
+                    . "  if (\$x === true && \$format == Formula::SORTABLE)\n"
+                    . "    \$x = 1;\n"
+                    . "  return \$x;\n";
+            }
+        }
         return $t;
     }
 
@@ -1383,8 +1410,10 @@ class Formula {
             return ReviewField::unparse_letter(91, $x + 2);
         else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
             return ReviewField::unparse_letter($this->_format->option_letter, $x);
-        else
+        else if (is_numeric($x))
             return round($x * 100) / 100;
+        else
+            return "$x";
     }
 
     public function unparse_text($x) {
