@@ -27,13 +27,14 @@ class Contact {
     public $nameAmbiguous = null;
     private $name_html_ = null;
     private $reviewer_html_ = null;
-    var $email = "";
-    var $preferredEmail = "";
-    var $sorter = "";
+    public $email = "";
+    public $preferredEmail = "";
+    public $sorter = "";
+
     public $affiliation = "";
     public $country = null;
-    var $collaborators;
-    var $voicePhoneNumber;
+    public $collaborators;
+    public $voicePhoneNumber;
 
     private $password = "";
     private $passwordTime = 0;
@@ -43,10 +44,11 @@ class Contact {
 
     public $disabled = false;
     public $activity_at = false;
+    public $creationTime = 0;
     private $updateTime = 0;
-    private $data_ = null;
+    private $data = null;
     private $topic_interest_map_ = null;
-    var $defaultWatch = WATCH_COMMENT;
+    public $defaultWatch = WATCH_COMMENT;
 
     // Roles
     const ROLE_PC = 1;
@@ -62,7 +64,7 @@ class Contact {
     private $is_lead_;
     private $is_explicit_manager_;
     private $rights_version_ = 0;
-    var $roles = 0;
+    public $roles = 0;
     var $isPC = false;
     var $privChair = false;
     var $contactTags = null;
@@ -123,7 +125,7 @@ class Contact {
         if (isset($user->disabled))
             $this->disabled = !!$user->disabled;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime"] as $k)
+                  "updateTime", "creationTime"] as $k)
             if (isset($user->$k))
                 $this->$k = (int) $user->$k;
         if (property_exists($user, "contactTags"))
@@ -135,7 +137,9 @@ class Contact {
         else if (isset($user->lastLogin))
             $this->activity_at = (int) $user->lastLogin;
         if (isset($user->data) && $user->data)
-            $this->data_ = array_to_object_recursive($user->data);
+            // this works even if $user->data is a JSON string
+            // (array_to_object_recursive($str) === $str)
+            $this->data = array_to_object_recursive($user->data);
         if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
             || isset($user->isChair)) {
             $roles = (int) get($user, "roles");
@@ -169,12 +173,14 @@ class Contact {
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
-                  "updateTime"] as $k)
+                  "updateTime", "creationTime"] as $k)
             $this->$k = (int) $this->$k;
         if (!$this->activity_at && isset($this->lastLogin))
             $this->activity_at = (int) $this->lastLogin;
-        if (isset($this->data) && $this->data)
-            $this->data_ = array_to_object_recursive($this->data);
+        if ($this->data)
+            // this works even if $user->data is a JSON string
+            // (array_to_object_recursive($str) === $str)
+            $this->data = array_to_object_recursive($this->data);
         if (isset($this->roles))
             $this->assign_roles((int) $this->roles);
     }
@@ -599,22 +605,22 @@ class Contact {
     }
 
     private function make_data() {
-        if (is_string($this->data_))
-            $this->data_ = json_decode($this->data_);
-        if (!$this->data_)
-            $this->data_ = (object) array();
+        if (is_string($this->data))
+            $this->data = json_decode($this->data);
+        if (!$this->data)
+            $this->data = (object) array();
     }
 
     function data($key = null) {
         $this->make_data();
         if ($key)
-            return @$this->data_->$key;
+            return get($this->data, $key);
         else
-            return $this->data_;
+            return $this->data;
     }
 
     private function encode_data() {
-        if ($this->data_ && ($t = json_encode($this->data_)) !== "{}")
+        if ($this->data && ($t = json_encode($this->data)) !== "{}")
             return $t;
         else
             return null;
@@ -626,14 +632,14 @@ class Contact {
 
     function merge_data($data) {
         $this->make_data();
-        object_replace_recursive($this->data_, array_to_object_recursive($data));
+        object_replace_recursive($this->data, array_to_object_recursive($data));
     }
 
     function merge_and_save_data($data) {
         $this->activate_database_account();
         $this->make_data();
         $old = $this->encode_data();
-        object_replace_recursive($this->data_, array_to_object_recursive($data));
+        object_replace_recursive($this->data, array_to_object_recursive($data));
         $new = $this->encode_data();
         if ($old !== $new)
             Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
@@ -641,10 +647,10 @@ class Contact {
 
     private function data_str() {
         $d = null;
-        if (is_string($this->data_))
-            $d = $this->data_;
-        else if (is_object($this->data_))
-            $d = json_encode($this->data_);
+        if (is_string($this->data))
+            $d = $this->data;
+        else if (is_object($this->data))
+            $d = json_encode($this->data);
         return $d === "{}" ? null : $d;
     }
 
