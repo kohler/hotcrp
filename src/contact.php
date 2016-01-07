@@ -98,8 +98,8 @@ class Contact {
             $name = $user;
         else
             $name = Text::analyze_name($user);
-        $this->firstName = (string) @$name->firstName;
-        $this->lastName = (string) @$name->lastName;
+        $this->firstName = get_s($name, "firstName");
+        $this->lastName = get_s($name, "lastName");
         if (isset($user->unaccentedName))
             $this->unaccentedName = $user->unaccentedName;
         else if (isset($name->unaccentedName))
@@ -138,12 +138,12 @@ class Contact {
             $this->data_ = array_to_object_recursive($user->data);
         if (isset($user->roles) || isset($user->isPC) || isset($user->isAssistant)
             || isset($user->isChair)) {
-            $roles = (int) @$user->roles;
-            if (@$user->isPC)
+            $roles = (int) get($user, "roles");
+            if (get($user, "isPC"))
                 $roles |= self::ROLE_PC;
-            if (@$user->isAssistant)
+            if (get($user, "isAssistant"))
                 $roles |= self::ROLE_ADMIN;
-            if (@$user->isChair)
+            if (get($user, "isChair"))
                 $roles |= self::ROLE_CHAIR;
             $this->assign_roles($roles);
         }
@@ -195,8 +195,7 @@ class Contact {
     }
 
     static public function set_sorter($c) {
-        global $Opt;
-        if (@$Opt["sortByLastName"]) {
+        if (opt("sortByLastName")) {
             if (($m = Text::analyze_von($c->lastName)))
                 $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
             else
@@ -346,11 +345,10 @@ class Contact {
     }
 
     static public function contactdb() {
-        global $Opt;
         if (self::$contactdb_dblink === false) {
             self::$contactdb_dblink = null;
-            if (@$Opt["contactdb_dsn"])
-                list(self::$contactdb_dblink, $dbname) = Dbl::connect_dsn($Opt["contactdb_dsn"]);
+            if (($dsn = opt("contactdb_dsn")))
+                list(self::$contactdb_dblink, $dbname) = Dbl::connect_dsn($dsn);
         }
         return self::$contactdb_dblink;
     }
@@ -1093,8 +1091,7 @@ class Contact {
     }
 
     public static function password_storage_cleartext() {
-        global $Opt;
-        return $Opt["safePasswords"] < 1;
+        return opt("safePasswords") < 1;
     }
 
     public function has_password() {
@@ -1102,15 +1099,13 @@ class Contact {
     }
 
     public function allow_contactdb_password() {
-        global $Opt;
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !@$Opt["contactdb_noPasswords"];
+        return $cdbu && $cdbu->password && !opt("contactdb_noPasswords");
     }
 
     private function prefer_contactdb_password() {
-        global $Opt;
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !@$Opt["contactdb_noPasswords"]
+        return $cdbu && $cdbu->password && !opt("contactdb_noPasswords")
             && (!$this->has_database_account() || $this->password === "*"
                 || $this->passwordIsCdb);
     }
@@ -1126,12 +1121,12 @@ class Contact {
 
     // obsolete
     private static function password_hmac_key($keyid) {
-        global $Conf, $Opt;
+        global $Conf;
         if ($keyid === null)
-            $keyid = defval($Opt, "passwordHmacKeyid", 0);
-        $key = @$Opt["passwordHmacKey.$keyid"];
+            $keyid = opt("passwordHmacKeyid", 0);
+        $key = opt("passwordHmacKey.$keyid");
         if (!$key && $keyid == 0)
-            $key = @$Opt["passwordHmacKey"];
+            $key = opt("passwordHmacKey");
         if (!$key) /* backwards compatibility */
             $key = $Conf->setting_data("passwordHmacKey.$keyid");
         if (!$key) {
@@ -1167,8 +1162,7 @@ class Contact {
     }
 
     static private function password_hash_method() {
-        global $Opt;
-        $m = @$Opt["passwordHashMethod"];
+        $m = opt("passwordHashMethod");
         if (function_exists("password_verify") && !is_string($m))
             return is_int($m) ? $m : PASSWORD_DEFAULT;
         if (!function_exists("hash_hmac"))
@@ -1179,16 +1173,14 @@ class Contact {
     }
 
     static private function preferred_password_keyid($iscdb) {
-        global $Opt;
         if ($iscdb)
-            return defval($Opt, "contactdb_passwordHmacKeyid", 0);
+            return opt("contactdb_passwordHmacKeyid", 0);
         else
-            return defval($Opt, "passwordHmacKeyid", 0);
+            return opt("passwordHmacKeyid", 0);
     }
 
     static private function check_password_encryption($hash, $iscdb) {
-        global $Opt;
-        $safe = $Opt[$iscdb ? "contactdb_safePasswords" : "safePasswords"];
+        $safe = opt($iscdb ? "contactdb_safePasswords" : "safePasswords");
         if ($safe < 1
             || ($method = self::password_hash_method()) === false
             || ($hash && $safe == 1 && @$hash[0] !== " "))
@@ -1205,7 +1197,6 @@ class Contact {
     }
 
     static private function hash_password($input, $iscdb) {
-        global $Opt;
         $method = self::password_hash_method();
         if ($method === false)
             return $input;
@@ -1221,8 +1212,8 @@ class Contact {
     }
 
     public function check_password($input) {
-        global $Conf, $Opt, $Now;
-        assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
+        global $Conf, $Now;
+        assert(!self::external_login());
         if ($this->contactId && $this->is_password_disabled())
             return false;
         // update passwordUseTime once a month
@@ -1279,13 +1270,13 @@ class Contact {
     const CHANGE_PASSWORD_NO_CDB = 2;
 
     public function change_password($old, $new, $flags) {
-        global $Conf, $Opt, $Now;
-        assert(!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]));
+        global $Conf, $Now;
+        assert(!self::external_login());
 
         $hash = $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
             $cdbu = $this->contactdb_user();
-        if ($cdbu && $cdbu->password && !@$Opt["contactdb_noPasswords"]
+        if ($cdbu && $cdbu->password && !opt("contactdb_noPasswords")
             && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
             if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && self::check_password_encryption(false, true))

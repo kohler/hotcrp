@@ -28,27 +28,28 @@ function make_session_name($n) {
 }
 
 function ensure_session() {
-    global $Opt;
     if (session_id() !== "")
         return true;
     if (!($sn = make_session_name(opt("sessionName"))))
         return false;
     // maybe upgrade from an old session name to this one
     if (!isset($_COOKIE[$sn])
-        && isset($Opt["sessionUpgrade"])
-        && ($upgrade_sn = make_session_name($Opt["sessionUpgrade"]))
+        && ($upgrade_sn = opt("sessionUpgrade"))
+        && ($upgrade_sn = make_session_name($upgrade_sn))
         && isset($_COOKIE[$upgrade_sn])) {
         session_id($_COOKIE[$upgrade_sn]);
         setcookie($upgrade_sn, "", time() - 3600, "/",
-                  get($Opt, "sessionUpgradeDomain", get($Opt, "sessionDomain", "")),
-                  get($Opt, "sessionSecure", false));
+                  opt("sessionUpgradeDomain", opt("sessionDomain", "")),
+                  opt("sessionSecure", false));
     }
-    if (isset($Opt["sessionSecure"]) || isset($Opt["sessionDomain"])) {
+    $secure = opt("sessionSecure");
+    $domain = opt("sessionDomain");
+    if ($secure !== null || $domain !== null) {
         $params = session_get_cookie_params();
-        if (isset($Opt["sessionSecure"]))
-            $params["secure"] = !!$Opt["sessionSecure"];
-        if (isset($Opt["sessionDomain"]))
-            $params["domain"] = $Opt["sessionDomain"];
+        if ($secure !== null)
+            $params["secure"] = !!$secure;
+        if ($domain !== null)
+            $params["domain"] = $domain;
         session_set_cookie_params($params["lifetime"], $params["path"],
                                   $params["domain"], $params["secure"]);
     }
