@@ -249,7 +249,7 @@ class HotCRPMailer extends Mailer {
         if ($what == "%REVIEWNUMBER%")
             return $this->reviewNumber;
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
-            if (!@$this->permissionContact->is_site_contact
+            if (!$this->permissionContact->is_site_contact
                 && !$this->row->has_author($this->permissionContact)
                 && !$this->permissionContact->can_view_authors($this->row, false))
                 return ($isbool ? false : "Hidden for blind review");

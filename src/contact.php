@@ -17,7 +17,6 @@ class Contact_Update {
 class Contact {
     static public $rights_version = 1;
 
-    // Information from the SQL definition
     public $contactId = 0;
     public $contactDbId = 0;
     private $cid;               // for forward compatibility
@@ -30,6 +29,7 @@ class Contact {
     public $email = "";
     public $preferredEmail = "";
     public $sorter = "";
+    public $sort_position = null;
 
     public $affiliation = "";
     public $country = null;
@@ -44,6 +44,7 @@ class Contact {
 
     public $disabled = false;
     public $activity_at = false;
+    private $lastLogin = null;
     public $creationTime = 0;
     private $updateTime = 0;
     private $data = null;
@@ -63,6 +64,7 @@ class Contact {
     private $is_requester_;
     private $is_lead_;
     private $is_explicit_manager_;
+    public $is_site_contact = false;
     private $rights_version_ = 0;
     public $roles = 0;
     var $isPC = false;
@@ -72,6 +74,13 @@ class Contact {
     private $capabilities = null;
     private $review_tokens_ = null;
     private $activated_ = false;
+
+    // Per-paper DB information, usually null
+    public $myReviewType = null;
+    public $myReviewSubmitted = null;
+    public $myReviewNeedsSubmit = null;
+    public $conflictType = null;
+    public $watch = null;
 
     static private $status_info_cache = array();
     static private $contactdb_dblink = false;
@@ -187,17 +196,19 @@ class Contact {
 
     // begin changing contactId to cid
     public function __get($name) {
-        if ($name == "cid")
+        if ($name === "cid")
             return $this->contactId;
         else
             return null;
     }
 
     public function __set($name, $value) {
-        if ($name == "cid")
+        if ($name === "cid")
             $this->contactId = $this->cid = $value;
-        else
+        else {
+            error_log(caller_landmark(1) . ": writing nonexistent property $name");
             $this->$name = $value;
+        }
     }
 
     static public function set_sorter($c) {
@@ -1419,7 +1430,8 @@ class Contact {
 
     private function check_rights_version() {
         if ($this->rights_version_ !== self::$rights_version) {
-            unset($this->is_author_, $this->has_review_, $this->has_outstanding_review_, $this->is_requester_, $this->is_lead_, $this->is_explicit_manager_);
+            $this->is_author_ = $this->has_review_ = $this->has_outstanding_review_ =
+                $this->is_requester_ = $this->is_lead_ = $this->is_explicit_manager_ = null;
             $this->rights_version_ = self::$rights_version;
         }
     }
