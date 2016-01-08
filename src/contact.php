@@ -82,6 +82,8 @@ class Contact {
     public $myReviewNeedsSubmit = null;
     public $conflictType = null;
     public $watch = null;
+    public $prefOrdinal = null;
+    public $topicInterest = null;
 
     static private $status_info_cache = array();
     static private $contactdb_dblink = false;
