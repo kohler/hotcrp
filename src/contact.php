@@ -16,6 +16,7 @@ class Contact_Update {
 
 class Contact {
     static public $rights_version = 1;
+    static public $trueuser_privChair = null;
 
     public $contactId = 0;
     public $contactDbId = 0;
@@ -289,7 +290,7 @@ class Contact {
                     $_SESSION["last_actas"] = $actascontact->email;
                 }
                 if ($this->privChair || ($truecontact && $truecontact->privChair))
-                    $actascontact->trueuser_privChair = true;
+                    self::$trueuser_privChair = $actascontact;
                 return $actascontact->activate();
             }
         }
