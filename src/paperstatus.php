@@ -442,9 +442,11 @@ class PaperStatus {
                 $this->set_error_html("author", "Format error [authors]");
             // old author information
             $old_au_by_email = [];
-            if ($old_pj)
-                foreach (@$old_pj->authors ? : [] as $au)
-                    $old_au_by_email[strtolower($au->email)] = $au;
+            if ($old_pj && isset($old_pj->authors)) {
+                foreach ($old_pj->authors as $au)
+                    if (isset($au->email))
+                        $old_au_by_email[strtolower($au->email)] = $au;
+            }
             // new author information
             $curau = is_array($pj->authors) ? $pj->authors : array();
             $pj->authors = array();
