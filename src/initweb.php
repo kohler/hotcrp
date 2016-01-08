@@ -48,22 +48,9 @@ ensure_session();
 function initialize_user() {
     global $Conf, $Me;
 
-    // backwards compat: set $_SESSION["user"] from $_SESSION["Me"]
-    if (!isset($_SESSION["user"]) && isset($_SESSION["Me"])) {
-        $x = $_SESSION["Me"];
-        $_SESSION["user"] = "$x->contactId $x->confDsn $x->email";
-        unset($_SESSION["Me"], $_SESSION["pcmembers"]);
-    }
-    if (!isset($_SESSION["trueuser"]) && isset($_SESSION["user"]))
-        $_SESSION["trueuser"] = $_SESSION["user"];
-    if (is_string(@$_SESSION["trueuser"])) {
-        $userwords = explode(" ", $_SESSION["trueuser"]);
-        $_SESSION["trueuser"] = (object) array("email" => @$userwords[2]);
-    }
-
     // load current user
     $Me = null;
-    $trueuser = @$_SESSION["trueuser"];
+    $trueuser = get($_SESSION, "trueuser");
     if ($trueuser && $trueuser->email)
         $Me = Contact::find_by_email($trueuser->email);
     if (!$Me)

@@ -16,7 +16,6 @@ class LoginHelper {
         unset($_SESSION[$Conf->dsn]);
         if (!$explicit && $capabilities)
             $Conf->save_session("capabilities", $capabilities);
-        unset($_SESSION["user"]); // backwards compatibility
         if ($explicit) {
             unset($_SESSION["login_bounce"]);
             if (isset($Opt["httpAuthLogin"])) {
