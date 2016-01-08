@@ -64,7 +64,7 @@ if ($Me->privChair && isset($_REQUEST["data"])
                 $m .= "</div>";
             }
             $messages[] = $m . "</div>\n";
-            $Me->_updatecheck = 0;
+            $_SESSION["updatecheck"] = 0;
         }
     }
 }

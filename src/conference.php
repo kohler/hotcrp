@@ -2479,7 +2479,8 @@ class Conf {
 
         // Callback for version warnings
         if ($Me && $Me->privChair
-            && (!isset($Me->_updatecheck) || $Me->_updatecheck + 20 <= $Now)
+            && (!isset($_SESSION["updatecheck"])
+                || $_SESSION["updatecheck"] + 20 <= $Now)
             && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
             $m = defval($Opt, "updatesSite", "//hotcrp.lcdf.org/updates");
             $m .= (strpos($m, "?") === false ? "?" : "&")
@@ -2500,7 +2501,7 @@ class Conf {
                 }
             }
             Ht::stash_script("check_version(\"$m\",\"$v\")");
-            $Me->_updatecheck = $Now;
+            $_SESSION["updatecheck"] = $Now;
         }
     }
 
