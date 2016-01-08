@@ -3123,12 +3123,12 @@ function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
 }
 
 function suggest(elt, klass, cleanf) {
-    var hiding = false, blurring, tagdiv, tagfail;
+    var tagdiv, blurring, hiding = false, interacted, tagfail;
 
     function kill() {
         tagdiv && tagdiv.remove();
         tagdiv = null;
-        blurring = hiding = false;
+        blurring = hiding = interacted = false;
     }
 
     function finish_display(cinfo) {
@@ -3164,7 +3164,7 @@ function suggest(elt, klass, cleanf) {
         cleanf(elt, !!tagdiv).then(finish_display);
     }
 
-    function maybe_complete($ac) {
+    function maybe_complete($ac, ignore_empty_completion) {
         var common = null, attr, i, j;
         for (i = 0; i != $ac.length; ++i) {
             attr = $ac[i].getAttribute("data-autocomplete");
@@ -3180,14 +3180,20 @@ function suggest(elt, klass, cleanf) {
         if (common === null)
             return false;
         else if ($ac.length == 1)
-            return do_complete(common + " ", true);
-        else
-            return do_complete(common, false);
+            return do_complete(common + " ", true, ignore_empty_completion);
+        else {
+            interacted = true;
+            return do_complete(common, false, ignore_empty_completion);
+        }
     }
 
-    function do_complete(text, done) {
+    function do_complete(text, done, ignore_empty_completion) {
         var start = elt.selectionStart;
-        var pc_len = tagdiv.self().attr("data-autocomplete-postcaret-length");
+        var pc_len = +tagdiv.self().attr("data-autocomplete-postcaret-length");
+        if (!pc_len && ignore_empty_completion) {
+            done && kill();
+            return null; /* null == no completion occurred (false == failed) */
+        }
         var val = elt.value.substring(0, start) + text + elt.value.substring(start + pc_len);
         $(elt).val(val);
         elt.selectionStart = elt.selectionEnd = start + text.length;
@@ -3232,6 +3238,7 @@ function suggest(elt, klass, cleanf) {
                 return false;
         }
         $active.addClass("active");
+        interacted = true;
         return true;
     }
 
@@ -3247,7 +3254,7 @@ function suggest(elt, klass, cleanf) {
         if (k == "Tab" && !m && tagdiv)
             completed = maybe_complete(tagdiv.self().find(".autocomplete"));
         else if (k == "Enter" && !m && tagdiv)
-            completed = maybe_complete(tagdiv.self().find(".suggestion.active .autocomplete"));
+            completed = maybe_complete(tagdiv.self().find(".suggestion.active .autocomplete"), !interacted);
         if (completed !== null && (completed || !tagfail)) {
             tagfail = !completed;
             evt.preventDefault();
@@ -3266,6 +3273,7 @@ function suggest(elt, klass, cleanf) {
     function click(evt) {
         maybe_complete($(this).find(".autocomplete"));
         evt.stopPropagation();
+        interacted = true;
     }
 
     function hover(evt) {
