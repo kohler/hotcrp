@@ -291,7 +291,7 @@ class AuthorsPaperColumn extends PaperColumn {
     }
     public function prepare(PaperList $pl, $visible) {
         $this->aufull = !$pl->is_folded("aufull");
-        return true;
+        return $pl->contact->can_view_some_authors();
     }
     private function full_authors($row) {
         $lastaff = "";
@@ -368,7 +368,7 @@ class CollabPaperColumn extends PaperColumn {
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
-        return !!$Conf->setting("sub_collab");
+        return !!$Conf->setting("sub_collab") && $pl->contact->can_view_some_authors();
     }
     public function header($pl, $ordinal) {
         return "Collaborators";
