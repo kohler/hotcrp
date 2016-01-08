@@ -897,10 +897,9 @@ class PaperList {
 
         $sort_url = $q = false;
         $sort_class = "pl_sort";
-        if ($this->sortable && ($url = $this->search->url_site_relative_raw())) {
-            global $ConfSiteBase;
-            $sort_url = htmlspecialchars($ConfSiteBase . $url) . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
-        }
+        if ($this->sortable && ($url = $this->search->url_site_relative_raw()))
+            $sort_url = htmlspecialchars(Navigation::siteurl() . $url)
+                . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
 
         $defsortname = null;
         if (isset($fdef->is_selector) && $sort_url
@@ -1276,7 +1275,7 @@ class PaperList {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw($altq);
                 if (substr($url, 0, 5) == "search")
-                    $altqh = "<a href=\"" . $ConfSiteBase . htmlspecialchars($url) . "\">" . $altqh . "</a>";
+                    $altqh = "<a href=\"" . htmlspecialchars(Navigation::siteurl() . $url) . "\">" . $altqh . "</a>";
                 return "No matching papers. Did you mean “${altqh}”?";
             } else
                 return "No matching papers";

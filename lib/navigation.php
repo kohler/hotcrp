@@ -127,6 +127,12 @@ class Navigation {
             return $x . substr($url, 5);
     }
 
+    public static function set_siteurl($url) {
+        if ($url !== "" && $url[strlen($url) - 1] !== "/")
+            $url .= "/";
+        return (self::$sitedir_relative = $url);
+    }
+
     public static function page() {
         return self::$page;
     }

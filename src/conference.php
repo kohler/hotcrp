@@ -251,7 +251,7 @@ class Conf {
     }
 
     private function crosscheck_options() {
-        global $Opt, $ConfSiteBase, $ConfSitePATH;
+        global $Opt, $ConfSitePATH;
 
         // set longName, downloadPrefix, etc.
         $confid = $Opt["confid"];
@@ -305,9 +305,9 @@ class Conf {
         // set assetsUrl and scriptAssetsUrl
         if (!isset($Opt["scriptAssetsUrl"]) && isset($_SERVER["HTTP_USER_AGENT"])
             && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false)
-            $Opt["scriptAssetsUrl"] = $ConfSiteBase;
+            $Opt["scriptAssetsUrl"] = Navigation::siteurl();
         if (!isset($Opt["assetsUrl"]))
-            $Opt["assetsUrl"] = $ConfSiteBase;
+            $Opt["assetsUrl"] = Navigation::siteurl();
         if ($Opt["assetsUrl"] !== "" && !str_ends_with($Opt["assetsUrl"], "/"))
             $Opt["assetsUrl"] .= "/";
         if (!isset($Opt["scriptAssetsUrl"]))
@@ -1329,14 +1329,13 @@ class Conf {
 
 
     function set_siteurl($base) {
-        global $ConfSiteBase, $Opt;
-        if ($base !== "" && !str_ends_with($base, "/"))
-            $base .= "/";
-        if ($Opt["assetsUrl"] === Navigation::siteurl()) {
+        global $Opt;
+        $old_siteurl = Navigation::siteurl();
+        $base = Navigation::set_siteurl($base);
+        if ($Opt["assetsUrl"] === $old_siteurl) {
             $Opt["assetsUrl"] = $base;
             Ht::$img_base = $Opt["assetsUrl"] . "images/";
         }
-        $ConfSiteBase = $base; // XXX Navigation
     }
 
 
@@ -2231,7 +2230,7 @@ class Conf {
     }
 
     function make_script_file($url, $no_strict = false) {
-        global $ConfSiteBase, $ConfSitePATH, $Opt;
+        global $ConfSitePATH, $Opt;
         if (str_starts_with($url, "scripts/")) {
             $post = "";
             if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
@@ -2241,14 +2240,14 @@ class Conf {
                     . "&strictjs=1" . ($post ? "&$post" : "");
             else
                 $url = $Opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
-            if ($Opt["scriptAssetsUrl"] === $ConfSiteBase)
+            if ($Opt["scriptAssetsUrl"] === Navigation::siteurl())
                 return Ht::script_file($url);
         }
         return Ht::script_file($url, array("crossorigin" => "anonymous"));
     }
 
     private function header_head($title) {
-        global $Me, $ConfSiteBase, $ConfSitePATH, $Opt, $CurrentProw;
+        global $Me, $ConfSitePATH, $Opt, $CurrentProw;
         // load session list and clear its cookie
         $list = SessionList::active();
         SessionList::set_requested(0);
@@ -2278,7 +2277,7 @@ class Conf {
                 if (@$Opt["assetsUrl"] && substr($favicon, 0, 7) === "images/")
                     $favicon = $Opt["assetsUrl"] . $favicon;
                 else
-                    $favicon = $ConfSiteBase . $favicon;
+                    $favicon = Navigation::siteurl() . $favicon;
             }
             if (substr($favicon, -4) == ".png")
                 echo "<link rel=\"icon\" type=\"image/png\" href=\"$favicon\" />\n";
@@ -2312,7 +2311,7 @@ class Conf {
         Ht::stash_html($this->make_script_file($jquery, true) . "\n");
 
         // Javascript settings to set before script.js
-        Ht::stash_script("siteurl=\"$ConfSiteBase\";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
+        Ht::stash_script("siteurl=" . json_encode(Navigation::siteurl()) . ";siteurl_suffix=\"" . Navigation::php_suffix() . "\"");
         if (session_id() !== "")
             Ht::stash_script("siteurl_postvalue=\"" . post_value() . "\"");
         if ($list)
@@ -2360,7 +2359,7 @@ class Conf {
     }
 
     function header($title, $id, $actionBar, $title_div = null) {
-        global $ConfSiteBase, $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
+        global $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
         if ($this->headerPrinted)
             return;
 
@@ -2485,7 +2484,7 @@ class Conf {
             $m = defval($Opt, "updatesSite", "//hotcrp.lcdf.org/updates");
             $m .= (strpos($m, "?") === false ? "?" : "&")
                 . "addr=" . urlencode($_SERVER["SERVER_ADDR"])
-                . "&base=" . urlencode($ConfSiteBase)
+                . "&base=" . urlencode(Navigation::siteurl())
                 . "&version=" . HOTCRP_VERSION;
             $v = HOTCRP_VERSION;
             if (is_dir("$ConfSitePATH/.git")) {

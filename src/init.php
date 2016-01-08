@@ -79,15 +79,16 @@ define("CAPTYPE_CHANGEEMAIL", 2);
 
 define("ALWAYS_OVERRIDE", 9999);
 
-global $OK, $Now, $CurrentProw;
+global $OK, $Now, $CurrentProw, $ConfSitePATH;
 $OK = 1;
 $Now = time();
 $CurrentProw = null;
+$ConfSitePATH = null;
 
 
-// set $ConfSitePATH (path to conference site), $ConfSiteBase
+// set $ConfSitePATH (path to conference site)
 function set_path_variables() {
-    global $ConfSitePATH, $ConfSiteBase;
+    global $ConfSitePATH;
     if (!@$ConfSitePATH) {
         $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
         while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php"))
@@ -96,8 +97,6 @@ function set_path_variables() {
             $ConfSitePATH = "/var/www/html";
     }
     require_once("$ConfSitePATH/lib/navigation.php");
-    if (@$ConfSiteBase === null)
-        $ConfSiteBase = Navigation::siteurl();
 }
 set_path_variables();
 
@@ -125,7 +124,9 @@ class SiteAutoloader {
 
 function __autoload($class_name) {
     global $ConfSitePATH;
-    $f = @SiteAutoloader::$map[$class_name];
+    $f = null;
+    if (isset(SiteAutoloader::$map[$class_name]))
+        $f = SiteAutoloader::$map[$class_name];
     if (!$f) {
         $l = strtolower($class_name);
         if (file_exists("$ConfSitePATH/src/$l.php"))
