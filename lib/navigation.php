@@ -22,10 +22,7 @@ class Navigation {
         else
             list($x, $xport) = array("http://", 80);
         self::$protocol = $x;
-        if (!$_SERVER["HTTP_HOST"])
-            $x .= "localhost";
-        else
-            $x .= $_SERVER["HTTP_HOST"];
+        $x .= self::host() ? : "localhost";
         if (($port = $_SERVER["SERVER_PORT"])
             && $port != $xport
             && strpos($x, ":", 6) === false)
@@ -95,7 +92,12 @@ class Navigation {
     }
 
     public static function host() {
-        return $_SERVER["HTTP_HOST"];
+        $host = null;
+        if (isset($_SERVER["HTTP_HOST"]))
+            $host = $_SERVER["HTTP_HOST"];
+        if (!$host && isset($_SERVER["SERVER_NAME"]))
+            $host = $_SERVER["SERVER_NAME"];
+        return $host;
     }
 
     public static function site_absolute($downcase_host = false) {
@@ -220,15 +222,9 @@ class Navigation {
             && self::$protocol == "http://"
             && (!$allow_http_if_localhost
                 || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
-                    && $_SERVER["REMOTE_ADDR"] !== "::1"))) {
-            $x = "https://";
-            if (!$_SERVER["HTTP_HOST"])
-                $x .= "localhost";
-            else
-                $x .= $_SERVER["HTTP_HOST"];
-            $x .= self::siteurl_path(self::$page . self::$php_suffix . self::$path . self::$query);
-            self::redirect($x);
-        }
+                    && $_SERVER["REMOTE_ADDR"] !== "::1")))
+            self::redirect("https://" . (self::host() ? : "localhost")
+                           . self::siteurl_path(self::$page . self::$php_suffix . self::$path . self::$query));
     }
 }
 
