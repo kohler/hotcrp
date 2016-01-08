@@ -566,7 +566,7 @@ function option_clean_form_positions($new_opts, $current_opts) {
 }
 
 function save_options($set) {
-    global $Conf, $Values, $Error, $Highlight;
+    global $Conf, $Values, $Error, $Warning, $Highlight;
 
     if (!$set) {
         $current_opts = PaperOption::option_list();
@@ -610,6 +610,15 @@ function save_options($set) {
     }
     $Conf->save_setting("next_optionid", $nextid);
     $Conf->save_setting("options", 1, count($newj) ? $newj : null);
+
+    // warn on visibility
+    if (value_or_setting("sub_blind") === Conf::BLIND_ALWAYS) {
+        foreach ($new_opts as $id => $o)
+            if ($o->visibility === "nonblind") {
+                $Warning[] = "The “" . htmlspecialchars($o->name) . "” option is marked as “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”";
+                $Highlight["optp$id"] = true;
+            }
+    }
 
     $deleted_ids = array();
     foreach ($current_opts as $id => $o)
