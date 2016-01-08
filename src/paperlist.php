@@ -181,6 +181,8 @@ class PaperList {
             if ($this->viewmap->anonau === null)
                 $this->viewmap->anonau = true;
         }
+        if ($this->viewmap->anonau && $this->viewmap->au === null)
+            $this->viewmap->au = true;
         if ($this->viewmap->rownumbers)
             $this->viewmap->rownum = true;
     }
