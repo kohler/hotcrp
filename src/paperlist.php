@@ -376,7 +376,7 @@ class PaperList {
         return $this->_xreviewer;
     }
 
-    private function _footer($ncol, $listname, $rstate, $extra) {
+    private function _footer($ncol, $listname, $extra) {
         global $Conf;
         if ($this->count == 0)
             return "";
@@ -1396,8 +1396,7 @@ class PaperList {
             $foot .= $this->_statistics_rows($rstate, $fieldDef);
         if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))
-            $foot .= $this->_footer($ncol, $listname, $rstate,
-                                    defval($options, "footer_extra", ""));
+            $foot .= $this->_footer($ncol, $listname, get_s($options, "footer_extra"));
         if ($foot)
             $enter .= '<tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
                 . ">\n" . $foot . "</tfoot>\n";
