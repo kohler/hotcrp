@@ -1052,12 +1052,14 @@ class Contact {
     static function id_by_email($email) {
         $result = Dbl::qe("select contactId from ContactInfo where email=?", trim($email));
         $row = edb_row($result);
+        Dbl::free($result);
         return $row ? $row[0] : false;
     }
 
     static function email_by_id($id) {
         $result = Dbl::qe("select email from ContactInfo where contactId=" . (int) $id);
         $row = edb_row($result);
+        Dbl::free($result);
         return $row ? $row[0] : false;
     }
 
@@ -1423,6 +1425,7 @@ class Contact {
         $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
         $this->has_review_ = $row && $row[1] > 0;
         $this->has_outstanding_review_ = $row && $row[2] > 0;
+        Dbl::free($result);
 
         // Update contact information from capabilities
         if ($this->capabilities)
