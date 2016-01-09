@@ -497,9 +497,9 @@ class ReviewForm {
             $format = Conf::$gDefaultFormat;
         $format_info = Conf::format_info();
         if (($f = @$format_info[$format])) {
-            if ($text && @$f["description_text"])
-                return $f["description_text"];
-            $t = @$f["description"];
+            if ($text && ($t = get($f, "description_text")))
+                return $t;
+            $t = get($f, "description");
             if ($text && $t)
                 $t = self::cleanDescription($t);
             return $t;
@@ -554,10 +554,8 @@ class ReviewForm {
                 }
                 echo "</select>";
             } else {
-                if ($format_description) {
+                if ($format_description)
                     echo $format_description;
-                    $format_description = null;
-                }
                 echo Ht::textarea($field, $fval,
                         array("class" => "reviewtext", "rows" => $f->display_space,
                               "cols" => 60, "onchange" => "hiliter(this)",
@@ -1067,10 +1065,8 @@ $blind\n";
                     $fval = "No entry";
                 else
                     $fval = "(Your choice here)";
-            } else if ($format_description) {
+            } else if ($format_description)
                 $x .= prefix_word_wrap("==-== ", $format_description, "==-== ");
-                $format_description = null;
-            }
             $x .= "\n" . preg_replace("/^==\\+==/m", "\\==+==", $fval) . "\n";
         }
         return $x . "\n==+== Scratchpad (for unsaved private notes)\n\n==+== End Review\n";
