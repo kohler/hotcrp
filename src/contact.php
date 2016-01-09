@@ -1414,8 +1414,7 @@ class Contact {
             if ($this->review_tokens_)
                 $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
             $result = Dbl::qe("select max(conf.conflictType),
-                r.contactId as reviewer,
-                max(r.reviewNeedsSubmit) as reviewNeedsSubmit
+                r.contactId as reviewer
                 from ContactInfo c
                 left join PaperConflict conf on (conf.contactId=c.contactId)
                 left join PaperReview r on (r.contactId=c.contactId$qr)
@@ -1424,7 +1423,6 @@ class Contact {
         $row = edb_row($result);
         $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
         $this->has_review_ = $row && $row[1] > 0;
-        $this->has_outstanding_review_ = $row && $row[2] > 0;
         Dbl::free($result);
 
         // Update contact information from capabilities
@@ -1471,8 +1469,22 @@ class Contact {
 
     function has_outstanding_review() {
         $this->check_rights_version();
-        if (!isset($this->has_outstanding_review_))
-            $this->load_author_reviewer_status();
+        if ($this->has_outstanding_review_ === null) {
+            // Load from database
+            $result = null;
+            if ($this->contactId > 0) {
+                $qr = "";
+                if ($this->review_tokens_)
+                    $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
+                $result = Dbl::qe("select r.reviewId from PaperReview r
+                    join Paper p on (p.paperId=r.paperId and p.timeSubmitted>0)
+                    where (r.contactId=$this->contactId$qr)
+                    and r.reviewNeedsSubmit!=0 limit 1");
+            }
+            $row = edb_row($result);
+            Dbl::free($result);
+            $this->has_outstanding_review_ = !!$row;
+        }
         return $this->has_outstanding_review_;
     }
 
