@@ -2395,7 +2395,7 @@ span.revinfo {
 }
 .rvg .revvt {
 	margin-right: 2em;
-	margin-bottom: 2px;
+	padding-bottom: 2px;
 }
 .revet > .revfn {
 	color: #683131;
