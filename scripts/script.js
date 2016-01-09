@@ -2717,7 +2717,7 @@ function add(cj, editing) {
                     (cj.response == "1" ? "Response" : cj.response + " Response") +
                     '</h3></div>';
             else
-                cmtcontainer = '<div class="cmtcard"><div class="cmtcard_head"><h3>Comments</h3></div>';
+                cmtcontainer = '<div class="cmtcard">';
             cmtcontainer = $(cmtcontainer + '<div class="cmtcard_body"></div></div>');
             cmtcontainer.appendTo("#cmtcontainer");
         }

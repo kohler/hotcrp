@@ -2466,7 +2466,7 @@ span.rev_rating_summary {
 /* comments */
 div.cmtcard {
 	margin: 24px 0 0 14em;
-	padding: 2px 0 5px;
+	padding: 5px 0 5px;
 	background: #e6e1cf;
 	position: relative;
 	border: 1px solid #99aabf;
@@ -2476,7 +2476,7 @@ div.cmtcard.response {
 	background: #ffddc1;
 }
 div.cmtcard_head {
-	padding: 3px 12px 4px;
+	padding: 0 12px 4px;
 }
 div.cmtcard_body {
 	background: #ffffff;
