@@ -324,7 +324,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $q .= " from (select $LinkTable.$LinkColumn, coalesce(commentId, 0) commentId
                 from $LinkTable
                 left join $Table on ($Table.$LinkColumn=$LinkTable.$LinkColumn and (commentType&" . COMMENTTYPE_RESPONSE . ")!=0 and commentRound=$this->commentRound)
-                where $LinkTable.$LinkColumn={$this->prow->$LinkColumn} group by $LinkTable.$LinkColumn) t
+                where $LinkTable.$LinkColumn={$this->prow->$LinkColumn} limit 1) t
         where t.commentId=0";
             }
         } else {
