@@ -327,7 +327,9 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 	group_concat(distinct if(reviewNeedsSubmit=1 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds
 	from PaperReview
 	join Paper using (paperId)
-	where " . join(" or ", $where) . " group by PaperReview.reviewId>0");
+	where (" . join(" or ", $where) . ")
+    and (reviewSubmitted is not null or timeSubmitted>0)
+    group by PaperReview.reviewId>0");
     if (($myrow = edb_orow($result)))
         $myrow->scores = scoreCounts($myrow->scores, $merit_noptions);
 

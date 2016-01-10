@@ -61,7 +61,7 @@ class Contact {
     const ROLE_REVIEWER = 32;
     private $is_author_;
     private $has_review_;
-    private $has_outstanding_review_;
+    private $has_outstanding_review_ = null;
     private $is_requester_;
     private $is_lead_;
     private $is_explicit_manager_;
@@ -3187,5 +3187,4 @@ class Contact {
         } else
             return false;
     }
-
 }

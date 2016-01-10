@@ -141,7 +141,9 @@ class HotCRPMailer extends Mailer {
                 from PaperReview r join Paper p using (paperId)
                 where r.contactId=" . $contact->contactId . "
                 and r.timeRequested>r.timeRequestNotified$since
-                and r.reviewSubmitted is null and r.reviewNeedsSubmit!=0
+                and r.reviewSubmitted is null
+                and r.reviewNeedsSubmit!=0
+                and p.timeSubmitted>0
                 order by r.paperId");
         $text = "";
         while (($row = edb_row($result)))

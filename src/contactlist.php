@@ -571,7 +571,7 @@ class ContactList {
                 $jwhere[] = "r.requestedBy=" . $this->contact->contactId;
             if (!$this->contact->privChair)
                 $jwhere[] = "(pc.conflictType is null or pc.conflictType=0 or r.contactId=" . $this->contact->contactId . ")";
-            $jwhere[] = "(p.timeWithdrawn<=0 or r.reviewSubmitted>0)";
+            $jwhere[] = "(p.timeSubmitted>0 or r.reviewSubmitted>0)";
             if (count($jwhere))
                 $pq .= "\n\t\twhere " . join(" and ", $jwhere);
             if (isset($queryOptions["revratings"]))

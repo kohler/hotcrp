@@ -199,9 +199,9 @@ class MailRecipients {
             $needpaper = $needconflict = true;
             $needreview = false;
             if ($Conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE) {
-                $cols[] = "(coalesce(PaperReview.contactId,0)!=0) has_review";
-                $cols[] = "coalesce(PaperReview.has_outstanding_review,0) has_outstanding_review";
-                $joins[] = "left join (select contactId, max(reviewNeedsSubmit) has_outstanding_review from PaperReview group by PaperReview.contactId) as PaperReview using (contactId)";
+                $cols[] = "(coalesce(allr.contactId,0)!=0) has_review";
+                $cols[] = "coalesce(allr.has_outstanding_review,0) has_outstanding_review";
+                $joins[] = "left join (select contactId, max(if(reviewNeedsSubmit!=0 and timeSubmitted>0,1,0)) has_outstanding_review from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) group by PaperReview.contactId) as allr using (contactId)";
             }
             $joins[] = "join Paper";
             $where[] = "PaperConflict.conflictType>=" . CONFLICT_AUTHOR;
@@ -217,19 +217,17 @@ class MailRecipients {
             if ($revmatch[1] == "c")
                 $where[] = "PaperReview.reviewSubmitted>0";
             else if ($revmatch[1] == "unc" || $revmatch[1] == "new")
-                $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0";
+                $where[] = "PaperReview.reviewSubmitted is null and PaperReview.reviewNeedsSubmit!=0 and Paper.timeSubmitted>0";
             if ($revmatch[1] == "new")
                 $where[] = "PaperReview.timeRequested>PaperReview.timeRequestNotified";
             if ($revmatch[1] == "allc") {
-                $joins[] = "left join (select contactId, max(reviewNeedsSubmit) anyReviewNeedsSubmit from PaperReview group by contactId) AllReviews on (AllReviews.contactId=ContactInfo.contactId)";
-                $where[] = "AllReviews.anyReviewNeedsSubmit<=0";
+                $joins[] = "left join (select contactId, max(if(reviewNeedsSubmit!=0 and timeSubmitted>0,1,0)) anyReviewNeedsSubmit from PaperReview join Paper on (Paper.paperId=PaperReview.paperId) group by contactId) AllReviews on (AllReviews.contactId=ContactInfo.contactId)";
+                $where[] = "AllReviews.anyReviewNeedsSubmit=0";
             }
             if ($this->newrev_since)
                 $where[] = "PaperReview.timeRequested>=$this->newrev_since";
             // Withdrawn papers may not count
-            if ($revmatch[1] == "unc" || $revmatch[1] == "new")
-                $where[] = "Paper.timeSubmitted>0";
-            else if ($revmatch[1] == "")
+            if ($revmatch[1] == "")
                 $where[] = "(Paper.timeSubmitted>0 or PaperReview.reviewSubmitted>0)";
             // Review type
             if ($revmatch[2] == "ext" || $revmatch[2] == "myext")
