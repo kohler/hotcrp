@@ -211,6 +211,10 @@ function get_s($var, $idx, $default = null) {
     return (string) get($var, $idx, $default);
 }
 
+function get_i($var, $idx, $default = null) {
+    return (int) get($var, $idx, $default);
+}
+
 function opt($idx, $default = null) {
     global $Opt;
     return get($Opt, $idx, $default);
@@ -227,6 +231,15 @@ function req($idx, $default = null) {
 
 function req_s($idx, $default = null) {
     return (string) req($idx, $default);
+}
+
+function make_qreq() {
+    $qreq = new Qobject;
+    foreach ($_GET as $k => $v)
+        $qreq[$k] = $v;
+    foreach ($_POST as $k => $v)
+        $qreq[$k] = $v;
+    return $qreq;
 }
 
 function defval($var, $idx, $defval = null) {

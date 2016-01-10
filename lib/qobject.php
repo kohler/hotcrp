@@ -13,8 +13,11 @@ class Qobject implements ArrayAccess, IteratorAggregate {
     public function offsetExists($offset) {
         return isset($this->storage[$offset]);
     }
-    public function offsetGet($offset) {
-        return isset($this->storage[$offset]) ? $this->storage[$offset] : null;
+    public function& offsetGet($offset) {
+        if (isset($this->storage[$offset]))
+            return $this->storage[$offset];
+        else
+            return null;
     }
     public function offsetSet($offset, $value) {
         if ($offset === null)
@@ -31,13 +34,22 @@ class Qobject implements ArrayAccess, IteratorAggregate {
     public function __set($name, $value) {
         $this->storage[$name] = $value;
     }
-    public function __get($name) {
-        return isset($this->storage[$name]) ? $this->storage[$name] : null;
+    public function& __get($name) {
+        if (isset($this->storage[$name]))
+            return $this->storage[$name];
+        else
+            return null;
     }
     public function __isset($name) {
         return isset($this->storage[$name]);
     }
     public function __unset($name) {
         unset($this->storage[$name]);
+    }
+    public function make_array() {
+        return $this->storage;
+    }
+    public function make_object() {
+        return (object) $this->storage;
     }
 }
