@@ -16,7 +16,10 @@ class Qobject implements ArrayAccess, IteratorAggregate {
         return isset($this->$offset);
     }
     public function& offsetGet($offset) {
-        return $this->$offset;
+        $x = null;
+        if (property_exists($this, $offset))
+            $x =& $this->$offset;
+        return $x;
     }
     public function offsetSet($offset, $value) {
         $this->$offset = $value;
@@ -31,7 +34,10 @@ class Qobject implements ArrayAccess, IteratorAggregate {
         $this->$name = $value;
     }
     public function& __get($name) {
-        return $this->$name;
+        $x = null;
+        if (property_exists($this, $name))
+            $x =& $this->$name;
+        return $x;
     }
     public function __isset($name) {
         return isset($this->$name);
