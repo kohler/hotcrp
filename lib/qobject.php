@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class Qobject implements ArrayAccess, IteratorAggregate {
+class Qobject implements ArrayAccess, IteratorAggregate, Countable {
     public function __construct($x = array()) {
         if ($x) {
             if (is_object($x))
@@ -44,6 +44,9 @@ class Qobject implements ArrayAccess, IteratorAggregate {
     }
     public function __unset($name) {
         unset($this->$name);
+    }
+    public function count() {
+        return count(get_object_vars($this));
     }
     public function make_array() {
         return get_object_vars($this);

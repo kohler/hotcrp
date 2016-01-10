@@ -138,4 +138,17 @@ xassert_eqq(prefix_word_wrap("+ ", "This\nis\na thing\nto\nbe wrapped.", "- ", 9
 
 xassert_eqq(!!preg_match('/\A\pZ\z/u', ' '), true);
 
+// Qobject tests
+$q = new Qobject(["a" => 1, "b" => 2]);
+xassert_eqq($q->a, 1);
+xassert_eqq($q->b, 2);
+xassert_eqq(count($q), 2);
+xassert_eqq($q->c, null);
+xassert_eqq(count($q), 2);
+$q->c = array();
+xassert_eqq(count($q), 3);
+$q->c[] = 1;
+xassert_eqq(json_encode($q->c), "[1]");
+xassert_eqq(count($q), 3);
+
 xassert_exit();
