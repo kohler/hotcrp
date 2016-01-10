@@ -8,62 +8,66 @@ require_once("src/papersearch.php");
 if (!$Me->is_manager())
     $Me->escape();
 
-// paper selection
-if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
-    $_REQUEST["q"] = "";
+// request cleaning
+$qreq = make_qreq();
 
 $tOpt = PaperSearch::manager_search_types($Me);
-if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
+if (!$qreq->t || !isset($tOpt[$qreq->t])) {
     reset($tOpt);
-    $_REQUEST["t"] = key($tOpt);
+    $qreq->t = key($tOpt);
 }
 
-$kind = defval($_REQUEST, "kind", "a");
-if ($kind != "a" && $kind != "c")
-    $kind = "a";
-if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"]))
-    $_REQUEST["p"] = $_REQUEST["pap"];
-if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
-    $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
-if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"]) && $kind == "c") {
-    foreach ($_REQUEST["p"] as $p)
+if ($qreq->kind != "a" && $qreq->kind != "c")
+    $qreq->kind = "a";
+
+if (!$qreq->q || trim($qreq->q) == "(All)")
+    $qreq->q = "";
+
+if (!$qreq->p && $qreq->pap)
+    $qreq->p = $qreq->pap;
+if (is_string($qreq->p))
+    $qreq->p = preg_split('/\s+/', $qreq->p);
+
+if (is_string($qreq->papx))
+    $qreq->papx = preg_split('/\s+/', $qreq->papx);
+
+$qreq->assrev = array();
+foreach ($qreq as $k => $v)
+    if (str_starts_with($k, "assrev")
+        && ($p = cvtint(substr($k, 6))) > 0)
+        $qreq->assrev[$p] = $v;
+if (is_array($qreq->papx)) {
+    foreach ($qreq->papx as $p)
+        if (($p = cvtint($p)) > 0 && !isset($qreq->assrev[$p]))
+            $qreq->assrev[$p] = 0;
+}
+
+if (is_array($qreq->p) && $qreq->kind == "c") {
+    foreach ($qreq->p as $p)
         if (($p = cvtint($p)) > 0)
-            $_REQUEST["assrev$p"] = -1;
-}
-if (isset($_REQUEST["papx"]) && is_string($_REQUEST["papx"]))
-    $_REQUEST["papx"] = preg_split('/\s+/', $_REQUEST["papx"]);
-if (isset($_REQUEST["papx"]) && is_array($_REQUEST["papx"])) {
-    foreach ($_REQUEST["papx"] as $p)
-        if (($p = cvtint($p)) > 0 && !isset($_REQUEST["assrev$p"]))
-            $_REQUEST["assrev$p"] = 0;
+            $qreq->assrev[$p] = -1;
 }
 
-$_REQUEST["rev_roundtag"] = (string) $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"]);
+$qreq->rev_roundtag = (string) $Conf->sanitize_round_name($qreq->rev_roundtag);
 
 
 $pcm = pcMembers();
-$reviewer = cvtint(@$_REQUEST["reviewer"]);
+$reviewer = cvtint($qreq->reviewer);
 if ($reviewer <= 0)
     $reviewer = $Me->contactId;
-if ($reviewer <= 0 || !@$pcm[$reviewer])
+if ($reviewer <= 0 || !isset($pcm[$reviewer]))
     $reviewer = 0;
 
 
-function saveAssignments($reviewer) {
-    global $Conf, $Me, $Now, $kind, $pcm;
+function saveAssignments($qreq, $reviewer) {
+    global $Conf, $Me, $Now, $pcm;
     $reviewer_contact = $pcm[$reviewer];
     $round_number = null;
 
-    $pids = array();
-    foreach ($_POST as $k => $v)
-        if (substr($k, 0, 6) === "assrev"
-            && ctype_digit(substr($k, 6))
-            && ($p = (int) substr($k, 6)) > 0)
-            $pids[] = $p;
-    if (!count($pids))
+    if (!count($qreq->assrev))
         return;
 
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $pids, "reviewer" => $reviewer)));
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => array_keys($qreq->assrev), "reviewer" => $reviewer)));
 
     $lastPaperId = -1;
     $del = $ins = "";
@@ -71,18 +75,18 @@ function saveAssignments($reviewer) {
         if ($row->paperId == $lastPaperId
             || !$Me->can_administer($row)
             || $row->reviewerConflictType >= CONFLICT_AUTHOR
-            || !isset($_REQUEST["assrev$row->paperId"]))
+            || !isset($qreq->assrev[$row->paperId]))
             continue;
         $lastPaperId = $row->paperId;
-        $type = cvtint($_REQUEST["assrev$row->paperId"], 0);
+        $type = $qreq->assrev[$row->paperId];
         if ($type >= 0 && $row->reviewerConflictType > 0 && $row->reviewerConflictType < CONFLICT_AUTHOR)
             $del .= " or paperId=$row->paperId";
         if ($type < 0 && $row->reviewerConflictType < CONFLICT_CHAIRMARK)
             $ins .= ", ($row->paperId, $reviewer, " . CONFLICT_CHAIRMARK . ")";
-        if ($kind == "a" && $type != $row->reviewerReviewType
+        if ($qreq->kind == "a" && $type != $row->reviewerReviewType
             && ($type <= 0 || $reviewer_contact->can_accept_review_assignment_ignore_conflict($row))) {
             if ($type > 0 && $round_number === null)
-                $round_number = $Conf->round_number($_REQUEST["rev_roundtag"], true);
+                $round_number = $Conf->round_number($qreq->rev_roundtag, true);
             $Me->assign_review($row->paperId, $reviewer, $type,
                                array("round_number" => $round_number));
         }
@@ -97,13 +101,13 @@ function saveAssignments($reviewer) {
 
     if ($Conf->setting("pcrev_assigntime") == $Now)
         $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
-    redirectSelf();
+    redirectSelf(["kind" => $qreq->kind]);
 }
 
 
-if (isset($_REQUEST["update"]) && $reviewer > 0 && check_post())
-    saveAssignments($reviewer);
-else if (isset($_REQUEST["update"]))
+if ($qreq->update && $reviewer > 0 && check_post())
+    saveAssignments($qreq, $reviewer);
+else if ($qreq->update)
     Conf::msg_error("You need to select a reviewer.");
 
 
@@ -124,14 +128,14 @@ Assignment methods:
  <li><a href='", hoturl("bulkassign"), "'>Upload</a></li>
 </ul>
 <hr class='hr' />\n";
-if ($kind == "a")
+if ($qreq->kind == "a")
     echo "Types of PC review:
 <dl><dt>" . review_type_icon(REVIEW_PRIMARY) . " Primary</dt><dd>Mandatory, may not be delegated</dd>
   <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
   <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd></dl>
 <hr class='hr' />\n";
 echo "<dl><dt>Potential conflicts</dt><dd>Matches between PC member collaborators and paper authors, or between PC member and paper authors or collaborators</dd>\n";
-if ($kind == "a")
+if ($qreq->kind == "a")
     echo "<dt>Preference</dt><dd><a href='", hoturl("reviewprefs"), "'>Review preference</a></dd>
   <dt>Topic score</dt><dd>+4 per high interest paper topic, &minus;2 per low interest paper topic</dd>
   <dt>Desirability</dt><dd>High values mean many PC members want to review the paper</dd>\n";
@@ -169,23 +173,23 @@ echo "<table><tr><td><strong>PC member:</strong> &nbsp;</td>",
     "<tr><td colspan='2'><div class='g'></div></td></tr>\n";
 
 // Paper selection
-$q = (defval($_REQUEST, "q", "") == "" ? "(All)" : $_REQUEST["q"]);
+$q = ($qreq->q == "" ? "(All)" : $qreq->q);
 echo "<tr><td>Paper selection: &nbsp;</td><td>",
     Ht::entry_h("q", $q,
                 array("id" => "manualassignq", "size" => 40, "placeholder" => "(All)",
                       "title" => "Paper numbers or search terms")),
     " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "hiliter(this)"));
+    echo Ht::select("t", $tOpt, $qreq->t, array("onchange" => "hiliter(this)"));
 else
     echo join("", $tOpt);
 echo "</td></tr>\n",
     "<tr><td colspan='2'><div class='g'></div>\n";
 
-echo Ht::radio("kind", "a", $kind == "a",
+echo Ht::radio("kind", "a", $qreq->kind == "a",
                array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign reviews and/or conflicts"), "<br />\n",
-    Ht::radio("kind", "c", $kind == "c",
+    Ht::radio("kind", "c", $qreq->kind == "c",
                array("onchange" => "hiliter(this)")),
     "&nbsp;", Ht::label("Assign conflicts only (and limit papers to potential conflicts)"), "</td></tr>\n";
 
@@ -284,20 +288,19 @@ if ($reviewer > 0) {
 
     // ajax assignment form
     echo Ht::form(hoturl_post("assign", "update=1"), array("id" => "assrevform")), "<div class='clear'>",
-        Ht::hidden("kind", $kind),
+        Ht::hidden("kind", $qreq->kind),
         Ht::hidden("p", ""),
         Ht::hidden("pcs$reviewer", ""),
         Ht::hidden("reviewer", $reviewer),
-        Ht::hidden("rev_roundtag", $_REQUEST["rev_roundtag"]),
+        Ht::hidden("rev_roundtag", $qreq->rev_roundtag),
         "</div></form>\n\n";
 
     // main assignment form
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"],
-                                         "q" => $_REQUEST["q"],
+    $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
     $paperList = new PaperList($search, ["sort" => true, "list" => true, "reviewer" => $pcm[$reviewer]]);
     $paperList->display .= " topics ";
-    if ($kind != "c")
+    if ($qreq->kind != "c")
         $paperList->display .= "reviewers ";
     if (isset($showau)) {
         $search->overrideMatchPreg = true;
@@ -307,19 +310,19 @@ if ($reviewer > 0) {
         if ($showco)
             $search->matchPreg["collaborators"] = make_match_preg($showco);
     }
-    $a = isset($_REQUEST["sort"]) ? "&amp;sort=" . urlencode($_REQUEST["sort"]) : "";
-    echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind=$kind$a"),
+    $a = isset($qreq->sort) ? "&amp;sort=" . urlencode($qreq->sort) : "";
+    echo "<div class='aahc'><form class='assignpc' method='post' action=\"", hoturl_post("manualassign", "reviewer=$reviewer&amp;kind={$qreq->kind}$a"),
         "\" enctype='multipart/form-data' accept-charset='UTF-8'><div>\n",
-        Ht::hidden("t", $_REQUEST["t"]),
-        Ht::hidden("q", $_REQUEST["q"]),
+        Ht::hidden("t", $qreq->t),
+        Ht::hidden("q", $qreq->q),
         Ht::hidden("papx", join(" ", $search->paperList())),
         "<div class=\"aa\">",
         Ht::submit("update", "Save assignments", array("class" => "bb"));
-    if ($kind != "c") {
+    if ($qreq->kind != "c") {
         $rev_rounds = $Conf->round_selector_options();
         if (count($rev_rounds) > 1)
             echo '<span style="padding-left:2em">Review round: &nbsp;',
-                Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed", array("id" => "assrevroundtag")),
+                Ht::select("rev_roundtag", $rev_rounds, $qreq->rev_roundtag ? : "unnamed", array("id" => "assrevroundtag")),
                 '</span>';
         else if (!@$rev_rounds["unnamed"])
             echo '<span style="padding-left:2em">Review round: ', $Conf->current_round_name(), '</span>';
@@ -328,7 +331,7 @@ if ($reviewer > 0) {
         Ht::checkbox(false, false, true, array("id" => "assrevimmediate")),
         "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
         "</span></div>\n",
-        $paperList->table_html(($kind == "c" ? "conflict" : "reviewAssignment"),
+        $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
                                array("class" => "pltable_full",
                                      "header_links" => true,
                                      "nofooter" => true,
