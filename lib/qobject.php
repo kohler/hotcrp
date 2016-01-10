@@ -4,52 +4,45 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Qobject implements ArrayAccess, IteratorAggregate {
-    private $storage = array();
     public function __construct($x = array()) {
-        if ($x)
+        if ($x) {
+            if (is_object($x))
+                $x = (array) $x;
             foreach ($x as $k => $v)
-                $this->storage[$k] = $v;
+                $this->$k = $v;
+        }
     }
     public function offsetExists($offset) {
-        return isset($this->storage[$offset]);
+        return isset($this->$offset);
     }
     public function& offsetGet($offset) {
-        if (isset($this->storage[$offset]))
-            return $this->storage[$offset];
-        else
-            return null;
+        return $this->$offset;
     }
     public function offsetSet($offset, $value) {
-        if ($offset === null)
-            $this->storage[] = $value;
-        else
-            $this->storage[$offset] = $value;
+        $this->$offset = $value;
     }
     public function offsetUnset($offset) {
-        unset($this->storage[$offset]);
+        unset($this->$offset);
     }
     public function getIterator() {
-        return new ArrayIterator($this->storage);
+        return new ArrayIterator(get_object_vars($this));
     }
     public function __set($name, $value) {
-        $this->storage[$name] = $value;
+        $this->$name = $value;
     }
     public function& __get($name) {
-        if (isset($this->storage[$name]))
-            return $this->storage[$name];
-        else
-            return null;
+        return $this->$name;
     }
     public function __isset($name) {
-        return isset($this->storage[$name]);
+        return isset($this->$name);
     }
     public function __unset($name) {
-        unset($this->storage[$name]);
+        unset($this->$name);
     }
     public function make_array() {
-        return $this->storage;
+        return get_object_vars($this);
     }
     public function make_object() {
-        return (object) $this->storage;
+        return (object) get_object_vars($this);
     }
 }
