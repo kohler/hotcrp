@@ -102,6 +102,7 @@ class PaperList {
     private $viewmap;
     private $atab;
     private $_row_id_pattern = null;
+    private $qreq;
 
     public $qopts; // set by PaperColumn::prepare
     private $footers = array();
@@ -115,46 +116,46 @@ class PaperList {
 
     static public $include_stash = true;
 
-    function __construct($search, $args = array()) {
+    function __construct($search, $args = array(), $qreq = null) {
         global $Conf;
         $this->search = $search;
         $this->contact = $this->search->contact;
+        $this->qreq = $qreq ? : new Qobject;
 
-        $this->sortable = !!@$args["sort"];
+        $this->sortable = isset($args["sort"]) && $args["sort"];
         if ($this->sortable && is_string($args["sort"]))
             $this->sorters[] = ListSorter::parse_sorter($args["sort"]);
-        else if ($this->sortable && isset($_REQUEST["sort"]))
-            $this->sorters[] = ListSorter::parse_sorter($_REQUEST["sort"]);
+        else if ($this->sortable && $this->qreq->sort)
+            $this->sorters[] = ListSorter::parse_sorter($this->qreq->sort);
         else
             $this->sorters[] = ListSorter::parse_sorter("");
 
-        $this->foldable = $this->sortable || !!@$args["foldable"]
+        $this->foldable = $this->sortable || !!get($args, "foldable")
             || $this->contact->privChair /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
-        if (isset($_REQUEST["linkto"])
-            && ($_REQUEST["linkto"] == "paper" || $_REQUEST["linkto"] == "review" || $_REQUEST["linkto"] == "assign"))
-            $this->_paper_link_page = $_REQUEST["linkto"];
+        if (isset($qreq->linkto)
+            && ($qreq->linkto == "paper" || $qreq->linkto == "review" || $qreq->linkto == "assign"))
+            $this->_paper_link_page = $qreq->linkto;
         $this->listNumber = 0;
-        if (defval($args, "list"))
+        if (get($args, "list"))
             $this->listNumber = SessionList::allocate($search->listId($this->sortdef()));
 
-        if (is_string(defval($args, "display", null)))
+        if (is_string(get($args, "display")))
             $this->display = " " . $args["display"] . " ";
         else {
-            $svar = defval($args, "foldtype", "pl") . "display";
+            $svar = get($args, "foldtype", "pl") . "display";
             $this->display = $Conf->session($svar, "");
         }
-        if (($r = @$args["reviewer"])) {
+        if (isset($args["reviewer"]) && ($r = $args["reviewer"])) {
             if (!is_object($r)) {
                 error_log(caller_landmark() . ": warning: 'reviewer' not an object");
                 $r = Contact::find_by_id($r);
             }
             $this->_reviewer = $r;
         }
-        $this->atab = defval($_REQUEST, "atab", "");
-        $this->_row_id_pattern = defval($args, "row_id_pattern", null);
-        unset($_REQUEST["atab"]);
+        $this->atab = $this->qreq->atab;
+        $this->_row_id_pattern = get($args, "row_id_pattern");
 
         $this->tagger = new Tagger($this->contact);
         $this->scoresOk = $this->contact->privChair
@@ -222,7 +223,7 @@ class PaperList {
         if (count($this->sorters)
             && $this->sorters[0]->type
             && $this->sorters[0]->thenmap === null
-            && ($always || defval($_REQUEST, "sort", "") != "")
+            && ($always || (string) $this->qreq->sort != "")
             && ($this->sorters[0]->type != "id" || $this->sorters[0]->reverse)) {
             $x = ($this->sorters[0]->reverse ? "r" : "");
             if (($fdef = PaperColumn::lookup($this->sorters[0]->type))
@@ -305,8 +306,8 @@ class PaperList {
 
     // content downloaders
     function sessionMatchPreg($name) {
-        if (isset($_REQUEST["ls"])
-            && ($l = SessionList::lookup($_REQUEST["ls"]))
+        if (isset($this->qreq->ls)
+            && ($l = SessionList::lookup($this->qreq->ls))
             && @($l->matchPreg->$name))
             return $l->matchPreg->$name;
         else
@@ -440,14 +441,14 @@ class PaperList {
             $sel_opt["json"] = "JSON";
             $sel_opt["jsonattach"] = "JSON with attachments";
         }
-        $t .= Ht::select("getaction", $sel_opt, defval($_REQUEST, "getaction"),
+        $t .= Ht::select("getaction", $sel_opt, $this->qreq->getaction,
                           array("id" => "plact${nlll}_d", "tabindex" => 6))
             . "&nbsp; " . Ht::submit("getgo", "Go", array("tabindex" => 6, "onclick" => "return (papersel_check_safe=true)")) . "</span>\n";
         $nlll++;
 
         // Upload preferences (review preferences only)
         if ($revpref) {
-            if (isset($_REQUEST["upload"]) || $this->atab == "uploadpref")
+            if (isset($this->qreq->upload) || $this->atab == "uploadpref")
                 $whichlll = $nlll;
             $t .= $barsep;
             $t .= "    <span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></span>"
@@ -459,7 +460,7 @@ class PaperList {
 
         // Set preferences (review preferences only)
         if ($revpref) {
-            if (isset($_REQUEST["setpaprevpref"]) || $this->atab == "setpref")
+            if (isset($this->qreq->setpaprevpref) || $this->atab == "setpref")
                 $whichlll = $nlll;
             $t .= $barsep
                 . "    <span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></span>"
@@ -471,7 +472,7 @@ class PaperList {
 
         // Tags (search+PC only)
         if ($this->contact->isPC && !$revpref) {
-            if (isset($_REQUEST["tagact"]) || $this->atab == "tags")
+            if (isset($this->qreq->tagact) || $this->atab == "tags")
                 $whichlll = $nlll;
             $t .= $barsep;
             $t .= "    <span id=\"foldplacttags\" class=\"foldc fold99c\" style=\"vertical-align:top\"><span class=\"lll$nlll\"><a href=\"" . selfHref(array("atab" => "tags")) . "#plact\" onclick=\"return crpfocus('plact',$nlll)\">Tag</a></span>";
@@ -485,26 +486,26 @@ class PaperList {
                 $tagextra["onchange"] = "plactions_dofold()";
                 $want_plactions_dofold = true;
             }
-            $t .= Ht::select("tagtype", $tagopt, defval($_REQUEST, "tagtype"),
+            $t .= Ht::select("tagtype", $tagopt, $this->qreq->tagtype,
                               $tagextra) . " &nbsp;";
             if ($this->contact->privChair) {
                 $t .= '<span class="fx99"><a class="q" href="#" onclick="return fold(\'placttags\')">'
                     . expander(null, 0) . "</a></span>";
             }
             $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
-                . Ht::entry("tag", @$_REQUEST["tag"],
+                . Ht::entry("tag", $this->qreq->tag,
                             array("id" => "plact{$nlll}_d", "size" => 15,
                                   "onfocus" => "autosub('tagact',this)"))
                 . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span>';
             if ($this->contact->privChair) {
                 $t .= "<div class='fx'><div style='margin:2px 0'>"
-                    . Ht::checkbox("tagcr_gapless", 1, defval($_REQUEST, "tagcr_gapless"), array("style" => "margin-left:0"))
+                    . Ht::checkbox("tagcr_gapless", 1, $this->qreq->tagcr_gapless, array("style" => "margin-left:0"))
                     . "&nbsp;" . Ht::label("Gapless order") . "</div>"
                     . "<div style='margin:2px 0'>Using: &nbsp;"
-                    . Ht::select("tagcr_method", PaperRank::methods(), defval($_REQUEST, "tagcr_method"))
+                    . Ht::select("tagcr_method", PaperRank::methods(), $this->qreq->tagcr_method)
                     . "</div>"
                     . "<div style='margin:2px 0'>Source tag: &nbsp;~"
-                    . Ht::entry("tagcr_source", @$_REQUEST["tagcr_source"], array("size" => 15))
+                    . Ht::entry("tagcr_source", $this->qreq->tagcr_source, array("size" => 15))
                     . "</div></div>";
             }
             $t .= "</span>\n";
@@ -513,7 +514,7 @@ class PaperList {
 
         // Assignments (search+admin only)
         if ($this->contact->privChair && !$revpref) {
-            if (isset($_REQUEST["setassign"]) || $this->atab == "assign")
+            if (isset($this->qreq->setassign) || $this->atab == "assign")
                 $whichlll = $nlll;
             $t .= $barsep;
             $t .= "    <span class=\"lll$nlll\"><a href=\"" . selfHref(array("atab" => "assign")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Assign</a></span>"
@@ -532,12 +533,12 @@ class PaperList {
                                     "zzz3" => null,
                                     "lead" => "Discussion lead",
                                     "shepherd" => "Shepherd"),
-                              defval($_REQUEST, "marktype"),
+                              $this->qreq->marktype,
                               array("id" => "plact${nlll}_d",
                                     "onchange" => "plactions_dofold()"))
                 . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;';
             $t .= Ht::select("markpc", pc_members_selector_options(false),
-                             defval($_REQUEST, "markpc"), array("id" => "markpc"))
+                             $this->qreq->markpc, array("id" => "markpc"))
                 . "</span> &nbsp;" . Ht::submit("setassign", "Go");
             $t .= "</span>\n";
             $nlll++;
@@ -550,14 +551,14 @@ class PaperList {
             $t .= $barsep;
             $t .= "    <span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "decide")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Decide</a></span>"
                 . "<span class='lld$nlll'><b>:</b> Set to &nbsp;";
-            $t .= decisionSelector(defval($_REQUEST, "decision", 0), "plact${nlll}_d") . " &nbsp;" . Ht::submit("setdecision", "Go") . "</span>\n";
+            $t .= decisionSelector($this->qreq->decision, "plact${nlll}_d") . " &nbsp;" . Ht::submit("setdecision", "Go") . "</span>\n";
             $nlll++;
 
-            if (isset($_REQUEST["sendmail"]) || $this->atab == "mail")
+            if (isset($this->qreq->sendmail) || $this->atab == "mail")
                 $whichlll = $nlll;
             $t .= $barsep
                 . "    <span class=\"lll$nlll\"><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick=\"return crpfocus('plact',$nlll)\">Mail</a></span><span class=\"lld$nlll\"><b>:</b> &nbsp;"
-                . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), defval($_REQUEST, "recipients"), array("id" => "plact${nlll}_d"))
+                . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $this->qreq->recipients, array("id" => "plact${nlll}_d"))
                 . " &nbsp;" . Ht::submit("sendmail", "Go", array("onclick" => "return (papersel_check_safe=true)")) . "</span>\n";
             $nlll++;
         }
@@ -671,8 +672,7 @@ class PaperList {
             foreach ($nf as $f)
                 $field_list[] = $f;
         }
-        if (defval($_REQUEST, "selectall") > 0
-            && $field_list[0]->name == "sel")
+        if ($this->qreq->selectall > 0 && $field_list[0]->name == "sel")
             $field_list[0] = PaperColumn::lookup("selon");
         return $field_list;
     }
@@ -762,7 +762,7 @@ class PaperList {
         if ($fname === "authors")
             $fname = "au";
         return $fname
-            && !defval($_REQUEST, "show$fname")
+            && !$this->qreq["show$fname"]
             && ($this->viewmap->$fname === false
                 || ($this->viewmap->$fname === null
                     && strpos($this->display, " $fname ") === false));
@@ -987,7 +987,7 @@ class PaperList {
         }
         if ($this->contact->privChair) {
             $jsmap[] = "\"force\":5";
-            $classes[] = "fold5" . (defval($_REQUEST, "forceShow") ? "o" : "c");
+            $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         }
         if (count($jsmap))
             Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
@@ -1404,8 +1404,8 @@ class PaperList {
         // session variable to remember the list
         if ($this->listNumber) {
             $sl = $this->search->create_session_list_object($rstate->ids, self::_listDescription($listname), $this->sortdef());
-            if (isset($_REQUEST["sort"]))
-                $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($_REQUEST["sort"]);
+            if (isset($this->qreq->sort))
+                $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
             $sl->url = $url;
             SessionList::change($this->listNumber, $sl, true);
         }

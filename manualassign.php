@@ -298,7 +298,7 @@ if ($reviewer > 0) {
     // main assignment form
     $search = new PaperSearch($Me, array("t" => $qreq->t, "q" => $qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("manualassign", "reviewer=$reviewer")));
-    $paperList = new PaperList($search, ["sort" => true, "list" => true, "reviewer" => $pcm[$reviewer]]);
+    $paperList = new PaperList($search, ["sort" => true, "list" => true, "reviewer" => $pcm[$reviewer]], make_qreq());
     $paperList->display .= " topics ";
     if ($qreq->kind != "c")
         $paperList->display .= "reviewers ";
