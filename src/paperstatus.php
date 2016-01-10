@@ -4,13 +4,13 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperStatus {
+    private $contact = null;
     private $uploaded_documents;
     private $errf;
     private $errmsg;
     public $nerrors;
     private $no_email = false;
     private $allow_error = array();
-    private $view_contact = null;
     private $forceShow = null;
     private $export_ids = false;
     private $export_docids = false;
@@ -18,8 +18,9 @@ class PaperStatus {
     private $disable_users = false;
     private $document_callbacks = array();
 
-    function __construct($options = array()) {
-        foreach (array("no_email", "allow_error", "view_contact",
+    function __construct($contact, $options = array()) {
+        $this->contact = $contact;
+        foreach (array("no_email", "allow_error",
                        "forceShow", "export_ids", "export_docids",
                        "export_content", "disable_users") as $k)
             if (array_key_exists($k, $options))
@@ -39,10 +40,10 @@ class PaperStatus {
     }
 
     function load($pid, $args = array()) {
-        global $Conf, $Me;
+        global $Conf;
         $prow = $Conf->paperRow(array("paperId" => $pid,
                                       "topics" => true, "options" => true),
-                                $this->view_contact ? : $Me);
+                                $this->contact);
         return $prow ? $this->row_to_json($prow, $args) : null;
     }
 
@@ -82,7 +83,7 @@ class PaperStatus {
 
     function row_to_json($prow, $args = array()) {
         global $Conf;
-        if (!$prow || ($this->view_contact && !$this->view_contact->can_view_paper($prow)))
+        if (!$prow || ($this->contact && !$this->contact->can_view_paper($prow)))
             return null;
 
         $pj = (object) array();
@@ -107,8 +108,8 @@ class PaperStatus {
         else if ($prow->timeSubmitted == -100 && $prow->timeWithdrawn > 0)
             $pj->submitted_at = 1000000000;
 
-        $can_view_authors = !$this->view_contact
-            || $this->view_contact->can_view_authors($prow, $this->forceShow);
+        $can_view_authors = !$this->contact
+            || $this->contact->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
             $contacts = array();
             foreach ($prow->named_contacts() as $conf)
@@ -162,14 +163,14 @@ class PaperStatus {
             $pj->topics = (object) $topics;
 
         if ($prow->paperStorageId > 1
-            && (!$this->view_contact || $this->view_contact->can_view_pdf($prow))
+            && (!$this->contact || $this->contact->can_view_pdf($prow))
             && ($doc = $this->document_to_json($prow, DTYPE_SUBMISSION,
                                                (int) $prow->paperStorageId,
                                                $args)))
             $pj->submission = $doc;
 
         if ($prow->finalPaperStorageId > 1
-            && (!$this->view_contact || $this->view_contact->can_view_pdf($prow))
+            && (!$this->contact || $this->contact->can_view_pdf($prow))
             && ($doc = $this->document_to_json($prow, DTYPE_FINAL,
                                                (int) $prow->finalPaperStorageId,
                                                $args)))
@@ -183,8 +184,8 @@ class PaperStatus {
             $options = array();
             foreach ($prow->options() as $oa) {
                 $o = $oa->option;
-                if ($this->view_contact
-                    && !$this->view_contact->can_view_paper_option($prow, $o, $this->forceShow))
+                if ($this->contact
+                    && !$this->contact->can_view_paper_option($prow, $o, $this->forceShow))
                     continue;
                 $okey = $this->export_ids ? $o->id : $o->abbr;
                 if ($o->type == "checkbox" && $oa->value)
@@ -246,6 +247,8 @@ class PaperStatus {
 
     private function upload_document($docj, $paperid, $dtype) {
         global $Conf;
+        if (!$paperid)
+            $paperid = -1;
 
         // look for an existing document with same sha1;
         // check existing docid's sha1
@@ -591,7 +594,7 @@ class PaperStatus {
         }
     }
 
-    private function check_invariants($pj, $old_pj) {
+    private function check_invariants($pj, $old_pj, $prow) {
         // Errors don't prevent saving
         if (@$pj->title === ""
             || (@$pj->title === null && (!$old_pj || !$old_pj->title)))
@@ -605,7 +608,7 @@ class PaperStatus {
         if (count($pj->bad_authors))
             $this->set_error_html("author", "Some authors ignored.");
         $ncontacts = 0;
-        foreach (self::conflicts_array($pj, $old_pj) as $c)
+        foreach ($this->conflicts_array($pj, $old_pj, $prow) as $c)
             if ($c >= CONFLICT_CONTACTAUTHOR)
                 ++$ncontacts;
         if (!$ncontacts && $old_pj && self::contacts_array($old_pj))
@@ -676,7 +679,7 @@ class PaperStatus {
         return $contacts;
     }
 
-    static function conflicts_array($pj, $old_pj) {
+    function conflicts_array($pj, $old_pj, $prow) {
         $x = array();
 
         if ($pj && @$pj->pc_conflicts !== null)
@@ -691,10 +694,10 @@ class PaperStatus {
         else
             $c = $old_pj ? $old_pj->authors : array();
         foreach ($c as $au)
-            if (@$au->email && @$au->contact)
-                $x[strtolower($au->email)] = CONFLICT_CONTACTAUTHOR;
-            else if (@$au->email)
-                $x[strtolower($au->email)] = CONFLICT_AUTHOR;
+            if (@$au->email) {
+                $lemail = strtolower($au->email);
+                $x[$lemail] = @$au->contact ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
+            }
 
         if ($pj && @$pj->contacts !== null)
             $c = $pj->contacts;
@@ -705,26 +708,40 @@ class PaperStatus {
             $x[$lemail] = max((int) @$x[$lemail], CONFLICT_CONTACTAUTHOR);
         }
 
-        if ($old_pj && @$old_pj->pc_conflicts)
+        if ($old_pj && @$old_pj->pc_conflicts) {
+            $can_administer = !$this->contact
+                || $this->contact->can_administer($prow, $this->forceShow);
             foreach ($old_pj->pc_conflicts as $email => $type)
                 if ($type == CONFLICT_CHAIRMARK) {
-                    $email = strtolower($email);
-                    if (@+$x[$email] < CONFLICT_CHAIRMARK)
-                        $x[$email] = CONFLICT_CHAIRMARK;
+                    $lemail = strtolower($email);
+                    if (get_i($x, $lemail) < CONFLICT_CHAIRMARK
+                        && !$can_administer)
+                        $x[$lemail] = CONFLICT_CHAIRMARK;
                 }
+        }
 
         ksort($x);
         return $x;
     }
 
-    function save($pj, $old_pj = null) {
+    function save($pj) {
         global $Conf, $Now;
 
-        if (@$pj->id && !$old_pj)
-            $old_pj = $this->load($pj->id, array("docids" => true));
-        if (!@$pj->id)
-            $pj->id = $old_pj ? $old_pj->id : 0;
-        if ($pj && $old_pj && $pj->id != $old_pj->id) {
+        $paperid = null;
+        if (isset($pj->id) && is_int($pj->id) && $pj->id > 0)
+            $paperid = $pj->id;
+        else if (isset($pj->id)) {
+            $this->set_error_html("id", "Format error [id]");
+            return false;
+        }
+
+        $prow = $old_pj = null;
+        if ($paperid)
+            $prow = $Conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true],
+                                    $this->contact);
+        if ($prow)
+            $old_pj = $this->row_to_json($prow, ["docids" => true]);
+        if ($pj && $old_pj && $paperid != $old_pj->id) {
             $this->set_error_html("id", "Saving paper with different ID");
             return false;
         }
@@ -734,13 +751,13 @@ class PaperStatus {
             $this->normalize($old_pj, null);
         if ($this->nerrors)
             return false;
-        $this->check_invariants($pj, $old_pj);
+        $this->check_invariants($pj, $old_pj, $prow);
 
         // store all documents
         if (@$pj->submission)
-            $this->upload_document($pj->submission, $pj->id, DTYPE_SUBMISSION);
+            $this->upload_document($pj->submission, $paperid, DTYPE_SUBMISSION);
         if (@$pj->final)
-            $this->upload_document($pj->final, $pj->id, DTYPE_FINAL);
+            $this->upload_document($pj->final, $paperid, DTYPE_FINAL);
         if (@$pj->options) {
             $option_list = PaperOption::option_list();
             foreach ($pj->options as $id => $oa) {
@@ -748,7 +765,7 @@ class PaperStatus {
                 if ($o->type == "attachments" || $o->is_document()) {
                     $oa = is_array($oa) ? $oa : array($oa);
                     foreach ($oa as $x)
-                        $this->upload_document($x, $pj->id, $id);
+                        $this->upload_document($x, $paperid, $id);
                 }
             }
         }
@@ -861,19 +878,19 @@ class PaperStatus {
             } else if (!$joindoc)
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
 
-            if ($pj->id) {
-                $result = Dbl::qe_raw("update Paper set " . join(",", $q) . " where paperId=$pj->id");
+            if ($paperid) {
+                $result = Dbl::qe_raw("update Paper set " . join(",", $q) . " where paperId=$paperid");
                 if ($result
                     && $result->affected_rows === 0
-                    && edb_nrows(Dbl::qe_raw("select paperId from Paper where paperId=$pj->id")) === 0)
-                    $result = Dbl::qe_raw("insert into Paper set paperId=$pj->id, " . join(",", $q));
+                    && edb_nrows(Dbl::qe_raw("select paperId from Paper where paperId=$paperid")) === 0)
+                    $result = Dbl::qe_raw("insert into Paper set paperId=$paperid, " . join(",", $q));
             } else {
                 $result = Dbl::qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
-                    || !($pj->id = $result->insert_id))
+                    || !($paperid = $result->insert_id))
                     return $this->set_error_html(false, "Could not create paper.");
                 if (count($this->uploaded_documents))
-                    Dbl::qe_raw("update PaperStorage set paperId=$pj->id where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
+                    Dbl::qe_raw("update PaperStorage set paperId=$paperid where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
             }
 
             // maybe update `papersub` settings
@@ -888,7 +905,7 @@ class PaperStatus {
             $topics = self::topics_sql($pj);
             $old_topics = self::topics_sql($old_pj);
             if ($topics !== $old_topics) {
-                $result = Dbl::qe_raw("delete from PaperTopic where paperId=$pj->id");
+                $result = Dbl::qe_raw("delete from PaperTopic where paperId=$paperid");
                 if ($topics)
                     $result = Dbl::qe_raw("insert into PaperTopic (topicId,paperId) values $topics");
             }
@@ -899,15 +916,15 @@ class PaperStatus {
             $options = convert_to_utf8(self::options_sql($pj));
             $old_options = self::options_sql($old_pj);
             if ($options !== $old_options) {
-                $result = Dbl::qe_raw("delete from PaperOption where paperId=$pj->id");
+                $result = Dbl::qe_raw("delete from PaperOption where paperId=$paperid");
                 if ($options)
                     $result = Dbl::qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
             }
         }
 
         // update PaperConflict
-        $conflict = self::conflicts_array($pj, $old_pj);
-        $old_conflict = self::conflicts_array($old_pj, null);
+        $conflict = $this->conflicts_array($pj, $old_pj, $prow);
+        $old_conflict = $this->conflicts_array($old_pj, null, null);
         if (join(",", array_keys($conflict)) !== join(",", array_keys($old_conflict))
             || join(",", array_values($conflict)) !== join(",", array_values($old_conflict))) {
             $q = array();
@@ -917,14 +934,14 @@ class PaperStatus {
             if (count($q)) {
                 $result = Dbl::qe_raw("select contactId, email from ContactInfo where email in (" . join(",", $q) . ")");
                 while (($row = edb_row($result)))
-                    $ins[] = "($pj->id,$row[0]," . $conflict[strtolower($row[1])] . ")";
+                    $ins[] = "($paperid,$row[0]," . $conflict[strtolower($row[1])] . ")";
             }
-            $result = Dbl::qe_raw("delete from PaperConflict where paperId=$pj->id");
+            $result = Dbl::qe_raw("delete from PaperConflict where paperId=$paperid");
             if (count($ins))
                 $result = Dbl::qe_raw("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
         }
 
-        return $pj->id;
+        return $paperid;
     }
 
     function error_html() {

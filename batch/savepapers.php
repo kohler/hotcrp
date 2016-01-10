@@ -38,9 +38,9 @@ foreach ($jp as $j) {
     $prefix = @$j->id ? "#$j->id: " : "new paper #$index: ";
     if (!$quiet)
         fwrite(STDERR, $prefix);
-    $ps = new PaperStatus(array("no_email" => true,
-                                "disable_users" => $disable_users,
-                                "allow_error" => array("topics", "options")));
+    $ps = new PaperStatus(null, ["no_email" => true,
+                                 "disable_users" => $disable_users,
+                                 "allow_error" => ["topics", "options"]]);
     $res = $ps->save($j);
     if (!$quiet)
         fwrite(STDERR, $res ? "saved\n" : "failed\n");

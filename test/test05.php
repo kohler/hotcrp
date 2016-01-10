@@ -15,7 +15,7 @@ $Conf->save_setting("sub_sub", $Now + 100);
 $user_estrin = Contact::find_by_email("estrin@usc.edu"); // pc
 $user_nobody = new Contact;
 
-$ps = new PaperStatus(["view_contact" => $user_estrin]);
+$ps = new PaperStatus($user_estrin);
 
 $paper1a = $ps->load(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");

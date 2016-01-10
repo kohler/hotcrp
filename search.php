@@ -860,7 +860,7 @@ if ($getaction == "acmcms" && SearchActions::any() && $Me->privChair) {
 // download status JSON for selected papers
 if ($getaction == "json" && SearchActions::any() && $Me->privChair) {
     $pj = array();
-    $ps = new PaperStatus(array("view_contact" => $Me, "forceShow" => true));
+    $ps = new PaperStatus($Me, ["forceShow" => true]);
     foreach (SearchActions::selection() as $pid)
         if (($j = $ps->load($pid)))
             $pj[] = $j;
@@ -886,7 +886,7 @@ if ($getaction == "jsonattach" && SearchActions::any() && $Me->privChair) {
     global $jsonattach_zip;
     $jsonattach_zip = new ZipDocument($Opt["downloadPrefix"] . "data.zip");
     $pj = array();
-    $ps = new PaperStatus(array("view_contact" => $Me, "forceShow" => true));
+    $ps = new PaperStatus($Me, ["forceShow" => true]);
     $ps->add_document_callback("jsonattach_document");
     foreach (SearchActions::selection() as $pid)
         if (($j = $ps->load($pid)))

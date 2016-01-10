@@ -391,8 +391,8 @@ function update_paper($pj, $opj, $action, $diffs) {
     global $Conf, $Me, $Opt, $OK, $Error, $prow;
     // XXX lock tables
 
-    $ps = new PaperStatus;
-    $saved = $ps->save($pj, $opj);
+    $ps = new PaperStatus($Me);
+    $saved = $ps->save($pj);
 
     if (!$saved && !$prow && fileUploaded($_FILES["paperUpload"]))
         $ps->set_error_html("paper", "<strong>The submission you tried to upload was ignored.</strong>");
@@ -531,7 +531,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
                  || @$Opt["noPapers"]))
         $action = "submit";
 
-    $ps = new PaperStatus;
+    $ps = new PaperStatus($Me);
     $opj = $prow ? $ps->row_to_json($prow, array("docids" => true)) : null;
     $pj = request_to_json($opj, $action);
     $diffs = request_differences($pj, $opj, $action);
@@ -570,7 +570,7 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
 
 if (isset($_POST["updatecontacts"]) && check_post() && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
-        $ps = new PaperStatus;
+        $ps = new PaperStatus($Me);
         $opj = $ps->row_to_json($prow, array("docids" => true));
         $pj = paper_json_clone($opj);
         request_contacts_to_json($pj);

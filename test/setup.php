@@ -46,7 +46,7 @@ foreach ($json->contacts as $c) {
         die_hard("* failed to create user $c->email\n");
 }
 foreach ($json->papers as $p) {
-    $ps = new PaperStatus;
+    $ps = new PaperStatus(null);
     if (!$ps->save($p))
         die_hard("* failed to create paper $p->title:\n" . htmlspecialchars_decode(join("\n", $ps->error_html())) . "\n");
 }
