@@ -1045,7 +1045,7 @@ class PaperSearch {
             return $this->_reviewerMatcher($text, $quoted, true);
     }
 
-    function _searchReviewer($qword, $keyword, &$qt) {
+    private function _search_reviewer($qword, $keyword, &$qt) {
         global $Conf;
         if (preg_match('/\A(.*)(pri|sec|ext)\z/', $keyword, $m)) {
             $qword = $m[2] . ":" . $qword;
@@ -1661,7 +1661,7 @@ class PaperSearch {
         else if ($lword === "manager" || $lword === "admin" || $lword === "administrator")
             $qt[] = new SearchTerm("pf", 0, array("managerContactId", "!=0"));
         else if (preg_match('/\A[cip]?(?:re|pri|sec|ext)\z/', $lword))
-            $this->_searchReviewer(">0", $lword, $qt);
+            $this->_search_reviewer(">0", $lword, $qt);
         else if ($lword === "lead")
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("leadContactId", "!=0"));
         else if ($lword === "shep" || $lword === "shepherd")
@@ -1889,9 +1889,9 @@ class PaperSearch {
         if ($keyword ? $keyword === "co" : isset($this->fields["co"]))
             $this->_searchField($word, "co", $qt);
         if ($keyword ? $keyword === "re" : isset($this->fields["re"]))
-            $this->_searchReviewer($qword, "re", $qt);
+            $this->_search_reviewer($qword, "re", $qt);
         else if ($keyword && @self::$_canonical_review_keywords[$keyword])
-            $this->_searchReviewer($qword, $keyword, $qt);
+            $this->_search_reviewer($qword, $keyword, $qt);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
             $this->_search_comment($word, $keyword, $qt, $quoted);
         if ($keyword === "revpref" && $this->amPC)
