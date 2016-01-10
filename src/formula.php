@@ -57,10 +57,14 @@ class Fexpr {
     public function format() {
         return $this->format_;
     }
-    public function format_comparator($cmp) {
+    public function format_comparator($cmp, $other_expr = null) {
         global $Opt;
-        if ($this->format_ && $this->format_ instanceof ReviewField
-            && $this->format_->option_letter && !@$Opt["smartScoreCompare"]) {
+        if ($this->format_
+            && $this->format_ instanceof ReviewField
+            && $this->format_->option_letter
+            && !@$Opt["smartScoreCompare"]
+            && (!$other_expr
+                || $other_expr->format() === $this->format_)) {
             if ($cmp[0] == "<")
                 return ">" . substr($cmp, 1);
             if ($cmp[0] == ">")
@@ -159,7 +163,7 @@ class Fexpr {
                 return "($t1 !== null && $t2 !== null ? pow($t1, $t2) : null)";
             else {
                 if (Formula::$opprec[$op] == 8)
-                    $op = $this->args[0]->format_comparator($op);
+                    $op = $this->args[0]->format_comparator($op, $this->args[1]);
                 return "($t1 !== null && $t2 !== null ? $t1 $op $t2 : null)";
             }
         }
