@@ -887,7 +887,7 @@ class PaperStatus {
             } else {
                 $result = Dbl::qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
-                    || !($paperid = $result->insert_id))
+                    || !($paperid = $pj->id = $result->insert_id))
                     return $this->set_error_html(false, "Could not create paper.");
                 if (count($this->uploaded_documents))
                     Dbl::qe_raw("update PaperStorage set paperId=$paperid where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
