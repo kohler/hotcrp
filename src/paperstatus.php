@@ -634,30 +634,30 @@ class PaperStatus {
         return $x;
     }
 
-    static function topics_sql($pj) {
+    static function topics_sql($pj, $paperid) {
         $x = array();
         foreach (($pj ? (array) @$pj->topics : array()) as $id => $v)
-            $x[] = "($id,$pj->id)";
+            $x[] = "($id,$paperid)";
         sort($x);
         return join(",", $x);
     }
 
-    static function options_sql($pj) {
+    static function options_sql($pj, $paperid) {
         $x = array();
         $option_list = PaperOption::option_list();
         foreach ((array) ($pj ? @$pj->options : null) as $id => $oa) {
             $o = $option_list[$id];
             if ($o->type == "text") {
                 if ((string) $oa !== "")
-                    $x[] = "($pj->id,$o->id,1,'" . sqlq($oa) . "')";
+                    $x[] = "($paperid,$o->id,1,'" . sqlq($oa) . "')";
             } else if ($o->is_document())
-                $x[] = "($pj->id,$o->id,$oa->docid,null)";
+                $x[] = "($paperid,$o->id,$oa->docid,null)";
             else if ($o->type == "attachments") {
                 $oa = is_array($oa) ? $oa : array($oa);
                 foreach ($oa as $ord => $ov)
-                    $x[] = "($pj->id,$o->id,$ov->docid,'" . ($ord + 1) . "')";
+                    $x[] = "($paperid,$o->id,$ov->docid,'" . ($ord + 1) . "')";
             } else if ($o->type != "checkbox" || $oa)
-                $x[] = "($pj->id,$o->id,$oa,null)";
+                $x[] = "($paperid,$o->id,$oa,null)";
         }
         sort($x);
         return join(",", $x);
@@ -902,8 +902,8 @@ class PaperStatus {
 
         // update PaperTopics
         if (@$pj->topics) {
-            $topics = self::topics_sql($pj);
-            $old_topics = self::topics_sql($old_pj);
+            $topics = self::topics_sql($pj, $paperid);
+            $old_topics = self::topics_sql($old_pj, $paperid);
             if ($topics !== $old_topics) {
                 $result = Dbl::qe_raw("delete from PaperTopic where paperId=$paperid");
                 if ($topics)
@@ -913,8 +913,8 @@ class PaperStatus {
 
         // update PaperOption
         if (@$pj->options) {
-            $options = convert_to_utf8(self::options_sql($pj));
-            $old_options = self::options_sql($old_pj);
+            $options = convert_to_utf8(self::options_sql($pj, $paperid));
+            $old_options = self::options_sql($old_pj, $paperid);
             if ($options !== $old_options) {
                 $result = Dbl::qe_raw("delete from PaperOption where paperId=$paperid");
                 if ($options)
