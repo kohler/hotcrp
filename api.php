@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 // argument cleaning
+require_once("lib/navigation.php");
 if (!isset($_GET["fn"])) {
-    require_once("lib/navigation.php");
     if (($fn = Navigation::path_component(0, true)))
         $_GET["fn"] = $fn;
     else if (isset($_GET["track"]))
@@ -15,37 +15,66 @@ if (!isset($_GET["fn"])) {
 }
 if ($_GET["fn"] === "deadlines")
     $_GET["fn"] = "status";
-if (!isset($_GET["p"]) && ($p = Navigation::path_component(1, true))
+if (!isset($_GET["p"])
+    && ($p = Navigation::path_component(1, true))
     && ctype_digit($p))
-    $_GET["p"] = (string) intval($p);
+    $_GET["p"] = $p;
 
-// maybe prevent session creation
+// prevent session creation for trackerstatus (must precede initweb)
 global $Me;
 if ($_GET["fn"] === "trackerstatus")
     $Me = false;
 
+// initialization
 require_once("src/initweb.php");
 
+$qreq = make_qreq();
+if ($qreq->base !== null)
+    $Conf->set_siteurl($qreq->base);
+if (!$Me->has_database_account()
+    && ($key = $Me->capability("tracker_kiosk"))) {
+    $kiosks = setting_json("__tracker_kiosk") ? : (object) array();
+    if (isset($kiosks->$key) && $kiosks->$key->update_at >= $Now - 172800) {
+        if ($kiosks->$key->update_at < $Now - 3600) {
+            $kiosks->$key->update_at = $Now;
+            $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
+        }
+        $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
+    }
+}
+if ($qreq->p && ctype_digit($qreq->p)) {
+    $CurrentProw = $Conf->paperRow(array("paperId" => intval($qreq->p)), $Me);
+    if ($CurrentProw && !$Me->can_view_paper($CurrentProw))
+        $CurrentProw = null;
+}
+
 // requests
-if ($_GET["fn"] === "trackerstatus") // used by hotcrp-comet
-    MeetingTracker::trackerstatus_api();
+if (isset(SiteLoader::$api_map[$qreq->fn])) {
+    $uf = SiteLoader::$api_map[$qreq->fn];
+    if (!($uf[1] & SiteLoader::API_GET) && !check_post())
+        json_exit(["ok" => false, "error" => "Missing credentials."]);
+    if (($uf[1] & SiteLoader::API_PAPER) && !$CurrentProw)
+        json_exit(["ok" => false, "error" => "No such paper."]);
+    call_user_func($uf[0], $Me, $qreq, $CurrentProw);
+    json_exit(["ok" => false, "error" => "Internal error."]);
+}
 
 if ($_GET["fn"] === "jserror") {
-    $url = defval($_REQUEST, "url", "");
+    $url = req("url");
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
         $url = $m[1];
-    if (isset($_REQUEST["lineno"]) && $_REQUEST["lineno"] !== "0")
-        $url .= ":" . $_REQUEST["lineno"];
-    if (isset($_REQUEST["colno"]) && $_REQUEST["colno"] !== "0")
-        $url .= ":" . $_REQUEST["colno"];
+    if (($n = req("lineno")))
+        $url .= ":" . $n;
+    if (($n = req("colno")))
+        $url .= ":" . $n;
     if ($url !== "")
         $url .= ": ";
-    $errormsg = trim((string) @$_REQUEST["error"]);
+    $errormsg = trim((string) req("error"));
     if ($errormsg) {
         $suffix = "";
         if ($Me->email)
             $suffix .= ", user " . $Me->email;
-        if (@$_SERVER["REMOTE_ADDR"])
+        if (isset($_SERVER["REMOTE_ADDR"]))
             $suffix .= ", host " . $_SERVER["REMOTE_ADDR"];
         error_log("JS error: $url$errormsg$suffix");
         if (isset($_REQUEST["stack"])) {
@@ -65,26 +94,24 @@ if ($_GET["fn"] === "jserror") {
             error_log("JS error: {$url}via " . join(" ", $stack));
         }
     }
-    $Conf->ajaxExit(array("ok" => true));
+    json_exit(["ok" => true]);
 }
 
 if ($_GET["fn"] === "setsession") {
-    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_]+)\z/', (string) @$_REQUEST["var"], $m)) {
-        $val = @$_REQUEST["val"];
+    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_]+)\z/', (string) req("var"), $m)) {
+        $val = req("val");
         if ($m[2]) {
             $on = !($val !== null && intval($val) > 0);
             displayOptionsSet($m[1], substr($m[2], 1), $on);
         } else
             $Conf->save_session($m[1], $val !== null ? intval($val) : null);
-        $Conf->ajaxExit(["ok" => true]);
+        json_exit(["ok" => true]);
     } else
-        $Conf->ajaxExit(["ok" => false]);
+        json_exit(["ok" => false]);
 }
 
 if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
-    if (($base = @$_GET["base"]) !== null)
-        $Conf->set_siteurl($base);
-    $from = @$_GET["from"];
+    $from = req("from");
     if (!$from || !ctype_digit($from))
         $from = $Now;
     $entries = $Conf->reviewerActivity($Me, $from, 10);
@@ -99,13 +126,10 @@ if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
             $rows[] = $rf->reviewFlowEntry($Me, $xr, "");
             $when = $xr->reviewSubmitted;
         }
-    $Conf->ajaxExit(array("ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
-                          "rows" => $rows));
+    json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
+               "rows" => $rows]);
 } else if ($_GET["fn"] === "events")
-    $Conf->ajaxExit(array("ok" => false));
-
-if ($_GET["fn"] === "alltags")
-    PaperActions::alltags_api();
+    json_exit(["ok" => false]);
 
 if ($_GET["fn"] === "searchcompletion") {
     $s = new PaperSearch($Me, "");
@@ -117,27 +141,9 @@ if ($_GET["fn"] === "searchcompletion") {
 if ($_GET["fn"] === "track")
     MeetingTracker::track_api($Me); // may fall through to act like `status`
 
-if (!$Me->has_database_account()
-    && ($key = $Me->capability("tracker_kiosk"))) {
-    $kiosks = setting_json("__tracker_kiosk") ? : (object) array();
-    if ($kiosks->$key && $kiosks->$key->update_at >= $Now - 172800) {
-        if ($kiosks->$key->update_at < $Now - 3600) {
-            $kiosks->$key->update_at = $Now;
-            $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
-        }
-        $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
-    }
-}
-
-if (@$_GET["p"] && ctype_digit($_GET["p"])) {
-    $CurrentProw = $Conf->paperRow(array("paperId" => intval($_GET["p"])), $Me);
-    if ($CurrentProw && !$Me->can_view_paper($CurrentProw))
-        $CurrentProw = null;
-}
-
 $j = $Me->my_deadlines($CurrentProw);
 
-if (@$_REQUEST["conflist"] && $Me->has_email() && ($cdb = Contact::contactdb())) {
+if (req("conflist") && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
     $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
         from Roles r join Conferences c on (c.confid=r.confid)

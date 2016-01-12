@@ -120,7 +120,7 @@ function log_jserror(errormsg, error, noconsole) {
     if (error && error.stack)
         errormsg.stack = error.stack;
     jQuery.ajax({
-        url: hoturl("api", "fn=jserror"),
+        url: hoturl("api", "fn=jserror"), global: false,
         type: "POST", cache: false, data: errormsg
     });
     if (error && !noconsole && typeof console === "object" && console.error)
@@ -139,6 +139,24 @@ function log_jserror(errormsg, error, noconsole) {
         return old_onerror ? old_onerror.apply(this, arguments) : false;
     };
 })();
+
+function jqxhr_error_message(jqxhr, status, errormsg) {
+    if (status == "parsererror")
+        return "Internal error: bad response from server.";
+    else if (errormsg)
+        return errormsg.toString();
+    else if (status == "timeout")
+        return "Connection timed out.";
+    else if (status)
+        return "Error [" + status + "].";
+    else
+        return "Error.";
+}
+
+$(document).ajaxError(function (event, jqxhr, settings, httperror) {
+    if (jqxhr.readyState == 4)
+        log_jserror(settings.url + " API failure: status " + jqxhr.status + ", " + httperror);
+});
 
 
 // geometry
@@ -552,6 +570,8 @@ function hoturl(page, options) {
         x.o = m[1] + (m[1] && m[3] ? "&" : "") + m[3];
         anchor = "#" + m[2];
     }
+    if (page === "api" && !/(?:^|&)base=/.test(x.o))
+        x.o = x.o + (x.o ? "&" : "") + "base=" + encodeURIComponent(siteurl);
     if (page === "paper") {
         hoturl_clean(x, "p=(\\d+)");
         hoturl_clean(x, "m=(\\w+)");
@@ -2815,17 +2835,6 @@ function blur_keyup_shortcut(evt) {
     return false;
 }
 
-function jqxhr_error_message(jqxhr, status, message) {
-    if (message)
-        return message.toString();
-    else if (status == "timeout")
-        return "Connection timed out.";
-    else if (status)
-        return "Error [" + status + "].";
-    else
-        return "Error.";
-}
-
 function make_pseditor(type, url) {
     var folde = $$("fold" + type),
         edite = folde.getElementsByTagName("select")[0] || folde.getElementsByTagName("textarea")[0],
@@ -4353,28 +4362,50 @@ function doremovedocument(elt) {
 }
 
 function save_tags() {
-    return Miniajax.submit("tagform", function (rv) {
-        jQuery("#foldtags .xmerror").remove();
-        if (rv.ok) {
-            fold("tags", true);
-            save_tags.success(rv);
-        } else
-            jQuery("#papstriptagsedit").prepend('<div class="xmsg xmerror">' + rv.error + "</div>");
+    function done(msg) {
+        $("#foldtags .xmerror").remove();
+        if (msg)
+            $("#papstriptagsedit").prepend('<div class="xmsg xmerror">' + msg + '</div>');
+    }
+    $.ajax({
+        url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
+        type: "POST", dataType: "json", timeout: 4000,
+        data: $("#tagform").serialize(),
+        success: function (data) {
+            if (data.ok) {
+                fold("tags", true);
+                save_tags.success(data);
+            }
+            done(data.ok ? "" : data.error);
+        }, error: function (jqxhr, status, errormsg) {
+            done(jqxhr_error_message(jqxhr, status, errormsg));
+        }
     });
+    return false;
 }
+save_tags.load_report = function () {
+    $.ajax({
+        url: hoturl("api", "fn=tagreport&p=" + hotcrp_paperid),
+        success: function (data) {
+            if (data.ok)
+                $("#tagreportformresult").html(data.response || "");
+        }
+    });
+    return false;
+};
 save_tags.success = function (data) {
     data.color_classes && make_pattern_fill(data.color_classes, "", true);
-    jQuery(".has_hotcrp_tag_classes").each(function () {
+    $(".has_hotcrp_tag_classes").each(function () {
         var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
         this.className = t + " " + (data.color_classes || "");
     });
-    jQuery("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
+    $("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
     if (data.response)
-        jQuery("#foldtags .psv .fn").prepend(data.response);
-    if (!jQuery("#foldtags textarea").is(":visible"))
-        jQuery("#foldtags textarea").val(data.tags_edit_text);
-    jQuery(".is-tag-index").each(function () {
-        var j = jQuery(this), res = "",
+        $("#foldtags .psv .fn").prepend(data.response);
+    if (!$("#foldtags textarea").is(":visible"))
+        $("#foldtags textarea").val(data.tags_edit_text);
+    $(".is-tag-index").each(function () {
+        var j = $(this), res = "",
             t = j.attr("data-tag-base") + "#", i;
         if (t.charAt(0) == "~" && t.charAt(1) != "~")
             t = hotcrp_user.cid + t;
@@ -4391,7 +4422,7 @@ save_tags.success = function (data) {
         }
     });
 };
-jQuery(function () {
+$(function () {
     if ($$("foldtags"))
         jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
             if (dl.tags && dl.tags[hotcrp_paperid])
@@ -4474,7 +4505,7 @@ function save_tag_index(e) {
         }
     }
     jQuery.ajax({
-        url: hoturl_post("paper", "p=" + hotcrp_paperid + "&m=api&fn=settags"),
+        url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
         type: "POST", cache: false,
         data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
         success: function (data) {
@@ -4783,7 +4814,7 @@ var events = null, events_at = 0;
 
 function load_more_events() {
     $.ajax({
-        url: hoturl("api", "fn=events&base=" + encodeURIComponent(siteurl) + (events_at ? "&from=" + events_at : "")),
+        url: hoturl("api", "fn=events" + (events_at ? "&from=" + events_at : "")),
         type: "GET", cache: false, dataType: "json",
         success: function (data) {
             if (data.ok) {

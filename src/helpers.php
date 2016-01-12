@@ -257,9 +257,9 @@ function redirectSelf($extra = array()) {
     go(selfHref($extra, array("raw" => true)));
 }
 
-function json_exit($json) {
+function json_exit($json, $div = false) {
     global $Conf;
-    $Conf->ajaxExit($json);
+    $Conf->ajaxExit($json, $div);
 }
 
 function foldbutton($foldtype, $foldnum = 0, $content = "") {

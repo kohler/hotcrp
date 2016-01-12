@@ -82,7 +82,7 @@ function handle_api() {
     if (!$prow)
         $Conf->ajaxExit(array("ok" => false, "error" => "No such paper."));
     if ($_REQUEST["fn"] == "setdecision")
-        $Conf->ajaxExit(PaperActions::set_decision($prow));
+        PaperApi::setdecision_api($Me, make_qreq(), $prow);
     else if ($_REQUEST["fn"] == "setlead")
         PaperActions::set_lead($prow, @$_REQUEST["lead"], $Me, true);
     else if ($_REQUEST["fn"] == "setshepherd")
@@ -90,7 +90,7 @@ function handle_api() {
     else if ($_REQUEST["fn"] == "setmanager")
         PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, true);
     else if ($_REQUEST["fn"] == "settags")
-        PaperActions::setTags($prow, true);
+        PaperApi::settags_api($Me, make_qreq(), $prow);
     $Conf->ajaxExit(array("ok" => false, "error" => "Unknown action."));
 }
 if (@$_REQUEST["m"] === "api")
@@ -625,14 +625,8 @@ if (isset($_REQUEST["settags"]) && check_post()) {
     PaperActions::setTags($prow);
     loadRows();
 }
-if (isset($_REQUEST["tagreport"]) && check_post()) {
-    $treport = PaperActions::tag_report($prow);
-    if (count($treport->warnings))
-        $Conf->warnMsg(join("<br>", $treport->warnings));
-    if (count($treport->messages))
-        $Conf->infoMsg(join("<br>", $treport->messages));
-    $Conf->ajaxExit(array("ok" => $treport->ok), true);
-}
+if (isset($_REQUEST["tagreport"]) && check_post())
+    PaperApi::tagreport_api($Me, make_qreq(), $prow);
 
 
 // correct modes

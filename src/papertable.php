@@ -1352,8 +1352,7 @@ class PaperTable {
                                         !$this->prow->has_conflict($Me));
         $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") === "tags");
 
-        $this->_papstripBegin("tags", !$unfolded,
-                              array("data-onunfold" => "Miniajax.submit('tagreportform')"));
+        $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
         $color = TagInfo::color_classes($viewable);
         echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">';
 
@@ -1366,7 +1365,7 @@ class PaperTable {
             // tag report form
             $Conf->footerHtml(Ht::form(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1"), array("id" => "tagreportform", "onsubmit" => "return Miniajax.submit('tagreportform')"))
                               . "</form>");
-            $treport = PaperActions::tag_report($this->prow);
+            $treport = PaperApi::tagreport($Me, $this->prow);
 
             // uneditable
             echo '<div class="fn taghl">';

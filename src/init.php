@@ -103,31 +103,43 @@ set_path_variables();
 
 
 // Load code
-class SiteAutoloader {
-    static $map = ["AssignmentSet" => "src/assigners.php",
-                   "CapabilityManager" => "src/capability.php",
-                   "ColumnErrors" => "lib/column.php",
-                   "ContactSearch" => "src/papersearch.php",
-                   "CsvGenerator" => "lib/csv.php",
-                   "CsvParser" => "lib/csv.php",
-                   "FormulaPaperColumn" => "src/papercolumn.php",
-                   "LoginHelper" => "lib/login.php",
-                   "MimeText" => "lib/mailer.php",
-                   "NumericOrderPaperColumn" => "src/papercolumn.php",
-                   "ReviewAssigner" => "src/assigners.php",
-                   "ReviewField" => "src/review.php",
-                   "ReviewForm" => "src/review.php",
-                   "ReviewSearchMatcher" => "src/papersearch.php",
-                   "TagInfo" => "lib/tagger.php",
-                   "XlsxGenerator" => "lib/xlsx.php",
-                   "ZipDocument" => "lib/filer.php"];
+class SiteLoader {
+    static $map = [
+        "AssignmentSet" => "src/assigners.php",
+        "CapabilityManager" => "src/capability.php",
+        "ColumnErrors" => "lib/column.php",
+        "ContactSearch" => "src/papersearch.php",
+        "CsvGenerator" => "lib/csv.php",
+        "CsvParser" => "lib/csv.php",
+        "FormulaPaperColumn" => "src/papercolumn.php",
+        "LoginHelper" => "lib/login.php",
+        "MimeText" => "lib/mailer.php",
+        "NumericOrderPaperColumn" => "src/papercolumn.php",
+        "ReviewAssigner" => "src/assigners.php",
+        "ReviewField" => "src/review.php",
+        "ReviewForm" => "src/review.php",
+        "ReviewSearchMatcher" => "src/papersearch.php",
+        "TagInfo" => "lib/tagger.php",
+        "XlsxGenerator" => "lib/xlsx.php",
+        "ZipDocument" => "lib/filer.php"
+    ];
+    const API_POST = 0;
+    const API_GET = 1;
+    const API_PAPER = 2;
+    static $api_map = [
+        "alltags" => ["PaperApi::alltags_api", self::API_GET],
+        "setdecision" => ["PaperApi::setdecision_api", self::API_PAPER],
+        "settags" => ["PaperApi::settags_api", self::API_PAPER],
+        "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
+        "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET] // hotcrp-comet entrypoint
+    ];
 }
 
 function __autoload($class_name) {
     global $ConfSitePATH;
     $f = null;
-    if (isset(SiteAutoloader::$map[$class_name]))
-        $f = SiteAutoloader::$map[$class_name];
+    if (isset(SiteLoader::$map[$class_name]))
+        $f = SiteLoader::$map[$class_name];
     if (!$f) {
         $l = strtolower($class_name);
         if (file_exists("$ConfSitePATH/src/$l.php"))

@@ -4,24 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperActions {
-
-    static function set_decision($prow) {
-        global $Conf, $Me;
-        if (!$Me->can_set_decision($prow))
-            return array("ok" => false, "error" => "You can’t set the decision for paper #$prow->paperId.");
-        $dnum = cvtint(@$_REQUEST["decision"]);
-        $decs = $Conf->decision_map();
-        if (!isset($decs[$dnum]))
-            return array("ok" => false, "error" => "Bad decision value.");
-        $result = Dbl::qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
-        if ($result && ($dnum > 0 || $prow->outcome > 0))
-            $Conf->update_paperacc_setting($dnum > 0);
-        if ($result)
-            return array("ok" => true, "result" => htmlspecialchars($decs[$dnum]));
-        else
-            return array("ok" => false);
-    }
-
     static function save_review_preferences($prefarray) {
         global $Conf;
         $q = array();
@@ -145,7 +127,7 @@ class PaperActions {
         // exit
         $prow->load_tags();
         if ($ajax && $ok) {
-            $treport = self::tag_report($prow);
+            $treport = PaperApi::tagreport($Me, $prow);
             if ($treport->warnings)
                 $Conf->warnMsg(join("<br>", $treport->warnings));
             $taginfo = $prow->tag_info_json($Me);
@@ -160,86 +142,4 @@ class PaperActions {
         }
         // NB normally redirectSelf() does not return
     }
-
-    static function tag_report($prow) {
-        global $Me;
-        if (!$Me->can_view_tags($prow))
-            return (object) array("ok" => false);
-        $ret = (object) array("ok" => true, "warnings" => array(), "messages" => array());
-        if (($vt = TagInfo::vote_tags())) {
-            $myprefix = $Me->contactId . "~";
-            $qv = $myvotes = array();
-            foreach ($vt as $tag => $v) {
-                $qv[] = $myprefix . $tag;
-                $myvotes[strtolower($tag)] = 0;
-            }
-            $result = Dbl::qe("select tag, sum(tagIndex) from PaperTag where tag ?a group by tag", $qv);
-            while (($row = edb_row($result))) {
-                $lbase = strtolower(substr($row[0], strlen($myprefix)));
-                $myvotes[$lbase] += +$row[1];
-            }
-            $vlo = $vhi = array();
-            foreach ($vt as $tag => $vlim) {
-                $lbase = strtolower($tag);
-                if ($myvotes[$lbase] < $vlim)
-                    $vlo[] = '<a class="q" href="' . hoturl("search", "q=editsort:-%23~$tag") . '">~' . $tag . '</a>#' . ($vlim - $myvotes[$lbase]);
-                else if ($myvotes[$lbase] > $vlim
-                         && $prow->has_tag($myprefix . $tag))
-                    $vhi[] = '<span class="nw"><a class="q" href="' . hoturl("search", "q=sort:-%23~$tag+edit:%23~$tag") . '">~' . $tag . '</a> (' . ($myvotes[$lbase] - $vlim) . " over)</span>";
-            }
-            if (count($vlo))
-                $ret->messages[] = 'Remaining <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vlo);
-            if (count($vhi))
-                $ret->warnings[] = 'Overallocated <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vhi);
-        }
-        return $ret;
-    }
-
-    static function alltags_api() {
-        global $Conf, $Me, $OK;
-        if (!$Me->isPC)
-            $Conf->ajaxExit(array("ok" => false));
-
-        $need_paper = $conflict_where = false;
-        $where = $args = array();
-
-        if ($Me->allow_administer(null)) {
-            $need_paper = true;
-            if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
-                $conflict_where = "(p.managerContactId=0 or p.managerContactId=$Me->contactId or pc.conflictType is null)";
-        } else if ($Conf->check_track_sensitivity("view")) {
-            $where[] = "t.paperId ?a";
-            $args[] = $Me->list_submitted_papers_with_viewable_tags();
-        } else {
-            $need_paper = true;
-            if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
-                $conflict_where = "(p.managerContactId=$Me->contactId or pc.conflictType is null)";
-            else if (!$Conf->setting("tag_seeall"))
-                $conflict_where = "pc.conflictType is null";
-        }
-
-        $q = "select distinct tag from PaperTag t";
-        if ($need_paper) {
-            $q .= " join Paper p on (p.paperId=t.paperId)";
-            $where[] = "p.timeSubmitted>0";
-        }
-        if ($conflict_where) {
-            $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$Me->contactId)";
-            $where[] = $conflict_where;
-        }
-        $q .= " where " . join(" and ", $where);
-
-        $tags = array();
-        $result = Dbl::qe_apply($q, $args);
-        while (($row = edb_row($result))) {
-            $twiddle = strpos($row[0], "~");
-            if ($twiddle === false
-                || ($twiddle == 0 && $row[0][1] === "~" && $Me->privChair))
-                $tags[] = $row[0];
-            else if ($twiddle > 0 && substr($row[0], 0, $twiddle) == $Me->contactId)
-                $tags[] = substr($row[0], $twiddle);
-        }
-        $Conf->ajaxExit(array("ok" => true, "tags" => $tags));
-    }
-
 }

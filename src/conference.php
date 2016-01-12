@@ -2548,8 +2548,8 @@ class Conf {
                     $t .= "<span class=\"$msg[0]\">$msg[1]</span>";
             }
         }
-        if (!isset($values["response"]) && $t !== "")
-            $values["response"] = $t;
+        if ($t !== "")
+            $values["response"] = $t . get_s($values, "response");
         if (isset($_REQUEST["jsontext"]) && $_REQUEST["jsontext"])
             header("Content-Type: text/plain");
         else

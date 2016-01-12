@@ -2734,7 +2734,7 @@ class Contact {
     }
 
     function can_view_tags(PaperInfo $prow = null, $forceShow = null) {
-        // see also PaperActions::alltags_api,
+        // see also PaperApi::alltags,
         // Contact::list_submitted_papers_with_viewable_tags
         global $Conf;
         if (!$prow)

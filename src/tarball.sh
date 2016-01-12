@@ -149,6 +149,7 @@ src/meetingtracker.php
 src/messages.csv
 src/multiconference.php
 src/paperactions.php
+src/paperapi.php
 src/papercolumn.php
 src/paperinfo.php
 src/paperlist.php
