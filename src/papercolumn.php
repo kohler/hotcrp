@@ -293,71 +293,82 @@ class AuthorsPaperColumn extends PaperColumn {
         $this->aufull = !$pl->is_folded("aufull");
         return $pl->contact->can_view_some_authors();
     }
-    private function full_authors($row) {
-        $lastaff = "";
-        $anyaff = false;
-        $aus = $affaus = array();
-        foreach ($row->author_list() as $au) {
-            if ($au->affiliation != $lastaff && count($aus)) {
-                $affaus[] = array($aus, $lastaff);
-                $aus = array();
-                $anyaff = $anyaff || ($au->affiliation != "");
-            }
-            $lastaff = $au->affiliation;
-            $aus[] = $au->name();
+    private function affiliation_map($row) {
+        $nonempty_count = 0;
+        $aff = [];
+        foreach ($row->author_list() as $i => $au) {
+            if ($i && $au->affiliation === $aff[$i - 1])
+                $aff[$i - 1] = null;
+            $aff[] = $au->affiliation;
+            $nonempty_count += ($au->affiliation !== "");
         }
-        if (count($aus))
-            $affaus[] = array($aus, $lastaff);
-        foreach ($affaus as &$ax)
-            if ($ax[1] === "" && $anyaff)
-                $ax[1] = "unaffiliated";
-        return $affaus;
+        if ($nonempty_count != 0 && $nonempty_count != count($aff)) {
+            foreach ($aff as &$affx)
+                if ($affx === "")
+                    $affx = "unaffiliated";
+        }
+        return $aff;
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_authors($row, true);
     }
     public function content($pl, $row, $rowidx) {
-        $aus = array();
+        $out = [];
         $highlight = get($pl->search->matchPreg, "authorInformation", "");
-        if ($this->aufull) {
-            $affaus = $this->full_authors($row);
-            foreach ($affaus as &$ax) {
-                foreach ($ax[0] as &$axn)
-                    $axn = Text::highlight($axn, $highlight);
-                unset($axn);
-                $aff = Text::highlight($ax[1], $highlight);
-                $ax = commajoin($ax[0]) . ($aff ? " <span class='auaff'>($aff)</span>" : "");
-            }
-            return commajoin($affaus);
-        } else if (!$highlight) {
+        if (!$highlight && !$this->aufull) {
             foreach ($row->author_list() as $au)
-                $aus[] = $au->abbrevname_html();
-            return join(", ", $aus);
+                $out[] = $au->abbrevname_html();
+            return join(", ", $out);
         } else {
-            foreach ($row->author_list() as $au) {
-                $first = htmlspecialchars($au->firstName);
-                $x = Text::highlight($au->name(), $highlight, $nm);
-                if ((!$nm || substr($x, 0, strlen($first)) == $first)
-                    && ($initial = Text::initial($first)) != "")
-                    $x = $initial . substr($x, strlen($first));
-                $aus[] = $x;
+            $affmap = $this->affiliation_map($row);
+            $aus = $affout = [];
+            $any_affhl = false;
+            foreach ($row->author_list() as $i => $au) {
+                $name = Text::highlight($au->name(), $highlight, $didhl);
+                if (!$this->aufull
+                    && ($first = htmlspecialchars($au->firstName))
+                    && (!$didhl || substr($name, 0, strlen($first)) === $first)
+                    && ($initial = Text::initial($first)) !== "")
+                    $name = $initial . substr($name, strlen($first));
+                $auy[] = $name;
+                if ($affmap[$i] !== null) {
+                    $out[] = $this->aufull ? commajoin($auy) : join(", ", $auy);
+                    $affout[] = Text::highlight($affmap[$i], $highlight, $didhl);
+                    $any_affhl = $any_affhl || $didhl;
+                    $auy = [];
+                }
             }
-            return join(", ", $aus);
+            // $affout[0] === "" iff there are no nonempty affiliations
+            if (($any_affhl || $this->aufull) && $affout[0] !== "") {
+                foreach ($out as $i => &$x)
+                    $x .= ' <span class="auaff">(' . $affout[$i] . ')</span>';
+            }
+            if ($this->aufull)
+                return commajoin($out);
+            else
+                return join($any_affhl ? "; " : ", ", $out);
         }
     }
     public function text($pl, $row) {
         if (!$pl->contact->can_view_authors($row, true))
             return "";
-        if ($this->aufull) {
-            $affaus = $this->full_authors($row);
-            foreach ($affaus as &$ax)
-                $ax = commajoin($ax[0]) . ($ax[1] ? " ($ax[1])" : "");
-            return commajoin($affaus);
-        } else {
-            $aus = array();
+        $out = [];
+        if (!$this->aufull) {
             foreach ($row->author_list() as $au)
-                $aus[] = $au->abbrevname_text();
-            return join(", ", $aus);
+                $out[] = $au->abbrevname_text();
+            return join(", ", $out);
+        } else {
+            $affmap = $this->affiliation_map($row);
+            $aus = [];
+            foreach ($row->author_list() as $i => $au) {
+                $aus[] = $au->name();
+                if ($affmap[$i] !== null) {
+                    $aff = ($affmap[$i] !== "" ? " ($affmap[$i])" : "");
+                    $out[] = commajoin($aus) . $aff;
+                    $aus = [];
+                }
+            }
+            return commajoin($out);
         }
     }
 }
