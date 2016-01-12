@@ -225,7 +225,7 @@ if ($reviewer > 0) {
                 . nl2br(htmlspecialchars($row->collaborators))
                 . "</div>";
 
-        $useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
+        $useless_words = array("university" => 1, "the" => 1, "and" => 1, "of" => 1, "univ" => 1, "none" => 1, "a" => 1, "an" => 1, "at" => 1, "jr" => 1, "sr" => 1, "iii" => 1);
 
         // search outline from old CRP, done here in a very different way
         preg_match_all('/[a-z&]{2,}/', strtolower($row->firstName . " " . $row->lastName . " " . $row->affiliation), $match);
@@ -255,7 +255,7 @@ if ($reviewer > 0) {
         if ($showco !== "")
             $col[2][] = "<div class='f-c'>Conflict search terms for paper collaborators</div><div class='f-e'>"
                 . htmlspecialchars(rtrim($showco)) . "</div>";
-        $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search)) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
+        $col[2][] = "<a href=\"" . hoturl("search", "q=" . urlencode(join(" OR ", $search) . ($showco ? " show:co" : "") . ($showau ? " show:au" : "")) . "&amp;linkto=assign") . "\">Search for potential conflicts</a>";
     }
 
     // Topic links
