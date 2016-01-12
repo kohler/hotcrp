@@ -1410,6 +1410,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new ReviewerListPaperColumn);
     PaperColumn::register(new AuthorsPaperColumn);
     PaperColumn::register(new CollabPaperColumn);
+    PaperColumn::register_synonym("co", "collab");
     PaperColumn::register(new TagListPaperColumn);
     PaperColumn::register(new AbstractPaperColumn);
     PaperColumn::register(new LeadPaperColumn);
