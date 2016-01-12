@@ -77,7 +77,7 @@ function rf_update() {
 
     $rf = ReviewForm::get();
     foreach ($rf->fmap as $fid => $f) {
-        $nrfj->$fid = $fj = (object) array();
+        $fj = (object) array();
 
         $sn = simplify_whitespace(defval($_REQUEST, "shortName_$fid", ""));
         if ($sn == "<None>" || $sn == "<New field>" || $sn == "Field name")
@@ -92,7 +92,7 @@ function rf_update() {
         else if ($pos > 0)
             $shortNameError = $Error["shortName_$fid"] = true;
 
-        $fj->view_score = @$_REQUEST["authorView_$fid"];
+        $fj->visibility = @$_REQUEST["authorView_$fid"];
 
         $x = CleanHTML::clean(defval($_REQUEST, "description_$fid", ""), $err);
         if ($x === false) {
@@ -125,6 +125,10 @@ function rf_update() {
         if (($rlist = @$_REQUEST["round_list_$fid"]))
             foreach (explode(" ", trim($rlist)) as $round_name)
                 $fj->round_mask |= 1 << $Conf->round_number($round_name, false);
+
+        $xf = clone $f;
+        $xf->assign($fj);
+        $nrfj->$fid = $xf->unparse_json();
     }
 
     if ($shortNameError)

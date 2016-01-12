@@ -123,7 +123,7 @@ function parse_field(fid) {
     if ((x = $.trim($("#description_" + fid).val())) !== "")
         fieldj.description = x;
     if ((x = $("#options_" + fid).val()) != "pc")
-        fieldj.view_score = x;
+        fieldj.visibility = x;
     if (original[fid].options) {
         if (!text_to_options(fieldj, $("#options_" + fid).val()))
             return false;
@@ -174,7 +174,7 @@ function check_change(fid) {
     if ($.trim($("#shortName_" + fid).val()) != fieldj.name
         || $("#order_" + fid).val() != (fieldj.position || 0)
         || $("#description_" + fid).val() != (fieldj.description || "")
-        || $("#authorView_" + fid).val() != (fieldj.view_score || "pc")
+        || $("#authorView_" + fid).val() != (fieldj.visibility || "pc")
         || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
         || ((j = $("#option_class_prefix_" + fid)) && j.length
             && j.val() != option_class_prefix(fieldj))
@@ -204,7 +204,7 @@ function fill_field(fid, fieldj) {
     $("#shortName_" + fid).val(fieldj.name || "");
     $("#order_" + fid).val(fieldj.position || 0);
     $("#description_" + fid).val(fieldj.description || "");
-    $("#authorView_" + fid).val(fieldj.view_score || "pc");
+    $("#authorView_" + fid).val(fieldj.visibility || "pc");
     $("#options_" + fid).val(options_to_text(fieldj));
     $("#option_class_prefix_flipped_" + fid).val(fieldj.option_letter ? "1" : "");
     $("#option_class_prefix_" + fid).val(option_class_prefix(fieldj));
@@ -317,11 +317,11 @@ function create_field_view(fid, fieldj) {
     $f.find(".settings_revfn").text(fieldj.name || "<unnamed>");
 
     x = "";
-    if ((fieldj.view_score || "pc") === "pc")
+    if ((fieldj.visibility || "pc") === "pc")
         x = "(hidden from authors)";
-    else if (fieldj.view_score === "admin")
+    else if (fieldj.visibility === "admin")
         x = "(shown only to administrators)";
-    else if (fieldj.view_score === "secret")
+    else if (fieldj.visibility === "secret")
         x = "(secret)";
     $x = $f.find(".settings_revvis");
     x ? $x.text(x) : $x.remove();

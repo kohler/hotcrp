@@ -10,7 +10,7 @@
             "Top 10% but not top 5% of submitted papers",
             "Top 5% of submitted papers!"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Overall merit (1–5, Reject through Strong Accept)",
@@ -23,7 +23,7 @@
             "Accept",
             "Strong accept"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Overall merit (A–D, Identify the Champion)",
@@ -36,7 +36,7 @@
             "Good paper, I will champion it"
         ],
         "option_letter": "A",
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Reviewer confidence (1–3, Low through High)",
@@ -47,7 +47,7 @@
             "Medium",
             "High"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Reviewer expertise (1–5)",
@@ -60,7 +60,7 @@
              "I know a lot about this area",
              "This is my area"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Confidence (X–Z, Identify the Champion)",
@@ -72,7 +72,7 @@
             "I am an expert in this area"
         ],
         "option_letter": "X",
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Novelty (1–4)",
@@ -84,7 +84,7 @@
              "New contribution",
              "Surprisingly new contribution"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Writing quality (1–5)",
@@ -97,7 +97,7 @@
              "Well-written",
              "Outstanding"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Experimental methodology (1–5)",
@@ -110,7 +110,7 @@
              "Good",
              "Excellent"
         ],
-        "view_score": "author"
+        "visibility": "author"
     },
 
     {
@@ -118,39 +118,39 @@
         "name": "Paper summary",
         "preferred_id": "paperSummary",
         "description": "Please summarize the paper briefly in your own words.",
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Strengths",
         "name": "Strengths",
         "preferred_id": "strengthOfPaper",
         "description": "What are the paper’s strengths? Just a couple sentences, please.",
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Weaknesses",
         "name": "Weaknesses",
         "preferred_id": "weaknessOfPaper",
         "description": "What are the paper’s weaknesses? Just a couple sentences, please.",
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Comments to authors",
         "name": "Comments to authors",
         "preferred_id": "commentsToAuthor",
-        "view_score": "author"
+        "visibility": "author"
     },
     {
         "selector": "Comments to PC",
         "name": "Comments to PC",
         "preferred_id": "commentsToPC",
-        "view_score": "pc"
+        "visibility": "pc"
     },
     {
         "selector": "Response questions",
         "name": "Questions for authors’ response",
         "preferred_id": "commentsToAddress",
         "description": "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
-        "view_score": "author"
+        "visibility": "author"
     }
 ]

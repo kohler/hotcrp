@@ -2305,10 +2305,10 @@ function render_review(j, rrow) {
 
         t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
             '"><div class="revvt"><div class="revfn">' + f.name_html;
-        if (f.view_score != "author")
+        if (f.visibility != "author")
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
-                   pc: "hidden from authors"})[f.view_score] || f.view_score) +
+                   pc: "hidden from authors"})[f.visibility] || f.visibility) +
                 ')</div>';
         t += '</div><hr class="c" /></div><div class="revv';
 

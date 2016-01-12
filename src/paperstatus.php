@@ -592,13 +592,15 @@ class PaperStatus {
         }
 
         // Inherit contactness
-        if (isset($pj->authors) && $old_pj) {
-            foreach ($old_pj->authors ? : [] as $au)
+        if (isset($pj->authors) && $old_pj && isset($old_pj->authors)) {
+            foreach ($old_pj->authors as $au)
                 if (@$au->contact && $au->email
                     && ($aux = @$au_by_email[strtolower($au->email)])
                     && !isset($aux->contact))
                     $aux->contact = true;
-            foreach (@$old_pj->contacts ? : [] as $au)
+        }
+        if (isset($pj->authors) && $old_pj && isset($old_pj->contacts)) {
+            foreach ($old_pj->contacts as $au)
                 if (($aux = @$au_by_email[strtolower($au->email)])
                     && !isset($aux->contact))
                     $aux->contact = true;
