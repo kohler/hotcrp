@@ -2155,8 +2155,11 @@ class Contact {
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
                 && $rrowSubmitted
-                && $viewscore >= VIEWSCORE_AUTHOR
-                && $this->can_view_submitted_review_as_author($prow))
+                && $this->can_view_submitted_review_as_author($prow)
+                && ($viewscore >= VIEWSCORE_AUTHOR
+                    || ($viewscore >= VIEWSCORE_AUTHORDEC
+                        && $prow->outcome
+                        && $this->can_view_decision($prow, $forceShow))))
             || ($rights->allow_pc
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
@@ -2676,10 +2679,11 @@ class Contact {
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
         // Returns the maximum view_score for an invisible review
         // field. Values are:
-        //   VIEWSCORE_ADMINONLY     -2   admin can view
-        //   VIEWSCORE_REVIEWERONLY  -1   admin and review author can view
-        //   VIEWSCORE_PC             0   admin and PC/any reviewer can view
-        //   VIEWSCORE_AUTHOR         1   admin and PC/any reviewer and author can view
+        //   VIEWSCORE_ADMINONLY     admin can view
+        //   VIEWSCORE_REVIEWERONLY  ... and review author can view
+        //   VIEWSCORE_PC            ... and any PC/reviewer can view
+        //   VIEWSCORE_AUTHORDEC     ... and authors can view when decisions visible
+        //   VIEWSCORE_AUTHOR        ... and authors can view
         // So returning -3 means all scores are visible.
         // Deadlines are not considered.
         $rights = $this->rights($prow, $forceShow);
@@ -2689,6 +2693,10 @@ class Contact {
             return VIEWSCORE_REVIEWERONLY - 1;
         else if (!$this->can_view_review($prow, $rrow, $forceShow))
             return VIEWSCORE_MAX + 1;
+        else if ($rights->act_author_view
+                 && $prow->outcome
+                 && $this->can_view_decision($prow, $forceShow))
+            return VIEWSCORE_AUTHORDEC - 1;
         else if ($rights->act_author_view)
             return VIEWSCORE_AUTHOR - 1;
         else
@@ -2701,9 +2709,12 @@ class Contact {
             return VIEWSCORE_ADMINONLY - 1;
         else if ($this->is_reviewer())
             return VIEWSCORE_REVIEWERONLY - 1;
-        else if ($this->is_author() && $Conf->timeAuthorViewReviews())
-            return VIEWSCORE_AUTHOR - 1;
-        else
+        else if ($this->is_author() && $Conf->timeAuthorViewReviews()) {
+            if ($Conf->timeAuthorViewDecision())
+                return VIEWSCORE_AUTHORDEC - 1;
+            else
+                return VIEWSCORE_AUTHOR - 1;
+        } else
             return VIEWSCORE_MAX + 1;
     }
 

@@ -33,13 +33,19 @@ class ReviewField {
 
     static private $view_score_map = [
         "secret" => VIEWSCORE_ADMINONLY, "admin" => VIEWSCORE_REVIEWERONLY,
-        "pc" => VIEWSCORE_PC, "author" => VIEWSCORE_AUTHOR
+        "pc" => VIEWSCORE_PC,
+        "audec" => VIEWSCORE_AUTHORDEC, "authordec" => VIEWSCORE_AUTHORDEC,
+        "au" => VIEWSCORE_AUTHOR, "author" => VIEWSCORE_AUTHOR
     ];
     // Hard-code the database's `view_score` values as of January 2016
     static private $view_score_upgrade_map = [
-        "-2" => "secret", "-1" => "admin", "0" => "pc", "1" => "author"
+        "-2" => "secret", "-1" => "admin", "0" => "pc", "1" => "au"
     ];
-    static private $view_score_rmap = null;
+    static private $view_score_rmap = [
+        VIEWSCORE_ADMINONLY => "secret", VIEWSCORE_REVIEWERONLY => "admin",
+        VIEWSCORE_PC => "pc", VIEWSCORE_AUTHORDEC => "audec",
+        VIEWSCORE_AUTHOR => "au"
+    ];
 
     public function __construct($id, $has_options) {
         $this->id = $id;
@@ -126,8 +132,6 @@ class ReviewField {
     }
 
     static public function unparse_visibility_value($vs) {
-        if (!self::$view_score_rmap)
-            self::$view_score_rmap = array_flip(self::$view_score_map);
         if (isset(self::$view_score_rmap[$vs]))
             return self::$view_score_rmap[$vs];
         else
@@ -375,12 +379,12 @@ class ReviewForm {
         // parse JSON
         if (!$rfj)
             $rfj = json_decode('{
-"overAllMerit":{"name":"Overall merit","position":1,"visibility":"author",
+"overAllMerit":{"name":"Overall merit","position":1,"visibility":"au",
   "options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},
-"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"author",
+"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au",
   "options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},
-"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"visibility":"author"},
-"commentsToAuthor":{"name":"Comments to authors","position":4,"visibility":"author"},
+"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},
+"commentsToAuthor":{"name":"Comments to authors","position":4,"visibility":"au"},
 "commentsToPC":{"name":"Comments to PC","position":5,"visibility":"pc"}}');
 
         foreach ($rfj as $fname => $j)

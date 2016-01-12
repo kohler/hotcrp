@@ -2305,7 +2305,7 @@ function render_review(j, rrow) {
 
         t += '<div class="rv rv' + "glr".charAt(display) + '" data-rf="' + f.uid +
             '"><div class="revvt"><div class="revfn">' + f.name_html;
-        if (f.visibility != "author")
+        if (f.visibility != "au" && f.visibility != "audec")
             t += '<div class="revvis">(' +
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors"})[f.visibility] || f.visibility) +

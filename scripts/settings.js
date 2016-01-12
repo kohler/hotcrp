@@ -251,8 +251,9 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
     <div class="f-ix">\
       <div class="f-c">Visibility</div>\
       <select name="authorView_$" id="authorView_$" class="reviewfield_authorView">\
-        <option value="author">Authors &amp; reviewers</option>\
+        <option value="au">Shown to authors</option>\
         <option value="pc">Hidden from authors</option>\
+        <option value="audec">Hidden from authors until decision</option>\
         <option value="admin">Shown only to administrators</option>\
       </select>\
     </div>\
@@ -323,6 +324,8 @@ function create_field_view(fid, fieldj) {
         x = "(shown only to administrators)";
     else if (fieldj.visibility === "secret")
         x = "(secret)";
+    else if (fieldj.visibility === "audec")
+        x = "(hidden from authors until decision)";
     $x = $f.find(".settings_revvis");
     x ? $x.text(x) : $x.remove();
 
