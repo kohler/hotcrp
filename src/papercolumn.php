@@ -1197,7 +1197,7 @@ class FormulaPaperColumn extends PaperColumn {
             $view_bound = max($view_bound, VIEWSCORE_AUTHOR - 1);
         if (!$pl->scoresOk
             || !$this->formula->check()
-            || $this->formula->base_view_score() <= $view_bound)
+            || $this->formula->view_score($pl->contact) <= $view_bound)
             return false;
         $this->formula_function = $this->formula->compile_function($pl->contact);
         if ($visible)

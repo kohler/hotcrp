@@ -860,4 +860,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql("alter table PaperReview add `timeDisplayed` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("alter table PaperComment add `timeDisplayed` int(11) NOT NULL DEFAULT '0'"))
         $Conf->update_schema_version(115);
+    if ($Conf->sversion == 115
+        && Dbl::ql("alter table Formula drop column `authorView`"))
+        $Conf->update_schema_version(116);
 }

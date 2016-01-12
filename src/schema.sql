@@ -86,7 +86,6 @@ CREATE TABLE `Formula` (
   `heading` varchar(200) NOT NULL DEFAULT '',
   `headingTitle` varbinary(4096) NOT NULL,
   `expression` varbinary(4096) NOT NULL,
-  `authorView` tinyint(1) NOT NULL DEFAULT '1',
   `createdBy` int(11) NOT NULL DEFAULT '0',
   `timeModified` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`formulaId`),
@@ -451,7 +450,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 115);
+insert into Settings (name, value) values ('allowPaperOption', 116);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

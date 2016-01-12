@@ -930,7 +930,6 @@ class Formula {
     public $heading = "";
     public $headingTitle = "";
     public $expression = null;
-    public $authorView = null;
     public $allowReview = false;
     private $needsReview = false;
     public $datatypes = 0;
@@ -1024,8 +1023,6 @@ class Formula {
             }
         }
         $this->_parse = (count($this->_error_html) ? false : $e);
-        if ($this->authorView === null)
-            $this->authorView = $this->view_score($Me);
         return !!$this->_parse;
     }
 
@@ -1402,11 +1399,6 @@ class Formula {
             if ($this->needsReview)
                 $state->loop_variable($state->all_datatypes);
         }
-    }
-
-    public function base_view_score() {
-        $this->check();
-        return $this->authorView;
     }
 
     public function view_score(Contact $contact) {
