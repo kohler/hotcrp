@@ -24,11 +24,11 @@ if ($Me->privChair) {
     foreach ($kiosks as $k => $kj)
         if ($kj->update_at >= $Now - 7200)
             $kiosk_keys[$kj->show_papers ? 1 : 0] = $k;
-    for ($show_papers = 0; $show_papers <= 1; ++$show_papers)
-        if (!$kiosk_keys[$show_papers]) {
+    for ($i = 0; $i <= 1; ++$i)
+        if (!$kiosk_keys[$i]) {
             $key = hotcrp_random_password();
-            $kiosks[$key] = (object) array("update_at" => $Now, "show_papers" => !!$show_papers);
-            $kiosk_keys[$show_papers] = $kchange = $key;
+            $kiosks[$key] = (object) array("update_at" => $Now, "show_papers" => !!$i);
+            $kiosk_keys[$i] = $kchange = $key;
         }
     // save kiosks
     if ($kchange)
@@ -58,12 +58,12 @@ else if (($key = $Me->capability("tracker_kiosk")))
     $kiosk = kiosk_lookup($key);
 
 if ($kiosk) {
-    $Me->is_tracker_kiosk = true;
-    $show_papers = $Me->tracker_kiosk_show_papers = $kiosk->show_papers;
+    $Me->tracker_kiosk_state = $kiosk->show_papers ? 2 : 1;
+    $show_papers = $kiosk->show_papers;
 }
 
 // user
-if (!$Me->isPC && !$Me->is_tracker_kiosk)
+if (!$Me->isPC && !$Me->tracker_kiosk_state)
     $Me->escape();
 
 // header and script

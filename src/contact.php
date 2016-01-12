@@ -71,6 +71,7 @@ class Contact {
     var $isPC = false;
     var $privChair = false;
     var $contactTags = null;
+    public $tracker_kiosk_state = false;
     const CAP_AUTHORVIEW = 1;
     private $capabilities = null;
     private $review_tokens_ = null;
@@ -1748,7 +1749,7 @@ class Contact {
         global $Conf;
         return $this->privChair
             || ($this->isPC && $Conf->check_tracks(null, $this, "viewtracker"))
-            || @$this->is_tracker_kiosk;
+            || $this->tracker_kiosk_state;
     }
 
     public function view_conflict_type(PaperInfo $prow = null) {
@@ -2982,7 +2983,7 @@ class Contact {
 
         // add meeting tracker
         $tracker = null;
-        if (($this->isPC || @$this->is_tracker_kiosk)
+        if (($this->isPC || $this->tracker_kiosk_state)
             && $Conf->setting("tracker")
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
@@ -2993,7 +2994,7 @@ class Contact {
                 $dl->tracker_hidden = true;
             $dl->now = microtime(true);
         }
-        if (($this->isPC || @$this->is_tracker_kiosk)
+        if (($this->isPC || $this->tracker_kiosk_state)
             && @$Opt["trackerCometSite"])
             $dl->tracker_site = $Opt["trackerCometSite"]
                 . "?conference=" . urlencode(Navigation::site_absolute(true));

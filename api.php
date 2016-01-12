@@ -125,8 +125,7 @@ if (!$Me->has_database_account()
             $kiosks->$key->update_at = $Now;
             $Conf->save_setting("__tracker_kiosk", 1, $kiosks);
         }
-        $Me->is_tracker_kiosk = true;
-        $Me->tracker_kiosk_show_papers = $kiosks->$key->show_papers;
+        $Me->tracker_kiosk_state = $kiosks->$key->show_papers ? 2 : 1;
     }
 }
 

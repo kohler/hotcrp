@@ -127,7 +127,7 @@ class MeetingTracker {
             $status->position_at = $tracker->position_at;
         $pids = array_slice($tracker->ids, $tracker->position, 3);
 
-        $pc_conflicts = $acct->privChair || @$acct->is_tracker_kiosk;
+        $pc_conflicts = $acct->privChair || $acct->tracker_kiosk_state;
         $col = $j = "";
         if ($pc_conflicts) {
             $col = ", allconfs.conflictIds";
@@ -145,7 +145,7 @@ class MeetingTracker {
         while (($row = edb_orow($result))) {
             $papers[$row->paperId] = $p = (object) array();
             if (($acct->privChair || !$row->conflictType || !@$status->hide_conflicts)
-                && (!@$acct->is_tracker_kiosk || @$acct->tracker_kiosk_show_papers)) {
+                && $acct->tracker_kiosk_state != 1) {
                 $p->pid = (int) $row->paperId;
                 $p->title = $row->title;
             }
