@@ -998,9 +998,9 @@ class EditTagPaperColumn extends TagPaperColumn {
     public function prepare(PaperList $pl, $visible) {
         if (($p = parent::prepare($pl, $visible)) && $visible > 0) {
             $pl->add_footer_html(
-                 Ht::form(hoturl_post("paper", "settags=1&amp;forceShow=1"),
-                           array("id" => "edittagajaxform",
-                                 "style" => "display:none")) . "<div>"
+                 Ht::form(hoturl_post("api", "fn=settags&amp;forceShow=1&amp;base=" . urlencode(Navigation::siteurl())),
+                          ["id" => "edittagajaxform",
+                           "style" => "display:none"]) . "<div>"
                  . Ht::hidden("p") . Ht::hidden("addtags")
                  . Ht::hidden("deltags") . "</div></form>",
                  "edittagajaxform");

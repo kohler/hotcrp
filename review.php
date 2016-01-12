@@ -351,10 +351,6 @@ if (isset($_REQUEST["setrevpref"]) && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();
 }
-if (isset($_REQUEST["settags"]) && check_post()) {
-    PaperActions::setTags($prow);
-    loadRows();
-}
 
 
 // can we view/edit reviews?

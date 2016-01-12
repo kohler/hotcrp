@@ -1357,14 +1357,12 @@ class PaperTable {
         echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">';
 
         if ($is_editable)
-            echo Ht::form_div(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;m=api&amp;fn=settags"), array("id" => "tagform", "onsubmit" => "return save_tags()"));
+            echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));
 
         echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
             '<div class="psv" style="position:relative">';
         if ($is_editable) {
             // tag report form
-            $Conf->footerHtml(Ht::form(hoturl_post("paper", "p=" . $this->prow->paperId . "&amp;tagreport=1"), array("id" => "tagreportform", "onsubmit" => "return Miniajax.submit('tagreportform')"))
-                              . "</form>");
             $treport = PaperApi::tagreport($Me, $this->prow);
 
             // uneditable
@@ -1389,7 +1387,6 @@ class PaperTable {
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div style="padding:1ex 0;text-align:right">',
-                Ht::hidden("settags", "1"),
                 Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)")),
                 " &nbsp;", Ht::submit("Save", array("class" => "bsm")),
                 "</div>",

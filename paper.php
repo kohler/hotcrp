@@ -620,15 +620,6 @@ if (isset($_REQUEST["delete"]) && check_post()) {
 }
 
 
-// paper actions
-if (isset($_REQUEST["settags"]) && check_post()) {
-    PaperActions::setTags($prow);
-    loadRows();
-}
-if (isset($_REQUEST["tagreport"]) && check_post())
-    PaperApi::tagreport_api($Me, make_qreq(), $prow);
-
-
 // correct modes
 $paperTable = new PaperTable($prow);
 $paperTable->resolveComments();

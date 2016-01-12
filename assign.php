@@ -447,13 +447,6 @@ if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
 }
 
 
-// paper actions
-if (isset($_REQUEST["settags"]) && check_post()) {
-    PaperActions::setTags($prow);
-    loadRows();
-}
-
-
 // paper table
 $paperTable = new PaperTable($prow, "assign");
 $paperTable->initialize(false, false);

@@ -100,46 +100,4 @@ class PaperActions {
     static function set_manager($prow, $value, $contact, $ajax = false) {
         return self::set_paper_pc($prow, $value, $contact, $ajax, "manager");
     }
-
-    static function setTags($prow, $ajax = null) {
-        global $Conf, $Me, $OK;
-        if (isset($_REQUEST["cancelsettags"]))
-            return;
-        if ($ajax === null)
-            $ajax = @$_REQUEST["ajax"];
-
-        // save tags using assigner
-        $x = array("paper,tag");
-        if (isset($_REQUEST["tags"])) {
-            $x[] = "$prow->paperId,all#clear";
-            foreach (TagInfo::split($_REQUEST["tags"]) as $t)
-                $x[] = "$prow->paperId," . CsvGenerator::quote($t);
-        }
-        foreach (TagInfo::split((string) @$_REQUEST["addtags"]) as $t)
-            $x[] = "$prow->paperId," . CsvGenerator::quote($t);
-        foreach (TagInfo::split((string) @$_REQUEST["deltags"]) as $t)
-            $x[] = "$prow->paperId," . CsvGenerator::quote($t . "#clear");
-        $assigner = new AssignmentSet($Me, $Me->is_admin_force());
-        $assigner->parse(join("\n", $x));
-        $error = join("<br>", $assigner->errors_html());
-        $ok = $assigner->execute();
-
-        // exit
-        $prow->load_tags();
-        if ($ajax && $ok) {
-            $treport = PaperApi::tagreport($Me, $prow);
-            if ($treport->warnings)
-                $Conf->warnMsg(join("<br>", $treport->warnings));
-            $taginfo = $prow->tag_info_json($Me);
-            $taginfo->ok = true;
-            $Conf->ajaxExit((array) $taginfo, true);
-        } else if ($ajax)
-            $Conf->ajaxExit(array("ok" => false, "error" => $error));
-        else {
-            if ($error)
-                $_SESSION["redirect_error"] = array("paperId" => $prow->paperId, "tags" => $error);
-            redirectSelf();
-        }
-        // NB normally redirectSelf() does not return
-    }
 }
