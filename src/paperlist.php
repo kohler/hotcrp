@@ -176,13 +176,11 @@ class PaperList {
             $this->viewmap->columns = true;
         if ($this->viewmap->stat || $this->viewmap->stats || $this->viewmap->totals)
             $this->viewmap->statistics = true;
-        if ($this->viewmap->authors) {
-            if ($this->viewmap->au === null)
-                $this->viewmap->au = true;
-            if ($this->viewmap->anonau === null)
-                $this->viewmap->anonau = true;
-        }
-        if ($this->viewmap->anonau && $this->viewmap->au === null)
+        if ($this->viewmap->authors && $this->viewmap->au === null)
+            $this->viewmap->au = true;
+        if ($this->viewmap->au && $this->viewmap->anonau === null)
+            $this->viewmap->anonau = true;
+        else if ($this->viewmap->anonau && $this->viewmap->au === null)
             $this->viewmap->au = true;
         if ($this->viewmap->rownumbers)
             $this->viewmap->rownum = true;
