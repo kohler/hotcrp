@@ -303,7 +303,7 @@ class PaperStatus {
     }
 
     private function normalize_string($pj, $k, $simplify) {
-        if (@$pj->$k !== null)
+        if (isset($pj->$k))
             if (is_string($pj->$k))
                 $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
             else {
@@ -436,11 +436,22 @@ class PaperStatus {
         $this->normalize_string($pj, "title", true);
         $this->normalize_string($pj, "abstract", false);
         $this->normalize_string($pj, "collaborators", false);
+        if (isset($pj->collaborators)) {
+            $collab = [];
+            foreach (preg_split('/[\r\n]+/', $pj->collaborators) as $line)
+                $collab[] = preg_replace('/[,;\s]+\z/', '', $line);
+            while (count($collab) && $collab[count($collab) - 1] === "")
+                array_pop($collab);
+            if (count($collab))
+                $pj->collaborators = join("\n", $collab) . "\n";
+            else
+                $pj->collaborators = "";
+        }
 
         // Authors
         $au_by_email = array();
         $pj->bad_authors = array();
-        if (@$pj->authors !== null) {
+        if (isset($pj->authors)) {
             if (!is_array($pj->authors))
                 $this->set_error_html("author", "Format error [authors]");
             // old author information
