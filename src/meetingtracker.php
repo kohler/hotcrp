@@ -209,7 +209,7 @@ class MeetingTracker {
             return "off";
     }
 
-    static function trackerstatus_api($user, $qreq, $prow) {
+    static function trackerstatus_api($user = null, $qreq = null, $prow = null) {
         $tracker = self::lookup();
         $a = array("ok" => true, "tracker_status" => self::tracker_status($tracker));
         if ($tracker && $tracker->position_at)

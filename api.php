@@ -20,10 +20,14 @@ if (!isset($_GET["p"])
     && ctype_digit($p))
     $_GET["p"] = $p;
 
-// prevent session creation for trackerstatus (must precede initweb)
+// trackerstatus is a special case: prevent session creation
 global $Me;
-if ($_GET["fn"] === "trackerstatus")
+if ($_GET["fn"] === "trackerstatus") {
     $Me = false;
+    require_once("src/initweb.php");
+    MeetingTracker::trackerstatus_api();
+    exit;
+}
 
 // initialization
 require_once("src/initweb.php");
@@ -31,7 +35,7 @@ require_once("src/initweb.php");
 $qreq = make_qreq();
 if ($qreq->base !== null)
     $Conf->set_siteurl($qreq->base);
-if ($Me && !$Me->has_database_account()
+if (!$Me->has_database_account()
     && ($key = $Me->capability("tracker_kiosk"))) {
     $kiosks = setting_json("__tracker_kiosk") ? : (object) array();
     if (isset($kiosks->$key) && $kiosks->$key->update_at >= $Now - 172800) {
