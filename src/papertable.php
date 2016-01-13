@@ -64,7 +64,6 @@ class PaperTable {
         if ($prow->myReviewType >= REVIEW_SECONDARY
             || $Me->allow_administer($prow))
             $ms["assign"] = true;
-        $ms["api"] = true;
         if (!$mode)
             $mode = @$_REQUEST["m"] ? : @$_REQUEST["mode"];
         if ($mode === "pe")

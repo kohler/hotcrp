@@ -178,9 +178,10 @@ class PaperList {
             $this->viewmap->statistics = true;
         if ($this->viewmap->authors && $this->viewmap->au === null)
             $this->viewmap->au = true;
-        if ($this->viewmap->au && $this->viewmap->anonau === null)
+        if ($Conf->submission_blindness() != Conf::BLIND_OPTIONAL
+            && $this->viewmap->au && $this->viewmap->anonau === null)
             $this->viewmap->anonau = true;
-        else if ($this->viewmap->anonau && $this->viewmap->au === null)
+        if ($this->viewmap->anonau && $this->viewmap->au === null)
             $this->viewmap->au = true;
         if ($this->viewmap->rownumbers)
             $this->viewmap->rownum = true;
