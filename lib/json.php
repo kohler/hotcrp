@@ -18,6 +18,12 @@
 
 define("JSON_HOTCRP", 1);
 
+if (!interface_exists("JsonSerializable")) {
+    interface JsonSerializable {
+        public function jsonSerialize();
+    }
+}
+
 class Json {
     static $string_map =
         array("\\" => "\\\\", "\"" => "\\\"", "/" => "\\/",
@@ -185,6 +191,8 @@ class Json {
     // XXX not a full emulation of json_encode(); hopefully that won't matter
     // in the fullness of time
     static function encode($x, $options = 0) {
+        if ($x instanceof JsonSerializable)
+            $x = $x->jsonSerialize();
         if ($x === null)
             return "null";
         else if ($x === false)

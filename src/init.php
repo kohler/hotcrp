@@ -112,6 +112,7 @@ class SiteLoader {
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "FormulaPaperColumn" => "src/papercolumn.php",
+        "JsonSerializable" => "lib/json.php",
         "LoginHelper" => "lib/login.php",
         "MimeText" => "lib/mailer.php",
         "NumericOrderPaperColumn" => "src/papercolumn.php",
