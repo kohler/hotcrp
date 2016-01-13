@@ -75,26 +75,6 @@ if (!$newPaper)
 
 
 // paper actions
-function handle_api() {
-    global $Conf, $Me, $prow;
-    if (!check_post() || !@$_REQUEST["fn"])
-        $Conf->ajaxExit(array("ok" => false));
-    if (!$prow)
-        $Conf->ajaxExit(array("ok" => false, "error" => "No such paper."));
-    if ($_REQUEST["fn"] == "setdecision")
-        PaperApi::setdecision_api($Me, make_qreq(), $prow);
-    else if ($_REQUEST["fn"] == "setlead")
-        PaperActions::set_lead($prow, @$_REQUEST["lead"], $Me, true);
-    else if ($_REQUEST["fn"] == "setshepherd")
-        PaperActions::set_shepherd($prow, @$_REQUEST["shepherd"], $Me, true);
-    else if ($_REQUEST["fn"] == "setmanager")
-        PaperActions::set_manager($prow, @$_REQUEST["manager"], $Me, true);
-    else if ($_REQUEST["fn"] == "settags")
-        PaperApi::settags_api($Me, make_qreq(), $prow);
-    $Conf->ajaxExit(array("ok" => false, "error" => "Unknown action."));
-}
-if (@$_REQUEST["m"] === "api")
-    handle_api();
 if (isset($_REQUEST["setrevpref"]) && $prow && check_post()) {
     PaperActions::setReviewPreference($prow);
     loadRows();

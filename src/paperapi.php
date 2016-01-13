@@ -22,56 +22,42 @@ class PaperApi {
             json_exit(["ok" => false]);
     }
 
-    private static function set_paper_pc($prow, $value, $contact, $ajax, $type) {
-        global $Conf, $Error, $Me, $OK;
-
+    private static function set_paper_pc_api($user, $qreq, $prow, $type) {
         // canonicalize $value
+        $value = $qreq->$type;
+        $pc = null;
         if ($value === "0" || $value === 0 || $value === "none")
             $pc = 0;
         else if (is_string($value))
             $pc = pcByEmail($value);
-        else if (is_object($value) && ($value instanceof Contact))
-            $pc = $value;
-        else
-            $pc = null;
+        if (!$pc && $pc !== 0)
+            json_exit(["ok" => false, "error" => "No such PC member “" . htmlspecialchars($value) . "”."]);
 
-        if ($type == "manager" ? !$contact->privChair : !$contact->can_administer($prow)) {
-            Conf::msg_error("You don’t have permission to set the $type.");
-            $Error[$type] = true;
-        } else if ($pc === 0
-                   || ($pc && $pc->isPC && $pc->can_accept_review_assignment($prow))) {
-            $contact->assign_paper_pc($prow, $type, $pc);
-            if ($OK && $ajax)
-                $Conf->confirmMsg("Saved");
-        } else if ($pc) {
-            Conf::msg_error(Text::user_html($pc) . " can’t be the $type for paper #" . $prow->paperId . ".");
-            $Error[$type] = true;
-        } else {
-            Conf::msg_error("Bad $type setting “" . htmlspecialchars($value) . "”.");
-            $Error[$type] = true;
-        }
-
-        if ($ajax) {
-            $result = ["ok" => $OK && !@$Error[$type], "result" => $OK && $pc ? $pc->name_html() : "None"];
-            if ($Me->can_view_reviewer_tags($prow)) {
-                $tagger = new Tagger;
-                $result["color_classes"] = $pc ? $tagger->viewable_color_classes($pc->contactTags) : "";
-            }
-            $Conf->ajaxExit($result);
-        }
-        return $OK && !@$Error[$type];
+        if ($type == "manager" ? $user->privChair : $user->can_administer($prow)) {
+            if (!$pc || ($pc->isPC && $pc->can_accept_review_assignment($prow))) {
+                $user->assign_paper_pc($prow, $type, $pc);
+                $j = ["ok" => true, "result" => $pc ? $pc->name_html() : "None"];
+                if ($user->can_view_reviewer_tags($prow)) {
+                    $tagger = new Tagger($user);
+                    $j["color_classes"] = $pc ? $tagger->viewable_color_classes($pc->contactTags) : "";
+                }
+                json_exit($j);
+            } else
+                json_exit(["ok" => false, "error" => Text::user_html($pc) . " can’t be the $type for paper #{$prow->paperId}."]);
+        } else
+            json_exit(["ok" => false, "error" => "You don’t have permission to set the $type for paper #{$prow->paperId}."]);
     }
 
-    static function set_lead($prow, $value, $contact, $ajax = false) {
-        return self::set_paper_pc($prow, $value, $contact, $ajax, "lead");
+    static function setlead_api($user, $qreq, $prow) {
+        return self::set_paper_pc_api($user, $qreq, $prow, "lead");
     }
 
-    static function set_shepherd($prow, $value, $contact, $ajax = false) {
-        return self::set_paper_pc($prow, $value, $contact, $ajax, "shepherd");
+    static function setshepherd_api($user, $qreq, $prow) {
+        return self::set_paper_pc_api($user, $qreq, $prow, "shepherd");
     }
 
-    static function set_manager($prow, $value, $contact, $ajax = false) {
-        return self::set_paper_pc($prow, $value, $contact, $ajax, "manager");
+    static function setmanager_api($user, $qreq, $prow) {
+        return self::set_paper_pc_api($user, $qreq, $prow, "manager");
     }
 
     static function tagreport($user, $prow) {

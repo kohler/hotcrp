@@ -235,4 +235,20 @@ function xassert_assign($who, $override, $what) {
     xassert($assignset->execute());
 }
 
+function call_api($fn, $user, $qreq, $prow) {
+    if (!($qreq instanceof Qobject))
+        $qreq = new Qobject($qreq);
+    xassert(isset(SiteLoader::$api_map[$fn]));
+    $uf = SiteLoader::$api_map[$fn];
+    JsonResultException::$capturing = true;
+    $result = null;
+    try {
+        call_user_func($uf[0], $user, $qreq, $prow);
+    } catch (JsonResultException $jre) {
+        $result = new Qobject($jre->result);
+    }
+    JsonResultException::$capturing = false;
+    return $result;
+}
+
 echo "* Tests initialized.\n";

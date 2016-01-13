@@ -130,6 +130,9 @@ class SiteLoader {
     static $api_map = [
         "alltags" => ["PaperApi::alltags_api", self::API_GET],
         "setdecision" => ["PaperApi::setdecision_api", self::API_PAPER],
+        "setlead" => ["PaperApi::setlead_api", self::API_PAPER],
+        "setmanager" => ["PaperApi::setmanager_api", self::API_PAPER],
+        "setshepherd" => ["PaperApi::setshepherd_api", self::API_PAPER],
         "settags" => ["PaperApi::settags_api", self::API_PAPER],
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
         "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET] // hotcrp-comet entrypoint

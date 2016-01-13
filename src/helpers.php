@@ -257,9 +257,20 @@ function redirectSelf($extra = array()) {
     go(selfHref($extra, array("raw" => true)));
 }
 
+class JsonResultException extends Exception {
+    public $result;
+    static public $capturing = false;
+    function __construct($j) {
+        $this->result = $j;
+    }
+}
+
 function json_exit($json, $div = false) {
     global $Conf;
-    $Conf->ajaxExit($json, $div);
+    if (JsonResultException::$capturing)
+        throw new JsonResultException($json);
+    else
+        $Conf->ajaxExit($json, $div);
 }
 
 function foldbutton($foldtype, $foldnum = 0, $content = "") {

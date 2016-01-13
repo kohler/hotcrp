@@ -2858,7 +2858,7 @@ function make_pseditor(type, url) {
     function change() {
         var saveval = jQuery(edite).val();
         jQuery.ajax({
-            url: hoturl_post("paper", url), type: "POST", cache: false,
+            url: hoturl_post("api", url), type: "POST", cache: false,
             data: jQuery(folde).find("form").serialize(), dataType: "json",
             success: function (data) {
                 if (data.ok) {

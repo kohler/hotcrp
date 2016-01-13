@@ -1314,7 +1314,7 @@ class PaperTable {
                            ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
                            array("id" => "fold${type}_d")),
                 '</div></form>';
-            $Conf->footerScript('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',m:"api",fn:"set' . $type . '"})');
+            $Conf->footerScript('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"set' . $type . '"})');
         }
 
         if ($wholefold === null)
@@ -1413,7 +1413,7 @@ class PaperTable {
             '</div></form><p class="fn odname">',
             htmlspecialchars($Conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
-        $Conf->footerScript('make_pseditor("decision",{p:' . $this->prow->paperId . ',m:"api",fn:"setdecision"})');
+        $Conf->footerScript('make_pseditor("decision",{p:' . $this->prow->paperId . ',fn:"setdecision"})');
     }
 
     function papstripReviewPreference() {

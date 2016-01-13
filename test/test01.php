@@ -235,9 +235,12 @@ xassert(!$user_jon->can_accept_review_assignment($paper17));
 // check shepherd search visibility
 $paper11 = $Conf->paperRow(11, $user_chair);
 $paper12 = $Conf->paperRow(12, $user_chair);
-xassert(PaperActions::set_shepherd($paper11, $user_estrin, $user_chair));
-xassert(PaperActions::set_shepherd($paper12, $user_estrin, $user_chair));
+$j = call_api("setshepherd", $user_chair, ["shepherd" => $user_estrin->email], $paper11);
+xassert_eqq($j->ok, true);
+$j = call_api("setshepherd", $user_chair, ["shepherd" => $user_estrin->email], $paper12);
+xassert_eqq($j->ok, true);
 assert_search_papers($user_chair, "shep:any", "11 12");
+assert_search_papers($user_chair, "shep:estrin", "11 12");
 assert_search_papers($user_shenker, "shep:any", "11 12");
 
 // tag searches
