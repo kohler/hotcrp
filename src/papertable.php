@@ -363,7 +363,7 @@ class PaperTable {
             }
 
             foreach (PaperOption::option_list() as $id => $o)
-                if (@$o->near_submission
+                if ($o->display() === PaperOption::DISP_SUBMISSION
                     && $o->has_document()
                     && $prow
                     && $Me->can_view_paper_option($prow, $o)
@@ -421,7 +421,7 @@ class PaperTable {
         $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
     }
 
-    private function echo_editable_document($docx, $storageId, $flags) {
+    private function echo_editable_document(PaperOption $docx, $storageId, $flags) {
         global $Conf, $Me, $Opt;
 
         $prow = $this->prow;
@@ -443,7 +443,7 @@ class PaperTable {
         $accepts = $docclass->mimetypes();
         if (count($accepts))
             echo $this->editable_papt($docx->abbr, htmlspecialchars($docx->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
-        if (@$docx->description)
+        if ($docx->description)
             echo '<div class="paphint">', $docx->description, "</div>";
         echo '<div class="papev">';
 
@@ -749,8 +749,11 @@ class PaperTable {
 
         foreach ($this->prow->options() as $oa) {
             $o = $oa->option;
-            if ((@$o->near_submission && $o->has_document() && $Me->can_view_paper_option($this->prow, $o))
-                || (!$showAllOptions && !$Me->can_view_paper_option($this->prow, $o)))
+            if (($o->display() === PaperOption::DISP_SUBMISSION
+                 && $o->has_document()
+                 && $Me->can_view_paper_option($this->prow, $o))
+                || (!$showAllOptions
+                    && !$Me->can_view_paper_option($this->prow, $o)))
                 continue;
 
             // create option display value
@@ -791,7 +794,7 @@ class PaperTable {
 
             // display it
             $folded = $showAllOptions && !$Me->can_view_paper_option($this->prow, $o, false);
-            if (@$o->highlight || @$o->near_submission) {
+            if ($o->display() !== PaperOption::DISP_TOPICS) {
                 $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
                     . '<div class="pavt"><span class="pavfn">'
                     . ($show_on ? $on : $ox) . "</span>"
@@ -1108,8 +1111,8 @@ class PaperTable {
             return;
         assert(!!$this->editable);
         foreach ($opt as $o) {
-            if (!@($display_types[$o->display_type()])
-                || (@$o->final && !$this->canUploadFinal)
+            if (!($display_types & (1 << $o->display()))
+                || ($o->final && !$this->canUploadFinal)
                 || ($prow && !$Me->can_view_paper_option($prow, $o, true)))
                 continue;
 
@@ -1132,12 +1135,12 @@ class PaperTable {
             if ($o->type === "checkbox") {
                 echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)),
                                           array("id" => "{$optid}_div"));
-                if (@$o->description)
+                if ($o->description)
                     echo '<div class="paphint">', $o->description, "</div>";
                 Ht::stash_script("jQuery('#{$optid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
             } else if (!$o->is_document()) {
                 echo $this->editable_papt($optid, htmlspecialchars($o->name));
-                if (@$o->description)
+                if ($o->description)
                     echo '<div class="paphint">', $o->description, "</div>";
                 echo '<div class="papev">';
                 if ($o->type === "selector")
@@ -1922,7 +1925,7 @@ class PaperTable {
 
         $this->editable_title();
         $this->echo_editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
-        $this->editable_options(array("near_submission" => true));
+        $this->editable_options(1 << PaperOption::DISP_SUBMISSION);
 
         // Authorship
         $this->editable_authors();
@@ -1938,7 +1941,8 @@ class PaperTable {
 
         // Topics and options
         $this->editable_topics();
-        $this->editable_options(array("normal" => true, "highlight" => true));
+        $this->editable_options((1 << PaperOption::DISP_PROMINENT)
+                                | (1 << PaperOption::DISP_TOPICS));
 
         // Potential conflicts
         if ($this->editable !== "f" || $this->admin) {

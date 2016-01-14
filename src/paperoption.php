@@ -21,7 +21,7 @@ class PaperOptionValue {
                 if ($docid > 1 && ($d = paperDocumentData($prow, $this->id, $docid))) {
                     $d->docclass = $docclass = $docclass ? : new HotCRPDocument($this->id);
                     $d->unique_filename = $d->filename;
-                    while (@$by_unique_filename[$d->unique_filename]) {
+                    while (get($by_unique_filename, $d->unique_filename)) {
                         if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $d->unique_filename, $m))
                             $d->unique_filename = $m[1] . ($m[2] + 1) . $m[3];
                         else if (preg_match('/\A(.*?)(\.\w+|)\z/', $d->unique_filename, $m) && $m[1] !== "")
@@ -46,26 +46,51 @@ class PaperOption {
     public $position;
     public $final;
     public $visibility; // "rev", "nonblind", "admin"
-    public $near_submission;
-    public $highlight;
+    private $display;
     public $display_space;
     public $selector;
-    private static $list = null;
+
+    static private $list = null;
+
+    const DISP_TOPICS = 0;
+    const DISP_PROMINENT = 1;
+    const DISP_SUBMISSION = 2;
+    const DISP_DEFAULT = 3;
+    static private $display_map = [
+        "default" => self::DISP_DEFAULT, "submission" => self::DISP_SUBMISSION,
+        "topics" => self::DISP_TOPICS, "prominent" => self::DISP_PROMINENT
+    ];
+    static private $display_rmap = null;
 
     function __construct($args) {
-        foreach ($args as $k => $v)
-            $this->$k = $v;
-        if (isset($this->view_type) && !$this->visibility) {
-            $this->visibility = $this->view_type;
-            if ($this->visibility === "pc")
-                $this->visibility = "rev";
-        }
-        if (!$this->visibility)
-            $this->visibility = "rev";
-        if (!$this->abbr)
+        if (is_object($args))
+            $args = get_object_vars($args);
+        $this->id = (int) $args["id"];
+        $this->name = $args["name"];
+        $this->type = $args["type"];
+        if (!($this->abbr = get_s($args, "abbr")))
             $this->abbr = self::abbreviate($this->name, $this->id);
-        if (!$this->description)
-            $this->description = "";
+        $this->description = get_s($args, "description");
+        $this->position = get_i($args, "position");
+        $this->final = !!get($args, "final");
+
+        $vis = get($args, "visibility") ? : get($args, "view_type");
+        if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
+            $vis = "rev";
+        $this->visibility = $vis;
+
+        $disp = get($args, "display");
+        if (get($args, "near_submission"))
+            $disp = "submission";
+        if (get($args, "highlight"))
+            $disp = "prominent";
+        if ($disp === null)
+            $disp = "topics";
+        $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
+
+        if (($x = get($args, "display_space")))
+            $this->display_space = (int) $x;
+        $this->selector = get($args, "selector");
     }
 
     static function compare($a, $b) {
@@ -96,7 +121,7 @@ class PaperOption {
     static function find($id) {
         if (self::$list === null)
             self::option_list();
-        return @self::$list[$id];
+        return get(self::$list, $id);
     }
 
     static function find_document($id) {
@@ -109,12 +134,12 @@ class PaperOption {
     }
 
     static function search($name) {
-        $name = @strtolower($name);
-        if ((string) $name === (string) DTYPE_SUBMISSION
+        $name = strtolower($name);
+        if ($name === (string) DTYPE_SUBMISSION
             || $name === "paper"
             || $name === "submission")
             return array(DTYPE_SUBMISSION => self::find_document(DTYPE_SUBMISSION));
-        else if ((string) $name === (string) DTYPE_FINAL
+        else if ($name === (string) DTYPE_FINAL
                  || $name === "final")
             return array(DTYPE_FINAL => self::find_document(DTYPE_FINAL));
         if (self::$list === null)
@@ -164,7 +189,7 @@ class PaperOption {
     }
 
     function has_document() {
-        return $this->is_document() || $this->type === "attachments";
+        return $this->type === "attachments" || $this->is_document();
     }
 
     function needs_data() {
@@ -175,13 +200,17 @@ class PaperOption {
         return $this->type === "attachments";
     }
 
-    function display_type() {
-        if (@$this->near_submission)
-            return "near_submission";
-        else if (@$this->highlight)
-            return "highlight";
+    function display_name() {
+        if (!self::$display_rmap)
+            self::$display_rmap = array_flip(self::$display_map);
+        return self::$display_rmap[$this->display];
+    }
+
+    function display() {
+        if ($this->display === self::DISP_DEFAULT)
+            return $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
         else
-            return "normal";
+            return $this->display;
     }
 
     function unparse() {
@@ -190,19 +219,16 @@ class PaperOption {
                             "abbr" => $this->abbr,
                             "type" => $this->type,
                             "position" => (int) $this->position);
-        if (@$this->description)
+        if ($this->description)
             $j->description = $this->description;
-        if (@$this->final)
+        if ($this->final)
             $j->final = true;
-        if (@$this->near_submission)
-            $j->near_submission = true;
-        if (@$this->highlight)
-            $j->highlight = true;
-        if (@$this->visibility && $this->visibility !== "rev")
+        $j->display = $this->display_name();
+        if ($this->visibility !== "rev")
             $j->visibility = $this->visibility;
-        if (@$this->display_space)
+        if ($this->display_space)
             $j->display_space = $this->display_space;
-        if (@$this->selector)
+        if ($this->selector)
             $j->selector = $this->selector;
         return $j;
     }
@@ -212,7 +238,7 @@ class PaperOption {
                    "yes" => array("{$this->abbr}:yes", $this));
         if ($this->type === "numeric")
             $x["numeric"] = array("{$this->abbr}:>100", $this);
-        if ($this->has_selector() && @$this->selector[1]) {
+        if ($this->has_selector() && isset($this->selector[1])) {
             if (preg_match('/\A\w+\z/', $this->selector[1]))
                 $x["selector"] = array("{$this->abbr}:" . strtolower($this->selector[1]), $this);
             else if (!strpos($this->selector[1], "\""))
@@ -243,7 +269,7 @@ class PaperOption {
             return 0;
         $options = self::option_list();
         $prow->option_array = array();
-        if (!count($options) || @$prow->optionIds === "")
+        if (!count($options) || get($prow, "optionIds") === "")
             return 0;
 
         $optsel = array();
@@ -283,5 +309,4 @@ class PaperOption {
 
         return count($prow->option_array);
     }
-
 }

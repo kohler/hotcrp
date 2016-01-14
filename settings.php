@@ -471,27 +471,26 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
     global $Conf;
 
     $name = simplify_whitespace(defval($_POST, "optn$id", ""));
-    if (!isset($_POST["optn$id"]) && $id[0] != "n") {
-        if (@$current_opts[$id])
+    if (!isset($_POST["optn$id"]) && $id[0] !== "n") {
+        if (get($current_opts, $id))
             $new_opts[$id] = $current_opts[$id];
         return;
-    } else if ($name == ""
-               || @$_POST["optfp$id"] == "delete"
-               || ($id[0] == "n" && ($name == "New option" || $name == "(Enter new option)")))
+    } else if ($name === ""
+               || $_POST["optfp$id"] === "delete"
+               || ($id[0] === "n" && ($name === "New option" || $name === "(Enter new option)")))
         return;
 
-    $oarg = array("name" => $name, "id" => (int) $id, "req_id" => $id);
-    if ($id[0] == "n") {
+    $oarg = ["name" => $name, "id" => (int) $id, "final" => false];
+    if ($id[0] === "n") {
         $nextid = max($Conf->setting("next_optionid", 1), 1);
         foreach ($new_opts as $haveid => $o)
             $nextid = max($nextid, $haveid + 1);
         foreach ($current_opts as $haveid => $o)
             $nextid = max($nextid, $haveid + 1);
         $oarg["id"] = $nextid;
-        $oarg["is_new"] = true;
     }
 
-    if (@$_POST["optd$id"] && trim($_POST["optd$id"]) != "") {
+    if (get($_POST, "optd$id") && trim($_POST["optd$id"]) != "") {
         $t = CleanHTML::clean($_POST["optd$id"], $err);
         if ($t === false) {
             $Error[] = $err;
@@ -500,7 +499,7 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
             $oarg["description"] = $t;
     }
 
-    if (($optvt = @$_POST["optvt$id"])) {
+    if (($optvt = get($_POST, "optvt$id"))) {
         if (($pos = strpos($optvt, ":")) !== false) {
             $oarg["type"] = substr($optvt, 0, $pos);
             if (preg_match('/:final/', $optvt))
@@ -524,32 +523,33 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
     }
 
     $oarg["visibility"] = defval($_POST, "optp$id", "rev");
-    if (@$oarg["final"])
+    if ($oarg["final"])
         $oarg["visibility"] = "rev";
 
     $oarg["position"] = (int) defval($_POST, "optfp$id", 1);
 
-    if (@$_POST["optdt$id"] == "near_submission"
-        || ($oarg["type"] == "pdf" && @$oarg["final"]))
-        $oarg["near_submission"] = true;
-    else if (@$_POST["optdt$id"] == "highlight")
-        $oarg["highlight"] = true;
+    $oarg["display"] = defval($_POST, "optdt$id");
+    if ($oarg["type"] === "pdf" && $oarg["final"])
+        $oarg["display"] = "submission";
 
-    $new_opts[$oarg["id"]] = new PaperOption($oarg);
+    $new_opts[$oarg["id"]] = $o = new PaperOption($oarg);
+    $o->req_id = $id;
+    $o->is_new = $id[0] === "n";
 }
 
 function option_clean_form_positions($new_opts, $current_opts) {
     foreach ($new_opts as $id => $o) {
-        $current_o = @$current_opts[$id];
+        $current_o = get($current_opts, $id);
         $o->old_position = ($current_o ? $current_o->position : $o->position);
+        $o->position_set = false;
     }
     for ($i = 0; $i < count($new_opts); ++$i) {
         $best = null;
         foreach ($new_opts as $id => $o)
-            if (!@$o->position_set
+            if (!$o->position_set
                 && (!$best
-                    || (@$o->near_submission
-                        && !@$best->near_submission)
+                    || ($o->display() === PaperOption::DISP_SUBMISSION
+                        && $best->display() !== PaperOption::DISP_SUBMISSION)
                     || $o->position < $best->position
                     || ($o->position == $best->position
                         && $o->position != $o->old_position
@@ -577,7 +577,7 @@ function save_options($set) {
             option_request_to_json($new_opts, $id, $current_opts);
         foreach ($_POST as $k => $v)
             if (substr($k, 0, 4) == "optn"
-                && !@$current_opts[substr($k, 4)])
+                && !get($current_opts, substr($k, 4)))
                 option_request_to_json($new_opts, substr($k, 4), $current_opts);
 
         // check abbreviations
@@ -1676,23 +1676,26 @@ function option_search_term($oname) {
 function doOptGroupOption($o) {
     global $Conf, $Error;
 
-    if (is_string($o))
+    if ($o)
+        $id = $o->id;
+    else {
         $o = new PaperOption(array("id" => $o,
                 "name" => "(Enter new option)",
                 "description" => "",
                 "type" => "checkbox",
-                "position" => count(PaperOption::option_list()) + 1));
-    $id = $o->id;
+                "position" => count(PaperOption::option_list()) + 1,
+                "display" => "default"));
+        $id = "n";
+    }
 
     if (count($Error) > 0 && isset($_POST["optn$id"])) {
         $o = new PaperOption(array("id" => $id,
                 "name" => $_POST["optn$id"],
-                "description" => defval($_POST, "optd$id", ""),
-                "type" => defval($_POST, "optvt$id", "checkbox"),
-                "visibility" => defval($_POST, "optp$id", ""),
-                "position" => defval($_POST, "optfp$id", 1),
-                "highlight" => @($_POST["optdt$id"] == "highlight"),
-                "near_submission" => @($_POST["optdt$id"] == "near_submission")));
+                "description" => get($_POST, "optd$id"),
+                "type" => get($_POST, "optvt$id", "checkbox"),
+                "visibility" => get($_POST, "optp$id", ""),
+                "position" => get($_POST, "optfp$id", 1),
+                "display" => get($_POST, "optdt$id")));
         if ($o->has_selector())
             $o->selector = explode("\n", rtrim(defval($_POST, "optv$id", "")));
     }
@@ -1784,10 +1787,11 @@ function doOptGroupOption($o) {
 
     echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
         setting_label("optdt$id", "Display"), "</div><div class='f-e'>";
-    echo Ht::select("optdt$id", array("normal" => "Normal",
-                                      "highlight" => "Prominent",
-                                      "near_submission" => "Near submission"),
-                    $o->display_type(), array("id" => "optdt$id")),
+    echo Ht::select("optdt$id", ["default" => "Default",
+                                 "prominent" => "Prominent",
+                                 "topics" => "With topics",
+                                 "submission" => "Near submission"],
+                    $o->display_name(), array("id" => "optdt$id")),
         "</div></div></td>";
 
     if (isset($otypes["pdf:final"]))
@@ -1829,7 +1833,7 @@ function doOptGroup() {
 
     echo $sep;
 
-    doOptGroupOption("n");
+    doOptGroupOption(null);
 
     echo "</table>\n";
 
