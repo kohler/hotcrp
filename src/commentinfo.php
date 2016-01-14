@@ -353,8 +353,11 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                 $qa .= ", timeNotified=$Now";
             if (!$this->timeDisplayed && $displayed)
                 $qa .= ", timeDisplayed=$Now";
-            $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentTags=? where commentId=$this->commentId";
-            $qv[] = $text;
+            $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
+            if (strlen($text) <= 32000)
+                array_push($qv, $text, null);
+            else
+                array_push($qv, UnicodeHelper::utf8_prefix($text, 200), $text);
             $qv[] = $ctags;
         }
 
