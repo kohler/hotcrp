@@ -3361,14 +3361,16 @@ function add_revpref_ajax(selector, reviewer) {
         }
     }
 
-    $(selector).on("focus", "input.revpref", rp_focus)
-        .on("change", "input.revpref", rp_change)
-        .on("keypress", "input.revpref", rp_keypress);
+    $(selector).off(".revpref_ajax")
+        .on("focus.revpref_ajax", "input.revpref", rp_focus)
+        .on("change.revpref_ajax", "input.revpref", rp_change)
+        .on("keypress.revpref_ajax", "input.revpref", rp_keypress);
 }
 
 
 function add_assrev_ajax(selector) {
-    $(selector).on("change", "select[name^='assrev']", function () {
+    $(selector).off(".assrev_ajax")
+        .on("change.assrev_ajax", "select[name^='assrev']", function () {
         var form = $$("assrevform"), that = this;
         if (form && $("#assrevimmediate")[0].checked) {
             var reviewer = form.reviewer.value;
@@ -3385,7 +3387,8 @@ function add_assrev_ajax(selector) {
 
 
 function add_conflict_ajax(selector) {
-    $(selector).on("click", "input[name='pap[]']", function (event) {
+    $(selector).off(".conflict_ajax")
+        .on("click.conflict_ajax", "input[name='pap[]']", function (event) {
         var form = $$("assrevform"), that = this;
         if (form && $("#assrevimmediate")[0].checked) {
             var reviewer = form.reviewer.value;
@@ -3761,9 +3764,10 @@ return function (selector, active_dragtag) {
     var sel = $$("sel");
     if (!ready) {
         ready = true;
-        $(selector).on("click", "input.edittag", tag_onclick)
-            .on("change", "input.edittagval", tag_onclick)
-            .on("keypress", "input.edittagval", tag_keypress);
+        $(selector).off(".edittag_ajax")
+            .on("click.edittag_ajax", "input.edittag", tag_onclick)
+            .on("change.edittag_ajax", "input.edittagval", tag_onclick)
+            .on("keypress.edittag_ajax", "input.edittagval", tag_keypress);
     }
     if (active_dragtag) {
         dragtag = active_dragtag;
