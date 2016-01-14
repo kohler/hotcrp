@@ -32,6 +32,7 @@ class Mailer {
     protected $reason = null;
     protected $adminupdate = null;
     protected $notes = null;
+    protected $unique_expansion = false;
     public $capability = null;
 
     protected $expansionType = null;
@@ -158,9 +159,10 @@ class Mailer {
         if ($what == "%PHP%")
             return Navigation::php_suffix();
         if (preg_match('/\A%(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
-            if ($this->recipient)
+            if ($this->recipient) {
+                $this->unique_expansion = true;
                 return $this->expand_user($this->recipient, $m[1]);
-            else if ($isbool)
+            } else if ($isbool)
                 return false;
         }
 
@@ -416,11 +418,13 @@ class Mailer {
                 $template[$lcfield] = $rest[$lcfield];
 
         // expand the template
+        $this->unique_expansion = false;
         $m = $this->expand($template);
         $prep = (object) array();
         $subject = MimeText::encode_header("Subject: ", $m["subject"]);
         $prep->subject = substr($subject, 9);
         $prep->body = $m["body"];
+        $prep->unique_preparation = $this->unique_expansion;
 
         // look up recipient; use preferredEmail if set
         $recipient = $this->recipient;
@@ -466,8 +470,8 @@ class Mailer {
             || $prep1->body != $prep2->body
             || get($prep1->headers, "cc") != get($prep2->headers, "cc")
             || get($prep1->headers, "reply-to") != get($prep2->headers, "reply-to")
-            || get($prep1, "unique_preparation")
-            || get($prep2, "unique_preparation");
+            || $prep1->unique_preparation
+            || $prep2->unique_preparation;
     }
 
     static function merge_preparation_to($prep, $to) {
