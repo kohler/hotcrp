@@ -132,6 +132,7 @@ class SiteLoader {
         "setdecision" => ["PaperApi::setdecision_api", self::API_PAPER],
         "setlead" => ["PaperApi::setlead_api", self::API_PAPER],
         "setmanager" => ["PaperApi::setmanager_api", self::API_PAPER],
+        "setpref" => ["PaperApi::setpref_api", self::API_PAPER],
         "setshepherd" => ["PaperApi::setshepherd_api", self::API_PAPER],
         "settags" => ["PaperApi::settags_api", self::API_PAPER],
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],

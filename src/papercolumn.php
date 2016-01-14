@@ -122,8 +122,8 @@ class SelectorPaperColumn extends PaperColumn {
             return false;
         if ($this->name == "selconf" || $this->name == "selunlessconf")
             $pl->qopts["reviewer"] = $pl->reviewer_cid();
-        if ($this->name == "selconf")
-            $pl->add_footer_script("add_conflict_ajax()");
+        if ($this->name == "selconf" && ($tid = $pl->table_id()))
+            $pl->add_header_script("add_conflict_ajax(" . json_encode("#$tid") . ")");
         return true;
     }
     public function header($pl, $ordinal) {
@@ -574,8 +574,8 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->is_manager())
             return false;
-        if ($visible > 0)
-            $pl->add_footer_script("add_assrev_ajax()");
+        if ($visible > 0 && ($tid = $pl->table_id()))
+            $pl->add_header_script("add_assrev_ajax(" . json_encode("#$tid") . ")");
         $pl->qopts["reviewer"] = $pl->reviewer_cid();
         return true;
     }
@@ -601,9 +601,7 @@ class AssignReviewPaperColumn extends ReviewerTypePaperColumn {
                              -1 => "Conflict");
         else
             $options = array(0 => "None", -1 => "Conflict");
-        return Ht::select("assrev$row->paperId", $options, $rt,
-                           array("tabindex" => 3,
-                                 "onchange" => "hiliter(this)"));
+        return Ht::select("assrev$row->paperId", $options, $rt, ["tabindex" => 3]);
     }
 }
 
@@ -676,11 +674,11 @@ class PreferencePaperColumn extends PaperColumn {
             $pl->qopts["reviewerPreference"] = $pl->qopts["topicInterestScore"] = 1;
             $pl->qopts["reviewer"] = $pl->reviewer_cid();
         }
-        if ($this->editable && $visible > 0) {
-            $arg = "ajax=1&amp;setrevpref=1";
-            if ($pl->contact->privChair && $pl->reviewer_cid())
-                $arg .= "&amp;reviewer=" . $pl->reviewer_cid();
-            $pl->add_footer_script("add_revpref_ajax(" . json_encode(hoturl_post_raw("paper", $arg)) . ")");
+        if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
+            $reviewer_cid = 0;
+            if ($pl->contact->privChair)
+                $reviewer_cid = $pl->reviewer_cid() ? : 0;
+            $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ",$reviewer_cid)");
         }
         return true;
     }
@@ -713,8 +711,8 @@ class PreferencePaperColumn extends PaperColumn {
         else if ($row->reviewerConflictType > 0)
             return "N/A";
         else
-            return '<input id="revpref' . $row->paperId . '" name="revpref' . $row->paperId
-                . '" value="' . $pref . '" type="text" size="4" tabindex="2" placeholder="0" />';
+            return '<input name="revpref' . $row->paperId
+                . '" class="revpref" value="' . ($pref !== "0" ? $pref : "") . '" type="text" size="4" tabindex="2" placeholder="0" />';
     }
     public function text($pl, $row) {
         return get($row, "reviewerPreference") + 0;
@@ -996,33 +994,27 @@ class EditTagPaperColumn extends TagPaperColumn {
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare(PaperList $pl, $visible) {
-        if (($p = parent::prepare($pl, $visible)) && $visible > 0) {
-            $pl->add_footer_html(
-                 Ht::form(hoturl_post("api", "fn=settags&amp;forceShow=1&amp;base=" . urlencode(Navigation::siteurl())),
-                          ["id" => "edittagajaxform",
-                           "style" => "display:none"]) . "<div>"
-                 . Ht::hidden("p") . Ht::hidden("addtags")
-                 . Ht::hidden("deltags") . "</div></form>",
-                 "edittagajaxform");
+        if (($p = parent::prepare($pl, $visible)) && $visible > 0
+            && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
+            $s = "";
             if (("edit" . $sorter->type == $this->name
                  || $sorter->type == $this->name)
                 && !$sorter->reverse
                 && !$pl->search->thenmap
                 && $this->is_value)
-                $pl->add_footer_script("add_edittag_ajax('$this->dtag')");
-            else
-                $pl->add_footer_script("add_edittag_ajax()");
+                $s = "," . json_encode($this->dtag);
+            $pl->add_header_script("add_edittag_ajax(" . json_encode("#$tid") . $s . ")");
         }
         return $p;
     }
     public function content($pl, $row, $rowidx) {
         $v = $this->_tag_value($row);
         if (!$this->is_value)
-            return "<input type='checkbox' class='cb' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
+            return "<input type='checkbox' class='cb edittag' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
                 . ($v !== null ? " checked='checked'" : "") . " />";
         else
-            return "<input type='text' size='4' name='tag:$this->dtag $row->paperId' value=\""
+            return "<input type='text' class='edittagval' size='4' name='tag:$this->dtag $row->paperId' value=\""
                 . ($v !== null ? htmlspecialchars($v) : "") . "\" tabindex='6' />";
     }
 }

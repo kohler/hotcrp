@@ -186,4 +186,21 @@ class PaperApi {
         Dbl::free($result);
         json_exit(["ok" => true, "tags" => $tags]);
     }
+
+    static function setpref_api($user, $qreq, $prow) {
+        global $Conf;
+        $cid = $user->contactId;
+        if ($user->allow_administer($prow) && $qreq->reviewer
+            && ($x = cvtint($qreq->reviewer)) > 0)
+            $cid = $x;
+        if (($v = parse_preference($qreq->pref))) {
+            if (PaperActions::save_review_preferences([[$prow->paperId, $cid, $v[0], $v[1]]]))
+                $j = ["ok" => true, "response" => "Saved"];
+            else
+                $j = ["ok" => false];
+            $j["value"] = unparse_preference($v);
+        } else
+            $j = ["ok" => false, "error" => "Bad preference"];
+        json_exit($j);
+    }
 }

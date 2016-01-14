@@ -119,7 +119,7 @@ function log_jserror(errormsg, error, noconsole) {
         errormsg.colno = error.columnNumber;
     if (error && error.stack)
         errormsg.stack = error.stack;
-    jQuery.ajax({
+    $.ajax({
         url: hoturl("api", "fn=jserror"), global: false,
         type: "POST", cache: false, data: errormsg
     });
@@ -157,6 +157,22 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
     if (jqxhr.readyState == 4)
         log_jserror(settings.url + " API failure: status " + jqxhr.status + ", " + httperror);
 });
+
+function ajax_link_errors(settings) {
+    var f = settings.success;
+    function onerror(jqxhr, status, errormsg) {
+        f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
+    }
+    if (!settings.error)
+        settings.error = onerror;
+    else if ($.isArray(settings.error))
+        settings.error.push(onerror);
+    else
+        settings.error = [settings.error, onerror];
+    if (!settings.timeout)
+        settings.timeout = 8000;
+    return settings;
+}
 
 
 // geometry
@@ -2857,7 +2873,7 @@ function make_pseditor(type, url) {
     }
     function change() {
         var saveval = jQuery(edite).val();
-        jQuery.ajax({
+        $.ajax({
             url: hoturl_post("api", url), type: "POST", cache: false,
             data: jQuery(folde).find("form").serialize(), dataType: "json",
             success: function (data) {
@@ -3313,116 +3329,75 @@ $(function () {
 
 
 // review preferences
-window.add_revpref_ajax = (function () {
-var prefurl;
-
-function rp_focus() {
-    autosub("update", this);
-}
-
-function rp_change() {
-    var self = this, whichpaper = this.name.substr(7);
-    jQuery.ajax({
-        url: prefurl, type: "POST", cache: false,
-        data: {"ajax": 1, "p": whichpaper, "revpref": self.value},
-        dataType: "json",
-        success: function (rv) {
-            setajaxcheck(self.id, rv);
-            if (rv.ok && rv.value != null)
-                self.value = rv.value;
-        },
-        complete: function (xhr, status) {
-            hiliter(self);
-        }
-    });
-}
-
-function rp_keypress(e) {
-    e = e || window.event;
-    if (event_modkey(e) || event_key(e) != "Enter")
-        return true;
-    else {
-        rp_change.apply(this);
-        return false;
+function add_revpref_ajax(selector, reviewer) {
+    function rp_focus() {
+        autosub("update", this);
     }
-}
 
-return function (url) {
-    var inputs = document.getElementsByTagName("input");
-    prefurl = url;
-    staged_foreach(inputs, function (elt) {
-        if (elt.type == "text" && elt.name.substr(0, 7) == "revpref") {
-            elt.onfocus = rp_focus;
-            elt.onchange = rp_change;
-            elt.onkeypress = rp_keypress;
-            mktemptext(elt);
+    function rp_change() {
+        var self = this, whichpaper = this.name.substr(7);
+        $.ajax({
+            url: hoturl_post("api", "fn=setpref&p=" + whichpaper),
+            type: "POST", dataType: "json",
+            data: {pref: self.value, reviewer: reviewer},
+            success: function (rv) {
+                setajaxcheck(self, rv);
+                if (rv.ok && rv.value != null)
+                    self.value = rv.value;
+            },
+            complete: function (xhr, status) {
+                hiliter(self);
+            }
+        });
+    }
+
+    function rp_keypress(e) {
+        e = e || window.event;
+        if (event_modkey(e) || event_key(e) != "Enter")
+            return true;
+        else {
+            rp_change.apply(this);
+            return false;
         }
-    });
-};
+    }
 
-})();
-
-
-window.add_assrev_ajax = (function () {
-var pcs;
-
-function ar_onchange() {
-    var form = $$("assrevform"), immediate = $$("assrevimmediate"),
-    roundtag = $$("assrevroundtag"), that = this;
-    if (form && form.p && form[pcs] && immediate && immediate.checked) {
-        form.p.value = this.name.substr(6);
-        form.rev_roundtag.value = (roundtag ? roundtag.value : "");
-        form[pcs].value = this.value;
-        Miniajax.submit("assrevform", function (rv) {
-            setajaxcheck(that, rv);
-        });
-    } else
-        hiliter(this);
+    $(selector).on("focus", "input.revpref", rp_focus)
+        .on("change", "input.revpref", rp_change)
+        .on("keypress", "input.revpref", rp_keypress);
 }
 
-return function () {
-    var form = $$("assrevform");
-    if (!form || !form.reviewer)
-        return;
-    pcs = "pcs" + form.reviewer.value;
-    var inputs = document.getElementsByTagName("select");
-    staged_foreach(inputs, function (elt) {
-        if (elt.name.substr(0, 6) == "assrev")
-            elt.onchange = ar_onchange;
+
+function add_assrev_ajax(selector) {
+    $(selector).on("change", "select[name^='assrev']", function () {
+        var form = $$("assrevform"), that = this;
+        if (form && $("#assrevimmediate")[0].checked) {
+            var reviewer = form.reviewer.value;
+            form.p.value = this.name.substr(6);
+            form.rev_roundtag.value = $("#assrevroundtag").val() || "";
+            form["pcs" + reviewer].value = this.value;
+            Miniajax.submit("assrevform", function (rv) {
+                setajaxcheck(that, rv);
+            });
+        } else
+            hiliter(this);
     });
-};
-
-})();
-
-
-window.add_conflict_ajax = (function () {
-var pcs;
-
-function conf_onclick() {
-    var form = $$("assrevform"), immediate = $$("assrevimmediate"), that = this;
-    if (form && form.p && form[pcs] && immediate && immediate.checked) {
-        form.p.value = this.value;
-        form[pcs].value = (this.checked ? -1 : 0);
-        Miniajax.submit("assrevform", function (rv) {
-            setajaxcheck(that, rv);
-        });
-    } else
-        hiliter(this);
 }
 
-return function () {
-    var form = $$("assrevform");
-    if (!form || !form.reviewer)
-        return;
-    pcs = "pcs" + form.reviewer.value;
-    var inputs = document.getElementsByTagName("input");
-    staged_foreach(inputs, function (elt) {
-        if (elt.name == "pap[]")
-            elt.onclick = conf_onclick;
-    });
-};
 
-})();
+function add_conflict_ajax(selector) {
+    $(selector).on("click", "input[name='pap[]']", function (event) {
+        var form = $$("assrevform"), that = this;
+        if (form && $("#assrevimmediate")[0].checked) {
+            var reviewer = form.reviewer.value;
+            form.p.value = this.value;
+            form["pcs" + reviewer].value = this.checked ? -1 : 0;
+            Miniajax.submit("assrevform", function (rv) {
+                setajaxcheck(that, rv);
+            });
+        } else
+            hiliter(this);
+    });
+}
 
 
 window.add_edittag_ajax = (function () {
@@ -3436,7 +3411,7 @@ function parse_tagvalue(s) {
         return 0;
     else if (s == "n" || s == "no" || s == "" || s == "f" || s == "false" || s == "na" || s == "n/a")
         return false;
-    else if (s.match(/^[-+]?\d+$/))
+    else if (s.match(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/))
         return +s;
     else
         return null;
@@ -3446,36 +3421,35 @@ function unparse_tagvalue(tv) {
     return tv === false ? "" : tv;
 }
 
-function tag_setform(elt) {
-    var form = $$("edittagajaxform");
-    var m = elt.name.match(/^tag:(\S+) (\d+)$/);
-    form.p.value = m[2];
-    form.addtags.value = form.deltags.value = "";
-    if (elt.type.toLowerCase() == "checkbox") {
-        if (elt.checked)
-            form.addtags.value = m[1];
-        else
-            form.deltags.value = m[1];
-    } else {
+function tag_save(elt, success) {
+    var m = elt.name.match(/^tag:(\S+) (\d+)$/),
+        data = {addtags: "", deltags: ""};
+    if (elt.type.toLowerCase() == "checkbox")
+        elt.checked ? data.addtags = m[1] : data.deltags = m[1];
+    else {
         var tv = parse_tagvalue(elt.value);
         if (tv === false)
-            form.deltags.value = m[1];
+            data.deltags = m[1];
         else if (tv !== null)
-            form.addtags.value = m[1] + "#" + tv;
+            data.addtags = m[1] + "#" + tv;
         else {
             setajaxcheck(elt, {ok: false, error: "Tag value must be an integer (or “n” to remove the tag)."});
             return false;
         }
     }
-    return true;
+    $.ajax(ajax_link_errors({
+        url: hoturl_post("api", "fn=settags&p=" + m[2] + "&forceShow=1"),
+        type: "POST", dataType: "json", data: data,
+        success: success
+    }));
+    return data;
 }
 
 function tag_onclick() {
     var that = this;
-    if (tag_setform(that))
-        Miniajax.submit("edittagajaxform", function (rv) {
-            setajaxcheck(that, rv);
-        });
+    tag_save(that, function (rv) {
+        setajaxcheck(that, rv);
+    });
 }
 
 function tag_keypress(evt) {
@@ -3716,27 +3690,26 @@ function commit_drag(si, di) {
 
 function sorttag_onchange() {
     var that = this, tv = parse_tagvalue(that.value);
-    if (tag_setform(this))
-        Miniajax.submit("edittagajaxform", function (rv) {
-            setajaxcheck(that, rv);
-            var srcindex = analyze_rows(that);
-            if (!rv.ok || srcindex === null)
-                return;
-            var id = rowanal[srcindex].id, i, ltv;
-            valuemap[id] = tv;
-            for (i = 0; i < rowanal.length; ++i) {
-                ltv = valuemap[rowanal[i].id];
-                if (!rowanal[i].entry
-                    || (tv !== false && ltv === false)
-                    || (tv !== false && ltv !== null && +ltv > +tv)
-                    || (ltv === tv && +rowanal[i].id > +id))
-                    break;
-            }
-            var had_focus = document.activeElement == that;
-            row_move(srcindex, i);
-            if (had_focus)
-                that.focus();
-        });
+    tag_save(that, function (rv) {
+        setajaxcheck(that, rv);
+        var srcindex = analyze_rows(that);
+        if (!rv.ok || srcindex === null)
+            return;
+        var id = rowanal[srcindex].id, i, ltv;
+        valuemap[id] = tv;
+        for (i = 0; i < rowanal.length; ++i) {
+            ltv = valuemap[rowanal[i].id];
+            if (!rowanal[i].entry
+                || (tv !== false && ltv === false)
+                || (tv !== false && ltv !== null && +ltv > +tv)
+                || (ltv === tv && +rowanal[i].id > +id))
+                break;
+        }
+        var had_focus = document.activeElement == that;
+        row_move(srcindex, i);
+        if (had_focus)
+            that.focus();
+    });
 }
 
 function tag_mousedown(evt) {
@@ -3784,49 +3757,32 @@ function tag_mouseup(evt) {
     dragging = srcindex = dragindex = null;
 }
 
-return function (active_dragtag) {
+return function (selector, active_dragtag) {
     var sel = $$("sel");
-    if (!$$("edittagajaxform") || !sel)
-        return;
     if (!ready) {
         ready = true;
-        staged_foreach(document.getElementsByTagName("input"), function (elt) {
-            if (elt.name.substr(0, 4) == "tag:") {
-                if (elt.type.toLowerCase() == "checkbox")
-                    elt.onclick = tag_onclick;
-                else {
-                    elt.onchange = tag_onclick;
-                    elt.onkeypress = tag_keypress;
-                }
-            }
-        });
+        $(selector).on("click", "input.edittag", tag_onclick)
+            .on("change", "input.edittagval", tag_onclick)
+            .on("keypress", "input.edittagval", tag_keypress);
     }
     if (active_dragtag) {
         dragtag = active_dragtag;
         valuemap = {};
 
-        var tables = document.getElementsByTagName("table"), i, j;
-        for (i = 0; i < tables.length && !plt_tbody; ++i)
-            if (tables[i].className.match(/\bpltable\b/)) {
-                var children = tables[i].childNodes;
-                for (j = 0; j < children.length; ++j)
-                    if (children[j].nodeName.toUpperCase() == "TBODY") {
-                        plt_tbody = children[j];
-                        break;
-                    }
-            }
-
-        staged_foreach(plt_tbody.getElementsByTagName("input"), function (elt) {
-            if (elt.name.substr(0, 5 + dragtag.length) == "tag:" + dragtag + " ") {
-                var x = document.createElement("span"), id = elt.name.substr(5 + dragtag.length);
-                x.className = "dragtaghandle";
-                x.setAttribute("data-pid", id);
-                x.setAttribute("title", "Drag to change order");
-                elt.parentElement.insertBefore(x, elt.nextSibling);
-                x.onmousedown = tag_mousedown;
-                elt.onchange = sorttag_onchange;
-                valuemap[id] = parse_tagvalue(elt.value);
-            }
+        $(function () {
+            plt_tbody = $(selector).find("tbody")[0];
+            staged_foreach(plt_tbody.getElementsByTagName("input"), function (elt) {
+                if (elt.name.substr(0, 5 + dragtag.length) == "tag:" + dragtag + " ") {
+                    var x = document.createElement("span"), id = elt.name.substr(5 + dragtag.length);
+                    x.className = "dragtaghandle";
+                    x.setAttribute("data-pid", id);
+                    x.setAttribute("title", "Drag to change order");
+                    elt.parentElement.insertBefore(x, elt.nextSibling);
+                    x.onmousedown = tag_mousedown;
+                    elt.onchange = sorttag_onchange;
+                    valuemap[id] = parse_tagvalue(elt.value);
+                }
+            });
         });
     }
 };
@@ -4367,7 +4323,7 @@ function save_tags() {
         if (msg)
             $("#papstriptagsedit").prepend('<div class="xmsg xmerror">' + msg + '</div>');
     }
-    $.ajax({
+    $.ajax(ajax_link_errors({
         url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
         type: "POST", dataType: "json", timeout: 4000,
         data: $("#tagform").serialize(),
@@ -4377,18 +4333,15 @@ function save_tags() {
                 save_tags.success(data);
             }
             done(data.ok ? "" : data.error);
-        }, error: function (jqxhr, status, errormsg) {
-            done(jqxhr_error_message(jqxhr, status, errormsg));
         }
-    });
+    }));
     return false;
 }
 save_tags.load_report = function () {
     $.ajax({
         url: hoturl("api", "fn=tagreport&p=" + hotcrp_paperid),
         success: function (data) {
-            if (data.ok)
-                $("#tagreportformresult").html(data.response || "");
+            data.ok && $("#tagreportformresult").html(data.response || "");
         }
     });
     return false;
@@ -4508,7 +4461,7 @@ function save_tag_index(e) {
             make_bubble(message, "errorbubble").dir("l").near(ji.length ? ji[0] : e).removeOn(j.find("input"), "input");
         }
     }
-    jQuery.ajax({
+    $.ajax({
         url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
         type: "POST", cache: false,
         data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},

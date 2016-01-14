@@ -104,7 +104,7 @@ class PaperList {
     private $qreq;
 
     public $qopts; // set by PaperColumn::prepare
-    private $footers = array();
+    private $_header_script = "";
     private $default_sort_column;
 
     // collected during render and exported to caller
@@ -1172,22 +1172,16 @@ class PaperList {
         return $field_list2;
     }
 
-    public function add_footer_script($script) {
-        $this->footers[] = array(true, $script);
+    public function table_id() {
+        return $this->viewmap->table_id;
     }
 
-    public function add_footer_html($html, $name) {
-        $this->footers[] = array(false, $html, $name);
-    }
-
-    private function _resolve_footers() {
-        global $Conf;
-        foreach ($this->footers as $f)
-            if ($f[0])
-                $Conf->footerScript($f[1]);
-            else
-                $Conf->footerHtml($f[1], $f[2]);
-        $this->footers = array();
+    public function add_header_script($script) {
+        if ($this->_header_script !== ""
+            && ($ch = $this->_header_script[strlen($this->_header_script) - 1]) !== "}"
+            && $ch !== "{" && $ch !== ";")
+            $this->_header_script .= ";";
+        $this->_header_script .= $script;
     }
 
     private function _columns($field_list, $table_html) {
@@ -1405,6 +1399,10 @@ class PaperList {
             $enter .= '<tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
                 . ">\n" . $foot . "</tfoot>\n";
 
+        // header scripts to set up delegations
+        if ($this->_header_script)
+            $enter .= '<script>' . $this->_header_script . "</script>\n";
+
         // session variable to remember the list
         if ($this->listNumber) {
             $sl = $this->search->create_session_list_object($rstate->ids, self::_listDescription($listname), $this->sortdef());
@@ -1424,7 +1422,6 @@ class PaperList {
         if ($rstate->has_anonau)
             $this->any->anonau = true;
 
-        $this->_resolve_footers();
         $this->ids = $rstate->ids;
         return $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
     }
