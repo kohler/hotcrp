@@ -286,9 +286,9 @@ max_procrastination_seq.label = function (dl) {
 procrastination_seq.tick_format = max_procrastination_seq.tick_format =
     function (x) { return -x; };
 
-function seq_to_cdf(seq) {
+function seq_to_cdf(seq, flip) {
     var cdf = [], i, n = seq.ntotal || seq.length;
-    seq.sort(d3.ascending);
+    seq.sort(flip ? d3.descending : d3.ascending);
     for (i = 0; i <= seq.length; ++i) {
         if (i != 0 && (i == seq.length || seq[i-1] != seq[i]))
             cdf.push([seq[i-1], i/n]);
@@ -425,8 +425,8 @@ var hotcrp_graphs = {};
 function hotcrp_graphs_cdf(args) {
     args = make_args(args);
 
-    var x = d3.scale.linear().range([0, args.width]);
-    var y = d3.scale.linear().range([args.height, 0]);
+    var x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range([args.height, 0]);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", args.width + args.left + args.right)
@@ -447,13 +447,13 @@ function hotcrp_graphs_cdf(args) {
     });
     var data = series.map(function (d) {
         d = d.d ? d.d : d;
-        return d.cdf ? d : seq_to_cdf(d);
+        return d.cdf ? d : seq_to_cdf(d, !!args.xflip);
     });
 
     // axis domains
     var xdomain = data.reduce(function (e, d) {
-        e[0] = Math.min(e[0], d[0][0]);
-        e[1] = Math.max(e[1], d[d.length - 1][0]);
+        e[0] = Math.min(e[0], d[0][0], d[d.length - 1][0]);
+        e[1] = Math.max(e[1], d[0][0], d[d.length - 1][0]);
         return e;
     }, [Infinity, -Infinity]);
     xdomain = [xdomain[0] - (xdomain[1] - xdomain[0]) / 32,
@@ -476,8 +476,8 @@ function hotcrp_graphs_cdf(args) {
         var klass = "gcdf";
         if (series[i].className)
             klass += " " + series[i].className;
-        if (d[d.length - 1][0] != xdomain[1])
-            d.push([xdomain[1], d[d.length - 1][1]]);
+        if (d[d.length - 1][0] != xdomain[args.xflip ? 0 : 1])
+            d.push([xdomain[args.xflip ? 0 : 1], d[d.length - 1][1]]);
         svg.append("path").attr("dataindex", i)
             .datum(d)
             .attr("class", klass)
