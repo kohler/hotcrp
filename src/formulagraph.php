@@ -390,15 +390,13 @@ class FormulaGraph {
         global $Conf, $Me;
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = array();
+        $counttype = $this->fx->needs_review() ? "reviews" : "papers";
         if ($axis == "y" && $this->type == self::FBARCHART)
-            $t[] = "ylabel:\"fraction of papers\",yfraction:true";
+            $t[] = "ylabel:\"fraction of $counttype\",yfraction:true";
         else if ($axis == "y" && $this->type == self::BARCHART
-                 && $f->expression === "sum(1)") {
-            if ($this->fx->needs_review())
-                $t[] = "ylabel:\"# reviews\"";
-            else
-                $t[] = "ylabel:\"# papers\"";
-        } else if ($axis == "y" && $this->type == self::CDF)
+                 && $f->expression === "sum(1)")
+            $t[] = "ylabel:\"# $counttype\"";
+        else if ($axis == "y" && $this->type == self::CDF)
             $t[] = "ylabel:\"CDF\"";
         else if ($axis != "x" || !$this->fx_query)
             $t[] = "{$axis}label:" . json_encode($f->expression);
