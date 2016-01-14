@@ -332,7 +332,7 @@ if ($reviewer > 0) {
         "&nbsp;", Ht::label("Automatically save assignments", "assrevimmediate"),
         "</span></div>\n",
         $paperList->table_html(($qreq->kind == "c" ? "conflict" : "reviewAssignment"),
-                               array("class" => "pltable_full",
+                               array("class" => "pltable_full", "table_id" => "foldpl",
                                      "header_links" => true,
                                      "nofooter" => true,
                                      "fold" => array("allrevtopicpref" => true))),

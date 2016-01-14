@@ -79,7 +79,6 @@ class PaperListReviewAnalysis {
 }
 
 class PaperList {
-
     // creator can set to change behavior
     public $papersel = null;
     public $display;
@@ -314,7 +313,7 @@ class PaperList {
     }
 
     static function wrapChairConflict($text) {
-        return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a href="#" onclick="return fold(\'pl\',0,\'force\')">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
+        return '<span class="fn5"><em>Hidden for conflict</em> <span class="barsep">·</span> <a href="#">Override conflicts</a></span><span class="fx5">' . $text . "</span>";
     }
 
     public function reviewer_cid() {
@@ -988,17 +987,19 @@ class PaperList {
             $jsmap[] = "\"force\":5";
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         }
-        if (count($jsmap))
-            Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
-        $args = array();
-        if ($this->search->q)
-            $args["q"] = $this->search->q;
-        if ($this->search->qt)
-            $args["qt"] = $this->search->qt;
-        $args["t"] = $this->search->limitName;
-        $args["pap"] = join(" ", $rstate->ids);
-        Ht::stash_script("plinfo.needload(" . json_encode($args) . ");"
-                         . "plinfo.set_fields(" . json_encode($jscol) . ");");
+        if ($this->viewmap->table_id) {
+            if (count($jsmap))
+                Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
+            $args = array();
+            if ($this->search->q)
+                $args["q"] = $this->search->q;
+            if ($this->search->qt)
+                $args["qt"] = $this->search->qt;
+            $args["t"] = $this->search->limitName;
+            $args["pap"] = join(" ", $rstate->ids);
+            Ht::stash_script("plinfo.needload(" . json_encode($args) . ");"
+                             . "plinfo.set_fields(" . json_encode($jscol) . ");");
+        }
         return $classes;
     }
 
@@ -1074,7 +1075,7 @@ class PaperList {
         $specials = array_flip(array("cc", "compact", "compactcolumn", "compactcolumns",
                                      "column", "col", "columns", "sort", "rownum", "rownumbers",
                                      "stat", "stats", "statistics", "totals",
-                                     "au", "anonau"));
+                                     "au", "anonau", "table_id"));
         $viewmap_add = array();
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
@@ -1259,6 +1260,8 @@ class PaperList {
         if (isset($options["fold"]))
             foreach ($options["fold"] as $n => $v)
                 $this->viewmap->$n = $v;
+        if (isset($options["table_id"]))
+            $this->viewmap->table_id = $options["table_id"];
         // need tags for row coloring
         if ($this->contact->can_view_tags(null))
             $this->qopts["tags"] = 1;
@@ -1367,13 +1370,15 @@ class PaperList {
         if ($this->listNumber)
             $enter .= " has_hotcrp_list";
         if (count($foldclasses))
-            $enter .= " " . join(" ", $foldclasses) . "\" id=\"foldpl";
+            $enter .= " " . join(" ", $foldclasses);
+        if ($this->viewmap->table_id)
+            $enter .= "\" id=\"" . $this->viewmap->table_id;
         if (defval($options, "attributes"))
             foreach ($options["attributes"] as $n => $v)
                 $enter .= "\" $n=\"$v";
         if ($this->listNumber)
             $enter .= '" data-hotcrp-list="' . $this->listNumber;
-        $enter .= "\">\n";
+        $enter .= "\" data-fold=\"true\">\n";
         $exit = "</table>";
 
         // maybe make columns, maybe not

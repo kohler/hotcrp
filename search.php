@@ -1202,8 +1202,10 @@ if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")], make_qreq());
     if (check_post())
         $pl->papersel = SearchActions::selection_map();
-    $pl_text = $pl->table_html($Search->limitName, array("class" => "pltable_full",
-                           "attributes" => array("data-fold-session" => 'pldisplay.$')));
+    $pl_text = $pl->table_html($Search->limitName, [
+            "class" => "pltable_full", "table_id" => "foldpl",
+            "attributes" => ["data-fold-session" => 'pldisplay.$']
+        ]);
     $pldisplay = $pl->display;
     unset($_REQUEST["atab"], $_GET["atab"], $_POST["atab"]);
 } else

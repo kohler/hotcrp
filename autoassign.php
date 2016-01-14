@@ -450,7 +450,7 @@ if (isset($_REQUEST["requery"]) || isset($_REQUEST["haspap"])) {
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
     $plist->papersel = SearchActions::selection_map();
-    echo $plist->table_html("reviewersSel", array("nofooter" => true)),
+    echo $plist->table_html("reviewersSel", ["nofooter" => true]),
         Ht::hidden("prevt", $_REQUEST["t"]), Ht::hidden("prevq", $_REQUEST["q"]),
         Ht::hidden("haspap", 1);
 }
