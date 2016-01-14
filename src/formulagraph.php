@@ -39,7 +39,7 @@ class FormulaGraph {
         } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
             $this->type = self::BARCHART;
             $this->fy = new Formula("sum(1)", true);
-        } else if (preg_match('/\A(?:frac|fraction)\z/i', $fy)) {
+        } else if (preg_match('/\A(?:stack|frac|fraction)\z/i', $fy)) {
             $this->type = self::FBARCHART;
             $this->fy = new Formula("sum(1)", true);
         } else {
