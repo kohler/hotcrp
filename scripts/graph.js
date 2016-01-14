@@ -806,11 +806,16 @@ function data_to_barchart(data, isfraction) {
         else
             data[i].yoff = 0;
 
-    if (isfraction) {
+    if (isfraction && data.some(function (d) { return d[4] != data[0][4]; })) {
         var maxy = {};
         data.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
         data.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
+    } else if (isfraction) {
+        var maxy = 0;
+        data.forEach(function (d) { maxy += d[1]; });
+        data.forEach(function (d) { d.yoff /= maxy; d[1] /= maxy; });
     }
+
     return data;
 }
 
