@@ -863,4 +863,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 115
         && Dbl::ql("alter table Formula drop column `authorView`"))
         $Conf->update_schema_version(116);
+    if ($Conf->sversion == 116
+        && Dbl::ql("alter table PaperComment add `commentOverflow` longblob DEFAULT NULL"))
+        $Conf->update_schema_version(117);
 }

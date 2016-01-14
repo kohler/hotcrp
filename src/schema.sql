@@ -172,6 +172,7 @@ CREATE TABLE `PaperComment` (
   `commentTags` varbinary(1024) DEFAULT NULL,
   `commentRound` int(11) NOT NULL DEFAULT '0',
   `commentFormat` tinyint(1) DEFAULT NULL,
+  `commentOverflow` longblob DEFAULT NULL,
   PRIMARY KEY (`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
@@ -450,7 +451,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 116);
+insert into Settings (name, value) values ('allowPaperOption', 117);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
