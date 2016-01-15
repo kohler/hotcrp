@@ -741,7 +741,7 @@ class Autoassigner {
         Dbl::free($result);
         // run max-flow
         $result = $this->papersel;
-        for ($roundno = 0; count($result) > 1; ++$roundno) {
+        for ($roundno = 0; !$roundno || count($result) > 1; ++$roundno) {
             $this->mcmf_round_descriptor = $roundno ? ", round " . ($roundno + 1) : "";
             $result = $this->run_discussion_order_once($conf, $result);
             if (!$roundno) {
