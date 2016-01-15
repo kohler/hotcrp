@@ -102,7 +102,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 117) {
+        if ($this->sversion < 120) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -908,7 +908,9 @@ class Conf {
     }
 
     function update_schema_version($n) {
-        if (Dbl::ql("update Settings set value=$n where name='allowPaperOption'")) {
+        if (!$n)
+            $n = Dbl::fetch_ivalue("select value from Settings where name='allowPaperOption'");
+        if ($n && Dbl::ql("update Settings set value=$n where name='allowPaperOption'")) {
             $this->sversion = $this->settings["allowPaperOption"] = $n;
             return true;
         } else

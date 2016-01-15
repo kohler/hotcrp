@@ -205,12 +205,28 @@ function update_schema_review_word_counts($Conf) {
     } while (count($q) == 32);
 }
 
+function update_schema_drop_keys_if_exist($table, $key) {
+    $indexes = Dbl::fetch_first_columns("select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='$table'");
+    $drops = [];
+    foreach (is_array($key) ? $key : [$key] as $k)
+        if (in_array($k, $indexes))
+            $drops[] = ($k === "PRIMARY" ? "drop primary key" : "drop key `$k`");
+    if (count($drops))
+        return Dbl::ql("alter table `$table` " . join(", ", $drops));
+    else
+        return true;
+}
+
 function updateSchema($Conf) {
     global $Opt, $OK;
     // avoid error message abut timezone, set to $Opt
     // (which might be overridden by database values later)
     if (function_exists("date_default_timezone_set") && @$Opt["timezone"])
         date_default_timezone_set($Opt["timezone"]);
+    while (($result = Dbl::ql("insert into Settings set name='__schema_lock', value=1 on duplicate key update value=1"))
+           && $result->affected_rows == 0)
+        time_nanosleep(0, 200000000);
+    $Conf->update_schema_version(null);
 
     error_log($Opt["dbName"] . ": updating schema from version " . $Conf->sversion);
 
@@ -866,4 +882,29 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 116
         && Dbl::ql("alter table PaperComment add `commentOverflow` longblob DEFAULT NULL"))
         $Conf->update_schema_version(117);
+    if ($Conf->sversion == 117
+        && update_schema_drop_keys_if_exist("PaperTopic", ["paperTopic", "PRIMARY"])
+        && Dbl::ql("alter table PaperTopic add primary key (`paperId`,`topicId`)")
+        && update_schema_drop_keys_if_exist("TopicInterest", ["contactTopic", "PRIMARY"])
+        && Dbl::ql("alter table TopicInterest add primary key (`contactId`,`topicId`)"))
+        $Conf->update_schema_version(118);
+    if ($Conf->sversion == 118
+        && update_schema_drop_keys_if_exist("PaperTag", ["paperTag", "PRIMARY"])
+        && Dbl::ql("alter table PaperTag add primary key (`paperId`,`tag`)")
+        && update_schema_drop_keys_if_exist("PaperReviewPreference", ["paperId", "PRIMARY"])
+        && Dbl::ql("alter table PaperReviewPreference add primary key (`paperId`,`contactId`)")
+        && update_schema_drop_keys_if_exist("PaperConflict", ["contactPaper", "contactPaperConflict", "PRIMARY"])
+        && Dbl::ql("alter table PaperConflict add primary key (`contactId`,`paperId`)")
+        && Dbl::ql("alter table MailLog modify `paperIds` blob")
+        && Dbl::ql("alter table MailLog modify `cc` blob")
+        && Dbl::ql("alter table MailLog modify `replyto` blob")
+        && Dbl::ql("alter table MailLog modify `subject` blob")
+        && Dbl::ql("alter table MailLog modify `emailBody` blob"))
+        $Conf->update_schema_version(119);
+    if ($Conf->sversion == 119
+        && update_schema_drop_keys_if_exist("PaperWatch", ["contactPaper", "contactPaperWatch", "PRIMARY"])
+        && Dbl::ql("alter table PaperWatch add primary key (`paperId`,`contactId`)"))
+        $Conf->update_schema_version(120);
+
+    Dbl::ql("delete from Settings where name='__schema_lock'");
 }

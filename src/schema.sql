@@ -104,11 +104,11 @@ CREATE TABLE `MailLog` (
   `recipients` varbinary(200) NOT NULL,
   `q` varbinary(4096) DEFAULT NULL,
   `t` varbinary(200) DEFAULT NULL,
-  `paperIds` text,
-  `cc` text,
-  `replyto` text,
-  `subject` text,
-  `emailBody` text,
+  `paperIds` blob,
+  `cc` blob,
+  `replyto` blob,
+  `subject` blob,
+  `emailBody` blob,
   PRIMARY KEY (`mailId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -192,8 +192,7 @@ CREATE TABLE `PaperConflict` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `conflictType` tinyint(1) NOT NULL DEFAULT '0',
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-  UNIQUE KEY `contactPaperConflict` (`contactId`,`paperId`,`conflictType`)
+  PRIMARY KEY (`contactId`,`paperId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -282,8 +281,8 @@ CREATE TABLE `PaperReviewPreference` (
   `contactId` int(11) NOT NULL,
   `preference` int(4) NOT NULL DEFAULT '0',
   `expertise` int(4) DEFAULT NULL,
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `paperId` (`paperId`)
+  PRIMARY KEY (`paperId`,`contactId`),
+  UNIQUE KEY `contactPaper` (`contactId`,`paperId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -341,7 +340,7 @@ CREATE TABLE `PaperTag` (
   `paperId` int(11) NOT NULL,
   `tag` varchar(40) NOT NULL,		# see TAG_MAXLEN in header.php
   `tagIndex` float NOT NULL DEFAULT '0',
-  UNIQUE KEY `paperTag` (`paperId`,`tag`)
+  PRIMARY KEY (`paperId`,`tag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -352,9 +351,9 @@ CREATE TABLE `PaperTag` (
 
 DROP TABLE IF EXISTS `PaperTopic`;
 CREATE TABLE `PaperTopic` (
-  `topicId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
-  UNIQUE KEY `paperTopic` (`paperId`,`topicId`)
+  `topicId` int(11) NOT NULL,
+  PRIMARY KEY (`paperId`,`topicId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -368,8 +367,7 @@ CREATE TABLE `PaperWatch` (
   `paperId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `watch` int(11) NOT NULL DEFAULT '0',
-  UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
-  UNIQUE KEY `contactPaperWatch` (`contactId`,`paperId`,`watch`)
+  PRIMARY KEY (`paperId`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -445,13 +443,13 @@ CREATE TABLE `TopicInterest` (
   `contactId` int(11) NOT NULL,
   `topicId` int(11) NOT NULL,
   `interest` int(1) DEFAULT NULL,
-  UNIQUE KEY `contactTopic` (`contactId`,`topicId`)
+  PRIMARY KEY (`contactId`,`topicId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 117);
+insert into Settings (name, value) values ('allowPaperOption', 120);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
