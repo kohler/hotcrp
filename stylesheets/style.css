@@ -2588,7 +2588,7 @@ div.cmttext.has_wordsover {
 	margin: 0 -5px -3px;
 	padding: 0 5px 3px;
 	background: #f5ecec;
-	background: linear-gradient(to right, #f5ecec, #f5ecec 650px, rgba(245,236,236,0) 650px);
+	background: linear-gradient(to right, #f5ecec, #f5ecec 655px, rgba(245,236,236,0) 655px);
 }
 div.wordsover_mark {
 	position: absolute;
