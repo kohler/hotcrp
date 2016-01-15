@@ -743,7 +743,8 @@ class Conf {
     }
 
     function save_session_array($name, $index, $value) {
-        if (!is_array(get($_SESSION[$this->dsn], $name)))
+        if (!isset($_SESSION[$this->dsn][$name])
+            || !is_array($_SESSION[$this->dsn][$name]))
             $_SESSION[$this->dsn][$name] = array();
         if ($index !== true)
             $_SESSION[$this->dsn][$name][$index] = $value;
