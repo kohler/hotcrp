@@ -226,7 +226,8 @@ class MeetingTracker {
         else {
             $args = preg_split('/\s+/', $_REQUEST["track"]);
             if (count($args) >= 2
-                && ($xlist = SessionList::lookup($args[1]))) {
+                && ($xlist = SessionList::lookup($args[1]))
+                && str_starts_with($xlist->listid, "p/")) {
                 $position = null;
                 if (count($args) >= 3 && ctype_digit($args[2]))
                     $position = array_search((int) $args[2], $xlist->ids);
