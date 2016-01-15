@@ -2109,6 +2109,8 @@ author_change.delta = function (e, delta) {
         $(tr).find("input[placeholder]").val("");
     }
     while (delta) {
+        if (!tr)
+            log_jserror("bad tr, delta " + delta + ", html " + $(e).closest("table").html());
         var sib = tr[link];
         if (delta < 0 && (!sib || !$(sib).is(":visible")))
             break;
