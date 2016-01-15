@@ -754,7 +754,7 @@ class Autoassigner {
         // make assignments
         $this->set_progress("Completing assignment");
         $this->ass = array("paper,action,tag", "# hotcrp_assign_display_search",
-                           "# hotcrp_assign_show pcconf");
+                           "# hotcrp_assign_show pcconf", "all,cleartag,$tag");
         $curgroup = -1;
         $index = 0;
         $search = array("HEADING:none");
