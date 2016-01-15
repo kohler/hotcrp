@@ -665,7 +665,7 @@ class Autoassigner {
         $this->check_missing_assignments($papers, "rev");
     }
 
-    private function run_discussion_order_once($conf, $plist) {
+    private function run_discussion_order_once($cflt, $plist) {
         $m = new MinCostMaxFlow;
         $m->add_progressf(array($this, "mcmf_progress"));
         $this->set_progress("Preparing assignment optimizer");
@@ -692,7 +692,7 @@ class Autoassigner {
                     $pid1 = is_array($pid1) ? $pid1[count($pid1) - 1] : $pid1;
                     $pid2 = is_array($pid2) ? $pid2[0] : $pid2;
                     // cost of edge is number of different conflicts
-                    $cost = count($conf[$pid1] + $conf[$pid2]) - count(array_intersect($conf[$pid1], $conf[$pid2]));
+                    $cost = count($cflt[$pid1] + $cflt[$pid2]) - count(array_intersect($cflt[$pid1], $cflt[$pid2]));
                     $m->add_edge("po$i", "p$j", 1, $cost);
                 }
         // run MCMF
@@ -732,18 +732,18 @@ class Autoassigner {
         $this->mcmf_round_descriptor = "";
         $this->mcmf_optimizing_for = "Optimizing assignment";
         // load conflicts
-        $conf = array();
+        $cflt = array();
         foreach ($this->papersel as $pid)
-            $conf[$pid] = array();
+            $cflt[$pid] = array();
         $result = Dbl::qe("select paperId, contactId from PaperConflict where paperId ?a and contactId ?a and conflictType>0", $this->papersel, array_keys($this->pcm));
         while (($row = edb_row($result)))
-            $conf[(int) $row[0]][] = (int) $row[1];
+            $cflt[(int) $row[0]][] = (int) $row[1];
         Dbl::free($result);
         // run max-flow
         $result = $this->papersel;
         for ($roundno = 0; !$roundno || count($result) > 1; ++$roundno) {
             $this->mcmf_round_descriptor = $roundno ? ", round " . ($roundno + 1) : "";
-            $result = $this->run_discussion_order_once($conf, $result);
+            $result = $this->run_discussion_order_once($cflt, $result);
             if (!$roundno) {
                 $groupmap = array();
                 foreach ($result as $i => $pids)
