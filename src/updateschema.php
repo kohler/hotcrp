@@ -905,6 +905,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && update_schema_drop_keys_if_exist("PaperWatch", ["contactPaper", "contactPaperWatch", "PRIMARY"])
         && Dbl::ql("alter table PaperWatch add primary key (`paperId`,`contactId`)"))
         $Conf->update_schema_version(120);
+    if ($Conf->sversion == 120
+        && Dbl::ql("alter table Paper add `paperFormat` tinyint(1) DEFAULT NULL"))
+        $Conf->update_schema_version(121);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

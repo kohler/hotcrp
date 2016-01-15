@@ -126,6 +126,7 @@ class PaperTable {
     static public function do_header($paperTable, $id, $action_mode) {
         global $Conf, $Me;
         $prow = $paperTable ? $paperTable->prow : null;
+        $format = 0;
 
         $t = '<div id="header_page" class="header_page_submission';
         if ($prow && $paperTable && ($list = SessionList::active()))
@@ -156,9 +157,22 @@ class PaperTable {
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
-                . ' &nbsp; <span class="ptitle">';
-            if ($paperTable && $paperTable->matchPreg && isset($paperTable->matchPreg["title"]))
-                $t .= Text::highlight($prow->title, $paperTable->matchPreg["title"], $paperTable->entryMatches);
+                . ' &nbsp; ';
+            $highlight = null;
+            if ($paperTable && $paperTable->matchPreg)
+                $highlight = get($paperTable->matchPreg, "title");
+            if (!$highlight && ($format = $prow->paperFormat) === null)
+                $format = Conf::$gDefaultFormat;
+            if ($format && ($f = $Conf->format_info($format))
+                && ($regex = get($f, "simple_regex"))
+                && preg_match($regex, $prow->title))
+                $format = 0;
+            if ($format)
+                $t .= '<span class="ptitle preformat" data-format="' . $format . '">';
+            else
+                $t .= '<span class="ptitle">';
+            if ($highlight)
+                $t .= Text::highlight($prow->title, $highlight, $paperTable->entryMatches);
             else
                 $t .= htmlspecialchars($prow->title);
             $t .= '</span></span></a>';
@@ -171,6 +185,8 @@ class PaperTable {
             $t .= $paperTable->_paptabBeginKnown();
 
         $Conf->header($title, $id, actionBar($action_mode, $prow), $t);
+        if ($format)
+            $Conf->echoScript("render_text.titles()");
     }
 
     private function echoDivEnter() {

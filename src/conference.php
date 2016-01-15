@@ -102,7 +102,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 120) {
+        if ($this->sversion < 121) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -713,7 +713,7 @@ class Conf {
     }
 
 
-    function format_info() {
+    function format_info($format) {
         global $Opt;
         if (self::$gFormatInfo === null) {
             if (is_array(get($Opt, "formatInfo")))
@@ -723,7 +723,7 @@ class Conf {
             if (!self::$gFormatInfo)
                 self::$gFormatInfo = array();
         }
-        return self::$gFormatInfo;
+        return get(self::$gFormatInfo, $format);
     }
 
 

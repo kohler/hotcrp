@@ -160,6 +160,8 @@ class SelectorPaperColumn extends PaperColumn {
 
 class TitlePaperColumn extends PaperColumn {
     private $has_badges = false;
+    private $highlight = false;
+    private $nformats = 0;
     public function __construct() {
         parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "title_compare"));
@@ -169,6 +171,7 @@ class TitlePaperColumn extends PaperColumn {
             && TagInfo::has_badges();
         if ($this->has_badges)
             $pl->qopts["tags"] = 1;
+        $this->highlight = get($pl->search->matchPreg, "title");
         return true;
     }
     public function title_compare($a, $b) {
@@ -178,16 +181,38 @@ class TitlePaperColumn extends PaperColumn {
         return "Title";
     }
     public function content($pl, $row, $rowidx) {
-        $href = $pl->_paperLink($row);
-        $x = Text::highlight($row->title, get($pl->search->matchPreg, "title"));
-        $badge = "";
+        global $Conf;
+        $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';
+
+        $format = 0;
+        if ($pl->live_table && !$this->highlight
+            && ($format = $row->paperFormat) === null)
+            $format = Conf::$gDefaultFormat;
+        if ($format && ($f = $Conf->format_info($format))
+            && ($regex = get($f, "simple_regex"))
+            && preg_match($regex, $row->title))
+            $format = 0;
+        if ($format) {
+            $t .= ' preformat" data-format="' . $format;
+            $Conf->footerScript('$(render_text.titles)', 'render_titles');
+            ++$this->nformats;
+        }
+
+        $t .= '" tabindex="5">' . Text::highlight($row->title, $this->highlight) . '</a>'
+            . $pl->_contentDownload($row);
+
         if ($this->has_badges && $pl->contact->can_view_tags($row, true)
             && (string) $row->paperTags !== ""
             && ($t = $pl->tagger->viewable($row->paperTags)) !== ""
             && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
-            $badge = $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
-        return "<a href=\"$href\" class=\"ptitle taghl\" tabindex=\"5\">"
-            . $x . "</a>" . $pl->_contentDownload($row) . $badge;
+            $t .= $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
+
+        if ($this->nformats && $rowidx % 16 == 15) {
+            $t .= '<script>render_text.titles()</script>';
+            $this->nformats = 0;
+        }
+
+        return $t;
     }
     public function text($pl, $row) {
         return $row->title;

@@ -2255,7 +2255,6 @@ var render_text = function (format, text /* arguments... */) {
         a = [text];
         for (i = 2; i < arguments.length; ++i)
             a.push(arguments[i]);
-        r = lookup(format);
         try {
             return {format: r.format, content: r.render.apply(null, a)};
         } catch (e) {
@@ -2263,6 +2262,21 @@ var render_text = function (format, text /* arguments... */) {
     }
     return {format: 0, content: render0(text)};
 };
+
+function render_inline(format, text /* arguments... */) {
+    var x = null, a, i, r = lookup(format);
+    if (r.format && r.render_inline) {
+        a = [text];
+        for (i = 2; i < arguments.length; ++i)
+            a.push(arguments[i]);
+        try {
+            return {format: r.format, content: r.render_inline.apply(null, a)};
+        } catch (e) {
+        }
+    }
+    return {format: 0, content: escape_entities(text)};
+}
+
 $.extend(render_text, {
     add_format: function (x) {
         x.format && (renderers[x.format] = x);
@@ -2275,6 +2289,16 @@ $.extend(render_text, {
     },
     set_default_format: function (format) {
         default_format = format;
+    },
+    inline: render_inline,
+    titles: function () {
+        $(".ptitle.preformat").each(function () {
+            var $j = $(this), format = +this.getAttribute("data-format");
+            $j.removeClass("preformat");
+            var f = render_inline(format, this.getAttribute("data-title") || $j.text());
+            if (f.format)
+                $j.addClass("format" + format).html(f.content);
+        });
     }
 });
 return render_text;
