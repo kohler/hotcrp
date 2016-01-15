@@ -63,8 +63,8 @@ class Conf {
         // unpack dsn, connect to database, load current settings
         if (($this->dsn = $dsn))
             list($this->dblink, $Opt["dbName"]) = Dbl::connect_dsn($this->dsn);
-        if (!@$Opt["confid"])
-            $Opt["confid"] = @$Opt["dbName"];
+        if (!isset($Opt["confid"]))
+            $Opt["confid"] = get($Opt, "dbName");
         if ($this->dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler(array($this, "query_error_handler"));
@@ -94,7 +94,7 @@ class Conf {
             if (substr($row[0], 0, 4) == "opt.") {
                 $okey = substr($row[0], 4);
                 if (!array_key_exists($okey, $OptOverride))
-                    $OptOverride[$okey] = @$Opt[$okey];
+                    $OptOverride[$okey] = get($Opt, $okey);
                 $Opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
             }
         }
@@ -272,7 +272,8 @@ class Conf {
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",
                        "paperSite", "defaultPaperSite", "contactName",
                        "contactEmail", "docstore") as $k)
-            if (is_string(@$Opt[$k]) && strpos($Opt[$k], "$") !== false) {
+            if (isset($Opt[$k]) && is_string($Opt[$k])
+                && strpos($Opt[$k], "$") !== false) {
                 $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
                 $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $Opt["shortName"], $Opt[$k]);
             }
@@ -315,14 +316,14 @@ class Conf {
         Ht::$img_base = $Opt["assetsUrl"] . "images/";
 
         // set docstore
-        if (@$Opt["docstore"] === true)
+        if (get($Opt, "docstore") === true)
             $Opt["docstore"] = "docs";
-        else if (!@$Opt["docstore"] && @$Opt["filestore"]) { // backwards compat
+        else if (!get($Opt, "docstore") && get($Opt, "filestore")) { // backwards compat
             if (($Opt["docstore"] = $Opt["filestore"]) === true)
                 $Opt["docstore"] = "filestore";
-            $Opt["docstoreSubdir"] = @$Opt["filestoreSubdir"];
+            $Opt["docstoreSubdir"] = get($Opt, "filestoreSubdir");
         }
-        if (@$Opt["docstore"] && $Opt["docstore"][0] !== "/")
+        if (get($Opt, "docstore") && $Opt["docstore"][0] !== "/")
             $Opt["docstore"] = $ConfSitePATH . "/" . $Opt["docstore"];
 
         // handle timezone

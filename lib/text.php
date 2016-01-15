@@ -5,6 +5,7 @@
 
 class NameInfo {
     public $firstName = null;
+    public $middleName = null;
     public $lastName = null;
     public $email = null;
     public $withMiddle = null;
@@ -12,6 +13,7 @@ class NameInfo {
     public $nameAmbiguous = null;
     public $name = null;
     public $affiliation = null;
+    public $unaccentedName = null;
 }
 
 class Text {

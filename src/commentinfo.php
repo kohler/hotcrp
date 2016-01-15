@@ -101,7 +101,7 @@ class CommentInfo {
 
     private static function _user($x) {
         if (isset($x->reviewEmail))
-            return (object) array("firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName"), "email" => get($x, "reviewEmail"));
+            return (object) ["firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName"), "email" => $x->reviewEmail];
         else
             return $x;
     }

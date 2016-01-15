@@ -257,7 +257,12 @@ class Dbl {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
+        if ($qstr)
+            return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
+        else {
+            error_log(self::landmark() . ": empty query");
+            return false;
+        }
     }
 
     static public function do_result($dblink, $flags, $qstr, $result) {
