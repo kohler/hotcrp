@@ -556,7 +556,7 @@ class Conf {
             foreach ($this->rounds as $i => $rname)
                 if (!$i || $rname !== ";") {
                     foreach (self::$review_deadlines as $rd)
-                        if (($dl[$i] = @$this->settings[$rd . ($i ? "_$i" : "")]))
+                        if (($dl[$i] = get($this->settings, $rd . ($i ? "_$i" : ""))))
                             break;
                     $i && ($r[$i] = $rname);
                 }
@@ -568,8 +568,8 @@ class Conf {
             }
             array_key_exists(0, $dl) && ($r[0] = "unnamed");
             uasort($r, function ($a, $b) use ($dl) {
-                $adl = @$dl[$a];
-                $bdl = @$dl[$b];
+                $adl = get($dl, $a);
+                $bdl = get($dl, $b);
                 if ($adl && $bdl && $adl != $bdl)
                     return $adl < $bdl ? -1 : 1;
                 else if (!$adl != !$bdl)
@@ -585,7 +585,7 @@ class Conf {
 
     function round_name($roundno, $expand = false) {
         if ($roundno > 0) {
-            if (($rname = @$this->rounds[$roundno]) && $rname !== ";")
+            if (($rname = get($this->rounds, $roundno)) && $rname !== ";")
                 return $rname;
             else if ($expand)
                 return "?$roundno?"; /* should not happen */
@@ -595,7 +595,7 @@ class Conf {
 
     function round_suffix($roundno) {
         if ($roundno > 0) {
-            if (($rname = @$this->rounds[$roundno]) && $rname !== ";")
+            if (($rname = get($this->rounds, $roundno)) && $rname !== ";")
                 return "_$rname";
         }
         return "";
@@ -624,11 +624,11 @@ class Conf {
     }
 
     function current_round_name() {
-        return (string) @$this->settingTexts["rev_roundtag"];
+        return (string) get($this->settingTexts, "rev_roundtag");
     }
 
     function current_round($add = false) {
-        return $this->round_number(@$this->settingTexts["rev_roundtag"], $add);
+        return $this->round_number($this->current_round_name(), $add);
     }
 
     function round_number($name, $add) {
@@ -651,7 +651,7 @@ class Conf {
         foreach ($this->defined_round_list() as $rname)
             $opt[$rname] = $rname;
         $crname = $this->current_round_name() ? : "unnamed";
-        if ($crname && !@$opt[$crname])
+        if ($crname && !get($opt, $crname))
             $opt[$crname] = $crname;
         return $opt;
     }
@@ -659,7 +659,7 @@ class Conf {
     function round_selector_name($roundno) {
         if ($roundno === null)
             return $this->current_round_name() ? : "unnamed";
-        else if ($roundno > 0 && ($rname = @$this->rounds[$roundno])
+        else if ($roundno > 0 && ($rname = get($this->rounds, $roundno))
                  && $rname !== ";")
             return $rname;
         else
@@ -669,16 +669,16 @@ class Conf {
 
 
     function resp_round_list() {
-        if (($x = @$this->settingTexts["resp_rounds"]))
+        if (($x = get($this->settingTexts, "resp_rounds")))
             return explode(" ", $x);
         else
             return array(1);
     }
 
     function resp_round_name($rnum) {
-        if (($x = @$this->settingTexts["resp_rounds"])) {
+        if (($x = get($this->settingTexts, "resp_rounds"))) {
             $x = explode(" ", $x);
-            if (($n = @$x[$rnum]))
+            if (($n = get($x, $rnum)))
                 return $n;
         }
         return "1";
@@ -705,7 +705,7 @@ class Conf {
         if (!$rname || $rname === 1 || $rname === "1" || $rname === true
             || !strcasecmp($rname, "none"))
             return 0;
-        $rtext = (string) @$this->settingTexts["resp_rounds"];
+        $rtext = (string) get($this->settingTexts, "resp_rounds");
         foreach (explode(" ", $rtext) as $i => $x)
             if (!strcasecmp($x, $rname))
                 return $i;
@@ -716,9 +716,9 @@ class Conf {
     function format_info() {
         global $Opt;
         if (self::$gFormatInfo === null) {
-            if (is_array(@$Opt["formatInfo"]))
+            if (is_array(get($Opt, "formatInfo")))
                 self::$gFormatInfo = $Opt["formatInfo"];
-            else if (is_string(@$Opt["formatInfo"]))
+            else if (is_string(get($Opt, "formatInfo")))
                 self::$gFormatInfo = json_decode($Opt["formatInfo"], true);
             if (!self::$gFormatInfo)
                 self::$gFormatInfo = array();
@@ -743,7 +743,7 @@ class Conf {
     }
 
     function save_session_array($name, $index, $value) {
-        if (!is_array(@$_SESSION[$this->dsn][$name]))
+        if (!is_array(get($_SESSION[$this->dsn], $name)))
             $_SESSION[$this->dsn][$name] = array();
         if ($index !== true)
             $_SESSION[$this->dsn][$name][$index] = $value;
@@ -1198,7 +1198,7 @@ class Conf {
     }
     function time_review_open() {
         global $Now;
-        $rev_open = @+$this->settings["rev_open"];
+        $rev_open = +get($this->settings, "rev_open");
         return 0 < $rev_open && $rev_open <= $Now;
     }
     function review_deadline($round, $isPC, $hard) {
@@ -1213,12 +1213,12 @@ class Conf {
     }
     function missed_review_deadline($round, $isPC, $hard) {
         global $Now;
-        $rev_open = @+$this->settings["rev_open"];
+        $rev_open = +get($this->settings, "rev_open");
         if (!(0 < $rev_open && $rev_open <= $Now))
             return "rev_open";
         $dn = $this->review_deadline($round, $isPC, $hard);
-        $dv = @+$this->settings[$dn];
-        if ($dv > 0 && $dv + @+$this->settings["rev_grace"] < $Now)
+        $dv = +get($this->settings, $dn);
+        if ($dv > 0 && $dv + +get($this->settings, "rev_grace") < $Now)
             return $dn;
         return false;
     }

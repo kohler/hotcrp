@@ -7,8 +7,8 @@ function admin_home_messages() {
     global $Opt, $Conf;
     $m = array();
     $errmarker = "<span class=\"error\">Error:</span> ";
-    if (preg_match("/^(?:[1-4]\\.|5\\.[012])/", phpversion()))
-        $m[] = $errmarker . "HotCRP requires PHP version 5.3 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
+    if (preg_match("/^(?:[1-4]\\.|5\\.[0123])/", phpversion()))
+        $m[] = $errmarker . "HotCRP requires PHP version 5.4 or higher.  You are running PHP version " . htmlspecialchars(phpversion()) . ".";
     if (get_magic_quotes_gpc())
         $m[] = $errmarker . "The PHP <code>magic_quotes_gpc</code> feature is on, which is a bad idea.  Check that your Web server is using HotCRP’s <code>.htaccess</code> file.  You may also want to disable <code>magic_quotes_gpc</code> in your <code>php.ini</code> configuration file.";
     if (get_magic_quotes_runtime())
@@ -23,19 +23,16 @@ function admin_home_messages() {
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result))
         && $row[1] < $max_file_size
-        && !@$Opt["dbNoPapers"])
+        && !get($Opt, "dbNoPapers"))
         $m[] = $errmarker . "MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is $max_file_size&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers.";
     // Conference names
-    if (@$Opt["shortNameDefaulted"])
+    if (get($Opt, "shortNameDefaulted"))
         $m[] = "<a href=\"" . hoturl("settings", "group=basics") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
     else if (simplify_whitespace(Conf::$gShortName) != Conf::$gShortName)
         $m[] = "The <a href=\"" . hoturl("settings", "group=basics") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
     $site_contact = Contact::site_contact();
     if (!$site_contact->email || $site_contact->email == "you@example.com")
         $m[] = "<a href=\"" . hoturl("settings", "group=basics") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong.";
-    // Backwards compatibility
-    if (@$Conf->setting_data("clickthrough_submit")) // delete 12/2014
-        $m[] = "You need to recreate the <a href=\"" . hoturl("settings", "group=msg") . "\">clickthrough submission terms</a>.";
     // Any -100 preferences around?
     $result = Dbl::ql_raw($Conf->preferenceConflictQuery(false, "limit 1"));
     if (($row = edb_row($result)))
@@ -52,7 +49,7 @@ function admin_home_messages() {
         $assigntime = $Conf->setting("pcrev_assigntime");
         $result = Dbl::qe_raw("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
         if (edb_nrows($result))
-            $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">Mark as notified</a>";
+            $m[] = "PC review assignments have changed.&nbsp; <a href=\"" . hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . hoturl_post("index", "clearnewpcrev=$assigntime") . "\">Clear this message</a>";
         else
             $Conf->save_setting("pcrev_informtime", $assigntime);
     }
