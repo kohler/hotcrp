@@ -119,8 +119,7 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         if ($reason == "" && $Me->privChair && defval($_REQUEST, "doemail") > 0)
             $reason = defval($_REQUEST, "emailNote", "");
         Dbl::qe("update Paper set timeWithdrawn=$Now, timeSubmitted=if(timeSubmitted>0,-100,0), withdrawReason=? where paperId=$prow->paperId", $reason != "" ? $reason : null);
-        $result = Dbl::qe("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId");
-        $numreviews = $result ? $result->affected_rows : false;
+        $numreviews = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$prow->paperId and reviewNeedsSubmit!=0");
         $Conf->update_papersub_setting(false);
         loadRows();
 
@@ -150,9 +149,6 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
 if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_revive_paper($prow))) {
         Dbl::qe("update Paper set timeWithdrawn=0, timeSubmitted=if(timeSubmitted=-100,$Now,0), withdrawReason=null where paperId=$prow->paperId");
-        Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=1 where paperId=$prow->paperId and reviewSubmitted is null");
-        Dbl::qe_raw("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . ") set PaperReview.reviewNeedsSubmit=-1 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
-        Dbl::qe_raw("update PaperReview join PaperReview as Req on (Req.paperId=$prow->paperId and Req.requestedBy=PaperReview.contactId and Req.reviewType=" . REVIEW_EXTERNAL . " and Req.reviewSubmitted>0) set PaperReview.reviewNeedsSubmit=0 where PaperReview.paperId=$prow->paperId and PaperReview.reviewSubmitted is null and PaperReview.reviewType=" . REVIEW_SECONDARY);
         $Conf->update_papersub_setting(true);
         loadRows();
         $Me->log_activity("Revived", $prow->paperId);

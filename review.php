@@ -116,7 +116,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     Dbl::qe_raw("lock tables PaperReview write");
     $needsSubmit = 1;
     if ($paperTable->editrrow->reviewType == REVIEW_SECONDARY) {
-        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType=" . REVIEW_EXTERNAL);
+        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType<" . REVIEW_SECONDARY);
         if (($row = edb_row($result)) && $row[0])
             $needsSubmit = 0;
         else if ($row && $row[1])
@@ -189,8 +189,8 @@ if (isset($_REQUEST["deletereview"]) && check_post()
                 $Conf->update_rev_tokens_setting(true);
 
             // perhaps a delegatee needs to redelegate
-            if ($paperTable->editrrow->reviewType == REVIEW_EXTERNAL && $paperTable->editrrow->requestedBy > 0) {
-                $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=" . $paperTable->editrrow->paperId . " and requestedBy=" . $paperTable->editrrow->requestedBy . " and reviewType=" . REVIEW_EXTERNAL);
+            if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY && $paperTable->editrrow->requestedBy > 0) {
+                $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=" . $paperTable->editrrow->paperId . " and requestedBy=" . $paperTable->editrrow->requestedBy . " and reviewType<" . REVIEW_SECONDARY);
                 if (!($row = edb_row($result)) || $row[0] == 0)
                     Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=" . $paperTable->editrrow->paperId . " and contactId=" . $paperTable->editrrow->requestedBy . " and reviewSubmitted is null");
             }
@@ -282,8 +282,8 @@ function refuseReview() {
         return;
 
     // now the requester must potentially complete their review
-    if ($rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy > 0) {
-        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->requestedBy and reviewType=" . REVIEW_EXTERNAL);
+    if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
+        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->requestedBy and reviewType<" . REVIEW_SECONDARY);
         if (!($row = edb_row($result)) || $row[0] == 0)
             Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=" . ($row && $row[1] ? -1 : 1) . " where reviewType=" . REVIEW_SECONDARY . " and paperId=$rrow->paperId and contactId=$rrow->requestedBy and reviewSubmitted is null");
     }
