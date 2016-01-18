@@ -448,21 +448,39 @@ class SearchOptsPaperColumn extends PaperColumn {
             if (strpos($word, ':') === false)
                 continue;
             $keyword = substr($word, 0, strpos($word, ':'));
-            $matchingKw = reset(array_filter($options, function ($o) use ($keyword) {return $o->abbr == $keyword;}));
+            $matchingKw = reset(array_filter($options, function ($o) use ($keyword) {return $this->option_search_term($o->abbr) == $keyword;}));
             if (empty($matchingKw))
                 continue;
             $keywordId = $matchingKw->id;
-            $keywordTitle = $matchingKw->description or $matchingKw->name;
+            $keywordTitle = !empty($matchingKw->description) ? $matchingKw->description : $matchingKw->name;
             $keywordRow = reset(array_filter($prow, function ($k) use ($keywordId) {return $k[1] == $keywordId;}));
-            if (empty($keywordRow))
-                continue;
-            $value = !empty($keywordRow[3]) ? $keywordRow[3] : $keywordRow[2];
+            if ($matchingKw->type == "checkbox") {
+                if (empty($keywordRow) || (!$keywordRow[3] && !$keywordRow[2])) {
+                    $value = "no";
+                } else {
+                    $value = "yes";
+                }
+            } else {
+                if (empty($keywordRow))
+                    continue;
+                $value = !empty($keywordRow[3]) ? $keywordRow[3] : $keywordRow[2];
+            }
             $content .= "<br><strong>$keywordTitle</strong>: $value";
         }
         return $content;
     }
     public function text($pl, $row) {
         return content($pl, $row);
+    }
+    // From settings.php.
+    private function option_search_term($oname) {
+        $owords = preg_split(',[^a-z_0-9]+,', strtolower(trim($oname)));
+        for ($i = 0; $i < count($owords); ++$i) {
+            $attempt = join("-", array_slice($owords, 0, $i + 1));
+            if (count(PaperOption::search($attempt)) == 1)
+                return $attempt;
+        }
+        return simplify_whitespace($oname);
     }
 }
 

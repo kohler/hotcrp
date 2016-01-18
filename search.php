@@ -33,14 +33,22 @@ if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
 if (!isset($_REQUEST["t"]))
     $_REQUEST["t"] = key($tOpt);
 
-function startsWith($haystack, $needle) {
+function _startsWith($haystack, $needle) {
     $length = strlen($needle);
     return (substr($haystack, 0, $length) === $needle);
 }
 
-function endsWith($haystack, $needle) {
+function _endsWith($haystack, $needle) {
     $length = strlen($needle);
     return $length == 0 ? true : (substr($haystack, -$length) === $needle);
+}
+
+function _escapeMySqlSearchValue($value) {
+    $value = str_replace("\\", "\\\\", $value);
+    $value = str_replace("%", "\\%", $value);
+    $value = str_replace("\"", "\\\"", $value);
+    $value = str_replace(" ", "+", $value);
+    return $value;
 }
 
 // search canonicalization
@@ -54,33 +62,39 @@ if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
     $query_all = $_REQUEST["qa"];
 
     // Add all additional options.
+    $delim = " and ";
     foreach ($_REQUEST as $key => $value) {
-        if (startsWith($key, "qao_") && !endsWith($key, "_op")) {
+        if (_startsWith($key, "qao_") && !_endsWith($key, "_op")) {
             $optName = substr($key, 4);
             $optOp = $_REQUEST[$key . "_op"];
             switch ($optOp) {
                 case 'IS_NUM':
-                    $query_all .= " " . $optName . ":" . $value;
+                    $query_all .= $delim . $optName . ":" . _escapeMySqlSearchValue($value);
                     break;
                 case 'IS_AT_LEAST':
-                    $query_all .= " " . $optName . ":>=" . $value;
+                    $query_all .= $delim . $optName . ":>=" . _escapeMySqlSearchValue($value);
                     break;
                 case 'IS_LESS_THAN':
-                    $query_all .= " " . $optName . ":<" . $value;
+                    $query_all .= $delim . $optName . ":<" . _escapeMySqlSearchValue($value);
                     break;
                 case 'IS':
-                    $query_all .= " opt:" . $optName . "=" . $value;
+                    $query_all .= "{$delim}opt:" . $optName . "=" . _escapeMySqlSearchValue($value);
                     break;
                 case 'STARTS_WITH':
-                    $query_all .= " opt:" . $optName . "=" . $value . "*";
+                    $query_all .= "{$delim}opt:" . $optName . "=" . _escapeMySqlSearchValue($value) . "*";
+                    break;
+                case 'ENDS_WITH':
+                    $query_all .= $delim . $optName . ":'%" . _escapeMySqlSearchValue($value) . "'";
                     break;
                 case 'CONTAINS':
-                    $query_all .= " opt:" . $optName . "=*" . $value . "*";
+                    $query_all .= "{$delim}opt:" . $optName . "=*" . _escapeMySqlSearchValue($value) . "*";
+                    break;
+                case 'CHECKBOX':
+                    $query_all .= $delim . $optName . ":'" . _escapeMySqlSearchValue($value) . "'";
                     break;
             }
         }
     }
-    
     $_REQUEST["q"] = PaperSearch::canonical_query($query_all, defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
 } else {
     unset($_REQUEST["qa"]);
@@ -1500,7 +1514,7 @@ if ($opt = PaperOption::option_list()) {
         return simplify_whitespace($oname);
     }
 
-    // Add initial options. This script is actually pretty hacky :(, but it handles numberic,
+    // Add initial options. This script is actually pretty hacky :(, but it handles numeric,
     // checkbox, and text fields. Also, this code is probably riddled with SQL injection exploits.
     $filtered_opt = array_filter($opt, function($o) {
         $o->search_term = option_search_term($o->name);
@@ -1546,8 +1560,15 @@ if ($opt = PaperOption::option_list()) {
             valueOpt.style.width = '8em';
             valueOpt.style['margin-right'] = '2.5em';
 
-            selectOpt.onchange = (function(_opt, _op, _value) {return function() {
+            // Add hidden box (for default value for checkboxes).
+            var valueOptHidden = document.createElement('input');
+            valueOptHidden.type = 'hidden';
+            valueOptHidden.value = 'no';
+            valueOptHidden.disabled = true;
+
+            selectOpt.onchange = (function(_opt, _op, _value, _valueHidden) {return function() {
                 _value.name = 'qao_' + _opt.value;
+                _valueHidden.name = _value.name;
                 _op.name = 'qao_' + _opt.value + '_op';
                 
                 var type = options.filter(function(o) {return o.search_term == _opt.value;})[0].type;
@@ -1555,7 +1576,7 @@ if ($opt = PaperOption::option_list()) {
                     case 'numeric':
                         _value.type = 'number';
                         _value.value = '0';
-                        _op.disabled = false;
+                        _valueHidden.disabled = true;
                         _op.style.display = '';
                         clearOptions(_op);
                         appendOptionToSelect('IS_NUM', 'is', _op);
@@ -1565,34 +1586,39 @@ if ($opt = PaperOption::option_list()) {
                     case 'checkbox':
                         _value.type = 'checkbox';
                         _value.checked = false;
-                        _op.disabled = true;
+                        _value.value = 'yes';
+                        _valueHidden.disabled = false;
                         _op.style.display = 'none';
                         clearOptions(_op);
+                        appendOptionToSelect('CHECKBOX', 'is checked', _op);
                         break;
                     default:
                         _value.type = 'text';
                         _value.value = '';
                         _value.checked = false;
-                        _op.disabled = false;
+                        _valueHidden.disabled = true;
                         _op.style.display = '';
                         clearOptions(_op);
                         appendOptionToSelect('IS', 'is', _op);
                         appendOptionToSelect('STARTS_WITH', 'starts with', _op);
+                        appendOptionToSelect('ENDS_WITH', 'ends with', _op);
                         appendOptionToSelect('CONTAINS', 'contains', _op);
                 }
-            }})(selectOpt, selectOp, valueOpt);
+            }})(selectOpt, selectOp, valueOpt, valueOptHidden);
             selectOpt.onchange();
             switch (type) {
                 case 'numeric':
-                    valueOpt.value = value || 0;
+                    valueOpt.value = value || '';
                     break;
                 case 'checkbox':
-                    valueOpt.checked = !!value;
+                    operator = 'CHECKBOX';
+                    valueOpt.checked = value == 'yes';
                     break;
                 default:
                     valueOpt.value = value || '';
             };
             selectOp.value = operator;
+            optionDiv.appendChild(valueOptHidden);
             optionDiv.appendChild(valueOpt);
             
             // Add remove button.

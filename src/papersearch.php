@@ -1587,11 +1587,15 @@ class PaperSearch {
                     continue;
                 }
 
-                if ($oval === "" || $oval === "yes")
+                if ($oval === "" || $oval === "yes" || $oval === "'yes'")
                     $qo[] = array($o, "!=", 0, $oval);
-                else if ($oval === "no")
+                else if ($oval === "no" || $oval === "'no'")
                     $qo[] = array($o, "=", 0);
-                else if ($o->type === "numeric") {
+                else if ($o->type == "text") {
+                    if (!empty($oval)) {
+                        $xval = " like '%' and Option_X.data like " . str_replace("+", " ", $oval);
+                    }
+                } else if ($o->type === "numeric") {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
                         $qo[] = array($o, $ocompar, $m[1]);
                     else
@@ -2749,11 +2753,19 @@ class PaperSearch {
             // expanded from _clauseTermSetTable
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
-            $thistab = "Option_" . count($sqi->tables);
+            $optionNum = count($sqi->tables);
+            $thistab = "Option_" . $optionNum;
             $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]->id));
-            $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
-            $t->link = $thistab . "_x";
-            $q[] = $sqi->columns[$t->link];
+            if ($t->value[0]->type == "text") {
+                $sqi->add_column($thistab . "_x", "$thistab.value");
+                $t->link = $thistab . "_x";
+                $newValue = str_replace("Option_X.data like '", "Option_$optionNum.data like '", $t->value[1]);
+                $q[] = $sqi->columns[$t->link] . $newValue;
+            } else {
+                $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
+                $t->link = $thistab . "_x";
+                $q[] = $sqi->columns[$t->link];
+            }
             $f[] = "(" . join(" and ", $q) . ")";
         } else if ($tt === "formula") {
             $q = array("true");
