@@ -570,7 +570,10 @@ class PaperTable {
             $contentEnd = strpos($summaryTemplate, END_IF, $varEnd);
             $conditionalEnd = $contentEnd + END_IF_LEN;
             
-            if (($varOption && ($varOption->value || $varOption->data)) == $expectedValue) {
+            $shouldShow = $varOption
+                    && (($varOption->option->type == "text" && !empty($varOption->data))
+                            || ($varOption->option->type != "text" && ($varOption->data || $varOption->value)));
+            if ($shouldShow == $expectedValue) {
                 $summary .= substr($summaryTemplate, $contentStart, $contentEnd - $contentStart);
             }
         }
@@ -581,7 +584,7 @@ class PaperTable {
             $var = $matches[0];
             $var = substr($var, 2, strlen($var) - 3);
             $varOption = reset(array_filter($options, function ($o) use ($var) {return $o->option->name == $var;}));
-            $value = $varOption ? ($varOption->data ? $varOption->data : $varOption->value) : "[???]";
+            $value = $varOption ? ($varOption->option->type == "text" ? $varOption->data : ($varOption->data ? $varOption->data : $varOption->value)) : "[???]";
 
             if ($varOption && $varOption->option->type == "checkbox") {
                 $value = $value ? 'Yes' : 'No';
