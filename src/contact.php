@@ -1054,7 +1054,7 @@ class Contact {
         $result = Dbl::qe("select contactId from ContactInfo where email=?", trim($email));
         $row = edb_row($result);
         Dbl::free($result);
-        return $row ? $row[0] : false;
+        return $row ? (int) $row[0] : false;
     }
 
     static function email_by_id($id) {
