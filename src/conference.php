@@ -821,12 +821,15 @@ class Conf {
         $this->settings["papermanager"] = Dbl::fetch_ivalue("select value from Settings where name='papermanager'");
     }
 
+
+    static private $invariant_row = null;
+
     private function invariantq($q, $args = []) {
         $result = Dbl::ql_apply($this->dblink, $q, $args);
         if ($result) {
-            $any = !!$result->fetch_row();
+            self::$invariant_row = $result->fetch_row();
             $result->close();
-            return $any;
+            return !!self::$invariant_row;
         } else
             return null;
     }
@@ -875,6 +878,18 @@ class Conf {
         $any = $this->invariantq("select reviewId from PaperReview where reviewSubmitted>0 and reviewWordCount is null limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: submitted PaperReview with null reviewWordCount");
+
+        // correct reviewNeedsSubmit
+        $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
+            left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
+                       from PaperReview where reviewType<" . REVIEW_SECONDARY . "
+                       group by paperId, requestedBy) q
+                on (q.paperId=r.paperId and q.requestedBy=r.contactId)
+            where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
+            and if(q.ct=0,1,if(q.cs=0,-1,1))!=r.reviewNeedsSubmit
+            limit 1");
+        if ($any)
+            trigger_error($Opt["dbName"] . " invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
     }
 
 
