@@ -886,7 +886,7 @@ class Conf {
                        group by paperId, requestedBy) q
                 on (q.paperId=r.paperId and q.requestedBy=r.contactId)
             where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
-            and if(q.ct=0,1,if(q.cs=0,-1,1))!=r.reviewNeedsSubmit
+            and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,1))!=r.reviewNeedsSubmit
             limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
