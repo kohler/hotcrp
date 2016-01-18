@@ -2522,7 +2522,7 @@ class PaperSearch {
         // are not visible to the current querier
         $result = Dbl::qe("select MPR.reviewId
         from PaperReview as MPR
-        left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit<=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
+        left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
         left join (select paperId, count(rating) as numRatings from PaperReview join ReviewRating using (reviewId) group by paperId) as NRR on (NRR.paperId=MPR.paperId)
         where MPR.contactId=$contactId
         and numReviews<=2

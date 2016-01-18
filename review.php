@@ -185,7 +185,7 @@ if (isset($_REQUEST["deletereview"]) && check_post()
         if ($result) {
             $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
-            if (defval($paperTable->editrrow, "reviewToken", 0) != 0)
+            if ($paperTable->editrrow->reviewToken != 0)
                 $Conf->update_rev_tokens_setting(true);
 
             // perhaps a delegatee needs to redelegate
