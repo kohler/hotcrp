@@ -2561,9 +2561,9 @@ class PaperSearch {
             if ($rsm->completeness & ReviewSearchMatcher::COMPLETE)
                 $cwhere[] = "reviewSubmitted>0";
             if ($rsm->completeness & ReviewSearchMatcher::INCOMPLETE)
-                $cwhere[] = "reviewNeedsSubmit>0";
+                $cwhere[] = "reviewNeedsSubmit!=0";
             if ($rsm->completeness & ReviewSearchMatcher::INPROGRESS)
-                $cwhere[] = "(reviewNeedsSubmit>0 and reviewModified>0)";
+                $cwhere[] = "(reviewSubmitted is null and reviewModified>0)";
             if (count($cwhere))
                 $where[] = "(" . join(" or ", $cwhere) . ")";
             if ($rsm->round !== null) {

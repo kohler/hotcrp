@@ -504,7 +504,7 @@ class PaperInfo {
             if (@$this->reviewCount !== null && $this->reviewCount === @$this->startedReviewCount)
                 $this->inProgressReviewCount = $this->reviewCount;
             else {
-                $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted or reviewNeedsSubmit>0) and reviewModified>0"));
+                $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted is null and reviewModified>0"));
                 $this->inProgressReviewCount = @$rows[0][0];
             }
         }
