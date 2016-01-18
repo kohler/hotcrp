@@ -3121,15 +3121,19 @@ class Contact {
         // change database
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = "";
-            if (@$extra["round_number"] !== null)
-                $qa .= ", reviewRound=" . $extra["round_number"];
-            else if (($round = $Conf->current_round()))
+            if (($round = get($extra, "round_number")) === null)
+                $round = $Conf->current_round();
+            if ($round)
                 $qa .= ", reviewRound=" . $round;
-            if (@$extra["mark_notify"])
+            if (get($extra, "mark_notify"))
                 $qa .= ", timeRequestNotified=$Now";
-            if (@$extra["token"])
+            if (get($extra, "token"))
                 $qa .= self::unassigned_review_token();
-            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, requestedBy=$this->contactId, timeRequested=$Now$qa";
+            if (($requester = get($extra, "requester_contact")))
+                $qa .= ", requestedBy=" . $requester->contactId;
+            else
+                $qa .= ", requestedBy=" . $this->contactId;
+            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, timeRequested=$Now$qa";
         } else if ($type > 0 && $rrow->reviewType != $type)
             $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)

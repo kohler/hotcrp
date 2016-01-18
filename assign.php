@@ -255,8 +255,20 @@ function requestReview($email) {
 
     $reason = trim(defval($_REQUEST, "reason", ""));
 
-    $otherTables = ($Conf->setting("extrev_chairreq") ? ", ReviewRequest write" : "");
-    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read, ActionLog write" . $otherTables);
+    $round = $Conf->current_round();
+    if (isset($_REQUEST["round"]) && $_REQUEST["round"] != ""
+        && ($rname = $Conf->sanitize_round_name($_REQUEST["round"])) !== false)
+        $round = $Conf->round_number($rname);
+
+    // look up the requester
+    $Requester = $Me;
+    if ($Conf->setting("extrev_chairreq")) {
+        $result = Dbl::qe("select firstName, lastName, u.email, u.contactId from ReviewRequest rr join ContactInfo u on (u.contactId=rr.requestedBy) where paperId=$prow->paperId and rr.email=?", $Them->email);
+        if ($result && ($recorded_requester = $result->fetch_object("Contact")))
+            $Requester = $recorded_requester;
+    }
+
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read, ActionLog write");
     // NB caller unlocks tables on error
 
     // check for outstanding review request
@@ -264,21 +276,15 @@ function requestReview($email) {
         return $result;
 
     // at this point, we think we've succeeded.
-    // potentially send the email from the requester
-    $Requester = $Me;
-    if ($Conf->setting("extrev_chairreq")) {
-        $result = Dbl::qe_raw("select firstName, lastName, ContactInfo.email, ContactInfo.contactId from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
-        if ($result && ($recorded_requester = $result->fetch_object("Contact"))) {
-            $Requester = $recorded_requester;
-            Dbl::qe_raw("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email='" . sqlq($Them->email) . "'");
-        }
-    }
-
     // store the review request
-    $Me->assign_review($prow->paperId, $Them->contactId,
-                       REVIEW_EXTERNAL, array("mark_notify" => true));
+    $Me->assign_review($prow->paperId, $Them->contactId, REVIEW_EXTERNAL,
+                       ["mark_notify" => true, "requester_contact" => $Requester,
+                        "round_number" => $round]);
 
-    // mark secondary as delegated
+    Dbl::qx_raw("unlock tables");
+
+    // delete proposed request, mark secondary as delegated
+    Dbl::qe("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email=?", $Them->email);
     Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
 
     // send confirmation email
@@ -287,18 +293,27 @@ function requestReview($email) {
                                 "other_contact" => $Requester, // backwards compat
                                 "reason" => $reason));
 
-    // confirmation message
     $Conf->confirmMsg("Created a request to review paper #$prow->paperId.");
-    Dbl::qx_raw("unlock tables");
     return true;
 }
 
-function proposeReview($email) {
-    global $Conf, $Me, $prow;
+function delegate_review_round() {
+    // Use the delegator's review round
+    global $Conf, $Me, $Now, $prow, $rrows;
+    $round = null;
+    foreach ($rrows as $rrow)
+        if ($rrow->contactId == $Me->contactId
+            && $rrow->reviewType == REVIEW_SECONDARY)
+            $round = (int) $rrow->reviewRound;
+    return $round;
+}
+
+function proposeReview($email, $round) {
+    global $Conf, $Me, $Now, $prow, $rrows;
 
     $email = trim($email);
-    $name = trim(defval($_REQUEST, "name", ""));
-    $reason = trim(defval($_REQUEST, "reason", ""));
+    $name = trim($_REQUEST["name"]);
+    $reason = trim($_REQUEST["reason"]);
     $reqId = Contact::id_by_email($email);
 
     Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read");
@@ -308,9 +323,11 @@ function proposeReview($email) {
         && !($result = requestReviewChecks(htmlspecialchars($email), $reqId)))
         return $result;
 
-    // check for outstanding review request
-    $result = Dbl::qe_raw("insert into ReviewRequest (paperId, name, email, requestedBy, reason)
-        values ($prow->paperId, '" . sqlq($name) . "', '" . sqlq($email) . "', $Me->contactId, '" . sqlq(trim($_REQUEST["reason"])) . "') on duplicate key update paperId=paperId");
+    // add review request
+    $result = Dbl::qe("insert into ReviewRequest set paperId={$prow->paperId},
+        name=?, email=?, requestedBy={$Me->contactId}, reason=?, reviewRound=?
+        on duplicate key update paperId=paperId",
+                      $name, $email, $reason, $round);
 
     // send confirmation email
     HotCRPMailer::send_manager("@proposereview", $prow,
@@ -392,12 +409,13 @@ if (isset($_REQUEST["add"]) && check_post()) {
         Conf::msg_error("An email address is required to request a review.");
     else {
         if (setting("extrev_chairreq") && !$Me->allow_administer($prow))
-            $ok = proposeReview($_REQUEST["email"]);
+            $ok = proposeReview($_REQUEST["email"], delegate_review_round());
         else
             $ok = requestReview($_REQUEST["email"]);
         if ($ok) {
             unset($_REQUEST["email"]);
             unset($_REQUEST["name"]);
+            unset($_REQUEST["round"]);
             unset($_REQUEST["reason"]);
             redirectSelf();
         } else
@@ -467,7 +485,7 @@ if (setting("extrev_chairreq")) {
         $q = "";
     else
         $q = " and requestedBy=$Me->contactId";
-    $result = Dbl::qe_raw("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId" . $q);
+    $result = Dbl::qe_raw("select name, ReviewRequest.email, firstName as reqFirstName, lastName as reqLastName, ContactInfo.email as reqEmail, requestedBy, reason, reviewRound from ReviewRequest join ContactInfo on (ContactInfo.contactId=ReviewRequest.requestedBy) where ReviewRequest.paperId=$prow->paperId" . $q);
     $proposals = edb_orows($result);
 }
 $t = reviewTable($prow, $rrows, null, null, "assign", $proposals);

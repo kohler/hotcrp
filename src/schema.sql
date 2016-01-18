@@ -399,6 +399,7 @@ CREATE TABLE `ReviewRequest` (
   `email` varchar(120) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   `requestedBy` int(11) NOT NULL,
+  `reviewRound` int(1) DEFAULT NULL,
   UNIQUE KEY `paperEmail` (`paperId`,`email`),
   KEY `paperId` (`paperId`),
   KEY `requestedBy` (`requestedBy`)
@@ -450,7 +451,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 122);
+insert into Settings (name, value) values ('allowPaperOption', 123);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

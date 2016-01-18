@@ -40,7 +40,7 @@ class PaperListReviewAnalysis {
         else
             $title = "Review";
         if ($this->needsSubmit)
-            $title .= " (" . strtolower($this->completion_html()) . ")";
+            $title .= " (" . strtolower($this->description_html()) . ")";
         $t = review_type_icon($this->row->reviewType, $this->needsSubmit, $title);
         if ($includeLink)
             $t = $this->wrap_link($t);
@@ -48,7 +48,7 @@ class PaperListReviewAnalysis {
             $t .= '<span class="revround" title="Review round">&nbsp;' . $this->round . "</span>";
         return $t;
     }
-    public function completion_html() {
+    public function description_html() {
         if (!$this->row)
             return "";
         else if (!$this->needsSubmit)
@@ -62,7 +62,7 @@ class PaperListReviewAnalysis {
             return "In&nbsp;progress";
     }
     public function status_html() {
-        $t = $this->completion_html();
+        $t = $this->description_html();
         if ($this->needsSubmit && $t !== "Delegated")
             $t = "<strong class=\"overdue\">$t</strong>";
         return $this->needsSubmit ? $t : $this->wrap_link($t);

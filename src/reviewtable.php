@@ -150,10 +150,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
-                else {
-                    $u = @$pcm[$rr->requestedBy] ? : array($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
-                    $t .= Text::user_html($u);
-                }
+                else if (($u = get($pcm, $rr->requestedBy)))
+                    $t .= $u->name_html();
+                else
+                    $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
                 $t .= '</td>';
                 $want_requested_by = true;
             } else
@@ -214,26 +214,35 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
-                else {
-                    $u = @$pcm[$rr->requestedBy] ? : array($rr->reqFirstName, $rr->reqLastName, $rr->reqEmail);
-                    $t .= Text::user_html($u);
-                }
+                else if (($u = get($pcm, $rr->requestedBy)))
+                    $t .= $u->name_html();
+                else
+                    $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
                 $t .= '</td>';
                 $want_requested_by = true;
             }
 
             $t .= '<td>';
-            if ($admin)
+            if ($admin) {
                 $t .= '<small>'
                     . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
                     . '<div class="inline">'
                     . Ht::hidden("name", $rr->name)
                     . Ht::hidden("email", $rr->email)
-                    . Ht::hidden("reason", $rr->reason)
-                    . Ht::submit("add", "Approve review", array("style" => "font-size:smaller"))
+                    . Ht::hidden("reason", $rr->reason);
+                if ($rr->reviewRound !== null) {
+                    if ($rr->reviewRound == 0)
+                        $rname = "unnamed";
+                    else
+                        $rname = $Conf->round_name($rr->reviewRound);
+                    if ($rname)
+                        $t .= Ht::hidden("round", $rname);
+                }
+                $t .= Ht::submit("add", "Approve review", array("style" => "font-size:smaller"))
                     . ' '
                     . Ht::submit("deny", "Deny request", array("style" => "font-size:smaller"))
                     . '</div></form>';
+            }
             else if ($rr->reqEmail === $Me->email)
                 $t .= _retract_review_request_form($prow, $rr);
             $t .= '</td>';

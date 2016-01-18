@@ -913,6 +913,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql_raw("update PaperReview r, Paper p, PaperReview rq set r.reviewNeedsSubmit=0 where p.paperId=r.paperId and p.paperId=rq.paperId and p.timeSubmitted<=0 and r.reviewType=" . REVIEW_SECONDARY . " and r.contactId=rq.requestedBy and rq.reviewType<" . REVIEW_SECONDARY . " and rq.reviewSubmitted is not null")
         && Dbl::ql_raw("update PaperReview r, Paper p, PaperReview rq set r.reviewNeedsSubmit=-1 where p.paperId=r.paperId and p.paperId=rq.paperId and p.timeSubmitted<=0 and r.reviewType=" . REVIEW_SECONDARY . " and r.contactId=rq.requestedBy and rq.reviewType<" . REVIEW_SECONDARY . " and r.reviewNeedsSubmit=0"))
         $Conf->update_schema_version(122);
+    if ($Conf->sversion == 122
+        && Dbl::ql("alter table ReviewRequest add `reviewRound` int(1) DEFAULT NULL"))
+        $Conf->update_schema_version(123);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }
