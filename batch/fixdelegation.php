@@ -42,7 +42,7 @@ function fix_one_delegation() {
         else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
                  && ($pc = pcByEmail($m[1]))
                  && $pc->can_administer($prow))
-            $confirmations[$xid] = $pc->contactId;
+            $confirmations[$row->contactId] = $pc->contactId;
     }
     Dbl::free($result);
 
