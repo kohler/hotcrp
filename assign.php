@@ -72,16 +72,16 @@ function retractRequest($email, $prow, $confirm = true) {
 
     // check for outstanding review
     $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail";
-    $result = Dbl::qe_raw("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
+    $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
                 from ContactInfo
                 join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
-                where ContactInfo.email='" . sqlq($email) . "'");
+                where ContactInfo.email=?", $email);
     $row = edb_orow($result);
 
     // check for outstanding review request
-    $result2 = Dbl::qe_raw("select name, email, requestedBy
+    $result2 = Dbl::qe("select name, email, requestedBy
                 from ReviewRequest
-                where paperId=$prow->paperId and email='" . sqlq($email) . "'");
+                where paperId=$prow->paperId and email=?", $email);
     $row2 = edb_orow($result2);
 
     // act

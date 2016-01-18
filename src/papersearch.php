@@ -2420,7 +2420,7 @@ class PaperSearch {
         if ($flags & self::F_AUTHOR)
             $q[] = $this->contact->actAuthorSql("PaperConflict");
         if ($flags & self::F_REVIEWER)
-            $q[] = "MyReview.reviewNeedsSubmit=0"; // i.e. not null
+            $q[] = "MyReview.reviewNeedsSubmit=0";
         if ($flags & self::F_XVIEW) {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
             $sqi->add_rights_columns();

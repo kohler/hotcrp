@@ -3105,7 +3105,7 @@ class Contact {
 
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now;
-        $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken, requestedBy from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = edb_orow($result);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
