@@ -324,7 +324,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     $result = Dbl::qe_raw("select count(reviewSubmitted) num_submitted,
 	count(if(reviewNeedsSubmit=0,reviewSubmitted,1)) num_needs_submit,
 	group_concat(if(reviewSubmitted is not null,overAllMerit,null)) scores,
-	group_concat(distinct if(reviewNeedsSubmit=1 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds
+	group_concat(distinct if(reviewNeedsSubmit!=0 and reviewSubmitted is null,reviewRound,null)) unsubmitted_rounds
 	from PaperReview
 	join Paper using (paperId)
 	where (" . join(" or ", $where) . ")
