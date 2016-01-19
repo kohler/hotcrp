@@ -1240,7 +1240,8 @@ class Contact {
     public function check_password($input) {
         global $Conf, $Now;
         assert(!self::external_login());
-        if ($this->contactId && $this->disabled)
+        if (($this->contactId && $this->disabled)
+            || !self::valid_password($input))
             return false;
         // update passwordUseTime once a month
         $update_use_time = $Now - 31 * 86400;
@@ -1298,6 +1299,9 @@ class Contact {
     public function change_password($old, $new, $flags) {
         global $Conf, $Now;
         assert(!self::external_login());
+        if ($new === null)
+            $new = self::random_password();
+        assert(self::valid_password($new));
 
         $hash = $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
@@ -1308,7 +1312,7 @@ class Contact {
                 && self::check_password_encryption("", true))
                 $hash = self::hash_password($new, true);
             else
-                $hash = $new = $new ? : self::random_password();
+                $hash = $new;
             $cdbu->password = $hash;
             if (!$old || $old !== $new)
                 $cdbu->passwordTime = $Now;
@@ -1324,7 +1328,7 @@ class Contact {
                      && self::check_password_encryption("", false))
                 $hash = self::hash_password($new, false);
             else
-                $hash = $new = $new ? : self::random_password();
+                $hash = $new;
             $this->password = $hash;
             if (!$old || $old !== $new)
                 $this->passwordTime = $Now;
