@@ -48,6 +48,10 @@ $marina = "marina@poema.ru";
 
 $Opt["safePasswords"] = $Opt["contactdb_safePasswords"] = 0;
 user($marina)->change_password(null, "rosdevitch", 0);
+xassert_eqq(password($marina), "");
+xassert_eqq(password($marina, true), "rosdevitch");
+xassert(user($marina)->check_password("rosdevitch"));
+user($marina)->change_password(null, "rosdevitch", Contact::CHANGE_PASSWORD_NO_CDB);
 xassert_eqq(password($marina), "rosdevitch");
 xassert_eqq(password($marina, true), "rosdevitch");
 xassert(user($marina)->check_password("rosdevitch"));
@@ -72,7 +76,7 @@ xassert(!user($marina)->check_password("crapdevitch"));
 
 // update contactdb password => old local password useless
 save_password($marina, "isdevitch", true);
-xassert_eqq(password($marina), "dungdevitch");
+xassert_eqq(password($marina), "");
 xassert(user($marina)->check_password("isdevitch"));
 xassert(!user($marina)->check_password("dungdevitch"));
 
@@ -89,19 +93,19 @@ save_password($marina, null, true);
 xassert(user($marina)->check_password("ncurses"));
 
 // restore to "this is a cdb password"
-save_password($marina, "isdevitch", true);
-Dbl::qe("update ContactInfo set passwordIsCdb=1 where email=?", $marina);
+user($marina)->change_password(null, "isdevitch", 0);
+xassert_eqq(password($marina), "");
+xassert_eqq(password($marina, true), "isdevitch");
 
 // start upgrading passwords
 if (function_exists("password_needs_rehash")) {
     $Opt["safePasswords"] = $Opt["contactdb_safePasswords"] = 2;
     xassert(user($marina)->check_password("isdevitch"));
-    xassert_eqq(substr(password($marina), 0, 2), " \$");
     xassert_eqq(substr(password($marina, true), 0, 2), " \$");
-    xassert_eqq(password($marina), password($marina, true));
+    xassert_eqq(password($marina), "");
 
     save_password($marina, ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm', true);
-    save_password($marina, '*', false);
+    save_password($marina, '', false);
     xassert(user($marina)->check_password("isdevitch"));
     xassert_eqq(password($marina, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
 }

@@ -997,7 +997,7 @@ class Contact {
         global $Conf, $Now;
         if ($cdbu && ($cdbu = $cdbu->contactdb_user())
             && $cdbu->allow_contactdb_password()) {
-            $cu->qv["password"] = $this->password = $cdbu->password;
+            $cu->qv["password"] = $this->password = "";
             $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
             $cu->qv["passwordIsCdb"] = 1;
         } else if (!self::external_login()) {
@@ -1105,7 +1105,8 @@ class Contact {
     //     change local password and update time;
 
     public static function valid_password($input) {
-        return $input && trim($input) === $input && $input !== "*";
+        return $input !== "" && $input !== "0" && $input !== "*"
+            && trim($input) === $input;
     }
 
     public static function random_password($length = 14) {
@@ -1253,27 +1254,14 @@ class Contact {
         $cdbu = $this->contactdb_user();
         $cdbok = false;
         if ($cdbu && ($hash = $cdbu->password)
-            && $cdbu->allow_contactdb_password()) {
-            $cdbok = self::check_hashed_password($input, $hash, $this->email);
-            if ($cdbok && self::check_password_encryption($hash, true)) {
+            && $cdbu->allow_contactdb_password()
+            && ($cdbok = self::check_hashed_password($input, $hash, $this->email))) {
+            if (self::check_password_encryption($hash, true)) {
                 $hash = self::hash_password($input, true);
                 Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
                 $cdbu->password = $hash;
             }
-            if ($cdbok && $this->contactId && $this->passwordIsCdb
-                && $this->password !== $hash) {
-                if ($hash !== "" && $hash[0] === " " && $hash[1] !== "\$")
-                    $hash = self::hash_password($input, false);
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where contactId=?", $hash, $cdbu->passwordTime, $Now, $this->contactId);
-                $this->password = $hash;
-                $this->passwordTime = $cdbu->passwordTime;
-                $this->passwordUseTime = $Now;
-            } else if ($cdbok && $this->contactId && $this->passwordIsCdb
-                       && $this->passwordUseTime <= $update_use_time) {
-                Dbl::ql($Conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
-                $this->passwordUseTime = $Now;
-            }
-            if ($cdbok && $cdbu->passwordUseTime <= $update_use_time) {
+            if ($cdbu->passwordUseTime <= $update_use_time) {
                 Dbl::ql(self::contactdb(), "update ContactInfo set passwordUseTime=? where contactDbId=?", $Now, $cdbu->contactDbId);
                 $cdbu->passwordUseTime = $Now;
             }
@@ -1307,39 +1295,35 @@ class Contact {
             $new = self::random_password();
         assert(self::valid_password($new));
 
-        $hash = $cdbu = null;
+        $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
             $cdbu = $this->contactdb_user();
-        if ($cdbu && $cdbu->password
+        if ($cdbu
+            && (!$old || $cdbu->password)
             && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
-            if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
+            $hash = $new;
+            if ($hash && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && self::check_password_encryption("", true))
-                $hash = self::hash_password($new, true);
-            else
-                $hash = $new;
+                $hash = self::hash_password($hash, true);
             $cdbu->password = $hash;
             if (!$old || $old !== $new)
                 $cdbu->passwordTime = $Now;
             Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
-        }
-
-        if ($this->contactId
-            && (!$old || $hash || self::check_hashed_password($old, $this->password, $this->email))) {
-            $this->passwordIsCdb = $hash ? 1 : 0;
-            if ($hash && ($hash === $new || substr($hash, 0, 2) === " \$"))
-                /* use old hash */;
-            else if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                     && self::check_password_encryption("", false))
-                $hash = self::hash_password($new, false);
-            else
-                $hash = $new;
+            if ($this->contactId && $this->password) {
+                $this->password = "";
+                $this->passwordTime = $cdbu->passwordTime;
+                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            }
+        } else if ($this->contactId
+                   && (!$old || self::check_hashed_password($old, $this->password, $this->email))) {
+            $hash = $new;
+            if ($hash && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
+                && self::check_password_encryption("", false))
+                $hash = self::hash_password($hash, false);
             $this->password = $hash;
             if (!$old || $old !== $new)
                 $this->passwordTime = $Now;
-            if ($Conf->sversion >= 97)
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=?, passwordIsCdb=? where contactId=?", $this->password, $this->passwordTime, $this->passwordIsCdb, $this->contactId);
-            else
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         }
     }
 
