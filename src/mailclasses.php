@@ -240,7 +240,7 @@ class MailRecipients {
 
         // query construction
         $q = "select ContactInfo.contactId, firstName, lastName, email,
-            password, passwordIsCdb, roles, contactTags, preferredEmail, "
+            password, roles, contactTags, preferredEmail, "
             . ($needconflict ? "PaperConflict.conflictType" : "0 as conflictType");
         if ($needpaper)
             $q .= ", Paper.paperId, Paper.title, Paper.abstract,

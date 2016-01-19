@@ -102,7 +102,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 124) {
+        if ($this->sversion < 126) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -895,6 +895,11 @@ class Conf {
         $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: anonymous user is not disabled");
+
+        // no one has password '*'
+        $any = $this->invariantq("select email from ContactInfo where password='*' limit 1");
+        if ($any)
+            trigger_error($Opt["dbName"] . " invariant error: password '*'");
     }
 
 

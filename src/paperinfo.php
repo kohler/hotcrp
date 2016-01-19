@@ -686,7 +686,7 @@ class PaperInfo {
         global $Conf;
 
         $q = "select ContactInfo.contactId, firstName, lastName, email,
-                password, passwordIsCdb, contactTags, roles, defaultWatch,
+                password, contactTags, roles, defaultWatch,
                 PaperReview.reviewType myReviewType,
                 PaperReview.reviewSubmitted myReviewSubmitted,
                 PaperReview.reviewNeedsSubmit myReviewNeedsSubmit,

@@ -71,7 +71,7 @@ function retractRequest($email, $prow, $confirm = true) {
     // NB caller unlocks tables
 
     // check for outstanding review
-    $contact_fields = "firstName, lastName, ContactInfo.email, password, passwordIsCdb, roles, preferredEmail";
+    $contact_fields = "firstName, lastName, ContactInfo.email, password, roles, preferredEmail";
     $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewSubmitted, reviewToken, requestedBy, $contact_fields
                 from ContactInfo
                 join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
@@ -218,7 +218,7 @@ function requestReviewChecks($themHtml, $reqId) {
     global $Me, $prow;
 
     // check for outstanding review request
-    $result = Dbl::qe_raw("select reviewId, firstName, lastName, email, password, passwordIsCdb from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId");
+    $result = Dbl::qe_raw("select reviewId, firstName, lastName, email, password from PaperReview join ContactInfo on (ContactInfo.contactId=PaperReview.requestedBy) where paperId=$prow->paperId and PaperReview.contactId=$reqId");
     if (!$result)
         return false;
     else if (($row = edb_orow($result)))

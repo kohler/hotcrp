@@ -400,7 +400,7 @@ class HotCRPMailer extends Mailer {
         global $Conf, $Me;
 
         $result = Dbl::qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password, passwordIsCdb,
+                firstName, lastName, email, preferredEmail, password,
                 roles, disabled, contactTags,
                 conflictType, 0 myReviewType
                 from ContactInfo join PaperConflict using (contactId)
@@ -437,7 +437,7 @@ class HotCRPMailer extends Mailer {
         global $Conf, $Me, $Opt;
 
         $result = Dbl::qe("select ContactInfo.contactId,
-                firstName, lastName, email, preferredEmail, password, passwordIsCdb,
+                firstName, lastName, email, preferredEmail, password,
                 roles, disabled, contactTags,
                 conflictType, reviewType myReviewType
                 from ContactInfo

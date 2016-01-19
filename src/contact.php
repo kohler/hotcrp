@@ -40,7 +40,6 @@ class Contact {
     private $password = "";
     private $passwordTime = 0;
     private $passwordUseTime = 0;
-    private $passwordIsCdb;
     private $contactdb_user_ = false;
 
     public $disabled = false;
@@ -135,8 +134,6 @@ class Contact {
         self::set_sorter($this);
         if (isset($user->password))
             $this->password = (string) $user->password;
-        $this->passwordIsCdb = ($this->contactDbId && !$this->contactId)
-            || !!get($user, "passwordIsCdb");
         if (isset($user->disabled))
             $this->disabled = !!$user->disabled;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
@@ -181,10 +178,6 @@ class Contact {
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         self::set_sorter($this);
         $this->password = (string) $this->password;
-        if ($this->contactDbId && !$this->contactId)
-            $this->passwordIsCdb = true;
-        else
-            $this->passwordIsCdb = (int) $this->passwordIsCdb != 0;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
@@ -999,11 +992,9 @@ class Contact {
             && $cdbu->allow_contactdb_password()) {
             $cu->qv["password"] = $this->password = "";
             $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
-            $cu->qv["passwordIsCdb"] = 1;
         } else if (!self::external_login()) {
             $cu->qv["password"] = $this->password = self::random_password();
             $cu->qv["passwordTime"] = $this->passwordTime = $Now;
-            $cu->qv["passwordIsCdb"] = 0;
         } else
             $cu->qv["password"] = $this->password = "";
     }
@@ -1126,18 +1117,13 @@ class Contact {
     private function prefer_contactdb_password() {
         $cdbu = $this->contactdb_user();
         return $cdbu && $cdbu->password
-            && (!$this->has_database_account()
-                || $this->password === ""
-                || $this->password === "*"
-                || $this->passwordIsCdb);
+            && (!$this->has_database_account() || $this->password === "");
     }
 
     public function plaintext_password() {
         // Return the currently active plaintext password. This might not
-        // equal $this->password because of $this->passwordIsCdb.
-        if ($this->password === ""
-            || $this->password === "*"
-            || $this->passwordIsCdb) {
+        // equal $this->password because of the cdb.
+        if ($this->password === "") {
             if ($this->contactId
                 && ($cdbu = $this->contactdb_user()))
                 return $cdbu->plaintext_password();
@@ -1269,14 +1255,13 @@ class Contact {
 
         $localok = false;
         if ($this->contactId && ($hash = $this->password)
-            && (!$this->passwordIsCdb || !$cdbu)) {
-            $localok = self::check_hashed_password($input, $hash, $this->email);
-            if ($localok && self::check_password_encryption($hash, false)) {
+            && ($localok = self::check_hashed_password($input, $hash, $this->email))) {
+            if (self::check_password_encryption($hash, false)) {
                 $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
                 $this->password = $hash;
             }
-            if ($localok && $this->passwordUseTime <= $update_use_time) {
+            if ($this->passwordUseTime <= $update_use_time) {
                 Dbl::ql($Conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
                 $this->passwordUseTime = $Now;
             }

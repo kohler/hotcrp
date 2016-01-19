@@ -38,8 +38,6 @@ function save_password($email, $encoded_password, $iscdb = false) {
     global $Conf, $Now;
     $dblink = $iscdb ? Contact::contactdb() : $Conf->dblink;
     Dbl::qe($dblink, "update ContactInfo set password=?, passwordTime=? where email=?", $encoded_password, $Now, $email);
-    if (!$iscdb)
-        Dbl::qe($dblink, "update ContactInfo set passwordIsCdb=0 where email=?", $email);
     ++$Now;
 }
 
