@@ -1215,9 +1215,9 @@ class Contact {
         $safe = opt($iscdb ? "contactdb_safePasswords" : "safePasswords");
         if ($safe < 1
             || ($method = self::password_hash_method()) === false
-            || ($hash && $safe == 1 && @$hash[0] !== " "))
+            || ($hash !== "" && $safe == 1 && $hash[0] !== " "))
             return false;
-        else if (!$hash || @$hash[0] !== " ")
+        else if ($hash === "" || $hash[0] !== " ")
             return true;
         else if (is_int($method))
             return $hash[1] !== "\$"
@@ -1263,7 +1263,7 @@ class Contact {
             }
             if ($cdbok && $this->contactId && $this->passwordIsCdb
                 && $this->password !== $hash) {
-                if (@$hash[0] == " " && @$hash[1] !== "\$")
+                if ($hash !== "" && $hash[0] === " " && $hash[1] !== "\$")
                     $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where contactId=?", $hash, $cdbu->passwordTime, $Now, $this->contactId);
                 $this->password = $hash;
@@ -1311,7 +1311,7 @@ class Contact {
         if ($cdbu && $cdbu->password
             && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
             if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                && self::check_password_encryption(false, true))
+                && self::check_password_encryption("", true))
                 $hash = self::hash_password($new, true);
             else
                 $hash = $new = $new ? : self::random_password();
@@ -1327,7 +1327,7 @@ class Contact {
             if ($hash && ($hash === $new || substr($hash, 0, 2) === " \$"))
                 /* use old hash */;
             else if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                     && self::check_password_encryption(false, false))
+                     && self::check_password_encryption("", false))
                 $hash = self::hash_password($new, false);
             else
                 $hash = $new = $new ? : self::random_password();
