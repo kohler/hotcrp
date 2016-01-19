@@ -702,7 +702,7 @@ class Contact {
 
     private function _save_assign_field($k, $v, Contact_Update $cu) {
         global $Conf;
-        $fieldtype = (int) @self::$save_fields[$k];
+        $fieldtype = get_i(self::$save_fields, $k);
         if ($fieldtype & 2)
             $v = simplify_whitespace($v);
         else if ($fieldtype & 1)
@@ -722,7 +722,7 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $different_email = strtolower($cj->email) !== @strtolower($old_email);
+        $different_email = strtolower($cj->email) !== strtolower((string) $old_email);
         $cu = new Contact_Update($inserting, $different_email);
 
         $aupapers = null;
@@ -756,7 +756,7 @@ class Contact {
         $old_datastr = $this->data_str();
         $data = (object) array();
         foreach (array("address", "city", "state", "zip") as $k)
-            if (($x = @$cj->$k)) {
+            if (isset($cj->$k) && ($x = $cj->$k)) {
                 while (is_array($x) && $x[count($x) - 1] === "")
                     array_pop($x);
                 $data->$k = $x ? : null;
@@ -773,11 +773,11 @@ class Contact {
         // Follow
         if (isset($cj->follow)) {
             $w = 0;
-            if (@$cj->follow->reviews)
+            if (get($cj->follow, "reviews"))
                 $w |= WATCH_COMMENT;
-            if (@$cj->follow->allreviews)
+            if (get($cj->follow, "allreviews"))
                 $w |= WATCH_ALLCOMMENTS;
-            if (@$cj->follow->allfinal)
+            if (get($cj->follow, "allfinal"))
                 $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
             $this->_save_assign_field("defaultWatch", $w, $cu);
         }
@@ -827,11 +827,11 @@ class Contact {
         // Roles
         $roles = 0;
         if (isset($cj->roles)) {
-            if (@$cj->roles->pc)
+            if (get($cj->roles, "pc"))
                 $roles |= Contact::ROLE_PC;
-            if (@$cj->roles->chair)
+            if (get($cj->roles, "chair"))
                 $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
-            if (@$cj->roles->sysadmin)
+            if (get($cj->roles, "sysadmin"))
                 $roles |= Contact::ROLE_ADMIN;
             if ($roles !== $old_roles)
                 $this->save_roles($roles, $actor);
@@ -874,8 +874,8 @@ class Contact {
         }
 
         // Password
-        if (@$cj->new_password)
-            $this->change_password(@$cj->old_password, $cj->new_password, 0);
+        if (isset($cj->new_password))
+            $this->change_password(get($cj, "old_password"), $cj->new_password, 0);
 
         // Beware PC cache
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
@@ -916,11 +916,11 @@ class Contact {
             foreach ($row->author_list() as $au)
                 if (strcasecmp($au->email, $email) == 0) {
                     $aupapers[] = $row->paperId;
-                    if ($reg && !@$reg->firstName && $au->firstName)
+                    if ($reg && $au->firstName && !get($reg, "firstName"))
                         $reg->firstName = $au->firstName;
-                    if ($reg && !@$reg->lastName && $au->lastName)
+                    if ($reg && $au->lastName && !get($reg, "lastName"))
                         $reg->lastName = $au->lastName;
-                    if ($reg && !@$reg->affiliation && $au->affiliation)
+                    if ($reg && $au->affiliation && !get($reg, "affiliation"))
                         $reg->affiliation = $au->affiliation;
                 }
         return $aupapers;
@@ -1014,7 +1014,7 @@ class Contact {
         global $Conf, $Me, $Opt, $Now;
         if (is_array($reg))
             $reg = (object) $reg;
-        assert(is_string(@$reg->email));
+        assert(is_string($reg->email));
         $email = trim($reg->email);
         assert($email !== "");
 
@@ -1023,20 +1023,20 @@ class Contact {
             return $acct;
 
         // validate email, check contactdb
-        if (!@$reg->no_validate_email && !validate_email($email))
+        if (!get($reg, "no_validate_email") && !validate_email($email))
             return null;
         $cdbu = Contact::contactdb_find_by_email($email);
-        if (@$reg->only_if_contactdb && !$cdbu)
+        if (get($reg, "only_if_contactdb") && !$cdbu)
             return null;
 
         $cj = (object) array();
         foreach (array("firstName", "lastName", "email", "affiliation",
                        "collaborators", "preferredEmail") as $k)
-            if (($v = $cdbu && @$cdbu->$k ? $cdbu->$k : @$reg->$k))
+            if (($v = $cdbu && $cdbu->$k ? $cdbu->$k : get($reg, $k)))
                 $cj->$k = $v;
-        if (($v = $cdbu && @$cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : @$reg->voicePhoneNumber))
+        if (($v = $cdbu && $cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : get($reg, "voicePhoneNumber")))
             $cj->phone = $v;
-        if (($cdbu && $cdbu->disabled) || @$reg->disabled)
+        if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
             $cj->disabled = true;
 
         $acct = new Contact;

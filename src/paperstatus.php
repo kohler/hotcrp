@@ -767,11 +767,11 @@ class PaperStatus {
         $this->check_invariants($pj, $old_pj, $prow);
 
         // store all documents
-        if (@$pj->submission)
+        if (isset($pj->submission) && $pj->submission)
             $this->upload_document($pj->submission, $paperid, DTYPE_SUBMISSION);
-        if (@$pj->final)
+        if (isset($pj->final) && $pj->final)
             $this->upload_document($pj->final, $paperid, DTYPE_FINAL);
-        if (@$pj->options) {
+        if (isset($pj->options) && $pj->options) {
             $option_list = PaperOption::option_list();
             foreach ($pj->options as $id => $oa) {
                 $o = $option_list[$id];
@@ -786,7 +786,7 @@ class PaperStatus {
         // create contacts
         foreach (self::contacts_array($pj) as $c) {
             $c->only_if_contactdb = !@$c->contact;
-            $c->disabled = !!@$this->disable_users;
+            $c->disabled = !!$this->disable_users;
             if (!Contact::create($c, !$this->no_email)
                 && @$c->contact)
                 $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
