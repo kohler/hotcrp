@@ -1123,12 +1123,12 @@ class Contact {
 
     public function allow_contactdb_password() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !opt("contactdb_noPasswords");
+        return $cdbu && $cdbu->password;
     }
 
     private function prefer_contactdb_password() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !opt("contactdb_noPasswords")
+        return $cdbu && $cdbu->password
             && (!$this->has_database_account() || $this->password === "*"
                 || $this->passwordIsCdb);
     }
@@ -1299,7 +1299,7 @@ class Contact {
         $hash = $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
             $cdbu = $this->contactdb_user();
-        if ($cdbu && $cdbu->password && !opt("contactdb_noPasswords")
+        if ($cdbu && $cdbu->password
             && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
             if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
                 && self::check_password_encryption(false, true))
