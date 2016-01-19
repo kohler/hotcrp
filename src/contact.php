@@ -515,7 +515,8 @@ class Contact {
 
     static function is_anonymous_email($email) {
         // see also PaperSearch, Mailer
-        return preg_match('/\Aanonymous\d*\z/', $email);
+        return substr($email, 0, 9) === "anonymous"
+            && (strlen($email) === 9 || ctype_digit(substr($email, 9)));
     }
 
     function is_anonymous_user() {

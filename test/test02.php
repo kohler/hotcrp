@@ -153,4 +153,12 @@ xassert_eqq(count($q), 3);
 xassert_eqq(json_encode($q), "{\"a\":1,\"b\":2,\"c\":[1]}");
 xassert_eqq(Json::encode($q), "{\"a\":1,\"b\":2,\"c\":[1]}");
 
+// Contact::is_anonymous_email tests
+xassert(Contact::is_anonymous_email("anonymous"));
+xassert(Contact::is_anonymous_email("anonymous1"));
+xassert(Contact::is_anonymous_email("anonymous10"));
+xassert(Contact::is_anonymous_email("anonymous9"));
+xassert(!Contact::is_anonymous_email("anonymous@example.com"));
+xassert(!Contact::is_anonymous_email("example@anonymous"));
+
 xassert_exit();
