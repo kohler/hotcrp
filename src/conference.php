@@ -714,7 +714,7 @@ class Conf {
     }
 
 
-    function format_info($format) {
+    static function format_info($format) {
         global $Opt;
         if (self::$gFormatInfo === null) {
             if (is_array(get($Opt, "formatInfo")))

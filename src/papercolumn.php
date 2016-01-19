@@ -188,7 +188,7 @@ class TitlePaperColumn extends PaperColumn {
         if ($pl->live_table && !$this->highlight
             && ($format = $row->paperFormat) === null)
             $format = Conf::$gDefaultFormat;
-        if ($format && ($f = $Conf->format_info($format))
+        if ($format && ($f = Conf::format_info($format))
             && ($regex = get($f, "simple_regex"))
             && preg_match($regex, $row->title))
             $format = 0;

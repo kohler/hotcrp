@@ -163,7 +163,7 @@ class PaperTable {
                 $highlight = get($paperTable->matchPreg, "title");
             if (!$highlight && ($format = $prow->paperFormat) === null)
                 $format = Conf::$gDefaultFormat;
-            if ($format && ($f = $Conf->format_info($format))
+            if ($format && ($f = Conf::format_info($format))
                 && ($regex = get($f, "simple_regex"))
                 && preg_match($regex, $prow->title))
                 $format = 0;
