@@ -1117,10 +1117,6 @@ class Contact {
         return opt("safePasswords") < 1;
     }
 
-    public function has_password() {
-        return $this->password !== "" && $this->password !== "*";
-    }
-
     public function allow_contactdb_password() {
         $cdbu = $this->contactdb_user();
         return $cdbu && $cdbu->password;

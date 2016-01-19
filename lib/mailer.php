@@ -108,9 +108,10 @@ class Mailer {
         // generic expansions: OPT, URLENC
         if ($len > 7 && substr($what, 0, 5) == "%OPT(" && substr($what, $len - 2) == ")%") {
             $inner = "%" . substr($what, 5, $len - 7) . "%";
+            $yes = $this->expandvar($inner, true);
             if ($isbool)
-                return $this->expandvar($inner, true);
-            else if (($yes = $this->expandvar($inner, true)))
+                return $yes;
+            else if ($yes)
                 return $this->expandvar($inner, false);
             else
                 return ($yes === null ? $what : "");
@@ -198,15 +199,13 @@ class Mailer {
 
         // expansions that require a recipient
         if ($what == "%LOGINURL%" || $what == "%LOGINURLPARTS%" || $what == "%PASSWORD%") {
-            $password = null;
+            $password = false;
             if (!$external_password) {
                 $pwd_plaintext = $this->recipient->plaintext_password();
                 if ($pwd_plaintext && !$this->sensitivity)
                     $password = $pwd_plaintext;
                 else if ($pwd_plaintext && $this->sensitivity === "display")
                     $password = "HIDDEN";
-                else if ($this->sensitivity || $this->recipient->has_password())
-                    $password = false;
             }
             $loginparts = "";
             if (!isset($Opt["httpAuthLogin"])) {
@@ -219,7 +218,7 @@ class Mailer {
             else if ($what == "%LOGINURLPARTS%")
                 return $loginparts;
             else
-                return ($isbool || $password !== null ? $password : "");
+                return ($isbool || $password ? $password : "");
         }
         if ($what == "%CAPABILITY%")
             return ($isbool || $this->capability ? $this->capability : "");
