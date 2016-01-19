@@ -851,7 +851,8 @@ class Contact {
             if (!$cdbu) {
                 $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?";
                 $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
-                if ($this->password && ($this->password[0] !== " " || substr($this->password, 0, 2) === " \$")) {
+                if ($this->password !== ""
+                    && ($this->password[0] !== " " || $this->password[1] === "\$")) {
                     $q .= ", password=?";
                     $qv[] = $this->password;
                 }
