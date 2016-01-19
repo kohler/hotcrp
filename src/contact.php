@@ -135,6 +135,8 @@ class Contact {
         self::set_sorter($this);
         if (isset($user->password))
             $this->password = (string) $user->password;
+        $this->passwordIsCdb = ($this->contactDbId && !$this->contactId)
+            || !!get($user, "passwordIsCdb");
         if (isset($user->disabled))
             $this->disabled = !!$user->disabled;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
@@ -999,11 +1001,11 @@ class Contact {
             && $cdbu->allow_contactdb_password()) {
             $cu->qv["password"] = $this->password = $cdbu->password;
             $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
-            if ($Conf->sversion >= 97)
-                $cu->qv["passwordIsCdb"] = 1;
+            $cu->qv["passwordIsCdb"] = 1;
         } else if (!self::external_login()) {
             $cu->qv["password"] = $this->password = self::random_password();
             $cu->qv["passwordTime"] = $this->passwordTime = $Now;
+            $cu->qv["passwordIsCdb"] = 0;
         } else
             $cu->qv["password"] = $this->password = "";
     }
@@ -1134,11 +1136,18 @@ class Contact {
     }
 
     public function plaintext_password() {
-        if ($this->password !== "" && $this->password !== "*"
-            && $this->password[0] !== " ")
-            return $this->password;
-        else
+        // Return the currently active plaintext password. This might not
+        // equal $this->password because of $this->passwordIsCdb.
+        if ($this->password === ""
+            || $this->password === "*"
+            || $this->password[0] === " ")
             return false;
+        else if ($this->contactId
+                 && $this->passwordIsCdb
+                 && ($cdbu = $this->contactdb_user()))
+            return $cdbu->plaintext_password();
+        else
+            return $this->password;
     }
 
 
