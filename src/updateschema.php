@@ -916,6 +916,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 122
         && Dbl::ql("alter table ReviewRequest add `reviewRound` int(1) DEFAULT NULL"))
         $Conf->update_schema_version(123);
+    if ($Conf->sversion == 123
+        && Dbl::ql("update ContactInfo set disabled=1 where password='' and email regexp '^anonymous[0-9]*\$'"))
+        $Conf->update_schema_version(124);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

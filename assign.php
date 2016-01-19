@@ -373,8 +373,7 @@ function createAnonymousReview() {
         $row = edb_row($result);
         $reqId = $row[0];
     } else {
-        $unacc = $Conf->sversion >= 90 ? "unaccentedName='Jane Q. Public', " : "";
-        $result = Dbl::qe("insert into ContactInfo set firstName='Jane Q.', lastName='Public',$unacc email=?, affiliation='Unaffiliated', password='', creationTime=$Now", $contactemail);
+        $result = Dbl::qe("insert into ContactInfo set firstName='Jane Q.', lastName='Public', unaccentedName='Jane Q. Public', email=?, affiliation='Unaffiliated', password='', disabled=1, creationTime=$Now", $contactemail);
         if (!$result)
             return $result;
         $reqId = $result->insert_id;
