@@ -879,7 +879,7 @@ class Conf {
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: submitted PaperReview with null reviewWordCount");
 
-        // correct reviewNeedsSubmit
+        // reviewNeedsSubmit is defined correctly
         $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
             left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
                        from PaperReview where reviewType<" . REVIEW_SECONDARY . "
@@ -890,6 +890,11 @@ class Conf {
             limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+
+        // anonymous users are disabled
+        $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
+        if ($any)
+            trigger_error($Opt["dbName"] . " invariant error: anonymous user is not disabled");
     }
 
 
