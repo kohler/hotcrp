@@ -83,7 +83,11 @@ class PaperStatus {
 
     function row_to_json($prow, $args = array()) {
         global $Conf;
-        if (!$prow || ($this->contact && !$this->contact->can_view_paper($prow)))
+        $contact = $this->contact;
+        if (get($args, "forceShow"))
+            $contact = null;
+
+        if (!$prow || ($contact && !$contact->can_view_paper($prow)))
             return null;
 
         $pj = (object) array();
@@ -108,8 +112,8 @@ class PaperStatus {
         else if ($prow->timeSubmitted == -100 && $prow->timeWithdrawn > 0)
             $pj->submitted_at = 1000000000;
 
-        $can_view_authors = !$this->contact
-            || $this->contact->can_view_authors($prow, $this->forceShow);
+        $can_view_authors = !$contact
+            || $contact->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
             $contacts = array();
             foreach ($prow->named_contacts() as $conf)
@@ -163,14 +167,14 @@ class PaperStatus {
             $pj->topics = (object) $topics;
 
         if ($prow->paperStorageId > 1
-            && (!$this->contact || $this->contact->can_view_pdf($prow))
+            && (!$contact || $contact->can_view_pdf($prow))
             && ($doc = $this->document_to_json($prow, DTYPE_SUBMISSION,
                                                (int) $prow->paperStorageId,
                                                $args)))
             $pj->submission = $doc;
 
         if ($prow->finalPaperStorageId > 1
-            && (!$this->contact || $this->contact->can_view_pdf($prow))
+            && (!$contact || $contact->can_view_pdf($prow))
             && ($doc = $this->document_to_json($prow, DTYPE_FINAL,
                                                (int) $prow->finalPaperStorageId,
                                                $args)))
@@ -184,8 +188,7 @@ class PaperStatus {
             $options = array();
             foreach ($prow->options() as $oa) {
                 $o = $oa->option;
-                if ($this->contact
-                    && !$this->contact->can_view_paper_option($prow, $o, $this->forceShow))
+                if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
                     continue;
                 $okey = $this->export_ids ? $o->id : $o->abbr;
                 if ($o->type == "checkbox" && $oa->value)
@@ -753,7 +756,7 @@ class PaperStatus {
             $prow = $Conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true],
                                     $this->contact);
         if ($prow)
-            $old_pj = $this->row_to_json($prow, ["docids" => true]);
+            $old_pj = $this->row_to_json($prow, ["forceShow" => true, "docids" => true]);
         if ($pj && $old_pj && $paperid != $old_pj->id) {
             $this->set_error_html("id", "Saving paper with different ID");
             return false;

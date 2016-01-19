@@ -522,7 +522,7 @@ class Contact {
 
     function is_admin_force() {
         return $this->privChair
-            && ($fs = @$_REQUEST["forceShow"])
+            && ($fs = get($_REQUEST, "forceShow"))
             && $fs != "0";
     }
 
