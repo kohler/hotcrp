@@ -1136,12 +1136,14 @@ class Contact {
         // equal $this->password because of $this->passwordIsCdb.
         if ($this->password === ""
             || $this->password === "*"
-            || $this->password[0] === " ")
+            || $this->passwordIsCdb) {
+            if ($this->contactId
+                && ($cdbu = $this->contactdb_user()))
+                return $cdbu->plaintext_password();
+            else
+                return false;
+        } else if ($this->password[0] === " ")
             return false;
-        else if ($this->contactId
-                 && $this->passwordIsCdb
-                 && ($cdbu = $this->contactdb_user()))
-            return $cdbu->plaintext_password();
         else
             return $this->password;
     }
