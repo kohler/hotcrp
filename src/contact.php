@@ -1125,7 +1125,9 @@ class Contact {
     private function prefer_contactdb_password() {
         $cdbu = $this->contactdb_user();
         return $cdbu && $cdbu->password
-            && (!$this->has_database_account() || $this->password === "*"
+            && (!$this->has_database_account()
+                || $this->password === ""
+                || $this->password === "*"
                 || $this->passwordIsCdb);
     }
 
