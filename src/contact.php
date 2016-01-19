@@ -1344,6 +1344,7 @@ class Contact {
 
     function sendAccountInfo($sendtype, $sensitive) {
         global $Conf, $Opt;
+        assert(!$this->disabled);
         $rest = array();
         if ($sendtype == "create" && $this->prefer_contactdb_password())
             $template = "@activateaccount";
