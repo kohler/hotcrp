@@ -1147,13 +1147,7 @@ hotcrp_graphs.boxplot = function (args) {
 };
 
 hotcrp_graphs.formulas_add_qrow = function () {
-    var i, h, j;
-    for (i = 0; $("#q" + i).length; ++i)
-        /* do nothing */;
-    j = $(hotcrp_graphs.formulas_qrow.replace(/\$/g, i)).appendTo("#qcontainer");
-    hiliter_children(j);
-    j.find("input[placeholder]").each(mktemptext);
-    j.find(".hotcrp_searchbox").each(function () { taghelp(this, "taghelp_q", taghelp_q); });
+    author_change($("#qcontainer > tr:last-child > td:first-child"), 1);
 };
 
 hotcrp_graphs.option_letter_ticks = function (n, c, sv) {

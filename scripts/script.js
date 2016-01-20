@@ -2052,86 +2052,56 @@ function badpairs_click() {
 }
 
 // author entry
-var numauthorfold = [];
-function authorfold(prefix, relative, n) {
-    var elt;
-    if (relative > 0)
-        n += numauthorfold[prefix];
-    if (n <= 1)
-        n = 1;
-    for (var i = 1; i <= n; i++)
-        if ((elt = $$(prefix + i)) && elt.className == "aueditc")
-            elt.className = "auedito";
-        else if (!elt)
-            n = i - 1;
-    for (var i = n + 1; i <= 50; i++)
-        if ((elt = $$(prefix + i)) && elt.className == "auedito")
-            elt.className = "aueditc";
-        else if (!elt)
-            break;
-    // set number displayed
-    if (relative >= 0) {
-        $("#" + prefix + "count").val(n);
-        numauthorfold[prefix] = n;
+function author_change(e, delta) {
+    var $e = $(e), $tbody = $e.closest("tbody");
+    if (delta == Infinity) {
+        $e.closest("tr").remove();
+        delta = 0;
+    } else {
+        var tr = $e.closest("tr")[0];
+        for (; delta < 0 && tr.previousSibling; ++delta)
+            $(tr).insertBefore(tr.previousSibling);
+        for (; delta > 0 && tr.nextSibling; --delta)
+            $(tr).insertAfter(tr.nextSibling);
     }
-    // IE won't actually do the fold unless we yell at it
-    elt = $$(prefix + "table");
-    if (document.recalc && elt)
-        try {
-            elt.innerHTML = elt.innerHTML + "";
-        } catch (err) {
+
+    function any_interesting(row) {
+        var $x = $(row).find("input"), i;
+        if (!$tbody.attr("data-last-row-blank"))
+            return false;
+        for (i = 0; i != $x.length; ++i) {
+            var $e = $($x[i]), v = $e.val();
+            if (v != "" && v !== $e.attr("placeholder"))
+                return true;
         }
+        return false;
+    }
+
+    var trs = $tbody.children();
+    while (trs.length < Math.max(1, +$tbody.attr("data-min-rows"))
+           || any_interesting(trs[trs.length - 1])
+           || delta > 0) {
+        var $newtr = $($tbody.attr("data-row-template")).appendTo($tbody);
+        $newtr.find("input[placeholder]").each(mktemptext);
+        $newtr.find(".hotcrp_searchbox").each(make_taghelp_q);
+        trs = $tbody.children();
+        --delta;
+    }
+
+    for (var i = 1; i <= trs.length; ++i) {
+        var $tr = $(trs[i - 1]), td0h = $($tr[0].firstChild).html();
+        if (td0h !== i + "." && /^(?:\d+|\$).$/.test(td0h))
+            $($tr[0].firstChild).html(i + ".");
+        $tr.find("input, select").each(function () {
+            var m = /^(.*?)(?:\d+|\$)$/.exec(this.getAttribute("name"));
+            if (m && m[2] != i)
+                this.setAttribute("name", m[1] + i);
+        });
+    }
+
+    hiliter($tbody[0]);
     return false;
 }
-
-function author_change(e, force) {
-    var $e = $(e), tr = $e.closest("tr"), val = $.trim($e.val());
-    if (force || (val != "" && val !== $e.attr("placeholder"))) {
-        if (tr[0].nextSibling == null) {
-            var n = tr.siblings().length;
-            var h = tr.siblings().first().html().replace(/\$/g, n + 1);
-            $("<tr>" + h + "</tr>").insertAfter(tr)
-                .find("input[placeholder]").each(mktemptext);
-        } else if (tr[0].nextSibling.className == "aueditc")
-            tr[0].nextSibling.className = "auedito";
-    }
-    hiliter(e);
-}
-
-author_change.delta = function (e, delta) {
-    var $ = jQuery, tr = $(e).closest("tr")[0], ini, inj, k,
-        link = (delta < 0 ? "previous" : "next") + "Sibling",
-        removing = delta == Infinity;
-    if (removing) {
-        // move to last position in list, then remove
-        for (delta = 0, sib = tr[link]; sib; sib = sib[link], ++delta)
-            /* nada */;
-        $(tr).find("input[placeholder]").val("");
-    }
-    while (delta) {
-        if (!tr)
-            log_jserror("bad tr, delta " + delta + ", html " + $(e).closest("table").html());
-        var sib = tr[link];
-        if (delta < 0 && (!sib || !$(sib).is(":visible")))
-            break;
-        hiliter(tr);
-        if (!sib)
-            sib = tr.nextSibling;
-        ini = $(tr).find("input"), inj = $(sib).find("input");
-        for (k = 0; k != ini.length; ++k) {
-            var v = $(ini[k]).val();
-            $(ini[k]).val($(inj[k]).val()).change();
-            $(inj[k]).val(v).change();
-        }
-        tr = sib;
-        delta += delta < 0 ? 1 : -1;
-    }
-    ini = $(tr.parentElement);
-    if (removing && $(ini).children().length > 6)
-        $(tr).remove();
-    $(ini).find("tr:last-child input").each(function () { author_change(this); });
-    return false;
-};
 
 
 // check marks for ajax saves
@@ -3347,11 +3317,11 @@ function suggest(elt, klass, cleanf) {
     }
 }
 
-$(function () {
-    $(".hotcrp_searchbox").each(function () {
-        suggest(this, "taghelp_q", taghelp_q);
-    });
-});
+function make_taghelp_q() {
+    suggest(this, "taghelp_q", taghelp_q);
+}
+
+$(function () { $(".hotcrp_searchbox").each(make_taghelp_q); });
 
 
 // review preferences

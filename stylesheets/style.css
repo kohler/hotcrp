@@ -2851,8 +2851,7 @@ td.mhcb {
 .fold60c .fx60, .fold60o .fn60,
 .fold61c .fx61, .fold61o .fn61,
 .fold99c .fx99, .fold99o .fn99,
-.hidden,
-tr.aueditc > td {
+.hidden {
 	display: none;
 }
 .foldc:hover .fhn_ib, .foldo:hover .fhx_ib {

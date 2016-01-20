@@ -554,13 +554,12 @@ class PaperTable {
             '<div class="pavb abstract">', $data, "</div></div>\n\n";
     }
 
-    private static function echo_editable_authors_tr($tr, $n, $name, $email, $aff) {
-        echo '<tr', $tr, '>',
-            '<td class="rxcaption">', $n, ".</td>",
-            '<td class="lentry">', Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name")), "</td>",
-            '<td class="lentry">', Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email")), "</td>",
-            '<td class="lentry">', Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation")), "</td>",
-            '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change.delta(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change.delta(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change.delta(this,Infinity)" tabindex="-1">x</a></td></tr>';
+    private static function editable_authors_tr($n, $name, $email, $aff) {
+        return '<tr><td class="rxcaption">' . $n . ".</td>"
+            . '<td class="lentry">' . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name")) . "</td>"
+            . '<td class="lentry">' . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email")) . "</td>"
+            . '<td class="lentry">' . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation")) . "</td>"
+            . '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
     }
 
     private function editable_authors() {
@@ -572,13 +571,13 @@ class PaperTable {
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo " Any author with an account on this site can edit the submission.</div>",
             '<div class="papev"><table id="auedittable" class="auedittable">',
-            '<tbody>';
-        self::echo_editable_authors_tr(' data-hotautemplate="true" style="display:none"', '$', "", "", "");
+            '<tbody data-last-row-blank="true" data-min-rows="5" data-row-template="',
+            htmlspecialchars(self::editable_authors_tr('$', "", "", "")), '">';
 
         $blankAu = array("", "", "", "");
         if ($this->useRequest) {
             for ($n = 1; @$_POST["auname$n"] || @$_POST["auemail$n"] || @$_POST["auaff$n"]; ++$n)
-                self::echo_editable_authors_tr("", $n, (string) @$_POST["auname$n"], (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
+                echo self::editable_authors_tr($n, (string) @$_POST["auname$n"], (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
         } else {
             $aulist = $this->prow ? $this->prow->author_list() : array();
             for ($n = 1; $n <= count($aulist); ++$n) {
@@ -587,11 +586,11 @@ class PaperTable {
                     $auname = $au->lastName . ", " . $au->firstName;
                 else
                     $auname = $au->name();
-                self::echo_editable_authors_tr("", $n, $auname, $au->email, $au->affiliation);
+                echo self::editable_authors_tr($n, $auname, $au->email, $au->affiliation);
             }
         }
         do {
-            self::echo_editable_authors_tr("", $n, "", "", "");
+            echo self::editable_authors_tr($n, "", "", "");
         } while (++$n <= 5);
         echo "</tbody></table></div></div>\n\n";
     }
