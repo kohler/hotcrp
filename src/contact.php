@@ -406,17 +406,30 @@ class Contact {
         global $Opt, $Now;
         if (!($cdb = self::contactdb()) || !$this->has_database_account())
             return false;
-        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles
+        $update_password = null;
+        $update_passwordTime = 0;
+        if (!$this->disabled
+            && $this->password
+            && ($this->password[0] !== " " || $this->password[1] === "\$"))
+            && $this->passwordTime) {
+            $update_password = $this->password;
+            $update_passwordTime = $this->passwordTime;
+        }
+
+        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles, password
             from ContactInfo
             left join Conferences on (Conferences.`dbname`=?)
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
             where email=?", $Opt["dbName"], $this->email);
         $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
         if (!$row) {
-            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
+            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime);
             $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
             $this->contactdb_user_ = false;
         }
+
+        if ($row && $row[3] === null && $update_password)
+            Dbl::ql($cdb, "update ContactInfo set password=?, passwordTime=? where contactDbId=? and password is null", $update_password, $update_passwordTime, $row[0]);
 
         if ($row && $row[1] && (int) $row[2] != $this->all_roles()) {
             $result = Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
