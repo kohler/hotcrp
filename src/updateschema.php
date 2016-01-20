@@ -925,6 +925,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 125
         && Dbl::ql("alter table ContactInfo drop column `passwordIsCdb`"))
         $Conf->update_schema_version(126);
+    if ($Conf->sversion == 126
+        && Dbl::ql("update ContactInfo set disabled=1, password='' where email regexp '^anonymous[0-9]*\$'"))
+        $Conf->update_schema_version(127);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }
