@@ -410,7 +410,7 @@ class Contact {
         $update_passwordTime = 0;
         if (!$this->disabled
             && $this->password
-            && ($this->password[0] !== " " || $this->password[1] === "\$"))
+            && ($this->password[0] !== " " || $this->password[1] === "\$")
             && $this->passwordTime) {
             $update_password = $this->password;
             $update_passwordTime = $this->passwordTime;
