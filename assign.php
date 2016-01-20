@@ -615,7 +615,7 @@ if ($Me->can_administer($prow)) {
 echo "</div></div>\n";
 
 // add external reviewers
-echo Ht::form($loginUrl), '<div class="revcard aahc"><div class="revcard_head">',
+echo Ht::form($loginUrl), '<div class="aahc revcard"><div class="revcard_head">',
     "<h3>Request an external review</h3>\n",
     "<div class='hint'>External reviewers get access to their assigned papers, including ";
 if (setting("extrev_view") >= 2)

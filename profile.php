@@ -593,7 +593,7 @@ if ($newProfile)
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
-    '<div class="profiletext aahc', ($need_highlight ? " alert" : ""), "\">\n",
+    '<div class="aahc profiletext', ($need_highlight ? " alert" : ""), "\">\n",
     // Don't want chrome to autofill the password changer.
     // But chrome defaults to autofilling the password changer
     // unless we supply an earlier password input.

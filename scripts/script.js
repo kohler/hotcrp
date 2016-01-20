@@ -1682,7 +1682,7 @@ function hiliter(elt, off) {
     else if (!elt || elt.preventDefault)
         elt = this;
     while (elt && elt.tagName && (elt.tagName.toUpperCase() != "DIV"
-                                  || elt.className.substr(0, 4) != "aahc"))
+                                  || !/\baahc\b/.test(elt.className)))
         elt = elt.parentNode;
     if (!elt || !elt.tagName)
         highlightUpdate(null, off);
@@ -1691,8 +1691,7 @@ function hiliter(elt, off) {
 }
 
 function hiliter_children(form) {
-    jQuery(form).find("input, select, textarea").on("change", hiliter)
-        .on("input", hiliter);
+    jQuery(form).on("change input", "input, select, textarea", hiliter);
 }
 
 var foldmap = {};
