@@ -2670,6 +2670,10 @@ class Contact {
         return $this->can_administer($prow, $forceShow);
     }
 
+    function can_view_formula(Formula $formula) {
+        return $formula->view_score($this) <= $this->permissive_view_score_bound();
+    }
+
     // A review field is visible only if its view_score > view_score_bound.
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
         // Returns the maximum view_score for an invisible review

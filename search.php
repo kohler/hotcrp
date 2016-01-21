@@ -1371,9 +1371,13 @@ if ($pl) {
     }
 
     // Formulas group
-    if (count(FormulaPaperColumn::$list)) {
+    $formulas = [];
+    foreach (FormulaPaperColumn::$list as $formula)
+        if ($Me->can_view_formula($formula))
+            $formulas[] = $formula;
+    if (count($formulas)) {
         displayOptionText("<strong>Formulas:</strong>", 4);
-        foreach (FormulaPaperColumn::$list as $formula)
+        foreach ($formulas as $formula)
             displayOptionCheckbox("formula" . $formula->formulaId, 4, htmlspecialchars($formula->name));
     }
 }
