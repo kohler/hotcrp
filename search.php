@@ -1047,7 +1047,9 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
 function visible_formulas() {
     return array_filter(FormulaPaperColumn::$list, function ($f) {
         global $Me;
-        return $Me->can_view_formula($f);
+        return $_REQUEST["t"] == "a"
+            ? $Me->can_view_formula_as_author($f)
+            : $Me->can_view_formula($f);
     });
 }
 
@@ -1564,8 +1566,8 @@ if ($pl && $pl->count > 0) {
                                 "onchange" => "fold('pl',!this.checked,'force');$('#forceShow').val(this.checked?1:0)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
-    // Formulas link
-    if (count(visible_formulas()) || $Me->isPC)
+    // Edit formulas link
+    if ($Me->isPC && $_REQUEST["t"] != "a")
         echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";

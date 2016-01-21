@@ -2674,6 +2674,10 @@ class Contact {
         return $formula->view_score($this) > $this->permissive_view_score_bound();
     }
 
+    function can_view_formula_as_author(Formula $formula) {
+        return $formula->view_score($this) > self::author_permissive_view_score_bound();
+    }
+
     // A review field is visible only if its view_score > view_score_bound.
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
         // Returns the maximum view_score for an invisible review
@@ -2715,6 +2719,14 @@ class Contact {
                 return VIEWSCORE_AUTHOR - 1;
         } else
             return VIEWSCORE_MAX + 1;
+    }
+
+    static function author_permissive_view_score_bound() {
+        global $Conf;
+        if ($Conf->timeAuthorViewDecision())
+            return VIEWSCORE_AUTHORDEC - 1;
+        else
+            return VIEWSCORE_AUTHOR - 1;
     }
 
     function aggregated_view_score_bound() {

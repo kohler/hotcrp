@@ -1209,12 +1209,11 @@ class FormulaPaperColumn extends PaperColumn {
     public function prepare(PaperList $pl, $visible) {
         if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
             return true;
-        $view_bound = $pl->contact->permissive_view_score_bound();
-        if ($pl->search->limitName == "a")
-            $view_bound = max($view_bound, VIEWSCORE_AUTHOR - 1);
         if (!$pl->scoresOk
             || !$this->formula->check()
-            || $this->formula->view_score($pl->contact) <= $view_bound)
+            || !($pl->search->limitName == "a"
+                 ? $pl->contact->can_view_formula_as_author($this->formula)
+                 : $pl->contact->can_view_formula($this->formula)))
             return false;
         $this->formula_function = $this->formula->compile_function($pl->contact);
         if ($visible)
