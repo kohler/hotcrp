@@ -2671,7 +2671,7 @@ class Contact {
     }
 
     function can_view_formula(Formula $formula) {
-        return $formula->view_score($this) <= $this->permissive_view_score_bound();
+        return $formula->view_score($this) > $this->permissive_view_score_bound();
     }
 
     // A review field is visible only if its view_score > view_score_bound.
