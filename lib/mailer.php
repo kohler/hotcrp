@@ -402,7 +402,8 @@ class Mailer {
         global $Opt;
         return $Opt["sendEmail"]
             && ($at = strpos($email, "@")) !== false
-            && substr($email, $at) != "@_.com";
+            && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
+                || !preg_match(';\A(?:_.*|example\.(?:com|net|org))\z;i', substr($email, $at + 1)));
     }
 
     function make_preparation($template, $rest = array()) {
