@@ -28,9 +28,9 @@ software:
   - Including MySQL and GD support
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
-* pdftohtml, http://poppler.freedesktop.org/ (Only required for format
-  checking. Recent pdftohtml versions are suitable for HotCRP; most versions
-  released before 2013 aren’t.)
+* Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (Only
+  required for format checking. Recent pdftohtml versions are suitable for
+  HotCRP; most versions released before 2013 aren’t.)
 
 Apache is preloaded on most Linux distributions. You may need to install
 additional packages for PHP and MySQL, such as:
