@@ -2750,8 +2750,8 @@ class PaperSearch {
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
             $thistab = "Option_" . count($sqi->tables);
-            $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]->id));
-            $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
+            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $t->value[0]->id . " group by paperId)"));
+            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $t->value[1]);
             $t->link = $thistab . "_x";
             $q[] = $sqi->columns[$t->link];
             $f[] = "(" . join(" and ", $q) . ")";
