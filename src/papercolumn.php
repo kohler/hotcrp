@@ -1161,7 +1161,7 @@ class ScorePaperColumn extends PaperColumn {
 
 class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
-    public static $list = array();
+    public static $list = array(); // Used by search.php
     public $formula;
     private $formula_function;
     public $statistics;
