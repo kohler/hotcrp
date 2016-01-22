@@ -799,7 +799,7 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $t .= "<td class=\"pl pl_$fdef->cssname";
+                $t .= "<td class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
                     $t .= " fx$fdef->foldable";
                 $t .= "\">";
@@ -823,7 +823,7 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $tt .= "<div class=\"pl_$fdef->cssname";
+                $tt .= "<div class=\"" . $fdef->className;
                 if ($is_authors) {
                     $tt .= " fx1";
                     if ($this->contact->can_view_authors($row, false))
@@ -947,8 +947,8 @@ class PaperList {
         $ord = 0;
         foreach ($fieldDef as $fdef) {
             $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef, $ord)];
-            if ($fdef->cssname != $fdef->name)
-                $j["cssname"] = $fdef->cssname;
+            if ($fdef->className != "pl_" . $fdef->name)
+                $j["className"] = $fdef->className;
             if ($fdef->view == Column::VIEW_COLUMN) {
                 $j["column"] = true;
                 ++$ord;
@@ -1218,7 +1218,7 @@ class PaperList {
                     $t .= '<td colspan="' . $titled . '" class="pl pl_statheader">' . $name . '</td>';
                 }
                 $titled = false;
-                $t .= '<td class="pl pl_' . $fdef->cssname;
+                $t .= '<td class="pl ' . $fdef->className;
                 if ($fdef->foldable)
                     $t .= ' fx' . $fdef->foldable;
                 $t .= '">';
@@ -1334,13 +1334,13 @@ class PaperList {
                 if ($fdef->view != Column::VIEW_COLUMN
                     || $fdef->is_folded)
                     continue;
-                $colhead .= "<th class=\"pl pl_$fdef->cssname";
+                $colhead .= "<th class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
                     $colhead .= " fx" . $fdef->foldable;
                 $colhead .= "\">";
                 if ($fdef->has_content)
                     $colhead .= $this->_field_title($fdef, $ord);
-                if ($titleextra && $fdef->cssname == "title") {
+                if ($titleextra && $fdef->className == "pl_title") {
                     $colhead .= $titleextra;
                     $titleextra = false;
                 }

@@ -13,7 +13,7 @@ class Column {
     const COMPLETABLE = 32;
 
     public $name;
-    public $cssname;
+    public $className;
     public $foldable;
     public $completable;
     public $view;
@@ -24,7 +24,7 @@ class Column {
 
     public function __construct($name, $flags, $extra) {
         $this->name = $name;
-        $this->cssname = get($extra, "cssname", $name);
+        $this->className = get($extra, "className", "pl_$name");
         $this->foldable = ($flags & self::FOLDABLE) != 0;
         $this->completable = ($flags & self::COMPLETABLE) != 0;
         $this->view = $flags & self::VIEWMASK;

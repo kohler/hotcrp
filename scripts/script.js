@@ -4036,19 +4036,19 @@ var plinfo = (function () {
 var fields, field_order, aufull = {}, loadargs = {};
 
 function add_column(f, which) {
-    var i, index = 0, $j = $("#fold" + which);
+    var i, index = 0, $j = $("#fold" + which),
+        classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
+            " fx" + f.foldnum + "\"";
     for (i = 0; i != field_order.length && field_order[i] != f; ++i)
         if (field_order[i].column && !field_order[i].missing)
             ++index;
     $j.find("tr.pl_headrow").each(function () {
-        var h = "<th class=\"pl pl_" + (f.cssname || f.name) + " fx" + f.foldnum +
-            "\">" + f.title + "</th>";
+        var h = "<th" + classEnd + ">" + f.title + "</th>";
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     $j.find("tr.pl").each(function () {
         var pid = this.getAttribute("data-pid");
-        var h = "<td class=\"pl pl_" + (f.cssname || f.name) + " fx" + f.foldnum +
-            "\" id=\"" + f.name + "." + pid + "\"></td>";
+        var h = "<td" + classEnd + " id=\"" + f.name + "." + pid + "\"></td>";
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     $j.find("tr.plx > td.plx, td.pl_footer, td.plheading").each(function () {
@@ -4058,14 +4058,15 @@ function add_column(f, which) {
 }
 
 function add_row(f, which) {
-    var i, index = 0;
+    var i, index = 0,
+        classEnd = '" class="' + (f.className || "pl_" + f.name) +
+            " fx" + f.foldnum + '"></div>';
     for (i = 0; i != field_order.length && field_order[i] != f; ++i)
         if (!field_order[i].column && !field_order[i].missing)
             ++index;
     $($$("fold" + which)).find("tr.plx > td.plx").each(function () {
         var pid = this.parentNode.getAttribute("data-pid");
-        var n = $('<div id="' + f.name + '.' + pid + '" class="fx' + f.foldnum
-                  + ' pl_' + (f.cssname || f.name) + '"></div>')[0];
+        var n = $('<div id="' + f.name + '.' + pid + classEnd)[0];
         this.insertBefore(n, this.childNodes[index] || null);
     });
     f.missing = false;

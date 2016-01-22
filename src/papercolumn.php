@@ -223,7 +223,7 @@ class StatusPaperColumn extends PaperColumn {
     private $is_long;
     public function __construct($name, $is_long, $extra = 0) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("cssname" => "status", "comparator" => "status_compare"));
+                            array("className" => "pl_status", "comparator" => "status_compare"));
         $this->is_long = $is_long;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
@@ -542,7 +542,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
 
 class ReviewSubmittedPaperColumn extends PaperColumn {
     public function __construct() {
-        parent::__construct("revsubmitted", Column::VIEW_COLUMN | Column::COMPLETABLE, array("cssname" => "text"));
+        parent::__construct("revsubmitted", Column::VIEW_COLUMN | Column::COMPLETABLE, array("className" => "pl_text"));
     }
     public function prepare(PaperList $pl, $visible) {
         return !!$pl->contact->isPC;
@@ -566,7 +566,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
 class ReviewDelegationPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("revdelegation", Column::VIEW_COLUMN,
-                            array("cssname" => "text",
+                            array("className" => "pl_text",
                                   "comparator" => "review_delegation_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
@@ -936,7 +936,7 @@ class TagPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE, array("comparator" => "tag_compare"));
         $this->dtag = $tag;
         $this->is_value = $is_value;
-        $this->cssname = ($this->is_value ? "tagval" : "tag");
+        $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
     }
     public function make_field($name, $errors) {
         $p = strpos($name, ":") ? : strpos($name, "#");
@@ -1011,7 +1011,7 @@ class TagPaperColumn extends PaperColumn {
 class EditTagPaperColumn extends TagPaperColumn {
     public function __construct($name, $tag, $is_value) {
         parent::__construct($name, $tag, $is_value);
-        $this->cssname = ($this->is_value ? "edittagval" : "edittag");
+        $this->className = ($this->is_value ? "pl_edittagval" : "pl_edittag");
         $this->editable = true;
     }
     public function make_field($name, $errors) {
@@ -1049,12 +1049,11 @@ class ScorePaperColumn extends PaperColumn {
     public $max_score;
     private $form_field;
     private $xreviewer;
-    private static $registered = array();
     public function __construct($score) {
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("comparator" => "score_compare"));
         $this->minimal = true;
-        $this->cssname = "score";
+        $this->className = "pl_score";
         $this->score = $score;
     }
     public static function lookup_all() {
@@ -1169,7 +1168,7 @@ class FormulaPaperColumn extends PaperColumn {
     public function __construct($name, $formula) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "formula_compare"));
-        $this->cssname = "formula";
+        $this->className = "pl_formula";
         $this->formula = $formula;
         if ($formula && $formula->formulaId)
             self::$list[$formula->formulaId] = $formula;
@@ -1277,7 +1276,7 @@ class TagReportPaperColumn extends PaperColumn {
     public function __construct($tag) {
         parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag),
                             Column::VIEW_ROW | Column::FOLDABLE);
-        $this->cssname = "tagrep";
+        $this->className = "pl_tagrep";
         $this->tag = $tag;
     }
     public static function lookup_all() {
@@ -1411,9 +1410,9 @@ function initialize_paper_columns() {
     global $Conf;
 
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
-    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "cssname" => "sel")));
-    PaperColumn::register(new SelectorPaperColumn("selconf", array("cssname" => "confselector")));
-    PaperColumn::register(new SelectorPaperColumn("selunlessconf", array("minimal" => true, "cssname" => "sel")));
+    PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "className" => "pl_sel")));
+    PaperColumn::register(new SelectorPaperColumn("selconf", array("className" => "pl_confselector")));
+    PaperColumn::register(new SelectorPaperColumn("selunlessconf", array("minimal" => true, "className" => "pl_sel")));
     PaperColumn::register(new IdPaperColumn);
     PaperColumn::register(new TitlePaperColumn);
     PaperColumn::register(new StatusPaperColumn("status", false));
