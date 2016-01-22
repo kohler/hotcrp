@@ -6,6 +6,9 @@
 class PaperOptionValue {
     public $id;
     public $option;
+    public $value;
+    public $values;
+    public $data;
     private $_documents = null;
 
     public function __construct(PaperOption $o) {
@@ -40,7 +43,8 @@ class PaperOptionValue {
 class PaperOption {
     public $id;
     public $name;
-    public $type;
+    public $type; // checkbox, selector, radio, numeric, text,
+                  // pdf, slides, video, attachments
     public $abbr;
     public $description;
     public $position;
@@ -107,11 +111,31 @@ class PaperOption {
             $c = $c ? : $Conf;
             if (($optj = $c->setting_json("options"))) {
                 foreach ($optj as $j)
-                    self::$list[$j->id] = new PaperOption($j);
+                    self::$list[$j->id] = PaperOption::make($j);
                 uasort(self::$list, array("PaperOption", "compare"));
             }
         }
         return self::$list;
+    }
+
+    static function make($args) {
+        if (is_object($args))
+            $args = get_object_vars($args);
+        $type = get($args, "type");
+        if ($type === "checkbox")
+            return new CheckboxPaperOption($args);
+        else if ($type === "radio" || $type === "selector")
+            return new SelectorPaperOption($args);
+        else if ($type === "numeric")
+            return new NumericPaperOption($args);
+        else if ($type === "text")
+            return new TextPaperOption($args);
+        else if ($type === "pdf" || $type === "slides" || $type === "video")
+            return new DocumentPaperOption($args);
+        else if ($type === "attachments")
+            return new AttachmentsPaperOption($args);
+        else
+            return new PaperOption($args);
     }
 
     static function invalidate_option_list() {
@@ -126,9 +150,9 @@ class PaperOption {
 
     static function find_document($id) {
         if ($id == DTYPE_SUBMISSION)
-            return new PaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null));
+            return new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null));
         else if ($id == DTYPE_FINAL)
-            return new PaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null));
+            return new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null));
         else
             return self::find($id);
     }
@@ -175,29 +199,28 @@ class PaperOption {
         return $type === "radio" || $type === "selector";
     }
 
-    function has_selector() {
-        return self::type_has_selector($this->type);
-    }
-
     static function type_takes_pdf($type) {
         return $type === "pdf" || $type === "slides";
     }
 
+    function has_selector() {
+        return false;
+    }
+
     function is_document() {
-        return $this->type === "pdf" || $this->type === "slides"
-            || $this->type === "video";
+        return false;
     }
 
     function has_document() {
-        return $this->type === "attachments" || $this->is_document();
+        return false;
     }
 
     function needs_data() {
-        return $this->type === "text" || $this->type === "attachments";
+        return false;
     }
 
     function takes_multiple() {
-        return $this->type === "attachments";
+        return false;
     }
 
     function display_name() {
@@ -234,20 +257,8 @@ class PaperOption {
     }
 
     function example_searches() {
-        $x = array("has" => array("has:$this->abbr", $this),
-                   "yes" => array("{$this->abbr}:yes", $this));
-        if ($this->type === "numeric")
-            $x["numeric"] = array("{$this->abbr}:>100", $this);
-        if ($this->has_selector() && isset($this->selector[1])) {
-            if (preg_match('/\A\w+\z/', $this->selector[1]))
-                $x["selector"] = array("{$this->abbr}:" . strtolower($this->selector[1]), $this);
-            else if (!strpos($this->selector[1], "\""))
-                $x["selector"] = array("{$this->abbr}:\"{$this->selector[1]}\"", $this);
-        } else if ($this->type === "attachments") {
-            $x["attachment-count"] = array("{$this->abbr}:>2", $this);
-            $x["attachment-filename"] = array("{$this->abbr}:*.gif", $this);
-        }
-        return $x;
+        return ["has" => ["has:$this->abbr", $this],
+                "yes" => ["{$this->abbr}:yes", $this]];
     }
 
     private static function sort_multiples($o, $ox) {
@@ -308,5 +319,158 @@ class PaperOption {
             }
 
         return count($prow->option_array);
+    }
+
+    function value_compare($av, $bv) {
+        return 0;
+    }
+
+    static function basic_value_compare($av, $bv) {
+        $av = $av ? $av->value : null;
+        $bv = $bv ? $bv->value : null;
+        if ($av === $bv)
+            return 0;
+        else if ($av === null || $bv === null)
+            return $av === null ? -1 : 1;
+        else
+            return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
+    }
+
+    function unparse_column_html($pl, $v) {
+        return "";
+    }
+}
+
+class CheckboxPaperOption extends PaperOption {
+    function __construct($args) {
+        parent::__construct($args);
+    }
+
+    function value_compare($av, $bv) {
+        return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
+    }
+
+    function unparse_column_html($pl, $v) {
+        return $v && $v->value ? "✓" : "";
+    }
+}
+
+class SelectorPaperOption extends PaperOption {
+    function __construct($args) {
+        parent::__construct($args);
+    }
+
+    function has_selector() {
+        return true;
+    }
+
+    function example_searches() {
+        $x = parent::example_searches();
+        if (count($this->selector) > 1) {
+            if (preg_match('/\A\w+\z/', $this->selector[1]))
+                $x["selector"] = array("{$this->abbr}:" . strtolower($this->selector[1]), $this);
+            else if (!strpos($this->selector[1], "\""))
+                $x["selector"] = array("{$this->abbr}:\"{$this->selector[1]}\"", $this);
+        }
+        return $x;
+    }
+
+    function value_compare($av, $bv) {
+        return PaperOption::basic_value_compare($av, $bv);
+    }
+}
+
+class DocumentPaperOption extends PaperOption {
+    function __construct($args) {
+        parent::__construct($args);
+    }
+
+    function is_document() {
+        return true;
+    }
+
+    function has_document() {
+        return true;
+    }
+
+    function value_compare($av, $bv) {
+        return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
+    }
+}
+
+class NumericPaperOption extends PaperOption {
+    function __construct($args) {
+        parent::__construct($args);
+    }
+
+    function example_searches() {
+        $x = parent::example_searches();
+        $x["numeric"] = array("{$this->abbr}:>100", $this);
+        return $x;
+    }
+
+    function value_compare($av, $bv) {
+        return PaperOption::basic_value_compare($av, $bv);
+    }
+
+    function unparse_column_html($pl, $v) {
+        return $v && $v->value !== null ? $v->value : "";
+    }
+}
+
+class TextPaperOption extends PaperOption {
+    function __construct($args) {
+        parent::__construct($args);
+    }
+
+    function needs_data() {
+        return true;
+    }
+
+    function value_compare($av, $bv) {
+        $av = $av ? $av->data : null;
+        $av = $av !== null ? $av : "";
+        $bv = $bv ? $bv->data : null;
+        $bv = $bv !== null ? $bv : "";
+        if ($av !== "" && $bv !== "")
+            return strcasecmp($av, $bv);
+        else
+            return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
+    }
+
+    function unparse_column_html($pl, $v) {
+        if ($v && $v->data !== null && $v->data !== "")
+            return '<div class="format0">' . Ht::link_urls(htmlspecialchars($v->data)) . '</div>';
+        else
+            return "";
+    }
+}
+
+class AttachmentsPaperOption extends PaperOption {
+    function __construct($args) {
+        parent::__construct($args);
+    }
+
+    function has_document() {
+        return true;
+    }
+
+    function needs_data() {
+        return true;
+    }
+
+    function takes_multiple() {
+        return true;
+    }
+
+    function example_searches() {
+        $x = parent::example_searches();
+        $x["attachment-count"] = array("{$this->abbr}:>2", $this);
+        $x["attachment-filename"] = array("{$this->abbr}:*.gif", $this);
+        return $x;
+    }
+
+    function value_compare($av, $bv) {
+        return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
     }
 }

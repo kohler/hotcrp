@@ -786,7 +786,7 @@ class PaperTable {
             else if ($o->type === "text"
                      && $oa->data != "") {
                 $ox = htmlspecialchars($oa->data);
-                if (@($o->display_space > 1))
+                if ($o->display_space > 1)
                     $ox = nl2br($ox);
                 $ox = Ht::link_urls($ox);
             } else if ($o->type === "attachments") {

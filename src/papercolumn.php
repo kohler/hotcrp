@@ -27,7 +27,7 @@ class PaperColumn extends Column {
             return self::$by_name[$lname];
         foreach (self::$factories as $f)
             if (str_starts_with($lname, $f[0])
-                && ($x = $f[1]->make_field($name, $errors)))
+                && ($x = $f[1]->make_column($name, $errors)))
                 return $x;
         return null;
     }
@@ -938,7 +938,7 @@ class TagPaperColumn extends PaperColumn {
         $this->is_value = $is_value;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
     }
-    public function make_field($name, $errors) {
+    public function make_column($name, $errors) {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
@@ -1014,7 +1014,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         $this->className = ($this->is_value ? "pl_edittagval" : "pl_edittag");
         $this->editable = true;
     }
-    public function make_field($name, $errors) {
+    public function make_column($name, $errors) {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
@@ -1059,22 +1059,22 @@ class ScorePaperColumn extends PaperColumn {
     public static function lookup_all() {
         $reg = array();
         foreach (ReviewForm::all_fields() as $f)
-            if (($s = self::_make_field($f->id)))
-                $reg[$f->display_order] = $s;
+            if (($c = self::_make_column($f->id)))
+                $reg[$f->display_order] = $c;
         ksort($reg);
         return $reg;
     }
-    private static function _make_field($name) {
+    private static function _make_column($name) {
         if (($f = ReviewForm::field_search($name))
             && $f->has_options && $f->display_order !== false) {
-            $s = parent::lookup_local($f->id);
-            $s = $s ? : PaperColumn::register(new ScorePaperColumn($f->id));
-            return $s;
+            $c = parent::lookup_local($f->id);
+            $c = $c ? : PaperColumn::register(new ScorePaperColumn($f->id));
+            return $c;
         } else
             return null;
     }
-    public function make_field($name, $errors) {
-        return self::_make_field($name);
+    public function make_column($name, $errors) {
+        return self::_make_column($name);
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk)
@@ -1159,6 +1159,75 @@ class ScorePaperColumn extends PaperColumn {
     }
 }
 
+class OptionPaperColumn extends PaperColumn {
+    private $opt;
+    public function __construct($opt) {
+        parent::__construct($opt ? $opt->abbr : null, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
+                            array("comparator" => "option_compare"));
+        $this->minimal = true;
+        $this->className = "pl_option";
+        if ($opt && $opt->type == "checkbox")
+            $this->className .= " plc";
+        else if ($opt && $opt->type == "numeric")
+            $this->className .= " plrd";
+        $this->opt = $opt;
+    }
+    public static function lookup_all() {
+        $reg = array();
+        foreach (PaperOption::option_list() as $opt)
+            $reg[] = self::_make_column($opt);
+        return $reg;
+    }
+    private static function _make_column($opt) {
+        $s = parent::lookup_local($opt->abbr);
+        $s = $s ? : PaperColumn::register(new OptionPaperColumn($opt));
+        return $s;
+    }
+    public function make_column($name, $errors) {
+        $p = strpos($name, ":") ? : -1;
+        $opts = PaperOption::search(substr($name, $p + 1));
+        if (count($opts) == 1) {
+            reset($opts);
+            return self::_make_column(current($opts));
+        } else {
+            if ($p > 0)
+                $errors->add("No such option “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 1);
+            return null;
+        }
+    }
+    public function prepare(PaperList $pl, $visible) {
+        if (!$pl->contact->can_view_some_paper_option($this->opt))
+            return false;
+        $pl->qopts["options"] = true;
+        return true;
+    }
+    public function option_compare($a, $b) {
+        return $this->opt->value_compare($a->option($this->opt->id),
+                                         $b->option($this->opt->id));
+    }
+    public function header($pl, $ordinal) {
+        return htmlspecialchars($this->opt->name);
+    }
+    public function completion_name() {
+        return $this->opt ? $this->opt->abbr : null;
+    }
+    public function completion_instances() {
+        return self::lookup_all();
+    }
+    public function content_empty($pl, $row) {
+        return !$pl->contact->can_view_paper_option($row, $this->opt, true);
+    }
+    public function content($pl, $row, $rowidx) {
+        $t = "";
+        if ($pl->contact->can_view_paper_option($row, $this->opt, false))
+            $t = $this->opt->unparse_column_html($pl, $row->option($this->opt->id));
+        else if ($pl->contact->allow_administer($row)
+                 && $pl->contact->can_view_paper_option($row, $this->opt, true))
+            $t = '<span class="fx5">' . $this->opt->unparse_column_html($pl, $row->option($this->opt->id)) . '</span>';
+        return $t;
+    }
+}
+
 class FormulaPaperColumn extends PaperColumn {
     private static $registered = array();
     public static $list = array(); // Used by search.php
@@ -1180,7 +1249,7 @@ class FormulaPaperColumn extends PaperColumn {
         PaperColumn::register($fdef);
         self::$registered[] = $fdef;
     }
-    public function make_field($name, $errors) {
+    public function make_column($name, $errors) {
         foreach (self::$registered as $col)
             if (strcasecmp($col->formula->name, $name) == 0)
                 return $col;
@@ -1450,8 +1519,12 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
     PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
+    PaperColumn::register_factory("opt:", new OptionPaperColumn(null));
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
+
+    if (count(PaperOption::option_list()))
+        PaperColumn::register_factory("", new OptionPaperColumn(null));
 
     foreach (ReviewForm::all_fields() as $f)
         if ($f->has_options) {

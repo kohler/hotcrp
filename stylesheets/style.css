@@ -1605,7 +1605,7 @@ th.pll {
 	text-align: left;
 }
 
-th.plc, th.pl_id, th.pl_logid, th.pl_sel, th.pl_confselector,
+th.plc, th.plrd, th.pl_id, th.pl_logid, th.pl_sel, th.pl_confselector,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
@@ -1615,7 +1615,7 @@ th.plr {
 	text-align: right;
 }
 
-td.plr, td.pl_id, td.pl_logid, td.pl_sel,
+td.plr, td.plrd, td.pl_id, td.pl_logid, td.pl_sel,
 td.pl_revpref, td.pl_topicscore, td.pl_desirability,
 td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;
