@@ -334,6 +334,8 @@ function make_axes(svg, xAxis, yAxis, args) {
 
     args.x.ticks.rewrite.call(svg.select(".x.axis"), svg);
     args.y.ticks.rewrite.call(svg.select(".y.axis"), svg);
+    xAxis.axis_args = args.x;
+    yAxis.axis_args = args.y;
 }
 
 function proj0(d) {
@@ -415,6 +417,13 @@ function make_args(args) {
     args.width = $(args.selector).width() - args.left - args.right;
     args.height = 500 - args.top - args.bottom;
     return args;
+}
+
+function position_label(axis, p, prefix) {
+    var t = '<span class="nw">' + (prefix || "");
+    if (axis.axis_args.label)
+        t += escape_entities(axis.axis_args.label) + " ";
+    return t + axis.axis_args.ticks.unparse_html.call(axis, p) + '</span>';
 }
 
 
@@ -751,9 +760,8 @@ hotcrp_graphs.scatter = function (args) {
 
     function make_tooltip(p, ps) {
         ps.sort(pid_sorter);
-        return '<p>' + args.x.ticks.unparse_html.call(xAxis, p[0]) + ', ' +
-            args.y.ticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
-            ps.join(', #') + '</p>';
+        return '<p>' + position_label(xAxis, p[0]) + ', ' +
+            position_label(yAxis, p[1]) + '</p><p>#' + ps.join(', #') + '</p>';
     }
 
     var hovered_data, hubble;
@@ -891,9 +899,8 @@ hotcrp_graphs.barchart = function (args) {
 
     function make_tooltip(p) {
         p[2].sort(pid_sorter);
-        return '<p>' + args.x.ticks.unparse_html.call(xAxis, p[0]) + ', ' +
-            args.y.ticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
-            p[2].join(', #') + '</p>';
+        return '<p>' + position_label(xAxis, p[0]) + ', ' +
+            position_label(yAxis, p[1]) + '</p><p>#' + p[2].join(', #') + '</p>';
     }
 
     var hovered_data, hubble;
@@ -1092,13 +1099,13 @@ hotcrp_graphs.boxplot = function (args) {
 
     function make_tooltip(p, ps, ds) {
         var yformat = args.y.ticks.unparse_html, t, x = [];
-        t = '<p>' + args.x.ticks.unparse_html.call(xAxis, p[0]);
+        t = '<p>' + position_label(xAxis, p[0]);
         if (p.q) {
-            t += ", median " + yformat.call(yAxis, p.q[2]);
+            t += ", " + position_label(yAxis, p.q[2], "median ");
             for (var i = 0; i < ps.length; ++i)
                 x.push(ps[i] + " (" + yformat.call(yAxis, ds[i]) + ")");
         } else {
-            t += ", " + yformat.call(yAxis, ds[0]);
+            t += ", " + position_label(yAxis, ds[0]);
             x = ps;
         }
         x.sort(pid_sorter);
