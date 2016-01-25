@@ -1000,8 +1000,12 @@ hotcrp_graphs.boxplot = function (args) {
 
     function place_box(sel) {
         sel.attr("d", function (d) {
-            var yq1 = y(d.q[args.yflip ? 3 : 1]), yq2 = y(d.q[2]),
-                yq3 = y(d.q[args.yflip ? 1 : 3]);
+            var yq1 = y(d.q[1]), yq2 = y(d.q[2]), yq3 = y(d.q[3]);
+            if (yq1 < yq3) {
+                var tmp = yq3;
+                yq3 = yq1;
+                yq1 = tmp;
+            }
             if (yq1 - yq3 < 4)
                 yq3 = yq2 - 2, yq1 = yq3 + 4;
             yq3 = Math.min(yq3, yq2 - 1);
