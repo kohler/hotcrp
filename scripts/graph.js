@@ -1172,13 +1172,21 @@ hotcrp_graphs.option_letter_ticks = function (n, c, sv) {
 
 function get_max_tick_width(axis) {
     return d3.max($(axis[0]).find("g.tick text").map(function () {
-        return $(this).width();
+        if (this.getBoundingClientRect) {
+            var r = this.getBoundingClientRect();
+            return r.right - r.left;
+        } else
+            return $(this).width();
     }));
 }
 
 function get_sample_tick_height(axis) {
     return d3.quantile($(axis[0]).find("g.tick text").map(function () {
-        return $(this).height();
+        if (this.getBoundingClientRect) {
+            var r = this.getBoundingClientRect();
+            return r.bottom - r.top;
+        } else
+            return $(this).height();
     }), 0.5);
 }
 
