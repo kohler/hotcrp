@@ -515,7 +515,7 @@ function hotcrp_graphs_cdf(args) {
         }
         var u = p.pathNode ? series[p.pathNode.getAttribute("dataindex")] : null;
         if (u && u.label) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             hubble.text(u.label)
                 .dir(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "r" : "b")
@@ -747,6 +747,13 @@ hotcrp_graphs.scatter = function (args) {
         .on("mouseover", mousemoved).on("mousemove", mousemoved)
         .on("mouseout", mouseout).on("click", mouseclick);
 
+    function make_tooltip(p, ps) {
+        ps.sort(pid_sorter);
+        return '<p>' + args.xticks.unparse_html.call(xAxis, p[0]) + ', ' +
+            args.yticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
+            ps.join(', #') + '</p>';
+    }
+
     var hovered_data, hubble;
     function mousemoved() {
         var m = d3.mouse(this), p = data.quadtree.gfind(m, 4);
@@ -759,10 +766,9 @@ hotcrp_graphs.scatter = function (args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            var ps = p[2].map(proj2);
-            ps.sort(pid_sorter);
-            hubble.html("<p>#" + ps.join(", #") + "</p>").dir("b").near(hovers.node());
+            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble.html(make_tooltip(p[2][0], p[2].map(proj2)))
+                .dir("b").near(hovers.node());
         } else if (hubble)
             hubble = hubble.remove() && null;
     }
@@ -881,6 +887,13 @@ hotcrp_graphs.barchart = function (args) {
     svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
         .on("click", mouseclick);
 
+    function make_tooltip(p) {
+        p[2].sort(pid_sorter);
+        return '<p>' + args.xticks.unparse_html.call(xAxis, p[0]) + ', ' +
+            args.yticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
+            p[2].join(', #') + '</p>';
+    }
+
     var hovered_data, hubble;
     function mouseover() {
         var p = d3.select(this).data()[0];
@@ -893,12 +906,8 @@ hotcrp_graphs.barchart = function (args) {
             hovered_data = p;
         }
         if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            if (!p.sorted) {
-                p[2].sort(pid_sorter);
-                p.sorted = true;
-            }
-            hubble.html("<p>#" + p[2].join(", #") + "</p>").dir("h").near(this);
+            hubble = hubble || make_bubble("", {color: "graphtip dark", "pointer-events": "none"});
+            hubble.html(make_tooltip(p)).dir("h").near(this);
         }
     }
 
@@ -1077,11 +1086,14 @@ hotcrp_graphs.boxplot = function (args) {
     function make_tooltip(p, ps, ds) {
         var yformat = args.yticks.unparse_html, t, x = [];
         t = '<p>' + args.xticks.unparse_html.call(xAxis, p[0]);
-        if (p.q)
-            t += " : median " + yformat.call(yAxis, p.q[2]);
-        var x = [];
-        for (var i = 0; i < ps.length; ++i)
-            x.push(ps[i] + " (" + yformat.call(yAxis, ds[i]) + ")");
+        if (p.q) {
+            t += ", median " + yformat.call(yAxis, p.q[2]);
+            for (var i = 0; i < ps.length; ++i)
+                x.push(ps[i] + " (" + yformat.call(yAxis, ds[i]) + ")");
+        } else {
+            t += ", " + yformat.call(yAxis, ds[0]);
+            x = ps;
+        }
         x.sort(pid_sorter);
         return t + '</p><p><span class="nw">#' + x.join(',</span> <span class="nw">#') + '</span></p>';
     }
