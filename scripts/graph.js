@@ -319,21 +319,21 @@ function make_axes(svg, xAxis, yAxis, args) {
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + args.height + ")")
-        .call(xAxis).call(args.xaxis_setup || function () {})
+        .call(xAxis).call(args.x.axis_setup || function () {})
       .append("text")
         .attr("x", args.width).attr("y", 0).attr("dy", "-.5em")
-        .style(css).text(args.xlabel || "");
+        .style(css).text(args.x.label || "");
 
     svg.append("g")
         .attr("class", "y axis")
-        .call(yAxis).call(args.yaxis_setup || function () {})
+        .call(yAxis).call(args.y.axis_setup || function () {})
       .append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 6).attr("dy", ".71em")
-        .style(css).text(args.ylabel || "");
+        .style(css).text(args.y.label || "");
 
-    args.xticks.rewrite.call(svg.select(".x.axis"), svg);
-    args.yticks.rewrite.call(svg.select(".y.axis"), svg);
+    args.x.ticks.rewrite.call(svg.select(".x.axis"), svg);
+    args.y.ticks.rewrite.call(svg.select(".y.axis"), svg);
 }
 
 function proj0(d) {
@@ -408,8 +408,10 @@ function axis_domain(axis, argextent, e) {
 
 function make_args(args) {
     args = $.extend({top: 20, right: 20, bottom: BOTTOM_MARGIN, left: 50}, args);
-    args.xticks = make_axis(args.xticks);
-    args.yticks = make_axis(args.yticks);
+    args.x = args.x || {};
+    args.y = args.y || {};
+    args.x.ticks = make_axis(args.x.ticks);
+    args.y.ticks = make_axis(args.y.ticks);
     args.width = $(args.selector).width() - args.left - args.right;
     args.height = 500 - args.top - args.bottom;
     return args;
@@ -425,7 +427,7 @@ var hotcrp_graphs = {};
 function hotcrp_graphs_cdf(args) {
     args = make_args(args);
 
-    var x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
+    var x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
         y = d3.scale.linear().range([args.height, 0]);
 
     var svg = d3.select(args.selector).append("svg")
@@ -447,7 +449,7 @@ function hotcrp_graphs_cdf(args) {
     });
     var data = series.map(function (d) {
         d = d.d ? d.d : d;
-        return d.cdf ? d : seq_to_cdf(d, !!args.xflip);
+        return d.cdf ? d : seq_to_cdf(d, !!args.x.flip);
     });
 
     // axis domains
@@ -458,15 +460,15 @@ function hotcrp_graphs_cdf(args) {
     }, [Infinity, -Infinity]);
     xdomain = [xdomain[0] - (xdomain[1] - xdomain[0]) / 32,
                xdomain[1] + (xdomain[1] - xdomain[0]) / 32];
-    axis_domain(x, args.xextent, xdomain);
-    axis_domain(y, args.yextent, [0, Math.ceil(d3.max(data, function (d) {
+    axis_domain(x, args.x.extent, xdomain);
+    axis_domain(y, args.y.extent, [0, Math.ceil(d3.max(data, function (d) {
         return d[d.length - 1][1];
     }) * 10) / 10]);
 
     // axes
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks.ticks.call(xAxis, x.domain());
-    args.xtick_format && xAxis.tickFormat(args.xtick_format);
+    args.x.ticks.ticks.call(xAxis, x.domain());
+    args.x.tick_format && xAxis.tickFormat(args.x.tick_format);
     var yAxis = d3.svg.axis().scale(y).orient("left");
     var line = d3.svg.line().x(function (d) {return x(d[0]);})
         .y(function (d) {return y(d[1]);});
@@ -476,8 +478,8 @@ function hotcrp_graphs_cdf(args) {
         var klass = "gcdf";
         if (series[i].className)
             klass += " " + series[i].className;
-        if (d[d.length - 1][0] != xdomain[args.xflip ? 0 : 1])
-            d.push([xdomain[args.xflip ? 0 : 1], d[d.length - 1][1]]);
+        if (d[d.length - 1][0] != xdomain[args.x.flip ? 0 : 1])
+            d.push([xdomain[args.x.flip ? 0 : 1], d[d.length - 1][1]]);
         svg.append("path").attr("dataindex", i)
             .datum(d)
             .attr("class", klass)
@@ -570,9 +572,9 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
         args.data[i].d = seq_to_cdf(dlf(args.data[i].d, revdata.deadlines));
 
     if (dlf.tick_format)
-        args.xtick_format = dlf.tick_format;
-    args.xlabel = dlf.label(revdata.deadlines);
-    args.ylabel = "Fraction of assignments completed";
+        args.x.tick_format = dlf.tick_format;
+    args.x.label = dlf.label(revdata.deadlines);
+    args.y.label = "Fraction of assignments completed";
 
     hotcrp_graphs_cdf(args);
 };
@@ -699,17 +701,17 @@ hotcrp_graphs.scatter = function (args) {
 
     var xe = d3.extent(data, proj0),
         ye = d3.extent(data, proj1),
-        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0]),
+        x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range(args.y.flip ? [0, args.height] : [args.height, 0]),
         rf = function (d) { return d.r - 1; };
-    axis_domain(x, args.xextent, expand_extent(xe));
-    axis_domain(y, args.yextent, expand_extent(ye, true));
+    axis_domain(x, args.x.extent, expand_extent(xe));
+    axis_domain(y, args.y.extent, expand_extent(ye, true));
     data = grouped_quadtree(data, x, y, 4);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks.ticks.call(xAxis, xe);
+    args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks.ticks.call(yAxis, ye);
+    args.y.ticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", args.width + args.left + args.right)
@@ -749,8 +751,8 @@ hotcrp_graphs.scatter = function (args) {
 
     function make_tooltip(p, ps) {
         ps.sort(pid_sorter);
-        return '<p>' + args.xticks.unparse_html.call(xAxis, p[0]) + ', ' +
-            args.yticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
+        return '<p>' + args.x.ticks.unparse_html.call(xAxis, p[0]) + ', ' +
+            args.y.ticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
             ps.join(', #') + '</p>';
     }
 
@@ -827,7 +829,7 @@ function data_to_barchart(data, isfraction) {
 
 hotcrp_graphs.barchart = function (args) {
     args = make_args(args);
-    var data = data_to_barchart(args.data, !!args.yfraction);
+    var data = data_to_barchart(args.data, !!args.y.fraction);
 
     var xe = d3.extent(data, proj0),
         ge = d3.extent(data, function (d) { return d[4] || 0; }),
@@ -837,10 +839,10 @@ hotcrp_graphs.barchart = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0]);
-    axis_domain(x, args.xextent, expand_extent(xe));
-    axis_domain(y, args.yextent, ye);
+        x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
+    axis_domain(x, args.x.extent, expand_extent(xe));
+    axis_domain(y, args.y.extent, ye);
 
     var dpr = window.devicePixelRatio || 1;
     var barwidth = args.width / 20;
@@ -852,9 +854,9 @@ hotcrp_graphs.barchart = function (args) {
     var gdelta = -(ge[1] + 1) * barwidth / 2;
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks.ticks.call(xAxis, xe);
+    args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks.ticks.call(yAxis, ye);
+    args.y.ticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", args.width + args.left + args.right)
@@ -889,8 +891,8 @@ hotcrp_graphs.barchart = function (args) {
 
     function make_tooltip(p) {
         p[2].sort(pid_sorter);
-        return '<p>' + args.xticks.unparse_html.call(xAxis, p[0]) + ', ' +
-            args.yticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
+        return '<p>' + args.x.ticks.unparse_html.call(xAxis, p[0]) + ', ' +
+            args.y.ticks.unparse_html.call(yAxis, p[1]) + '</p><p>#' +
             p[2].join(', #') + '</p>';
     }
 
@@ -962,7 +964,7 @@ function data_to_boxplot(data, septags) {
 
 hotcrp_graphs.boxplot = function (args) {
     args = make_args(args);
-    var data = data_to_boxplot(args.data, !!args.yfraction, true);
+    var data = data_to_boxplot(args.data, !!args.y.fraction, true);
 
     var xe = d3.extent(data, proj0),
         ye = [d3.min(data, function (d) { return d.ymin; }),
@@ -971,19 +973,19 @@ hotcrp_graphs.boxplot = function (args) {
             var delta = i ? d[0] - data[i-1][0] : 0;
             return delta || Infinity;
         }),
-        x = d3.scale.linear().range(args.xflip ? [args.width, 0] : [0, args.width]),
-        y = d3.scale.linear().range(args.yflip ? [0, args.height] : [args.height, 0]);
-    axis_domain(x, args.xextent, expand_extent(xe));
-    axis_domain(y, args.yextent, expand_extent(ye, true));
+        x = d3.scale.linear().range(args.x.flip ? [args.width, 0] : [0, args.width]),
+        y = d3.scale.linear().range(args.y.flip ? [0, args.height] : [args.height, 0]);
+    axis_domain(x, args.x.extent, expand_extent(xe));
+    axis_domain(y, args.y.extent, expand_extent(ye, true));
 
     var barwidth = args.width/80;
     if (deltae[0] != Infinity)
         barwidth = Math.max(Math.min(barwidth, Math.abs(x(xe[0] + deltae[0]) - x(xe[0])) * 0.5), 6);
 
     var xAxis = d3.svg.axis().scale(x).orient("bottom");
-    args.xticks.ticks.call(xAxis, xe);
+    args.x.ticks.ticks.call(xAxis, xe);
     var yAxis = d3.svg.axis().scale(y).orient("left");
-    args.yticks.ticks.call(yAxis, ye);
+    args.y.ticks.ticks.call(yAxis, ye);
 
     var svg = d3.select(args.selector).append("svg")
         .attr("width", args.width + args.left + args.right)
@@ -1089,8 +1091,8 @@ hotcrp_graphs.boxplot = function (args) {
     svg.selectAll(".gbox.outlier").on("mouseover", mouseover_outlier);
 
     function make_tooltip(p, ps, ds) {
-        var yformat = args.yticks.unparse_html, t, x = [];
-        t = '<p>' + args.xticks.unparse_html.call(xAxis, p[0]);
+        var yformat = args.y.ticks.unparse_html, t, x = [];
+        t = '<p>' + args.x.ticks.unparse_html.call(xAxis, p[0]);
         if (p.q) {
             t += ", median " + yformat.call(yAxis, p.q[2]);
             for (var i = 0; i < ps.length; ++i)
@@ -1156,7 +1158,7 @@ hotcrp_graphs.boxplot = function (args) {
             clicker(null);
         else if (!hovered_data.q)
             clicker(hovered_data[2].map(proj2));
-        else if ((s = args.xticks.search(hovered_data[0])))
+        else if ((s = args.x.ticks.search(hovered_data[0])))
             clicker_go(hoturl("search", {q: s}));
         else
             clicker(hovered_data.p);
