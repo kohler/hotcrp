@@ -4511,23 +4511,31 @@ function numeric_parser(text) {
     return parseInt(text, 10);
 }
 
+function gcd(a, b) {
+    if (a == b)
+        return a;
+    else if (a > b)
+        return gcd(a - b, b);
+    else
+        return gcd(a, b - a);
+}
+
 function make_letter_unparser(n, c) {
     return function (val, count) {
         if (val < 0.8 || val > n + 0.2)
             return val.toFixed(2);
-        var ord1 = c + n - Math.ceil(val);
-        var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
+        var ival = Math.ceil(val), ch1 = String.fromCharCode(c + n - ival);
+        if (val == ival)
+            return ch1;
+        var ch2 = String.fromCharCode(c + n - ival + 1);
         count = count || 2;
-        val = Math.floor(count * val + 0.5) - count * Math.floor(val);
-        if (val == 0 || val == count)
-            return val ? ch2 : ch1;
-        else if (val == count / 2)
-            return ch1 + ch2;
-        else {
-            for (var i = 0, s = ""; i < count; ++i)
-                s += i < val ? ch1 : ch2;
-            return s;
-        }
+        val = Math.floor((ival - val) * count + 0.5);
+        if (val <= 0 || val >= count)
+            return val <= 0 ? ch1 : ch2;
+        var g = gcd(val, count);
+        for (var i = 0, s = ""; i < count; i += g)
+            s += i < val ? ch1 : ch2;
+        return s;
     };
 }
 
