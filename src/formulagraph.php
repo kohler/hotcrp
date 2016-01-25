@@ -341,7 +341,7 @@ class FormulaGraph {
         $i = 0;
         $m = [];
         foreach ($this->reviewers as $c) {
-            $c->graph_index = ++$i;
+            $c->sort_position = ++$i;
             $m[$c->contactId] = $i;
         }
         $this->_valuemap_rewrite($data, $axes, $m);
@@ -415,12 +415,12 @@ class FormulaGraph {
             $x = [];
             $tagger = new Tagger($Me);
             foreach ($this->reviewers as $r) {
-                $rd = ["text" => $r->name_html(), // XXX should be text
+                $rd = ["text" => $Me->name_text_for($r),
                        "search" => "re:" . $r->email];
                 if ($Me->can_view_reviewer_tags()
                     && ($colors = $tagger->viewable_color_classes($r->contactTags)))
                     $rd["color_classes"] = $colors;
-                $x[$r->graph_index] = $rd;
+                $x[$r->sort_position] = $rd;
             }
             $t[] = $axis . "ticks:hotcrp_graphs.named_integer_ticks("
                     . json_encode($x) . ")" . $rticks;

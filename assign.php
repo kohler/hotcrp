@@ -558,7 +558,7 @@ if ($Me->can_administer($prow)) {
             echo '<div class="pctbass">', review_type_icon(-2),
                 Ht::img("_.gif", ">", array("class" => "next", "style" => "visibility:hidden")), '&nbsp;</div>',
                 '<div id="ass' . $p->contactId . '" class="pctbname pctbname-2 taghl nw">',
-                $pc->name_html(), '</div>';
+                $Me->name_html_for($pc), '</div>';
         } else {
             if ($p->conflictType > 0)
                 $revtype = -1;
@@ -578,7 +578,7 @@ if ($Me->can_administer($prow)) {
                 . '</div></div>';
 
             echo '<div id="ass' . $p->contactId . '" class="pctbname pctbname' . $revtype . '">'
-                . '<span class="taghl nw">' . $pc->name_html() . '</span>';
+                . '<span class="taghl nw">' . $Me->name_html_for($pc) . '</span>';
             if ($p->conflictType == 0
                 && ($p->reviewerPreference || $p->reviewerExpertise
                     || $p->topicInterestScore))

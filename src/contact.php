@@ -25,8 +25,6 @@ class Contact {
     public $lastName = "";
     public $unaccentedName = "";
     public $nameAmbiguous = null;
-    private $name_html_ = null;
-    private $reviewer_html_ = null;
     public $email = "";
     public $preferredEmail = "";
     public $sorter = "";
@@ -49,6 +47,7 @@ class Contact {
     private $updateTime = 0;
     private $data = null;
     private $topic_interest_map_ = null;
+    private $name_for_map_ = array();
     public $defaultWatch = WATCH_COMMENT;
 
     // Roles
@@ -120,7 +119,6 @@ class Contact {
             $this->unaccentedName = $name->unaccentedName;
         else
             $this->unaccentedName = Text::unaccented_name($name);
-        $this->name_html_ = $this->reviewer_html_ = null;
         foreach (array("email", "preferredEmail", "affiliation",
                        "voicePhoneNumber", "country") as $k)
             if (isset($user->$k))
@@ -488,27 +486,46 @@ class Contact {
             return $this->firstName . " " . $this->lastName;
     }
 
-    function name_html() {
-        if ($this->name_html_ === null)
-            $this->name_html_ = Text::name_html($this);
-        return $this->name_html_;
-    }
+    private function name_for($pfx, $x) {
+        $cid = is_object($x) ? $x->contactId : $x;
+        $key = $pfx . $cid;
+        if (isset($this->name_for_map_[$key]))
+            return $this->name_for_map_[$key];
 
-    function reviewer_html() {
-        if ($this->reviewer_html_ === null) {
-            global $Me;
-            $this->reviewer_html_ = $this->name_html();
-            if ($Me->isPC && $this->contactTags) {
-                $tagger = new Tagger;
-                if (($viewable = $tagger->viewable($this->contactTags))
-                    && ($colors = TagInfo::color_classes($viewable))) {
-                    if (TagInfo::classes_have_colors($colors))
-                        $colors = "tagcolorspan " . $colors;
-                    $this->reviewer_html_ = '<span class="' . $colors . '">' . $this->reviewer_html_ . '</span>';
-                }
+        $pcm = pcMembers();
+        if (isset($pcm[$cid]))
+            $x = $pcm[$cid];
+        else if (!is_object($x) || !isset($x->email)
+                 || !isset($x->firstName) || !isset($x->lastName))
+            $x = self::find_by_id($cid);
+
+        if ($pfx !== "t")
+            $n = Text::name_html($x);
+        else
+            $n = Text::name_text($x);
+
+        if ($pfx === "r" && isset($x->contactTags) && $x->contactTags) {
+            $tagger = new Tagger($this);
+            if (($colors = $tagger->viewable_color_classes($x->contactTags))) {
+                if (TagInfo::classes_have_colors($colors))
+                    $colors = "tagcolorspan " . $colors;
+                $n = '<span class="' . $colors . '">' . $n . '</span>';
             }
         }
-        return $this->reviewer_html_;
+
+        return ($this->name_for_map_[$key] = $n);
+    }
+
+    function name_html_for($x) {
+        return $this->name_for("", $x);
+    }
+
+    function name_text_for($x) {
+        return $this->name_for("t", $x);
+    }
+
+    function reviewer_html_for($x) {
+        return $this->name_for($this->isPC ? "r" : "", $x);
     }
 
     function has_email() {

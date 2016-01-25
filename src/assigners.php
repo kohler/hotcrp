@@ -480,7 +480,7 @@ class ReviewAssigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("reviewers");
-        $t = $this->contact->reviewer_html() . ' ';
+        $t = $aset->contact()->reviewer_html_for($this->contact) . ' ';
         if ($this->rtype) {
             $t .= review_type_icon($this->rtype, true);
             if ($this->round)
@@ -569,7 +569,7 @@ class LeadAssigner extends Assigner {
             $aset->show_column("reviewers");
         if (!$this->cid)
             return "remove $this->type";
-        $t = $this->contact->reviewer_html();
+        $t = $aset->contact()->reviewer_html_for($this->contact);
         if ($this->isadd && $this->type === "lead")
             $t .= " " . review_lead_icon();
         else if ($this->isadd && $this->type === "shepherd")
@@ -649,7 +649,7 @@ class ConflictAssigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("pcconf");
-        $t = $this->contact->reviewer_html() . ' ';
+        $t = $aset->contact()->reviewer_html_for($this->contact) . ' ';
         if ($this->ctype)
             $t .= review_type_icon(-1);
         else
@@ -1023,7 +1023,7 @@ class PreferenceAssigner extends Assigner {
         if (!$this->cid)
             return "remove all preferences";
         $aset->show_column("allrevpref");
-        return $this->contact->reviewer_html() . " " . unparse_preference_span(array($this->pref, $this->exp), true);
+        return $aset->contact()->reviewer_html_for($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
     function unparse_csv(AssignmentSet $aset) {
         if (!$this->pref && $this->exp === null)
@@ -1104,6 +1104,10 @@ class AssignmentSet {
             $override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
         $this->cmap = new AssignerContacts;
+    }
+
+    public function contact() {
+        return $this->contact;
     }
 
     public function push_override($override) {
@@ -1580,7 +1584,7 @@ class AssignmentSet {
                     $t = '<div class="ctelt"><div class="pc_ctelt';
                     if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
                         $t .= ' ' . $k;
-                    $t .= '"><span class="taghl">' . $p->name_html() . "</span>: "
+                    $t .= '"><span class="taghl">' . $this->contact->name_html_for($p) . "</span>: "
                         . plural($deltarev->get($p->contactId)->ass, "assignment")
                         . self::review_count_report($nrev, $deltarev, $p, "After assignment:&nbsp;")
                         . "<hr class=\"c\" /></div></div>";

@@ -124,12 +124,9 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         if (!$Me->can_view_review_identity($prow, $rr, null)) {
             $t .= ($rtype ? "<td>$rtype</td>" : '<td class="empty"></td>');
         } else {
-            if (!$showtoken || !Contact::is_anonymous_email($rr->email)) {
-                if (($u = @$pcm[$rr->contactId]))
-                    $n = $u->name_html();
-                else
-                    $n = Text::name_html($rr);
-            } else
+            if (!$showtoken || !Contact::is_anonymous_email($rr->email))
+                $n = $Me->name_html_for($rr);
+            else
                 $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
             if ($allow_admin)
                 $n .= _review_table_actas($rr);
@@ -151,7 +148,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
                 else if (($u = get($pcm, $rr->requestedBy)))
-                    $t .= $u->name_html();
+                    $t .= $Me->reviewer_html_for($rr->requestedBy);
                 else
                     $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
                 $t .= '</td>';
@@ -215,7 +212,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
                 else if (($u = get($pcm, $rr->requestedBy)))
-                    $t .= $u->name_html();
+                    $t .= $Me->reviewer_html_for($rr->requestedBy);
                 else
                     $t .= Text::user_html([$rr->reqFirstName, $rr->reqLastName, $rr->reqEmail]);
                 $t .= '</td>';

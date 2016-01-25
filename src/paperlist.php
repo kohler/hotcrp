@@ -345,7 +345,7 @@ class PaperList {
     public function _contentPC($row, $contactId, $visible) {
         $pcm = pcMembers();
         if (isset($pcm[$contactId]))
-            return $this->maybeConflict($row, $pcm[$contactId]->reviewer_html(), $visible);
+            return $this->maybeConflict($row, $this->contact->reviewer_html_for($pcm[$contactId]), $visible);
         else
             return "";
     }

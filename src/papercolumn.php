@@ -502,7 +502,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
     public function header($pl, $ordinal) {
         if ($this->xreviewer)
-            return $this->xreviewer->name_html() . "<br />Review</span>";
+            return $pl->contact->name_html_for($this->xreviewer) . "<br />Review</span>";
         else
             return "Review";
     }
@@ -779,7 +779,7 @@ class PreferenceListPaperColumn extends PaperColumn {
                 if ($this->topics)
                     $pref[2] = $row->topic_interest_score($pc);
                 if (($pspan = unparse_preference_span($pref)) !== "")
-                    $ts[] = '<span class="nw">' . $pc->reviewer_html() . $pspan . '</span>';
+                    $ts[] = '<span class="nw">' . $pl->contact->reviewer_html_for($pc) . $pspan . '</span>';
             }
         return join(", ", $ts);
     }
@@ -820,11 +820,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         $x = array();
         foreach ($pl->review_list[$row->paperId] as $xrow) {
             $ranal = new PaperListReviewAnalysis($xrow);
-            if ($pcm && ($p = get($pcm, $xrow->contactId)))
-                $n = $p->reviewer_html();
-            else
-                $n = Text::name_html($xrow);
-            $n .= "&nbsp;" . $ranal->icon_html(false);
+            $n = $pl->contact->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
             if ($prefs || $topics) {
                 $pref = get($prefs, $xrow->contactId);
                 if ($topics)
@@ -853,11 +849,12 @@ class PCConflictListPaperColumn extends PaperColumn {
         return "PC conflicts";
     }
     public function content($pl, $row, $rowidx) {
-        $conf = $row->conflicts();
-        $y = array();
-        foreach (pcMembers() as $id => $pc)
-            if (get($conf, $id))
-                $y[] = $pc->reviewer_html();
+        $y = [];
+        $pcm = pcMembers();
+        foreach ($row->conflicts() as $id => $type)
+            if (($pc = get($pcm, $id)))
+                $y[$pc->sort_position] = $pl->contact->reviewer_html_for($pc);
+        ksort($y);
         return join(", ", $y);
     }
 }
@@ -1376,7 +1373,7 @@ class TagReportPaperColumn extends PaperColumn {
             $mytag = " " . $pcm->contactId . "~" . $this->tag . "#";
             if (($p = strpos($t, $mytag)) !== false) {
                 $n = (int) substr($t, $p + strlen($mytag));
-                $a[] = $pcm->name_html() . ($n ? " (#$n)" : "");
+                $a[] = $pl->contact->name_html_for($pcm) . ($n ? " (#$n)" : "");
             }
         }
         return join(", ", $a);

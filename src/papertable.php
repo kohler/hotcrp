@@ -1228,7 +1228,7 @@ class PaperTable {
             Ht::hidden("has_pcconf", 1),
             '<div class="pc_ctable">';
         foreach ($pcm as $id => $p) {
-            $label = Ht::label($p->name_html(), "pcc$id", array("class" => "taghl"));
+            $label = Ht::label($Me->name_html_for($p), "pcc$id", array("class" => "taghl"));
             if ($p->affiliation)
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
@@ -1275,15 +1275,14 @@ class PaperTable {
         $tagger = new Tagger;
         foreach ($this->prow->pc_conflicts() as $id => $x) {
             $p = $pcm[$id];
-            $text = "<p class=\"odname\">" . $p->name_html() . "</p>";
+            $text = "<p class=\"odname\">" . $Me->name_html_for($p) . "</p>";
             if ($Me->isPC && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
                 $text = "<div class=\"pscopen $classes taghl\">$text</div>";
             $pcconf[$p->sort_position] = $text;
         }
-
+        ksort($pcconf);
         if (!count($pcconf))
             $pcconf[] = "<p class=\"odname\">None</p>";
-        ksort($pcconf);
         $this->_papstripBegin();
         echo $this->papt("pcconflict", "PC conflicts", array("type" => "ps")),
             "<div class='psv psconf'>", join("", $pcconf), "</div></div>\n";
@@ -1309,8 +1308,8 @@ class PaperTable {
             '<div class="psv">';
         $colors = "";
         $p = null;
-        if ($value && ($p = @$pc[$value]))
-            $n = $p->name_html();
+        if ($value && isset($pc[$value]))
+            $n = $Me->name_html_for($value);
         else
             $n = $value ? "Unknown!" : "";
         $text = '<p class="fn odname">' . $n . '</p>';
