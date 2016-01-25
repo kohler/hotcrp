@@ -1312,10 +1312,10 @@ class FormulaPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $formulaf = $this->formula_function;
         $s = $formulaf($row, null, $pl->contact);
-        $t = $this->formula->unparse_html($s);
+        $t = $this->formula->unparse_html($s, $pl->contact);
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
             $ss = $formulaf($row, null, $pl->contact, null, true);
-            $tt = $this->formula->unparse_html($ss);
+            $tt = $this->formula->unparse_html($ss, $pl->contact);
             if ($tt !== $t) {
                 $this->statistics->add($ss);
                 return '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
@@ -1327,13 +1327,13 @@ class FormulaPaperColumn extends PaperColumn {
     public function text($pl, $row) {
         $formulaf = $this->formula_function;
         $s = $formulaf($row, null, $pl->contact);
-        return $this->formula->unparse_text($s);
+        return $this->formula->unparse_text($s, $pl->contact);
     }
     public function has_statistics() {
         return $this->statistics && $this->statistics->count();
     }
-    public function statistic($what) {
-        return $this->formula->unparse_html($this->statistics->statistic($what));
+    public function statistic($pl, $what) {
+        return $this->formula->unparse_html($this->statistics->statistic($what), $pl->contact);
     }
 }
 

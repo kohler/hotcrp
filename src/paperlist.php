@@ -1197,7 +1197,7 @@ class PaperList {
         $any_empty = null;
         foreach ($fieldDef as $fdef)
             if ($fdef->view == Column::VIEW_COLUMN && $fdef->has_statistics())
-                $any_empty = $any_empty || $fdef->statistic(ScoreInfo::COUNT) != $this->count;
+                $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
         if ($any_empty === null)
             return "";
         foreach (array(ScoreInfo::SUM => "Total", ScoreInfo::MEAN => "Mean",
@@ -1223,7 +1223,7 @@ class PaperList {
                     $t .= ' fx' . $fdef->foldable;
                 $t .= '">';
                 if ($fdef->has_statistics())
-                    $t .= $fdef->statistic($stat);
+                    $t .= $fdef->statistic($this, $stat);
                 $t .= '</td>';
             }
             if (is_int($titled))

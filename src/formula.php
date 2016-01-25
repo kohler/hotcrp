@@ -320,16 +320,12 @@ class AggregateFexpr extends Fexpr {
     }
 
     public function typecheck_format() {
-        if ($this->op === "argmin" || $this->op === "argmax"
-            && count($this->args) >= 2
-            && $this->args[0] instanceof Fexpr)
-            return $this->args[0]->format();
-        else if ($this->op === "all" || $this->op === "any")
+        if ($this->op === "all" || $this->op === "any")
             return self::FBOOL;
         else if (($this->op === "avg" || $this->op === "wavg"
                   || $this->op === "min" || $this->op === "max"
-                  || $this->op === "median" || $this->op === "quantile")
-                 && count($this->args) >= 1
+                  || $this->op === "median" || $this->op === "quantile"
+                  || $this->op === "argmin" || $this->op === "argmax")
                  && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
         else
@@ -1378,21 +1374,26 @@ class Formula {
         return [$outf, $inf];
     }
 
-    public function unparse_html($x) {
+    public function unparse_html($x, $contact) {
         if ($x === null || $x === false)
             return "";
         else if ($x === true)
             return "✓";
         else if ($this->_format === Fexpr::FPREFEXPERTISE)
             return ReviewField::unparse_letter(91, $x + 2);
+        else if ($this->_format === Fexpr::FREVIEWER)
+            return $contact->reviewer_html_for($x);
         else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
             return ReviewField::unparse_letter($this->_format->option_letter, $x);
         else
             return round($x * 100) / 100;
     }
 
-    public function unparse_text($x) {
-        return $this->unparse_html($x);
+    public function unparse_text($x, $contact) {
+        if (is_int($x) && $x && $this->_format === Fexpr::FREVIEWER)
+            return $contact->name_text_for($x);
+        else
+            return $this->unparse_html($x, $contact);
     }
 
     public function add_query_options(&$queryOptions, $contact) {
