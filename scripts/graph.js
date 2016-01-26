@@ -432,7 +432,7 @@ var hotcrp_graphs = {};
 
 // args: {selector: JQUERYSELECTOR,
 //        data: [{d: [ARRAY], label: STRING, className: STRING}],
-//        xlabel: STRING, ylabel: STRING, xtick_format: STRING}
+//        x/y: {label: STRING, tick_format: STRING}}
 function hotcrp_graphs_cdf(args) {
     args = make_args(args);
 
@@ -545,7 +545,7 @@ hotcrp_graphs.cdf = hotcrp_graphs_cdf;
 
 
 hotcrp_graphs.procrastination = function (selector, revdata) {
-    var args = {selector: selector, data: {}};
+    var args = {selector: selector, data: {}, x: {}, y: {}};
 
     // collect data
     var alldata = [], d, i, l, cid, u;

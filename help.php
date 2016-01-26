@@ -1034,8 +1034,8 @@ reviewers with the “#heavy” tag:</p>
 <p>(“re:#heavy + 1” equals 2 for #heavy reviews and 1 for others.)</p>
 
 <p>Formulas work better for numeric scores, but you can use them for letter
-scores too. HotCRP uses alphabetical order, so the “min” of scores A, B, and D
-is A. For instance:</p>
+scores too. HotCRP uses alphabetical order for letter scores, so the “min” of
+scores A, B, and D is A. For instance:</p>
 
 <blockquote>count(confidence=X)</blockquote>");
 
