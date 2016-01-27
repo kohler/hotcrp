@@ -2592,7 +2592,7 @@ function save_editor(elt, action, really) {
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + ctype);
     x.j.find("button").prop("disabled", true);
-    $.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
+    function callback(data, textStatus, jqxhr) {
         var editing_response = x.cj.response && edit_allowed(x.cj),
             cid = cj_cid(x.cj), data_cid;
         if (data.ok && !data.cmt && !x.cj.is_new)
@@ -2612,7 +2612,8 @@ function save_editor(elt, action, really) {
             render_cmt(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
-    });
+    }
+    $.post(url, x.j.find("form").serialize(), callback);
 }
 
 function submit_editor(evt) {
