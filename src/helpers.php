@@ -445,10 +445,10 @@ class SessionList {
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
-        $l = @$lists[$idx];
+        $l = get($lists, $idx);
         if ($l && $l->cid == ($Me ? $Me->contactId : 0)) {
             $l = clone $l;
-            if (is_string(@$l->ids))
+            if (is_string($l->ids))
                 $l->ids = json_decode($l->ids);
             $l->listno = (int) $idx;
             return $l;
@@ -458,8 +458,8 @@ class SessionList {
     static function change($idx, $delta, $replace = false) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
-        $l = @$lists[$idx];
-        if ($l && @$l->cid == ($Me ? $Me->contactId : 0) && !$replace)
+        $l = get($lists, $idx);
+        if ($l && $l->cid == ($Me ? $Me->contactId : 0) && !$replace)
             $l = clone $l;
         else
             $l = (object) array();
@@ -475,10 +475,10 @@ class SessionList {
         $cid = $Me ? $Me->contactId : 0;
         $oldest = $empty = 0;
         for ($i = 1; $i <= 8; ++$i)
-            if (($l = @$lists[$i])) {
-                if ($listid && @($l->listid == $listid) && $l->cid == $cid)
+            if (($l = get($lists, $i))) {
+                if ($listid && $l->listid == $listid && $l->cid == $cid)
                     return $i;
-                else if (!$oldest || @($lists[$oldest]->timestamp < $l->timestamp))
+                else if (!$oldest || $lists[$oldest]->timestamp < $l->timestamp)
                     $oldest = $i;
             } else if (@$_REQUEST["ls"] === (string) $i
                        || @$_COOKIE["hotcrp_ls"] === (string) $i)
