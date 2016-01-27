@@ -123,8 +123,6 @@ class MeetingTracker {
     static private function status_papers($status, $tracker, $acct) {
         global $Conf;
 
-        if (@$tracker->position_at)
-            $status->position_at = $tracker->position_at;
         $pids = array_slice($tracker->ids, $tracker->position, 3);
 
         $pc_conflicts = $acct->privChair || $acct->tracker_kiosk_state;
@@ -189,6 +187,7 @@ class MeetingTracker {
         $status = (object) array("trackerid" => $tracker->trackerid,
                                  "listid" => $tracker->listid,
                                  "position" => $tracker->position,
+                                 "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
         if (!!@$Opt["trackerHideConflicts"])
@@ -201,10 +200,8 @@ class MeetingTracker {
     }
 
     static function tracker_status($tracker) {
-        if ($tracker && @$tracker->position_at)
+        if ($tracker)
             return $tracker->trackerid . "@" . $tracker->position_at;
-        else if ($tracker)
-            return $tracker->trackerid;
         else
             return "off";
     }
@@ -212,7 +209,7 @@ class MeetingTracker {
     static function trackerstatus_api($user = null, $qreq = null, $prow = null) {
         $tracker = self::lookup();
         $a = array("ok" => true, "tracker_status" => self::tracker_status($tracker));
-        if ($tracker && $tracker->position_at)
+        if ($tracker)
             $a["tracker_status_at"] = $tracker->position_at;
         json_exit($a);
     }
