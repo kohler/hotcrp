@@ -478,7 +478,7 @@ class SessionList {
             if (($l = get($lists, $i))) {
                 if ($listid && $l->listid == $listid && $l->cid == $cid)
                     return $i;
-                else if (!$oldest || $lists[$oldest]->timestamp < $l->timestamp)
+                else if (!$oldest || $l->timestamp < $lists[$oldest]->timestamp)
                     $oldest = $i;
             } else if (@$_REQUEST["ls"] === (string) $i
                        || @$_COOKIE["hotcrp_ls"] === (string) $i)
