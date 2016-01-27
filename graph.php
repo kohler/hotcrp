@@ -45,7 +45,7 @@ function echo_graph() {
 if ($Graph == "procrastination") {
     echo "<h2>Procrastination</h2>\n";
     echo_graph();
-    $rt = new ReviewTimes;
+    $rt = new ReviewTimes($Me);
     $Conf->echoScript('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode($rt->json()) . '); })');
 }
 

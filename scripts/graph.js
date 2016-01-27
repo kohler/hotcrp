@@ -558,6 +558,8 @@ hotcrp_graphs.procrastination = function (selector, revdata) {
             d.priority = 1;
         } else if (u && u.light)
             d.className = "revtimel_light";
+        if (u && u.color_classes)
+            d.className = (d.className ? d.className + " " : "") + u.color_classes;
         Array.prototype.push.apply(alldata, d.d);
         if (cid !== "conflicts")
             args.data[cid] = d;

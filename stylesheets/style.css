@@ -3037,7 +3037,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	fill: rgba(221, 216, 85, 0.3);
 }
 .gcdf.greentag, .gdot.greentag, .gbar.greentag, .gbox.greentag {
-	stroke: rgba(13, 185, 13, 0.8);
+	stroke: rgba(72, 185, 72, 0.8);
 }
 .gdot.greentag, .gbar.greentag, .gbox.greentag, .glab.greentag {
 	fill: rgba(13, 195, 13, 0.2);
