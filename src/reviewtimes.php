@@ -63,24 +63,34 @@ class ReviewTimes {
         if (count($nass))
             $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
 
+        $contacts = pcMembers();
+        $need_contacts = [];
+        foreach ($this->r as $cid => $x)
+            if (!isset($contacts[$cid]) && ctype_digit($cid))
+                $need_contacts[] = $cid;
+        if (count($need_contacts)) {
+            $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
+            while ($result && ($row = $result->fetch_object("Contact")))
+                $contacts[$row->contactId] = $row;
+        }
+
         $users = array();
-        $pcm = pcMembers();
         $tagger = null;
         if ($this->contact->can_view_reviewer_tags())
             $tagger = new Tagger($this->contact);
         foreach ($this->r as $cid => $x)
             if ($cid != "conflicts") {
                 $users[$cid] = $u = (object) array();
-                $p = get($pcm, $cid);
+                $p = get($contacts, $cid);
                 if ($p)
                     $u->name = Text::name_text($p);
                 if (count($x) < $heavy_boundary)
                     $u->light = true;
-                if ($p && $p->contactTags && ($t = $tagger->viewable_color_classes($p->contactTags)))
+                if ($p && $p->contactTags
+                    && ($t = $tagger->viewable_color_classes($p->contactTags)))
                     $u->color_classes = $t;
             }
 
         return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
     }
-
 }
