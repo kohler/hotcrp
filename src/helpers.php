@@ -480,10 +480,7 @@ class SessionList {
                     return $i;
                 else if (!$oldest || $l->timestamp < $lists[$oldest]->timestamp)
                     $oldest = $i;
-            } else if (@$_REQUEST["ls"] === (string) $i
-                       || @$_COOKIE["hotcrp_ls"] === (string) $i)
-                return $i;
-            else if (!$empty)
+            } else if (!$empty)
                 $empty = $i;
         return $empty ? : $oldest;
     }
