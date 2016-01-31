@@ -476,6 +476,8 @@ class SessionList {
         $oldest = $empty = 0;
         for ($i = 1; $i <= 8; ++$i)
             if (($l = get($lists, $i))) {
+                if (!isset($l->timestamp))
+                    error_log("missing timestamp " . json_encode($l));
                 if ($listid && $l->listid == $listid && $l->cid == $cid)
                     return $i;
                 else if (!$oldest || $l->timestamp < $lists[$oldest]->timestamp)
