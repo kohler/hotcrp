@@ -29,6 +29,8 @@ class Conf {
     private $_topic_separator_cache = null;
     public $dsn = null;
 
+    public $paper = null; // current paper row
+
     static public $g;
     static public $gShortName;
     static public $gLongName;
@@ -2276,7 +2278,7 @@ class Conf {
     }
 
     private function header_head($title) {
-        global $Me, $ConfSitePATH, $Opt, $CurrentProw;
+        global $Me, $ConfSitePATH, $Opt;
         // load session list and clear its cookie
         $list = SessionList::active();
         SessionList::set_requested(0);
@@ -2358,8 +2360,8 @@ class Conf {
 
         $pid = @$_REQUEST["paperId"];
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
-        if (!$pid && $CurrentProw)
-            $pid = $CurrentProw->paperId;
+        if (!$pid && $this->paper)
+            $pid = $this->paper->paperId;
         if ($pid)
             Ht::stash_script("hotcrp_paperid=$pid");
         if ($pid && $Me && $Me->privChair
@@ -2388,7 +2390,7 @@ class Conf {
     }
 
     function header($title, $id, $actionBar, $title_div = null) {
-        global $ConfSitePATH, $CurrentProw, $Me, $Now, $Opt;
+        global $ConfSitePATH, $Me, $Now, $Opt;
         if ($this->headerPrinted)
             return;
 
@@ -2415,7 +2417,7 @@ class Conf {
 
         // deadlines settings
         if ($Me)
-            Ht::stash_script("hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($CurrentProw)) . ")");
+            Ht::stash_script("hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($this->paper)) . ")");
         if (self::$gDefaultFormat)
             Ht::stash_script("render_text.set_default_format(" . self::$gDefaultFormat . ")");
 

@@ -74,7 +74,7 @@ function hoturl_defaults($options = array()) {
 }
 
 function hoturl_site_relative($page, $options = null) {
-    global $Me, $paperTable, $_hoturl_defaults;
+    global $Conf, $Me, $_hoturl_defaults;
     $t = $page . Navigation::php_suffix();
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
@@ -97,10 +97,10 @@ function hoturl_site_relative($page, $options = null) {
                 $options .= "&amp;" . $k . "=" . $v;
     // append forceShow to links to same paper if appropriate
     $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
-    if ($is_paper_page && @$paperTable && $paperTable->prow
-        && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)
-        && $Me->can_administer($paperTable->prow)
-        && $paperTable->prow->has_conflict($Me)
+    if ($is_paper_page && $Conf->paper
+        && preg_match($are . 'p=' . $Conf->paper->paperId . $zre, $options)
+        && $Me->can_administer($Conf->paper)
+        && $Conf->paper->has_conflict($Me)
         && !preg_match($are . 'forceShow=/', $options))
         $options .= "&amp;forceShow=1";
     // create slash-based URLs if appropriate
@@ -560,14 +560,14 @@ class SessionList {
         return self::$requested_list;
     }
     static public function active($listtype = null, $id = null) {
-        global $CurrentProw, $Me, $Now;
+        global $Conf, $Me, $Now;
 
         // check current-list cache
         if (!$listtype && self::$active_list)
             return self::$active_list;
         else if (!$listtype) {
             $listtype = "p";
-            $id = $CurrentProw ? $CurrentProw->paperId : null;
+            $id = $Conf->paper ? $Conf->paper->paperId : null;
         }
         if (!$id)
             return null;

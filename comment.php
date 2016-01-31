@@ -21,8 +21,8 @@ function exit_to_paper() {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $CurrentProw, $prow, $paperTable, $crow, $Error;
-    $CurrentProw = $prow = PaperTable::paperRow($whyNot);
+    global $Conf, $Me, $prow, $paperTable, $crow, $Error;
+    $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         exit_to_paper();
     $paperTable = new PaperTable($prow);

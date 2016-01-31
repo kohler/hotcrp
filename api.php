@@ -47,9 +47,9 @@ if (!$Me->has_database_account()
     }
 }
 if ($qreq->p && ctype_digit($qreq->p)) {
-    $CurrentProw = $Conf->paperRow(array("paperId" => intval($qreq->p)), $Me);
-    if ($CurrentProw && !$Me->can_view_paper($CurrentProw))
-        $CurrentProw = null;
+    $Conf->paper = $Conf->paperRow(array("paperId" => intval($qreq->p)), $Me);
+    if ($Conf->paper && !$Me->can_view_paper($Conf->paper))
+        $Conf->paper = null;
 }
 
 // requests
@@ -57,9 +57,9 @@ if (isset(SiteLoader::$api_map[$qreq->fn])) {
     $uf = SiteLoader::$api_map[$qreq->fn];
     if (!($uf[1] & SiteLoader::API_GET) && !check_post())
         json_exit(["ok" => false, "error" => "Missing credentials."]);
-    if (($uf[1] & SiteLoader::API_PAPER) && !$CurrentProw)
+    if (($uf[1] & SiteLoader::API_PAPER) && !$Conf->paper)
         json_exit(["ok" => false, "error" => "No such paper."]);
-    call_user_func($uf[0], $Me, $qreq, $CurrentProw);
+    call_user_func($uf[0], $Me, $qreq, $Conf->paper);
     json_exit(["ok" => false, "error" => "Internal error."]);
 }
 
@@ -145,7 +145,7 @@ if ($_GET["fn"] === "searchcompletion") {
 if ($_GET["fn"] === "track")
     MeetingTracker::track_api($Me); // may fall through to act like `status`
 
-$j = $Me->my_deadlines($CurrentProw);
+$j = $Me->my_deadlines($Conf->paper);
 
 if (req("conflist") && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
@@ -159,8 +159,8 @@ if (req("conflist") && $Me->has_email() && ($cdb = Contact::contactdb())) {
     }
 }
 
-if ($CurrentProw && $Me->can_view_tags($CurrentProw))
-    $j->tags = (object) array($CurrentProw->paperId => $CurrentProw->tag_info_json($Me));
+if ($Conf->paper && $Me->can_view_tags($Conf->paper))
+    $j->tags = (object) array($Conf->paper->paperId => $Conf->paper->tag_info_json($Me));
 
 $j->ok = true;
 $Conf->ajaxExit($j);
