@@ -336,7 +336,7 @@ class PaperOption {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
     }
 
-    function unparse_column_html($pl, $v) {
+    function unparse_column_html($pl, $row) {
         return "";
     }
 }
@@ -350,7 +350,8 @@ class CheckboxPaperOption extends PaperOption {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
 
-    function unparse_column_html($pl, $v) {
+    function unparse_column_html($pl, $row) {
+        $v = $row->option($this->id);
         return $v && $v->value ? "✓" : "";
     }
 }
@@ -378,6 +379,11 @@ class SelectorPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
     }
+
+    function unparse_column_html($pl, $row) {
+        $v = $row->option($this->id);
+        return isset($this->selector[$v]) ? htmlspecialchars($this->selector[$v]) : "";
+    }
 }
 
 class DocumentPaperOption extends PaperOption {
@@ -396,6 +402,13 @@ class DocumentPaperOption extends PaperOption {
     function value_compare($av, $bv) {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
+
+    function unparse_column_html($pl, $row) {
+        if (($v = $row->option($this->id)))
+            foreach ($v->documents($row) as $d)
+                return documentDownload($d, "sdlimg", "", true);
+        return "";
+    }
 }
 
 class NumericPaperOption extends PaperOption {
@@ -413,7 +426,8 @@ class NumericPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function unparse_column_html($pl, $v) {
+    function unparse_column_html($pl, $row) {
+        $v = $row->option($this->id);
         return $v && $v->value !== null ? $v->value : "";
     }
 }
@@ -438,7 +452,8 @@ class TextPaperOption extends PaperOption {
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
     }
 
-    function unparse_column_html($pl, $v) {
+    function unparse_column_html($pl, $row) {
+        $v = $row->option($this->id);
         if ($v && $v->data !== null && $v->data !== "")
             return '<div class="format0">' . Ht::link_urls(htmlspecialchars($v->data)) . '</div>';
         else
@@ -472,5 +487,15 @@ class AttachmentsPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
+    }
+
+    function unparse_column_html($pl, $row) {
+        $docs = [];
+        if (($v = $row->option($this->id)))
+            foreach ($v->documents($row) as $d) {
+                $name = htmlspecialchars($d->unique_filename);
+                $docs[] = documentDownload($d, count($docs) ? "sdlimgsp" : "sdlimg", $name, true);
+            }
+        return join("<br>", $docs);
     }
 }

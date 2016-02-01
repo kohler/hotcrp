@@ -308,7 +308,7 @@ function reviewType($paperId, $row, $long = 0) {
         return "";
 }
 
-function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
+function documentDownload($doc, $dlimg_class = "dlimg", $text = null, $no_size = false) {
     global $Conf;
     $p = HotCRPDocument::url($doc);
     $finalsuffix = ($doc->documentType == DTYPE_FINAL ? "f" : "");
@@ -322,7 +322,7 @@ function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
         $x = "<a href=\"$p\" class=\"q\">" . Ht::img("generic${finalsuffix}${imgsize}.png", "[Download]", $dlimg_class);
     if ($text)
         $x .= $sp . $text;
-    if (isset($doc->size) && $doc->size > 0) {
+    if (isset($doc->size) && $doc->size > 0 && !$no_size) {
         $x .= "&nbsp;<span class=\"dlsize\">" . ($text ? "(" : "");
         if ($doc->size > 921)
             $x .= round($doc->size / 1024);

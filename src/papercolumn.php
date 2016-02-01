@@ -1161,6 +1161,10 @@ class OptionPaperColumn extends PaperColumn {
     public function __construct($opt) {
         parent::__construct($opt ? $opt->abbr : null, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("comparator" => "option_compare"));
+        if ($opt && $opt instanceof TextPaperOption) {
+            $this->view = Column::VIEW_ROW;
+            $this->embedded_header = true;
+        }
         $this->minimal = true;
         $this->className = "pl_option";
         if ($opt && $opt->type == "checkbox")
@@ -1216,11 +1220,22 @@ class OptionPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $t = "";
-        if ($pl->contact->can_view_paper_option($row, $this->opt, false))
-            $t = $this->opt->unparse_column_html($pl, $row->option($this->opt->id));
-        else if ($pl->contact->allow_administer($row)
-                 && $pl->contact->can_view_paper_option($row, $this->opt, true))
-            $t = '<span class="fx5">' . $this->opt->unparse_column_html($pl, $row->option($this->opt->id)) . '</span>';
+        if (($ok = $pl->contact->can_view_paper_option($row, $this->opt, false))
+            || ($pl->contact->allow_administer($row)
+                && $pl->contact->can_view_paper_option($row, $this->opt, true))) {
+            $t = $this->opt->unparse_column_html($pl, $row);
+            if ($t !== "" && $this->embedded_header) {
+                $h = '<h6>' . htmlspecialchars($this->opt->name) . ':</h6> ';
+                if (preg_match(',\A(<div.*?>)([\s\S]*)\z,', $t, $m))
+                    $t = $m[1] . $h . $m[2];
+                else
+                    $t = $h . $t;
+            }
+            if (!$ok && $this->embedded_header)
+                $t = '<div class="fx5">' . $t . '</div>';
+            else if (!$ok)
+                $t = '<span class="fx5">' . $t . '</div>';
+        }
         return $t;
     }
 }

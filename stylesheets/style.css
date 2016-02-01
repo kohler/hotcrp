@@ -1059,7 +1059,7 @@ img.placthook {
 	background-image: url(../images/sprite.png?2);
 	background-position: -40px 0;
 }
-img.sdlimg {
+img.sdlimg, img.sdlimgsp {
 	position: relative;
 	bottom: -4px;
 	margin-top: -4px;

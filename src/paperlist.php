@@ -838,7 +838,9 @@ class PaperList {
                 $tt .= "\">";
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    $tt .= "<h6>" . $fdef->header($this, -1) . ":</h6> " . $c;
+                    if (!$fdef->embedded_header)
+                        $tt .= "<h6>" . $fdef->header($this, -1) . ":</h6> ";
+                    $tt .= $c;
                     $fdef->has_content = true;
                 }
                 $tt .= "</div>";
@@ -959,6 +961,8 @@ class PaperList {
                 $j["missing"] = true;
             if ($fdef->foldable)
                 $j["foldnum"] = $fdef->foldable;
+            if ($fdef->embedded_header)
+                $j["embedded_header"] = true;
             $jscol[] = $j;
             if ($fdef->foldable && $fdef->name !== "authors") {
                 $classes[] = "fold$fdef->foldable" . ($fdef->is_folded ? "c" : "o");
