@@ -746,27 +746,29 @@ return function (content, bubopt) {
     var divbw = null;
 
     function change_tail_direction() {
-        var bw = [0, 0, 0, 0];
+        var bw = [0, 0, 0, 0], trw = sizes[1], trh = sizes[0] / 2;
         divbw = parseFloat($(bubdiv).css(cssborder(dir, "Width")));
         divbw !== divbw && (divbw = 0); // eliminate NaN
-        bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
-        bw[dir^2] = sizes[1] + "px";
+        bw[dir^1] = bw[dir^3] = trh + "px";
+        bw[dir^2] = trw + "px";
         bubch[0].style.borderWidth = bw.join(" ");
-        bw[dir^1] = bw[dir^3] = Math.max(sizes[0] / 2 - 0.77*divbw, 0) + "px";
-        bw[dir^2] = Math.max(sizes[1] - 0.77*divbw, 0) + "px";
+        bw[dir^1] = bw[dir^3] = trh + "px";
+        bw[dir^2] = trw + "px";
         bubch[2].style.borderWidth = bw.join(" ");
 
-        var i, yc;
-        for (i = 1; i <= 3; ++i)
+        for (var i = 1; i <= 3; ++i)
             bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
-        bubch[0].style[lcdir[dir]] = (-sizes[1]) + "px";
-        bubch[2].style[lcdir[dir]] = (-sizes[1] + divbw) + "px";
+        bubch[0].style[lcdir[dir]] = (-trw - divbw) + "px";
+        // Offset the inner triangle so that the border width in the diagonal
+        // part of the tail, is visually similar to the border width
+        var trdelta = (divbw / trh) * Math.sqrt(trw * trw + trh * trh);
+        bubch[2].style[lcdir[dir]] = (-trw - divbw + trdelta) + "px";
 
         for (i = 0; i < 3; i += 2)
             bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
             bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
 
-        yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
+        var yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
             return (0.75 * p1 + 0.25) + ")";
         });
         bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
@@ -917,12 +919,12 @@ return function (content, bubopt) {
         }
 
         var x, y, xa, ya, d;
+        var divbw = parseFloat($(bubdiv).css(cssborder(ds & 1 ? 0 : 3, "Width")));
         if (ds & 1) {
             ya = constrainmid(nearpos, wpos, 0, ds2);
             y = constrain(ya, wpos, bpos, 0, ds2, noconstrain);
-            d = constrainradius(roundpixel(ya - y - sizes[0] / 2), bpos, ds);
-            bubch[0].style.top = d + "px";
-            bubch[2].style.top = (d + 0.77*divbw) + "px";
+            d = constrainradius(roundpixel(ya - y - sizes[0] / 2 - divbw), bpos, ds);
+            bubch[0].style.top = bubch[2].style.top = d + "px";
 
             if (ds == 1)
                 x = nearpos.left - sizes.right - bpos.width - sizes[1] - 1;
@@ -931,9 +933,8 @@ return function (content, bubopt) {
         } else {
             xa = constrainmid(nearpos, wpos, 3, ds2);
             x = constrain(xa, wpos, bpos, 3, ds2, noconstrain);
-            d = constrainradius(roundpixel(xa - x - sizes[0] / 2), bpos, ds);
-            bubch[0].style.left = d + "px";
-            bubch[2].style.left = (d + 0.77*divbw) + "px";
+            d = constrainradius(roundpixel(xa - x - sizes[0] / 2 - divbw), bpos, ds);
+            bubch[0].style.left = bubch[2].style.left = d + "px";
 
             if (ds == 0)
                 y = nearpos.bottom + sizes.top + sizes[1];
