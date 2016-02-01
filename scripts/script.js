@@ -36,19 +36,6 @@ function add_callback(cb1, cb2) {
         return cb1 || cb2;
 }
 
-function staged_foreach(a, f, backwards) {
-    var i = (backwards ? a.length - 1 : 0);
-    var step = (backwards ? -1 : 1);
-    var stagef = function () {
-        var x;
-        for (x = 0; i >= 0 && i < a.length && x < 100; i += step, ++x)
-            f(a[i]);
-        if (i < a.length)
-            setTimeout(stagef, 0);
-    };
-    stagef();
-}
-
 
 // promises
 function Promise(value) {
@@ -3791,17 +3778,15 @@ return function (selector, active_dragtag) {
 
         $(function () {
             plt_tbody = $(selector).find("tbody")[0];
-            staged_foreach(plt_tbody.getElementsByTagName("input"), function (elt) {
-                if (elt.name.substr(0, 5 + dragtag.length) == "tag:" + dragtag + " ") {
-                    var x = document.createElement("span"), id = elt.name.substr(5 + dragtag.length);
-                    x.className = "dragtaghandle";
-                    x.setAttribute("data-pid", id);
-                    x.setAttribute("title", "Drag to change order");
-                    elt.parentElement.insertBefore(x, elt.nextSibling);
-                    x.onmousedown = tag_mousedown;
-                    elt.onchange = sorttag_onchange;
-                    valuemap[id] = parse_tagvalue(elt.value);
-                }
+            $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
+                var x = document.createElement("span"), id = this.name.substr(5 + dragtag.length);
+                x.className = "dragtaghandle";
+                x.setAttribute("data-pid", id);
+                x.setAttribute("title", "Drag to change order");
+                this.parentElement.insertBefore(x, this.nextSibling);
+                x.onmousedown = tag_mousedown;
+                this.onchange = sorttag_onchange;
+                valuemap[id] = parse_tagvalue(this.value);
             });
         });
     }
