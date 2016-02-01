@@ -284,6 +284,13 @@ function commajoin(a, joinword) {
         return a.slice(0, l - 1).join(", ") + ", " + joinword + " " + a[l - 1];
 }
 
+function common_prefix(a, b) {
+    var i = 0;
+    while (i != a.length && i != b.length && a.charAt(i) == b.charAt(i))
+        ++i;
+    return a.substring(0, i);
+}
+
 function count_words(text) {
     return ((text || "").match(/[^-\s.,;:<>!?*_~`#|]\S*/g) || []).length;
 }
@@ -3115,30 +3122,49 @@ function taghelp_q(elt, displayed) {
 
 function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
     return function (tlist) {
-        var res = [], lstr = precaret.toLowerCase();
+        var res = [], lprecaret = precaret.toLowerCase(),
+            lpostcaret = postcaret.toLowerCase(),
+            best_postcaret = "", best_postcaret_index = null;
         for (var i = 0; i < tlist.length; ++i) {
-            var titem = completion_item(tlist[i]), t = titem.s, tt = t;
+            var titem = completion_item(tlist[i]),
+                text = titem.s, ltext = titem.s.toLowerCase(),
+                pos = 0, h = "";
             if (include_pfx) {
-                if (t.substring(0, pfx.length).toLowerCase() !== pfx)
+                if (ltext.substr(0, pfx.length) !== pfx)
                     continue;
-                tt = t = t.substring(pfx.length);
+                pos = pfx.length;
             }
-            if (lstr.length && t.substring(0, lstr.length).toLowerCase() !== lstr)
-                continue;
-            if (lstr.length)
-                t = "<b>" + t.substring(0, precaret.length) + "</b>" +
-                    escape_entities(t.substring(lstr.length));
-            else
-                t = escape_entities(t);
-            t = '<div class="autocomplete" data-autocomplete="' +
-                tt.substring(precaret.length).replace(/\"/g, "&quot;") +
-                '">' + pfx + t + '</div>';
-            res[tt.length == precaret.length ? "unshift" : "push"](t);
+            var start = '">' + pfx, ncdelete = 0;
+            if (!lprecaret.length
+                || ltext.substr(pos, lprecaret.length) === lprecaret) {
+                if (lprecaret.length) {
+                    start += "<b>" + escape_entities(text.substr(pos, lprecaret.length)) + "</b>";
+                    pos += lprecaret.length;
+                }
+                if (best_postcaret_index === null)
+                    best_postcaret_index = res.length;
+                if (lpostcaret.length) {
+                    var common_postcaret = common_prefix(ltext.substr(pos), lpostcaret);
+                    if (common_postcaret.length > best_postcaret.length) {
+                        best_postcaret = common_postcaret;
+                        best_postcaret_index = res.length;
+                    }
+                } else if (text.length == pos)
+                    best_postcaret_index = res.length;
+            } else {
+                // continue
+                ncdelete = lprecaret.length;
+            }
+
+            var posttext = escape_entities(text.substr(pos));
+            res.push('<div class="suggestion" data-autocomplete="' + ncdelete + ' ' +posttext + start + posttext + '</div>');
         }
-        if (res.length)
+        if (res.length) {
+            best_postcaret_index = best_postcaret_index || 0;
+            res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion"/, '<div class="suggestion active"');
             return {list: res, precaret_length: pfx.length + precaret.length,
                     postcaret_length: postcaret.length};
-        else
+        } else
             return null;
     };
 }
@@ -3153,7 +3179,7 @@ function suggest(elt, klass, cleanf) {
     }
 
     function finish_display(cinfo) {
-        if (!cinfo)
+        if (!cinfo || !cinfo.list.length)
             return kill();
         if (!tagdiv) {
             tagdiv = make_bubble({dir: "nw", color: "suggest"});
@@ -3166,8 +3192,7 @@ function suggest(elt, klass, cleanf) {
         for (i = 0; i < ml.length && cinfo.list.length > ml[i]; ++i)
             /* nada */;
         var t = '<div class="suggesttable suggesttable' + (i + 1) +
-            '"><div class="suggestion active">' +
-            cinfo.list.join('</div><div class="suggestion">') + '</div></div>';
+            '">' + cinfo.list.join('') + '</div>';
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt),
             matchpos = elt.selectionStart - cinfo.precaret_length;
@@ -3186,22 +3211,15 @@ function suggest(elt, klass, cleanf) {
     }
 
     function maybe_complete($ac, ignore_empty_completion) {
-        var common = null, attr, i, j;
+        var common = null, ndelete, attr, i, j;
         for (i = 0; i != $ac.length; ++i) {
             attr = $ac[i].getAttribute("data-autocomplete");
-            if (common === null)
-                common = attr;
-            else {
-                for (j = 0; attr.charAt(j) === common.charAt(j)
-                            && j < attr.length; ++j)
-                    /* skip */;
-                common = common.substring(0, j);
-            }
+            common = common === null ? attr : common_prefix(attr, common);
         }
         if (common === null)
             return false;
         else if ($ac.length == 1)
-            return do_complete(common + " ", true, ignore_empty_completion);
+            return do_complete(common, true, ignore_empty_completion);
         else {
             interacted = true;
             return do_complete(common, false, ignore_empty_completion);
@@ -3209,15 +3227,19 @@ function suggest(elt, klass, cleanf) {
     }
 
     function do_complete(text, done, ignore_empty_completion) {
-        var start = elt.selectionStart;
+        var space = text.indexOf(" "), nkill = +text.substring(0, space);
+        text = text.substring(space + 1);
         var pc_len = +tagdiv.self().attr("data-autocomplete-postcaret-length");
-        if (!pc_len && ignore_empty_completion) {
+        if (!pc_len && text == "" && ignore_empty_completion) {
             done && kill();
             return null; /* null == no completion occurred (false == failed) */
         }
-        var val = elt.value.substring(0, start) + text + elt.value.substring(start + pc_len);
+        done && (text += " ");
+        var start = elt.selectionStart;
+        var val = elt.value.substring(0, start - nkill) + text +
+            elt.value.substring(start + pc_len);
         $(elt).val(val);
-        elt.selectionStart = elt.selectionEnd = start + text.length;
+        elt.selectionStart = elt.selectionEnd = start - nkill + text.length;
         done ? kill() : setTimeout(display, 1);
         return true;
     }
@@ -3272,10 +3294,8 @@ function suggest(elt, klass, cleanf) {
             hiding = true;
             return true;
         }
-        if (k == "Tab" && !m && tagdiv)
-            completed = maybe_complete(tagdiv.self().find(".autocomplete"));
-        else if (k == "Enter" && !m && tagdiv)
-            completed = maybe_complete(tagdiv.self().find(".suggestion.active .autocomplete"), !interacted);
+        if ((k == "Tab" || k == "Enter") && !m && tagdiv)
+            completed = maybe_complete(tagdiv.self().find(".suggestion.active"), k == "Enter" && !interacted);
         if (completed !== null && (completed || !tagfail)) {
             tagfail = !completed;
             evt.preventDefault();
@@ -3292,7 +3312,7 @@ function suggest(elt, klass, cleanf) {
     }
 
     function click(evt) {
-        maybe_complete($(this).find(".autocomplete"));
+        maybe_complete($(this).find(".suggestion"));
         evt.stopPropagation();
         interacted = true;
     }
