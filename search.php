@@ -78,16 +78,16 @@ if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
                     $query_all .= $delim . $optName . ":<" . _escapeMySqlSearchValue($value);
                     break;
                 case 'IS':
-                    $query_all .= "{$delim}opt:" . $optName . "=" . _escapeMySqlSearchValue($value);
+                    $query_all .= $delim . $optName . ":'" . _escapeMySqlSearchValue($value) . "'";
                     break;
                 case 'STARTS_WITH':
-                    $query_all .= "{$delim}opt:" . $optName . "=" . _escapeMySqlSearchValue($value) . "*";
+                    $query_all .= $delim . $optName . ":'" . _escapeMySqlSearchValue($value) . "%'";
                     break;
                 case 'ENDS_WITH':
                     $query_all .= $delim . $optName . ":'%" . _escapeMySqlSearchValue($value) . "'";
                     break;
                 case 'CONTAINS':
-                    $query_all .= "{$delim}opt:" . $optName . "=*" . _escapeMySqlSearchValue($value) . "*";
+                    $query_all .= $delim . $optName . ":'%" . _escapeMySqlSearchValue($value) . "%'";
                     break;
                 case 'CHECKBOX':
                     $query_all .= $delim . $optName . ":'" . _escapeMySqlSearchValue($value) . "'";

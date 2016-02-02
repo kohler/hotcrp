@@ -1593,7 +1593,7 @@ class PaperSearch {
                     $qo[] = array($o, "=", 0);
                 else if ($o->type == "text") {
                     if (!empty($oval)) {
-                        $xval = " like '%' and Option_X.data like " . str_replace("+", " ", $oval);
+                        $qo[] = array($o, " like '%' and Option_X.data like " . str_replace("+", " ", $oval));
                     }
                 } else if ($o->type === "numeric") {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
@@ -2759,7 +2759,7 @@ class PaperSearch {
             if ($t->value[0]->type == "text") {
                 $sqi->add_column($thistab . "_x", "$thistab.value");
                 $t->link = $thistab . "_x";
-                $newValue = str_replace("Option_X.data like '", "Option_$optionNum.data like '", $t->value[1]);
+                $newValue = str_replace("Option_X.data like '", "LOWER(CONVERT(Option_$optionNum.data USING utf8)) like '", $t->value[1]);
                 $q[] = $sqi->columns[$t->link] . $newValue;
             } else {
                 $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
