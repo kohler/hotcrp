@@ -3015,13 +3015,13 @@ class Contact {
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-            $dl->tracker_status_at = $tracker->position_at;
-            if (@$Opt["trackerHidden"])
+            $dl->tracker_status_at = microtime(true);
+            if (get($Opt, "trackerHidden"))
                 $dl->tracker_hidden = true;
             $dl->now = microtime(true);
         }
         if (($this->isPC || $this->tracker_kiosk_state)
-            && @$Opt["trackerCometSite"])
+            && get($Opt, "trackerCometSite"))
             $dl->tracker_site = $Opt["trackerCometSite"]
                 . "?conference=" . urlencode(Navigation::site_absolute(true));
 

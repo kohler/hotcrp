@@ -15,7 +15,7 @@ class MeetingTracker {
     static function clear() {
         global $Conf, $Now;
         $Conf->save_setting("tracker", $Now, null);
-        self::contact_tracker_comet(null);
+        self::contact_tracker_comet();
         return null;
     }
 
@@ -47,16 +47,24 @@ class MeetingTracker {
                 $tracker->position_at = microtime(true);
         }
         $Conf->save_setting("tracker", $Now, $tracker);
-        self::contact_tracker_comet($tracker);
+        self::contact_tracker_comet();
         return $tracker;
     }
 
-    static function contact_tracker_comet($tracker, $pids = null) {
+    static function contact_tracker_comet($pids = null) {
         global $Opt, $Now;
+
+        $comet_dir = get($Opt, "trackerCometUpdateDirectory");
+        $comet_url = get($Opt, "trackerCometSite");
+        if (!$comet_dir && !$comet_url)
+            return;
+
+        // calculate status
         $conference = Navigation::site_absolute();
+        $tracker = self::lookup();
 
         // first drop notification json in trackerCometUpdateDirectory
-        if (($comet_dir = get($Opt, "trackerCometUpdateDirectory"))) {
+        if ($comet_dir) {
             $j = array("ok" => true, "conference" => $conference,
                        "tracker_status" => self::tracker_status($tracker),
                        "tracker_status_at" => microtime(true));
@@ -80,7 +88,7 @@ class MeetingTracker {
         }
 
         // second contact trackerCometSite
-        if (!($comet_url = get($Opt, "trackerCometSite")))
+        if (!$comet_url)
             return;
 
         if (!preg_match(',\Ahttps?:,', $comet_url)) {
@@ -203,11 +211,9 @@ class MeetingTracker {
     }
 
     static function trackerstatus_api($user = null, $qreq = null, $prow = null) {
-        $tracker = self::lookup();
-        $a = array("ok" => true, "tracker_status" => self::tracker_status($tracker));
-        if ($tracker)
-            $a["tracker_status_at"] = $tracker->position_at;
-        json_exit($a);
+        json_exit(["ok" => true,
+                   "tracker_status" => self::tracker_status(self::lookup()),
+                   "tracker_status_at" => microtime(true)]);
     }
 
     static function track_api($user) {
