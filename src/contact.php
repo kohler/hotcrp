@@ -3011,19 +3011,21 @@ class Contact {
         // add meeting tracker
         $tracker = null;
         if (($this->isPC || $this->tracker_kiosk_state)
-            && $Conf->setting_data("tracker")
-            && ($tracker = MeetingTracker::status($this))) {
-            $dl->tracker = $tracker;
-            $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-            $dl->tracker_status_at = microtime(true);
-            if (get($Opt, "trackerHidden"))
-                $dl->tracker_hidden = true;
-            $dl->now = microtime(true);
+            && $this->can_view_tracker()) {
+            if ($Conf->setting_data("tracker")
+                && ($tracker = MeetingTracker::info_for($this))) {
+                $dl->tracker = $tracker;
+                $dl->tracker_status = MeetingTracker::tracker_status($tracker);
+                $dl->tracker_status_at = microtime(true);
+                if (get($Opt, "trackerHidden"))
+                    $dl->tracker_hidden = true;
+                $dl->now = $dl->tracker_status_at;
+            } else if (($twhen = $Conf->setting("tracker")))
+                $dl->tracker_status_at = $twhen;
+            if (get($Opt, "trackerCometSite"))
+                $dl->tracker_site = $Opt["trackerCometSite"]
+                    . "?conference=" . urlencode(Navigation::site_absolute(true));
         }
-        if (($this->isPC || $this->tracker_kiosk_state)
-            && get($Opt, "trackerCometSite"))
-            $dl->tracker_site = $Opt["trackerCometSite"]
-                . "?conference=" . urlencode(Navigation::site_absolute(true));
 
         // permissions
         if ($prows) {

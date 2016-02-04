@@ -177,7 +177,7 @@ class MeetingTracker {
             $status->papers[] = $papers[$pid];
     }
 
-    static function status($acct) {
+    static function info_for($acct) {
         global $Conf, $Opt, $Now;
         $tracker = self::lookup();
         if (!$tracker || !$acct->can_view_tracker())

@@ -1569,7 +1569,8 @@ function load(dlx, is_initial) {
     if (!dl.load)
         dl.load = now_sec();
     has_tracker = !!dl.tracker;
-    if (dl.tracker)
+    if (dl.tracker
+        || (dl.tracker_status_at && dl.load - dl.tracker_status_at < 259200))
         had_tracker_at = dl.load;
     display_main(is_initial);
     var evt = $.Event("hotcrp_deadlines");
@@ -1585,7 +1586,7 @@ function load(dlx, is_initial) {
             t = 10;
         else if (had_tracker_at && comet_tracker())
             /* skip */;
-        else if (had_tracker_at && dl.load - had_tracker_at < 1200000)
+        else if (had_tracker_at && dl.load - had_tracker_at < 10800)
             t = 10000;
         else if (dlname && (!dltime || dltime - dl.load <= 120))
             t = 45000;
