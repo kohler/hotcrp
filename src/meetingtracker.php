@@ -13,8 +13,8 @@ class MeetingTracker {
     }
 
     static function clear() {
-        global $Conf;
-        $Conf->save_setting("tracker", null);
+        global $Conf, $Now;
+        $Conf->save_setting("tracker", $Now, null);
         self::contact_tracker_comet(null);
         return null;
     }
@@ -46,7 +46,7 @@ class MeetingTracker {
             else if ($old_tracker->position_at == $tracker->position_at)
                 $tracker->position_at = microtime(true);
         }
-        self::save($tracker);
+        $Conf->save_setting("tracker", $Now, $tracker);
         self::contact_tracker_comet($tracker);
         return $tracker;
     }
@@ -56,7 +56,7 @@ class MeetingTracker {
         $conference = Navigation::site_absolute();
 
         // first drop notification json in trackerCometUpdateDirectory
-        if (($comet_dir = @$Opt["trackerCometUpdateDirectory"])) {
+        if (($comet_dir = get($Opt, "trackerCometUpdateDirectory"))) {
             $j = array("ok" => true, "conference" => $conference,
                        "tracker_status" => self::tracker_status($tracker),
                        "tracker_status_at" => microtime(true));
@@ -80,7 +80,7 @@ class MeetingTracker {
         }
 
         // second contact trackerCometSite
-        if (!($comet_url = @$Opt["trackerCometSite"]))
+        if (!($comet_url = get($Opt, "trackerCometSite")))
             return;
 
         if (!preg_match(',\Ahttps?:,', $comet_url)) {
@@ -115,11 +115,6 @@ class MeetingTracker {
         fclose($stream);
     }
 
-    static function save($mn) {
-        global $Conf;
-        $Conf->save_setting("tracker", 1, $mn);
-    }
-
     static private function status_papers($status, $tracker, $acct) {
         global $Conf;
 
@@ -142,7 +137,8 @@ class MeetingTracker {
         $papers = array();
         while (($row = edb_orow($result))) {
             $papers[$row->paperId] = $p = (object) array();
-            if (($acct->privChair || !$row->conflictType || !@$status->hide_conflicts)
+            if (($acct->privChair || !$row->conflictType
+                 || !get($status, "hide_conflicts"))
                 && $acct->tracker_kiosk_state != 1) {
                 $p->pid = (int) $row->paperId;
                 $p->title = $row->title;
@@ -160,7 +156,7 @@ class MeetingTracker {
             if ($pc_conflicts) {
                 $p->pc_conflicts = array();
                 foreach (explode(",", (string) $row->conflictIds) as $cid)
-                    if (($pc = @$pcm[$cid]))
+                    if (($pc = get($pcm, $cid)))
                         $p->pc_conflicts[$pc->sort_position] = (object) array("email" => $pc->email, "name" => Text::name_text($pc));
                 ksort($p->pc_conflicts);
                 $p->pc_conflicts = array_values($p->pc_conflicts);
@@ -181,7 +177,7 @@ class MeetingTracker {
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
             && $status->position == $tracker->position
-            && @($status->calculated_at >= $Now - 30)
+            && $status->calculated_at >= $Now - 30
             && !$acct->is_actas_user())
             return $status;
         $status = (object) array("trackerid" => $tracker->trackerid,
@@ -190,7 +186,7 @@ class MeetingTracker {
                                  "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
-        if (!!@$Opt["trackerHideConflicts"])
+        if (!!get($Opt, "trackerHideConflicts"))
             $status->hide_conflicts = true;
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);

@@ -3011,7 +3011,7 @@ class Contact {
         // add meeting tracker
         $tracker = null;
         if (($this->isPC || $this->tracker_kiosk_state)
-            && $Conf->setting("tracker")
+            && $Conf->setting_data("tracker")
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);

@@ -2422,8 +2422,7 @@ class Conf {
             Ht::stash_script("render_text.set_default_format(" . self::$gDefaultFormat . ")");
 
         // meeting tracker
-        $trackerowner = $Me && $Me->privChair
-            && ($trackerstate = $this->setting_json("tracker"))
+        $trackerowner = ($trackerstate = $this->setting_json("tracker"))
             && $trackerstate->sessionid == session_id();
         if ($trackerowner)
             Ht::stash_script("hotcrp_deadlines.tracker(0)");
