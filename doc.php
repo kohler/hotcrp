@@ -9,8 +9,9 @@
 
 require_once("src/initweb.php");
 
-function document_error($msg) {
+function document_error($status, $msg) {
     global $Conf;
+    header("HTTP/1.1 $status");
     $Conf->header("Download", null, actionBar());
     $msg && Conf::msg_error($msg);
     $Conf->footer();
@@ -56,16 +57,16 @@ function document_download() {
     }
 
     if ($documentType === null)
-        document_error("Unknown document “" . htmlspecialchars($orig_s) . "”.");
+        document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");
 
     $prow = $Conf->paperRow($paperId, $Me, $whyNot);
     if (!$prow)
-        document_error(whyNotText($whyNot, "view"));
+        document_error("404 Not Found", whyNotText($whyNot, "view"));
     else if (($whyNot = $Me->perm_view_pdf($prow)))
-        document_error(whyNotText($whyNot, "view"));
+        document_error("403 Forbidden", whyNotText($whyNot, "view"));
     else if ($documentType > 0
              && !$Me->can_view_paper_option($prow, $documentType, true))
-        document_error("You don’t have permission to view this document.");
+        document_error("403 Forbidden", "You don’t have permission to view this document.");
 
     if ($attachment_filename) {
         $oa = $prow->option($documentType);
@@ -73,7 +74,7 @@ function document_download() {
             if ($doc->unique_filename == $attachment_filename)
                 $docid = $doc;
         if (!$docid)
-            document_error("No such attachment “" . htmlspecialchars($orig_s) . "”.");
+            document_error("404 Not Found", "No such attachment “" . htmlspecialchars($orig_s) . "”.");
     }
 
     // Actually download paper.
@@ -81,7 +82,7 @@ function document_download() {
     if ($Conf->downloadPaper($prow, cvtint(@$_REQUEST["save"]) > 0, $documentType, $docid))
         exit;
 
-    document_error(null);
+    document_error("500 Server Error", null);
 }
 
 document_download();

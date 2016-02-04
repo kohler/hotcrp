@@ -571,7 +571,7 @@ foreach (pcMembers() as $p) {
         . Ht::checkbox("pcs[]", $p->contactId, isset($pcsel[$p->contactId]),
                        ["id" => "pcsel" . (count($summary) + 1),
                         "onclick" => "rangeclick(event,this);$$('pctyp_sel').checked=true"])
-        . '&nbsp;</td><td><span class="taghl">' . $p->name_html() . '</span>'
+        . '&nbsp;</td><td><span class="taghl">' . $Me->name_html_for($p) . '</span>'
         . AssignmentSet::review_count_report($nrev, null, $p, "")
         . "</td></tr></table><hr class=\"c\" />\n</div></div>";
     $summary[] = $t;

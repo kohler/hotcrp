@@ -62,8 +62,8 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
 
 // grab paper row
 function loadRows() {
-    global $prow, $CurrentProw, $Error;
-    $CurrentProw = $prow = PaperTable::paperRow($whyNot);
+    global $prow, $Conf, $Error;
+    $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
     if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)

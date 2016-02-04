@@ -307,25 +307,25 @@ class AggregateFexpr extends Fexpr {
             $op = "avg";
         $arg_count = 1;
         if ($op === "atminof" || $op === "atmaxof"
+            || $op === "argmin" || $op === "argmax"
             || $op === "wavg" || $op === "quantile")
             $arg_count = 2;
-        if (count($args) == $arg_count)
-            return new AggregateFexpr($op, $args);
-        else
+        if (count($args) != $arg_count)
             return null;
+        if ($op === "atminof" || $op === "atmaxof") {
+            $op = "arg" . substr($op, 2, 3);
+            $args = [$args[1], $args[0]];
+        }
+        return new AggregateFexpr($op, $args);
     }
 
     public function typecheck_format() {
-        if ($this->op === "atminof" || $this->op === "atmaxof"
-            && count($this->args) >= 2
-            && $this->args[1] instanceof Fexpr)
-            return $this->args[1]->format();
-        else if ($this->op === "all" || $this->op === "any")
+        if ($this->op === "all" || $this->op === "any")
             return self::FBOOL;
         else if (($this->op === "avg" || $this->op === "wavg"
                   || $this->op === "min" || $this->op === "max"
-                  || $this->op === "median" || $this->op === "quantile")
-                 && count($this->args) >= 1
+                  || $this->op === "median" || $this->op === "quantile"
+                  || $this->op === "argmin" || $this->op === "argmax")
                  && $this->args[0] instanceof Fexpr)
             return $this->args[0]->format();
         else
@@ -353,14 +353,14 @@ class AggregateFexpr extends Fexpr {
             $cmp = $this->format_comparator($this->op === "min" ? "<" : ">");
             return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
         }
-        if ($this->op == "atminof" || $this->op == "atmaxof") {
-            $cmp = $this->args[0]->format_comparator($this->op == "atminof" ? "<" : ">");
+        if ($this->op == "argmin" || $this->op == "argmax") {
+            $cmp = $this->args[1]->format_comparator($this->op == "argmin" ? "<" : ">");
             return ["[null, [null]]",
-"if (~l~ !== null && (~r~[0] === null || ~l~ $cmp ~r~[0])) {
-  ~r~[0] = ~l~;
-  ~r~[1] = [~l1~];
-} else if (~l~ !== null && ~l~ == ~r~[0])
-  ~r~[1][] = ~l1~;",
+"if (~l1~ !== null && (~r~[0] === null || ~l1~ $cmp ~r~[0])) {
+  ~r~[0] = ~l1~;
+  ~r~[1] = [~l~];
+} else if (~l1~ !== null && ~l1~ == ~r~[0])
+  ~r~[1][] = ~l~;",
                     "~x~[1][count(~x~[1]) > 1 ? mt_rand(0, count(~x~[1]) - 1) : 0]"];
         }
         if ($this->op === "count")
@@ -1232,7 +1232,7 @@ class Formula {
         } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words)|(?:round|reviewer))\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
-        } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|argmin|argmax|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {
             $t = $m[2];
             if (!($e = $this->_parse_function($m[1], $t, true)))
                 return null;
@@ -1374,21 +1374,26 @@ class Formula {
         return [$outf, $inf];
     }
 
-    public function unparse_html($x) {
+    public function unparse_html($x, $contact) {
         if ($x === null || $x === false)
             return "";
         else if ($x === true)
             return "✓";
         else if ($this->_format === Fexpr::FPREFEXPERTISE)
             return ReviewField::unparse_letter(91, $x + 2);
+        else if ($this->_format === Fexpr::FREVIEWER)
+            return $contact->reviewer_html_for($x);
         else if ($this->_format instanceof ReviewField && $this->_format->option_letter)
             return ReviewField::unparse_letter($this->_format->option_letter, $x);
         else
             return round($x * 100) / 100;
     }
 
-    public function unparse_text($x) {
-        return $this->unparse_html($x);
+    public function unparse_text($x, $contact) {
+        if (is_int($x) && $x && $this->_format === Fexpr::FREVIEWER)
+            return $contact->name_text_for($x);
+        else
+            return $this->unparse_html($x, $contact);
     }
 
     public function add_query_options(&$queryOptions, $contact) {

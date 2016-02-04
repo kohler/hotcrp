@@ -45,7 +45,7 @@ function echo_graph() {
 if ($Graph == "procrastination") {
     echo "<h2>Procrastination</h2>\n";
     echo_graph();
-    $rt = new ReviewTimes;
+    $rt = new ReviewTimes($Me);
     $Conf->echoScript('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode($rt->json()) . '); })');
 }
 
@@ -55,9 +55,9 @@ function formulas_qrow($i, $q, $s, $errf) {
     if ($q === "all")
         $q = "";
     $klass = ($errf ? "setting_error " : "") . "hotcrp_searchbox";
-    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "id" => "q$i", "placeholder" => "(All)", "class" => $klass));
-    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("plain" => "plain", "by-tag" => "by tag", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag", array("id" => "s$i"));
-    $t .= '</td><td class="nw"><a href="#" class="qx row_up" onclick="return author_change.delta(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change.delta(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change.delta(this,Infinity)" tabindex="-1">x</a></td></tr>';
+    $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass));
+    $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("plain" => "plain", "by-tag" => "by tag", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
+    $t .= '</td><td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
     return $t;
 }
 
@@ -89,7 +89,7 @@ if ($Graph == "formula") {
     }
 
     $queries = $styles = array();
-    for ($i = 0; isset($_REQUEST["q$i"]); ++$i) {
+    for ($i = 1; isset($_REQUEST["q$i"]); ++$i) {
         $q = trim($_REQUEST["q$i"]);
         $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
         $styles[] = trim((string) @$_REQUEST["s$i"]);
@@ -153,9 +153,10 @@ if ($Graph == "formula") {
         '</td></tr>';
     // Series
     echo '<tr><td class="lcaption"><label for="q">Search</label></td>',
-        '<td class="lentry"><table><tbody id="qcontainer">';
+        '<td class="lentry"><table><tbody id="qcontainer" data-row-template="',
+        htmlspecialchars(formulas_qrow('$', "", "by-tag", false)), '">';
     for ($i = 0; $i < count($styles); ++$i)
-        echo formulas_qrow($i, $queries[$i], $styles[$i], $fg && @$fg->errf["q$i"]);
+        echo formulas_qrow($i + 1, $queries[$i], $styles[$i], $fg && @$fg->errf["q$i"]);
     echo "</tbody></table>\n";
     echo '<tr><td></td><td class="lentry">',
         Ht::js_button("Add search", "hotcrp_graphs.formulas_add_qrow()"),
@@ -164,7 +165,6 @@ if ($Graph == "formula") {
     echo '<div class="g"></div>';
     echo Ht::submit(null, "Graph");
     echo '</div></form>';
-    $Conf->echoScript("hotcrp_graphs.formulas_qrow=" . json_encode(formulas_qrow('$', "", "by-tag", false)));
 }
 
 

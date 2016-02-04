@@ -1059,7 +1059,7 @@ img.placthook {
 	background-image: url(../images/sprite.png?2);
 	background-position: -40px 0;
 }
-img.sdlimg {
+img.sdlimg, img.sdlimgsp {
 	position: relative;
 	bottom: -4px;
 	margin-top: -4px;
@@ -1605,7 +1605,7 @@ th.pll {
 	text-align: left;
 }
 
-th.plc, th.pl_id, th.pl_logid, th.pl_sel, th.pl_confselector,
+th.plc, th.plrd, th.pl_id, th.pl_logid, th.pl_sel, th.pl_confselector,
 th.pl_revtype, th.pl_revstat, th.pl_topicscore, th.pl_desirability,
 th.pl_score, th.pl_uscores, th.pl_tag, th.pl_tagval, th.pl_formula {
 	text-align: center;
@@ -1615,7 +1615,7 @@ th.plr {
 	text-align: right;
 }
 
-td.plr, td.pl_id, td.pl_logid, td.pl_sel,
+td.plr, td.plrd, td.pl_id, td.pl_logid, td.pl_sel,
 td.pl_revpref, td.pl_topicscore, td.pl_desirability,
 td.pl_tag, td.pl_tagval, td.pl_formula {
 	text-align: right;
@@ -2851,8 +2851,7 @@ td.mhcb {
 .fold60c .fx60, .fold60o .fn60,
 .fold61c .fx61, .fold61o .fn61,
 .fold99c .fx99, .fold99o .fn99,
-.hidden,
-tr.aueditc > td {
+.hidden {
 	display: none;
 }
 .foldc:hover .fhn_ib, .foldo:hover .fhx_ib {
@@ -3038,7 +3037,7 @@ table.lognav td#newest, table.lognav td#newer, table.lognav td#newnum {
 	fill: rgba(221, 216, 85, 0.3);
 }
 .gcdf.greentag, .gdot.greentag, .gbar.greentag, .gbox.greentag {
-	stroke: rgba(13, 185, 13, 0.8);
+	stroke: rgba(72, 185, 72, 0.8);
 }
 .gdot.greentag, .gbar.greentag, .gbox.greentag, .glab.greentag {
 	fill: rgba(13, 195, 13, 0.2);

@@ -74,7 +74,7 @@ function hoturl_defaults($options = array()) {
 }
 
 function hoturl_site_relative($page, $options = null) {
-    global $Me, $paperTable, $_hoturl_defaults;
+    global $Conf, $Me, $_hoturl_defaults;
     $t = $page . Navigation::php_suffix();
     // parse options, separate anchor; see also redirectSelf
     $anchor = "";
@@ -97,10 +97,10 @@ function hoturl_site_relative($page, $options = null) {
                 $options .= "&amp;" . $k . "=" . $v;
     // append forceShow to links to same paper if appropriate
     $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
-    if ($is_paper_page && @$paperTable && $paperTable->prow
-        && preg_match($are . 'p=' . $paperTable->prow->paperId . $zre, $options)
-        && $Me->can_administer($paperTable->prow)
-        && $paperTable->prow->has_conflict($Me)
+    if ($is_paper_page && $Conf->paper
+        && preg_match($are . 'p=' . $Conf->paper->paperId . $zre, $options)
+        && $Me->can_administer($Conf->paper)
+        && $Conf->paper->has_conflict($Me)
         && !preg_match($are . 'forceShow=/', $options))
         $options .= "&amp;forceShow=1";
     // create slash-based URLs if appropriate
@@ -308,7 +308,7 @@ function reviewType($paperId, $row, $long = 0) {
         return "";
 }
 
-function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
+function documentDownload($doc, $dlimg_class = "dlimg", $text = null, $no_size = false) {
     global $Conf;
     $p = HotCRPDocument::url($doc);
     $finalsuffix = ($doc->documentType == DTYPE_FINAL ? "f" : "");
@@ -322,7 +322,7 @@ function documentDownload($doc, $dlimg_class = "dlimg", $text = null) {
         $x = "<a href=\"$p\" class=\"q\">" . Ht::img("generic${finalsuffix}${imgsize}.png", "[Download]", $dlimg_class);
     if ($text)
         $x .= $sp . $text;
-    if (isset($doc->size) && $doc->size > 0) {
+    if (isset($doc->size) && $doc->size > 0 && !$no_size) {
         $x .= "&nbsp;<span class=\"dlsize\">" . ($text ? "(" : "");
         if ($doc->size > 921)
             $x .= round($doc->size / 1024);
@@ -445,10 +445,10 @@ class SessionList {
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
-        $l = @$lists[$idx];
+        $l = get($lists, $idx);
         if ($l && $l->cid == ($Me ? $Me->contactId : 0)) {
             $l = clone $l;
-            if (is_string(@$l->ids))
+            if (is_string($l->ids))
                 $l->ids = json_decode($l->ids);
             $l->listno = (int) $idx;
             return $l;
@@ -458,8 +458,8 @@ class SessionList {
     static function change($idx, $delta, $replace = false) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
-        $l = @$lists[$idx];
-        if ($l && @$l->cid == ($Me ? $Me->contactId : 0) && !$replace)
+        $l = get($lists, $idx);
+        if ($l && $l->cid == ($Me ? $Me->contactId : 0) && !$replace)
             $l = clone $l;
         else
             $l = (object) array();
@@ -475,15 +475,14 @@ class SessionList {
         $cid = $Me ? $Me->contactId : 0;
         $oldest = $empty = 0;
         for ($i = 1; $i <= 8; ++$i)
-            if (($l = @$lists[$i])) {
-                if ($listid && @($l->listid == $listid) && $l->cid == $cid)
+            if (($l = get($lists, $i))) {
+                if (!isset($l->timestamp))
+                    error_log("missing timestamp " . json_encode($l));
+                if ($listid && $l->listid == $listid && $l->cid == $cid)
                     return $i;
-                else if (!$oldest || @($lists[$oldest]->timestamp < $l->timestamp))
+                else if (!$oldest || $l->timestamp < $lists[$oldest]->timestamp)
                     $oldest = $i;
-            } else if (@$_REQUEST["ls"] === (string) $i
-                       || @$_COOKIE["hotcrp_ls"] === (string) $i)
-                return $i;
-            else if (!$empty)
+            } else if (!$empty)
                 $empty = $i;
         return $empty ? : $oldest;
     }
@@ -561,14 +560,14 @@ class SessionList {
         return self::$requested_list;
     }
     static public function active($listtype = null, $id = null) {
-        global $CurrentProw, $Me, $Now;
+        global $Conf, $Me, $Now;
 
         // check current-list cache
         if (!$listtype && self::$active_list)
             return self::$active_list;
         else if (!$listtype) {
             $listtype = "p";
-            $id = $CurrentProw ? $CurrentProw->paperId : null;
+            $id = $Conf->paper ? $Conf->paper->paperId : null;
         }
         if (!$id)
             return null;

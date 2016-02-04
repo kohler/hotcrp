@@ -47,8 +47,8 @@ function errorMsgExit($msg) {
 
 // collect paper ID
 function loadRows() {
-    global $Conf, $Me, $CurrentProw, $prow, $paperTable, $editRrowLogname, $Error;
-    $CurrentProw = $prow = PaperTable::paperRow($whyNot);
+    global $Conf, $Me, $prow, $paperTable, $editRrowLogname, $Error;
+    $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
     $paperTable = new PaperTable($prow);
@@ -185,7 +185,7 @@ if (isset($_REQUEST["deletereview"]) && check_post()
         if ($result) {
             $Me->log_activity("$editRrowLogname deleted", $prow);
             $Conf->confirmMsg("Deleted review.");
-            if (defval($paperTable->editrrow, "reviewToken", 0) != 0)
+            if ($paperTable->editrrow->reviewToken != 0)
                 $Conf->update_rev_tokens_setting(true);
 
             // perhaps a delegatee needs to redelegate
@@ -271,13 +271,13 @@ function refuseReview() {
     $rrow = $paperTable->editrrow;
     $hadToken = defval($rrow, "reviewToken", 0) != 0;
 
-    $result = Dbl::qe_raw("delete from PaperReview where reviewId=$rrow->reviewId");
+    $result = Dbl::qe("delete from PaperReview where reviewId=$rrow->reviewId");
     if (!$result)
         return;
     $reason = defval($_REQUEST, "reason", "");
     if ($reason == "Optional explanation")
         $reason = "";
-    $result = Dbl::qe_raw("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($rrow->paperId, $rrow->contactId, $rrow->requestedBy, '" . sqlq(trim($reason)) . "')");
+    $result = Dbl::qe("insert into PaperReviewRefused set paperId={$rrow->paperId}, contactId={$rrow->contactId}, requestedBy={$rrow->requestedBy}, reason=?", trim($reason));
     if (!$result)
         return;
 

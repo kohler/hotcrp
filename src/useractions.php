@@ -10,7 +10,7 @@ class UserActions {
         while ($result && ($Acct = $result->fetch_object("Contact"))) {
             if ($dopassword)
                 $Acct->change_password(null, null, Contact::CHANGE_PASSWORD_NO_CDB);
-            if ($sendtype && !$Acct->is_password_disabled())
+            if ($sendtype && !$Acct->disabled)
                 $Acct->sendAccountInfo($sendtype, false);
             else if ($sendtype)
                 $j->warnings[] = "Not sending mail to disabled account " . htmlspecialchars($Acct->email) . ".";

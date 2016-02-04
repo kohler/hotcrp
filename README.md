@@ -9,8 +9,7 @@ smart paper search and an extensive tagging facility. It is widely
 used in computer science conferences and for internal review processes
 at several large companies.
 
-HotCRP also has weaknesses. Complicated multitrack conferences (with
-different deadlines per track) should use other software.
+Multitrack conferences with per-track deadlines should use other software.
 
 HotCRP is the open-source version of the software running on
 [hotcrp.com](https://hotcrp.com). If you want to run HotCRP without setting
@@ -28,9 +27,9 @@ software:
   - Including MySQL and GD support
 * MySQL version 5 or higher, http://mysql.org/
 * The zip compressor, http://www.info-zip.org/
-* pdftohtml, http://poppler.freedesktop.org/ (Only required for format
-  checking. Recent pdftohtml versions are suitable for HotCRP; most versions
-  released before 2013 aren’t.)
+* Poppler’s version of pdftohtml, http://poppler.freedesktop.org/ (Only
+  required for format checking. Recent pdftohtml versions are suitable for
+  HotCRP; most versions released before 2013 aren’t.)
 
 Apache is preloaded on most Linux distributions. You may need to install
 additional packages for PHP and MySQL, such as:
@@ -47,10 +46,6 @@ additional packages for PHP and MySQL, such as:
 You may need to restart the Apache web server after installing these
 packages (`sudo apachectl graceful` or `sudo apache2ctl graceful`). If
 using nginx, you will need the php-fpm package.
-
-**Load notes**: HotCRP requires a system with at least 256MB of
-memory, more if paper format checking is used and submission load is
-expected to be high.
 
 Installation
 ------------

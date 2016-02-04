@@ -80,10 +80,9 @@ define("CAPTYPE_CHANGEEMAIL", 2);
 
 define("ALWAYS_OVERRIDE", 9999);
 
-global $OK, $Now, $CurrentProw, $ConfSitePATH;
+global $OK, $Now, $ConfSitePATH;
 $OK = 1;
 $Now = time();
-$CurrentProw = null;
 $ConfSitePATH = null;
 
 
@@ -121,6 +120,7 @@ class SiteLoader {
         "ReviewForm" => "src/review.php",
         "ReviewSearchMatcher" => "src/papersearch.php",
         "TagInfo" => "lib/tagger.php",
+        "TextPaperOption" => "src/paperoption.php",
         "XlsxGenerator" => "lib/xlsx.php",
         "ZipDocument" => "lib/filer.php"
     ];

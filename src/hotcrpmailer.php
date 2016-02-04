@@ -32,16 +32,16 @@ class HotCRPMailer extends Mailer {
     function reset($recipient = null, $row = null, $rest = array()) {
         global $Me, $Opt;
         parent::reset($recipient, $rest);
-        $this->permissionContact = defval($rest, "permissionContact", $recipient);
+        $this->permissionContact = get($rest, "permissionContact", $recipient);
         foreach (array("requester", "reviewer", "other") as $k)
-            if (($v = @$rest[$k . "_contact"]))
+            if (($v = get($rest, $k . "_contact")))
                 $this->contacts[$k] = $v;
         $this->row = $row;
         foreach (array("rrow", "reviewNumber", "comment_row", "newrev_since") as $k)
-            $this->$k = @$rest[$k];
+            $this->$k = get($rest, $k);
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
-        if (@$rest["no_send"])
+        if (get($rest, "no_send"))
             $this->no_send = true;
         // Infer reviewer contact from rrow/comment_row
         if (!@$this->contacts["reviewer"] && $this->rrow && @$this->rrow->reviewEmail)
@@ -49,9 +49,9 @@ class HotCRPMailer extends Mailer {
         else if (!@$this->contacts["reviewer"] && $this->comment_row && @$this->comment_row->reviewEmail)
             $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
         // Do not put passwords in email that is cc'd elsewhere
-        if ((!$Me || !$Me->privChair || @$Opt["chairHidePasswords"])
-            && (@$rest["cc"] || @$rest["bcc"])
-            && (@$rest["sensitivity"] === null || @$rest["sensitivity"] === "display"))
+        if ((!$Me || !$Me->privChair || get($Opt, "chairHidePasswords"))
+            && (get($rest, "cc") || get($rest, "bcc"))
+            && (get($rest, "sensitivity") === null || get($rest, "sensitivity") === "display"))
             $this->sensitivity = "high";
     }
 

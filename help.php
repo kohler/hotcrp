@@ -1007,8 +1007,8 @@ merit among reviewers with high Reviewer expertise.</p>
 <p>To display a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=show%3avar%28OveMer%29") . "\">show:var(OveMer)</a>” (show
 the variance in Overall merit scores).
-Add “<a href=\"" . hoturl("search", "q=show%3avar%28OveMer%29+show%3astatistics") . "\">show:statistics</a>” to show summary statistics over all papers.
-You can also <a href=\"" . hoturl("graph", "g=formula") . "\">graph formulas</a>.
+Add “<a href=\"" . hoturl("search", "q=show%3avar%28OveMer%29+show%3astatistics") . "\">show:statistics</a>” to show summary statistics over all papers,
+and <a href=\"" . hoturl("graph", "g=formula") . "\">graph formulas</a>.
 To search for a formula, use a search term such as “<a href=\""
              . hoturl("search", "q=formula%3avar%28OveMer%29%3e0.5") . "\">formula:var(OveMer)>0.5</a>”
 (select papers with variance in Overall merit greater than 0.5).
@@ -1033,9 +1033,9 @@ reviewers with the “#heavy” tag:</p>
 
 <p>(“re:#heavy + 1” equals 2 for #heavy reviews and 1 for others.)</p>
 
-<p>Formulas work better for numeric scores, but you can use them
-for alphabetical scores; for instance, assuming a
-Confidence score with choices X, Y, and Z:</p>
+<p>Formulas work better for numeric scores, but you can use them for letter
+scores too. HotCRP uses alphabetical order for letter scores, so the “min” of
+scores A, B, and D is A. For instance:</p>
 
 <blockquote>count(confidence=X)</blockquote>");
 
@@ -1107,8 +1107,8 @@ Use an aggregate function to calculate a property over all review scores.</p>");
     _alternateRow("", "stddev_samp(<em>e</em>), var_samp(<em>e</em>)", "Sample standard deviation, sample variance");
     _alternateRow("", "any(<em>e</em>)", "True if any of the reviews have <em>e</em> true");
     _alternateRow("", "all(<em>e</em>)", "True if all of the reviews have <em>e</em> true");
-    _alternateRow("", "atminof(<em>x</em>, <em>e</em>)", "Value of <em>e</em> when <em>x</em> is minimized");
-    _alternateRow("", "atmaxof(<em>x</em>, <em>e</em>)", "Value of <em>e</em> when <em>x</em> is maximized");
+    _alternateRow("", "argmin(<em>x</em>, <em>e</em>)", "Value of <em>x</em> when <em>e</em> is minimized");
+    _alternateRow("", "argmax(<em>x</em>, <em>e</em>)", "Value of <em>x</em> when <em>e</em> is maximized");
     _alternateRow("", "my(<em>e</em>)", "Calculate <em>e</em> for your review");
     echo "</table>\n";
 

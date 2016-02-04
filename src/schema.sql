@@ -55,7 +55,6 @@ CREATE TABLE `ContactInfo` (
   `country` varbinary(256) DEFAULT NULL,
   `password` varbinary(2048) NOT NULL,
   `passwordTime` int(11) NOT NULL DEFAULT '0',
-  `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0',
   `passwordUseTime` int(11) NOT NULL DEFAULT '0',
   `collaborators` varbinary(8192) DEFAULT NULL,
   `creationTime` int(11) NOT NULL DEFAULT '0',
@@ -399,6 +398,7 @@ CREATE TABLE `ReviewRequest` (
   `email` varchar(120) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   `requestedBy` int(11) NOT NULL,
+  `reviewRound` int(1) DEFAULT NULL,
   UNIQUE KEY `paperEmail` (`paperId`,`email`),
   KEY `paperId` (`paperId`),
   KEY `requestedBy` (`requestedBy`)
@@ -450,7 +450,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 122);
+insert into Settings (name, value) values ('allowPaperOption', 127);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

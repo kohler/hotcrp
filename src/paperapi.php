@@ -36,7 +36,7 @@ class PaperApi {
         if ($type == "manager" ? $user->privChair : $user->can_administer($prow)) {
             if (!$pc || ($pc->isPC && $pc->can_accept_review_assignment($prow))) {
                 $user->assign_paper_pc($prow, $type, $pc);
-                $j = ["ok" => true, "result" => $pc ? $pc->name_html() : "None"];
+                $j = ["ok" => true, "result" => $pc ? $user->name_html_for($pc) : "None"];
                 if ($user->can_view_reviewer_tags($prow)) {
                     $tagger = new Tagger($user);
                     $j["color_classes"] = $pc ? $tagger->viewable_color_classes($pc->contactTags) : "";

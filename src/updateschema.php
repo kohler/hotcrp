@@ -913,6 +913,21 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql_raw("update PaperReview r, Paper p, PaperReview rq set r.reviewNeedsSubmit=0 where p.paperId=r.paperId and p.paperId=rq.paperId and p.timeSubmitted<=0 and r.reviewType=" . REVIEW_SECONDARY . " and r.contactId=rq.requestedBy and rq.reviewType<" . REVIEW_SECONDARY . " and rq.reviewSubmitted is not null")
         && Dbl::ql_raw("update PaperReview r, Paper p, PaperReview rq set r.reviewNeedsSubmit=-1 where p.paperId=r.paperId and p.paperId=rq.paperId and p.timeSubmitted<=0 and r.reviewType=" . REVIEW_SECONDARY . " and r.contactId=rq.requestedBy and rq.reviewType<" . REVIEW_SECONDARY . " and r.reviewNeedsSubmit=0"))
         $Conf->update_schema_version(122);
+    if ($Conf->sversion == 122
+        && Dbl::ql("alter table ReviewRequest add `reviewRound` int(1) DEFAULT NULL"))
+        $Conf->update_schema_version(123);
+    if ($Conf->sversion == 123
+        && Dbl::ql("update ContactInfo set disabled=1 where password='' and email regexp '^anonymous[0-9]*\$'"))
+        $Conf->update_schema_version(124);
+    if ($Conf->sversion == 124
+        && Dbl::ql("update ContactInfo set password='' where password='*' or passwordIsCdb"))
+        $Conf->update_schema_version(125);
+    if ($Conf->sversion == 125
+        && Dbl::ql("alter table ContactInfo drop column `passwordIsCdb`"))
+        $Conf->update_schema_version(126);
+    if ($Conf->sversion == 126
+        && Dbl::ql("update ContactInfo set disabled=1, password='' where email regexp '^anonymous[0-9]*\$'"))
+        $Conf->update_schema_version(127);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

@@ -4,19 +4,20 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class ReviewTimes {
-
+    private $contact;
     private $r = array();
     private $dl = array();
 
-    public function __construct($rounds = null) {
-        global $Conf, $Me;
+    public function __construct($user, $rounds = null) {
+        global $Conf;
+        $this->contact = $user;
         $qp = "select PaperReview.contactId, timeRequested, reviewSubmitted, reviewRound";
-        if (!$Me->privChair)
-            $qp .= ", conflictType from PaperReview left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$Me->contactId)";
+        if (!$this->contact->privChair)
+            $qp .= ", conflictType from PaperReview left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=" . $this->contact->contactId . ")";
         else
             $qp .= ", 0 conflictType from PaperReview";
         $qp .= " where reviewType>" . REVIEW_PC . " or (reviewType=" . REVIEW_PC . " and timeRequested>0 and reviewSubmitted>0)";
-        if (!$Me->privChair)
+        if (!$this->contact->privChair)
             $qp .= " and coalesce(conflictType,0)=0";
         $qa = array();
         if ($rounds) {
@@ -35,10 +36,10 @@ class ReviewTimes {
         }
 
         // maybe hide who's who
-        if (!$Me->can_view_aggregated_review_identity()) {
+        if (!$this->contact->can_view_aggregated_review_identity()) {
             $who = $r = array();
             foreach ($this->r as $cid => $data)
-                if ($cid === "conflicts" || $cid == $Me->contactId)
+                if ($cid === "conflicts" || $cid == $this->contact->contactId)
                     $r[$cid] = $data;
                 else {
                     do {
@@ -62,18 +63,34 @@ class ReviewTimes {
         if (count($nass))
             $heavy_boundary = 0.66 * $nass[(int) (0.8 * count($nass))];
 
+        $contacts = pcMembers();
+        $need_contacts = [];
+        foreach ($this->r as $cid => $x)
+            if (!isset($contacts[$cid]) && ctype_digit($cid))
+                $need_contacts[] = $cid;
+        if (count($need_contacts)) {
+            $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
+            while ($result && ($row = $result->fetch_object("Contact")))
+                $contacts[$row->contactId] = $row;
+        }
+
         $users = array();
-        $pcm = pcMembers();
+        $tagger = null;
+        if ($this->contact->can_view_reviewer_tags())
+            $tagger = new Tagger($this->contact);
         foreach ($this->r as $cid => $x)
             if ($cid != "conflicts") {
                 $users[$cid] = $u = (object) array();
-                if (($p = @$pcm[$cid]))
+                $p = get($contacts, $cid);
+                if ($p)
                     $u->name = Text::name_text($p);
                 if (count($x) < $heavy_boundary)
                     $u->light = true;
+                if ($p && $p->contactTags
+                    && ($t = $tagger->viewable_color_classes($p->contactTags)))
+                    $u->color_classes = $t;
             }
 
         return (object) array("reviews" => $this->r, "deadlines" => $this->dl, "users" => $users);
     }
-
 }

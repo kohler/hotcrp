@@ -25,8 +25,6 @@ class Contact {
     public $lastName = "";
     public $unaccentedName = "";
     public $nameAmbiguous = null;
-    private $name_html_ = null;
-    private $reviewer_html_ = null;
     public $email = "";
     public $preferredEmail = "";
     public $sorter = "";
@@ -40,7 +38,6 @@ class Contact {
     private $password = "";
     private $passwordTime = 0;
     private $passwordUseTime = 0;
-    private $passwordIsCdb;
     private $contactdb_user_ = false;
 
     public $disabled = false;
@@ -50,6 +47,7 @@ class Contact {
     private $updateTime = 0;
     private $data = null;
     private $topic_interest_map_ = null;
+    private $name_for_map_ = array();
     public $defaultWatch = WATCH_COMMENT;
 
     // Roles
@@ -121,7 +119,6 @@ class Contact {
             $this->unaccentedName = $name->unaccentedName;
         else
             $this->unaccentedName = Text::unaccented_name($name);
-        $this->name_html_ = $this->reviewer_html_ = null;
         foreach (array("email", "preferredEmail", "affiliation",
                        "voicePhoneNumber", "country") as $k)
             if (isset($user->$k))
@@ -179,10 +176,6 @@ class Contact {
             $this->unaccentedName = Text::unaccented_name($this->firstName, $this->lastName);
         self::set_sorter($this);
         $this->password = (string) $this->password;
-        if ($this->contactDbId && !$this->contactId)
-            $this->passwordIsCdb = true;
-        else
-            $this->passwordIsCdb = (int) $this->passwordIsCdb != 0;
         if (isset($this->disabled))
             $this->disabled = !!$this->disabled;
         foreach (["defaultWatch", "passwordTime", "passwordUseTime",
@@ -411,17 +404,30 @@ class Contact {
         global $Opt, $Now;
         if (!($cdb = self::contactdb()) || !$this->has_database_account())
             return false;
-        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles
+        $update_password = null;
+        $update_passwordTime = 0;
+        if (!$this->disabled
+            && $this->password
+            && ($this->password[0] !== " " || $this->password[1] === "\$")
+            && $this->passwordTime) {
+            $update_password = $this->password;
+            $update_passwordTime = $this->passwordTime;
+        }
+
+        $idquery = Dbl::format_query($cdb, "select ContactInfo.contactDbId, Conferences.confid, roles, password
             from ContactInfo
             left join Conferences on (Conferences.`dbname`=?)
             left join Roles on (Roles.contactDbId=ContactInfo.contactDbId and Roles.confid=Conferences.confid)
             where email=?", $Opt["dbName"], $this->email);
         $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
         if (!$row) {
-            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
+            Dbl::ql($cdb, "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?, password=?, passwordTime=? on duplicate key update firstName=firstName", $this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators, $update_password, $update_passwordTime);
             $row = Dbl::fetch_first_row(Dbl::ql_raw($cdb, $idquery));
             $this->contactdb_user_ = false;
         }
+
+        if ($row && $row[3] === null && $update_password)
+            Dbl::ql($cdb, "update ContactInfo set password=?, passwordTime=? where contactDbId=? and password is null", $update_password, $update_passwordTime, $row[0]);
 
         if ($row && $row[1] && (int) $row[2] != $this->all_roles()) {
             $result = Dbl::ql($cdb, "insert into Roles set contactDbId=?, confid=?, roles=?, updated_at=? on duplicate key update roles=values(roles), updated_at=values(updated_at)", $row[0], $row[1], $this->all_roles(), $Now);
@@ -473,10 +479,6 @@ class Contact {
         return $this->contactId <= 0 && !$this->capabilities && !$this->email;
     }
 
-    function is_password_disabled() {
-        return $this->disabled || $this->password === "";
-    }
-
     function name_text() {
         if ($this->firstName === "" || $this->lastName === "")
             return $this->firstName . $this->lastName;
@@ -484,27 +486,46 @@ class Contact {
             return $this->firstName . " " . $this->lastName;
     }
 
-    function name_html() {
-        if ($this->name_html_ === null)
-            $this->name_html_ = Text::name_html($this);
-        return $this->name_html_;
-    }
+    private function name_for($pfx, $x) {
+        $cid = is_object($x) ? $x->contactId : $x;
+        $key = $pfx . $cid;
+        if (isset($this->name_for_map_[$key]))
+            return $this->name_for_map_[$key];
 
-    function reviewer_html() {
-        if ($this->reviewer_html_ === null) {
-            global $Me;
-            $this->reviewer_html_ = $this->name_html();
-            if ($Me->isPC && $this->contactTags) {
-                $tagger = new Tagger;
-                if (($viewable = $tagger->viewable($this->contactTags))
-                    && ($colors = TagInfo::color_classes($viewable))) {
-                    if (TagInfo::classes_have_colors($colors))
-                        $colors = "tagcolorspan " . $colors;
-                    $this->reviewer_html_ = '<span class="' . $colors . '">' . $this->reviewer_html_ . '</span>';
-                }
+        $pcm = pcMembers();
+        if (isset($pcm[$cid]))
+            $x = $pcm[$cid];
+        else if (!is_object($x) || !isset($x->email)
+                 || !isset($x->firstName) || !isset($x->lastName))
+            $x = self::find_by_id($cid);
+
+        if ($pfx !== "t")
+            $n = Text::name_html($x);
+        else
+            $n = Text::name_text($x);
+
+        if ($pfx === "r" && isset($x->contactTags) && $x->contactTags) {
+            $tagger = new Tagger($this);
+            if (($colors = $tagger->viewable_color_classes($x->contactTags))) {
+                if (TagInfo::classes_have_colors($colors))
+                    $colors = "tagcolorspan " . $colors;
+                $n = '<span class="' . $colors . '">' . $n . '</span>';
             }
         }
-        return $this->reviewer_html_;
+
+        return ($this->name_for_map_[$key] = $n);
+    }
+
+    function name_html_for($x) {
+        return $this->name_for("", $x);
+    }
+
+    function name_text_for($x) {
+        return $this->name_for("t", $x);
+    }
+
+    function reviewer_html_for($x) {
+        return $this->name_for($this->isPC ? "r" : "", $x);
     }
 
     function has_email() {
@@ -513,7 +534,8 @@ class Contact {
 
     static function is_anonymous_email($email) {
         // see also PaperSearch, Mailer
-        return preg_match('/\Aanonymous\d*\z/', $email);
+        return substr($email, 0, 9) === "anonymous"
+            && (strlen($email) === 9 || ctype_digit(substr($email, 9)));
     }
 
     function is_anonymous_user() {
@@ -530,7 +552,7 @@ class Contact {
 
     function is_admin_force() {
         return $this->privChair
-            && ($fs = @$_REQUEST["forceShow"])
+            && ($fs = get($_REQUEST, "forceShow"))
             && $fs != "0";
     }
 
@@ -700,7 +722,7 @@ class Contact {
 
     private function _save_assign_field($k, $v, Contact_Update $cu) {
         global $Conf;
-        $fieldtype = (int) @self::$save_fields[$k];
+        $fieldtype = get_i(self::$save_fields, $k);
         if ($fieldtype & 2)
             $v = simplify_whitespace($v);
         else if ($fieldtype & 1)
@@ -720,7 +742,7 @@ class Contact {
         $inserting = !$this->contactId;
         $old_roles = $this->roles;
         $old_email = $this->email;
-        $different_email = strtolower($cj->email) !== @strtolower($old_email);
+        $different_email = strtolower($cj->email) !== strtolower((string) $old_email);
         $cu = new Contact_Update($inserting, $different_email);
 
         $aupapers = null;
@@ -754,7 +776,7 @@ class Contact {
         $old_datastr = $this->data_str();
         $data = (object) array();
         foreach (array("address", "city", "state", "zip") as $k)
-            if (($x = @$cj->$k)) {
+            if (isset($cj->$k) && ($x = $cj->$k)) {
                 while (is_array($x) && $x[count($x) - 1] === "")
                     array_pop($x);
                 $data->$k = $x ? : null;
@@ -771,11 +793,11 @@ class Contact {
         // Follow
         if (isset($cj->follow)) {
             $w = 0;
-            if (@$cj->follow->reviews)
+            if (get($cj->follow, "reviews"))
                 $w |= WATCH_COMMENT;
-            if (@$cj->follow->allreviews)
+            if (get($cj->follow, "allreviews"))
                 $w |= WATCH_ALLCOMMENTS;
-            if (@$cj->follow->allfinal)
+            if (get($cj->follow, "allfinal"))
                 $w |= (WATCHTYPE_FINAL_SUBMIT << WATCHSHIFT_ALL);
             $this->_save_assign_field("defaultWatch", $w, $cu);
         }
@@ -825,11 +847,11 @@ class Contact {
         // Roles
         $roles = 0;
         if (isset($cj->roles)) {
-            if (@$cj->roles->pc)
+            if (get($cj->roles, "pc"))
                 $roles |= Contact::ROLE_PC;
-            if (@$cj->roles->chair)
+            if (get($cj->roles, "chair"))
                 $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
-            if (@$cj->roles->sysadmin)
+            if (get($cj->roles, "sysadmin"))
                 $roles |= Contact::ROLE_ADMIN;
             if ($roles !== $old_roles)
                 $this->save_roles($roles, $actor);
@@ -848,7 +870,8 @@ class Contact {
             if (!$cdbu) {
                 $q = "insert into ContactInfo set firstName=?, lastName=?, email=?, affiliation=?, country=?, collaborators=?";
                 $qv = array($this->firstName, $this->lastName, $this->email, $this->affiliation, $this->country, $this->collaborators);
-                if ($this->password && ($this->password[0] !== " " || substr($this->password, 0, 2) === " \$")) {
+                if ($this->password !== ""
+                    && ($this->password[0] !== " " || $this->password[1] === "\$")) {
                     $q .= ", password=?";
                     $qv[] = $this->password;
                 }
@@ -872,8 +895,8 @@ class Contact {
         }
 
         // Password
-        if (@$cj->new_password)
-            $this->change_password(@$cj->old_password, $cj->new_password, 0);
+        if (isset($cj->new_password))
+            $this->change_password(get($cj, "old_password"), $cj->new_password, 0);
 
         // Beware PC cache
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
@@ -881,9 +904,9 @@ class Contact {
 
         // Mark creation and activity
         if ($inserting) {
-            if ($send && !$this->is_password_disabled())
+            if ($send && !$this->disabled)
                 $this->sendAccountInfo("create", false);
-            $type = $this->is_password_disabled() ? "disabled " : "";
+            $type = $this->disabled ? "disabled " : "";
             if ($Me && $Me->has_email() && $Me->email !== $this->email)
                 $Conf->log("Created {$type}account ($Me->email)", $this);
             else
@@ -914,11 +937,11 @@ class Contact {
             foreach ($row->author_list() as $au)
                 if (strcasecmp($au->email, $email) == 0) {
                     $aupapers[] = $row->paperId;
-                    if ($reg && !@$reg->firstName && $au->firstName)
+                    if ($reg && $au->firstName && !get($reg, "firstName"))
                         $reg->firstName = $au->firstName;
-                    if ($reg && !@$reg->lastName && $au->lastName)
+                    if ($reg && $au->lastName && !get($reg, "lastName"))
                         $reg->lastName = $au->lastName;
-                    if ($reg && !@$reg->affiliation && $au->affiliation)
+                    if ($reg && $au->affiliation && !get($reg, "affiliation"))
                         $reg->affiliation = $au->affiliation;
                 }
         return $aupapers;
@@ -997,10 +1020,8 @@ class Contact {
         global $Conf, $Now;
         if ($cdbu && ($cdbu = $cdbu->contactdb_user())
             && $cdbu->allow_contactdb_password()) {
-            $cu->qv["password"] = $this->password = $cdbu->password;
+            $cu->qv["password"] = $this->password = "";
             $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
-            if ($Conf->sversion >= 97)
-                $cu->qv["passwordIsCdb"] = 1;
         } else if (!self::external_login()) {
             $cu->qv["password"] = $this->password = self::random_password();
             $cu->qv["passwordTime"] = $this->passwordTime = $Now;
@@ -1012,7 +1033,7 @@ class Contact {
         global $Conf, $Me, $Opt, $Now;
         if (is_array($reg))
             $reg = (object) $reg;
-        assert(is_string(@$reg->email));
+        assert(is_string($reg->email));
         $email = trim($reg->email);
         assert($email !== "");
 
@@ -1021,26 +1042,26 @@ class Contact {
             return $acct;
 
         // validate email, check contactdb
-        if (!@$reg->no_validate_email && !validate_email($email))
+        if (!get($reg, "no_validate_email") && !validate_email($email))
             return null;
         $cdbu = Contact::contactdb_find_by_email($email);
-        if (@$reg->only_if_contactdb && !$cdbu)
+        if (get($reg, "only_if_contactdb") && !$cdbu)
             return null;
 
         $cj = (object) array();
         foreach (array("firstName", "lastName", "email", "affiliation",
                        "collaborators", "preferredEmail") as $k)
-            if (($v = $cdbu && @$cdbu->$k ? $cdbu->$k : @$reg->$k))
+            if (($v = $cdbu && $cdbu->$k ? $cdbu->$k : get($reg, $k)))
                 $cj->$k = $v;
-        if (($v = $cdbu && @$cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : @$reg->voicePhoneNumber))
+        if (($v = $cdbu && $cdbu->voicePhoneNumber ? $cdbu->voicePhoneNumber : get($reg, "voicePhoneNumber")))
             $cj->phone = $v;
-        if (($cdbu && $cdbu->disabled) || @$reg->disabled)
+        if (($cdbu && $cdbu->disabled) || get($reg, "disabled"))
             $cj->disabled = true;
 
         $acct = new Contact;
         if ($acct->save_json($cj, null, $send)) {
             if ($Me && $Me->privChair) {
-                $type = $acct->is_password_disabled() ? "disabled " : "";
+                $type = $acct->disabled ? "disabled " : "";
                 $Conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");
             }
             return $acct;
@@ -1054,7 +1075,7 @@ class Contact {
         $result = Dbl::qe("select contactId from ContactInfo where email=?", trim($email));
         $row = edb_row($result);
         Dbl::free($result);
-        return $row ? $row[0] : false;
+        return $row ? (int) $row[0] : false;
     }
 
     static function email_by_id($id) {
@@ -1105,7 +1126,8 @@ class Contact {
     //     change local password and update time;
 
     public static function valid_password($input) {
-        return $input && trim($input) === $input && $input !== "*";
+        return $input !== "" && $input !== "0" && $input !== "*"
+            && trim($input) === $input;
     }
 
     public static function random_password($length = 14) {
@@ -1117,28 +1139,30 @@ class Contact {
         return opt("safePasswords") < 1;
     }
 
-    public function has_password() {
-        return $this->password !== "" && $this->password !== "*";
-    }
-
     public function allow_contactdb_password() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !opt("contactdb_noPasswords");
+        return $cdbu && $cdbu->password;
     }
 
     private function prefer_contactdb_password() {
         $cdbu = $this->contactdb_user();
-        return $cdbu && $cdbu->password && !opt("contactdb_noPasswords")
-            && (!$this->has_database_account() || $this->password === "*"
-                || $this->passwordIsCdb);
+        return $cdbu && $cdbu->password
+            && (!$this->has_database_account() || $this->password === "");
     }
 
     public function plaintext_password() {
-        if ($this->password !== "" && $this->password !== "*"
-            && $this->password[0] !== " ")
-            return $this->password;
-        else
+        // Return the currently active plaintext password. This might not
+        // equal $this->password because of the cdb.
+        if ($this->password === "") {
+            if ($this->contactId
+                && ($cdbu = $this->contactdb_user()))
+                return $cdbu->plaintext_password();
+            else
+                return false;
+        } else if ($this->password[0] === " ")
             return false;
+        else
+            return $this->password;
     }
 
 
@@ -1206,9 +1230,9 @@ class Contact {
         $safe = opt($iscdb ? "contactdb_safePasswords" : "safePasswords");
         if ($safe < 1
             || ($method = self::password_hash_method()) === false
-            || ($hash && $safe == 1 && @$hash[0] !== " "))
+            || ($hash !== "" && $safe == 1 && $hash[0] !== " "))
             return false;
-        else if (!$hash || @$hash[0] !== " ")
+        else if ($hash === "" || $hash[0] !== " ")
             return true;
         else if (is_int($method))
             return $hash[1] !== "\$"
@@ -1237,7 +1261,8 @@ class Contact {
     public function check_password($input) {
         global $Conf, $Now;
         assert(!self::external_login());
-        if ($this->contactId && $this->is_password_disabled())
+        if (($this->contactId && $this->disabled)
+            || !self::valid_password($input))
             return false;
         // update passwordUseTime once a month
         $update_use_time = $Now - 31 * 86400;
@@ -1245,27 +1270,14 @@ class Contact {
         $cdbu = $this->contactdb_user();
         $cdbok = false;
         if ($cdbu && ($hash = $cdbu->password)
-            && $cdbu->allow_contactdb_password()) {
-            $cdbok = self::check_hashed_password($input, $hash, $this->email);
-            if ($cdbok && self::check_password_encryption($hash, true)) {
+            && $cdbu->allow_contactdb_password()
+            && ($cdbok = self::check_hashed_password($input, $hash, $this->email))) {
+            if (self::check_password_encryption($hash, true)) {
                 $hash = self::hash_password($input, true);
                 Dbl::ql(self::contactdb(), "update ContactInfo set password=? where contactDbId=?", $hash, $cdbu->contactDbId);
                 $cdbu->password = $hash;
             }
-            if ($cdbok && $this->contactId && $this->passwordIsCdb
-                && $this->password !== $hash) {
-                if (@$hash[0] == " " && @$hash[1] !== "\$")
-                    $hash = self::hash_password($input, false);
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=?, passwordUseTime=? where contactId=?", $hash, $cdbu->passwordTime, $Now, $this->contactId);
-                $this->password = $hash;
-                $this->passwordTime = $cdbu->passwordTime;
-                $this->passwordUseTime = $Now;
-            } else if ($cdbok && $this->contactId && $this->passwordIsCdb
-                       && $this->passwordUseTime <= $update_use_time) {
-                Dbl::ql($Conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
-                $this->passwordUseTime = $Now;
-            }
-            if ($cdbok && $cdbu->passwordUseTime <= $update_use_time) {
+            if ($cdbu->passwordUseTime <= $update_use_time) {
                 Dbl::ql(self::contactdb(), "update ContactInfo set passwordUseTime=? where contactDbId=?", $Now, $cdbu->contactDbId);
                 $cdbu->passwordUseTime = $Now;
             }
@@ -1273,14 +1285,13 @@ class Contact {
 
         $localok = false;
         if ($this->contactId && ($hash = $this->password)
-            && (!$this->passwordIsCdb || !$cdbu)) {
-            $localok = self::check_hashed_password($input, $hash, $this->email);
-            if ($localok && self::check_password_encryption($hash, false)) {
+            && ($localok = self::check_hashed_password($input, $hash, $this->email))) {
+            if (self::check_password_encryption($hash, false)) {
                 $hash = self::hash_password($input, false);
                 Dbl::ql($Conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
                 $this->password = $hash;
             }
-            if ($localok && $this->passwordUseTime <= $update_use_time) {
+            if ($this->passwordUseTime <= $update_use_time) {
                 Dbl::ql($Conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
                 $this->passwordUseTime = $Now;
             }
@@ -1295,46 +1306,46 @@ class Contact {
     public function change_password($old, $new, $flags) {
         global $Conf, $Now;
         assert(!self::external_login());
+        if ($new === null)
+            $new = self::random_password();
+        assert(self::valid_password($new));
 
-        $hash = $cdbu = null;
+        $cdbu = null;
         if (!($flags & self::CHANGE_PASSWORD_NO_CDB))
             $cdbu = $this->contactdb_user();
-        if ($cdbu && $cdbu->password && !opt("contactdb_noPasswords")
+        if ($cdbu
+            && (!$old || $cdbu->password)
             && (!$old || self::check_hashed_password($old, $cdbu->password, $this->email))) {
-            if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                && self::check_password_encryption(false, true))
-                $hash = self::hash_password($new, true);
-            else
-                $hash = $new = $new ? : self::random_password();
+            $hash = $new;
+            if ($hash && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
+                && self::check_password_encryption("", true))
+                $hash = self::hash_password($hash, true);
             $cdbu->password = $hash;
             if (!$old || $old !== $new)
                 $cdbu->passwordTime = $Now;
             Dbl::ql(self::contactdb(), "update ContactInfo set password=?, passwordTime=? where contactDbId=?", $cdbu->password, $cdbu->passwordTime, $cdbu->contactDbId);
-        }
-
-        if ($this->contactId
-            && (!$old || $hash || self::check_hashed_password($old, $this->password, $this->email))) {
-            $this->passwordIsCdb = $hash ? 1 : 0;
-            if ($hash && ($hash === $new || substr($hash, 0, 2) === " \$"))
-                /* use old hash */;
-            else if ($new && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
-                     && self::check_password_encryption(false, false))
-                $hash = self::hash_password($new, false);
-            else
-                $hash = $new = $new ? : self::random_password();
+            if ($this->contactId && $this->password) {
+                $this->password = "";
+                $this->passwordTime = $cdbu->passwordTime;
+                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            }
+        } else if ($this->contactId
+                   && (!$old || self::check_hashed_password($old, $this->password, $this->email))) {
+            $hash = $new;
+            if ($hash && !($flags & self::CHANGE_PASSWORD_PLAINTEXT)
+                && self::check_password_encryption("", false))
+                $hash = self::hash_password($hash, false);
             $this->password = $hash;
             if (!$old || $old !== $new)
                 $this->passwordTime = $Now;
-            if ($Conf->sversion >= 97)
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=?, passwordIsCdb=? where contactId=?", $this->password, $this->passwordTime, $this->passwordIsCdb, $this->contactId);
-            else
-                Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            Dbl::ql($Conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         }
     }
 
 
     function sendAccountInfo($sendtype, $sensitive) {
         global $Conf, $Opt;
+        assert(!$this->disabled);
         $rest = array();
         if ($sendtype == "create" && $this->prefer_contactdb_password())
             $template = "@activateaccount";
@@ -2676,6 +2687,14 @@ class Contact {
         return $this->can_administer($prow, $forceShow);
     }
 
+    function can_view_formula(Formula $formula) {
+        return $formula->view_score($this) > $this->permissive_view_score_bound();
+    }
+
+    function can_view_formula_as_author(Formula $formula) {
+        return $formula->view_score($this) > self::author_permissive_view_score_bound();
+    }
+
     // A review field is visible only if its view_score > view_score_bound.
     function view_score_bound(PaperInfo $prow, $rrow, $forceShow = null) {
         // Returns the maximum view_score for an invisible review
@@ -2717,6 +2736,14 @@ class Contact {
                 return VIEWSCORE_AUTHOR - 1;
         } else
             return VIEWSCORE_MAX + 1;
+    }
+
+    static function author_permissive_view_score_bound() {
+        global $Conf;
+        if ($Conf->timeAuthorViewDecision())
+            return VIEWSCORE_AUTHORDEC - 1;
+        else
+            return VIEWSCORE_AUTHOR - 1;
     }
 
     function aggregated_view_score_bound() {
@@ -2988,8 +3015,7 @@ class Contact {
             && ($tracker = MeetingTracker::status($this))) {
             $dl->tracker = $tracker;
             $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-            if (($p = @$tracker->position_at))
-                $dl->tracker_status_at = $p;
+            $dl->tracker_status_at = $tracker->position_at;
             if (@$Opt["trackerHidden"])
                 $dl->tracker_hidden = true;
             $dl->now = microtime(true);
@@ -3105,7 +3131,7 @@ class Contact {
 
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now;
-        $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken, requestedBy from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = edb_orow($result);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
@@ -3121,15 +3147,19 @@ class Contact {
         // change database
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = "";
-            if (@$extra["round_number"] !== null)
-                $qa .= ", reviewRound=" . $extra["round_number"];
-            else if (($round = $Conf->current_round()))
+            if (($round = get($extra, "round_number")) === null)
+                $round = $Conf->current_round();
+            if ($round)
                 $qa .= ", reviewRound=" . $round;
-            if (@$extra["mark_notify"])
+            if (get($extra, "mark_notify"))
                 $qa .= ", timeRequestNotified=$Now";
-            if (@$extra["token"])
+            if (get($extra, "token"))
                 $qa .= self::unassigned_review_token();
-            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, requestedBy=$this->contactId, timeRequested=$Now$qa";
+            if (($requester = get($extra, "requester_contact")))
+                $qa .= ", requestedBy=" . $requester->contactId;
+            else
+                $qa .= ", requestedBy=" . $this->contactId;
+            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, timeRequested=$Now$qa";
         } else if ($type > 0 && $rrow->reviewType != $type)
             $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)

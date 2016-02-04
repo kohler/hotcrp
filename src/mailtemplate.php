@@ -57,7 +57,7 @@ Here is your account information for the %CONFNAME% submissions site.
        Email: %EMAIL%
     Password: %OPT(PASSWORD)%
 
-Use the link below to sign in directly.
+Or use the link below to sign in.
 
 %LOGINURL%
 
@@ -398,7 +398,7 @@ Your message here.
        Title: %TITLE%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Use the link below to sign in to the submissions site.
+Use the link below to sign in to the site.
 
 %LOGINURL%
 
@@ -420,7 +420,7 @@ This is a reminder to finish your review for %CONFNAME% paper #%NUMBER%. %IF(REV
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Use the link below to sign in to the submissions site.
+Use the link below to sign in to the site.
 
 %LOGINURL%
 
@@ -445,7 +445,7 @@ This is a reminder from %REQUESTERCONTACT% to finish your review for %CONFNAME% 
      Authors: %OPT(AUTHORS)%
   Paper site: %URL(paper, p=%NUMBER%)%
 
-Use the link below to sign in to the submissions site.
+Use the link below to sign in to the site.
 
 %LOGINURL%
 

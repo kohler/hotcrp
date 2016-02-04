@@ -532,7 +532,7 @@ function option_request_to_json(&$new_opts, $id, $current_opts) {
     if ($oarg["type"] === "pdf" && $oarg["final"])
         $oarg["display"] = "submission";
 
-    $new_opts[$oarg["id"]] = $o = new PaperOption($oarg);
+    $new_opts[$oarg["id"]] = $o = PaperOption::make($oarg);
     $o->req_id = $id;
     $o->is_new = $id[0] === "n";
 }
@@ -1679,7 +1679,7 @@ function doOptGroupOption($o) {
     if ($o)
         $id = $o->id;
     else {
-        $o = new PaperOption(array("id" => $o,
+        $o = PaperOption::make(array("id" => $o,
                 "name" => "(Enter new option)",
                 "description" => "",
                 "type" => "checkbox",
@@ -1689,7 +1689,7 @@ function doOptGroupOption($o) {
     }
 
     if (count($Error) > 0 && isset($_POST["optn$id"])) {
-        $o = new PaperOption(array("id" => $id,
+        $o = PaperOption::make(array("id" => $id,
                 "name" => $_POST["optn$id"],
                 "description" => get($_POST, "optd$id"),
                 "type" => get($_POST, "optvt$id", "checkbox"),

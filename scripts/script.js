@@ -36,19 +36,6 @@ function add_callback(cb1, cb2) {
         return cb1 || cb2;
 }
 
-function staged_foreach(a, f, backwards) {
-    var i = (backwards ? a.length - 1 : 0);
-    var step = (backwards ? -1 : 1);
-    var stagef = function () {
-        var x;
-        for (x = 0; i >= 0 && i < a.length && x < 100; i += step, ++x)
-            f(a[i]);
-        if (i < a.length)
-            setTimeout(stagef, 0);
-    };
-    stagef();
-}
-
 
 // promises
 function Promise(value) {
@@ -282,6 +269,13 @@ function commajoin(a, joinword) {
         return a[0] + " " + joinword + " " + a[1];
     else
         return a.slice(0, l - 1).join(", ") + ", " + joinword + " " + a[l - 1];
+}
+
+function common_prefix(a, b) {
+    var i = 0;
+    while (i != a.length && i != b.length && a.charAt(i) == b.charAt(i))
+        ++i;
+    return a.substring(0, i);
 }
 
 function count_words(text) {
@@ -752,27 +746,29 @@ return function (content, bubopt) {
     var divbw = null;
 
     function change_tail_direction() {
-        var bw = [0, 0, 0, 0];
+        var bw = [0, 0, 0, 0], trw = sizes[1], trh = sizes[0] / 2;
         divbw = parseFloat($(bubdiv).css(cssborder(dir, "Width")));
         divbw !== divbw && (divbw = 0); // eliminate NaN
-        bw[dir^1] = bw[dir^3] = (sizes[0] / 2) + "px";
-        bw[dir^2] = sizes[1] + "px";
+        bw[dir^1] = bw[dir^3] = trh + "px";
+        bw[dir^2] = trw + "px";
         bubch[0].style.borderWidth = bw.join(" ");
-        bw[dir^1] = bw[dir^3] = Math.max(sizes[0] / 2 - 0.77*divbw, 0) + "px";
-        bw[dir^2] = Math.max(sizes[1] - 0.77*divbw, 0) + "px";
+        bw[dir^1] = bw[dir^3] = trh + "px";
+        bw[dir^2] = trw + "px";
         bubch[2].style.borderWidth = bw.join(" ");
 
-        var i, yc;
-        for (i = 1; i <= 3; ++i)
+        for (var i = 1; i <= 3; ++i)
             bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
-        bubch[0].style[lcdir[dir]] = (-sizes[1]) + "px";
-        bubch[2].style[lcdir[dir]] = (-sizes[1] + divbw) + "px";
+        bubch[0].style[lcdir[dir]] = (-trw - divbw) + "px";
+        // Offset the inner triangle so that the border width in the diagonal
+        // part of the tail, is visually similar to the border width
+        var trdelta = (divbw / trh) * Math.sqrt(trw * trw + trh * trh);
+        bubch[2].style[lcdir[dir]] = (-trw - divbw + trdelta) + "px";
 
         for (i = 0; i < 3; i += 2)
             bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
             bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
 
-        yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
+        var yc = to_rgba($(bubdiv).css("backgroundColor")).replace(/([\d.]+)\)/, function (s, p1) {
             return (0.75 * p1 + 0.25) + ")";
         });
         bubch[0].style[cssbc(dir^2)] = $(bubdiv).css(cssbc(dir));
@@ -923,12 +919,12 @@ return function (content, bubopt) {
         }
 
         var x, y, xa, ya, d;
+        var divbw = parseFloat($(bubdiv).css(cssborder(ds & 1 ? 0 : 3, "Width")));
         if (ds & 1) {
             ya = constrainmid(nearpos, wpos, 0, ds2);
             y = constrain(ya, wpos, bpos, 0, ds2, noconstrain);
-            d = constrainradius(roundpixel(ya - y - sizes[0] / 2), bpos, ds);
-            bubch[0].style.top = d + "px";
-            bubch[2].style.top = (d + 0.77*divbw) + "px";
+            d = constrainradius(roundpixel(ya - y - sizes[0] / 2 - divbw), bpos, ds);
+            bubch[0].style.top = bubch[2].style.top = d + "px";
 
             if (ds == 1)
                 x = nearpos.left - sizes.right - bpos.width - sizes[1] - 1;
@@ -937,9 +933,8 @@ return function (content, bubopt) {
         } else {
             xa = constrainmid(nearpos, wpos, 3, ds2);
             x = constrain(xa, wpos, bpos, 3, ds2, noconstrain);
-            d = constrainradius(roundpixel(xa - x - sizes[0] / 2), bpos, ds);
-            bubch[0].style.left = d + "px";
-            bubch[2].style.left = (d + 0.77*divbw) + "px";
+            d = constrainradius(roundpixel(xa - x - sizes[0] / 2 - divbw), bpos, ds);
+            bubch[0].style.left = bubch[2].style.left = d + "px";
 
             if (ds == 0)
                 y = nearpos.bottom + sizes.top + sizes[1];
@@ -1682,7 +1677,7 @@ function hiliter(elt, off) {
     else if (!elt || elt.preventDefault)
         elt = this;
     while (elt && elt.tagName && (elt.tagName.toUpperCase() != "DIV"
-                                  || elt.className.substr(0, 4) != "aahc"))
+                                  || !/\baahc\b/.test(elt.className)))
         elt = elt.parentNode;
     if (!elt || !elt.tagName)
         highlightUpdate(null, off);
@@ -1691,8 +1686,7 @@ function hiliter(elt, off) {
 }
 
 function hiliter_children(form) {
-    jQuery(form).find("input, select, textarea").on("change", hiliter)
-        .on("input", hiliter);
+    jQuery(form).on("change input", "input, select, textarea", hiliter);
 }
 
 var foldmap = {};
@@ -2052,86 +2046,56 @@ function badpairs_click() {
 }
 
 // author entry
-var numauthorfold = [];
-function authorfold(prefix, relative, n) {
-    var elt;
-    if (relative > 0)
-        n += numauthorfold[prefix];
-    if (n <= 1)
-        n = 1;
-    for (var i = 1; i <= n; i++)
-        if ((elt = $$(prefix + i)) && elt.className == "aueditc")
-            elt.className = "auedito";
-        else if (!elt)
-            n = i - 1;
-    for (var i = n + 1; i <= 50; i++)
-        if ((elt = $$(prefix + i)) && elt.className == "auedito")
-            elt.className = "aueditc";
-        else if (!elt)
-            break;
-    // set number displayed
-    if (relative >= 0) {
-        $("#" + prefix + "count").val(n);
-        numauthorfold[prefix] = n;
+function author_change(e, delta) {
+    var $e = $(e), $tbody = $e.closest("tbody");
+    if (delta == Infinity) {
+        $e.closest("tr").remove();
+        delta = 0;
+    } else {
+        var tr = $e.closest("tr")[0];
+        for (; delta < 0 && tr.previousSibling; ++delta)
+            $(tr).insertBefore(tr.previousSibling);
+        for (; delta > 0 && tr.nextSibling; --delta)
+            $(tr).insertAfter(tr.nextSibling);
     }
-    // IE won't actually do the fold unless we yell at it
-    elt = $$(prefix + "table");
-    if (document.recalc && elt)
-        try {
-            elt.innerHTML = elt.innerHTML + "";
-        } catch (err) {
+
+    function any_interesting(row) {
+        var $x = $(row).find("input"), i;
+        if (!$tbody.attr("data-last-row-blank"))
+            return false;
+        for (i = 0; i != $x.length; ++i) {
+            var $e = $($x[i]), v = $e.val();
+            if (v != "" && v !== $e.attr("placeholder"))
+                return true;
         }
+        return false;
+    }
+
+    var trs = $tbody.children();
+    while (trs.length < Math.max(1, +$tbody.attr("data-min-rows"))
+           || any_interesting(trs[trs.length - 1])
+           || delta > 0) {
+        var $newtr = $($tbody.attr("data-row-template")).appendTo($tbody);
+        $newtr.find("input[placeholder]").each(mktemptext);
+        $newtr.find(".hotcrp_searchbox").each(make_taghelp_q);
+        trs = $tbody.children();
+        --delta;
+    }
+
+    for (var i = 1; i <= trs.length; ++i) {
+        var $tr = $(trs[i - 1]), td0h = $($tr[0].firstChild).html();
+        if (td0h !== i + "." && /^(?:\d+|\$).$/.test(td0h))
+            $($tr[0].firstChild).html(i + ".");
+        $tr.find("input, select").each(function () {
+            var m = /^(.*?)(?:\d+|\$)$/.exec(this.getAttribute("name"));
+            if (m && m[2] != i)
+                this.setAttribute("name", m[1] + i);
+        });
+    }
+
+    hiliter($tbody[0]);
     return false;
 }
-
-function author_change(e, force) {
-    var $e = $(e), tr = $e.closest("tr"), val = $.trim($e.val());
-    if (force || (val != "" && val !== $e.attr("placeholder"))) {
-        if (tr[0].nextSibling == null) {
-            var n = tr.siblings().length;
-            var h = tr.siblings().first().html().replace(/\$/g, n + 1);
-            $("<tr>" + h + "</tr>").insertAfter(tr)
-                .find("input[placeholder]").each(mktemptext);
-        } else if (tr[0].nextSibling.className == "aueditc")
-            tr[0].nextSibling.className = "auedito";
-    }
-    hiliter(e);
-}
-
-author_change.delta = function (e, delta) {
-    var $ = jQuery, tr = $(e).closest("tr")[0], ini, inj, k,
-        link = (delta < 0 ? "previous" : "next") + "Sibling",
-        removing = delta == Infinity;
-    if (removing) {
-        // move to last position in list, then remove
-        for (delta = 0, sib = tr[link]; sib; sib = sib[link], ++delta)
-            /* nada */;
-        $(tr).find("input[placeholder]").val("");
-    }
-    while (delta) {
-        if (!tr)
-            log_jserror("bad tr, delta " + delta + ", html " + $(e).closest("table").html());
-        var sib = tr[link];
-        if (delta < 0 && (!sib || !$(sib).is(":visible")))
-            break;
-        hiliter(tr);
-        if (!sib)
-            sib = tr.nextSibling;
-        ini = $(tr).find("input"), inj = $(sib).find("input");
-        for (k = 0; k != ini.length; ++k) {
-            var v = $(ini[k]).val();
-            $(ini[k]).val($(inj[k]).val()).change();
-            $(inj[k]).val(v).change();
-        }
-        tr = sib;
-        delta += delta < 0 ? 1 : -1;
-    }
-    ini = $(tr.parentElement);
-    if (removing && $(ini).children().length > 6)
-        $(tr).remove();
-    $(ini).find("tr:last-child input").each(function () { author_change(this); });
-    return false;
-};
 
 
 // check marks for ajax saves
@@ -2623,7 +2587,7 @@ function save_editor(elt, action, really) {
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + ctype);
     x.j.find("button").prop("disabled", true);
-    $.post(url, x.j.find("form").serialize(), function (data, textStatus, jqxhr) {
+    function callback(data, textStatus, jqxhr) {
         var editing_response = x.cj.response && edit_allowed(x.cj),
             cid = cj_cid(x.cj), data_cid;
         if (data.ok && !data.cmt && !x.cj.is_new)
@@ -2643,7 +2607,8 @@ function save_editor(elt, action, really) {
             render_cmt(x.j, data.cmt, editing_response, data.msg);
         else
             x.j.closest(".cmtg").html(data.msg);
-    });
+    }
+    $.post(url, x.j.find("form").serialize(), callback);
 }
 
 function submit_editor(evt) {
@@ -3145,30 +3110,49 @@ function taghelp_q(elt, displayed) {
 
 function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
     return function (tlist) {
-        var res = [], lstr = precaret.toLowerCase();
+        var res = [], lprecaret = precaret.toLowerCase(),
+            lpostcaret = postcaret.toLowerCase(),
+            best_postcaret = "", best_postcaret_index = null;
         for (var i = 0; i < tlist.length; ++i) {
-            var titem = completion_item(tlist[i]), t = titem.s, tt = t;
+            var titem = completion_item(tlist[i]),
+                text = titem.s, ltext = titem.s.toLowerCase(),
+                pos = 0, h = "";
             if (include_pfx) {
-                if (t.substring(0, pfx.length).toLowerCase() !== pfx)
+                if (ltext.substr(0, pfx.length) !== pfx)
                     continue;
-                tt = t = t.substring(pfx.length);
+                pos = pfx.length;
             }
-            if (lstr.length && t.substring(0, lstr.length).toLowerCase() !== lstr)
-                continue;
-            if (lstr.length)
-                t = "<b>" + t.substring(0, precaret.length) + "</b>" +
-                    escape_entities(t.substring(lstr.length));
-            else
-                t = escape_entities(t);
-            t = '<div class="autocomplete" data-autocomplete="' +
-                tt.substring(precaret.length).replace(/\"/g, "&quot;") +
-                '">' + pfx + t + '</div>';
-            res[tt.length == precaret.length ? "unshift" : "push"](t);
+            var start = '">' + pfx, ncdelete = 0;
+            if (!lprecaret.length
+                || ltext.substr(pos, lprecaret.length) === lprecaret) {
+                if (lprecaret.length) {
+                    start += "<b>" + escape_entities(text.substr(pos, lprecaret.length)) + "</b>";
+                    pos += lprecaret.length;
+                }
+                if (best_postcaret_index === null)
+                    best_postcaret_index = res.length;
+                if (lpostcaret.length) {
+                    var common_postcaret = common_prefix(ltext.substr(pos), lpostcaret);
+                    if (common_postcaret.length > best_postcaret.length) {
+                        best_postcaret = common_postcaret;
+                        best_postcaret_index = res.length;
+                    }
+                } else if (text.length == pos)
+                    best_postcaret_index = res.length;
+            } else {
+                // continue
+                ncdelete = lprecaret.length;
+            }
+
+            var posttext = escape_entities(text.substr(pos));
+            res.push('<div class="suggestion" data-autocomplete="' + ncdelete + ' ' +posttext + start + posttext + '</div>');
         }
-        if (res.length)
+        if (res.length) {
+            best_postcaret_index = best_postcaret_index || 0;
+            res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion"/, '<div class="suggestion active"');
             return {list: res, precaret_length: pfx.length + precaret.length,
                     postcaret_length: postcaret.length};
-        else
+        } else
             return null;
     };
 }
@@ -3183,7 +3167,7 @@ function suggest(elt, klass, cleanf) {
     }
 
     function finish_display(cinfo) {
-        if (!cinfo)
+        if (!cinfo || !cinfo.list.length)
             return kill();
         if (!tagdiv) {
             tagdiv = make_bubble({dir: "nw", color: "suggest"});
@@ -3196,8 +3180,7 @@ function suggest(elt, klass, cleanf) {
         for (i = 0; i < ml.length && cinfo.list.length > ml[i]; ++i)
             /* nada */;
         var t = '<div class="suggesttable suggesttable' + (i + 1) +
-            '"><div class="suggestion active">' +
-            cinfo.list.join('</div><div class="suggestion">') + '</div></div>';
+            '">' + cinfo.list.join('') + '</div>';
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt),
             matchpos = elt.selectionStart - cinfo.precaret_length;
@@ -3216,22 +3199,15 @@ function suggest(elt, klass, cleanf) {
     }
 
     function maybe_complete($ac, ignore_empty_completion) {
-        var common = null, attr, i, j;
+        var common = null, ndelete, attr, i, j;
         for (i = 0; i != $ac.length; ++i) {
             attr = $ac[i].getAttribute("data-autocomplete");
-            if (common === null)
-                common = attr;
-            else {
-                for (j = 0; attr.charAt(j) === common.charAt(j)
-                            && j < attr.length; ++j)
-                    /* skip */;
-                common = common.substring(0, j);
-            }
+            common = common === null ? attr : common_prefix(attr, common);
         }
         if (common === null)
             return false;
         else if ($ac.length == 1)
-            return do_complete(common + " ", true, ignore_empty_completion);
+            return do_complete(common, true, ignore_empty_completion);
         else {
             interacted = true;
             return do_complete(common, false, ignore_empty_completion);
@@ -3239,15 +3215,19 @@ function suggest(elt, klass, cleanf) {
     }
 
     function do_complete(text, done, ignore_empty_completion) {
-        var start = elt.selectionStart;
+        var space = text.indexOf(" "), nkill = +text.substring(0, space);
+        text = text.substring(space + 1);
         var pc_len = +tagdiv.self().attr("data-autocomplete-postcaret-length");
-        if (!pc_len && ignore_empty_completion) {
+        if (!pc_len && text == "" && ignore_empty_completion) {
             done && kill();
             return null; /* null == no completion occurred (false == failed) */
         }
-        var val = elt.value.substring(0, start) + text + elt.value.substring(start + pc_len);
+        done && (text += " ");
+        var start = elt.selectionStart;
+        var val = elt.value.substring(0, start - nkill) + text +
+            elt.value.substring(start + pc_len);
         $(elt).val(val);
-        elt.selectionStart = elt.selectionEnd = start + text.length;
+        elt.selectionStart = elt.selectionEnd = start - nkill + text.length;
         done ? kill() : setTimeout(display, 1);
         return true;
     }
@@ -3302,10 +3282,8 @@ function suggest(elt, klass, cleanf) {
             hiding = true;
             return true;
         }
-        if (k == "Tab" && !m && tagdiv)
-            completed = maybe_complete(tagdiv.self().find(".autocomplete"));
-        else if (k == "Enter" && !m && tagdiv)
-            completed = maybe_complete(tagdiv.self().find(".suggestion.active .autocomplete"), !interacted);
+        if ((k == "Tab" || k == "Enter") && !m && tagdiv)
+            completed = maybe_complete(tagdiv.self().find(".suggestion.active"), k == "Enter" && !interacted);
         if (completed !== null && (completed || !tagfail)) {
             tagfail = !completed;
             evt.preventDefault();
@@ -3322,7 +3300,7 @@ function suggest(elt, klass, cleanf) {
     }
 
     function click(evt) {
-        maybe_complete($(this).find(".autocomplete"));
+        maybe_complete($(this).find(".suggestion"));
         evt.stopPropagation();
         interacted = true;
     }
@@ -3347,11 +3325,11 @@ function suggest(elt, klass, cleanf) {
     }
 }
 
-$(function () {
-    $(".hotcrp_searchbox").each(function () {
-        suggest(this, "taghelp_q", taghelp_q);
-    });
-});
+function make_taghelp_q() {
+    suggest(this, "taghelp_q", taghelp_q);
+}
+
+$(function () { $(".hotcrp_searchbox").each(make_taghelp_q); });
 
 
 // review preferences
@@ -3801,17 +3779,15 @@ return function (selector, active_dragtag) {
 
         $(function () {
             plt_tbody = $(selector).find("tbody")[0];
-            staged_foreach(plt_tbody.getElementsByTagName("input"), function (elt) {
-                if (elt.name.substr(0, 5 + dragtag.length) == "tag:" + dragtag + " ") {
-                    var x = document.createElement("span"), id = elt.name.substr(5 + dragtag.length);
-                    x.className = "dragtaghandle";
-                    x.setAttribute("data-pid", id);
-                    x.setAttribute("title", "Drag to change order");
-                    elt.parentElement.insertBefore(x, elt.nextSibling);
-                    x.onmousedown = tag_mousedown;
-                    elt.onchange = sorttag_onchange;
-                    valuemap[id] = parse_tagvalue(elt.value);
-                }
+            $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
+                var x = document.createElement("span"), id = this.name.substr(5 + dragtag.length);
+                x.className = "dragtaghandle";
+                x.setAttribute("data-pid", id);
+                x.setAttribute("title", "Drag to change order");
+                this.parentElement.insertBefore(x, this.nextSibling);
+                x.onmousedown = tag_mousedown;
+                this.onchange = sorttag_onchange;
+                valuemap[id] = parse_tagvalue(this.value);
             });
         });
     }
@@ -4067,19 +4043,19 @@ var plinfo = (function () {
 var fields, field_order, aufull = {}, loadargs = {};
 
 function add_column(f, which) {
-    var i, index = 0, $j = $("#fold" + which);
+    var i, index = 0, $j = $("#fold" + which),
+        classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
+            " fx" + f.foldnum + "\"";
     for (i = 0; i != field_order.length && field_order[i] != f; ++i)
         if (field_order[i].column && !field_order[i].missing)
             ++index;
     $j.find("tr.pl_headrow").each(function () {
-        var h = "<th class=\"pl pl_" + (f.cssname || f.name) + " fx" + f.foldnum +
-            "\">" + f.title + "</th>";
+        var h = "<th" + classEnd + ">" + f.title + "</th>";
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     $j.find("tr.pl").each(function () {
         var pid = this.getAttribute("data-pid");
-        var h = "<td class=\"pl pl_" + (f.cssname || f.name) + " fx" + f.foldnum +
-            "\" id=\"" + f.name + "." + pid + "\"></td>";
+        var h = "<td" + classEnd + " id=\"" + f.name + "." + pid + "\"></td>";
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     $j.find("tr.plx > td.plx, td.pl_footer, td.plheading").each(function () {
@@ -4089,14 +4065,15 @@ function add_column(f, which) {
 }
 
 function add_row(f, which) {
-    var i, index = 0;
+    var i, index = 0,
+        classEnd = '" class="' + (f.className || "pl_" + f.name) +
+            " fx" + f.foldnum + '"></div>';
     for (i = 0; i != field_order.length && field_order[i] != f; ++i)
         if (!field_order[i].column && !field_order[i].missing)
             ++index;
     $($$("fold" + which)).find("tr.plx > td.plx").each(function () {
         var pid = this.parentNode.getAttribute("data-pid");
-        var n = $('<div id="' + f.name + '.' + pid + '" class="fx' + f.foldnum
-                  + ' pl_' + (f.cssname || f.name) + '"></div>')[0];
+        var n = $('<div id="' + f.name + '.' + pid + classEnd)[0];
         this.insertBefore(n, this.childNodes[index] || null);
     });
     f.missing = false;
@@ -4541,23 +4518,31 @@ function numeric_parser(text) {
     return parseInt(text, 10);
 }
 
+function gcd(a, b) {
+    if (a == b)
+        return a;
+    else if (a > b)
+        return gcd(a - b, b);
+    else
+        return gcd(a, b - a);
+}
+
 function make_letter_unparser(n, c) {
     return function (val, count) {
         if (val < 0.8 || val > n + 0.2)
             return val.toFixed(2);
-        var ord1 = c + n - Math.ceil(val);
-        var ch1 = String.fromCharCode(ord1), ch2 = String.fromCharCode(ord1 + 1);
+        var ival = Math.ceil(val), ch1 = String.fromCharCode(c + n - ival);
+        if (val == ival)
+            return ch1;
+        var ch2 = String.fromCharCode(c + n - ival + 1);
         count = count || 2;
-        val = Math.floor(count * val + 0.5) - count * Math.floor(val);
-        if (val == 0 || val == count)
-            return val ? ch2 : ch1;
-        else if (val == count / 2)
-            return ch1 + ch2;
-        else {
-            for (var i = 0, s = ""; i < count; ++i)
-                s += i < val ? ch1 : ch2;
-            return s;
-        }
+        val = Math.floor((ival - val) * count + 0.5);
+        if (val <= 0 || val >= count)
+            return val <= 0 ? ch1 : ch2;
+        var g = gcd(val, count);
+        for (var i = 0, s = ""; i < count; i += g)
+            s += i < val ? ch1 : ch2;
+        return s;
     };
 }
 

@@ -143,7 +143,7 @@ echo "</dl>\nClick a heading to sort.\n</div></div>";
 
 
 if ($reviewer > 0)
-    echo "<h2 style='margin-top:1em'>Assignments for ", $pcm[$reviewer]->name_html(), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
+    echo "<h2 style='margin-top:1em'>Assignments for ", $Me->name_html_for($pcm[$reviewer]), ($pcm[$reviewer]->affiliation ? " (" . htmlspecialchars($pcm[$reviewer]->affiliation) . ")" : ""), "</h2>\n";
 else
     echo "<h2 style='margin-top:1em'>Assignments by PC member</h2>\n";
 

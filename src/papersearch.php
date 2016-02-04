@@ -2420,7 +2420,7 @@ class PaperSearch {
         if ($flags & self::F_AUTHOR)
             $q[] = $this->contact->actAuthorSql("PaperConflict");
         if ($flags & self::F_REVIEWER)
-            $q[] = "MyReview.reviewNeedsSubmit=0"; // i.e. not null
+            $q[] = "MyReview.reviewNeedsSubmit=0";
         if ($flags & self::F_XVIEW) {
             $this->needflags |= self::F_NONCONFLICT | self::F_REVIEWER;
             $sqi->add_rights_columns();
@@ -2522,7 +2522,7 @@ class PaperSearch {
         // are not visible to the current querier
         $result = Dbl::qe("select MPR.reviewId
         from PaperReview as MPR
-        left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit<=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
+        left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
         left join (select paperId, count(rating) as numRatings from PaperReview join ReviewRating using (reviewId) group by paperId) as NRR on (NRR.paperId=MPR.paperId)
         where MPR.contactId=$contactId
         and numReviews<=2
@@ -2561,9 +2561,9 @@ class PaperSearch {
             if ($rsm->completeness & ReviewSearchMatcher::COMPLETE)
                 $cwhere[] = "reviewSubmitted>0";
             if ($rsm->completeness & ReviewSearchMatcher::INCOMPLETE)
-                $cwhere[] = "reviewNeedsSubmit>0";
+                $cwhere[] = "reviewNeedsSubmit!=0";
             if ($rsm->completeness & ReviewSearchMatcher::INPROGRESS)
-                $cwhere[] = "(reviewNeedsSubmit>0 and reviewModified>0)";
+                $cwhere[] = "(reviewSubmitted is null and reviewModified>0)";
             if (count($cwhere))
                 $where[] = "(" . join(" or ", $cwhere) . ")";
             if ($rsm->round !== null) {
@@ -2750,8 +2750,8 @@ class PaperSearch {
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
             $thistab = "Option_" . count($sqi->tables);
-            $sqi->add_table($thistab, array("left join", "PaperOption", "$thistab.optionId=" . $t->value[0]->id));
-            $sqi->add_column($thistab . "_x", "coalesce($thistab.value,0)" . $t->value[1]);
+            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $t->value[0]->id . " group by paperId)"));
+            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $t->value[1]);
             $t->link = $thistab . "_x";
             $q[] = $sqi->columns[$t->link];
             $f[] = "(" . join(" and ", $q) . ")";

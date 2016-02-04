@@ -40,7 +40,7 @@ class PaperListReviewAnalysis {
         else
             $title = "Review";
         if ($this->needsSubmit)
-            $title .= " (" . strtolower($this->completion_html()) . ")";
+            $title .= " (" . strtolower($this->description_html()) . ")";
         $t = review_type_icon($this->row->reviewType, $this->needsSubmit, $title);
         if ($includeLink)
             $t = $this->wrap_link($t);
@@ -48,7 +48,7 @@ class PaperListReviewAnalysis {
             $t .= '<span class="revround" title="Review round">&nbsp;' . $this->round . "</span>";
         return $t;
     }
-    public function completion_html() {
+    public function description_html() {
         if (!$this->row)
             return "";
         else if (!$this->needsSubmit)
@@ -62,7 +62,7 @@ class PaperListReviewAnalysis {
             return "In&nbsp;progress";
     }
     public function status_html() {
-        $t = $this->completion_html();
+        $t = $this->description_html();
         if ($this->needsSubmit && $t !== "Delegated")
             $t = "<strong class=\"overdue\">$t</strong>";
         return $this->needsSubmit ? $t : $this->wrap_link($t);
@@ -345,7 +345,7 @@ class PaperList {
     public function _contentPC($row, $contactId, $visible) {
         $pcm = pcMembers();
         if (isset($pcm[$contactId]))
-            return $this->maybeConflict($row, $pcm[$contactId]->reviewer_html(), $visible);
+            return $this->maybeConflict($row, $this->contact->reviewer_html_for($pcm[$contactId]), $visible);
         else
             return "";
     }
@@ -603,7 +603,7 @@ class PaperList {
     private function _list_columns($listname) {
         switch ($listname) {
         case "a":
-            return "id title statusfull revstat authors collab abstract topics reviewers shepherd scores";
+            return "id title statusfull revstat authors collab abstract topics reviewers shepherd scores formulas";
         case "authorHome":
             return "id title statusfull";
         case "s":
@@ -799,7 +799,7 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $t .= "<td class=\"pl pl_$fdef->cssname";
+                $t .= "<td class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
                     $t .= " fx$fdef->foldable";
                 $t .= "\">";
@@ -823,7 +823,7 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $tt .= "<div class=\"pl_$fdef->cssname";
+                $tt .= "<div class=\"" . $fdef->className;
                 if ($is_authors) {
                     $tt .= " fx1";
                     if ($this->contact->can_view_authors($row, false))
@@ -838,7 +838,9 @@ class PaperList {
                 $tt .= "\">";
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    $tt .= "<h6>" . $fdef->header($this, -1) . ":</h6> " . $c;
+                    if (!$fdef->embedded_header)
+                        $tt .= "<h6>" . $fdef->header($this, -1) . ":</h6> ";
+                    $tt .= $c;
                     $fdef->has_content = true;
                 }
                 $tt .= "</div>";
@@ -947,8 +949,8 @@ class PaperList {
         $ord = 0;
         foreach ($fieldDef as $fdef) {
             $j = ["name" => $fdef->name, "title" => $this->_field_title($fdef, $ord)];
-            if ($fdef->cssname != $fdef->name)
-                $j["cssname"] = $fdef->cssname;
+            if ($fdef->className != "pl_" . $fdef->name)
+                $j["className"] = $fdef->className;
             if ($fdef->view == Column::VIEW_COLUMN) {
                 $j["column"] = true;
                 ++$ord;
@@ -959,6 +961,8 @@ class PaperList {
                 $j["missing"] = true;
             if ($fdef->foldable)
                 $j["foldnum"] = $fdef->foldable;
+            if ($fdef->embedded_header)
+                $j["embedded_header"] = true;
             $jscol[] = $j;
             if ($fdef->foldable && $fdef->name !== "authors") {
                 $classes[] = "fold$fdef->foldable" . ($fdef->is_folded ? "c" : "o");
@@ -1197,7 +1201,7 @@ class PaperList {
         $any_empty = null;
         foreach ($fieldDef as $fdef)
             if ($fdef->view == Column::VIEW_COLUMN && $fdef->has_statistics())
-                $any_empty = $any_empty || $fdef->statistic(ScoreInfo::COUNT) != $this->count;
+                $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
         if ($any_empty === null)
             return "";
         foreach (array(ScoreInfo::SUM => "Total", ScoreInfo::MEAN => "Mean",
@@ -1218,12 +1222,12 @@ class PaperList {
                     $t .= '<td colspan="' . $titled . '" class="pl pl_statheader">' . $name . '</td>';
                 }
                 $titled = false;
-                $t .= '<td class="pl pl_' . $fdef->cssname;
+                $t .= '<td class="pl ' . $fdef->className;
                 if ($fdef->foldable)
                     $t .= ' fx' . $fdef->foldable;
                 $t .= '">';
                 if ($fdef->has_statistics())
-                    $t .= $fdef->statistic($stat);
+                    $t .= $fdef->statistic($this, $stat);
                 $t .= '</td>';
             }
             if (is_int($titled))
@@ -1334,13 +1338,13 @@ class PaperList {
                 if ($fdef->view != Column::VIEW_COLUMN
                     || $fdef->is_folded)
                     continue;
-                $colhead .= "<th class=\"pl pl_$fdef->cssname";
+                $colhead .= "<th class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
                     $colhead .= " fx" . $fdef->foldable;
                 $colhead .= "\">";
                 if ($fdef->has_content)
                     $colhead .= $this->_field_title($fdef, $ord);
-                if ($titleextra && $fdef->cssname == "title") {
+                if ($titleextra && $fdef->className == "pl_title") {
                     $colhead .= $titleextra;
                     $titleextra = false;
                 }

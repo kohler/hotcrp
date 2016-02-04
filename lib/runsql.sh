@@ -102,7 +102,7 @@ if test -n "$pwuser"; then
             showpwvalue=y
         fi
         pwvalue="`echo "+$pwvalue" | sed -e 's,^.,,' | sql_quote`"
-        query="update ContactInfo set password='$pwvalue', passwordTime=UNIX_TIMESTAMP(CURRENT_TIMESTAMP()), passwordIsCdb=0 where email='$pwuser'; select row_count()"
+        query="update ContactInfo set password='$pwvalue', passwordTime=UNIX_TIMESTAMP(CURRENT_TIMESTAMP()) where email='$pwuser'; select row_count()"
         nupdates="`echo "$query" | eval "$MYSQL $myargs -N $FLAGS $dbname"`"
         if [ $nupdates = 0 ]; then
             echo "no such user" 1>&2; exitval=1

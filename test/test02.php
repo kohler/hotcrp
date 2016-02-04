@@ -153,4 +153,29 @@ xassert_eqq(count($q), 3);
 xassert_eqq(json_encode($q), "{\"a\":1,\"b\":2,\"c\":[1]}");
 xassert_eqq(Json::encode($q), "{\"a\":1,\"b\":2,\"c\":[1]}");
 
+// Contact::is_anonymous_email tests
+xassert(Contact::is_anonymous_email("anonymous"));
+xassert(Contact::is_anonymous_email("anonymous1"));
+xassert(Contact::is_anonymous_email("anonymous10"));
+xassert(Contact::is_anonymous_email("anonymous9"));
+xassert(!Contact::is_anonymous_email("anonymous@example.com"));
+xassert(!Contact::is_anonymous_email("example@anonymous"));
+
+// Mailer::allow_send tests
+$Opt["sendEmail"] = true;
+xassert(Mailer::allow_send("ass@butt.com"));
+xassert(Mailer::allow_send("ass@example.edu"));
+xassert(!Mailer::allow_send("ass"));
+xassert(!Mailer::allow_send("ass@_.com"));
+xassert(!Mailer::allow_send("ass@_.co.uk"));
+xassert(!Mailer::allow_send("ass@example.com"));
+xassert(!Mailer::allow_send("ass@example.org"));
+xassert(!Mailer::allow_send("ass@example.net"));
+xassert(!Mailer::allow_send("ass@Example.com"));
+xassert(!Mailer::allow_send("ass@Example.ORG"));
+xassert(!Mailer::allow_send("ass@Example.net"));
+$Opt["sendEmail"] = false;
+xassert(!Mailer::allow_send("ass@butt.com"));
+xassert(!Mailer::allow_send("ass@example.edu"));
+
 xassert_exit();
