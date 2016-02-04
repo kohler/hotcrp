@@ -2233,7 +2233,8 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	color: #333333;
 	border: 1px solid #dddddd;
 	box-shadow: 0 0 5px rgba(0,0,0,0.1);
-	font-size: smaller;
+	font-size: 12px;
+	line-height: 16px;
 	margin: 4px 8px;
 	padding: 2px 2px;
 	border-radius: 3px;

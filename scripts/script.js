@@ -3126,7 +3126,7 @@ function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
             if (!lprecaret.length
                 || ltext.substr(pos, lprecaret.length) === lprecaret) {
                 if (lprecaret.length) {
-                    start += "<b>" + escape_entities(text.substr(pos, lprecaret.length)) + "</b>";
+                    start += escape_entities(text.substr(pos, lprecaret.length));
                     pos += lprecaret.length;
                 }
                 if (best_postcaret_index === null)
@@ -3148,8 +3148,8 @@ function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
             res.push('<div class="suggestion" data-autocomplete="' + ncdelete + ' ' +posttext + start + posttext + '</div>');
         }
         if (res.length) {
-            best_postcaret_index = best_postcaret_index || 0;
-            res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion"/, '<div class="suggestion active"');
+            if (best_postcaret_index !== null)
+                res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion"/, '<div class="suggestion active"');
             return {list: res, precaret_length: pfx.length + precaret.length,
                     postcaret_length: postcaret.length};
         } else
@@ -3205,7 +3205,7 @@ function suggest(elt, klass, cleanf) {
             common = common === null ? attr : common_prefix(attr, common);
         }
         if (common === null)
-            return false;
+            return null;
         else if ($ac.length == 1)
             return do_complete(common, true, ignore_empty_completion);
         else {
@@ -3218,7 +3218,7 @@ function suggest(elt, klass, cleanf) {
         var space = text.indexOf(" "), nkill = +text.substring(0, space);
         text = text.substring(space + 1);
         var pc_len = +tagdiv.self().attr("data-autocomplete-postcaret-length");
-        if (!pc_len && text == "" && ignore_empty_completion) {
+        if (!pc_len && (nkill || text == "") && ignore_empty_completion) {
             done && kill();
             return null; /* null == no completion occurred (false == failed) */
         }
