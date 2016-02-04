@@ -21,7 +21,7 @@ class PaperOptionValue {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
             foreach ($this->values as $docid)
-                if ($docid > 1 && ($d = paperDocumentData($prow, $this->id, $docid))) {
+                if ($docid > 1 && ($d = $prow->document($this->id, $docid))) {
                     $d->docclass = $docclass = $docclass ? : new HotCRPDocument($this->id);
                     $d->unique_filename = $d->filename;
                     while (get($by_unique_filename, $d->unique_filename)) {

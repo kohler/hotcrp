@@ -483,6 +483,26 @@ class PaperInfo {
         return get($this->option_array, $id);
     }
 
+    public function document($dtype, $did = 0) {
+        assert($did || $dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL);
+        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
+            if ($this->finalPaperStorageId <= 0)
+                $psi = [DTYPE_SUBMISSION, $this->paperStorageId];
+            else
+                $psi = [DTYPE_FINAL, $this->finalPaperStorageId];
+            if ($did == 0 || $did == $psi[1])
+                return (object) ["paperId" => $this->paperId,
+                                 "documentType" => $psi[0],
+                                 "paperStorageId" => $psi[1],
+                                 "mimetype" => get_s($this, "mimetype"),
+                                 "size" => get_i($this, "size"),
+                                 "timestamp" => get_i($this, "timestamp"),
+                                 "sha1" => get_s($this, "sha1")];
+        }
+        // load document object from database if pre-loaded version doesn't work
+        return Dbl::fetch_first_object("select paperId, documentType, paperStorageId, mimetype, size, timestamp, sha1, filename from PaperStorage where paperStorageId=?", $did);
+    }
+
     public function num_reviews_submitted() {
         if (!property_exists($this, "reviewCount"))
             $this->reviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted>0");

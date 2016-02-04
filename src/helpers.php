@@ -333,50 +333,12 @@ function documentDownload($doc, $dlimg_class = "dlimg", $text = null, $no_size =
     return $x . "</a>";
 }
 
-function paperDocumentData($prow, $documentType = DTYPE_SUBMISSION, $paperStorageId = 0) {
-    global $Conf, $Opt;
-    assert($paperStorageId || $documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
-    if ($documentType == DTYPE_FINAL && $prow->finalPaperStorageId <= 0)
-        $documentType = DTYPE_SUBMISSION;
-    if ($paperStorageId == 0 && $documentType == DTYPE_FINAL)
-        $paperStorageId = $prow->finalPaperStorageId;
-    else if ($paperStorageId == 0)
-        $paperStorageId = $prow->paperStorageId;
-    if ($paperStorageId <= 1)
-        return null;
-
-    // pre-load document object from paper
-    $doc = (object) array("paperId" => $prow->paperId,
-                          "mimetype" => defval($prow, "mimetype", ""),
-                          "size" => defval($prow, "size", 0),
-                          "timestamp" => defval($prow, "timestamp", 0),
-                          "sha1" => defval($prow, "sha1", ""));
-    if ($prow->finalPaperStorageId > 0) {
-        $doc->paperStorageId = $prow->finalPaperStorageId;
-        $doc->documentType = DTYPE_FINAL;
-    } else {
-        $doc->paperStorageId = $prow->paperStorageId;
-        $doc->documentType = DTYPE_SUBMISSION;
-    }
-
-    // load document object from database if pre-loaded version doesn't work
-    if ($paperStorageId > 0
-        && ($doc->documentType != $documentType
-            || $paperStorageId != $doc->paperStorageId)) {
-        $size = $Conf->sversion >= 74 ? "size" : "length(paper) as size";
-        $result = Dbl::qe("select paperStorageId, paperId, $size, mimetype, timestamp, sha1, filename, documentType from PaperStorage where paperStorageId=$paperStorageId");
-        $doc = edb_orow($result);
-    }
-
-    return $doc;
-}
-
 function paperDownload($prow, $final = false) {
     global $Conf, $Me;
     // don't let PC download papers in progress
     if ($prow->timeSubmitted <= 0 && !$Me->can_view_pdf($prow))
         return "";
-    $doc = paperDocumentData($prow, $final ? DTYPE_FINAL : DTYPE_SUBMISSION);
+    $doc = $prow->document($final ? DTYPE_FINAL : DTYPE_SUBMISSION);
     return $doc ? documentDownload($doc) : "";
 }
 

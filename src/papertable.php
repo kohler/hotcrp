@@ -371,7 +371,7 @@ class PaperTable {
 
             $dprefix = "";
             $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            if (($data = paperDocumentData($prow, $dtype))) {
+            if (($data = $prow->document($dtype))) {
                 if (($stamps = self::pdfStamps($data)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 $dname = $dtype == DTYPE_FINAL ? "Final version" : "Submission";
@@ -467,7 +467,7 @@ class PaperTable {
         $doc = null;
         $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
         if ($prow && $Me->can_view_pdf($prow) && $storageId > 1
-            && (($doc = paperDocumentData($prow, $documentType, $storageId)))) {
+            && (($doc = $prow->document($documentType, $storageId)))) {
             echo "<table id='current_$inputid'><tr>",
                 "<td class='nowrap'>", documentDownload($doc), "</td>";
             if ($doc->mimetype === "application/pdf" && $banal)
@@ -800,7 +800,7 @@ class PaperTable {
                     /* make fake document */
                     $doc = (object) array("paperId" => $this->prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->id);
                 else
-                    $doc = paperDocumentData($this->prow, $o->id, $oa->value);
+                    $doc = $this->prow->document($o->id, $oa->value);
                 if ($doc)
                     $ox = documentDownload($doc, "sdlimg", $on);
             }
