@@ -2285,7 +2285,7 @@ class PaperTable {
             } else {
                 // make new list
                 $pl->listno = SessionList::allocate($pl->listid);
-                SessionList::change($pl->listno, $pl, true);
+                SessionList::change($pl->listno, $pl);
             }
             unset($_REQUEST["ls"]);
             SessionList::set_requested($pl->listno);

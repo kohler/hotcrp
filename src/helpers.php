@@ -417,19 +417,13 @@ class SessionList {
         } else
             return null;
     }
-    static function change($idx, $delta, $replace = false) {
-        global $Conf, $Me;
-        $lists = $Conf->session("l", array());
-        $l = get($lists, $idx);
-        if ($l && $l->cid == ($Me ? $Me->contactId : 0) && !$replace)
-            $l = clone $l;
-        else
-            $l = (object) array();
-        foreach ($delta as $k => $v)
-            $l->$k = $v;
-        if (isset($l->ids) && !is_string($l->ids))
-            $l->ids = json_encode($l->ids);
-        $Conf->save_session_array("l", $idx, $l);
+    static function change($idx, $l) {
+        global $Conf;
+        $l = is_object($l) ? get_object_vars($l) : $l;
+        if (isset($l["ids"]) && !is_string($l["ids"]))
+            $l["ids"] = json_encode($l["ids"]);
+        $Conf->save_session_array("l", $idx, (object) $l);
+        return true;
     }
     static function allocate($listid) {
         global $Conf, $Me;
@@ -491,14 +485,14 @@ class SessionList {
         global $Me;
         if (self::$requested_list === false) {
             // look up list ID
-            $listdesc = @$_REQUEST["ls"];
+            $listdesc = req("ls");
             if (isset($_COOKIE["hotcrp_ls"]))
                 $listdesc = $listdesc ? : $_COOKIE["hotcrp_ls"];
 
             $list = null;
             if (($listno = cvtint($listdesc, null))
                 && ($xlist = self::lookup($listno))
-                && (!@$xlist->cid || $xlist->cid == ($Me ? $Me->contactId : 0)))
+                && (!get($xlist, "cid") || $xlist->cid == ($Me ? $Me->contactId : 0)))
                 $list = $xlist;
 
             // look up list description
@@ -539,7 +533,7 @@ class SessionList {
 
         // start with requested list
         $list = self::requested();
-        if ($list && !str_starts_with((string) @$list->listid, $listtype))
+        if ($list && !str_starts_with(get_s($list, "listid"), $listtype))
             $list = null;
 
         // look up ID in list; try new lists if not found
@@ -558,12 +552,11 @@ class SessionList {
             $list = null;
 
         // save list changes
-        if ($list && !@$list->listno) {
+        if ($list && !get($list, "listno"))
             $list->listno = self::allocate($list->listid);
-            self::change($list->listno, $list, true);
-        }
         if ($list) {
-            self::change($list->listno, ["timestamp" => $Now]);
+            $list->timestamp = $Now;
+            self::change($list->listno, $list);
             $list->id_position = $k;
         }
         self::$active_listid = $listid;

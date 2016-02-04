@@ -838,7 +838,7 @@ class ContactList {
             $l = SessionList::create("u/" . $listname, $ids,
                                      ($listtitle ? $listtitle : "Users"),
                                      hoturl_site_relative_raw("users", ["t" => $listname]));
-            SessionList::change($this->listNumber, $l, true);
+            SessionList::change($this->listNumber, $l);
         }
 
         return $x;

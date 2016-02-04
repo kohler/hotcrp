@@ -1413,7 +1413,10 @@ class PaperList {
             if (isset($this->qreq->sort))
                 $url .= (strpos($url, "?") ? "&" : "?") . "sort=" . urlencode($this->qreq->sort);
             $sl->url = $url;
-            SessionList::change($this->listNumber, $sl, true);
+            if (get($options, "list_properties"))
+                foreach ($options["list_properties"] as $k => $v)
+                    $sl->$k = $v;
+            SessionList::change($this->listNumber, $sl);
         }
 
         foreach ($fieldDef as $fdef)
