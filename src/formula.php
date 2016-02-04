@@ -1181,15 +1181,18 @@ class Formula {
             if (!count($os->os))
                 return null;
             foreach ($os->os as $o) {
-                $ex = new OptionFexpr($o[0]);
-                if ($o[2] === "special")
+                $ex = new OptionFexpr($o->option);
+                if ($o->kind)
                     $this->_error_html[] = "“" . htmlspecialchars($rest[1]) . "” can’t be used in formulas.";
-                else if (@$o[3] !== "" && $o[1] == "not in")
-                    $ex = new NegateFexpr(new InFexpr($ex, $o[2]));
-                else if (@$o[3] !== "" && $o[1] == "in")
-                    $ex = new InFexpr($ex, $o[2]);
+                else if ($o->value_word === "")
+                    /* stick with raw option fexpr */;
+                else if (is_array($o->value) && $o->compar === "!=")
+                    $ex = new NegateFexpr(new InFexpr($ex, $o->value));
+                else if (is_array($o->value))
+                    $ex = new InFexpr($ex, $o->value);
                 else
-                    $ex = new Fexpr(@self::$_oprewrite[$o[1]] ? : $o[1], $ex, new ConstantFexpr($o[2], $o[0]));
+                    $ex = new Fexpr(get(self::$_oprewrite, $o->compar, $o->compar),
+                                    $ex, new ConstantFexpr($o->value, $o->option));
                 $e = $e ? new Fexpr("||", $e, $ex) : $ex;
             }
             if ($os->negate)

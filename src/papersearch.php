@@ -657,6 +657,32 @@ class ContactSearch {
     }
 }
 
+class OptionMatcher {
+    public $option;
+    public $compar;
+    public $value;
+    public $kind;
+    public $value_word;
+
+    public function __construct($option, $compar, $value, $value_word, $kind = 0) {
+        assert(!is_array($value) || $compar === "=" || $compar === "!=");
+        $this->option = $option;
+        $this->compar = $compar;
+        $this->value = $value;
+        $this->value_word = $value_word;
+        $this->kind = $kind;
+    }
+    public function table_matcher() {
+        if ($this->kind)
+            return ">0";
+        else if (is_array($this->value))
+            return ($this->compar === "=" ? " in (" : " not in (")
+                . join(",", $this->value) . ")";
+        else
+            return $this->compar . $this->value;
+    }
+}
+
 class PaperSearch {
     const F_MANAGER = 0x0001;
     const F_NONCONFLICT = 0x0002;
@@ -1579,32 +1605,32 @@ class PaperSearch {
                         $warn[] = "“" . htmlspecialchars($oval) . "” doesn’t match any " . htmlspecialchars($oname) . " values.";
                     else if (count($xval) == 1) {
                         reset($xval);
-                        $qo[] = array($o, $ocompar, key($xval), $oval);
+                        $qo[] = new OptionMatcher($o, $ocompar, key($xval), $oval);
                     } else if ($ocompar !== "=" && $ocompar !== "!=")
                         $warn[] = "Submission option “" . htmlspecialchars("$oname:$oval") . "” matches multiple values, can’t use " . htmlspecialchars($ocompar) . ".";
                     else
-                        $qo[] = array($o, $ocompar === "=" ? "in" : "not in", array_keys($xval), $oval);
+                        $qo[] = new OptionMatcher($o, $ocompar, array_keys($xval), $oval);
                     continue;
                 }
 
                 if ($oval === "" || $oval === "yes")
-                    $qo[] = array($o, "!=", 0, $oval);
+                    $qo[] = new OptionMatcher($o, "!=", 0, $oval);
                 else if ($oval === "no")
-                    $qo[] = array($o, "=", 0);
+                    $qo[] = new OptionMatcher($o, "=", 0, $oval);
                 else if ($o->type === "numeric") {
                     if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m))
-                        $qo[] = array($o, $ocompar, $m[1]);
+                        $qo[] = new OptionMatcher($o, $ocompar, $m[1], $oval);
                     else
                         $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
                 } else if ($o->type === "attachments") {
                     if ($oval === "any")
-                        $qo[] = array($o, "!=", 0, $oval);
+                        $qo[] = new OptionMatcher($o, "!=", 0, $oval);
                     else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m)) {
                         if (CountMatcher::compare(0, $ocompar, $m[1]))
-                            $qo[] = array($o, "=", 0);
-                        $qo[] = array($o, ">0", "special", "attachment-count", $ocompar, $m[1]);
+                            $qo[] = new OptionMatcher($o, "=", 0, $oval);
+                        $qo[] = new OptionMatcher($o, $ocompar, $m[1], $oval, "attachment-count");
                     } else
-                        $qo[] = array($o, ">0", "special", "attachment-name", $oval);
+                        $qo[] = new OptionMatcher($o, "~=", $oval, $oval, "attachment-name", $oval);
                 } else
                     continue;
             }
@@ -1612,7 +1638,7 @@ class PaperSearch {
             foreach (PaperOption::option_list() as $oid => $o)
                 if ($o->has_selector()) {
                     foreach (Text::simple_search($oname, $o->selector) as $xval => $text)
-                        $qo[] = array($o, $ocompar, $xval);
+                        $qo[] = new OptionMatcher($o, $ocompar, $xval, "~val~");
                 }
 
         return (object) array("os" => $qo, "warn" => $warn, "negate" => $oname === "none");
@@ -1633,13 +1659,7 @@ class PaperSearch {
         // add expressions
         $qz = array();
         foreach ($os->os as $oq)
-            if ($oq[2] === "special") {
-                $qz[] = new SearchTerm("option", self::F_XVIEW, $oq);
-            } else {
-                $cmp = ctype_alpha($oq[1][0]) ? " $oq[1] " : $oq[1];
-                $value = is_array($oq[2]) ? "(" . join(",", $oq[2]) . ")" : $oq[2];
-                $qz[] = new SearchTerm("option", self::F_XVIEW, array($oq[0], $cmp . $value));
-            }
+            $qz[] = new SearchTerm("option", self::F_XVIEW, $oq);
         if ($os->negate)
             $qz = array(SearchTerm::make_not(SearchTerm::make_op("or", $qz)));
         $qt = array_merge($qt, $qz);
@@ -2750,8 +2770,8 @@ class PaperSearch {
             $q = array();
             $this->_clauseTermSetFlags($t, $sqi, $q);
             $thistab = "Option_" . count($sqi->tables);
-            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $t->value[0]->id . " group by paperId)"));
-            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $t->value[1]);
+            $sqi->add_table($thistab, array("left join", "(select paperId, max(value) v from PaperOption where optionId=" . $t->value->option->id . " group by paperId)"));
+            $sqi->add_column($thistab . "_x", "coalesce($thistab.v,0)" . $t->value->table_matcher());
             $t->link = $thistab . "_x";
             $q[] = $sqi->columns[$t->link];
             $f[] = "(" . join(" and ", $q) . ")";
@@ -2824,7 +2844,7 @@ class PaperSearch {
                 && !$this->contact->can_view_decision($row, true))
                 return false;
             if ($t->type === "option"
-                && !$this->contact->can_view_paper_option($row, $t->value[0], true))
+                && !$this->contact->can_view_paper_option($row, $t->value->option, true))
                 return false;
             if ($t->type === "re" && ($fieldname = $t->link)
                 && !isset($row->$fieldname)) {
@@ -2944,12 +2964,13 @@ class PaperSearch {
             $fieldname = $t->link;
             if ($row->$fieldname == 0)
                 return false;
-            if (@$t->value[2] === "special") {
-                $ov = $row->option($t->value[0]->id);
-                if ($t->value[3] === "attachment-count")
-                    return CountMatcher::compare(count($ov->values), $t->value[4], $t->value[5]);
-                else if ($t->value[3] === "attachment-name") {
-                    $reg = self::analyze_field_preg($t->value[4]);
+            $om = $t->value;
+            if ($om->kind) {
+                $ov = $row->option($om->option->id);
+                if ($om->kind === "attachment-count" && $ov)
+                    return CountMatcher::compare(count($ov->values), $om->compar, $om->value);
+                else if ($om->kind === "attachment-name" && $ov) {
+                    $reg = self::analyze_field_preg($om->value);
                     foreach ($ov->documents($row) as $doc)
                         if (self::match_field_preg($reg, $doc->filename, false))
                             return true;
