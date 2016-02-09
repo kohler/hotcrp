@@ -3023,8 +3023,7 @@ class Contact {
             } else if (($twhen = $Conf->setting("tracker")))
                 $dl->tracker_status_at = $twhen;
             if (get($Opt, "trackerCometSite"))
-                $dl->tracker_site = $Opt["trackerCometSite"]
-                    . "?conference=" . urlencode(Navigation::site_absolute(true));
+                $dl->tracker_site = $Opt["trackerCometSite"];
         }
 
         // permissions

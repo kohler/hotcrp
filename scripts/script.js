@@ -1507,11 +1507,8 @@ function comet_tracker() {
         timeout = (comet_nsuccess ? 298000 : Math.floor(1000 + Math.random() * 1000));
 
     // correct tracker_site URL to be a full URL if necessary
-    if (dl.tracker_site && !dl.tracker_site_corrected
-        && !/^(?:https?:|\/)/.test(dl.tracker_site)) {
+    if (dl.tracker_site && !/^(?:https?:|\/)/.test(dl.tracker_site))
         dl.tracker_site = url_absolute(dl.tracker_site, hoturl_absolute_base());
-        dl.tracker_site_corrected = true;
-    }
 
     // exit early if already waiting, or another tab is waiting, or stopped
     if (comet_sent_at || comet_store(0))
@@ -1552,7 +1549,9 @@ function comet_tracker() {
     }
 
     $.ajax({
-        url: hoturl_add(dl.tracker_site, "poll=" + encodeURIComponent(dl.tracker_status || "off")
+        url: hoturl_add(dl.tracker_site,
+                        "conference=" + encodeURIComponent(hoturl_absolute_base())
+                        + "&poll=" + encodeURIComponent(dl.tracker_status || "off")
                         + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
                         + "&timeout=" + timeout),
         timeout: timeout + 2000, dataType: "json",
