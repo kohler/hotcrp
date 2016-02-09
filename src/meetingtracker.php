@@ -102,7 +102,7 @@ class MeetingTracker {
         }
 
         $context = stream_context_create(array("http" =>
-                                               array("method" => "get",
+                                               array("method" => "GET",
                                                      "ignore_errors" => true,
                                                      "content" => "",
                                                      "timeout" => 1.0)));
