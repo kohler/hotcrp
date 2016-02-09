@@ -100,13 +100,15 @@ class MeetingTracker {
             else
                 $comet_url = $m[1] . $m[2] . $comet_url;
         }
+        if (!str_ends_with($comet_url, "/"))
+            $comet_url .= "/";
 
         $context = stream_context_create(array("http" =>
                                                array("method" => "GET",
                                                      "ignore_errors" => true,
                                                      "content" => "",
                                                      "timeout" => 1.0)));
-        $comet_url .= "?conference=" . urlencode($conference)
+        $comet_url .= "update?conference=" . urlencode($conference)
             . "&tracker_status=" . urlencode(self::tracker_status($tracker))
             . "&tracker_status_at=" . microtime(true);
         if ($pids)
