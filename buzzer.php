@@ -79,17 +79,21 @@ function trackertable_paper_row(hc, idx, paper) {
     hc.push_pop(paper.pid && showpapers ? "#" + paper.pid : "");
     hc.push("<td class=\"trackertable trackertitle\">", "<\/td>");
     hc.push_pop(paper.title && showpapers ? text_to_html(paper.title) : "");
-    hc.push("<td class=\"trackertable trackerconflicts\">", "<\/td>");
+    if (idx == 0)
+        hc.push("<td id=\"trackerelapsed\"><\/td>");
+    hc.pop();
     if (paper.pc_conflicts) {
+        hc.push("<tr class=\"trackertable" + idx + "\">", "<\/tr>");
+        hc.push("<td colspan=\"2\"><\/td>");
+        hc.push("<td class=\"trackertable trackerpcconf\"><h6 class=\"plx\">PC conflicts:</h6>", "<\/td>");
         for (var i = 0; i < paper.pc_conflicts.length; ++i)
             hc.push((i ? ", " : "") + "<span class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
         if (!paper.pc_conflicts.length)
             hc.push("None");
+        hc.pop();
+        hc.push("<td><\/td>");
+        hc.pop();
     }
-    hc.pop();
-    if (idx == 0)
-        hc.push("<td id=\"trackerelapsed\"><\/td>");
-    hc.pop();
 }
 function trackertable() {
     var dl = hotcrp_status, hc = new HtmlCollector;
@@ -97,15 +101,6 @@ function trackertable() {
         hc.push("' . $no_discussion . '");
     else {
         hc.push("<table>", "<\/table>");
-
-        hc.push("<thead><tr>", "<\/tr><\/thead>");
-        var any_conflicts = false, i;
-        for (i = 0; i < dl.tracker.papers.length; ++i)
-            any_conflicts = any_conflicts || dl.tracker.papers[i].pc_conflicts;
-        hc.push("<th colspan=\"3\"><\/th>");
-        if (any_conflicts)
-            hc.push("<th class=\"pl\">PC conflicts<\/th>");
-        hc.pop();
 
         hc.push("<tbody>", "<\/tbody>");
         for (var i = 0; i < dl.tracker.papers.length; ++i)

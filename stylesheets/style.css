@@ -1549,7 +1549,7 @@ tr.plx {
 	font-size: 85%;
 	line-height: 135%;
 }
-tr.plx h6 {
+tr.plx h6, h6.plx {
 	display: inline;
 	font-size: inherit;
 	font-weight: normal;
@@ -2749,6 +2749,7 @@ div.aabut .words {
 
 #trackertable {
 	line-height: 125%;
+	font-size: larger;
 }
 #trackertable > table {
 	width: 100%;
@@ -2764,6 +2765,10 @@ td.trackertable.trackerdesc {
 }
 td.trackertable.trackertitle {
 	padding: 0.25em 2em 0.25em 0;
+}
+td.trackertable.trackerpcconf {
+	padding-top: 0;
+	font-size: smaller;
 }
 
 /* mail */
