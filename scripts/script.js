@@ -1259,7 +1259,13 @@ var has_tracker, had_tracker_at, last_tracker_html,
     tracker_timer, tracker_refresher;
 
 function tracker_window_state() {
-    return wstorage.json(true, "hotcrp-tracking");
+    var ts = wstorage.json(true, "hotcrp-tracking");
+    if (ts && !ts[2] && dl.tracker && dl.tracker.trackerid == ts[1]
+        && dl.tracker.start_at) {
+        ts = [ts[0], ts[1], dl.tracker.start_at];
+        wstorage.json(true, "hotcrp-tracking", ts);
+    }
+    return ts;
 }
 
 function is_my_tracker() {
@@ -1334,7 +1340,7 @@ function tracker_html(mytracker) {
 function display_tracker() {
     var mne = $$("tracker"), mnspace = $$("trackerspace"),
         mytracker = is_my_tracker(),
-        body, trackerstate, t, i, e, now = now_msec();
+        body, t, i, e, now = now_msec();
 
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
@@ -1420,6 +1426,8 @@ function tracker(start) {
         var req = trackerstate[1] + "%20" + encodeURIComponent(list);
         if (hotcrp_paperid)
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
+        if (trackerstate[2])
+            req += "&tracker_start_at=" + trackerstate[2];
         $.ajax({
             url: hoturl_post("api", "fn=track&track=" + req),
             type: "POST", success: load_success, timeout: 10000

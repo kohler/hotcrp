@@ -204,6 +204,7 @@ class MeetingTracker {
         $status = (object) array("trackerid" => $tracker->trackerid,
                                  "listid" => $tracker->listid,
                                  "position" => $tracker->position,
+                                 "start_at" => $tracker->start_at,
                                  "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
@@ -234,18 +235,28 @@ class MeetingTracker {
         if (!$user->privChair || !check_post())
             json_exit(array("ok" => false));
         // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
-        if ($_REQUEST["track"] === "stop")
+        if ($_REQUEST["track"] === "stop") {
             self::clear();
-        else {
-            $args = preg_split('/\s+/', $_REQUEST["track"]);
-            if (count($args) >= 2
-                && ($xlist = SessionList::lookup($args[1]))
-                && str_starts_with($xlist->listid, "p/")) {
-                $position = null;
-                if (count($args) >= 3 && ctype_digit($args[2]))
-                    $position = array_search((int) $args[2], $xlist->ids);
-                self::update($xlist, $args[0], $position);
-            }
+            return;
+        }
+        // check tracker_start_at to ignore concurrent updates
+        if (($start_at = req("tracker_start_at"))
+            && ($tracker = self::lookup())) {
+            $time = $tracker->position_at;
+            if (isset($tracker->start_at))
+                $time = $tracker->start_at;
+            if ($time > $start_at)
+                return;
+        }
+        // actually track
+        $args = preg_split('/\s+/', $_REQUEST["track"]);
+        if (count($args) >= 2
+            && ($xlist = SessionList::lookup($args[1]))
+            && str_starts_with($xlist->listid, "p/")) {
+            $position = null;
+            if (count($args) >= 3 && ctype_digit($args[2]))
+                $position = array_search((int) $args[2], $xlist->ids);
+            self::update($xlist, $args[0], $position);
         }
     }
 }
