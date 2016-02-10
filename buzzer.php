@@ -82,7 +82,7 @@ function trackertable_paper_row(hc, idx, paper) {
     hc.push("<td class=\"trackertable trackerconflicts\">", "<\/td>");
     if (paper.pc_conflicts) {
         for (var i = 0; i < paper.pc_conflicts.length; ++i)
-            hc.push((i ? ", " : "") + "<scan class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
+            hc.push((i ? ", " : "") + "<span class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
         if (!paper.pc_conflicts.length)
             hc.push("None");
     }
