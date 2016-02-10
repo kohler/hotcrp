@@ -25,7 +25,7 @@ class MeetingTracker {
         global $Conf;
         if ($Conf->setting("tracker")) {
             $t = ["trackerid" => false, "position_at" => self::next_position_at()];
-            $Conf->save_setting("tracker", 0, $t);
+            $Conf->save_setting("tracker", 0, (object) $t);
             self::contact_tracker_comet();
         }
         return null;
