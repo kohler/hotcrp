@@ -195,7 +195,7 @@ div.body {
 body.paper {
 	background: #dce4e8;
 }
-body#help, body#settings {
+body#help, body#settings, body#buzzer {
 	background: #ecf2f4;
 }
 
@@ -2746,7 +2746,7 @@ div.aabut .words {
 }
 #trackerelapsed {
 	font-weight: bold;
-        padding: 0 1em 0 0.5em;
+        padding: 0 24px 0 0.5em;
         opacity: 0.5;
         text-align: right;
 }
@@ -2754,21 +2754,31 @@ div.aabut .words {
 #trackertable {
 	line-height: 125%;
 	font-size: larger;
+	margin: 0 -24px;
 }
 #trackertable > table {
 	width: 100%;
 }
 .trackertable0 {
-	background: rgba(100, 255, 100, 0.9);
+	background: #ffffff; /*rgba(100, 255, 100, 0.9);*/
+}
+.trackertable0.t > td {
+	border-top: 1px solid #f33360;
+}
+.trackertable0.b > td {
+	border-bottom: 1px solid #f33360;
 }
 td.trackertable {
 	padding: 0.25em 0.5em 0.25em 0;
 }
 td.trackertable.trackerdesc {
-	padding-left: 0.5em;
+	padding-left: 24px;
 }
 td.trackertable.trackertitle {
-	padding: 0.25em 2em 0.25em 0;
+	padding-right: 2em;
+}
+td.trackertable.trackerelapsed {
+	padding-right: 24px;
 }
 td.trackertable.trackerpcconf {
 	padding-top: 0;

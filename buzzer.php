@@ -72,7 +72,7 @@ if ($Me->privChair)
     $no_discussion .= '<p>To start a discussion, <a href=\\"' . hoturl("search") . '\\">search<\/a> for a list, go to a paper in that list, and use the “&#9759;” button.<\/p>';
 Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
 function trackertable_paper_row(hc, idx, paper) {
-    hc.push("<tr class=\"trackertable" + idx + "\">", "<\/tr>");
+    hc.push("<tr class=\"trackertable" + idx + (paper.pc_conflicts ? " t" : " t b") + "\">", "<\/tr>");
     hc.push("<td class=\"trackertable trackerdesc\">", "<\/td>");
     hc.push_pop(idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     hc.push("<td class=\"trackertable trackerpid\">", "<\/td>");
@@ -83,7 +83,7 @@ function trackertable_paper_row(hc, idx, paper) {
         hc.push("<td id=\"trackerelapsed\"><\/td>");
     hc.pop();
     if (paper.pc_conflicts) {
-        hc.push("<tr class=\"trackertable" + idx + "\">", "<\/tr>");
+        hc.push("<tr class=\"trackertable" + idx + " b\">", "<\/tr>");
         hc.push("<td colspan=\"2\"><\/td>");
         hc.push("<td class=\"trackertable trackerpcconf\"><h6 class=\"plx\">PC conflicts:</h6>", "<\/td>");
         for (var i = 0; i < paper.pc_conflicts.length; ++i)
@@ -111,7 +111,7 @@ function trackertable() {
         hotcrp_deadlines.tracker_show_elapsed();
     if (buzzer_status != "open" && (dl.tracker_status || "off") != "off"
         && buzzer_status != dl.tracker_status && !buzzer_muted) {
-        var sound = jQuery("#buzzer")[0];
+        var sound = jQuery("#buzzersound")[0];
         sound.pause();
         sound.currentTime = 0;
         sound.play();
@@ -133,10 +133,10 @@ jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
     evt.preventDefault();
     jQuery(trackertable);
 })');
-$Conf->header("Discussion status", "buzzerpage", false);
+$Conf->header("Discussion status", "buzzer", false);
 
 echo '<div id="trackertable" style="margin-top:1em"></div>';
-echo "<audio id=\"buzzer\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
+echo "<audio id=\"buzzersound\"><source src=\"", Ht::$img_base, "buzzer.mp3\"></audio>";
 
 echo Ht::form(hoturl_post("buzzer"));
 echo '<table style="margin-top:3em"><tr>';
