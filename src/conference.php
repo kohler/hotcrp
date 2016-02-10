@@ -2453,7 +2453,8 @@ class Conf {
             }
 
             // "act as" link
-            if (($actas = @$_SESSION["last_actas"]) && @$_SESSION["trueuser"]
+            if (($actas = get($_SESSION, "last_actas"))
+                && get($_SESSION, "trueuser")
                 && ($Me->privChair || Contact::$trueuser_privChair === $Me)) {
                 // Link becomes true user if not currently chair.
                 if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0)
@@ -2491,7 +2492,7 @@ class Conf {
         echo "  <hr class=\"c\" /></div>\n";
 
         echo "<div id=\"initialmsgs\">\n";
-        if (@$Opt["maintenance"])
+        if (get($Opt, "maintenance"))
             echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
         $this->save_messages = false;
         if (($msgs = $this->session("msgs")) && count($msgs)) {

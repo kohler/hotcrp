@@ -7,7 +7,7 @@ class MeetingTracker {
     static function lookup() {
         global $Conf, $Now;
         $tracker = $Conf->setting_json("tracker");
-        if ($tracker && $tracker->update_at >= $Now - 150)
+        if ($tracker && (!$tracker->trackerid || $tracker->update_at >= $Now - 150))
             return $tracker;
         else {
             $p = $tracker ? $tracker->position_at : 0;
