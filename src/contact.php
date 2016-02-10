@@ -3009,19 +3009,19 @@ class Contact {
         }
 
         // add meeting tracker
-        $tracker = null;
         if (($this->isPC || $this->tracker_kiosk_state)
             && $this->can_view_tracker()) {
-            if ($Conf->setting_data("tracker")
-                && ($tracker = MeetingTracker::info_for($this))) {
-                $dl->tracker = $tracker;
+            $tracker = MeetingTracker::lookup();
+            if ($tracker->trackerid
+                && ($tinfo = MeetingTracker::info_for($this))) {
+                $dl->tracker = $tinfo;
                 $dl->tracker_status = MeetingTracker::tracker_status($tracker);
-                $dl->tracker_status_at = microtime(true);
                 if (get($Opt, "trackerHidden"))
                     $dl->tracker_hidden = true;
-                $dl->now = $dl->tracker_status_at;
-            } else if (($twhen = $Conf->setting("tracker")))
-                $dl->tracker_status_at = $twhen;
+                $dl->now = microtime(true);
+            }
+            if ($tracker->position_at)
+                $dl->tracker_status_at = $tracker->position_at;
             if (get($Opt, "trackerCometSite"))
                 $dl->tracker_site = $Opt["trackerCometSite"];
         }

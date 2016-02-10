@@ -2423,6 +2423,7 @@ class Conf {
 
         // meeting tracker
         $trackerowner = ($trackerstate = $this->setting_json("tracker"))
+            && $trackerstate->trackerid
             && $trackerstate->sessionid == session_id();
         if ($trackerowner)
             Ht::stash_script("hotcrp_deadlines.tracker(0)");

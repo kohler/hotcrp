@@ -9,13 +9,25 @@ class MeetingTracker {
         $tracker = $Conf->setting_json("tracker");
         if ($tracker && $tracker->update_at >= $Now - 150)
             return $tracker;
-        return null;
+        else {
+            $p = $tracker ? $tracker->position_at : 0;
+            return (object) ["trackerid" => false, "position_at" => $p];
+        }
+    }
+
+    static private function next_position_at() {
+        global $Conf;
+        $tracker = $Conf->setting_json("tracker");
+        return max(microtime(true), $tracker ? $tracker->position_at + 0.1 : 0);
     }
 
     static function clear() {
-        global $Conf, $Now;
-        $Conf->save_setting("tracker", $Now, null);
-        self::contact_tracker_comet();
+        global $Conf;
+        if ($Conf->setting("tracker")) {
+            $t = ["trackerid" => false, "position_at" => self::next_position_at()];
+            $Conf->save_setting("tracker", 0, $t);
+            self::contact_tracker_comet();
+        }
         return null;
     }
 
@@ -31,22 +43,21 @@ class MeetingTracker {
                                   "url" => $list->url,
                                   "description" => $list->description,
                                   "start_at" => $Now,
-                                  "position_at" => $Now,
+                                  "position_at" => 0,
                                   "update_at" => $Now,
                                   "owner" => $Me->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
         $old_tracker = self::lookup();
-        if ($old_tracker
-            && $old_tracker->trackerid == $tracker->trackerid) {
+        if ($old_tracker->trackerid == $tracker->trackerid) {
             $tracker->start_at = $old_tracker->start_at;
             if ($old_tracker->listid == $tracker->listid
                 && $old_tracker->position == $tracker->position)
                 $tracker->position_at = $old_tracker->position_at;
-            else if ($old_tracker->position_at == $tracker->position_at)
-                $tracker->position_at = microtime(true);
         }
-        $Conf->save_setting("tracker", $Now, $tracker);
+        if (!$tracker->position_at)
+            $tracker->position_at = self::next_position_at();
+        $Conf->save_setting("tracker", 1, $tracker);
         self::contact_tracker_comet();
         return $tracker;
     }
@@ -67,7 +78,7 @@ class MeetingTracker {
         if ($comet_dir) {
             $j = array("ok" => true, "conference" => $conference,
                        "tracker_status" => self::tracker_status($tracker),
-                       "tracker_status_at" => microtime(true));
+                       "tracker_status_at" => $tracker->position_at);
             if ($pids)
                 $j["pulse"] = true;
             if (!str_ends_with($comet_dir, "/"))
@@ -110,7 +121,7 @@ class MeetingTracker {
                                                      "timeout" => 1.0)));
         $comet_url .= "update?conference=" . urlencode($conference)
             . "&tracker_status=" . urlencode(self::tracker_status($tracker))
-            . "&tracker_status_at=" . microtime(true);
+            . "&tracker_status_at=" . $tracker->position_at;
         if ($pids)
             $comet_url .= "&pulse=1";
         $stream = @fopen($comet_url, "r", false, $context);
@@ -182,7 +193,7 @@ class MeetingTracker {
     static function info_for($acct) {
         global $Conf, $Opt, $Now;
         $tracker = self::lookup();
-        if (!$tracker || !$acct->can_view_tracker())
+        if (!$tracker->trackerid || !$acct->can_view_tracker())
             return false;
         if (($status = $Conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
@@ -206,16 +217,17 @@ class MeetingTracker {
     }
 
     static function tracker_status($tracker) {
-        if ($tracker)
+        if ($tracker->trackerid)
             return $tracker->trackerid . "@" . $tracker->position_at;
         else
             return "off";
     }
 
     static function trackerstatus_api($user = null, $qreq = null, $prow = null) {
+        $tracker = self::lookup();
         json_exit(["ok" => true,
-                   "tracker_status" => self::tracker_status(self::lookup()),
-                   "tracker_status_at" => microtime(true)]);
+                   "tracker_status" => self::tracker_status($tracker),
+                   "tracker_status_at" => $tracker->position_at]);
     }
 
     static function track_api($user) {
