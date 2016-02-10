@@ -610,6 +610,7 @@ span.expander > span.in0 {
         display: inline-block;
         padding: 2px 4px;
         text-decoration: none;
+        cursor: pointer;
 }
 .btn.btn-default {
         background: #4444cc;
@@ -625,6 +626,9 @@ span.expander > span.in0 {
 }
 .btn.btn-closer {
 	line-height: 85%;
+}
+.btn.hottooltip {
+	cursor: pointer;
 }
 
 /* checkboxes */
