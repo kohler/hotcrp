@@ -2746,7 +2746,7 @@ div.aabut .words {
 }
 #trackerelapsed {
 	font-weight: bold;
-        padding: 0 24px 0 0.5em;
+        padding: 0 1em 0 0.5em;
         opacity: 0.5;
         text-align: right;
 }
@@ -2777,7 +2777,7 @@ td.trackertable.trackerdesc {
 td.trackertable.trackertitle {
 	padding-right: 2em;
 }
-td.trackertable.trackerelapsed {
+#trackertable #trackerelapsed {
 	padding-right: 24px;
 }
 td.trackertable.trackerpcconf {
