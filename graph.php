@@ -10,10 +10,6 @@ $Graph = @$_REQUEST["g"];
 if (!$Graph
     && preg_match(',\A/(\w+)(/|\z),', Navigation::path(), $m))
     $Graph = $_REQUEST["g"] = $m[1];
-$Subgraph = @$_REQUEST["subg"];
-if (!$Subgraph
-    && preg_match(',\A/\w+/(.+?)/?\z,', Navigation::path()))
-    $Subgraph = $_REQUEST["subg"] = $m[2];
 
 // collect allowed graphs
 $Graphs = array();
