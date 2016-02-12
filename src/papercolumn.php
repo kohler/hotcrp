@@ -184,8 +184,10 @@ class TitlePaperColumn extends PaperColumn {
         global $Conf;
         $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';
 
+        $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
+
         $format = 0;
-        if ($pl->live_table && !$this->highlight
+        if ($pl->live_table && !$highlight_count
             && ($format = $row->paperFormat) === null)
             $format = Conf::$gDefaultFormat;
         if ($format && ($f = Conf::format_info($format))
@@ -198,7 +200,7 @@ class TitlePaperColumn extends PaperColumn {
             ++$this->nformats;
         }
 
-        $t .= '" tabindex="5">' . Text::highlight($row->title, $this->highlight) . '</a>'
+        $t .= '" tabindex="5">' . $highlight_text . '</a>'
             . $pl->_contentDownload($row);
 
         if ($this->has_badges && $pl->contact->can_view_tags($row, true)

@@ -158,23 +158,30 @@ class PaperTable {
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
                 . ' &nbsp; ';
-            $highlight = null;
-            if ($paperTable && $paperTable->matchPreg)
-                $highlight = get($paperTable->matchPreg, "title");
-            if (!$highlight && ($format = $prow->paperFormat) === null)
+
+            $highlight = $highlight_text = null;
+            $title_matches = 0;
+            if ($paperTable && $paperTable->matchPreg
+                && ($highlight = get($paperTable->matchPreg, "title")))
+                $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
+
+            $format = null;
+            if (!$title_matches && ($format = $prow->paperFormat) === null)
                 $format = Conf::$gDefaultFormat;
             if ($format && ($f = Conf::format_info($format))
                 && ($regex = get($f, "simple_regex"))
                 && preg_match($regex, $prow->title))
                 $format = 0;
+
             if ($format)
                 $t .= '<span class="ptitle preformat" data-format="' . $format . '">';
             else
                 $t .= '<span class="ptitle">';
-            if ($highlight)
-                $t .= Text::highlight($prow->title, $highlight, $paperTable->entryMatches);
+            if ($highlight_text)
+                $t .= $highlight_text;
             else
                 $t .= htmlspecialchars($prow->title);
+
             $t .= '</span></span></a>';
             if ($viewable_tags)
                 $t .= $tagger->unparse_badges_html($viewable_tags);
