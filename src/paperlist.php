@@ -306,8 +306,8 @@ class PaperList {
     function sessionMatchPreg($name) {
         if (isset($this->qreq->ls)
             && ($l = SessionList::lookup($this->qreq->ls))
-            && @($l->matchPreg->$name))
-            return $l->matchPreg->$name;
+            && ($x = get($l->matchPreg, $name)))
+            return $x;
         else
             return "";
     }
