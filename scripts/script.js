@@ -1512,7 +1512,7 @@ $(window).on("unload", function () { comet_store(-1); });
 
 function comet_tracker() {
     var at = now_msec(),
-        timeout = (comet_nsuccess ? 298000 : Math.floor(1000 + Math.random() * 1000));
+        timeout = Math.floor((comet_nsuccess ? 297000 : 1000) + Math.random() * 1000);
 
     // correct tracker_site URL to be a full URL if necessary
     if (dl.tracker_site && !/^(?:https?:|\/)/.test(dl.tracker_site))
