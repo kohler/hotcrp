@@ -67,9 +67,10 @@ if (!$Me->isPC && !$Me->tracker_kiosk_state)
     $Me->escape();
 
 // header and script
-$no_discussion = '<h2>No discussion<\/h2>';
+$no_discussion = '<div><h2>No discussion<\/h2>'; // <div> is CSS-styled
 if ($Me->privChair)
     $no_discussion .= '<p>To start a discussion, <a href=\\"' . hoturl("search") . '\\">search<\/a> for a list, go to a paper in that list, and use the “&#9759;” button.<\/p>';
+$no_discussion .= '</div>';
 Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
 function trackertable_paper_row(hc, idx, paper) {
     hc.push("<tr class=\"trackertable" + idx + (paper.pc_conflicts ? " t" : " t b") + "\">", "<\/tr>");

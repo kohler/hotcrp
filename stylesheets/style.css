@@ -2754,10 +2754,13 @@ div.aabut .words {
 #trackertable {
 	line-height: 125%;
 	font-size: larger;
+	margin: 0 -24px;
+}
+#trackertable > div {
+	margin: 0 24px;
 }
 #trackertable > table {
 	width: 100%;
-	margin: 0 -24px;
 }
 .trackertable0 {
 	background: #ffffff;
