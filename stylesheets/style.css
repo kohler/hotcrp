@@ -124,7 +124,7 @@ a.pnum, a.ptitle, a.maillink, u.x, .noul {
 }
 a.q:hover, a.qq:hover, a.x:hover, a.xx:hover u.x,
 div.papmodex:hover > a, div.leftmenu_item:hover > a,
-tr.pl:hover a.pnum, tr.pl:hover a.ptitle,
+tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 .childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
 	text-decoration: underline;
 }

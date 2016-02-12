@@ -1256,7 +1256,7 @@ function redisplay_main() {
 
 // tracker
 var has_tracker, had_tracker_at, last_tracker_html,
-    tracker_timer, tracker_refresher;
+    tracker_has_format, tracker_timer, tracker_refresher;
 
 function tracker_window_state() {
     var ts = wstorage.json(true, "hotcrp-tracking");
@@ -1280,16 +1280,20 @@ var tracker_map = [["is_manager", "Administrator"],
                    ["is_conflict", "Conflict"]];
 
 function tracker_paper_columns(idx, paper) {
-    var url = hoturl("paper", {p: paper.pid, ls: dl.tracker.listid}), i, x = [], title;
+    var url = hoturl("paper", {p: paper.pid, ls: dl.tracker.listid}), x = [];
     var t = '<td class="trackerdesc">';
     t += (idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     t += '</td><td class="trackerpid">';
     if (paper.pid)
         t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
     t += '</td><td class="trackerbody">';
-    if (paper.title)
-        x.push('<a class="uu" href="' + url + '">' + text_to_html(paper.title) + '</a>');
-    for (i = 0; i != tracker_map.length; ++i)
+    if (paper.title) {
+        var f = paper.format ? ' ptitle preformat" data-format="' + paper.format : "";
+        x.push('<a class="uu' + f + '" href="' + url + '">' + text_to_html(paper.title) + '</a>');
+        if (paper.format)
+            tracker_has_format = true;
+    }
+    for (var i = 0; i != tracker_map.length; ++i)
         if (paper[tracker_map[i][0]])
             x.push('<span class="tracker' + tracker_map[i][0] + '">' + tracker_map[i][1] + '</span>');
     return t + x.join(" &nbsp;&#183;&nbsp; ") + '</td>';
@@ -1317,6 +1321,7 @@ function tracker_show_elapsed() {
 }
 
 function tracker_html(mytracker) {
+    tracker_has_format = false;
     var t = "";
     if (dl.is_admin) {
         t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
@@ -1392,6 +1397,8 @@ function display_tracker() {
             mne.className = "match";
         mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
         $(mne).find(".hottooltip").each(add_tooltip);
+        if (tracker_has_format)
+            render_text.titles();
         mnspace.style.height = mne.offsetHeight + "px";
     }
     if (dl.tracker && dl.tracker.position_at)

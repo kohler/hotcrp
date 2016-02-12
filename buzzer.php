@@ -71,7 +71,7 @@ $no_discussion = '<div><h2>No discussion<\/h2>'; // <div> is CSS-styled
 if ($Me->privChair)
     $no_discussion .= '<p>To start a discussion, <a href=\\"' . hoturl("search") . '\\">search<\/a> for a list, go to a paper in that list, and use the “&#9759;” button.<\/p>';
 $no_discussion .= '</div>';
-Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
+Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ', tracker_has_format;
 function trackertable_paper_row(hc, idx, paper) {
     var pcconf;
     if (paper.pc_conflicts) {
@@ -88,10 +88,15 @@ function trackertable_paper_row(hc, idx, paper) {
     hc.push("<td class=\"trackertable trackerpid\">", "<\/td>");
     hc.push_pop(paper.pid && showpapers ? "#" + paper.pid : "");
     hc.push("<td class=\"trackertable trackertitle\">", "<\/td>");
-    if (showpapers)
-        hc.push_pop(paper.title ? text_to_html(paper.title) : "<i>No title</i>");
-    else
+    if (!showpapers)
         hc.push_pop(pcconf ? pcconf : "");
+    else if (paper.title && paper.format) {
+        hc.push_pop("<span class=\"ptitle preformat\" data-format=\"" + paper.format + "\">" + text_to_html(paper.title) + "<\/span>");
+        tracker_has_format = true;
+    } else if (paper.title)
+        hc.push_pop(text_to_html(paper.title));
+    else
+        hc.push_pop("<i>No title</i>");
     if (idx == 0)
         hc.push("<td id=\"trackerelapsed\"><\/td>");
     hc.pop();
@@ -105,6 +110,7 @@ function trackertable_paper_row(hc, idx, paper) {
 }
 function trackertable() {
     var dl = hotcrp_status, hc = new HtmlCollector;
+    tracker_has_format = false;
     if (!dl.tracker || !dl.tracker.papers)
         hc.push("' . $no_discussion . '");
     else {
@@ -117,6 +123,8 @@ function trackertable() {
     jQuery("#trackertable").html(hc.render());
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
+    if (tracker_has_format)
+        render_text.titles();
     if (buzzer_status != "open" && (dl.tracker_status || "off") != "off"
         && buzzer_status != dl.tracker_status && !buzzer_muted) {
         var sound = jQuery("#buzzersound")[0];

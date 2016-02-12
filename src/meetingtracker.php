@@ -149,20 +149,22 @@ class MeetingTracker {
             $pcm = pcMembers();
         }
 
-        $result = $Conf->qe("select p.paperId, p.title, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
+        $result = $Conf->qe("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
             from Paper p
             left join PaperReview r on (r.paperId=p.paperId and " . ($acct->contactId ? "r.contactId=$acct->contactId" : "false") . ")
             left join PaperConflict conf on (conf.paperId=p.paperId and " . ($acct->contactId ? "conf.contactId=$acct->contactId" : "false") . ")
             ${j}where p.paperId in (" . join(",", $pids) . ")");
 
         $papers = array();
-        while (($row = edb_orow($result))) {
+        while (($row = PaperInfo::fetch($result, $acct))) {
             $papers[$row->paperId] = $p = (object) array();
             if (($acct->privChair || !$row->conflictType
                  || !get($status, "hide_conflicts"))
                 && $acct->tracker_kiosk_state != 1) {
                 $p->pid = (int) $row->paperId;
                 $p->title = $row->title;
+                if (($format = $row->title_format()))
+                    $p->format = $format;
             }
             if ($acct->contactId > 0
                 && $row->managerContactId == $acct->contactId)
