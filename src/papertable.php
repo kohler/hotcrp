@@ -159,21 +159,13 @@ class PaperTable {
                 . '"><span class="taghl"><span class="pnum">' . $title . '</span>'
                 . ' &nbsp; ';
 
-            $highlight = $highlight_text = null;
+            $highlight_text = null;
             $title_matches = 0;
             if ($paperTable && $paperTable->matchPreg
                 && ($highlight = get($paperTable->matchPreg, "title")))
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
 
-            $format = null;
-            if (!$title_matches && ($format = $prow->paperFormat) === null)
-                $format = Conf::$gDefaultFormat;
-            if ($format && ($f = Conf::format_info($format))
-                && ($regex = get($f, "simple_regex"))
-                && preg_match($regex, $prow->title))
-                $format = 0;
-
-            if ($format)
+            if (!$title_matches && ($format = $prow->title_format()))
                 $t .= '<span class="ptitle preformat" data-format="' . $format . '">';
             else
                 $t .= '<span class="ptitle">';

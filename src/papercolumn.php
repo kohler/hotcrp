@@ -186,15 +186,8 @@ class TitlePaperColumn extends PaperColumn {
 
         $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
 
-        $format = 0;
         if ($pl->live_table && !$highlight_count
-            && ($format = $row->paperFormat) === null)
-            $format = Conf::$gDefaultFormat;
-        if ($format && ($f = Conf::format_info($format))
-            && ($regex = get($f, "simple_regex"))
-            && preg_match($regex, $row->title))
-            $format = 0;
-        if ($format) {
+            && ($format = $row->title_format())) {
             $t .= ' preformat" data-format="' . $format;
             $Conf->footerScript('$(render_text.titles)', 'render_titles');
             ++$this->nformats;

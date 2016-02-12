@@ -103,6 +103,7 @@ class PaperInfo {
     public $timeWithdrawn;
     public $paperStorageId;
     public $managerContactId;
+    public $paperFormat;
 
     private $_contact_info = array();
     private $_contact_info_rights_version = 0;
@@ -190,6 +191,17 @@ class PaperInfo {
     public function pretty_text_title($width = 75) {
         $l = $this->pretty_text_title_indent($width);
         return prefix_word_wrap("Paper #{$this->paperId}: ", $this->title, $l);
+    }
+
+    public function title_format() {
+        $format = $this->paperFormat;
+        if ($format === null)
+            $format = Conf::$gDefaultFormat;
+        if ($format && ($f = Conf::format_info($format))
+            && ($simple_regex = get($f, "simple_regex"))
+            && preg_match($simple_regex, $this->title))
+            $format = 0;
+        return $format;
     }
 
     public function author_list() {
