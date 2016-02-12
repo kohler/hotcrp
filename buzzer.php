@@ -73,25 +73,32 @@ if ($Me->privChair)
 $no_discussion .= '</div>';
 Ht::stash_script('var buzzer_status = "open", buzzer_muted = false, showpapers = ' . json_encode($show_papers) . ';
 function trackertable_paper_row(hc, idx, paper) {
-    hc.push("<tr class=\"trackertable" + idx + (paper.pc_conflicts ? " t" : " t b") + "\">", "<\/tr>");
+    var pcconf;
+    if (paper.pc_conflicts) {
+        pcconf = [];
+        for (var i = 0; i < paper.pc_conflicts.length; ++i)
+            pcconf.push("<span class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
+        pcconf = "<h6 class=\"plx\">PC conflicts:</h6> " +
+            (pcconf.length ? pcconf.join(", ") : "None");
+    }
+
+    hc.push("<tr class=\"trackertable" + idx + (showpapers && pcconf ? " t" : " t b") + "\">", "<\/tr>");
     hc.push("<td class=\"trackertable trackerdesc\">", "<\/td>");
     hc.push_pop(idx == 0 ? "Currently:" : (idx == 1 ? "Next:" : "Then:"));
     hc.push("<td class=\"trackertable trackerpid\">", "<\/td>");
     hc.push_pop(paper.pid && showpapers ? "#" + paper.pid : "");
     hc.push("<td class=\"trackertable trackertitle\">", "<\/td>");
-    hc.push_pop(paper.title && showpapers ? text_to_html(paper.title) : "");
+    if (showpapers)
+        hc.push_pop(paper.title ? text_to_html(paper.title) : "<i>No title</i>");
+    else
+        hc.push_pop(pcconf ? pcconf : "");
     if (idx == 0)
         hc.push("<td id=\"trackerelapsed\"><\/td>");
     hc.pop();
-    if (paper.pc_conflicts) {
+    if (showpapers && pcconf) {
         hc.push("<tr class=\"trackertable" + idx + " b\">", "<\/tr>");
         hc.push("<td colspan=\"2\"><\/td>");
-        hc.push("<td class=\"trackertable trackerpcconf\"><h6 class=\"plx\">PC conflicts:</h6>", "<\/td>");
-        for (var i = 0; i < paper.pc_conflicts.length; ++i)
-            hc.push((i ? ", " : "") + "<span class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
-        if (!paper.pc_conflicts.length)
-            hc.push("None");
-        hc.pop();
+        hc.push("<td class=\"trackertable trackerpcconf\">" + pcconf + "<\/td>");
         hc.push("<td><\/td>");
         hc.pop();
     }
