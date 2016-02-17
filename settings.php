@@ -24,6 +24,7 @@ class Si {
     public $type;
     public $optional = false;
     public $values;
+    public $size;
     public $placeholder;
     public $parser;
     public $novalue = false;
@@ -34,34 +35,34 @@ class Si {
 
     static public $all = [];
 
+    private function store($name, $key, $j, $jkey, $typecheck) {
+        if (isset($j->$jkey) && call_user_func($typecheck, $j->$jkey))
+            $this->$key = $j->$jkey;
+        else if (isset($j->$jkey))
+            trigger_error("setting $name.$jkey format error");
+    }
+
     public function __construct($name, $j) {
         $this->name = $name;
-        if (isset($j->short_description) && is_string($j->short_description))
-            $this->short_description = $j->short_description;
-        else if (isset($j->name) && is_string($j->name))
-            $this->short_description = $j->name;
-        foreach (["type", "parser", "ifnonempty", "message_default", "placeholder"] as $k)
-            if (isset($j->$k) && is_string($j->$k))
-                $this->$k = $j->$k;
-            else if (isset($j->$k))
-                trigger_error("setting $name.$k format error");
+        $this->store($name, "short_description", $j, "name", "is_string");
+        foreach (["short_description", "type", "parser", "ifnonempty", "message_default", "placeholder"] as $k)
+            $this->store($name, $k, $j, $k, "is_string");
         foreach (["optional", "novalue", "nodb", "disabled"] as $k)
-            if (isset($j->$k) && is_bool($j->$k))
-                $this->$k = $j->$k;
-            else if (isset($j->$k))
-                trigger_error("setting $name.$k format error");
-        if (isset($j->values) && is_array($j->values))
-            $this->values = $j->values;
+            $this->store($name, $k, $j, $k, "is_bool");
+        $this->store($name, "size", $j, "size", "is_int");
+        $this->store($name, "values", $j, "values", "is_array");
     }
 
     static public function get($name, $k = null) {
-        if (isset(self::$all[$name])) {
-            $si = self::$all[$name];
-            if ($k)
-                return $si->$k;
-            return $si;
-        } else
+        if (!isset(self::$all[$name])
+            && ($xname = preg_replace('/_[\$\d]+\z/', '', $name)) !== $name)
+            $name = $xname;
+        if (!isset(self::$all[$name]))
             return null;
+        $si = self::$all[$name];
+        if ($k)
+            return $si->$k;
+        return $si;
     }
 
 
@@ -103,18 +104,76 @@ class Si {
     }
 }
 
+class SettingGroup {
+    public $name;
+    public $description;
+    public $priority;
+    public $render;
+
+    static public $all;
+    static public $map;
+    static private $sorted = false;
+
+    public function __construct($name, $description, $priority, $render = null) {
+        $this->name = $name;
+        $this->description = $description;
+        $this->priority = $priority;
+        $this->render = $render;
+    }
+    public function render() {
+        if ($this->render)
+            call_user_func($this->render);
+    }
+
+    static public function register($g) {
+        assert(!isset(self::$all[$g->name]) && !isset(self::$map[$g->name]));
+        self::$all[$g->name] = $g;
+        self::$sorted = false;
+    }
+    static public function register_synonym($new_name, $old_name) {
+        assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
+        assert(!isset(self::$all[$new_name]) && !isset(self::$map[$new_name]));
+        self::$map[$new_name] = $old_name;
+    }
+    static public function all() {
+        if (!self::$sorted) {
+            uasort(self::$all, function ($a, $b) {
+                if ($a->priority != $b->priority)
+                    return $a->priority < $b->priority ? -1 : 1;
+                else
+                    return strcasecmp($a->name, $b->name);
+            });
+            self::$sorted = true;
+        }
+        return self::$all;
+    }
+}
+
 Si::initialize();
 
 // maybe set $Opt["contactName"] and $Opt["contactEmail"]
 Contact::site_contact();
 
+SettingGroup::register(new SettingGroup("basics", "Basics", 0, "doInfoGroup"));
+SettingGroup::register_synonym("info", "basics");
+SettingGroup::register(new SettingGroup("users", "Accounts", 10, "doAccGroup"));
+SettingGroup::register_synonym("acc", "users");
+SettingGroup::register(new SettingGroup("msg", "Messages", 20, "doMsgGroup"));
+SettingGroup::register(new SettingGroup("sub", "Submissions", 30, "doSubGroup"));
+SettingGroup::register(new SettingGroup("opt", "Submission options", 40, "doOptGroup"));
+SettingGroup::register(new SettingGroup("reviews", "Reviews", 50, "doRevGroup"));
+SettingGroup::register_synonym("rev", "reviews");
+SettingGroup::register_synonym("review", "reviews");
+SettingGroup::register(new SettingGroup("reviewform", "Review form", 60, "doRfoGroup"));
+SettingGroup::register_synonym("rfo", "reviewform");
+SettingGroup::register(new SettingGroup("tags", "Tags &amp; tracks", 70, "doTagsGroup"));
+SettingGroup::register_synonym("tracks", "tags");
+SettingGroup::register(new SettingGroup("dec", "Decisions", 80, "doDecGroup"));
+
 $Group = defval($_REQUEST, "group");
-$GroupMap = ["rev" => "reviews", "review" => "reviews",
-             "rfo" => "reviewform", "tracks" => "tags",
-             "acc" => "users", "info" => "basics"];
-if (isset($GroupMap[$Group]))
-    $Group = $GroupMap[$Group];
-if (array_search($Group, array("basics", "users", "msg", "sub", "opt", "reviews", "reviewform", "tags", "dec")) === false) {
+if (isset(SettingGroup::$map[$Group]))
+    $Group = SettingGroup::$map[$Group];
+if (!isset(SettingGroup::$all[$Group])) {
     if ($Conf->timeAuthorViewReviews())
         $Group = "dec";
     else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
@@ -1462,7 +1521,14 @@ function doRadio($name, $varr) {
 }
 
 function render_entry($name, $v, $size = 30, $temptext = "") {
-    return Ht::entry($name, $v, setting_js($name, array("size" => $size, "placeholder" => $temptext)));
+    $js = ["size" => $size, "placeholder" => $temptext];
+    if (($info = Si::get($name))) {
+        if ($info->size)
+            $js["size"] = $info->size;
+        if ($info->placeholder)
+            $js["placeholder"] = $info->placeholder;
+    }
+    return Ht::entry($name, $v, setting_js($name, $js));
 }
 
 function doTextRow($name, $text, $v, $size = 30,
@@ -1478,8 +1544,8 @@ function doTextRow($name, $text, $v, $size = 30,
     echo "</td></tr>\n";
 }
 
-function doEntry($name, $v, $size = 30, $temptext = "") {
-    echo render_entry($name, $v, $size, $temptext);
+function doEntry($name, $v, $size = 30) {
+    echo render_entry($name, $v, $size);
 }
 
 function date_value($name, $temptext, $othername = null) {
@@ -1575,12 +1641,12 @@ function doInfoGroup() {
     if ($long == opt_data("shortName"))
         $long = "";
     echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n";
-    doEntry("opt.longName", $long, 70, "(same as abbreviation)");
+    doEntry("opt.longName", $long, 70);
     echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
     echo "<div class=\"g\"></div>\n";
 
     echo "<div class='f-c'>", setting_label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    doEntry("opt.conferenceSite", opt_data("conferenceSite"), 70, "N/A");
+    doEntry("opt.conferenceSite", opt_data("conferenceSite"), 70);
     echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
@@ -1598,11 +1664,11 @@ function doInfoGroup() {
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', setting_label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    doEntry("opt.emailReplyTo", opt_data("emailReplyTo"), 80, "(none)");
+    doEntry("opt.emailReplyTo", opt_data("emailReplyTo"), 80);
     echo '<div class="g"></div>', "\n";
 
     echo '<div class="f-c">', setting_label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    doEntry("opt.emailCc", opt_data("emailCc"), 80, "(none)");
+    doEntry("opt.emailCc", opt_data("emailCc"), 80);
     echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
@@ -2178,7 +2244,7 @@ function doTagsGroup() {
     else
         $v = join(" ", array_keys(TagInfo::chair_tags()));
     echo "<td>", Ht::hidden("has_tag_chair", 1);
-    doEntry("tag_chair", $v, 40, "");
+    doEntry("tag_chair", $v, 40);
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", setting_label("tag_approval", "Approval voting tags"), "</td>";
@@ -2431,29 +2497,19 @@ function doDecGroup() {
 }
 
 
-$settings_groups = array("basics" => "Basics",
-               "users" => "Accounts",
-               "msg" => "Messages",
-               "sub" => "Submissions",
-               "opt" => "Submission options",
-               "reviews" => "Reviews",
-               "reviewform" => "Review form",
-               "tags" => "Tags &amp; tracks",
-               "dec" => "Decisions");
-
-$Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . $settings_groups[$Group] . "</strong>", "settings", actionBar());
+$Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . SettingGroup::$all[$Group]->description . "</strong>", "settings", actionBar());
 $Conf->echoScript(""); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
 echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform")), "<div>";
 
 echo '<div class="leftmenu_menucontainer"><div class="leftmenu_list">';
-foreach ($settings_groups as $k => $v) {
-    if ($k === $Group)
-        echo '<div class="leftmenu_item_on">', $v, '</div>';
+foreach (SettingGroup::all() as $g) {
+    if ($g->name === $Group)
+        echo '<div class="leftmenu_item_on">', $g->description, '</div>';
     else
         echo '<div class="leftmenu_item">',
-            '<a href="', hoturl("settings", "group=$k"), '">', $v, '</a></div>';
+            '<a href="', hoturl("settings", "group={$g->name}"), '">', $g->description, '</a></div>';
 }
 echo "</div></div>\n",
     '<div class="leftmenu_content_container"><div class="leftmenu_content">',
@@ -2464,27 +2520,7 @@ echo "<div class='aahc'>";
 doActionArea(true);
 echo "<div>";
 
-if ($Group == "basics")
-    doInfoGroup();
-else if ($Group == "users")
-    doAccGroup();
-else if ($Group == "msg")
-    doMsgGroup();
-else if ($Group == "sub")
-    doSubGroup();
-else if ($Group == "opt")
-    doOptGroup();
-else if ($Group == "reviews")
-    doRevGroup();
-else if ($Group == "reviewform")
-    doRfoGroup();
-else if ($Group == "tags")
-    doTagsGroup();
-else {
-    if ($Group != "dec")
-        error_log("bad settings group $Group");
-    doDecGroup();
-}
+SettingGroup::$all[$Group]->render();
 
 echo "</div>";
 doActionArea(false);
