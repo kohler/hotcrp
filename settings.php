@@ -18,31 +18,92 @@ $Error = $Warning = $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
 
 // read setting information
-$SettingInfo = json_decode(file_get_contents("$ConfSitePATH/src/settinginfo.json"), true);
+class Si {
+    public $name;
+    public $short_description;
+    public $type;
+    public $optional = false;
+    public $values;
+    public $placeholder;
+    public $parser;
+    public $novalue = false;
+    public $nodb = false;
+    public $disabled = false;
+    public $ifnonempty;
+    public $message_default;
 
-function handle_settinginfo($text, $f) {
-    global $SettingInfo;
-    $j = json_decode($text, true);
-    if (is_array($j))
-        $SettingInfo = array_replace_recursive($SettingInfo, $j);
-    else if (json_last_error() !== JSON_ERROR_NONE)
-        trigger_error("settinginfo_include($f) parse error: " . json_last_error_msg());
-}
+    static public $all = [];
 
-if (($settinginfo_include = @$Opt["settinginfo_include"])) {
-    if (!is_array($settinginfo_include))
-        $settinginfo_include = array($settinginfo_include);
-    foreach ($settinginfo_include as $k => $si) {
-        if (preg_match(',\A\s*\{\s*\",s', $si))
-            handle_settinginfo($si, $k);
-        else
-            foreach (expand_includes($ConfSitePATH, $si) as $f)
-                if (($x = file_get_contents($f)))
-                    handle_settinginfo($x, $f);
+    public function __construct($name, $j) {
+        $this->name = $name;
+        if (isset($j->short_description) && is_string($j->short_description))
+            $this->short_description = $j->short_description;
+        else if (isset($j->name) && is_string($j->name))
+            $this->short_description = $j->name;
+        foreach (["type", "parser", "ifnonempty", "message_default", "placeholder"] as $k)
+            if (isset($j->$k) && is_string($j->$k))
+                $this->$k = $j->$k;
+            else if (isset($j->$k))
+                trigger_error("setting $name.$k format error");
+        foreach (["optional", "novalue", "nodb", "disabled"] as $k)
+            if (isset($j->$k) && is_bool($j->$k))
+                $this->$k = $j->$k;
+            else if (isset($j->$k))
+                trigger_error("setting $name.$k format error");
+        if (isset($j->values) && is_array($j->values))
+            $this->values = $j->values;
+    }
+
+    static public function get($name, $k = null) {
+        if (isset(self::$all[$name])) {
+            $si = self::$all[$name];
+            if ($k)
+                return $si->$k;
+            return $si;
+        } else
+            return null;
+    }
+
+
+    static private function read($info, $text, $fname) {
+        $j = json_decode($text, true);
+        if (is_array($j))
+            $info = array_replace_recursive($info, $j);
+        else if (json_last_error() !== JSON_ERROR_NONE) {
+            Json::decode($text); // our JSON decoder provides error positions
+            trigger_error("$fname: Invalid JSON, " . Json::last_error_msg());
+        }
+        return $info;
+    }
+
+    static public function initialize() {
+        global $ConfSitePATH, $Opt;
+
+        // read all .php files in src/settings
+        foreach (expand_includes($ConfSitePATH, "src/settings/*.php") as $f)
+            @include $f;
+
+        $fname = "$ConfSitePATH/src/settinginfo.json";
+        $info = self::read([], file_get_contents($fname), $fname);
+        if (isset($Opt["settinginfo_include"])
+            && ($settinginfo_include = $Opt["settinginfo_include"])) {
+            if (!is_array($settinginfo_include))
+                $settinginfo_include = array($settinginfo_include);
+            foreach ($settinginfo_include as $k => $si) {
+                if (preg_match(',\A\s*\{\s*\",s', $si))
+                    $info = handle_settinginfo($info, $si, "include entry $k");
+                else
+                    foreach (expand_includes($ConfSitePATH, $si) as $f)
+                        if (($x = file_get_contents($f)))
+                            $info = handle_settinginfo($info, $x, $f);
+            }
+        }
+        foreach ($info as $k => $v)
+            self::$all[$k] = new Si($k, (object) $v);
     }
 }
 
-$SettingInfo = array_to_object_recursive($SettingInfo);
+Si::initialize();
 
 // maybe set $Opt["contactName"] and $Opt["contactEmail"]
 Contact::site_contact();
@@ -61,21 +122,7 @@ if (array_search($Group, array("basics", "users", "msg", "sub", "opt", "reviews"
     else
         $Group = "sub";
 }
-if ($Group == "users")
-    require_once("src/contactlist.php");
 
-
-function setting_info($n, $k = null) {
-    global $SettingInfo;
-    $x = @$SettingInfo->$n ? : (object) array();
-    return $k ? @$x->$k : $x;
-}
-
-function setting_disabled($n) {
-    global $SettingInfo;
-    $x = @$SettingInfo->$n;
-    return $x && @$x->disabled;
-}
 
 function parseGrace($v) {
     $t = 0;
@@ -126,8 +173,8 @@ function expandMailTemplate($name, $default) {
 }
 
 function unparse_setting_error($info, $text) {
-    if (@$info->name)
-        return "$info->name: $text";
+    if ($info->short_description)
+        return "$info->short_description: $text";
     else
         return $text;
 }
@@ -144,7 +191,7 @@ function parse_value($name, $info) {
     }
 
     $v = trim($_POST[$name]);
-    if (@$info->placeholder && $info->placeholder === $v)
+    if ($info->placeholder && $info->placeholder === $v)
         $v = "";
     $opt_value = null;
     if (substr($name, 0, 4) === "opt.")
@@ -195,7 +242,7 @@ function parse_value($name, $info) {
             $err = unparse_setting_error($info, "Invalid email header.");
     } else if ($info->type === "emailstring") {
         $v = trim($v);
-        if ($v === "" && @$info->optional)
+        if ($v === "" && $info->optional)
             return 0;
         else if (validate_email($v) || $v === $opt_value)
             return ($v == "" ? 0 : array(0, $v));
@@ -203,7 +250,7 @@ function parse_value($name, $info) {
             $err = unparse_setting_error($info, "Invalid email.");
     } else if ($info->type === "urlstring") {
         $v = trim($v);
-        if ($v === "" && @$info->optional)
+        if ($v === "" && $info->optional)
             return 0;
         else if (preg_match(',\A(?:https?|ftp)://\S+\z,', $v))
             return [0, $v];
@@ -212,7 +259,7 @@ function parse_value($name, $info) {
     } else if ($info->type === "htmlstring") {
         if (($v = CleanHTML::clean($v, $err)) === false)
             $err = unparse_setting_error($info, $err);
-        else if (@$info->message_default
+        else if ($info->message_default
                  && $v === $Conf->message_default_html($info->message_default))
             return 0;
         else if ($v === $Conf->setting_data($name))
@@ -232,11 +279,11 @@ function parse_value($name, $info) {
     return null;
 }
 
-function save_tags($set, $what) {
+function save_tags($si_name, $info, $set) {
     global $Conf, $Values, $Error, $Warning, $Highlight;
     $tagger = new Tagger;
 
-    if (!$set && $what == "tag_chair" && isset($_POST["tag_chair"])) {
+    if (!$set && $info->name == "tag_chair" && isset($_POST["tag_chair"])) {
         $vs = array();
         foreach (preg_split('/\s+/', $_POST["tag_chair"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
@@ -252,7 +299,7 @@ function save_tags($set, $what) {
             $Values["tag_chair"] = $v;
     }
 
-    if (!$set && $what == "tag_vote" && isset($_POST["tag_vote"])) {
+    if (!$set && $info->name == "tag_vote" && isset($_POST["tag_vote"])) {
         $vs = array();
         foreach (preg_split('/\s+/', $_POST["tag_vote"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR)) {
@@ -270,7 +317,7 @@ function save_tags($set, $what) {
             $Values["tag_vote"] = $v;
     }
 
-    if ($set && $what == "tag_vote" && isset($Values["tag_vote"])) {
+    if ($set && $info->name == "tag_vote" && isset($Values["tag_vote"])) {
         // check allotments
         $pcm = pcMembers();
         foreach (preg_split('/\s+/', $Values["tag_vote"][1]) as $t) {
@@ -311,7 +358,7 @@ function save_tags($set, $what) {
         }
     }
 
-    if (!$set && $what == "tag_approval" && isset($_POST["tag_approval"])) {
+    if (!$set && $info->name == "tag_approval" && isset($_POST["tag_approval"])) {
         $vs = array();
         foreach (preg_split('/\s+/', $_POST["tag_approval"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
@@ -327,7 +374,7 @@ function save_tags($set, $what) {
             $Values["tag_approval"] = $v;
     }
 
-    if ($set && $what == "tag_approval" && isset($Values["tag_approval"])) {
+    if ($set && $info->name == "tag_approval" && isset($Values["tag_approval"])) {
         $pcm = pcMembers();
         foreach (preg_split('/\s+/', $Values["tag_approval"][1]) as $t) {
             if ($t === "")
@@ -355,7 +402,7 @@ function save_tags($set, $what) {
         }
     }
 
-    if (!$set && $what == "tag_rank" && isset($_POST["tag_rank"])) {
+    if (!$set && $info->name == "tag_rank" && isset($_POST["tag_rank"])) {
         $vs = array();
         foreach (preg_split('/\s+/', $_POST["tag_rank"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
@@ -375,7 +422,7 @@ function save_tags($set, $what) {
             $Values["tag_rank"] = $v;
     }
 
-    if (!$set && $what == "tag_color") {
+    if (!$set && $info->name == "tag_color") {
         $vs = array();
         $any_set = false;
         foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
@@ -411,7 +458,7 @@ function save_tags($set, $what) {
             $Values["tag_badge"] = $v;
     }
 
-    if (!$set && $what == "tag_au_seerev" && isset($_POST["tag_au_seerev"])) {
+    if (!$set && $info->name == "tag_au_seerev" && isset($_POST["tag_au_seerev"])) {
         $vs = array();
         $chair_tags = array_flip(explode(" ", value_or_setting_data("tag_chair")));
         foreach (preg_split('/,*\s+/', $_POST["tag_au_seerev"]) as $t)
@@ -436,7 +483,7 @@ function save_tags($set, $what) {
         TagInfo::invalidate_defined_tags();
 }
 
-function save_topics($set) {
+function save_topics($si_name, $info, $set) {
     global $Conf, $Values;
     if (!$set) {
         $Values["topics"] = true;
@@ -565,7 +612,7 @@ function option_clean_form_positions($new_opts, $current_opts) {
     }
 }
 
-function save_options($set) {
+function save_options($si_name, $info, $set) {
     global $Conf, $Values, $Error, $Warning, $Highlight;
 
     if (!$set) {
@@ -631,7 +678,7 @@ function save_options($set) {
     PaperOption::invalidate_option_list();
 }
 
-function save_decisions($set) {
+function save_decisions($si_name, $info, $set) {
     global $Conf, $Values, $Error, $Highlight;
     if (!$set) {
         $dec_revmap = array();
@@ -695,7 +742,7 @@ function save_decisions($set) {
         $Conf->save_setting("outcome_map", 1, $decs);
 }
 
-function save_banal($set) {
+function save_banal($si_name, $info, $set) {
     global $Conf, $Values, $Highlight, $Error, $Warning, $ConfSitePATH;
     if ($set)
         return true;
@@ -850,7 +897,7 @@ function save_banal($set) {
     }
 }
 
-function save_tracks($set) {
+function save_tracks($si_name, $info, $set) {
     global $Values, $Error, $Warning, $Highlight;
     if ($set)
         return;
@@ -899,7 +946,7 @@ function save_tracks($set) {
         $Values["tracks"] = null;
 }
 
-function save_rounds($set) {
+function save_rounds($si_name, $info, $set) {
     global $Conf, $Values, $Error, $Highlight;
     if ($set)
         return;
@@ -971,7 +1018,7 @@ function save_rounds($set) {
                 $osuffix = $isuffix;
             $ndeadlines = 0;
             foreach (Conf::$review_deadlines as $k) {
-                $v = parse_value($k . $isuffix, setting_info($k));
+                $v = parse_value($k . $isuffix, Si::get($k));
                 $Values[$k . $osuffix] = $v < 0 ? null : $v;
                 $ndeadlines += $v > 0;
             }
@@ -983,7 +1030,7 @@ function save_rounds($set) {
                     $Values[$soft] = $Values[$hard];
                 else if (@$Values[$hard] && @$Values[$soft] > $Values[$hard]) {
                     $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                    $Error[] = setting_info("{$k}soft", "name") . $desc . ": Must come before " . setting_info("{$k}hard", "name") . ".";
+                    $Error[] = Si::get("{$k}soft", "name") . $desc . ": Must come before " . Si::get("{$k}hard", "name") . ".";
                     $Highlight[$soft] = $Highlight[$hard] = true;
                 }
             }
@@ -1017,7 +1064,7 @@ function save_rounds($set) {
     }
 }
 
-function save_resp_rounds($set) {
+function save_resp_rounds($si_name, $info, $set) {
     global $Conf, $Error, $Highlight, $Values;
     if ($set || !value_or_setting("resp_active"))
         return;
@@ -1058,13 +1105,13 @@ function save_resp_rounds($set) {
 
     foreach ($roundnames_set as $i) {
         $isuf = $i ? "_$i" : "";
-        if (($v = parse_value("resp_open$isuf", setting_info("resp_open"))) !== null)
+        if (($v = parse_value("resp_open$isuf", Si::get("resp_open"))) !== null)
             $Values["resp_open$isuf"] = $v < 0 ? null : $v;
-        if (($v = parse_value("resp_done$isuf", setting_info("resp_done"))) !== null)
+        if (($v = parse_value("resp_done$isuf", Si::get("resp_done"))) !== null)
             $Values["resp_done$isuf"] = $v < 0 ? null : $v;
-        if (($v = parse_value("resp_words$isuf", setting_info("resp_words"))) !== null)
+        if (($v = parse_value("resp_words$isuf", Si::get("resp_words"))) !== null)
             $Values["resp_words$isuf"] = $v < 0 ? null : $v;
-        if (($v = parse_value("msg.resp_instrux$isuf", setting_info("msg.resp_instrux"))) !== null)
+        if (($v = parse_value("msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
             $Values["msg.resp_instrux$isuf"] = $v;
     }
 
@@ -1074,31 +1121,12 @@ function save_resp_rounds($set) {
         $Values["resp_rounds"] = 0;
 }
 
-function doSpecial($name, $set) {
+function save_review_form($si_name, $info, $set) {
     global $Values;
-    if ($name === "tag_chair" || $name === "tag_vote" || $name === "tag_approval"
-        || $name === "tag_rank" || $name === "tag_color"
-        || $name === "tag_au_seerev")
-        save_tags($set, $name);
-    else if ($name === "topics")
-        save_topics($set);
-    else if ($name === "options")
-        save_options($set);
-    else if ($name === "decisions")
-        save_decisions($set);
-    else if ($name === "reviewform") {
-        if (!$set)
-            $Values[$name] = true;
-        else
-            rf_update();
-    } else if ($name === "banal")
-        save_banal($set);
-    else if ($name === "rev_roundtag")
-        save_rounds($set);
-    else if ($name === "tracks")
-        save_tracks($set);
-    else if ($name === "resp_rounds")
-        save_resp_rounds($set);
+    if (!$set)
+        $Values[$info->name] = true;
+    else
+        rf_update();
 }
 
 function truthy($x) {
@@ -1106,34 +1134,34 @@ function truthy($x) {
              || $x === "" || $x === "0" || $x === "false");
 }
 
-function account_value($name, $info) {
+function account_value($info) {
     global $Values, $Error, $Highlight;
-    $xname = str_replace(".", "_", $name);
-    if (@$info->type === "special")
+    $xname = str_replace(".", "_", $info->name);
+    if ($info->type === "special")
         $has_value = truthy(@$_POST["has_$xname"]);
     else
         $has_value = isset($_POST[$xname])
-            || ((@$info->type === "cdate" || @$info->type === "checkbox")
+            || (($info->type === "cdate" || $info->type === "checkbox")
                 && truthy(@$_POST["has_$xname"]));
 
-    if ($has_value && (@$info->disabled || @$info->novalue
-                       || !@$info->type || $info->type === "none"))
+    if ($has_value && ($info->disabled || $info->novalue
+                       || !$info->type || $info->type === "none"))
         /* ignore changes to disabled/novalue settings */;
     else if ($has_value && $info->type === "special")
-        doSpecial($name, false);
+        call_user_func($info->parser, $info->name, $info, false);
     else if ($has_value) {
-        $v = parse_value($name, $info);
+        $v = parse_value($info->name, $info);
         if ($v === null) {
             if ($info->type !== "cdate" && $info->type !== "checkbox")
                 return;
             $v = 0;
         }
         if (!is_array($v) && $v <= 0 && $info->type !== "radio" && $info->type !== "zint")
-            $Values[$name] = null;
+            $Values[$info->name] = null;
         else
-            $Values[$name] = $v;
-        if (@$info->ifnonempty)
-            $Values[$info->ifnonempty] = ($Values[$name] === null ? null : 1);
+            $Values[$info->name] = $v;
+        if ($info->ifnonempty)
+            $Values[$info->ifnonempty] = ($Values[$info->name] === null ? null : 1);
     }
 }
 
@@ -1168,8 +1196,8 @@ function value_or_setting_data($name) {
 
 if (isset($_REQUEST["update"]) && check_post()) {
     // parse settings
-    foreach ($SettingInfo as $name => $info)
-        account_value($name, $info);
+    foreach (Si::$all as $tag => $si)
+        account_value($si);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
@@ -1177,7 +1205,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         if (!@$Values[$first] && @$Values[$second])
             $Values[$first] = $Values[$second];
         else if (@$Values[$second] && @$Values[$first] > $Values[$second]) {
-            $Error[] = unparse_setting_error($SettingInfo->$first, "Must come before " . setting_info($second, "name") . ".");
+            $Error[] = unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "name") . ".");
             $Highlight[$first] = $Highlight[$second] = true;
         }
     if (array_key_exists("sub_sub", $Values))
@@ -1197,7 +1225,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $isuf = $i ? "_$i" : "";
             if (@$Values["resp_open$isuf"] && @$Values["resp_done$isuf"]
                 && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
-                $Error[] = unparse_setting_error($SettingInfo->resp_open, "Must come before " . setting_info("resp_done", "name") . ".");
+                $Error[] = unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "name") . ".");
                 $Highlight["resp_open$isuf"] = $Highlight["resp_done$isuf"] = true;
             }
         }
@@ -1267,13 +1295,15 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->qe("lock tables $tables");
 
         // apply settings
-        foreach ($Values as $n => $v)
-            if (setting_info($n, "type") == "special")
-                doSpecial($n, true);
+        foreach ($Values as $n => $v) {
+            $si = Si::get($n);
+            if ($si && $si->type == "special")
+                call_user_func($si->parser, $n, $si, true);
+        }
 
         $dv = $aq = $av = array();
         foreach ($Values as $n => $v)
-            if (!setting_info($n, "nodb")) {
+            if (!Si::get($n, "nodb")) {
                 $dv[] = $n;
                 if (substr($n, 0, 4) === "opt.") {
                     $okey = substr($n, 4);
@@ -1337,8 +1367,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $Conf->confirmMsg("Changes saved.");
         redirectSelf();
     }
-} else if ($Group == "rfo")
-    rf_update();
+}
 if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
@@ -1346,7 +1375,7 @@ if (isset($_REQUEST["cancel"]) && check_post())
 function setting_js($name, $extra = array()) {
     global $Highlight;
     $x = array("id" => $name);
-    if (setting_disabled($name))
+    if (Si::get($name, "disabled"))
         $x["disabled"] = true;
     foreach ($extra as $k => $v)
         $x[$k] = $v;
@@ -1731,14 +1760,14 @@ function doOptGroupOption($o) {
         setting_label("optvt$id", "Type"), "</div><div class='f-e'>";
 
     $optvt = $o->type;
-    if ($optvt == "text" && @$o->display_space > 3)
+    if ($optvt == "text" && $o->display_space > 3)
         $optvt .= ":ds_" . $o->display_space;
-    if (@$o->final)
+    if ($o->final)
         $optvt .= ":final";
 
     $show_final = $Conf->collectFinalPapers();
     foreach (PaperOption::option_list() as $ox)
-        $show_final = $show_final || @$ox->final;
+        $show_final = $show_final || $ox->final;
 
     $otypes = array();
     if ($show_final)
@@ -1748,7 +1777,7 @@ function doOptGroupOption($o) {
     $otypes["radio"] = "Radio buttons";
     $otypes["numeric"] = "Numeric";
     $otypes["text"] = "Text";
-    if ($o->type == "text" && @$o->display_space > 3 && $o->display_space != 5)
+    if ($o->type == "text" && $o->display_space > 3 && $o->display_space != 5)
         $otypes[$optvt] = "Multiline text";
     else
         $otypes["text:ds_5"] = "Multiline text";
