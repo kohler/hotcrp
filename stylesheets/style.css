@@ -267,7 +267,7 @@ div.merror {
 	background: #ffeeee url(../images/stophand45.png) 10px 10px no-repeat;
 	border: 2px solid #ee2222;
 }
-div.merror p:first-child, div.info p:first-child, div.warning p:first-child, div.confirm p:first-child, div.help p:first-child {
+div.merror > p:first-child, div.info > p:first-child, div.warning > p:first-child, div.confirm > p:first-child, div.help > p:first-child {
 	margin-top: 0;
 }
 div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
@@ -2319,6 +2319,36 @@ div.pavt {
 div.papt span.hint {
 	float: right;
 }
+.abstract {
+	position: relative;
+}
+.fold6c .abstract {
+	max-height: 11.8ex;
+	overflow-y: hidden;
+}
+.textdiv-shade {
+	z-index: 1;
+	position: absolute;
+	bottom: 0%;
+	width: 100%;
+	height: 48px;
+	background: white;
+	background: linear-gradient(to top, #ffffff, rgba(255,255,255,0) 12px),
+		linear-gradient(340deg, #ffffff, #ffffff 32px, rgba(255,255,255,0) 50px);
+}
+.textdiv-expander {
+	z-index: 2;
+	position: absolute;
+	bottom: 0%;
+	width: 100%;
+	text-align: right;
+}
+.textdiv-expander > a {
+	display: inline-block;
+	background: white;
+	padding: 0 8px;
+	border-radius: 4px;
+}
 
 div.pg {
 	margin-top: 1em;
@@ -2578,7 +2608,7 @@ div.aahc.alert div.aab {
 	background: linear-gradient(to bottom, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%),
 		linear-gradient(to top, rgba(255,170,170,0), #ffaaaa 4px, #ffaaaa 51%, transparent 51%);
 }
-div.revtext, div.cmttext {
+div.paptext, div.revtext, div.cmttext {
 	position: relative;
 	line-height: 125%;
 }

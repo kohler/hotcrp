@@ -188,14 +188,17 @@ class PaperTable {
             $Conf->echoScript("render_text.on_page()");
     }
 
+    private function abstract_foldable($abstract) {
+        return strlen($abstract) > 190;
+    }
+
     private function echoDivEnter() {
         global $Me;
 
         // if highlighting, automatically unfold abstract/authors
-        if ($this->matchPreg && $this->prow && $this->allFolded
-            && ($this->foldState & 64)) {
-            $data = $this->entryData("abstract");
-            if ($this->entryMatches)
+        if ($this->prow && $this->allFolded && ($this->foldState & 64)) {
+            $abstract = $this->entryData("abstract");
+            if ($this->entryMatches || !$this->abstract_foldable($abstract))
                 $this->foldState &= ~64;
         }
         if ($this->matchPreg && $this->prow && ($this->foldState & 256)) {
@@ -321,20 +324,7 @@ class PaperTable {
         else
             $text = htmlspecialchars($text);
 
-        if ($table_type === "col")
-            $text = nl2br($text);
-        else if ($table_type === "p") {
-            $pars = preg_split("/\n([ \t\r\v\f]*\n)+/", $text);
-            $text = "";
-            for ($i = 0; $i < count($pars); ++$i) {
-                $style = ($i == 0 ? "margin-top:0" : "");
-                if ($i == count($pars) - 1)
-                    $style .= ($style ? ";" : "") . "margin-bottom:0";
-                $text .= "<p" . ($style ? " style='$style'" : "") . ">" . $pars[$i] . "</p>";
-            }
-        }
-
-        return $text;
+        return $table_type === "col" ? nl2br($text) : $text;
     }
 
     private function editable_title() {
@@ -525,32 +515,32 @@ class PaperTable {
     private function echo_editable_abstract() {
         echo $this->editable_papt("abstract", "Abstract"),
             '<div class="papev abstract">',
-            $this->entryData("abstract", "p"),
+            $this->entryData("abstract"),
             "</div></div>\n\n";
     }
 
     private function paptabAbstract() {
-        $data = $this->entryData("abstract", "p");
-        if ($this->allFolded && strlen($data) > 190) {
-            $shortdata = trim(preg_replace(",</?p.*?>,", "\n", $data));
-            $shortdata = preg_replace("/\\S+(<[^>]+)?\\Z/", "", UnicodeHelper::utf8_prefix($shortdata, 180));
-            if ($shortdata !== "") { /* "" might happen if really long word */
-                echo '<div class="pg">',
-                    $this->papt("abstract", "Abstract",
-                                array("fold" => "paper", "foldnum" => 6,
-                                      "foldsession" => "foldpaperb",
-                                      "foldtitle" => "Toggle full abstract")),
-                    '<div class="pavb abstract">',
-                    '<div class="fn6">', $shortdata,
-                    ' <a class="fn6" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a>',
-                    '</div><div class="fx6">', $data,
-                    "</div></div></div>\n\n";
-                return;
-            }
-        }
+        global $Conf;
+        $text = $this->entryData("abstract");
+        $extra = [];
+        if ($this->allFolded && $this->abstract_foldable($text))
+            $extra = ["fold" => "paper", "foldnum" => 6,
+                      "foldsession" => "foldpaperb",
+                      "foldtitle" => "Toggle full abstract"];
         echo '<div class="pg">',
-            $this->papt("abstract", "Abstract"),
-            '<div class="pavb abstract">', $data, "</div></div>\n\n";
+            $this->papt("abstract", "Abstract", $extra),
+            '<div class="pavb abstract"><div class="paptext format0';
+        if ($this->prow && ($format = $this->prow->format_of($text))) {
+            echo ' preformat" data-format="', $format;
+            $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
+        }
+        echo '">', htmlspecialchars($text), "</div>";
+        if ($extra)
+            echo '<div class="fn6 textdiv-shade"></div>',
+                '<div class="fn6 textdiv-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
+        echo "</div></div>\n";
+        if ($extra)
+            $Conf->echoScript("render_text.on_page()");
     }
 
     private static function editable_authors_tr($n, $name, $email, $aff) {

@@ -2285,7 +2285,7 @@ $.extend(render_text, {
             else
                 f = render_text(format, content);
             if (f.format)
-                $j.addClass("format" + format).html(f.content);
+                $j.removeClass("format0").addClass("format" + format).html(f.content);
         });
     }
 });
