@@ -189,7 +189,7 @@ class TitlePaperColumn extends PaperColumn {
         if ($pl->live_table && !$highlight_count
             && ($format = $row->title_format())) {
             $t .= ' preformat" data-format="' . $format;
-            $Conf->footerScript('$(render_text.titles)', 'render_titles');
+            $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
             ++$this->nformats;
         }
 
@@ -203,7 +203,7 @@ class TitlePaperColumn extends PaperColumn {
             $t .= $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
 
         if ($this->nformats && $rowidx % 16 == 15) {
-            $t .= '<script>render_text.titles()</script>';
+            $t .= '<script>render_text.on_page()</script>';
             $this->nformats = 0;
         }
 

@@ -124,7 +124,7 @@ function trackertable() {
     if (dl.tracker && dl.tracker.position != null)
         hotcrp_deadlines.tracker_show_elapsed();
     if (tracker_has_format)
-        render_text.titles();
+        render_text.on_page();
     if (buzzer_status != "open" && (dl.tracker_status || "off") != "off"
         && buzzer_status != dl.tracker_status && !buzzer_muted) {
         var sound = jQuery("#buzzersound")[0];

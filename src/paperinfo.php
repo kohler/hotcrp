@@ -193,15 +193,20 @@ class PaperInfo {
         return prefix_word_wrap("Paper #{$this->paperId}: ", $this->title, $l);
     }
 
-    public function title_format() {
+    public function format_of($text, $check_simple = false) {
         $format = $this->paperFormat;
         if ($format === null)
             $format = Conf::$gDefaultFormat;
         if ($format && ($f = Conf::format_info($format))
+            && $check_simple
             && ($simple_regex = get($f, "simple_regex"))
-            && preg_match($simple_regex, $this->title))
+            && preg_match($simple_regex, $text))
             $format = 0;
         return $format;
+    }
+
+    public function title_format() {
+        return $this->format_of($this->title, true);
     }
 
     public function author_list() {

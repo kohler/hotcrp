@@ -185,7 +185,7 @@ class PaperTable {
 
         $Conf->header($title, $id, actionBar($action_mode, $prow), $t);
         if ($format)
-            $Conf->echoScript("render_text.titles()");
+            $Conf->echoScript("render_text.on_page()");
     }
 
     private function echoDivEnter() {

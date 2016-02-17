@@ -1398,7 +1398,7 @@ function display_tracker() {
         mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
         $(mne).find(".hottooltip").each(add_tooltip);
         if (tracker_has_format)
-            render_text.titles();
+            render_text.on_page();
         mnspace.style.height = mne.offsetHeight + "px";
     }
     if (dl.tracker && dl.tracker.position_at)
@@ -2275,11 +2275,15 @@ $.extend(render_text, {
         default_format = format;
     },
     inline: render_inline,
-    titles: function () {
-        $(".ptitle.preformat").each(function () {
-            var $j = $(this), format = +this.getAttribute("data-format");
+    on_page: function () {
+        $(".preformat").each(function () {
+            var $j = $(this), format = +this.getAttribute("data-format"),
+                content = this.getAttribute("data-content") || $j.text(), f;
             $j.removeClass("preformat");
-            var f = render_inline(format, this.getAttribute("data-title") || $j.text());
+            if (this.tagName.toUpperCase() == "SPAN")
+                f = render_inline(format, content);
+            else
+                f = render_text(format, content);
             if (f.format)
                 $j.addClass("format" + format).html(f.content);
         });
