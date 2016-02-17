@@ -174,7 +174,7 @@ function expand_includes($sitedir, $files, $expansions = array()) {
     global $Opt;
     if (is_string($files))
         $files = array($files);
-    $confname = @$Opt["confid"] ? : @$Opt["dbName"];
+    $confname = get($Opt, "confid") ? : get($Opt, "dbName");
     $results = array();
     $cwd = null;
     foreach ($files as $f) {
@@ -215,11 +215,11 @@ function read_included_options($sitedir, $files) {
 }
 
 global $Opt, $OptOverride;
-if (!@$Opt)
+if (!$Opt)
     $Opt = array();
-if (!@$OptOverride)
+if (!$OptOverride)
     $OptOverride = array();
-if (!@$Opt["loaded"]) {
+if (!get($Opt, "loaded")) {
     if (defined("HOTCRP_OPTIONS")) {
         if ((@include HOTCRP_OPTIONS) !== false)
             $Opt["loaded"] = true;
@@ -227,27 +227,27 @@ if (!@$Opt["loaded"]) {
                || (@include "$ConfSitePATH/conf/options.inc") !== false
                || (@include "$ConfSitePATH/Code/options.inc") !== false)
         $Opt["loaded"] = true;
-    if (@$Opt["multiconference"])
+    if (get($Opt, "multiconference"))
         Multiconference::init();
-    if (@$Opt["include"])
+    if (get($Opt, "include"))
         read_included_options($ConfSitePATH, $Opt["include"]);
 }
-if (!@$Opt["loaded"] || @$Opt["missing"])
+if (!get($Opt, "loaded") || get($Opt, "missing"))
     Multiconference::fail_bad_options();
-if (@$Opt["dbLogQueries"])
-    Dbl::log_queries(@$Opt["dbLogQueries"]);
+if (get($Opt, "dbLogQueries"))
+    Dbl::log_queries($Opt["dbLogQueries"]);
 
 
 // Allow lots of memory
 function set_memory_limit() {
     global $Opt;
-    if (!@$Opt["memoryLimit"]) {
+    if (!get($Opt, "memoryLimit")) {
         $suf = array("" => 1, "k" => 1<<10, "m" => 1<<20, "g" => 1<<30);
         if (preg_match(',\A(\d+)\s*([kmg]?)\z,', strtolower(ini_get("memory_limit")), $m)
             && $m[1] * $suf[$m[2]] < (128<<20))
             $Opt["memoryLimit"] = "128M";
     }
-    if (@$Opt["memoryLimit"])
+    if (get($Opt, "memoryLimit"))
         ini_set("memory_limit", $Opt["memoryLimit"]);
 }
 set_memory_limit();
