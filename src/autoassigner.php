@@ -11,7 +11,7 @@ class Autoassigner {
     private $badpairs = array();
     private $papersel;
     private $ass = null;
-    private $load = array();
+    private $load;
     private $prefs;
     public $prefinfo = array();
     private $pref_groups;
@@ -23,7 +23,7 @@ class Autoassigner {
     private $mcmf_optimizing_for; // for use in MCMF progress
     private $mcmf_max_cost;
     private $ndesired;
-    public $profile = array();
+    public $profile = ["maxflow" => 0, "mincost" => 0];
 
     const METHOD_MCMF = 0;
     const METHOD_RANDOM = 1;
@@ -37,16 +37,18 @@ class Autoassigner {
     const COSTPERPAPER = 100;
 
     public function __construct($papersel) {
-        $this->pcm = pcMembers();
+        $this->select_pc(array_keys(pcMembers()));
         $this->papersel = $papersel;
     }
 
     public function select_pc($pcids) {
-        $this->pcm = array();
+        $this->pcm = $this->load = [];
         $pcids = array_flip($pcids);
         foreach (pcMembers() as $cid => $p)
-            if (isset($pcids[$cid]))
+            if (isset($pcids[$cid])) {
                 $this->pcm[$cid] = $p;
+                $this->load[$cid] = 0;
+            }
         return count($this->pcm);
     }
 
@@ -87,7 +89,7 @@ class Autoassigner {
         $result = Dbl::qe_raw($Conf->preferenceConflictQuery($papertype, ""));
         $this->ass = array("paper,action,email");
         while (($row = edb_row($result))) {
-            if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
+            if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]]))
                 continue;
             $this->ass[] = "$row[0],conflict," . $this->pcm[$row[1]]->email;
             $this->prefinfo["$row[0] $row[1]"] = $row[2];
@@ -113,7 +115,7 @@ class Autoassigner {
         $this->ass = array("paper,action,email");
         $result = Dbl::qe_raw($q);
         while (($row = edb_row($result))) {
-            if (!@$papers[$row[0]] || !@$this->pcm[$row[1]])
+            if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]]))
                 continue;
             $this->ass[] = "$row[0],$action," . $this->pcm[$row[1]]->email;
         }
@@ -171,7 +173,7 @@ class Autoassigner {
             $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $this->papersel);
 
             while (($row = PaperInfo::fetch($result, true))) {
-                $row->topicIds = @$topicIds[$row->paperId];
+                $row->topicIds = get($topicIds, $row->paperId);
                 $topic_interest_score = $row->topic_interest_score($p);
                 $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $row->expertise, $topic_interest_score);
                 if ($row->myReviewType > 0)
@@ -230,7 +232,7 @@ class Autoassigner {
             $score = "1";
         else if ((substr($scoreinfo, 0, 1) === "-"
                   || substr($scoreinfo, 0, 1) === "+")
-                 && @$all_fields[substr($scoreinfo, 1)]) {
+                 && isset($all_fields[substr($scoreinfo, 1)])) {
             $score = "PaperReview." . substr($scoreinfo, 1);
             $scoredir = substr($scoreinfo, 0, 1) === "-" ? -1 : 1;
         } else
@@ -312,7 +314,7 @@ class Autoassigner {
         $this->ass[] = "$pid,$action," . $this->pcm[$cid]->email . $round;
         $this->prefs[$cid][$pid] = self::PNEWASSIGN;
         $papers[$pid]--;
-        @$this->load[$cid]++;
+        $this->load[$cid]++;
         if (isset($this->badpairs[$cid]))
             foreach ($this->badpairs[$cid] as $cid2 => $x)
                 if ($this->prefs[$cid2][$pid] >= self::PMIN)
@@ -334,8 +336,6 @@ class Autoassigner {
 
     // This assignment function assigns without considering preferences.
     private function assign_stupidly(&$papers, $action, $round, $nperpc) {
-        foreach ($this->pcm as $cid => $p)
-            $this->load[$cid] = (int) @$this->load[$cid];
         $ndesired = $this->assign_desired($papers, $nperpc);
         $nmade = 0;
         $pcm = $this->pcm;
@@ -377,8 +377,6 @@ class Autoassigner {
     }
 
     private function assign_randomly(&$papers, $action, $round, $nperpc) {
-        foreach ($this->pcm as $cid => $p)
-            $this->load[$cid] = (int) @$this->load[$cid];
         $pref_unhappiness = $pref_dist = array_fill_keys(array_keys($this->pcm), 0);
         $pcids = array_keys($this->pcm);
         $ndesired = $this->assign_desired($papers, $nperpc);
@@ -407,7 +405,7 @@ class Autoassigner {
             while ($this->pref_groups[$pc]
                    && ($pg = current($this->pref_groups[$pc]))) {
                 // create copy of pids for assignment
-                if (@$pg->apids === null)
+                if (!isset($pg->apids) || $pg->apids === null)
                     $pg->apids = $pg->pids;
                 // skip if no papers left
                 if (!count($pg->apids)) {
@@ -482,7 +480,7 @@ class Autoassigner {
             if ($nperpc)
                 $m->add_edge(".source", "u$cid", $nperpc, 0);
             else {
-                for ($l = (int) @$this->load[$cid]; $l < $maxload; ++$l)
+                for ($l = $this->load[$cid]; $l < $maxload; ++$l)
                     $m->add_edge(".source", "u$cid", 1, self::COSTPERPAPER * ($l - $minload));
             }
         }
@@ -507,7 +505,7 @@ class Autoassigner {
             foreach ($this->badpairs as $cid1 => $bp) {
                 foreach ($bp as $cid2 => $x)
                     if (isset($this->pcm[$cid1]) && isset($this->pcm[$cid2]))
-                        @$bpclass[$cid1][$cid2] = @$bpclass[$cid1][$cid1] = true;
+                        $bpclass[$cid1][$cid2] = $bpclass[$cid1][$cid1] = true;
             }
             foreach ($bpclass as $cid => &$x)
                 $x = min(array_keys($x));
@@ -517,7 +515,7 @@ class Autoassigner {
         $bpdone = array();
         foreach ($papers as $pid => $ct)
             foreach ($this->pcm as $cid => $p) {
-                if ((int) @$this->prefs[$cid][$pid] < self::PMIN)
+                if ((int) get($this->prefs[$cid], $pid) < self::PMIN)
                     continue;
                 if (isset($bpclass[$cid])) {
                     $x = "b{$pid}." . $bpclass[$cid];
@@ -721,9 +719,9 @@ class Autoassigner {
         // done
         $m->clear(); // break circular refs
         $this->mcmf = null;
-        @$this->profile["maxflow"] += $m->maxflow_end_at - $m->maxflow_start_at;
+        $this->profile["maxflow"] += $m->maxflow_end_at - $m->maxflow_start_at;
         if ($m->mincost_start_at)
-            @$this->profile["mincost"] += $m->mincost_end_at - $m->mincost_start_at;
+            $this->profile["mincost"] += $m->mincost_end_at - $m->mincost_start_at;
         return $result;
     }
 
