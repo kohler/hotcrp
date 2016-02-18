@@ -144,7 +144,7 @@ class MinCostMaxFlow {
         $this->debug = ($flags & self::DEBUG) != 0;
     }
 
-    public function add_node($name, $klass) {
+    public function add_node($name, $klass = "") {
         if ($name === "")
             $name = ".v" . count($this->v);
         assert(is_string($name) && !isset($this->vmap[$name]));
@@ -807,8 +807,12 @@ class MinCostMaxFlow {
             $x[] = "n {$this->sink->vindex} t\n";
         }
         foreach ($this->v as $v)
-            if ($v !== $this->source && $v !== $this->sink)
-                $x[] = "c ninfo {$v->vindex} {$v->name} {$v->klass}\n";
+            if ($v !== $this->source && $v !== $this->sink) {
+                $cmt = "c ninfo {$v->vindex} {$v->name}";
+                if ($v->klass !== "")
+                    $cmt .= " {$v->klass}";
+                $x[] = "$cmt\n";
+            }
         if ($mincost) {
             foreach ($this->e as $e)
                 $x[] = "a {$e->src->vindex} {$e->dst->vindex} 0 {$e->cap} {$e->cost}\n";
