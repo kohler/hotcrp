@@ -111,6 +111,7 @@ class PaperInfo {
     private $_prefs_array = null;
     private $_review_id_array = null;
     private $_topics_array = null;
+    private $_topic_interest_score_array = null;
     private $_conflicts;
     private $_conflicts_email;
 
@@ -404,21 +405,26 @@ class PaperInfo {
     }
 
     public function topic_interest_score($contact) {
-        if (is_int($contact)) {
-            $pcm = pcMembers();
-            $contact = get($pcm, $contact);
-        }
         $score = 0;
+        if (is_int($contact))
+            $contact = get(pcMembers(), $contact);
         if ($contact) {
-            $interests = $contact->topic_interest_map();
-            foreach ($this->topics() as $t)
-                $score += (int) get($interests, $t);
+            if ($this->_topic_interest_score_array === null)
+                $this->_topic_interest_score_array = array();
+            if (isset($this->_topic_interest_score_array[$contact->contactId]))
+                $score = $this->_topic_interest_score_array[$contact->contactId];
+            else {
+                $interests = $contact->topic_interest_map();
+                foreach ($this->topics() as $t)
+                    $score += (int) get($interests, $t);
+                $this->_topic_interest_score_array[$contact->contactId] = $score;
+            }
         }
         return $score;
     }
 
     public function conflicts($email = false) {
-        if ($email ? !@$this->_conflicts_email : !isset($this->_conflicts)) {
+        if ($email ? !$this->_conflicts_email : !isset($this->_conflicts)) {
             $this->_conflicts = array();
             if (!$email && isset($this->allConflictType)) {
                 $vals = array();
@@ -477,10 +483,9 @@ class PaperInfo {
             $x = array();
             if ($this->allReviewerPreference !== "" && $this->allReviewerPreference !== null) {
                 $p = preg_split('/[ ,]/', $this->allReviewerPreference);
-                for ($i = 0; $i < count($p); $i += 3) {
-                    if (@$p[$i+1] != "0" || @$p[$i+2] != ".")
-                        $x[(int) $p[$i]] = array((int) @$p[$i+1],
-                                                 @$p[$i+2] == "." ? null : (int) @$p[$i+2]);
+                for ($i = 0; $i + 2 < count($p); $i += 3) {
+                    if ($p[$i+1] != "0" || $p[$i+2] != ".")
+                        $x[(int) $p[$i]] = array((int) $p[$i+1], $p[$i+2] == "." ? null : (int) $p[$i+2]);
                 }
             }
             $this->_prefs_array = $x;

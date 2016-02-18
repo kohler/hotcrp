@@ -652,6 +652,7 @@ class DesirabilityPaperColumn extends PaperColumn {
 }
 
 class TopicScorePaperColumn extends PaperColumn {
+    private $contact;
     public function __construct() {
         parent::__construct("topicscore", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("comparator" => "topic_score_compare"));
@@ -661,27 +662,29 @@ class TopicScorePaperColumn extends PaperColumn {
         if (!$Conf->has_topics() || !$pl->contact->isPC)
             return false;
         if ($visible) {
+            $this->contact = $pl->reviewer_contact();
             $pl->qopts["reviewer"] = $pl->reviewer_cid();
-            $pl->qopts["topicInterestScore"] = 1;
+            $pl->qopts["topics"] = 1;
         }
         return true;
     }
     public function topic_score_compare($a, $b) {
-        return $b->topicInterestScore - $a->topicInterestScore;
+        return $b->topic_interest_score($this->contact) - $a->topic_interest_score($this->contact);
     }
     public function header($pl, $ordinal) {
         return "Topic<br/>score";
     }
     public function content($pl, $row, $rowidx) {
-        return htmlspecialchars($row->topicInterestScore + 0);
+        return htmlspecialchars($row->topic_interest_score($this->contact));
     }
     public function text($pl, $row) {
-        return $row->topicInterestScore + 0;
+        return $row->topic_interest_score($this->contact);
     }
 }
 
 class PreferencePaperColumn extends PaperColumn {
     private $editable;
+    private $contact;
     public function __construct($name, $editable) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("comparator" => "preference_compare"));
@@ -691,8 +694,9 @@ class PreferencePaperColumn extends PaperColumn {
         if (!$pl->contact->isPC)
             return false;
         if ($visible) {
-            $pl->qopts["reviewerPreference"] = $pl->qopts["topicInterestScore"] = 1;
+            $this->contact = $pl->reviewer_contact();
             $pl->qopts["reviewer"] = $pl->reviewer_cid();
+            $pl->qopts["reviewerPreference"] = $pl->qopts["topics"] = 1;
         }
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
             $reviewer_cid = 0;
@@ -712,7 +716,8 @@ class PreferencePaperColumn extends PaperColumn {
                 return $ae === null ? 1 : -1;
             return (float) $ae < (float) $be ? 1 : -1;
         }
-        list($at, $bt) = [(float) $a->topicInterestScore, (float) $b->topicInterestScore];
+        $at = $a->topic_interest_score($this->contact);
+        $bt = $b->topic_interest_score($this->contact);
         if ($at != $bt)
             return $at < $bt ? 1 : -1;
         return 0;

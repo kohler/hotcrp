@@ -1501,10 +1501,6 @@ class Conf {
         return $table . "interest";
     }
 
-    function query_topic_interest_score() {
-        return "interest";
-    }
-
     function paperQuery($contact, $options = array()) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)
@@ -1702,7 +1698,7 @@ class Conf {
         if ($myPaperReview == "MyPaperReview")
             $joins[] = "left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)";
 
-        if (get($options, "topics") || get($options, "topicInterest") || get($options, "topicInterestScore")) {
+        if (get($options, "topics") || get($options, "topicInterest")) {
             $j = "left join (select paperId";
             if (get($options, "topics") || get($options, "topicInterest")) {
                 $j .= ", group_concat(PaperTopic.topicId) as topicIds";
@@ -1712,12 +1708,8 @@ class Conf {
                 $j .= ", group_concat(ifnull(" . $this->query_topic_interest("TopicInterest.") . ",0)) as topicInterest";
                 $cols[] = "PaperTopics.topicInterest";
             }
-            if (get($options, "topicInterestScore")) {
-                $j .= ", sum(" . $this->query_topic_interest_score() . ") as topicInterestScore";
-                $cols[] = "coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore";
-            }
             $j .= " from PaperTopic";
-            if (get($options, "topicInterest") || get($options, "topicInterestScore"))
+            if (get($options, "topicInterest"))
                 $j .= " left join TopicInterest on (TopicInterest.topicId=PaperTopic.topicId and TopicInterest.contactId=$reviewerContactId)";
             $j .= " where {$papersel}true group by paperId) as PaperTopics on (PaperTopics.paperId=Paper.paperId)";
             $joins[] = $j;

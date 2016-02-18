@@ -501,14 +501,12 @@ if ($Me->can_administer($prow)) {
         coalesce(preference, 0) as reviewerPreference,
         expertise as reviewerExpertise,
         coalesce(allReviews,'') as allReviews,
-        coalesce(PaperTopics.topicInterestScore,0) as topicInterestScore,
         coalesce(PRR.paperId,0) as refused
         from ContactInfo
         left join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId and PaperConflict.paperId=$prow->paperId)
         left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.paperId=$prow->paperId)
         left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=$prow->paperId)
         left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
-        left join (select contactId, sum(" . $Conf->query_topic_interest_score() . ") as topicInterestScore from PaperTopic join TopicInterest using (topicId) where paperId=$prow->paperId group by contactId) as PaperTopics on (PaperTopics.contactId=ContactInfo.contactId)
         left join PaperReviewRefused PRR on (PRR.paperId=$prow->paperId and PRR.contactId=ContactInfo.contactId)
         where (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
         group by ContactInfo.contactId");
@@ -579,10 +577,11 @@ if ($Me->can_administer($prow)) {
 
             echo '<div id="ass' . $p->contactId . '" class="pctbname pctbname' . $revtype . '">'
                 . '<span class="taghl nw">' . $Me->name_html_for($pc) . '</span>';
-            if ($p->conflictType == 0
-                && ($p->reviewerPreference || $p->reviewerExpertise
-                    || $p->topicInterestScore))
-                echo unparse_preference_span($p);
+            if ($p->conflictType == 0) {
+                $p->topicInterestScore = $prow->topic_interest_score($pc);
+                if ($p->reviewerPreference || $p->reviewerExpertise || $p->topicInterestScore)
+                    echo unparse_preference_span($p);
+            }
             echo '</div>';
         }
 

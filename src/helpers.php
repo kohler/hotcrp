@@ -1036,14 +1036,14 @@ function unparse_preference($preference, $expertise = null) {
 
 function unparse_preference_span($preference, $always = false) {
     if (is_object($preference))
-        $preference = array(@$preference->reviewerPreference,
-                            @$preference->reviewerExpertise,
-                            @$preference->topicInterestScore);
+        $preference = array(get($preference, "reviewerPreference"),
+                            get($preference, "reviewerExpertise"),
+                            get($preference, "topicInterestScore"));
     else if (!is_array($preference))
         $preference = array($preference, null, null);
-    $pv = (int) @$preference[0];
-    $ev = @$preference[1];
-    $tv = (int) @$preference[2];
+    $pv = (int) get($preference, 0);
+    $ev = get($preference, 1);
+    $tv = (int) get($preference, 2);
     $type = 1;
     if ($pv < 0 || (!$pv && $tv < 0))
         $type = -1;

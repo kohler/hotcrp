@@ -1596,14 +1596,14 @@ class Contact {
         if (($this->roles & self::ROLE_PCLIKE)
             && $this !== $Me
             && ($pcm = pcMembers())
-            && $this === @$pcm[$this->contactId]) {
+            && $this === get($pcm, $this->contactId)) {
             $result = Dbl::qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
             foreach ($pcm as $pc)
                 $pc->topic_interest_map_ = array();
             $pc = null;
             while (($row = edb_row($result))) {
                 if (!$pc || $pc->contactId != $row[0])
-                    $pc = @$pcm[$row[0]];
+                    $pc = get($pcm, $row[0]);
                 if ($pc)
                     $pc->topic_interest_map_[(int) $row[1]] = (int) $row[2];
             }
