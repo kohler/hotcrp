@@ -2280,10 +2280,10 @@ $.extend(render_text, {
             var $j = $(this), format = +this.getAttribute("data-format"),
                 content = this.getAttribute("data-content") || $j.text(), f;
             $j.removeClass("preformat");
-            if (this.tagName.toUpperCase() == "SPAN")
-                f = render_inline(format, content);
-            else
+            if (this.tagName.toUpperCase() == "DIV")
                 f = render_text(format, content);
+            else
+                f = render_inline(format, content);
             if (f.format)
                 $j.removeClass("format0").addClass("format" + format).html(f.content);
         });
