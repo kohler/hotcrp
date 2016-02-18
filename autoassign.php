@@ -14,92 +14,95 @@ if (check_post())
 // clean request
 
 // paper selection
-if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) === "(All)")
-    $_REQUEST["q"] = "";
+$Qreq = make_qreq();
+if (!isset($Qreq->q) || trim($Qreq->q) === "(All)")
+    $Qreq->q = "";
+$_REQUEST["q"] = $_GET["q"] = $_POST["q"] = $Qreq->q;
 
 $tOpt = PaperSearch::manager_search_types($Me);
-if ($Me->privChair && !isset($_REQUEST["t"])
-    && defval($_REQUEST, "a") === "prefconflict"
+if ($Me->privChair && !isset($Qreq->t)
+    && $Qreq->a === "prefconflict"
     && $Conf->can_pc_see_all_submissions())
-    $_REQUEST["t"] = "all";
-if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]])) {
+    $Qreq->t = "all";
+if (!isset($Qreq->t) || !isset($tOpt[$Qreq->t])) {
     reset($tOpt);
-    $_REQUEST["t"] = key($tOpt);
+    $Qreq->t = key($tOpt);
 }
+$_REQUEST["t"] = $_GET["t"] = $_POST["t"] = $Qreq->t;
 
 // PC selection
-if (isset($_REQUEST["pcs"]) && is_string($_REQUEST["pcs"]))
-    $_REQUEST["pcs"] = preg_split('/\s+/', $_REQUEST["pcs"]);
-if (isset($_REQUEST["pcs"]) && is_array($_REQUEST["pcs"])) {
+if (isset($Qreq->pcs) && is_string($Qreq->pcs))
+    $Qreq->pcs = preg_split('/\s+/', $Qreq->pcs);
+if (isset($Qreq->pcs) && is_array($Qreq->pcs)) {
     $pcsel = array();
-    foreach ($_REQUEST["pcs"] as $p)
+    foreach ($Qreq->pcs as $p)
         if (($p = cvtint($p)) > 0)
             $pcsel[$p] = 1;
 } else
     $pcsel = pcMembers();
 
-if (!isset($_REQUEST["pctyp"])
-    || ($_REQUEST["pctyp"] !== "all" && $_REQUEST["pctyp"] !== "sel"))
-    $_REQUEST["pctyp"] = "all";
+if (!isset($Qreq->pctyp)
+    || ($Qreq->pctyp !== "all" && $Qreq->pctyp !== "sel"))
+    $Qreq->pctyp = "all";
 
 // bad pairs
 // load defaults from last autoassignment or save entry to default
 $pcm = pcMembers();
-if (!isset($_REQUEST["badpairs"]) && !isset($_REQUEST["assign"]) && !count($_POST)) {
+if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && !count($_POST)) {
     $x = preg_split('/\s+/', $Conf->setting_data("autoassign_badpairs", ""), null, PREG_SPLIT_NO_EMPTY);
     $bpnum = 1;
     for ($i = 0; $i < count($x) - 1; $i += 2)
         if (isset($pcm[$x[$i]]) && isset($pcm[$x[$i+1]])) {
-            $_REQUEST["bpa$bpnum"] = $x[$i];
-            $_REQUEST["bpb$bpnum"] = $x[$i+1];
+            $Qreq["bpa$bpnum"] = $x[$i];
+            $Qreq["bpb$bpnum"] = $x[$i+1];
             ++$bpnum;
         }
     if ($Conf->setting("autoassign_badpairs"))
-        $_REQUEST["badpairs"] = 1;
-} else if (count($_POST) && isset($_REQUEST["assign"]) && check_post()) {
+        $Qreq->badpairs = 1;
+} else if (count($_POST) && isset($Qreq->assign) && check_post()) {
     $x = array();
-    for ($i = 1; isset($_REQUEST["bpa$i"]); ++$i)
-        if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")
-            && isset($pcm[$_REQUEST["bpa$i"]]) && isset($pcm[$_REQUEST["bpb$i"]])) {
-            $x[] = $_REQUEST["bpa$i"];
-            $x[] = $_REQUEST["bpb$i"];
+    for ($i = 1; isset($Qreq["bpa$i"]); ++$i)
+        if ($Qreq["bpa$i"] && $Qreq["bpb$i"]
+            && isset($pcm[$Qreq["bpa$i"]]) && isset($pcm[$Qreq["bpb$i"]])) {
+            $x[] = $Qreq["bpa$i"];
+            $x[] = $Qreq["bpb$i"];
         }
     if (count($x) || $Conf->setting_data("autoassign_badpairs")
-        || (!isset($_REQUEST["badpairs"]) != !$Conf->setting("autoassign_badpairs")))
-        $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($_REQUEST["badpairs"]) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
+        || (!isset($Qreq->badpairs) != !$Conf->setting("autoassign_badpairs")))
+        $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($Qreq->badpairs) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
 }
 // set $badpairs array
 $badpairs = array();
-if (isset($_REQUEST["badpairs"]))
-    for ($i = 1; isset($_REQUEST["bpa$i"]); ++$i)
-        if (defval($_REQUEST, "bpa$i") && defval($_REQUEST, "bpb$i")) {
-            if (!isset($badpairs[$_REQUEST["bpa$i"]]))
-                $badpairs[$_REQUEST["bpa$i"]] = array();
-            $badpairs[$_REQUEST["bpa$i"]][$_REQUEST["bpb$i"]] = 1;
+if (isset($Qreq->badpairs))
+    for ($i = 1; isset($Qreq["bpa$i"]); ++$i)
+        if ($Qreq["bpa$i"] && $Qreq["bpb$i"]) {
+            if (!isset($badpairs[$Qreq["bpa$i"]]))
+                $badpairs[$Qreq["bpa$i"]] = array();
+            $badpairs[$Qreq["bpa$i"]][$Qreq["bpb$i"]] = 1;
         }
 
 // paper selection
-if ((isset($_REQUEST["prevt"]) && isset($_REQUEST["t"]) && $_REQUEST["prevt"] !== $_REQUEST["t"])
-    || (isset($_REQUEST["prevq"]) && isset($_REQUEST["q"]) && $_REQUEST["prevq"] !== $_REQUEST["q"])) {
-    if (isset($_REQUEST["assign"]))
+if ((isset($Qreq->prevt) && isset($Qreq->t) && $Qreq->prevt !== $Qreq->t)
+    || (isset($Qreq->prevq) && isset($Qreq->q) && $Qreq->prevq !== $Qreq->q)) {
+    if (isset($Qreq->assign))
         $Conf->infoMsg("You changed the paper search.  Please review the resulting paper list.");
-    unset($_REQUEST["assign"]);
-    $_REQUEST["requery"] = 1;
+    unset($Qreq->assign);
+    $Qreq->requery = 1;
 }
 
-if (isset($_REQUEST["saveassignment"]) && @$_REQUEST["submit"])
+if (isset($Qreq->saveassignment) && $Qreq->submit)
     SearchActions::parse_requested_selection($Me, "pap");
-else if (isset($_REQUEST["saveassignment"]))
+else if (isset($Qreq->saveassignment))
     SearchActions::parse_requested_selection($Me, "p");
-else if (@$_REQUEST["requery"] || !SearchActions::parse_requested_selection($Me)) {
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
+else if ($Qreq->requery || !SearchActions::parse_requested_selection($Me)) {
+    $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
     SearchActions::set_selection($search->paperList());
 }
 sort(SearchActions::$sel);
 
 // rev_roundtag
-if (($x = $Conf->sanitize_round_name(@$_REQUEST["rev_roundtag"])) !== false)
-    $_REQUEST["rev_roundtag"] = $x;
+if (($x = $Conf->sanitize_round_name($Qreq->rev_roundtag)) !== false)
+    $Qreq->rev_roundtag = $x;
 
 // score selector
 $scoreselector = array("+overAllMerit" => "", "-overAllMerit" => "");
@@ -113,10 +116,10 @@ if ($scoreselector["+overAllMerit"] === "")
 $scoreselector["x"] = "(no score preference)";
 
 // download proposed assignment
-if (isset($_REQUEST["saveassignment"]) && isset($_POST["download"])
-    && isset($_POST["assignment"])) {
+if (isset($Qreq->saveassignment) && isset($Qreq->download)
+    && isset($Qreq->assignment)) {
     $assignset = new AssignmentSet($Me, true);
-    $assignset->parse($_POST["assignment"]);
+    $assignset->parse($Qreq->assignment);
     $x = $assignset->unparse_csv();
     downloadCSV($x->data, $x->header, "assignments", ["selection" => true, "sort" => SORT_NATURAL]);
     exit;
@@ -144,14 +147,14 @@ class AutoassignerInterface {
     public $ok = false;
 
     public function check() {
-        global $Error;
+        global $Error, $Qreq;
 
         $atypes = array("rev" => "r", "revadd" => "r", "revpc" => "r",
                         "lead" => true, "shepherd" => true,
                         "prefconflict" => true, "clear" => true,
                         "discorder" => true);
-        $this->atype = @$_REQUEST["a"];
-        if (!$this->atype || !@$atypes[$this->atype]) {
+        $this->atype = $Qreq->a;
+        if (!$this->atype || !isset($atypes[$this->atype])) {
             $Error["ass"] = true;
             return Conf::msg_error("Malformed request!");
         }
@@ -159,14 +162,14 @@ class AutoassignerInterface {
 
         $r = false;
         if ($this->atype_review) {
-            $r = defval($_REQUEST, $this->atype . "type", "");
+            $r = $Qreq[$this->atype . "type"];
             if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
                 && $r != REVIEW_PC) {
                 $Error["ass"] = true;
                 return Conf::msg_error("Malformed request!");
             }
         } else if ($this->atype === "clear") {
-            $r = defval($_REQUEST, "cleartype", "");
+            $r = $Qreq->cleartype;
             if ($r != REVIEW_PRIMARY && $r != REVIEW_SECONDARY
                 && $r != REVIEW_PC && $r !== "conflict"
                 && $r !== "lead" && $r !== "shepherd") {
@@ -176,25 +179,25 @@ class AutoassignerInterface {
         }
         $this->reviewtype = $r;
 
-        if ($this->atype_review && $_REQUEST["rev_roundtag"] !== ""
-            && ($err = Conf::round_name_error($_REQUEST["rev_roundtag"]))) {
+        if ($this->atype_review && $Qreq->rev_roundtag !== ""
+            && ($err = Conf::round_name_error($Qreq->rev_roundtag))) {
             $Error["rev_roundtag"] = true;
             return Conf::msg_error($err);
         }
 
-        if ($this->atype === "rev" && cvtint(@$_REQUEST["revct"], -1) <= 0) {
+        if ($this->atype === "rev" && cvtint($Qreq->revct, -1) <= 0) {
             $Error["rev"] = true;
             return Conf::msg_error("Enter the number of reviews you want to assign.");
-        } else if ($this->atype === "revadd" && cvtint(@$_REQUEST["revaddct"], -1) <= 0) {
+        } else if ($this->atype === "revadd" && cvtint($Qreq->revaddct, -1) <= 0) {
             $Error["revadd"] = true;
             return Conf::msg_error("You must assign at least one review.");
-        } else if ($this->atype === "revpc" && cvtint(@$_REQUEST["revpcct"], -1) <= 0) {
+        } else if ($this->atype === "revpc" && cvtint($Qreq->revpcct, -1) <= 0) {
             $Error["revpc"] = true;
             return Conf::msg_error("You must assign at least one review.");
         }
 
         if ($this->atype === "discorder") {
-            $tag = trim((string) @$_REQUEST["discordertag"]);
+            $tag = trim((string) $Qreq->discordertag);
             $tag = $tag === "" ? "discuss" : $tag;
             $tagger = new Tagger;
             if (!($tag = $tagger->check($tag, Tagger::NOVALUE))) {
@@ -208,7 +211,7 @@ class AutoassignerInterface {
     }
 
     private function result_html() {
-        global $Conf, $Me, $pcsel;
+        global $Conf, $Me, $Qreq, $pcsel;
         $assignments = $this->autoassigner->assignments();
         ReviewAssigner::$prefinfo = $this->autoassigner->prefinfo;
         ob_start();
@@ -224,19 +227,19 @@ class AutoassignerInterface {
         list($atypes, $apids) = $assignset->types_and_papers(true);
         $badpairs_inputs = $badpairs_arg = array();
         for ($i = 1; $i <= 20; ++$i)
-            if (@$_REQUEST["bpa$i"] && @$_REQUEST["bpb$i"]) {
-                array_push($badpairs_inputs, Ht::hidden("bpa$i", $_REQUEST["bpa$i"]),
-                           Ht::hidden("bpb$i", $_REQUEST["bpb$i"]));
-                $badpairs_arg[] = $_REQUEST["bpa$i"] . "-" . $_REQUEST["bpb$i"];
+            if ($Qreq["bpa$i"] && $Qreq["bpb$i"]) {
+                array_push($badpairs_inputs, Ht::hidden("bpa$i", $Qreq["bpa$i"]),
+                           Ht::hidden("bpb$i", $Qreq["bpb$i"]));
+                $badpairs_arg[] = $Qreq["bpa$i"] . "-" . $Qreq["bpb$i"];
             }
         echo Ht::form_div(hoturl_post("autoassign",
                                       ["saveassignment" => 1,
                                        "assigntypes" => join(" ", $atypes),
                                        "assignpids" => join(" ", $apids),
                                        "xbadpairs" => count($badpairs_arg) ? join(" ", $badpairs_arg) : null,
-                                       "profile" => @$_REQUEST["profile"],
-                                       "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"],
-                                       "seed" => @$_REQUEST["seed"]]));
+                                       "profile" => $Qreq->profile,
+                                       "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE,
+                                       "seed" => $Qreq->seed]));
 
         $atype = $assignset->type_description();
         echo "<h3>Proposed " . ($atype ? $atype . " " : "") . "assignment</h3>";
@@ -245,7 +248,7 @@ class AutoassignerInterface {
         $assignset->echo_unparse_display();
 
         // print preference unhappiness
-        if (@$_REQUEST["profile"] && $this->atype_review) {
+        if ($Qreq->profile && $this->atype_review) {
             $umap = $this->autoassigner->pc_unhappiness();
             sort($umap);
             echo '<p style="font-size:65%">Preference unhappiness: ';
@@ -276,8 +279,8 @@ class AutoassignerInterface {
             Ht::submit("download", "Download assignment file"), "\n&nbsp;",
             Ht::submit("cancel", "Cancel"), "\n";
         foreach (array("t", "q", "a", "revtype", "revaddtype", "revpctype", "cleartype", "revct", "revaddct", "revpcct", "pctyp", "balance", "badpairs", "rev_roundtag", "method", "haspap") as $t)
-            if (isset($_REQUEST[$t]))
-                echo Ht::hidden($t, $_REQUEST[$t]);
+            if (isset($Qreq[$t]))
+                echo Ht::hidden($t, $Qreq[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
             join("", $badpairs_inputs),
             Ht::hidden("p", join(" ", SearchActions::selection())), "\n";
@@ -306,29 +309,29 @@ class AutoassignerInterface {
     }
 
     public function run() {
-        global $Conf, $Me, $pcsel, $badpairs, $scoreselector;
+        global $Conf, $Me, $Qreq, $pcsel, $badpairs, $scoreselector;
         assert($this->ok);
         session_write_close(); // this might take a long time
         set_time_limit(240);
 
         // prepare autoassigner
-        if (@$_REQUEST["seed"] && is_numeric($_REQUEST["seed"]))
-            srand((int) $_REQUEST["seed"]);
+        if ($Qreq->seed && is_numeric($Qreq->seed))
+            srand((int) $Qreq->seed);
         $this->autoassigner = $autoassigner = new Autoassigner(SearchActions::selection());
-        if ($_REQUEST["pctyp"] === "sel") {
+        if ($Qreq->pctyp === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
             if ($n == 0) {
                 Conf::msg_error("Select one or more PC members to assign.");
                 return null;
             }
         }
-        if (@$_REQUEST["balance"] === "all")
+        if ($Qreq->balance === "all")
             $autoassigner->set_balance(Autoassigner::BALANCE_ALL);
         foreach ($badpairs as $cid1 => $bp) {
             foreach ($bp as $cid2 => $x)
                 $autoassigner->avoid_pair_assignment($cid1, $cid2);
         }
-        if (@$_REQUEST["method"] === "random")
+        if ($Qreq->method === "random")
             $autoassigner->set_method(Autoassigner::METHOD_RANDOM);
         else
             $autoassigner->set_method(Autoassigner::METHOD_MCMF);
@@ -338,20 +341,20 @@ class AutoassignerInterface {
 
         $this->start_at = microtime(true);
         if ($this->atype === "prefconflict")
-            $autoassigner->run_prefconflict(@$_REQUEST["t"]);
+            $autoassigner->run_prefconflict($Qreq->t);
         else if ($this->atype === "clear")
             $autoassigner->run_clear($this->reviewtype);
         else if ($this->atype === "lead" || $this->atype === "shepherd")
-            $autoassigner->run_paperpc($this->atype, @$_REQUEST["{$this->atype}score"]);
+            $autoassigner->run_paperpc($this->atype, $Qreq["{$this->atype}score"]);
         else if ($this->atype === "revpc")
-            $autoassigner->run_reviews_per_pc($this->reviewtype, @$_REQUEST["rev_roundtag"],
-                                              cvtint(@$_REQUEST["revpcct"]));
+            $autoassigner->run_reviews_per_pc($this->reviewtype, $Qreq->rev_roundtag,
+                                              cvtint($Qreq->revpcct));
         else if ($this->atype === "revadd")
-            $autoassigner->run_more_reviews($this->reviewtype, @$_REQUEST["rev_roundtag"],
-                                            cvtint(@$_REQUEST["revaddct"]));
+            $autoassigner->run_more_reviews($this->reviewtype, $Qreq->rev_roundtag,
+                                            cvtint($Qreq->revaddct));
         else if ($this->atype === "rev")
-            $autoassigner->run_ensure_reviews($this->reviewtype, @$_REQUEST["rev_roundtag"],
-                                              cvtint(@$_REQUEST["revct"]));
+            $autoassigner->run_ensure_reviews($this->reviewtype, $Qreq->rev_roundtag,
+                                              cvtint($Qreq->revct));
         else if ($this->atype === "discorder")
             $autoassigner->run_discussion_order($this->discordertag);
 
@@ -370,24 +373,25 @@ class AutoassignerInterface {
     }
 }
 
-if (isset($_REQUEST["assign"]) && isset($_REQUEST["a"])
-    && isset($_REQUEST["pctyp"]) && check_post()) {
+if (isset($Qreq->assign) && isset($Qreq->a)
+    && isset($Qreq->pctyp) && check_post()) {
     $ai = new AutoassignerInterface;
     if ($ai->check())
         $ai->run();
     ensure_session();
-} else if (@$_REQUEST["saveassignment"] && @$_REQUEST["submit"]
-           && isset($_REQUEST["assignment"]) && check_post()) {
+} else if ($Qreq->saveassignment && $Qreq->submit
+           && isset($Qreq->assignment) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
-    $assignset->parse($_REQUEST["assignment"]);
+    $assignset->parse($Qreq->assignment);
     $assignset->restrict_papers(SearchActions::selection());
     $assignset->execute(true);
 }
 
 
 function doRadio($name, $value, $text, $extra = null) {
-    if (($checked = (!isset($_REQUEST[$name]) || $_REQUEST[$name] === $value)))
-        $_REQUEST[$name] = $value;
+    global $Qreq;
+    if (($checked = (!isset($Qreq[$name]) || $Qreq[$name] === $value)))
+        $Qreq[$name] = $value;
     $extra = ($extra ? $extra : array());
     $extra["id"] = "${name}_$value";
     echo Ht::radio($name, $value, $checked, $extra), "&nbsp;";
@@ -396,14 +400,15 @@ function doRadio($name, $value, $text, $extra = null) {
 }
 
 function doSelect($name, $opts, $extra = null) {
-    if (!isset($_REQUEST[$name]))
-        $_REQUEST[$name] = key($opts);
-    echo Ht::select($name, $opts, $_REQUEST[$name], $extra);
+    global $Qreq;
+    if (!isset($Qreq[$name]))
+        $Qreq[$name] = key($opts);
+    echo Ht::select($name, $opts, $Qreq[$name], $extra);
 }
 
 function divClass($name, $classes = null) {
     global $Error;
-    if (@$Error[$name])
+    if (isset($Error[$name]))
         $classes = ($classes ? $classes . " " : "") . "error";
     if ($classes)
         return '<div class="' . $classes . '">';
@@ -411,7 +416,7 @@ function divClass($name, $classes = null) {
         return '<div>';
 }
 
-echo Ht::form(hoturl_post("autoassign", array("profile" => @$_REQUEST["profile"], "seed" => @$_REQUEST["seed"], "XDEBUG_PROFILE" => @$_REQUEST["XDEBUG_PROFILE"]))),
+echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE))),
     '<div class="aahc">',
     "<div class='helpside'><div class='helpinside'>
 Assignment methods:
@@ -429,29 +434,29 @@ Types of PC review:
 
 // paper selection
 echo divClass("pap"), "<h3>Paper selection</h3>";
-if (!isset($_REQUEST["q"]))
-    $_REQUEST["q"] = join(" ", SearchActions::selection());
-echo Ht::entry_h("q", $_REQUEST["q"],
+if (!isset($Qreq->q)) // XXX redundant
+    $Qreq->q = join(" ", SearchActions::selection());
+echo Ht::entry_h("q", $Qreq->q,
                  array("id" => "autoassignq", "placeholder" => "(All)",
                        "size" => 40, "title" => "Enter paper numbers or search terms",
                        "class" => "hotcrp_searchbox",
                        "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $_REQUEST["t"], array("onchange" => "highlightUpdate(\"requery\")"));
+    echo Ht::select("t", $tOpt, $Qreq->t, array("onchange" => "highlightUpdate(\"requery\")"));
 else
     echo join("", $tOpt);
 echo " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
-if (isset($_REQUEST["requery"]) || isset($_REQUEST["haspap"])) {
+if (isset($Qreq->requery) || isset($Qreq->haspap)) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
 <div class='g'></div>";
 
-    $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"],
+    $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q,
                                          "urlbase" => hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
     $plist->papersel = SearchActions::selection_map();
     echo $plist->table_html("reviewersSel", ["nofooter" => true]),
-        Ht::hidden("prevt", $_REQUEST["t"]), Ht::hidden("prevq", $_REQUEST["q"]),
+        Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("haspap", 1);
 }
 echo "</div>\n";
@@ -463,7 +468,7 @@ echo divClass("ass"), "<h3>Action</h3>";
 echo divClass("rev", "hotradiorelation");
 doRadio("a", "rev", "Ensure each selected paper has <i>at least</i>");
 echo "&nbsp; ",
-    Ht::entry("revct", defval($_REQUEST, "revct", 1),
+    Ht::entry("revct", get($Qreq, "revct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')), "&nbsp; ";
 doSelect("revtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
 echo "&nbsp; review(s)</div>\n";
@@ -471,7 +476,7 @@ echo "&nbsp; review(s)</div>\n";
 echo divClass("revadd", "hotradiorelation");
 doRadio("a", "revadd", "Assign");
 echo "&nbsp; ",
-    Ht::entry("revaddct", defval($_REQUEST, "revaddct", 1),
+    Ht::entry("revaddct", get($Qreq, "revaddct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')),
     "&nbsp; <i>additional</i>&nbsp; ";
 doSelect("revaddtype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
@@ -480,7 +485,7 @@ echo "&nbsp; review(s) per selected paper</div>\n";
 echo divClass("revpc", "hotradiorelation");
 doRadio("a", "revpc", "Assign each PC member");
 echo "&nbsp; ",
-    Ht::entry("revpcct", defval($_REQUEST, "revpcct", 1),
+    Ht::entry("revpcct", get($Qreq, "revpcct", 1),
               array("size" => 3, "onfocus" => 'autosub(false,this)')),
     "&nbsp; additional&nbsp; ";
 doSelect("revpctype", array(REVIEW_PRIMARY => "primary", REVIEW_SECONDARY => "secondary", REVIEW_PC => "optional"));
@@ -492,13 +497,13 @@ if (count($rev_rounds) > 1) {
     echo divClass("rev_roundtag"),
         '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Review round:&nbsp; ',
-        Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed"),
+        Ht::select("rev_roundtag", $rev_rounds, $Qreq->rev_roundtag ? : "unnamed"),
         '</span></div>';
-} else if (!@$rev_rounds["unnamed"])
+} else if (!get($rev_rounds, "unnamed"))
     echo divClass("rev_roundtag"), Ht::hidden("rev_roundtag", $Conf->current_round_name()),
         '<input style="visibility:hidden" type="radio" class="cb" name="a" value="rev_roundtag" disabled="disabled" />&nbsp;',
         '<span style="font-size:smaller">Review round: ',
-        ($_REQUEST["rev_roundtag"] ? : "unnamed"), '</span></div>';
+        ($Qreq->rev_roundtag ? : "unnamed"), '</span></div>';
 echo "<div class='g'></div>\n";
 
 echo divClass("prefconflict", "hotradiorelation");
@@ -522,7 +527,7 @@ echo " &nbsp;assignments for selected papers and PC members";
 
 echo "<div class='g'></div>", divClass("discorder", "hotradiorelation");
 doRadio("a", "discorder", "Create discussion order in tag #");
-echo Ht::entry("discordertag", defval($_REQUEST, "discordertag", "discuss"),
+echo Ht::entry("discordertag", get($Qreq, "discordertag", "discuss"),
                array("size" => 12, "onfocus" => 'autosub(false,this)')),
     ", grouping papers with similar PC conflicts</div>";
 
@@ -582,20 +587,20 @@ echo '<div class="pc_ctable">', join("", $summary), "</div>\n",
 
 // Bad pairs
 function bpSelector($i, $which) {
-    static $badPairSelector;
+    static $badPairSelector, $Qreq;
     if (!$badPairSelector)
         $badPairSelector = pc_members_selector_options("(PC member)");
     return Ht::select("bp$which$i", $badPairSelector,
-                      defval($_REQUEST, "bp$which$i") ? : "0",
+                      $Qreq["bp$which$i"] ? : "0",
                       ["onchange" => "badpairs_click()"]);
 }
 
 echo "<div class='g'></div><div class='relative'><table id=\"bptable\"><tbody>\n";
-for ($i = 1; $i == 1 || isset($_REQUEST["bpa$i"]); ++$i) {
+for ($i = 1; $i == 1 || isset($Qreq["bpa$i"]); ++$i) {
     $selector_text = bpSelector($i, "a") . " &nbsp;and&nbsp; " . bpSelector($i, "b");
     echo '    <tr><td class="rentry nw">';
     if ($i == 1)
-        echo Ht::checkbox("badpairs", 1, isset($_REQUEST["badpairs"]),
+        echo Ht::checkbox("badpairs", 1, isset($Qreq["badpairs"]),
                            array("id" => "badpairs")),
             "&nbsp;", Ht::label("Don’t assign", "badpairs"), " &nbsp;";
     else

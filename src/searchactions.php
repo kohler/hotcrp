@@ -34,11 +34,11 @@ class SearchActions {
 
     static function parse_requested_selection($user, $key = null) {
         if ($key === null) {
-            $ps = isset($_POST["p"]) ? $_POST["p"] : @$_GET["p"];
+            $ps = isset($_POST["p"]) ? $_POST["p"] : get($_GET, "p");
             if ($ps === null)
-                $ps = isset($_POST["pap"]) ? $_POST["pap"] : @$_GET["pap"];
+                $ps = isset($_POST["pap"]) ? $_POST["pap"] : get($_GET, "pap");
         } else
-            $ps = isset($_POST[$key]) ? $_POST[$key] : @$_GET[$key];
+            $ps = isset($_POST[$key]) ? $_POST[$key] : get($_GET, $key);
         if ($user && $ps === "all") {
             $s = new PaperSearch($user, $_REQUEST);
             $ps = $s->paperList();
