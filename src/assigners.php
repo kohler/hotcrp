@@ -456,6 +456,7 @@ class ReviewAssigner extends Assigner {
             if (count($matches) && $roundname === null)
                 $roundname = $matches[0]["_round"];
             $revmatch["_round"] = $roundname;
+            $revmatch["_rsubmitted"] = 0;
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
             if ($rtype == REVIEW_EXTERNAL && !count($matches)
