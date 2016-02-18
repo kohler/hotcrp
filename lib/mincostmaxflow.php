@@ -781,12 +781,12 @@ class MinCostMaxFlow {
             if ($e->flow)
                 $cost += $e->flow * $e->cost;
         }
-        sort($ex);
+        usort($ex, "strnatcmp");
         $vx = array();
         foreach ($this->v as $v)
             if ($v->excess)
                 $vx[] = "E {$v->name} {$v->excess}\n";
-        sort($vx);
+        usort($vx, "strnatcmp");
         $x = "";
         if ($this->hasrun)
             $x = "total {$e->flow} $cost\n";
