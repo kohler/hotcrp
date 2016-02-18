@@ -505,7 +505,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
     }
     public function header($pl, $ordinal) {
         if ($this->xreviewer)
-            return $pl->contact->name_html_for($this->xreviewer) . "<br />Review</span>";
+            return $pl->contact->name_html_for($this->xreviewer) . "<br />review</span>";
         else
             return "Review";
     }
@@ -771,7 +771,7 @@ class PreferencePaperColumn extends PaperColumn {
     }
     public function header($pl, $ordinal) {
         if ($this->careful)
-            return $pl->contact->name_html_for($this->contact) . "<br />Preference</span>";
+            return $pl->contact->name_html_for($this->contact) . "<br />preference</span>";
         else
             return "Preference";
     }
