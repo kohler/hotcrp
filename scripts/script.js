@@ -3361,11 +3361,15 @@ function add_revpref_ajax(selector, reviewer) {
     }
 
     function rp_change() {
-        var self = this, whichpaper = this.name.substr(7);
+        var self = this, pid = this.name.substr(7), cid = reviewer, pos;
+        if ((pos = pid.indexOf("u")) > 0) {
+            cid = pid.substr(pos + 1);
+            pid = pid.substr(0, pos);
+        }
         $.ajax({
-            url: hoturl_post("api", "fn=setpref&p=" + whichpaper),
+            url: hoturl_post("api", "fn=setpref&p=" + pid),
             type: "POST", dataType: "json",
-            data: {pref: self.value, reviewer: reviewer},
+            data: {pref: self.value, reviewer: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
                 if (rv.ok && rv.value != null)

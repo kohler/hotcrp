@@ -493,6 +493,11 @@ class PaperInfo {
         return $this->_prefs_array;
     }
 
+    public function reviewer_preference($contact) {
+        $pref = get($this->reviewer_preferences(), $contact->contactId);
+        return $pref ? : [0, null];
+    }
+
     public function options() {
         if (!property_exists($this, "option_array"))
             PaperOption::parse_paper_options($this);

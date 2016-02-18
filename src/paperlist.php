@@ -105,6 +105,7 @@ class PaperList {
 
     public $qopts; // set by PaperColumn::prepare
     private $_header_script = "";
+    private $_header_script_map = [];
     private $default_sort_column;
 
     // collected during render and exported to caller
@@ -1180,7 +1181,12 @@ class PaperList {
         return $this->viewmap->table_id;
     }
 
-    public function add_header_script($script) {
+    public function add_header_script($script, $uniqueid = false) {
+        if ($uniqueid) {
+            if (isset($this->_header_script_map[$uniqueid]))
+                return;
+            $this->_header_script_map[$uniqueid] = true;
+        }
         if ($this->_header_script !== ""
             && ($ch = $this->_header_script[strlen($this->_header_script) - 1]) !== "}"
             && $ch !== "{" && $ch !== ";")

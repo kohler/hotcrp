@@ -4,8 +4,9 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperColumn extends Column {
-    static public $by_name = array();
-    static public $factories = array();
+    static public $by_name = [];
+    static public $factories = [];
+    static private $synonyms = [];
 
     const PREP_SORT = -1;
     const PREP_FOLDED = 0; // value matters
@@ -18,39 +19,46 @@ class PaperColumn extends Column {
 
     public static function lookup_local($name) {
         $lname = strtolower($name);
+        if (isset(self::$synonyms[$lname]))
+            $lname = self::$synonyms[$lname];
         return get(self::$by_name, $lname, null);
     }
 
     public static function lookup($name, $errors = null) {
         $lname = strtolower($name);
+        if (isset(self::$synonyms[$lname]))
+            $lname = self::$synonyms[$lname];
         if (isset(self::$by_name[$lname]))
             return self::$by_name[$lname];
         foreach (self::$factories as $f)
             if (str_starts_with($lname, $f[0])
                 && ($x = $f[1]->make_column($name, $errors)))
                 return $x;
+        if (($colon = strpos($lname, ":")) > 0
+            && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
+            return self::lookup($syn . substr($lname, $colon));
         return null;
     }
 
     public static function register($fdef) {
         $lname = strtolower($fdef->name);
-        assert(!isset(self::$by_name[$lname]));
+        assert(!isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
         self::$by_name[$lname] = $fdef;
-        for ($i = 1; $i < func_num_args(); ++$i) {
-            $lname = strtolower(func_get_arg($i));
-            assert(!isset(self::$by_name[$lname]));
-            self::$by_name[$lname] = $fdef;
-        }
+        assert(func_num_args() == 1); // XXX backwards compat
         return $fdef;
     }
     public static function register_factory($prefix, $f) {
         self::$factories[] = array(strtolower($prefix), $f);
     }
     public static function register_synonym($new_name, $old_name) {
-        $fdef = self::$by_name[strtolower($old_name)];
-        $new_name = strtolower($new_name);
-        assert($fdef && !isset(self::$by_name[$new_name]));
-        self::$by_name[$new_name] = $fdef;
+        $lold = strtolower($old_name);
+        $lname = strtolower($new_name);
+        assert(isset(self::$by_name[$lold]) && !isset(self::$by_name[$lname]) && !isset(self::$synonyms[$lname]));
+        self::$synonyms[$lname] = $lold;
+    }
+    public static function make_column_error($errors, $ehtml, $eprio) {
+        if ($errors)
+            $errors->add($ehtml, $eprio);
     }
 
     public function prepare(PaperList $pl, $visible) {
@@ -685,37 +693,76 @@ class TopicScorePaperColumn extends PaperColumn {
 class PreferencePaperColumn extends PaperColumn {
     private $editable;
     private $contact;
-    public function __construct($name, $editable) {
+    private $viewer_contact;
+    private $is_direct;
+    private $careful;
+    public function __construct($name, $editable, $contact = null) {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE,
-                            array("comparator" => "preference_compare"));
+                            array("comparator" => "preference_compare",
+                                  "className" => $editable ? "pl_editrevpref" : "pl_revpref"));
         $this->editable = $editable;
+        $this->contact = $contact;
+    }
+    public function make_column($name, $errors) {
+        global $Me;
+        $p = strpos($name, ":");
+        $cids = ContactSearch::make_pc(substr($name, $p + 1), $Me)->ids;
+        if (count($cids) == 0)
+            self::make_column_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 2);
+        else if (count($cids) == 1) {
+            $pcm = pcMembers();
+            return parent::register(new PreferencePaperColumn($name, $this->editable, $pcm[$cids[0]]));
+        } else
+            self::make_column_error($errors, "“" . htmlspecialchars(substr($name, $p + 1)) . "” matches more than one PC member.", 2);
+        return null;
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
             return false;
-        if ($visible) {
+        $this->viewer_contact = $pl->contact;
+        if (!$this->contact)
             $this->contact = $pl->reviewer_contact();
-            $pl->qopts["reviewer"] = $pl->reviewer_cid();
-            $pl->qopts["reviewerPreference"] = $pl->qopts["topics"] = 1;
+        if ($visible) {
+            $this->careful = $this->contact->contactId != $pl->contact->contactId;
+            $this->is_direct = $this->contact->contactId == $pl->reviewer_cid();
+            if ($this->is_direct) {
+                $pl->qopts["reviewer"] = $pl->reviewer_cid();
+                $pl->qopts["reviewerPreference"] = 1;
+            } else
+                $pl->qopts["allReviewerPreference"] = 1;
+            $pl->qopts["topics"] = 1;
         }
         if ($this->editable && $visible > 0 && ($tid = $pl->table_id())) {
             $reviewer_cid = 0;
             if ($pl->contact->privChair)
                 $reviewer_cid = $pl->reviewer_cid() ? : 0;
-            $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ",$reviewer_cid)");
+            $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ",$reviewer_cid)", "revpref_ajax");
         }
         return true;
     }
+    private function preference_values($row) {
+        if (($this->careful && !$this->viewer_contact->allow_administer($row))
+            || ($this->is_direct ? $row->reviewerConflictType > 0 : $row->has_conflict($this->contact)))
+            return [null, null];
+        else if ($this->is_direct)
+            return [$row->reviewerPreference, $row->reviewerExpertise];
+        else
+            return $row->reviewer_preference($this->contact);
+    }
     public function preference_compare($a, $b) {
-        list($ap, $bp) = [(float) $a->reviewerPreference, (float) $b->reviewerPreference];
+        list($ap, $ae) = $this->preference_values($a);
+        list($bp, $be) = $this->preference_values($b);
+        if ($ap === null || $bp === null)
+            return $ap === $bp ? 0 : ($ap === null ? 1 : -1);
         if ($ap != $bp)
             return $ap < $bp ? 1 : -1;
-        list($ae, $be) = [$a->reviewerExpertise, $b->reviewerExpertise];
+
         if ($ae !== $be) {
             if (($ae === null) !== ($be === null))
                 return $ae === null ? 1 : -1;
             return (float) $ae < (float) $be ? 1 : -1;
         }
+
         $at = $a->topic_interest_score($this->contact);
         $bt = $b->topic_interest_score($this->contact);
         if ($at != $bt)
@@ -723,24 +770,35 @@ class PreferencePaperColumn extends PaperColumn {
         return 0;
     }
     public function header($pl, $ordinal) {
-        return "Preference";
+        if ($this->careful)
+            return $pl->contact->name_html_for($this->contact) . "<br />Preference</span>";
+        else
+            return "Preference";
+    }
+    public function content_empty($pl, $row) {
+        return $this->careful && !$pl->contact->allow_administer($row);
     }
     public function content($pl, $row, $rowidx) {
-        $pref = unparse_preference($row);
-        if ($pl->reviewer_cid()
-            && $pl->reviewer_cid() != $pl->contact->contactId
-            && !$pl->contact->allow_administer($row))
-            return "N/A";
-        else if (!$this->editable)
-            return $pref;
-        else if ($row->reviewerConflictType > 0)
-            return "N/A";
-        else
-            return '<input name="revpref' . $row->paperId
-                . '" class="revpref" value="' . ($pref !== "0" ? $pref : "") . '" type="text" size="4" tabindex="2" placeholder="0" />';
+        if ($this->is_direct && $row->reviewerConflictType > 0)
+            return "";
+        else if (!$this->is_direct && $row->has_conflict($this->contact))
+            return review_type_icon(-1);
+        $ptext = $this->text($pl, $row);
+        if (!$this->editable) {
+            if ($ptext[0] === "-")
+                $ptext = "&#8722;" . substr($ptext, 1);
+            if ($this->careful && !$pl->contact->can_administer($row, false))
+                $ptext = '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
+            return $ptext;
+        } else {
+            $iname = "revpref" . $row->paperId;
+            if (!$this->is_direct)
+                $iname .= "u" . $this->contact->contactId;
+            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />';
+        }
     }
     public function text($pl, $row) {
-        return get($row, "reviewerPreference") + 0;
+        return unparse_preference($this->preference_values($row));
     }
 }
 
@@ -1192,7 +1250,7 @@ class OptionPaperColumn extends PaperColumn {
             return self::_make_column(current($opts));
         } else {
             if ($p > 0)
-                $errors->add("No such option “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 1);
+                self::make_column_error($errors, "No such option “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 1);
             return null;
         }
     }
@@ -1270,7 +1328,7 @@ class FormulaPaperColumn extends PaperColumn {
         $formula = new Formula($name);
         if (!$formula->check()) {
             if ($errors && strpos($name, "(") !== false)
-                $errors->add($formula->error_html(), 1);
+                self::make_column_error($errors, $formula->error_html(), 1);
             return null;
         }
         $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1), $formula);
@@ -1505,14 +1563,14 @@ function initialize_paper_columns() {
     PaperColumn::register(new AssignReviewPaperColumn);
     PaperColumn::register(new TopicScorePaperColumn);
     PaperColumn::register(new TopicListPaperColumn);
-    PaperColumn::register(new PreferencePaperColumn("revpref", false));
-    PaperColumn::register_synonym("pref", "revpref");
-    PaperColumn::register(new PreferencePaperColumn("editrevpref", true));
-    PaperColumn::register_synonym("editpref", "editrevpref");
-    PaperColumn::register(new PreferenceListPaperColumn("allrevpref", false));
-    PaperColumn::register_synonym("allpref", "allrevpref");
-    PaperColumn::register(new PreferenceListPaperColumn("allrevtopicpref", true));
-    PaperColumn::register_synonym("alltopicpref", "allrevtopicpref");
+    PaperColumn::register(new PreferencePaperColumn("pref", false));
+    PaperColumn::register_synonym("revpref", "pref");
+    PaperColumn::register(new PreferencePaperColumn("editpref", true));
+    PaperColumn::register_synonym("editrevpref", "editpref");
+    PaperColumn::register(new PreferenceListPaperColumn("allpref", false));
+    PaperColumn::register_synonym("allrevpref", "allpref");
+    PaperColumn::register(new PreferenceListPaperColumn("alltopicpref", true));
+    PaperColumn::register_synonym("allrevtopicpref", "alltopicpref");
     PaperColumn::register(new DesirabilityPaperColumn);
     PaperColumn::register(new ReviewerListPaperColumn);
     PaperColumn::register(new AuthorsPaperColumn);
@@ -1534,6 +1592,8 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("opt:", new OptionPaperColumn(null));
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
+    PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
+    PaperColumn::register_factory("editpref:", new PreferencePaperColumn(null, true));
 
     if (count(PaperOption::option_list()))
         PaperColumn::register_factory("", new OptionPaperColumn(null));
