@@ -92,11 +92,11 @@ class Si {
                 $settinginfo_include = array($settinginfo_include);
             foreach ($settinginfo_include as $k => $si) {
                 if (preg_match(',\A\s*\{\s*\",s', $si))
-                    $info = handle_settinginfo($info, $si, "include entry $k");
+                    $info = self::read($info, $si, "include entry $k");
                 else
                     foreach (expand_includes($ConfSitePATH, $si) as $f)
                         if (($x = file_get_contents($f)))
-                            $info = handle_settinginfo($info, $x, $f);
+                            $info = self::read($info, $x, $f);
             }
         }
         foreach ($info as $k => $v)
