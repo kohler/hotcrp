@@ -175,7 +175,9 @@ class Autoassigner {
             while (($row = PaperInfo::fetch($result, true))) {
                 $row->topicIds = get($topicIds, $row->paperId);
                 $topic_interest_score = $row->topic_interest_score($p);
-                $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $row->expertise, $topic_interest_score);
+                if (($exp = $row->expertise) !== null)
+                    $exp = (int) $exp;
+                $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $exp, $topic_interest_score);
                 if ($row->myReviewType > 0)
                     $pref = self::POLDASSIGN;
                 else if ($row->conflictType > 0 || $row->refused > 0
@@ -532,8 +534,8 @@ class Autoassigner {
         $nassigned = 0;
         foreach ($this->pcm as $cid => $p) {
             foreach ($m->reachable("u$cid", "p") as $v) {
-                $this->make_assignment($action, $round, $cid,
-                                       substr($v->name, 1), $papers);
+                $pid = substr($v->name, 1);
+                $this->make_assignment($action, $round, $cid, $pid, $papers);
                 ++$nassigned;
             }
         }
