@@ -298,11 +298,11 @@ class MinCostMaxFlow {
 
     private function pushrelabel_discharge($v) {
         $ne = count($v->e);
-        $notrelabeled = 1;
+        $relabeled = false;
         while ($v->excess > 0) {
             if ($v->npos == $ne) {
                 $this->pushrelabel_relabel($v);
-                $notrelabeled = 0;
+                $relabeled = true;
             } else {
                 $e = $v->e[$v->npos];
                 if ($e->is_distance_admissible_from($v))
@@ -311,7 +311,7 @@ class MinCostMaxFlow {
                     ++$v->npos;
             }
         }
-        return !$notrelabeled;
+        return $relabeled;
     }
 
     private function pushrelabel_run() {
