@@ -31,8 +31,9 @@ class Autoassigner {
 
     const PMIN = -1000000;
     const PNOASSIGN = -1000001;
-    const POLDASSIGN = -1000002;
-    const PNEWASSIGN = -1000003;
+    const POTHERASSIGN = -1000002; // order matters
+    const POLDASSIGN = -1000003;
+    const PNEWASSIGN = -1000004;
 
     const COSTPERPAPER = 100;
 
@@ -141,7 +142,7 @@ class Autoassigner {
         Dbl::free($result);
     }
 
-    private function preferences_review() {
+    private function preferences_review($reviewtype) {
         global $Conf;
         $time = microtime(true);
         $this->prefs = array();
@@ -178,8 +179,10 @@ class Autoassigner {
                 if (($exp = $row->expertise) !== null)
                     $exp = (int) $exp;
                 $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $exp, $topic_interest_score);
-                if ($row->myReviewType > 0)
+                if ($row->myReviewType == $reviewtype)
                     $pref = self::POLDASSIGN;
+                else if ($row->myReviewType > 0)
+                    $pref = self::POTHERASSIGN;
                 else if ($row->conflictType > 0 || $row->refused > 0
                          || !$p->can_accept_review_assignment($row))
                     $pref = self::PNOASSIGN;
@@ -213,7 +216,7 @@ class Autoassigner {
                     if ($this->prefs[$cid][$pid] < self::PMIN)
                         continue;
                     foreach ($bp as $cid2 => $x)
-                        if ($this->prefs[$cid2][$pid] <= self::POLDASSIGN)
+                        if ($this->prefs[$cid2][$pid] <= self::POTHERASSIGN)
                             $this->prefs[$cid2][$pid] = self::PNOASSIGN;
                 }
             }
@@ -458,7 +461,7 @@ class Autoassigner {
         }
     }
 
-    private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
+    private function assign_mcmf_once(&$papers, $action, $round, $nperpc, $xpapers) {
         global $Conf;
         $m = new MinCostMaxFlow;
         $m->add_progressf(array($this, "mcmf_progress"));
@@ -470,7 +473,7 @@ class Autoassigner {
         $nass = 0;
         foreach ($papers as $pid => $ct) {
             $m->add_node("p$pid", "p");
-            $m->add_edge("p$pid", ".sink", $ct, 0);
+            $m->add_edge("p$pid", ".sink", $xpapers ? $xpapers[$pid] : $ct, 0);
             $nass += $ct;
         }
         // user nodes
@@ -512,7 +515,15 @@ class Autoassigner {
         $bpdone = array();
         foreach ($papers as $pid => $ct)
             foreach ($this->pcm as $cid => $p) {
-                if ((int) get($this->prefs[$cid], $pid) < self::PMIN)
+                $pref = (int) get($this->prefs[$cid], $pid);
+                if ($pref >= self::PMIN) {
+                    $emincap = 0;
+                    $ecost = $cost[$cid][$pid];
+                } else if ($pref == self::POLDASSIGN && $xpapers) {
+                    $emincap = 1;
+                    $ecost = 0;
+                    $m->add_edge(".source", "u$cid", 1, 0, 1);
+                } else
                     continue;
                 if (isset($bpclass[$cid])) {
                     $x = "b{$pid}." . $bpclass[$cid];
@@ -522,7 +533,7 @@ class Autoassigner {
                     }
                 } else
                     $x = "p$pid";
-                $m->add_edge("u$cid", $x, 1, $cost[$cid][$pid]);
+                $m->add_edge("u$cid", $x, 1, $ecost, $emincap);
             }
         // run MCMF
         $this->mcmf = $m;
@@ -535,8 +546,10 @@ class Autoassigner {
         foreach ($this->pcm as $cid => $p) {
             foreach ($m->reachable("u$cid", "p") as $v) {
                 $pid = substr($v->name, 1);
-                $this->make_assignment($action, $round, $cid, $pid, $papers);
-                ++$nassigned;
+                if ((int) get($this->prefs[$cid], $pid) != self::POLDASSIGN) {
+                    $this->make_assignment($action, $round, $cid, $pid, $papers);
+                    ++$nassigned;
+                }
             }
         }
         $m->clear(); // break circular refs
@@ -548,11 +561,11 @@ class Autoassigner {
         return $nassigned;
     }
 
-    private function assign_mcmf(&$papers, $action, $round, $nperpc) {
+    private function assign_mcmf(&$papers, $action, $round, $nperpc, $xpapers) {
         $this->mcmf_round_descriptor = "";
         $this->mcmf_optimizing_for = "Optimizing assignment for preferences and balance";
         $mcmf_round = 1;
-        while ($this->assign_mcmf_once($papers, $action, $round, $nperpc)) {
+        while ($this->assign_mcmf_once($papers, $action, $round, $nperpc, $xpapers)) {
             $nmissing = 0;
             foreach ($papers as $pid => $ct)
                 if ($ct > 0)
@@ -570,13 +583,13 @@ class Autoassigner {
         }
     }
 
-    private function assign_method(&$papers, $action, $round, $nperpc) {
+    private function assign_method(&$papers, $action, $round, $nperpc, $xpapers = null) {
         if ($this->method == self::METHOD_RANDOM)
             $this->assign_randomly($papers, $action, $round, $nperpc);
         else if ($this->method == self::METHOD_STUPID)
             $this->assign_stupidly($papers, $action, $round, $nperpc);
         else
-            $this->assign_mcmf($papers, $action, $round, $nperpc);
+            $this->assign_mcmf($papers, $action, $round, $nperpc, $xpapers);
     }
 
 
@@ -628,7 +641,7 @@ class Autoassigner {
     }
 
     public function run_reviews_per_pc($reviewtype, $round, $nass) {
-        $this->preferences_review();
+        $this->preferences_review($reviewtype);
         $papers = array_fill_keys($this->papersel, ceil((count($this->pcm) * ($nass + 2)) / count($this->papersel)));
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
         $this->assign_method($papers, $action, $round, $nass);
@@ -637,7 +650,7 @@ class Autoassigner {
     public function run_more_reviews($reviewtype, $round, $nass) {
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
-        $this->preferences_review();
+        $this->preferences_review($reviewtype);
         $papers = array_fill_keys($this->papersel, $nass);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
         $this->assign_method($papers, $action, $round, null);
@@ -648,15 +661,18 @@ class Autoassigner {
         global $Conf;
         if ($this->balance !== self::BALANCE_NEW)
             $this->balance_reviews($reviewtype);
-        $this->preferences_review();
+        $this->preferences_review($reviewtype);
         $papers = array_fill_keys($this->papersel, $nass);
+        $xpapers = $papers;
         $result = Dbl::qe("select paperId, count(reviewId) from PaperReview where reviewType={$reviewtype} group by paperId");
         while (($row = edb_row($result)))
-            if (isset($papers[$row[0]]))
+            if (isset($papers[$row[0]])) {
                 $papers[$row[0]] = max($nass - $row[1], 0);
+                $xpapers[$row[0]] = max($nass, $row[1]);
+            }
         Dbl::free($result);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
-        $this->assign_method($papers, $action, $round, null);
+        $this->assign_method($papers, $action, $round, null, $xpapers);
         $this->check_missing_assignments($papers, "rev");
     }
 
