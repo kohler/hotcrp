@@ -350,6 +350,7 @@ class MinCostMaxFlow {
     private function pushrelabel_make_distance() {
         foreach ($this->v as $v) {
             $v->distance = 0;
+            $v->npos = 0;
             $v->xlink = null;
         }
         $qhead = $qtail = $this->sink;
@@ -411,16 +412,14 @@ class MinCostMaxFlow {
             $e->src->excess -= $e->cap;
         }
 
-        // initialize lists and neighbor position
+        // initialize list
         $lhead = $ltail = null;
-        foreach ($this->v as $v) {
-            $v->npos = 0;
+        foreach ($this->v as $v)
             if ($v !== $this->source && $v !== $this->sink) {
                 $ltail ? ($ltail->link = $v) : ($lhead = $v);
                 $v->link = null;
                 $ltail = $v;
             }
-        }
 
         // relabel-to-front
         $n = 0;
