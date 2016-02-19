@@ -1381,15 +1381,26 @@ class AssignmentSet {
         if (!$this->install_csv_header($csv, $req))
             return false;
 
-        // parse file
+        // parse file, load papers all at once
+        $lines = $pids = [];
         while (($req = $csv->next()) !== false) {
+            $lines[] = [$csv->lineno(), $req];
+            $this->collect_papers($req, $pids, false);
+        }
+        if (count($pids)) {
             $this->astate->lineno = $csv->lineno();
-            if ($csv->lineno() % 100 == 0) {
+            $this->astate->fetch_prows(array_keys($pids));
+        }
+
+        // now parse assignment
+        foreach ($lines as $linereq) {
+            $this->astate->lineno = $linereq[0];
+            if ($linereq[0] % 100 == 0) {
                 if ($alertf)
-                    call_user_func($alertf, $this, $csv->lineno(), $req);
+                    call_user_func($alertf, $this, $linereq[0], $req);
                 set_time_limit(30);
             }
-            $this->apply($req);
+            $this->apply($linereq[1]);
         }
         if ($alertf)
             call_user_func($alertf, $this, $csv->lineno(), false);
@@ -1397,24 +1408,34 @@ class AssignmentSet {
         $this->finish();
     }
 
-    function apply($req) {
-        // parse paper
+    private function collect_papers($req, &$pids, $report_error) {
         $pfield = trim(get_s($req, "paper"));
-        $pfield_straight = false;
-        if ($pfield !== "" && ctype_digit($pfield)) {
-            $pids = array(intval($pfield));
-            $pfield_straight = true;
-        } else if ($pfield !== "") {
+        if ($pfield !== "" && ctype_digit($pfield))
+            $pids[intval($pfield)] = 2;
+        else if ($pfield !== "") {
             if (!($pids = get($this->searches, $pfield))) {
                 $search = new PaperSearch($this->contact, $pfield);
-                $pids = $this->searches[$pfield] = $search->paperList();
-                foreach ($search->warnings as $w)
-                    $this->error($w);
+                $this->searches[$pfield] = $search->paperList();
+                foreach ($this->searches[$pfield] as $pid)
+                    $pids[$pid] = 1;
+                if ($report_error)
+                    foreach ($search->warnings as $w)
+                        $this->error($w);
             }
-            if (!count($pids))
-                return $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
-        } else
-            return $this->error("Bad paper column");
+            if (!count($pids) && $report_error)
+                $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
+        } else if ($report_error)
+            $this->error("Bad paper column");
+    }
+
+    function apply($req) {
+        // parse paper
+        $pids = [];
+        $this->collect_papers($req, $pids, true);
+        if (!count($pids))
+            return false;
+        $pfield_straight = join(",", array_values($pids)) === "2";
+        $pids = array_keys($pids);
 
         // check action
         if (($action = get($req, "action")) === null
