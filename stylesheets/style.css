@@ -1222,12 +1222,13 @@ span.asspref-1 {
 	page-break-inside: avoid;
 	break-inside: avoid;
 	margin: 0 6px;
+	padding: 2px 0 3px;
 }
 .pc_ctable > .ctelt {
 	padding-bottom: 4px;
 }
 .pc_ctelt {
-	padding: 2px 6px 3px;
+	padding: 0 6px;
 }
 
 /* review type/assignment blocks */
