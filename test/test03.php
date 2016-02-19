@@ -10,8 +10,8 @@ require_once("$ConfSitePATH/test/setup.php");
 
 function mcmf_assignment_text($m) {
     $a = array();
-    foreach ($m->nodes("user") as $u)
-        foreach ($m->reachable($u, "paper") as $p)
+    foreach ($m->nodes("u") as $u)
+        foreach ($m->reachable($u, "p") as $p)
             $a[] = "$u->name $p->name\n";
     sort($a);
     return join("", $a);
@@ -22,11 +22,11 @@ function mcmf_assignment_text($m) {
 
 $m = new MinCostMaxFlow;
 foreach (array("u0", "u1", "u2") as $x) {
-    $m->add_node($x, "user");
+    $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1, 0);
 }
 foreach (array("p0", "p1", "p2") as $x) {
-    $m->add_node($x, "paper");
+    $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1, 0);
 }
 $m->add_edge("u0", "p0", 1, 0);
@@ -55,11 +55,11 @@ fwrite(STDERR, "- Phase 1 complete.\n");
 
 $m = new MinCostMaxFlow;
 foreach (array("u0", "u1", "u2") as $x) {
-    $m->add_node($x, "user");
+    $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1, 0);
 }
 foreach (array("p0", "p1", "p2") as $x) {
-    $m->add_node($x, "paper");
+    $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1, 0);
 }
 foreach (array("u0", "u1", "u2") as $x)
@@ -89,11 +89,11 @@ fwrite(STDERR, "- Phase 2 complete.\n");
 
 $m = new MinCostMaxFlow;
 foreach (array("u0", "u1", "u2") as $x) {
-    $m->add_node($x, "user");
+    $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1, 0);
 }
 foreach (array("p0", "p1", "p2") as $x) {
-    $m->add_node($x, "paper");
+    $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1, 0);
 }
 foreach (array("u0", "u1", "u2") as $x)
@@ -124,11 +124,11 @@ fwrite(STDERR, "- Phase 3 complete.\n");
 
 $m = new MinCostMaxFlow;
 foreach (array("u0", "u1", "u2") as $x) {
-    $m->add_node($x, "user");
+    $m->add_node($x, "u");
     $m->add_edge(".source", $x, 1);
 }
 foreach (array("p0", "p1", "p2") as $x) {
-    $m->add_node($x, "paper");
+    $m->add_node($x, "p");
     $m->add_edge($x, ".sink", 1);
 }
 foreach (array("u0", "u1", "u2") as $x)
@@ -158,12 +158,12 @@ fwrite(STDERR, "- Phase 4 complete.\n");
 $m = new MinCostMaxFlow;
 $m->parse_dimacs("n 1 s
 n 2 t
-c ninfo 3 u0 user
-c ninfo 4 u1 user
-c ninfo 5 u2 user
-c ninfo 6 p0 paper
-c ninfo 7 p1 paper
-c ninfo 8 p2 paper
+c ninfo 3 u0 u
+c ninfo 4 u1 u
+c ninfo 5 u2 u
+c ninfo 6 p0 p
+c ninfo 7 p1 p
+c ninfo 8 p2 p
 a 1 3 1
 a 1 4 1
 a 1 5 1
