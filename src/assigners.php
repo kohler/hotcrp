@@ -1603,7 +1603,7 @@ class AssignmentSet {
             $deltarev->shepherd && $nrev->load_shepherd();
             foreach (pcMembers() as $p)
                 if ($deltarev->get($p->contactId)->ass) {
-                    $t = '<div class="ctelt"><div class="pc_ctelt';
+                    $t = '<div class="ctelt"><div class="ctelti';
                     if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
                         $t .= ' ' . $k;
                     $t .= '"><span class="taghl">' . $this->contact->name_html_for($p) . "</span>: "

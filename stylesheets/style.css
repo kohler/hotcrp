@@ -1210,11 +1210,6 @@ span.asspref-1 {
 	-webkit-column-gap: 18px;
 	-moz-column-gap: 18px;
 	column-gap: 18px;
-}
-.ctable {
-	margin: 0 -6px;
-}
-.pc_ctable {
 	margin: 0 -12px -4px;
 }
 .ctelt {
@@ -1222,12 +1217,9 @@ span.asspref-1 {
 	page-break-inside: avoid;
 	break-inside: avoid;
 	margin: 0 6px;
-	padding: 2px 0 3px;
+	padding: 2px 0 4px;
 }
-.pc_ctable > .ctelt {
-	padding-bottom: 4px;
-}
-.pc_ctelt {
+.ctelti {
 	padding: 0 6px;
 }
 

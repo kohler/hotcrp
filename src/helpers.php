@@ -367,7 +367,7 @@ function topicTable($prow, $active = 0) {
     foreach ($tmap as $tid => $tname) {
         if (!isset($allTopics[$tid]))
             continue;
-        $out .= '<div class="ctelt">';
+        $out .= '<div class="ctelt"><div class="ctelti">';
         $tname = '<span class="topic0">' . htmlspecialchars($tname) . '</span>';
         if ($paperId <= 0 || $active >= 0) {
             $out .= '<table><tr><td class="nw">'
@@ -376,7 +376,7 @@ function topicTable($prow, $active = 0) {
                 . "&nbsp;</td><td>" . Ht::label($tname) . "</td></tr></table>";
         } else
             $out .= $tname;
-        $out .= "</div>\n";
+        $out .= "</div></div>\n";
         $i++;
     }
     return $out . "</div>";

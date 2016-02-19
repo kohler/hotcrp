@@ -569,7 +569,7 @@ $tagger = new Tagger($Me);
 $nrev = new AssignmentCountSet;
 $nrev->load_rev();
 foreach (pcMembers() as $p) {
-    $t = '<div class="ctelt"><div class="pc_ctelt';
+    $t = '<div class="ctelt"><div class="ctelti';
     if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
         $t .= ' ' . $k;
     $t .= '"><table><tr><td class="nw">'

@@ -1222,7 +1222,7 @@ class PaperTable {
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
 
-            echo '<div class="ctelt"><div class="pc_ctelt';
+            echo '<div class="ctelt"><div class="ctelti';
             if ($show_colors && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
                 echo ' ', $classes;
             echo '">';
