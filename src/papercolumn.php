@@ -722,8 +722,11 @@ class PreferencePaperColumn extends PaperColumn {
         $this->viewer_contact = $pl->contact;
         if (!$this->contact)
             $this->contact = $pl->reviewer_contact();
+        $this->careful = $this->contact->contactId != $pl->contact->contactId;
+        if (($this->careful || !$this->name /* == this is the user factory */)
+            && !$pl->contact->is_manager())
+            return false;
         if ($visible) {
-            $this->careful = $this->contact->contactId != $pl->contact->contactId;
             $this->is_direct = $this->contact->contactId == $pl->reviewer_cid();
             if ($this->is_direct) {
                 $pl->qopts["reviewer"] = $pl->reviewer_cid();
@@ -739,6 +742,9 @@ class PreferencePaperColumn extends PaperColumn {
             $pl->add_header_script("add_revpref_ajax(" . json_encode("#$tid") . ",$reviewer_cid)", "revpref_ajax");
         }
         return true;
+    }
+    public function completion_name() {
+        return $this->name ? : "pref:<user>";
     }
     private function preference_values($row) {
         if (($this->careful && !$this->viewer_contact->allow_administer($row))
