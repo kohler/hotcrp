@@ -137,13 +137,8 @@ class ZipDocument {
         $this->files[$zip_filename] = true;
 
         // complete
-        if (time() - $this->start_time >= 0) {
+        if (time() - $this->start_time >= 0)
             set_time_limit(30);
-            if (!$this->headers) {
-                $this->download_headers();
-                Filer::hyperflush();
-            }
-        }
         return self::_add_done($doc, true);
     }
 
@@ -427,13 +422,9 @@ class Filer {
     }
 
     // download
-    static function hyperflush() {
-        flush();
-        while (@ob_end_flush())
-            /* do nothing */;
-    }
     static function download_file($filename, $no_accel = false) {
         global $Opt, $zlib_output_compression;
+        // if docstoreAccelRedirect, output X-Accel-Redirect header
         if (($dar = get($Opt, "docstoreAccelRedirect"))
             && ($ds = get($Opt, "docstore"))
             && !$no_accel) {
@@ -448,9 +439,13 @@ class Filer {
                 return;
             }
         }
+        // write length header, flush output buffers
         if (!$zlib_output_compression)
             header("Content-Length: " . filesize($filename));
-        self::hyperflush();
+        flush();
+        while (@ob_end_flush())
+            /* do nothing */;
+        // read file directly to output
         readfile($filename);
     }
     function download($doc, $downloadname = null, $attachment = null) {
