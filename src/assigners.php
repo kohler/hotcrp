@@ -1397,7 +1397,7 @@ class AssignmentSet {
             $this->astate->lineno = $linereq[0];
             if ($linereq[0] % 100 == 0) {
                 if ($alertf)
-                    call_user_func($alertf, $this, $linereq[0], $req);
+                    call_user_func($alertf, $this, $linereq[0], $linereq[1]);
                 set_time_limit(30);
             }
             $this->apply($linereq[1]);
@@ -1413,16 +1413,16 @@ class AssignmentSet {
         if ($pfield !== "" && ctype_digit($pfield))
             $pids[intval($pfield)] = 2;
         else if ($pfield !== "") {
-            if (!($pids = get($this->searches, $pfield))) {
+            if (!isset($this->searches[$pfield])) {
                 $search = new PaperSearch($this->contact, $pfield);
                 $this->searches[$pfield] = $search->paperList();
-                foreach ($this->searches[$pfield] as $pid)
-                    $pids[$pid] = 1;
                 if ($report_error)
                     foreach ($search->warnings as $w)
                         $this->error($w);
             }
-            if (!count($pids) && $report_error)
+            foreach ($this->searches[$pfield] as $pid)
+                $pids[$pid] = 1;
+            if (!count($this->searches[$pfield]) && $report_error)
                 $this->error("No papers match “" . htmlspecialchars($pfield) . "”");
         } else if ($report_error)
             $this->error("Bad paper column");
