@@ -1208,8 +1208,10 @@ class PaperList {
         foreach ($fieldDef as $fdef)
             if ($fdef->view == Column::VIEW_COLUMN && $fdef->has_statistics())
                 $any_empty = $any_empty || $fdef->statistic($this, ScoreInfo::COUNT) != $this->count;
-        if ($any_empty === null)
+        if ($any_empty === null) {
+            $this->error_html[] = "No statistics to show. Try adding formulas to your display; for example, “show:statistics show:(count(rev))”.";
             return "";
+        }
         foreach (array(ScoreInfo::SUM => "Total", ScoreInfo::MEAN => "Mean",
                        ScoreInfo::MEDIAN => "Median") as $stat => $name) {
             $t .= "<tr>";
