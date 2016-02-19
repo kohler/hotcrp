@@ -252,14 +252,18 @@ class MinCostMaxFlow {
     // push-relabel: maximum flow only, ignores costs
 
     private static function pushrelabel_bfs_setdistance($qtail, $v, $dist) {
-        $v->distance = $dist;
-        $v->npos = 0;
+        if ($v->distance !== $dist) {
+            $v->distance = $dist;
+            $v->npos = 0;
+        }
         $v->xlink = null;
         $qtail->xlink = $v;
         return $v;
     }
 
     private function pushrelabel_make_distance() {
+        foreach ($this->v as $v)
+            $v->xlink = $this->sink;
         $qhead = $qtail = $this->sink;
         $qhead->distance = 0;
         $qhead->xlink = null;
@@ -267,7 +271,7 @@ class MinCostMaxFlow {
             $d = $qhead->distance + 1;
             foreach ($qhead->e as $e)
                 if ($e->residual_cap_to($qhead) > 0
-                    && $e->other($qhead)->distance > $d)
+                    && $e->other($qhead)->xlink === $this->sink)
                     $qtail = self::pushrelabel_bfs_setdistance($qtail, $e->other($qhead), $d);
             $qhead = $qhead->xlink;
         }
