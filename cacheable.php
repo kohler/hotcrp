@@ -25,7 +25,7 @@ function fail() {
     exit;
 }
 
-$file = @$_REQUEST["file"];
+$file = isset($_GET["file"]) ? $_GET["file"] : null;
 if (!$file)
     fail();
 
@@ -36,7 +36,7 @@ if (preg_match(',\A(?:images|scripts|stylesheets)(?:/[^./][^/]+)+\z,', $file)
     $s = $m[1];
     if ($s === ".js") {
         header("Content-Type: text/javascript; charset=utf-8");
-        if (@$_REQUEST["strictjs"])
+        if (isset($_GET["strictjs"]) && $_GET["strictjs"])
             $prefix = "\"use strict\";\n";
     } else if ($s === ".map")
         header("Content-Type: application/json; charset=utf-8");
@@ -62,8 +62,8 @@ header("Last-Modified: $last_modified");
 header("ETag: $etag");
 
 // check for a conditional request
-$if_modified_since = @$_SERVER["HTTP_IF_MODIFIED_SINCE"];
-$if_none_match = @$_SERVER["HTTP_IF_NONE_MATCH"];
+$if_modified_since = isset($_SERVER["HTTP_IF_MODIFIED_SINCE"]) ? $_SERVER["HTTP_IF_MODIFIED_SINCE"] : 0;
+$if_none_match = isset($_SERVER["HTTP_IF_NONE_MATCH"]) ? $_SERVER["HTTP_IF_NONE_MATCH"] : 0;
 if (($if_modified_since || $if_none_match)
     && (!$if_modified_since || $if_modified_since === $last_modified)
     && (!$if_none_match || $if_none_match === $etag))
