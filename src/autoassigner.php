@@ -485,11 +485,6 @@ class Autoassigner {
             }
         }
         // cost determination
-        // Adjust preference group counts so people who enter fewer
-        // preference levels aren't disadvantaged.
-        $maxnpg = 0;
-        foreach ($this->pcm as $cid => $p)
-            $maxnpg = max($maxnpg, count($this->pref_groups[$cid]));
         $cost = array();
         foreach ($this->pcm as $cid => $p) {
             $ppg = $this->pref_groups[$cid];
