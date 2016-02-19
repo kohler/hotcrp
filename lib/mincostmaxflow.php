@@ -48,7 +48,7 @@ class MinCostMaxFlow_Node {
                 $old_rc = $e->cost + $e->src->price - $old_price;
             if (($rc < 0) !== ($old_rc < 0) && $e->flow < $e->cap)
                 $e->src->n_outgoing_admissible += $rc < 0 ? 1 : -1;
-            if (($rc > 0) !== ($old_rc > 0) && $e->flow > 0)
+            if (($rc > 0) !== ($old_rc > 0) && $e->flow > $e->mincap)
                 $e->dst->n_outgoing_admissible += $rc > 0 ? 1 : -1;
         }
     }
@@ -58,12 +58,14 @@ class MinCostMaxFlow_Edge {
     public $src;
     public $dst;
     public $cap;
+    public $mincap;
     public $cost;
     public $flow = 0;
-    public function __construct($src, $dst, $cap, $cost) {
+    public function __construct($src, $dst, $cap, $cost, $mincap = 0) {
         $this->src = $src;
         $this->dst = $dst;
         $this->cap = $cap;
+        $this->mincap = $mincap;
         $this->cost = $cost;
     }
     public function other($v) {
@@ -73,13 +75,13 @@ class MinCostMaxFlow_Edge {
         return $v === $this->dst ? $this->flow : -$this->flow;
     }
     public function residual_cap($isrev) {
-        return $isrev ? $this->flow : $this->cap - $this->flow;
+        return $isrev ? $this->flow - $this->mincap : $this->cap - $this->flow;
     }
     public function residual_cap_from($v) {
-        return $v === $this->src ? $this->cap - $this->flow : $this->flow;
+        return $v === $this->src ? $this->cap - $this->flow : $this->flow - $this->mincap;
     }
     public function residual_cap_to($v) {
-        return $v === $this->src ? $this->flow : $this->cap - $this->flow;
+        return $v === $this->src ? $this->flow - $this->mincap : $this->cap - $this->flow;
     }
     public function reduced_cost($isrev) {
         $c = $this->cost + $this->src->price - $this->dst->price;
@@ -92,14 +94,14 @@ class MinCostMaxFlow_Edge {
         if ($v === $this->src)
             return $this->flow < $this->cap && $v->distance == $this->dst->distance + 1;
         else
-            return $this->flow > 0 && $v->distance == $this->src->distance + 1;
+            return $this->flow > $this->mincap && $v->distance == $this->src->distance + 1;
     }
     public function is_price_admissible_from($v) {
         $c = $this->cost + $this->src->price - $this->dst->price;
         if ($v === $this->src)
             return $this->flow < $this->cap && $c < 0;
         else
-            return $this->flow > 0 && $c > 0;
+            return $this->flow > $this->mincap && $c > 0;
     }
 };
 
@@ -151,7 +153,7 @@ class MinCostMaxFlow {
         return $v;
     }
 
-    public function add_edge($vs, $vd, $cap, $cost = 0) {
+    public function add_edge($vs, $vd, $cap, $cost = 0, $mincap = 0) {
         if (is_string($vs))
             $vs = $this->vmap[$vs];
         if (is_string($vd))
@@ -159,7 +161,7 @@ class MinCostMaxFlow {
         assert(($vs instanceof MinCostMaxFlow_Node) && ($vd instanceof MinCostMaxFlow_Node));
         assert($vs !== $this->sink && $vd !== $this->source && $vs !== $vd);
         // XXX assert(this edge does not exist)
-        $this->e[] = new MinCostMaxFlow_Edge($vs, $vd, $cap, $cost);
+        $this->e[] = new MinCostMaxFlow_Edge($vs, $vd, $cap, $cost, $mincap);
         $this->maxcap = max($this->maxcap, $cap);
         $this->mincost = min($this->mincost, $cost);
         $this->maxcost = max($this->maxcost, $cost);
@@ -418,7 +420,7 @@ class MinCostMaxFlow {
         foreach ($v->e as $epos => $e) {
             if ($e->src === $v && $e->flow < $e->cap)
                 $px = $e->dst->price - $e->cost;
-            else if ($e->dst === $v && $e->flow > 0)
+            else if ($e->dst === $v && $e->flow > $e->mincap)
                 $px = $e->src->price + $e->cost;
             else
                 continue;
@@ -548,7 +550,7 @@ class MinCostMaxFlow {
             if ($v->n_outgoing_admissible) {
                 foreach ($v->e as $e)
                     if ($e->is_price_admissible_from($v)) {
-                        $delta = ($e->src === $v ? $e->cap : 0) - $e->flow;
+                        $delta = ($e->src === $v ? $e->cap : $e->mincap) - $e->flow;
                         $e->flow += $delta;
                         $e->dst->excess += $delta;
                         $e->src->excess -= $delta;
@@ -600,8 +602,8 @@ class MinCostMaxFlow {
         foreach ($this->e as $e) {
             if ($e->flow < $e->cap && $e->reduced_cost(false) < $ebound)
                 fwrite(STDERR, "BUG: residual arc {$e->src->name} > {$e->dst->name} ({$e->flow}/{$e->cap} \${$e->cost}) has reduced cost " . $e->reduced_cost(false) . " < " . -$this->epsilon . "\n");
-            if ($e->flow > 0 && $e->reduced_cost(true) < $ebound)
-                fwrite(STDERR, "BUG: residual arc {$e->src->name} < {$e->dst->name} (" . (-$e->flow) . "/0 \$" . -$e->cost . ") has reduced cost " . $e->reduced_cost(true) . " < " . -$this->epsilon . "\n");
+            if ($e->flow > $e->mincap && $e->reduced_cost(true) < $ebound)
+                fwrite(STDERR, "BUG: residual arc {$e->src->name} < {$e->dst->name} (" . (-$e->flow) . "/{$e->mincap} \$" . -$e->cost . ") has reduced cost " . $e->reduced_cost(true) . " < " . -$this->epsilon . "\n");
         }
     }
 
@@ -690,8 +692,8 @@ class MinCostMaxFlow {
         $ex = array();
         $cost = 0;
         foreach ($this->e as $e) {
-            if ($e->flow || !$only_flow)
-                $ex[] = "{$e->src->name} {$e->dst->name} $e->cap $e->cost $e->flow\n";
+            if ($e->flow || $e->mincap || !$only_flow)
+                $ex[] = "{$e->src->name} {$e->dst->name} $e->mincap $e->cap $e->cost $e->flow\n";
             if ($e->flow)
                 $cost += $e->flow * $e->cost;
         }
@@ -729,7 +731,7 @@ class MinCostMaxFlow {
             }
         if ($mincost) {
             foreach ($this->e as $e)
-                $x[] = "a {$e->src->vindex} {$e->dst->vindex} 0 {$e->cap} {$e->cost}\n";
+                $x[] = "a {$e->src->vindex} {$e->dst->vindex} {$e->mincap} {$e->cap} {$e->cost}\n";
         } else {
             foreach ($this->e as $e)
                 $x[] = "a {$e->src->vindex} {$e->dst->vindex} {$e->cap}\n";
@@ -817,11 +819,11 @@ class MinCostMaxFlow {
                 $this->add_edge($this->dimacs_node($vnames, $m[1]),
                                 $this->dimacs_node($vnames, $m[2]),
                                 (int) $m[3], 0);
-            } else if (preg_match('/\Aa (\d+) (\d+) 0 (\d+) (-?\d+)\s*\z/', $line, $m)) {
+            } else if (preg_match('/\Aa (\d+) (\d+) (\d+) (\d+) (-?\d+)\s*\z/', $line, $m)) {
                 assert(!$has_edges);
                 $this->add_edge($this->dimacs_node($vnames, $m[1]),
                                 $this->dimacs_node($vnames, $m[2]),
-                                (int) $m[3], (int) $m[4]);
+                                (int) $m[4], (int) $m[5], (int) $m[3]);
             } else if (preg_match('/\Ac finfo (\d+)\s*(|-?\d+)\s*\z/', $line, $m)) {
                 $next_cap = (int) $m[1];
                 $next_cost = (int) $m[2];
