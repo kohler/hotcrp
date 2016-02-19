@@ -343,22 +343,21 @@ class MinCostMaxFlow {
 
     private static function pushrelabel_bfs_setdistance($qtail, $v, $dist) {
         $v->distance = $dist;
+        $v->npos = 0;
+        $v->xlink = null;
         $qtail->xlink = $v;
         return $v;
     }
 
     private function pushrelabel_make_distance() {
-        foreach ($this->v as $v) {
-            $v->distance = 0;
-            $v->npos = 0;
-            $v->xlink = null;
-        }
         $qhead = $qtail = $this->sink;
+        $qhead->distance = 0;
+        $qhead->xlink = null;
         while ($qhead) {
             $d = $qhead->distance + 1;
             foreach ($qhead->e as $e)
                 if ($e->residual_cap_to($qhead) > 0
-                    && $e->other($qhead)->distance === 0)
+                    && $e->other($qhead)->distance > $d)
                     $qtail = self::pushrelabel_bfs_setdistance($qtail, $e->other($qhead), $d);
             $qhead = $qhead->xlink;
         }
@@ -405,6 +404,8 @@ class MinCostMaxFlow {
         $this->maxflow_start_at = microtime(true);
 
         // initialize preflow
+        foreach ($this->v as $v)
+            $v->distance = count($this->v);
         $this->pushrelabel_make_distance();
         foreach ($this->source->e as $e) {
             $e->flow = $e->cap;
@@ -838,6 +839,7 @@ class MinCostMaxFlow {
             $v->vindex = $i + 1;
         if ($mincost) {
             $x[] = "s " . $this->current_cost() . "\n";
+            $x[] = "c flow " . $this->current_flow() . "\n";
             $x[] = "c min_epsilon " . $this->epsilon . "\n";
             foreach ($this->v as $v)
                 if ($v->price != 0)
