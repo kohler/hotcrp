@@ -9,10 +9,8 @@ class MinCostMaxFlow_Node {
     public $klass;
     public $flow = 0;
     public $link = null;
-    public $linkrev = null;
     public $xlink = null;
     public $npos = null;
-    public $cycle = null;
     public $distance = 0;
     public $excess = 0;
     public $price = 0;
@@ -248,94 +246,6 @@ class MinCostMaxFlow {
             $e->src->e[] = $e;
         foreach ($this->e as $e)
             $e->dst->e[] = $e;
-    }
-
-
-    // Cycle canceling via Bellman-Ford (very slow)
-
-    private function bf_walk($v) {
-        $e = $v->link;
-        if ($e === null)
-            return array(null, null, null, null);
-        else if (!$v->linkrev)
-            return array($e, false, $e->src);
-        else
-            return array($e, true, $e->dst);
-    }
-
-    private function cyclecancel_iteration() {
-        // initialize
-        foreach ($this->v as $v) {
-            $v->distance = INF;
-            $v->link = $v->linkrev = $v->cycle = null;
-        }
-        $this->source->distance = 0;
-
-        // run Bellman-Ford algorithm
-        $more = true;
-        for ($iter = 1; $more && $iter < count($this->v); ++$iter) {
-            $more = false;
-            foreach ($this->e as $i => $e) {
-                if ($e->flow < $e->cap) {
-                    $xdist = $e->src->distance + $e->cost;
-                    if ($e->dst->distance > $xdist) {
-                        $e->dst->distance = $xdist;
-                        $e->dst->link = $e;
-                        $e->dst->linkrev = false;
-                        $more = true;
-                    }
-                }
-                if ($e->flow) {
-                    $xdist = $e->dst->distance - $e->cost;
-                    if ($e->src->distance > $xdist) {
-                        $e->src->distance = $xdist;
-                        $e->src->link = $e;
-                        $e->src->linkrev = true;
-                        $more = true;
-                    }
-                }
-            }
-        }
-
-        // saturate minimum negative-cost cycles, which must be disjoint
-        $any_cycles = false;
-        foreach ($this->v as $vi => $v) {
-            $xv = $v;
-            while ($xv !== null && $xv->cycle === null) {
-                $xv->cycle = $v;
-                list($e, $erev, $xv) = $this->bf_walk($xv);
-            }
-            if ($xv !== null && $xv->cycle === $v) {
-                $yv = $xv;
-                // find available capacity
-                $cap = INF;
-                do {
-                    list($e, $erev, $yv) = $this->bf_walk($yv);
-                    $cap = min($cap, $e->residual_cap($erev));
-                } while ($yv !== $xv);
-                // saturate
-                do {
-                    list($e, $erev, $yv) = $this->bf_walk($yv);
-                    $e->flow += $erev ? -$cap : $cap;
-                } while ($yv !== $xv);
-                $any_cycles = true;
-            }
-        }
-
-        return $any_cycles;
-    }
-
-    private function cyclecancel_run() {
-        // make it a circulation
-        $this->e[] = new MinCostMaxFlow_Edge($this->sink, $this->source, count($this->e) * $this->maxcap, -count($this->v) * ($this->maxcost + 1));
-
-        while ($this->cyclecancel_iteration())
-            /* nada */;
-
-        array_pop($this->e);
-        foreach ($this->e as $i => $e)
-            if ($e->flow > 0)
-                $e->src->flow += $e->flow;
     }
 
 
@@ -759,7 +669,7 @@ class MinCostMaxFlow {
     public function clear() {
         // break circular references
         foreach ($this->v as $v)
-            $v->link = $v->xlink = $v->cycle = $v->e = null;
+            $v->link = $v->xlink = $v->e = null;
         foreach ($this->e as $e)
             $e->src = $e->dst = null;
         $this->v = array();
