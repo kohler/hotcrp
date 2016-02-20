@@ -22,7 +22,6 @@ class PaperTable {
     private $npapstrip = 0;
     private $npapstrip_tag_entry;
     private $allFolded;
-    private $foldState;
     private $matchPreg;
     private $watchCheckbox = WATCH_COMMENT;
     private $entryMatches;
@@ -76,11 +75,6 @@ class PaperTable {
             $this->mode = key($ms);
         if (@$ms["re"] && isset($_REQUEST["reviewId"]))
             $this->mode = "re";
-
-        $this->foldState = 1023;
-        foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v)
-            if (!$Conf->session("foldpaper$k", 1))
-                $this->foldState &= ~(1 << $v);
 
         $this->matchPreg = array();
         $matcher = array();
@@ -193,18 +187,23 @@ class PaperTable {
     }
 
     private function echoDivEnter() {
-        global $Me;
+        global $Conf, $Me;
+
+        $foldState = $this->allFolded ? 1023 : 0;
+        foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v)
+            if (!$Conf->session("foldpaper$k", 1))
+                $foldState &= ~(1 << $v);
 
         // if highlighting, automatically unfold abstract/authors
-        if ($this->prow && $this->allFolded && ($this->foldState & 64)) {
+        if ($this->prow && ($foldState & 64)) {
             $abstract = $this->entryData("abstract");
             if ($this->entryMatches || !$this->abstract_foldable($abstract))
-                $this->foldState &= ~64;
+                $foldState &= ~64;
         }
-        if ($this->matchPreg && $this->prow && ($this->foldState & 256)) {
-            $data = $this->entryData("authorInformation");
+        if ($this->matchPreg && $this->prow && ($foldState & 256)) {
+            $this->entryData("authorInformation");
             if ($this->entryMatches)
-                $this->foldState &= ~(256 | 512);
+                $foldState &= ~(256 | 512);
         }
 
         // collect folders
@@ -213,12 +212,12 @@ class PaperTable {
             $ever_viewable = $Me->can_view_authors($this->prow, true);
             $viewable = $ever_viewable && $Me->can_view_authors($this->prow, false);
             if ($ever_viewable && !$viewable)
-                $folders[] = $this->foldState & 256 ? "fold8c" : "fold8o";
+                $folders[] = $foldState & 256 ? "fold8c" : "fold8o";
             if ($ever_viewable && $this->allFolded)
-                $folders[] = $this->foldState & 512 ? "fold9c" : "fold9o";
+                $folders[] = $foldState & 512 ? "fold9c" : "fold9o";
         }
-        $folders[] = $this->foldState & 64 ? "fold6c" : "fold6o";
-        $folders[] = $this->foldState & 32 ? "fold5c" : "fold5o";
+        $folders[] = $foldState & 64 ? "fold6c" : "fold6o";
+        $folders[] = $foldState & 32 ? "fold5c" : "fold5o";
 
         // echo div
         echo '<div id="foldpaper" class="', join(" ", $folders), '">';
