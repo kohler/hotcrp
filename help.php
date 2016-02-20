@@ -1130,11 +1130,7 @@ function chair() {
   in <b>bold</b>).</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
-  policies</a></strong>, including whether submission is blind, whether
-  authors check off conflicted PC members (“Collect authors’ PC conflicts
-  with checkboxes”), and whether authors must enter additional non-PC collaborators,
-  which can help detect conflicts with external reviewers (“Collect authors’
-  other collaborators as text”).</p></li>
+  policies</a></strong>, including whether submission is blind.</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set submission
   deadlines.</a></strong> Authors first <em>register</em>, then <em>submit</em>
@@ -1152,30 +1148,38 @@ function chair() {
   protection against last-minute server overload and gives authors
   some slack.</p></li>
 
-<li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define
-  submission options (optional).</a></strong>  You can add
-  additional options to the submission form, such as “Consider this
-  paper for the Best Student Paper award” or “Provide this paper to the
-  European shadow PC.”  You can
-  <a href='" . hoturl("search") . "'>search</a> for papers with or without
-  each option.</p></li>
+<li><p><strong><a href='" . hoturl("settings", "group=subform") . "'>Set up
+  the submission form</a></strong>, including whether abstracts are required,
+  whether authors check off conflicted PC members (“Collect authors’ PC
+  conflicts with checkboxes”), and whether authors must enter additional
+  non-PC collaborators, which can help detect conflicts with external
+  reviewers (“Collect authors’ other collaborators as text”). The submission
+  form also can include:</p>
 
-<li><p><strong><a href='" . hoturl("settings", "group=opt") . "'>Define paper
-  topics (optional).</a></strong> Authors can select topics, such as
-  “Applications” or “Network databases,” that characterize their
-  paper’s subject areas.  PC members express topics for which they have high,
-  medium, and low interest, improving automatic paper assignment.  Although
-  explicit preferences (see below) are better than topic-based assignments,
-  busy PC members might not specify their preferences; topic matching lets you
-  do a reasonable job at assigning papers anyway.</p></li>
+  <ul>
 
-<li><p><strong><a href='" . hoturl("settings", "group=sub") . "'>Set
-  up the automated format checker (optional).</a></strong> This adds a
-  “Check format” link to the Edit Paper screen.
-  Clicking the link checks the paper for formatting errors, such as going
-  over the page limit.  Papers with formatting errors may still be submitted,
-  since the checker itself can make mistakes, but the automated checker leaves
-  cheating authors no excuse.</p></li>
+  <li><p><strong>PDF format checker.</strong> This adds a “Check format” link
+  to the Edit Paper screen. Clicking the link checks the paper for formatting
+  errors, such as going over the page limit.  Papers with formatting errors
+  may still be submitted, since the checker itself can make mistakes, but the
+  automated checker leaves cheating authors no excuse.</p></li>
+
+  <li><p><strong>Options</strong> such as checkboxes, selectors, freeform
+  text, and uploaded attachments. Checkbox options might include “Consider
+  this paper for the Best Student Paper award” or “Provide this paper to the
+  European shadow PC.” Attachment options might include supplemental material.
+  You can <a href='" . hoturl("search") . "'>search</a> for papers with or
+  without each option.</p></li>
+
+  <li><p><strong>Topics.</strong> Authors can select topics, such as
+  “Applications” or “Network databases,” that characterize their paper’s
+  subject areas.  PC members express topics for which they have high, medium,
+  and low interest, improving automatic paper assignment.  Although explicit
+  preferences (see below) are better than topic-based assignments, busy PC
+  members might not specify their preferences; topic matching lets you do a
+  reasonable job at assigning papers anyway.</p></li>
+
+  </ul></li>
 
 <li><p>Take a look at a <a href='" . hoturl("paper", "p=new") . "'>paper
   submission page</a> to make sure it looks right.</p></li>

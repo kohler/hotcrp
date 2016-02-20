@@ -318,12 +318,12 @@ function request_differences($pj, $opj, $action) {
         return array("new" => true);
     $diffs = array();
     foreach (array("title", "abstract", "collaborators") as $k)
-        if ((string) @$pj->$k !== (string) @$opj->$k)
+        if (get_s($pj, $k) !== get_s($opj, $k))
             $diffs[$k] = true;
     if (request_authors_differ($pj, $opj))
         $diffs["authors"] = true;
-    if (json_encode(@$pj->topics ? : (object) array())
-        !== json_encode(@$opj->topics ? : (object) array()))
+    if (json_encode(get($pj, "topics") ? : (object) array())
+        !== json_encode(get($opj, "topics") ? : (object) array()))
         $diffs["topics"] = true;
     $pjopt = @$pj->options ? : (object) array();
     $opjopt = @$opj->options ? : (object) array();

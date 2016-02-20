@@ -160,7 +160,8 @@ SettingGroup::register(new SettingGroup("users", "Accounts", 10, "doAccGroup"));
 SettingGroup::register_synonym("acc", "users");
 SettingGroup::register(new SettingGroup("msg", "Messages", 20, "doMsgGroup"));
 SettingGroup::register(new SettingGroup("sub", "Submissions", 30, "doSubGroup"));
-SettingGroup::register(new SettingGroup("opt", "Submission options", 40, "doOptGroup"));
+SettingGroup::register(new SettingGroup("subform", "Submission form", 40, "doOptGroup"));
+SettingGroup::register_synonym("opt", "subform");
 SettingGroup::register(new SettingGroup("reviews", "Reviews", 50, "doRevGroup"));
 SettingGroup::register_synonym("rev", "reviews");
 SettingGroup::register_synonym("review", "reviews");
@@ -254,7 +255,7 @@ function parse_value($name, $info) {
         $v = "";
     $opt_value = null;
     if (substr($name, 0, 4) === "opt.")
-        $opt_value = @$Opt[substr($name, 4)];
+        $opt_value = get($Opt, substr($name, 4));
 
     if ($info->type === "checkbox")
         return $v != "";
@@ -692,7 +693,7 @@ function save_options($si_name, $info, $set) {
             if (preg_match('/\Aopt\d+\z/', $o->abbr)) {
                 $Error[] = "Option name “" . htmlspecialchars($o->name) . "” is reserved. Please pick another option name.";
                 $Highlight["optn$o->req_id"] = true;
-            } else if (@$optabbrs[$o->abbr]) {
+            } else if (get($optabbrs, $o->abbr)) {
                 $Error[] = "Multiple options abbreviate to “{$o->abbr}”. Please pick option names that abbreviate uniquely.";
                 $Highlight["optn$o->req_id"] = $Highlight[$optabbrs[$o->abbr]->req_id] = true;
             } else
@@ -728,7 +729,7 @@ function save_options($si_name, $info, $set) {
 
     $deleted_ids = array();
     foreach ($current_opts as $id => $o)
-        if (!@$new_opts[$id])
+        if (!get($new_opts, $id))
             $deleted_ids[] = $id;
     if (count($deleted_ids))
         $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
@@ -757,7 +758,7 @@ function save_decisions($si_name, $info, $set) {
             }
         unset($dname);
 
-        if (@$_POST["decn"] && !@$_POST["decn_confirm"]) {
+        if (get($_POST, "decn") && !get($_POST, "decn_confirm")) {
             $delta = (defval($_POST, "dtypn", 1) > 0 ? 1 : -1);
             $match_accept = (stripos($_POST["decn"], "accept") !== false);
             $match_reject = (stripos($_POST["decn"], "reject") !== false);
@@ -994,9 +995,10 @@ function save_tracks($si_name, $info, $set) {
                 }
             } else if ($ttype == "none")
                 $t->$type = "+none";
-        if (count((array) $t) || @$tracks->_)
+        if (count((array) $t) || get($tracks, "_"))
             $tracks->$trackname = $t;
-        if (@$t->viewpdf && $t->viewpdf != @$t->unassrev && @$t->unassrev != "+none")
+        if (get($t, "viewpdf") && $t->viewpdf != get($t, "unassrev")
+            && get($t, "unassrev") != "+none")
             $Warning[] = ($trackname === "_" ? "Default track" : "Track “{$trackname}”") . ": Generally, a track that restricts PDF visibility should restrict the “self-assign papers” right in the same way.";
     }
     if (count((array) $tracks))
@@ -1020,10 +1022,10 @@ function save_rounds($si_name, $info, $set) {
     for ($i = 0;
          isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
          ++$i) {
-        $rname = @trim($_POST["roundname_$i"]);
+        $rname = trim(get_s($_POST, "roundname_$i"));
         if ($rname === "(no name)" || $rname === "default" || $rname === "unnamed")
             $rname = "";
-        if ((@$_POST["deleteround_$i"] || $rname === "") && $i) {
+        if ((get($_POST, "deleteround_$i") || $rname === "") && $i) {
             $roundnames[] = ";";
             $Values["rev_round_changes"][] = array($i, 0);
             if ($round_deleted === null && !isset($_POST["roundname_0"])
@@ -1036,7 +1038,7 @@ function save_rounds($si_name, $info, $set) {
             $Highlight["roundname_$i"] = true;
         } else if ($i == 0)
             $roundname0 = $rname;
-        else if (@$roundnames_set[strtolower($rname)]) {
+        else if (get($roundnames_set, strtolower($rname))) {
             $roundnames[] = ";";
             $Values["rev_round_changes"][] = array($i, $roundnames_set[strtolower($rname)]);
         } else {
@@ -1044,7 +1046,7 @@ function save_rounds($si_name, $info, $set) {
             $roundnames_set[strtolower($rname)] = $i;
         }
     }
-    if ($roundname0 && !@$roundnames_set[strtolower($roundname0)]) {
+    if ($roundname0 && !get($roundnames_set, strtolower($roundname0))) {
         $roundnames[] = $roundname0;
         $roundnames_set[strtolower($roundname0)] = count($roundnames);
     }
@@ -1071,9 +1073,9 @@ function save_rounds($si_name, $info, $set) {
     for ($i = 0; $i < count($roundnames) + 1; ++$i)
         if ((isset($rtransform[$i])
              || ($i ? $roundnames[$i - 1] !== ";" : !isset($_POST["deleteround_0"])))
-            && @$rtransform[$i] !== false) {
+            && get($rtransform, $i) !== false) {
             $isuffix = $i ? "_$i" : "";
-            if (($osuffix = @$rtransform[$i]) === null)
+            if (($osuffix = get($rtransform, $i)) === null)
                 $osuffix = $isuffix;
             $ndeadlines = 0;
             foreach (Conf::$review_deadlines as $k) {
@@ -1085,9 +1087,9 @@ function save_rounds($si_name, $info, $set) {
                 $Values["pcrev_soft$osuffix"] = 0;
             foreach (array("pcrev_", "extrev_") as $k) {
                 list($soft, $hard) = array("{$k}soft$osuffix", "{$k}hard$osuffix");
-                if (!@$Values[$soft] && @$Values[$hard])
+                if (!get($Values, $soft) && get($Values, $hard))
                     $Values[$soft] = $Values[$hard];
-                else if (@$Values[$hard] && @$Values[$soft] > $Values[$hard]) {
+                else if (get($Values, $hard) && get($Values, $soft) > $Values[$hard]) {
                     $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
                     $Error[] = Si::get("{$k}soft", "name") . $desc . ": Must come before " . Si::get("{$k}hard", "name") . ".";
                     $Highlight[$soft] = $Highlight[$hard] = true;
@@ -1112,7 +1114,7 @@ function save_rounds($si_name, $info, $set) {
         if ($roundname0)
             $Values["rev_roundtag"] = array(1, $roundname0);
     } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
-        $rname = @$roundnames[substr($t, 1) - 1];
+        $rname = get($roundnames, substr($t, 1) - 1);
         if ($rname && $rname !== ";")
             $Values["rev_roundtag"] = array(1, $rname);
     } else if (!($rerror = Conf::round_name_error($t)))
@@ -1132,7 +1134,7 @@ function save_resp_rounds($si_name, $info, $set) {
     $roundnames_set = array();
 
     if (isset($_POST["resp_roundname"])) {
-        $rname = @trim($_POST["resp_roundname"]);
+        $rname = trim(get_s($_POST, "resp_roundname"));
         if ($rname === "" || $rname === "none" || $rname === "1")
             /* do nothing */;
         else if (($rerror = Conf::resp_round_name_error($rname))) {
@@ -1145,15 +1147,15 @@ function save_resp_rounds($si_name, $info, $set) {
     }
 
     for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i) {
-        $rname = @trim($_POST["resp_roundname_$i"]);
-        if ($rname === "" && @$old_roundnames[$i])
+        $rname = trim(get_s($_POST, "resp_roundname_$i"));
+        if ($rname === "" && get($old_roundnames, $i))
             $rname = $old_roundnames[$i];
         if ($rname === "")
             continue;
         else if (($rerror = Conf::resp_round_name_error($rname))) {
             $Error[] = $rerror;
             $Highlight["resp_roundname_$i"] = true;
-        } else if (@$roundnames_set[strtolower($rname)] !== null) {
+        } else if (get($roundnames_set, strtolower($rname)) !== null) {
             $Error[] = "Response round name “" . htmlspecialchars($rname) . "” has already been used.";
             $Highlight["resp_roundname_$i"] = true;
         } else {
@@ -1197,11 +1199,11 @@ function account_value($info) {
     global $Values, $Error, $Highlight;
     $xname = str_replace(".", "_", $info->name);
     if ($info->type === "special")
-        $has_value = truthy(@$_POST["has_$xname"]);
+        $has_value = truthy(get($_POST, "has_$xname"));
     else
         $has_value = isset($_POST[$xname])
             || (($info->type === "cdate" || $info->type === "checkbox")
-                && truthy(@$_POST["has_$xname"]));
+                && truthy(get($_POST, "has_$xname")));
 
     if ($has_value && ($info->disabled || $info->novalue
                        || !$info->type || $info->type === "none"))
@@ -1248,7 +1250,7 @@ function value_or_setting($name) {
 function value_or_setting_data($name) {
     global $Conf, $Values;
     if (array_key_exists($name, $Values))
-        return is_array(@$Values[$name]) ? $Values[$name][1] : null;
+        return is_array(get($Values, $name)) ? $Values[$name][1] : null;
     else
         return $Conf->setting_data($name);
 }
@@ -1261,28 +1263,26 @@ if (isset($_REQUEST["update"]) && check_post()) {
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
              as $first => $second)
-        if (!@$Values[$first] && @$Values[$second])
+        if (!get($Values, $first) && get($Values, $second))
             $Values[$first] = $Values[$second];
-        else if (@$Values[$second] && @$Values[$first] > $Values[$second]) {
+        else if (get($Values, $second) && get($Values, $first) > $Values[$second]) {
             $Error[] = unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "name") . ".");
             $Highlight[$first] = $Highlight[$second] = true;
         }
     if (array_key_exists("sub_sub", $Values))
         $Values["sub_update"] = $Values["sub_sub"];
-    if (array_key_exists("opt.contactName", $Values)
-        || array_key_exists("opt.contactEmail", $Values)) {
-        $site_contact = Contact::site_contact();
-        if (@$Opt["defaultSiteContact"]
-            && @($Opt["contactName"] === $Values["opt.contactName"][1]))
+    if (get($Opt, "defaultSiteContact")) {
+        if (array_key_exists("opt.contactName", $Values)
+            && get($Opt, "contactName") === $Values["opt.contactName"][1])
             $Values["opt.contactName"] = null;
-        if (@$Opt["defaultSiteContact"]
-            && @($Opt["contactEmail"] === $Values["opt.contactEmail"][1]))
+        if (array_key_exists("opt.contactEmail", $Values)
+            && get($Opt, "contactEmail") === $Values["opt.contactEmail"][1])
             $Values["opt.contactEmail"] = null;
     }
-    if (@$Values["resp_active"])
+    if (get($Values, "resp_active"))
         foreach (explode(" ", value_or_setting_data("resp_rounds")) as $i => $rname) {
             $isuf = $i ? "_$i" : "";
-            if (@$Values["resp_open$isuf"] && @$Values["resp_done$isuf"]
+            if (get($Values, "resp_open$isuf") && get($Values, "resp_done$isuf")
                 && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
                 $Error[] = unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "name") . ".");
                 $Highlight["resp_open$isuf"] = $Highlight["resp_done$isuf"] = true;
@@ -1332,12 +1332,14 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Values["clickthrough_submit"] = null;
     if (value_or_setting("au_seerev") == Conf::AUSEEREV_TAGS
         && !value_or_setting_data("tag_au_seerev")
-        && !@$Highlight["tag_au_seerev"]) {
+        && !get($Highlight, "tag_au_seerev")) {
         $Warning[] = "You haven’t set any review visibility tags.";
         $Highlight["tag_au_seerev"] = true;
     }
     if (has_value("sub_nopapers"))
         $Values["opt.noPapers"] = value("sub_nopapers") ? : null;
+    if (has_value("sub_noabstract"))
+        $Values["opt.noAbstract"] = value("sub_noabstract") ? : null;
 
     // make settings
     if (count($Error) == 0 && count($Values) > 0) {
@@ -1366,7 +1368,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
                 $dv[] = $n;
                 if (substr($n, 0, 4) === "opt.") {
                     $okey = substr($n, 4);
-                    $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : @$Opt[$okey]);
+                    $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : get($Opt, $okey));
                     $Opt[$okey] = (is_array($v) ? $v[1] : $v);
                     if ($oldv === $Opt[$okey])
                         continue; // do not save value in database
@@ -1397,7 +1399,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
         // contactdb may need to hear about changes to shortName
         if (array_key_exists("opt.shortName", $Values)
-            && @$Opt["contactdb_dsn"] && ($cdb = Contact::contactdb()))
+            && get($Opt, "contactdb_dsn") && ($cdb = Contact::contactdb()))
             Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Opt["shortName"], $Opt["dbName"]);
     }
 
@@ -1438,21 +1440,21 @@ function setting_js($name, $extra = array()) {
         $x["disabled"] = true;
     foreach ($extra as $k => $v)
         $x[$k] = $v;
-    if (@$Highlight[$name])
-        $x["class"] = trim("setting_error " . (@$x["class"] ? : ""));
+    if (get($Highlight, $name))
+        $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
     return $x;
 }
 
 function setting_class($name) {
     global $Highlight;
-    return @$Highlight[$name] ? "setting_error" : null;
+    return get($Highlight, $name) ? "setting_error" : null;
 }
 
 function setting_label($name, $text, $label = null) {
     global $Highlight;
     $name1 = is_array($name) ? $name[0] : $name;
     foreach (is_array($name) ? $name : array($name) as $n)
-        if (@$Highlight[$n]) {
+        if (get($Highlight, $n)) {
             $text = '<span class="setting_error">' . $text . '</span>';
             break;
         }
@@ -1537,9 +1539,9 @@ function doTextRow($name, $text, $v, $size = 30,
     $nametext = (is_array($text) ? $text[0] : $text);
     echo '<tr><td class="', $capclass, ' nw">', setting_label($name, $nametext),
         '</td><td class="lentry">', render_entry($name, $v, $size, $tempText);
-    if (is_array($text) && @$text[2])
+    if (is_array($text) && get($text, 2))
         echo $text[2];
-    if (is_array($text) && @$text[1])
+    if (is_array($text) && get($text, 1))
         echo "<br /><span class='hint'>", $text[1], "</span>";
     echo "</td></tr>\n";
 }
@@ -1706,52 +1708,6 @@ function doSubGroup() {
     doRadio("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
 
 
-    echo "<hr class=\"hr\" />\n<div class=\"g\"></div>\n";
-    $sub_nopapers = 0;
-    if (@$Opt["noPapers"] === 1 || @$Opt["noPapers"] === true)
-        $sub_nopapers = 1;
-    else if (@$Opt["noPapers"] === 2)
-        $sub_nopapers = 2;
-    echo Ht::label("Must submissions include a PDF upload?", "sub_nopapers"),
-        "&nbsp; ", Ht::select("sub_nopapers", array(0 => "PDF required", 2 => "PDF optional", 1 => "No PDF"), $sub_nopapers);
-
-    if (is_executable("src/banal")) {
-        echo "<div class='g'></div>",
-            Ht::hidden("has_banal", 1),
-            "<table id='foldbanal' class='", (xsetting("sub_banal") ? "foldo" : "foldc"), "'>";
-        doCheckbox("sub_banal", "Automated format checker<span class='fx'>:</span>", true, "void fold('banal',!this.checked)");
-        echo "<tr class='fx'><td></td><td class='top'><table>";
-        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
-        for ($i = 0; $i < 6; $i++)
-            if (defval($bsetting, $i, "") == "")
-                $bsetting[$i] = "N/A";
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), xsetting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
-        doTextRow("sub_banal_pagelimit", "Page limit", xsetting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), xsetting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
-        echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), xsetting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), xsetting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_columns", array("Columns", null), xsetting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
-        echo "</table></td></tr></table>";
-    }
-
-    echo "<div class='g'></div>\n<table id='foldpcconf' class='fold",
-        (xsetting("sub_pcconf") ? "o" : "c"), "'>\n";
-    doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
-               "void fold('pcconf',!this.checked)");
-    echo "<tr class='fx'><td></td><td>";
-    $conf = array();
-    foreach (Conflict::$type_descriptions as $n => $d)
-        if ($n)
-            $conf[] = "“{$d}”";
-    doCheckbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
-    echo "</td></tr>\n";
-    doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
-    echo "</table>\n";
-
-
-    echo "<hr class='hr' />\n";
-
     echo "<div class='g'></div><table>\n";
     doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
     echo "</table>";
@@ -1909,8 +1865,59 @@ function doOptGroupOption($o) {
     echo "</div></td></tr>\n";
 }
 
+function opt_yes_no_optional($name) {
+    global $Opt;
+    if (($x = get($Opt, $name)) === 1 || $x === true)
+        return 1;
+    if ($x === 2)
+        return 2;
+    return 0;
+}
+
 function doOptGroup() {
-    global $Conf, $Error;
+    global $Conf, $Opt, $Error;
+
+    echo "<h3 class=\"settings\">Basics</h3>\n";
+
+    echo Ht::select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"], opt_yes_no_optional("noAbstract"));
+
+    echo " <span class=\"barsep\">·</span> ", Ht::select("sub_nopapers", array(0 => "PDF upload required", 2 => "PDF upload optional", 1 => "No PDF"), opt_yes_no_optional("noPapers"));
+
+    if (is_executable("src/banal")) {
+        echo "<div class='g'></div>",
+            Ht::hidden("has_banal", 1),
+            "<table id='foldbanal' class='", (xsetting("sub_banal") ? "foldo" : "foldc"), "'>";
+        doCheckbox("sub_banal", "PDF format checker<span class='fx'>:</span>", true, "void fold('banal',!this.checked)");
+        echo "<tr class='fx'><td></td><td class='top'><table>";
+        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
+        for ($i = 0; $i < 6; $i++)
+            if (defval($bsetting, $i, "") == "")
+                $bsetting[$i] = "N/A";
+        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), xsetting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_pagelimit", "Page limit", xsetting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), xsetting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
+        echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
+        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), xsetting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), xsetting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_columns", array("Columns", null), xsetting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
+        echo "</table></td></tr></table>";
+    }
+
+    echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
+        "<table id=\"foldpcconf\" class=\"fold",
+        (xsetting("sub_pcconf") ? "o" : "c"), "\">\n";
+    doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
+               "void fold('pcconf',!this.checked)");
+    echo "<tr class='fx'><td></td><td>";
+    $conf = array();
+    foreach (Conflict::$type_descriptions as $n => $d)
+        if ($n)
+            $conf[] = "“{$d}”";
+    doCheckbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
+    echo "</td></tr>\n";
+    doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
+    echo "</table>\n";
+
 
     echo "<h3 class=\"settings\">Submission options</h3>\n";
     echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
@@ -1961,8 +1968,8 @@ function doOptGroup() {
             '</td>';
 
         $tinterests = defval($interests, $tid, array());
-        echo '<td class="fx rpentry">', (@$tinterests[0] ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
-            '<td class="fx rpentry">', (@$tinterests[1] ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
+        echo '<td class="fx rpentry">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
+            '<td class="fx rpentry">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
 
         if ($td1 !== "<td></td>") {
             // example search
@@ -1983,7 +1990,7 @@ function doOptGroup() {
         $td1 = "<td></td>";
     }
     echo '<tr><td class="lcaption top" rowspan="40">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", count($Error) ? @$_POST["topnew"] : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
+        Ht::textarea("topnew", count($Error) ? get($_POST, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
         '</td></tr></table>';
 }
 
@@ -1992,7 +1999,7 @@ function echo_round($rnum, $nameval, $review_count, $deletable) {
     global $Conf, $Error;
     $rname = "roundname_$rnum";
     if (count($Error) && $rnum !== '$')
-        $nameval = (string) @$_POST[$rname];
+        $nameval = (string) get($_POST, $rname);
 
     $default_rname = "unnamed";
     if ($nameval === "(new round)" || $rnum === '$')
@@ -2065,7 +2072,7 @@ function doRevGroup() {
     $rounds = $Conf->round_list();
     if (count($Error) > 0) {
         for ($i = 1; isset($_POST["roundname_$i"]); ++$i)
-            $rounds[$i] = @$_POST["deleteround_$i"] ? ";" : trim(@$_POST["roundname_$i"]);
+            $rounds[$i] = get($_POST, "deleteround_$i") ? ";" : trim(get_s($_POST, "roundname_$i"));
     }
 
     // prepare round selector
@@ -2107,7 +2114,7 @@ function doRevGroup() {
     $num_printed = 0;
     for ($i = 0; $i < count($rounds); ++$i)
         if ($i ? $rounds[$i] !== ";" : $print_round0) {
-            echo_round($i, $i ? $rounds[$i] : "", @+$round_map[$i], count($selector) !== 1);
+            echo_round($i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
             ++$num_printed;
         }
     echo '</div><div id="newround" style="display:none">';
@@ -2181,7 +2188,7 @@ function do_track_permission($type, $question, $tnum, $thistrack) {
     if (count($Error) > 0) {
         $tclass = defval($_POST, "${type}_track$tnum", "");
         $ttag = defval($_POST, "${type}tag_track$tnum", "");
-    } else if ($thistrack && @$thistrack->$type) {
+    } else if ($thistrack && get($thistrack, $type)) {
         if ($thistrack->$type == "+none")
             $tclass = "none";
         else {
@@ -2219,7 +2226,7 @@ function do_track($trackname, $tnum) {
     echo "</div>\n";
 
     $t = $Conf->setting_json("tracks");
-    $t = $t && $trackname !== "" ? @$t->$trackname : null;
+    $t = $t && $trackname !== "" ? get($t, $trackname) : null;
     echo "<table style=\"margin-left:1.5em;margin-bottom:0.5em\">";
     do_track_permission("view", "Who can view these papers?", $tnum, $t);
     do_track_permission("viewpdf", "Who can view PDFs?<br><span class=\"hint\">Assigned reviewers can always view PDFs.</span>", $tnum, $t);
@@ -2370,9 +2377,9 @@ function doDecGroup() {
     $opts = array(Conf::AUSEEREV_NO => $no_text,
                   Conf::AUSEEREV_YES => "Yes");
     if (value("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
-        && !@$Opt["allow_auseerev_unlessincomplete"])
+        && !get($Opt, "allow_auseerev_unlessincomplete"))
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
-    if (@$Opt["allow_auseerev_unlessincomplete"])
+    if (get($Opt, "allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
     $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", xsetting_data("tag_au_seerev"), 24);
     doRadio("au_seerev", $opts);

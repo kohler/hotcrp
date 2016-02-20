@@ -414,7 +414,7 @@ class PaperTable {
         else
             $checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
         echo "<div id='foldisready' class='",
-            (($prow && $storageId > 1) || @$Opt["noPapers"] ? "foldo" : "foldc"),
+            (($prow && $storageId > 1) || get($Opt, "noPapers") ? "foldo" : "foldc"),
             "'><table class='fx'><tr><td class='nowrap'>",
             Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
         if ($Conf->setting('sub_freeze'))
@@ -441,7 +441,7 @@ class PaperTable {
         $filetypes = array();
         $accepts = array();
         if ($main_submission
-            && (@$Opt["noPapers"] === 1 || @$Opt["noPapers"] === true)
+            && (get($Opt, "noPapers") === 1 || get($Opt, "noPapers") === true)
             && $documentType == DTYPE_SUBMISSION)
             return;
 
@@ -513,21 +513,30 @@ class PaperTable {
     }
 
     private function echo_editable_abstract() {
-        echo $this->editable_papt("abstract", "Abstract"),
-            '<div class="papev abstract">',
-            $this->entryData("abstract"),
-            "</div></div>\n\n";
+        global $Opt;
+        $abs = get($Opt, "noAbstract");
+        if ($abs !== 1 && $abs !== true) {
+            $title = "Abstract";
+            if ($abs === 2)
+                $title .= ' <span class="papfnh">(optional)</span>';
+            echo $this->editable_papt("abstract", $title),
+                '<div class="papev abstract">',
+                $this->entryData("abstract"),
+                "</div></div>\n\n";
+        }
     }
 
     private function paptabAbstract() {
-        global $Conf;
+        global $Conf, $Opt;
         $text = $this->entryData("abstract");
+        if (trim($text) === "" && get($Opt, "noAbstract"))
+            return;
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
             $extra = ["fold" => "paper", "foldnum" => 6,
                       "foldsession" => "foldpaperb",
                       "foldtitle" => "Toggle full abstract"];
-        echo '<div class="pg">',
+        echo '<div class="paptab"><div class="paptab_abstract"><div class="pg">',
             $this->papt("abstract", "Abstract", $extra),
             '<div class="pavb abstract"><div class="paptext format0';
         if ($this->prow && ($format = $this->prow->format_of($text))) {
@@ -538,7 +547,7 @@ class PaperTable {
         if ($extra)
             echo '<div class="fn6 textdiv-shade"></div>',
                 '<div class="fn6 textdiv-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
-        echo "</div></div>\n";
+        echo "</div></div></div></div>\n";
         if ($extra)
             $Conf->echoScript("render_text.on_page()");
     }
@@ -1646,7 +1655,7 @@ class PaperTable {
             if ($Me->can_update_paper($prow)) {
                 if ($Conf->setting("sub_freeze"))
                     $t = "A final version of this paper must be submitted before it can be reviewed.";
-                else if ($prow->paperStorageId <= 1 && !@$Opt["noPapers"])
+                else if ($prow->paperStorageId <= 1 && !get($Opt, "noPapers"))
                     $t = "The submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
                     $t = "The submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
@@ -1994,9 +2003,8 @@ class PaperTable {
             if ($this->mode === "edit" && ($m = $this->editMessage()))
                 echo $m, "<div class='g'></div>\n";
             $this->paptabDownload();
-            echo '<div class="paptab"><div class="paptab_abstract">';
             $this->paptabAbstract();
-            echo '</div></div><div class="paptab"><div class="paptab_authors">';
+            echo '<div class="paptab"><div class="paptab_authors">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"
                                  && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions($Me->can_administer($prow));
