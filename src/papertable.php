@@ -189,21 +189,21 @@ class PaperTable {
     private function echoDivEnter() {
         global $Conf, $Me;
 
-        $foldState = $this->allFolded ? 1023 : 0;
-        foreach (array("a" => 8, "p" => 9, "b" => 6, "t" => 5) as $k => $v)
+        $folds = ["a" => true, "p" => $this->allFolded, "b" => $this->allFolded, "t" => $this->allFolded];
+        foreach (["a", "p", "b", "t"] as $k)
             if (!$Conf->session("foldpaper$k", 1))
-                $foldState &= ~(1 << $v);
+                $folds[$k] = false;
 
         // if highlighting, automatically unfold abstract/authors
-        if ($this->prow && ($foldState & 64)) {
+        if ($this->prow && $folds["b"]) {
             $abstract = $this->entryData("abstract");
             if ($this->entryMatches || !$this->abstract_foldable($abstract))
-                $foldState &= ~64;
+                $folds["b"] = false;
         }
-        if ($this->matchPreg && $this->prow && ($foldState & 256)) {
+        if ($this->matchPreg && $this->prow && $folds["a"]) {
             $this->entryData("authorInformation");
             if ($this->entryMatches)
-                $foldState &= ~(256 | 512);
+                $folds["a"] = $folds["p"] = false;
         }
 
         // collect folders
@@ -212,12 +212,12 @@ class PaperTable {
             $ever_viewable = $Me->can_view_authors($this->prow, true);
             $viewable = $ever_viewable && $Me->can_view_authors($this->prow, false);
             if ($ever_viewable && !$viewable)
-                $folders[] = $foldState & 256 ? "fold8c" : "fold8o";
+                $folders[] = $folds["a"] ? "fold8c" : "fold8o";
             if ($ever_viewable && $this->allFolded)
-                $folders[] = $foldState & 512 ? "fold9c" : "fold9o";
+                $folders[] = $folds["p"] ? "fold9c" : "fold9o";
         }
-        $folders[] = $foldState & 64 ? "fold6c" : "fold6o";
-        $folders[] = $foldState & 32 ? "fold5c" : "fold5o";
+        $folders[] = $folds["b"] ? "fold6c" : "fold6o";
+        $folders[] = $folds["t"] ? "fold5c" : "fold5o";
 
         // echo div
         echo '<div id="foldpaper" class="', join(" ", $folders), '">';
