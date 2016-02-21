@@ -171,15 +171,26 @@ function option_class_prefix(fieldj) {
 
 function check_change(fid) {
     var fieldj = original[fid] || {}, j, sv;
-    if ($.trim($("#shortName_" + fid).val()) != fieldj.name
-        || $("#order_" + fid).val() != (fieldj.position || 0)
-        || $("#description_" + fid).val() != (fieldj.description || "")
-        || $("#authorView_" + fid).val() != (fieldj.visibility || "pc")
-        || $.trim($("#options_" + fid).val()) != $.trim(options_to_text(fieldj))
-        || ((j = $("#option_class_prefix_" + fid)) && j.length
-            && j.val() != option_class_prefix(fieldj))
-        || ($("#round_list_" + fid).val() || "") != (fieldj.round_list || []).join(" "))
+    function ch(why) {
         hiliter("reviewform_container");
+        return true;
+    }
+    if ($.trim($("#shortName_" + fid).val()) != fieldj.name)
+        return ch("shortName");
+    if ($("#order_" + fid).val() != (fieldj.position || 0))
+        return ch("order");
+    if (!text_eq($("#description_" + fid).val(), fieldj.description))
+        return ch("description");
+    if ($("#authorView_" + fid).val() != (fieldj.visibility || "pc"))
+        return ch("authorView");
+    if (!text_eq($.trim($("#options_" + fid).val()), $.trim(options_to_text(fieldj))))
+        return ch("options");
+    if ((j = $("#option_class_prefix_" + fid)) && j.length
+        && j.val() != option_class_prefix(fieldj))
+        return ch("option_class_prefix");
+    if (($("#round_list_" + fid).val() || "") != (fieldj.round_list || []).join(" "))
+        return ch("round_list");
+    return false;
 }
 
 function check_this_change() {

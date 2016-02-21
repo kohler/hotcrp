@@ -229,6 +229,14 @@ function text_to_html(text) {
     return n.innerHTML;
 }
 
+function text_eq(a, b) {
+    if (a === b)
+        return true;
+    a = (a == null ? "" : a).replace(/\r\n?/g, "\n");
+    b = (b == null ? "" : b).replace(/\r\n?/g, "\n");
+    return a === b;
+}
+
 function plural_noun(n, what) {
     if (jQuery.isArray(n))
         n = n.length;
@@ -2579,16 +2587,12 @@ function analyze(e) {
 }
 
 function beforeunload() {
-    var i, $cs = $(".cmtg textarea[name='comment']"), x, text, text2;
+    var i, $cs = $(".cmtg textarea[name='comment']"), x, text;
     for (i = 0; i != $cs.length; ++i) {
         x = analyze($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
         text2 = (x.cj && x.cj.text) || "";
-        if (text === text2)
-            continue;
-        text = text.replace(/\r\n?/g, "\n");
-        text2 = text2.replace(/\r\n?/g, "\n");
-        if (text !== text2)
+        if (!text_eq(text, (x.cj && x.cj.text) || ""))
             return "Your comment edits have not been saved. If you leave this page now, they will be lost.";
     }
 }
