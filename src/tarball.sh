@@ -23,15 +23,15 @@ mkdistdir () {
     mkdir $crpd
 
     while read f; do
-	if [ -n "$f" ]; then
-	    d=`echo "$f" | sed 's/[^\/]*$//'`
-	    [ -n "$d" -a ! -d "$crpd/$d" ] && mkdir "$crpd/$d"
-	    if [ -f "$f" ]; then
-		ln "$f" "$crpd/$f"
-	    else
-		cp -r "$f" "$crpd/$d"
-	    fi
-	fi
+        if [ -n "$f" ]; then
+            d=`echo "$f" | sed 's/[^\/]*$//'`
+            [ -n "$d" -a ! -d "$crpd/$d" ] && mkdir "$crpd/$d"
+            if [ -f "$f" ]; then
+                ln "$f" "$crpd/$f"
+            else
+                cp -r "$f" "$crpd/$d"
+            fi
+        fi
     done
 
     export COPY_EXTENDED_ATTRIBUTES_DISABLE=true COPYFILE_DISABLE=true
@@ -160,13 +160,13 @@ src/papertable.php
 src/paperrank.php
 src/review.php
 src/reviewformlibrary.json
-src/reviewsetform.php
 src/reviewtable.php
 src/reviewtimes.php
 src/sample.pdf
 src/schema.sql
 src/searchactions.php
 src/settinginfo.json
+src/settings/s_reviewform.php
 src/updateschema.php
 src/useractions.php
 src/userstatus.php

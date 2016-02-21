@@ -1,5 +1,5 @@
 <?php
-// src/reviewsetform.php -- HotCRP review form definition page
+// src/settings/s_reviewform.php -- HotCRP review form definition page
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
@@ -212,3 +212,6 @@ submitted. Add a line “<tt>No entry</tt>” to make the score optional.</p></d
         "<span class='sep'></span>",
         Ht::button("Add text field", array("onclick" => "review_form_settings.add(0)"));
 }
+
+SettingGroup::register("reviewform", "Review form", 600, "rf_show");
+SettingGroup::register_synonym("rfo", "reviewform");

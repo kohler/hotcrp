@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-require_once("src/reviewsetform.php");
 if (!$Me->privChair)
     $Me->escape();
 
@@ -110,27 +109,42 @@ class SettingGroup {
     public $name;
     public $description;
     public $priority;
-    public $render;
+    private $render;
 
     static public $all;
     static public $map;
     static private $sorted = false;
 
-    public function __construct($name, $description, $priority, $render = null) {
+    public function __construct($name, $description, $priority, $renderer) {
         $this->name = $name;
         $this->description = $description;
         $this->priority = $priority;
-        $this->render = $render;
+        $this->render = [[0, 0, $renderer]];
+    }
+    public function add_renderer($priority, $renderer) {
+        $x = [$priority, count($this->render), $renderer];
+        $this->render[] = $x;
     }
     public function render() {
-        if ($this->render)
-            call_user_func($this->render);
+        usort($this->render, function ($a, $b) {
+            if ($a[0] != $b[0])
+                return $a[0] < $b[0] ? -1 : 1;
+            if ($a[1] != $b[1])
+                return $a[1] < $b[1] ? -1 : 1;
+            return 0;
+        });
+        foreach ($this->render as $r)
+            call_user_func($r[2]);
     }
 
-    static public function register($g) {
-        assert(!isset(self::$all[$g->name]) && !isset(self::$map[$g->name]));
-        self::$all[$g->name] = $g;
+    static public function register($name, $description, $priority, $renderer) {
+        assert(!isset(self::$all[$name]) && !isset(self::$map[$name]));
+        self::$all[$name] = new SettingGroup($name, $description, $priority, $renderer);
         self::$sorted = false;
+    }
+    static public function register_renderer($name, $priority, $renderer) {
+        assert(isset(self::$all[$name]));
+        self::$all[$name]->add_renderer($priority, $renderer);
     }
     static public function register_synonym($new_name, $old_name) {
         assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
@@ -151,27 +165,22 @@ class SettingGroup {
     }
 }
 
-Si::initialize();
-
-// maybe set $Opt["contactName"] and $Opt["contactEmail"]
-Contact::site_contact();
-
-SettingGroup::register(new SettingGroup("basics", "Basics", 0, "doInfoGroup"));
+SettingGroup::register("basics", "Basics", 0, "doInfoGroup");
 SettingGroup::register_synonym("info", "basics");
-SettingGroup::register(new SettingGroup("users", "Accounts", 100, "doAccGroup"));
+SettingGroup::register("users", "Accounts", 100, "doAccGroup");
 SettingGroup::register_synonym("acc", "users");
-SettingGroup::register(new SettingGroup("msg", "Messages", 200, "doMsgGroup"));
-SettingGroup::register(new SettingGroup("sub", "Submissions", 300, "doSubGroup"));
-SettingGroup::register(new SettingGroup("subform", "Submission form", 400, "doOptGroup"));
+SettingGroup::register("msg", "Messages", 200, "doMsgGroup");
+SettingGroup::register("sub", "Submissions", 300, "doSubGroup");
+SettingGroup::register("subform", "Submission form", 400, "doOptGroup");
 SettingGroup::register_synonym("opt", "subform");
-SettingGroup::register(new SettingGroup("reviews", "Reviews", 500, "doRevGroup"));
+SettingGroup::register("reviews", "Reviews", 500, "doRevGroup");
 SettingGroup::register_synonym("rev", "reviews");
 SettingGroup::register_synonym("review", "reviews");
-SettingGroup::register(new SettingGroup("reviewform", "Review form", 600, "doRfoGroup"));
-SettingGroup::register_synonym("rfo", "reviewform");
-SettingGroup::register(new SettingGroup("tags", "Tags &amp; tracks", 700, "doTagsGroup"));
+SettingGroup::register("tags", "Tags &amp; tracks", 700, "doTagsGroup");
 SettingGroup::register_synonym("tracks", "tags");
-SettingGroup::register(new SettingGroup("dec", "Decisions", 800, "doDecGroup"));
+SettingGroup::register("dec", "Decisions", 800, "doDecGroup");
+
+Si::initialize();
 
 function choose_setting_group() {
     global $Conf;
@@ -191,6 +200,9 @@ function choose_setting_group() {
     return $Group;
 }
 $Group = choose_setting_group();
+
+// maybe set $Opt["contactName"] and $Opt["contactEmail"]
+Contact::site_contact();
 
 
 function parseGrace($v) {
@@ -2182,12 +2194,6 @@ function doRevGroup() {
 
     echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
     doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
-}
-
-// Review form
-function doRfoGroup() {
-    require_once("src/reviewsetform.php");
-    rf_show();
 }
 
 // Tags and tracks
