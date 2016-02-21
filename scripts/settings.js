@@ -429,7 +429,7 @@ function append_field(fid, pos) {
     $f.find(".hottooltip").each(add_tooltip);
 }
 
-function rfs(fieldmapj, originalj, samplesj, errors, request) {
+function rfs(fieldmapj, originalj, samplesj, errf, request) {
     var i, fid, $j;
     fieldmap = fieldmapj;
     original = originalj;
@@ -454,7 +454,7 @@ function rfs(fieldmapj, originalj, samplesj, errors, request) {
         $("#" + i).val(request[i]);
         hiliter("reviewform_container");
     }
-    for (i in errors || {}) {
+    for (i in errf || {}) {
         $j = $(".errloc_" + i);
         $j.addClass("error");
         foldup($j[0], null, {n: 2, f: false});

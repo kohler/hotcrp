@@ -64,8 +64,8 @@ function rf_check_options($fid, $fj) {
     return true;
 }
 
-function rf_update() {
-    global $Conf, $Error, $review_form_setting_prefixes;
+function rf_update($sv) {
+    global $Conf, $review_form_setting_prefixes;
 
     if (!isset($_REQUEST["update"]) || !check_post())
         return;
@@ -73,7 +73,10 @@ function rf_update() {
     $scoreModified = array();
 
     $nrfj = (object) array();
-    $shortNameError = $optionError = false;
+    $old_error_count = $sv->error_count();
+    $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+2. Medium quality
+3. High quality</pre>";
 
     $rf = ReviewForm::get();
     foreach ($rf->fmap as $fid => $f) {
@@ -90,7 +93,7 @@ function rf_update() {
         if ($sn != "")
             $fj->name = $sn;
         else if ($pos > 0)
-            $shortNameError = $Error["shortName_$fid"] = true;
+            $sv->set_error("shortName_$fid", "Missing review field name.");
 
         $fj->visibility = @$_REQUEST["authorView_$fid"];
 
@@ -98,10 +101,8 @@ function rf_update() {
         if ($x === false) {
             if (@$f->description)
                 $fj->description = $f->description;
-            if ($pos > 0) {
-                $Error["description_$fid"] = true;
-                Conf::msg_error(htmlspecialchars($sn) . " description: " . $err);
-            }
+            if ($pos > 0)
+                $sv->set_error("description_$fid", htmlspecialchars($sn) . " description: " . $err);
         } else if (($x = trim($x)) != "")
             $fj->description = $x;
 
@@ -110,11 +111,15 @@ function rf_update() {
 
         if ($f->has_options) {
             $fj->options = array_values($f->options); // default
-            if (!rf_check_options($fid, $fj) && $pos > 0)
-                $optionError = $Error["options_$fid"] = true;
+            if (!rf_check_options($fid, $fj) && $pos > 0) {
+                $sv->set_error("options_$fid", "Invalid options.");
+                if ($option_error)
+                    $sv->set_error(null, $option_error);
+                $option_error = false;
+            }
             $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
-            $sv = defval($_REQUEST, "option_class_prefix_$fid", "sv");
-            $prefix_index = array_search($sv, $prefixes) ? : 0;
+            $class_prefix = defval($_REQUEST, "option_class_prefix_$fid", "sv");
+            $prefix_index = array_search($class_prefix, $prefixes) ? : 0;
             if (@$_REQUEST["option_class_prefix_flipped_$fid"])
                 $prefix_index ^= 1;
             if ($prefix_index)
@@ -131,13 +136,7 @@ function rf_update() {
         $nrfj->$fid = $xf->unparse_json();
     }
 
-    if ($shortNameError)
-        Conf::msg_error("Each review field should have a name.  Please fix the highlighted fields and save again.");
-    if ($optionError)
-        Conf::msg_error("Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
-2. Medium quality
-3. High quality</pre>  Please fix the highlighted errors and save again.");
-    if (!$shortNameError && !$optionError) {
+    if ($sv->error_count() == $old_error_count) {
         $Conf->save_setting("review_form", 1, $nrfj);
         foreach ($nrfj as $fid => $fj)
             if (@$fj->position && @$fj->options) {
@@ -150,7 +149,7 @@ function rf_update() {
                 unset($_REQUEST["$fx$fid"]);
         }
         if (count($scoreModified))
-            $Conf->warnMsg("Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
+            $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
     }
 
     $Conf->invalidateCaches(array("rf" => true));
@@ -165,8 +164,8 @@ function rf_getField($f, $formname, $fname, $backup = null) {
         return $f->$fname;
 }
 
-function rf_show() {
-    global $Conf, $ConfSitePATH, $Error, $review_form_setting_prefixes;
+function rf_show($sv) {
+    global $Conf, $ConfSitePATH, $review_form_setting_prefixes;
 
     $rf = ReviewForm::get();
     $fmap = array();
@@ -176,7 +175,7 @@ function rf_show() {
     $samples = json_decode(file_get_contents("$ConfSitePATH/src/reviewformlibrary.json"));
 
     $req = array();
-    if (count($Error))
+    if ($sv->has_errors())
         foreach ($rf->fmap as $fid => $f) {
             foreach ($review_form_setting_prefixes as $fx)
                 if (isset($_REQUEST["$fx$fid"]))
@@ -202,7 +201,7 @@ submitted. Add a line “<tt>No entry</tt>” to make the score optional.</p></d
                         . json_encode($fmap) . ","
                         . json_encode($rf->unparse_full_json()) . ","
                         . json_encode($samples) . ","
-                        . json_encode($Error) . ","
+                        . json_encode($sv->error_fields()) . ","
                         . json_encode($req) . ")");
 
     echo Ht::hidden("has_reviewform", 1),

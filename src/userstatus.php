@@ -415,7 +415,7 @@ class UserStatus {
     }
 
     function has_error($field) {
-        if (@($x = self::$field_synonym_map[$field]))
+        if (($x = get(self::$field_synonym_map, $field)))
             $field = $x;
         return isset($this->errf[$field]);
     }
