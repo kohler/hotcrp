@@ -8,16 +8,12 @@ require_once("src/reviewsetform.php");
 if (!$Me->privChair)
     $Me->escape();
 
-if (!isset($_REQUEST["group"])
-    && preg_match(',\A/(\w+)\z,i', Navigation::path()))
-    $_REQUEST["group"] = substr(Navigation::path(), 1);
-
 $Highlight = $Conf->session("settings_highlight", array());
 $Conf->save_session("settings_highlight", null);
 $Error = $Warning = $Values = array();
 $DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
 
-// read setting information
+// setting information
 class Si {
     public $name;
     public $short_description;
@@ -47,6 +43,8 @@ class Si {
         $this->store($name, "short_description", $j, "name", "is_string");
         foreach (["short_description", "type", "parser", "ifnonempty", "message_default", "placeholder"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
+        if (!$this->type && $this->parser)
+            $this->type = "special";
         foreach (["optional", "novalue", "nodb", "disabled"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
@@ -79,11 +77,6 @@ class Si {
 
     static public function initialize() {
         global $ConfSitePATH, $Opt;
-
-        // read all .php files in src/settings
-        foreach (expand_includes($ConfSitePATH, "src/settings/*.php") as $f)
-            @include $f;
-
         $fname = "$ConfSitePATH/src/settinginfo.json";
         $info = self::read([], file_get_contents($fname), $fname);
         if (isset($Opt["settinginfo_include"])
@@ -99,8 +92,17 @@ class Si {
                             $info = self::read($info, $x, $f);
             }
         }
-        foreach ($info as $k => $v)
-            self::$all[$k] = new Si($k, (object) $v);
+
+        foreach ($info as $k => $v) {
+            if (isset($v["require"])) {
+                foreach (expand_includes($ConfSitePATH, $v["require"]) as $f)
+                    require_once $f;
+            }
+            $class = "Si";
+            if (isset($v["info_class"]))
+                $class = $v["info_class"];
+            self::$all[$k] = new $class($k, (object) $v);
+        }
     }
 }
 
@@ -156,32 +158,39 @@ Contact::site_contact();
 
 SettingGroup::register(new SettingGroup("basics", "Basics", 0, "doInfoGroup"));
 SettingGroup::register_synonym("info", "basics");
-SettingGroup::register(new SettingGroup("users", "Accounts", 10, "doAccGroup"));
+SettingGroup::register(new SettingGroup("users", "Accounts", 100, "doAccGroup"));
 SettingGroup::register_synonym("acc", "users");
-SettingGroup::register(new SettingGroup("msg", "Messages", 20, "doMsgGroup"));
-SettingGroup::register(new SettingGroup("sub", "Submissions", 30, "doSubGroup"));
-SettingGroup::register(new SettingGroup("subform", "Submission form", 40, "doOptGroup"));
+SettingGroup::register(new SettingGroup("msg", "Messages", 200, "doMsgGroup"));
+SettingGroup::register(new SettingGroup("sub", "Submissions", 300, "doSubGroup"));
+SettingGroup::register(new SettingGroup("subform", "Submission form", 400, "doOptGroup"));
 SettingGroup::register_synonym("opt", "subform");
-SettingGroup::register(new SettingGroup("reviews", "Reviews", 50, "doRevGroup"));
+SettingGroup::register(new SettingGroup("reviews", "Reviews", 500, "doRevGroup"));
 SettingGroup::register_synonym("rev", "reviews");
 SettingGroup::register_synonym("review", "reviews");
-SettingGroup::register(new SettingGroup("reviewform", "Review form", 60, "doRfoGroup"));
+SettingGroup::register(new SettingGroup("reviewform", "Review form", 600, "doRfoGroup"));
 SettingGroup::register_synonym("rfo", "reviewform");
-SettingGroup::register(new SettingGroup("tags", "Tags &amp; tracks", 70, "doTagsGroup"));
+SettingGroup::register(new SettingGroup("tags", "Tags &amp; tracks", 700, "doTagsGroup"));
 SettingGroup::register_synonym("tracks", "tags");
-SettingGroup::register(new SettingGroup("dec", "Decisions", 80, "doDecGroup"));
+SettingGroup::register(new SettingGroup("dec", "Decisions", 800, "doDecGroup"));
 
-$Group = defval($_REQUEST, "group");
-if (isset(SettingGroup::$map[$Group]))
-    $Group = SettingGroup::$map[$Group];
-if (!isset(SettingGroup::$all[$Group])) {
-    if ($Conf->timeAuthorViewReviews())
-        $Group = "dec";
-    else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
-        $Group = "reviews";
-    else
-        $Group = "sub";
+function choose_setting_group() {
+    global $Conf;
+    $Group = get($_REQUEST, "group");
+    if (!$Group && preg_match(',\A/(\w+)\z,i', Navigation::path()))
+        $Group = substr(Navigation::path(), 1);
+    if (isset(SettingGroup::$map[$Group]))
+        $Group = SettingGroup::$map[$Group];
+    if (!isset(SettingGroup::$all[$Group])) {
+        if ($Conf->timeAuthorViewReviews())
+            $Group = "dec";
+        else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
+            $Group = "reviews";
+        else
+            $Group = "sub";
+    }
+    return $Group;
 }
+$Group = choose_setting_group();
 
 
 function parseGrace($v) {
