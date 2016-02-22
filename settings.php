@@ -1187,7 +1187,7 @@ function save_rounds($sv, $si_name, $info, $set) {
             $ndeadlines = 0;
             foreach (Conf::$review_deadlines as $k) {
                 $v = parse_value($sv, $k . $isuffix, Si::get($k));
-                $Values[$k . $osuffix] = $v < 0 ? null : $v;
+                $Values[$k . $osuffix] = $v <= 0 ? null : $v;
                 $ndeadlines += $v > 0;
             }
             if ($ndeadlines == 0 && $osuffix)
@@ -1269,9 +1269,9 @@ function save_resp_rounds($sv, $si_name, $info, $set) {
     foreach ($roundnames_set as $i) {
         $isuf = $i ? "_$i" : "";
         if (($v = parse_value($sv, "resp_open$isuf", Si::get("resp_open"))) !== null)
-            $Values["resp_open$isuf"] = $v < 0 ? null : $v;
+            $Values["resp_open$isuf"] = $v <= 0 ? null : $v;
         if (($v = parse_value($sv, "resp_done$isuf", Si::get("resp_done"))) !== null)
-            $Values["resp_done$isuf"] = $v < 0 ? null : $v;
+            $Values["resp_done$isuf"] = $v <= 0 ? null : $v;
         if (($v = parse_value($sv, "resp_words$isuf", Si::get("resp_words"))) !== null)
             $Values["resp_words$isuf"] = $v < 0 ? null : $v;
         if (($v = parse_value($sv, "msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
