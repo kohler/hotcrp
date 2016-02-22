@@ -136,8 +136,8 @@ class Conf {
         }
 
         // set capability key
-        if (!@$this->settings["cap_key"]
-            && !@$Opt["disableCapabilities"]
+        if (!get($this->settings, "cap_key")
+            && !get($Opt, "disableCapabilities")
             && !(($key = hotcrp_random_bytes(16)) !== false
                  && ($key = base64_encode($key))
                  && $this->save_setting("cap_key", 1, $key)))
@@ -168,12 +168,12 @@ class Conf {
         if (!isset($this->settings["rev_blind"]))
             $this->settings["rev_blind"] = self::BLIND_ALWAYS;
         if (!isset($this->settings["seedec"])) {
-            if (@$this->settings["au_seedec"])
+            if (get($this->settings, "au_seedec"))
                 $this->settings["seedec"] = self::SEEDEC_ALL;
-            else if (@$this->settings["rev_seedec"])
+            else if (get($this->settings, "rev_seedec"))
                 $this->settings["seedec"] = self::SEEDEC_REV;
         }
-        if (@$this->settings["pc_seeallrev"] == 2) {
+        if (get($this->settings, "pc_seeallrev") == 2) {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
         }
@@ -197,21 +197,21 @@ class Conf {
 
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
-            if (!@$this->settingTexts[$k] && @$Opt[$k])
+            if (!get($this->settingTexts, $k) && get($Opt, $k))
                 $this->settingTexts[$k] = $Opt[$k];
-        if (!@$this->settingTexts["s3_bucket"]
-            || !@$this->settingTexts["s3_key"]
-            || !@$this->settingTexts["s3_secret"])
+        if (!get($this->settingTexts, "s3_bucket")
+            || !get($this->settingTexts, "s3_key")
+            || !get($this->settingTexts, "s3_secret"))
             unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
                   $this->settingTexts["s3_secret"]);
-        if (@$Opt["dbNoPapers"] && !@$Opt["docstore"] && !@$Opt["filestore"]
-            && !@$this->settingTexts["s3_bucket"])
+        if (get($Opt, "dbNoPapers") && !get($Opt, "docstore")
+            && !get($Opt, "filestore") && !get($this->settingTexts, "s3_bucket"))
             unset($Opt["dbNoPapers"]);
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
         $this->_track_review_sensitivity = false;
-        if (@($j = $this->settingTexts["tracks"]))
+        if (($j = get($this->settingTexts, "tracks")))
             $this->crosscheck_track_settings($j);
 
         // clear caches
@@ -220,21 +220,21 @@ class Conf {
         $this->_defined_rounds = null;
         // digested settings
         $this->_pc_see_pdf = true;
-        if (+@$this->settings["sub_freeze"] <= 0
-            && ($so = +@$this->settings["sub_open"]) > 0
+        if (get($this->settings, "sub_freeze", 0) <= 0
+            && ($so = get($this->settings, "sub_open", 0)) > 0
             && $so < $Now
-            && ($ss = +@$this->settings["sub_sub"]) > 0
+            && ($ss = get($this->settings, "sub_sub", 0)) > 0
             && $ss > $Now)
             $this->_pc_see_pdf = false;
 
-        $this->au_seerev = @+$this->settings["au_seerev"];
+        $this->au_seerev = get($this->settings, "au_seerev", 0);
         if (!$this->au_seerev
-            && @+$this->settings["resp_active"] > 0
+            && get($this->settings, "resp_active", 0) > 0
             && $this->time_author_respond_all_rounds())
             $this->au_seerev = self::AUSEEREV_YES;
         $this->tag_au_seerev = null;
         if ($this->au_seerev == self::AUSEEREV_TAGS)
-            $this->tag_au_seerev = explode(" ", (string) @$this->settingTexts["tag_au_seerev"]);
+            $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
     }
 
     private function crosscheck_track_settings($j) {
@@ -247,7 +247,7 @@ class Conf {
                 $this->_track_tags[] = $k;
             if (!isset($v->viewpdf) && isset($v->view))
                 $v->viewpdf = $v->view;
-            if (@$v->unassrev || @$v->assrev)
+            if (get($v, "unassrev") || get($v, "assrev"))
                 $this->_track_review_sensitivity = true;
         }
     }
@@ -340,7 +340,8 @@ class Conf {
         }
 
         // set safePasswords
-        if (!@$Opt["safePasswords"] || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] < 1))
+        if (!get($Opt, "safePasswords")
+            || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] < 1))
             $Opt["safePasswords"] = 0;
         else if ($Opt["safePasswords"] === true)
             $Opt["safePasswords"] = 1;
@@ -348,7 +349,7 @@ class Conf {
             $Opt["contactdb_safePasswords"] = $Opt["safePasswords"];
 
         // set defaultFormat
-        self::$gDefaultFormat = (int) @$Opt["defaultFormat"];
+        self::$gDefaultFormat = (int) get($Opt, "defaultFormat");
         self::$gFormatInfo = null;
     }
 
@@ -370,8 +371,8 @@ class Conf {
     function decision_map() {
         if ($this->_decisions === null) {
             $this->_decisions = array();
-            if (@($j = $this->settingTexts["outcome_map"])
-                && @($j = json_decode($j, true))
+            if (($j = get($this->settingTexts, "outcome_map"))
+                && ($j = json_decode($j, true))
                 && is_array($j))
                 $this->_decisions = $j;
             $this->_decisions[0] = "Unspecified";
@@ -382,7 +383,7 @@ class Conf {
     function decision_name($dnum) {
         if ($this->_decisions === null)
             $this->decision_map();
-        if (($dname = @$this->_decisions[$dnum]))
+        if (($dname = get($this->_decisions, $dnum)))
             return $dname;
         else
             return false;
@@ -401,7 +402,7 @@ class Conf {
 
 
     function topic_map() {
-        $x = @$this->settingTexts["topic_map"];
+        $x = get($this->settingTexts, "topic_map");
         if (!$x) {
             $result = $this->qe("select topicId, topicName from TopicArea order by topicName");
             $to = $tx = array();
@@ -421,7 +422,7 @@ class Conf {
     }
 
     function topic_order_map() {
-        $x = @$this->settingTexts["topic_order_map"];
+        $x = get($this->settingTexts, "topic_order_map");
         if (!$x) {
             $to = array();
             foreach ($this->topic_map() as $tid => $tname)
@@ -462,7 +463,7 @@ class Conf {
 
 
     function review_form_json() {
-        $x = @$this->settingTexts["review_form"];
+        $x = get($this->settingTexts, "review_form");
         if (is_string($x))
             $x = $this->settingTexts["review_form"] = json_decode($x);
         return is_object($x) ? $x : null;
@@ -486,7 +487,7 @@ class Conf {
             $checked = false;
             if ($prow)
                 foreach ($this->_track_tags as $t)
-                    if (@($perm = $this->tracks->$t->$type)
+                    if (($perm = get($this->tracks->$t, $type))
                         && $prow->has_tag($t)) {
                         $has_tag = $contact->has_tag(substr($perm, 1));
                         if ($perm[0] == "-" ? $has_tag : !$has_tag)
@@ -494,7 +495,7 @@ class Conf {
                         $checked = true;
                     }
             if (!$checked
-                && @($perm = $this->tracks->_->$type)) {
+                && ($perm = get($this->tracks->_, $type))) {
                 $has_tag = $contact->has_tag(substr($perm, 1));
                 if ($perm[0] == "-" ? $has_tag : !$has_tag)
                     return false;
@@ -506,7 +507,7 @@ class Conf {
     function check_any_tracks($contact, $type) {
         if ($this->tracks)
             foreach ($this->tracks as $k => $v)
-                if (@($perm = $v->$type) === null)
+                if (($perm = get($v, $type)) === null)
                     return true;
                 else {
                     $has_tag = $contact->has_tag(substr($perm, 1));
@@ -519,7 +520,7 @@ class Conf {
     function check_all_tracks($contact, $type) {
         if ($this->tracks)
             foreach ($this->tracks as $k => $v)
-                if (@($perm = $v->$type) !== null) {
+                if (($perm = get($v, $type)) !== null) {
                     $has_tag = $contact->has_tag(substr($perm, 1));
                     if ($perm[0] == "-" ? $has_tag : !$has_tag)
                         return false;
@@ -530,7 +531,7 @@ class Conf {
     function check_track_sensitivity($type) {
         if ($this->tracks)
             foreach ($this->tracks as $k => $v)
-                if (@($perm = $v->$type) !== null)
+                if (($perm = get($v, $type)) !== null)
                     return true;
         return false;
     }
@@ -840,23 +841,23 @@ class Conf {
         global $Opt;
 
         $any = $this->invariantq("select paperId from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . " limit 1");
-        if ($any !== !!@$this->settings["papersub"])
+        if ($any !== !!get($this->settings, "papersub"))
             trigger_error($Opt["dbName"] . " invariant error: papersub");
 
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
-        if ($any !== !!@$this->settings["paperacc"])
+        if ($any !== !!get($this->settings, "paperacc"))
             trigger_error($Opt["dbName"] . " invariant error: paperacc");
 
         $any = $this->invariantq("select reviewId from PaperReview where reviewToken!=0 limit 1");
-        if ($any !== !!@$this->settings["rev_tokens"])
+        if ($any !== !!get($this->settings, "rev_tokens"))
             trigger_error($Opt["dbName"] . " invariant error: rev_tokens");
 
         $any = $this->invariantq("select paperId from Paper where leadContactId>0 or shepherdContactId>0 limit 1");
-        if ($any !== !!@$this->settings["paperlead"])
+        if ($any !== !!get($this->settings, "paperlead"))
             trigger_error($Opt["dbName"] . " invariant error: paperlead");
 
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
-        if ($any !== !!@$this->settings["papermanager"])
+        if ($any !== !!get($this->settings, "papermanager"))
             trigger_error($Opt["dbName"] . " invariant error: papermanager");
 
         // no empty text options
@@ -1098,7 +1099,7 @@ class Conf {
             $Opt["dateFormatTimezoneRemover"] =
                 "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
         }
-        if (@$Opt["dateFormatTimezoneRemover"])
+        if (get($Opt, "dateFormatTimezoneRemover"))
             $d = preg_replace($Opt["dateFormatTimezoneRemover"], " ", $d);
         $d = preg_replace('/\butc([-+])/i', 'GMT$1', $d);
         return strtotime($d, $reference);
@@ -1162,23 +1163,23 @@ class Conf {
 
     function settingsAfter($name) {
         global $Now;
-        $t = @$this->settings[$name];
+        $t = get($this->settings, $name);
         return $t !== null && $t > 0 && $t <= $Now;
     }
     function deadlinesAfter($name, $grace = null) {
         global $Now;
-        $t = @$this->settings[$name];
-        if ($t !== null && $t > 0 && $grace && ($g = @$this->settings[$grace]))
+        $t = get($this->settings, $name);
+        if ($t !== null && $t > 0 && $grace && ($g = get($this->settings, $grace)))
             $t += $g;
         return $t !== null && $t > 0 && $t <= $Now;
     }
     function deadlinesBetween($name1, $name2, $grace = null) {
         global $Now;
-        $t = @$this->settings[$name1];
+        $t = get($this->settings, $name1);
         if (($t === null || $t <= 0 || $t > $Now) && $name1)
             return false;
-        $t = @$this->settings[$name2];
-        if ($t !== null && $t > 0 && $grace && ($g = @$this->settings[$grace]))
+        $t = get($this->settings, $name2);
+        if ($t !== null && $t > 0 && $grace && ($g = get($this->settings, $grace)))
             $t += $g;
         return $t === null || $t <= 0 || $t >= $Now;
     }
@@ -1291,7 +1292,7 @@ class Conf {
         return true;
     }
     function timeEmailChairAboutReview() {
-        return @$this->settings["rev_notifychair"] > 0;
+        return get($this->settings, "rev_notifychair") > 0;
     }
 
     function submission_blindness() {
@@ -1323,20 +1324,20 @@ class Conf {
     }
 
     function has_any_accepts() {
-        return !!@$this->settings["paperacc"];
+        return !!get($this->settings, "paperacc");
     }
 
     function has_any_lead_or_shepherd() {
-        return !!@$this->settings["paperlead"];
+        return !!get($this->settings, "paperlead");
     }
 
     function has_any_manager() {
-        return !!@$this->settings["papermanager"];
+        return !!get($this->settings, "papermanager");
     }
 
     function can_pc_see_all_submissions() {
         if ($this->_pc_seeall_cache === null) {
-            $this->_pc_seeall_cache = @$this->settings["pc_seeall"] ? : 0;
+            $this->_pc_seeall_cache = get($this->settings, "pc_seeall") ? : 0;
             if ($this->_pc_seeall_cache > 0 && !$this->timeFinalizePaper())
                 $this->_pc_seeall_cache = 0;
         }
@@ -1405,7 +1406,7 @@ class Conf {
         else
             $paperMatch = "=" . $prow->paperId;
         $q = "select p.paperId, s.mimetype, s.sha1, s.timestamp, ";
-        if (!@$Opt["docstore"] && !is_array($prow))
+        if (!get($Opt, "docstore") && !is_array($prow))
             $q .= "s.paper as content, ";
         $q .= "s.filename, s.infoJson, $documentType documentType, s.paperStorageId from Paper p";
         if ($docid)
@@ -2350,22 +2351,22 @@ class Conf {
             $huser->cid = $Me->contactId;
         Ht::stash_script("hotcrp_user=" . json_encode($huser) . ";");
 
-        $pid = @$_REQUEST["paperId"];
+        $pid = get($_REQUEST, "paperId");
         $pid = $pid && ctype_digit($pid) ? (int) $pid : 0;
         if (!$pid && $this->paper)
             $pid = $this->paper->paperId;
         if ($pid)
             Ht::stash_script("hotcrp_paperid=$pid");
         if ($pid && $Me && $Me->privChair
-            && ($forceShow = @$_REQUEST["forceShow"]) && $forceShow != "0")
+            && ($forceShow = get($_REQUEST, "forceShow")) && $forceShow != "0")
             Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
-        if (!@$Opt["noDefaultScript"])
+        if (!get($Opt, "noDefaultScript"))
             Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
 
         // other scripts
-        if (@$Opt["scripts"])
+        if (get($Opt, "scripts"))
             foreach ($Opt["scripts"] as $file)
                 Ht::stash_html($this->make_script_file($file) . "\n");
 
@@ -2405,7 +2406,7 @@ class Conf {
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (@$Opt["time24hour"] ? 1 : 0) . ")");
+        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (get($Opt, "time24hour") ? 1 : 0) . ")");
 
         // deadlines settings
         if ($Me)
@@ -2472,7 +2473,7 @@ class Conf {
         if (!$title_div && $actionBar)
             $title_div = '<hr class="c" />';
 
-        $renderf = @$Opt["headerRenderer"];
+        $renderf = get($Opt, "headerRenderer");
         if (!$renderf)
             $renderf = "Conf::echo_header";
         if (is_array($renderf)) {
@@ -2638,7 +2639,7 @@ class Conf {
             $text .= " (papers " . join(", ", $ps) . ")";
             $ps = null;
         }
-        $result = Dbl::q("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", @$_SERVER["REMOTE_ADDR"], (int) $who, $ps, substr($text, 0, 4096));
+        $result = Dbl::q("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", get($_SERVER, "REMOTE_ADDR"), (int) $who, $ps, substr($text, 0, 4096));
         Dbl::free($result);
     }
 
@@ -2671,9 +2672,9 @@ class Conf {
 
     public function message_html($name, $expansions = null) {
         $name = $this->message_name($name);
-        $html = @$this->settingTexts["msg.$name"];
+        $html = get($this->settingTexts, "msg.$name");
         if ($html === null && ($p = strrpos($name, ".")) !== false)
-            $html = @$this->settingTexts["msg." . substr($name, 0, $p)];
+            $html = get($this->settingTexts, "msg." . substr($name, 0, $p));
         if ($html === null)
             $html = Message::default_html($name);
         if ($html && $expansions)
