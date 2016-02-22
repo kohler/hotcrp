@@ -102,7 +102,7 @@ class CleanHTML {
         if (count($tagstack) > 0)
             return self::_cleanHTMLError($err, "unclosed tags, including <code>&lt;$tagstack[0]&gt;</code>");
 
-        return $x;
+        return preg_replace('/\r\n?/', "\n", $x);
     }
 
 }

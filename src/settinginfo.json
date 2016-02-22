@@ -5,7 +5,10 @@
     },
     "au_seerev": {
         "name": "Authors can see reviews",
-        "type": "radio", "values": [0, 1, 2, 3]
+        "type": "radio", "values": [0, 1, 2, 3], "default_value": 0
+    },
+    "clickthrough_submit": {
+        "invisible": true
     },
     "cmt_always": {
         "name": "Allow comments even if reviewing is closed",
@@ -28,7 +31,7 @@
     },
     "extrev_view": {
         "name": "External reviewers can view reviews",
-        "type": "radio", "values": [0, 1, 2]
+        "type": "radio", "values": [0, 1, 2], "default_value": 0
     },
     "final_done": {
         "name": "Final version upload hard deadline",
@@ -84,6 +87,15 @@
         "name": "Paper submission message",
         "type": "htmlstring", "message_default": "msg.submit"
     },
+    "next_optionid": {
+        "invisible": true
+    },
+    "opt.clickthrough_review": {
+        "invisible": true
+    },
+    "opt.clickthrough_submit": {
+        "invisible": true
+    },
     "opt.conferenceSite": {
         "name": "Conference URL",
         "type": "urlstring", "optional": true, "placeholder": "N/A"
@@ -113,7 +125,11 @@
         "type": "simplestring"
     },
     "options": {
-        "parser": "save_options"
+        "parser": "save_options",
+        "type": "string"
+    },
+    "options_nextid": {
+        "invisible": true, "storage": "val.options"
     },
     "pc_seeall": {
         "name": "PC can see all papers",
@@ -121,11 +137,11 @@
     },
     "pc_seeallrev": {
         "name": "PC can see all reviews",
-        "type": "radio", "values": [0, 1, 3, 4]
+        "type": "radio", "values": [0, 1, 3, 4], "default_value": 0
     },
     "pc_seeblindrev": {
         "name": "PC can see blind reviewers’ identities",
-        "type": "radio", "values": [0, 1]
+        "type": "radio", "values": [0, 1], "default_value": 0
     },
     "pcrev_any": {
         "name": "PC can review any paper",
@@ -164,11 +180,11 @@
     },
     "resp_words": {
         "name": "Authors’ response word limit",
-        "type": "zint"
+        "type": "zint", "default_value": 500
     },
     "rev_blind": {
         "name": "Review anonymity",
-        "type": "radio", "values": [0, 1, 2]
+        "type": "radio", "values": [0, 1, 2], "default_value": 2
     },
     "rev_notifychair": {
         "name": "Notify PC chairs of new reviews by email",
@@ -180,7 +196,7 @@
     },
     "rev_ratings": {
         "name": "Collect ratings of reviews",
-        "type": "radio", "values": [0, 1, 2]
+        "type": "radio", "values": [0, 1, 2], "default_value": 0
     },
     "rev_roundtag": {
         "name": "Current review round",
@@ -194,11 +210,15 @@
         "type": "radio", "values": [0, 1, 2, 3]
     },
     "sub_banal": {
-        "type": "checkbox", "parser": "save_banal"
+        "type": "checkbox", "parser": "save_banal",
+        "storage": "val.sub_banal"
+    },
+    "sub_banal_data": {
+        "invisible": false, "type": "string", "storage": "sub_banal"
     },
     "sub_blind": {
         "name": "Submission anonymity",
-        "type": "radio", "values": [0, 1, 2, 3]
+        "type": "radio", "values": [0, 1, 2, 3], "default_value": 2
     },
     "sub_collab": {
         "name": "Collect other collaborators",
@@ -214,11 +234,13 @@
     },
     "sub_noabstract": {
         "name": "Submission abstract required",
-        "type": "radio", "values": [0, 1, 2]
+        "type": "radio", "values": [0, 1, 2],
+        "storage": "ova.noAbstract", "default_value": 0
     },
     "sub_nopapers": {
         "name": "Submission PDF required",
-        "type": "radio", "values": [0, 1, 2]
+        "type": "radio", "values": [0, 1, 2],
+        "storage": "ova.noPapers", "default_value": 0
     },
     "sub_open": {
         "name": "Open site for submissions",
@@ -240,12 +262,19 @@
         "name": "Submission deadline",
         "type": "date"
     },
+    "sub_update": {
+        "invisible": true
+    },
     "tag_approval": {
         "name": "Approval voting tags",
-        "parser": "save_tags"
+        "type": "taglist", "parser": "save_tags"
     },
     "tag_au_seerev": {
         "name": "Review visibility tags",
+        "type": "taglist", "parser": "save_tags"
+    },
+    "tag_badge": {
+        "name": "Tag badges",
         "type": "taglist", "parser": "save_tags"
     },
     "tag_chair": {
@@ -260,6 +289,9 @@
         "name": "Ranking tags",
         "type": "taglist", "parser": "save_tags"
     },
+    "tag_rounds": {
+        "invisible": true, "type": "taglist"
+    },
     "tag_seeall": {
         "name": "PC can see tags for conflicted papers",
         "type": "checkbox"
@@ -272,6 +304,7 @@
         "parser": "save_topics"
     },
     "tracks": {
-        "parser": "save_tracks"
+        "parser": "save_tracks",
+        "type": "string"
     }
 }
