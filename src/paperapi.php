@@ -151,7 +151,7 @@ class PaperApi {
             $need_paper = true;
             if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
                 $conflict_where = "(p.managerContactId=0 or p.managerContactId=$user->contactId or pc.conflictType is null)";
-        } else if ($Conf->check_track_sensitivity("view")) {
+        } else if ($Conf->check_track_sensitivity(Track::VIEW)) {
             $where[] = "t.paperId ?a";
             $args[] = $user->list_submitted_papers_with_viewable_tags();
         } else {

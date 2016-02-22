@@ -3,6 +3,21 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class Track {
+    private $a;
+    const VIEW = 0;
+    const VIEWPDF = 1;
+    const VIEWREV = 2;
+    const ASSREV = 3;
+    const UNASSREV = 4;
+    const VIEWTRACKER = 5;
+    static public $map = [
+        "view" => 0, "viewpdf" => 1, "viewrev" => 2, "assrev" => 3,
+        "unassrev" => 4, "viewtracker" => 5
+    ];
+    static public $zero = [null, null, null, null, null, null];
+}
+
 class Conf {
     public $dblink = null;
 
@@ -240,14 +255,19 @@ class Conf {
     private function crosscheck_track_settings($j) {
         if (is_string($j) && !($j = json_decode($j)))
             return;
-        $this->tracks = $j;
+        $this->tracks = array("_" => Track::$zero);
         $this->_track_tags = array();
-        foreach ($this->tracks as $k => $v) {
+        foreach ((array) $j as $k => $v) {
             if ($k !== "_")
                 $this->_track_tags[] = $k;
             if (!isset($v->viewpdf) && isset($v->view))
                 $v->viewpdf = $v->view;
-            if (get($v, "unassrev") || get($v, "assrev"))
+            $t = Track::$zero;
+            foreach (Track::$map as $tname => $idx)
+                if (isset($v->$tname))
+                    $t[$idx] = $v->$tname;
+            $this->tracks[$k] = $t;
+            if ($t[Track::UNASSREV] || $t[Track::ASSREV])
                 $this->_track_review_sensitivity = true;
         }
     }
@@ -487,7 +507,7 @@ class Conf {
             $checked = false;
             if ($prow)
                 foreach ($this->_track_tags as $t)
-                    if (($perm = get($this->tracks->$t, $type))
+                    if (($perm = $this->tracks[$t][$type])
                         && $prow->has_tag($t)) {
                         $has_tag = $contact->has_tag(substr($perm, 1));
                         if ($perm[0] == "-" ? $has_tag : !$has_tag)
@@ -495,7 +515,7 @@ class Conf {
                         $checked = true;
                     }
             if (!$checked
-                && ($perm = get($this->tracks->_, $type))) {
+                && ($perm = $this->tracks["_"][$type])) {
                 $has_tag = $contact->has_tag(substr($perm, 1));
                 if ($perm[0] == "-" ? $has_tag : !$has_tag)
                     return false;
@@ -507,7 +527,7 @@ class Conf {
     function check_any_tracks($contact, $type) {
         if ($this->tracks)
             foreach ($this->tracks as $k => $v)
-                if (($perm = get($v, $type)) === null)
+                if (($perm = $v[$type]) === null)
                     return true;
                 else {
                     $has_tag = $contact->has_tag(substr($perm, 1));
@@ -520,7 +540,7 @@ class Conf {
     function check_all_tracks($contact, $type) {
         if ($this->tracks)
             foreach ($this->tracks as $k => $v)
-                if (($perm = get($v, $type)) !== null) {
+                if (($perm = $v[$type]) !== null) {
                     $has_tag = $contact->has_tag(substr($perm, 1));
                     if ($perm[0] == "-" ? $has_tag : !$has_tag)
                         return false;
@@ -531,7 +551,7 @@ class Conf {
     function check_track_sensitivity($type) {
         if ($this->tracks)
             foreach ($this->tracks as $k => $v)
-                if (($perm = get($v, $type)) !== null)
+                if ($v[$type] !== null)
                     return true;
         return false;
     }

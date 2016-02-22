@@ -1659,7 +1659,7 @@ class Contact {
             $tracks = $Conf->has_tracks();
             $isPC = $this->isPC
                 && (!$tracks || $ci->review_type >= REVIEW_PC
-                    || $Conf->check_tracks($prow, $this, "view"));
+                    || $Conf->check_tracks($prow, $this, Track::VIEW));
 
             // check whether PC privileges apply
             $ci->allow_pc_broad = $ci->allow_administer || $isPC;
@@ -1672,7 +1672,7 @@ class Contact {
                 $ci->potential_reviewer = true;
             else if ($ci->allow_pc)
                 $ci->potential_reviewer = !$tracks
-                    || $Conf->check_tracks($prow, $this, "unassrev");
+                    || $Conf->check_tracks($prow, $this, Track::UNASSREV);
             else
                 $ci->potential_reviewer = false;
             $ci->allow_review = $ci->potential_reviewer
@@ -1759,7 +1759,7 @@ class Contact {
     public function can_view_tracker() {
         global $Conf;
         return $this->privChair
-            || ($this->isPC && $Conf->check_tracks(null, $this, "viewtracker"))
+            || ($this->isPC && $Conf->check_tracks(null, $this, Track::VIEWTRACKER))
             || $this->tracker_kiosk_state;
     }
 
@@ -1963,7 +1963,7 @@ class Contact {
                 && $Conf->timeReviewerViewSubmittedPaper())
             || ($rights->allow_pc_broad
                 && $Conf->timePCViewPaper($prow, $pdf)
-                && (!$pdf || $Conf->check_tracks($prow, $this, "viewpdf")));
+                && (!$pdf || $Conf->check_tracks($prow, $this, Track::VIEWPDF)));
     }
 
     function perm_view_paper(PaperInfo $prow, $pdf = false) {
@@ -2084,7 +2084,7 @@ class Contact {
                 && ($rights->allow_administer
                     || $rights->review_type
                     || !$opt->has_document()
-                    || $Conf->check_tracks($prow, $this, "viewpdf")));
+                    || $Conf->check_tracks($prow, $this, Track::VIEWPDF)));
     }
 
     function can_view_some_paper_option($opt) {
@@ -2163,7 +2163,7 @@ class Contact {
             return true;
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
-        $pc_trackok = $rights->allow_pc && $Conf->check_tracks($prow, $this, "viewrev");
+        $pc_trackok = $rights->allow_pc && $Conf->check_tracks($prow, $this, Track::VIEWREV);
         // See also PaperInfo::can_view_review_identity_of.
         return ($rights->act_author_view
                 && $rrowSubmitted
@@ -2320,7 +2320,7 @@ class Contact {
         return $this->isPC
             && $Conf->setting("pcrev_any") > 0
             && $Conf->time_review(null, true, true)
-            && $Conf->check_any_tracks($this, "unassrev");
+            && $Conf->check_any_tracks($this, Track::UNASSREV);
     }
 
     function timeReview(PaperInfo $prow, $rrow) {
@@ -2345,25 +2345,25 @@ class Contact {
         global $Conf;
         if (!$prow)
             return $this->isPC
-                && ($Conf->check_all_tracks($this, "assrev")
-                    || $Conf->check_all_tracks($this, "unassrev"));
+                && ($Conf->check_all_tracks($this, Track::ASSREV)
+                    || $Conf->check_all_tracks($this, Track::UNASSREV));
         $rights = $this->rights($prow);
         return $rights->allow_pc_broad
             && ($rights->review_type > 0
                 || $rights->allow_administer
-                || $Conf->check_tracks($prow, $this, "assrev")
-                || $Conf->check_tracks($prow, $this, "unassrev"));
+                || $Conf->check_tracks($prow, $this, Track::ASSREV)
+                || $Conf->check_tracks($prow, $this, Track::UNASSREV));
     }
 
     function can_accept_review_assignment_ignore_conflict(PaperInfo $prow = null) {
         global $Conf;
         if (!$prow)
-            return $this->isPC && $Conf->check_all_tracks($this, "assrev");
+            return $this->isPC && $Conf->check_all_tracks($this, Track::ASSREV);
         $rights = $this->rights($prow);
         return $rights->allow_pc_broad
             && ($rights->review_type > 0
                 || $rights->allow_administer
-                || $Conf->check_tracks($prow, $this, "assrev"));
+                || $Conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
     function can_accept_review_assignment(PaperInfo $prow) {
@@ -2372,7 +2372,7 @@ class Contact {
         return $rights->allow_pc
             && ($rights->review_type > 0
                 || $rights->allow_administer
-                || $Conf->check_tracks($prow, $this, "assrev"));
+                || $Conf->check_tracks($prow, $this, Track::ASSREV));
     }
 
     private function review_rights(PaperInfo $prow, $rrow) {
@@ -2777,7 +2777,7 @@ class Contact {
         $tag_seeall = $Conf->setting("tag_seeall");
         if (!$this->isPC)
             return $pids;
-        else if (!$this->privChair && $Conf->check_track_sensitivity("view")) {
+        else if (!$this->privChair && $Conf->check_track_sensitivity(Track::VIEW)) {
             $q = "select p.paperId, pt.paperTags, r.reviewType from Paper p
                 left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag where tag ?a group by paperId) as pt on (pt.paperId=p.paperId)
                 left join PaperReview r on (r.paperId=p.paperId and r.contactId=$this->contactId)";
@@ -2789,7 +2789,7 @@ class Contact {
             $result = Dbl::qe($q, $Conf->track_tags());
             while ($result && ($prow = $result->fetch_object("PaperInfo")))
                 if ((int) $prow->reviewType >= REVIEW_PC
-                    || $Conf->check_tracks($prow, $this, "view"))
+                    || $Conf->check_tracks($prow, $this, Track::VIEW))
                     $pids[] = (int) $prow->paperId;
             Dbl::free($result);
             return $pids;
