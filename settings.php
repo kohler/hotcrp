@@ -110,6 +110,9 @@ class SettingValues {
     private $errmsg = array();
     private $warnmsg = array();
 
+    public $need_lock = array();
+    public $rev_round_changes = array();
+
     public function __construct() {
     }
     public function has_errors() {
@@ -508,8 +511,10 @@ function save_tags($sv, $si_name, $info, $set) {
         $v = array(count($vs), join(" ", $vs));
         if (!$sv->has_error("tag_vote")
             && ($Conf->setting("tag_vote") != $v[0]
-                || $Conf->setting_data("tag_vote") !== $v[1]))
+                || $Conf->setting_data("tag_vote") !== $v[1])) {
             $Values["tag_vote"] = $v;
+            $sv->need_lock["PaperTag"] = true;
+        }
     }
 
     if ($set && $info->name == "tag_vote" && isset($Values["tag_vote"])) {
@@ -561,8 +566,10 @@ function save_tags($sv, $si_name, $info, $set) {
         $v = array(count($vs), join(" ", $vs));
         if (!$sv->has_error("tag_approval")
             && ($Conf->setting("tag_approval") != $v[0]
-                || $Conf->setting_data("tag_approval") !== $v[1]))
+                || $Conf->setting_data("tag_approval") !== $v[1])) {
             $Values["tag_approval"] = $v;
+            $sv->need_lock["PaperTag"] = true;
+        }
     }
 
     if ($set && $info->name == "tag_approval" && isset($Values["tag_approval"])) {
@@ -666,6 +673,8 @@ function save_topics($sv, $si_name, $info, $set) {
     global $Conf, $Values;
     if (!$set) {
         $Values["topics"] = true;
+        foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
+            $sv->need_lock[$t] = true;
         return;
     }
 
@@ -814,8 +823,10 @@ function save_options($sv, $si_name, $info, $set) {
             else
                 $optabbrs[$o->abbr] = $o;
 
-        if (!$sv->has_errors())
+        if (!$sv->has_errors()) {
             $Values["options"] = $new_opts;
+            $sv->need_lock["PaperOption"] = true;
+        }
         return;
     }
 
@@ -880,6 +891,7 @@ function save_decisions($sv, $si_name, $info, $set) {
         }
 
         $Values["decisions"] = true;
+        $sv->need_lock["Paper"] = true;
         return;
     }
 
@@ -1021,10 +1033,8 @@ function save_banal($sv, $si_name, $info, $set) {
 
     // actually create setting
     if ($sv->error_count() == $old_error_count) {
-        $Values["sub_banal"] = array(1, join(";", $bs));
-        $zoomarg = "";
-
         // Perhaps we have an old pdftohtml with a bad -zoom.
+        $zoomarg = "";
         for ($tries = 0; $tries < 2; ++$tries) {
             $cf = new CheckFormat();
             $s1 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
@@ -1035,7 +1045,7 @@ function save_banal($sv, $si_name, $info, $set) {
                 $zoomarg = "";
         }
 
-        $Values["sub_banal"][1] .= $zoomarg;
+        $Values["sub_banal"] = array(1, join(";", $bs) . $zoomarg);
         $e1 = $cf->errors;
         $s2 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
         $e2 = $cf->errors;
@@ -1115,7 +1125,6 @@ function save_rounds($sv, $si_name, $info, $set) {
     // round names
     $roundnames = $roundnames_set = array();
     $roundname0 = $round_deleted = null;
-    $Values["rev_round_changes"] = array();
     for ($i = 0;
          isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
          ++$i) {
@@ -1124,7 +1133,7 @@ function save_rounds($sv, $si_name, $info, $set) {
             $rname = "";
         if ((get($_POST, "deleteround_$i") || $rname === "") && $i) {
             $roundnames[] = ";";
-            $Values["rev_round_changes"][] = array($i, 0);
+            $sv->rev_round_changes[] = array($i, 0);
             if ($round_deleted === null && !isset($_POST["roundname_0"])
                 && $i < $_POST["oldroundcount"])
                 $round_deleted = $i;
@@ -1136,7 +1145,7 @@ function save_rounds($sv, $si_name, $info, $set) {
             $roundname0 = $rname;
         else if (get($roundnames_set, strtolower($rname))) {
             $roundnames[] = ";";
-            $Values["rev_round_changes"][] = array($i, $roundnames_set[strtolower($rname)]);
+            $sv->rev_round_changes[] = array($i, $roundnames_set[strtolower($rname)]);
         } else {
             $roundnames[] = $rname;
             $roundnames_set[strtolower($rname)] = $i;
@@ -1147,7 +1156,7 @@ function save_rounds($sv, $si_name, $info, $set) {
         $roundnames_set[strtolower($roundname0)] = count($roundnames);
     }
     if ($roundname0)
-        array_unshift($Values["rev_round_changes"], array(0, $roundnames_set[strtolower($roundname0)]));
+        array_unshift($sv->rev_round_changes, array(0, $roundnames_set[strtolower($roundname0)]));
 
     // round deadlines
     foreach ($Conf->round_list() as $i => $rname) {
@@ -1275,9 +1284,10 @@ function save_resp_rounds($sv, $si_name, $info, $set) {
 
 function save_review_form($sv, $si_name, $info, $set) {
     global $Values;
-    if (!$set)
+    if (!$set) {
         $Values[$info->name] = true;
-    else
+        $sv->need_lock["PaperReview"] = true;
+    } else
         rf_update($sv);
 }
 
@@ -1431,16 +1441,10 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // make settings
     if (!$Sv->has_errors() && count($Values) > 0) {
-        $tables = "Settings write, TopicArea write, PaperTopic write, TopicInterest write, PaperOption write";
-        if (array_key_exists("decisions", $Values)
-            || array_key_exists("tag_vote", $Values)
-            || array_key_exists("tag_approval", $Values))
-            $tables .= ", Paper write";
-        if (array_key_exists("tag_vote", $Values)
-            || array_key_exists("tag_approval", $Values))
-            $tables .= ", PaperTag write";
-        if (array_key_exists("reviewform", $Values))
-            $tables .= ", PaperReview write";
+        $tables = "Settings write";
+        foreach ($Sv->need_lock as $t => $need)
+            if ($need)
+                $tables .= ", $t write";
         $Conf->qe("lock tables $tables");
 
         // apply settings
@@ -1481,9 +1485,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->load_settings();
 
         // remove references to deleted rounds
-        if (array_key_exists("rev_round_changes", $Values))
-            foreach ($Values["rev_round_changes"] as $x)
-                $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
+        foreach ($Sv->rev_round_changes as $x)
+            $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
 
         // contactdb may need to hear about changes to shortName
         if (array_key_exists("opt.shortName", $Values)

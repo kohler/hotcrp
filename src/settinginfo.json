@@ -189,9 +189,6 @@
         "name": "Current review round",
         "parser": "save_rounds"
     },
-    "rev_round_changes": {
-        "type": "none", "nodb": true
-    },
     "reviewform": {
         "nodb": true, "parser": "save_review_form", "require": "src/settings/s_reviewform.php"
     },
