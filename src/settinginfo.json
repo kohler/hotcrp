@@ -7,9 +7,6 @@
         "name": "Authors can see reviews",
         "type": "radio", "values": [0, 1, 2, 3]
     },
-    "banal": {
-        "parser": "save_banal"
-    },
     "cmt_always": {
         "name": "Allow comments even if reviewing is closed",
         "type": "checkbox"
@@ -187,7 +184,7 @@
     },
     "rev_roundtag": {
         "name": "Current review round",
-        "parser": "save_rounds"
+        "type": "tag", "parser": "save_rounds"
     },
     "reviewform": {
         "parser": "save_review_form", "require": "src/settings/s_reviewform.php"
@@ -195,6 +192,9 @@
     "seedec": {
         "name": "Decision visibility",
         "type": "radio", "values": [0, 1, 2, 3]
+    },
+    "sub_banal": {
+        "type": "checkbox", "parser": "save_banal"
     },
     "sub_blind": {
         "name": "Submission anonymity",
@@ -246,19 +246,19 @@
     },
     "tag_au_seerev": {
         "name": "Review visibility tags",
-        "parser": "save_tags"
+        "type": "taglist", "parser": "save_tags"
     },
     "tag_chair": {
         "name": "Chair-only tags",
-        "parser": "save_tags"
+        "type": "taglist", "parser": "save_tags"
     },
     "tag_color": {
         "name": "Tag colors",
-        "parser": "save_tags"
+        "type": "taglist", "parser": "save_tags"
     },
     "tag_rank": {
         "name": "Ranking tags",
-        "parser": "save_tags"
+        "type": "taglist", "parser": "save_tags"
     },
     "tag_seeall": {
         "name": "PC can see tags for conflicted papers",
@@ -266,7 +266,7 @@
     },
     "tag_vote": {
         "name": "Voting tags",
-        "parser": "save_tags"
+        "type": "taglist", "parser": "save_tags"
     },
     "topics": {
         "parser": "save_topics"

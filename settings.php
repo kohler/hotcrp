@@ -15,6 +15,7 @@ class Si {
     public $name;
     public $short_description;
     public $type;
+    public $storage_type;
     public $optional = false;
     public $values;
     public $size;
@@ -26,7 +27,17 @@ class Si {
     public $ifnonempty;
     public $message_default;
 
+    const SI_VALUE = 1;
+    const SI_DATA = 2;
+    const SI_OPT = 3;
+
     static public $all = [];
+    static public $type_storage = [
+        "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
+        "htmlstring" => self::SI_DATA, "simplestring" => self::SI_DATA,
+        "string" => self::SI_DATA, "tag" => self::SI_DATA,
+        "taglist" => self::SI_DATA, "urlstring" => self::SI_DATA
+    ];
 
     private function store($name, $key, $j, $jkey, $typecheck) {
         if (isset($j->$jkey) && call_user_func($typecheck, $j->$jkey))
@@ -47,6 +58,12 @@ class Si {
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
         $this->store($name, "values", $j, "values", "is_array");
+        if (substr($name, 0, 4) === "opt.")
+            $this->storage_type = self::SI_OPT;
+        else if (isset(self::$type_storage[$this->type]))
+            $this->storage_type = self::$type_storage[$this->type];
+        else
+            $this->storage_type = self::SI_VALUE;
     }
 
     static public function get($name, $k = null) {
@@ -172,29 +189,31 @@ class SettingValues {
             $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
         return $x;
     }
+    public function inputv($name, $default_value = null) {
+        if ($this->has_errors())
+            return get($_POST, $name, $default_value);
+        else
+            return $default_value;
+    }
     public function sv($name, $default_value = null) {
         global $Conf;
         if ($this->has_errors())
             return get($_POST, $name, $default_value);
         else
-            return $Conf->setting($name, $default_value);
+            return $this->sv_active($name, $default_value);
     }
-    public function sd($name, $default_value = "") {
-        if ($this->has_errors())
-            return get($_POST, $name, $default_value);
-        else
-            return $this->sd_active($name, $default_value);
-    }
-    public function sd_active($name, $default_value = "") {
+    public function sv_active($name, $default_value = "") {
         global $Conf, $Opt;
         $si = Si::get($name);
         if (!$si)
             error_log("Missing setting information for $name");
         assert(!!$si);
-        if (substr($name, 0, 4) === "opt.")
+        if ($si->storage_type == Si::SI_OPT)
             $val = get($Opt, substr($name, 4), $default_value);
-        else
+        else if ($si->storage_type == Si::SI_DATA)
             $val = $Conf->setting_data($name, $default_value);
+        else
+            $val = $Conf->setting($name, $default_value);
         if ($val === $si->invalid_value)
             $val = "";
         return $val;
@@ -400,7 +419,7 @@ function parse_value($sv, $name, $info) {
     if (($info->placeholder && $info->placeholder === $v)
         || ($info->invalid_value && $info->invalid_value === $v))
         $v = "";
-    $v_active = $sv->sd_active($name, null);
+    $v_active = $sv->sv_active($name, null);
 
     if ($info->type === "checkbox")
         return $v != "";
@@ -1299,7 +1318,7 @@ function truthy($x) {
 function account_value($sv, $info) {
     global $Values;
     $xname = str_replace(".", "_", $info->name);
-    if ($info->type === "special")
+    if ($info->parser)
         $has_value = truthy(get($_POST, "has_$xname"));
     else
         $has_value = isset($_POST[$xname])
@@ -1311,7 +1330,7 @@ function account_value($sv, $info) {
     if ($info->disabled || $info->novalue
         || !$info->type || $info->type === "none")
         /* ignore changes to disabled/novalue settings */;
-    else if ($info->type === "special") {
+    else if ($info->parser) {
         call_user_func($info->parser, $sv, $info->name, $info, false);
         $sv->save_callbacks[$info->name] = $info;
     } else {
@@ -1641,7 +1660,7 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
     if (is_array($name))
         list($name, $defaultname) = $name;
     $default = $Conf->message_default_html($defaultname);
-    $current = $Sv->sd($name, $default);
+    $current = $Sv->sv($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" data-fold="true">',
         '<div class="', ($type ? "f-cn" : "f-cl"),
@@ -1658,12 +1677,12 @@ function doInfoGroup($sv) {
     global $Conf, $Opt;
 
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
-    doEntry("opt.shortName", $sv->sd("opt.shortName"), 20);
+    doEntry("opt.shortName", $sv->sv("opt.shortName"), 20);
     echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
     echo "<div class=\"g\"></div>\n";
 
-    $long = $sv->sd("opt.longName");
-    if ($long == $sv->sd("opt.shortName"))
+    $long = $sv->sv("opt.longName");
+    if ($long == $sv->sv("opt.shortName"))
         $long = "";
     echo "<div class='f-c'>", $sv->label("opt.longName", "Conference name"), "</div>\n";
     doEntry("opt.longName", $long, 70);
@@ -1671,29 +1690,29 @@ function doInfoGroup($sv) {
     echo "<div class=\"g\"></div>\n";
 
     echo "<div class='f-c'>", $sv->label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    doEntry("opt.conferenceSite", $sv->sd("opt.conferenceSite"), 70);
+    doEntry("opt.conferenceSite", $sv->sv("opt.conferenceSite"), 70);
     echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.contactName", "Name of site contact"), "</div>\n";
-    doEntry("opt.contactName", $sv->sd("opt.contactName"), 50);
+    doEntry("opt.contactName", $sv->sv("opt.contactName"), 50);
     echo '<div class="g"></div>', "\n";
 
     echo "<div class='f-c'>", $sv->label("opt.contactEmail", "Email of site contact"), "</div>\n";
-    doEntry("opt.contactEmail", $sv->sd("opt.contactEmail"), 40);
+    doEntry("opt.contactEmail", $sv->sv("opt.contactEmail"), 40);
     echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    doEntry("opt.emailReplyTo", $sv->sd("opt.emailReplyTo"), 80);
+    doEntry("opt.emailReplyTo", $sv->sv("opt.emailReplyTo"), 80);
     echo '<div class="g"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    doEntry("opt.emailCc", $sv->sd("opt.emailCc"), 80);
+    doEntry("opt.emailCc", $sv->sv("opt.emailCc"), 80);
     echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
@@ -1908,7 +1927,7 @@ function doOptGroup($sv) {
 
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>",
-            Ht::hidden("has_banal", 1),
+            Ht::hidden("has_sub_banal", 1),
             "<table id='foldbanal' class='", ($sv->sv("sub_banal") ? "foldo" : "foldc"), "'>";
         $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
         echo "<tr class='fx'><td></td><td class='top'><table>";
@@ -1916,13 +1935,13 @@ function doOptGroup($sv) {
         for ($i = 0; $i < 6; $i++)
             if (defval($bsetting, $i, "") == "")
                 $bsetting[$i] = "N/A";
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), $sv->sv("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
-        doTextRow("sub_banal_pagelimit", "Page limit", $sv->sv("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), $sv->sv("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), $sv->inputv("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_pagelimit", "Page limit", $sv->inputv("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), $sv->inputv("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
         echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), $sv->sv("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), $sv->sv("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_columns", array("Columns", null), $sv->sv("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), $sv->inputv("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), $sv->inputv("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_columns", array("Columns", null), $sv->inputv("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
         echo "</table></td></tr></table>";
     }
 
@@ -2099,7 +2118,7 @@ function doRevGroup($sv) {
     }
 
     // prepare round selector
-    $round_value = trim($sv->sd("rev_roundtag"));
+    $round_value = trim($sv->sv("rev_roundtag"));
     $current_round_value = $Conf->setting_data("rev_roundtag", "");
     if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
         $round_value = "#0";
@@ -2398,7 +2417,7 @@ function doDecGroup($sv) {
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (get($Opt, "allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", $sv->sd("tag_au_seerev"), 24);
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", $sv->sv("tag_au_seerev"), 24);
     doRadio("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
