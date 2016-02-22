@@ -31,8 +31,8 @@ class Si {
     const SI_DATA = 2;
     const SI_OPT = 3;
 
-    static public $all = [];
-    static public $type_storage = [
+    static private $all = [];
+    static private $type_storage = [
         "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
         "htmlstring" => self::SI_DATA, "simplestring" => self::SI_DATA,
         "string" => self::SI_DATA, "tag" => self::SI_DATA,
