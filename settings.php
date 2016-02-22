@@ -1413,15 +1413,19 @@ function setting_warnings($sv, $group) {
         && $sv->newv("sub_open") > 0
         && $sv->newv("sub_sub") <= 0)
         $sv->set_warning(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
-    foreach (array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard")
-             as $deadline)
-        if (($sv->has_freshv($deadline) || !$group || $group === "reviews")
-            && $sv->newv($deadline) > $Now
-            && $sv->newv($deadline) != $Conf->setting($deadline)
-            && $sv->newv("rev_open") <= 0) {
-            $sv->set_warning("rev_open", "A review deadline is set, but the site is not open for reviewing.");
-            break;
-        }
+    $errored = false;
+    foreach ($Conf->round_list() as $i => $rname) {
+        $suffix = $i ? "_$i" : "";
+        foreach (Conf::$review_deadlines as $deadline)
+            if (($sv->has_freshv($deadline . $suffix) || !$group || $group === "reviews")
+                && $sv->newv($deadline . $suffix) > $Now
+                && $sv->newv("rev_open") <= 0
+                && !$errored) {
+                $sv->set_warning("rev_open", "A review deadline is set in the future, but the site is not open for reviewing. This is sometimes unintentional.");
+                $errored = true;
+                break;
+            }
+    }
     if (($sv->has_freshv("au_seerev") || !$group || $group === "reviews" || $group === "dec")
         && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
         && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
