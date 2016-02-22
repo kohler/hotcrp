@@ -828,13 +828,13 @@ function save_options($sv, $si_name, $info, $set) {
 
     $newj = (object) array();
     uasort($new_opts, array("PaperOption", "compare"));
-    $nextid = $Conf->setting("next_optionid", 1);
+    $nextid = max($Conf->setting("next_optionid", 1), $Conf->setting("options", 1));
     foreach ($new_opts as $id => $o) {
         $newj->$id = $o->unparse();
         $nextid = max($nextid, $id + 1);
     }
-    $Conf->save_setting("next_optionid", $nextid);
-    $Conf->save_setting("options", 1, count($newj) ? $newj : null);
+    $Conf->save_setting("next_optionid", null);
+    $Conf->save_setting("options", $nextid, count($newj) ? $newj : null);
 
     // warn on visibility
     if (value_or_setting("sub_blind") === Conf::BLIND_ALWAYS) {
