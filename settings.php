@@ -23,6 +23,7 @@ class Si {
     public $novalue = false;
     public $nodb = false;
     public $disabled = false;
+    public $invalid_value = null;
     public $ifnonempty;
     public $message_default;
 
@@ -36,9 +37,10 @@ class Si {
     }
 
     public function __construct($name, $j) {
+        assert(!preg_match('/_[\$\d]+\z/', $name));
         $this->name = $name;
         $this->store($name, "short_description", $j, "name", "is_string");
-        foreach (["short_description", "type", "parser", "ifnonempty", "message_default", "placeholder"] as $k)
+        foreach (["short_description", "type", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
         if (!$this->type && $this->parser)
             $this->type = "special";
@@ -174,25 +176,21 @@ class SettingValues {
         else
             return $Conf->setting($name, $default_value);
     }
-    public function sd($name, $default_value = "", $kill_value = "") {
-        global $Conf;
+    public function sd($name, $default_value = "") {
+        if ($this->has_errors())
+            return get($_POST, $name, $default_value);
+        else
+            return $this->sd_active($name, $default_value);
+    }
+    public function sd_active($name, $default_value = "") {
+        global $Conf, $Opt;
+        $si = Si::get($name);
+        assert(!!$si);
         if (substr($name, 0, 4) === "opt.")
-            return $this->od(substr($name, 4), $default_value, $kill_value);
-        else if ($this->has_errors())
-            $val = get($_POST, $name, $default_value);
+            $val = get($Opt, substr($name, 4), $default_value);
         else
             $val = $Conf->setting_data($name, $default_value);
-        if ($val == $kill_value)
-            $val = "";
-        return $val;
-    }
-    public function od($name, $default_value = "", $kill_value = "") {
-        global $Opt;
-        if ($this->has_errors())
-            $val = get($_POST, "opt.$name", $default_value);
-        else
-            $val = get($Opt, $name, $default_value);
-        if ($val == $kill_value)
+        if ($val === $si->invalid_value)
             $val = "";
         return $val;
     }
@@ -394,11 +392,10 @@ function parse_value($sv, $name, $info) {
     }
 
     $v = trim($_POST[$name]);
-    if ($info->placeholder && $info->placeholder === $v)
+    if (($info->placeholder && $info->placeholder === $v)
+        || ($info->invalid_value && $info->invalid_value === $v))
         $v = "";
-    $opt_value = null;
-    if (substr($name, 0, 4) === "opt.")
-        $opt_value = get($Opt, substr($name, 4));
+    $v_active = $sv->sd_active($name, null);
 
     if ($info->type === "checkbox")
         return $v != "";
@@ -433,21 +430,21 @@ function parse_value($sv, $name, $info) {
             if ($t["body"] == $v)
                 return 0;
         }
-        return ($v == "" && !$opt_value ? 0 : array(0, $v));
+        return ($v == "" && !$v_active ? 0 : array(0, $v));
     } else if ($info->type === "simplestring") {
         $v = simplify_whitespace($v);
-        return ($v == "" && !$opt_value ? 0 : array(0, $v));
+        return ($v == "" && !$v_active ? 0 : array(0, $v));
     } else if ($info->type === "emailheader") {
         $v = MimeText::encode_email_header("", $v);
         if ($v !== false)
-            return ($v == "" && !$opt_value ? 0 : array(0, MimeText::decode_header($v)));
+            return ($v == "" && !$v_active ? 0 : array(0, MimeText::decode_header($v)));
         else
             $err = unparse_setting_error($info, "Invalid email header.");
     } else if ($info->type === "emailstring") {
         $v = trim($v);
         if ($v === "" && $info->optional)
             return 0;
-        else if (validate_email($v) || $v === $opt_value)
+        else if (validate_email($v) || $v === $v_active)
             return ($v == "" ? 0 : array(0, $v));
         else
             $err = unparse_setting_error($info, "Invalid email.");
@@ -1656,12 +1653,12 @@ function doInfoGroup($sv) {
     global $Conf, $Opt;
 
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
-    doEntry("opt.shortName", $sv->od("shortName"), 20);
+    doEntry("opt.shortName", $sv->sd("opt.shortName"), 20);
     echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
     echo "<div class=\"g\"></div>\n";
 
-    $long = $sv->od("longName");
-    if ($long == $sv->od("shortName"))
+    $long = $sv->sd("opt.longName");
+    if ($long == $sv->sd("opt.shortName"))
         $long = "";
     echo "<div class='f-c'>", $sv->label("opt.longName", "Conference name"), "</div>\n";
     doEntry("opt.longName", $long, 70);
@@ -1669,29 +1666,29 @@ function doInfoGroup($sv) {
     echo "<div class=\"g\"></div>\n";
 
     echo "<div class='f-c'>", $sv->label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    doEntry("opt.conferenceSite", $sv->od("conferenceSite"), 70);
+    doEntry("opt.conferenceSite", $sv->sd("opt.conferenceSite"), 70);
     echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.contactName", "Name of site contact"), "</div>\n";
-    doEntry("opt.contactName", $sv->od("contactName", null, "Your Name"), 50);
+    doEntry("opt.contactName", $sv->sd("opt.contactName"), 50);
     echo '<div class="g"></div>', "\n";
 
     echo "<div class='f-c'>", $sv->label("opt.contactEmail", "Email of site contact"), "</div>\n";
-    doEntry("opt.contactEmail", $sv->od("contactEmail", null, "you@example.com"), 40);
+    doEntry("opt.contactEmail", $sv->sd("opt.contactEmail"), 40);
     echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    doEntry("opt.emailReplyTo", $sv->od("emailReplyTo"), 80);
+    doEntry("opt.emailReplyTo", $sv->sd("opt.emailReplyTo"), 80);
     echo '<div class="g"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    doEntry("opt.emailCc", $sv->od("emailCc"), 80);
+    doEntry("opt.emailCc", $sv->sd("opt.emailCc"), 80);
     echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
