@@ -871,7 +871,9 @@ function save_decisions($sv, $si_name, $info, $set) {
                 && ($k === "decn" || ($dnum = cvtint(substr($k, 3), 0)))
                 && ($k !== "decn" || trim($dname) !== "")) {
                 $dname = simplify_whitespace($dname);
-                if (($derror = Conf::decision_name_error($dname)))
+                if ($dname === "")
+                    /* remove decision */;
+                else if (($derror = Conf::decision_name_error($dname)))
                     $sv->set_error($k, htmlspecialchars($derror));
                 else if (isset($dec_revmap[strtolower($dname)]))
                     $sv->set_error($k, "Decision name “{$dname}” was already used.");
