@@ -1198,7 +1198,7 @@ function save_rounds($sv, $si_name, $info, $set) {
                     $Values[$soft] = $Values[$hard];
                 else if (get($Values, $hard) && get($Values, $soft) > $Values[$hard]) {
                     $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                    $sv->set_error($soft, Si::get("{$k}soft", "name") . $desc . ": Must come before " . Si::get("{$k}hard", "name") . ".");
+                    $sv->set_error($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
                     $sv->set_error($hard);
                 }
             }
@@ -1371,7 +1371,7 @@ function do_setting_update($sv) {
         if (!get($Values, $first) && get($Values, $second))
             $Values[$first] = $Values[$second];
         else if (get($Values, $second) && get($Values, $first) > $Values[$second]) {
-            $sv->set_error($first, unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "name") . "."));
+            $sv->set_error($first, unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "short_description") . "."));
             $sv->set_error($second);
         }
     if (array_key_exists("sub_sub", $Values))
@@ -1389,7 +1389,7 @@ function do_setting_update($sv) {
             $isuf = $i ? "_$i" : "";
             if (get($Values, "resp_open$isuf") && get($Values, "resp_done$isuf")
                 && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
-                $sv->set_error("resp_open$isuf", unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "name") . "."));
+                $sv->set_error("resp_open$isuf", unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "short_description") . "."));
                 $sv->set_error("resp_done$isuf");
             }
         }
