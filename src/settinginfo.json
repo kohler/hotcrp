@@ -8,14 +8,14 @@
         "type": "radio", "values": [0, 1, 2, 3]
     },
     "banal": {
-        "nodb": true, "parser": "save_banal"
+        "parser": "save_banal"
     },
     "cmt_always": {
         "name": "Allow comments even if reviewing is closed",
         "type": "checkbox"
     },
     "decisions": {
-        "nodb": true, "parser": "save_decisions"
+        "parser": "save_decisions"
     },
     "extrev_chairreq": {
         "name": "PC chair must approve proposed external reviewers",
@@ -116,7 +116,7 @@
         "type": "simplestring"
     },
     "options": {
-        "nodb": true, "parser": "save_options"
+        "parser": "save_options"
     },
     "pc_seeall": {
         "name": "PC can see all papers",
@@ -190,7 +190,7 @@
         "parser": "save_rounds"
     },
     "reviewform": {
-        "nodb": true, "parser": "save_review_form", "require": "src/settings/s_reviewform.php"
+        "parser": "save_review_form", "require": "src/settings/s_reviewform.php"
     },
     "seedec": {
         "name": "Decision visibility",
@@ -269,7 +269,7 @@
         "parser": "save_tags"
     },
     "topics": {
-        "nodb": true, "parser": "save_topics"
+        "parser": "save_topics"
     },
     "tracks": {
         "parser": "save_tracks"

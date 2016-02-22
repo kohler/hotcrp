@@ -21,7 +21,6 @@ class Si {
     public $placeholder;
     public $parser;
     public $novalue = false;
-    public $nodb = false;
     public $disabled = false;
     public $invalid_value = null;
     public $ifnonempty;
@@ -37,14 +36,14 @@ class Si {
     }
 
     public function __construct($name, $j) {
-        assert(!preg_match('/_[\$\d]+\z/', $name));
+        assert(!preg_match('/_(?:\$|n|\d+)\z/', $name));
         $this->name = $name;
         $this->store($name, "short_description", $j, "name", "is_string");
         foreach (["short_description", "type", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
         if (!$this->type && $this->parser)
             $this->type = "special";
-        foreach (["optional", "novalue", "nodb", "disabled"] as $k)
+        foreach (["optional", "novalue", "disabled"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
         $this->store($name, "values", $j, "values", "is_array");
@@ -52,7 +51,7 @@ class Si {
 
     static public function get($name, $k = null) {
         if (!isset(self::$all[$name])
-            && ($xname = preg_replace('/_[\$\d]+\z/', '', $name)) !== $name)
+            && ($xname = preg_replace('/_(?:\$|n|\d+)\z/', '', $name)) !== $name)
             $name = $xname;
         if (!isset(self::$all[$name]))
             return null;
@@ -110,6 +109,7 @@ class SettingValues {
     private $errmsg = array();
     private $warnmsg = array();
 
+    public $save_callbacks = array();
     public $need_lock = array();
     public $rev_round_changes = array();
 
@@ -188,6 +188,8 @@ class SettingValues {
     public function sd_active($name, $default_value = "") {
         global $Conf, $Opt;
         $si = Si::get($name);
+        if (!$si)
+            error_log("Missing setting information for $name");
         assert(!!$si);
         if (substr($name, 0, 4) === "opt.")
             $val = get($Opt, substr($name, 4), $default_value);
@@ -670,9 +672,8 @@ function save_tags($sv, $si_name, $info, $set) {
 }
 
 function save_topics($sv, $si_name, $info, $set) {
-    global $Conf, $Values;
+    global $Conf;
     if (!$set) {
-        $Values["topics"] = true;
         foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
             $sv->need_lock[$t] = true;
         return;
@@ -841,8 +842,8 @@ function save_options($sv, $si_name, $info, $set) {
         $newj->$id = $o->unparse();
         $nextid = max($nextid, $id + 1);
     }
-    $Conf->save_setting("next_optionid", null);
-    $Conf->save_setting("options", $nextid, count($newj) ? $newj : null);
+    $Values["next_optionid"] = null;
+    $Values["options"] = array($nextid, count($newj) ? json_encode($newj) : null);
 
     // warn on visibility
     if (value_or_setting("sub_blind") === Conf::BLIND_ALWAYS) {
@@ -863,7 +864,7 @@ function save_options($sv, $si_name, $info, $set) {
 }
 
 function save_decisions($sv, $si_name, $info, $set) {
-    global $Conf, $Values;
+    global $Conf;
     if (!$set) {
         $dec_revmap = array();
         foreach ($_POST as $k => &$dname)
@@ -892,7 +893,6 @@ function save_decisions($sv, $si_name, $info, $set) {
                 $sv->set_error("decn", "You are trying to add a Reject-class decision that has “accept” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
         }
 
-        $Values["decisions"] = true;
         $sv->need_lock["Paper"] = true;
         return;
     }
@@ -1285,11 +1285,9 @@ function save_resp_rounds($sv, $si_name, $info, $set) {
 }
 
 function save_review_form($sv, $si_name, $info, $set) {
-    global $Values;
-    if (!$set) {
-        $Values[$info->name] = true;
+    if (!$set)
         $sv->need_lock["PaperReview"] = true;
-    } else
+    else
         rf_update($sv);
 }
 
@@ -1307,13 +1305,16 @@ function account_value($sv, $info) {
         $has_value = isset($_POST[$xname])
             || (($info->type === "cdate" || $info->type === "checkbox")
                 && truthy(get($_POST, "has_$xname")));
+    if (!$has_value)
+        return;
 
-    if ($has_value && ($info->disabled || $info->novalue
-                       || !$info->type || $info->type === "none"))
+    if ($info->disabled || $info->novalue
+        || !$info->type || $info->type === "none")
         /* ignore changes to disabled/novalue settings */;
-    else if ($has_value && $info->type === "special")
+    else if ($info->type === "special") {
         call_user_func($info->parser, $sv, $info->name, $info, false);
-    else if ($has_value) {
+        $sv->save_callbacks[$info->name] = $info;
+    } else {
         $v = parse_value($sv, $info->name, $info);
         if ($v === null) {
             if ($info->type !== "cdate" && $info->type !== "checkbox")
@@ -1358,10 +1359,11 @@ function value_or_setting_data($name) {
         return $Conf->setting_data($name);
 }
 
-if (isset($_REQUEST["update"]) && check_post()) {
+function do_setting_update($sv) {
+    global $Conf, $Group, $Me, $Now, $Opt, $OptOverride, $Values;
     // parse settings
     foreach (Si::$all as $tag => $si)
-        account_value($Sv, $si);
+        account_value($sv, $si);
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
@@ -1369,8 +1371,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
         if (!get($Values, $first) && get($Values, $second))
             $Values[$first] = $Values[$second];
         else if (get($Values, $second) && get($Values, $first) > $Values[$second]) {
-            $Sv->set_error($first, unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "name") . "."));
-            $Sv->set_error($second);
+            $sv->set_error($first, unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "name") . "."));
+            $sv->set_error($second);
         }
     if (array_key_exists("sub_sub", $Values))
         $Values["sub_update"] = $Values["sub_sub"];
@@ -1387,8 +1389,8 @@ if (isset($_REQUEST["update"]) && check_post()) {
             $isuf = $i ? "_$i" : "";
             if (get($Values, "resp_open$isuf") && get($Values, "resp_done$isuf")
                 && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
-                $Sv->set_error("resp_open$isuf", unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "name") . "."));
-                $Sv->set_error("resp_done$isuf");
+                $sv->set_error("resp_open$isuf", unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "name") . "."));
+                $sv->set_error("resp_done$isuf");
             }
         }
 
@@ -1404,7 +1406,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
     if (value("sub_freeze", -1) == 0
         && value("sub_open") > 0
         && value("sub_sub") <= 0)
-        $Sv->set_warning(null, "You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This is sometimes unintentional.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
+        $sv->set_warning(null, "You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This is sometimes unintentional.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
     if (value("sub_open", 1) <= 0
         && $Conf->setting("sub_open") > 0
         && value_or_setting("sub_sub") <= 0)
@@ -1414,69 +1416,65 @@ if (isset($_REQUEST["update"]) && check_post()) {
         if (value($deadline) > $Now
             && value($deadline) != $Conf->setting($deadline)
             && value_or_setting("rev_open") <= 0) {
-            $Sv->set_warning("rev_open", "Review deadline set. You may also want to open the site for reviewing.");
+            $sv->set_warning("rev_open", "Review deadline set. You may also want to open the site for reviewing.");
             break;
         }
     if (value_or_setting("au_seerev") != Conf::AUSEEREV_NO
         && value_or_setting("au_seerev") != Conf::AUSEEREV_TAGS
         && $Conf->setting("pcrev_soft") > 0
         && $Now < $Conf->setting("pcrev_soft")
-        && !$Sv->has_errors())
-        $Sv->set_warning(null, "Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
+        && !$sv->has_errors())
+        $sv->set_warning(null, "Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
     if (value("final_open")
         && (!value("final_done") || value("final_done") > $Now)
         && value_or_setting("seedec") != Conf::SEEDEC_ALL)
-        $Sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
+        $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
     if (value("seedec") == Conf::SEEDEC_ALL
         && value_or_setting("au_seerev") == Conf::AUSEEREV_NO)
-        $Sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
+        $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
     if (has_value("msg.clickthrough_submit"))
         $Values["clickthrough_submit"] = null;
     if (value_or_setting("au_seerev") == Conf::AUSEEREV_TAGS
         && !value_or_setting_data("tag_au_seerev")
-        && !$Sv->has_error("tag_au_seerev"))
-        $Sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
+        && !$sv->has_error("tag_au_seerev"))
+        $sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
     if (has_value("sub_nopapers"))
         $Values["opt.noPapers"] = value("sub_nopapers") ? : null;
     if (has_value("sub_noabstract"))
         $Values["opt.noAbstract"] = value("sub_noabstract") ? : null;
 
     // make settings
-    if (!$Sv->has_errors() && count($Values) > 0) {
+    if (!$sv->has_errors() && count($Values) > 0) {
         $tables = "Settings write";
-        foreach ($Sv->need_lock as $t => $need)
+        foreach ($sv->need_lock as $t => $need)
             if ($need)
                 $tables .= ", $t write";
         $Conf->qe("lock tables $tables");
 
         // apply settings
-        foreach ($Values as $n => $v) {
-            $si = Si::get($n);
-            if ($si && $si->type == "special")
-                call_user_func($si->parser, $Sv, $n, $si, true);
-        }
+        foreach ($sv->save_callbacks as $name => $si)
+            call_user_func($si->parser, $sv, $name, $si, true);
 
         $dv = $aq = $av = array();
-        foreach ($Values as $n => $v)
-            if (!Si::get($n, "nodb")) {
-                $dv[] = $n;
-                if (substr($n, 0, 4) === "opt.") {
-                    $okey = substr($n, 4);
-                    $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : get($Opt, $okey));
-                    $Opt[$okey] = (is_array($v) ? $v[1] : $v);
-                    if ($oldv === $Opt[$okey])
-                        continue; // do not save value in database
-                    else if (!array_key_exists($okey, $OptOverride))
-                        $OptOverride[$okey] = $oldv;
-                }
-                if (is_array($v)) {
-                    $aq[] = "(?, ?, ?)";
-                    array_push($av, $n, $v[0], $v[1]);
-                } else if ($v !== null) {
-                    $aq[] = "(?, ?, null)";
-                    array_push($av, $n, $v);
-                }
+        foreach ($Values as $n => $v) {
+            $dv[] = $n;
+            if (substr($n, 0, 4) === "opt.") {
+                $okey = substr($n, 4);
+                $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : get($Opt, $okey));
+                $Opt[$okey] = (is_array($v) ? $v[1] : $v);
+                if ($oldv === $Opt[$okey])
+                    continue; // do not save value in database
+                else if (!array_key_exists($okey, $OptOverride))
+                    $OptOverride[$okey] = $oldv;
             }
+            if (is_array($v)) {
+                $aq[] = "(?, ?, ?)";
+                array_push($av, $n, $v[0], $v[1]);
+            } else if ($v !== null) {
+                $aq[] = "(?, ?, null)";
+                array_push($av, $n, $v);
+            }
+        }
         if (count($dv))
             Dbl::qe_apply("delete from Settings where name?a", array($dv));
         if (count($aq))
@@ -1487,7 +1485,7 @@ if (isset($_REQUEST["update"]) && check_post()) {
         $Conf->load_settings();
 
         // remove references to deleted rounds
-        foreach ($Sv->rev_round_changes as $x)
+        foreach ($sv->rev_round_changes as $x)
             $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
 
         // contactdb may need to hear about changes to shortName
@@ -1498,12 +1496,12 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // report errors
     $msgs = array();
-    if ($Sv->has_errors() || $Sv->has_warnings()) {
+    if ($sv->has_errors() || $sv->has_warnings()) {
         $any_errors = false;
-        foreach ($Sv->error_messages() as $m)
+        foreach ($sv->error_messages() as $m)
             if ($m && $m !== true && $m !== 1)
                 $msgs[] = $any_errors = $m;
-        foreach ($Sv->warning_messages() as $m)
+        foreach ($sv->warning_messages() as $m)
             if ($m && $m !== true && $m !== 1)
                 $msgs[] = "Warning: " . $m;
         $mt = '<div class="multimessage"><div>' . join('</div><div>', $msgs) . '</div></div>';
@@ -1515,13 +1513,15 @@ if (isset($_REQUEST["update"]) && check_post()) {
 
     // update the review form in case it's changed
     ReviewForm::clear_cache();
-    if (!$Sv->has_errors()) {
-        $Conf->save_session("settings_highlight", $Sv->error_fields());
+    if (!$sv->has_errors()) {
+        $Conf->save_session("settings_highlight", $sv->error_fields());
         if (!count($msgs))
             $Conf->confirmMsg("Changes saved.");
         redirectSelf();
     }
 }
+if (isset($_REQUEST["update"]) && check_post())
+    do_setting_update($Sv);
 if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
