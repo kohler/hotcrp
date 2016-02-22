@@ -146,6 +146,77 @@ class SettingValues {
         return $this->warnmsg;
     }
 
+    public function label($name, $html, $label_id = null) {
+        $name1 = is_array($name) ? $name[0] : $name;
+        foreach (is_array($name) ? $name : array($name) as $n)
+            if ($this->has_error($n)) {
+                $html = '<span class="setting_error">' . $html . '</span>';
+                break;
+            }
+        if ($label_id !== false)
+            $html = Ht::label($html, $label_id ? : $name1);
+        return $html;
+    }
+    public function sjs($name, $extra = array()) {
+        $x = ["id" => $name];
+        if (Si::get($name, "disabled"))
+            $x["disabled"] = true;
+        foreach ($extra as $k => $v)
+            $x[$k] = $v;
+        if ($this->has_error($name))
+            $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
+        return $x;
+    }
+    public function sv($name, $default_value = null) {
+        global $Conf;
+        if ($this->has_errors())
+            return get($_POST, $name, $default_value);
+        else
+            return $Conf->setting($name, $default_value);
+    }
+    public function sd($name, $default_value = "", $kill_value = "") {
+        global $Conf;
+        if (substr($name, 0, 4) === "opt.")
+            return $this->od(substr($name, 4), $default_value, $kill_value);
+        else if ($this->has_errors())
+            $val = get($_POST, $name, $default_value);
+        else
+            $val = $Conf->setting_data($name, $default_value);
+        if ($val == $kill_value)
+            $val = "";
+        return $val;
+    }
+    public function od($name, $default_value = "", $kill_value = "") {
+        global $Opt;
+        if ($this->has_errors())
+            $val = get($_POST, "opt.$name", $default_value);
+        else
+            $val = get($Opt, $name, $default_value);
+        if ($val == $kill_value)
+            $val = "";
+        return $val;
+    }
+
+    public function echo_checkbox($name, $text, $onchange = null) {
+        $x = $this->sv($name);
+        echo Ht::hidden("has_$name", 1),
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
+            "&nbsp;",
+            $this->label($name, $text, true),
+            "<br />\n";
+    }
+
+    public function echo_checkbox_row($name, $text, $onchange = null) {
+        $x = $this->sv($name);
+        echo '<tr><td class="nw">',
+            Ht::hidden("has_$name", 1),
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
+            "&nbsp;</td><td>",
+            $this->label($name, $text, true),
+            "</td></tr>\n";
+    }
+
+
     static public function make_request() {
         global $Conf;
         $sv = new SettingValues;
@@ -1453,96 +1524,26 @@ if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
 
-function setting_js($name, $extra = array()) {
-    global $Sv;
-    $x = array("id" => $name);
-    if (Si::get($name, "disabled"))
-        $x["disabled"] = true;
-    foreach ($extra as $k => $v)
-        $x[$k] = $v;
-    if ($Sv->has_error($name))
-        $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
-    return $x;
-}
-
-function setting_class($name) {
-    global $Sv;
-    return $Sv->has_error($name) ? "setting_error" : null;
-}
-
-function setting_label($name, $text, $label = null) {
-    global $Sv;
-    $name1 = is_array($name) ? $name[0] : $name;
-    foreach (is_array($name) ? $name : array($name) as $n)
-        if ($Sv->has_error($n)) {
-            $text = '<span class="setting_error">' . $text . '</span>';
-            break;
-        }
-    if ($label !== false)
-        $text = Ht::label($text, $label ? : $name1);
-    return $text;
-}
-
-function xsetting($name, $defval = null) {
-    global $Conf, $Sv;
-    if ($Sv->has_errors())
-        return defval($_POST, $name, $defval);
-    else
-        return $Conf->setting($name, $defval);
-}
-
-function xsetting_data($name, $defval = "", $killval = "") {
-    global $Conf, $Sv;
-    if (substr($name, 0, 4) === "opt.")
-        return opt_data(substr($name, 4), $defval, $killval);
-    else if ($Sv->has_errors())
-        $val = defval($_POST, $name, $defval);
-    else
-        $val = defval($Conf->settingTexts, $name, $defval);
-    if ($val == $killval)
-        $val = "";
-    return $val;
-}
-
-function opt_data($name, $defval = "", $killval = "") {
-    global $Opt, $Sv;
-    if ($Sv->has_errors())
-        $val = defval($_POST, "opt.$name", $defval);
-    else
-        $val = defval($Opt, $name, $defval);
-    if ($val == $killval)
-        $val = "";
-    return $val;
-}
-
-function doCheckbox($name, $text, $tr = false, $js = null) {
-    $x = xsetting($name);
-    echo ($tr ? '<tr><td class="nw">' : ""),
-        Ht::hidden("has_$name", 1),
-        Ht::checkbox($name, 1, $x !== null && $x > 0, setting_js($name, array("onchange" => $js, "id" => "cb$name"))),
-        "&nbsp;", ($tr ? "</td><td>" : ""),
-        setting_label($name, $text, true),
-        ($tr ? "</td></tr>\n" : "<br />\n");
-}
-
 function doRadio($name, $varr) {
-    $x = xsetting($name);
+    global $Sv;
+    $x = $Sv->sv($name);
     if ($x === null || !isset($varr[$x]))
         $x = 0;
     echo "<table style=\"margin-top:0.25em\">\n";
     foreach ($varr as $k => $text) {
-        echo '<tr><td class="nw">', Ht::radio($name, $k, $k == $x, setting_js($name, array("id" => "{$name}_{$k}"))),
+        echo '<tr><td class="nw">', Ht::radio($name, $k, $k == $x, $Sv->sjs($name, array("id" => "{$name}_{$k}"))),
             "&nbsp;</td><td>";
         if (is_array($text))
-            echo setting_label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
+            echo $Sv->label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
         else
-            echo setting_label($name, $text, true);
+            echo $Sv->label($name, $text, true);
         echo "</td></tr>\n";
     }
     echo "</table>\n";
 }
 
 function render_entry($name, $v, $size = 30, $temptext = "") {
+    global $Sv;
     $js = ["size" => $size, "placeholder" => $temptext];
     if (($info = Si::get($name))) {
         if ($info->size)
@@ -1550,14 +1551,14 @@ function render_entry($name, $v, $size = 30, $temptext = "") {
         if ($info->placeholder)
             $js["placeholder"] = $info->placeholder;
     }
-    return Ht::entry($name, $v, setting_js($name, $js));
+    return Ht::entry($name, $v, $Sv->sjs($name, $js));
 }
 
 function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
-    global $Conf;
+    global $Conf, $Sv;
     $nametext = (is_array($text) ? $text[0] : $text);
-    echo '<tr><td class="', $capclass, ' nw">', setting_label($name, $nametext),
+    echo '<tr><td class="', $capclass, ' nw">', $Sv->label($name, $nametext),
         '</td><td class="lentry">', render_entry($name, $v, $size, $tempText);
     if (is_array($text) && get($text, 2))
         echo $text[2];
@@ -1572,10 +1573,10 @@ function doEntry($name, $v, $size = 30) {
 
 function date_value($name, $temptext, $othername = null) {
     global $Conf, $Sv;
-    $x = xsetting($name);
+    $x = $Sv->sv($name);
     if ($x !== null && $Sv->has_errors())
         return $x;
-    if ($othername && xsetting($othername) == $x)
+    if ($othername && $Sv->sv($othername) == $x)
         return $temptext;
     if ($temptext !== "N/A" && $temptext !== "none" && $x === 0)
         return "none";
@@ -1600,12 +1601,12 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
-    global $GraceExplanation;
+    global $GraceExplanation, $Sv;
     if (!isset($GraceExplanation)) {
         $text = array($text, "Example: “15 min”");
         $GraceExplanation = true;
     }
-    doTextRow($name, $text, unparseGrace(xsetting($name)), 15, $capclass, "none");
+    doTextRow($name, $text, unparseGrace($Sv->sv($name)), 15, $capclass, "none");
 }
 
 function doActionArea($top) {
@@ -1620,8 +1621,8 @@ function doActionArea($top) {
 function doAccGroup($sv) {
     global $Conf, $Me;
 
-    if (xsetting("acct_addr"))
-        doCheckbox("acct_addr", "Collect users’ addresses and phone numbers");
+    if ($sv->sv("acct_addr"))
+        $sv->echo_checkbox("acct_addr", "Collect users’ addresses and phone numbers");
 
     echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
 
@@ -1633,64 +1634,64 @@ function doAccGroup($sv) {
 
 // Messages
 function do_message($name, $description, $type, $rows = 10, $hint = "") {
-    global $Conf;
+    global $Conf, $Sv;
     $defaultname = $name;
     if (is_array($name))
         list($name, $defaultname) = $name;
     $default = $Conf->message_default_html($defaultname);
-    $current = xsetting_data($name, $default);
+    $current = $Sv->sd($name, $default);
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" data-fold="true">',
         '<div class="', ($type ? "f-cn" : "f-cl"),
         ' childfold" onclick="return foldup(this,event)">',
         '<a class="q" href="#" onclick="return foldup(this,event)">',
-        expander(null, 0), setting_label($name, $description),
+        expander(null, 0), $Sv->label($name, $description),
         '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
-        Ht::textarea($name, $current, setting_js($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
+        Ht::textarea($name, $current, $Sv->sjs($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
         '</div><div class="g"></div>', "\n";
 }
 
 function doInfoGroup($sv) {
     global $Conf, $Opt;
 
-    echo '<div class="f-c">', setting_label("opt.shortName", "Conference abbreviation"), "</div>\n";
-    doEntry("opt.shortName", opt_data("shortName"), 20);
+    echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
+    doEntry("opt.shortName", $sv->od("shortName"), 20);
     echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
     echo "<div class=\"g\"></div>\n";
 
-    $long = opt_data("longName");
-    if ($long == opt_data("shortName"))
+    $long = $sv->od("longName");
+    if ($long == $sv->od("shortName"))
         $long = "";
-    echo "<div class='f-c'>", setting_label("opt.longName", "Conference name"), "</div>\n";
+    echo "<div class='f-c'>", $sv->label("opt.longName", "Conference name"), "</div>\n";
     doEntry("opt.longName", $long, 70);
     echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
     echo "<div class=\"g\"></div>\n";
 
-    echo "<div class='f-c'>", setting_label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    doEntry("opt.conferenceSite", opt_data("conferenceSite"), 70);
+    echo "<div class='f-c'>", $sv->label("opt.conferenceSite", "Conference URL"), "</div>\n";
+    doEntry("opt.conferenceSite", $sv->od("conferenceSite"), 70);
     echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
-    echo '<div class="f-c">', setting_label("opt.contactName", "Name of site contact"), "</div>\n";
-    doEntry("opt.contactName", opt_data("contactName", null, "Your Name"), 50);
+    echo '<div class="f-c">', $sv->label("opt.contactName", "Name of site contact"), "</div>\n";
+    doEntry("opt.contactName", $sv->od("contactName", null, "Your Name"), 50);
     echo '<div class="g"></div>', "\n";
 
-    echo "<div class='f-c'>", setting_label("opt.contactEmail", "Email of site contact"), "</div>\n";
-    doEntry("opt.contactEmail", opt_data("contactEmail", null, "you@example.com"), 40);
+    echo "<div class='f-c'>", $sv->label("opt.contactEmail", "Email of site contact"), "</div>\n";
+    doEntry("opt.contactEmail", $sv->od("contactEmail", null, "you@example.com"), 40);
     echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
-    echo '<div class="f-c">', setting_label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    doEntry("opt.emailReplyTo", opt_data("emailReplyTo"), 80);
+    echo '<div class="f-c">', $sv->label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
+    doEntry("opt.emailReplyTo", $sv->od("emailReplyTo"), 80);
     echo '<div class="g"></div>', "\n";
 
-    echo '<div class="f-c">', setting_label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    doEntry("opt.emailCc", opt_data("emailCc"), 80);
+    echo '<div class="f-c">', $sv->label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
+    doEntry("opt.emailCc", $sv->od("emailCc"), 80);
     echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
@@ -1710,7 +1711,7 @@ function doMsgGroup($sv) {
 function doSubGroup($sv) {
     global $Conf, $Opt;
 
-    doCheckbox('sub_open', '<b>Open site for submissions</b>');
+    $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
 
     echo "<div class='g'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
@@ -1729,7 +1730,7 @@ function doSubGroup($sv) {
 
 
     echo "<div class='g'></div><table>\n";
-    doCheckbox('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>", true);
+    $sv->echo_checkbox_row('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>");
     echo "</table>";
 }
 
@@ -1774,14 +1775,14 @@ function doOptGroupOption($sv, $o) {
     echo "<tr><td><div class='f-contain'>\n",
         "  <div class='f-i'>",
         "<div class='f-c'>",
-        setting_label("optn$id", ($id === "n" ? "New option name" : "Option name")),
+        $sv->label("optn$id", ($id === "n" ? "New option name" : "Option name")),
         "</div>",
         "<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, setting_js("optn$id", array("placeholder" => "(Enter new option)", "size" => 50))),
+        Ht::entry("optn$id", $o->name, $sv->sjs("optn$id", array("placeholder" => "(Enter new option)", "size" => 50))),
         "</div>\n",
         "  <div class='f-i'>",
         "<div class='f-c'>",
-        setting_label("optd$id", "Description"),
+        $sv->label("optd$id", "Description"),
         "</div>",
         "<div class='f-e'>",
         Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd$id")),
@@ -1799,7 +1800,7 @@ function doOptGroupOption($sv, $o) {
     echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-        setting_label("optvt$id", "Type"), "</div><div class='f-e'>";
+        $sv->label("optvt$id", "Type"), "</div><div class='f-e'>";
 
     $optvt = $o->type;
     if ($optvt == "text" && $o->display_space > 3)
@@ -1838,12 +1839,12 @@ function doOptGroupOption($sv, $o) {
     $Conf->footerScript("do_option_type(\$\$('optvt$id'),true)");
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
-        setting_label("optp$id", "Visibility"), "</div><div class='f-e'>",
+        $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",
         Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility, array("id" => "optp$id")),
         "</div></div></td>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-        setting_label("optfp$id", "Form order"), "</div><div class='f-e'>";
+        $sv->label("optfp$id", "Form order"), "</div><div class='f-e'>";
     $x = array();
     // can't use "foreach (PaperOption::option_list())" because caller
     // uses cursor
@@ -1857,7 +1858,7 @@ function doOptGroupOption($sv, $o) {
         "</div></div></td>";
 
     echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
-        setting_label("optdt$id", "Display"), "</div><div class='f-e'>";
+        $sv->label("optdt$id", "Display"), "</div><div class='f-e'>";
     echo Ht::select("optdt$id", ["default" => "Default",
                                  "prominent" => "Prominent",
                                  "topics" => "With topics",
@@ -1879,7 +1880,7 @@ function doOptGroupOption($sv, $o) {
     echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
         "'><div class='fx'>",
         "<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
-        Ht::textarea("optv$id", $value, setting_js("optv$id", array("rows" => $rows, "cols" => 50))),
+        Ht::textarea("optv$id", $value, $sv->sjs("optv$id", array("rows" => $rows, "cols" => 50))),
         "</div></div>";
 
     echo "</div></td></tr>\n";
@@ -1906,36 +1907,36 @@ function doOptGroup($sv) {
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>",
             Ht::hidden("has_banal", 1),
-            "<table id='foldbanal' class='", (xsetting("sub_banal") ? "foldo" : "foldc"), "'>";
-        doCheckbox("sub_banal", "PDF format checker<span class='fx'>:</span>", true, "void fold('banal',!this.checked)");
+            "<table id='foldbanal' class='", ($sv->sv("sub_banal") ? "foldo" : "foldc"), "'>";
+        $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
         echo "<tr class='fx'><td></td><td class='top'><table>";
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
         for ($i = 0; $i < 6; $i++)
             if (defval($bsetting, $i, "") == "")
                 $bsetting[$i] = "N/A";
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), xsetting("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
-        doTextRow("sub_banal_pagelimit", "Page limit", xsetting("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), xsetting("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), $sv->sv("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
+        doTextRow("sub_banal_pagelimit", "Page limit", $sv->sv("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), $sv->sv("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
         echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), xsetting("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), xsetting("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_columns", array("Columns", null), xsetting("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), $sv->sv("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), $sv->sv("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_columns", array("Columns", null), $sv->sv("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
         echo "</table></td></tr></table>";
     }
 
     echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
         "<table id=\"foldpcconf\" class=\"fold",
-        (xsetting("sub_pcconf") ? "o" : "c"), "\">\n";
-    doCheckbox("sub_pcconf", "Collect authors’ PC conflicts", true,
-               "void fold('pcconf',!this.checked)");
+        ($sv->sv("sub_pcconf") ? "o" : "c"), "\">\n";
+    $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts",
+                           "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
     $conf = array();
     foreach (Conflict::$type_descriptions as $n => $d)
         if ($n)
             $conf[] = "“{$d}”";
-    doCheckbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
+    $sv->echo_checkbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
     echo "</td></tr>\n";
-    doCheckbox("sub_collab", "Collect authors’ other collaborators as text", true);
+    $sv->echo_checkbox_row("sub_collab", "Collect authors’ other collaborators as text");
     echo "</table>\n";
 
 
@@ -2025,7 +2026,7 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
     if ($nameval === "(new round)" || $rnum === '$')
         $default_rname = "(new round)";
     echo '<div class="mg" data-round-number="', $rnum, '"><div>',
-        setting_label($rname, "Round"), ' &nbsp;',
+        $sv->label($rname, "Round"), ' &nbsp;',
         render_entry($rname, $nameval, 12, $default_rname);
     echo '<div class="inb" style="min-width:7em;margin-left:2em">';
     if ($rnum !== '$' && $review_count)
@@ -2049,16 +2050,16 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
     else
         $dlsuf = "";
     echo '<table style="margin-left:3em">';
-    echo '<tr><td>', setting_label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
+    echo '<tr><td>', $sv->label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
         render_entry("pcrev_soft$entrysuf", date_value("pcrev_soft$dlsuf", "none"), 28, "none"),
-        '</td><td class="lentry">', setting_label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
+        '</td><td class="lentry">', $sv->label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
         render_entry("pcrev_hard$entrysuf", date_value("pcrev_hard$dlsuf", "none"), 28, "none"),
         '</td></tr>';
-    echo '<tr><td>', setting_label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
+    echo '<tr><td>', $sv->label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
         render_entry("extrev_soft$entrysuf", date_value("extrev_soft$dlsuf", "same as PC", "pcrev_soft$dlsuf"), 28, "same as PC"),
-        '</td><td class="lentry">', setting_label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
+        '</td><td class="lentry">', $sv->label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
         render_entry("extrev_hard$entrysuf", date_value("extrev_hard$dlsuf", "same as PC", "pcrev_hard$dlsuf"), 28, "same as PC"),
         '</td></tr>';
     echo '</table></div>', "\n";
@@ -2067,11 +2068,11 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
 function doRevGroup($sv) {
     global $Conf, $DateExplanation;
 
-    doCheckbox("rev_open", "<b>Open site for reviewing</b>");
-    doCheckbox("cmt_always", "Allow comments even if reviewing is closed");
+    $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
+    $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
 
     echo "<div class='g'></div>\n";
-    doCheckbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
+    $sv->echo_checkbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
 
     echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
@@ -2080,7 +2081,7 @@ function doRevGroup($sv) {
                                Conf::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
 
     echo "<div class='g'></div>\n";
-    doCheckbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
+    $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
 
 
     // Deadlines
@@ -2096,7 +2097,7 @@ function doRevGroup($sv) {
     }
 
     // prepare round selector
-    $round_value = trim(xsetting_data("rev_roundtag"));
+    $round_value = trim($sv->sd("rev_roundtag"));
     $current_round_value = $Conf->setting_data("rev_roundtag", "");
     if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
         $round_value = "#0";
@@ -2124,9 +2125,9 @@ function doRevGroup($sv) {
 
     echo '<div id="round_container"', (count($selector) == 1 ? ' style="display:none"' : ''), '>',
         '<table id="rev_roundtag_table"><tr><td class="lxcaption">',
-        setting_label("rev_roundtag", "Current round"),
+        $sv->label("rev_roundtag", "Current round"),
         '</td><td>',
-        Ht::select("rev_roundtag", $selector, $round_value, setting_js("rev_roundtag")),
+        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
         '</td></tr></table>',
         '<div class="hint">This round is used for new assignments.</div><div class="g"></div></div>';
 
@@ -2155,8 +2156,8 @@ function doRevGroup($sv) {
     echo "<h3 class=\"settings g\">External reviews</h3>\n";
 
     echo "<div class='g'></div>";
-    doCheckbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
-    doCheckbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
+    $sv->echo_checkbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
+    $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
 
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);
@@ -2213,17 +2214,17 @@ function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
 
     echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">",
         "<td class=\"lxcaption\">",
-        setting_label(array("{$type}_track$tnum", "{$type}tag_track$tnum"),
+        $sv->label(array("{$type}_track$tnum", "{$type}tag_track$tnum"),
                       $question, "{$type}_track$tnum"),
         "</td>",
         "<td>",
         Ht::select("{$type}_track$tnum",
                    array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"),
                    $tclass,
-                   setting_js("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
+                   $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
         " &nbsp;",
         Ht::entry("${type}tag_track$tnum", $ttag,
-                  setting_js("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
+                  $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
         "</td></tr>";
 }
 
@@ -2235,8 +2236,8 @@ function do_track($sv, $trackname, $tnum) {
     if ($trackname === "_")
         echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
     else
-        echo setting_label("name_track$tnum", "For papers with tag &nbsp;"),
-            Ht::entry("name_track$tnum", $trackname, setting_js("name_track$tnum", array("placeholder" => "(tag)"))), ":";
+        echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
+            Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
     echo "</div>\n";
 
     $t = $Conf->setting_json("tracks");
@@ -2259,7 +2260,7 @@ function doTagsGroup($sv) {
     $tagger = new Tagger;
     echo "<h3 class=\"settings\">Tags</h3>\n";
 
-    echo "<table><tr><td class='lxcaption'>", setting_label("tag_chair", "Chair-only tags"), "</td>";
+    echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
     if ($sv->has_errors())
         $v = defval($_POST, "tag_chair", "");
     else
@@ -2268,7 +2269,7 @@ function doTagsGroup($sv) {
     doEntry("tag_chair", $v, 40);
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
-    echo "<tr><td class='lxcaption'>", setting_label("tag_approval", "Approval voting tags"), "</td>";
+    echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
     if ($sv->has_errors())
         $v = defval($_POST, "tag_approval", "");
     else {
@@ -2281,7 +2282,7 @@ function doTagsGroup($sv) {
     doEntry("tag_approval", $v, 40);
     echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
-    echo "<tr><td class='lxcaption'>", setting_label("tag_vote", "Allotment voting tags"), "</td>";
+    echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
     if ($sv->has_errors())
         $v = defval($_POST, "tag_vote", "");
     else {
@@ -2294,7 +2295,7 @@ function doTagsGroup($sv) {
     doEntry("tag_vote", $v, 40);
     echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
-    echo "<tr><td class='lxcaption'>", setting_label("tag_rank", "Ranking tag"), "</td>";
+    echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
     if ($sv->has_errors())
         $v = defval($_POST, "tag_rank", "");
     else
@@ -2305,7 +2306,7 @@ function doTagsGroup($sv) {
     echo "</table>";
 
     echo "<div class='g'></div>\n";
-    doCheckbox('tag_seeall', "PC can see tags for conflicted papers");
+    $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
 
     preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_color", ""), $m,
                    PREG_SET_ORDER);
@@ -2395,13 +2396,13 @@ function doDecGroup($sv) {
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (get($Opt, "allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", xsetting_data("tag_au_seerev"), 24);
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", $sv->sd("tag_au_seerev"), 24);
     doRadio("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
     // Authors' response
     echo '<div class="g"></div><table id="foldauresp" class="fold2o">';
-    doCheckbox('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", true, "void fold('auresp',!this.checked,2)");
+    $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", "void fold('auresp',!this.checked,2)");
     echo '<tr class="fx2"><td></td><td><div id="auresparea">',
         Ht::hidden("has_resp_rounds", 1);
 
@@ -2426,13 +2427,13 @@ function doDecGroup($sv) {
             doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption", "none");
         } else
             doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption");
-        if (xsetting("resp_open$isuf") === 1 && ($x = xsetting("resp_done$isuf")))
+        if ($sv->sv("resp_open$isuf") === 1 && ($x = $sv->sv("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
         doDateRow("resp_open$isuf", "Start time", null, "lxcaption");
         doDateRow("resp_done$isuf", "Hard deadline", null, "lxcaption");
         doGraceRow("resp_grace$isuf", "Grace period", "lxcaption");
         doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."),
-                  xsetting("resp_words$isuf", 500), 5, "lxcaption", "none");
+                  $sv->sv("resp_words$isuf", 500), 5, "lxcaption", "none");
         echo '</table><div style="padding-top:4px">';
         do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
         echo '</div></div>', "\n";
@@ -2487,7 +2488,7 @@ function doDecGroup($sv) {
         $vclass = defval($_POST, "dtypn", $vclass);
     }
     echo '<tr><td class="lcaption">',
-        setting_label("decn", "New decision type"),
+        $sv->label("decn", "New decision type"),
         '<br /></td>',
         '<td class="lentry nw">',
         Ht::hidden("has_decisions", 1),
@@ -2504,7 +2505,7 @@ function doDecGroup($sv) {
     // Final versions
     echo "<h3 class=\"settings g\">Final versions</h3>\n";
     echo '<table id="foldfinal" class="fold2o">';
-    doCheckbox('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', true, "void fold('final',!this.checked,2)");
+    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
     echo "<tr class='fx2'><td></td><td><table>";
     doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
     doDateRow("final_done", "Hard deadline", null, "lxcaption");
