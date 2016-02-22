@@ -31,7 +31,7 @@ class Si {
     const SI_DATA = 2;
     const SI_OPT = 3;
 
-    static private $all = [];
+    static public $all = [];
     static private $type_storage = [
         "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
         "htmlstring" => self::SI_DATA, "simplestring" => self::SI_DATA,
@@ -68,8 +68,12 @@ class Si {
 
     static public function get($name, $k = null) {
         if (!isset(self::$all[$name])
-            && ($xname = preg_replace('/_(?:\$|n|\d+)\z/', '', $name)) !== $name)
-            $name = $xname;
+            && preg_match('/\A(.*)(_(?:\$|n|\d+))\z/', $name, $m)
+            && isset(self::$all[$m[1]])) {
+            $si = clone self::$all[$m[1]];
+            $si->name = $name;
+            self::$all[$name] = $si;
+        }
         if (!isset(self::$all[$name]))
             return null;
         $si = self::$all[$name];
@@ -125,6 +129,7 @@ class SettingValues {
     private $errf = array();
     private $errmsg = array();
     private $warnmsg = array();
+    public $warnings_reported = false;
 
     public $save_callbacks = array();
     public $need_lock = array();
@@ -167,6 +172,22 @@ class SettingValues {
     public function warning_messages() {
         return $this->warnmsg;
     }
+    public function report() {
+        $msgs = array();
+        $any_errors = false;
+        foreach ($this->errmsg as $m)
+            if ($m && $m !== true && $m !== 1)
+                $msgs[] = $any_errors = $m;
+        foreach ($this->warnmsg as $m)
+            if ($m && $m !== true && $m !== 1)
+                $msgs[] = "Warning: " . $m;
+        $mt = '<div class="multimessage"><div>' . join('</div><div>', $msgs) . '</div></div>';
+        if (count($msgs) && $any_errors)
+            Conf::msg_error($mt);
+        else if (count($msgs))
+            Conf::msg_warning($mt);
+        $this->warnings_reported = true;
+    }
 
     public function label($name, $html, $label_id = null) {
         $name1 = is_array($name) ? $name[0] : $name;
@@ -189,25 +210,49 @@ class SettingValues {
             $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
         return $x;
     }
+
     public function inputv($name, $default_value = null) {
         if ($this->has_errors())
             return get($_POST, $name, $default_value);
         else
             return $default_value;
     }
+
+    private function si($name) {
+        $si = Si::get($name);
+        if (!$si)
+            error_log("missing setting information for $name");
+        return $si;
+    }
+
     public function sv($name, $default_value = null) {
         global $Conf;
         if ($this->has_errors())
             return get($_POST, $name, $default_value);
         else
-            return $this->sv_active($name, $default_value);
+            return $this->oldv($name, $default_value);
     }
-    public function sv_active($name, $default_value = "") {
+    public function oldv($name, $default_value = null) {
+        return $this->si_oldv($name, $this->si($name), $default_value);
+    }
+    public function has_freshv($name) {
+        global $Values;
+        return array_key_exists($name, $Values);
+    }
+    public function freshv($name, $default_value = null) {
+        return $this->si_freshv($name, $this->si($name), $default_value);
+    }
+    public function newv($name, $default_value = null) {
+        global $Values;
+        $si = $this->si($name);
+        if (array_key_exists($name, $Values))
+            return $this->si_freshv($name, $si, $default_value);
+        else
+            return $this->si_oldv($name, $si, $default_value);
+    }
+
+    private function si_oldv($name, $si, $default_value) {
         global $Conf, $Opt;
-        $si = Si::get($name);
-        if (!$si)
-            error_log("Missing setting information for $name");
-        assert(!!$si);
         if ($si->storage_type == Si::SI_OPT)
             $val = get($Opt, substr($name, 4), $default_value);
         else if ($si->storage_type == Si::SI_DATA)
@@ -217,6 +262,19 @@ class SettingValues {
         if ($val === $si->invalid_value)
             $val = "";
         return $val;
+    }
+    private function si_freshv($name, $si, $default_value) {
+        global $Values;
+        if (!isset($Values[$name]))
+            return $default_value;
+        else if ($si->storage_type == Si::SI_OPT
+                 || $si->storage_type == Si::SI_DATA) {
+            assert(is_array($Values[$name]));
+            return $Values[$name][1];
+        } else if (is_array($Values[$name]))
+            return $Values[$name][0];
+        else
+            return $Values[$name];
     }
 
     public function echo_checkbox($name, $text, $onchange = null) {
@@ -411,6 +469,8 @@ function parse_value($sv, $name, $info) {
         $xname = str_replace(".", "_", $name);
         if (isset($_POST[$xname]))
             $_POST[$name] = $_POST[$xname];
+        else if ($info->type === "checkbox" || $info->type === "cdate")
+            return 0;
         else
             return null;
     }
@@ -419,7 +479,7 @@ function parse_value($sv, $name, $info) {
     if (($info->placeholder && $info->placeholder === $v)
         || ($info->invalid_value && $info->invalid_value === $v))
         $v = "";
-    $v_active = $sv->sv_active($name, null);
+    $v_active = $sv->oldv($name, null);
 
     if ($info->type === "checkbox")
         return $v != "";
@@ -538,10 +598,10 @@ function save_tags($sv, $si_name, $info, $set) {
         }
     }
 
-    if ($set && $info->name == "tag_vote" && isset($Values["tag_vote"])) {
+    if ($set && $info->name == "tag_vote" && $sv->has_freshv("tag_vote")) {
         // check allotments
         $pcm = pcMembers();
-        foreach (preg_split('/\s+/', $Values["tag_vote"][1]) as $t) {
+        foreach (preg_split('/\s+/', $sv->freshv("tag_vote")) as $t) {
             if ($t === "")
                 continue;
             $base = substr($t, 0, strpos($t, "#"));
@@ -593,9 +653,9 @@ function save_tags($sv, $si_name, $info, $set) {
         }
     }
 
-    if ($set && $info->name == "tag_approval" && isset($Values["tag_approval"])) {
+    if ($set && $info->name == "tag_approval" && $sv->has_freshv("tag_approval")) {
         $pcm = pcMembers();
-        foreach (preg_split('/\s+/', $Values["tag_approval"][1]) as $t) {
+        foreach (preg_split('/\s+/', $sv->freshv("tag_approval")) as $t) {
             if ($t === "")
                 continue;
             $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
@@ -671,7 +731,7 @@ function save_tags($sv, $si_name, $info, $set) {
 
     if (!$set && $info->name == "tag_au_seerev" && isset($_POST["tag_au_seerev"])) {
         $vs = array();
-        $chair_tags = array_flip(explode(" ", value_or_setting_data("tag_chair")));
+        $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
         foreach (preg_split('/,*\s+/', $_POST["tag_au_seerev"]) as $t)
             if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
                 $vs[] = $t;
@@ -865,7 +925,7 @@ function save_options($sv, $si_name, $info, $set) {
     $Values["options"] = array($nextid, count($newj) ? json_encode($newj) : null);
 
     // warn on visibility
-    if (value_or_setting("sub_blind") === Conf::BLIND_ALWAYS) {
+    if ($sv->newv("sub_blind") === Conf::BLIND_ALWAYS) {
         foreach ($new_opts as $id => $o)
             if ($o->visibility === "nonblind")
                 $sv->set_warning("optp$id", "The “" . htmlspecialchars($o->name) . "” option is marked as “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
@@ -1212,10 +1272,11 @@ function save_rounds($sv, $si_name, $info, $set) {
             if ($ndeadlines == 0 && $osuffix)
                 $Values["pcrev_soft$osuffix"] = 0;
             foreach (array("pcrev_", "extrev_") as $k) {
-                list($soft, $hard) = array("{$k}soft$osuffix", "{$k}hard$osuffix");
-                if (!get($Values, $soft) && get($Values, $hard))
-                    $Values[$soft] = $Values[$hard];
-                else if (get($Values, $hard) && get($Values, $soft) > $Values[$hard]) {
+                list($soft, $hard) = ["{$k}soft$osuffix", "{$k}hard$osuffix"];
+                list($softv, $hardv) = [$sv->freshv($soft), $sv->freshv($hard)];
+                if (!$softv && $hardv)
+                    $Values[$soft] = $hardv;
+                else if ($hardv && $softv > $hardv) {
                     $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
                     $sv->set_error($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
                     $sv->set_error($hard);
@@ -1251,7 +1312,7 @@ function save_rounds($sv, $si_name, $info, $set) {
 
 function save_resp_rounds($sv, $si_name, $info, $set) {
     global $Conf, $Values;
-    if ($set || !value_or_setting("resp_active"))
+    if ($set || !$sv->newv("resp_active"))
         return;
     $old_roundnames = $Conf->resp_round_list();
     $roundnames = array(1);
@@ -1327,19 +1388,15 @@ function account_value($sv, $info) {
     if (!$has_value)
         return;
 
-    if ($info->disabled || $info->novalue
-        || !$info->type || $info->type === "none")
+    if ($info->disabled || $info->novalue || !$info->type || $info->type === "none")
         /* ignore changes to disabled/novalue settings */;
     else if ($info->parser) {
         call_user_func($info->parser, $sv, $info->name, $info, false);
         $sv->save_callbacks[$info->name] = $info;
     } else {
         $v = parse_value($sv, $info->name, $info);
-        if ($v === null) {
-            if ($info->type !== "cdate" && $info->type !== "checkbox")
-                return;
-            $v = 0;
-        }
+        if ($v === null)
+            return;
         if (!is_array($v) && $v <= 0 && $info->type !== "radio" && $info->type !== "zint")
             $Values[$info->name] = null;
         else
@@ -1349,33 +1406,43 @@ function account_value($sv, $info) {
     }
 }
 
-function has_value($name) {
-    global $Values;
-    return array_key_exists($name, $Values);
-}
-
-function value($name, $default = null) {
-    global $Conf, $Values;
-    if (array_key_exists($name, $Values))
-        return $Values[$name];
-    else
-        return $default;
-}
-
-function value_or_setting($name) {
-    global $Conf, $Values;
-    if (array_key_exists($name, $Values))
-        return $Values[$name];
-    else
-        return $Conf->setting($name);
-}
-
-function value_or_setting_data($name) {
-    global $Conf, $Values;
-    if (array_key_exists($name, $Values))
-        return is_array(get($Values, $name)) ? $Values[$name][1] : null;
-    else
-        return $Conf->setting_data($name);
+function setting_warnings($sv, $group) {
+    global $Conf, $Now;
+    if (($sv->has_freshv("sub_open") || !$group || $group === "sub")
+        && $sv->newv("sub_freeze", -1) == 0
+        && $sv->newv("sub_open") > 0
+        && $sv->newv("sub_sub") <= 0)
+        $sv->set_warning(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
+    foreach (array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard")
+             as $deadline)
+        if (($sv->has_freshv($deadline) || !$group || $group === "reviews")
+            && $sv->newv($deadline) > $Now
+            && $sv->newv($deadline) != $Conf->setting($deadline)
+            && $sv->newv("rev_open") <= 0) {
+            $sv->set_warning("rev_open", "A review deadline is set, but the site is not open for reviewing.");
+            break;
+        }
+    if (($sv->has_freshv("au_seerev") || !$group || $group === "reviews" || $group === "dec")
+        && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
+        && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
+        && $sv->oldv("pcrev_soft") > 0
+        && $Now < $sv->oldv("pcrev_soft")
+        && !$sv->has_errors())
+        $sv->set_warning(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
+    if (($sv->has_freshv("final_open") || !$group || $group === "dec")
+        && $sv->newv("final_open")
+        && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
+        && $sv->newv("seedec") != Conf::SEEDEC_ALL)
+        $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
+    if (($sv->has_freshv("seedec") || !$group || $group === "dec")
+        && $sv->newv("seedec") == Conf::SEEDEC_ALL
+        && $sv->newv("au_seerev") == Conf::AUSEEREV_NO)
+        $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
+    if (($sv->has_freshv("au_seerev") || !$group || $group === "dec")
+        && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
+        && !$sv->newv("tag_au_seerev")
+        && !$sv->has_error("tag_au_seerev"))
+        $sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
 }
 
 function do_setting_update($sv) {
@@ -1386,28 +1453,28 @@ function do_setting_update($sv) {
 
     // check date relationships
     foreach (array("sub_reg" => "sub_sub", "final_soft" => "final_done")
-             as $first => $second)
-        if (!get($Values, $first) && get($Values, $second))
-            $Values[$first] = $Values[$second];
-        else if (get($Values, $second) && get($Values, $first) > $Values[$second]) {
-            $sv->set_error($first, unparse_setting_error(Si::get($first), "Must come before " . Si::get($second, "short_description") . "."));
-            $sv->set_error($second);
+             as $dn1 => $dn2)
+        list($dv1, $dv2) = [$sv->freshv($dn1), $sv->freshv($dn2)];
+        if (!$dv1 && $dv2)
+            $Values[$dn1] = $dv2;
+        else if ($dv2 && $dv1 > $dv2) {
+            $sv->set_error($dn1, unparse_setting_error(Si::get($dn1), "Must come before " . Si::get($dn2, "short_description") . "."));
+            $sv->set_error($dn2);
         }
-    if (array_key_exists("sub_sub", $Values))
+    if ($sv->has_freshv("sub_sub"))
         $Values["sub_update"] = $Values["sub_sub"];
     if (get($Opt, "defaultSiteContact")) {
-        if (array_key_exists("opt.contactName", $Values)
-            && get($Opt, "contactName") === $Values["opt.contactName"][1])
+        if ($sv->has_freshv("opt.contactName")
+            && get($Opt, "contactName") === $sv->freshv("opt.contactName"))
             $Values["opt.contactName"] = null;
-        if (array_key_exists("opt.contactEmail", $Values)
-            && get($Opt, "contactEmail") === $Values["opt.contactEmail"][1])
+        if ($sv->has_freshv("opt.contactEmail")
+            && get($Opt, "contactEmail") === $sv->freshv("opt.contactEmail"))
             $Values["opt.contactEmail"] = null;
     }
-    if (get($Values, "resp_active"))
-        foreach (explode(" ", value_or_setting_data("resp_rounds")) as $i => $rname) {
+    if ($sv->has_freshv("resp_active") && $sv->freshv("resp_active"))
+        foreach (explode(" ", $sv->newv("resp_rounds")) as $i => $rname) {
             $isuf = $i ? "_$i" : "";
-            if (get($Values, "resp_open$isuf") && get($Values, "resp_done$isuf")
-                && $Values["resp_open$isuf"] > $Values["resp_done$isuf"]) {
+            if ($sv->newv("resp_open$isuf") > $sv->newv("resp_done$isuf")) {
                 $sv->set_error("resp_open$isuf", unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "short_description") . "."));
                 $sv->set_error("resp_done$isuf");
             }
@@ -1421,46 +1488,18 @@ function do_setting_update($sv) {
             $Values["papersub"] = $row[0];
     }
 
-    // warn on other relationships
-    if (value("sub_freeze", -1) == 0
-        && value("sub_open") > 0
-        && value("sub_sub") <= 0)
-        $sv->set_warning(null, "You have not set a paper submission deadline, but authors can update their submissions until the deadline.  This is sometimes unintentional.  You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
-    if (value("sub_open", 1) <= 0
-        && $Conf->setting("sub_open") > 0
-        && value_or_setting("sub_sub") <= 0)
+    // Setting relationships
+    if ($sv->has_freshv("sub_open")
+        && $sv->newv("sub_open", 1) <= 0
+        && $sv->oldv("sub_open") > 0
+        && $sv->newv("sub_sub") <= 0)
         $Values["sub_close"] = $Now;
-    foreach (array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard")
-             as $deadline)
-        if (value($deadline) > $Now
-            && value($deadline) != $Conf->setting($deadline)
-            && value_or_setting("rev_open") <= 0) {
-            $sv->set_warning("rev_open", "Review deadline set. You may also want to open the site for reviewing.");
-            break;
-        }
-    if (value_or_setting("au_seerev") != Conf::AUSEEREV_NO
-        && value_or_setting("au_seerev") != Conf::AUSEEREV_TAGS
-        && $Conf->setting("pcrev_soft") > 0
-        && $Now < $Conf->setting("pcrev_soft")
-        && !$sv->has_errors())
-        $sv->set_warning(null, "Authors can now see reviews and comments although it is before the review deadline.  This is sometimes unintentional.");
-    if (value("final_open")
-        && (!value("final_done") || value("final_done") > $Now)
-        && value_or_setting("seedec") != Conf::SEEDEC_ALL)
-        $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted.  You should change the “Who can see paper decisions” setting to “<strong>Authors</strong>, etc.”");
-    if (value("seedec") == Conf::SEEDEC_ALL
-        && value_or_setting("au_seerev") == Conf::AUSEEREV_NO)
-        $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
-    if (has_value("msg.clickthrough_submit"))
+    if ($sv->has_freshv("msg.clickthrough_submit"))
         $Values["clickthrough_submit"] = null;
-    if (value_or_setting("au_seerev") == Conf::AUSEEREV_TAGS
-        && !value_or_setting_data("tag_au_seerev")
-        && !$sv->has_error("tag_au_seerev"))
-        $sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
-    if (has_value("sub_nopapers"))
-        $Values["opt.noPapers"] = value("sub_nopapers") ? : null;
-    if (has_value("sub_noabstract"))
-        $Values["opt.noAbstract"] = value("sub_noabstract") ? : null;
+    if ($sv->has_freshv("sub_nopapers"))
+        $Values["opt.noPapers"] = $sv->newv("sub_nopapers") ? : null;
+    if ($sv->has_freshv("sub_noabstract"))
+        $Values["opt.noAbstract"] = $sv->newv("sub_noabstract") ? : null;
 
     // make settings
     if (!$sv->has_errors() && count($Values) > 0) {
@@ -1508,26 +1547,9 @@ function do_setting_update($sv) {
             $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
 
         // contactdb may need to hear about changes to shortName
-        if (array_key_exists("opt.shortName", $Values)
+        if ($sv->has_freshv("opt.shortName")
             && get($Opt, "contactdb_dsn") && ($cdb = Contact::contactdb()))
             Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Opt["shortName"], $Opt["dbName"]);
-    }
-
-    // report errors
-    $msgs = array();
-    if ($sv->has_errors() || $sv->has_warnings()) {
-        $any_errors = false;
-        foreach ($sv->error_messages() as $m)
-            if ($m && $m !== true && $m !== 1)
-                $msgs[] = $any_errors = $m;
-        foreach ($sv->warning_messages() as $m)
-            if ($m && $m !== true && $m !== 1)
-                $msgs[] = "Warning: " . $m;
-        $mt = '<div class="multimessage"><div>' . join('</div><div>', $msgs) . '</div></div>';
-        if (count($msgs) && $any_errors)
-            Conf::msg_error($mt);
-        else if (count($msgs))
-            $Conf->warnMsg($mt);
     }
 
     // update the review form in case it's changed
@@ -1537,6 +1559,9 @@ function do_setting_update($sv) {
         if (!count($msgs))
             $Conf->confirmMsg("Changes saved.");
         redirectSelf();
+    } else {
+        setting_warnings($sv, $Group);
+        $sv->report();
     }
 }
 if (isset($_REQUEST["update"]) && check_post())
@@ -2412,7 +2437,7 @@ function doDecGroup($sv) {
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
     $opts = array(Conf::AUSEEREV_NO => $no_text,
                   Conf::AUSEEREV_YES => "Yes");
-    if (value("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
+    if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
         && !get($Opt, "allow_auseerev_unlessincomplete"))
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (get($Opt, "allow_auseerev_unlessincomplete"))
@@ -2539,6 +2564,11 @@ function doDecGroup($sv) {
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }
 
+
+if (!$Sv->warnings_reported) {
+    setting_warnings($Sv, $Group);
+    $Sv->report();
+}
 
 $Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . SettingGroup::$all[$Group]->description . "</strong>", "settings", actionBar());
 $Conf->echoScript(""); // clear out other script references
