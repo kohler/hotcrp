@@ -1541,28 +1541,29 @@ function do_setting_update($sv) {
 
         $dv = $aq = $av = array();
         foreach ($sv->savedv as $n => $v) {
-            $dv[] = $n;
             if (substr($n, 0, 4) === "opt." && $v !== null) {
                 $okey = substr($n, 4);
                 $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : get($Opt, $okey));
                 $Opt[$okey] = ($v[1] === null ? $v[0] : $v[1]);
-                if ($oldv === $Opt[$okey])
+                if ($oldv === $Opt[$okey]) {
+                    $dv[] = $n;
                     continue; // do not save value in database
-                else if (!array_key_exists($okey, $OptOverride))
+                } else if (!array_key_exists($okey, $OptOverride))
                     $OptOverride[$okey] = $oldv;
             }
             if ($v !== null) {
                 $aq[] = "(?, ?, ?)";
                 array_push($av, $n, $v[0], $v[1]);
-            }
+            } else
+                $dv[] = $n;
         }
         if (count($dv)) {
             Dbl::qe_apply("delete from Settings where name?a", array($dv));
             //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query_apply("delete from Settings where name?a", array($dv))));
         }
         if (count($aq)) {
-            Dbl::qe_apply("insert into Settings (name, value, data) values " . join(",", $aq), $av);
-            //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query_apply("insert into Settings (name, value, data) values " . join(",\n\t", $aq), $av)));
+            Dbl::qe_apply("insert into Settings (name, value, data) values\n\t" . join(",\n\t", $aq) . "\n\ton duplicate key update value=values(value), data=values(data)", $av);
+            //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query_apply("insert into Settings (name, value, data) values\n\t" . join(",\n\t", $aq) . "\n\ton duplicate key update value=values(value), data=values(data)", $av)));
         }
 
         $Conf->qe("unlock tables");
