@@ -440,7 +440,8 @@ SettingGroup::register_synonym("rev", "reviews");
 SettingGroup::register_synonym("review", "reviews");
 SettingGroup::register("tags", "Tags &amp; tracks", 700, "doTagsGroup");
 SettingGroup::register_synonym("tracks", "tags");
-SettingGroup::register("dec", "Decisions", 800, "doDecGroup");
+SettingGroup::register("decisions", "Decisions", 800, "doDecGroup");
+SettingGroup::register_synonym("dec", "decisions");
 
 Si::initialize();
 $Sv = SettingValues::make_request();
@@ -454,7 +455,7 @@ function choose_setting_group() {
         $Group = SettingGroup::$map[$Group];
     if (!isset(SettingGroup::$all[$Group])) {
         if ($Conf->timeAuthorViewReviews())
-            $Group = "dec";
+            $Group = "decisions";
         else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
             $Group = "reviews";
         else
@@ -1459,24 +1460,24 @@ function setting_warnings($sv, $group) {
                 break;
             }
     }
-    if (($sv->has_savedv("au_seerev") || !$group || $group === "reviews" || $group === "dec")
+    if (($sv->has_savedv("au_seerev") || !$group || $group === "reviews" || $group === "decisions")
         && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
         && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
         && $sv->oldv("pcrev_soft") > 0
         && $Now < $sv->oldv("pcrev_soft")
         && !$sv->has_errors())
         $sv->set_warning(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
-    if (($sv->has_savedv("final_open") || !$group || $group === "dec")
+    if (($sv->has_savedv("final_open") || !$group || $group === "decisions")
         && $sv->newv("final_open")
         && ($sv->newv("final_soft") || $sv->newv("final_done"))
         && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
         && $sv->newv("seedec") != Conf::SEEDEC_ALL)
         $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted. You may want to update the the “Who can see paper decisions” setting.");
-    if (($sv->has_savedv("seedec") || !$group || $group === "dec")
+    if (($sv->has_savedv("seedec") || !$group || $group === "decisions")
         && $sv->newv("seedec") == Conf::SEEDEC_ALL
         && $sv->newv("au_seerev") == Conf::AUSEEREV_NO)
         $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
-    if (($sv->has_savedv("au_seerev") || !$group || $group === "dec")
+    if (($sv->has_savedv("au_seerev") || !$group || $group === "decisions")
         && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
         && !$sv->newv("tag_au_seerev")
         && !$sv->has_error("tag_au_seerev"))
