@@ -451,8 +451,12 @@ function rfs(fieldmapj, originalj, samplesj, errf, request) {
     for (i in request || {}) {
         if (!$("#" + i).length)
             rfs.add(false, i.replace(/^.*_/, ""));
-        $("#" + i).val(request[i]);
-        hiliter("reviewform_container");
+        $j = $("#" + i);
+        if (!text_eq($j.val(), request[i])) {
+            $j.val(request[i]);
+            hiliter("reviewform_container");
+            foldup($j[0], null, {n: 2, f: false});
+        }
     }
     for (i in errf || {}) {
         $j = $(".errloc_" + i);

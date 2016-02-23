@@ -15,7 +15,7 @@
         "type": "checkbox"
     },
     "decisions": {
-        "parser": "save_decisions"
+        "parser": "Decision_SettingParser"
     },
     "extrev_chairreq": {
         "name": "PC chair must approve proposed external reviewers",
@@ -125,11 +125,14 @@
         "type": "simplestring"
     },
     "options": {
-        "parser": "save_options",
+        "parser": "Option_SettingParser",
         "type": "string"
     },
     "options_nextid": {
         "internal": true, "storage": "val.options"
+    },
+    "outcome_map": {
+        "internal": true, "type": "string"
     },
     "pc_seeall": {
         "name": "PC can see all papers",
@@ -176,7 +179,7 @@
         "type": "date"
     },
     "resp_rounds": {
-        "parser": "save_resp_rounds"
+        "parser": "RespRound_SettingParser"
     },
     "resp_words": {
         "name": "Authors’ response word limit",
@@ -200,17 +203,18 @@
     },
     "rev_roundtag": {
         "name": "Current review round",
-        "type": "tag", "parser": "save_rounds"
+        "type": "tag", "parser": "Round_SettingParser"
     },
-    "reviewform": {
-        "parser": "save_review_form", "require": "src/settings/s_reviewform.php"
+    "review_form": {
+        "parser": "ReviewForm_SettingParser", "require": "src/settings/s_reviewform.php",
+        "type": "string"
     },
     "seedec": {
         "name": "Decision visibility",
         "type": "radio", "values": [0, 1, 2, 3]
     },
     "sub_banal": {
-        "type": "checkbox", "parser": "save_banal",
+        "type": "checkbox", "parser": "Banal_SettingParser",
         "storage": "val.sub_banal"
     },
     "sub_banal_data": {
@@ -267,27 +271,27 @@
     },
     "tag_approval": {
         "name": "Approval voting tags",
-        "type": "taglist", "parser": "save_tags"
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_au_seerev": {
         "name": "Review visibility tags",
-        "type": "taglist", "parser": "save_tags"
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_badge": {
         "name": "Tag badges",
-        "type": "taglist", "parser": "save_tags"
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_chair": {
         "name": "Chair-only tags",
-        "type": "taglist", "parser": "save_tags"
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_color": {
         "name": "Tag colors",
-        "type": "taglist", "parser": "save_tags"
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_rank": {
         "name": "Ranking tags",
-        "type": "taglist", "parser": "save_tags"
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_rounds": {
         "internal": true, "type": "taglist"
@@ -297,14 +301,14 @@
         "type": "checkbox"
     },
     "tag_vote": {
-        "name": "Voting tags",
-        "type": "taglist", "parser": "save_tags"
+        "name": "Allotment voting tags",
+        "type": "taglist", "parser": "Tag_SettingParser"
     },
     "topics": {
-        "parser": "save_topics"
+        "parser": "Topic_SettingParser"
     },
     "tracks": {
-        "parser": "save_tracks",
+        "parser": "Track_SettingParser",
         "type": "string"
     }
 }

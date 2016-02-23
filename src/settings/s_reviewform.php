@@ -8,14 +8,14 @@ $review_form_setting_prefixes = array("shortName_", "description_",
                                       "order_", "authorView_", "options_",
                                       "option_class_prefix_");
 
-function rf_check_options($fid, $fj) {
+function rf_check_options($sv, $fid, $fj) {
     global $Conf;
-    if (!isset($_REQUEST["options_$fid"])) {
+    if (!isset($sv->req["options_$fid"])) {
         $fj->options = array();
         return @$fj->position ? false : true;
     }
 
-    $text = cleannl($_REQUEST["options_$fid"]);
+    $text = cleannl($sv->req["options_$fid"]);
     $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
     $expect = ($letters ? "[A-Z]" : "[1-9]");
 
@@ -64,104 +64,99 @@ function rf_check_options($fid, $fj) {
     return true;
 }
 
-function rf_update($sv) {
-    global $Conf, $review_form_setting_prefixes;
+class ReviewForm_SettingParser extends SettingParser {
+    private $nrfj;
 
-    if (!isset($_REQUEST["update"]) || !check_post())
-        return;
+    public function parse($sv, $si) {
+        global $Conf, $review_form_setting_prefixes;
+        $this->nrfj = (object) array();
+        $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
+    2. Medium quality
+    3. High quality</pre>";
 
-    $scoreModified = array();
-
-    $nrfj = (object) array();
-    $old_error_count = $sv->error_count();
-    $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
-2. Medium quality
-3. High quality</pre>";
-
-    $rf = ReviewForm::get();
-    foreach ($rf->fmap as $fid => $f) {
-        $fj = (object) array();
-
-        $sn = simplify_whitespace(defval($_REQUEST, "shortName_$fid", ""));
-        if ($sn == "<None>" || $sn == "<New field>" || $sn == "Field name")
-            $sn = "";
-        $pos = cvtint(@$_REQUEST["order_$fid"]);
-        if ($pos > 0 && $sn == ""
-            && trim(defval($_REQUEST, "description_$fid", "")) == ""
-            && trim(defval($_REQUEST, "options_$fid", "")) == "")
-            $pos = -1;
-        if ($sn != "")
-            $fj->name = $sn;
-        else if ($pos > 0)
-            $sv->set_error("shortName_$fid", "Missing review field name.");
-
-        $fj->visibility = @$_REQUEST["authorView_$fid"];
-
-        $x = CleanHTML::clean(defval($_REQUEST, "description_$fid", ""), $err);
-        if ($x === false) {
-            if (@$f->description)
-                $fj->description = $f->description;
-            if ($pos > 0)
-                $sv->set_error("description_$fid", htmlspecialchars($sn) . " description: " . $err);
-        } else if (($x = trim($x)) != "")
-            $fj->description = $x;
-
-        if ($pos > 0)
-            $fj->position = $pos;
-
-        if ($f->has_options) {
-            $fj->options = array_values($f->options); // default
-            if (!rf_check_options($fid, $fj) && $pos > 0) {
-                $sv->set_error("options_$fid", "Invalid options.");
-                if ($option_error)
-                    $sv->set_error(null, $option_error);
-                $option_error = false;
-            }
-            $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
-            $class_prefix = defval($_REQUEST, "option_class_prefix_$fid", "sv");
-            $prefix_index = array_search($class_prefix, $prefixes) ? : 0;
-            if (@$_REQUEST["option_class_prefix_flipped_$fid"])
-                $prefix_index ^= 1;
-            if ($prefix_index)
-                $fj->option_class_prefix = $prefixes[$prefix_index];
-        }
-
-        $fj->round_mask = 0;
-        if (($rlist = @$_REQUEST["round_list_$fid"]))
-            foreach (explode(" ", trim($rlist)) as $round_name)
-                $fj->round_mask |= 1 << $Conf->round_number($round_name, false);
-
-        $xf = clone $f;
-        $xf->assign($fj);
-        $nrfj->$fid = $xf->unparse_json();
-    }
-
-    if ($sv->error_count() == $old_error_count) {
-        $Conf->save_setting("review_form", 1, $nrfj);
-        foreach ($nrfj as $fid => $fj)
-            if (@$fj->position && @$fj->options) {
-                $result = Dbl::qe_raw("update PaperReview set $fid=0 where $fid>" . count($fj->options));
-                if ($result && $result->affected_rows > 0)
-                    $scoreModified[] = htmlspecialchars($fj->name);
-            }
+        $rf = ReviewForm::get();
         foreach ($rf->fmap as $fid => $f) {
-            foreach ($review_form_setting_prefixes as $fx)
-                unset($_REQUEST["$fx$fid"]);
+            $fj = (object) array();
+
+            $sn = simplify_whitespace(defval($sv->req, "shortName_$fid", ""));
+            if ($sn == "<None>" || $sn == "<New field>" || $sn == "Field name")
+                $sn = "";
+            $pos = cvtint(@$sv->req["order_$fid"]);
+            if ($pos > 0 && $sn == ""
+                && trim(defval($sv->req, "description_$fid", "")) == ""
+                && trim(defval($sv->req, "options_$fid", "")) == "")
+                $pos = -1;
+            if ($sn != "")
+                $fj->name = $sn;
+            else if ($pos > 0)
+                $sv->set_error("shortName_$fid", "Missing review field name.");
+
+            $fj->visibility = @$sv->req["authorView_$fid"];
+
+            $x = CleanHTML::clean(defval($sv->req, "description_$fid", ""), $err);
+            if ($x === false) {
+                if (@$f->description)
+                    $fj->description = $f->description;
+                if ($pos > 0)
+                    $sv->set_error("description_$fid", htmlspecialchars($sn) . " description: " . $err);
+            } else if (($x = trim($x)) != "")
+                $fj->description = $x;
+
+            if ($pos > 0)
+                $fj->position = $pos;
+
+            if ($f->has_options) {
+                $fj->options = array_values($f->options); // default
+                if (!rf_check_options($sv, $fid, $fj) && $pos > 0) {
+                    $sv->set_error("options_$fid", "Invalid options.");
+                    if ($option_error)
+                        $sv->set_error(null, $option_error);
+                    $option_error = false;
+                }
+                $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
+                $class_prefix = defval($sv->req, "option_class_prefix_$fid", "sv");
+                $prefix_index = array_search($class_prefix, $prefixes) ? : 0;
+                if (@$sv->req["option_class_prefix_flipped_$fid"])
+                    $prefix_index ^= 1;
+                if ($prefix_index)
+                    $fj->option_class_prefix = $prefixes[$prefix_index];
+            }
+
+            $fj->round_mask = 0;
+            if (($rlist = @$sv->req["round_list_$fid"]))
+                foreach (explode(" ", trim($rlist)) as $round_name)
+                    $fj->round_mask |= 1 << $Conf->round_number($round_name, false);
+
+            $xf = clone $f;
+            $xf->assign($fj);
+            $this->nrfj->$fid = $xf->unparse_json();
         }
-        if (count($scoreModified))
-            $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
+
+        $sv->need_lock["PaperReview"] = true;
+        return true;
     }
 
-    $Conf->invalidateCaches(array("rf" => true));
-}
-
-function rf_getField($f, $formname, $fname, $backup = null) {
-    if (isset($_REQUEST["${formname}_$f->id"]))
-        return $_REQUEST["${formname}_$f->id"];
-    else if ($backup !== null)
-        return $backup;
-    else
-        return $f->$fname;
+    public function save($sv, $si) {
+        global $Conf, $review_form_setting_prefixes;
+        if ($sv->update("review_form", json_encode($this->nrfj))) {
+            $rf = ReviewForm::get();
+            $scoreModified = array();
+            foreach ($this->nrfj as $fid => $fj)
+                if (get($fj, "position") && get($fj, "options")) {
+                    $result = Dbl::qe_raw("update PaperReview set $fid=0 where $fid>" . count($fj->options));
+                    if ($result && $result->affected_rows > 0)
+                        $scoreModified[] = htmlspecialchars($fj->name);
+                    Dbl::free($result);
+                }
+            foreach ($rf->fmap as $fid => $f) {
+                foreach ($review_form_setting_prefixes as $fx)
+                    unset($sv->req["$fx$fid"]);
+            }
+            if (count($scoreModified))
+                $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
+            $Conf->invalidateCaches(array("rf" => true));
+        }
+    }
 }
 
 function rf_show($sv) {
@@ -175,11 +170,11 @@ function rf_show($sv) {
     $samples = json_decode(file_get_contents("$ConfSitePATH/src/reviewformlibrary.json"));
 
     $req = array();
-    if ($sv->has_errors())
+    if ($sv->use_req())
         foreach ($rf->fmap as $fid => $f) {
             foreach ($review_form_setting_prefixes as $fx)
-                if (isset($_REQUEST["$fx$fid"]))
-                    $req["$fx$fid"] = $_REQUEST["$fx$fid"];
+                if (isset($sv->req["$fx$fid"]))
+                    $req["$fx$fid"] = $sv->req["$fx$fid"];
         }
 
     $Conf->footerHtml('<div id="review_form_caption_description" style="display:none">'
@@ -204,7 +199,7 @@ submitted. Add a line “<tt>No entry</tt>” to make the score optional.</p></d
                         . json_encode($sv->error_fields()) . ","
                         . json_encode($req) . ")");
 
-    echo Ht::hidden("has_reviewform", 1),
+    echo Ht::hidden("has_review_form", 1),
         "<div id=\"reviewform_removedcontainer\"></div>",
         "<div id=\"reviewform_container\"></div>",
         Ht::button("Add score field", array("onclick" => "review_form_settings.add(1)")),

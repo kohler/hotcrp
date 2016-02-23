@@ -146,26 +146,35 @@ class Si {
     }
 }
 
+class SettingParser {
+    public function parse($sv, $si) {
+        return false;
+    }
+    public function save($sv, $si) {
+    }
+}
+
 class SettingValues {
     private $errf = array();
     private $errmsg = array();
     private $warnmsg = array();
     public $warnings_reported = false;
 
+    public $parsers = array();
     public $save_callbacks = array();
     public $need_lock = array();
-    public $rev_round_changes = array();
-    public $stashed_options;
 
+    public $req = array();
     public $savedv = array();
 
     public function __construct() {
     }
-    public function has_errors() {
+
+    public function use_req() {
         return count($this->errmsg) > 0;
     }
-    public function has_warnings() {
-        return count($this->warnmsg) > 0;
+    public function has_errors() {
+        return count($this->errmsg) > 0;
     }
     public function error_count() {
         return count($this->errmsg);
@@ -189,12 +198,6 @@ class SettingValues {
     }
     public function error_fields() {
         return $this->errf;
-    }
-    public function error_messages() {
-        return $this->errmsg;
-    }
-    public function warning_messages() {
-        return $this->warnmsg;
     }
     public function report() {
         $msgs = array();
@@ -236,8 +239,8 @@ class SettingValues {
     }
 
     public function inputv($name, $default_value = null) {
-        if ($this->has_errors())
-            return get($_POST, $name, $default_value);
+        if ($this->use_req())
+            return get($this->req, $name, $default_value);
         else
             return $default_value;
     }
@@ -251,8 +254,8 @@ class SettingValues {
 
     public function sv($name, $default_value = null) {
         global $Conf;
-        if ($this->has_errors())
-            return get($_POST, $name, $default_value);
+        if ($this->use_req())
+            return get($this->req, $name, $default_value);
         else
             return $this->oldv($name, $default_value);
     }
@@ -267,7 +270,16 @@ class SettingValues {
         $si = $this->si($name);
         return $this->si_savedv($si->storage(), $si, $default_value);
     }
-    public function store($name, $value) {
+    public function newv($name, $default_value = null) {
+        $si = $this->si($name);
+        $s = $si->storage();
+        if (array_key_exists($s, $this->savedv))
+            return $this->si_savedv($s, $si, $default_value);
+        else
+            return $this->si_oldv($name, $si, $default_value);
+    }
+
+    public function save($name, $value) {
         global $Conf;
         $si = $this->si($name);
         if (!$si)
@@ -297,18 +309,10 @@ class SettingValues {
     }
     public function update($name, $value) {
         if ($value !== $this->oldv($name)) {
-            $this->store($name, $value);
+            $this->save($name, $value);
             return true;
         } else
             return false;
-    }
-    public function newv($name, $default_value = null) {
-        $si = $this->si($name);
-        $s = $si->storage();
-        if (array_key_exists($s, $this->savedv))
-            return $this->si_savedv($s, $si, $default_value);
-        else
-            return $this->si_oldv($name, $si, $default_value);
     }
 
     private function si_oldv($name, $si, $default_value) {
@@ -357,6 +361,8 @@ class SettingValues {
         $sv = new SettingValues;
         $sv->errf = $Conf->session("settings_highlight", array());
         $Conf->save_session("settings_highlight", null);
+        foreach ($_POST as $k => $v)
+            $sv->req[$k] = $v;
         return $sv;
     }
 }
@@ -520,17 +526,17 @@ function unparse_setting_error($info, $text) {
 function parse_value($sv, $name, $info) {
     global $Conf, $Now, $Opt;
 
-    if (!isset($_POST[$name])) {
+    if (!isset($sv->req[$name])) {
         $xname = str_replace(".", "_", $name);
-        if (isset($_POST[$xname]))
-            $_POST[$name] = $_POST[$xname];
+        if (isset($sv->req[$xname]))
+            $sv->req[$name] = $sv->req[$xname];
         else if ($info->type === "checkbox" || $info->type === "cdate")
             return 0;
         else
             return null;
     }
 
-    $v = trim($_POST[$name]);
+    $v = trim($sv->req[$name]);
     if (($info->placeholder && $info->placeholder === $v)
         || ($info->invalid_value && $info->invalid_value === $v))
         $v = "";
@@ -612,216 +618,205 @@ function parse_value($sv, $name, $info) {
     return null;
 }
 
-function save_tags($sv, $si_name, $info, $set) {
-    global $Conf;
-    $tagger = new Tagger;
-
-    if (!$set && $info->name == "tag_chair" && isset($_POST["tag_chair"])) {
-        $vs = array();
-        foreach (preg_split('/\s+/', $_POST["tag_chair"]) as $t)
-            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                $vs[$t] = true;
-            else if ($t !== "")
-                $sv->set_error("tag_chair", "Chair-only tag: " . $tagger->error_html);
-        if (!$sv->has_error("tag_chair"))
-            $sv->update("tag_chair", join(" ", array_keys($vs)));
+class Tag_SettingParser extends SettingParser {
+    private $tagger;
+    public function __construct() {
+        $this->tagger = new Tagger;
     }
-
-    if (!$set && $info->name == "tag_vote" && isset($_POST["tag_vote"])) {
-        $vs = array();
-        foreach (preg_split('/\s+/', $_POST["tag_vote"]) as $t)
-            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR)) {
-                if (preg_match('/\A([^#]+)(|#|#0+|#-\d*)\z/', $t, $m))
-                    $t = $m[1] . "#1";
-                $vs[] = $t;
+    private function parse_list($sv, $si, $checkf, $min_idx) {
+        $ts = array();
+        foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
+            if ($t !== "" && $this->tagger->check($t, $checkf)) {
+                list($tag, $idx) = TagInfo::split_index($t);
+                if ($min_idx)
+                    $t = $tag . "#" . max($min_idx, (float) $idx);
+                $ts[$tag] = $t;
             } else if ($t !== "")
-                $sv->set_error("tag_vote", "Allotment voting tag: " . $tagger->error_html);
-        if (!$sv->has_error("tag_vote")
-            && $sv->update("tag_vote", join(" ", $vs)))
-            $sv->need_lock["PaperTag"] = true;
+                $sv->set_error($si->name, $si->short_description . ": " . $this->tagger->error_html);
+        return array_values($ts);
     }
+    public function parse($sv, $si) {
+        if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $sv->update($si->name, join(" ", $ts));
+        }
 
-    if ($set && $info->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
-        // check allotments
-        $pcm = pcMembers();
-        foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
-            if ($t === "")
-                continue;
-            $base = substr($t, 0, strpos($t, "#"));
-            $allotment = substr($t, strlen($base) + 1);
+        if ($si->name == "tag_vote" && isset($sv->req["tag_vote"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
+            if ($sv->update("tag_vote", join(" ", $ts)))
+                $sv->need_lock["PaperTag"] = true;
+        }
 
-            $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
-            $pvals = array();
-            $cvals = array();
-            $negative = false;
-            while (($row = edb_row($result))) {
-                $who = substr($row[1], 0, strpos($row[1], "~"));
-                if ($row[2] < 0) {
-                    $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
-                    $negative = true;
-                } else {
-                    $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
-                    $cvals[$who] = defval($cvals, $who, 0) + $row[2];
+        if ($si->name == "tag_approval" && isset($sv->req["tag_approval"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            if ($sv->update("tag_approval", join(" ", $ts)))
+                $sv->need_lock["PaperTag"] = true;
+        }
+
+        if ($si->name == "tag_rank" && isset($sv->req["tag_rank"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            if (count($ts) > 1)
+                $sv->set_error("tag_rank", "At most one rank tag is currently supported.");
+            else
+                $sv->update("tag_rank", join(" ", $ts));
+        }
+
+        if ($si->name == "tag_color") {
+            $ts = array();
+            $any_set = false;
+            foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
+                if (isset($sv->req["tag_color_$k"])) {
+                    $xsi = new Si("tag_color_$k", ["name" => ucfirst($k) . " style tag"]);
+                    $any_set = true;
+                    foreach ($this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                        $ts[] = $t . "=" . $k;
                 }
-            }
-
-            foreach ($cvals as $who => $what)
-                if ($what > $allotment)
-                    $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
-
-            $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
-            $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
-
-            $q = array();
-            foreach ($pvals as $pid => $what)
-                $q[] = "($pid, '" . sqlq($base) . "', $what)";
-            if (count($q) > 0)
-                $Conf->qe("insert into PaperTag values " . join(", ", $q));
+            if ($any_set)
+                $sv->update("tag_color", join(" ", $ts));
         }
-    }
 
-    if (!$set && $info->name == "tag_approval" && isset($_POST["tag_approval"])) {
-        $vs = array();
-        foreach (preg_split('/\s+/', $_POST["tag_approval"]) as $t)
-            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                $vs[] = $t;
-            else if ($t !== "")
-                $sv->set_error("tag_approval", "Approval voting tag: " . $tagger->error_html);
-        if (!$sv->has_error("tag_approval")
-            && $sv->update("tag_approval", join(" ", $vs)))
-            $sv->need_lock["PaperTag"] = true;
-    }
-
-    if ($set && $info->name == "tag_approval" && $sv->has_savedv("tag_approval")) {
-        $pcm = pcMembers();
-        foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
-            if ($t === "")
-                continue;
-            $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
-            $pvals = array();
-            $negative = false;
-            while (($row = edb_row($result))) {
-                $who = substr($row[1], 0, strpos($row[1], "~"));
-                if ($row[2] < 0) {
-                    $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
-                    $negative = true;
-                } else
-                    $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
-            }
-
-            $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
-            $Conf->qe("delete from PaperTag where tag='" . sqlq($t) . "'$q");
-
-            $q = array();
-            foreach ($pvals as $pid => $what)
-                $q[] = "($pid, '" . sqlq($t) . "', $what)";
-            if (count($q) > 0)
-                $Conf->qe("insert into PaperTag values " . join(", ", $q));
+        if ($si->name == "tag_badge") {
+            $ts = array();
+            $any_set = false;
+            foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
+                if (isset($sv->req["tag_badge_$k"])) {
+                    $xsi = new Si("tag_badge_$k", ["name" => ucfirst($k) . " badge style tag"]);
+                    $any_set = true;
+                    foreach ($this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                        $ts[] = $t . "=" . $k;
+                }
+            if ($any_set)
+                $sv->update("tag_badge", join(" ", $ts));
         }
-    }
 
-    if (!$set && $info->name == "tag_rank" && isset($_POST["tag_rank"])) {
-        $vs = array();
-        foreach (preg_split('/\s+/', $_POST["tag_rank"]) as $t)
-            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                $vs[] = $t;
-            else if ($t !== "")
-                $sv->set_error("tag_rank", "Rank tag: " . $tagger->error_html);
-        if (count($vs) > 1)
-            $sv->set_error("tag_rank", "At most one rank tag is currently supported.");
-        if (!$sv->has_error("tag_rank"))
-            $sv->update("tag_rank", join(" ", $vs));
-    }
-
-    if (!$set && $info->name == "tag_color") {
-        $vs = array();
-        $any_set = false;
-        foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
-            if (isset($_POST["tag_color_" . $k])) {
-                $any_set = true;
-                foreach (preg_split('/,*\s+/', $_POST["tag_color_" . $k]) as $t)
-                    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                        $vs[] = $t . "=" . $k;
-                    else if ($t !== "")
-                        $sv->set_error("tag_color_$k", ucfirst($k) . " style tag: " . $tagger->error_html);
-            }
-        if ($any_set)
-            $sv->update("tag_color", join(" ", $vs));
-
-        $vs = array();
-        $any_set = false;
-        foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
-            if (isset($_POST["tag_badge_" . $k])) {
-                $any_set = true;
-                foreach (preg_split('/,*\s+/', $_POST["tag_badge_" . $k]) as $t)
-                    if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                        $vs[] = $t . "=" . $k;
-                    else if ($t !== "")
-                        $sv->set_error("tag_badge_$k", ucfirst($k) . " badge style tag: " . $tagger->error_html);
-            }
-        if ($any_set)
-            $sv->update("tag_badge", join(" ", $vs));
-    }
-
-    if (!$set && $info->name == "tag_au_seerev" && isset($_POST["tag_au_seerev"])) {
-        $vs = array();
-        $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
-        foreach (preg_split('/,*\s+/', $_POST["tag_au_seerev"]) as $t)
-            if ($t !== "" && $tagger->check($t, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-                $vs[] = $t;
+        if ($si->name == "tag_au_seerev" && isset($sv->req["tag_au_seerev"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
+            foreach ($ts as $t)
                 if (!isset($chair_tags[$t]))
                     $sv->set_warning("tag_au_seerev", "Review visibility tag “" . htmlspecialchars($t) . "” isn’t a <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only tag</a>, which means PC members can change it. You usually want these tags under chair control.");
-            } else if ($t !== "")
-                $sv->set_error("tag_au_seerev", "Review visibility tag: " . $tagger->error_html);
-        $sv->update("tag_au_seerev", join(" ", $vs));
+            $sv->update("tag_au_seerev", join(" ", $ts));
+        }
+
+        return true;
     }
 
-    if ($set)
+    public function save($sv, $si) {
+        if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
+            // check allotments
+            $pcm = pcMembers();
+            foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
+                if ($t === "")
+                    continue;
+                $base = substr($t, 0, strpos($t, "#"));
+                $allotment = substr($t, strlen($base) + 1);
+
+                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
+                $pvals = array();
+                $cvals = array();
+                $negative = false;
+                while (($row = edb_row($result))) {
+                    $who = substr($row[1], 0, strpos($row[1], "~"));
+                    if ($row[2] < 0) {
+                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
+                        $negative = true;
+                    } else {
+                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
+                        $cvals[$who] = defval($cvals, $who, 0) + $row[2];
+                    }
+                }
+
+                foreach ($cvals as $who => $what)
+                    if ($what > $allotment)
+                        $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
+
+                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
+                $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
+
+                $q = array();
+                foreach ($pvals as $pid => $what)
+                    $q[] = "($pid, '" . sqlq($base) . "', $what)";
+                if (count($q) > 0)
+                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
+            }
+        }
+
+        if ($si->name == "tag_approval" && $sv->has_savedv("tag_approval")) {
+            $pcm = pcMembers();
+            foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
+                if ($t === "")
+                    continue;
+                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
+                $pvals = array();
+                $negative = false;
+                while (($row = edb_row($result))) {
+                    $who = substr($row[1], 0, strpos($row[1], "~"));
+                    if ($row[2] < 0) {
+                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
+                        $negative = true;
+                    } else
+                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
+                }
+
+                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
+                $Conf->qe("delete from PaperTag where tag='" . sqlq($t) . "'$q");
+
+                $q = array();
+                foreach ($pvals as $pid => $what)
+                    $q[] = "($pid, '" . sqlq($t) . "', $what)";
+                if (count($q) > 0)
+                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
+            }
+        }
+
         TagInfo::invalidate_defined_tags();
+    }
 }
 
-function save_topics($sv, $si_name, $info, $set) {
-    global $Conf;
-    if (!$set) {
+class Topic_SettingParser extends SettingParser {
+    public function parse($sv, $si) {
         foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
             $sv->need_lock[$t] = true;
-        return;
+        return true;
     }
 
-    $tmap = $Conf->topic_map();
-    foreach ($_POST as $k => $v)
-        if ($k === "topnew") {
-            $news = array();
-            foreach (explode("\n", $v) as $n)
-                if (($n = simplify_whitespace($n)) !== "")
-                    $news[] = "('" . sqlq($n) . "')";
-            if (count($news))
-                $Conf->qe("insert into TopicArea (topicName) values " . join(",", $news));
-        } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
-                   && ctype_digit(substr($k, 3))) {
-            $k = (int) substr($k, 3);
-            $v = simplify_whitespace($v);
-            if ($v == "") {
-                $Conf->qe("delete from TopicArea where topicId=$k");
-                $Conf->qe("delete from PaperTopic where topicId=$k");
-                $Conf->qe("delete from TopicInterest where topicId=$k");
-            } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
-                $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
-        }
-    $Conf->invalidate_topics();
+    public function save($sv, $si) {
+        global $Conf;
+        $tmap = $Conf->topic_map();
+        foreach ($sv->req as $k => $v)
+            if ($k === "topnew") {
+                $news = array();
+                foreach (explode("\n", $v) as $n)
+                    if (($n = simplify_whitespace($n)) !== "")
+                        $news[] = "('" . sqlq($n) . "')";
+                if (count($news))
+                    $Conf->qe("insert into TopicArea (topicName) values " . join(",", $news));
+            } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
+                       && ctype_digit(substr($k, 3))) {
+                $k = (int) substr($k, 3);
+                $v = simplify_whitespace($v);
+                if ($v == "") {
+                    $Conf->qe("delete from TopicArea where topicId=$k");
+                    $Conf->qe("delete from PaperTopic where topicId=$k");
+                    $Conf->qe("delete from TopicInterest where topicId=$k");
+                } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
+                    $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
+            }
+        $Conf->invalidate_topics();
+    }
 }
 
 
 function option_request_to_json($sv, &$new_opts, $id, $current_opts) {
     global $Conf;
 
-    $name = simplify_whitespace(defval($_POST, "optn$id", ""));
-    if (!isset($_POST["optn$id"]) && $id[0] !== "n") {
+    $name = simplify_whitespace(defval($sv->req, "optn$id", ""));
+    if (!isset($sv->req["optn$id"]) && $id[0] !== "n") {
         if (get($current_opts, $id))
             $new_opts[$id] = $current_opts[$id];
         return;
     } else if ($name === ""
-               || $_POST["optfp$id"] === "delete"
+               || $sv->req["optfp$id"] === "delete"
                || ($id[0] === "n" && ($name === "New option" || $name === "(Enter new option)")))
         return;
 
@@ -835,15 +830,15 @@ function option_request_to_json($sv, &$new_opts, $id, $current_opts) {
         $oarg["id"] = $nextid;
     }
 
-    if (get($_POST, "optd$id") && trim($_POST["optd$id"]) != "") {
-        $t = CleanHTML::clean($_POST["optd$id"], $err);
+    if (get($sv->req, "optd$id") && trim($sv->req["optd$id"]) != "") {
+        $t = CleanHTML::clean($sv->req["optd$id"], $err);
         if ($t !== false)
             $oarg["description"] = $t;
         else
             $sv->set_error("optd$id", $err);
     }
 
-    if (($optvt = get($_POST, "optvt$id"))) {
+    if (($optvt = get($sv->req, "optvt$id"))) {
         if (($pos = strpos($optvt, ":")) !== false) {
             $oarg["type"] = substr($optvt, 0, $pos);
             if (preg_match('/:final/', $optvt))
@@ -857,7 +852,7 @@ function option_request_to_json($sv, &$new_opts, $id, $current_opts) {
 
     if (PaperOption::type_has_selector($oarg["type"])) {
         $oarg["selector"] = array();
-        $seltext = trim(cleannl(defval($_POST, "optv$id", "")));
+        $seltext = trim(cleannl(defval($sv->req, "optv$id", "")));
         if ($seltext != "") {
             foreach (explode("\n", $seltext) as $t)
                 $oarg["selector"][] = $t;
@@ -865,13 +860,13 @@ function option_request_to_json($sv, &$new_opts, $id, $current_opts) {
             $sv->set_error("optv$id", "Enter selectors one per line.");
     }
 
-    $oarg["visibility"] = defval($_POST, "optp$id", "rev");
+    $oarg["visibility"] = defval($sv->req, "optp$id", "rev");
     if ($oarg["final"])
         $oarg["visibility"] = "rev";
 
-    $oarg["position"] = (int) defval($_POST, "optfp$id", 1);
+    $oarg["position"] = (int) defval($sv->req, "optfp$id", 1);
 
-    $oarg["display"] = defval($_POST, "optdt$id");
+    $oarg["display"] = defval($sv->req, "optdt$id");
     if ($oarg["type"] === "pdf" && $oarg["final"])
         $oarg["display"] = "submission";
 
@@ -908,17 +903,17 @@ function option_clean_form_positions($new_opts, $current_opts) {
     }
 }
 
-function save_options($sv, $si_name, $info, $set) {
-    global $Conf;
+class Option_SettingParser extends SettingParser {
+    private $stashed_options = false;
 
-    if (!$set) {
+    function parse($sv, $si) {
         $current_opts = PaperOption::option_list();
 
         // convert request to JSON
         $new_opts = array();
         foreach ($current_opts as $id => $o)
             option_request_to_json($sv, $new_opts, $id, $current_opts);
-        foreach ($_POST as $k => $v)
+        foreach ($sv->req as $k => $v)
             if (substr($k, 0, 4) == "optn"
                 && !get($current_opts, substr($k, 4)))
                 option_request_to_json($sv, $new_opts, substr($k, 4), $current_opts);
@@ -934,49 +929,51 @@ function save_options($sv, $si_name, $info, $set) {
                 $optabbrs[$o->abbr] = $o;
 
         if (!$sv->has_errors()) {
-            $sv->stashed_options = $new_opts;
+            $this->stashed_options = $new_opts;
             $sv->need_lock["PaperOption"] = true;
+            return true;
         }
-        return;
     }
 
-    $new_opts = $sv->stashed_options;
-    $current_opts = PaperOption::option_list();
-    option_clean_form_positions($new_opts, $current_opts);
+    public function save($sv, $si) {
+        global $Conf;
+        $new_opts = $this->stashed_options;
+        $current_opts = PaperOption::option_list();
+        option_clean_form_positions($new_opts, $current_opts);
 
-    $newj = (object) array();
-    uasort($new_opts, array("PaperOption", "compare"));
-    $nextid = max($Conf->setting("next_optionid", 1), $Conf->setting("options", 1));
-    foreach ($new_opts as $id => $o) {
-        $newj->$id = $o->unparse();
-        $nextid = max($nextid, $id + 1);
+        $newj = (object) array();
+        uasort($new_opts, array("PaperOption", "compare"));
+        $nextid = max($Conf->setting("next_optionid", 1), $Conf->setting("options", 1));
+        foreach ($new_opts as $id => $o) {
+            $newj->$id = $o->unparse();
+            $nextid = max($nextid, $id + 1);
+        }
+        $sv->save("next_optionid", null);
+        $sv->save("options", count($newj) ? json_encode($newj) : null);
+
+        // warn on visibility
+        if ($sv->newv("sub_blind") === Conf::BLIND_ALWAYS) {
+            foreach ($new_opts as $id => $o)
+                if ($o->visibility === "nonblind")
+                    $sv->set_warning("optp$id", "The “" . htmlspecialchars($o->name) . "” option is marked as “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
+        }
+
+        $deleted_ids = array();
+        foreach ($current_opts as $id => $o)
+            if (!get($new_opts, $id))
+                $deleted_ids[] = $id;
+        if (count($deleted_ids))
+            $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
+
+        // invalidate cached option list
+        PaperOption::invalidate_option_list();
     }
-    $sv->store("next_optionid", null);
-    $sv->store("options", count($newj) ? json_encode($newj) : null);
-
-    // warn on visibility
-    if ($sv->newv("sub_blind") === Conf::BLIND_ALWAYS) {
-        foreach ($new_opts as $id => $o)
-            if ($o->visibility === "nonblind")
-                $sv->set_warning("optp$id", "The “" . htmlspecialchars($o->name) . "” option is marked as “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
-    }
-
-    $deleted_ids = array();
-    foreach ($current_opts as $id => $o)
-        if (!get($new_opts, $id))
-            $deleted_ids[] = $id;
-    if (count($deleted_ids))
-        $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
-
-    // invalidate cached option list
-    PaperOption::invalidate_option_list();
 }
 
-function save_decisions($sv, $si_name, $info, $set) {
-    global $Conf;
-    if (!$set) {
+class Decision_SettingParser extends SettingParser {
+    public function parse($sv, $si) {
         $dec_revmap = array();
-        foreach ($_POST as $k => &$dname)
+        foreach ($sv->req as $k => &$dname)
             if (str_starts_with($k, "dec")
                 && ($k === "decn" || ($dnum = cvtint(substr($k, 3), 0)))
                 && ($k !== "decn" || trim($dname) !== "")) {
@@ -992,10 +989,10 @@ function save_decisions($sv, $si_name, $info, $set) {
             }
         unset($dname);
 
-        if (get($_POST, "decn") && !get($_POST, "decn_confirm")) {
-            $delta = (defval($_POST, "dtypn", 1) > 0 ? 1 : -1);
-            $match_accept = (stripos($_POST["decn"], "accept") !== false);
-            $match_reject = (stripos($_POST["decn"], "reject") !== false);
+        if (get($sv->req, "decn") && !get($sv->req, "decn_confirm")) {
+            $delta = (defval($sv->req, "dtypn", 1) > 0 ? 1 : -1);
+            $match_accept = (stripos($sv->req["decn"], "accept") !== false);
+            $match_reject = (stripos($sv->req["decn"], "reject") !== false);
             if ($delta > 0 && $match_reject)
                 $sv->set_error("decn", "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
             else if ($delta < 0 && $match_accept)
@@ -1003,144 +1000,144 @@ function save_decisions($sv, $si_name, $info, $set) {
         }
 
         $sv->need_lock["Paper"] = true;
-        return;
+        return true;
     }
 
-    // mark all used decisions
-    $decs = $Conf->decision_map();
-    $update = false;
-    foreach ($_POST as $k => $v)
-        if (str_starts_with($k, "dec") && ($k = cvtint(substr($k, 3), 0))) {
-            if ($v == "") {
-                $Conf->qe("update Paper set outcome=0 where outcome=$k");
-                unset($decs[$k]);
-                $update = true;
-            } else if ($v != $decs[$k]) {
-                $decs[$k] = $v;
-                $update = true;
+    public function save($sv, $si) {
+        global $Conf;
+        // mark all used decisions
+        $decs = $Conf->decision_map();
+        $update = false;
+        foreach ($sv->req as $k => $v)
+            if (str_starts_with($k, "dec") && ($k = cvtint(substr($k, 3), 0))) {
+                if ($v == "") {
+                    $Conf->qe("update Paper set outcome=0 where outcome=$k");
+                    unset($decs[$k]);
+                    $update = true;
+                } else if ($v != $decs[$k]) {
+                    $decs[$k] = $v;
+                    $update = true;
+                }
             }
+
+        if (defval($sv->req, "decn", "") != "") {
+            $delta = (defval($sv->req, "dtypn", 1) > 0 ? 1 : -1);
+            for ($k = $delta; isset($decs[$k]); $k += $delta)
+                /* skip */;
+            $decs[$k] = $sv->req["decn"];
+            $update = true;
         }
 
-    if (defval($_POST, "decn", "") != "") {
-        $delta = (defval($_POST, "dtypn", 1) > 0 ? 1 : -1);
-        for ($k = $delta; isset($decs[$k]); $k += $delta)
-            /* skip */;
-        $decs[$k] = $_POST["decn"];
-        $update = true;
+        if ($update)
+            $sv->save("outcome_map", json_encode($decs));
     }
-
-    if ($update)
-        $Conf->save_setting("outcome_map", 1, $decs);
 }
 
-function save_banal($sv, $si_name, $info, $set) {
-    global $Conf, $ConfSitePATH;
-    if ($set)
-        return true;
-    if (!isset($_POST["sub_banal"])) {
-        $sv->store("sub_banal", 0);
-        return true;
-    }
-
-    // check banal subsettings
-    $old_error_count = $sv->error_count();
-    $bs = array_fill(0, 6, "");
-    if (($s = trim(defval($_POST, "sub_banal_papersize", ""))) != ""
-        && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-        $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
-        $sout = array();
-        foreach ($ses as $ss)
-            if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
-                $sout[] = $ss;
-            else if ($ss != "") {
-                $sv->set_error("sub_banal_papersize", "Invalid paper size.");
-                $sout = null;
-                break;
-            }
-        if ($sout && count($sout))
-            $bs[0] = join(" OR ", $sout);
-    }
-
-    if (($s = trim(defval($_POST, "sub_banal_pagelimit", ""))) != ""
-        && strcasecmp($s, "N/A") != 0) {
-        if (($sx = cvtint($s, -1)) > 0)
-            $bs[1] = $sx;
-        else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
-                 && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
-            $bs[1] = +$m[1] . "-" . +$m[2];
-        else
-            $sv->set_error("sub_banal_pagelimit", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
-    }
-
-    if (($s = trim(defval($_POST, "sub_banal_columns", ""))) != ""
-        && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-        if (($sx = cvtint($s, -1)) >= 0)
-            $bs[2] = ($sx > 0 ? $sx : $bs[2]);
-        else
-            $sv->set_error("sub_banal_columns", "Columns must be a whole number.");
-    }
-
-    if (($s = trim(defval($_POST, "sub_banal_textblock", ""))) != ""
-        && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-        // change margin specifications into text block measurements
-        if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
-            $s = $m[1];
-            if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
-                $sv->set_error("sub_banal_pagesize", "You must specify a page size as well as margins.");
-                $sv->set_error("sub_banal_textblock");
-            } else if (strpos($s, "x") !== false) {
-                if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
-                    $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
-                    $s = "";
-                } else if (count($m) == 2)
-                    $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
-                else if (count($m) == 3)
-                    $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
-                else
-                    $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
-            } else {
-                $s = preg_replace('/\s+/', 'x', $s);
-                if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
-                    $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
-                else if (!is_array($m))
-                    $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
-                else if (count($m) == 2)
-                    $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
-                else if (count($m) == 3)
-                    $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
-                else
-                    $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
-            }
-            $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
+class Banal_SettingParser extends SettingParser {
+    public function parse($sv, $si) {
+        global $Conf, $ConfSitePATH;
+        if (!isset($sv->req["sub_banal"])) {
+            $sv->save("sub_banal", 0);
+            return false;
         }
-        // check text block measurements
-        if ($s && !CheckFormat::parse_dimen($s, 2))
-            $sv->set_error("sub_banal_textblock", "Invalid text block definition.");
-        else if ($s)
-            $bs[3] = $s;
-    }
 
-    if (($s = trim(defval($_POST, "sub_banal_bodyfontsize", ""))) != ""
-        && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-        if (!is_numeric($s) || $s <= 0)
-            $sv->error("sub_banal_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
-        else
-            $bs[4] = $s;
-    }
+        // check banal subsettings
+        $old_error_count = $sv->error_count();
+        $bs = array_fill(0, 6, "");
+        if (($s = trim(defval($sv->req, "sub_banal_papersize", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
+            $sout = array();
+            foreach ($ses as $ss)
+                if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
+                    $sout[] = $ss;
+                else if ($ss != "") {
+                    $sv->set_error("sub_banal_papersize", "Invalid paper size.");
+                    $sout = null;
+                    break;
+                }
+            if ($sout && count($sout))
+                $bs[0] = join(" OR ", $sout);
+        }
 
-    if (($s = trim(defval($_POST, "sub_banal_bodyleading", ""))) != ""
-        && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-        if (!is_numeric($s) || $s <= 0)
-            $sv->error("sub_banal_bodyleading", "Minimum body leading must be a number bigger than 0.");
-        else
-            $bs[5] = $s;
-    }
+        if (($s = trim(defval($sv->req, "sub_banal_pagelimit", ""))) != ""
+            && strcasecmp($s, "N/A") != 0) {
+            if (($sx = cvtint($s, -1)) > 0)
+                $bs[1] = $sx;
+            else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
+                     && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
+                $bs[1] = +$m[1] . "-" . +$m[2];
+            else
+                $sv->set_error("sub_banal_pagelimit", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
+        }
 
-    while (count($bs) > 0 && $bs[count($bs) - 1] == "")
-        array_pop($bs);
+        if (($s = trim(defval($sv->req, "sub_banal_columns", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            if (($sx = cvtint($s, -1)) >= 0)
+                $bs[2] = ($sx > 0 ? $sx : $bs[2]);
+            else
+                $sv->set_error("sub_banal_columns", "Columns must be a whole number.");
+        }
 
-    // actually create setting
-    if ($sv->error_count() == $old_error_count) {
+        if (($s = trim(defval($sv->req, "sub_banal_textblock", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            // change margin specifications into text block measurements
+            if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
+                $s = $m[1];
+                if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
+                    $sv->set_error("sub_banal_pagesize", "You must specify a page size as well as margins.");
+                    $sv->set_error("sub_banal_textblock");
+                } else if (strpos($s, "x") !== false) {
+                    if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
+                        $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
+                        $s = "";
+                    } else if (count($m) == 2)
+                        $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
+                    else if (count($m) == 3)
+                        $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
+                    else
+                        $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
+                } else {
+                    $s = preg_replace('/\s+/', 'x', $s);
+                    if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
+                        $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
+                    else if (!is_array($m))
+                        $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
+                    else if (count($m) == 2)
+                        $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
+                    else if (count($m) == 3)
+                        $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
+                    else
+                        $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
+                }
+                $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
+            }
+            // check text block measurements
+            if ($s && !CheckFormat::parse_dimen($s, 2))
+                $sv->set_error("sub_banal_textblock", "Invalid text block definition.");
+            else if ($s)
+                $bs[3] = $s;
+        }
+
+        if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            if (!is_numeric($s) || $s <= 0)
+                $sv->error("sub_banal_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
+            else
+                $bs[4] = $s;
+        }
+
+        if (($s = trim(defval($sv->req, "sub_banal_bodyleading", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            if (!is_numeric($s) || $s <= 0)
+                $sv->error("sub_banal_bodyleading", "Minimum body leading must be a number bigger than 0.");
+            else
+                $bs[5] = $s;
+        }
+
+        if ($sv->error_count() != $old_error_count)
+            return false;
+
         // Perhaps we have an old pdftohtml with a bad -zoom.
         $zoomarg = "";
         for ($tries = 0; $tries < 2; ++$tries) {
@@ -1153,7 +1150,10 @@ function save_banal($sv, $si_name, $info, $set) {
                 $zoomarg = "";
         }
 
-        $sv->store("sub_banal_data", join(";", $bs) . $zoomarg);
+        // actually create setting
+        while (count($bs) > 0 && $bs[count($bs) - 1] == "")
+            array_pop($bs);
+        $sv->save("sub_banal_data", join(";", $bs) . $zoomarg);
         $e1 = $cf->errors;
         $s2 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
         $e2 = $cf->errors;
@@ -1169,226 +1169,236 @@ function save_banal($sv, $si_name, $info, $set) {
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
             $sv->set_warning(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
         }
+
+        return false;
     }
 }
 
-function save_tracks($sv, $si_name, $info, $set) {
-    if ($set)
-        return;
-    $tagger = new Tagger;
-    $tracks = (object) array();
-    $missing_tags = false;
-    for ($i = 1; isset($_POST["name_track$i"]); ++$i) {
-        $trackname = trim($_POST["name_track$i"]);
-        if ($trackname === "" || $trackname === "(tag)")
-            continue;
-        else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
-                 || ($trackname === "_" && $i != 1)) {
-            if ($trackname !== "_")
-                $sv->set_error("name_track$i", "Track name: " . $tagger->error_html);
-            else
-                $sv->set_error("name_track$i", "Track name “_” is reserved.");
-            $sv->set_error("tracks");
-            continue;
+class Track_SettingParser extends SettingParser {
+    public function parse($sv, $si) {
+        $tagger = new Tagger;
+        $tracks = (object) array();
+        $missing_tags = false;
+        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
+            $trackname = trim($sv->req["name_track$i"]);
+            if ($trackname === "" || $trackname === "(tag)")
+                continue;
+            else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
+                     || ($trackname === "_" && $i != 1)) {
+                if ($trackname !== "_")
+                    $sv->set_error("name_track$i", "Track name: " . $tagger->error_html);
+                else
+                    $sv->set_error("name_track$i", "Track name “_” is reserved.");
+                $sv->set_error("tracks");
+                continue;
+            }
+            $t = (object) array();
+            foreach (Track::$map as $type => $value)
+                if (($ttype = defval($sv->req, "${type}_track$i", "")) == "+"
+                    || $ttype == "-") {
+                    $ttag = trim(defval($sv->req, "${type}tag_track$i", ""));
+                    if ($ttag === "" || $ttag === "(tag)") {
+                        $sv->set_error("{$type}_track$i", "Tag missing for track setting.");
+                        $sv->set_error("tracks");
+                    } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
+                               || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                        $t->$type = $ttype . $ttag;
+                    else {
+                        $sv->set_error("{$type}_track$i", $tagger->error_html);
+                        $sv->set_error("tracks");
+                    }
+                } else if ($ttype == "none")
+                    $t->$type = "+none";
+            if (count((array) $t) || get($tracks, "_"))
+                $tracks->$trackname = $t;
+            if (get($t, "viewpdf") && $t->viewpdf != get($t, "unassrev")
+                && get($t, "unassrev") != "+none")
+                $sv->set_warning(null, ($trackname === "_" ? "Default track" : "Track “{$trackname}”") . ": Generally, a track that restricts PDF visibility should restrict the “self-assign papers” right in the same way.");
         }
-        $t = (object) array();
-        foreach (array("view", "viewpdf", "viewrev", "assrev", "unassrev",
-                       "viewtracker") as $type)
-            if (($ttype = defval($_POST, "${type}_track$i", "")) == "+"
-                || $ttype == "-") {
-                $ttag = trim(defval($_POST, "${type}tag_track$i", ""));
-                if ($ttag === "" || $ttag === "(tag)") {
-                    $sv->set_error("{$type}_track$i", "Tag missing for track setting.");
-                    $sv->set_error("tracks");
-                } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
-                           || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                    $t->$type = $ttype . $ttag;
-                else {
-                    $sv->set_error("{$type}_track$i", $tagger->error_html);
-                    $sv->set_error("tracks");
-                }
-            } else if ($ttype == "none")
-                $t->$type = "+none";
-        if (count((array) $t) || get($tracks, "_"))
-            $tracks->$trackname = $t;
-        if (get($t, "viewpdf") && $t->viewpdf != get($t, "unassrev")
-            && get($t, "unassrev") != "+none")
-            $sv->set_warning(null, ($trackname === "_" ? "Default track" : "Track “{$trackname}”") . ": Generally, a track that restricts PDF visibility should restrict the “self-assign papers” right in the same way.");
+        $sv->save("tracks", count((array) $tracks) ? json_encode($tracks) : null);
+        return false;
     }
-    $sv->store("tracks", count((array) $tracks) ? json_encode($tracks) : null);
 }
 
-function save_rounds($sv, $si_name, $info, $set) {
-    global $Conf;
-    if ($set)
-        return;
-    else if (!isset($_POST["rev_roundtag"])) {
-        $sv->store("rev_roundtag", null);
-        return;
-    }
-    // round names
-    $roundnames = $roundnames_set = array();
-    $roundname0 = $round_deleted = null;
-    for ($i = 0;
-         isset($_POST["roundname_$i"]) || isset($_POST["deleteround_$i"]) || !$i;
-         ++$i) {
-        $rname = trim(get_s($_POST, "roundname_$i"));
-        if ($rname === "(no name)" || $rname === "default" || $rname === "unnamed")
-            $rname = "";
-        if ((get($_POST, "deleteround_$i") || $rname === "") && $i) {
-            $roundnames[] = ";";
-            $sv->rev_round_changes[] = array($i, 0);
-            if ($round_deleted === null && !isset($_POST["roundname_0"])
-                && $i < $_POST["oldroundcount"])
-                $round_deleted = $i;
-        } else if ($rname === "")
-            /* ignore */;
-        else if (($rerror = Conf::round_name_error($rname)))
-            $sv->set_error("roundname_$i", $rerror);
-        else if ($i == 0)
-            $roundname0 = $rname;
-        else if (get($roundnames_set, strtolower($rname))) {
-            $roundnames[] = ";";
-            $sv->rev_round_changes[] = array($i, $roundnames_set[strtolower($rname)]);
-        } else {
-            $roundnames[] = $rname;
-            $roundnames_set[strtolower($rname)] = $i;
-        }
-    }
-    if ($roundname0 && !get($roundnames_set, strtolower($roundname0))) {
-        $roundnames[] = $roundname0;
-        $roundnames_set[strtolower($roundname0)] = count($roundnames);
-    }
-    if ($roundname0)
-        array_unshift($sv->rev_round_changes, array(0, $roundnames_set[strtolower($roundname0)]));
+class Round_SettingParser extends SettingParser {
+    private $rev_round_changes = array();
 
-    // round deadlines
-    foreach ($Conf->round_list() as $i => $rname) {
-        $suffix = $i ? "_$i" : "";
-        foreach (Conf::$review_deadlines as $k)
-            $sv->store($k . $suffix, null);
-    }
-    $rtransform = array();
-    if ($roundname0 && ($ri = $roundnames_set[strtolower($roundname0)])
-        && !isset($_POST["pcrev_soft_$ri"])) {
-        $rtransform[0] = "_$ri";
-        $rtransform[$ri] = false;
-    }
-    if ($round_deleted) {
-        $rtransform[$round_deleted] = "";
-        if (!isset($rtransform[0]))
-            $rtransform[0] = false;
-    }
-    for ($i = 0; $i < count($roundnames) + 1; ++$i)
-        if ((isset($rtransform[$i])
-             || ($i ? $roundnames[$i - 1] !== ";" : !isset($_POST["deleteround_0"])))
-            && get($rtransform, $i) !== false) {
-            $isuffix = $i ? "_$i" : "";
-            if (($osuffix = get($rtransform, $i)) === null)
-                $osuffix = $isuffix;
-            $ndeadlines = 0;
-            foreach (Conf::$review_deadlines as $k) {
-                $v = parse_value($sv, $k . $isuffix, Si::get($k));
-                $sv->store($k . $osuffix, $v <= 0 ? null : $v);
-                $ndeadlines += $v > 0;
-            }
-            if ($ndeadlines == 0 && $osuffix)
-                $sv->store("pcrev_soft$osuffix", 0);
-            foreach (array("pcrev_", "extrev_") as $k) {
-                list($soft, $hard) = ["{$k}soft$osuffix", "{$k}hard$osuffix"];
-                list($softv, $hardv) = [$sv->savedv($soft), $sv->savedv($hard)];
-                if (!$softv && $hardv)
-                    $sv->store($soft, $hardv);
-                else if ($hardv && $softv > $hardv) {
-                    $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                    $sv->set_error($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
-                    $sv->set_error($hard);
-                }
+    function parse($sv, $si) {
+        global $Conf;
+        if (!isset($sv->req["rev_roundtag"])) {
+            $sv->save("rev_roundtag", null);
+            return false;
+        }
+        // round names
+        $roundnames = $roundnames_set = array();
+        $roundname0 = $round_deleted = null;
+        for ($i = 0;
+             isset($sv->req["roundname_$i"]) || isset($sv->req["deleteround_$i"]) || !$i;
+             ++$i) {
+            $rname = trim(get_s($sv->req, "roundname_$i"));
+            if ($rname === "(no name)" || $rname === "default" || $rname === "unnamed")
+                $rname = "";
+            if ((get($sv->req, "deleteround_$i") || $rname === "") && $i) {
+                $roundnames[] = ";";
+                $this->rev_round_changes[] = array($i, 0);
+                if ($round_deleted === null && !isset($sv->req["roundname_0"])
+                    && $i < $sv->req["oldroundcount"])
+                    $round_deleted = $i;
+            } else if ($rname === "")
+                /* ignore */;
+            else if (($rerror = Conf::round_name_error($rname)))
+                $sv->set_error("roundname_$i", $rerror);
+            else if ($i == 0)
+                $roundname0 = $rname;
+            else if (get($roundnames_set, strtolower($rname))) {
+                $roundnames[] = ";";
+                $this->rev_round_changes[] = array($i, $roundnames_set[strtolower($rname)]);
+            } else {
+                $roundnames[] = $rname;
+                $roundnames_set[strtolower($rname)] = $i;
             }
         }
-
-    // round list (save after deadlines processing)
-    while (count($roundnames) && $roundnames[count($roundnames) - 1] === ";")
-        array_pop($roundnames);
-    $sv->store("tag_rounds", join(" ", $roundnames));
-
-    // default round
-    $t = trim($_POST["rev_roundtag"]);
-    $sv->store("rev_roundtag", null);
-    if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed)\z/i', $t))
-        /* do nothing */;
-    else if ($t === "#0") {
+        if ($roundname0 && !get($roundnames_set, strtolower($roundname0))) {
+            $roundnames[] = $roundname0;
+            $roundnames_set[strtolower($roundname0)] = count($roundnames);
+        }
         if ($roundname0)
-            $sv->store("rev_roundtag", $roundname0);
-    } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
-        $rname = get($roundnames, substr($t, 1) - 1);
-        if ($rname && $rname !== ";")
-            $sv->store("rev_roundtag", $rname);
-    } else if (!($rerror = Conf::round_name_error($t)))
-        $sv->store("rev_roundtag", $t);
-    else
-        $sv->set_error("rev_roundtag", $rerror);
-}
+            array_unshift($this->rev_round_changes, array(0, $roundnames_set[strtolower($roundname0)]));
 
-function save_resp_rounds($sv, $si_name, $info, $set) {
-    global $Conf;
-    if ($set || !$sv->newv("resp_active"))
-        return;
-    $old_roundnames = $Conf->resp_round_list();
-    $roundnames = array(1);
-    $roundnames_set = array();
+        // round deadlines
+        foreach ($Conf->round_list() as $i => $rname) {
+            $suffix = $i ? "_$i" : "";
+            foreach (Conf::$review_deadlines as $k)
+                $sv->save($k . $suffix, null);
+        }
+        $rtransform = array();
+        if ($roundname0 && ($ri = $roundnames_set[strtolower($roundname0)])
+            && !isset($sv->req["pcrev_soft_$ri"])) {
+            $rtransform[0] = "_$ri";
+            $rtransform[$ri] = false;
+        }
+        if ($round_deleted) {
+            $rtransform[$round_deleted] = "";
+            if (!isset($rtransform[0]))
+                $rtransform[0] = false;
+        }
+        for ($i = 0; $i < count($roundnames) + 1; ++$i)
+            if ((isset($rtransform[$i])
+                 || ($i ? $roundnames[$i - 1] !== ";" : !isset($sv->req["deleteround_0"])))
+                && get($rtransform, $i) !== false) {
+                $isuffix = $i ? "_$i" : "";
+                if (($osuffix = get($rtransform, $i)) === null)
+                    $osuffix = $isuffix;
+                $ndeadlines = 0;
+                foreach (Conf::$review_deadlines as $k) {
+                    $v = parse_value($sv, $k . $isuffix, Si::get($k));
+                    $sv->save($k . $osuffix, $v <= 0 ? null : $v);
+                    $ndeadlines += $v > 0;
+                }
+                if ($ndeadlines == 0 && $osuffix)
+                    $sv->save("pcrev_soft$osuffix", 0);
+                foreach (array("pcrev_", "extrev_") as $k) {
+                    list($soft, $hard) = ["{$k}soft$osuffix", "{$k}hard$osuffix"];
+                    list($softv, $hardv) = [$sv->savedv($soft), $sv->savedv($hard)];
+                    if (!$softv && $hardv)
+                        $sv->save($soft, $hardv);
+                    else if ($hardv && $softv > $hardv) {
+                        $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
+                        $sv->set_error($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
+                        $sv->set_error($hard);
+                    }
+                }
+            }
 
-    if (isset($_POST["resp_roundname"])) {
-        $rname = trim(get_s($_POST, "resp_roundname"));
-        if ($rname === "" || $rname === "none" || $rname === "1")
+        // round list (save after deadlines processing)
+        while (count($roundnames) && $roundnames[count($roundnames) - 1] === ";")
+            array_pop($roundnames);
+        $sv->save("tag_rounds", join(" ", $roundnames));
+
+        // default round
+        $t = trim($sv->req["rev_roundtag"]);
+        $sv->save("rev_roundtag", null);
+        if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed)\z/i', $t))
             /* do nothing */;
-        else if (($rerror = Conf::resp_round_name_error($rname)))
-            $sv->set_error("resp_roundname", $rerror);
-        else {
-            $roundnames[0] = $rname;
-            $roundnames_set[strtolower($rname)] = 0;
-        }
+        else if ($t === "#0") {
+            if ($roundname0)
+                $sv->save("rev_roundtag", $roundname0);
+        } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
+            $rname = get($roundnames, substr($t, 1) - 1);
+            if ($rname && $rname !== ";")
+                $sv->save("rev_roundtag", $rname);
+        } else if (!($rerror = Conf::round_name_error($t)))
+            $sv->save("rev_roundtag", $t);
+        else
+            $sv->set_error("rev_roundtag", $rerror);
+        if (count($this->rev_round_changes)) {
+            $sv->need_lock["PaperReview"] = true;
+            return true;
+        } else
+            return false;
     }
-
-    for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i) {
-        $rname = trim(get_s($_POST, "resp_roundname_$i"));
-        if ($rname === "" && get($old_roundnames, $i))
-            $rname = $old_roundnames[$i];
-        if ($rname === "")
-            continue;
-        else if (($rerror = Conf::resp_round_name_error($rname)))
-            $sv->set_error("resp_roundname_$i", $rerror);
-        else if (get($roundnames_set, strtolower($rname)) !== null)
-            $sv->set_error("resp_roundname_$i", "Response round name “" . htmlspecialchars($rname) . "” has already been used.");
-        else {
-            $roundnames[] = $rname;
-            $roundnames_set[strtolower($rname)] = $i;
-        }
+    public function save($sv, $si) {
+        // remove references to deleted rounds
+        foreach ($this->rev_round_changes as $x)
+            $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
     }
-
-    foreach ($roundnames_set as $i) {
-        $isuf = $i ? "_$i" : "";
-        if (($v = parse_value($sv, "resp_open$isuf", Si::get("resp_open"))) !== null)
-            $sv->store("resp_open$isuf", $v <= 0 ? null : $v);
-        if (($v = parse_value($sv, "resp_done$isuf", Si::get("resp_done"))) !== null)
-            $sv->store("resp_done$isuf", $v <= 0 ? null : $v);
-        if (($v = parse_value($sv, "resp_words$isuf", Si::get("resp_words"))) !== null)
-            $sv->store("resp_words$isuf", $v < 0 ? null : $v);
-        if (($v = parse_value($sv, "msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
-            $sv->store("msg.resp_instrux$isuf", $v);
-    }
-
-    if (count($roundnames) > 1 || $roundnames[0] !== 1)
-        $sv->store("resp_rounds", join(" ", $roundnames));
-    else
-        $sv->store("resp_rounds", null);
 }
 
-function save_review_form($sv, $si_name, $info, $set) {
-    if (!$set)
-        $sv->need_lock["PaperReview"] = true;
-    else
-        rf_update($sv);
+class RespRound_SettingParser extends SettingParser {
+    function parse($sv, $si) {
+        global $Conf;
+        if (!$sv->newv("resp_active"))
+            return false;
+        $old_roundnames = $Conf->resp_round_list();
+        $roundnames = array(1);
+        $roundnames_set = array();
+
+        if (isset($sv->req["resp_roundname"])) {
+            $rname = trim(get_s($sv->req, "resp_roundname"));
+            if ($rname === "" || $rname === "none" || $rname === "1")
+                /* do nothing */;
+            else if (($rerror = Conf::resp_round_name_error($rname)))
+                $sv->set_error("resp_roundname", $rerror);
+            else {
+                $roundnames[0] = $rname;
+                $roundnames_set[strtolower($rname)] = 0;
+            }
+        }
+
+        for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i) {
+            $rname = trim(get_s($sv->req, "resp_roundname_$i"));
+            if ($rname === "" && get($old_roundnames, $i))
+                $rname = $old_roundnames[$i];
+            if ($rname === "")
+                continue;
+            else if (($rerror = Conf::resp_round_name_error($rname)))
+                $sv->set_error("resp_roundname_$i", $rerror);
+            else if (get($roundnames_set, strtolower($rname)) !== null)
+                $sv->set_error("resp_roundname_$i", "Response round name “" . htmlspecialchars($rname) . "” has already been used.");
+            else {
+                $roundnames[] = $rname;
+                $roundnames_set[strtolower($rname)] = $i;
+            }
+        }
+
+        foreach ($roundnames_set as $i) {
+            $isuf = $i ? "_$i" : "";
+            if (($v = parse_value($sv, "resp_open$isuf", Si::get("resp_open"))) !== null)
+                $sv->save("resp_open$isuf", $v <= 0 ? null : $v);
+            if (($v = parse_value($sv, "resp_done$isuf", Si::get("resp_done"))) !== null)
+                $sv->save("resp_done$isuf", $v <= 0 ? null : $v);
+            if (($v = parse_value($sv, "resp_words$isuf", Si::get("resp_words"))) !== null)
+                $sv->save("resp_words$isuf", $v < 0 ? null : $v);
+            if (($v = parse_value($sv, "msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
+                $sv->save("msg.resp_instrux$isuf", $v);
+        }
+
+        if (count($roundnames) > 1 || $roundnames[0] !== 1)
+            $sv->save("resp_rounds", join(" ", $roundnames));
+        else
+            $sv->save("resp_rounds", null);
+        return false;
+    }
 }
 
 function truthy($x) {
@@ -1396,34 +1406,36 @@ function truthy($x) {
              || $x === "" || $x === "0" || $x === "false");
 }
 
-function account_value($sv, $info) {
-    if ($info->internal)
+function account_value($sv, $si) {
+    if ($si->internal)
         return;
 
-    $xname = str_replace(".", "_", $info->name);
-    if ($info->parser)
-        $has_value = truthy(get($_POST, "has_$xname"));
+    $xname = str_replace(".", "_", $si->name);
+    if ($si->parser)
+        $has_value = truthy(get($sv->req, "has_$xname"));
     else
-        $has_value = isset($_POST[$xname])
-            || (($info->type === "cdate" || $info->type === "checkbox")
-                && truthy(get($_POST, "has_$xname")));
+        $has_value = isset($sv->req[$xname])
+            || (($si->type === "cdate" || $si->type === "checkbox")
+                && truthy(get($sv->req, "has_$xname")));
     if (!$has_value)
         return;
 
-    if ($info->disabled || $info->novalue || !$info->type || $info->type === "none")
+    if ($si->disabled || $si->novalue || !$si->type || $si->type === "none")
         /* ignore changes to disabled/novalue settings */;
-    else if ($info->parser) {
-        call_user_func($info->parser, $sv, $info->name, $info, false);
-        $sv->save_callbacks[$info->name] = $info;
+    else if ($si->parser) {
+        if (!isset($sv->parsers[$si->parser]))
+            $sv->parsers[$si->parser] = new $si->parser;
+        if ($sv->parsers[$si->parser]->parse($sv, $si))
+            $sv->save_callbacks[$si->name] = $si;
     } else {
-        $v = parse_value($sv, $info->name, $info);
+        $v = parse_value($sv, $si->name, $si);
         if ($v === null)
             return;
-        if (is_int($v) && $v <= 0 && $info->type !== "radio" && $info->type !== "zint")
+        if (is_int($v) && $v <= 0 && $si->type !== "radio" && $si->type !== "zint")
             $v = null;
-        $sv->store($info->name, $v);
-        if ($info->ifnonempty)
-            $sv->store($info->ifnonempty, $v === null ? null : 1);
+        $sv->save($si->name, $v);
+        if ($si->ifnonempty)
+            $sv->save($si->ifnonempty, $v === null ? null : 1);
     }
 }
 
@@ -1482,20 +1494,20 @@ function do_setting_update($sv) {
              as $dn1 => $dn2)
         list($dv1, $dv2) = [$sv->savedv($dn1), $sv->savedv($dn2)];
         if (!$dv1 && $dv2)
-            $sv->store($dn1, $dv2);
+            $sv->save($dn1, $dv2);
         else if ($dv2 && $dv1 > $dv2) {
             $sv->set_error($dn1, unparse_setting_error(Si::get($dn1), "Must come before " . Si::get($dn2, "short_description") . "."));
             $sv->set_error($dn2);
         }
     if ($sv->has_savedv("sub_sub"))
-        $sv->store("sub_update", $sv->savedv("sub_sub"));
+        $sv->save("sub_update", $sv->savedv("sub_sub"));
     if (get($Opt, "defaultSiteContact")) {
         if ($sv->has_savedv("opt.contactName")
             && get($Opt, "contactName") === $sv->savedv("opt.contactName"))
-            $sv->store("opt.contactName", null);
+            $sv->save("opt.contactName", null);
         if ($sv->has_savedv("opt.contactEmail")
             && get($Opt, "contactEmail") === $sv->savedv("opt.contactEmail"))
-            $sv->store("opt.contactEmail", null);
+            $sv->save("opt.contactEmail", null);
     }
     if ($sv->has_savedv("resp_active") && $sv->savedv("resp_active"))
         foreach (explode(" ", $sv->newv("resp_rounds")) as $i => $rname) {
@@ -1515,7 +1527,7 @@ function do_setting_update($sv) {
             $x = "timeWithdrawn<=0";
         $result = $Conf->q("select ifnull(min(paperId),0) from Paper where $x");
         if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
-            $sv->store("papersub", $row[0]);
+            $sv->save("papersub", $row[0]);
     }
 
     // Setting relationships
@@ -1523,12 +1535,13 @@ function do_setting_update($sv) {
         && $sv->newv("sub_open", 1) <= 0
         && $sv->oldv("sub_open") > 0
         && $sv->newv("sub_sub") <= 0)
-        $sv->store("sub_close", $Now);
+        $sv->save("sub_close", $Now);
     if ($sv->has_savedv("msg.clickthrough_submit"))
-        $sv->store("clickthrough_submit", null);
+        $sv->save("clickthrough_submit", null);
 
     // make settings
-    if (!$sv->has_errors() && count($sv->savedv) > 0) {
+    if (!$sv->has_errors()
+        && (count($sv->savedv) || count($sv->save_callbacks))) {
         $tables = "Settings write";
         foreach ($sv->need_lock as $t => $need)
             if ($need)
@@ -1536,8 +1549,8 @@ function do_setting_update($sv) {
         $Conf->qe("lock tables $tables");
 
         // apply settings
-        foreach ($sv->save_callbacks as $name => $si)
-            call_user_func($si->parser, $sv, $name, $si, true);
+        foreach ($sv->save_callbacks as $si)
+            $sv->parsers[$si->parser]->save($sv, $si);
 
         $dv = $aq = $av = array();
         foreach ($sv->savedv as $n => $v) {
@@ -1569,10 +1582,6 @@ function do_setting_update($sv) {
         $Conf->qe("unlock tables");
         $Me->log_activity("Updated settings group '$Group'");
         $Conf->load_settings();
-
-        // remove references to deleted rounds
-        foreach ($sv->rev_round_changes as $x)
-            $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
 
         // contactdb may need to hear about changes to shortName
         if ($sv->has_savedv("opt.shortName")
@@ -1618,11 +1627,11 @@ function doRadio($name, $varr) {
 function render_entry($name, $v, $size = 30, $temptext = "") {
     global $Sv;
     $js = ["size" => $size, "placeholder" => $temptext];
-    if (($info = Si::get($name))) {
-        if ($info->size)
-            $js["size"] = $info->size;
-        if ($info->placeholder)
-            $js["placeholder"] = $info->placeholder;
+    if (($si = Si::get($name))) {
+        if ($si->size)
+            $js["size"] = $si->size;
+        if ($si->placeholder)
+            $js["placeholder"] = $si->placeholder;
     }
     return Ht::entry($name, $v, $Sv->sjs($name, $js));
 }
@@ -1647,7 +1656,7 @@ function doEntry($name, $v, $size = 30) {
 function date_value($name, $temptext, $othername = null) {
     global $Conf, $Sv;
     $x = $Sv->sv($name);
-    if ($x !== null && $Sv->has_errors())
+    if ($x !== null && $Sv->use_req())
         return $x;
     if ($othername && $Sv->sv($othername) == $x)
         return $temptext;
@@ -1833,16 +1842,16 @@ function doOptGroupOption($sv, $o) {
         $id = "n";
     }
 
-    if ($sv->has_errors() && isset($_POST["optn$id"])) {
+    if ($sv->use_req() && isset($sv->req["optn$id"])) {
         $o = PaperOption::make(array("id" => $id,
-                "name" => $_POST["optn$id"],
-                "description" => get($_POST, "optd$id"),
-                "type" => get($_POST, "optvt$id", "checkbox"),
-                "visibility" => get($_POST, "optp$id", ""),
-                "position" => get($_POST, "optfp$id", 1),
-                "display" => get($_POST, "optdt$id")));
+                "name" => $sv->req["optn$id"],
+                "description" => get($sv->req, "optd$id"),
+                "type" => get($sv->req, "optvt$id", "checkbox"),
+                "visibility" => get($sv->req, "optp$id", ""),
+                "position" => get($sv->req, "optfp$id", 1),
+                "display" => get($sv->req, "optdt$id")));
         if ($o->has_selector())
-            $o->selector = explode("\n", rtrim(defval($_POST, "optv$id", "")));
+            $o->selector = explode("\n", rtrim(defval($sv->req, "optv$id", "")));
     }
 
     echo "<tr><td><div class='f-contain'>\n",
@@ -2055,8 +2064,8 @@ function doOptGroup($sv) {
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = '<td class="lcaption">Current</td>';
     foreach ($Conf->topic_map() as $tid => $tname) {
-        if ($sv->has_errors() && isset($_POST["top$tid"]))
-            $tname = $_POST["top$tid"];
+        if ($sv->use_req() && isset($sv->req["top$tid"]))
+            $tname = $sv->req["top$tid"];
         echo '<tr>', $td1, '<td class="lentry">',
             Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em")),
             '</td>';
@@ -2084,7 +2093,7 @@ function doOptGroup($sv) {
         $td1 = "<td></td>";
     }
     echo '<tr><td class="lcaption top" rowspan="40">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", $sv->has_errors() ? get($_POST, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
+        Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
         '</td></tr></table>';
 }
 
@@ -2092,8 +2101,8 @@ function doOptGroup($sv) {
 function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
     global $Conf;
     $rname = "roundname_$rnum";
-    if ($sv->has_errors() && $rnum !== '$')
-        $nameval = (string) get($_POST, $rname);
+    if ($sv->use_req() && $rnum !== '$')
+        $nameval = (string) get($sv->req, $rname);
 
     $default_rname = "unnamed";
     if ($nameval === "(new round)" || $rnum === '$')
@@ -2164,9 +2173,9 @@ function doRevGroup($sv) {
     echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', $date_text, '</p>';
 
     $rounds = $Conf->round_list();
-    if ($sv->has_errors()) {
-        for ($i = 1; isset($_POST["roundname_$i"]); ++$i)
-            $rounds[$i] = get($_POST, "deleteround_$i") ? ";" : trim(get_s($_POST, "roundname_$i"));
+    if ($sv->use_req()) {
+        for ($i = 1; isset($sv->req["roundname_$i"]); ++$i)
+            $rounds[$i] = get($sv->req, "deleteround_$i") ? ";" : trim(get_s($sv->req, "roundname_$i"));
     }
 
     // prepare round selector
@@ -2185,7 +2194,7 @@ function doRevGroup($sv) {
     $print_round0 = true;
     if ($round_value !== "#0" && $round_value !== ""
         && $current_round_value !== ""
-        && (!$sv->has_errors() || isset($_POST["roundname_0"]))
+        && (!$sv->use_req() || isset($sv->req["roundname_0"]))
         && !$Conf->round0_defined())
         $print_round0 = false;
 
@@ -2273,9 +2282,9 @@ function doRevGroup($sv) {
 function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
     global $Conf;
     $tclass = $ttag = "";
-    if ($sv->has_errors()) {
-        $tclass = defval($_POST, "${type}_track$tnum", "");
-        $ttag = defval($_POST, "${type}tag_track$tnum", "");
+    if ($sv->use_req()) {
+        $tclass = defval($sv->req, "${type}_track$tnum", "");
+        $ttag = defval($sv->req, "${type}tag_track$tnum", "");
     } else if ($thistrack && get($thistrack, $type)) {
         if ($thistrack->$type == "+none")
             $tclass = "none";
@@ -2334,8 +2343,8 @@ function doTagsGroup($sv) {
     echo "<h3 class=\"settings\">Tags</h3>\n";
 
     echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
-    if ($sv->has_errors())
-        $v = defval($_POST, "tag_chair", "");
+    if ($sv->use_req())
+        $v = defval($sv->req, "tag_chair", "");
     else
         $v = join(" ", array_keys(TagInfo::chair_tags()));
     echo "<td>", Ht::hidden("has_tag_chair", 1);
@@ -2343,8 +2352,8 @@ function doTagsGroup($sv) {
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
-    if ($sv->has_errors())
-        $v = defval($_POST, "tag_approval", "");
+    if ($sv->use_req())
+        $v = defval($sv->req, "tag_approval", "");
     else {
         $x = "";
         foreach (TagInfo::approval_tags() as $n => $v)
@@ -2356,8 +2365,8 @@ function doTagsGroup($sv) {
     echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
-    if ($sv->has_errors())
-        $v = defval($_POST, "tag_vote", "");
+    if ($sv->use_req())
+        $v = defval($sv->req, "tag_vote", "");
     else {
         $x = "";
         foreach (TagInfo::vote_tags() as $n => $v)
@@ -2369,8 +2378,8 @@ function doTagsGroup($sv) {
     echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
-    if ($sv->has_errors())
-        $v = defval($_POST, "tag_rank", "");
+    if ($sv->use_req())
+        $v = defval($sv->req, "tag_rank", "");
     else
         $v = $Conf->setting_data("tag_rank", "");
     echo "<td>", Ht::hidden("has_tag_rank", 1);
@@ -2388,8 +2397,8 @@ function doTagsGroup($sv) {
         $tag_colors[TagInfo::canonical_color($x[2])][] = $x[1];
     $tag_colors_rows = array();
     foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
-        if ($sv->has_errors())
-            $v = defval($_POST, "tag_color_$k", "");
+        if ($sv->use_req())
+            $v = defval($sv->req, "tag_color_$k", "");
         else if (isset($tag_colors[$k]))
             $v = join(" ", $tag_colors[$k]);
         else
@@ -2405,8 +2414,8 @@ function doTagsGroup($sv) {
     foreach (["black" => "black label", "red" => "red label", "green" => "green label",
               "blue" => "blue label", "white" => "white label"]
              as $k => $desc) {
-        if ($sv->has_errors())
-            $v = defval($_POST, "tag_badge_$k", "");
+        if ($sv->use_req())
+            $v = defval($sv->req, "tag_badge_$k", "");
         else if (isset($tag_badges[$k]))
             $v = join(" ", $tag_badges[$k]);
         else
@@ -2436,9 +2445,9 @@ function doTagsGroup($sv) {
             ++$tracknum;
         }
     // new tracks (if error prevented saving)
-    if ($sv->has_errors())
-        for ($i = 1; isset($_POST["name_track$i"]); ++$i) {
-            $trackname = trim($_POST["name_track$i"]);
+    if ($sv->use_req())
+        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
+            $trackname = trim($sv->req["name_track$i"]);
             if (!isset($trackj->$trackname)) {
                 do_track($sv, $trackname, $tracknum);
                 ++$tracknum;
@@ -2480,10 +2489,10 @@ function doDecGroup($sv) {
         Ht::hidden("has_resp_rounds", 1);
 
     // Response rounds
-    if ($sv->has_errors()) {
+    if ($sv->use_req()) {
         $rrounds = array(1);
-        for ($i = 1; isset($_POST["resp_roundname_$i"]); ++$i)
-            $rrounds[$i] = $_POST["resp_roundname_$i"];
+        for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i)
+            $rrounds[$i] = $sv->req["resp_roundname_$i"];
     } else
         $rrounds = $Conf->resp_round_list();
     $rrounds["n"] = "";
@@ -2542,8 +2551,8 @@ function doDecGroup($sv) {
     $caption = "<td class='lcaption' rowspan='$n_real_decs'>Current decision types</td>";
     foreach ($decs as $k => $v)
         if ($k) {
-            if ($sv->has_errors())
-                $v = defval($_POST, "dec$k", $v);
+            if ($sv->use_req())
+                $v = defval($sv->req, "dec$k", $v);
             echo "<tr>", $caption, '<td class="lentry nw">',
                 Ht::entry("dec$k", $v, array("size" => 35)),
                 " &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
@@ -2556,9 +2565,9 @@ function doDecGroup($sv) {
     // new decision
     $v = "";
     $vclass = 1;
-    if ($sv->has_errors()) {
-        $v = defval($_POST, "decn", $v);
-        $vclass = defval($_POST, "dtypn", $vclass);
+    if ($sv->use_req()) {
+        $v = defval($sv->req, "decn", $v);
+        $vclass = defval($sv->req, "dtypn", $vclass);
     }
     echo '<tr><td class="lcaption">',
         $sv->label("decn", "New decision type"),
