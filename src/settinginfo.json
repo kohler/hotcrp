@@ -8,7 +8,7 @@
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 0
     },
     "clickthrough_submit": {
-        "invisible": true
+        "internal": true
     },
     "cmt_always": {
         "name": "Allow comments even if reviewing is closed",
@@ -88,13 +88,13 @@
         "type": "htmlstring", "message_default": "msg.submit"
     },
     "next_optionid": {
-        "invisible": true
+        "internal": true
     },
     "opt.clickthrough_review": {
-        "invisible": true
+        "internal": true
     },
     "opt.clickthrough_submit": {
-        "invisible": true
+        "internal": true
     },
     "opt.conferenceSite": {
         "name": "Conference URL",
@@ -129,7 +129,7 @@
         "type": "string"
     },
     "options_nextid": {
-        "invisible": true, "storage": "val.options"
+        "internal": true, "storage": "val.options"
     },
     "pc_seeall": {
         "name": "PC can see all papers",
@@ -214,7 +214,7 @@
         "storage": "val.sub_banal"
     },
     "sub_banal_data": {
-        "invisible": false, "type": "string", "storage": "sub_banal"
+        "internal": true, "type": "string", "storage": "sub_banal"
     },
     "sub_blind": {
         "name": "Submission anonymity",
@@ -263,7 +263,7 @@
         "type": "date"
     },
     "sub_update": {
-        "invisible": true
+        "internal": true
     },
     "tag_approval": {
         "name": "Approval voting tags",
@@ -290,7 +290,7 @@
         "type": "taglist", "parser": "save_tags"
     },
     "tag_rounds": {
-        "invisible": true, "type": "taglist"
+        "internal": true, "type": "taglist"
     },
     "tag_seeall": {
         "name": "PC can see tags for conflicted papers",

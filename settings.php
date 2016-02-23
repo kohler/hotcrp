@@ -14,7 +14,7 @@ class Si {
     public $name;
     public $short_description;
     public $type;
-    public $invisible;
+    public $internal;
     public $storage_type;
     public $storage = null;
     public $optional = false;
@@ -55,7 +55,7 @@ class Si {
         $this->store($name, "short_description", $j, "name", "is_string");
         foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
-        foreach (["invisible", "optional", "novalue", "disabled"] as $k)
+        foreach (["internal", "optional", "novalue", "disabled"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
         $this->store($name, "values", $j, "values", "is_array");
@@ -1397,7 +1397,7 @@ function truthy($x) {
 }
 
 function account_value($sv, $info) {
-    if ($info->invisible)
+    if ($info->internal)
         return;
 
     $xname = str_replace(".", "_", $info->name);
