@@ -224,7 +224,7 @@ class Dbl {
                     reset($arg);
                     $arg = ($nextch === "a" ? "=" : "!=") . current($arg);
                 } else
-                    $arg = ($nextch === "a" ? " IN (" : " NOT IN (") . join(",", $arg) . ")";
+                    $arg = ($nextch === "a" ? " IN (" : " NOT IN (") . join(", ", $arg) . ")";
                 ++$nextpos;
             } else if ($nextch === "s") {
                 $arg = $dblink->real_escape_string($arg);
@@ -547,7 +547,7 @@ function sql_in_numeric_set($set) {
     else if (count($set) == 1)
         return "=" . $set[0];
     else
-        return " in (" . join(",", $set) . ")";
+        return " in (" . join(", ", $set) . ")";
 }
 
 function sql_not_in_numeric_set($set) {
