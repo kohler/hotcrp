@@ -404,6 +404,37 @@ class SessionList {
     static private $active_listid = null;
     static private $active_list = null;
     static private $requested_list = false;
+    static private function decode_ids($ids) {
+        if (($a = json_decode($ids)) !== null)
+            return $a;
+        $a = [];
+        preg_match_all('/[-\d]+/', $ids, $m);
+        foreach ($m[0] as $p)
+            if (($pos = strpos($p, "-"))) {
+                $j = (int) substr($p, $pos + 1);
+                for ($i = (int) substr($p, 0, $pos); $i <= $j; ++$i)
+                    $a[] = $i;
+            } else
+                $a[] = (int) $p;
+        return $a;
+    }
+    static private function encode_ids($ids) {
+        if (count($ids) < 30)
+            return json_encode($ids);
+        $a = array();
+        $p0 = $p1 = -100;
+        foreach ($ids as $p) {
+            if ($p1 + 1 != $p) {
+                if ($p0 > 0)
+                    $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
+                $p0 = $p;
+            }
+            $p1 = $p;
+        }
+        if ($p0 > 0)
+            $a[] = ($p0 == $p1 ? $p0 : "$p0-$p1");
+        return "[" . join(",", $a) . "]";
+    }
     static function lookup($idx) {
         global $Conf, $Me;
         $lists = $Conf->session("l", array());
@@ -411,7 +442,7 @@ class SessionList {
         if ($l && $l->cid == ($Me ? $Me->contactId : 0)) {
             $l = clone $l;
             if (is_string($l->ids))
-                $l->ids = json_decode($l->ids);
+                $l->ids = self::decode_ids($l->ids);
             $l->listno = (int) $idx;
             return $l;
         } else
@@ -421,7 +452,7 @@ class SessionList {
         global $Conf;
         $l = is_object($l) ? get_object_vars($l) : $l;
         if (isset($l["ids"]) && !is_string($l["ids"]))
-            $l["ids"] = json_encode($l["ids"]);
+            $l["ids"] = self::encode_ids($l["ids"]);
         $Conf->save_session_array("l", $idx, (object) $l);
         return true;
     }
