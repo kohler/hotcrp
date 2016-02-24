@@ -190,27 +190,27 @@ class UserStatus {
             }
 
         // Email
-        if (!@$cj->email && $old_user)
+        if (!get($cj, "email") && $old_user)
             $cj->email = $old_user->email;
-        else if (!@$cj->email)
+        else if (!get($cj, "email"))
             $this->set_error("email", "Email is required.");
-        else if (!@$this->errf["email"]
+        else if (!isset($this->errf["email"])
                  && !validate_email($cj->email)
                  && (!$old_user || $old_user->email !== $cj->email))
             $this->set_error("email", "Invalid email address “" . htmlspecialchars($cj->email) . "”.");
 
         // ID
-        if (@$cj->id === "new") {
-            if (@$cj->email && Contact::id_by_email($cj->email)) {
+        if (get($cj, "id") === "new") {
+            if (get($cj, "email") && Contact::id_by_email($cj->email)) {
                 $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
                 $this->errf["email_inuse"] = true;
             }
         } else {
-            if (!@$cj->id && $old_user && $old_user->contactId)
+            if (!get($cj, "id") && $old_user && $old_user->contactId)
                 $cj->id = $old_user->contactId;
-            if (@$cj->id && !is_int($cj->id))
+            if (get($cj, "id") && !is_int($cj->id))
                 $this->errf("id", "Format error [id]");
-            if ($old_user && @$cj->email
+            if ($old_user && get($cj, "email")
                 && strtolower($old_user->email) !== strtolower($cj->email)
                 && Contact::id_by_email($cj->email))
                 $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
@@ -229,26 +229,26 @@ class UserStatus {
         }
 
         // Preferred email
-        if (@$cj->preferred_email
-            && !@$this->errf["preferred_email"]
+        if (get($cj, "preferred_email")
+            && !isset($this->errf["preferred_email"])
             && !validate_email($cj->preferred_email)
             && (!$old_user || $old_user->preferredEmail !== $cj->preferred_email))
             $this->set_error("preferred_email", "Invalid email address “" . htmlspecialchars($cj->preferred_email) . "”");
 
         // Address
         $address = array();
-        if (is_array(@$cj->address))
+        if (is_array(get($cj, "address")))
             $address = $cj->address;
         else {
-            if (is_string(@$cj->address))
+            if (is_string(get($cj, "address")))
                 $address[] = $cj->address;
-            else if (@$cj->address)
+            else if (get($cj, "address"))
                 $this->set_error("address", "Format error [address]");
-            if (is_string(@$cj->address2))
+            if (is_string(get($cj, "address2")))
                 $address[] = $cj->address2;
-            else if (is_string(@$cj->addressLine2))
+            else if (is_string(get($cj, "addressLine2")))
                 $address[] = $cj->addressLine2;
-            else if (@$cj->address2 || @$cj->addressLine2)
+            else if (get($cj, "address2") || get($cj, "addressLine2"))
                 $this->set_error("address2", "Format error [address2]");
         }
         foreach ($address as $a)
@@ -258,14 +258,14 @@ class UserStatus {
             $cj->address = $address;
 
         // Collaborators
-        if (is_array(@$cj->collaborators))
+        if (is_array(get($cj, "collaborators")))
             foreach ($cj->collaborators as $c)
                 if (!is_string($c))
                     $this->set_error("collaborators", "Format error [collaborators]");
-        if (is_array(@$cj->collaborators) && !@$this->errf["collaborators"])
+        if (is_array(get($cj, "collaborators")) && !isset($this->errf["collaborators"]))
             $cj->collaborators = join("\n", $cj->collaborators);
-        if (@$cj->collaborators && !is_string($cj->collaborators)
-            && !@$this->errf["collaborators"])
+        if (get($cj, "collaborators") && !is_string($cj->collaborators)
+            && !isset($this->errf["collaborators"]))
             $this->set_error("collaborators", "Format error [collaborators]");
 
         // Disabled
@@ -311,9 +311,9 @@ class UserStatus {
                     $old_tags[$tag] = $index;
                 }
             // process removals, then additions
-            foreach ($this->make_tags_array(@$cj->remove_tags, "remove_tags") as $t) {
+            foreach ($this->make_tags_array(get($cj, "remove_tags"), "remove_tags") as $t) {
                 list($tag, $index) = TagInfo::split_index($t);
-                if ($index === false || @$old_tags[$tag] == $index)
+                if ($index === false || get($old_tags, $tag) == $index)
                     unset($old_tags[$tag]);
             }
             foreach ($this->make_tags_array($cj->add_tags, "add_tags") as $t) {
@@ -333,7 +333,7 @@ class UserStatus {
             $cj->topics = (object) array();
             $cj->bad_topics = array();
             foreach ((array) $topics as $k => $v) {
-                if (@$topic_map[$k])
+                if (get($topic_map, $k))
                     /* OK */;
                 else if (($x = array_search($k, $topic_map, true)) !== false)
                     $k = $x;
@@ -365,9 +365,9 @@ class UserStatus {
 
     function check_invariants($cj) {
         global $Now;
-        if (@count($cj->bad_follow))
+        if (isset($cj->bad_follow) && count($cj->bad_follow))
             $this->set_warning("follow", "Unknown follow types ignored (" . htmlspecialchars(commajoin($cj->bad_follow)) . ").");
-        if (@count($cj->bad_topics))
+        if (isset($cj->bad_topics) && count($cj->bad_topics))
             $this->set_warning("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($cj->bad_topics)) . ").");
     }
 
@@ -377,11 +377,11 @@ class UserStatus {
         assert(is_object($cj));
         self::normalize_name($cj);
 
-        if (!$old_user && is_int(@$cj->id) && $cj->id)
+        if (!$old_user && is_int(get($cj, "id")) && $cj->id)
             $old_user = Contact::find_by_id($cj->id);
-        else if (!$old_user && is_string(@$cj->email) && $cj->email)
+        else if (!$old_user && is_string(get($cj, "email")) && $cj->email)
             $old_user = Contact::find_by_email($cj->email);
-        if (!@$cj->id)
+        if (!get($cj, "id"))
             $cj->id = $old_user ? $old_user->contactId : "new";
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
             $this->set_error("id", "Saving user with different ID");
@@ -392,7 +392,7 @@ class UserStatus {
         $old_cdb_user = null;
         if ($old_user && $old_user->has_email())
             $old_cdb_user = Contact::contactdb_find_by_email($old_user->email);
-        else if (is_string(@$cj->email) && $cj->email)
+        else if (is_string(get($cj, "email")) && $cj->email)
             $old_cdb_user = Contact::contactdb_find_by_email($cj->email);
         $user = $old_user ? : $old_cdb_user;
 
