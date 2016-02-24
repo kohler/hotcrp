@@ -2337,7 +2337,7 @@ function do_track($sv, $trackname, $tnum) {
     $t = $Conf->setting_json("tracks");
     $t = $t && $trackname !== "" ? get($t, $trackname) : null;
     do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
-    do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always view PDFs."], $tnum, $t);
+    do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
     do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
     $hint = "";
     if ($Conf->setting("pc_seeblindrev"))
