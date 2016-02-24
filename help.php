@@ -654,7 +654,7 @@ function tracks() {
 specific papers. Tracks are managed through the <a href=\"" . hoturl("help", "t=tags") . "\">tags system</a>.
 Without tracks, all PC members are treated equally.
 With tracks, PC members with different tags can have different rights to
-view or review papers, depending on the papers’ tags.</p>
+see and review papers, depending on the papers’ tags.</p>
 
 <p>Set up tracks on the <a href=\"" . hoturl("settings", "group=tracks") . "\">Settings &gt;
 Tracks</a> page.</p>");
@@ -669,7 +669,7 @@ reviewed. To set this up:</p>
 <ul>
 <li>Give external review committee members the “erc” tag.</li>
 <li>On Settings &gt; Tracks, “For papers not on other
-tracks,” select “Who can view reviews? &gt; PC members without tag: erc”
+tracks,” select “Who can see reviews? &gt; PC members without tag: erc”
 and “Who can self-assign a review? &gt; PC members without tag: erc”.</li>
 </ul>
 
