@@ -2248,7 +2248,8 @@ class Contact {
             || ($rights->allow_pc
                 && (!($pc_seeblindrev = $Conf->setting("pc_seeblindrev"))
                     || ($pc_seeblindrev == 2
-                        && $this->can_view_review($prow, $rrow, $forceShow))))
+                        && $this->can_view_review($prow, $rrow, $forceShow)))
+                && $Conf->check_tracks($prow, $this, Track::VIEWREVID))
             || ($rights->allow_review
                 && $prow->review_not_incomplete($this)
                 && ($rights->allow_pc

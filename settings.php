@@ -2295,44 +2295,56 @@ function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
         }
     }
 
-    echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">",
-        "<td class=\"lxcaption\">",
-        $sv->label(array("{$type}_track$tnum", "{$type}tag_track$tnum"),
-                      $question, "{$type}_track$tnum"),
-        "</td>",
-        "<td>",
+    $hint = "";
+    if (is_array($question))
+        list($question, $hint) = [$question[0], '<p class="hint" style="margin:0;max-width:480px">' . $question[1] . '</p>'];
+
+    echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
+    if ($type === "viewtracker")
+        echo "<td class=\"lxcaption\" colspan=\"2\" style=\"padding-top:0.5em\">";
+    else
+        echo "<td style=\"width:2em\"></td><td class=\"lxcaption\">";
+    echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"],
+                    $question, "{$type}_track$tnum"),
+        "</td><td>",
         Ht::select("{$type}_track$tnum",
                    array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"),
                    $tclass,
                    $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
-        " &nbsp;",
+        " &nbsp;</td><td style=\"min-width:120px\">",
         Ht::entry("${type}tag_track$tnum", $ttag,
                   $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
         "</td></tr>";
+    if ($hint)
+        echo "<tr><td></td><td colspan=\"3\" style=\"padding-bottom:2px\">", $hint, "</td></tr>";
 }
 
 function do_track($sv, $trackname, $tnum) {
     global $Conf;
     echo "<div id=\"trackgroup$tnum\"",
         ($tnum ? "" : " style=\"display:none\""),
-        "><div class=\"trackname\" style=\"margin-bottom:3px\">";
+        "><table style=\"margin-bottom:0.5em\">";
+    echo "<tr><td colspan=\"3\" style=\"padding-bottom:3px\">";
     if ($trackname === "_")
         echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
     else
         echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
             Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
-    echo "</div>\n";
+    echo "</td></tr>\n";
 
     $t = $Conf->setting_json("tracks");
     $t = $t && $trackname !== "" ? get($t, $trackname) : null;
-    echo "<table style=\"margin-left:1.5em;margin-bottom:0.5em\">";
-    do_track_permission($sv, "view", "Who can view these papers?", $tnum, $t);
-    do_track_permission($sv, "viewpdf", "Who can view PDFs?<br><span class=\"hint\">Assigned reviewers can always view PDFs.</span>", $tnum, $t);
-    do_track_permission($sv, "viewrev", "Who can view reviews?", $tnum, $t);
+    do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
+    do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always view PDFs."], $tnum, $t);
+    do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
+    $hint = "";
+    if ($Conf->setting("pc_seeblindrev"))
+        $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
+    do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
     do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
     do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
     if ($trackname === "_")
-        do_track_permission($sv, "viewtracker", "Who can view the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
+        do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
     echo "</table></div>\n\n";
 }
 

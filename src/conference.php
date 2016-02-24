@@ -8,14 +8,15 @@ class Track {
     const VIEW = 0;
     const VIEWPDF = 1;
     const VIEWREV = 2;
-    const ASSREV = 3;
-    const UNASSREV = 4;
-    const VIEWTRACKER = 5;
+    const VIEWREVID = 3;
+    const ASSREV = 4;
+    const UNASSREV = 5;
+    const VIEWTRACKER = 6;
     static public $map = [
-        "view" => 0, "viewpdf" => 1, "viewrev" => 2, "assrev" => 3,
-        "unassrev" => 4, "viewtracker" => 5
+        "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
+        "assrev" => 4, "unassrev" => 5, "viewtracker" => 6
     ];
-    static public $zero = [null, null, null, null, null, null];
+    static public $zero = [null, null, null, null, null, null, null];
 }
 
 class Conf {
