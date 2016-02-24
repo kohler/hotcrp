@@ -9,6 +9,7 @@ class UserStatus {
     private $errmsg;
     public $nerrors;
     private $send_email = null;
+    private $no_deprivilege_self = false;
     private $allow_error = array();
 
     static private $field_synonym_map = array("preferredEmail" => "preferred_email",
@@ -19,7 +20,7 @@ class UserStatus {
                        "contactTags" => "tags", "uemail" => "email");
 
     function __construct($options = array()) {
-        foreach (array("send_email", "allow_error") as $k)
+        foreach (array("send_email", "allow_error", "no_deprivilege_self") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
         $this->clear();
@@ -169,7 +170,7 @@ class UserStatus {
 
     private function normalize($cj, $old_user) {
         // Errors prevent saving
-        global $Conf, $Now;
+        global $Conf, $Me, $Now;
 
         // Canonicalize keys
         foreach (array("preferredEmail" => "preferred_email",
@@ -293,6 +294,12 @@ class UserStatus {
                 if ($v && $k !== "pc" && $k !== "chair" && $k !== "sysadmin"
                     && $k !== "no")
                     $cj->bad_roles[] = $k;
+            if ($this->no_deprivilege_self && $Me && $old_user
+                && $old_user->contactId == $Me->contactId
+                && Contact::parse_roles_json($cj->roles) < $Me->roles) {
+                unset($cj->roles);
+                $this->set_warning("roles", "Ignoring request to drop your privileges.");
+            }
         }
 
         // Tags

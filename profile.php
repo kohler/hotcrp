@@ -312,13 +312,12 @@ function parseBulkFile($text, $filename) {
         }
         $cj->id = "new";
 
-        $ustatus = new UserStatus(array("send_email" => true));
+        $ustatus = new UserStatus(array("send_email" => true, "no_deprivilege_self" => true));
         if (($saved_user = save_user($cj, $ustatus, null, true)))
             $success[] = "<a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">"
                 . Text::user_html_nolink($saved_user) . "</a>";
-        else
-            foreach ($ustatus->error_messages() as $e)
-                $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> " . $e;
+        foreach ($ustatus->error_messages() as $e)
+            $errors[] = "<span class='lineno'>" . $filename . $csv->lineno() . ":</span> " . $e;
     }
 
     if (count($unknown_topics))

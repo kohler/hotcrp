@@ -737,6 +737,17 @@ class Contact {
             $cu->qv[$k] = $this->$k = $v;
     }
 
+    static public function parse_roles_json($j) {
+        $roles = 0;
+        if (isset($j->pc) && $j->pc)
+            $roles |= self::ROLE_PC;
+        if (isset($j->chair) && $j->chair)
+            $roles |= self::ROLE_CHAIR | self::ROLE_PC;
+        if (isset($j->sysadmin) && $j->sysadmin)
+            $roles |= self::ROLE_ADMIN;
+        return $roles;
+    }
+
     function save_json($cj, $actor, $send) {
         global $Conf, $Me, $Now;
         $inserting = !$this->contactId;
@@ -847,12 +858,7 @@ class Contact {
         // Roles
         $roles = 0;
         if (isset($cj->roles)) {
-            if (get($cj->roles, "pc"))
-                $roles |= Contact::ROLE_PC;
-            if (get($cj->roles, "chair"))
-                $roles |= Contact::ROLE_CHAIR | Contact::ROLE_PC;
-            if (get($cj->roles, "sysadmin"))
-                $roles |= Contact::ROLE_ADMIN;
+            $roles = self::parse_roles_json($cj->roles);
             if ($roles !== $old_roles)
                 $this->save_roles($roles, $actor);
         }
