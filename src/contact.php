@@ -2917,7 +2917,7 @@ class Contact {
         $sub_sub = setting("sub_sub");
         $dl->sub->open = +setting("sub_open") > 0;
         $dl->sub->sub = +$sub_sub;
-        $dl->sub->grace = "sub_grace";
+        $graces = [[$dl->sub, "sub_grace"]];
         if ($sub_reg && $sub_reg != $sub_update)
             $dl->sub->reg = $sub_reg;
         if ($sub_update && $sub_update != $sub_sub)
@@ -2943,7 +2943,7 @@ class Contact {
                 $isuf = $i ? "_$i" : "";
                 $dlresp->open = +setting("resp_open$isuf");
                 $dlresp->done = +setting("resp_done$isuf");
-                $dlresp->grace = "resp_grace$isuf";
+                $graces[] = [$dlresp, "resp_grace$isuf"];
             }
         }
 
@@ -2957,7 +2957,7 @@ class Contact {
                 $dl->final->done = +setting("final_done");
                 $dl->final->ishard = true;
             }
-            $dl->final->grace = "final_grace";
+            $graces[] = [$dl->final, "final_grace"];
         }
 
         // reviewer deadlines
@@ -2991,7 +2991,8 @@ class Contact {
                         $dlround->ishard = true;
                     } else if ($s)
                         $dlround->done = $s;
-                    $dlround->grace = "rev_grace";
+                    if ($grace)
+                        $graces[] = [$dlround, "rev_grace"];
                 }
             }
             // blindness
@@ -3004,15 +3005,14 @@ class Contact {
 
         // grace periods: give a minute's notice of an impending grace
         // period
-        foreach (get_object_vars($dl) as $dlsub) {
-            if (get($dlsub, "open") && get($dlsub, "grace") && ($grace = setting($dlsub->grace)))
+        foreach ($graces as $g) {
+            if (get($g[0], "open") && ($grace = setting($g[1])))
                 foreach (array("reg", "update", "sub", "done") as $k)
-                    if (get($dlsub, $k) && $dlsub->$k + 60 < $Now
-                        && $dlsub->$k + $grace >= $Now) {
+                    if (get($g[0], $k) && $g[0]->$k + 60 < $Now
+                        && $g[0]->$k + $grace >= $Now) {
                         $kgrace = "{$k}_ingrace";
-                        $dlsub->$kgrace = true;
+                        $g[0]->$kgrace = true;
                     }
-            unset($dlsub->grace);
         }
 
         // add meeting tracker

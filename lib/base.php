@@ -202,7 +202,7 @@ function get($var, $idx, $default = null) {
     else if ($var === null)
         return $default;
     else {
-        error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        error_log("inappropriate get: " . var_export($var, true) . ": " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return $default;
     }
 }
