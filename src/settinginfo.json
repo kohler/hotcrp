@@ -91,10 +91,10 @@
         "internal": true
     },
     "opt.clickthrough_review": {
-        "internal": true
+        "internal": true, "storage": "ova.clickthrough_review"
     },
     "opt.clickthrough_submit": {
-        "internal": true
+        "internal": true, "storage": "ova.clickthrough_submit"
     },
     "opt.conferenceSite": {
         "name": "Conference URL",
