@@ -1241,7 +1241,8 @@ class Round_SettingParser extends SettingParser {
                 $rname = "";
             if ((get($sv->req, "deleteround_$i") || $rname === "") && $i) {
                 $roundnames[] = ";";
-                $this->rev_round_changes[] = array($i, 0);
+                if (Dbl::fetch_ivalue("select reviewId from PaperReview where reviewRound=$i limit 1"))
+                    $this->rev_round_changes[] = array($i, 0);
                 if ($round_deleted === null && !isset($sv->req["roundname_0"])
                     && $i < $sv->req["oldroundcount"])
                     $round_deleted = $i;
