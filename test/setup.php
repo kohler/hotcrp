@@ -251,4 +251,47 @@ function call_api($fn, $user, $qreq, $prow) {
     return $result;
 }
 
+function fetch_paper($pid, $contact) {
+    global $Conf;
+    return $Conf->paperRow($pid, $contact);
+}
+
+function fetch_review($pid, $contact) {
+    global $Conf;
+    $pid = is_object($pid) ? $pid->paperId : $pid;
+    $cid = is_object($contact) ? $contact->contactId : $contact;
+    return $Conf->reviewRow(["paperId" => $pid, "contactId" => $cid]);
+}
+
+function save_review($pid, $contact, $revreq) {
+    $pid = is_object($pid) ? $pid->paperId : $pid;
+    $rf = ReviewForm::get();
+    $rf->save_review($revreq, fetch_review($pid, $contact), fetch_paper($pid, $contact), $contact);
+    return fetch_review($pid, $contact);
+}
+
+function pcassignment_csv() {
+    global $Conf, $Me;
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, ["assignments" => true]));
+    $pcm = pcMembers();
+    $round_list = $Conf->round_list();
+    $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
+    $csvg = new CsvGenerator;
+    $csvg->select(["paper", "action", "email", "round"]);
+    $csvg->set_header(["paper", "action", "email", "round"]);
+    while (($prow = PaperInfo::fetch($result, $Me))) {
+        foreach ($prow->all_reviewers() as $cid)
+            if (($pc = get($pcm, $cid))
+                && ($rtype = $prow->review_type($cid)) >= REVIEW_PC) {
+                $round = $prow->review_round($cid);
+                $round_name = $round ? $round_list[$round] : "none";
+                $csvg->add(["paper" => $prow->paperId,
+                            "action" => $reviewnames[$rtype],
+                            "email" => $pc->email,
+                            "round" => $round_name]);
+            }
+    }
+    return $csvg->unparse();
+}
+
 echo "* Tests initialized.\n";

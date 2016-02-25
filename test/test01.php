@@ -23,6 +23,7 @@ $user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk"); // pc, red
 $user_varghese = Contact::find_by_email("varghese@ccrc.wustl.edu"); // pc
 $user_wilma = Contact::find_by_email("ojuelegba@gmail.com"); // pc
 $user_mjh = Contact::find_by_email("mjh@isi.edu"); // pc
+$user_pdruschel = Contact::find_by_email("pdruschel@cs.rice.edu"); // pc
 $user_nobody = new Contact;
 
 // users are different
@@ -139,11 +140,7 @@ $Conf->save_setting("pc_seeblindrev", 1);
 assert_search_papers($user_mgbaker, "re:varghese", "");
 
 $revreq = array("overAllMerit" => 5, "reviewerQualification" => 4, "ready" => true);
-$rf = ReviewForm::get();
-$rf->save_review($revreq,
-                 $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mgbaker->contactId)),
-                 $Conf->paperRow(1, $user_mgbaker),
-                 $user_mgbaker);
+save_review(1, $user_mgbaker, $revreq);
 assert_search_papers($user_mgbaker, "re:varghese", "1");
 
 // check comment identity
@@ -185,11 +182,7 @@ xassert(!$user_varghese->can_view_review($paper1, $review1, false));
 xassert($user_marina->has_review());
 xassert($user_marina->has_outstanding_review());
 xassert($user_marina->can_view_review($paper1, $review1, false));
-$rf->save_review($revreq,
-                 $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mjh->contactId)),
-                 $Conf->paperRow(1, $user_mjh),
-                 $user_mjh);
-$review2 = $Conf->reviewRow(array("paperId" => 1, "contactId" => $user_mjh->contactId));
+$review2 = save_review(1, $user_mjh, $revreq);
 xassert($user_wilma->can_view_review($paper1, $review1, false));
 xassert($user_wilma->can_view_review($paper1, $review2, false));
 xassert($user_mgbaker->can_view_review($paper1, $review1, false));
@@ -216,10 +209,7 @@ AssignmentSet::run($user_chair, "paper,action,email\n3,primary,ojuelegba@gmail.c
 xassert($user_wilma->has_outstanding_review());
 xassert(!$user_wilma->can_view_review($paper1, $review1, false));
 xassert(!$user_wilma->can_view_review($paper1, $review2, false));
-$rf->save_review($revreq,
-                 $Conf->reviewRow(array("paperId" => 3, "contactId" => $user_wilma->contactId)),
-                 $Conf->paperRow(3, $user_wilma),
-                 $user_wilma);
+save_review(3, $user_wilma, $revreq);
 xassert(!$user_wilma->has_outstanding_review());
 xassert($user_wilma->can_view_review($paper1, $review1, false));
 xassert($user_wilma->can_view_review($paper1, $review2, false));
@@ -387,6 +377,27 @@ $tags = array();
 while ($result && ($row = $result->fetch_row()))
     $tags[] = "$row[0],$row[1],$row[2]\n";
 echo join("", $tags);*/
+
+// check review visibility for “not unless completed on same paper”
+$Conf->save_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
+Contact::update_rights();
+$paper2 = $Conf->paperRow(2, $user_chair);
+$review2a = fetch_review(2, $user_jon);
+xassert(!$review2a->reviewSubmitted);
+xassert($user_jon->can_view_review($paper2, $review2a, false));
+xassert(!$user_pdruschel->can_view_review($paper2, $review2a, false));
+xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
+$review2a = save_review(2, $user_jon, $revreq);
+xassert($review2a->reviewSubmitted);
+xassert($user_jon->can_view_review($paper2, $review2a, false));
+xassert(!$user_pdruschel->can_view_review($paper2, $review2a, false));
+xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
+$review2b = save_review(2, $user_pdruschel, $revreq);
+xassert($user_jon->can_view_review($paper2, $review2a, false));
+xassert($user_pdruschel->can_view_review($paper2, $review2a, false));
+xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
+AssignmentSet::run($user_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
+xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 
 $Conf->check_invariants();
 
