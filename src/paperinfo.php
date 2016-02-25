@@ -444,7 +444,7 @@ class PaperInfo {
                 foreach (explode(",", $this->allConflictType) as $x)
                     $vals[] = explode(" ", $x);
             } else if (!$email)
-                $vals = Dbl::fetch_rows("select contactId, conflictType, null from PaperConflict where paperId=$this->paperId");
+                $vals = Dbl::fetch_rows("select contactId, conflictType from PaperConflict where paperId=$this->paperId");
             else {
                 $vals = Dbl::fetch_rows("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
                 $this->_conflicts_email = true;
@@ -452,7 +452,7 @@ class PaperInfo {
             foreach ($vals as $v)
                 if ($v[1] > 0) {
                     $row = (object) array("contactId" => (int) $v[0], "conflictType" => (int) $v[1]);
-                    if ($v[2])
+                    if (isset($v[2]) && $v[2])
                         $row->email = $v[2];
                     $this->_conflicts[$row->contactId] = $row;
                 }
