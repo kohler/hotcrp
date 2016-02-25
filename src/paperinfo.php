@@ -151,24 +151,30 @@ class PaperInfo {
     }
 
 
+    static private function contact_to_cid($contact) {
+        global $Me;
+        if ($contact && is_object($contact))
+            return $contact->contactId;
+        else
+            return $contact ? : $Me->contactId;
+    }
+
     public function contact_info($contact = null) {
         global $Me;
-        if (!$contact)
-            $contact = $Me;
         $rev_tokens = null;
-        if (is_object($contact)) {
+        if (!$contact || is_object($contact)) {
+            $contact = $contact ? : $Me;
             $rev_tokens = $contact->review_tokens();
-            $contact = $contact->contactId;
         }
+        $cid = self::contact_to_cid($contact);
         if ($this->_contact_info_rights_version !== Contact::$rights_version) {
             $this->_contact_info = array();
             $this->_contact_info_rights_version = Contact::$rights_version;
         }
-        $ci = get($this->_contact_info, $contact);
-        if (!$ci)
-            $ci = $this->_contact_info[$contact] =
-                PaperContactInfo::load($this->paperId, $contact, $rev_tokens);
-        return $ci;
+        if (!array_key_exists($cid, $this->_contact_info))
+            $this->_contact_info[$cid] =
+                PaperContactInfo::load($this->paperId, $cid, $rev_tokens);
+        return $this->_contact_info[$cid];
     }
 
     public function replace_contact_info_map($cimap) {
@@ -252,13 +258,20 @@ class PaperInfo {
     }
 
     public function review_type($contact = null) {
-        $ci = $this->contact_info($contact);
-        return $ci ? $ci->review_type : 0;
+        $cid = self::contact_to_cid($contact);
+        if ($this->_contact_info_rights_version === Contact::$rights_version
+            && array_key_exists($cid, $this->_contact_info)) {
+            $ci = $this->_contact_info[$cid];
+            return $ci ? $ci->review_type : 0;
+        }
+        if (!isset($this->allReviewTypes) && isset($this->reviewTypes)
+            && ($x = get($this->submitted_review_types())) !== null)
+            return $x;
+        return get($this->all_review_types(), $cid);
     }
 
     public function has_review($contact = null) {
-        $ci = $this->contact_info($contact);
-        return $ci && $ci->review_type > 0;
+        return $this->review_type($contact) > 0;
     }
 
     public function review_not_incomplete($contact = null) {
@@ -557,23 +570,32 @@ class PaperInfo {
             return $this->num_reviews_in_progress();
     }
 
-    private function load_scores(/* args */) {
-        $args = func_get_args();
-        $args = (count($args) == 1 ? $args[0] : $args);
+    private function load_score_array($restriction, $args) {
         $req = array();
         for ($i = 0; $i < count($args); $i += 2)
             $req[] = "group_concat(" . $args[$i] . " order by reviewId) " . $args[$i + 1];
-        $result = Dbl::qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
+        $result = Dbl::qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and " . ($restriction ? "reviewSubmitted>0" : "true"));
         $row = $result ? $result->fetch_assoc() : null;
         foreach ($row ? : array() as $k => $v)
             $this->$k = $v;
         Dbl::free($result);
     }
 
+    private function load_scores(/* args */) {
+        $args = func_get_args();
+        $this->load_score_array(true, count($args) == 1 ? $args[0] : $args);
+    }
+
+    public function all_reviewers() {
+        if (!property_exists($this, "allReviewContactIds"))
+            $this->load_score_array(false, ["contactId", "allReviewContactIds"]);
+        return $this->allReviewContactIds ? explode(",", $this->allReviewContactIds) : [];
+    }
+
     public function submitted_reviewers() {
         if (!property_exists($this, "reviewContactIds"))
-            $this->load_scores("contactId", "reviewContactIds");
-        return $this->reviewContactIds ? explode(",", $this->reviewContactIds) : array();
+            $this->load_score_array(true, ["contactId", "reviewContactIds"]);
+        return $this->reviewContactIds ? explode(",", $this->reviewContactIds) : [];
     }
 
     public function viewable_submitted_reviewers($contact, $forceShow) {
@@ -588,49 +610,65 @@ class PaperInfo {
         return array();
     }
 
-    private function review_cid_int_array($basek, $k) {
-        if (!property_exists($this, $k) || !property_exists($this, "reviewContactIds"))
-            $this->load_scores($basek, $k, "contactId", "reviewContactIds");
+    private function review_cid_int_array($restriction, $basek, $k) {
+        $ck = $restriction ? "reviewContactIds" : "allReviewContactIds";
+        if (!property_exists($this, $k) || !property_exists($this, $ck))
+            $this->load_score_array($restriction, [$basek, $k, "contactId", $ck]);
         if ($this->$k) {
             $x = array();
             foreach (explode(",", $this->$k) as $v)
                 $x[] = $v === "" ? null : (int) $v;
-            return array_combine(explode(",", $this->reviewContactIds), $x);
+            return array_combine(explode(",", $this->$ck), $x);
         } else
             return array();
     }
 
     public function review_ordinals() {
-        return $this->review_cid_int_array("reviewOrdinal", "reviewOrdinals");
+        return $this->review_cid_int_array(true, "reviewOrdinal", "reviewOrdinals");
     }
 
     public function review_ordinal($cid) {
         return get($this->review_ordinals(), $cid);
     }
 
+    public function all_review_types() {
+        return $this->review_cid_int_array(false, "reviewType", "allReviewTypes");
+    }
+
     public function submitted_review_types() {
-        return $this->review_cid_int_array("reviewType", "reviewTypes");
+        return $this->review_cid_int_array(true, "reviewType", "reviewTypes");
     }
 
     public function submitted_review_word_counts() {
-        return $this->review_cid_int_array("reviewWordCount", "reviewWordCounts");
+        return $this->review_cid_int_array(true, "reviewWordCount", "reviewWordCounts");
     }
 
     public function review_word_count($cid) {
         return get($this->submitted_review_word_counts(), $cid);
     }
 
+    public function all_review_rounds() {
+        return $this->review_cid_int_array(false, "reviewRound", "allReviewRounds");
+    }
+
     public function submitted_review_rounds() {
-        return $this->review_cid_int_array("reviewRound", "reviewRounds");
+        return $this->review_cid_int_array(true, "reviewRound", "reviewRounds");
+    }
+
+    public function submitted_review_round($cid) {
+        return get($this->submitted_review_rounds());
     }
 
     public function review_round($cid) {
-        return get($this->submitted_review_rounds(), $cid);
+        if (!isset($this->allReviewRounds) && isset($this->reviewRounds)
+            && ($x = get($this->submitted_review_rounds())) !== null)
+            return $x;
+        return get($this->all_review_rounds(), $cid);
     }
 
     public function scores($fid) {
         $fid = is_object($fid) ? $fid->id : $fid;
-        return $this->review_cid_int_array($fid, "{$fid}Scores");
+        return $this->review_cid_int_array(true, $fid, "{$fid}Scores");
     }
 
     public function score($fid, $cid) {

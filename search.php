@@ -566,23 +566,21 @@ if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) 
             $texts[] = array("paper" => $prow->paperId,
                              "action" => "none",
                              "title" => "You cannot override your conflict with this paper");
-        } else if ($prow->assignmentContactIds) {
+        } else if ($prow->all_reviewers()) {
             $texts[] = array();
             $texts[] = array("paper" => $prow->paperId,
                              "action" => "clearreview",
                              "email" => "#pc",
                              "round" => "any",
                              "title" => $prow->title);
-            $cids = explode(",", $prow->assignmentContactIds);
-            $rtypes = explode(",", $prow->assignmentReviewTypes);
-            $rrounds = explode(",", $prow->assignmentReviewRounds);
-            for ($i = 0; $i < count($cids); ++$i)
-                if (($pc = get($pcm, $cids[$i])) && $rtypes[$i] >= REVIEW_PC) {
-                    $round = (int) $rrounds[$i];
+            foreach ($prow->all_reviewers() as $cid)
+                if (($pc = get($pcm, $cid))
+                    && ($rtype = $prow->review_type($cid)) >= REVIEW_PC) {
+                    $round = $prow->review_round($cid);
                     $round_name = $round ? $round_list[$round] : "none";
                     $any_round = $any_round || $round != 0;
                     $texts[] = array("paper" => $prow->paperId,
-                                     "action" => $reviewnames[$rtypes[$i]],
+                                     "action" => $reviewnames[$rtype],
                                      "email" => $pc->email,
                                      "round" => $round_name);
                 }

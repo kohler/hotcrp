@@ -1687,9 +1687,9 @@ class Conf {
 
         // assignments
         if (get($options, "assignments")) {
-            $j = "select paperId, group_concat(contactId order by reviewId) assignmentContactIds, group_concat(reviewType order by reviewId) assignmentReviewTypes, group_concat(reviewRound order by reviewId) assignmentReviewRounds";
-            $cols[] = "Ass.assignmentContactIds, Ass.assignmentReviewTypes, Ass.assignmentReviewRounds";
-            $joins[] = "left join ($j from PaperReview where {$papersel}true group by paperId) Ass on (Ass.paperId=Paper.paperId)";
+            $j = "select paperId, group_concat(contactId order by reviewId) allReviewContactIds, group_concat(reviewType order by reviewId) allReviewTypes, group_concat(reviewRound order by reviewId) allReviewRounds";
+            $cols[] = "R_all.allReviewContactIds, R_all.allReviewTypes, R_all.allReviewRounds";
+            $joins[] = "left join ($j from PaperReview where {$papersel}true group by paperId) R_all on (R_all.paperId=Paper.paperId)";
         }
 
         // fields
