@@ -820,7 +820,7 @@ class PaperSearch {
         "ext" => 1, "cext" => 1, "iext" => 1, "pext" => 1);
 
 
-    function __construct($me, $options) {
+    function __construct($me, $options, $reviewer = false) {
         global $Conf;
         if (is_string($options))
             $options = array("q" => $options);
@@ -906,9 +906,11 @@ class PaperSearch {
         if (strpos($this->urlbase, "&amp;") !== false)
             trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
-        $this->_reviewer = defval($options, "reviewer", false);
+        $this->_reviewer = $reviewer;
+        if ($this->_reviewer === false)
+            $this->_reviewer = get($options, "reviewer", false);
         $this->_reviewer_fixed = !!$this->_reviewer;
-        if ($this->_reviewer_fixed)
+        if ($this->_reviewer && $reviewer === false)
             error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
         $this->_allow_deleted = defval($options, "allow_deleted", false);
