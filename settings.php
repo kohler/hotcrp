@@ -669,7 +669,7 @@ class Tag_SettingParser extends SettingParser {
                 if (isset($sv->req["tag_color_$k"])) {
                     $xsi = new Si("tag_color_$k", ["name" => ucfirst($k) . " style tag"]);
                     $any_set = true;
-                    foreach ($this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
             if ($any_set)
@@ -683,7 +683,7 @@ class Tag_SettingParser extends SettingParser {
                 if (isset($sv->req["tag_badge_$k"])) {
                     $xsi = new Si("tag_badge_$k", ["name" => ucfirst($k) . " badge style tag"]);
                     $any_set = true;
-                    foreach ($this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
             if ($any_set)
