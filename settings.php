@@ -1496,7 +1496,7 @@ function setting_warnings($sv, $group) {
                 && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
                 $tnum = ($trackname === "_" ? 1 : $tnum);
                 $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
-                $sv->set_warning("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see papers should restrict the “self-assign papers” right in the same way.");
+                $sv->set_warning("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see PDFs should restrict who can self-assign papers in the same way.");
             }
             $tracknum += ($trackname === "_" ? 0 : 1);
         }
