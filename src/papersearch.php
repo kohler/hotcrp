@@ -2669,7 +2669,7 @@ class PaperSearch {
                 $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
             if ($t->flags & self::F_AUTHORCOMMENT)
                 $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-            if ($t->commentRound !== null)
+            if (isset($t->commentRound))
                 $where[] = "commentRound=" . $t->commentRound;
             if ($extrawhere)
                 $where[] = $extrawhere;
@@ -2723,7 +2723,7 @@ class PaperSearch {
             else {
                 $rtype = $t->flags & (self::F_ALLOWCOMMENT | self::F_ALLOWRESPONSE | self::F_AUTHORCOMMENT | self::F_ALLOWDRAFT | self::F_REQUIREDRAFT);
                 $thistab = "Numcomments_" . $rtype;
-                if ($t->commentRound !== null)
+                if (isset($t->commentRound))
                     $thistab .= "_" . $t->commentRound;
             }
             $f[] = $this->_clauseTermSetComments($thistab, $t->value->contact_match_sql("contactId"), $t, $sqi);
