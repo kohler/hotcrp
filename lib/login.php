@@ -213,8 +213,7 @@ class LoginHelper {
         if (strpos($_REQUEST["email"], "@") !== false
             || strpos($_REQUEST["email"], "%40") === false)
             return false;
-        if (!$Conf->setting("bug_doubleencoding"))
-            $Conf->q("insert into Settings (name, value) values ('bug_doubleencoding', 1)");
+        error_log("double-encoded request: " . json_encode($_REQUEST));
         foreach ($_REQUEST as $k => &$v)
             $v = rawurldecode($v);
         return true;
