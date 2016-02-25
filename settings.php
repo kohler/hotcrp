@@ -692,10 +692,6 @@ class Tag_SettingParser extends SettingParser {
 
         if ($si->name == "tag_au_seerev" && isset($sv->req["tag_au_seerev"])) {
             $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
-            foreach ($ts as $t)
-                if (!isset($chair_tags[$t]))
-                    $sv->set_warning("tag_au_seerev", "Review visibility tag “" . htmlspecialchars($t) . "” isn’t a <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only tag</a>, which means PC members can change it. You usually want these tags under chair control.");
             $sv->update("tag_au_seerev", join(" ", $ts));
         }
 
@@ -952,13 +948,6 @@ class Option_SettingParser extends SettingParser {
         $sv->save("next_optionid", null);
         $sv->save("options", count($newj) ? json_encode($newj) : null);
 
-        // warn on visibility
-        if ($sv->newv("sub_blind") === Conf::BLIND_ALWAYS) {
-            foreach ($new_opts as $id => $o)
-                if ($o->visibility === "nonblind")
-                    $sv->set_warning("optp$id", "The “" . htmlspecialchars($o->name) . "” option is marked as “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
-        }
-
         $deleted_ids = array();
         foreach ($current_opts as $id => $o)
             if (!get($new_opts, $id))
@@ -1212,9 +1201,6 @@ class Track_SettingParser extends SettingParser {
                     $t->$type = "+none";
             if (count((array) $t) || get($tracks, "_"))
                 $tracks->$trackname = $t;
-            if (get($t, "viewpdf") && $t->viewpdf != get($t, "unassrev")
-                && get($t, "unassrev") != "+none")
-                $sv->set_warning(null, ($trackname === "_" ? "Default track" : "Track “{$trackname}”") . ": Generally, a track that restricts PDF visibility should restrict the “self-assign papers” right in the same way.");
         }
         $sv->save("tracks", count((array) $tracks) ? json_encode($tracks) : null);
         return false;
@@ -1449,6 +1435,7 @@ function setting_warnings($sv, $group) {
         && $sv->newv("sub_open") > 0
         && $sv->newv("sub_sub") <= 0)
         $sv->set_warning(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
+
     $errored = false;
     foreach ($Conf->round_list() as $i => $rname) {
         $suffix = $i ? "_$i" : "";
@@ -1462,6 +1449,7 @@ function setting_warnings($sv, $group) {
                 break;
             }
     }
+
     if (($sv->has_savedv("au_seerev") || !$group || $group === "reviews" || $group === "decisions")
         && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
         && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
@@ -1469,21 +1457,59 @@ function setting_warnings($sv, $group) {
         && $Now < $sv->oldv("pcrev_soft")
         && !$sv->has_errors())
         $sv->set_warning(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
+
     if (($sv->has_savedv("final_open") || !$group || $group === "decisions")
         && $sv->newv("final_open")
         && ($sv->newv("final_soft") || $sv->newv("final_done"))
         && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
         && $sv->newv("seedec") != Conf::SEEDEC_ALL)
         $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted. You may want to update the the “Who can see paper decisions” setting.");
+
     if (($sv->has_savedv("seedec") || !$group || $group === "decisions")
         && $sv->newv("seedec") == Conf::SEEDEC_ALL
         && $sv->newv("au_seerev") == Conf::AUSEEREV_NO)
         $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
+
     if (($sv->has_savedv("au_seerev") || !$group || $group === "decisions")
         && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
         && !$sv->newv("tag_au_seerev")
         && !$sv->has_error("tag_au_seerev"))
         $sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
+
+    if (($sv->savedv("au_seerev") || !$group || $group === "decisions")
+        && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
+        && $sv->newv("tag_au_seerev")
+        && !$sv->has_error("tag_au_seerev")) {
+        $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
+        foreach (explode(" ", $sv->newv("tag_au_seerev")) as $t)
+            if ($t !== "" && !isset($chair_tags[$t]))
+                $sv->set_warning("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only</a>.");
+    }
+
+    if (($sv->savedv("tracks") || !$group || $group === "tags")
+        && $sv->newv("tracks")) {
+        $tracks = json_decode($sv->newv("tracks"), true);
+        $tracknum = 2;
+        foreach ($tracks as $trackname => $t) {
+            $unassrev = get($t, "unassrev");
+            if (get($t, "viewpdf") && $t["viewpdf"] !== $unassrev
+                && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
+                $tnum = ($trackname === "_" ? 1 : $tnum);
+                $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
+                $sv->set_warning("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see papers should restrict the “self-assign papers” right in the same way.");
+            }
+            $tracknum += ($trackname === "_" ? 0 : 1);
+        }
+    }
+
+    if (($sv->savedv("options") || !$group || $group === "subform")
+        && $sv->newv("options")
+        && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
+        $options = json_decode($sv->newv("options"));
+        foreach ((array) $options as $id => $o)
+            if (get($o, "visibility") === "nonblind")
+                $sv->set_warning("optp$id", "The “" . htmlspecialchars($o->name) . "” option is “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
+    }
 }
 
 function do_setting_update($sv) {
@@ -1597,6 +1623,7 @@ function do_setting_update($sv) {
     if (!$sv->has_errors()) {
         $Conf->save_session("settings_highlight", $sv->error_fields());
         $Conf->confirmMsg("Changes saved.");
+        $sv->report();
         redirectSelf();
     } else {
         setting_warnings($sv, $Group);

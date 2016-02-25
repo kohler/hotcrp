@@ -179,7 +179,8 @@
         "type": "date"
     },
     "resp_rounds": {
-        "parser": "RespRound_SettingParser"
+        "parser": "RespRound_SettingParser",
+        "type": "string"
     },
     "resp_words": {
         "name": "Authors’ response word limit",
