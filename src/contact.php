@@ -3163,11 +3163,10 @@ class Contact {
                 $qa .= ", timeRequestNotified=$Now";
             if (get($extra, "token"))
                 $qa .= self::unassigned_review_token();
-            if (($requester = get($extra, "requester_contact")))
-                $qa .= ", requestedBy=" . $requester->contactId;
-            else
-                $qa .= ", requestedBy=" . $this->contactId;
-            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, timeRequested=$Now$qa";
+            $new_requester_cid = $this->contactId;
+            if (($new_requester = get($extra, "requester_contact")))
+                $new_requester_cid = $new_requester->contactId;
+            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, timeRequested=$Now$qa, requestedBy=$new_requester_cid";
         } else if ($type > 0 && $rrow->reviewType != $type)
             $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)
@@ -3189,10 +3188,16 @@ class Contact {
         }
         $Conf->log($msg . " by " . $this->email, $reviewer_cid, $pid);
 
-        if ($q[0] == "i")
+        // on new review, update PaperReviewRefused, ReviewRequest, delegation
+        if ($q[0] == "i") {
             Dbl::ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
-        // Mark rev_tokens setting for future update by
-        // update_rev_tokens_setting
+            if (($req_email = get($extra, "requested_email")))
+                Dbl::qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
+            if ($type < REVIEW_SECONDARY)
+                Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$pid and reviewType=" . REVIEW_SECONDARY . " and contactId=" . $new_requester_cid . " and reviewSubmitted is null and reviewNeedsSubmit=1");
+        }
+
+        // Mark rev_tokens setting for future update by update_rev_tokens_setting
         if ($rrow && get($rrow, "reviewToken") && $type <= 0)
             $Conf->settings["rev_tokens"] = -1;
         // Set pcrev_assigntime

@@ -268,7 +268,7 @@ function requestReview($email) {
             $Requester = $recorded_requester;
     }
 
-    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ContactInfo read, PaperConflict read, ActionLog write");
+    Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read, ActionLog write");
     // NB caller unlocks tables on error
 
     // check for outstanding review request
@@ -279,13 +279,9 @@ function requestReview($email) {
     // store the review request
     $Me->assign_review($prow->paperId, $Them->contactId, REVIEW_EXTERNAL,
                        ["mark_notify" => true, "requester_contact" => $Requester,
-                        "round_number" => $round]);
+                        "requested_email" => $Them->email, "round_number" => $round]);
 
     Dbl::qx_raw("unlock tables");
-
-    // delete proposed request, mark secondary as delegated
-    Dbl::qe("delete from ReviewRequest where paperId=$prow->paperId and ReviewRequest.email=?", $Them->email);
-    Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$prow->paperId and reviewType=" . REVIEW_SECONDARY . " and contactId=$Requester->contactId and reviewSubmitted is null and reviewNeedsSubmit=1");
 
     // send confirmation email
     HotCRPMailer::send_to($Them, "@requestreview", $prow,
