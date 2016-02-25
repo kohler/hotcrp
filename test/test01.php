@@ -397,7 +397,25 @@ xassert($user_jon->can_view_review($paper2, $review2a, false));
 xassert($user_pdruschel->can_view_review($paper2, $review2a, false));
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
 AssignmentSet::run($user_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
+$review2d = fetch_review(2, $user_mgbaker);
+xassert(!$review2d->reviewSubmitted);
+xassert($review2d->reviewNeedsSubmit == 1);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
+$user_external = Contact::create(["email" => "external@_.com", "name" => "External Reviewer"]);
+$user_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
+$review2d = fetch_review(2, $user_mgbaker);
+xassert(!$review2d->reviewSubmitted);
+xassert($review2d->reviewNeedsSubmit == -1);
+xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
+$review2e = fetch_review(2, $user_external);
+xassert(!$user_mgbaker->can_view_review($paper2, $review2e, false));
+$review2e = save_review(2, $user_external, $revreq);
+$review2d = fetch_review(2, $user_mgbaker);
+xassert(!$review2d->reviewSubmitted);
+xassert($review2d->reviewNeedsSubmit == 0);
+xassert($user_mgbaker->can_view_review($paper2, $review2a, false));
+xassert($user_mgbaker->can_view_review($paper2, $review2e, false));
+
 
 $Conf->check_invariants();
 

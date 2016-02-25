@@ -1104,7 +1104,7 @@ class PaperSearch {
             } else if (preg_match('/\A(pri|primary|sec|secondary|ext|external)' . $tailre, $qword, $m)) {
                 $rt = ReviewSearchMatcher::parse_review_type($m[1]);
                 $qword = $m[2];
-            } else if (preg_match('/\A(complete|done|incomplete|inprogress)' . $tailre, $qword, $m)) {
+            } else if (preg_match('/\A(complete|done|incomplete|in-?progress)' . $tailre, $qword, $m)) {
                 if ($m[1] === "complete" || $m[1] === "done")
                     $completeness |= ReviewSearchMatcher::COMPLETE;
                 else if ($m[1] === "incomplete")
