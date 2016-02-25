@@ -392,6 +392,24 @@ class Dbl {
         return $x ? (int) $x[0] : null;
     }
 
+    static function fetch_rows(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
+        $x = [];
+        while (($row = ($result ? $result->fetch_row() : null)))
+            $x[] = $row;
+        $result && $result->close();
+        return $x;
+    }
+
+    static function fetch_objects(/* $result | [$dblink,] $query, ... */) {
+        $result = self::do_make_result(func_get_args());
+        $x = [];
+        while (($row = ($result ? $result->fetch_object() : null)))
+            $x[] = $row;
+        $result && $result->close();
+        return $x;
+    }
+
     static function fetch_first_row(/* $result | [$dblink,] $query, ... */) {
         $result = self::do_make_result(func_get_args());
         $x = $result ? $result->fetch_row() : null;

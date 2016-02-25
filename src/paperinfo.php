@@ -431,15 +431,15 @@ class PaperInfo {
                 foreach (explode(",", $this->allConflictType) as $x)
                     $vals[] = explode(" ", $x);
             } else if (!$email)
-                $vals = edb_rows(Dbl::qe("select contactId, conflictType from PaperConflict where paperId=$this->paperId"));
+                $vals = Dbl::fetch_rows("select contactId, conflictType, null from PaperConflict where paperId=$this->paperId");
             else {
-                $vals = edb_rows(Dbl::qe("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId"));
+                $vals = Dbl::fetch_rows("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
                 $this->_conflicts_email = true;
             }
             foreach ($vals as $v)
                 if ($v[1] > 0) {
                     $row = (object) array("contactId" => (int) $v[0], "conflictType" => (int) $v[1]);
-                    if (@$v[2])
+                    if ($v[2])
                         $row->email = $v[2];
                     $this->_conflicts[$row->contactId] = $row;
                 }
@@ -460,7 +460,7 @@ class PaperInfo {
     }
 
     public function named_contacts() {
-        $vals = edb_orows(Dbl::qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
+        $vals = Dbl::fetch_objects("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR);
         foreach ($vals as $v) {
             $v->contactId = (int) $v->contactId;
             $v->conflictType = (int) $v->conflictType;
@@ -470,9 +470,7 @@ class PaperInfo {
 
     private function load_reviewer_preferences() {
         global $Conf;
-        $result = Dbl::qe("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
-        $row = edb_row($result);
-        $this->allReviewerPreference = $row ? $row[0] : null;
+        $this->allReviewerPreference = Dbl::fetch_first_value("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $this->_prefs_array = null;
     }
 
@@ -544,12 +542,10 @@ class PaperInfo {
 
     public function num_reviews_in_progress() {
         if (!property_exists($this, "inProgressReviewCount")) {
-            if (@$this->reviewCount !== null && $this->reviewCount === @$this->startedReviewCount)
+            if (isset($this->reviewCount) && isset($this->startedReviewCount) && $this->reviewCount === $this->startedReviewCount)
                 $this->inProgressReviewCount = $this->reviewCount;
-            else {
-                $rows = edb_rows(Dbl::qe("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted is null and reviewModified>0"));
-                $this->inProgressReviewCount = @$rows[0][0];
-            }
+            else
+                $this->inProgressReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted is null and reviewModified>0");
         }
         return (int) $this->inProgressReviewCount;
     }
@@ -609,8 +605,7 @@ class PaperInfo {
     }
 
     public function review_ordinal($cid) {
-        $o = $this->review_ordinals();
-        return @$o[$cid];
+        return get($this->review_ordinals(), $cid);
     }
 
     public function submitted_review_types() {
@@ -622,8 +617,7 @@ class PaperInfo {
     }
 
     public function review_word_count($cid) {
-        $wc = $this->submitted_review_word_counts();
-        return @$wc[$cid];
+        return get($this->submitted_review_word_counts(), $cid);
     }
 
     public function submitted_review_rounds() {
@@ -631,8 +625,7 @@ class PaperInfo {
     }
 
     public function review_round($cid) {
-        $rr = $this->submitted_review_rounds();
-        return @$rr[$cid];
+        return get($this->submitted_review_rounds(), $cid);
     }
 
     public function scores($fid) {
@@ -641,8 +634,7 @@ class PaperInfo {
     }
 
     public function score($fid, $cid) {
-        $s = $this->scores($fid);
-        return @$s[$cid];
+        return get($this->scores($fid), $cid);
     }
 
     public function may_have_viewable_scores($field, $contact, $forceShow) {
@@ -658,7 +650,7 @@ class PaperInfo {
             $s = $this->scores($field->id);
             if ($view)
                 return $s;
-            else if (($my_score = @$s[$contact->contactId]) !== null)
+            else if (($my_score = get($s, $contact->contactId)) !== null)
                 return array($contact->contactId => $my_score);
         }
         return null;
@@ -699,7 +691,7 @@ class PaperInfo {
             }
         }
         // call contact
-        return ($rrow = @$this->_review_id_array[$cid])
+        return ($rrow = get($this->_review_id_array, $cid))
             && $contact->can_view_review_identity($this, $rrow, $forceShow);
     }
 
