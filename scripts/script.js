@@ -1797,8 +1797,11 @@ function aufoldup(event) {
         m8 = e.className.match(/\bfold8([co])\b/);
     if (m9 && (!m8 || m8[1] == "o"))
         foldup(e, event, {n: 9, s: "foldpaperp"});
-    if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o"))
+    if (m8 && (!m9 || m8[1] == "c" || m9[1] == "o")) {
         foldup(e, event, {n: 8, s: "foldpapera"});
+        if (m8[1] == "o" && $$("foldpscollab"))
+            fold("pscollab", 1);
+    }
     return false;
 }
 

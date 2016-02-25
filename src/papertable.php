@@ -1069,11 +1069,9 @@ class PaperTable {
         if ($this->entryMatches || !$this->allFolded)
             $fold = 0;
 
-        $this->_papstripBegin("pscollab", $fold);
+        $this->_papstripBegin("pscollab", $fold, ["data-fold-session" => "foldpscollab"]);
         echo $this->papt("collaborators", $name,
-                         array("type" => "ps", "fold" => "pscollab",
-                               "foldsession" => "foldpscollab",
-                               "folded" => $fold)),
+                         ["type" => "ps", "fold" => "pscollab", "folded" => $fold]),
             "<div class='psv'><div class='fx'>", $data,
             "</div></div></div>\n\n";
     }
