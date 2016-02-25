@@ -444,9 +444,20 @@ class ReviewSearchMatcher extends ContactCountMatcher {
 class RevprefSearchMatcher extends ContactCountMatcher {
     public $preference_match = null;
     public $expertise_match = null;
+    public $is_any = false;
 
     function __construct($countexpr, $contacts) {
         parent::__construct($countexpr, $contacts);
+    }
+    function preference_expertise_match() {
+        if ($this->is_any)
+            return "(preference!=0 or expertise is not null)";
+        $where = [];
+        if ($this->preference_match)
+            $where[] = "preference" . $this->preference_match->countexpr();
+        if ($this->expertise_match)
+            $where[] = "expertise" . $this->expertise_match->countexpr();
+        return join(" and ", $where);
     }
 }
 
@@ -796,8 +807,8 @@ class PaperSearch {
         "pcconflict" => "pcconflict", "pcconf" => "pcconflict",
         "status" => "status", "has" => "has", "is" => "is",
         "rating" => "rate", "rate" => "rate",
-        "revpref" => "revpref", "pref" => "revpref",
-        "repref" => "revpref",
+        "revpref" => "pref", "pref" => "pref", "repref" => "pref",
+        "revprefexp" => "prefexp", "prefexp" => "prefexp", "prefexpertise" => "prefexp",
         "ss" => "ss", "search" => "ss",
         "formula" => "formula", "f" => "formula",
         "HEADING" => "HEADING", "heading" => "HEADING",
@@ -1404,7 +1415,7 @@ class PaperSearch {
         return true;
     }
 
-    private function _search_revpref($word, &$qt, $quoted) {
+    private function _search_revpref($word, &$qt, $quoted, $isexp) {
         $contacts = null;
         if (preg_match('/\A(.*?[^:=<>!])([:=!<>]=?|≠|≤|≥)(.*)\z/s', $word, $m)
             && !ctype_digit($m[1])) {
@@ -1412,8 +1423,10 @@ class PaperSearch {
             $word = ($m[2] === ":" ? $m[3] : $m[2] . $m[3]);
         }
 
-        if (!preg_match(',\A(\d*)\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
-            || ($m[1] === "" && $m[3] === "" && $m[4] === "")) {
+        if (strcasecmp($word, "any") == 0 || strcasecmp($word, "none") == 0)
+            $m = [null, "1", "=", "any", strcasecmp($word, "any") == 0];
+        else if (!preg_match(',\A(\d*)\s*([=!<>]=?|≠|≤|≥|)\s*(-?\d*)\s*([xyz]?)\z,i', $word, $m)
+                 || ($m[1] === "" && $m[3] === "" && $m[4] === "")) {
             $qt[] = new SearchTerm("f");
             return;
         }
@@ -1428,21 +1441,29 @@ class PaperSearch {
         // PC members can only search their own preferences.
         // Admins can search papers they administer.
         $value = new RevprefSearchMatcher((int) $m[1] ? ">=" . $m[1] : "=0", $contacts);
-        if ($m[3] !== "")
+        if ($m[3] === "any")
+            $value->is_any = true;
+        else if ($m[3] !== "")
             $value->preference_match = new CountMatcher($m[2] . $m[3]);
-        if ($m[4] !== "")
+        if ($m[3] !== "any" && $m[4] !== "")
             $value->expertise_match = new CountMatcher($m[2] . (121 - ord(strtolower($m[4]))));
+        $qz = [];
         if ($this->privChair)
-            $qt[] = new SearchTerm("revpref", 0, $value);
+            $qz[] = new SearchTerm("revpref", 0, $value);
         else {
             if ($this->contact->is_manager())
-                $qt[] = new SearchTerm("revpref", self::F_MANAGER, $value);
+                $qz[] = new SearchTerm("revpref", self::F_MANAGER, $value);
             if ($value->test_contact($this->cid)) {
                 $xvalue = clone $value;
                 $xvalue->set_contacts($this->cid);
-                $qt[] = new SearchTerm("revpref", 0, $xvalue);
+                $qz[] = new SearchTerm("revpref", 0, $xvalue);
             }
         }
+        if (!count($qz))
+            $qz[] = new SearchTerm("f");
+        if (strcasecmp($word, "none") == 0)
+            $qz = array(SearchTerm::make_not(SearchTerm::make_op("or", $qz)));
+        $qt = array_merge($qt, $qz);
     }
 
     private function _search_formula($word, &$qt, $quoted) {
@@ -1917,8 +1938,10 @@ class PaperSearch {
             $this->_search_reviewer($qword, $keyword, $qt);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
             $this->_search_comment($word, $keyword, $qt, $quoted);
-        if ($keyword === "revpref" && $this->amPC)
-            $this->_search_revpref($word, $qt, $quoted);
+        if ($keyword === "pref" && $this->amPC)
+            $this->_search_revpref($word, $qt, $quoted, false);
+        if ($keyword === "prefexp" && $this->amPC)
+            $this->_search_revpref($word, $qt, $quoted, true);
         foreach (array("lead", "shepherd", "manager") as $ctype)
             if ($keyword === $ctype) {
                 $x = $this->_one_pc_matcher($word, $quoted);
@@ -2637,10 +2660,8 @@ class PaperSearch {
             $where = array();
             if ($rsm->has_contacts())
                 $where[] = $rsm->contact_match_sql("contactId");
-            if ($rsm->preference_match)
-                $where[] = "preference" . $rsm->preference_match->countexpr();
-            if ($rsm->expertise_match)
-                $where[] = "expertise" . $rsm->expertise_match->countexpr();
+            if (($match = $rsm->preference_expertise_match()))
+                $where[] = $match;
             $q = "select paperId, count(PaperReviewPreference.preference) as count"
                 . " from PaperReviewPreference";
             if (count($where))
