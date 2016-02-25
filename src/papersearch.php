@@ -821,10 +821,10 @@ class PaperSearch {
         "ext" => 1, "cext" => 1, "iext" => 1, "pext" => 1);
 
 
-    function __construct($me, $opt) {
+    function __construct($me, $options) {
         global $Conf;
-        if (is_string($opt))
-            $opt = array("q" => $opt);
+        if (is_string($options))
+            $options = array("q" => $options);
 
         // contact facts
         $this->contact = $me;
@@ -833,7 +833,7 @@ class PaperSearch {
         $this->cid = $me->contactId;
 
         // paper selection
-        $ptype = defval($opt, "t", "");
+        $ptype = get_s($options, "t");
         if ($ptype === 0)
             $ptype = "";
         if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
@@ -878,7 +878,7 @@ class PaperSearch {
         // default, then it must be the only default or query construction
         // will break.
         $this->fields = array();
-        $qtype = defval($opt, "qt", "n");
+        $qtype = defval($options, "qt", "n");
         if ($qtype === "n" || $qtype === "ti")
             $this->fields["ti"] = 1;
         if ($qtype === "n" || $qtype === "ab")
@@ -894,11 +894,11 @@ class PaperSearch {
         $this->qt = ($qtype === "n" ? "" : $qtype);
 
         // the query itself
-        $this->q = trim(defval($opt, "q", ""));
+        $this->q = trim(get_s($options, "q"));
 
         // URL base
-        if (isset($opt["urlbase"]))
-            $this->urlbase = $opt["urlbase"];
+        if (isset($options["urlbase"]))
+            $this->urlbase = $options["urlbase"];
         else {
             $this->urlbase = hoturl_site_relative_raw("search", "t=" . urlencode($this->limitName));
             if ($qtype !== "n")
@@ -907,10 +907,12 @@ class PaperSearch {
         if (strpos($this->urlbase, "&amp;") !== false)
             trigger_error(caller_landmark() . " PaperSearch::urlbase should be a raw URL", E_USER_NOTICE);
 
-        $this->_reviewer = defval($opt, "reviewer", false);
+        $this->_reviewer = defval($options, "reviewer", false);
         $this->_reviewer_fixed = !!$this->_reviewer;
+        if ($this->_reviewer_fixed)
+            error_log("PaperSearch::\$reviewer set: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
 
-        $this->_allow_deleted = defval($opt, "allow_deleted", false);
+        $this->_allow_deleted = defval($options, "allow_deleted", false);
     }
 
     // begin changing contactId to cid

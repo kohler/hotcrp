@@ -15,7 +15,7 @@ class SearchActions {
     }
 
     static function selection_at($i) {
-        return @self::$sel[$i];
+        return get(self::$sel, $i);
     }
 
     static function selection_map() {
