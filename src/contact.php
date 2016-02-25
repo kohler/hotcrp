@@ -2191,9 +2191,8 @@ class Contact {
                 && !$rights->view_conflict_type
                 && $rrowSubmitted
                 && $viewscore >= VIEWSCORE_PC
-                && (($prow->review_not_incomplete($this)
-                     && ($Conf->setting("extrev_view") >= 1 || $pc_trackok))
-                    || $prow->leadContactId == $this->contactId));
+                && ($prow->review_not_incomplete($this)
+                    && ($Conf->setting("extrev_view") >= 1 || $pc_trackok)));
     }
 
     function perm_view_review(PaperInfo $prow, $rrow, $forceShow) {
@@ -2618,9 +2617,7 @@ class Contact {
             || (!$rights->view_conflict_type
                 && !($ctype & COMMENTTYPE_DRAFT)
                 && $this->can_view_review($prow, null, $forceShow)
-                && (($rights->allow_pc
-                     && (!$Conf->setting("pc_seeblindrev")
-                         || $prow->leadContactId == $this->contactId))
+                && (($rights->allow_pc && !$Conf->setting("pc_seeblindrev"))
                     || $prow->review_not_incomplete($this))
                 && ($rights->allow_pc
                     ? $ctype >= COMMENTTYPE_PCONLY
