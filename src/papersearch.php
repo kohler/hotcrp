@@ -61,7 +61,7 @@ class SearchTerm {
             foreach ($term->float as $k => $v)
                 if ($k === "sort" && isset($this->float["sort"]))
                     array_splice($this->float["sort"], count($this->float["sort"]), 0, $v);
-                else if (is_array(@$this->float[$k]) && is_array($v))
+                else if (is_array(get($this->float, $k)) && is_array($v))
                     $this->float[$k] = array_replace_recursive($this->float[$k], $v);
                 else if ($k !== "opinfo" || !isset($this->float[$k]))
                     $this->float[$k] = $v;
@@ -98,7 +98,7 @@ class SearchTerm {
         } else if ($qv->type === "revadj") {
             $qr = clone $qv->value[0];
             $qr->float = $this->float;
-            $qr->value["revadjnegate"] = !@$qr->value["revadjnegate"];
+            $qr->value["revadjnegate"] = !get($qr->value, "revadjnegate");
             return $qr;
         }
         return $this;
@@ -174,7 +174,7 @@ class SearchTerm {
     }
     private function _finish_then() {
         $ishighlight = $this->type !== "then";
-        $opinfo = strtolower(@$this->get_float("opinfo", ""));
+        $opinfo = strtolower($this->get_float("opinfo", ""));
         $newvalues = $newhvalues = $newhmasks = $newhtypes = array();
         $this->type = "then";
 
@@ -640,9 +640,9 @@ class ContactSearch {
             $this->contacts = array();
             $pcm = pcMembers();
             foreach ($this->ids as $cid)
-                if ($this->cset && ($p = @$this->cset[$cid]))
+                if ($this->cset && ($p = get($this->cset, $cid)))
                     $this->contacts[] = $p;
-                else if (($p = @$pcm[$cid]))
+                else if (($p = get($pcm, $cid)))
                     $this->contacts[] = $p;
                 else if ($Me->contactId == $cid)
                     $this->contacts[] = $Me;
@@ -652,8 +652,7 @@ class ContactSearch {
         return $this->contacts;
     }
     public function contact($i) {
-        $this->contacts();
-        return @$this->contacts[$i];
+        return get($this->contacts(), $i);
     }
 }
 
@@ -1339,7 +1338,7 @@ class PaperSearch {
                 else {
                     $score = $m[3];
                     if ($f->option_letter) {
-                        if (!@$Opt["smartScoreCompare"] || $noswitch) {
+                        if (!get($Opt, "smartScoreCompare") || $noswitch) {
                             // switch meaning of inequality
                             if ($m[2][0] === "<")
                                 $m[2] = ">" . substr($m[2], 1);
@@ -1470,7 +1469,7 @@ class PaperSearch {
             if (count($ret) == 0)
                 $this->warn("“" . htmlspecialchars($c) . "” doesn’t match a PC email.");
             $tagword = substr($tagword, $twiddle);
-        } else if ($twiddle === 0 && @$tagword[1] !== "~")
+        } else if ($twiddle === 0 && ($tagword === "" || $tagword[1] !== "~"))
             $ret[0] = $this->cid;
 
         $tagger = new Tagger($this->contact);
@@ -1671,7 +1670,7 @@ class PaperSearch {
     private function _search_has($word, &$qt, $quoted) {
         global $Conf;
         $lword = strtolower($word);
-        $lword = @self::$_keywords[$lword] ? : $lword;
+        $lword = get(self::$_keywords, $lword) ? : $lword;
         if ($lword === "paper" || $lword === "sub" || $lword === "submission")
             $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
         else if ($lword === "final" || $lword === "finalcopy")
@@ -1878,7 +1877,7 @@ class PaperSearch {
         if (($colon = strpos($word, ":")) > 0) {
             $x = substr($word, 0, $colon);
             if (strpos($x, '"') === false) {
-                $keyword = @self::$_keywords[$x] ? : $x;
+                $keyword = get(self::$_keywords, $x) ? : $x;
                 $word = substr($word, $colon + 1);
                 if ($word === false)
                     $word = "";
@@ -1912,7 +1911,7 @@ class PaperSearch {
             $this->_searchField($word, "co", $qt);
         if ($keyword ? $keyword === "re" : isset($this->fields["re"]))
             $this->_search_reviewer($qword, "re", $qt);
-        else if ($keyword && @self::$_canonical_review_keywords[$keyword])
+        else if ($keyword && get(self::$_canonical_review_keywords, $keyword))
             $this->_search_reviewer($qword, $keyword, $qt);
         if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)|\w*resp(?:onse)?(-?draft)?|cmt|aucmt|anycmt)\z/', $keyword))
             $this->_search_comment($word, $keyword, $qt, $quoted);
@@ -2060,7 +2059,7 @@ class PaperSearch {
         if (($colon = strpos($word, ":")) > 0) {
             $x = substr($word, 0, $colon);
             if (strpos($x, '"') === false)
-                $keyword = @self::$_keywords[$x] ? : $x;
+                $keyword = get(self::$_keywords, $x) ? : $x;
         }
 
         // allow a space after a keyword
@@ -2154,7 +2153,7 @@ class PaperSearch {
                     $curqe = $this->_searchQueryWord($word, true);
                     // Don't include 'show:' in headings.
                     if (($colon = strpos($word, ":")) === false
-                        || !@self::$_noheading_keywords[substr($word, 0, $colon)])
+                        || !get(self::$_noheading_keywords, substr($word, 0, $colon)))
                         $curqe->set_float("substr", substr($prevstr, 0, strlen($prevstr) - strlen($nextstr)));
                 }
             } else if ($opstr === ")") {
@@ -2670,7 +2669,7 @@ class PaperSearch {
                 $where[] = "(commentType&" . COMMENTTYPE_DRAFT . ")!=0";
             if ($t->flags & self::F_AUTHORCOMMENT)
                 $where[] = "commentType>=" . COMMENTTYPE_AUTHOR;
-            if (@$t->commentRound !== null)
+            if ($t->commentRound !== null)
                 $where[] = "commentRound=" . $t->commentRound;
             if ($extrawhere)
                 $where[] = $extrawhere;
@@ -2724,7 +2723,7 @@ class PaperSearch {
             else {
                 $rtype = $t->flags & (self::F_ALLOWCOMMENT | self::F_ALLOWRESPONSE | self::F_AUTHORCOMMENT | self::F_ALLOWDRAFT | self::F_REQUIREDRAFT);
                 $thistab = "Numcomments_" . $rtype;
-                if (@$t->commentRound !== null)
+                if ($t->commentRound !== null)
                     $thistab .= "_" . $t->commentRound;
             }
             $f[] = $this->_clauseTermSetComments($thistab, $t->value->contact_match_sql("contactId"), $t, $sqi);
@@ -3165,18 +3164,20 @@ class PaperSearch {
 
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $Conf->has_track_tags())
-            || @$this->_query_options["tags"]) {
+            || get($this->_query_options, "tags")) {
             $sqi->add_table("PaperTags", array("left join", "(select paperId, group_concat(' ', tag, '#', tagIndex separator '') as paperTags from PaperTag group by paperId)"));
             $sqi->add_column("paperTags", "PaperTags.paperTags");
         }
-        if (@$this->_query_options["scores"] || @$this->_query_options["reviewTypes"] || @$this->_query_options["reviewContactIds"]) {
+        if (get($this->_query_options, "scores")
+            || get($this->_query_options, "reviewTypes")
+            || get($this->_query_options, "reviewContactIds")) {
             $j = "group_concat(contactId order by reviewId) reviewContactIds";
             $sqi->add_column("reviewContactIds", "R_submitted.reviewContactIds");
-            if (@$this->_query_options["reviewTypes"]) {
+            if (get($this->_query_options, "reviewTypes")) {
                 $j .= ", group_concat(reviewType order by reviewId) reviewTypes";
                 $sqi->add_column("reviewTypes", "R_submitted.reviewTypes");
             }
-            foreach (@$this->_query_options["scores"] ? : array() as $f) {
+            foreach (get($this->_query_options, "scores") ? : array() as $f) {
                 $j .= ", group_concat($f order by reviewId) {$f}Scores";
                 $sqi->add_column("{$f}Scores", "R_submitted.{$f}Scores");
             }
@@ -3366,7 +3367,7 @@ class PaperSearch {
     }
 
     function has_sort() {
-        return @$this->sorters;
+        return $this->sorters;
     }
 
     function paperList() {

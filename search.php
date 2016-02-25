@@ -85,7 +85,7 @@ if (($getaction == "paper" || $getaction == "final"
 function topic_ids_to_text($tids, $tmap, $tomap) {
     $tx = array();
     foreach (explode(",", $tids) as $tid)
-        if (($tname = @$tmap[$tid]))
+        if (($tname = get($tmap, $tid)))
             $tx[$tomap[$tid]] = $tname;
     ksort($tx);
     return join(", ", $tx);
@@ -577,7 +577,7 @@ if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) 
             $rtypes = explode(",", $prow->assignmentReviewTypes);
             $rrounds = explode(",", $prow->assignmentReviewRounds);
             for ($i = 0; $i < count($cids); ++$i)
-                if (($pc = @$pcm[$cids[$i]]) && $rtypes[$i] >= REVIEW_PC) {
+                if (($pc = get($pcm, $cids[$i])) && $rtypes[$i] >= REVIEW_PC) {
                     $round = (int) $rrounds[$i];
                     $round_name = $round ? $round_list[$round] : "none";
                     $any_round = $any_round || $round != 0;
