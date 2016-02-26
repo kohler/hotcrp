@@ -504,14 +504,8 @@ class Contact {
         else
             $n = Text::name_text($x);
 
-        if ($pfx === "r" && isset($x->contactTags) && $x->contactTags) {
-            $tagger = new Tagger($this);
-            if (($colors = $tagger->viewable_color_classes($x->contactTags))) {
-                if (TagInfo::classes_have_colors($colors))
-                    $colors = "tagcolorspan " . $colors;
-                $n = '<span class="' . $colors . '">' . $n . '</span>';
-            }
-        }
+        if ($pfx === "r" && ($colors = $this->reviewer_color_classes_for($x)))
+            $n = '<span class="' . $colors . '">' . $n . '</span>';
 
         return ($this->name_for_map_[$key] = $n);
     }
@@ -526,6 +520,18 @@ class Contact {
 
     function reviewer_html_for($x) {
         return $this->name_for($this->isPC ? "r" : "", $x);
+    }
+
+    function reviewer_color_classes_for($x) {
+        if ($this->isPC && isset($x->contactTags) && $x->contactTags) {
+            $tagger = new Tagger($this);
+            if (($colors = $tagger->viewable_color_classes($x->contactTags))) {
+                if (TagInfo::classes_have_colors($colors))
+                    $colors = "tagcolorspan " . $colors;
+                return $colors;
+            }
+        }
+        return "";
     }
 
     function has_email() {

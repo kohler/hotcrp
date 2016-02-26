@@ -2575,6 +2575,22 @@ class Conf {
         echo Ht::take_stash(), "</body>\n</html>\n";
     }
 
+    public function echo_hotcrp_pc() {
+        global $Me;
+        if (!Ht::mark_stash("hotcrp_pc"))
+            return;
+        $hpcj = $list = [];
+        foreach (pcMembers() as $pcm) {
+            $hpcj[$pcm->contactId] = $j = (object) ["name" => $Me->name_html_for($pcm), "email" => $pcm->email];
+            if (($color_classes = $Me->reviewer_color_classes_for($pcm)))
+                $j->color_classes = $color_classes;
+            $list[] = $pcm->contactId;
+        }
+        $hpcj["__order__"] = $list;
+        Ht::stash_script("hotcrp_pc=" . json_encode($hpcj) . ";");
+    }
+
+
     function output_ajax($values = null, $div = false) {
         if ($values === false || $values === true)
             $values = array("ok" => $values);

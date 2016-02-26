@@ -824,6 +824,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             if ($this->topics)
                 $pl->qopts["topics"] = 1;
         }
+        $Conf->echo_hotcrp_pc();
         return true;
     }
     public function header($pl, $ordinal) {
@@ -834,17 +835,26 @@ class PreferenceListPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $prefs = $row->reviewer_preferences();
-        $topics = $this->topics ? $row->topics() : false;
         $ts = array();
         if ($prefs || $topics)
             foreach (pcMembers() as $pcid => $pc) {
-                $pref = get($prefs, $pcid, array());
-                if ($this->topics)
-                    $pref[2] = $row->topic_interest_score($pc);
-                if (($pspan = unparse_preference_span($pref)) !== "")
-                    $ts[] = '<span class="nw">' . $pl->contact->reviewer_html_for($pc) . $pspan . '</span>';
+                if (($pref = get($prefs, $pcid))
+                    && ($pref[0] !== 0 || $pref[1] !== null)) {
+                    $t = "P" . $pref[0];
+                    if ($pref[1] !== null)
+                        $t .= unparse_expertise($pref[1]);
+                    $ts[] = $pcid . $t;
+                } else if ($this->topics
+                           && ($tscore = $row->topic_interest_score($pc)))
+                    $ts[] = $pcid . "T" . $tscore;
             }
-        return join(", ", $ts);
+        if (count($ts)) {
+            $t = '<span class="has-allpref" data-allpref="' . join(" ", $ts) . '">Loading</span>';
+            if ($pl->live_table && $rowidx % 16 == 15)
+                $t .= "<script>plinfo.allpref()</script>";
+            return $t;
+        } else
+            return '';
     }
 }
 

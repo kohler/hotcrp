@@ -4,7 +4,7 @@
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
     siteurl_absolute_base,
-    hotcrp_paperid, hotcrp_list, hotcrp_status, hotcrp_user,
+    hotcrp_paperid, hotcrp_list, hotcrp_status, hotcrp_user, hotcrp_pc,
     hotcrp_want_override_conflict;
 
 function $$(id) {
@@ -4142,6 +4142,7 @@ function make_callback(dofold, type, which) {
         if (type == "aufull")
             aufull[!!dofold] = rv;
         scorechart();
+        plinfo.allpref();
     };
 }
 
@@ -4216,6 +4217,24 @@ plinfo.set_fields = function (fo) {
         fields[fo[i].name] = fo[i];
     if (fields.authors)
         fields.au = fields.anonau = fields.aufull = fields.authors;
+};
+
+plinfo.allpref = function () {
+    $(".has-allpref").each(function () {
+        var t = [], atoms = this.getAttribute("data-allpref").split(/ /);
+        for (var i = 0; i != atoms.length; ++i) {
+            var m = /^(\d+)([PT].*)$/.exec(atoms[i]),
+                pc = hotcrp_pc[m[1]], x = '<span class="nw">';
+            if (pc.color_classes)
+                x += '<span class="' + pc.color_classes + '">' + pc.name + '</span>';
+            else
+                x += pc.name;
+            x += ' <span class="asspref' + (m[2].charAt(1) === "-" ? "-1" : "1") +
+                '">' + m[2].replace(/-/, "−") /* minus */ + '</span></span>';
+            t.push(x);
+        }
+        $(this).html(t.join(", ")).removeClass("has-allpref");
+    });
 };
 
 return plinfo;

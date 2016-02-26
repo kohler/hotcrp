@@ -1056,8 +1056,8 @@ function unparse_expertise($expertise) {
 
 function unparse_preference($preference, $expertise = null) {
     if (is_object($preference))
-        list($preference, $expertise) = array(@$preference->reviewerPreference,
-                                              @$preference->reviewerExpertise);
+        list($preference, $expertise) = array(get($preference, "reviewerPreference"),
+                                              get($preference, "reviewerExpertise"));
     else if (is_array($preference))
         list($preference, $expertise) = $preference;
     if ($preference === null || $preference === false)
