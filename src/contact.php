@@ -3196,7 +3196,7 @@ class Contact {
         if ($direction > 0) {
             Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$pid and reviewType=" . REVIEW_SECONDARY . " and contactId=$cid and reviewSubmitted is null and reviewNeedsSubmit=1");
         } else if ($direction < 0) {
-            $row = Dbl::fetch_row("select count(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid");
+            $row = Dbl::fetch_first_row("select count(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid");
             if ($row && $row[0] && !$row[1])
                 Dbl::qe("update PaperReview set reviewNeedsSubmit=" . ($row[2] ? -1 : 1) . " where paperId=$pid and contactId=$cid and reviewSubmitted is null");
         }
