@@ -338,17 +338,17 @@ class PaperInfo {
         return $this->paperTags;
     }
 
-    public function tag_info_json(Contact $user) {
+    public function add_tag_info_json($pj, Contact $user) {
         if (!property_exists($this, "paperTags"))
             $this->load_tags();
         $tagger = new Tagger($user);
         $editable = $tagger->paper_editable($this);
         $viewable = $tagger->viewable($this->paperTags);
         $tags_view_html = $tagger->unparse_and_link($viewable, $this->paperTags, false, !$this->has_conflict($user));
-        return (object) array("tags" => TagInfo::split($viewable),
-                              "tags_edit_text" => $tagger->unparse($editable),
-                              "tags_view_html" => $tags_view_html,
-                              "color_classes" => TagInfo::color_classes($viewable));
+        $pj->tags = TagInfo::split($viewable);
+        $pj->tags_edit_text = $tagger->unparse($editable);
+        $pj->tags_view_html = $tags_view_html;
+        $pj->color_classes = TagInfo::color_classes($viewable);
     }
 
     private function load_topics() {

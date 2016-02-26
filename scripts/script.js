@@ -4422,8 +4422,8 @@ save_tags.success = function (data) {
 $(function () {
     if ($$("foldtags"))
         jQuery(window).on("hotcrp_deadlines", function (evt, dl) {
-            if (dl.tags && dl.tags[hotcrp_paperid])
-                save_tags.success(dl.tags[hotcrp_paperid]);
+            if (dl.p && dl.p[hotcrp_paperid] && dl.p[hotcrp_paperid].tags)
+                save_tags.success(dl.p[hotcrp_paperid].tags);
         });
 });
 

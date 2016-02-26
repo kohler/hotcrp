@@ -159,8 +159,11 @@ if (req("conflist") && $Me->has_email() && ($cdb = Contact::contactdb())) {
     }
 }
 
+$pj = (object) array();
 if ($Conf->paper && $Me->can_view_tags($Conf->paper))
-    $j->tags = (object) array($Conf->paper->paperId => $Conf->paper->tag_info_json($Me));
+    $Conf->paper->add_tag_info_json($pj, $Me);
+if (count((array) $pj))
+    $j->p = [$Conf->paper->paperId => $pj];
 
 $j->ok = true;
 $Conf->ajaxExit($j);
