@@ -3335,7 +3335,7 @@ function suggest(elt, klass, cleanf) {
     }
 
     function click(evt) {
-        maybe_complete($(this).find(".suggestion"));
+        maybe_complete($(this));
         evt.stopPropagation();
         interacted = true;
     }
