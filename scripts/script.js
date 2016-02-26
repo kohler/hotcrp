@@ -2261,7 +2261,7 @@ function do_render(format, is_inline, a) {
             }
         } catch (e) {
         }
-    return {format: 0, content: render0(text)};
+    return {format: 0, content: render0(a[0])};
 }
 
 var render_text = function (format, text /* arguments... */) {
