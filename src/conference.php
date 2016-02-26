@@ -1273,7 +1273,7 @@ class Conf {
             return "rev_open";
         $dn = $this->review_deadline($round, $isPC, $hard);
         $dv = +get($this->settings, $dn);
-        if ($dv > 0 && $dv + +get($this->settings, "rev_grace") < $Now)
+        if ($dv > 0 && $dv < $Now)
             return $dn;
         return false;
     }

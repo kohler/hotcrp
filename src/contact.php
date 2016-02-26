@@ -2972,7 +2972,6 @@ class Contact {
             }
         }
         if (get($dl->rev, "open")) {
-            $grace = setting("rev_grace");
             foreach ($Conf->defined_round_list() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
                 $jsuf = $i ? ".$round_name" : "";
@@ -2988,8 +2987,6 @@ class Contact {
                         $dlround->ishard = true;
                     } else if ($s)
                         $dlround->done = $s;
-                    if ($grace)
-                        $graces[] = [$dlround, "rev_grace"];
                 }
             }
             // blindness
