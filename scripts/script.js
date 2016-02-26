@@ -1225,11 +1225,11 @@ function display_main(is_initial) {
                 break;
             }
     }
-    if (!dlname && dl.is_author && dl.resp)
-        for (i in dl.resp.roundsuf) {
-            x = dl["resp" + dl.resp.roundsuf[i]];
+    if (!dlname && dl.is_author && dl.resps)
+        for (i in dl.resps) {
+            x = dl.resps[i];
             if (x.open && (+dl.now <= +x.done ? now - 120 <= +x.done : x.ingrace)) {
-                dlname = (dl.resp.rounds[i] == "1" ? "Response" : dl.resp.rounds[i] + " response") + " deadline";
+                dlname = (i == "1" ? "Response" : i + " response") + " deadline";
                 dltime = +x.done;
                 break;
             }
@@ -2459,11 +2459,11 @@ function comment_identity_time(cj) {
 
 
 function edit_allowed(cj) {
-    if (cj.response) {
-        var k = "can_respond" + (cj.response == "1" ? "" : "." + cj.response);
-        return hotcrp_status.perm[hotcrp_paperid][k] === true;
-    } else
-        return hotcrp_status.perm[hotcrp_paperid].can_comment === true;
+    var p = hotcrp_status.perm[hotcrp_paperid];
+    if (cj.response)
+        return p.can_responds && p.can_responds[cj.response] === true;
+    else
+        return p.can_comment === true;
 }
 
 function render_editing(hc, cj) {

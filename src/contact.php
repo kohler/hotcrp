@@ -2907,6 +2907,7 @@ class Contact {
             $dl->is_admin = true;
         if ($this->is_author())
             $dl->is_author = true;
+        $graces = [];
 
         // submissions
         $sub_reg = setting("sub_reg");
@@ -2914,7 +2915,8 @@ class Contact {
         $sub_sub = setting("sub_sub");
         $dl->sub->open = +setting("sub_open") > 0;
         $dl->sub->sub = +$sub_sub;
-        $graces = [[$dl->sub, "sub_grace"]];
+        if ($dl->sub->open)
+            $graces[] = [$dl->sub, "sub_grace"];
         if ($sub_reg && $sub_reg != $sub_update)
             $dl->sub->reg = $sub_reg;
         if ($sub_update && $sub_update != $sub_sub)
@@ -2930,18 +2932,18 @@ class Contact {
 
         // responses
         if (+setting("resp_active") > 0) {
-            $dl->resp = (object) array("rounds" => array(), "roundsuf" => array());
+            $dlresps = [];
             foreach ($Conf->resp_round_list() as $i => $rname) {
-                $osuf = $rname != "1" ? ".$rname" : "";
-                $dl->resp->rounds[] = $rname;
-                $dl->resp->roundsuf[] = $osuf;
-                $k = "resp" . $osuf;
-                $dlresp = $dl->$k = get($dl, $k) ? : (object) array();
                 $isuf = $i ? "_$i" : "";
-                $dlresp->open = +setting("resp_open$isuf");
-                $dlresp->done = +setting("resp_done$isuf");
-                $graces[] = [$dlresp, "resp_grace$isuf"];
+                $dlresps[$rname] = $dlresp = (object) [
+                    "open" => +setting("resp_open$isuf"),
+                    "done" => +setting("resp_done$isuf")
+                ];
+                if ($dlresp->open)
+                    $graces[] = [$dlresp, "resp_grace$isuf"];
             }
+            if (count($dlresps))
+                $dl->resps = $dlresps;
         }
 
         // final copy deadlines
@@ -2963,31 +2965,19 @@ class Contact {
             && ($rev_open = +setting("rev_open")) > 0
             && $rev_open <= $Now)
             $dl->rev->open = true;
-        if ($this->is_reviewer()) {
-            $dl->rev->rounds = array();
-            $dl->rev->roundsuf = array();
-            foreach ($Conf->defined_round_list() as $i => $round_name) {
-                $dl->rev->rounds[] = $round_name;
-                $dl->rev->roundsuf[] = $i ? ".$round_name" : "";
-            }
-        }
         if (get($dl->rev, "open")) {
+            $dl->revs = [];
+            $k = $this->isPC ? "pcrev" : "extrev";
             foreach ($Conf->defined_round_list() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
-                $jsuf = $i ? ".$round_name" : "";
-                foreach (array("pcrev", "extrev") as $rt) {
-                    if ($rt == "pcrev" && !$this->isPC)
-                        continue;
-                    $s = +setting("{$rt}_soft$isuf");
-                    $h = +setting("{$rt}_hard$isuf");
-                    $k = $rt . $jsuf;
-                    $dlround = $dl->$k = (object) array("open" => true);
-                    if ($h && ($h < $Now || $s < $Now)) {
-                        $dlround->done = $h;
-                        $dlround->ishard = true;
-                    } else if ($s)
-                        $dlround->done = $s;
-                }
+                $s = +setting("{$k}_soft$isuf");
+                $h = +setting("{$k}_hard$isuf");
+                $dl->revs[$round_name] = $dlround = (object) ["open" => true];
+                if ($h && ($h < $Now || $s < $Now)) {
+                    $dlround->done = $h;
+                    $dlround->ishard = true;
+                } else if ($s)
+                    $dlround->done = $s;
             }
             // blindness
             $rb = $Conf->review_blindness();
@@ -3000,7 +2990,7 @@ class Contact {
         // grace periods: give a minute's notice of an impending grace
         // period
         foreach ($graces as $g) {
-            if (get($g[0], "open") && ($grace = setting($g[1])))
+            if (($grace = setting($g[1])))
                 foreach (array("reg", "update", "sub", "done") as $k)
                     if (get($g[0], $k) && $g[0]->$k + 60 < $Now
                         && $g[0]->$k + $grace >= $Now) {
@@ -3053,11 +3043,15 @@ class Contact {
                 if (get($dl, "resp"))
                     foreach ($Conf->resp_round_list() as $i => $rname) {
                         $crow = (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i);
-                        $k = "can_respond" . ($rname == "1" ? "" : ".$rname");
+                        $v = false;
                         if ($this->can_respond($prow, $crow, true))
-                            $perm->$k = true;
+                            $v = true;
                         else if ($admin && $this->can_respond($prow, $crow, false))
-                            $perm->$k = "override";
+                            $v = "override";
+                        if ($v && !isset($perm->can_respond))
+                            $perm->can_responds = [];
+                        if ($v)
+                            $perm->can_responds[$rname] = $v;
                     }
                 if (self::can_some_author_view_submitted_review($prow))
                     $perm->some_author_can_view_review = true;
@@ -3072,20 +3066,14 @@ class Contact {
         $dl = $this->my_deadlines();
         if (get($dl->sub, "reg") || get($dl->sub, "update") || get($dl->sub, "sub"))
             return true;
-        if (get($dl, "resp"))
-            foreach ($dl->resp->roundsuf as $rsuf) {
-                $dlk = "resp$rsuf";
-                $dlr = $dl->$dlk;
+        if (get($dl, "resps"))
+            foreach ($dl->resps as $dlr) {
                 if (get($dlr, "open") && $dlr->open < $Now && get($dlr, "done"))
                     return true;
             }
         if (get($dl, "rev") && get($dl->rev, "open") && $dl->rev->open < $Now)
-            foreach ($dl->rev->roundsuf as $rsuf) {
-                $dlk = "pcrev$rsuf";
-                if (get($dl, $dlk) && get($dl->$dlk, "done"))
-                    return true;
-                $dlk = "extrev$rsuf";
-                if (get($dl, $dlk) && get($dl->$dlk, "done"))
+            foreach ($dl->revs as $dlr) {
+                if (get($dlr, "done"))
                     return true;
             }
         return false;

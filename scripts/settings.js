@@ -395,15 +395,18 @@ function append_field(fid, pos) {
     } else
         $f.find(".reviewrow_options").remove();
 
-    if (hotcrp_status.rev && (hotcrp_status.rev.rounds || []).length > 1) {
-        var rname = hotcrp_status.rev.rounds, v, j, text;
+    var rnames = [];
+    for (i in hotcrp_status.revs || {})
+        rnames.push(i);
+    if (hotcrp_status.rev && rnames.length > 1) {
+        var v, j, text;
         $j = $f.find(".reviewfield_round_list");
-        for (i = 0; i < (1 << rname.length) - 1;
-             i = next_lexicographic_permutation(i, rname.length)) {
+        for (i = 0; i < (1 << rnames.length) - 1;
+             i = next_lexicographic_permutation(i, rnames.length)) {
             text = [];
-            for (j = 0; j < rname.length; ++j)
+            for (j = 0; j < rnames.length; ++j)
                 if (i & (1 << j))
-                    text.push(rname[j]);
+                    text.push(rnames[j]);
             if (!text.length)
                 $j.append("<option value=\"\">All rounds</option>");
             else if (text.length == 1)

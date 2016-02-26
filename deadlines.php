@@ -9,7 +9,7 @@ require_once("src/initweb.php");
 // *** that hides the link when there are no deadlines to show.         ***
 
 $dl = $Me->my_deadlines();
-if (@$_REQUEST["ajax"]) {
+if (get($_REQUEST, "ajax")) {
     $dl->ok = true;
     $Conf->ajaxExit($dl);
 }
@@ -29,61 +29,61 @@ echo "</p>
 <dl>\n";
 
 
-function printDeadline($dl, $time, $phrase, $description) {
+function printDeadline($time, $phrase, $description) {
     global $Conf;
     echo "<dt><strong>", $phrase, "</strong>: ", $Conf->printableTime($time, "span") , "</dt>\n",
         "<dd>", $description, ($description ? "<br />" : ""), "</dd>";
 }
 
 // If you change these, also change Contact::has_reportable_deadline().
-if (@$dl->sub->reg)
-    printDeadline($dl, $dl->sub->reg, "Paper registration deadline",
+if (get($dl->sub, "reg"))
+    printDeadline($dl->sub->reg, "Paper registration deadline",
                   "You can register new papers until this deadline.");
 
-if (@$dl->sub->update)
-    printDeadline($dl, $dl->sub->update, "Paper update deadline",
+if (get($dl->sub, "update"))
+    printDeadline($dl->sub->update, "Paper update deadline",
                   "You can upload new versions of your paper and change other paper information until this deadline.");
 
-if (@$dl->sub->sub)
-    printDeadline($dl, $dl->sub->sub, "Paper submission deadline",
+if (get($dl->sub, "sub"))
+    printDeadline($dl->sub->sub, "Paper submission deadline",
                   "Papers must be submitted by this deadline to be reviewed.");
 
-if (@$dl->resp)
-    foreach ($dl->resp->roundsuf as $i => $rsuf) {
-        $rkey = "resp" . $rsuf;
-        $dlr = $dl->$rkey;
-        if ($dlr && @$dlr->open && $dlr->open <= $Now && @$dlr->done) {
-            $rname = $dl->resp->rounds[$i];
+if (get($dl, "resps"))
+    foreach ($dl->resps as $rname => $dlr)
+        if (get($dlr, "open") && $dlr->open <= $Now && get($dlr, "done")) {
             if ($rname == 1)
-                printDeadline($dl, $dlr->done, "Response deadline",
+                printDeadline($dlr->done, "Response deadline",
                               "You can submit responses to the reviews until this deadline.");
             else
-                printDeadline($dl, $dlr->done, "$rname response deadline",
+                printDeadline($dlr->done, "$rname response deadline",
                               "You can submit $rname responses to the reviews until this deadline.");
         }
-    }
 
-if (@$dl->rev && @$dl->rev->open && @$dl->rev->rounds) {
+if (get($dl, "rev") && get($dl->rev, "open")) {
     $dlbyround = array();
-    foreach ($dl->rev->rounds as $roundname) {
-        $suffix = $roundname === "" ? "" : "_$roundname";
-        $thisdl = array();
-        $pk = "pcrev$suffix";
-        if (@$dl->$pk && @$dl->$pk->done)
-            $thisdl[] = (@$dl->$pk->ishard ? "PH" : "PS") . $dl->$pk->done;
+    foreach ($Conf->defined_round_list() as $i => $round_name) {
+        $isuf = $i ? "_$i" : "";
+        $es = +setting("extrev_soft$isuf");
+        $eh = +setting("extrev_hard$isuf");
+        $ps = $ph = -1;
 
-        $ek = "extrev$suffix";
-        if (@$dl->$ek && @$dl->$ek->done) {
-            if (@$dl->$pk && @$dl->$pk->done
-                && $dl->$ek->done === $dl->$pk->done
-                && @$dl->$ek->ishard === @$dl->$pk->ishard)
-                /* do not print external deadlines if same as PC deadlines */;
-            else
-                $thisdl[] = (@$dl->$ek->ishard ? "EH" : "ES") . $dl->$ek->done;
+        $thisdl = [];
+        if ($Me->isPC) {
+            $ps = +setting("pcrev_soft$isuf");
+            $ph = +setting("pcrev_hard$isuf");
+            if ($ph && ($ph < $Now || $ps < $Now))
+                $thisdl[] = "PH" . $ph;
+            else if ($ps)
+                $thisdl[] = "PS" . $ps;
         }
-
+        if ($es != $ps || $eh != $ph) {
+            if ($eh && ($eh < $Now || $es < $Now))
+                $thisdl[] = "EH" . $eh;
+            else if ($es)
+                $thisdl[] = "ES" . $es;
+        }
         if (count($thisdl))
-            $dlbyround[$roundname] = $last_dlbyround = join(" ", $thisdl);
+            $dlbyround[$round_name] = $last_dlbyround = join(" ", $thisdl);
     }
 
     $dlroundunify = true;
@@ -100,16 +100,16 @@ if (@$dl->rev && @$dl->rev->open && @$dl->rev->rounds) {
         foreach (explode(" ", $dltext) as $dldesc) {
             list($dt, $dv) = array(substr($dldesc, 0, 2), +substr($dldesc, 2));
             if ($dt === "PS")
-                printDeadline($dl, $dv, ($noround ? "Review" : "$roundname review") . " deadline",
+                printDeadline($dv, ($noround ? "Review" : "$roundname review") . " deadline",
                               "$reviewstext are requested by this deadline.");
             else if ($dt === "PH")
-                printDeadline($dl, $dv, ($noround ? "Review" : "$roundname review") . " hard deadline",
+                printDeadline($dv, ($noround ? "Review" : "$roundname review") . " hard deadline",
                               "$reviewstext must be submitted by this deadline.");
             else if ($dt === "ES")
-                printDeadline($dl, $dv, ($noround ? "External" : "$roundname external") . " review deadline",
+                printDeadline($dv, ($noround ? "External" : "$roundname external") . " review deadline",
                               "$reviewstext are requested by this deadline.");
             else if ($dt === "EH")
-                printDeadline($dl, $dv, ($noround ? "External" : "$roundname external") . " review hard deadline",
+                printDeadline($dv, ($noround ? "External" : "$roundname external") . " review hard deadline",
                               "$reviewstext must be submitted by this deadline.");
         }
         if ($dlroundunify)
