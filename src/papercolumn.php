@@ -169,7 +169,6 @@ class SelectorPaperColumn extends PaperColumn {
 class TitlePaperColumn extends PaperColumn {
     private $has_badges = false;
     private $highlight = false;
-    private $nformats = 0;
     public function __construct() {
         parent::__construct("title", Column::VIEW_COLUMN | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "title_compare"));
@@ -189,16 +188,14 @@ class TitlePaperColumn extends PaperColumn {
         return "Title";
     }
     public function content($pl, $row, $rowidx) {
-        global $Conf;
         $t = '<a href="' . $pl->_paperLink($row) . '" class="ptitle taghl';
 
         $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
 
         if ($pl->live_table && !$highlight_count
             && ($format = $row->title_format())) {
+            ++$pl->nformat_onpage;
             $t .= ' preformat" data-format="' . $format;
-            $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
-            ++$this->nformats;
         }
 
         $t .= '" tabindex="5">' . $highlight_text . '</a>'
@@ -209,11 +206,6 @@ class TitlePaperColumn extends PaperColumn {
             && ($t = $pl->tagger->viewable($row->paperTags)) !== ""
             && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
             $t .= $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
-
-        if ($this->nformats && $rowidx % 16 == 15) {
-            $t .= '<script>render_text.on_page()</script>';
-            $this->nformats = 0;
-        }
 
         return $t;
     }
@@ -442,7 +434,14 @@ class AbstractPaperColumn extends PaperColumn {
         return $row->abstract == "";
     }
     public function content($pl, $row, $rowidx) {
-        return Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"));
+        $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
+        if ($pl->live_table && !$highlight_count
+            && ($format = $row->format_of($row->abstract))) {
+            ++$pl->nformat_onpage;
+            $t = '<div class="preformat" data-format="' . $format . '.plx">'
+                . $t . '</div>';
+        }
+        return $t;
     }
     public function text($pl, $row) {
         return $row->abstract;
@@ -1289,7 +1288,7 @@ class OptionPaperColumn extends PaperColumn {
                 && $pl->contact->can_view_paper_option($row, $this->opt, true))) {
             $t = $this->opt->unparse_column_html($pl, $row);
             if ($t !== "" && $this->embedded_header) {
-                $h = '<h6>' . htmlspecialchars($this->opt->name) . ':</h6> ';
+                $h = '<em class="plx">' . htmlspecialchars($this->opt->name) . ':</em> ';
                 if (preg_match(',\A(<div.*?>)([\s\S]*)\z,', $t, $m))
                     $t = $m[1] . $h . $m[2];
                 else

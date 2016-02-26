@@ -93,6 +93,7 @@ class PaperList {
     private $_xreviewer = false;
     public $review_list;
     public $live_table;
+    public $nformat_onpage;
 
     private $sortable;
     private $foldable;
@@ -733,8 +734,7 @@ class PaperList {
                 $pc->prefOrdinal = sprintf("-0.%04d", $ord++);
                 $pc->topicInterest = array();
             }
-            $result = Dbl::qe("select contactId, topicId, " . $Conf->query_topic_interest()
-                              . " from TopicInterest");
+            $result = Dbl::qe("select contactId, topicId, " . $Conf->query_topic_interest() . " from TopicInterest");
             while (($row = edb_row($result)))
                 $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
         }
@@ -840,7 +840,7 @@ class PaperList {
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
                     if (!$fdef->embedded_header)
-                        $tt .= "<h6>" . $fdef->header($this, -1) . ":</h6> ";
+                        $tt .= '<em class="plx">' . $fdef->header($this, -1) . ':</em> ';
                     $tt .= $c;
                     $fdef->has_content = true;
                 }
@@ -1072,6 +1072,7 @@ class PaperList {
         $this->any = new Qobject;
         $this->count = 0;
         $this->live_table = false;
+        $this->nformat_onpage = 0;
         return true;
     }
 
@@ -1326,11 +1327,20 @@ class PaperList {
         // collect row data
         $body = array();
         $lastheading = count($this->search->headingmap) ? -1 : -2;
+        $format_onpage = false;
         foreach ($rows as $row) {
             ++$this->count;
             if ($lastheading > -2)
                 $lastheading = $this->_row_check_heading($rstate, $rows, $row, $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
+            if ($this->nformat_onpage && !$format_onpage) {
+                $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
+                $format_onpage = true;
+            }
+            if ($this->nformat_onpage && $this->count % 16 == 15) {
+                $body[count($body) - 1] .= "  <script>render_text.on_page()</script>\n";
+                $this->nformat_onpage = 0;
+            }
         }
 
         // header cells

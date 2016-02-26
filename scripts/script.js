@@ -2239,37 +2239,43 @@ function render0(text) {
 var default_format = 0, renderers = {"0": {format: 0, render: render0}};
 
 function lookup(format) {
-    if (format == null || !renderers[format])
+    var r, p;
+    if (format && (r = renderers[format]))
+        return r;
+    if (format && (p = format.indexOf(".")) > 0
+        && (r = renderers[format.substring(0, p)]))
+        return r;
+    if (format == null)
         format = default_format;
     return renderers[format] || renderers[0];
 }
 
-var render_text = function (format, text /* arguments... */) {
-    var x = null, a, i, r = lookup(format);
-    if (r.format) {
-        a = [text];
-        for (i = 2; i < arguments.length; ++i)
-            a.push(arguments[i]);
+function do_render(format, is_inline, a) {
+    var r = lookup(format);
+    if (r.format)
         try {
-            return {format: r.format, content: r.render.apply(null, a)};
+            var f = (is_inline && r.render_inline) || r.render;
+            return {
+                format: r.formatClass || r.format,
+                content: f.apply(this, a)
+            }
         } catch (e) {
         }
-    }
     return {format: 0, content: render0(text)};
+}
+
+var render_text = function (format, text /* arguments... */) {
+    var a = [text], i;
+    for (i = 2; i < arguments.length; ++i)
+        a.push(arguments[i]);
+    return do_render.call(this, format, false, a);
 };
 
 function render_inline(format, text /* arguments... */) {
-    var x = null, a, i, r = lookup(format);
-    if (r.format && r.render_inline) {
-        a = [text];
-        for (i = 2; i < arguments.length; ++i)
-            a.push(arguments[i]);
-        try {
-            return {format: r.format, content: r.render_inline.apply(null, a)};
-        } catch (e) {
-        }
-    }
-    return {format: 0, content: escape_entities(text)};
+    var a = [text], i;
+    for (i = 2; i < arguments.length; ++i)
+        a.push(arguments[i]);
+    return do_render.call(this, format, true, a);
 }
 
 $.extend(render_text, {
@@ -2288,15 +2294,15 @@ $.extend(render_text, {
     inline: render_inline,
     on_page: function () {
         $(".preformat").each(function () {
-            var $j = $(this), format = +this.getAttribute("data-format"),
+            var $j = $(this), format = this.getAttribute("data-format"),
                 content = this.getAttribute("data-content") || $j.text(), f;
             $j.removeClass("preformat");
             if (this.tagName.toUpperCase() == "DIV")
-                f = render_text(format, content);
+                f = render_text.call(this, format, content);
             else
-                f = render_inline(format, content);
+                f = render_inline.call(this, format, content);
             if (f.format)
-                $j.removeClass("format0").addClass("format" + format).html(f.content);
+                $j.removeClass("format0").addClass("format" + f.format).html(f.content);
         });
     }
 });
@@ -4119,16 +4125,14 @@ function set(f, elt, text, which) {
         if (elt.className == "")
             elt.className = "fx" + foldmap[which][f.name];
         if (f.title && (!f.column || text == "Loading"))
-            text = "<h6>" + f.title + ":</h6> " + text;
+            text = '<em class="plx">' + f.title + ':</em> ' + text;
         elt.innerHTML = text;
     }
 }
 
 function make_callback(dofold, type, which) {
     return function (rv) {
-        var f = fields[type], i, x, elt, h6 = "";
-        if (f.title && !f.column)
-            h6 = "<h6>" + f.title + ":</h6> ";
+        var f = fields[type], i, x, elt;
         x = rv[f.name + ".html"] || {};
         for (i in x)
             if ((elt = $$(f.name + "." + i)))

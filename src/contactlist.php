@@ -743,8 +743,8 @@ class ContactList {
                     //$t .= "  <tr class=\"pl_$fdef[0] pl_callout $trclass";
                     if ($fdef[1] >= 3)
                         $tt .= " class=\"fx" . ($fdef[1] - 2) . "\"";
-                    $tt .= "><h6>" . $this->header($fieldId, -1, $row)
-                        . ":</h6> " . $d . "</div>";
+                    $tt .= '><em class="plx">' . $this->header($fieldId, -1, $row)
+                        . ":</em> " . $d . "</div>";
                 }
 
             if ($tt !== "") {

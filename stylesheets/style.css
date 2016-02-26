@@ -1546,8 +1546,7 @@ tr.plx {
 	font-size: 85%;
 	line-height: 135%;
 }
-tr.plx h6, h6.plx {
-	display: inline;
+em.plx {
 	font-size: inherit;
 	font-weight: normal;
 	font-style: italic;
