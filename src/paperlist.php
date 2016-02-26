@@ -609,10 +609,10 @@ class PaperList {
             return "id title statusfull";
         case "s":
         case "acc":
-            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allrevpref pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "all":
         case "act":
-            return "sel id title statusfull revtype authors collab abstract tags tagreports topics reviewers allrevpref pcconf lead shepherd scores formulas";
+            return "sel id title statusfull revtype authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "reviewerHome":
             $this->_default_linkto("review");
             return "id title revtype status";
@@ -620,16 +620,16 @@ class PaperList {
         case "lead":
         case "manager":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allrevpref pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "rout":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allrevpref pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "req":
             $this->_default_linkto("review");
-            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allrevpref pcconf lead shepherd scores formulas";
+            return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "reqrevs":
             $this->_default_linkto("review");
-            return "id title revdelegation revsubmitted revstat status authors collab abstract tags tagreports topics reviewers allrevpref pcconf lead shepherd scores formulas";
+            return "id title revdelegation revsubmitted revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "reviewAssignment":
             $this->_default_linkto("assign");
             return "id title revpref topicscore desirability assrev authors tags topics reviewers allrevtopicpref authorsmatch collabmatch scores formulas";

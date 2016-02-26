@@ -1023,7 +1023,7 @@ class PreferenceAssigner extends Assigner {
     function unparse_display(AssignmentSet $aset) {
         if (!$this->cid)
             return "remove all preferences";
-        $aset->show_column("allrevpref");
+        $aset->show_column("allpref");
         return $aset->contact()->reviewer_html_for($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
     function unparse_csv(AssignmentSet $aset) {
