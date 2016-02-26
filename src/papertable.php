@@ -519,8 +519,11 @@ class PaperTable {
             if ($abs === 2)
                 $title .= ' <span class="papfnh">(optional)</span>';
             echo $this->editable_papt("abstract", $title),
-                '<div class="papev abstract">',
-                $this->entryData("abstract"),
+                '<div class="papev abstract">';
+            if (($f = Conf::format_info($this->prow ? $this->prow->paperFormat : null))
+                && ($t = get($f, "description")))
+                echo $t;
+            echo $this->entryData("abstract"),
                 "</div></div>\n\n";
         }
     }

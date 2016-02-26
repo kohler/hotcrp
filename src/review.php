@@ -502,9 +502,7 @@ class ReviewForm {
     }
 
     private static function format_description($rrow, $text) {
-        if (($format = $rrow ? $rrow->reviewFormat : null) === null)
-            $format = Conf::$gDefaultFormat;
-        if (($f = Conf::format_info($format))) {
+        if (($f = Conf::format_info($rrow ? $rrow->reviewFormat : null))) {
             if ($text && ($t = get($f, "description_text")))
                 return $t;
             $t = get($f, "description");

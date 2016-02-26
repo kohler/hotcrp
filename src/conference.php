@@ -748,6 +748,8 @@ class Conf {
             if (!self::$gFormatInfo)
                 self::$gFormatInfo = array();
         }
+        if ($format === null)
+            $format = self::$gDefaultFormat;
         return get(self::$gFormatInfo, $format);
     }
 
