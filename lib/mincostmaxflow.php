@@ -10,7 +10,7 @@ class MinCostMaxFlow_Node {
     public $flow = 0;
     public $link = null;
     public $xlink = null;
-    public $npos = null;
+    public $npos = 0;
     public $distance = 0;
     public $excess = 0;
     public $price = 0;
@@ -221,7 +221,7 @@ class MinCostMaxFlow {
 
     private function topological_sort_visit($v, $klass, &$a) {
         if ($v !== $this->sink && !$v->npos) {
-            $v->npos = true;
+            $v->npos = 1;
             foreach ($v->e as $e)
                 if ($e->src === $v && $e->flow > 0 && !$e->dst->npos)
                     $this->topological_sort_visit($e->dst, $klass, $a);
@@ -234,7 +234,7 @@ class MinCostMaxFlow {
         if (is_string($v))
             $v = $this->vmap[$v];
         foreach ($this->v as $vx)
-            $vx->npos = false;
+            $vx->npos = 0;
         $a = array();
         $this->topological_sort_visit($v, $klass, $a);
         return array_reverse($a);
