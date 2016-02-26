@@ -1342,7 +1342,7 @@ if ($pl) {
     if ($Me->can_view_some_review_identity(true))
         displayOptionCheckbox("reviewers", 2, "Reviewers");
     if ($Me->privChair) {
-        displayOptionCheckbox("allrevpref", 2, "Review preferences");
+        displayOptionCheckbox("allpref", 2, "Review preferences");
         displayOptionCheckbox("pcconf", 2, "PC conflicts");
     }
     if ($Me->isPC && $pl->any->lead)
