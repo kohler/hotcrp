@@ -320,8 +320,10 @@ class MinCostMaxFlow {
         $this->maxflow_start_at = microtime(true);
 
         // initialize preflow
-        foreach ($this->v as $v)
+        foreach ($this->v as $v) {
             $v->distance = count($this->v);
+            $v->npos = 0;
+        }
         $this->pushrelabel_make_distance();
         foreach ($this->source->e as $e) {
             $e->flow = $e->cap;
