@@ -443,7 +443,7 @@ class PaperList {
         }
         $t .= Ht::select("getaction", $sel_opt, $this->qreq->getaction,
                           array("id" => "plact${nlll}_d", "tabindex" => 6))
-            . "&nbsp; " . Ht::submit("getgo", "Go", array("tabindex" => 6, "onclick" => "return (papersel_check_safe=true)")) . "</span>\n";
+            . "&nbsp; " . Ht::submit("getgo", "Go", ["tabindex" => 6, "onclick" => "return plist_submit.call(this, true)"]) . "</span>\n";
         $nlll++;
 
         // Upload preferences (review preferences only)
@@ -454,7 +454,7 @@ class PaperList {
             $t .= "    <span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "uploadpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Upload</a></span>"
                 . "<span class='lld$nlll nowrap'><b>&nbsp;preference file:</b> &nbsp;"
                 . "<input id='plact${nlll}_d' type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"upload\",this)' />&nbsp; "
-                . Ht::submit("upload", "Go", array("tabindex" => 6)) . "</span>\n";
+                . Ht::submit("upload", "Go", ["tabindex" => 6, "onclick" => "return plist_submit.call(this)"]) . "</span>\n";
             $nlll++;
         }
 
@@ -466,7 +466,7 @@ class PaperList {
                 . "    <span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "setpref")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Set preferences</a></span>"
                 . "<span class='lld$nlll'><b>:</b> &nbsp;"
                 . Ht::entry("paprevpref", "", array("id" => "plact${nlll}_d", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpaprevpref",this)'))
-                . " &nbsp;" . Ht::submit("setpaprevpref", "Go", array("tabindex" => 6)) . "</span>\n";
+                . " &nbsp;" . Ht::submit("setpaprevpref", "Go", ["tabindex" => 6, "onclick" => "return plist_submit.call(this)"]) . "</span>\n";
             $nlll++;
         }
 
@@ -496,7 +496,7 @@ class PaperList {
                 . Ht::entry("tag", $this->qreq->tag,
                             array("id" => "plact{$nlll}_d", "size" => 15,
                                   "onfocus" => "autosub('tagact',this)"))
-                . ' &nbsp;' . Ht::submit("tagact", "Go") . '</span>';
+                . ' &nbsp;' . Ht::submit("tagact", "Go", ["onclick" => "return plist_submit.call(this)"]) . '</span>';
             if ($this->contact->privChair) {
                 $t .= "<div class='fx'><div style='margin:2px 0'>"
                     . Ht::checkbox("tagcr_gapless", 1, $this->qreq->tagcr_gapless, array("style" => "margin-left:0"))
@@ -539,7 +539,7 @@ class PaperList {
                 . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;';
             $t .= Ht::select("markpc", pc_members_selector_options(false),
                              $this->qreq->markpc, array("id" => "markpc"))
-                . "</span> &nbsp;" . Ht::submit("setassign", "Go");
+                . "</span> &nbsp;" . Ht::submit("setassign", "Go", ["onclick" => "return plist_submit.call(this)"]);
             $t .= "</span>\n";
             $nlll++;
         }
@@ -551,7 +551,7 @@ class PaperList {
             $t .= $barsep;
             $t .= "    <span class='lll$nlll'><a href=\"" . selfHref(array("atab" => "decide")) . "#plact\" onclick='return crpfocus(\"plact\",$nlll)'>Decide</a></span>"
                 . "<span class='lld$nlll'><b>:</b> Set to &nbsp;";
-            $t .= decisionSelector($this->qreq->decision, "plact${nlll}_d") . " &nbsp;" . Ht::submit("setdecision", "Go") . "</span>\n";
+            $t .= decisionSelector($this->qreq->decision, "plact${nlll}_d") . " &nbsp;" . Ht::submit("setdecision", "Go", ["onclick" => "return plist_submit.call(this)"]) . "</span>\n";
             $nlll++;
 
             if (isset($this->qreq->sendmail) || $this->atab == "mail")
@@ -559,7 +559,7 @@ class PaperList {
             $t .= $barsep
                 . "    <span class=\"lll$nlll\"><a href=\"" . selfHref(array("atab" => "mail")) . "#plact\" onclick=\"return crpfocus('plact',$nlll)\">Mail</a></span><span class=\"lld$nlll\"><b>:</b> &nbsp;"
                 . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $this->qreq->recipients, array("id" => "plact${nlll}_d"))
-                . " &nbsp;" . Ht::submit("sendmail", "Go", array("onclick" => "return (papersel_check_safe=true)")) . "</span>\n";
+                . " &nbsp;" . Ht::submit("sendmail", "Go", ["onclick" => "return plist_submit.call(this, true)"]) . "</span>\n";
             $nlll++;
         }
 

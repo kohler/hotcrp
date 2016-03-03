@@ -1893,8 +1893,8 @@ function papersel(value, name) {
 }
 
 var papersel_check_safe = false;
-function paperselCheck() {
-    var e, values, check_safe = papersel_check_safe;
+function plist_onsubmit() {
+    var e, check_safe = papersel_check_safe;
     papersel_check_safe = false;
     if ((e = $$("sel_papstandin")))
         e.parentNode.removeChild(e);
@@ -1903,13 +1903,39 @@ function paperselCheck() {
     else if (check_safe) {
         e = document.createElement("div");
         e.id = "sel_papstandin";
-        values = $(this).find("input[name='pap[]']").map(function () { return this.value; }).get();
+        var values = $(this).find("input[name='pap[]']").map(function () { return this.value; }).get();
         e.innerHTML = '<input type="hidden" name="pap" value="' + values.join(" ") + "\" />";
         $$("sel").appendChild(e);
     } else {
         alert("Select one or more papers first.");
         return false;
     }
+
+    // encode the expected download in the form action, to ease debugging
+    if (!this.hasAttribute("data-original-action"))
+        this.setAttribute("data-original-action", this.action);
+    var action = this.getAttribute("data-original-action");
+    var s = this.getAttribute("data-submit-name");
+    this.removeAttribute("data-submit-name");
+    if (!s && this.defaultact)
+        s = $(this.defaultact).val();
+    if (s == "getgo")
+        s = "get-" + $(this.getaction).val();
+    else if (s == "tagact")
+        s = "tag-" + $(this.tagtype).val() + "-" + $(this.tag).val();
+    else if (s == "setassign") {
+        s = "assign-" + $(this.marktype).val();
+        if ($(this.marktype).val() != "auto")
+            s += "-" + $(this.markpc).val();
+    } else if (s == "setdecision")
+        s = "decision-" + $(this.decision).val();
+    if (s)
+        this.action = hoturl_add(action, "action=" + encodeURIComponent(s));
+    return true;
+}
+function plist_submit(check_safe) {
+    $(this).closest("form")[0].setAttribute("data-submit-name", this.name);
+    papersel_check_safe = !!check_safe;
     return true;
 }
 

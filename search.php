@@ -1663,9 +1663,9 @@ if ($pl) {
     echo "<div class='maintabsep'></div>\n\n<div class='pltable_full_ctr'>";
 
     if (isset($pl->any->sel))
-        echo Ht::form_div(selfHref(array("selector" => 1, "post" => post_value())), array("id" => "sel", "onsubmit" => "return paperselCheck.call(this)")),
+        echo Ht::form_div(selfHref(array("post" => post_value(), "forceShow" => null)), array("id" => "sel", "onsubmit" => "return plist_onsubmit.call(this)")),
             Ht::hidden("defaultact", "", array("id" => "defaultact")),
-            Ht::hidden("forceShow", (string) @$_REQUEST["forceShow"], array("id" => "forceShow")),
+            Ht::hidden("forceShow", req_s("forceShow"), array("id" => "forceShow")),
             Ht::hidden_default_submit("default", 1);
 
     echo $pl_text;
