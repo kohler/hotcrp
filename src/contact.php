@@ -1831,7 +1831,7 @@ class Contact {
         if ($this->can_update_paper($prow, $override))
             return null;
         $rights = $this->rights($prow, "any");
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1862,7 +1862,7 @@ class Contact {
         if ($this->can_finalize_paper($prow))
             return null;
         $rights = $this->rights($prow, "any");
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1889,7 +1889,7 @@ class Contact {
         if ($this->can_withdraw_paper($prow, $override))
             return null;
         $rights = $this->rights($prow, "any");
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         if (!$rights->allow_author && $rights->allow_author_view)
@@ -1916,7 +1916,7 @@ class Contact {
         if ($this->can_revive_paper($prow))
             return null;
         $rights = $this->rights($prow, "any");
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1946,7 +1946,7 @@ class Contact {
         if ($this->can_submit_final_paper($prow, $override))
             return null;
         $rights = $this->rights($prow, "any");
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author && $rights->allow_author_view)
             $whyNot["signin"] = 1;
         else if (!$rights->allow_author)
@@ -1987,7 +1987,7 @@ class Contact {
             && !$rights->review_type
             && !$rights->allow_pc_broad)
             return array("permission" => 1);
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -2208,7 +2208,7 @@ class Contact {
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
         $rights = $this->rights($prow, $forceShow);
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if ($prow->timeWithdrawn > 0)
             $whyNot["withdrawn"] = 1;
         else if ($prow->timeSubmitted <= 0)
@@ -2316,7 +2316,7 @@ class Contact {
         if ($this->can_request_review($prow, $check_time))
             return null;
         $rights = $this->rights($prow);
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if ($rights->review_type < REVIEW_PC)
             $whyNot["permission"] = 1;
         else {
@@ -2445,7 +2445,7 @@ class Contact {
             $rrow_cid = $rrow->contactId;
         // The "reviewNotAssigned" and "deadline" failure reasons are special.
         // If either is set, the system will still allow review form download.
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if ($rrow && $rrow_cid != $this->contactId
             && !$rights->allow_administer)
             $whyNot["differentReviewer"] = 1;
@@ -2535,7 +2535,7 @@ class Contact {
         if ($this->can_comment($prow, $crow, $submit))
             return null;
         $rights = $this->rights($prow);
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if ($crow && $crow->contactId != $this->contactId
             && !$rights->allow_administer)
             $whyNot["differentReviewer"] = 1;
@@ -2579,7 +2579,7 @@ class Contact {
         if ($this->can_respond($prow, $crow, $submit))
             return null;
         $rights = $this->rights($prow);
-        $whyNot = array("fail" => 1);
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_administer
             && !$rights->act_author)
             $whyNot["permission"] = 1;
@@ -2857,7 +2857,8 @@ class Contact {
         if ($this->can_change_tag($prow, $tag, $previndex, $index, $forceShow))
             return null;
         $rights = $this->rights($prow, $forceShow);
-        $whyNot = array("fail" => 1, "tag" => $tag, "paperId" => $prow->paperId);
+        $whyNot = $prow->initial_whynot();
+        $whyNot["tag"] = $tag;
         if (!$this->isPC)
             $whyNot["permission"] = true;
         else if ($rights->conflict_type > 0) {

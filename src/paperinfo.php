@@ -150,6 +150,10 @@ class PaperInfo {
         return "PaperComment";
     }
 
+    public function initial_whynot() {
+        return ["fail" => true, "paperId" => $this->paperId];
+    }
+
 
     static private function contact_to_cid($contact) {
         global $Me;
