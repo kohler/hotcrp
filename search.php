@@ -604,12 +604,14 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
     $texts = $any_scores = array();
     $any_decision = $any_reviewer_identity = false;
     $rf = ReviewForm::get();
+    $bad_pid = -1;
     while (($row = PaperInfo::fetch($result, $Me))) {
-        if (!$row->reviewSubmitted)
+        if (!$row->reviewSubmitted || $row->paperId == $bad_pid)
             /* skip */;
-        else if (($whyNot = $Me->perm_view_review($row, null, true)))
-            $errors[] = whyNotText($whyNot, "view review") . "<br />";
-        else {
+        else if (($whyNot = $Me->perm_view_review($row, null, true))) {
+            $errors[] = whyNotText($whyNot, "view reviews for") . "<br />";
+            $bad_pid = $row->paperId;
+        } else {
             $a = array("paper" => $row->paperId, "title" => $row->title, "blind" => $row->blind);
             if ($row->outcome && $Me->can_view_decision($row, true))
                 $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
@@ -642,8 +644,11 @@ if ($getaction == "scores" && $Me->isPC && SearchActions::any()) {
             array_push($header, "revieweremail", "reviewername");
         downloadCSV(SearchActions::reorder($texts), $header, "scores", ["selection" => true]);
         exit;
-    } else
-        Conf::msg_error(join("", $errors) . "No papers selected.");
+    } else {
+        if (!count($errors))
+            $errors[] = "No papers selected.";
+        Conf::msg_error(join("", $errors));
+    }
 }
 
 
