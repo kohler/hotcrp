@@ -240,7 +240,8 @@ if (($getaction == "revform" || $getaction == "revformz")
                 if (!isset($whyNot["deadline"]))
                     defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotToText($t)) . "\n\n", "==-== "));
             }
-            defappend($texts[$row->paperId], $rf->textForm($row, $row, $Me, null) . "\n");
+            $rrow = $row->reviewContactId ? $row : null;
+            defappend($texts[$row->paperId], $rf->textForm($row, $rrow, $Me, null) . "\n");
         }
     }
 
