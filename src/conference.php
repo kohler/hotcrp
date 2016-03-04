@@ -2008,7 +2008,7 @@ class Conf {
 
         if (isset($selector["array"]))
             return $x;
-        else if (count($x) == 1 || defval($selector, "first"))
+        else if (count($x) == 1 || (count($x) > 1 && get($selector, "first")))
             return $x[0];
         if (count($x) == 0)
             $whyNot['noReview'] = 1;
