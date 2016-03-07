@@ -110,11 +110,13 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
     flush();
     while (@ob_end_flush())
         /* do nothing */;
-    if (($text = file_get_contents($_FILES["uploadfile"]["tmp_name"])) === false)
+    $text = file_get_contents($_FILES["uploadfile"]["tmp_name"]);
+    if ($text === false)
         Conf::msg_error("Internal error: cannot read file.");
     else {
         $assignset = new AssignmentSet($Me, false);
         $defaults = assignment_defaults();
+        $text = convert_to_utf8($text);
         $assignset->parse($text, $_FILES["uploadfile"]["name"], $defaults, "keep_browser_alive");
         finish_browser_alive();
         if ($assignset->has_errors())
@@ -185,7 +187,7 @@ if (count($rev_rounds) > 1)
     echo '<span class="fx2">&nbsp; in round &nbsp;',
         Ht::select("rev_roundtag", $rev_rounds, $_REQUEST["rev_roundtag"] ? : "unnamed"),
         '</span>';
-else if (!@$rev_rounds["unnamed"])
+else if (!get($rev_rounds, "unnamed"))
     echo '<span class="fx2">&nbsp; in round ', $Conf->current_round_name(), '</span>';
 echo '<div class="g"></div>', "\n";
 
