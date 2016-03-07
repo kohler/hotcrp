@@ -746,8 +746,7 @@ class PreferencePaperColumn extends PaperColumn {
         return $this->name ? : "pref:<user>";
     }
     private function preference_values($row) {
-        if (($this->careful && !$this->viewer_contact->allow_administer($row))
-            || ($this->is_direct ? $row->reviewerConflictType > 0 : $row->has_conflict($this->contact)))
+        if ($this->careful && !$this->viewer_contact->allow_administer($row))
             return [null, null];
         else if ($this->is_direct)
             return [$row->reviewerPreference, $row->reviewerExpertise];
@@ -783,23 +782,30 @@ class PreferencePaperColumn extends PaperColumn {
     public function content_empty($pl, $row) {
         return $this->careful && !$pl->contact->allow_administer($row);
     }
-    public function content($pl, $row, $rowidx) {
-        if ($this->is_direct && $row->reviewerConflictType > 0)
-            return "";
-        else if (!$this->is_direct && $row->has_conflict($this->contact))
-            return review_type_icon(-1);
+    private function show_content($pl, $row, $zero_empty) {
         $ptext = $this->text($pl, $row);
-        if (!$this->editable) {
-            if ($ptext[0] === "-")
-                $ptext = "&#8722;" . substr($ptext, 1);
-            if ($this->careful && !$pl->contact->can_administer($row, false))
-                $ptext = '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
+        if ($ptext[0] === "-")
+            $ptext = "−" /* U+2122 MINUS SIGN */ . substr($ptext, 1);
+        if ($zero_empty && $ptext === "0")
+            return "";
+        else if ($this->careful && !$pl->contact->can_administer($row, false))
+            return '<span class="fx5">' . $ptext . '</span><span class="fn5">?</span>';
+        else
             return $ptext;
-        } else {
+    }
+    public function content($pl, $row, $rowidx) {
+        $conflicted = $this->is_direct ? $row->reviewerConflictType > 0
+            : $row->has_conflict($this->contact);
+        if ($conflicted && !$pl->contact->allow_administer($row))
+            return review_type_icon(-1);
+        else if (!$this->editable)
+            return $this->show_content($pl, $row, false);
+        else {
+            $ptext = $this->text($pl, $row);
             $iname = "revpref" . $row->paperId;
             if (!$this->is_direct)
                 $iname .= "u" . $this->contact->contactId;
-            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />';
+            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($conflicted && !$this->is_direct ? "&nbsp;" . review_type_icon(-1) : "");
         }
     }
     public function text($pl, $row) {
