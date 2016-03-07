@@ -657,7 +657,7 @@ function downloadRevpref($extended) {
     global $Conf, $Me, $Opt;
     // maybe download preferences for someone else
     $Rev = $Me;
-    if (($rev = cvtint(@$_REQUEST["reviewer"])) > 0 && $Me->privChair) {
+    if (($rev = cvtint(req("reviewer"))) > 0 && $Me->privChair) {
         if (!($Rev = Contact::find_by_id($rev)))
             return Conf::msg_error("No such reviewer");
     }
@@ -707,22 +707,19 @@ function downloadAllRevpref() {
     $has_conflict = $has_expertise = $has_topic_score = false;
     while (($prow = PaperInfo::fetch($result, $Me))) {
         $out = array();
-        $prefs = $prow->reviewer_preferences();
         $conflicts = $prow->conflicts();
         foreach ($pcm as $cid => $p) {
-            $pref = @$prefs[$cid] ? : array();
-            $conf = @$conflicts[$cid];
+            $pref = $prow->reviewer_preference($p);
+            $conf = get($conflicts, $cid);
             $tv = $prow->topicIds ? $prow->topic_interest_score($p) : 0;
-            if ($conf)
-                $pref = $tv = "";
             if ($pref || $conf || $tv) {
                 $texts[$prow->paperId][] = array("paper" => $prow->paperId, "title" => $prow->title, "name" => Text::name_text($p), "email" => $p->email,
-                            "preference" => @$pref[0] ? : "",
-                            "expertise" => unparse_expertise(@$pref[1]),
+                            "preference" => $pref[0] ? : "",
+                            "expertise" => unparse_expertise($pref[1]),
                             "topic_score" => $tv ? : "",
                             "conflict" => ($conf ? "conflict" : ""));
                 $has_conflict = $has_conflict || $conf;
-                $has_expertise = $has_expertise || @$pref[1] !== null;
+                $has_expertise = $has_expertise || $pref[1] !== null;
                 $has_topic_score = $has_topic_score || $tv;
             }
         }
