@@ -842,7 +842,7 @@ class PreferenceListPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $prefs = $row->reviewer_preferences();
         $ts = array();
-        if ($prefs || $topics)
+        if ($prefs || $this->topics)
             foreach (pcMembers() as $pcid => $pc) {
                 if (($pref = get($prefs, $pcid))
                     && ($pref[0] !== 0 || $pref[1] !== null)) {
