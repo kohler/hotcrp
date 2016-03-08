@@ -1554,9 +1554,9 @@ function do_setting_update($sv) {
             $x = "timeSubmitted>0";
         else
             $x = "timeWithdrawn<=0";
-        $result = $Conf->q("select ifnull(min(paperId),0) from Paper where $x");
-        if (($row = edb_row($result)) && $row[0] != $Conf->setting("papersub"))
-            $sv->save("papersub", $row[0]);
+        $num = Dbl::fetch_ivalue("select paperId from Paper where $x limit 1") ? 1 : 0;
+        if ($num != $Conf->setting("papersub"))
+            $sv->save("papersub", $num);
     }
 
     // Setting relationships
