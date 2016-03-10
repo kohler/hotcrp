@@ -61,9 +61,9 @@ class PaperApi {
     }
 
     static function tagreport($user, $prow) {
-        if (!$user->can_view_tags($prow))
-            return (object) ["ok" => false];
-        $ret = (object) ["ok" => true, "warnings" => [], "messages" => []];
+        $ret = (object) ["ok" => $user->can_view_tags($prow), "warnings" => [], "messages" => []];
+        if (!$ret->ok)
+            return $ret;
         if (($vt = TagInfo::vote_tags())) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();
