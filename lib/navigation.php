@@ -3,37 +3,49 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class Navigation {
-    private static $protocol;           // "http://" or "https://"
-    private static $server;             // "PROTOCOL://SITE[:PORT]"
-    private static $sitedir;            // "/PATH", does not include $page, ends in /
-    private static $page;               // Name of page
-    private static $path;
-    private static $query;
-    private static $sitedir_relative;
-    private static $php_suffix;
+class NavigationState {
+    public $protocol;           // "http://" or "https://"
+    public $host;
+    public $server;             // "PROTOCOL://HOST[:PORT]"
+    public $site_path;          // "/PATH", does not include $page, ends in /
+    public $page;               // Name of page
+    public $path;
+    public $query;
+    public $site_path_relative;
+    public $php_suffix;
+    public $request_uri;
 
-    public static function analyze($index_name = "index") {
-        if (PHP_SAPI == "cli")
+    // server variables:
+    //   required: SERVER_PORT, SCRIPT_FILENAME, SCRIPT_NAME, REQUEST_URI
+    //   optional: HTTP_HOST, SERVER_NAME, HTTPS, SERVER_SOFTWARE
+
+    public function __construct($server, $index_name = "index") {
+        if (!$server)
             return;
 
-        if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] != "off")
+        $this->host = null;
+        if (isset($server["HTTP_HOST"]))
+            $this->host = $server["HTTP_HOST"];
+        if (!$this->host && isset($server["SERVER_NAME"]))
+            $this->host = $server["SERVER_NAME"];
+
+        if (isset($server["HTTPS"]) && $server["HTTPS"] != "off")
             list($x, $xport) = array("https://", 443);
         else
             list($x, $xport) = array("http://", 80);
-        self::$protocol = $x;
-        $x .= self::host() ? : "localhost";
-        if (($port = $_SERVER["SERVER_PORT"])
+        $this->protocol = $x;
+        $x .= $this->host ? : "localhost";
+        if (($port = $server["SERVER_PORT"])
             && $port != $xport
             && strpos($x, ":", 6) === false)
             $x .= ":" . $port;
-        self::$server = $x;
+        $this->server = $x;
 
-        // detect $sitedir
-        $sfilename = $_SERVER["SCRIPT_FILENAME"]; // pathname
+        // detect $site_path
+        $sfilename = $server["SCRIPT_FILENAME"]; // pathname
         $sfile = substr($sfilename, strrpos($sfilename, "/") + 1);
 
-        $sname = $_SERVER["SCRIPT_NAME"]; // URL-decoded
+        $sname = $server["SCRIPT_NAME"]; // URL-decoded
         $sname_slash = strrpos($sname, "/");
         if (substr($sname, $sname_slash + 1) !== $sfile) {
             if ($sname === "" || $sname[strlen($sname) - 1] !== "/")
@@ -41,7 +53,7 @@ class Navigation {
             $sname_slash = strlen($sname) - 1;
         }
 
-        $uri = $_SERVER["REQUEST_URI"]; // URL-encoded
+        $this->request_uri = $uri = $server["REQUEST_URI"]; // URL-encoded
         if (substr($uri, 0, $sname_slash) === substr($sname, 0, $sname_slash))
             $uri_slash = $sname_slash;
         else {
@@ -54,73 +66,60 @@ class Navigation {
         if ($uri_slash === false || $uri_slash > strlen($uri))
             $uri_slash = strlen($uri);
 
-        self::$sitedir = substr($uri, 0, $uri_slash) . "/";
+        $this->site_path = substr($uri, 0, $uri_slash) . "/";
 
         // separate $page, $path, $query
         $uri_suffix = substr($uri, $uri_slash);
         preg_match(',\A(/[^/\?\#]*|)([^\?\#]*)(.*)\z,',
                    substr($uri, $uri_slash), $m);
         if ($m[1] !== "" && $m[1] !== "/")
-            self::$page = urldecode(substr($m[1], 1));
+            $this->page = urldecode(substr($m[1], 1));
         else
-            self::$page = $index_name;
-        if (($pagelen = strlen(self::$page)) > 4
-            && substr(self::$page, $pagelen - 4) === ".php")
-            self::$page = substr(self::$page, 0, $pagelen - 4);
-        self::$path = urldecode($m[2]);
-        self::$query = $m[3];
+            $this->page = $index_name;
+        if (($pagelen = strlen($this->page)) > 4
+            && substr($this->page, $pagelen - 4) === ".php")
+            $this->page = substr($this->page, 0, $pagelen - 4);
+        $this->path = urldecode($m[2]);
+        $this->query = $m[3];
 
-        // detect $sitedir_relative
-        $path_slash = substr_count(self::$path, "/");
+        // detect $site_path_relative
+        $path_slash = substr_count($this->path, "/");
         if ($path_slash)
-            self::$sitedir_relative = str_repeat("../", $path_slash);
+            $this->site_path_relative = str_repeat("../", $path_slash);
         else if ($uri_slash >= strlen($uri))
-            self::$sitedir_relative = self::$sitedir;
+            $this->site_path_relative = $this->site_path;
         else
-            self::$sitedir_relative = "";
+            $this->site_path_relative = "";
 
-        self::$php_suffix = ".php";
-        if ((isset($_SERVER["SERVER_SOFTWARE"])
-             && substr($_SERVER["SERVER_SOFTWARE"], 0, 5) === "nginx")
+        $this->php_suffix = ".php";
+        if ((isset($server["SERVER_SOFTWARE"])
+             && substr($server["SERVER_SOFTWARE"], 0, 5) === "nginx")
             || (function_exists("apache_get_modules")
                 && array_search("mod_rewrite", apache_get_modules()) !== false))
-            self::$php_suffix = "";
+            $this->php_suffix = "";
     }
 
-    public static function self() {
-        return self::$server . self::$sitedir . self::$page . self::$path . self::$query;
+    public function self() {
+        return $this->server . $this->site_path . $this->page . $this->path . $this->query;
     }
 
-    public static function host() {
-        $host = null;
-        if (isset($_SERVER["HTTP_HOST"]))
-            $host = $_SERVER["HTTP_HOST"];
-        if (!$host && isset($_SERVER["SERVER_NAME"]))
-            $host = $_SERVER["SERVER_NAME"];
-        return $host;
+    public function site_absolute($downcase_host = false) {
+        $x = $downcase_host ? strtolower($this->server) : $this->server;
+        return $x . $this->site_path;
     }
 
-    public static function site_absolute($downcase_host = false) {
-        $x = $downcase_host ? strtolower(self::$server) : self::$server;
-        return $x . self::$sitedir;
-    }
-
-    public static function site_path() {
-        return self::$sitedir;
-    }
-
-    public static function siteurl($url = null) {
-        $x = self::$sitedir_relative;
+    public function siteurl($url = null) {
+        $x = $this->site_path_relative;
         if (!$url)
             return $x;
         else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/")
             return $x . $url;
         else
-            return ($x ? : self::$sitedir) . substr($url, 5);
+            return ($x ? : $this->site_path) . substr($url, 5);
     }
 
-    public static function siteurl_path($url = null) {
-        $x = self::$sitedir;
+    public function siteurl_path($url = null) {
+        $x = $this->site_path;
         if (!$url)
             return $x;
         else if (substr($url, 0, 5) !== "index" || substr($url, 5, 1) === "/")
@@ -129,69 +128,120 @@ class Navigation {
             return $x . substr($url, 5);
     }
 
-    public static function set_siteurl($url) {
+    public function set_siteurl($url) {
         if ($url !== "" && $url[strlen($url) - 1] !== "/")
             $url .= "/";
-        return (self::$sitedir_relative = $url);
+        return ($this->site_path_relative = $url);
     }
 
-    public static function page() {
-        return self::$page;
-    }
-
-    public static function path() {
-        return self::$path;
-    }
-
-    public static function path_component($n, $decoded = false) {
-        if (self::$path !== "") {
-            $p = explode("/", substr(self::$path, 1));
+    public function path_component($n, $decoded = false) {
+        if ($this->path !== "") {
+            $p = explode("/", substr($this->path, 1));
             if ($n + 1 < count($p) || ($n + 1 == count($p) && $p[$n] !== ""))
                 return $decoded ? urldecode($p[$n]) : $p[$n];
         }
         return null;
     }
 
-    public static function path_suffix($n) {
-        if (self::$path !== "") {
+    public function path_suffix($n) {
+        if ($this->path !== "") {
             $p = 0;
-            while ($n > 0 && ($p = strpos(self::$path, "/", $p + 1)))
+            while ($n > 0 && ($p = strpos($this->path, "/", $p + 1)))
                 --$n;
             if ($p !== false)
-                return substr(self::$path, $p);
+                return substr($this->path, $p);
         }
         return "";
     }
 
-    public static function set_page($page) {
-        return (self::$page = $page);
-    }
-
-    public static function set_path($path) {
-        return (self::$path = $path);
-    }
-
-    public static function php_suffix() {
-        return self::$php_suffix;
-    }
-
-    public static function make_absolute($url) {
+    public function make_absolute($url) {
         if ($url === false)
-            return self::$server . self::$sitedir;
+            return $this->server . $this->site_path;
         preg_match(',\A((?:https?://[^/]+)?)(/*)((?:[.][.]/)*)(.*)\z,i', $url, $m);
         if ($m[1] !== "")
             return $url;
         else if (strlen($m[2]) > 1)
-            return self::$protocol . substr($url, 2);
+            return $this->protocol . substr($url, 2);
         else if ($m[2] === "/")
-            return self::$server . $url;
+            return $this->server . $url;
         else {
-            $site = substr($_SERVER["REQUEST_URI"], 0, strlen($_SERVER["REQUEST_URI"]) - strlen(self::$query));
+            $site = substr($this->request_uri, 0, strlen($this->request_uri) - strlen($this->query));
             $site = preg_replace(',/[^/]+\z,', "/", $site);
             for (; $m[3]; $m[3] = substr($m[3], 3))
                 $site = preg_replace(',/[^/]+/\z,', "/", $site);
-            return self::$server . $site . $m[3] . $m[4];
+            return $this->server . $site . $m[3] . $m[4];
         }
+    }
+}
+
+class Navigation {
+    private static $s;
+
+    public static function analyze($index_name = "index") {
+        if (PHP_SAPI != "cli")
+            self::$s = new NavigationState($_SERVER, $index_name);
+        else
+            self::$s = new NavigationState(null);
+    }
+
+    public static function self() {
+        return self::$s->self();
+    }
+
+    public static function host() {
+        return self::$s->host;
+    }
+
+    public static function site_absolute($downcase_host = false) {
+        return self::$s->site_absolute($downcase_host);
+    }
+
+    public static function site_path() {
+        return self::$s->site_path;
+    }
+
+    public static function siteurl($url = null) {
+        return self::$s->siteurl($url);
+    }
+
+    public static function siteurl_path($url = null) {
+        return self::$s->siteurl_path($url);
+    }
+
+    public static function set_siteurl($url) {
+        return self::$s->set_siteurl($url);
+    }
+
+    public static function page() {
+        return self::$s->page;
+    }
+
+    public static function path() {
+        return self::$s->path;
+    }
+
+    public static function path_component($n, $decoded = false) {
+        return self::$s->path_component($n, $decoded);
+    }
+
+    public static function path_suffix($n) {
+        return self::$s->path_suffix($n);
+    }
+
+    public static function set_page($page) {
+        return (self::$s->page = $page);
+    }
+
+    public static function set_path($path) {
+        return (self::$s->path = $path);
+    }
+
+    public static function php_suffix() {
+        return self::$s->php_suffix;
+    }
+
+    public static function make_absolute($url) {
+        return self::$s->make_absolute($url);
     }
 
     public static function redirect($url) {
@@ -218,13 +268,12 @@ class Navigation {
     }
 
     public static function redirect_http_to_https($allow_http_if_localhost = false) {
-        if ((!isset($_SERVER["HTTPS"]) || $_SERVER["HTTPS"] == "off")
-            && self::$protocol == "http://"
+        if (self::$s->protocol == "http://"
             && (!$allow_http_if_localhost
                 || ($_SERVER["REMOTE_ADDR"] !== "127.0.0.1"
                     && $_SERVER["REMOTE_ADDR"] !== "::1")))
-            self::redirect("https://" . (self::host() ? : "localhost")
-                           . self::siteurl_path(self::$page . self::$php_suffix . self::$path . self::$query));
+            self::redirect("https://" . (self::$s->host ? : "localhost")
+                           . self::siteurl_path(self::$s->page . self::$s->php_suffix . self::$s->path . self::$s->query));
     }
 }
 

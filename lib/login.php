@@ -97,7 +97,7 @@ class LoginHelper {
             foreach (array("email", "password", "action", "go", "signin") as $a)
                 if (isset($_REQUEST[$a]))
                     $url .= "&$a=" . urlencode($_REQUEST[$a]);
-            go("?" . $url);
+            Navigation::redirect("?" . $url);
         } else
             return Conf::msg_error("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
