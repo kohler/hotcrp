@@ -6,7 +6,7 @@
 require_once("src/initweb.php");
 require_once("src/papersearch.php");
 require_once("src/mailclasses.php");
-if (!$Me->privChair && !$Me->isPC)
+if (!$Me->is_manager() && !$Me->isPC)
     $Me->escape();
 $Error = array();
 
@@ -32,6 +32,8 @@ if ($Me->privChair) {
     $tOpt["unsub"] = "Unsubmitted papers";
     $tOpt["all"] = "All papers";
 }
+if ($Me->is_explicit_manager() || ($Me->privChair && $Conf->has_any_manager()))
+    $tOpt["manager"] = "Papers you administer";
 $tOpt["req"] = "Your review requests";
 if (!isset($_REQUEST["t"]) || !isset($tOpt[$_REQUEST["t"]]))
     $_REQUEST["t"] = key($tOpt);
@@ -517,12 +519,17 @@ echo '<tr><td class="mhnp nw">To:</td><td class="mhdd">',
 
 // paper selection
 echo '<div id="foldpsel" class="fold8c fold9o fold10c">';
-echo '<table class="fx9"><tr><td class="nw">';
-echo Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
-                  array("id" => "plimit",
-                        "onchange" => "fold('psel', !this.checked, 8)")),
-    "&nbsp;</td><td>", Ht::label("Choose papers", "plimit");
-echo "<span class='fx8'>:&nbsp; "; //</span><br /><div class='fx8'>";
+echo '<table class="fx9"><tr>';
+if ($Me->privChair)
+    echo '<td class="nw">',
+        Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
+                     ["id" => "plimit",
+                      "onchange" => "fold('psel', !this.checked, 8)"]),
+        "&nbsp;</td><td>", Ht::label("Choose papers", "plimit"),
+        "<span class='fx8'>:&nbsp; ";
+else
+    echo '<td class="nw">Papers: &nbsp;</td><td>',
+        Ht::hidden("plimit", 1), '<span>';
 echo Ht::entry("q", @$_REQUEST["q"],
                array("id" => "q", "placeholder" => "(All)",
                      "class" => "hotcrp_searchbox", "size" => 36)),
@@ -532,7 +539,7 @@ if (count($tOpt) == 1)
 else
     echo " ", Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "t"));
 echo " &nbsp;", Ht::submit("psearch", "Search");
-echo "</span>"; //"</div>";
+echo "</span>";
 if (isset($_REQUEST["plimit"]) && !isset($_REQUEST["monreq"])
     && (isset($_REQUEST["loadtmpl"]) || isset($_REQUEST["psearch"]))) {
     $plist = new PaperList(new PaperSearch($Me, ["t" => $_REQUEST["t"], "q" => $_REQUEST["q"]]));
@@ -562,7 +569,7 @@ $Conf->footerScript("setmailpsel(\$\$(\"recipients\"))");
 echo "</td></tr>\n";
 
 // ** CC, REPLY-TO
-if ($Me->privChair) {
+if ($Me->is_manager()) {
     foreach (Mailer::$email_fields as $lcfield => $field)
         if ($lcfield !== "to" && $lcfield !== "bcc") {
             $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
