@@ -61,7 +61,7 @@ class MailRecipients {
                 $by_dec["dec:yes"] = "Contact authors of accept-class papers";
             if ($dec_tcount[-1] > 0 || $type == "dec:no")
                 $by_dec["dec:no"] = "Contact authors of reject-class papers";
-            if ($dec_pcount[0] > 0 || $type == "dec:none")
+            if ($dec_tcount[0] > 0 || $type == "dec:none")
                 $by_dec["dec:none"] = "Contact authors of undecided papers";
             if ($type == "dec:any")
                 $by_dec["dec:any"] = "Contact authors of decided papers";
