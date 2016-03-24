@@ -138,6 +138,11 @@ class MailRecipients {
         return $t;
     }
 
+    function need_papers() {
+        return $this->type !== "pc" && substr($this->type, 0, 3) !== "pc:"
+            && $this->type !== "all";
+    }
+
     function query($paper_sensitive) {
         global $Conf;
         $cols = array();
@@ -145,10 +150,10 @@ class MailRecipients {
         $joins = array("ContactInfo");
 
         // paper limit
-        if ($this->type != "pc" && substr($this->type, 0, 3) != "pc:"
-            && $this->type != "all" && isset($this->papersel))
+        if ($this->need_papers() && isset($this->papersel))
             $where[] = "Paper.paperId in (" . join(",", $this->papersel) . ")";
 
+        // paper type limit
         if ($this->type == "s")
             $where[] = "Paper.timeSubmitted>0";
         else if ($this->type == "unsub")

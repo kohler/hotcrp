@@ -85,7 +85,7 @@ if (isset($Qreq->badpairs))
 if ((isset($Qreq->prevt) && isset($Qreq->t) && $Qreq->prevt !== $Qreq->t)
     || (isset($Qreq->prevq) && isset($Qreq->q) && $Qreq->prevq !== $Qreq->q)) {
     if (isset($Qreq->assign))
-        $Conf->infoMsg("You changed the paper search.  Please review the resulting paper list.");
+        $Conf->warnMsg("You changed the paper search. Please review the paper list.");
     unset($Qreq->assign);
     $Qreq->requery = 1;
 }

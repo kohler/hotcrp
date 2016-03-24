@@ -18,7 +18,7 @@ if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
         foreach (array("recipients", "q", "t", "cc", "replyto", "subject", "emailBody") as $field)
             if (isset($row->$field) && !isset($_REQUEST[$field]))
                 $_REQUEST[$field] = $row->$field;
-        if (@$row->q)
+        if ($row->q)
             $_REQUEST["plimit"] = 1;
     }
 }
@@ -47,13 +47,26 @@ if (isset($_REQUEST["template"]) && !isset($_REQUEST["check"]))
     $_REQUEST["loadtmpl"] = 1;
 
 // paper selection
-if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
+if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
     $_REQUEST["q"] = "";
 if (!isset($_REQUEST["p"]) && isset($_REQUEST["pap"])) // support p= and pap=
     $_REQUEST["p"] = $_REQUEST["pap"];
 if (isset($_REQUEST["p"]) && is_string($_REQUEST["p"]))
     $_REQUEST["p"] = preg_split('/\s+/', $_REQUEST["p"]);
-if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])) {
+// It's OK to just set $_REQUEST["p"] from the input without
+// validation because MailRecipients filters internally
+if (isset($_REQUEST["prevt"]) && isset($_REQUEST["prevq"])) {
+    if (!isset($_REQUEST["plimit"]))
+        unset($_REQUEST["p"]);
+    else if (($_REQUEST["prevt"] !== $_REQUEST["t"] || $_REQUEST["prevq"] !== $_REQUEST["q"])
+             && !isset($_REQUEST["psearch"])) {
+        $Conf->warnMsg("You changed the paper search. Please review the paper list.");
+        $_REQUEST["psearch"] = true;
+    }
+}
+$papersel = null;
+if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])
+    && !isset($_REQUEST["psearch"])) {
     $papersel = array();
     foreach ($_REQUEST["p"] as $p)
         if (($p = cvtint($p)) > 0)
@@ -62,13 +75,34 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])) {
     $_REQUEST["q"] = join(" ", $papersel);
     $_REQUEST["plimit"] = 1;
 } else if (isset($_REQUEST["plimit"])) {
-    $_REQUEST["q"] = defval($_REQUEST, "q", "");
     $search = new PaperSearch($Me, array("t" => $_REQUEST["t"], "q" => $_REQUEST["q"]));
     $papersel = $search->paperList();
     sort($papersel);
 } else
     $_REQUEST["q"] = "";
-if (isset($papersel) && count($papersel) == 0) {
+
+// Load template if requested
+if (isset($_REQUEST["loadtmpl"])) {
+    $t = defval($_REQUEST, "template", "genericmailtool");
+    if (!isset($mailTemplates[$t])
+        || !isset($mailTemplates[$t]["mailtool_name"]))
+        $t = "genericmailtool";
+    $template = $mailTemplates[$t];
+    $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
+    if (isset($template["mailtool_search_type"]))
+        $_REQUEST["t"] = $template["mailtool_search_type"];
+    $_REQUEST["subject"] = $null_mailer->expand($template["subject"]);
+    $_REQUEST["emailBody"] = $null_mailer->expand($template["body"]);
+}
+
+// Set recipients list, now that template is loaded
+$recip = new MailRecipients($Me, @$_REQUEST["recipients"], $papersel,
+                            @$_REQUEST["newrev_since"]);
+
+// Warn if no papers match
+if (isset($papersel) && count($papersel) == 0
+    && !isset($_REQUEST["loadtmpl"]) && !isset($_REQUEST["psearch"])
+    && $recip->need_papers()) {
     Conf::msg_error("No papers match that search.");
     unset($papersel);
     unset($_REQUEST["check"]);
@@ -254,7 +288,7 @@ class MailSender {
                     '" value="1" checked="checked" data-range-type="mhcb" id="psel', $this->cbcount,
                     '" onclick="rangeclick(event,this)" /></td>';
             }
-            echo '<td class="mhnp">', $k, ":</td>",
+            echo '<td class="mhnp nw">', $k, ":</td>",
                 '<td class="mhdp">', $vh, "</td></tr>\n";
         }
 
@@ -401,38 +435,6 @@ class MailSender {
 }
 
 
-// Check paper outcome counts
-$result = $Conf->q("select outcome, count(paperId), max(leadContactId), max(shepherdContactId) from Paper group by outcome");
-$noutcome = array();
-$anyLead = $anyShepherd = false;
-while (($row = edb_row($result))) {
-    $noutcome[$row[0]] = $row[1];
-    if ($row[2])
-        $anyLead = true;
-    if ($row[3])
-        $anyShepherd = true;
-}
-
-// Load template
-if (defval($_REQUEST, "loadtmpl")) {
-    $t = defval($_REQUEST, "template", "genericmailtool");
-    if (!isset($mailTemplates[$t])
-        || !isset($mailTemplates[$t]["mailtool_name"]))
-        $t = "genericmailtool";
-    $template = $mailTemplates[$t];
-    $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
-    if (isset($template["mailtool_search_type"]))
-        $_REQUEST["t"] = $template["mailtool_search_type"];
-    $_REQUEST["subject"] = $null_mailer->expand($template["subject"]);
-    $_REQUEST["emailBody"] = $null_mailer->expand($template["body"]);
-}
-
-
-// Set recipients list, now that template is loaded
-$recip = new MailRecipients($Me, @$_REQUEST["recipients"], @$papersel,
-                            @$_REQUEST["newrev_since"]);
-
-
 // Set subject and body if necessary
 if (!isset($_REQUEST["subject"]))
     $_REQUEST["subject"] = $null_mailer->expand($mailTemplates["genericmailtool"]["subject"]);
@@ -453,7 +455,8 @@ else
 
 
 // Check or send
-if (defval($_REQUEST, "loadtmpl") || defval($_REQUEST, "cancel"))
+if (defval($_REQUEST, "loadtmpl") || defval($_REQUEST, "cancel")
+    || defval($_REQUEST, "psearch"))
     /* do nothing */;
 else if (defval($_REQUEST, "send") && !$recip->error && check_post())
     MailSender::send($recip);
@@ -508,26 +511,41 @@ echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "h
 <div class='mail' style='float:left;margin:4px 1em 12px 0'><table>\n";
 
 // ** TO
-echo '<tr><td class="mhnp">To:</td><td class="mhdd">',
+echo '<tr><td class="mhnp nw">To:</td><td class="mhdd">',
     $recip->selectors(),
     "<div class='g'></div>\n";
 
 // paper selection
 echo '<div id="foldpsel" class="fold8c fold9o fold10c">';
-echo '<table class="fx9"><tr><td>',
-    Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
+echo '<table class="fx9"><tr><td class="nw">';
+echo Ht::checkbox("plimit", 1, isset($_REQUEST["plimit"]),
                   array("id" => "plimit",
                         "onchange" => "fold('psel', !this.checked, 8)")),
-    "&nbsp;</td><td>", Ht::label("Choose individual papers", "plimit");
-echo "<span class='fx8'>:</span><br /><div class='fx8'>";
-echo "Search&nbsp; ",
-    Ht::entry("q", @$_REQUEST["q"],
-              array("id" => "q", "placeholder" => "(All)",
-                    "class" => "hotcrp_searchbox", "size" => 36,
-                    "title" => "Enter paper numbers or search terms")),
-    " &nbsp;in &nbsp;",
-    Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "t")),
-    "</div></td></tr></table>\n";
+    "&nbsp;</td><td>", Ht::label("Choose papers", "plimit");
+echo "<span class='fx8'>:&nbsp; "; //</span><br /><div class='fx8'>";
+echo Ht::entry("q", @$_REQUEST["q"],
+               array("id" => "q", "placeholder" => "(All)",
+                     "class" => "hotcrp_searchbox", "size" => 36)),
+    " &nbsp;in&nbsp;";
+if (count($tOpt) == 1)
+    echo htmlspecialchars($tOpt[$_REQUEST["t"]]);
+else
+    echo " ", Ht::select("t", $tOpt, $_REQUEST["t"], array("id" => "t"));
+echo " &nbsp;", Ht::submit("psearch", "Search");
+echo "</span>"; //"</div>";
+if (isset($_REQUEST["plimit"]) && !isset($_REQUEST["monreq"])
+    && (isset($_REQUEST["loadtmpl"]) || isset($_REQUEST["psearch"]))) {
+    $plist = new PaperList(new PaperSearch($Me, ["t" => $_REQUEST["t"], "q" => $_REQUEST["q"]]));
+    $ptext = $plist->table_html("reviewers", ["noheader" => true, "nofooter" => true]);
+    echo "<div class='fx8'>";
+    if ($plist->count == 0)
+        echo "No papers match that search.";
+    else
+        echo '<div class="g"></div>', $ptext;
+    echo '</div>', Ht::hidden("prevt", $_REQUEST["t"]),
+        Ht::hidden("prevq", $_REQUEST["q"]);
+}
+echo "</td></tr></table>\n";
 
 echo '<div class="fx10" style="margin-top:0.35em">';
 if (!@$_REQUEST["newrev_since"] && ($t = $Conf->setting("pcrev_informtime")))
@@ -539,8 +557,7 @@ echo 'Assignments since:&nbsp; ',
 
 echo '<div class="fx9 g"></div></div>';
 
-$Conf->footerScript("fold(\"psel\",!\$\$(\"plimit\").checked,8);"
-                    . "setmailpsel(\$\$(\"recipients\"))");
+$Conf->footerScript("setmailpsel(\$\$(\"recipients\"))");
 
 echo "</td></tr>\n";
 
@@ -550,7 +567,7 @@ if ($Me->privChair) {
         if ($lcfield !== "to" && $lcfield !== "bcc") {
             $xfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
             $ec = (isset($Error[$xfield]) ? " error" : "");
-            echo "  <tr><td class='mhnp$ec'>$field:</td><td class='mhdp$ec'>",
+            echo "  <tr><td class='mhnp$ec nw'>$field:</td><td class='mhdp$ec'>",
                 "<input type='text' class='textlite-tt' name='$xfield' value=\"",
                 htmlspecialchars($_REQUEST[$xfield]), "\" size='64' />",
                 ($xfield == "replyto" ? "<div class='g'></div>" : ""),
@@ -559,7 +576,7 @@ if ($Me->privChair) {
 }
 
 // ** SUBJECT
-echo "  <tr><td class='mhnp'>Subject:</td><td class='mhdp'>",
+echo "  <tr><td class='mhnp nw'>Subject:</td><td class='mhdp'>",
     "<tt>[", htmlspecialchars(Conf::$gShortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
 
  <tr><td></td><td class='mhb'>\n",

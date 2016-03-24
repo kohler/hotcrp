@@ -2839,6 +2839,9 @@ td.mhcb {
 	padding: 4px 8px;
 	display: table-cell;
 }
+.mail tbody.pltable {
+	background-color: #ffffff;
+}
 .mhdp {
 	font-size: smaller;
 	font-family: monospace;

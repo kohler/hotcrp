@@ -4574,6 +4574,8 @@ function save_tag_index(e) {
 
 // mail
 function setmailpsel(sel) {
+    var plimit = $$("plimit");
+    fold("psel", !!plimit && !plimit.checked, 8);
     fold("psel", !!sel.value.match(/^(?:pc$|pc:|all$)/), 9);
     fold("psel", !sel.value.match(/^new.*rev$/), 10);
 }
