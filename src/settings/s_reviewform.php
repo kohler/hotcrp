@@ -118,8 +118,7 @@ class ReviewForm_SettingParser extends SettingParser {
                 $prefix_index = array_search($class_prefix, $prefixes) ? : 0;
                 if (@$sv->req["option_class_prefix_flipped_$fid"])
                     $prefix_index ^= 1;
-                if ($prefix_index)
-                    $fj->option_class_prefix = $prefixes[$prefix_index];
+                $fj->option_class_prefix = $prefixes[$prefix_index];
             }
 
             $fj->round_mask = 0;
