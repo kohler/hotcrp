@@ -1556,6 +1556,7 @@ class AssignmentSet {
         // check conflicts and perform assignment
         $any_success = false;
         foreach ($pids as $p) {
+            assert(is_int($p));
             $prow = get($this->astate->prows, $p);
             if (!$prow) {
                 $this->error("Paper $p does not exist");

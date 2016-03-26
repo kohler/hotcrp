@@ -744,7 +744,7 @@ class PaperSearch {
     public $sorters;
     private $_highlight_tags = null;
 
-    private $_matches = null;
+    private $_matches = null; // list of ints
 
     static private $_sort_keywords = null;
 
@@ -3039,7 +3039,7 @@ class PaperSearch {
         } else if ($qe->type === "pn") {
             foreach ($qe->value[0] as $p)
                 if (array_search($p, $this->_matches) === false)
-                    $this->_matches[] = $p;
+                    $this->_matches[] = (int) $p;
         }
     }
 
