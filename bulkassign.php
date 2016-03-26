@@ -81,11 +81,11 @@ if (isset($_REQUEST["saveassignment"]) && check_post()
     /*redirectSelf()*/;
 
 
-$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Upload</strong>", "bulkassign", actionBar());
+$Conf->header("Assignments &nbsp;&#x2215;&nbsp; <strong>Bulk update</strong>", "bulkassign", actionBar());
 echo '<div class="psmode">',
     '<div class="papmode"><a href="', hoturl("autoassign"), '">Automatic</a></div>',
     '<div class="papmode"><a href="', hoturl("manualassign"), '">Manual</a></div>',
-    '<div class="papmodex"><a href="', hoturl("bulkassign"), '">Upload</a></div>',
+    '<div class="papmodex"><a href="', hoturl("bulkassign"), '">Bulk update</a></div>',
     '</div><hr class="c" />';
 
 
@@ -95,7 +95,7 @@ Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "'>Automatic</a></li>
  <li><a href='", hoturl("manualassign"), "'>Manual by PC member</a></li>
  <li><a href='", hoturl("assign"), "'>Manual by paper</a></li>
- <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Upload</strong></a></li>
+ <li><a href='", hoturl("bulkassign"), "' class='q'><strong>Bulk update</strong></a></li>
 </ul>
 <hr class='hr' />
 Types of PC review:
@@ -106,19 +106,28 @@ Types of PC review:
 
 
 // upload review form action
-if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
-    && check_post()) {
+if (isset($_POST["bulkentry"]) && trim($_POST["bulkentry"]) === "Enter assignments")
+    unset($_POST["bulkentry"]);
+if (isset($_GET["upload"]) && check_post()
+    && ((isset($_POST["bulkentry"]) && $_POST["bulkentry"])
+        || fileUploaded($_FILES["bulk"]))) {
     flush();
     while (@ob_end_flush())
         /* do nothing */;
-    $text = file_get_contents($_FILES["uploadfile"]["tmp_name"]);
+    if (fileUploaded($_FILES["bulk"])) {
+        $text = file_get_contents($_FILES["bulk"]["tmp_name"]);
+        $filename = $_FILES["bulk"]["name"];
+    } else {
+        $text = $_POST["bulkentry"];
+        $filename = "";
+    }
     if ($text === false)
         Conf::msg_error("Internal error: cannot read file.");
     else {
         $assignset = new AssignmentSet($Me, false);
         $defaults = assignment_defaults();
         $text = convert_to_utf8($text);
-        $assignset->parse($text, $_FILES["uploadfile"]["name"], $defaults, "keep_browser_alive");
+        $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
         finish_browser_alive();
         if ($assignset->has_errors())
             $assignset->report_errors();
@@ -145,10 +154,11 @@ if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadfile"])
                 Ht::hidden("rev_roundtag", $defaults["round"]),
                 Ht::hidden("file", $text),
                 Ht::hidden("assignment_size_estimate", $csv_lineno),
-                Ht::hidden("filename", $_FILES["uploadfile"]["name"]),
+                Ht::hidden("filename", $filename),
                 Ht::hidden("requestreview_notify", req("requestreview_notify")),
                 Ht::hidden("requestreview_subject", req("requestreview_subject")),
                 Ht::hidden("requestreview_body", req("requestreview_body")),
+                Ht::hidden("bulkentry", req("bulkentry")),
                 '</div></div></div></form>', "\n";
             $Conf->footer();
             exit;
@@ -167,10 +177,16 @@ echo Ht::form_div(hoturl_post("bulkassign", "upload=1"),
                   array("divstyle" => "margin-top:1em"));
 
 // Upload
-echo '<input type="file" name="uploadfile" accept="text/plain,text/csv" size="30" />',
-    '<div id="foldoptions" style="margin:0.5em 0" class="foldo fold2o">';
+echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
+    Ht::textarea("bulkentry", req_s("bulkentry"),
+                 ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments"]),
+    '</div></div></div>';
 
-echo 'By default, assign&nbsp; ',
+echo '<div class="g"><strong>OR</strong> &nbsp;',
+    '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';
+
+echo '<div id="foldoptions" class="lg foldo fold2o">',
+    'By default, assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
                                        "pcreview" => "optional PC reviews",
@@ -205,7 +221,7 @@ echo "<table class='fx'><tr><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true")),
     "</td></tr></table>\n";
 
-echo '<div class="g"></div>', Ht::submit("Upload"), "</div>";
+echo '<div class="g"></div>', Ht::submit("Save assignments"), "</div>";
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=manager&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
 
@@ -299,5 +315,5 @@ To clear a tag, use assignment type <code>cleartag</code> or value <code>none</c
 gives the preference value.</dd>
 </dl>\n";
 
-$Conf->footerScript("$('#tsel').trigger('change')");
+$Conf->footerScript('$("#tsel").trigger("change");$("textarea").autogrow()');
 $Conf->footer();

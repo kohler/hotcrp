@@ -3128,7 +3128,7 @@ class Contact {
 
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now;
-        $result = Dbl::qe("select reviewId, reviewType, reviewModified, reviewToken, requestedBy from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $result = Dbl::qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = edb_orow($result);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
@@ -3142,12 +3142,10 @@ class Contact {
         }
 
         // change database
+        if ($type > 0 && ($round = get($extra, "round_number")) === null)
+            $round = $Conf->current_round();
         if ($type > 0 && (!$rrow || !$rrow->reviewType)) {
             $qa = "";
-            if (($round = get($extra, "round_number")) === null)
-                $round = $Conf->current_round();
-            if ($round)
-                $qa .= ", reviewRound=" . $round;
             if (get($extra, "mark_notify"))
                 $qa .= ", timeRequestNotified=$Now";
             if (get($extra, "token"))
@@ -3155,9 +3153,9 @@ class Contact {
             $new_requester_cid = $this->contactId;
             if (($new_requester = get($extra, "requester_contact")))
                 $new_requester_cid = $new_requester->contactId;
-            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, timeRequested=$Now$qa, requestedBy=$new_requester_cid";
-        } else if ($type > 0 && $rrow->reviewType != $type)
-            $q = "update PaperReview set reviewType=$type where reviewId=$rrow->reviewId";
+            $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=$Now$qa, requestedBy=$new_requester_cid";
+        } else if ($type > 0 && ($rrow->reviewType != $type || $rrow->reviewRound != $round))
+            $q = "update PaperReview set reviewType=$type, reviewRound=$round where reviewId=$rrow->reviewId";
         else if ($type <= 0 && $rrow && $rrow->reviewType)
             $q = "delete from PaperReview where reviewId=$rrow->reviewId";
         else

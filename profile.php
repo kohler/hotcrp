@@ -856,9 +856,9 @@ if ($newProfile) {
         $bulkentry = $session_bulkentry[1];
         $Conf->save_session("profile_bulkentry", null);
     }
-    echo '<div class="f-contain"><div class="f-i">',
-        '<div class="f-e">', Ht::textarea("bulkentry", $bulkentry,
-                                          array("rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line")),
+    echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
+        Ht::textarea("bulkentry", $bulkentry,
+                     ["rows" => 1, "cols" => 80, "placeholder" => "Enter users one per line"]),
         '</div></div></div>';
 
     echo '<div class="g"><strong>OR</strong> &nbsp;',
