@@ -221,7 +221,7 @@ echo "<table class='fx'><tr><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true")),
     "</td></tr></table>\n";
 
-echo '<div class="g"></div>', Ht::submit("Save assignments"), "</div>";
+echo '<div class="g"></div>', Ht::submit("Prepare assignments"), "</div>";
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=manager&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
 
@@ -289,6 +289,10 @@ column sets the review round; only matching assignments are cleared.
 Note that clearing an assignment doesn’t remove reviews that are already
 submitted (though clearing a primary or secondary assignment will change any associated
 review into a PC review).</dd>
+
+<dt><code>unsubmitreview</code></dt>
+<dd>Unsubmit a submitted review. The <code>email</code> and/or <code>name</code>
+columns locate the user.</dd>
 
 <dt><code>lead</code></dt>
 <dd>Set the discussion lead. The <code>email</code>, <code>name</code>,

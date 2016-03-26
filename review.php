@@ -114,15 +114,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     && $paperTable->editrrow->reviewSubmitted && $Me->can_administer($prow)
     && check_post()) {
     Dbl::qe_raw("lock tables PaperReview write");
-    $needsSubmit = 1;
-    if ($paperTable->editrrow->reviewType == REVIEW_SECONDARY) {
-        $result = Dbl::qe_raw("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$prow->paperId and requestedBy=" . $paperTable->editrrow->contactId . " and reviewType<" . REVIEW_SECONDARY);
-        if (($row = edb_row($result)) && $row[0])
-            $needsSubmit = 0;
-        else if ($row && $row[1])
-            $needsSubmit = -1;
-    }
-    $result = Dbl::qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=" . $paperTable->editrrow->reviewId);
+    $result = Contact::unsubmit_review_row($paperTable->editrrow);
     Dbl::qe_raw("unlock tables");
     if ($result) {
         $Me->log_activity("$editRrowLogname unsubmitted", $prow);

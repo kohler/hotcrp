@@ -629,7 +629,7 @@ doRadio('method', 'random', "Random good assignment");
 
 // Create assignment
 echo "<div class='g'></div>\n";
-echo "<div class='aa'>", Ht::submit("assign", "Prepare assignment"),
+echo "<div class='aa'>", Ht::submit("assign", "Prepare assignments"),
     " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 echo "</div></form>";

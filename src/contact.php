@@ -3207,6 +3207,18 @@ class Contact {
         }
     }
 
+    static function unsubmit_review_row($rrow) {
+        $needsSubmit = 1;
+        if ($rrow->reviewType == REVIEW_SECONDARY) {
+            $row = Dbl::fetch_first_row("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->contactId and reviewType<" . REVIEW_SECONDARY);
+            if ($row && $row[0])
+                $needsSubmit = 0;
+            else if ($row && $row[1])
+                $needsSubmit = -1;
+        }
+        return Dbl::qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=$rrow->reviewId");
+    }
+
     function assign_paper_pc($pids, $type, $reviewer, $extra = array()) {
         global $Conf;
 

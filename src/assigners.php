@@ -304,6 +304,15 @@ class AssignmentCountSet {
     }
 }
 
+class AssignmentCsv {
+    public $header = [];
+    public $data = [];
+    public function add($row) {
+        $this->header = $this->header + $row;
+        $this->data[] = $row;
+    }
+}
+
 class Assigner {
     public $type;
     public $pid;
@@ -358,7 +367,7 @@ class Assigner {
     function unparse_display(AssignmentSet $aset) {
         return "";
     }
-    function unparse_csv(AssignmentSet $aset) {
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         return null;
     }
     function account(AssignmentCountSet $delta) {
@@ -392,15 +401,14 @@ class NullAssigner extends Assigner {
 class ReviewAssigner extends Assigner {
     private $rtype;
     private $round;
-    private $oldtype;
-    private $notify;
+    private $oldtype = 0;
+    private $notify = null;
+    private $unsubmit = false;
     static public $prefinfo = null;
-    function __construct($pid, $contact, $rtype, $round, $oldtype = 0, $notify = null) {
-        parent::__construct($rtype ? strtolower(ReviewForm::$revtype_names[$rtype]) : "noreview", $pid, $contact);
+    function __construct($pid, $contact, $rtype, $round) {
+        parent::__construct($rtype ? strtolower(ReviewForm::$revtype_names[$rtype]) : "clearreview", $pid, $contact);
         $this->rtype = $rtype;
         $this->round = $round;
-        $this->oldtype = $oldtype;
-        $this->notify = $notify;
     }
     function contact_set() {
         if ($this->rtype > REVIEW_EXTERNAL)
@@ -417,16 +425,19 @@ class ReviewAssigner extends Assigner {
     function load_keys() {
         return array("pid", "cid");
     }
-    function load_state($state) {
+    static function load_review_state($state) {
         global $Conf;
         $result = Dbl::qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
             $round = $Conf->round_name($row[3], false);
             $state->load(array("type" => "review", "pid" => +$row[0], "cid" => +$row[1],
                                "_rtype" => $row[2], "_round" => $round,
-                               "_rsubmitted" => $row[4] > 0));
+                               "_rsubmitted" => $row[4] > 0 ? 1 : 0));
         }
         Dbl::free($result);
+    }
+    function load_state($state) {
+        self::load_review_state($state);
     }
     function apply($pid, $contact, $req, $state) {
         global $Conf;
@@ -485,11 +496,16 @@ class ReviewAssigner extends Assigner {
                     $state->add($r);
     }
     function realize($item, $cmap, $state) {
-        return new ReviewAssigner($item["pid"], $cmap->make_id($item["cid"]),
-                                  $item->deleted() ? 0 : $item["_rtype"],
-                                  $item["_round"],
-                                  $item->existed() ? $item->before["_rtype"] : 0,
-                                  $item->deleted() ? null : $item["_notify"]);
+        $a = new ReviewAssigner($item["pid"], $cmap->make_id($item["cid"]),
+                                $item->deleted() ? 0 : $item["_rtype"], $item["_round"]);
+        if ($item->existed())
+            $a->oldtype = $item->before["_rtype"];
+        if (!$item->deleted())
+            $a->notify = $item["_notify"];
+        if ($item->existed() && !$item->deleted()
+            && $item->before["_rsubmitted"] && !$item["_rsubmitted"])
+            $a->unsubmit = true;
+        return $a;
     }
     function unparse_description() {
         return "review";
@@ -498,6 +514,8 @@ class ReviewAssigner extends Assigner {
         $aset->show_column("reviewers");
         $t = $aset->contact()->reviewer_html_for($this->contact) . ' ';
         if ($this->rtype) {
+            if ($this->unsubmit)
+                $t = 'unsubmit ' . $t;
             $t .= review_type_icon($this->rtype, true);
             if ($this->round)
                 $t .= ' <span class="revround" title="Review round">'
@@ -509,16 +527,19 @@ class ReviewAssigner extends Assigner {
             $t = 'clear ' . $t . ' review';
         return $t;
     }
-    function unparse_csv(AssignmentSet $aset) {
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         if ($this->rtype >= REVIEW_SECONDARY)
             $rname = strtolower(ReviewForm::$revtype_names[$this->rtype]);
         else
-            $rname = "no";
+            $rname = "clear";
         $x = ["pid" => $this->pid, "action" => "{$rname}review",
               "email" => $this->contact->email, "name" => $this->contact->name_text()];
         if ($this->round)
             $x["round"] = $this->round;
-        return $x;
+        $acsv->add($x);
+        if ($this->unsubmit)
+            $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
+                        "email" => $this->contact->email, "name" => $this->contact->name_text()]);
     }
     function account(AssignmentCountSet $deltarev) {
         if ($this->cid > 0) {
@@ -538,11 +559,54 @@ class ReviewAssigner extends Assigner {
         $extra = array();
         if ($this->round && $this->rtype)
             $extra["round_number"] = $Conf->round_number($this->round, true);
-        $who->assign_review($this->pid, $this->cid, $this->rtype, $extra);
+        $reviewId = $who->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
             HotCRPMailer::send_to($reviewer, $this->notify, $prow);
+        }
+        if ($this->unsubmit && $reviewId)
+            Contact::unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
+    }
+}
+
+class UnsubmitReviewAssigner extends Assigner {
+    function __construct($pid, $contact) {
+        parent::__construct("unsubmitreview", $pid, $contact);
+    }
+    function contact_set() {
+        return "reviewers";
+    }
+    function allow_special_contact($cclass, $prow, $contact) {
+        return $cclass != "none";
+    }
+    function load_keys() {
+        return array("pid", "cid");
+    }
+    function load_state($state) {
+        ReviewAssigner::load_review_state($state);
+    }
+    function apply($pid, $contact, $req, $state) {
+        global $Conf;
+        $state->load_type("review", $this);
+
+        // parse round argument
+        $rarg0 = get($req, "round");
+        $oldround = null;
+        if ($rarg0 && strcasecmp($rarg0, "any") != 0
+            && ($oldround = $Conf->sanitize_round_name($rarg0)) === false)
+            return Conf::round_name_error($rarg0);
+
+        // remove existing review
+        $revmatch = ["type" => "review", "pid" => +$pid,
+                     "cid" => $contact ? $contact->contactId : null,
+                     "_rsubmitted" => 1];
+        if ($oldround !== null)
+            $revmatch["_round"] = $oldround;
+        $matches = $state->remove($revmatch);
+        foreach ($matches as $r) {
+            $r["_rsubmitted"] = 0;
+            $state->add($r);
         }
     }
 }
@@ -596,7 +660,7 @@ class LeadAssigner extends Assigner {
             $t = "remove $t as $this->type";
         return $t;
     }
-    function unparse_csv(AssignmentSet $aset) {
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => $this->type];
         if ($this->isadd) {
             $x["email"] = $this->contact->email;
@@ -675,7 +739,7 @@ class ConflictAssigner extends Assigner {
             $t .= unparse_preference_span($pref);
         return $t;
     }
-    function unparse_csv(AssignmentSet $aset) {
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         return [
             "pid" => $this->pid, "action" => $this->ctype ? "conflict" : "noconflict",
             "email" => $this->contact->email, "name" => $this->contact->name_text()
@@ -955,7 +1019,7 @@ class TagAssigner extends Assigner {
             $t = "add $t";
         return $t;
     }
-    function unparse_csv(AssignmentSet $aset) {
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $t = $this->tag;
         if ($this->index === null)
             return ["pid" => $this->pid, "action" => "cleartag", "tag" => $t];
@@ -1041,7 +1105,7 @@ class PreferenceAssigner extends Assigner {
         $aset->show_column("allpref");
         return $aset->contact()->reviewer_html_for($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
-    function unparse_csv(AssignmentSet $aset) {
+    function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         if (!$this->pref && $this->exp === null)
             $pref = "none";
         else
@@ -1079,6 +1143,7 @@ Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, "")
 Assigner::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
+Assigner::register("unsubmitreview", new UnsubmitReviewAssigner(0, null));
 Assigner::register("lead", new LeadAssigner("lead", 0, null, true));
 Assigner::register("nolead", new LeadAssigner("lead", 0, null, false));
 Assigner::register("clearlead", new LeadAssigner("lead", 0, null, false));
@@ -1636,14 +1701,12 @@ class AssignmentSet {
 
     function unparse_csv() {
         $this->set_my_conflicts();
-        $x = (object) ["header" => [], "data" => []];
+        $acsv = new AssignmentCsv;
         foreach ($this->assigners as $assigner)
-            if (($row = $assigner->unparse_csv($this))) {
-                $x->header = $x->header + $row;
-                $x->data[] = $row;
-            }
-        $x->header = array_keys($x->header);
-        return $x;
+            if (($row = $assigner->unparse_csv($this, $acsv)))
+                $acsv->add($row);
+        $acsv->header = array_keys($acsv->header);
+        return $acsv;
     }
 
     function restrict_papers($pids) {
