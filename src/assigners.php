@@ -359,7 +359,7 @@ class Assigner {
     }
     function load_state($state) {
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
     }
     function realize($item, $cmap, $state) {
         return null;
@@ -400,7 +400,31 @@ class NullAssigner extends Assigner {
     function allow_conflict($prow, $contact) {
         return true;
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
+    }
+}
+
+class ReviewAssigner_Data {
+    public $oldround = null;
+    public $newround = null;
+    public $error = false;
+    public function __construct($req, $state, $rtype) {
+        global $Conf;
+        $rarg0 = $rarg1 = get($req, "round");
+        $require_round_match = !!$rarg0 && !$rtype;
+        if ($rarg0 === null && $rtype > 0)
+            $rarg0 = $rarg1 = get($state->defaults, "round");
+        if ($rarg0 && ($colon = strpos($rarg0, ":")) !== false) {
+            $rarg1 = substr($rarg0, $colon + 1);
+            $rarg0 = substr($rarg0, 0, $colon);
+            $require_round_match = true;
+        }
+        if ($rarg0 && strcasecmp($rarg0, "any") != 0 && $require_round_match
+            && ($this->oldround = $Conf->sanitize_round_name($rarg0)) === false)
+            $this->error = Conf::round_name_error($rarg0);
+        if ($rarg1 && $rtype > 0
+            && ($this->newround = $Conf->sanitize_round_name($rarg1)) === false)
+            $this->error = Conf::round_name_error($rarg1);
     }
 }
 
@@ -409,6 +433,7 @@ class ReviewAssigner extends Assigner {
     private $round;
     private $oldtype = 0;
     private $notify = null;
+    private $oldsubmitted = 0;
     private $unsubmit = false;
     static public $prefinfo = null;
     function __construct($pid, $contact, $rtype, $round) {
@@ -447,49 +472,35 @@ class ReviewAssigner extends Assigner {
     function load_state($state) {
         self::load_review_state($state);
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
         global $Conf;
+        $state->load_type("review", $this);
         // check rtype argument
         $rtype = $this->rtype;
         if ($rtype == REVIEW_EXTERNAL && $contact->is_pc_member())
             $rtype = REVIEW_PC;
-        $state->load_type("review", $this);
 
         // parse round argument
-        $rarg0 = $rarg1 = get($req, "round");
-        $require_round_match = !!$rarg0 && !$rtype;
-        if ($rarg0 === null && $this->rtype > 0)
-            $rarg0 = $rarg1 = get($state->defaults, "round");
-        if ($rarg0 && ($colon = strpos($rarg0, ":")) !== false) {
-            $rarg1 = substr($rarg0, $colon + 1);
-            $rarg0 = substr($rarg0, 0, $colon);
-            $require_round_match = true;
-        }
-        $oldround = $newround = null;
-        if ($rarg0 && strcasecmp($rarg0, "any") != 0
-            && ($oldround = $Conf->sanitize_round_name($rarg0)) === false)
-            return Conf::round_name_error($rarg0);
-        if ($rarg1 && $rtype > 0
-            && ($newround = $Conf->sanitize_round_name($rarg1)) === false)
-            return Conf::round_name_error($rarg1);
+        $rdata = new ReviewAssigner_Data($req, $state, $rtype);
+        if ($rdata->error)
+            return $rdata->error;
 
         // remove existing review
-        $revmatch = array("type" => "review", "pid" => +$pid,
-                          "cid" => $contact ? $contact->contactId : null);
-        // require round match if round has changed
-        if ($oldround !== null && $require_round_match)
-            $revmatch["_round"] = $oldround;
+        $revmatch = array("type" => "review", "pid" => $pid,
+                          "cid" => $contact ? $contact->contactId : null,
+                          "_round" => $rdata->oldround);
         $matches = $state->remove($revmatch);
 
-        if ($rtype && $oldround !== null && $require_round_match && !count($matches))
+        if ($rtype && $rdata->oldround !== null && !count($matches))
             // explicit round change request => require old round matched
             return;
         else if ($rtype) {
             // add new review or reclassify old one
             $revmatch["_rtype"] = $rtype;
-            if (count($matches) && $newround === null)
-                $newround = $matches[0]["_round"];
-            $revmatch["_round"] = $newround;
+            if (count($matches) && $rdata->newround === null)
+                $revmatch["_round"] = $matches[0]["_round"];
+            else
+                $revmatch["_round"] = $rdata->newround;
             $revmatch["_rsubmitted"] = 0;
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
@@ -510,8 +521,10 @@ class ReviewAssigner extends Assigner {
             $a->oldtype = $item->before["_rtype"];
         if (!$item->deleted())
             $a->notify = $item["_notify"];
+        if ($item->existed())
+            $a->oldsubmitted = $item->before["_rsubmitted"];
         if ($item->existed() && !$item->deleted()
-            && $item->before["_rsubmitted"] && !$item["_rsubmitted"])
+            && $a->oldsubmitted && !$item["_rsubmitted"])
             $a->unsubmit = true;
         return $a;
     }
@@ -524,7 +537,7 @@ class ReviewAssigner extends Assigner {
         if ($this->rtype) {
             if ($this->unsubmit)
                 $t = 'unsubmit ' . $t;
-            $t .= review_type_icon($this->rtype, true);
+            $t .= review_type_icon($this->rtype, $this->unsubmit || !$a->oldsubmitted);
             if ($this->round)
                 $t .= ' <span class="revround" title="Review round">'
                     . htmlspecialchars($this->round) . '</span>';
@@ -597,7 +610,7 @@ class UnsubmitReviewAssigner extends Assigner {
     function load_state($state) {
         ReviewAssigner::load_review_state($state);
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
         global $Conf;
         $state->load_type("review", $this);
 
@@ -643,7 +656,7 @@ class LeadAssigner extends Assigner {
             $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
         $state->load_type($this->type, $this);
         $remcid = $this->isadd || !$contact->contactId ? null : $contact->contactId;
         $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
@@ -729,7 +742,7 @@ class ConflictAssigner extends Assigner {
             $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
         $state->load_type("conflict", $this);
         $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
         if (count($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
@@ -846,7 +859,7 @@ class TagAssigner extends Assigner {
             $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
         $state->load_type("tag", $this);
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
@@ -1084,7 +1097,7 @@ class PreferenceAssigner extends Assigner {
             $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
         Dbl::free($result);
     }
-    function apply($pid, $contact, $req, $state) {
+    function apply($pid, $contact, &$req, $state) {
         $state->load_type($this->type, $this);
 
         foreach (array("preference", "pref", "revpref") as $k)
