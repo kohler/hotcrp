@@ -348,7 +348,10 @@ class Assigner {
     function contact_set() {
         return "pc";
     }
-    function allow_special_contact($cclass, $prow, $contact) {
+    function allow_special_contact($cclass, $req, $state) {
+        return false;
+    }
+    function allow_conflict($prow, $contact) {
         return false;
     }
     function load_keys() {
@@ -391,7 +394,10 @@ class NullAssigner extends Assigner {
     function contact_set() {
         return false;
     }
-    function allow_special_contact($cclass, $prow, $contact) {
+    function allow_special_contact($cclass, $req, $state) {
+        return true;
+    }
+    function allow_conflict($prow, $contact) {
         return true;
     }
     function apply($pid, $contact, $req, $state) {
@@ -418,9 +424,11 @@ class ReviewAssigner extends Assigner {
         else
             return false;
     }
-    function allow_special_contact($cclass, $prow, $contact) {
-        return ($this->rtype == 0 && $cclass != "none")
-            || ($cclass == "conflict" && $prow->has_review($contact));
+    function allow_special_contact($cclass, $req, $state) {
+        return $this->rtype == 0 && $cclass != "none";
+    }
+    function allow_conflict($prow, $contact) {
+        return $this->rtype == 0 || $prow->has_review($contact);
     }
     function load_keys() {
         return array("pid", "cid");
@@ -577,8 +585,11 @@ class UnsubmitReviewAssigner extends Assigner {
     function contact_set() {
         return "reviewers";
     }
-    function allow_special_contact($cclass, $prow, $contact) {
+    function allow_special_contact($cclass, $req, $state) {
         return $cclass != "none";
+    }
+    function allow_conflict($prow, $contact) {
+        return true;
     }
     function load_keys() {
         return array("pid", "cid");
@@ -617,8 +628,11 @@ class LeadAssigner extends Assigner {
         parent::__construct($type, $pid, $contact);
         $this->isadd = $isadd;
     }
-    function allow_special_contact($cclass, $prow, $contact) {
+    function allow_special_contact($cclass, $req, $state) {
         return !$this->isadd || $cclass == "none";
+    }
+    function allow_conflict($prow, $contact) {
+        return !$this->isadd;
     }
     function load_keys() {
         return array("pid");
@@ -700,8 +714,11 @@ class ConflictAssigner extends Assigner {
         else
             return true;
     }
-    function allow_special_contact($cclass, $prow, $contact) {
-        return $cclass == "conflict" || ($cclass == "any" && !$this->ctype);
+    function allow_special_contact($cclass, $req, $state) {
+        return $cclass == "any" && !$this->ctype;
+    }
+    function allow_conflict($prow, $contact) {
+        return true;
     }
     function load_keys() {
         return array("pid", "cid");
@@ -814,7 +831,10 @@ class TagAssigner extends Assigner {
         else
             return true;
     }
-    function allow_special_contact($cclass, $prow, $contact) {
+    function allow_special_contact($cclass, $req, $state) {
+        return true;
+    }
+    function allow_conflict($prow, $contact) {
         return true;
     }
     function load_keys() {
@@ -1052,8 +1072,8 @@ class PreferenceAssigner extends Assigner {
         $this->pref = $pref;
         $this->exp = $exp;
     }
-    function allow_special_contact($cclass, $prow, $contact) {
-        return $cclass == "conflict";
+    function allow_conflict($prow, $contact) {
+        return true;
     }
     function load_keys() {
         return array("pid", "cid");
@@ -1137,10 +1157,10 @@ Assigner::register("sec", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("secondaryreview", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
-Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("review", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("noreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("clearreview", new ReviewAssigner(0, null, 0, ""));
 Assigner::register("unsubmitreview", new UnsubmitReviewAssigner(0, null));
@@ -1320,27 +1340,28 @@ class AssignmentSet {
             $special = $lemail;
         else if (!$first && $last && strpos(trim($last), " ") === false)
             $special = trim(strtolower($last));
+        $xspecial = $special;
         if ($special === "all")
             $special = "any";
 
         // check missing contact
         if (!$first && !$last && !$lemail) {
-            if ($assigner->allow_special_contact("missing", null, null))
+            if ($assigner->allow_special_contact("missing", $req, $this->astate))
                 return array(null);
             else
                 return $this->error("User missing.");
         }
 
-        // check special: "pc", "me", PC tag, "none", "any", "external"
+        // check special: "none", "any", "pc", "me", PC tag, "external"
+        if ($special === "none" || $special === "any") {
+            if (!$assigner->allow_special_contact($special, $req, $this->astate))
+                return $this->error("User “{$xspecial}” not allowed here.");
+            return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
+        }
         if ($special && !$first && (!$lemail || !$last)) {
             $ret = ContactSearch::make_special($special, $this->contact->contactId);
             if ($ret->ids !== false)
                 return $ret->contacts();
-        }
-        if ($special === "none" || $special === "any") {
-            if (!$assigner->allow_special_contact($special, null, null))
-                return $this->error("“{$special}” not allowed here");
-            return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
         }
         if (($special === "ext" || $special === "external")
             && $assigner->contact_set() === "reviewers") {
@@ -1552,7 +1573,7 @@ class AssignmentSet {
                 if ($contact && get($contact, "contactId") > 0
                     && !$this->astate->override
                     && $prow->has_conflict($contact)
-                    && !$assigner->allow_special_contact("conflict", $prow, $contact))
+                    && !$assigner->allow_conflict($prow, $contact))
                     $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p.");
                 else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                     $this->error($err);
