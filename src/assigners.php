@@ -430,32 +430,47 @@ class ReviewAssigner extends Assigner {
     }
     function apply($pid, $contact, $req, $state) {
         global $Conf;
-        $round = get($req, "round");
-        if ($round === null && $this->rtype > 0)
-            $round = get($state->defaults, "round");
-        if ($round && (strcasecmp($round, "any") != 0 || $this->rtype > 0)) {
-            if (($roundname = $Conf->sanitize_round_name($round)) === false)
-                return Conf::round_name_error($round);
-        } else
-            $roundname = null;
+        // check rtype argument
         $rtype = $this->rtype;
         if ($rtype == REVIEW_EXTERNAL && $contact->is_pc_member())
             $rtype = REVIEW_PC;
         $state->load_type("review", $this);
 
+        // parse round argument
+        $rarg0 = $rarg1 = get($req, "round");
+        $require_round_match = !!$rarg0 && !$rtype;
+        if ($rarg0 === null && $this->rtype > 0)
+            $rarg0 = $rarg1 = get($state->defaults, "round");
+        if ($rarg0 && ($colon = strpos($rarg0, ":")) !== false) {
+            $rarg1 = substr($rarg0, $colon + 1);
+            $rarg0 = substr($rarg0, 0, $colon);
+            $require_round_match = true;
+        }
+        $oldround = $newround = null;
+        if ($rarg0 && strcasecmp($rarg0, "any") != 0
+            && ($oldround = $Conf->sanitize_round_name($rarg0)) === false)
+            return Conf::round_name_error($rarg0);
+        if ($rarg1 && $rtype > 0
+            && ($newround = $Conf->sanitize_round_name($rarg1)) === false)
+            return Conf::round_name_error($rarg1);
+
         // remove existing review
         $revmatch = array("type" => "review", "pid" => +$pid,
                           "cid" => $contact ? $contact->contactId : null);
-        if (!$rtype && get($req, "round") && $roundname !== null)
-            $revmatch["_round"] = $roundname;
+        // require round match if round has changed
+        if ($oldround !== null && $require_round_match)
+            $revmatch["_round"] = $oldround;
         $matches = $state->remove($revmatch);
 
-        if ($rtype) {
+        if ($rtype && $oldround !== null && $require_round_match && !count($matches))
+            // explicit round change request => require old round matched
+            return;
+        else if ($rtype) {
             // add new review or reclassify old one
             $revmatch["_rtype"] = $rtype;
-            if (count($matches) && $roundname === null)
-                $roundname = $matches[0]["_round"];
-            $revmatch["_round"] = $roundname;
+            if (count($matches) && $newround === null)
+                $newround = $matches[0]["_round"];
+            $revmatch["_round"] = $newround;
             $revmatch["_rsubmitted"] = 0;
             if (count($matches))
                 $revmatch["_rsubmitted"] = $matches[0]["_rsubmitted"];
