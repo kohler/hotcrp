@@ -423,6 +423,24 @@ assert_search_papers($user_chair, "re:sec:mgbaker", "2");
 assert_search_papers($user_chair, "sec:mgbaker", "2");
 assert_search_papers($user_chair, "re:pri:mgbaker", "1 13 17");
 
+$assignset = new AssignmentSet($user_chair, null);
+$assignset->parse("action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n");
+xassert_eqq(join("\n", $assignset->errors_text()), "");
+xassert($assignset->execute());
+
+xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,all,mgbaker@cs.stanford.edu,secondary:primary\n"));
+assert_search_papers($user_chair, "re:sec:mgbaker", "");
+assert_search_papers($user_chair, "re:pri:mgbaker", "1 2 13 17");
+$review2d = fetch_review(2, $user_mgbaker);
+xassert(!$review2d->reviewSubmitted);
+xassert($review2d->reviewNeedsSubmit == 1);
+
+xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,2,mgbaker@cs.stanford.edu,primary:secondary\n"));
+assert_search_papers($user_chair, "re:sec:mgbaker", "2");
+assert_search_papers($user_chair, "re:pri:mgbaker", "1 13 17");
+$review2d = fetch_review(2, $user_mgbaker);
+xassert(!$review2d->reviewSubmitted);
+xassert($review2d->reviewNeedsSubmit == 0);
 
 $Conf->check_invariants();
 

@@ -3125,7 +3125,7 @@ class Contact {
 
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Conf, $Now;
-        $result = Dbl::qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $result = Dbl::qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = edb_orow($result);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
@@ -3151,9 +3151,12 @@ class Contact {
             if (($new_requester = get($extra, "requester_contact")))
                 $new_requester_cid = $new_requester->contactId;
             $q = "insert into PaperReview set paperId=$pid, contactId=$reviewer_cid, reviewType=$type, reviewRound=$round, timeRequested=$Now$qa, requestedBy=$new_requester_cid";
-        } else if ($type > 0 && ($rrow->reviewType != $type || $rrow->reviewRound != $round))
-            $q = "update PaperReview set reviewType=$type, reviewRound=$round where reviewId=$rrow->reviewId";
-        else if ($type <= 0 && $rrow && $rrow->reviewType)
+        } else if ($type > 0 && ($rrow->reviewType != $type || $rrow->reviewRound != $round)) {
+            $q = "update PaperReview set reviewType=$type, reviewRound=$round";
+            if (!$rrow->reviewSubmitted)
+                $q .= ", reviewNeedsSubmit=1";
+            $q .= " where reviewId=$rrow->reviewId";
+        } else if ($type <= 0 && $rrow && $rrow->reviewType)
             $q = "delete from PaperReview where reviewId=$rrow->reviewId";
         else
             return $rrow ? $rrow->reviewId : 0;
@@ -3182,6 +3185,10 @@ class Contact {
         } else if ($q[0] == "d") {
             if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0)
                 self::update_review_delegation($pid, $rrow->requestedBy, -1);
+        } else {
+            if ($type == REVIEW_SECONDARY && $rrow->reviewType != REVIEW_SECONDARY
+                && !$rrow->reviewSubmitted)
+                self::update_review_delegation($pid, $reviewer_cid, 0);
         }
 
         // Mark rev_tokens setting for future update by update_rev_tokens_setting
@@ -3197,10 +3204,13 @@ class Contact {
     static function update_review_delegation($pid, $cid, $direction) {
         if ($direction > 0) {
             Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$pid and reviewType=" . REVIEW_SECONDARY . " and contactId=$cid and reviewSubmitted is null and reviewNeedsSubmit=1");
-        } else if ($direction < 0) {
+        } else if ($direction <= 0) {
             $row = Dbl::fetch_first_row("select count(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid");
-            if ($row && $row[0] && !$row[1])
-                Dbl::qe("update PaperReview set reviewNeedsSubmit=" . ($row[2] ? -1 : 1) . " where paperId=$pid and contactId=$cid and reviewSubmitted is null");
+            if ($row && $row[0]) {
+                $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
+                if ($direction == 0 || $rns != 0)
+                    Dbl::qe("update PaperReview set reviewNeedsSubmit=$rns where paperId=$pid and contactId=$cid and reviewSubmitted is null");
+            }
         }
     }
 
