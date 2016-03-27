@@ -293,12 +293,15 @@ examples:</p>
 # assign drew@harvard.edu a primary review for paper #1 in round R2;
 # create a new assignment or modify an existing review:
 1,review,drew@harvard.edu,primary,R2
+
 # change helen@harvard.edu’s review for paper #1 to primary in round R2;
 # will not create a new assignment:
 1,review,helen@harvard.edu,any:primary,any:R2
+
 # change elizabeth@harvard.edu’s review for paper #1 to round R2,
 # but only if it is in round R1 now:
 1,review,elizabeth@harvard.edu,any,R1:R2
+
 # change all primary R1 reviews to R2:
 all,review,all,primary,R1:R2</pre>
 </dd>
