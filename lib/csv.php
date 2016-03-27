@@ -118,7 +118,7 @@ class CsvParser {
             if ($i && $line[$pos] === ",")
                 ++$pos;
             $bpos = $pos;
-            if ($line[$pos] === "\"") {
+            if ($pos != $linelen && $line[$pos] === "\"") {
                 while (1) {
                     $pos = strpos($line, "\"", $pos + 1);
                     if ($pos === false) {
