@@ -1372,9 +1372,11 @@ class AssignmentSet {
 
     private function reviewer_set() {
         if ($this->reviewer_set === false) {
-            $result = Dbl::qe("select " . AssignerContacts::$query . " from ContactInfo left join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")!=0 or reviewId is not null group by ContactInfo.contactId");
             $this->reviewer_set = array();
-            while (($row = edb_orow($result)))
+            foreach (pcMembers() as $p)
+                $this->reviewer_set[$p->contactId] = $p;
+            $result = Dbl::qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 group by ContactInfo.contactId");
+            while ($result && ($row = $result->fetch_object("Contact")))
                 $this->reviewer_set[$row->contactId] = $row;
             Dbl::free($result);
         }
