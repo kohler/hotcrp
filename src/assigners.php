@@ -407,6 +407,7 @@ class NullAssigner extends Assigner {
 class ReviewAssigner_Data {
     public $oldround = null;
     public $newround = null;
+    public $explicitround = false;
     public $oldtype = null;
     public $newtype = null;
     public $creator = true;
@@ -427,9 +428,9 @@ class ReviewAssigner_Data {
         return get(self::$type_map, $str, false);
     }
     static public function separate($key, $req, $state, $rtype) {
-        $a0 = $a1 = get($req, $key);
-        $require_match = $a0 !== null && trim($a0) !== "" && !$rtype;
-        if ($a0 === null && $rtype != 0)
+        $a0 = $a1 = trim(get_s($req, $key));
+        $require_match = $a0 !== "" && !$rtype;
+        if ($a0 === "" && $rtype != 0)
             $a0 = $a1 = get($state->defaults, $key);
         if ($a0 !== null && ($colon = strpos($a0, ":")) !== false) {
             $a1 = substr($a0, $colon + 1);
@@ -469,6 +470,7 @@ class ReviewAssigner_Data {
             $this->error = Conf::round_name_error($rarg1);
         if ($this->oldtype === null && $rtype > 0 && $rmatch)
             $this->oldtype = $rtype;
+        $this->explicitround = get($req, "round") !== null;
 
         $this->creator = !$tmatch && !$rmatch;
     }
@@ -552,8 +554,10 @@ class ReviewAssigner extends Assigner {
         $matches = $state->remove($revmatch);
 
         if ($rdata->newtype) {
-            if ($rdata->creator() && !count($matches))
+            if ($rdata->creator() && !count($matches)) {
+                $revmatch["_round"] = $rdata->newround;
                 $matches[] = $revmatch;
+            }
             $pcm = pcMembers();
             foreach ($matches as $m) {
                 if ($rdata->newtype)
@@ -562,7 +566,7 @@ class ReviewAssigner extends Assigner {
                     $m["_rtype"] = REVIEW_EXTERNAL;
                 if ($m["_rtype"] == REVIEW_EXTERNAL && isset($pcm[$m["_cid"]]))
                     $m["_rtype"] = REVIEW_PC;
-                if ($rdata->newround)
+                if ($rdata->newround && $rdata->explicitround)
                     $m["_round"] = $rdata->newround;
                 $state->add($m);
             }
@@ -595,7 +599,7 @@ class ReviewAssigner extends Assigner {
         if ($this->rtype) {
             if ($this->unsubmit)
                 $t = 'unsubmit ' . $t;
-            $t .= review_type_icon($this->rtype, $this->unsubmit || !$a->oldsubmitted);
+            $t .= review_type_icon($this->rtype, $this->unsubmit || !$this->oldsubmitted);
             if ($this->round)
                 $t .= ' <span class="revround" title="Review round">'
                     . htmlspecialchars($this->round) . '</span>';
