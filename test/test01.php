@@ -416,6 +416,13 @@ xassert($review2d->reviewNeedsSubmit == 0);
 xassert($user_mgbaker->can_view_review($paper2, $review2a, false));
 xassert($user_mgbaker->can_view_review($paper2, $review2e, false));
 
+// complex assignments
+assert_search_papers($user_chair, "2 AND re:4", "2");
+assert_search_papers($user_chair, "re:mgbaker", "1 2 13 17");
+assert_search_papers($user_chair, "re:sec:mgbaker", "2");
+assert_search_papers($user_chair, "sec:mgbaker", "2");
+assert_search_papers($user_chair, "re:pri:mgbaker", "1 13 17");
+
 
 $Conf->check_invariants();
 

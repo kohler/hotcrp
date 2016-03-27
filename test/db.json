@@ -42,7 +42,7 @@
         {"name": "Andrej Brodnik", "email": "Andrej.Brodnik@IMFM.Uni-Lj.SI", "affiliation": "Luleå University of Technology"},
         {"name": "Svante Carlsson", "email": "svante@sm.luth.se", "affiliation": "Luleå University of Technology"},
         {"name": "Stephen Pink", "email": "steve@sics.se", "affiliation": "Luleå University of Technology"}
-   ],
+    ],
     "submission": {"content": "%PDF-whatever2"},
     "submitted": true
 },
