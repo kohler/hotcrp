@@ -2878,14 +2878,17 @@ class PaperSearch {
                 foreach (explode(",", defval($row, $fieldname . "_info", "")) as $info)
                     if ($info !== "") {
                         list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
-                        if (($count_only
-                             ? $this->contact->can_count_review($row, $rrow, true)
-                             : $this->contact->can_view_review($row, $rrow, true))
-                            && (!$t->value->has_contacts()
-                                || $this->contact->can_view_review_identity($row, $rrow, true))
-                            && (!isset($t->value->view_score)
-                                || $t->value->view_score > $this->contact->view_score_bound($row, $rrow)))
-                            ++$row->$fieldname;
+                        if ($count_only
+                            ? !$this->contact->can_count_review($row, $rrow, true)
+                            : !$this->contact->can_view_review($row, $rrow, true))
+                            continue;
+                        if ($t->value->has_contacts()
+                            && !$this->contact->can_view_review_identity($row, $rrow, true))
+                            continue;
+                        if (isset($t->value->view_score)
+                            && $t->value->view_score <= $this->contact->view_score_bound($row, $rrow))
+                            continue;
+                        ++$row->$fieldname;
                     }
             }
             if (($t->type === "cmt" || $t->type === "cmttag")
