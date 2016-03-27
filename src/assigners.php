@@ -409,6 +409,7 @@ class ReviewAssigner_Data {
     public $newround = null;
     public $oldtype = null;
     public $newtype = null;
+    public $creator = true;
     public $error = false;
     private static $type_map = [
         "primary" => REVIEW_PRIMARY, "pri" => REVIEW_PRIMARY,
@@ -418,7 +419,8 @@ class ReviewAssigner_Data {
     ];
     public static function parse_type($str) {
         $str = strtolower($str);
-        if ($str === "review" || $str === "")
+        if ($str === "review" || $str === ""
+            || $str === "all" || $str === "any")
             return null;
         if (str_ends_with($str, "review"))
             $str = substr($str, 0, -6);
@@ -426,23 +428,30 @@ class ReviewAssigner_Data {
     }
     static public function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = get($req, $key);
-        $require_match = !!$a0 && !$rtype;
+        $require_match = $a0 !== null && trim($a0) !== "" && !$rtype;
         if ($a0 === null && $rtype != 0)
             $a0 = $a1 = get($state->defaults, $key);
-        if ($a0 && ($colon = strpos($a0, ":")) !== false) {
+        if ($a0 !== null && ($colon = strpos($a0, ":")) !== false) {
             $a1 = substr($a0, $colon + 1);
             $a0 = substr($a0, 0, $colon);
             $require_match = true;
         }
-        return [is_string($a0) ? trim($a0) : $a0,
-                is_string($a1) ? trim($a1) : $a1,
-                $require_match];
+        $a0 = is_string($a0) ? trim($a0) : $a0;
+        $a1 = is_string($a1) ? trim($a1) : $a1;
+        if (strcasecmp($a0, "any") == 0) {
+            $a0 = null;
+            $require_match = true;
+        }
+        if (strcasecmp($a1, "any") == 0) {
+            $a1 = null;
+            $require_match = true;
+        }
+        return [$a0, $a1, $require_match];
     }
     public function __construct($req, $state, $rtype) {
         global $Conf;
         list($targ0, $targ1, $tmatch) = self::separate("reviewtype", $req, $state, $rtype);
-        if ($targ0 !== null && $targ0 !== "" && strcasecmp($targ0, "any") != 0
-            && $tmatch
+        if ($targ0 !== null && $targ0 !== "" && $tmatch
             && ($this->oldtype = self::parse_type($targ0)) === false)
             $this->error = "Invalid reviewtype.";
         if ($targ1 !== null && $targ1 !== "" && $rtype != 0
@@ -452,8 +461,7 @@ class ReviewAssigner_Data {
             $this->newtype = $rtype;
 
         list($rarg0, $rarg1, $rmatch) = self::separate("round", $req, $state, $this->newtype);
-        if ($rarg0 !== null && $rarg0 !== "" && strcasecmp($rarg0, "any") != 0
-            && $rmatch
+        if ($rarg0 !== null && $rarg0 !== "" && $rmatch
             && ($this->oldround = $Conf->sanitize_round_name($rarg0)) === false)
             $this->error = Conf::round_name_error($rarg0);
         if ($rarg1 !== null && $rarg1 !== "" && $this->newtype != 0
@@ -461,6 +469,8 @@ class ReviewAssigner_Data {
             $this->error = Conf::round_name_error($rarg1);
         if ($this->oldtype === null && $rtype > 0 && $rmatch)
             $this->oldtype = $rtype;
+
+        $this->creator = !$tmatch && !$rmatch;
     }
     public static function make(&$req, $state, $rtype) {
         if (!isset($req["_review_data"]) || !is_object($req["_review_data"]))
@@ -468,7 +478,7 @@ class ReviewAssigner_Data {
         return $req["_review_data"];
     }
     public function creator() {
-        return $this->oldtype === null && $this->oldround === null;
+        return $this->creator;
     }
 }
 
@@ -662,19 +672,22 @@ class UnsubmitReviewAssigner extends Assigner {
         global $Conf;
         $state->load_type("review", $this);
 
-        // parse round argument
-        $rarg0 = get($req, "round");
+        // parse round and reviewtype arguments
+        $rarg0 = trim(get_s($req, "round"));
         $oldround = null;
-        if ($rarg0 && strcasecmp($rarg0, "any") != 0
+        if ($rarg0 !== "" && strcasecmp($rarg0, "any") != 0
             && ($oldround = $Conf->sanitize_round_name($rarg0)) === false)
             return Conf::round_name_error($rarg0);
+        $targ0 = trim(get_s($req, "reviewtype"));
+        $oldtype = null;
+        if ($targ0 !== ""
+            && ($oldtype = ReviewAssigner_Data::parse_type($targ0)) === false)
+            return "Invalid reviewtype.";
 
         // remove existing review
         $revmatch = ["type" => "review", "pid" => +$pid,
                      "cid" => $contact ? $contact->contactId : null,
-                     "_rsubmitted" => 1];
-        if ($oldround !== null)
-            $revmatch["_round"] = $oldround;
+                     "_rtype" => $oldtype, "_round" => $oldround, "_rsubmitted" => 1];
         $matches = $state->remove($revmatch);
         foreach ($matches as $r) {
             $r["_rsubmitted"] = 0;

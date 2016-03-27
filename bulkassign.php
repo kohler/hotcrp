@@ -269,30 +269,48 @@ removes an active assignment and then restores it, the assignment is left alone.
 <p>Assignment types are:</p>
 
 <dl>
-<dt><code>primary</code>, <code>secondary</code>, <code>pcreview</code></dt>
-<dd>Assign a primary, secondary, or optional PC review. The <code>email</code>,
-<code>name</code>, and/or <code>user</code> columns locate the user.
-It’s an error if a user doesn’t correspond to a PC member.
-The optional <code>round</code> column sets the review round.</dd>
-
 <dt><code>review</code></dt>
-<dd>Assign an external review (or an optional PC review, if the user is a PC member).
-The <code>email</code> and/or <code>name</code> columns locate the user.
-(<code>first</code> and <code>last</code> columns may be used in place of <code>name</code>.)
-If the user doesn’t have an account, one will be created.
-The optional <code>round</code> column sets the review round.</dd>
 
-<dt><code>clearreview</code></dt>
-<dd>Clear an existing review assignment. The <code>email</code> and/or
-<code>name</code> columns locate the user. The optional <code>round</code>
-column sets the review round; only matching assignments are cleared.
-Note that clearing an assignment doesn’t remove reviews that are already
-submitted (though clearing a primary or secondary assignment will change any associated
-review into a PC review).</dd>
+<dd>Assign a review. The <code>email</code> and/or <code>name</code> columns
+locate the user. (<code>first</code> and <code>last</code> columns may be used
+in place of <code>name</code>.) The <code>reviewtype</code> column sets the
+review type; it can be <code>primary</code>, <code>secondary</code>,
+<code>pcreview</code> (optional PC review), or <code>external</code>, or it
+can be <code>clear</code> to unassign the review. The optional
+<code>round</code> column sets the review round.
+
+<p>Only PC members can be assigned primary, secondary, and optional PC
+reviews. Accounts will be created for new external reviewers as necessary. The
+<code>clear</code> action doesn’t delete reviews that have already been
+entered.</p>
+
+<p>Assignments can create new reviews or change existing reviews. Use
+“<code>any</code>” or “old:new” syntax in the <code>round</code> and/or
+<code>reviewtype</code> columns to restrict to existing reviews. Some
+examples:</p>
+
+<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+# assign drew@harvard.edu a primary review for paper #1 in round R2;
+# create a new assignment or modify an existing review:
+1,review,drew@harvard.edu,primary,R2
+# change helen@harvard.edu’s review for paper #1 to primary in round R2;
+# will not create a new assignment:
+1,review,helen@harvard.edu,any:primary,any:R2
+# change elizabeth@harvard.edu’s review for paper #1 to round R2,
+# but only if it is in round R1 now:
+1,review,elizabeth@harvard.edu,any,R1:R2
+# change all primary R1 reviews to R2:
+all,review,all,primary,R1:R2</pre>
+</dd>
+
+<dt><code>primary</code>, <code>secondary</code>, <code>pcreview</code>,
+<code>external</code>, <code>clearreview</code></dt>
+<dd>Like <code>review</code>, assign a primary, secondary, optional PC, or
+external review, or clear existing reviews.</dd>
 
 <dt><code>unsubmitreview</code></dt>
-<dd>Unsubmit a submitted review. The <code>email</code> and/or <code>name</code>
-columns locate the user.</dd>
+<dd>Unsubmit a submitted review. The <code>email</code>, <code>name</code>,
+<code>reviewtype</code>, and <code>round</code> columns locate the review.</dd>
 
 <dt><code>lead</code></dt>
 <dd>Set the discussion lead. The <code>email</code>, <code>name</code>,
