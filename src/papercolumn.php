@@ -271,7 +271,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         foreach ($rows as $row) {
-            if (!$pl->contact->can_count_review($row, null, null))
+            if (!$pl->contact->can_view_review_assignment($row, null, null))
                 $row->_review_status_sort_info = 2147483647;
             else
                 $row->_review_status_sort_info = $row->num_reviews_submitted()
@@ -287,7 +287,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return '<span class="hottooltip" data-hottooltip="# completed reviews / # assigned reviews" data-hottooltip-dir="b">#&nbsp;Reviews</span>';
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->can_count_review($row, null, null);
+        return !$pl->contact->can_view_review_assignment($row, null, null);
     }
     public function content($pl, $row, $rowidx) {
         $done = $row->num_reviews_submitted();

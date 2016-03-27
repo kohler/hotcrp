@@ -2879,11 +2879,13 @@ class PaperSearch {
                     if ($info !== "") {
                         list($rrow->reviewId, $rrow->contactId, $rrow->reviewType, $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->requestedBy, $rrow->reviewToken, $rrow->reviewBlind) = explode(" ", $info);
                         if ($count_only
-                            ? !$this->contact->can_count_review($row, $rrow, true)
+                            ? !$this->contact->can_view_review_assignment($row, $rrow, true)
                             : !$this->contact->can_view_review($row, $rrow, true))
                             continue;
                         if ($t->value->has_contacts()
-                            && !$this->contact->can_view_review_identity($row, $rrow, true))
+                            ? !$this->contact->can_view_review_identity($row, $rrow, true)
+                            : /* don't count delegated reviews unless contacts given */
+                              $rrow->reviewSubmitted <= 0 && $rrow->reviewNeedsSubmit <= 0)
                             continue;
                         if (isset($t->value->view_score)
                             && $t->value->view_score <= $this->contact->view_score_bound($row, $rrow))

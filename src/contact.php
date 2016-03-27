@@ -2125,10 +2125,7 @@ class Contact {
                 && $Conf->setting("pcrev_editdelegate"));
     }
 
-    public function can_count_review(PaperInfo $prow, $rrow, $forceShow) {
-        if ($rrow && $rrow->reviewNeedsSubmit <= 0
-            && $rrow->reviewSubmitted <= 0)
-            return false;
+    public function can_view_review_assignment(PaperInfo $prow, $rrow, $forceShow) {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->allow_pc
