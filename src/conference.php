@@ -631,7 +631,7 @@ class Conf {
             return "Empty round name.";
         else if (!preg_match('/\A[a-zA-Z][a-zA-Z0-9]*\z/', $rname))
             return "Round names must start with a letter and contain only letters and numbers.";
-        else if (preg_match('/\A(?:none|any|default|unnamed|.*response)\z/i', $rname))
+        else if (preg_match('/\A(?:none|any|all|default|unnamed|.*response)\z/i', $rname))
             return "Round name $rname is reserved.";
         else
             return false;
