@@ -714,7 +714,7 @@ class UnsubmitReviewAssigner extends Assigner {
             return "Invalid reviewtype.";
 
         // remove existing review
-        $revmatch = ["type" => "review", "pid" => +$pid,
+        $revmatch = ["type" => "review", "pid" => $pid,
                      "cid" => $contact ? $contact->contactId : null,
                      "_rtype" => $oldtype, "_round" => $oldround, "_rsubmitted" => 1];
         $matches = $state->remove($revmatch);
@@ -1681,10 +1681,15 @@ class AssignmentSet {
             }
 
             $this->encounter_order[$p] = $p;
-            $cf = $assigner->contact_filter($p, $req, $this->astate);
+
+            $cf = null;
+            if (count($contacts) > 1
+                || ($contacts[0] && $contacts[0]->contactId))
+                $cf = $assigner->contact_filter($p, $req, $this->astate);
 
             foreach ($contacts as $contact) {
-                if ($cf && $contact && !get($cf, $contact->contactId))
+                if ($cf && $contact && $contact->contactId
+                    && !get($cf, $contact->contactId))
                     /* skip */;
                 else if ($contact && $contact->contactId > 0
                          && !$this->astate->override
