@@ -47,11 +47,12 @@ class AssignmentState {
         $this->contact = $contact;
         $this->override = $override;
     }
-    public function load_type($type, $loader) {
+    public function mark_type($type, $keys) {
         if (!isset($this->types[$type])) {
-            $this->types[$type] = $loader->load_keys();
-            $loader->load_state($this);
-        }
+            $this->types[$type] = $keys;
+            return true;
+        } else
+            return false;
     }
     private function pidstate($pid) {
         if (!isset($this->st[$pid]))
@@ -354,10 +355,7 @@ class Assigner {
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         return false;
     }
-    function load_keys() {
-        return [];
-    }
-    function load_state($state) {
+    function load_state(AssignmentState $state) {
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
     }
@@ -521,9 +519,6 @@ class ReviewAssigner extends Assigner {
                 && !$rdata->error
                 && !$rdata->creator());
     }
-    function load_keys() {
-        return array("pid", "cid");
-    }
     static function load_review_state($state) {
         global $Conf;
         $result = Dbl::qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
@@ -535,12 +530,12 @@ class ReviewAssigner extends Assigner {
         }
         Dbl::free($result);
     }
-    function load_state($state) {
-        self::load_review_state($state);
+    function load_state(AssignmentState $state) {
+        if ($state->mark_type("review", ["pid", "cid"]))
+            self::load_review_state($state);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         global $Conf;
-        $state->load_type("review", $this);
 
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
         if ($rdata->error)
@@ -666,15 +661,12 @@ class UnsubmitReviewAssigner extends Assigner {
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function load_keys() {
-        return array("pid", "cid");
-    }
-    function load_state($state) {
-        ReviewAssigner::load_review_state($state);
+    function load_state(AssignmentState $state) {
+        if ($state->mark_type("review", ["pid", "cid"]))
+            ReviewAssigner::load_review_state($state);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         global $Conf;
-        $state->load_type("review", $this);
 
         // parse round and reviewtype arguments
         $rarg0 = trim(get_s($req, "round"));
@@ -712,17 +704,15 @@ class LeadAssigner extends Assigner {
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         return !$this->isadd;
     }
-    function load_keys() {
-        return array("pid");
-    }
-    function load_state($state) {
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type($this->type, ["pid"]))
+            return;
         $result = Dbl::qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        $state->load_type($this->type, $this);
         $remcid = $this->isadd || !$contact->contactId ? null : $contact->contactId;
         $state->remove(array("type" => $this->type, "pid" => $pid, "_cid" => $remcid));
         if ($this->isadd && $contact->contactId)
@@ -798,17 +788,15 @@ class ConflictAssigner extends Assigner {
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function load_keys() {
-        return array("pid", "cid");
-    }
-    function load_state($state) {
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type("conflict", ["pid", "cid"]))
+            return;
         $result = Dbl::qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
         while (($row = edb_row($result)))
             $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        $state->load_type("conflict", $this);
         $res = $state->remove(array("type" => "conflict", "pid" => $pid, "cid" => $contact->contactId));
         if (count($res) && $res[0]["_ctype"] >= CONFLICT_AUTHOR)
             $state->add($res[0]);
@@ -915,17 +903,15 @@ class TagAssigner extends Assigner {
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function load_keys() {
-        return array("pid", "ltag");
-    }
-    function load_state($state) {
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type("tag", ["pid", "ltag"]))
+            return;
         $result = Dbl::qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
             $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        $state->load_type("tag", $this);
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
 
@@ -1153,18 +1139,15 @@ class PreferenceAssigner extends Assigner {
     function allow_conflict($prow, $contact, &$req, AssignmentState $state) {
         return true;
     }
-    function load_keys() {
-        return array("pid", "cid");
-    }
-    function load_state($state) {
+    function load_state(AssignmentState $state) {
+        if (!$state->mark_type($this->type, ["pid", "cid"]))
+            return;
         $result = Dbl::qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
         Dbl::free($result);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        $state->load_type($this->type, $this);
-
         foreach (array("preference", "pref", "revpref") as $k)
             if (($pref = get($req, $k)) !== null)
                 break;
@@ -1632,6 +1615,7 @@ class AssignmentSet {
         if ($contacts === false)
             return false;
         $this->astate->fetch_prows($pids);
+        $assigner->load_state($this->astate);
 
         // check conflicts and perform assignment
         $any_success = false;
