@@ -2622,7 +2622,7 @@ function analyze(e) {
 }
 
 function beforeunload() {
-    var i, $cs = $(".cmtg textarea[name='comment']"), x, text;
+    var i, $cs = $(".cmtg textarea[name='comment']"), x, text, text2;
     for (i = 0; i != $cs.length; ++i) {
         x = analyze($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
