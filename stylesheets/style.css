@@ -652,7 +652,6 @@ input.cbx {
 }
 .aa {
 	background: #f2f2f2;
-	clear: both;
 	border-radius: 5px;
 }
 div.aahc.alert .aa, div.aahc.alert .aax {
@@ -944,6 +943,9 @@ ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0;
 	padding-left: 1em;
+}
+dl.spaced > dt {
+	margin-top: 1em;
 }
 
 

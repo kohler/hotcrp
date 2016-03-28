@@ -775,7 +775,7 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
 }
 
 
-echo "<div class='aa'><table class='pt_buttons'>\n";
+echo "<div class='aa c'><table class='pt_buttons'>\n";
 $buttons = array(Ht::submit("register", $newProfile ? "Create account" : "Save changes", array("class" => "bb")));
 if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);

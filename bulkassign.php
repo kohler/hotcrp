@@ -189,7 +189,7 @@ echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
 echo '<div class="g"><strong>OR</strong> &nbsp;',
     '<input type="file" name="bulk" accept="text/plain,text/csv" size="30" /></div>';
 
-echo '<div id="foldoptions" class="lg foldo fold2o">',
+echo '<div id="foldoptions" class="lg foldc fold2o">',
     'By default, assign&nbsp; ',
     Ht::select("default_action", array("primary" => "primary reviews",
                                        "secondary" => "secondary reviews",
@@ -225,7 +225,8 @@ echo "<table class='fx'><tr><td>",
     Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true")),
     "</td></tr></table>\n";
 
-echo '<div class="g"></div>', Ht::submit("Prepare assignments"), "</div>";
+echo '<div class="g"></div><div class="aa">', Ht::submit("Prepare assignments"),
+    " &nbsp; <span class='hint'>You’ll be able to check the assignment before it is saved.</span></div>\n";
 
 echo '<div style="margin-top:1.5em"><a href="', hoturl_post("search", "t=manager&q=&get=pcassignments&p=all"), '">Download current PC assignments</a></div>';
 
@@ -233,11 +234,13 @@ echo "</div></form>
 
 <hr style='margin-top:1em' />
 
+<div class='helppagetext'>
 <h3>Instructions</h3>
 
-<p>Upload a comma-separated value file to assign reviews, conflicts, leads,
-shepherds, and tags. You’ll be given a chance to review the assignments before
-they are applied.</p>
+<p>Upload a comma-separated value file to prepare an assignment of reviews,
+conflicts, leads, shepherds, and tags. HotCRP calculates the minimal changes
+between the current state and the requested assignment; you’ll confirm those
+changes before they are committed.</p>
 
 <p>A simple example:</p>
 
@@ -247,7 +250,7 @@ they are applied.</p>
 1,primary,slugger@manny.com</pre>
 
 <p>This assigns PC members man@alice.org and slugger@manny.com as primary
-reviewers for paper #1, and PC member slugger@manny.com as a secondary
+reviewers for paper #1, and slugger@manny.com as a secondary
 reviewer for paper #2. Errors will be reported if those users aren’t PC
 members, or if they have conflicts with their assigned papers.</p>
 
@@ -265,22 +268,17 @@ lines assign man@alice.org as a primary reviewer for paper #1, and slugger@manny
 as a primary reviewer for paper #10. The last line assigns slugger@manny.com
 as a primary reviewer for all papers tagged #manny or #ramirez.</p>
 
-<p>HotCRP parses each assignment file line by line, but commits the
-file as a unit. If file makes no overall changes to the current
-state, the upload process does nothing. For instance, if a file
-removes an active assignment and then restores it, the assignment is left alone.</p>
-
 <p>Assignment types are:</p>
 
-<dl>
+<dl class=\"spaced\">
 <dt><code>review</code></dt>
 
 <dd>Assign a review. The <code>email</code> and/or <code>name</code> columns
 locate the user. (<code>first</code> and <code>last</code> columns may be used
 in place of <code>name</code>.) The <code>reviewtype</code> column sets the
 review type; it can be <code>primary</code>, <code>secondary</code>,
-<code>pcreview</code> (optional PC review), or <code>external</code>, or it
-can be <code>clear</code> to unassign the review. The optional
+<code>pcreview</code> (optional PC review), or <code>external</code>, or
+<code>clear</code> to unassign the review. The optional
 <code>round</code> column sets the review round.
 
 <p>Only PC members can be assigned primary, secondary, and optional PC
@@ -290,24 +288,28 @@ entered.</p>
 
 <p>Assignments can create new reviews or change existing reviews. Use
 “<code>any</code>” or “old:new” syntax in the <code>round</code> and/or
-<code>reviewtype</code> columns to restrict to existing reviews. Some
-examples:</p>
+<code>reviewtype</code> columns to restrict assignments to existing reviews.
+For example, to create a new assignment or modify an existing review:</p>
 
 <pre class=\"entryexample\">paper,assignment,email,reviewtype,round
-# assign drew@harvard.edu a primary review for paper #1 in round R2;
-# create a new assignment or modify an existing review:
-1,review,drew@harvard.edu,primary,R2
+1,review,drew@harvard.edu,primary,R2</pre>
 
-# change helen@harvard.edu’s review for paper #1 to primary in round R2;
-# will not create a new assignment:
-1,review,helen@harvard.edu,any:primary,any:R2
+<p>To modify an existing review’s round (“<code>any</code>” restricts the
+assignment to existing reviews):</p>
 
-# change elizabeth@harvard.edu’s review for paper #1 to round R2,
-# but only if it is in round R1 now:
-1,review,elizabeth@harvard.edu,any,R1:R2
+<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+1,review,drew@harvard.edu,any,R2</pre>
 
-# change all primary R1 reviews to R2:
+<p>To change an existing review from round R1 to round R2:</p>
+
+<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
+1,review,drew@harvard.edu,any,R1:R2</pre>
+
+<p>To change all round-R1 primary reviews to round R2:</p>
+
+<pre class=\"entryexample\">paper,assignment,email,reviewtype,round
 all,review,all,primary,R1:R2</pre>
+
 </dd>
 
 <dt><code>primary</code>, <code>secondary</code>, <code>pcreview</code>,
@@ -342,7 +344,9 @@ To clear a tag, use assignment type <code>cleartag</code> or value <code>none</c
 <dt><code>preference</code></dt>
 <dd>Set reviewer preference and expertise. The <code>preference</code> column
 gives the preference value.</dd>
-</dl>\n";
+</dl>
+
+</div>\n";
 
 $Conf->footerScript('$("#tsel").trigger("change");$("textarea").autogrow()');
 $Conf->footer();
