@@ -235,6 +235,151 @@
     ],
     "submission": {"content": "%PDF-whatever18"},
     "submitted": true
+},
+{
+    "_id_": 19,
+    "title": "A Flow-Based Approach to Datagram Security",
+    "abstract": "Datagram services provide a simple, flexible, robust, and scalable communication abstraction; their usefulness has been well demonstrated by the success of IP, UDP, and RPC. Yet, the overwhelming majority of network security protocols that have been proposed are geared towards connection-oriented communications. The few that do cater to datagram communications tend to either rely on long term host-pair keying or impose a session-oriented (i.e., requiring connection setup) semantics.\n\nSeparately, the concept of flows has received a great deal of attention recently, especially in the context of routing and QoS. A flow characterizes a sequence of datagrams sharing some pre-defined attributes. In this paper, we advocate the use of flows as a basis for structuring secure datagram communications. We support this by proposing a novel protocol for datagram security based on flows. Our protocol achieves zero-message keying, thus preserving the connectionless nature of datagram, and makes use of soft state, thus providing the efficiency of session-oriented schemes. We have implemented an instantiation for IP in the 4.4BSD kernel, and we provide a description of our implementation along with performance results.",
+    "authors": [
+        {"name": "Suvo Mittra", "email": "suvo@cs.stanford.edu", "affiliation": "Stanford University", "contact": true},
+        {"name": "Thomas Y.C. Woo", "email": "woo@research.bell-labs.com", "affiliation": "Bell Laboratories"}
+    ],
+    "submission": {"content": "%PDF-whatever19"},
+    "submitted": true
+},
+{
+    "_id_": 20,
+    "title": "Best-Effort versus Reservations: A Simple Comparative Analysis",
+    "abstract": "Using a simple analytical model, this paper addresses the following question: Should the Internet retain its best-effort-only architecture, or should it adopt one that is reservation-capable? We characterize the differences between reservation-capable and best-effort-only networks in terms of application performance and total welfare. Our analysis does not yield a definitive answer to the question we pose, since it would necessarily depend on unknowable factors such as the future cost of network bandwidth and the nature of the future traffic load. However, our model does reveal some interesting phenomena. First, in some circumstances, the amount of incremental bandwidth needed to make a best-effort-only network perform as well as a reservation capable one diverges as capacity increases. Second, in some circumstances reservation-capable networks retain significant advantages over best-effort-only networks, no matter how cheap bandwidth becomes. Lastly, we find bounds on the maximum performance advantage a reservation-capable network can achieve over best effort architectures.",
+    "authors": [
+        {"name": "Lee Breslau", "email": "breslau@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center", "contact": true},
+        {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center"}
+    ],
+    "submission": {"content": "%PDF-whatever20"},
+    "submitted": true
+},
+{
+    "_id_": 21,
+    "title": "Quality of Service Based Routing: A Performance Perspective",
+    "abstract": "Recent studies provide evidence that Quality of Service (QoS) routing can provide increased network utilization compared to routing that is not sensitive to QoS requirements of traffic. However, there are still strong concerns about the increased cost of QoS routing, both in terms of more complex and frequent computations and increased routing protocol overhead. The main goals of this paper are to study these two cost components, and propose solutions that achieve good routing performance with reduced processing cost. First, we identify the parameters that determine the protocol traffic overhead, namely (a) policy for triggering updates, (b) sensitivity of this policy, and (c) clampdown timers that limit the rate of updates. Using simulation, we study the relative significance of these factors and investigate the relationship between routing performance and the amount of update traffic. In addition, we explore a range of design options to reduce the processing cost of QoS routing algorithms, and study their effect on routing performance. Based on the conclusions of these studies, we develop extensions to the basic QoS routing, that can achieve good routing performance with limited update generation rates. The paper also addresses the impact on the results of a number of secondary factors such as topology, high level admission control, and characteristics of network traffic.",
+    "authors": [
+        {"name": "George Apostolopoulos", "affiliation": "University of Maryland"},
+        {"name": "Roch Guérin", "affiliation": "IBM T. J. Watson Research Center"},
+        {"name": "Sanjay Kamat", "email": "sanjay@watson.ibm.com", "affiliation": "IBM T. J. Watson Research Center"},
+        {"name": "Satish K. Tripathi", "email": "tripathi@cs.ucr.edu", "affiliation": "UC Riverside", "contact": true}
+    ],
+    "submission": {"content": "%PDF-whatever21"},
+    "submitted": true
+},
+{
+    "_id_": 22,
+    "title": "Scalable QoS Provision Through Buffer Management",
+    "abstract": "In recent years, a number of link scheduling algorithms have been proposed that greatly improve upon traditional FIFO scheduling in being able to assure rate and delay bounds for individual sessions. However, they cannot be easily deployed in a backbone environ ment with thousands of sessions, as their complexity increases with the number of sessions. In this paper, we propose and analyze an approach that uses a simple buffer management scheme to provide rate guarantees to individual flows (or to a set of flows) multiplexed into a common FIFO queue. We establish the buffer allocation re quirements to achieve these rate guarantees and study the trade-off between the achievable link utilization and the buffer size required with the proposed scheme. The aspect of fair access to excess band width is also addressed, and its mapping onto a buffer allocation rule is investigated. Numerical examples are provided that illus trate the performance of the proposed schemes. Finally, a scalable architecture for QoS provisioning is presented that integrates the proposed buffer management scheme with WFQ scheduling that uses a small number of queues.",
+    "authors": [
+        {"name": "R. Guérin", "email": "guerin@watson.ibm.com", "affiliation": "IBM T. J. Watson Research Center", "contact": true},
+        {"name": "S. Kamat", "email": "sanjay@watson.ibm.com", "affiliation": "IBM T. J. Watson Research Center", "contact": true},
+        {"name": "V. Peris", "email": "vperis@watson.ibm.com", "affiliation": "IBM T. J. Watson Research Center"},
+        {"name": "R. Rajan", "email": "raju@watson.ibm.com", "affiliation": "IBM T. J. Watson Research Center"}
+    ],
+    "submission": {"content": "%PDF-whatever22"},
+    "submitted": true
+},
+{
+    "_id_": 23,
+    "title": "Data networks as cascades: Explaining the multifractal nature of Internet WAN traffic",
+    "abstract": "In apparent contrast to the well-documented self-similar (i.e., monofractal) scaling behavior of measured LAN traffic, recent studies have suggested that measured TCP/IP and ATM WAN traffic exhibits more complex scaling behavior, consistent with multifractals. To bring multifractals into the realm of networking, this paper provides a simple construction based on cascades (also known as multiplicative processes) that is motivated by the protocol hierarchy of IP data networks. The cascade framework allows for a plausible physical explanation of the observed multifractal scaling behavior of data traffic and suggests that the underlying multiplicative structure is a traffic invariant for WAN traffic that co-exists with self-similarity. In particular, cascades allow us to refine the previously observed self-similar nature of data traffic to account for local irregularities in WAN traffic that are typically associated with networking mechanisms operating on small time scales, such as TCP flow control.\n\nTo validate our approach, we show that recent measurements of Internet WAN traffic from both an ISP and a corporate environment are fully consistent with the proposed cascade paradigm and hence with multifractality. We rely on wavelet-based time-scale analysis techniques to visualize and to infer the scaling behavior of the traces, both globally and locally. We also discuss and illustrate with some examples how this cascade-based approach to describing data network traffic suggests novel ways for dealing with networking problems and helps in building intuition and physical understanding about the possible implications of multifractality on issues related to network performance analysis.",
+    "authors": [
+        {"name": "A. Feldmann", "email": "anja@research.att.com", "affiliation": "AT&T Labs—Research", "contact": true},
+        {"name": "A. C. Gilbert", "email": "agilbert@research.att.com", "affiliation": "AT&T Labs—Research"},
+        {"name": "W. Willinger", "email": "walter@research.att.com", "affiliation": "AT&T Labs—Research"}
+    ],
+    "submission": {"content": "%PDF-whatever23"},
+    "submitted": true
+},
+{
+    "_id_": 24,
+    "title": "A Digital Fountain Approach to Reliable Distribution of Bulk Data",
+    "abstract": "The proliferation of applications that must reliably distribute bulk data to a large number of autonomous clients motivates the design of new multicast and broadcast protocols. We de- scribe an ideal, fully scalable protocol for these applications that we call a digital fountain. A digital fountain allows any number of heterogeneous clients to acquire bulk data with optimal efficiency at times of their choosing. Moreover, no feedback channels are needed to ensure reliable delivery, even in the face of high loss rates.\n\nWe develop a protocol that closely approximates a digital fountain using a new class of erasure codes that for large block sizes are orders of magnitude faster than standard erasure codes. We provide performance measurements that demonstrate the feasibility of our approach and discuss the design, implementation and performance of an experimental system.",
+    "authors": [
+        {"name": "John W. Byers", "email": "byers@icsi.berkeley.edu", "affiliation": "UC Berkeley and International Computer Science Institute", "contact": true},
+        {"name": "Michael Luby", "email": "luby@icsi.berkeley.edu", "affiliation": "International Computer Science Institute", "contact": true},
+        {"name": "Michael Mitzenmacher", "email": "michaelm@pa.dec.com", "affiliation": "Digital Systems Research Center"},
+        {"name": "Ashutosh Rege", "email": "rege@icsi.berkeley.edu", "affiliation": "International Computer Science Institute"}
+    ],
+    "submission": {"content": "%PDF-whatever24"},
+    "submitted": true
+},
+{
+    "_id_": 25,
+    "title": "Secure Group Communications Using Key Graphs",
+    "abstract": "Many emerging applications (e.g., teleconference, real-time information services, pay per view, distributed interactive simulation, and collaborative work) are based upon a group communications model, i.e., they require packet delivery from one or more authorized senders to a very large number of authorized receivers. As a result, securing group communications (i.e., providing confidentiality, integrity, and authenticity of messages delivered between group members) will become a critical networking issue. In this paper, we present a novel solution to the scalability problem of group/multicast key management. We formalize the notion of a secure group as a triple (U; K; R) where U denotes a set of users, K a set of keys held by the users, and R a user-key relation. We then introduce key graphs to specify secure groups. For a special class of key graphs, we present three strategies for securely distributing rekey messages after a join/leave, and specify protocols for joining and leaving a secure group. The rekeying strategies and join/leave protocols are implemented in a prototype group key server we have built. We present measurement results from experiments and discuss performance comparisons. We show that our group key management service, using any of the three rekeying strategies, is scalable to large groups with frequent joins and leaves. In particular, the average measured processing time per join/leave increases linearly with the logarithm of group size.",
+    "authors": [
+        {"name": "Chung Kei Wong", "email": "ckwong@cs.utexas.edu", "affiliation": "Department of Computer Sciences, University of Texas at Austin", "contact": true},
+        {"name": "Mohamed Gouda", "email": "gouda@cs.utexas.edu", "affiliation": "Department of Computer Sciences, University of Texas at Austin"},
+        {"name": "Simon S. Lam", "email": "lam@cs.utexas.edu", "affiliation": "Department of Computer Sciences, University of Texas at Austin"}
+    ],
+    "submission": {"content": "%PDF-whatever25"},
+    "submitted": true
+},
+{
+    "_id_": 26,
+    "title": "Achieving bounded fairness for multicast and TCP traffic in the internet",
+    "abstract": "There is an urgent need for effective multicast congestion control algorithms which enable reasonably fair sharing of network resources between multicast and unicast TCP traffic under the current Internet infrastructure. In this paper, we propose a quantitative definition of a type of bounded fairness between multicast and unicast best-effort traffic, termed essentially fair. We also propose a window-based Random Listening Algorithm (RLA) for multicast congestion control. The algorithm is proven to be essentially fair to TCP connections under a restricted topology with equal round-trip times and with phase effects eliminated. The algorithm is also fair to multiple multicast sessions. This paper provides the theoretical proofs and some simulation results to demonstrate that the RLA achieves good performance under various network topologies. These include the performance of a generalization of the RLA algorithm for topologies with different round-trip times.",
+    "authors": [
+        {"name": "Huayan Amy Wang", "email": "whycu@ctr.columbia.edu", "affiliation": "Department of Electrical Engineering, Columbia University", "contact": true},
+        {"name": "Mischa Schwartz", "email": "schwartz@ctr.columbia.edu", "affiliation": "Department of Electrical Engineering, Columbia University"}
+    ],
+    "submission": {"content": "%PDF-whatever26"},
+    "submitted": true
+},
+{
+    "_id_": 27,
+    "title": "The MASC/BGMP Architecture for Inter-domain Multicast Routing",
+    "abstract": "Multicast routing enables efficient data distribution to multiple recipients. However, existing work has concentrated on extending single-domain techniques to wide-area networks, rather than providing mechanisms to realize inter-domain multicast on a global scale in the Internet.\n\nWe describe an architecture for inter-domain multicast routing that consists of two complementary protocols. The Multicast Address-Set Claim (MASC) protocol forms the basis for a hierarchical address allocation architecture. It dynamically allocates to domains multicast address ranges from which groups initiated in the domain get their multicast addresses. The Border-Gateway Multicast Protocol (BGMP), run by the border routers of a domain, constructs inter-domain bidirectional shared trees, while allowing any existing multicast routing protocol to be used within individual domains. The resulting shared tree for a group is rooted at the domain whose address range covers the group's address; this domain is typically the group initiator's domain. We demonstrate the feasibility and performance of these complementary protocols through simulation. This architecture, together with existing protocols operating within each domain, is intended as a framework in which to solve the problems facing the current multicast addressing and routing infrastructure.",
+    "authors": [
+        {"name": "Satish Kumar", "email": "kkumar@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California", "contact": true},
+        {"name": "Pavlin Radoslavov", "email": "pavlin@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+        {"name": "David Thaler", "email": "thalerd@eecs.umich.edu", "affiliation": "University of Michigan"},
+        {"name": "Cengiz Alaettinoğlu", "email": "cengiz@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+        {"name": "Deborah Estrin", "email": "estrin@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California"},
+        {"name": "Mark Handley", "email": "mjh@isi.edu", "affiliation": "Information Sciences Institute, University of Southern California"}
+    ],
+    "submission": {"content": "%PDF-whatever27"},
+    "submitted": true
+},
+{
+    "_id_": 28,
+    "title": "Session Directories and Internet Multicast Address Allocation",
+    "abstract": "A multicast session directory is a mechanism by which users can discover the existence of multicast sessions. In the Mbone, session announcements have also served as multicast address reservations - a dual purpose that is efficient, but which may cause some side-affects as session directories scale.\n\nIn this paper we examine the scaling of multicast address allocation when it is performed by such a multicast session directory. Despite our best efforts to make such an approach scale, this analysis ultimately reveals significant scaling problems, and suggests a new approach to multicast address allocation in the Internet environment.",
+    "authors": [
+        {"name": "Mark Handley", "email": "mjh@isi.edu", "affiliation": "USC Information Sciences Institute", "contact": true}
+    ],
+    "submission": {"content": "%PDF-whatever28"},
+    "submitted": true
+},
+{
+    "_id_": 29,
+    "title": "*Core*-Stateless Fair Queueing: Achieving Approximately Fair Bandwidth Allocations in High Speed Networks",
+    "abstract": "Router mechanisms designed to achieve fair bandwidth allocations, like Fair Queueing, have many desirable properties for congestion control in the Internet. However, such mechanisms usually need to maintain state, manage buffers, and/or perform packet scheduling on a per ow basis, and this complexity may prevent them from being cost-effectively implemented and widely deployed. In this paper, we propose an architecture that significantly reduces this implementation complexity yet still achieves approximately fair bandwidth allocations. We apply this approach to an island of routers { that is, a contiguous region of the network { and we distinguish between edge routers and core routers. Edge routers maintain per ow state; they estimate the incoming rate of each ow and insert a label into each packet header based on this estimate. Core routers maintain no per ow state; they use FIFO packet scheduling augmented by a probabilistic dropping algorithm that uses the packet labels and an estimate of the aggregate traffic at the router. We call the scheme Core-Stateless Fair Queueing. We present simulations and analysis on the performance of this approach, and discuss an alternate approach.",
+    "authors": [
+        {"name": "Ion Stoica", "email": "istoica@cs.cmu.edu", "affiliation": "CMU", "contact": true},
+        {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox PARC"},
+        {"name": "Hui Zhang", "email": "hzhang@cs.cmu.edu", "affiliation": "CMU"}
+    ],
+    "submission": {"content": "%PDF-whatever29"},
+    "submitted": true
+},
+{
+    "_id_": 30,
+    "title": "Uniform versus Priority Dropping for Layered Video",
+    "abstract": "In this paper, we analyze the relative merits of uniform versus priority dropping for the transmission of layered video. We first present our original intuitions about these two approaches, and then investigate the issue more thoroughly through simulations and analysis in which we explicitly model the performance of layered video applications. We compare both their performance characteristics and incentive properties, and find that the performance benefit of priority dropping is smaller than we expected, while uniform dropping has worse incentive properties than we previously believed.",
+    "authors": [
+        {"name": "Sandeep Bajaj", "email": "bajaj@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center"},
+        {"name": "Lee Breslau", "email": "breslau@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center"},
+        {"name": "Scott Shenker", "email": "shenker@parc.xerox.com", "affiliation": "Xerox Palo Alto Research Center", "contact": true}
+    ],
+    "submission": {"content": "%PDF-whatever30"},
+    "submitted": true
 }],
 "assignments_1": "paper,action,email,round\n13,primary,huitema@bellcore.com,R1\n13,primary,chair@_.com,R1\n13,primary,mgbaker@cs.stanford.edu,R2\n12,primary,pfrancis@ntt.jp,R1\n12,primary,christophe.diot@sophia.inria.fr,R1\n12,primary,peter.danzig@usc.edu,R3\n11,primary,jj@cse.ucsc.edu\n11,primary,lixia@cs.ucla.edu\n11,primary,marina@poema.ru\n14,primary,varghese@ccrc.wustl.edu\n14,primary,mjh@isi.edu\n14,primary,rguerin@ibm.com\n15,primary,floyd@ee.lbl.gov\n15,primary,shenker@parc.xerox.com\n15,primary,jon@cs.ucl.ac.uk\n18,primary,estrin@usc.edu\n18,primary,pdruschel@cs.rice.edu\n18,primary,christophe.diot@sophia.inria.fr\n17,primary,pdruschel@cs.rice.edu\n16,primary,jon@cs.ucl.ac.uk\n17,primary,lixia@cs.ucla.edu\n17,primary,mgbaker@cs.stanford.edu\n16,primary,floyd@ee.lbl.gov\n16,primary,chair@_.com\n10,primary,varghese@ccrc.wustl.edu\n10,primary,huitema@bellcore.com\n10,primary,jj@cse.ucsc.edu\n9,primary,marina@poema.ru\n9,primary,pfrancis@ntt.jp\n9,primary,peter.danzig@usc.edu\n4,primary,shenker@parc.xerox.com\n4,primary,mjh@isi.edu\n4,primary,estrin@usc.edu\n3,primary,rguerin@ibm.com\n3,primary,mjh@isi.edu\n3,primary,peter.danzig@usc.edu\n2,primary,pdruschel@cs.rice.edu\n2,primary,chair@_.com\n2,primary,jon@cs.ucl.ac.uk\n1,primary,mgbaker@cs.stanford.edu\n5,primary,floyd@ee.lbl.gov\n6,primary,jj@cse.ucsc.edu\n5,primary,christophe.diot@sophia.inria.fr\n5,primary,lixia@cs.ucla.edu\n6,primary,pfrancis@ntt.jp\n6,primary,shenker@parc.xerox.com\n8,primary,estrin@usc.edu\n8,primary,marina@poema.ru\n7,primary,varghese@ccrc.wustl.edu\n8,primary,huitema@bellcore.com\n7,primary,rguerin@ibm.com\n1,primary,varghese@ccrc.wustl.edu\n1,primary,mjh@isi.edu\n7,primary,lixia@cs.ucla.edu"
 }

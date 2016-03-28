@@ -109,10 +109,10 @@ xassert($user_mgbaker->act_author_view($paper18));
 // simple search
 $pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));
 $j = $pl->text_json("id title");
-xassert_eqq(join(";", array_keys($j)), "1;6;13;15");
+xassert_eqq(join(";", array_keys($j)), "1;6;13;15;24");
 
 // sorting works
-assert_search_papers($user_shenker, "au:berkeley sort:title", "15 13 1 6");
+assert_search_papers($user_shenker, "au:berkeley sort:title", "24 15 13 1 6");
 
 // correct conflict information returned
 $pl = new PaperList(new PaperSearch($user_shenker, "1 2 3 4 5 15-18"),
@@ -328,7 +328,7 @@ assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");
 assert_search_papers($user_chair, "round:R1", "12 13");
 assert_search_papers($user_chair, "round:R1 re:any", "12 13");
-assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18");
+assert_search_papers($user_chair, "round:R1 re:>=0", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
 xassert_assign($Admin, true, "action,paper,user,round\nclearreview,all,huitema,R1\n");
 assert_search_papers($user_chair, "re:huitema", "8 10");
@@ -347,14 +347,14 @@ assert_search_papers($user_chair, "(10-12 THEN re:huitema) THEN 5-6", "10 11 12 
 
 // NOT searches
 assert_search_papers($user_chair, "#fart", "1 2 3 4 5 6 7 8");
-assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18");
-assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18");
+assert_search_papers($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
+assert_search_papers($user_chair, "-#fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
 // Check all tags
-assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18");
+assert_search_papers($user_chair, "#none", "9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 xassert_assign($Admin, false, "paper,tag\n9,~private\n10,~~chair\n");
-assert_search_papers($user_chair, "#none", "11 12 14 15 16 18");
-assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18");
+assert_search_papers($user_chair, "#none", "11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
+assert_search_papers($user_mgbaker, "#none", "3 9 10 11 12 14 15 16 18 19 20 21 22 23 24 25 26 27 28 29 30");
 
 // comment searches
 assert_search_papers($user_chair, "cmt:any", "1");
