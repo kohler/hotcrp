@@ -485,6 +485,9 @@ xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,a
 assert_search_papers($user_chair, "pri:mgbaker", "");
 assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
 
+xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:external"));
+assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
+
 $Conf->check_invariants();
 
 xassert_exit();
