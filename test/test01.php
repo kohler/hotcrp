@@ -442,6 +442,49 @@ $review2d = fetch_review(2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 0);
 
+// uploading the current assignment makes no changes
+function get_pcassignment_csv() {
+    global $user_chair;
+    list($header, $texts) = SearchActions::pcassignments_csv_data($user_chair, range(1, 30));
+    $csvg = new CsvGenerator;
+    $csvg->set_header($header);
+    $csvg->set_selection($header);
+    $csvg->add($texts);
+    return $csvg->unparse();
+}
+$old_pcassignments = get_pcassignment_csv();
+xassert(AssignmentSet::run($user_chair, $old_pcassignments));
+xassert_eqq(get_pcassignment_csv(), $old_pcassignments);
+
+// `any` assignments
+assert_search_papers($user_chair, "re:R1", "12 13");
+assert_search_papers($user_chair, "re:R2", "13");
+assert_search_papers($user_chair, "re:R3", "12");
+assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 14 15 16 17 18");
+xassert(AssignmentSet::run($user_chair, "action,paper,email,round\nreview,all,all,R1:none\n"));
+assert_search_papers($user_chair, "re:R1", "");
+assert_search_papers($user_chair, "re:R2", "13");
+assert_search_papers($user_chair, "re:R3", "12");
+assert_search_papers($user_chair, "round:none", "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18");
+xassert(AssignmentSet::run($user_chair, "action,paper,email,round\nreview,1-5,all,none:R1"));
+assert_search_papers($user_chair, "re:R1", "1 2 3 4 5");
+assert_search_papers($user_chair, "re:R2", "13");
+assert_search_papers($user_chair, "re:R3", "12");
+assert_search_papers($user_chair, "round:none", "6 7 8 9 10 11 12 13 14 15 16 17 18");
+
+assert_search_papers($user_chair, "sec:any", "2");
+assert_search_papers($user_chair, "2 AND pri:mgbaker", "");
+xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,any,secondary:primary"));
+assert_search_papers($user_chair, "sec:any", "");
+assert_search_papers($user_chair, "2 AND pri:mgbaker", "2");
+
+assert_search_papers($user_chair, "pri:mgbaker", "1 2 13 17");
+xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any"));
+assert_search_papers($user_chair, "pri:mgbaker", "1 2 13 17");
+xassert(AssignmentSet::run($user_chair, "action,paper,email,reviewtype\nreview,any,mgbaker,any:pcreview"));
+assert_search_papers($user_chair, "pri:mgbaker", "");
+assert_search_papers($user_chair, "re:opt:mgbaker", "1 2 13 17");
+
 $Conf->check_invariants();
 
 xassert_exit();

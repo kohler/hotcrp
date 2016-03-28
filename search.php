@@ -554,42 +554,7 @@ if ($getaction == "contact" && $Me->privChair && SearchActions::any()) {
 
 // download current assignments
 if ($getaction == "pcassignments" && $Me->is_manager() && SearchActions::any()) {
-    // Note that this is chair only
-    $pcm = pcMembers();
-    $round_list = $Conf->round_list();
-    $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
-    $any_round = false;
-    $texts = array();
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => SearchActions::selection(), "assignments" => 1)));
-    while (($prow = PaperInfo::fetch($result, $Me)))
-        if (!$Me->allow_administer($prow)) {
-            $texts[] = array();
-            $texts[] = array("paper" => $prow->paperId,
-                             "action" => "none",
-                             "title" => "You cannot override your conflict with this paper");
-        } else if ($prow->all_reviewers()) {
-            $texts[] = array();
-            $texts[] = array("paper" => $prow->paperId,
-                             "action" => "clearreview",
-                             "email" => "#pc",
-                             "round" => "any",
-                             "title" => $prow->title);
-            foreach ($prow->all_reviewers() as $cid)
-                if (($pc = get($pcm, $cid))
-                    && ($rtype = $prow->review_type($cid)) >= REVIEW_PC) {
-                    $round = $prow->review_round($cid);
-                    $round_name = $round ? $round_list[$round] : "none";
-                    $any_round = $any_round || $round != 0;
-                    $texts[] = array("paper" => $prow->paperId,
-                                     "action" => $reviewnames[$rtype],
-                                     "email" => $pc->email,
-                                     "round" => $round_name);
-                }
-        }
-    $header = array("paper", "action", "email");
-    if ($any_round)
-        $header[] = "round";
-    $header[] = "title";
+    list($header, $texts) = SearchActions::pcassignments_csv_data($Me, SearchActions::selection());
     downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
     exit;
 }
