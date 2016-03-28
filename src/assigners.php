@@ -352,7 +352,7 @@ class Assigner {
         else
             return true;
     }
-    function contact_set() {
+    function contact_set(&$req, AssignmentState $state) {
         return "pc";
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -401,7 +401,7 @@ class NullAssigner extends Assigner {
     function check_paper($user, $prow, AssignmentState $state) {
         return true;
     }
-    function contact_set() {
+    function contact_set(&$req, AssignmentState $state) {
         return false;
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -513,10 +513,12 @@ class ReviewAssigner extends Assigner {
         $this->rtype = $rtype;
         $this->round = $round;
     }
-    function contact_set() {
+    function contact_set(&$req, AssignmentState $state) {
         if ($this->rtype > REVIEW_EXTERNAL)
             return "pc";
-        else if ($this->rtype == 0)
+        else if ($this->rtype == 0
+                 || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
+                     && !$rdata->creator()))
             return "reviewers";
         else
             return false;
@@ -528,7 +530,6 @@ class ReviewAssigner extends Assigner {
         // Conflict allowed if we're not going to assign a new review
         return $this->rtype == 0 || $prow->has_review($contact)
             || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
-                && !$rdata->error
                 && !$rdata->creator());
     }
     static function load_review_state($state) {
@@ -582,13 +583,13 @@ class ReviewAssigner extends Assigner {
             }
             $pcm = pcMembers();
             foreach ($matches as $m) {
-                if ($rdata->newtype)
+                if (!$m["_rtype"] || $rdata->newtype > 0)
                     $m["_rtype"] = $rdata->newtype;
                 if (!$m["_rtype"] || $m["_rtype"] < 0)
                     $m["_rtype"] = REVIEW_EXTERNAL;
-                if ($m["_rtype"] == REVIEW_EXTERNAL && isset($pcm[$m["_cid"]]))
+                if ($m["_rtype"] == REVIEW_EXTERNAL && isset($pcm[$m["cid"]]))
                     $m["_rtype"] = REVIEW_PC;
-                if ($rdata->newround && $rdata->explicitround)
+                if ($rdata->newround !== null && $rdata->explicitround)
                     $m["_round"] = $rdata->newround;
                 $state->add($m);
             }
@@ -679,7 +680,7 @@ class UnsubmitReviewAssigner extends Assigner {
     function __construct($pid, $contact) {
         parent::__construct("unsubmitreview", $pid, $contact);
     }
-    function contact_set() {
+    function contact_set(&$req, AssignmentState $state) {
         return "reviewers";
     }
     function allow_special_contact($cclass, &$req, AssignmentState $state) {
@@ -1460,7 +1461,7 @@ class AssignmentSet {
                 return $ret->contacts();
         }
         if (($special === "ext" || $special === "external")
-            && $assigner->contact_set() === "reviewers") {
+            && $assigner->contact_set($req, $this->astate) === "reviewers") {
             $ret = array();
             foreach ($this->reviewer_set() as $u)
                 if (!$u->is_pc_member())
@@ -1473,7 +1474,7 @@ class AssignmentSet {
             return array($contact);
 
         // check PC list
-        $cset = $assigner->contact_set();
+        $cset = $assigner->contact_set($req, $this->astate);
         if ($cset === "pc")
             $cset = pcMembers();
         else if ($cset === "reviewers")
