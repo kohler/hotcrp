@@ -1574,9 +1574,9 @@ class AssignmentSet {
         }
 
         // now parse assignment
-        foreach ($lines as $linereq) {
+        foreach ($lines as $i => $linereq) {
             $this->astate->lineno = $linereq[0];
-            if ($linereq[0] % 100 == 0) {
+            if ($i % 100 == 0) {
                 if ($alertf)
                     call_user_func($alertf, $this, $linereq[0], $linereq[1]);
                 set_time_limit(30);

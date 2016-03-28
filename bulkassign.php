@@ -31,10 +31,14 @@ function assignment_defaults() {
 
 $csv_lineno = 0;
 $csv_preparing = false;
+$csv_started = 0;
 function keep_browser_alive($assignset, $lineno, $line) {
-    global $Conf, $csv_lineno, $csv_preparing;
+    global $Conf, $csv_lineno, $csv_preparing, $csv_started;
+    $time = microtime(true);
     $csv_lineno = $lineno;
-    if ($lineno >= 1000) {
+    if (!$csv_started)
+        $csv_started = $time;
+    else if ($time - $csv_started > 1) {
         if (!$csv_preparing) {
             echo "<div id='foldmail' class='foldc fold2o'>",
                 "<div class='fn fx2 merror'>Preparing assignments.<br /><span id='mailcount'></span></div>",
