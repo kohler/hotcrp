@@ -118,10 +118,10 @@ class AssignmentState {
     public function query($q) {
         return $this->query_remove($q, false, null);
     }
-    public function contact_filter($q) {
+    public function make_filter($key, $q) {
         $cf = [];
         foreach ($this->query($q) as $m)
-            $cf[$m["cid"]] = true;
+            $cf[$m[$key]] = true;
         return $cf;
     }
     public function remove($q) {
@@ -363,6 +363,9 @@ class Assigner {
     }
     function load_state(AssignmentState $state) {
     }
+    function paper_filter($contact, &$req, AssignmentState $state) {
+        return null;
+    }
     function contact_filter($pid, &$req, AssignmentState $state) {
         return null;
     }
@@ -479,7 +482,7 @@ class ReviewAssigner_Data {
             $this->oldtype = $rtype;
         $this->explicitround = get($req, "round") !== null;
 
-        $this->creator = !$tmatch && !$rmatch;
+        $this->creator = !$tmatch && !$rmatch && $this->newtype != 0;
     }
     public static function make(&$req, $state, $rtype) {
         if (!isset($req["_review_data"]) || !is_object($req["_review_data"]))
@@ -543,15 +546,20 @@ class ReviewAssigner extends Assigner {
         if ($state->mark_type("review", ["pid", "cid"]))
             self::load_review_state($state);
     }
-    function contact_filter($pid, &$req, AssignmentState $state) {
+    private function make_filter($fkey, $key, $value, &$req, $state) {
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
         if ($rdata->creator())
             return null;
-        else
-            return $state->contact_filter([
-                    "type" => "review", "pid" => $pid,
-                    "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround
-                ]);
+        return $state->make_filter($fkey, [
+                "type" => "review", $key => $value,
+                "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround
+            ]);
+    }
+    function paper_filter($contact, &$req, AssignmentState $state) {
+        return $this->make_filter("pid", "cid", $contact->contactId, $req, $state);
+    }
+    function contact_filter($pid, &$req, AssignmentState $state) {
+        return $this->make_filter("cid", "pid", $pid, $req, $state);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         global $Conf;
@@ -684,8 +692,11 @@ class UnsubmitReviewAssigner extends Assigner {
         if ($state->mark_type("review", ["pid", "cid"]))
             ReviewAssigner::load_review_state($state);
     }
+    function paper_filter($contact, &$req, AssignmentState $state) {
+        return $state->make_filter("pid", ["type" => "review", "cid" => $contact->contactId, "_rsubmitted" => 1]);
+    }
     function contact_filter($pid, &$req, AssignmentState $state) {
-        return $state->contact_filter(["type" => "review", "pid" => $pid, "_rsubmitted" => 1]);
+        return $state->make_filter("cid", ["type" => "review", "pid" => $pid, "_rsubmitted" => 1]);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         global $Conf;
@@ -1631,13 +1642,26 @@ class AssignmentSet {
         $action = strtolower(trim($action));
         if (!($assigner = Assigner::find($action)))
             return $this->error("Unknown action “" . htmlspecialchars($action) . "”");
+        $assigner->load_state($this->astate);
 
-        // clean user parts, fetch papers
+        // clean user parts
         $contacts = $this->lookup_users($req, $assigner);
         if ($contacts === false)
             return false;
+
+        // maybe filter papers
+        if (count($pids) > 20
+            && count($contacts) == 1 && $contacts[0] && $contacts[0]->contactId > 0
+            && ($pf = $assigner->paper_filter($contacts[0], $req, $this->astate))) {
+            $npids = [];
+            foreach ($pids as $p)
+                if (get($pf, $p))
+                    $npids[] = $p;
+            $pids = $npids;
+        }
+
+        // fetch papers
         $this->astate->fetch_prows($pids);
-        $assigner->load_state($this->astate);
 
         // check conflicts and perform assignment
         $any_success = false;
