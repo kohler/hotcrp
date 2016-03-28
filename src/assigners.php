@@ -118,6 +118,12 @@ class AssignmentState {
     public function query($q) {
         return $this->query_remove($q, false, null);
     }
+    public function contact_filter($q) {
+        $cf = [];
+        foreach ($this->query($q) as $m)
+            $cf[$m["cid"]] = true;
+        return $cf;
+    }
     public function remove($q) {
         return $this->query_remove($q, true, null);
     }
@@ -357,6 +363,9 @@ class Assigner {
     }
     function load_state(AssignmentState $state) {
     }
+    function contact_filter($pid, &$req, AssignmentState $state) {
+        return null;
+    }
     function apply($pid, $contact, &$req, AssignmentState $state) {
     }
     function realize(AssignmentItem $item, $cmap, AssignmentState $state) {
@@ -534,6 +543,16 @@ class ReviewAssigner extends Assigner {
         if ($state->mark_type("review", ["pid", "cid"]))
             self::load_review_state($state);
     }
+    function contact_filter($pid, &$req, AssignmentState $state) {
+        $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
+        if ($rdata->creator())
+            return null;
+        else
+            return $state->contact_filter([
+                    "type" => "review", "pid" => $pid,
+                    "_rtype" => $rdata->oldtype, "_round" => $rdata->oldround
+                ]);
+    }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         global $Conf;
 
@@ -664,6 +683,9 @@ class UnsubmitReviewAssigner extends Assigner {
     function load_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"]))
             ReviewAssigner::load_review_state($state);
+    }
+    function contact_filter($pid, &$req, AssignmentState $state) {
+        return $state->contact_filter(["type" => "review", "pid" => $pid, "_rsubmitted" => 1]);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         global $Conf;
@@ -1626,19 +1648,24 @@ class AssignmentSet {
                 $this->error("Paper $p does not exist");
                 continue;
             }
+
             $err = $assigner->check_paper($this->contact, $prow, $this->astate);
             if (!$err || is_string($err)) {
                 if ($pfield_straight && is_string($err))
                     $this->error($err);
                 continue;
             }
+
             $this->encounter_order[$p] = $p;
+            $cf = $assigner->contact_filter($p, $req, $this->astate);
 
             foreach ($contacts as $contact) {
-                if ($contact && get($contact, "contactId") > 0
-                    && !$this->astate->override
-                    && $prow->has_conflict($contact)
-                    && !$assigner->allow_conflict($prow, $contact, $req, $this->astate))
+                if ($cf && $contact && !get($cf, $contact->contactId))
+                    /* skip */;
+                else if ($contact && $contact->contactId > 0
+                         && !$this->astate->override
+                         && $prow->has_conflict($contact)
+                         && !$assigner->allow_conflict($prow, $contact, $req, $this->astate))
                     $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p.");
                 else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                     $this->error($err);
