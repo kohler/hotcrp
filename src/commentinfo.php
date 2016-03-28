@@ -92,10 +92,9 @@ class CommentInfo {
         $o = $is_author ? $cr->authorOrdinal : $cr->ordinal;
         if (self::commenttype_needs_ordinal($cr->commentType) && $o)
             return ($is_author ? "cA" : "c") . $o;
-        else if ($cr->commentType & COMMENTTYPE_RESPONSE) {
-            $rname = $cr->commentRound ? $Conf->resp_round_name($cr->commentRound) : "";
-            return $rname . "response";
-        } else
+        else if ($cr->commentType & COMMENTTYPE_RESPONSE)
+            return $Conf->resp_round_text($cr->commentRound) . "response";
+        else
             return "cx" . $cr->commentId;
     }
 

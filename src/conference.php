@@ -1369,9 +1369,8 @@ class Conf {
 
 
     function echoScript($script = "") {
+        Ht::stash_script($script);
         echo Ht::take_stash();
-        if ($script)
-            echo "<script>", $script, "</script>";
     }
 
     function footerScript($script, $uniqueid = null) {

@@ -299,6 +299,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     global $Conf, $Me;
     $conflictType = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
+    $any_comments = false;
     $admin = $Me->can_administer($prow);
     $xsep = ' <span class="barsep">·</span> ';
 
@@ -349,8 +350,10 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 }
                 $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
             }
-        if (count($cids) > 0)
+        if (count($cids) > 0) {
             $pret = '<div class="revnotes"><a href="#' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nw">' . join(',</span> <span class="nw">', $cnames) . "</span></div>";
+            $any_comments = true;
+        }
     }
 
     $t = "";
@@ -404,6 +407,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $x = '<a href="#cnew" onclick="return papercomment.edit_new()" class="xx">'
             . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
+        $any_comments = true;
     }
 
     // new response
@@ -425,6 +429,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $what . ($i ? " $rname" : "") . ' response</u></a>';
             $t .= ($t === "" ? "" : $xsep) . $x;
+            $any_comments = true;
         }
 
     // override conflict
@@ -436,6 +441,9 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $x = "You can’t override your conflict because this paper has an administrator.";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
+
+    if ($any_comments)
+        CommentInfo::echo_script($prow);
 
     if (($list = SessionList::active()) && ($pret || $t))
         return '<div class="has_hotcrp_list" data-hotcrp-list="' . $list->listno . '">'
