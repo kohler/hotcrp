@@ -81,9 +81,9 @@ if ($_GET["fn"] === "jserror") {
         if (isset($_SERVER["REMOTE_ADDR"]))
             $suffix .= ", host " . $_SERVER["REMOTE_ADDR"];
         error_log("JS error: $url$errormsg$suffix");
-        if (isset($_REQUEST["stack"])) {
+        if (($stacktext = req("stack"))) {
             $stack = array();
-            foreach (explode("\n", $_REQUEST["stack"]) as $line) {
+            foreach (explode("\n", $stacktext) as $line) {
                 $line = trim($line);
                 if ($line === "" || $line === $errormsg || "Uncaught $line" === $errormsg)
                     continue;
