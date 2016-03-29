@@ -3155,11 +3155,11 @@ class Contact {
             $q = "update PaperReview set reviewType=$type, reviewRound=$round";
             if (!$rrow->reviewSubmitted)
                 $q .= ", reviewNeedsSubmit=1";
-            $q .= " where reviewId=$rrow->reviewId";
+            $q .= " where reviewId=$reviewId";
         } else if ($type <= 0 && $rrow && $rrow->reviewType)
-            $q = "delete from PaperReview where reviewId=$rrow->reviewId";
+            $q = "delete from PaperReview where reviewId=$reviewId";
         else
-            return $rrow ? $rrow->reviewId : 0;
+            return $reviewId;
 
         if (!($result = Dbl::qe_raw($q)))
             return false;
@@ -3205,7 +3205,8 @@ class Contact {
         if ($direction > 0) {
             Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$pid and reviewType=" . REVIEW_SECONDARY . " and contactId=$cid and reviewSubmitted is null and reviewNeedsSubmit=1");
         } else if ($direction <= 0) {
-            $row = Dbl::fetch_first_row("select count(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted), count(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid");
+            $row = Dbl::fetch_first_row("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid");
+            error_log(var_export($row, true));
             if ($row && $row[0]) {
                 $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
                 if ($direction == 0 || $rns != 0)
