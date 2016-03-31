@@ -506,5 +506,5 @@ if ((@include "$ConfSitePATH/conf/mailtemplate-local.php") !== false
     || (@include "$ConfSitePATH/conf/mailtemplate-local.inc") !== false
     || (@include "$ConfSitePATH/Code/mailtemplate-local.inc") !== false)
     /* do nothing */;
-if (@$Opt["mailtemplate_include"])
+if (isset($Opt["mailtemplate_include"]) && $Opt["mailtemplate_include"])
     read_included_options($ConfSitePATH, $Opt["mailtemplate_include"]);
