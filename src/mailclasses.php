@@ -163,6 +163,15 @@ class MailRecipients {
             && $this->type !== "all";
     }
 
+    function combination_type($paper_sensitive) {
+        if (preg_match('/\A(?:pc|pc:.*|(?:|unc|new)pcrev|lead|shepherd)\z/', $this->type))
+            return 2;
+        else if ($paper_sensitive)
+            return 1;
+        else
+            return 0;
+    }
+
     function query($paper_sensitive) {
         global $Conf;
         $cols = array();

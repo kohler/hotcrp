@@ -3,8 +3,15 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class HotCRPMailer extends Mailer {
+class HotCRPMailPreparation extends MailPreparation {
+    public $paperId = -1;
+    public $conflictType = null;
+    public $paper_expansions = 0;
+    public $combination_type = 0;
+    public $fake = false;
+}
 
+class HotCRPMailer extends Mailer {
     protected $permissionContact = null;
     protected $contacts = array();
 
@@ -14,6 +21,7 @@ class HotCRPMailer extends Mailer {
     protected $comment_row = null;
     protected $newrev_since = false;
     protected $no_send = false;
+    public $combination_type = false;
 
     protected $_tagger = null;
     protected $_statistics = null;
@@ -26,7 +34,7 @@ class HotCRPMailer extends Mailer {
     }
 
     static private function make_reviewer_contact($x) {
-        return (object) array("email" => @$x->reviewEmail, "firstName" => @$x->reviewFirstName, "lastName" => @$x->reviewLastName);
+        return (object) ["email" => get($x, "reviewEmail"), "firstName" => get($x, "reviewFirstName"), "lastName" => get($x, "reviewLastName")];
     }
 
     function reset($recipient = null, $row = null, $rest = array()) {
@@ -34,8 +42,7 @@ class HotCRPMailer extends Mailer {
         parent::reset($recipient, $rest);
         $this->permissionContact = get($rest, "permissionContact", $recipient);
         foreach (array("requester", "reviewer", "other") as $k)
-            if (($v = get($rest, $k . "_contact")))
-                $this->contacts[$k] = $v;
+            $this->contacts[$k] = get($rest, $k . "_contact");
         $this->row = $row;
         foreach (array("rrow", "reviewNumber", "comment_row", "newrev_since") as $k)
             $this->$k = get($rest, $k);
@@ -44,9 +51,9 @@ class HotCRPMailer extends Mailer {
         if (get($rest, "no_send"))
             $this->no_send = true;
         // Infer reviewer contact from rrow/comment_row
-        if (!@$this->contacts["reviewer"] && $this->rrow && @$this->rrow->reviewEmail)
+        if (!$this->contacts["reviewer"] && $this->rrow && get($this->rrow, "reviewEmail"))
             $this->contacts["reviewer"] = self::make_reviewer_contact($this->rrow);
-        else if (!@$this->contacts["reviewer"] && $this->comment_row && @$this->comment_row->reviewEmail)
+        else if (!$this->contacts["reviewer"] && $this->comment_row && get($this->comment_row, "reviewEmail"))
             $this->contacts["reviewer"] = self::make_reviewer_contact($this->comment_row);
         // Do not put passwords in email that is cc'd elsewhere
         if ((!$Me || !$Me->privChair || get($Opt, "chairHidePasswords"))
@@ -59,12 +66,12 @@ class HotCRPMailer extends Mailer {
     // expansion helpers
     private function _expand_reviewer($type, $isbool) {
         global $Conf;
-        if (!($c = @$this->contacts["reviewer"]))
+        if (!($c = $this->contacts["reviewer"]))
             return false;
         if ($this->row
             && $this->rrow
             && $Conf->is_review_blind($this->rrow)
-            && !@$this->permissionContact->privChair
+            && !get($this->permissionContact, "privChair")
             && (!isset($this->permissionContact->can_view_review_identity)
                 || !$this->permissionContact->can_view_review_identity($this->row, $this->rrow, false))) {
             if ($isbool)
@@ -155,8 +162,8 @@ class HotCRPMailer extends Mailer {
     function infer_user_name($r, $contact) {
         // If user hasn't entered a name, try to infer it from author records
         if ($this->row && $this->row->paperId > 0) {
-            $e1 = (string) @$contact->email;
-            $e2 = (string) @$contact->preferredEmail;
+            $e1 = get_s($contact, "email");
+            $e2 = get_s($contact, "preferredEmail");
             foreach ($this->row->author_list() as $au)
                 if (($au->firstName || $au->lastName) && $au->email
                     && (strcasecmp($au->email, $e1) == 0
@@ -210,14 +217,14 @@ class HotCRPMailer extends Mailer {
             return $this->_statistics[1];
 
         if ($what == "%CONTACTDBDESCRIPTION%")
-            return @$Opt["contactdb_description"] ? : "HotCRP";
+            return get($Opt, "contactdb_description") ? : "HotCRP";
 
         if (preg_match('/\A%(OTHER|REQUESTER|REVIEWER)(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             if ($m[1] === "REVIEWER") {
                 $x = $this->_expand_reviewer($m[2], $isbool);
                 if ($x !== false || $isbool)
                     return $x;
-            } else if (($c = @$this->contacts[strtolower($m[1])]))
+            } else if (($c = $this->contacts[strtolower($m[1])]))
                 return $this->expand_user($c, $m[2]);
             else if ($isbool)
                 return false;
@@ -235,8 +242,10 @@ class HotCRPMailer extends Mailer {
             return $this->get_new_assignments($this->recipient);
 
         // rest is only there if we have a real paper
-        if (!$this->row || defval($this->row, "paperId") <= 0)
+        if (!$this->row || get($this->row, "paperId") <= 0)
             return self::EXPANDVAR_CONTINUE;
+        if ($this->preparation)
+            ++$this->preparation->paper_expansions;
 
         if ($what == "%TITLE%")
             return $this->row->title;
@@ -281,7 +290,7 @@ class HotCRPMailer extends Mailer {
                 return $this->expand_user($shep, "EMAIL");
         }
 
-        if ($what == "%REVIEWAUTHOR%" && @$this->contacts["reviewer"])
+        if ($what == "%REVIEWAUTHOR%" && $this->contacts["reviewer"])
             return $this->_expand_reviewer("CONTACT", $isbool);
         if ($what == "%REVIEWS%")
             return $this->get_reviews();
@@ -315,6 +324,8 @@ class HotCRPMailer extends Mailer {
             }
         }
 
+        if ($this->preparation)
+            --$this->preparation->paper_expansions;
         return self::EXPANDVAR_CONTINUE;
     }
 
@@ -345,21 +356,28 @@ class HotCRPMailer extends Mailer {
         return $e;
     }
 
-    function decorate_preparation($prep) {
-        $prep->paperId = -1;
-        $prep->conflictType = false;
-        if ($this->row && defval($this->row, "paperId") > 0) {
+    function create_preparation() {
+        $prep = new HotCRPMailPreparation;
+        if ($this->row && get($this->row, "paperId") > 0) {
             $prep->paperId = $this->row->paperId;
             $prep->conflictType = $this->row->has_author($this->recipient);
         }
+        $prep->combination_type = $this->combination_type;
+        return $prep;
     }
 
     static function preparation_differs($prep1, $prep2) {
-        return parent::preparation_differs($prep1, $prep2)
-            || ($prep1->paperId != $prep2->paperId
+        if (parent::preparation_differs($prep1, $prep2)
+            || $prep1->combination_type != $prep2->combination_type)
+            return true;
+        // allow cross-paper combination in `combination_type 2` (e.g. "pc")
+        if ($prep1->combination_type == 2 && !$prep1->paper_expansions && !$prep2->paper_expansions)
+            return false;
+        return (($prep1->paperId != $prep2->paperId
+                 || $prep1->combination_type == 0)
                 && (count($prep1->to) != 1 || count($prep2->to) != 1
                     || $prep1->to[0] !== $prep2->to[0]))
-            || ($prep1->conflictType != $prep2->conflictType);
+            || $prep1->conflictType != $prep2->conflictType;
     }
 
 
@@ -371,7 +389,7 @@ class HotCRPMailer extends Mailer {
         if (defval($recipient, "disabled"))
             return null;
         $mailer = new HotCRPMailer($recipient, $row, $rest);
-        if (($checkf = @$rest["check_function"])
+        if (($checkf = get($rest, "check_function"))
             && !call_user_func($checkf, $recipient, $mailer->row, $mailer->rrow))
             return null;
         return $mailer->make_preparation($template, $rest);

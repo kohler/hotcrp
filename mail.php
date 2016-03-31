@@ -311,15 +311,14 @@ class MailSender {
         if (!$mail_differs)
             $this->groupable = true;
         if ($mail_differs || !$this->group) {
-            if (!@$last_prep->fake)
+            if (!$last_prep->fake)
                 $this->send_prep($last_prep);
             $last_prep = $prep;
             $last_prep->contacts = array();
-            $last_prep->paperId = $row->paperId;
             $last_prep->to = array();
         }
 
-        if (@$prep->fake || isset($last_prep->contacts[$row->contactId]))
+        if ($prep->fake || isset($last_prep->contacts[$row->contactId]))
             return false;
         else {
             $last_prep->contacts[$row->contactId] = $row->contactId;
@@ -368,10 +367,9 @@ class MailSender {
             $rest["no_send"] = true;
 
         $mailer = new HotCRPMailer;
-        $fake_prep = (object) array("subject" => "", "body" => "", "to" => array(),
-                                    "paperId" => -1, "conflictType" => null,
-                                    "contactId" => array(), "fake" => 1,
-                                    "headers" => [], "unique_preparation" => false);
+        $mailer->combination_type = $this->recip->combination_type($paper_sensitive);
+        $fake_prep = new HotCRPMailPreparation;
+        $fake_prep->fake = true;
         $last_prep = $fake_prep;
         $nrows_done = 0;
         $nrows_left = edb_nrows($result);

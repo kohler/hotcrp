@@ -15,17 +15,16 @@ else
     define("MAILER_EOL", $Opt["postfixMailer"]);
 
 class MailPreparation {
-    public $subject;
-    public $body;
+    public $subject = "";
+    public $body = "";
     public $preparation_owner = "";
-    public $to;
-    public $sendable;
+    public $to = array();
+    public $sendable = false;
     public $headers = array();
     public $errors = array();
 }
 
 class Mailer {
-
     const EXPAND_BODY = 0;
     const EXPAND_HEADER = 1;
     const EXPAND_EMAIL = 2;
@@ -42,7 +41,7 @@ class Mailer {
     protected $reason = null;
     protected $adminupdate = null;
     protected $notes = null;
-    protected $unique_expansion = false;
+    protected $preparation = null;
     public $capability = null;
 
     protected $expansionType = null;
@@ -171,7 +170,8 @@ class Mailer {
             return Navigation::php_suffix();
         if (preg_match('/\A%(CONTACT|NAME|EMAIL|FIRST|LAST)%\z/', $what, $m)) {
             if ($this->recipient) {
-                $this->unique_expansion = true;
+                if ($this->preparation)
+                    $this->preparation->preparation_owner = $this->recipient->email;
                 return $this->expand_user($this->recipient, $m[1]);
             } else if ($isbool)
                 return false;
@@ -416,6 +416,10 @@ class Mailer {
                 || !preg_match(';\A(?:_.*|example\.(?:com|net|org))\z;i', substr($email, $at + 1)));
     }
 
+    function create_preparation() {
+        return new MailPreparation;
+    }
+
     function make_preparation($template, $rest = array()) {
         global $Conf, $Opt;
 
@@ -428,19 +432,17 @@ class Mailer {
                 $template[$lcfield] = $rest[$lcfield];
 
         // expand the template
-        $this->unique_expansion = false;
+        $prep = $this->preparation = $this->create_preparation();
         $m = $this->expand($template);
+        $this->preparation = null;
 
         $subject = MimeText::encode_header("Subject: ", $m["subject"]);
-        $recipient = $this->recipient;
-
-        $prep = new MailPreparation;
         $prep->subject = substr($subject, 9);
+
         $prep->body = $m["body"];
-        if ($this->unique_expansion)
-            $prep->preparation_owner = $recipient->email;
 
         // look up recipient; use preferredEmail if set
+        $recipient = $this->recipient;
         if (!$recipient || !$recipient->email)
             return Conf::msg_error("no email in Mailer::send");
         if (get($recipient, "preferredEmail")) {
@@ -472,10 +474,8 @@ class Mailer {
 
         if ($prep->errors && !get($rest, "no_error_quit"))
             return false;
-        else {
-            $this->decorate_preparation($prep);
+        else
             return $prep;
-        }
     }
 
     static function preparation_differs($prep1, $prep2) {

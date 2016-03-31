@@ -113,6 +113,7 @@ class SiteLoader {
         "FormulaPaperColumn" => "src/papercolumn.php",
         "JsonSerializable" => "lib/json.php",
         "LoginHelper" => "lib/login.php",
+        "MailPreparation" => "lib/mailer.php",
         "MimeText" => "lib/mailer.php",
         "NumericOrderPaperColumn" => "src/papercolumn.php",
         "ReviewAssigner" => "src/assigners.php",
