@@ -344,7 +344,6 @@ class SettingValues {
             $this->label($name, $text, true),
             "<br />\n";
     }
-
     public function echo_checkbox_row($name, $text, $onchange = null) {
         $x = $this->sv($name);
         echo '<tr><td class="nw">',
@@ -353,6 +352,33 @@ class SettingValues {
             "&nbsp;</td><td>",
             $this->label($name, $text, true),
             "</td></tr>\n";
+    }
+    public function echo_radio_table($name, $varr) {
+        $x = $this->sv($name);
+        if ($x === null || !isset($varr[$x]))
+            $x = 0;
+        echo "<table style=\"margin-top:0.25em\">\n";
+        foreach ($varr as $k => $text) {
+            echo '<tr><td class="nw">',
+                Ht::radio($name, $k, $k == $x, $this->sjs($name, array("id" => "{$name}_{$k}"))),
+                "&nbsp;</td><td>";
+            if (is_array($text))
+                echo $this->label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
+            else
+                echo $this->label($name, $text, true);
+            echo "</td></tr>\n";
+        }
+        echo "</table>\n";
+    }
+    public function render_entry($name, $v, $size = 30, $temptext = "") {
+        $js = ["size" => $size, "placeholder" => $temptext];
+        if (($si = $this->si($name))) {
+            if ($si->size)
+                $js["size"] = $si->size;
+            if ($si->placeholder)
+                $js["placeholder"] = $si->placeholder;
+        }
+        return Ht::entry($name, $v, $this->sjs($name, $js));
     }
 
 
@@ -1636,42 +1662,12 @@ if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
 
-function doRadio($name, $varr) {
-    global $Sv;
-    $x = $Sv->sv($name);
-    if ($x === null || !isset($varr[$x]))
-        $x = 0;
-    echo "<table style=\"margin-top:0.25em\">\n";
-    foreach ($varr as $k => $text) {
-        echo '<tr><td class="nw">', Ht::radio($name, $k, $k == $x, $Sv->sjs($name, array("id" => "{$name}_{$k}"))),
-            "&nbsp;</td><td>";
-        if (is_array($text))
-            echo $Sv->label($name, $text[0], true), "<br /><small>", $text[1], "</small>";
-        else
-            echo $Sv->label($name, $text, true);
-        echo "</td></tr>\n";
-    }
-    echo "</table>\n";
-}
-
-function render_entry($name, $v, $size = 30, $temptext = "") {
-    global $Sv;
-    $js = ["size" => $size, "placeholder" => $temptext];
-    if (($si = Si::get($name))) {
-        if ($si->size)
-            $js["size"] = $si->size;
-        if ($si->placeholder)
-            $js["placeholder"] = $si->placeholder;
-    }
-    return Ht::entry($name, $v, $Sv->sjs($name, $js));
-}
-
 function doTextRow($name, $text, $v, $size = 30,
                    $capclass = "lcaption", $tempText = "") {
     global $Conf, $Sv;
     $nametext = (is_array($text) ? $text[0] : $text);
     echo '<tr><td class="', $capclass, ' nw">', $Sv->label($name, $nametext),
-        '</td><td class="lentry">', render_entry($name, $v, $size, $tempText);
+        '</td><td class="lentry">', $Sv->render_entry($name, $v, $size, $tempText);
     if (is_array($text) && get($text, 2))
         echo $text[2];
     if (is_array($text) && get($text, 1))
@@ -1680,7 +1676,8 @@ function doTextRow($name, $text, $v, $size = 30,
 }
 
 function doEntry($name, $v, $size = 30) {
-    echo render_entry($name, $v, $size);
+    global $Sv;
+    echo $Sv->render_entry($name, $v, $size);
 }
 
 function date_value($name, $temptext, $othername = null) {
@@ -1719,12 +1716,6 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
         $GraceExplanation = true;
     }
     doTextRow($name, $text, unparseGrace($Sv->sv($name)), 15, $capclass, "none");
-}
-
-function doActionArea($top) {
-    echo "<div class='aa'>",
-        Ht::submit("update", "Save changes", array("class" => "bb")),
-        " &nbsp;", Ht::submit("cancel", "Cancel"), "</div>";
 }
 
 
@@ -1827,7 +1818,7 @@ function doSubGroup($sv) {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
-    doRadio("sub_blind", array(Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
+    $sv->echo_radio_table("sub_blind", array(Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
                                Conf::BLIND_NEVER => "No—author names are visible to reviewers",
                                Conf::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
                                Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
@@ -1838,7 +1829,7 @@ function doSubGroup($sv) {
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
 
-    doRadio("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
+    $sv->echo_radio_table("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
 
 
     echo "<div class='g'></div><table>\n";
@@ -2139,7 +2130,7 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $default_rname = "(new round)";
     echo '<div class="mg" data-round-number="', $rnum, '"><div>',
         $sv->label($rname, "Round"), ' &nbsp;',
-        render_entry($rname, $nameval, 12, $default_rname);
+        $sv->render_entry($rname, $nameval, 12, $default_rname);
     echo '<div class="inb" style="min-width:7em;margin-left:2em">';
     if ($rnum !== '$' && $review_count)
         echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $Conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
@@ -2164,15 +2155,15 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
     echo '<table style="margin-left:3em">';
     echo '<tr><td>', $sv->label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
-        render_entry("pcrev_soft$entrysuf", date_value("pcrev_soft$dlsuf", "none"), 28, "none"),
+        $sv->render_entry("pcrev_soft$entrysuf", date_value("pcrev_soft$dlsuf", "none"), 28, "none"),
         '</td><td class="lentry">', $sv->label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        render_entry("pcrev_hard$entrysuf", date_value("pcrev_hard$dlsuf", "none"), 28, "none"),
+        $sv->render_entry("pcrev_hard$entrysuf", date_value("pcrev_hard$dlsuf", "none"), 28, "none"),
         '</td></tr>';
     echo '<tr><td>', $sv->label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
-        render_entry("extrev_soft$entrysuf", date_value("extrev_soft$dlsuf", "same as PC", "pcrev_soft$dlsuf"), 28, "same as PC"),
+        $sv->render_entry("extrev_soft$entrysuf", date_value("extrev_soft$dlsuf", "same as PC", "pcrev_soft$dlsuf"), 28, "same as PC"),
         '</td><td class="lentry">', $sv->label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        render_entry("extrev_hard$entrysuf", date_value("extrev_hard$dlsuf", "same as PC", "pcrev_hard$dlsuf"), 28, "same as PC"),
+        $sv->render_entry("extrev_hard$entrysuf", date_value("extrev_hard$dlsuf", "same as PC", "pcrev_hard$dlsuf"), 28, "same as PC"),
         '</td></tr>';
     echo '</table></div>', "\n";
 }
@@ -2188,7 +2179,7 @@ function doRevGroup($sv) {
 
     echo "<div class='g'></div>\n";
     echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
-    doRadio("rev_blind", array(Conf::BLIND_ALWAYS => "Yes—reviews are anonymous",
+    $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes—reviews are anonymous",
                                Conf::BLIND_NEVER => "No—reviewer names are visible to authors",
                                Conf::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
 
@@ -2286,26 +2277,26 @@ function doRevGroup($sv) {
     echo "<h3 class=\"settings g\">Visibility</h3>\n";
 
     echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
+    $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
                                   Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
                                   Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                                   Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
 
     echo "<div class='g'></div>\n";
     echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
-    doRadio("pc_seeblindrev", array(0 => "Yes",
+    $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
                                     1 => "Only after completing a review for the same paper<br /><span class='hint'>This setting also hides reviewer-only comments from PC members who have not completed a review for the same paper.</span>"));
 
     echo "<div class='g'></div>";
     echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
-    doRadio("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
+    $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
 
 
     // Review ratings
     echo "<h3 class=\"settings g\">Review ratings</h3>\n";
 
     echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
-    doRadio("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
+    $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
 }
 
 // Tags and tracks
@@ -2520,8 +2511,8 @@ function doDecGroup($sv) {
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (get($Opt, "allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . render_entry("tag_au_seerev", $sv->sv("tag_au_seerev"), 24);
-    doRadio("au_seerev", $opts);
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", $sv->sv("tag_au_seerev"), 24);
+    $sv->echo_radio_table("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
     // Authors' response
@@ -2570,7 +2561,7 @@ function doDecGroup($sv) {
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
         "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
-    doRadio("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
+    $sv->echo_radio_table("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
                             Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
                             Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
                             Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
@@ -2666,6 +2657,12 @@ echo "</div></div>\n",
     '<div class="leftmenu_content_container"><div class="leftmenu_content">',
     '<div class="leftmenu_body">';
 Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
+
+function doActionArea($top) {
+    echo "<div class='aa'>",
+        Ht::submit("update", "Save changes", array("class" => "bb")),
+        " &nbsp;", Ht::submit("cancel", "Cancel"), "</div>";
+}
 
 echo "<div class='aahc'>";
 doActionArea(true);
