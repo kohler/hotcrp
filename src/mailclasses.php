@@ -28,6 +28,7 @@ class MailRecipients {
         global $Conf, $Now;
         $this->contact = $contact;
         assert(!!$contact->isPC);
+        $any_newpcrev = $any_lead = $any_shepherd = 0;
 
         if ($contact->is_manager()) {
             $this->defsel("s", "Contact authors of submitted papers");
@@ -94,9 +95,10 @@ class MailRecipients {
 	from ($aq) a
 	left join (select paperId any_lead from Paper where timeSubmitted>0 and leadContactId!=0$bcq_manager limit 1) b on (true)
 	left join (select paperId any_shepherd from Paper where timeSubmitted>0 and shepherdContactId!=0$bcq_manager limit 1) c on (true)";
-            $newpcrev_lead_shepherd = Dbl::fetch_first_object($q);
+            if (($row = Dbl::fetch_first_row($q)))
+                list($any_newpcrev, $any_lead, $any_shepherd) = $row;
 
-            if ($newpcrev_lead_shepherd && $newpcrev_lead_shepherd->any_newpcrev)
+            if ($any_newpcrev || $type == "newpcrev")
                 $this->defsel("newpcrev", "PC reviewers with new review assignments");
 
             $this->defsel("extrev", "External reviewers");
@@ -108,10 +110,10 @@ class MailRecipients {
         $this->defsel_nm("uncmyextrev", "Your requested reviewers with incomplete reviews");
 
         $this->sel["pc_group"] = array("optgroup", "Program committee");
-        if ($contact->is_manager() && $newpcrev_lead_shepherd) {
-            if ($newpcrev_lead_shepherd->any_lead)
+        if ($contact->is_manager()) {
+            if ($any_lead || $type == "lead")
                 $this->defsel("lead", "Discussion leads");
-            if ($newpcrev_lead_shepherd->any_shepherd)
+            if ($any_shepherd || $type == "shepherd")
                 $this->defsel("shepherd", "Shepherds");
         }
         $this->defsel_nm("pc", "Program committee");
