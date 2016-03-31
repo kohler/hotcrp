@@ -63,17 +63,17 @@ if (isset(SiteLoader::$api_map[$qreq->fn])) {
     json_exit(["ok" => false, "error" => "Internal error."]);
 }
 
-if ($_GET["fn"] === "jserror") {
-    $url = req("url");
+if ($qreq->fn === "jserror") {
+    $url = $qreq->url;
     if (preg_match(',[/=]((?:script|jquery)[^/&;]*[.]js),', $url, $m))
         $url = $m[1];
-    if (($n = req("lineno")))
+    if (($n = $qreq->lineno))
         $url .= ":" . $n;
-    if (($n = req("colno")))
+    if (($n = $qreq->colno))
         $url .= ":" . $n;
     if ($url !== "")
         $url .= ": ";
-    $errormsg = trim((string) req("error"));
+    $errormsg = trim((string) $qreq->error);
     if ($errormsg) {
         $suffix = "";
         if ($Me->email)
@@ -81,7 +81,7 @@ if ($_GET["fn"] === "jserror") {
         if (isset($_SERVER["REMOTE_ADDR"]))
             $suffix .= ", host " . $_SERVER["REMOTE_ADDR"];
         error_log("JS error: $url$errormsg$suffix");
-        if (($stacktext = req("stack"))) {
+        if (($stacktext = $qreq->stack)) {
             $stack = array();
             foreach (explode("\n", $stacktext) as $line) {
                 $line = trim($line);
@@ -101,9 +101,9 @@ if ($_GET["fn"] === "jserror") {
     json_exit(["ok" => true]);
 }
 
-if ($_GET["fn"] === "setsession") {
-    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_]+)\z/', (string) req("var"), $m)) {
-        $val = req("val");
+if ($qreq->fn === "setsession") {
+    if (preg_match('/\A(foldpaper[abpt]|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display)(|\.[a-zA-Z0-9_]+)\z/', (string) $qreq->var, $m)) {
+        $val = $qreq->val;
         if ($m[2]) {
             $on = !($val !== null && intval($val) > 0);
             displayOptionsSet($m[1], substr($m[2], 1), $on);
@@ -114,8 +114,8 @@ if ($_GET["fn"] === "setsession") {
         json_exit(["ok" => false]);
 }
 
-if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
-    $from = req("from");
+if ($qreq->fn === "events" && $Me->is_reviewer()) {
+    $from = $qreq->from;
     if (!$from || !ctype_digit($from))
         $from = $Now;
     $entries = $Conf->reviewerActivity($Me, $from, 10);
@@ -132,22 +132,22 @@ if ($_GET["fn"] === "events" && $Me->is_reviewer()) {
         }
     json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
                "rows" => $rows]);
-} else if ($_GET["fn"] === "events")
+} else if ($qreq->fn === "events")
     json_exit(["ok" => false]);
 
-if ($_GET["fn"] === "searchcompletion") {
+if ($qreq->fn === "searchcompletion") {
     $s = new PaperSearch($Me, "");
     $Conf->ajaxExit(array("ok" => true, "searchcompletion" => $s->search_completion()));
 }
 
 
 // from here on: `status` and `track` requests
-if ($_GET["fn"] === "track")
-    MeetingTracker::track_api($Me); // may fall through to act like `status`
+if ($qreq->fn === "track")
+    MeetingTracker::track_api($qreq, $Me); // may fall through to act like `status`
 
 $j = $Me->my_deadlines($Conf->paper);
 
-if (req("conflist") && $Me->has_email() && ($cdb = Contact::contactdb())) {
+if ($qreq->conflist && $Me->has_email() && ($cdb = Contact::contactdb())) {
     $j->conflist = array();
     $result = Dbl::ql($cdb, "select c.confid, siteclass, shortName, url
         from Roles r join Conferences c on (c.confid=r.confid)

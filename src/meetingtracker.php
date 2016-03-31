@@ -233,16 +233,16 @@ class MeetingTracker {
                    "tracker_status_at" => $tracker->position_at]);
     }
 
-    static function track_api($user) {
+    static function track_api($qreq, $user) {
         if (!$user->privChair || !check_post())
             json_exit(array("ok" => false));
         // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
-        if ($_REQUEST["track"] === "stop") {
+        if ($qreq->track === "stop") {
             self::clear();
             return;
         }
         // check tracker_start_at to ignore concurrent updates
-        if (($start_at = req("tracker_start_at"))
+        if (($start_at = $qreq->tracker_start_at)
             && ($tracker = self::lookup())) {
             $time = $tracker->position_at;
             if (isset($tracker->start_at))
@@ -251,7 +251,7 @@ class MeetingTracker {
                 return;
         }
         // actually track
-        $args = preg_split('/\s+/', $_REQUEST["track"]);
+        $args = preg_split('/\s+/', $qreq->track);
         if (count($args) >= 2
             && ($xlist = SessionList::lookup($args[1]))
             && str_starts_with($xlist->listid, "p/")) {

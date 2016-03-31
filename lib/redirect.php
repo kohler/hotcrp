@@ -74,6 +74,11 @@ function post_value() {
     return urlencode($sid);
 }
 
-function check_post() {
-    return isset($_REQUEST["post"]) && $_REQUEST["post"] == post_value();
+function check_post($qreq = null) {
+    $pv = post_value();
+    if ($qreq)
+        return isset($qreq->post) && $qreq->post == $pv;
+    else
+        return (isset($_GET["post"]) && $_GET["post"] == $pv)
+            || (isset($_POST["post"]) && $_POST["post"] == $pv);
 }
