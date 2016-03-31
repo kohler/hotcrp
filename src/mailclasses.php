@@ -98,9 +98,7 @@ class MailRecipients {
             if (($row = Dbl::fetch_first_row($q)))
                 list($any_newpcrev, $any_lead, $any_shepherd) = $row;
 
-            if ($any_newpcrev || $type == "newpcrev")
-                $this->defsel("newpcrev", "PC reviewers with new review assignments");
-
+            $this->defsel("newpcrev", "PC reviewers with new review assignments");
             $this->defsel("extrev", "External reviewers");
             $this->defsel("uncextrev", "External reviewers with incomplete reviews");
             $this->sel["rev_group_end"] = array("optgroup");

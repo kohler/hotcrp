@@ -14,6 +14,16 @@ else if ($Opt["postfixMailer"] === true)
 else
     define("MAILER_EOL", $Opt["postfixMailer"]);
 
+class MailPreparation {
+    public $subject;
+    public $body;
+    public $preparation_owner = "";
+    public $to;
+    public $sendable;
+    public $headers = array();
+    public $errors = array();
+}
+
 class Mailer {
 
     const EXPAND_BODY = 0;
@@ -420,14 +430,17 @@ class Mailer {
         // expand the template
         $this->unique_expansion = false;
         $m = $this->expand($template);
-        $prep = (object) array();
+
         $subject = MimeText::encode_header("Subject: ", $m["subject"]);
+        $recipient = $this->recipient;
+
+        $prep = new MailPreparation;
         $prep->subject = substr($subject, 9);
         $prep->body = $m["body"];
-        $prep->unique_preparation = $this->unique_expansion;
+        if ($this->unique_expansion)
+            $prep->preparation_owner = $recipient->email;
 
         // look up recipient; use preferredEmail if set
-        $recipient = $this->recipient;
         if (!$recipient || !$recipient->email)
             return Conf::msg_error("no email in Mailer::send");
         if (get($recipient, "preferredEmail")) {
@@ -457,7 +470,7 @@ class Mailer {
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . MAILER_EOL;
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . MAILER_EOL;
 
-        if (get($prep, "errors") && !get($rest, "no_error_quit"))
+        if ($prep->errors && !get($rest, "no_error_quit"))
             return false;
         else {
             $this->decorate_preparation($prep);
@@ -470,8 +483,7 @@ class Mailer {
             || $prep1->body != $prep2->body
             || get($prep1->headers, "cc") != get($prep2->headers, "cc")
             || get($prep1->headers, "reply-to") != get($prep2->headers, "reply-to")
-            || $prep1->unique_preparation
-            || $prep2->unique_preparation;
+            || $prep1->preparation_owner != $prep2->preparation_owner;
     }
 
     static function merge_preparation_to($prep, $to) {

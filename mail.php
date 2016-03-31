@@ -258,7 +258,7 @@ class MailSender {
 
         // hide passwords from non-chair users
         $show_prep = $prep;
-        if (@$prep->sensitive) {
+        if (get($prep, "sensitive")) {
             $show_prep = $prep->sensitive;
             $show_prep->to = $prep->to;
             self::fix_body($show_prep);
@@ -274,7 +274,7 @@ class MailSender {
                 $vh = '<div style="max-width:60em"><span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span></div>';
             } else if ($k == "Subject")
                 $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
-            else if (($line = @$show_prep->headers[$k])) {
+            else if (($line = get($show_prep->headers, $k))) {
                 $k = substr($line, 0, strlen($k));
                 $vh = htmlspecialchars(MimeText::decode_header(substr($line, strlen($k) + 2)));
             } else
@@ -386,7 +386,7 @@ class MailSender {
             $mailer->reset($contact, $row, $rest);
             $prep = $mailer->make_preparation($template, $rest);
 
-            if (@$prep->errors) {
+            if ($prep->errors) {
                 foreach ($prep->errors as $lcfield => $hline) {
                     $reqfield = ($lcfield == "reply-to" ? "replyto" : $lcfield);
                     $Error[$reqfield] = true;
