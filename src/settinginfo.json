@@ -185,6 +185,10 @@
         "parser": "RespRound_SettingParser",
         "type": "string"
     },
+    "resp_roundname": {
+        "name": "Response name",
+        "type": "tag", "novalue": true
+    },
     "resp_words": {
         "name": "Authors’ response word limit",
         "type": "zint", "default_value": 500
