@@ -58,11 +58,10 @@ class Fexpr {
         return $this->format_;
     }
     public function format_comparator($cmp, $other_expr = null) {
-        global $Opt;
         if ($this->format_
             && $this->format_ instanceof ReviewField
             && $this->format_->option_letter
-            && !@$Opt["smartScoreCompare"]
+            && !opt("smartScoreCompare")
             && (!$other_expr
                 || $other_expr->format() === $this->format_)) {
             if ($cmp[0] == "<")
@@ -404,7 +403,7 @@ class AggregateFexpr extends Fexpr {
             return $state->_compile_my($this->args[0]);
         if (($li = $this->loop_info())) {
             $t = $state->_compile_loop($li[0], $li[1], $this);
-            return @$li[2] ? str_replace("~x~", $t, $li[2]) : $t;
+            return get($li, 2) ? str_replace("~x~", $t, $li[2]) : $t;
         }
         return "null";
     }
@@ -460,7 +459,7 @@ class ScoreFexpr extends SubFexpr {
         $state->queryOptions["scores"][$fid] = $fid;
         $state->datatype |= Fexpr::ASUBREV;
         $scores = $state->define_gvar($fid, "\$prow->viewable_scores(\"$fid\", \$contact, \$forceShow)");
-        return "((int) @{$scores}[" . $state->_rrow_cid() . "] ? : null)";
+        return "((int) get($scores, " . $state->_rrow_cid() . ") ? : null)";
     }
 }
 
@@ -478,8 +477,8 @@ class PrefFexpr extends SubFexpr {
             return "null";
         $state->queryOptions["allReviewerPreference"] = true;
         $state->datatype |= self::APREF;
-        return "@" . $state->_add_review_prefs() . "[" . $state->_rrow_cid()
-            . "][" . ($this->isexpertise ? 1 : 0) . "]";
+        return "get(get(" . $state->_add_review_prefs() . ", " . $state->_rrow_cid()
+            . "), " . ($this->isexpertise ? 1 : 0) . ")";
     }
 }
 
@@ -591,7 +590,7 @@ class RevtypeFexpr extends SubFexpr {
                 return "null";
             $state->queryOptions["reviewTypes"] = true;
             $rt = $state->define_gvar("revtypes", "\$prow->submitted_review_types()");
-            return "@{$rt}[" . $state->_rrow_cid() . "]";
+            return "get($rt, " . $state->_rrow_cid() . ")";
         }
         return $rt;
     }
@@ -614,7 +613,7 @@ class ReviewRoundFexpr extends SubFexpr {
                 return "null";
             $state->queryOptions["reviewRounds"] = true;
             $rt = $state->define_gvar("revrounds", "\$prow->submitted_review_rounds()");
-            return "@{$rt}[" . $state->_rrow_cid() . "]";
+            return "get($rt, " . $state->_rrow_cid() . ")";
         }
         return $rt;
     }
@@ -632,10 +631,10 @@ class ConflictFexpr extends SubFexpr {
         if ($state->looptype == self::LMY)
             $rt = $state->contact->isPC ? "!!\$prow->conflictType" : "false";
         else {
-            $idx = "[" . $state->_rrow_cid() . "]";
-            $rt = "!!@" . $state->_add_conflicts() . $idx;
+            $idx = $state->_rrow_cid();
+            $rt = "!!get(" . $state->_add_conflicts() . ", " . $idx . ")";
             if ($this->ispc)
-                $rt = "(@" . $state->_add_pc() . $idx . " ? $rt : null)";
+                $rt = "(get(" . $state->_add_pc() . ", " . $idx . ") ? $rt : null)";
         }
         return $rt;
     }
@@ -707,14 +706,14 @@ class ReviewerMatchFexpr extends ReviewFexpr {
         return $e;
     }
     public static function check_tagmap($cid, $tag) {
-        if (@($a = self::$tagmap[$tag]) === null) {
+        if (($a = get(self::$tagmap, $tag)) === null) {
             $a = array();
             foreach (pcMembers() as $pc)
                 if (($v = $pc->tag_value($tag)) !== false)
                     $a[$pc->contactId] = $v ? : true;
             self::$tagmap[$tag] = $a;
         }
-        return @$a[$cid] ? : false;
+        return get($a, $cid) ? : false;
     }
 }
 
@@ -732,7 +731,7 @@ class ReviewWordCountFexpr extends SubFexpr {
                 return "null";
             $state->queryOptions["reviewWordCounts"] = true;
             $rt = $state->define_gvar("revwordcounts", "\$prow->submitted_review_word_counts()");
-            return "@{$rt}[" . $state->_rrow_cid() . "]";
+            return "get($rt, " . $state->_rrow_cid() . ")";
         }
         return $rt;
     }
@@ -769,7 +768,7 @@ class FormulaCompiler {
     }
 
     public function check_gvar($gvar) {
-        if (@$this->gvar[$gvar])
+        if (get($this->gvar, $gvar))
             return false;
         else {
             $this->gvar[$gvar] = $gvar;
@@ -781,7 +780,7 @@ class FormulaCompiler {
             $name = '$' . preg_replace_callback(',[^A-Ya-z0-9_],', function ($m) { return "Z" . dechex(ord($m[0])); }, $m[1]);
         else
             $name = $name[0] == "$" ? $name : '$' . $name;
-        if (@$this->gvar[$name] === null) {
+        if (get($this->gvar, $name) === null) {
             $this->gstmt[] = "$name = $expr;";
             $this->gvar[$name] = $name;
         }
@@ -973,12 +972,12 @@ class Formula {
 
     public function __construct(/* $fobj OR $expression, [$allowReview] */) {
         $args = func_get_args();
-        if (is_object(@$args[0])) {
+        if (is_object($args[0])) {
             foreach ($args[0] as $k => $v)
                 $this->$k = $v;
-        } else if (is_string(@$args[0])) {
+        } else if (is_string($args[0])) {
             $this->expression = $args[0];
-            $this->allowReview = !!@$args[1];
+            $this->allowReview = !!get($args, 1);
         }
     }
 
@@ -1162,7 +1161,7 @@ class Formula {
             $t = substr($t, 1);
             $e = $this->_parse_ternary($t, false);
             $t = ltrim($t);
-            if (!$e || @$t[0] !== ")")
+            if (!$e || $t === "" || $t[0] !== ")")
                 return null;
             $t = substr($t, 1);
         } else if ($t[0] === "-" || $t[0] === "+" || $t[0] === "!") {
@@ -1306,8 +1305,8 @@ class Formula {
                 return $e;
 
             $t = $tn;
-            $op = @self::$_oprewrite[$op] ? : $op;
-            if (!($e2 = $this->_parse_expr($t, @self::$_oprassoc[$op] ? $opprec : $opprec + 1, $in_qc)))
+            $op = get(self::$_oprewrite, $op) ? : $op;
+            if (!($e2 = $this->_parse_expr($t, get(self::$_oprassoc, $op) ? $opprec : $opprec + 1, $in_qc)))
                 return null;
             $e = new Fexpr($op, $e, $e2);
             $e->set_landmark($lpos, -strlen($t));
