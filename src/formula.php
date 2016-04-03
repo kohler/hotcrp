@@ -972,10 +972,10 @@ class Formula {
 
     public function __construct(/* $fobj OR $expression, [$allowReview] */) {
         $args = func_get_args();
-        if (is_object($args[0])) {
+        if (count($args) && is_object($args[0])) {
             foreach ($args[0] as $k => $v)
                 $this->$k = $v;
-        } else if (is_string($args[0])) {
+        } else if (count($args) && is_string($args[0])) {
             $this->expression = $args[0];
             $this->allowReview = !!get($args, 1);
         }
