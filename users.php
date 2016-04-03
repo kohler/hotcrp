@@ -279,7 +279,7 @@ if (isset($_REQUEST["scoresort"])
 if ($_REQUEST["t"] == "pc")
     $title = "Program committee";
 else if (str_starts_with($_REQUEST["t"], "#"))
-    $title = "Program committee &nbsp;|&nbsp; <strong>#" . substr($_REQUEST["t"], 1) . "</strong>";
+    $title = "#" . substr($_REQUEST["t"], 1) . " program committee";
 else
     $title = "Users";
 $Conf->header($title, "accounts", actionBar());
