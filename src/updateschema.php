@@ -928,6 +928,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 126
         && Dbl::ql("update ContactInfo set disabled=1, password='' where email regexp '^anonymous[0-9]*\$'"))
         $Conf->update_schema_version(127);
+    if ($Conf->sversion == 127
+        && Dbl::ql("update PaperReview set reviewWordCount=null"))
+        $Conf->update_schema_version(128);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

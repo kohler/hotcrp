@@ -151,6 +151,10 @@ class ReviewField {
             || ($rrow && ($fid = $this->id) && $rrow->$fid);
     }
 
+    public function include_word_count() {
+        return !$this->has_options && $this->view_score >= VIEWSCORE_AUTHORDEC;
+    }
+
     public function analyze() {
         if ($this->has_options && !$this->analyzed) {
             $scores = array_keys($this->options);
@@ -672,7 +676,8 @@ class ReviewForm {
         $wc = 0;
         foreach ($this->forder as $field => $f)
             if ($rrow->$field
-                && (!$f->round_mask || $f->is_round_visible($rrow)))
+                && (!$f->round_mask || $f->is_round_visible($rrow))
+                && $f->include_word_count())
                 $wc += count_words($rrow->$field);
         return $wc;
     }
@@ -706,7 +711,8 @@ class ReviewForm {
                         $fval .= "\n";
                     // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
                     $fval = convert_to_utf8($fval);
-                    $wc += count_words($fval);
+                    if ($f->include_word_count())
+                        $wc += count_words($fval);
                 }
                 if ($rrow && strcmp($rrow->$field, $fval) != 0
                     && strcmp(cleannl($rrow->$field), cleannl($fval)) != 0)

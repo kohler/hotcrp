@@ -616,15 +616,13 @@ class PaperInfo {
 
     private function review_cid_int_array($restriction, $basek, $k) {
         $ck = $restriction ? "reviewContactIds" : "allReviewContactIds";
+        if (property_exists($this, $ck) && !$this->$ck)
+            return array();
         if (!property_exists($this, $k) || !property_exists($this, $ck))
             $this->load_score_array($restriction, [$basek, $k, "contactId", $ck]);
-        if ($this->$k) {
-            $x = array();
-            foreach (explode(",", $this->$k) as $v)
-                $x[] = $v === "" ? null : (int) $v;
-            return array_combine(explode(",", $this->$ck), $x);
-        } else
-            return array();
+        $ka = explode(",", $this->$ck);
+        $va = json_decode("[" . $this->$k . "]", true);
+        return count($ka) == count($va) ? array_combine($ka, $va) : false;
     }
 
     public function review_ordinals() {
@@ -643,8 +641,28 @@ class PaperInfo {
         return $this->review_cid_int_array(true, "reviewType", "reviewTypes");
     }
 
+    private function fix_submitted_review_word_counts() {
+        $result = Dbl::qe("select * from PaperReview where reviewWordCount is null and reviewSubmitted>0 and paperId=$this->paperId");
+        $rf = ReviewForm::get();
+        $qs = [];
+        while (($rrow = edb_orow($result)))
+            $qs[] = "update PaperReview set reviewWordCount=" . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
+        Dbl::free($result);
+        if (count($qs)) {
+            $mresult = Dbl::multi_qe(join(";", $qs));
+            while (($result = $mresult->next()))
+                Dbl::free($result);
+            unset($this->reviewWordCounts);
+            return $this->submitted_review_word_counts();
+        } else
+            return array();
+    }
+
     public function submitted_review_word_counts() {
-        return $this->review_cid_int_array(true, "reviewWordCount", "reviewWordCounts");
+        $a = $this->review_cid_int_array(true, "reviewWordCount", "reviewWordCounts");
+        if ($a === false)
+            $a = $this->fix_submitted_review_word_counts();
+        return $a;
     }
 
     public function review_word_count($cid) {
