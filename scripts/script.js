@@ -3426,9 +3426,12 @@ function suggest(elt, klass, cleanf) {
     }
 
     function move_active(k) {
-        var $sug = tagdiv.self().find(".suggestion"),
+        var $sug = tagdiv.self().find(".suggestion"), pos,
             $active = tagdiv.self().find(".suggestion.active").removeClass("active");
-        if (k == "ArrowUp" || k == "ArrowDown") {
+        if (!$active.length /* should not happen */) {
+            pos = (k == "ArrowUp" || k == "ArrowLeft" ? $sug.length - 1 : 0);
+            $active = $($sug[pos]);
+        } else if (k == "ArrowUp" || k == "ArrowDown") {
             var pos = 0;
             while (pos != $sug.length && $sug[pos] !== $active[0])
                 ++pos;
