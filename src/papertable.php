@@ -2100,6 +2100,7 @@ class PaperTable {
 
         $opt = array("edit" => false);
         $rf = ReviewForm::get();
+        $rf->set_can_view_ratings($prow, $this->all_rrows);
         foreach ($this->viewable_rrows as $rr)
             if ($rr->reviewSubmitted)
                 $rf->show($prow, $this->all_rrows, $rr, $opt);
@@ -2212,6 +2213,7 @@ class PaperTable {
             self::echo_review_clickthrough();
 
         $rf = ReviewForm::get();
+        $rf->set_can_view_ratings($prow, $this->all_rrows);
         $rf->show($prow, $this->all_rrows, $this->editrrow, $opt);
         Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
                          "reviewtext_autogrow");

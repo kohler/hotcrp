@@ -951,7 +951,8 @@ class ReviewForm {
     static private function check_review_author_seen($prow, $rrow, $contact,
                                                      $no_update = false) {
         global $Now;
-        if ($rrow && !@$rrow->reviewAuthorSeen && $contact->act_author_view($prow)
+        if ($rrow && !get($rrow, "reviewAuthorSeen")
+            && $contact->act_author_view($prow)
             && !$contact->is_actas_user()) {
             $rrow->reviewAuthorSeen = $Now;
             if (!$no_update) {
@@ -1382,33 +1383,42 @@ $blind\n";
         return $x;
     }
 
-    private function _showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, &$options) {
+    public function set_can_view_ratings($prow, $rrows) {
+        global $Conf, $Me;
+        $my_rrow = null;
+        foreach ($rrows as $rrow)
+            if (!isset($rrow->numRatings) || $rrow->numRatings == 0)
+                $rrow->canViewRatings = false;
+            else if ($rrow->contactId != $Me->contactId
+                     || $Me->can_administer($prow)
+                     || $Conf->timePCViewAllReviews()
+                     || strpos($rrow->allRatings, ",") !== false)
+                $rrow->canViewRatings = true;
+            else
+                $my_rrow = $rrow;
+        if ($my_rrow) {
+            // Do not show rating counts if rater identity is unambiguous.
+            // See also PaperSearch::_clauseTermSetRating.
+            $nsubraters = 0;
+            $rateset = $Conf->setting("rev_ratings");
+            foreach ($rrows as $rrow)
+                if ($rrow->reviewNeedsSubmit == 0
+                    && $rrow->contactId != $Me->contactId
+                    && ($rateset == REV_RATINGS_PC_EXTERNAL
+                        || ($rateset == REV_RATINGS_PC && $rrow->reviewType > REVIEW_EXTERNAL)))
+                    ++$nsubraters;
+            $my_rrow->canViewRatings = $nsubraters >= 2;
+        }
+    }
+
+    private function _showWebDisplayBody($prow, $rrow, $reviewOrdinal, &$options) {
         global $Conf, $Me;
 
-        // Do not show rating counts if rater identity is unambiguous.
-        // See also PaperSearch::_clauseTermSetRating.
-        $visibleRatings = false;
-        if (isset($rrow->numRatings) && $rrow->numRatings > 0) {
-            if (!isset($options["nsubraters"])) {
-                $options["nsubraters"] = 0;
-                $rateset = $Conf->setting("rev_ratings");
-                foreach ($rrows as $rr)
-                    if ($rr->reviewSubmitted
-                        && ($rateset == REV_RATINGS_PC
-                            ? $rr->reviewType > REVIEW_EXTERNAL
-                            : $rateset == REV_RATINGS_PC_EXTERNAL))
-                        $options["nsubraters"]++;
-            }
-            $visibleRatings = ($rrow->contactId != $Me->contactId
-                    || $Me->can_administer($prow) || $options["nsubraters"] > 2
-                    || $Conf->timePCViewAllReviews()
-                    || strpos($rrow->allRatings, ",") !== false);
-        }
         if ($Me->can_view_review_ratings($prow, $rrow)
-            && ($Me->can_rate_review($prow, $rrow) || $visibleRatings)) {
+            && ($Me->can_rate_review($prow, $rrow) || $rrow->canViewRatings)) {
             $ratesep = "";
             echo "<div class='rev_rating'>";
-            if ($visibleRatings) {
+            if ($rrow->canViewRatings) {
                 $rates = array();
                 foreach (explode(",", $rrow->allRatings) as $r)
                     $rates[$r] = defval($rates, $r, 0) + 1;
@@ -1583,7 +1593,7 @@ $blind\n";
             echo "</span>\n";
 
         if (!$editmode) {
-            $this->_showWebDisplayBody($prow, $rrows, $rrow, $reviewOrdinal, $options);
+            $this->_showWebDisplayBody($prow, $rrow, $reviewOrdinal, $options);
             return;
         }
 
