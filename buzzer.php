@@ -78,7 +78,7 @@ function trackertable_paper_row(hc, idx, paper) {
         pcconf = [];
         for (var i = 0; i < paper.pc_conflicts.length; ++i)
             pcconf.push("<span class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
-        pcconf = "<h6 class=\"plx\">PC conflicts:</h6> " +
+        pcconf = "<em class=\"plx\">PC conflicts:</em> " +
             (pcconf.length ? pcconf.join(", ") : "None");
     }
 
