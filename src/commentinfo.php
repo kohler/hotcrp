@@ -77,6 +77,11 @@ class CommentInfo {
             && ($ctype & COMMENTTYPE_VISIBILITY) != COMMENTTYPE_ADMINONLY;
     }
 
+    private function ordinal_missing($ctype) {
+        return self::commenttype_needs_ordinal($ctype)
+            && !($ctype >= COMMENTTYPE_AUTHOR ? $this->authorOrdinal : $this->ordinal);
+    }
+
     public function unparse_ordinal() {
         $is_author = $this->commentType >= COMMENTTYPE_AUTHOR;
         $o = $is_author ? $this->authorOrdinal : $this->ordinal;
@@ -348,7 +353,9 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
                     && !($ctype & COMMENTTYPE_DRAFT)
                     && ($this->commentType & COMMENTTYPE_DRAFT)))
                 $qa .= ", timeNotified=$Now";
-            if (!$this->timeDisplayed && $displayed)
+            // reset timeDisplayed if you change the comment type
+            if ((!$this->timeDisplayed || $this->ordinal_missing($ctype))
+                && $text !== "" && $displayed)
                 $qa .= ", timeDisplayed=$Now";
             $q = "update $Table set timeModified=$Now$qa, commentType=$ctype, comment=?, commentOverflow=?, commentTags=? where commentId=$this->commentId";
             if (strlen($text) <= 32000)
@@ -369,8 +376,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         $contact->log_activity("Comment $cmtid " . ($text !== "" ? "saved" : "deleted"), $this->prow->$LinkColumn);
 
         // ordinal
-        if (self::commenttype_needs_ordinal($ctype) && $text !== ""
-            && !($ctype >= COMMENTTYPE_AUTHOR ? $this->authorOrdinal : $this->ordinal))
+        if ($text !== "" && $this->ordinal_missing($ctype))
             $this->save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn);
 
         // reload
