@@ -1490,8 +1490,7 @@ $blind\n";
             $rj = $this->unparse_review_json($prow, $rrow, $Me);
             if (get($options, "editmessage"))
                 $rj->message_html = $options["editmessage"];
-            echo '<div id="r', $reviewOrdinal, '-holder"></div>', "\n";
-            $Conf->echoScript("review_form.render_review(\$(\"#r{$reviewOrdinal}-holder\"), " . json_encode($rj) . ");\n");
+            $Conf->echoScript("review_form.add_review(" . json_encode($rj) . ");\n");
             return;
         }
 
@@ -1634,8 +1633,9 @@ $blind\n";
         Ht::stash_script('hiliter_children("form.revcard")', "form_revcard");
     }
 
-    function unparse_review_json($prow, $rrow, $contact) {
+    function unparse_review_json($prow, $rrow, $contact, $include_displayed_at = false) {
         global $Conf;
+        self::check_review_author_seen($prow, $rrow, $contact);
         $rj = array("pid" => $prow->paperId, "rid" => $rrow->reviewId);
         if ($rrow->reviewOrdinal)
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
@@ -1648,6 +1648,8 @@ $blind\n";
             $rj["blind"] = true;
         if ($rrow->reviewSubmitted)
             $rj["submitted"] = true;
+        else if (!$rrow->reviewOrdinal)
+            $rj["draft"] = true;
         if ($contact->can_review($prow, $rrow))
             $rj["editable"] = true;
 
@@ -1664,8 +1666,7 @@ $blind\n";
             $rj["modified_at"] = (int) $rrow->reviewModified;
             $rj["modified_at_text"] = $Conf->printableTime($rrow->reviewModified);
         }
-        $rj["displayed_at"] = 0;
-        if ($rrow->timeDisplayed > 0)
+        if ($include_displayed_at)
             // XXX exposes information, should hide before export
             $rj["displayed_at"] = (int) $rrow->timeDisplayed;
 

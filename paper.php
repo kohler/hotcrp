@@ -615,7 +615,7 @@ if ($paperTable->mode == "edit") {
 } else
     $editable = false;
 
-if (@$Error["author"])
+if (get($Error, "author"))
     $Error["authorInformation"] = true;
 
 $paperTable->initialize($editable, $editable && $useRequest);
@@ -627,13 +627,15 @@ $paperTable->paptabBegin();
 if ($paperTable->mode === "edit")
     $paperTable->paptabEndWithReviewMessage();
 else {
-    if ($paperTable->mode === "re")
+    if ($paperTable->mode === "re") {
         $paperTable->paptabEndWithEditableReview();
-    else if ($paperTable->can_view_reviews())
-        $paperTable->paptabEndWithReviews();
-    else
+        $paperTable->paptabComments();
+    } else if ($paperTable->can_view_reviews())
+        $paperTable->paptabEndWithReviewsAndComments();
+    else {
         $paperTable->paptabEndWithReviewMessage();
-    $paperTable->paptabComments();
+        $paperTable->paptabComments();
+    }
 }
 
 $Conf->footer();

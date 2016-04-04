@@ -2064,7 +2064,44 @@ class PaperTable {
             . "reviews for this paper. (" . $a . "Unprivileged view</a>)";
     }
 
-    function paptabEndWithReviews() {
+    public static function sort_rc_json($a, $b) {
+        // drafts come last
+        if (isset($a->draft) != isset($b->draft)
+            && (isset($a->draft) ? !$a->displayed_at : !$b->displayed_at))
+            return isset($a->draft) ? 1 : -1;
+        // order by displayed_at
+        if ($a->displayed_at != $b->displayed_at)
+            return $a->displayed_at < $b->displayed_at ? -1 : 1;
+        // reviews before comments
+        if (isset($a->rid) != isset($b->rid))
+            return isset($a->rid) ? -1 : 1;
+        if (isset($a->cid))
+            // order by commentId (which generally agrees with ordinal)
+            return $a->cid < $b->cid ? -1 : 1;
+        else {
+            // order by ordinal
+            if (isset($a->ordinal) && isset($b->ordinal)) {
+                $al = strlen($a->ordinal);
+                $bl = strlen($b->ordinal);
+                if ($al != $bl)
+                    return $al < $bl ? -1 : 1;
+                else
+                    return strcmp($a->ordinal, $b->ordinal);
+            }
+            // order by reviewId
+            return $a->rid < $b->rid ? -1 : 1;
+        }
+    }
+
+    private function include_comments() {
+        global $Conf, $Me;
+        return !$this->allreviewslink
+            && (count($this->mycrows)
+                || $Me->can_comment($this->prow, null)
+                || $Conf->time_author_respond());
+    }
+
+    function paptabEndWithReviewsAndComments() {
         global $Conf, $Me;
         $prow = $this->prow;
 
@@ -2098,42 +2135,69 @@ class PaperTable {
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
                 " in plain text</u></a></div></div>\n";
 
-        $opt = array("edit" => false);
         $rf = ReviewForm::get();
         $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
+
+        $rcjs = [];
         foreach ($this->viewable_rrows as $rr)
-            if ($rr->reviewSubmitted)
-                $rf->show($prow, $this->all_rrows, $rr, $opt);
-        foreach ($this->viewable_rrows as $rr)
-            if (!$rr->reviewSubmitted && $rr->reviewModified > 0)
-                $rf->show($prow, $this->all_rrows, $rr, $opt);
+            if ($rr->reviewSubmitted || $rr->reviewModified > 0)
+                $rcjs[] = $rf->unparse_review_json($prow, $rr, $Me, true);
+        if ($this->include_comments())
+            foreach ($this->mycrows as $cr)
+                $rcjs[] = $cr->unparse_json($Me, true);
+        $this->render_rcjs($rcjs);
+    }
+
+    private function has_response($respround) {
+        foreach ($this->mycrows as $cr)
+            if (($cr->commentType & COMMENTTYPE_RESPONSE)
+                && $cr->commentRound == $respround)
+                return true;
+        return false;
+    }
+
+    private function render_rcjs($rcjs) {
+        global $Conf, $Me;
+        usort($rcjs, "PaperTable::sort_rc_json");
+
+        $s = "";
+        $ncmt = 0;
+        foreach ($rcjs as $rcj) {
+            unset($rcj->displayed_at);
+            if (isset($rcj->rid))
+                $s .= "review_form.add_review(" . json_encode($rcj) . ");\n";
+            else {
+                ++$ncmt;
+                $s .= "papercomment.add(" . json_encode($rcj) . ");\n";
+            }
+        }
+
+        if ($this->include_comments()) {
+            if ($Me->can_comment($this->prow, null)) {
+                ++$ncmt;
+                $s .= "papercomment.add({is_new:true,editable:true});\n";
+            }
+            if ($this->prow->has_author($Me))
+                foreach ($Conf->time_author_respond() as $i => $rname) {
+                    if (!$this->has_response($i)) {
+                        ++$ncmt;
+                        $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode($rname) . "},true);\n";
+                    }
+                }
+        }
+
+        if ($ncmt)
+            CommentInfo::echo_script($this->prow);
+        $Conf->echoScript($s);
     }
 
     function paptabComments() {
         global $Conf, $Me;
-        $prow = $this->prow;
-
-        // show comments as well
-        if ((count($this->mycrows) || $Me->can_comment($prow, null)
-             || $Conf->time_author_respond())
-            && !$this->allreviewslink) {
-            $s = "";
-            $needresp = array();
-            if ($prow->has_author($Me))
-                $needresp = $Conf->time_author_respond();
-            foreach ($this->mycrows as $cr) {
-                $cj = $cr->unparse_json($Me);
-                if ($cr->commentType & COMMENTTYPE_RESPONSE)
-                    unset($needresp[(int) @$cr->commentRound]);
-                $s .= "papercomment.add(" . json_encode($cj) . ");\n";
-            }
-            if ($Me->can_comment($prow, null))
-                $s .= "papercomment.add({is_new:true,editable:true});\n";
-            foreach ($needresp as $i => $rname)
-                $s .= "papercomment.add({is_new:true,editable:true,response:" . json_encode($rname) . "},true);\n";
-            echo '<div id="cmtcontainer"></div>';
-            CommentInfo::echo_script($prow);
-            $Conf->echoScript($s);
+        if ($this->include_comments()) {
+            $rcjs = [];
+            foreach ($this->mycrows as $cr)
+                $rcjs[] = $cr->unparse_json($Me, true);
+            $this->render_rcjs($rcjs);
         }
     }
 

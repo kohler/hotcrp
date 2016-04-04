@@ -2398,7 +2398,7 @@ function score_header_tooltips(j) {
     });
 }
 
-function render_review_body(j, rrow) {
+function render_review_body(rrow) {
     var view_order = $.grep(form_order, function (f) {
         return f.options ? f.uid in rrow : !!rrow[f.uid];
     });
@@ -2451,7 +2451,7 @@ function ratereviewform_change() {
            });
 }
 
-function render_review(j, rrow) {
+function add_review(rrow) {
     var hc = new HtmlCollector,
         rid = rrow.ordinal ? rrow.pid + "" + rrow.ordinal : "" + rrow.rid,
         rlink = "r=" + rid + (hotcrp_want_override_conflict ? "&forceShow=1" : ""),
@@ -2540,13 +2540,13 @@ function render_review(j, rrow) {
 
     // BODY
     hc.push('<div class="revcard_body">', '</div>');
-    hc.push_pop(render_review_body(j, rrow));
+    hc.push_pop(render_review_body(rrow));
 
     // complete render
-    j.html(hc.render());
+    var $j = $(hc.render()).appendTo($("#body"));
     if (has_user_rating)
-        j.find(".ratereviewform select").change(ratereviewform_change);
-    score_header_tooltips(j);
+        $j.find(".ratereviewform select").change(ratereviewform_change);
+    score_header_tooltips($j);
 }
 
 return {
@@ -2571,7 +2571,7 @@ return {
             $(this).hover(score_tooltip_enter, tooltip_leave);
         });
     },
-    render_review: render_review
+    add_review: add_review
 };
 })($);
 
@@ -2581,7 +2581,7 @@ window.papercomment = (function ($) {
 var vismap = {rev: "hidden from authors",
               pc: "hidden from authors and external reviewers",
               admin: "shown only to administrators"};
-var cmts = {}, cmtcontainer = null, has_unload = false;
+var cmts = {}, has_unload = false;
 var idctr = 0, resp_rounds = {};
 var detwiddle = new RegExp("^" + (hotcrp_user.cid ? hotcrp_user.cid : "") + "~");
 
@@ -2928,23 +2928,24 @@ function render_cmt_text(textj, cj, chead) {
 function add(cj, editing) {
     var cid = cj_cid(cj), j = $("#" + cid);
     if (!j.length) {
-        if (!cmtcontainer || cj.response || cmtcontainer.hasClass("response")) {
+        var $c = $("#body").children().last();
+        if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
+            var t;
             if (cj.response)
-                cmtcontainer = '<div id="' + cid +
+                t = '<div id="' + cid +
                     '" class="cmtcard cmtid response responseround_' + cj.response +
                     '"><div class="cmtcard_head"><h3>' +
                     (cj.response == "1" ? "Response" : cj.response + " Response") +
                     '</h3></div>';
             else
-                cmtcontainer = '<div class="cmtcard">';
-            cmtcontainer = $(cmtcontainer + '<div class="cmtcard_body"></div></div>');
-            cmtcontainer.appendTo("#cmtcontainer");
+                t = '<div class="cmtcard">';
+            $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo("#body");
         }
         if (cj.response)
             j = $('<div class="cmtg"></div>');
         else
             j = $('<div id="' + cid + '" class="cmtg cmtid"></div>');
-        j.appendTo(cmtcontainer.find(".cmtcard_body"));
+        j.appendTo($c.find(".cmtcard_body"));
     }
     if (editing == null && cj.response && cj.draft && cj.editable)
         editing = true;

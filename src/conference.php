@@ -2517,7 +2517,7 @@ class Conf {
         echo "</div>\n";
 
         $this->headerPrinted = true;
-        echo "</div>\n<div class='body'>\n";
+        echo "</div>\n<div id=\"body\" class=\"body\">\n";
 
         // If browser owns tracker, send it the script immediately
         if ($trackerowner)

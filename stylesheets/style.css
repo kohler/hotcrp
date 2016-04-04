@@ -187,7 +187,7 @@ div.inline {
 
 
 /* body */
-div.body {
+div#body {
 	margin: 0 24px;
 	position: relative;
 	z-index: 3;
