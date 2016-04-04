@@ -900,11 +900,6 @@ class Conf {
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: PaperConflict with zero conflictType");
 
-        // no null submitted reviewWordCounts
-        $any = $this->invariantq("select reviewId from PaperReview where reviewSubmitted>0 and reviewWordCount is null limit 1");
-        if ($any)
-            trigger_error($Opt["dbName"] . " invariant error: submitted PaperReview with null reviewWordCount");
-
         // reviewNeedsSubmit is defined correctly
         $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
             left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
