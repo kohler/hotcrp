@@ -8,7 +8,7 @@ require_once("src/papertable.php");
 require_once("src/reviewtable.php");
 if ($Me->is_empty())
     $Me->escape();
-$_REQUEST["forceShow"] = 1;
+$Me->set_forceShow(true);
 $Error = array();
 // ensure site contact exists before locking tables
 Contact::site_contact();
@@ -50,7 +50,6 @@ function rrow_by_reviewid($rid) {
 }
 
 
-// forceShow
 loadRows();
 
 

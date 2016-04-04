@@ -255,8 +255,7 @@ if (($getaction == "rev" || $getaction == "revz") && SearchActions::any()) {
 
     $texts = array();
     $errors = array();
-    if ($Me->privChair)
-        $_REQUEST["forceShow"] = 1;
+    $Me->set_forceShow(true);
     $rf = ReviewForm::get();
     while (($row = PaperInfo::fetch($result, $Me))) {
         if (($whyNot = $Me->perm_view_review($row, null, null)))
@@ -1161,12 +1160,8 @@ if (defval($_REQUEST, "ajax"))
 
 // set display options, including forceShow if chair
 $pldisplay = $Conf->session("pldisplay");
-if ($Me->privChair) {
-    if (strpos($pldisplay, " force ") !== false)
-        $_REQUEST["forceShow"] = 1;
-    else
-        unset($_REQUEST["forceShow"]);
-}
+if ($Me->privChair)
+    $Me->set_forceShow(strpos($pldisplay, " force ") !== false);
 
 
 // search

@@ -86,6 +86,7 @@ class Contact {
 
     static private $status_info_cache = array();
     static private $contactdb_dblink = false;
+    static private $active_forceShow = false;
 
 
     public function __construct($trueuser = null) {
@@ -259,21 +260,22 @@ class Contact {
 
     // initialization
 
-    function activate() {
+    public function activate() {
         global $Conf, $Opt, $Now;
         $this->activated_ = true;
         $trueuser = get($_SESSION, "trueuser");
         $truecontact = null;
 
         // Handle actas requests
-        if (isset($_REQUEST["actas"]) && $trueuser) {
-            if (is_numeric($_REQUEST["actas"]))
-                $actasemail = self::email_by_id($_REQUEST["actas"]);
-            else if ($_REQUEST["actas"] === "admin")
+        $actas = req("actas");
+        if ($actas && $trueuser) {
+            if (is_numeric($actas))
+                $actasemail = self::email_by_id($actas);
+            else if ($actas === "admin")
                 $actasemail = $trueuser->email;
             else
-                $actasemail = $_REQUEST["actas"];
-            unset($_REQUEST["actas"]);
+                $actasemail = $actas;
+            unset($_GET["actas"], $_POST["actas"], $_REQUEST["actas"]);
             if ($actasemail
                 && strcasecmp($actasemail, $this->email) != 0
                 && (strcasecmp($actasemail, $trueuser->email) == 0
@@ -292,15 +294,15 @@ class Contact {
         }
 
         // Handle invalidate-caches requests
-        if (get($_REQUEST, "invalidatecaches") && $this->privChair) {
-            unset($_REQUEST["invalidatecaches"]);
+        if (req("invalidatecaches") && $this->privChair) {
+            unset($_GET["invalidatecaches"], $_POST["invalidatecaches"], $_REQUEST["invalidatecaches"]);
             $Conf->invalidateCaches();
         }
 
         // If validatorContact is set, use it
         if ($this->contactId <= 0 && get($Opt, "validatorContact")
-            && get($_REQUEST, "validator")) {
-            unset($_REQUEST["validator"]);
+            && req("validator")) {
+            unset($_GET["validator"], $_POST["validator"], $_REQUEST["validator"]);
             if (($newc = self::find_by_email($Opt["validatorContact"]))) {
                 $this->activated_ = false;
                 return $newc->activate();
@@ -340,7 +342,21 @@ class Contact {
                 $Conf->save_session("contactdb_roles", $this->all_roles());
         }
 
+        // Check forceShow
+        self::$active_forceShow = $this->privChair && req("forceShow");
+
         return $this;
+    }
+
+    public function set_forceShow($on) {
+        global $Me;
+        if ($this->contactId == $Me->contactId) {
+            self::$active_forceShow = $this->privChair && $on;
+            if (self::$active_forceShow)
+                $_GET["forceShow"] = $_POST["forceShow"] = $_REQUEST["forceShow"] = 1;
+            else
+                unset($_GET["forceShow"], $_POST["forceShow"], $_REQUEST["forceShow"]);
+        }
     }
 
     public function activate_database_account() {
@@ -557,9 +573,8 @@ class Contact {
     }
 
     function is_admin_force() {
-        return $this->privChair
-            && ($fs = get($_REQUEST, "forceShow"))
-            && $fs != "0";
+        global $Me;
+        return $this->contactId == $Me->contactId && self::$active_forceShow;
     }
 
     function is_pc_member() {
@@ -1631,7 +1646,7 @@ class Contact {
     // permissions policies
 
     private function rights(PaperInfo $prow, $forceShow = null) {
-        global $Conf;
+        global $Conf, $Me;
         $ci = $prow->contact_info($this);
 
         // check first whether administration is allowed
@@ -1647,10 +1662,11 @@ class Contact {
         }
 
         // correct $forceShow
-        if (!$ci->allow_administer)
+        if (!$ci->allow_administer
+            || ($forceShow === null && $this->contactId != $Me->contactId))
             $forceShow = false;
-        else if ($forceShow === null)
-            $forceShow = ($fs = get($_REQUEST, "forceShow")) && $fs != "0";
+        else if ($forceShow === null && $this->contactId == $Me->contactId)
+            $forceShow = self::$active_forceShow;
         else if ($forceShow === "any")
             $forceShow = !!get($ci, "forced_rights");
         if ($forceShow) {

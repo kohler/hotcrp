@@ -2379,8 +2379,7 @@ class Conf {
             $pid = $this->paper->paperId;
         if ($pid)
             Ht::stash_script("hotcrp_paperid=$pid");
-        if ($pid && $Me && $Me->privChair
-            && ($forceShow = get($_REQUEST, "forceShow")) && $forceShow != "0")
+        if ($pid && $Me && $Me->is_admin_force())
             Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
