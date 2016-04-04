@@ -724,7 +724,7 @@ class ReviewWordCountFexpr extends SubFexpr {
     public function compile(FormulaCompiler $state) {
         $state->datatype |= self::ASUBREV;
         if ($state->looptype == self::LMY)
-            $rt = $state->define_gvar("myrevwordcount", "\$prow->review_word_count(\$contact->contactId)");
+            $rt = $state->define_gvar("myrevwordcount", "\$prow->submitted_review_word_count(\$contact->contactId)");
         else {
             $view_score = $state->contact->permissive_view_score_bound();
             if (VIEWSCORE_PC <= $view_score)
@@ -1105,7 +1105,7 @@ class Formula {
             return new ReviewRoundFexpr;
         else if (preg_match('/\A(?:|r|re|rev)reviewer\z/i', $t))
             return new ReviewerFexpr;
-        else if (preg_match('/\A(?:|r|re|rev|review)words\z/i', $t))
+        else if (preg_match('/\A(?:|r|re|rev|review)(?:|au)words\z/i', $t))
             return new ReviewWordCountFexpr;
         else
             return null;
@@ -1121,7 +1121,7 @@ class Formula {
                 $op = $rt == 0 || $rt == REVIEW_PC ? ">=" : "==";
                 $ee = new Fexpr($op, new RevtypeFexpr, new ConstantFexpr($rt, Fexpr::FREVTYPE));
                 $ex = $m[2];
-            } else if (preg_match('/\A(words|type|round|reviewer)' . $tailre, $ex, $m)) {
+            } else if (preg_match('/\A((?:|au)words|type|round|reviewer)' . $tailre, $ex, $m)) {
                 if ($e0)
                     return null;
                 $e0 = $this->_reviewer_base($m[1]);
@@ -1228,10 +1228,10 @@ class Formula {
                    || preg_match('/\Atag(?:v|-?val|-?value)\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
             $e = new TagFexpr($m[1], true);
             $t = $m[2];
-        } else if (preg_match('/\A(r|re|rev|review|r(?:|e|ev|eview)type|(?:|r|re|rev|review)round|reviewer|r(?:|e|ev|eview)words)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A(r|re|rev|review|r(?:|e|ev|eview)type|(?:|r|re|rev|review)round|reviewer|r(?:|e|ev|eview)(?:|au)words)(?::|(?=#))\s*'. self::ARGUMENT_REGEX . '(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_decoration($this->_reviewer_base($m[1]), $m[2]);
             $t = $m[3];
-        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|words)|(?:round|reviewer))\b(.*)\z/is', $t, $m)) {
+        } else if (preg_match('/\A((?:r|re|rev|review)(?:type|round|(?:|au)words)|(?:round|reviewer))\b(.*)\z/is', $t, $m)) {
             $e = $this->_reviewer_base($m[1]);
             $t = $m[2];
         } else if (preg_match('/\A(my|all|any|avg|average|mean|median|quantile|count|min|max|atminof|atmaxof|argmin|argmax|std(?:d?ev(?:_pop|_samp|[_.][ps])?)?|sum|var(?:iance)?(?:_pop|_samp|[_.][ps])?|wavg)\b(.*)\z/is', $t, $m)) {

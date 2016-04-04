@@ -339,7 +339,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "re:primary:fdabek:complete", "“fdabek” has completed a primary review");
     if (($r = meaningful_round_name()))
         _searchQuickrefRow("", "re:$r", "review in round “" . htmlspecialchars($r) . "”");
-    _searchQuickrefRow("", "re:words<100", "has a complete review with less than 100 words");
+    _searchQuickrefRow("", "re:auwords<100", "has a review with less than 100 words in author-visible fields");
     if ($Conf->setting("rev_ratings") != REV_RATINGS_NONE)
         _searchQuickrefRow("", "rate:+", "review was rated positively (“rate:-” and “rate:+>2” also work; can combine with “re:”)");
     _searchQuickrefRow("Comments", "has:cmt", "at least one visible reviewer comment (not including authors’ response)");
@@ -1073,7 +1073,7 @@ scores A, B, and D is A. For instance:</p>
         _alternateRow("", "re:#$retag", "True if reviewer has tag “#{$retag}”");
     _alternateRow("", "re:round", "Review round");
     _alternateRow("", "re:type", "Review type");
-    _alternateRow("", "re:words", "Review word count");
+    _alternateRow("", "re:auwords", "Review word count (author-visible fields only)");
     _alternateRow("Review preferences", "pref", "Review preference");
     _alternateRow("", "prefexp", "Predicted expertise");
     echo "</table>\n";

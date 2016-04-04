@@ -590,30 +590,6 @@ class PaperInfo {
         $this->load_score_array(true, count($args) == 1 ? $args[0] : $args);
     }
 
-    public function all_reviewers() {
-        if (!property_exists($this, "allReviewContactIds"))
-            $this->load_score_array(false, ["contactId", "allReviewContactIds"]);
-        return $this->allReviewContactIds ? explode(",", $this->allReviewContactIds) : [];
-    }
-
-    public function submitted_reviewers() {
-        if (!property_exists($this, "reviewContactIds"))
-            $this->load_score_array(true, ["contactId", "reviewContactIds"]);
-        return $this->reviewContactIds ? explode(",", $this->reviewContactIds) : [];
-    }
-
-    public function viewable_submitted_reviewers($contact, $forceShow) {
-        if (!property_exists($this, "reviewContactIds"))
-            $this->load_scores("contactId", "reviewContactIds");
-        if ($this->reviewContactIds) {
-            if ($contact->can_view_review($this, null, $forceShow))
-                return explode(",", $this->reviewContactIds);
-            else if ($this->review_type($contact))
-                return array($contact->contactId);
-        }
-        return array();
-    }
-
     private function review_cid_int_array($restriction, $basek, $k) {
         $ck = $restriction ? "reviewContactIds" : "allReviewContactIds";
         if (property_exists($this, $ck) && !$this->$ck)
@@ -623,6 +599,34 @@ class PaperInfo {
         $ka = explode(",", $this->$ck);
         $va = json_decode("[" . $this->$k . "]", true);
         return count($ka) == count($va) ? array_combine($ka, $va) : false;
+    }
+
+    public function all_reviewers() {
+        if (!property_exists($this, "allReviewContactIds"))
+            $this->load_score_array(false, ["contactId", "allReviewContactIds"]);
+        return json_decode("[" . ($this->allReviewContactIds ? : "") . "]");
+    }
+
+    public function submitted_reviewers() {
+        if (!property_exists($this, "reviewContactIds"))
+            $this->load_score_array(true, ["contactId", "reviewContactIds"]);
+        return json_decode("[" . ($this->allReviewContactIds ? : "") . "]");
+    }
+
+    public function viewable_submitted_reviewers($contact, $forceShow) {
+        if (!property_exists($this, "reviewContactIds"))
+            $this->load_scores("contactId", "reviewContactIds");
+        if ($this->reviewContactIds) {
+            if ($contact->can_view_review($this, null, $forceShow))
+                return json_decode("[" . $this->reviewContactIds . "]");
+            else if ($this->review_type($contact))
+                return array($contact->contactId);
+        }
+        return array();
+    }
+
+    public function all_review_ids() {
+        return $this->review_cid_int_array(false, "reviewId", "allReviewIds");
     }
 
     public function review_ordinals() {
@@ -641,8 +645,11 @@ class PaperInfo {
         return $this->review_cid_int_array(true, "reviewType", "reviewTypes");
     }
 
-    private function fix_submitted_review_word_counts() {
-        $result = Dbl::qe("select * from PaperReview where reviewWordCount is null and reviewSubmitted>0 and paperId=$this->paperId");
+    private function _review_word_counts($restriction, $basek, $k, $count) {
+        $a = $this->review_cid_int_array($restriction, $basek, $k);
+        if ($a !== false || $count)
+            return $a;
+        $result = Dbl::qe("select * from PaperReview where reviewWordCount is null and paperId=$this->paperId");
         $rf = ReviewForm::get();
         $qs = [];
         while (($rrow = edb_orow($result)))
@@ -652,20 +659,20 @@ class PaperInfo {
             $mresult = Dbl::multi_qe(join(";", $qs));
             while (($result = $mresult->next()))
                 Dbl::free($result);
-            unset($this->reviewWordCounts);
-            return $this->submitted_review_word_counts();
-        } else
-            return array();
+            unset($this->reviewWordCounts, $this->allReviewWordCounts);
+        }
+        return $this->_review_word_counts($restriction, $basek, $k, $count + 1);
     }
 
     public function submitted_review_word_counts() {
-        $a = $this->review_cid_int_array(true, "reviewWordCount", "reviewWordCounts");
-        if ($a === false)
-            $a = $this->fix_submitted_review_word_counts();
-        return $a;
+        return $this->_review_word_counts(true, "reviewWordCount", "reviewWordCounts", 0);
     }
 
-    public function review_word_count($cid) {
+    public function all_review_word_counts() {
+        return $this->_review_word_counts(false, "reviewWordCount", "allReviewWordCounts", 0);
+    }
+
+    public function submitted_review_word_count($cid) {
         return get($this->submitted_review_word_counts(), $cid);
     }
 

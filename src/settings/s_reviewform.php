@@ -12,7 +12,7 @@ function rf_check_options($sv, $fid, $fj) {
     global $Conf;
     if (!isset($sv->req["options_$fid"])) {
         $fj->options = array();
-        return @$fj->position ? false : true;
+        return get($fj, "position") ? false : true;
     }
 
     $text = cleannl($sv->req["options_$fid"]);
@@ -43,7 +43,7 @@ function rf_check_options($sv, $fid, $fj) {
     if (!$letters && count($opts) > 0 && $lowonum != 1)
         return false;
     // must have at least 2 options, but off-form fields don't count
-    if (count($opts) < 2 && @$fj->position)
+    if (count($opts) < 2 && get($fj, "position"))
         return false;
 
     $text = "";
@@ -81,7 +81,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $sn = simplify_whitespace(defval($sv->req, "shortName_$fid", ""));
             if ($sn == "<None>" || $sn == "<New field>" || $sn == "Field name")
                 $sn = "";
-            $pos = cvtint(@$sv->req["order_$fid"]);
+            $pos = cvtint(get($sv->req, "order_$fid"));
             if ($pos > 0 && $sn == ""
                 && trim(defval($sv->req, "description_$fid", "")) == ""
                 && trim(defval($sv->req, "options_$fid", "")) == "")
@@ -91,11 +91,11 @@ class ReviewForm_SettingParser extends SettingParser {
             else if ($pos > 0)
                 $sv->set_error("shortName_$fid", "Missing review field name.");
 
-            $fj->visibility = @$sv->req["authorView_$fid"];
+            $fj->visibility = get($sv->req, "authorView_$fid");
 
             $x = CleanHTML::clean(defval($sv->req, "description_$fid", ""), $err);
             if ($x === false) {
-                if (@$f->description)
+                if (get($f, "description"))
                     $fj->description = $f->description;
                 if ($pos > 0)
                     $sv->set_error("description_$fid", htmlspecialchars($sn) . " description: " . $err);
@@ -116,13 +116,13 @@ class ReviewForm_SettingParser extends SettingParser {
                 $prefixes = array("sv", "svr", "sv-blpu", "sv-publ", "sv-viridis", "sv-viridisr");
                 $class_prefix = defval($sv->req, "option_class_prefix_$fid", "sv");
                 $prefix_index = array_search($class_prefix, $prefixes) ? : 0;
-                if (@$sv->req["option_class_prefix_flipped_$fid"])
+                if (get($sv->req, "option_class_prefix_flipped_$fid"))
                     $prefix_index ^= 1;
                 $fj->option_class_prefix = $prefixes[$prefix_index];
             }
 
             $fj->round_mask = 0;
-            if (($rlist = @$sv->req["round_list_$fid"]))
+            if (($rlist = get($sv->req, "round_list_$fid")))
                 foreach (explode(" ", trim($rlist)) as $round_name)
                     $fj->round_mask |= 1 << $Conf->round_number($round_name, false);
 
@@ -154,6 +154,8 @@ class ReviewForm_SettingParser extends SettingParser {
             if (count($scoreModified))
                 $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
             $Conf->invalidateCaches(array("rf" => true));
+            // reset all word counts in case author visibility changed
+            Dbl::qe("update PaperReview set reviewWordCount=null");
         }
     }
 }

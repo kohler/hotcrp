@@ -447,7 +447,7 @@ class Dbl {
         $x = array();
         while ($result && ($row = $result->fetch_row())) {
             assert(count($row) == 2);
-            $x[(int) $row[0]] = ($row[1] === null ? $row[1] : (int) $row[1]);
+            $x[(int) $row[0]] = ($row[1] === null ? null : (int) $row[1]);
         }
         $result && $result->close();
         return $x;

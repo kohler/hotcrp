@@ -737,6 +737,7 @@ class PaperSearch {
     private $_reviewAdjustError = false;
     private $_ssRecursion = array();
     private $_allow_deleted = false;
+    private $_reviewWordCounts = false;
     public $thenmap = null;
     public $headingmap = null;
     public $highlightmap = null;
@@ -1125,8 +1126,8 @@ class PaperSearch {
                 else
                     $completeness |= ReviewSearchMatcher::INPROGRESS;
                 $qword = $m[2];
-            } else if (preg_match('/\Awords((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
-                $wordcount = CountMatcher::canonicalize($m[1]);
+            } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
+                $wordcount = new CountMatcher($m[1]);
                 $qword = $m[2];
             } else if (preg_match('/\A([A-Za-z0-9]+)' . $tailre, $qword, $m)
                        && (($round = $Conf->round_number($m[1], false))
@@ -2624,8 +2625,6 @@ class PaperSearch {
                 $where[] = $rsm->contact_match_sql("r.contactId");
             if ($rsm->fieldsql)
                 $where[] = $rsm->fieldsql;
-            if ($rsm->wordcountexpr && $Conf->sversion >= 99)
-                $where[] = "reviewWordCount" . $rsm->wordcountexpr;
             $wheretext = "";
             if (count($where))
                 $wheretext = " where " . join(" and ", $where);
@@ -2839,6 +2838,17 @@ class PaperSearch {
     // Check the results of the query, reducing the possibly conservative
     // overestimate produced by the database to a precise result.
 
+    private function _clauseTermCheckWordCount($t, $row, $rrow) {
+        if ($this->_reviewWordCounts === false)
+            $this->_reviewWordCounts = Dbl::fetch_iimap("select reviewId, reviewWordCount from PaperReview");
+        if (!isset($this->_reviewWordCounts[$rrow->reviewId])) {
+            $cid2rid = $row->all_review_ids();
+            foreach ($row->all_review_word_counts($row) as $cid => $rwc)
+                $this->_reviewWordCounts[$cid2rid[$cid]] = $rwc;
+        }
+        return $t->value->wordcountexpr->test($this->_reviewWordCounts[$rrow->reviewId]);
+    }
+
     private function _clauseTermCheckFlags($t, $row) {
         $flags = $t->flags;
         if (($flags & self::F_MANAGER)
@@ -2889,6 +2899,9 @@ class PaperSearch {
                             continue;
                         if (isset($t->value->view_score)
                             && $t->value->view_score <= $this->contact->view_score_bound($row, $rrow))
+                            continue;
+                        if ($t->value->wordcountexpr
+                            && !$this->_clauseTermCheckWordCount($t, $row, $rrow))
                             continue;
                         ++$row->$fieldname;
                     }
