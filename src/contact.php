@@ -574,7 +574,7 @@ class Contact {
 
     function is_admin_force() {
         global $Me;
-        return $this->contactId == $Me->contactId && self::$active_forceShow;
+        return self::$active_forceShow && $this->contactId == $Me->contactId;
     }
 
     function is_pc_member() {
@@ -1662,11 +1662,10 @@ class Contact {
         }
 
         // correct $forceShow
-        if (!$ci->allow_administer
-            || ($forceShow === null && $this->contactId != $Me->contactId))
-            $forceShow = false;
-        else if ($forceShow === null && $this->contactId == $Me->contactId)
+        if ($forceShow === null && $Me && $this->contactId == $Me->contactId)
             $forceShow = self::$active_forceShow;
+        else if (!$ci->allow_administer || $forceShow === null)
+            $forceShow = false;
         else if ($forceShow === "any")
             $forceShow = !!get($ci, "forced_rights");
         if ($forceShow) {
