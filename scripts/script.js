@@ -2374,8 +2374,12 @@ function score_header_tooltip_enter(evt) {
         var fieldj = formj[rv.getAttribute("data-rf")];
         if (fieldj && (fieldj.description || fieldj.options)) {
             var d = "", si, vo;
-            if (fieldj.description)
-                d += "<p>" + fieldj.description + "</p>";
+            if (fieldj.description) {
+                if (/<(?:p|div|table)/i.test(fieldj.description))
+                    d += fieldj.description;
+                else
+                    d += "<p>" + fieldj.description + "</p>";
+            }
             if (fieldj.options) {
                 d += "<div class=\"od\">Choices are:</div>";
                 for (si = 0, vo = fieldj.score_info.value_order();
