@@ -228,6 +228,30 @@
     "sub_banal_data": {
         "internal": true, "type": "string", "storage": "sub_banal"
     },
+    "sub_banal_bodyfontsize": {
+        "name": "PDF format checker minimum body font size",
+        "type": "text", "novalue": true
+    },
+    "sub_banal_bodyleading": {
+        "name": "PDF format checker minimum body leading",
+        "type": "text", "novalue": true
+    },
+    "sub_banal_columns": {
+        "name": "PDF format checker column count",
+        "type": "text", "novalue": true
+    },
+    "sub_banal_pagelimit": {
+        "name": "PDF format checker page limit",
+        "type": "text", "novalue": true
+    },
+    "sub_banal_papersize": {
+        "name": "PDF format checker paper size",
+        "type": "text", "novalue": true
+    },
+    "sub_banal_textblock": {
+        "name": "PDF format checker text block size",
+        "type": "text", "novalue": true
+    },
     "sub_blind": {
         "name": "Submission anonymity",
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 2
