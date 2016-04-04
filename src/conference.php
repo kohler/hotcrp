@@ -1954,8 +1954,7 @@ class Conf {
                 ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail";
         if (isset($selector["ratings"]))
             $q .= ",
-                group_concat(ReviewRating.rating order by ReviewRating.rating desc) as allRatings,
-                count(ReviewRating.rating) as numRatings";
+                group_concat(ReviewRating.rating) as allRatings";
         if (isset($selector["myRating"]))
             $q .= ",
                 MyRating.rating as myRating";
@@ -2364,6 +2363,7 @@ class Conf {
             Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
+        Ht::stash_script("assetsurl=" . json_encode($Opt["assetsUrl"]) . ";");
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;

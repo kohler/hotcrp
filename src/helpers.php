@@ -1171,6 +1171,7 @@ function pc_members_selector_options($include_none, $accept_assignment_prow = nu
 }
 
 function review_type_icon($revtype, $unfinished = null, $title = null) {
+    // see also script.js:review_form
     static $revtypemap = array(-3 => array("&minus;", "Refused"),
                                -2 => array("A", "Author"),
                                -1 => array("C", "Conflict"),

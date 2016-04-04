@@ -118,16 +118,14 @@ class CommentInfo {
         if (!$this->commentId) {
             if (!$contact->can_comment($this->prow, $this))
                 return false;
-            $cj = (object) array("is_new" => true, "editable" => true);
+            $cj = (object) array("pid" => $this->prow->paperId, "is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
                 $cj->response = $Conf->resp_round_name($this->commentRound);
             return $cj;
         }
 
         // otherwise, viewable comment
-        $cj = (object) array("cid" => $this->commentId);
-        if ($contact->can_comment($this->prow, $this))
-            $cj->editable = true;
+        $cj = (object) array("pid" => $this->prow->paperId, "cid" => $this->commentId);
         $cj->ordinal = $this->unparse_ordinal();
         $cj->visibility = self::$visibility_map[$this->commentType & COMMENTTYPE_VISIBILITY];
         if ($this->commentType & COMMENTTYPE_BLIND)
@@ -136,6 +134,8 @@ class CommentInfo {
             $cj->draft = true;
         if ($this->commentType & COMMENTTYPE_RESPONSE)
             $cj->response = $Conf->resp_round_name($this->commentRound);
+        if ($contact->can_comment($this->prow, $this))
+            $cj->editable = true;
 
         // tags
         if ($this->commentTags

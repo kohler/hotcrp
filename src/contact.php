@@ -2502,11 +2502,13 @@ class Contact {
             return true;
     }
 
-    function can_view_review_ratings(PaperInfo $prow, $rrow) {
+    function can_view_review_ratings(PaperInfo $prow = null, $rrow = null) {
         global $Conf;
         $rs = $Conf->setting("rev_ratings");
         if ($rs != REV_RATINGS_PC && $rs != REV_RATINGS_PC_EXTERNAL)
             return false;
+        if (!$prow)
+            return $this->is_reviewer();
         $rights = $this->rights($prow);
         return $this->can_view_review($prow, $rrow, null)
             && ($rights->allow_pc || $rights->allow_review);

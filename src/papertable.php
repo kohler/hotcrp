@@ -2100,7 +2100,7 @@ class PaperTable {
 
         $opt = array("edit" => false);
         $rf = ReviewForm::get();
-        $rf->set_can_view_ratings($prow, $this->all_rrows);
+        $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
         foreach ($this->viewable_rrows as $rr)
             if ($rr->reviewSubmitted)
                 $rf->show($prow, $this->all_rrows, $rr, $opt);
@@ -2213,7 +2213,7 @@ class PaperTable {
             self::echo_review_clickthrough();
 
         $rf = ReviewForm::get();
-        $rf->set_can_view_ratings($prow, $this->all_rrows);
+        $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
         $rf->show($prow, $this->all_rrows, $this->editrrow, $opt);
         Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
                          "reviewtext_autogrow");
@@ -2380,6 +2380,8 @@ class PaperTable {
             }
         $rf = ReviewForm::get();
         $Conf->footerScript("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score)) . ")");
+        if ($Me->can_view_review_ratings())
+            $Conf->footerScript("review_form.set_ratings(" . json_encode($rf->unparse_ratings_json()) . ")");
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")

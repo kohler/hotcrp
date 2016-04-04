@@ -3,7 +3,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 var siteurl, siteurl_postvalue, siteurl_suffix, siteurl_defaults,
-    siteurl_absolute_base,
+    siteurl_absolute_base, assetsurl,
     hotcrp_paperid, hotcrp_list, hotcrp_status, hotcrp_user, hotcrp_pc,
     hotcrp_want_override_conflict;
 
@@ -628,6 +628,14 @@ function hoturl_post(page, options) {
     return hoturl(page, options);
 }
 
+function hoturl_html(page, options) {
+    return escape_entities(hoturl(page, options));
+}
+
+function hoturl_post_html(page, options) {
+    return escape_entities(hoturl_post(page, options));
+}
+
 function url_absolute(url, loc) {
     var x = "", m;
     loc = loc || window.location.href;
@@ -1236,7 +1244,7 @@ function display_main(is_initial) {
         }
 
     if (dlname) {
-        s = "<a href=\"" + escape_entities(hoturl("deadlines")) + "\">" + dlname + "</a> ";
+        s = "<a href=\"" + hoturl_html("deadlines") + "\">" + dlname + "</a> ";
         if (!dltime || dltime < now)
             s += "is NOW";
         else
@@ -1332,7 +1340,8 @@ function tracker_html(mytracker) {
     tracker_has_format = false;
     var t = "";
     if (dl.is_admin) {
-        t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="<div class=\'tooltipmenu\'><div><a class=\'ttmenu\' href=\'' + hoturl("buzzer") + '\' target=\'_blank\'>Discussion status page</a></div></div>"></div>';
+        var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
+        t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="' + escape_entities(dt) + '"></div>';
         t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="trackerlogo"></div>';
@@ -1359,7 +1368,7 @@ function display_tracker() {
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
             e.className = "btn btn-danger hottooltip";
-            e.setAttribute("data-hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
+            e.setAttribute("data-hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
         } else {
             e.className = "btn btn-default hottooltip";
             e.setAttribute("data-hottooltip", "Start meeting tracker");
@@ -2338,7 +2347,12 @@ return render_text;
 
 // reviews
 window.review_form = (function ($) {
-var formj, form_order;
+var formj, ratingsj, form_order;
+var rtype_info = {
+    "-3": ["−" /* &minus; */, "Refused"], "-2": ["A", "Author"],
+    "-1": ["C", "Conflict"], 1: ["E", "External review"],
+    2: ["P", "PC review"], 3: ["2", "Secondary review"], 4: ["1", "Primary review"]
+};
 
 function score_tooltip_enter(evt) {
     var j = $(this), tt = j.data("hotcrp_tooltip");
@@ -2380,7 +2394,7 @@ function score_header_tooltips(j) {
     });
 }
 
-function render_review(j, rrow) {
+function render_review_body(j, rrow) {
     var view_order = $.grep(form_order, function (f) {
         return f.options ? f.uid in rrow : !!rrow[f.uid];
     });
@@ -2417,7 +2431,117 @@ function render_review(j, rrow) {
             t += '<hr class="c" /></div>';
         last_display = display;
     }
-    j.html(t);
+    return t;
+}
+
+function ratereviewform_change() {
+    var $form = $(this).closest("form");
+    $.post($form[0].action + "&ajax=1",
+           $form.serialize(),
+           function (data, status, jqxhr) {
+               var result = "Internal error, please try again later.";
+               if (data && data.result)
+                   result = data.result;
+               $form.find(".result").remove();
+               $form.find("div.inline").append('<span class="result"> &nbsp;<span class="barsep">·</span>&nbsp; ' + data.result + '</span>');
+           });
+}
+
+function render_review(j, rrow) {
+    var hc = new HtmlCollector,
+        rid = rrow.ordinal ? rrow.pid + "" + rrow.ordinal : "" + rrow.rid,
+        rlink = "r=" + rid + (hotcrp_want_override_conflict ? "&forceShow=1" : ""),
+        has_user_rating = false, i, ratekey, selected;
+
+    hc.push('<div class="revcard" id="r' + rid + '" data-rid="' + rrow.rid + '">', '</div>');
+
+    // HEADER
+    hc.push('<div class="revcard_head">', '</div>');
+
+    // edit/text links
+    hc.push('<div class="floatright">', '</div>');
+    if (rrow.editable)
+        hc.push('<a href="' + hoturl_html("review", rlink) + '" class="xx">'
+                + '<img class="b" src="' + assetsurl + 'images/edit.png" alt="[Edit]" />'
+                + '&nbsp;<u>Edit</u></a><br />');
+    hc.push_pop('<a href="' + hoturl_html("review", rlink + "&text=1") + '" class="xx">'
+                + '<img class="b" src="' + assetsurl + 'images/txt.png" alt="[Text]" />'
+                + '&nbsp;<u>Plain text</u></a>');
+
+    hc.push('<h3><a href="' + hoturl_html("review", rlink) + '" class="u">'
+            + 'Review' + (rrow.submitted ? '&nbsp;#' + rid : '') + '</a></h3>');
+
+    // author info
+    var revinfo = [], rtype_text = "";
+    if (rrow.rtype) {
+        rtype_text = ' &nbsp;<span class="rt' + rrow.rtype + (rrow.submitted ? "" : "n") +
+            '" title="' + rtype_info[rrow.rtype][1] + '"><span class="rti">' +
+            rtype_info[rrow.rtype][0] + '</span></span>';
+        if (rrow.round)
+            rtype_text += '&nbsp;<span class="revround">' + escape_entities(rrow.round) + '</span>';
+    }
+    if (rrow.token)
+        revinfo.push('Review token ' + rrow.token + rtype_text);
+    else if (rrow.author && rrow.blind)
+        revinfo.push('[' + rrow.author + ']' + rtype_text);
+    else if (rrow.author)
+        revinfo.push(rrow.author + rtype_text);
+    else if (rtype_text)
+        revinfo.push(rtype_text.substr(7));
+    if (rrow.modified_at)
+        revinfo.push('Updated ' + rrow.modified_at_text);
+    if (revinfo.length)
+        hc.push(' <span class="revinfo">' + revinfo.join(' <span class="barsep">·</span> ') + '</span>');
+
+    // ratings
+    has_user_rating = "user_rating" in rrow;
+    var rateinfo = [];
+    if (rrow.ratings && rrow.ratings.length) {
+        var ratecount = {}, ratetext = [];
+        for (i = 0; i < rrow.ratings.length; ++i) {
+            ratekey = rrow.ratings[i];
+            ratecount[ratekey] = (ratecount[ratekey] || 0) + 1;
+        }
+        for (i = 0; i < ratingsj.order.length; ++i) {
+            ratekey = ratingsj.order[i];
+            if (ratecount[ratekey])
+                ratetext.push(ratecount[ratekey] + " “" + ratingsj[ratekey] + "”");
+        }
+        if (ratetext.length)
+            rateinfo.push('<span class="rev_rating_summary">Ratings: ' + ratetext.join(', ') + '</span>');
+    }
+    if (has_user_rating) {
+        var rhc = new HtmlCollector;
+        rhc.push('<form method="post" action="' + hoturl_post_html("review", rlink) + '" class="ratereviewform"><div class="inline">', '</div></form>');
+        rhc.push('How helpful is this review? &nbsp;');
+        rhc.push('<select name="rating">', '</select>');
+        for (i = 0; i != ratingsj.order.length; ++i) {
+            ratekey = ratingsj.order[i];
+            selected = rrow.user_rating === null ? ratekey === "n" : ratekey === rrow.user_rating;
+            rhc.push('<option value="' + ratekey + '"' + (selected ? ' selected="selected"' : '') + '>' + ratingsj[ratekey] + '</option>');
+        }
+        rhc.pop_n(2);
+        rateinfo.push(rhc.render());
+        rateinfo.push('<a href="' + hoturl_html("help", "t=revrate") + '">What is this?</a>');
+    }
+    if (rateinfo.length) {
+        hc.push('<div class="rev_rating">', '</div>');
+        hc.push_pop(rateinfo.join(' <span class="barsep">·</span> '));
+    }
+
+    if (rrow.message_html)
+        hc.push('<div class="hint">' + rrow.message_html + '</div>');
+
+    hc.push_pop('<hr class="c" />');
+
+    // BODY
+    hc.push('<div class="revcard_body">', '</div>');
+    hc.push_pop(render_review_body(j, rrow));
+
+    // complete render
+    j.html(hc.render());
+    if (has_user_rating)
+        j.find(".ratereviewform select").change(ratereviewform_change);
     score_header_tooltips(j);
 }
 
@@ -2434,6 +2558,9 @@ return {
         }
         form_order = $.map(formj, function (v) { return v; });
         form_order.sort(function (a, b) { return a.position - b.position; });
+    },
+    set_ratings: function (j) {
+        ratingsj = j;
     },
     score_tooltips: function (j) {
         j.find(".revscore").each(function () {
@@ -3859,32 +3986,6 @@ return function (selector, active_dragtag) {
 };
 
 })();
-
-
-// review ratings
-function makeratingajax(form, id) {
-    var selects;
-    form.className = "fold7c";
-    form.onsubmit = function () {
-        return Miniajax.submit(id, function (rv) {
-                if ((ee = $$(id + "result")) && rv.result)
-                    ee.innerHTML = " <span class='barsep'>·</span> " + rv.result;
-            });
-    };
-    selects = form.getElementsByTagName("select");
-    for (var i = 0; i < selects.length; ++i)
-        selects[i].onchange = function () {
-            void form.onsubmit();
-        };
-}
-
-function addRatingAjax() {
-    var forms = document.getElementsByTagName("form"), id;
-    for (var i = 0; i < forms.length; ++i)
-        if ((id = forms[i].getAttribute("id"))
-            && id.substr(0, 11) == "ratingform_")
-            makeratingajax(forms[i], id);
-}
 
 
 // popup dialogs
