@@ -120,7 +120,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 128) {
+        if ($this->sversion < 130) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);

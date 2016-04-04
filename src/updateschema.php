@@ -205,6 +205,11 @@ function update_schema_review_word_counts($Conf) {
     } while (count($q) == 32);
 }
 
+function update_schema_bad_comment_timeDisplayed($Conf) {
+    $badids = Dbl::fetch_first_columns($Conf->dblink, "select a.commentId from PaperComment a join PaperComment b where a.paperId=b.paperId and a.commentId<b.commentId and a.timeDisplayed>b.timeDisplayed");
+    return !count($badids) || Dbl::ql($Conf->dblink, "update PaperComment set timeDisplayed=0 where commentId ?a", $badids);
+}
+
 function update_schema_drop_keys_if_exist($table, $key) {
     $indexes = Dbl::fetch_first_columns("select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='$table'");
     $drops = [];
@@ -931,6 +936,12 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 127
         && Dbl::ql("update PaperReview set reviewWordCount=null"))
         $Conf->update_schema_version(128);
+    if ($Conf->sversion == 128
+        && update_schema_bad_comment_timeDisplayed($Conf))
+        $Conf->update_schema_version(129);
+    if ($Conf->sversion == 129
+        && Dbl::ql("update PaperComment set timeDisplayed=1 where timeDisplayed=0 and timeNotified>0"))
+        $Conf->update_schema_version(130);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

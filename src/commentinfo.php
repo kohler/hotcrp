@@ -296,9 +296,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $ctags = null;
 
         // notifications
-        $displayed = false;
-        if (!($ctype & COMMENTTYPE_DRAFT))
-            $displayed = true;
+        $displayed = !($ctype & COMMENTTYPE_DRAFT);
 
         // query
         $text = get_s($req, "text");
