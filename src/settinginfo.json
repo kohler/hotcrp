@@ -217,6 +217,10 @@
         "parser": "ReviewForm_SettingParser", "require": "src/settings/s_reviewform.php",
         "type": "string"
     },
+    "roundname": {
+        "name": "Review round name",
+        "type": "text", "novalue": true
+    },
     "seedec": {
         "name": "Decision visibility",
         "type": "radio", "values": [0, 1, 2, 3]
