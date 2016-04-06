@@ -246,8 +246,13 @@ class SettingValues {
                 $html = '<span class="setting_error">' . $html . '</span>';
                 break;
             }
-        if ($label_id !== false)
-            $html = Ht::label($html, $label_id ? : $name1);
+        if ($label_id !== false) {
+            $label_id = $label_id ? : $name1;
+            if (($pos = strpos($html, "<input")) !== false)
+                $html = Ht::label(substr($html, 0, $pos), $label_id) . substr($html, $pos);
+            else
+                $html = Ht::label($html, $label_id);
+        }
         return $html;
     }
     public function sjs($name, $extra = array()) {
@@ -393,9 +398,8 @@ class SettingValues {
         }
         echo "</table>\n";
     }
-    public function render_entry($name) {
+    public function render_entry($name, $js = []) {
         $v = $this->sv($name);
-        $js = [];
         if (($si = $this->si($name))) {
             if ($si->size)
                 $js["size"] = $si->size;
@@ -1710,10 +1714,10 @@ if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
 
-function doTextRow($name, $text, $capclass = "lcaption") {
+function doTextRow($name, $text) {
     global $Conf, $Sv;
     $nametext = (is_array($text) ? $text[0] : $text);
-    echo '<tr><td class="', $capclass, ' nw">', $Sv->label($name, $nametext),
+    echo '<tr><td class="lcaption nw">', $Sv->label($name, $nametext),
         '</td><td class="lentry">', $Sv->render_entry($name);
     if (is_array($text) && get($text, 2))
         echo $text[2];
@@ -1722,7 +1726,7 @@ function doTextRow($name, $text, $capclass = "lcaption") {
     echo "</td></tr>\n";
 }
 
-function doDateRow($name, $text, $capclass = "lcaption") {
+function doDateRow($name, $text) {
     global $DateExplanation, $Sv;
     if ($DateExplanation) {
         if (is_array($text))
@@ -1731,16 +1735,16 @@ function doDateRow($name, $text, $capclass = "lcaption") {
             $text = array($text, $DateExplanation);
         $DateExplanation = "";
     }
-    doTextRow($name, $text, $capclass);
+    doTextRow($name, $text);
 }
 
-function doGraceRow($name, $text, $capclass = "lcaption") {
+function doGraceRow($name, $text) {
     global $GraceExplanation, $Sv;
     if (!isset($GraceExplanation)) {
         $text = array($text, "Example: “15 min”");
         $GraceExplanation = true;
     }
-    doTextRow($name, $text, $capclass);
+    doTextRow($name, $text);
 }
 
 
@@ -1768,13 +1772,14 @@ function do_message($name, $description, $type, $rows = 10, $hint = "") {
         list($name, $defaultname) = $name;
     $default = $Conf->message_default_html($defaultname);
     $current = $Sv->sv($name, $default);
+    $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
+        . expander(null, 0) . $description . '</a>';
     echo '<div class="fold', ($current == $default ? "c" : "o"),
         '" data-fold="true">',
         '<div class="', ($type ? "f-cn" : "f-cl"),
         ' childfold" onclick="return foldup(this,event)">',
-        '<a class="q" href="#" onclick="return foldup(this,event)">',
-        expander(null, 0), $Sv->label($name, $description),
-        '</a> <span class="f-cx fx">(HTML allowed)</span></div>',
+        $Sv->label($name, $description),
+        ' <span class="f-cx fx">(HTML allowed)</span></div>',
         $hint,
         Ht::textarea($name, $current, $Sv->sjs($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
         '</div><div class="g"></div>', "\n";
@@ -1899,32 +1904,32 @@ function doOptGroupOption($sv, $o) {
             $o->selector = explode("\n", rtrim(defval($sv->req, "optv$id", "")));
     }
 
-    echo "<tr><td><div class='f-contain'>\n",
+    echo "<table><tr><td><div class='f-contain'>\n",
         "  <div class='f-i'>",
-        "<div class='f-c'>",
-        $sv->label("optn$id", ($id === "n" ? "New option name" : "Option name")),
-        "</div>",
-        "<div class='f-e'>",
-        Ht::entry("optn$id", $o->name, $sv->sjs("optn$id", array("placeholder" => "(Enter new option)", "size" => 50))),
-        "</div>\n",
-        "  <div class='f-i'>",
-        "<div class='f-c'>",
-        $sv->label("optd$id", "Description"),
-        "</div>",
-        "<div class='f-e'>",
-        Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd$id")),
-        "</div>",
-        "</div></td>";
+          "<div class='f-c'>",
+          $sv->label("optn$id", ($id === "n" ? "New option name" : "Option name")),
+          "</div>",
+          "<div class='f-e'>",
+          Ht::entry("optn$id", $o->name, $sv->sjs("optn$id", array("placeholder" => "(Enter new option)", "size" => 50))),
+          "</div>\n",
+        "  </div><div class='f-i'>",
+          "<div class='f-c'>",
+          $sv->label("optd$id", "Description"),
+          "</div>",
+          "<div class='f-e'>",
+          Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd$id")),
+          "</div>\n",
+        "  </div></div></td>";
 
+    echo '<td style="padding-left:1em">';
     if ($id !== "n" && ($examples = $o->example_searches())) {
-        echo "<td style='padding-left: 1em'><div class='f-i'>",
-            "<div class='f-c'>Example " . pluralx($examples, "search") . "</div>";
+        echo '<div class="f-i"><div class="f-c">Example ' . pluralx($examples, "search") . "</div>";
         foreach ($examples as &$ex)
             $ex = "<a href=\"" . hoturl("search", array("q" => $ex[0])) . "\">" . htmlspecialchars($ex[0]) . "</a>";
-        echo '<div class="f-e">', join("<br/>", $examples), "</div></div></td>";
+        echo '<div class="f-e">', join("<br/>", $examples), "</div></div>";
     }
 
-    echo "</tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
+    echo "</td></tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
         $sv->label("optvt$id", "Type"), "</div><div class='f-e'>";
@@ -1962,13 +1967,13 @@ function doOptGroupOption($sv, $o) {
         $otypes["video:final"] = "Final video";
     }
     echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
-        "</div></div></td>";
+        "</div></div></td>\n";
     $Conf->footerScript("do_option_type(\$\$('optvt$id'),true)");
 
     echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
         $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",
         Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility, array("id" => "optp$id")),
-        "</div></div></td>";
+        "</div></div></td>\n";
 
     echo "<td class='pad'><div class='f-i'><div class='f-c'>",
         $sv->label("optfp$id", "Form order"), "</div><div class='f-e'>";
@@ -1982,7 +1987,7 @@ function doOptGroupOption($sv, $o) {
     else
         $x["delete"] = "Delete option";
     echo Ht::select("optfp$id", $x, $o->position, array("id" => "optfp$id")),
-        "</div></div></td>";
+        "</div></div></td>\n";
 
     echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
         $sv->label("optdt$id", "Display"), "</div><div class='f-e'>";
@@ -1991,10 +1996,10 @@ function doOptGroupOption($sv, $o) {
                                  "topics" => "With topics",
                                  "submission" => "Near submission"],
                     $o->display_name(), array("id" => "optdt$id")),
-        "</div></div></td>";
+        "</div></div></td>\n";
 
     if (isset($otypes["pdf:final"]))
-        echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>";
+        echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>\n";
 
     echo "</tr></table>";
 
@@ -2010,7 +2015,7 @@ function doOptGroupOption($sv, $o) {
         Ht::textarea("optv$id", $value, $sv->sjs("optv$id", array("rows" => $rows, "cols" => 50))),
         "</div></div>";
 
-    echo "</div></td></tr>\n";
+    echo "</td></tr></table>\n";
 }
 
 function opt_yes_no_optional($name) {
@@ -2036,20 +2041,21 @@ function doOptGroup($sv) {
             Ht::hidden("has_sub_banal", 1),
             "<table id='foldbanal' class='", ($sv->sv("sub_banal") ? "foldo" : "foldc"), "'>";
         $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
-        echo "<tr class='fx'><td></td><td class='top'><table>";
+        echo '<tr class="fx"><td></td><td class="top"><table class="secondary-settings"><tbody>';
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
             $val = get($bsetting, $i, "");
             $sv->set_oldv("sub_banal_$name", $val == "" ? "N/A" : $val);
         }
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), "lxcaption");
-        doTextRow("sub_banal_pagelimit", "Page limit", "lxcaption");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), "lxcaption");
-        echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), "lxcaption");
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), "lxcaption");
-        doTextRow("sub_banal_columns", array("Columns", null), "lxcaption");
-        echo "</table></td></tr></table>";
+        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"));
+        doTextRow("sub_banal_pagelimit", "Page limit");
+        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"));
+        echo '</tbody></table></td>', '<td><span class="sep"></span></td>',
+            '<td class="top"><table class="secondary-settings"><tbody>';
+        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"));
+        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"));
+        doTextRow("sub_banal_columns", array("Columns", null));
+        echo "</tbody></table></td></tr></table>";
     }
 
     echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
@@ -2072,21 +2078,17 @@ function doOptGroup($sv) {
     echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
     echo "Add options one at a time.\n";
     echo "<div class='g'></div>\n",
-        Ht::hidden("has_options", 1),
-        "<table>";
+        Ht::hidden("has_options", 1);
     $sep = "";
     $all_options = array_merge(PaperOption::option_list()); // get our own iterator
     foreach ($all_options as $o) {
         echo $sep;
         doOptGroupOption($sv, $o);
-        $sep = "<tr><td colspan='2'><hr class='hr' /></td></tr>\n";
+        $sep = "\n<div style=\"margin-top:3em\"></div>\n";
     }
 
     echo $sep;
-
     doOptGroupOption($sv, null);
-
-    echo "</table>\n";
 
 
     // Topics
@@ -2138,7 +2140,7 @@ function doOptGroup($sv) {
         echo "</tr>\n";
         $td1 = "<td></td>";
     }
-    echo '<tr><td class="lcaption top" rowspan="40">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
+    echo '<tr><td class="lcaption top">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
         Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
         '</td></tr></table>';
 }
@@ -2525,7 +2527,7 @@ function doDecGroup($sv) {
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (get($Opt, "allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", ["onfocus" => "$('#au_seerev_" . Conf::AUSEEREV_TAGS . "').click()"]);
     $sv->echo_radio_table("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
@@ -2557,22 +2559,22 @@ function doDecGroup($sv) {
             echo '" style="padding-top:1em';
         if ($i === "n")
             echo ';display:none';
-        echo '"><table>';
-        doTextRow("resp_roundname$isuf", "Response name", "lxcaption");
+        echo '"><table class="secondary-settings"><tbody>';
+        doTextRow("resp_roundname$isuf", "Response name");
         if ($sv->sv("resp_open$isuf") === 1 && ($x = $sv->sv("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
-        doDateRow("resp_open$isuf", "Start time", "lxcaption");
-        doDateRow("resp_done$isuf", "Hard deadline", "lxcaption");
-        doGraceRow("resp_grace$isuf", "Grace period", "lxcaption");
-        doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."), "lxcaption");
-        echo '</table><div style="padding-top:4px">';
+        doDateRow("resp_open$isuf", "Start time");
+        doDateRow("resp_done$isuf", "Hard deadline");
+        doGraceRow("resp_grace$isuf", "Grace period");
+        doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."));
+        echo '</tbody></table><div style="padding-top:4px">';
         do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
         echo '</div></div>', "\n";
     }
 
     echo '</div><div style="padding-top:1em">',
         '<button type="button" onclick="settings_add_resp_round()">Add response round</button>',
-        '</div></div></td></tr></table>';
+        '</div></td></tr></table>';
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
     echo "<div class='g'></div>\n<hr class='hr' />\n",
@@ -2623,7 +2625,7 @@ function doDecGroup($sv) {
         '<br /></td>',
         '<td class="lentry nw">',
         Ht::hidden("has_decisions", 1),
-        Ht::entry("decn", $v, array("size" => 35)), ' &nbsp; ',
+        Ht::entry("decn", $v, array("id" => "decn", "size" => 35)), ' &nbsp; ',
         Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"), $vclass),
         "<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
         "</td></tr>";
@@ -2637,15 +2639,15 @@ function doDecGroup($sv) {
     echo "<h3 class=\"settings g\">Final versions</h3>\n";
     echo '<table id="foldfinal" class="fold2o">';
     $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
-    echo "<tr class='fx2'><td></td><td><table>";
-    doDateRow("final_soft", "Deadline", "lxcaption");
-    doDateRow("final_done", "Hard deadline", "lxcaption");
-    doGraceRow("final_grace", "Grace period", "lxcaption");
-    echo "</table><div class='g'></div>";
+    echo '<tr class="fx2"><td></td><td><table class="secondary-settings"><tbody>';
+    doDateRow("final_soft", "Deadline");
+    doDateRow("final_done", "Hard deadline");
+    doGraceRow("final_grace", "Grace period");
+    echo "</tbody></table><div class='g'></div>";
     do_message("msg.finalsubmit", "Instructions", 1);
     echo "<div class='g'></div>",
         "<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
-        "</div></td></tr></table>\n\n";
+        "</td></tr></table>\n\n";
     $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
 }
 
@@ -2659,7 +2661,7 @@ $Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . SettingGroup::$all[$Gro
 $Conf->echoScript(""); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
-echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform")), "<div>";
+echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform"));
 
 echo '<div class="leftmenu_menucontainer"><div class="leftmenu_list">';
 foreach (SettingGroup::all() as $g) {
@@ -2682,11 +2684,11 @@ function doActionArea($top) {
 
 echo "<div class='aahc'>";
 doActionArea(true);
+
 echo "<div>";
-
 SettingGroup::$all[$Group]->render($Sv);
-
 echo "</div>";
+
 doActionArea(false);
 echo "</div></div></div></div></form>\n";
 

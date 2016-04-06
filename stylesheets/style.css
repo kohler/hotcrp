@@ -762,6 +762,9 @@ th.lcaption, td.lcaption {
 	padding: 3px 1em 3px 0;
 	font-weight: bold;
 }
+table.secondary-settings > tbody > tr > td.lcaption {
+	font-weight: normal;
+}
 th.lxcaption, td.lxcaption {
 	padding: 3px 1em 3px 0;
 }
