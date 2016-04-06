@@ -28,6 +28,7 @@ class Si {
     public $default_value = null;
     public $ifnonempty;
     public $message_default;
+    public $date_backup;
 
     const SI_VALUE = 1;
     const SI_DATA = 2;
@@ -53,7 +54,7 @@ class Si {
         assert(!preg_match('/_(?:\$|n|\d+)\z/', $name));
         $this->name = $name;
         $this->store($name, "short_description", $j, "name", "is_string");
-        foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value"] as $k)
+        foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
         foreach (["internal", "optional", "novalue", "disabled"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
@@ -81,6 +82,19 @@ class Si {
             $this->storage_type = self::$type_storage[$this->type];
         else
             $this->storage_type = self::SI_VALUE;
+
+        // defaults for size, placeholder
+        if ($this->type == "cdate" || $this->type == "date" || $this->type == "ndate") {
+            if ($this->size === null)
+                $this->size = 30;
+            if ($this->placeholder === null)
+                $this->placeholder = "N/A";
+        } else if ($this->type == "grace") {
+            if ($this->size === null)
+                $this->size = 15;
+            if ($this->placeholder === null)
+                $this->placeholder = "none";
+        }
     }
 
     public function storage() {
@@ -160,12 +174,13 @@ class SettingValues {
     private $warnmsg = array();
     public $warnings_reported = false;
 
-    public $parsers = array();
+    private $parsers = array();
     public $save_callbacks = array();
     public $need_lock = array();
 
     public $req = array();
     public $savedv = array();
+    public $explicit_oldv = array();
 
     public function __construct() {
     }
@@ -215,6 +230,14 @@ class SettingValues {
             Conf::msg_warning($mt);
         $this->warnings_reported = true;
     }
+    public function parser($si) {
+        if ($si->parser) {
+            if (!isset($this->parsers[$si->parser]))
+                $this->parsers[$si->parser] = new $si->parser;
+            return $this->parsers[$si->parser];
+        } else
+            return null;
+    }
 
     public function label($name, $html, $label_id = null) {
         $name1 = is_array($name) ? $name[0] : $name;
@@ -238,14 +261,7 @@ class SettingValues {
         return $x;
     }
 
-    public function inputv($name, $default_value = null) {
-        if ($this->use_req())
-            return get($this->req, $name, $default_value);
-        else
-            return $default_value;
-    }
-
-    private function si($name) {
+    public function si($name) {
         $si = Si::get($name);
         if (!$si)
             error_log(caller_landmark(2) . ": setting $name: missing information");
@@ -279,6 +295,9 @@ class SettingValues {
             return $this->si_oldv($name, $si, $default_value);
     }
 
+    public function set_oldv($name, $value) {
+        $this->explicit_oldv[$name] = $value;
+    }
     public function save($name, $value) {
         global $Conf;
         $si = $this->si($name);
@@ -317,7 +336,11 @@ class SettingValues {
 
     private function si_oldv($name, $si, $default_value) {
         global $Conf, $Opt;
-        if ($si->storage_type & Si::SI_OPT)
+        if ($default_value === null)
+            $default_value = $si->default_value;
+        if (isset($this->explicit_oldv[$name]))
+            $val = $this->explicit_oldv[$name];
+        else if ($si->storage_type & Si::SI_OPT)
             $val = get($Opt, substr($name, 4), $default_value);
         else if ($si->storage_type & Si::SI_DATA)
             $val = $Conf->setting_data($name, $default_value);
@@ -370,18 +393,49 @@ class SettingValues {
         }
         echo "</table>\n";
     }
-    public function render_entry($name, $v, $size = 30, $temptext = "") {
-        $js = ["size" => $size, "placeholder" => $temptext];
+    public function render_entry($name) {
+        $v = $this->sv($name);
+        $js = [];
         if (($si = $this->si($name))) {
             if ($si->size)
                 $js["size"] = $si->size;
             if ($si->placeholder)
                 $js["placeholder"] = $si->placeholder;
+            if ($si->type === "date" || $si->type === "cdate" || $si->type === "ndate")
+                $v = $this->si_render_date_value($v, $si);
+            else if ($si->type === "grace")
+                $v = $this->si_render_grace_value($v, $si);
         }
         return Ht::entry($name, $v, $this->sjs($name, $js));
     }
-    public function echo_entry($name, $v) {
-        echo $this->render_entry($name, $v);
+    public function echo_entry($name) {
+        echo $this->render_entry($name);
+    }
+
+
+    public function si_render_date_value($v, $si) {
+        global $Conf;
+        if ($v !== null && $this->use_req())
+            return $v;
+        else if ($si->date_backup && $this->sv($si->date_backup) == $v)
+            return $si->placeholder;
+        else if ($si->placeholder !== "N/A" && $si->placeholder !== "none" && $v === 0)
+            return "none";
+        else if ($v <= 0)
+            return $si->placeholder;
+        else if ($v == 1)
+            return "now";
+        else
+            return $Conf->parseableTime($v, true);
+    }
+    public function si_render_grace_value($v, $si) {
+        if ($v === null || $v <= 0 || !is_numeric($v))
+            return "none";
+        if ($v % 3600 == 0)
+            return ($v / 3600) . " hr";
+        if ($v % 60 == 0)
+            return ($v / 60) . " min";
+        return sprintf("%d:%02d", intval($v / 60), $v % 60);
     }
 
 
@@ -527,16 +581,6 @@ function parseGrace($v) {
         return $t;
     else
         return null;
-}
-
-function unparseGrace($v) {
-    if ($v === null || $v <= 0 || !is_numeric($v))
-        return "none";
-    if ($v % 3600 == 0)
-        return ($v / 3600) . " hr";
-    if ($v % 60 == 0)
-        return ($v / 60) . " min";
-    return sprintf("%d:%02d", intval($v / 60), $v % 60);
 }
 
 function expandMailTemplate($name, $default) {
@@ -1441,9 +1485,8 @@ function account_value($sv, $si) {
     if ($si->disabled || $si->novalue || !$si->type || $si->type === "none")
         /* ignore changes to disabled/novalue settings */;
     else if ($si->parser) {
-        if (!isset($sv->parsers[$si->parser]))
-            $sv->parsers[$si->parser] = new $si->parser;
-        if ($sv->parsers[$si->parser]->parse($sv, $si))
+        $p = $sv->parser($si);
+        if ($p->parse($sv, $si))
             $sv->save_callbacks[$si->name] = $si;
     } else {
         $v = parse_value($sv, $si->name, $si);
@@ -1607,8 +1650,10 @@ function do_setting_update($sv) {
         $Conf->qe("lock tables $tables");
 
         // apply settings
-        foreach ($sv->save_callbacks as $si)
-            $sv->parsers[$si->parser]->save($sv, $si);
+        foreach ($sv->save_callbacks as $si) {
+            $p = $sv->parser($si);
+            $p->save($sv, $si);
+        }
 
         $dv = $aq = $av = array();
         foreach ($sv->savedv as $n => $v) {
@@ -1665,12 +1710,11 @@ if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
 
-function doTextRow($name, $text, $v, $size = 30,
-                   $capclass = "lcaption", $tempText = "") {
+function doTextRow($name, $text, $capclass = "lcaption") {
     global $Conf, $Sv;
     $nametext = (is_array($text) ? $text[0] : $text);
     echo '<tr><td class="', $capclass, ' nw">', $Sv->label($name, $nametext),
-        '</td><td class="lentry">', $Sv->render_entry($name, $v, $size, $tempText);
+        '</td><td class="lentry">', $Sv->render_entry($name);
     if (is_array($text) && get($text, 2))
         echo $text[2];
     if (is_array($text) && get($text, 1))
@@ -1678,25 +1722,8 @@ function doTextRow($name, $text, $v, $size = 30,
     echo "</td></tr>\n";
 }
 
-function date_value($name, $temptext, $othername = null) {
-    global $Conf, $Sv;
-    $x = $Sv->sv($name);
-    if ($x !== null && $Sv->use_req())
-        return $x;
-    if ($othername && $Sv->sv($othername) == $x)
-        return $temptext;
-    if ($temptext !== "N/A" && $temptext !== "none" && $x === 0)
-        return "none";
-    else if ($x <= 0)
-        return $temptext;
-    else if ($x == 1)
-        return "now";
-    else
-        return $Conf->parseableTime($x, true);
-}
-
-function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
-    global $DateExplanation;
+function doDateRow($name, $text, $capclass = "lcaption") {
+    global $DateExplanation, $Sv;
     if ($DateExplanation) {
         if (is_array($text))
             $text[1] = $DateExplanation . "<br />" . $text[1];
@@ -1704,7 +1731,7 @@ function doDateRow($name, $text, $othername = null, $capclass = "lcaption") {
             $text = array($text, $DateExplanation);
         $DateExplanation = "";
     }
-    doTextRow($name, $text, date_value($name, "N/A", $othername), 30, $capclass, "N/A");
+    doTextRow($name, $text, $capclass);
 }
 
 function doGraceRow($name, $text, $capclass = "lcaption") {
@@ -1713,7 +1740,7 @@ function doGraceRow($name, $text, $capclass = "lcaption") {
         $text = array($text, "Example: “15 min”");
         $GraceExplanation = true;
     }
-    doTextRow($name, $text, unparseGrace($Sv->sv($name)), 15, $capclass, "none");
+    doTextRow($name, $text, $capclass);
 }
 
 
@@ -1757,42 +1784,41 @@ function doInfoGroup($sv) {
     global $Conf, $Opt;
 
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
-    $sv->echo_entry("opt.shortName", $sv->sv("opt.shortName"));
+    $sv->echo_entry("opt.shortName");
     echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
     echo "<div class=\"g\"></div>\n";
 
-    $long = $sv->sv("opt.longName");
-    if ($long == $sv->sv("opt.shortName"))
-        $long = "";
+    if ($sv->oldv("opt.longName") == $sv->oldv("opt.shortName"))
+        $sv->set_oldv("opt.longName", "");
     echo "<div class='f-c'>", $sv->label("opt.longName", "Conference name"), "</div>\n";
-    $sv->echo_entry("opt.longName", $long);
+    $sv->echo_entry("opt.longName");
     echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
     echo "<div class=\"g\"></div>\n";
 
     echo "<div class='f-c'>", $sv->label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    $sv->echo_entry("opt.conferenceSite", $sv->sv("opt.conferenceSite"));
+    $sv->echo_entry("opt.conferenceSite");
     echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.contactName", "Name of site contact"), "</div>\n";
-    $sv->echo_entry("opt.contactName", $sv->sv("opt.contactName"));
+    $sv->echo_entry("opt.contactName");
     echo '<div class="g"></div>', "\n";
 
     echo "<div class='f-c'>", $sv->label("opt.contactEmail", "Email of site contact"), "</div>\n";
-    $sv->echo_entry("opt.contactEmail", $sv->sv("opt.contactEmail"));
+    $sv->echo_entry("opt.contactEmail");
     echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    $sv->echo_entry("opt.emailReplyTo", $sv->sv("opt.emailReplyTo"));
+    $sv->echo_entry("opt.emailReplyTo");
     echo '<div class="g"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    $sv->echo_entry("opt.emailCc", $sv->sv("opt.emailCc"));
+    $sv->echo_entry("opt.emailCc");
     echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
@@ -1822,7 +1848,7 @@ function doSubGroup($sv) {
                                Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
-    doDateRow("sub_reg", "Registration deadline", "sub_sub");
+    doDateRow("sub_reg", "Registration deadline");
     doDateRow("sub_sub", "Submission deadline");
     doGraceRow("sub_grace", 'Grace period');
     echo "</table>\n";
@@ -2012,16 +2038,17 @@ function doOptGroup($sv) {
         $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
         echo "<tr class='fx'><td></td><td class='top'><table>";
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
-        for ($i = 0; $i < 6; $i++)
-            if (defval($bsetting, $i, "") == "")
-                $bsetting[$i] = "N/A";
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), $sv->inputv("sub_banal_papersize", $bsetting[0]), 18, "lxcaption", "N/A");
-        doTextRow("sub_banal_pagelimit", "Page limit", $sv->inputv("sub_banal_pagelimit", $bsetting[1]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), $sv->inputv("sub_banal_textblock", $bsetting[3]), 18, "lxcaption", "N/A");
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
+            $val = get($bsetting, $i, "");
+            $sv->set_oldv("sub_banal_$name", $val == "" ? "N/A" : $val);
+        }
+        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"), "lxcaption");
+        doTextRow("sub_banal_pagelimit", "Page limit", "lxcaption");
+        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"), "lxcaption");
         echo "</table></td><td><span class='sep'></span></td><td class='top'><table>";
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), $sv->inputv("sub_banal_bodyfontsize", $bsetting[4]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), $sv->inputv("sub_banal_bodyleading", $bsetting[5]), 4, "lxcaption", "N/A");
-        doTextRow("sub_banal_columns", array("Columns", null), $sv->inputv("sub_banal_columns", $bsetting[2]), 4, "lxcaption", "N/A");
+        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"), "lxcaption");
+        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"), "lxcaption");
+        doTextRow("sub_banal_columns", array("Columns", null), "lxcaption");
         echo "</table></td></tr></table>";
     }
 
@@ -2122,13 +2149,14 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
     $rname = "roundname_$rnum";
     if ($sv->use_req() && $rnum !== '$')
         $nameval = (string) get($sv->req, $rname);
-
-    $default_rname = "unnamed";
+    $rname_si = $sv->si($rname);
     if ($nameval === "(new round)" || $rnum === '$')
-        $default_rname = "(new round)";
+        $rname_si->placeholder = "(new round)";
+    $sv->set_oldv($rname, $nameval);
+
     echo '<div class="mg" data-round-number="', $rnum, '"><div>',
         $sv->label($rname, "Round"), ' &nbsp;',
-        $sv->render_entry($rname, $nameval, 12, $default_rname);
+        $sv->render_entry($rname);
     echo '<div class="inb" style="min-width:7em;margin-left:2em">';
     if ($rnum !== '$' && $review_count)
         echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $Conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
@@ -2150,18 +2178,23 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
         $dlsuf = "_" . $rnum;
     else
         $dlsuf = "";
+    $si = $sv->si("extrev_soft$dlsuf");
+    $si->date_backup = "pcrev_soft$dlsuf";
+    $si = $sv->si("extrev_hard$dlsuf");
+    $si->date_backup = "pcrev_hard$dlsuf";
+
     echo '<table style="margin-left:3em">';
     echo '<tr><td>', $sv->label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
-        $sv->render_entry("pcrev_soft$entrysuf", date_value("pcrev_soft$dlsuf", "none"), 28, "none"),
+        $sv->render_entry("pcrev_soft$entrysuf"),
         '</td><td class="lentry">', $sv->label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        $sv->render_entry("pcrev_hard$entrysuf", date_value("pcrev_hard$dlsuf", "none"), 28, "none"),
+        $sv->render_entry("pcrev_hard$entrysuf"),
         '</td></tr>';
     echo '<tr><td>', $sv->label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
         '<td class="lentry" style="padding-right:3em">',
-        $sv->render_entry("extrev_soft$entrysuf", date_value("extrev_soft$dlsuf", "same as PC", "pcrev_soft$dlsuf"), 28, "same as PC"),
+        $sv->render_entry("extrev_soft$entrysuf"),
         '</td><td class="lentry">', $sv->label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        $sv->render_entry("extrev_hard$entrysuf", date_value("extrev_hard$dlsuf", "same as PC", "pcrev_hard$dlsuf"), 28, "same as PC"),
+        $sv->render_entry("extrev_hard$entrysuf"),
         '</td></tr>';
     echo '</table></div>', "\n";
 }
@@ -2374,47 +2407,30 @@ function doTagsGroup($sv) {
     echo "<h3 class=\"settings\">Tags</h3>\n";
 
     echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
-    if ($sv->use_req())
-        $v = defval($sv->req, "tag_chair", "");
-    else
-        $v = join(" ", array_keys(TagInfo::chair_tags()));
+    $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
     echo "<td>", Ht::hidden("has_tag_chair", 1);
-    $sv->echo_entry("tag_chair", $v);
+    $sv->echo_entry("tag_chair");
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
-    if ($sv->use_req())
-        $v = defval($sv->req, "tag_approval", "");
-    else {
-        $x = "";
-        foreach (TagInfo::approval_tags() as $n => $v)
-            $x .= "$n ";
-        $v = trim($x);
-    }
+    $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
     echo "<td>", Ht::hidden("has_tag_approval", 1);
-    $sv->echo_entry("tag_approval", $v);
+    $sv->echo_entry("tag_approval");
     echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
-    if ($sv->use_req())
-        $v = defval($sv->req, "tag_vote", "");
-    else {
-        $x = "";
-        foreach (TagInfo::vote_tags() as $n => $v)
-            $x .= "$n#$v ";
-        $v = trim($x);
-    }
+    $x = [];
+    foreach (TagInfo::vote_tags() as $n => $v)
+        $x[] = "$n#$v";
+    $sv->set_oldv("tag_vote", join(" ", $x));
     echo "<td>", Ht::hidden("has_tag_vote", 1);
-    $sv->echo_entry("tag_vote", $v);
+    $sv->echo_entry("tag_vote");
     echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
-    if ($sv->use_req())
-        $v = defval($sv->req, "tag_rank", "");
-    else
-        $v = $Conf->setting_data("tag_rank", "");
+    $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
     echo "<td>", Ht::hidden("has_tag_rank", 1);
-    $sv->echo_entry("tag_rank", $v);
+    $sv->echo_entry("tag_rank");
     echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 
@@ -2509,7 +2525,7 @@ function doDecGroup($sv) {
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
     if (get($Opt, "allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", $sv->sv("tag_au_seerev"), 24);
+    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev");
     $sv->echo_radio_table("au_seerev", $opts);
     echo Ht::hidden("has_tag_au_seerev", 1);
 
@@ -2529,24 +2545,26 @@ function doDecGroup($sv) {
     $rrounds["n"] = "";
     foreach ($rrounds as $i => $rname) {
         $isuf = $i ? "_$i" : "";
+        $rname_si = $sv->si("resp_roundname$isuf");
+        if (!$i) {
+            $rname = $rname == "1" ? "none" : $rname;
+            $rname_si->placeholder = "none";
+        }
+        $sv->set_oldv("resp_roundname$isuf", $rname);
+
         echo '<div id="response', $isuf;
         if ($i)
             echo '" style="padding-top:1em';
         if ($i === "n")
             echo ';display:none';
         echo '"><table>';
-        if (!$i) {
-            $rname = $rname == "1" ? "none" : $rname;
-            doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption", "none");
-        } else
-            doTextRow("resp_roundname$isuf", "Response name", $rname, 20, "lxcaption");
+        doTextRow("resp_roundname$isuf", "Response name", "lxcaption");
         if ($sv->sv("resp_open$isuf") === 1 && ($x = $sv->sv("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
-        doDateRow("resp_open$isuf", "Start time", null, "lxcaption");
-        doDateRow("resp_done$isuf", "Hard deadline", null, "lxcaption");
+        doDateRow("resp_open$isuf", "Start time", "lxcaption");
+        doDateRow("resp_done$isuf", "Hard deadline", "lxcaption");
         doGraceRow("resp_grace$isuf", "Grace period", "lxcaption");
-        doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."),
-                  $sv->sv("resp_words$isuf", 500), 5, "lxcaption", "none");
+        doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."), "lxcaption");
         echo '</table><div style="padding-top:4px">';
         do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
         echo '</div></div>', "\n";
@@ -2620,8 +2638,8 @@ function doDecGroup($sv) {
     echo '<table id="foldfinal" class="fold2o">';
     $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
     echo "<tr class='fx2'><td></td><td><table>";
-    doDateRow("final_soft", "Deadline", "final_done", "lxcaption");
-    doDateRow("final_done", "Hard deadline", null, "lxcaption");
+    doDateRow("final_soft", "Deadline", "lxcaption");
+    doDateRow("final_done", "Hard deadline", "lxcaption");
     doGraceRow("final_grace", "Grace period", "lxcaption");
     echo "</table><div class='g'></div>";
     do_message("msg.finalsubmit", "Instructions", 1);

@@ -23,11 +23,11 @@
     },
     "extrev_hard": {
         "name": "External reviewer hard review deadline",
-        "type": "ndate", "novalue": true
+        "type": "ndate", "size": 28, "placeholder": "same as PC", "novalue": true
     },
     "extrev_soft": {
         "name": "External reviewer soft review deadline",
-        "type": "date", "novalue": true
+        "type": "date", "size": 28, "placeholder": "same as PC", "novalue": true
     },
     "extrev_view": {
         "name": "External reviewers can view reviews",
@@ -47,7 +47,7 @@
     },
     "final_soft": {
         "name": "Final version upload deadline",
-        "type": "date"
+        "type": "date", "date_backup": "final_done"
     },
     "mailbody_requestreview": {
         "name": "Mail template for external review requests",
@@ -159,11 +159,11 @@
     },
     "pcrev_hard": {
         "name": "PC review hard deadline",
-        "type": "ndate", "novalue": true
+        "type": "ndate", "size": 28, "placeholder": "none", "novalue": true
     },
     "pcrev_soft": {
         "name": "PC review deadline",
-        "type": "date", "novalue": true
+        "type": "date", "size": 28, "placeholder": "none", "novalue": true
     },
     "resp_active": {
         "name": "Collect authors’ responses",
@@ -187,11 +187,11 @@
     },
     "resp_roundname": {
         "name": "Response name",
-        "type": "tag", "novalue": true
+        "type": "tag", "size": 20, "novalue": true
     },
     "resp_words": {
         "name": "Authors’ response word limit",
-        "type": "zint", "default_value": 500
+        "type": "zint", "size": 5, "placeholder": "none", "default_value": 500
     },
     "rev_blind": {
         "name": "Review anonymity",
@@ -219,7 +219,7 @@
     },
     "roundname": {
         "name": "Review round name",
-        "type": "text", "novalue": true
+        "type": "text", "size": 12, "novalue": true, "placeholder": "unnamed"
     },
     "seedec": {
         "name": "Decision visibility",
@@ -234,27 +234,27 @@
     },
     "sub_banal_bodyfontsize": {
         "name": "PDF format checker minimum body font size",
-        "type": "text", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
     },
     "sub_banal_bodyleading": {
         "name": "PDF format checker minimum body leading",
-        "type": "text", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
     },
     "sub_banal_columns": {
         "name": "PDF format checker column count",
-        "type": "text", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
     },
     "sub_banal_pagelimit": {
         "name": "PDF format checker page limit",
-        "type": "text", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
     },
     "sub_banal_papersize": {
         "name": "PDF format checker paper size",
-        "type": "text", "novalue": true
+        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true
     },
     "sub_banal_textblock": {
         "name": "PDF format checker text block size",
-        "type": "text", "novalue": true
+        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true
     },
     "sub_blind": {
         "name": "Submission anonymity",
@@ -296,7 +296,7 @@
     },
     "sub_reg": {
         "name": "Submission registration deadline",
-        "type": "date"
+        "type": "date", "date_backup": "sub_sub"
     },
     "sub_sub": {
         "name": "Submission deadline",
@@ -311,7 +311,7 @@
     },
     "tag_au_seerev": {
         "name": "Review visibility tags",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 24
     },
     "tag_badge": {
         "name": "Tag badges",
