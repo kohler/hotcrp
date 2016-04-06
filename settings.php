@@ -380,6 +380,9 @@ class SettingValues {
         }
         return Ht::entry($name, $v, $this->sjs($name, $js));
     }
+    public function echo_entry($name, $v) {
+        echo $this->render_entry($name, $v);
+    }
 
 
     static public function make_request() {
@@ -1675,11 +1678,6 @@ function doTextRow($name, $text, $v, $size = 30,
     echo "</td></tr>\n";
 }
 
-function doEntry($name, $v, $size = 30) {
-    global $Sv;
-    echo $Sv->render_entry($name, $v, $size);
-}
-
 function date_value($name, $temptext, $othername = null) {
     global $Conf, $Sv;
     $x = $Sv->sv($name);
@@ -1759,7 +1757,7 @@ function doInfoGroup($sv) {
     global $Conf, $Opt;
 
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
-    doEntry("opt.shortName", $sv->sv("opt.shortName"), 20);
+    $sv->echo_entry("opt.shortName", $sv->sv("opt.shortName"));
     echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
     echo "<div class=\"g\"></div>\n";
 
@@ -1767,34 +1765,34 @@ function doInfoGroup($sv) {
     if ($long == $sv->sv("opt.shortName"))
         $long = "";
     echo "<div class='f-c'>", $sv->label("opt.longName", "Conference name"), "</div>\n";
-    doEntry("opt.longName", $long, 70);
+    $sv->echo_entry("opt.longName", $long);
     echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
     echo "<div class=\"g\"></div>\n";
 
     echo "<div class='f-c'>", $sv->label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    doEntry("opt.conferenceSite", $sv->sv("opt.conferenceSite"), 70);
+    $sv->echo_entry("opt.conferenceSite", $sv->sv("opt.conferenceSite"));
     echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.contactName", "Name of site contact"), "</div>\n";
-    doEntry("opt.contactName", $sv->sv("opt.contactName"), 50);
+    $sv->echo_entry("opt.contactName", $sv->sv("opt.contactName"));
     echo '<div class="g"></div>', "\n";
 
     echo "<div class='f-c'>", $sv->label("opt.contactEmail", "Email of site contact"), "</div>\n";
-    doEntry("opt.contactEmail", $sv->sv("opt.contactEmail"), 40);
+    $sv->echo_entry("opt.contactEmail", $sv->sv("opt.contactEmail"));
     echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
 
 
     echo '<div class="lg"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    doEntry("opt.emailReplyTo", $sv->sv("opt.emailReplyTo"), 80);
+    $sv->echo_entry("opt.emailReplyTo", $sv->sv("opt.emailReplyTo"));
     echo '<div class="g"></div>', "\n";
 
     echo '<div class="f-c">', $sv->label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    doEntry("opt.emailCc", $sv->sv("opt.emailCc"), 80);
+    $sv->echo_entry("opt.emailCc", $sv->sv("opt.emailCc"));
     echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
 }
 
@@ -2381,7 +2379,7 @@ function doTagsGroup($sv) {
     else
         $v = join(" ", array_keys(TagInfo::chair_tags()));
     echo "<td>", Ht::hidden("has_tag_chair", 1);
-    doEntry("tag_chair", $v, 40);
+    $sv->echo_entry("tag_chair", $v);
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
@@ -2394,7 +2392,7 @@ function doTagsGroup($sv) {
         $v = trim($x);
     }
     echo "<td>", Ht::hidden("has_tag_approval", 1);
-    doEntry("tag_approval", $v, 40);
+    $sv->echo_entry("tag_approval", $v);
     echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
@@ -2407,7 +2405,7 @@ function doTagsGroup($sv) {
         $v = trim($x);
     }
     echo "<td>", Ht::hidden("has_tag_vote", 1);
-    doEntry("tag_vote", $v, 40);
+    $sv->echo_entry("tag_vote", $v);
     echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
@@ -2416,7 +2414,7 @@ function doTagsGroup($sv) {
     else
         $v = $Conf->setting_data("tag_rank", "");
     echo "<td>", Ht::hidden("has_tag_rank", 1);
-    doEntry("tag_rank", $v, 40);
+    $sv->echo_entry("tag_rank", $v);
     echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
 

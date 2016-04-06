@@ -98,31 +98,31 @@
     },
     "opt.conferenceSite": {
         "name": "Conference URL",
-        "type": "urlstring", "optional": true, "placeholder": "N/A"
+        "type": "urlstring", "optional": true, "size": 70, "placeholder": "N/A"
     },
     "opt.contactEmail": {
         "name": "Email of site contact",
-        "type": "emailstring", "optional": true, "invalid_value": "you@example.com"
+        "type": "emailstring", "optional": true, "size": 40, "invalid_value": "you@example.com"
     },
     "opt.contactName": {
         "name": "Name of site contact",
-        "type": "simplestring", "invalid_value": "Your Name"
+        "type": "simplestring", "size": 50, "invalid_value": "Your Name"
     },
     "opt.emailCc": {
         "name": "Default Cc for reviewer email",
-        "type": "emailheader", "placeholder": "(none)"
+        "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     "opt.emailReplyTo": {
         "name": "Reply-To for email",
-        "type": "emailheader", "placeholder": "(none)"
+        "type": "emailheader", "size": 80, "placeholder": "(none)"
     },
     "opt.longName": {
         "name": "Conference name",
-        "type": "simplestring", "placeholder": "(same as abbreviation)"
+        "type": "simplestring", "size": 70, "placeholder": "(same as abbreviation)"
     },
     "opt.shortName": {
         "name": "Conference abbreviation",
-        "type": "simplestring"
+        "type": "simplestring", "size": 20
     },
     "options": {
         "parser": "Option_SettingParser",
@@ -307,7 +307,7 @@
     },
     "tag_approval": {
         "name": "Approval voting tags",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 50
     },
     "tag_au_seerev": {
         "name": "Review visibility tags",
@@ -319,7 +319,7 @@
     },
     "tag_chair": {
         "name": "Chair-only tags",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 50
     },
     "tag_color": {
         "name": "Tag colors",
@@ -327,7 +327,7 @@
     },
     "tag_rank": {
         "name": "Ranking tags",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 50
     },
     "tag_rounds": {
         "internal": true, "type": "taglist"
@@ -338,7 +338,7 @@
     },
     "tag_vote": {
         "name": "Allotment voting tags",
-        "type": "taglist", "parser": "Tag_SettingParser"
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 50
     },
     "topics": {
         "parser": "Topic_SettingParser"
