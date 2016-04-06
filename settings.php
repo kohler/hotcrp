@@ -7,8 +7,6 @@ require_once("src/initweb.php");
 if (!$Me->privChair)
     $Me->escape();
 
-$DateExplanation = "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
-
 // setting information
 class Si {
     public $name;
@@ -84,7 +82,7 @@ class Si {
             $this->storage_type = self::SI_VALUE;
 
         // defaults for size, placeholder
-        if ($this->type == "cdate" || $this->type == "date" || $this->type == "ndate") {
+        if (str_ends_with($this->type, "date")) {
             if ($this->size === null)
                 $this->size = 30;
             if ($this->placeholder === null)
@@ -95,6 +93,10 @@ class Si {
             if ($this->placeholder === null)
                 $this->placeholder = "none";
         }
+    }
+
+    public function is_date() {
+        return str_ends_with($this->type, "date");
     }
 
     public function storage() {
@@ -181,6 +183,7 @@ class SettingValues {
     public $req = array();
     public $savedv = array();
     public $explicit_oldv = array();
+    private $hint_status = array();
 
     public function __construct() {
     }
@@ -405,7 +408,7 @@ class SettingValues {
                 $js["size"] = $si->size;
             if ($si->placeholder)
                 $js["placeholder"] = $si->placeholder;
-            if ($si->type === "date" || $si->type === "cdate" || $si->type === "ndate")
+            if ($si->is_date())
                 $v = $this->si_render_date_value($v, $si);
             else if ($si->type === "grace")
                 $v = $this->si_render_grace_value($v, $si);
@@ -415,9 +418,19 @@ class SettingValues {
     public function echo_entry($name) {
         echo $this->render_entry($name);
     }
+    public function echo_entry_row($name, $description, $hint = null, $after_entry = null) {
+        echo '<tr><td class="lcaption nw">', $this->label($name, $description),
+            '</td><td class="lentry">', $this->render_entry($name);
+        if ($after_entry)
+            echo $after_entry;
+        if (($si = $this->si($name)) && ($thint = $this->type_hint($si->type)))
+            $hint = ($hint ? $hint . "<br />" : "") . $thint;
+        if ($hint)
+            echo '<br /><span class="hint">', $hint, "</span>";
+        echo "</td></tr>\n";
+    }
 
-
-    public function si_render_date_value($v, $si) {
+    private function si_render_date_value($v, $si) {
         global $Conf;
         if ($v !== null && $this->use_req())
             return $v;
@@ -432,7 +445,7 @@ class SettingValues {
         else
             return $Conf->parseableTime($v, true);
     }
-    public function si_render_grace_value($v, $si) {
+    private function si_render_grace_value($v, $si) {
         if ($v === null || $v <= 0 || !is_numeric($v))
             return "none";
         if ($v % 3600 == 0)
@@ -440,6 +453,17 @@ class SettingValues {
         if ($v % 60 == 0)
             return ($v / 60) . " min";
         return sprintf("%d:%02d", intval($v / 60), $v % 60);
+    }
+
+    public function type_hint($type) {
+        if (str_ends_with($type, "date") && !isset($this->hint_status["date"])) {
+            $this->hint_status["date"] = true;
+            return "Date examples: “now”, “10 Dec 2006 11:59:59pm PST”, “2014-10-31 00:00 UTC-1100” <a href='http://php.net/manual/en/datetime.formats.php'>(more examples)</a>";
+        } else if ($type === "grace" && !isset($this->hint_status["grace"])) {
+            $this->hint_status["grace"] = true;
+            return "Example: “15 min”";
+        } else
+            return false;
     }
 
 
@@ -1714,41 +1738,6 @@ if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
 
-function doTextRow($name, $text) {
-    global $Conf, $Sv;
-    $nametext = (is_array($text) ? $text[0] : $text);
-    echo '<tr><td class="lcaption nw">', $Sv->label($name, $nametext),
-        '</td><td class="lentry">', $Sv->render_entry($name);
-    if (is_array($text) && get($text, 2))
-        echo $text[2];
-    if (is_array($text) && get($text, 1))
-        echo "<br /><span class='hint'>", $text[1], "</span>";
-    echo "</td></tr>\n";
-}
-
-function doDateRow($name, $text) {
-    global $DateExplanation, $Sv;
-    if ($DateExplanation) {
-        if (is_array($text))
-            $text[1] = $DateExplanation . "<br />" . $text[1];
-        else
-            $text = array($text, $DateExplanation);
-        $DateExplanation = "";
-    }
-    doTextRow($name, $text);
-}
-
-function doGraceRow($name, $text) {
-    global $GraceExplanation, $Sv;
-    if (!isset($GraceExplanation)) {
-        $text = array($text, "Example: “15 min”");
-        $GraceExplanation = true;
-    }
-    doTextRow($name, $text);
-}
-
-
-
 // Accounts
 function doAccGroup($sv) {
     global $Conf, $Me;
@@ -1853,9 +1842,9 @@ function doSubGroup($sv) {
                                Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
-    doDateRow("sub_reg", "Registration deadline");
-    doDateRow("sub_sub", "Submission deadline");
-    doGraceRow("sub_grace", 'Grace period');
+    $sv->echo_entry_row("sub_reg", "Registration deadline");
+    $sv->echo_entry_row("sub_sub", "Submission deadline");
+    $sv->echo_entry_row("sub_grace", 'Grace period');
     echo "</table>\n";
 
     $sv->echo_radio_table("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
@@ -2047,14 +2036,14 @@ function doOptGroup($sv) {
             $val = get($bsetting, $i, "");
             $sv->set_oldv("sub_banal_$name", $val == "" ? "N/A" : $val);
         }
-        doTextRow("sub_banal_papersize", array("Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”"));
-        doTextRow("sub_banal_pagelimit", "Page limit");
-        doTextRow("sub_banal_textblock", array("Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”"));
+        $sv->echo_entry_row("sub_banal_papersize", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
+        $sv->echo_entry_row("sub_banal_pagelimit", "Page limit");
+        $sv->echo_entry_row("sub_banal_textblock", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         echo '</tbody></table></td>', '<td><span class="sep"></span></td>',
             '<td class="top"><table class="secondary-settings"><tbody>';
-        doTextRow("sub_banal_bodyfontsize", array("Minimum body font size", null, "&nbsp;pt"));
-        doTextRow("sub_banal_bodyleading", array("Minimum leading", null, "&nbsp;pt"));
-        doTextRow("sub_banal_columns", array("Columns", null));
+        $sv->echo_entry_row("sub_banal_bodyfontsize", "Minimum body font size", null, "&nbsp;pt");
+        $sv->echo_entry_row("sub_banal_bodyleading", "Minimum leading", null, "&nbsp;pt");
+        $sv->echo_entry_row("sub_banal_columns", "Columns");
         echo "</tbody></table></td></tr></table>";
     }
 
@@ -2202,7 +2191,7 @@ function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
 }
 
 function doRevGroup($sv) {
-    global $Conf, $DateExplanation;
+    global $Conf;
 
     $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
     $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
@@ -2222,9 +2211,7 @@ function doRevGroup($sv) {
 
     // Deadlines
     echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
-    $date_text = $DateExplanation;
-    $DateExplanation = "";
-    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', $date_text, '</p>';
+    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', ($sv->type_hint("date") ? : ""), '</p>';
 
     $rounds = $Conf->round_list();
     if ($sv->use_req()) {
@@ -2402,7 +2389,7 @@ function do_track($sv, $trackname, $tnum) {
 }
 
 function doTagsGroup($sv) {
-    global $Conf, $DateExplanation;
+    global $Conf;
 
     // Tags
     $tagger = new Tagger;
@@ -2560,13 +2547,13 @@ function doDecGroup($sv) {
         if ($i === "n")
             echo ';display:none';
         echo '"><table class="secondary-settings"><tbody>';
-        doTextRow("resp_roundname$isuf", "Response name");
+        $sv->echo_entry_row("resp_roundname$isuf", "Response name");
         if ($sv->sv("resp_open$isuf") === 1 && ($x = $sv->sv("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
-        doDateRow("resp_open$isuf", "Start time");
-        doDateRow("resp_done$isuf", "Hard deadline");
-        doGraceRow("resp_grace$isuf", "Grace period");
-        doTextRow("resp_words$isuf", array("Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."));
+        $sv->echo_entry_row("resp_open$isuf", "Start time");
+        $sv->echo_entry_row("resp_done$isuf", "Hard deadline");
+        $sv->echo_entry_row("resp_grace$isuf", "Grace period");
+        $sv->echo_entry_row("resp_words$isuf", "Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
         echo '</tbody></table><div style="padding-top:4px">';
         do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
         echo '</div></div>', "\n";
@@ -2640,9 +2627,9 @@ function doDecGroup($sv) {
     echo '<table id="foldfinal" class="fold2o">';
     $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
     echo '<tr class="fx2"><td></td><td><table class="secondary-settings"><tbody>';
-    doDateRow("final_soft", "Deadline");
-    doDateRow("final_done", "Hard deadline");
-    doGraceRow("final_grace", "Grace period");
+    $sv->echo_entry_row("final_soft", "Deadline");
+    $sv->echo_entry_row("final_done", "Hard deadline");
+    $sv->echo_entry_row("final_grace", "Grace period");
     echo "</tbody></table><div class='g'></div>";
     do_message("msg.finalsubmit", "Instructions", 1);
     echo "<div class='g'></div>",
