@@ -48,7 +48,9 @@ if (isset($_POST["go"]) && check_post()) {
         if ($_POST["password"] === @$_POST["autopassword"])
             $flags |= Contact::CHANGE_PASSWORD_PLAINTEXT;
         $Acct->change_password(null, $_POST["password"], $flags);
-        $Acct->log_activity("Password reset via " . substr($_REQUEST["resetcap"], 0, 8) . "...");
+        if (!$iscdb || !($log_acct = Contact::find_by_email($Acct->email)))
+            $log_acct = $Acct;
+        $log_acct->log_activity("Password reset via " . substr($_REQUEST["resetcap"], 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
         $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_POST["password"]));
