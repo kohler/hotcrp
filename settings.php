@@ -429,6 +429,28 @@ class SettingValues {
             echo '<br /><span class="hint">', $hint, "</span>";
         echo "</td></tr>\n";
     }
+    private function echo_message_base($name, $description, $hint, $class) {
+        global $Conf;
+        $si = $this->si($name);
+        $rows = ($si ? $si->size : 0) ? : 10;
+        $default = $Conf->message_default_html($name);
+        $current = $this->sv($name, $default);
+        $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
+            . expander(null, 0) . $description . '</a>';
+        echo '<div class="fold', ($current == $default ? "c" : "o"), '" data-fold="true">',
+            '<div class="', $class, ' childfold" onclick="return foldup(this,event)">',
+            $this->label($name, $description),
+            ' <span class="f-cx fx">(HTML allowed)</span></div>',
+            $hint,
+            Ht::textarea($name, $current, $this->sjs($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
+            '</div><div class="g"></div>', "\n";
+    }
+    public function echo_message($name, $description, $hint = "") {
+        $this->echo_message_base($name, $description, $hint, "f-cl");
+    }
+    public function echo_message_minor($name, $description, $hint = "") {
+        $this->echo_message_base($name, $description, $hint, "f-cn");
+    }
 
     private function si_render_date_value($v, $si) {
         global $Conf;
@@ -1755,27 +1777,6 @@ function doAccGroup($sv) {
     echo $pl->table_html("pcadminx", hoturl("users", "t=pcadmin"));
 }
 
-// Messages
-function do_message($name, $description, $type, $rows = 10, $hint = "") {
-    global $Conf, $Sv;
-    $defaultname = $name;
-    if (is_array($name))
-        list($name, $defaultname) = $name;
-    $default = $Conf->message_default_html($defaultname);
-    $current = $Sv->sv($name, $default);
-    $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
-        . expander(null, 0) . $description . '</a>';
-    echo '<div class="fold', ($current == $default ? "c" : "o"),
-        '" data-fold="true">',
-        '<div class="', ($type ? "f-cn" : "f-cl"),
-        ' childfold" onclick="return foldup(this,event)">',
-        $Sv->label($name, $description),
-        ' <span class="f-cx fx">(HTML allowed)</span></div>',
-        $hint,
-        Ht::textarea($name, $current, $Sv->sjs($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
-        '</div><div class="g"></div>', "\n";
-}
-
 function doInfoGroup($sv) {
     global $Conf, $Opt;
 
@@ -1819,15 +1820,15 @@ function doInfoGroup($sv) {
 }
 
 function doMsgGroup($sv) {
-    do_message("msg.home", "Home page message", 0);
-    do_message("msg.clickthrough_submit", "Clickthrough submission terms", 0, 10,
+    $sv->echo_message("msg.home", "Home page message");
+    $sv->echo_message("msg.clickthrough_submit", "Clickthrough submission terms",
                "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
-    do_message("msg.submit", "Submission message", 0, 5,
+    $sv->echo_message("msg.submit", "Submission message",
                "<div class=\"hint fx\">This message will appear on paper editing pages.</div>");
-    do_message("msg.clickthrough_review", "Clickthrough reviewing terms", 0, 10,
+    $sv->echo_message("msg.clickthrough_review", "Clickthrough reviewing terms",
                "<div class=\"hint fx\">Users must “accept” these terms to edit a review. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
-    do_message("msg.conflictdef", "Definition of conflict of interest", 0, 5);
-    do_message("msg.revprefdescription", "Review preference instructions", 0, 20);
+    $sv->echo_message("msg.conflictdef", "Definition of conflict of interest");
+    $sv->echo_message("msg.revprefdescription", "Review preference instructions");
 }
 
 // Submissions
@@ -2557,7 +2558,7 @@ function doDecGroup($sv) {
         $sv->echo_entry_row("resp_grace$isuf", "Grace period");
         $sv->echo_entry_row("resp_words$isuf", "Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
         echo '</tbody></table><div style="padding-top:4px">';
-        do_message(array("msg.resp_instrux$isuf", "msg.resp_instrux"), "Instructions", 1, 3);
+        $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
         echo '</div></div>', "\n";
     }
 
@@ -2633,7 +2634,7 @@ function doDecGroup($sv) {
     $sv->echo_entry_row("final_done", "Hard deadline");
     $sv->echo_entry_row("final_grace", "Grace period");
     echo "</tbody></table><div class='g'></div>";
-    do_message("msg.finalsubmit", "Instructions", 1);
+    $sv->echo_message_minor("msg.finalsubmit", "Instructions");
     echo "<div class='g'></div>",
         "<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
         "</td></tr></table>\n\n";

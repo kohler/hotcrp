@@ -44,13 +44,17 @@ class Message {
     public static function default_html($name) {
         if (self::$messages === null)
             self::load();
-        if (!($m = get(self::$messages, $name))
-            && ($p = strrpos($name, ".")))
-            $m = get(self::$messages, substr($name, 0, $p));
-        if ($m && isset($m->html))
-            return $m->html;
-        else if ($m && isset($m->text))
-            return htmlspecialchars($m->text);
+        $msg = get(self::$messages, $name);
+        if (!$msg && preg_match('/\A(.*)_(?:\$|n|\d+)(|\..*)\z/', $name, $m)) {
+            $name = $m[1] . $m[2];
+            $msg = get(self::$messages, $name);
+        }
+        if (!$msg && ($p = strrpos($name, ".")))
+            $msg = get(self::$messages, substr($name, 0, $p));
+        if ($msg && isset($msg->html))
+            return $msg->html;
+        else if ($msg && isset($msg->text))
+            return htmlspecialchars($msg->text);
         else
             return false;
     }
