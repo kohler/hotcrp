@@ -19,24 +19,42 @@ class UserActions {
     }
 
     static function disable($ids, $contact) {
-        $result = Dbl::qe("update ContactInfo set disabled=1 where contactId ?a and contactId!=?", $ids, $contact->contactId);
-        if ($result && $result->affected_rows)
-            return (object) array("ok" => true);
-        else if ($result)
-            return (object) array("ok" => true, "warnings" => array("Those accounts were already disabled."));
-        else
-            return (object) array("error" => true);
+        global $Conf;
+        $old_logged_errors = Dbl::$logged_errors;
+        $enabled_cids = Dbl::fetch_first_columns("select contactId from ContactInfo where contactId ?a and disabled=0 and contactId!=?", $ids, $contact->contactId);
+        if ($enabled_cids)
+            Dbl::qe("update ContactInfo set disabled=1 where contactId ?a", $enabled_cids);
+        if (Dbl::$logged_errors > $old_logged_errors)
+            return (object) ["error" => true];
+        else if (!count($enabled_cids))
+            return (object) ["ok" => true, "warnings" => ["Those accounts were already disabled."]];
+        else {
+            $Conf->save_logs(true);
+            foreach ($enabled_cids as $cid)
+                $Conf->log("Account disabled by $contact->email", $cid);
+            $Conf->save_logs(false);
+            return (object) ["ok" => true];
+        }
     }
 
     static function enable($ids, $contact) {
-        $result = Dbl::qe("update ContactInfo set disabled=1 where contactId ?a and password='' and contactId!=?", $ids, $contact->contactId);
-        $result = Dbl::qe("update ContactInfo set disabled=0 where contactId ?a and contactId!=?", $ids, $contact->contactId);
-        if ($result && $result->affected_rows)
-            return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, true, "create", $ids);
-        else if ($result)
-            return (object) array("ok" => true, "warnings" => array("Those accounts were already enabled."));
-        else
-            return (object) array("error" => true);
+        global $Conf;
+        $old_logged_errors = Dbl::$logged_errors;
+        Dbl::qe("update ContactInfo set disabled=1 where contactId ?a and password='' and contactId!=?", $ids, $contact->contactId);
+        $disabled_cids = Dbl::fetch_first_columns("select contactId from ContactInfo where contactId ?a and disabled=1 and contactId!=?", $ids, $contact->contactId);
+        if ($disabled_cids)
+            Dbl::qe("update ContactInfo set disabled=0 where contactId ?a", $disabled_cids);
+        if (Dbl::$logged_errors > $old_logged_errors)
+            return (object) ["error" => true];
+        else if (!count($disabled_cids))
+            return (object) ["ok" => true, "warnings" => ["Those accounts were already enabled."]];
+        else {
+            $Conf->save_logs(true);
+            foreach ($disabled_cids as $cid)
+                $Conf->log("Account enabled by $contact->email", $cid);
+            $Conf->save_logs(false);
+            return self::modify_password_mail("password='' and contactId!=" . $contact->contactId, true, "create", $disabled_cids);
+        }
     }
 
     static function reset_password($ids, $contact) {
@@ -64,5 +82,4 @@ class UserActions {
             $Conf->ajaxExit(array("ok" => $confirmed));
         redirectSelf();
     }
-
 }
