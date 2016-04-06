@@ -3,72 +3,69 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-global $review_form_setting_prefixes;
-$review_form_setting_prefixes = array("shortName_", "description_",
-                                      "order_", "authorView_", "options_",
-                                      "option_class_prefix_");
-
-function rf_check_options($sv, $fid, $fj) {
-    global $Conf;
-    if (!isset($sv->req["options_$fid"])) {
-        $fj->options = array();
-        return get($fj, "position") ? false : true;
-    }
-
-    $text = cleannl($sv->req["options_$fid"]);
-    $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
-    $expect = ($letters ? "[A-Z]" : "[1-9]");
-
-    $opts = array();
-    $lowonum = 10000;
-    $allow_empty = false;
-
-    foreach (explode("\n", $text) as $line) {
-        $line = trim($line);
-        if ($line != "") {
-            if ((preg_match("/^($expect)\\.\\s*(\\S.*)/", $line, $m)
-                 || preg_match("/^($expect)\\s+(\\S.*)/", $line, $m))
-                && !isset($opts[$m[1]])) {
-                $onum = ($letters ? ord($m[1]) : (int) $m[1]);
-                $lowonum = min($lowonum, $onum);
-                $opts[$onum] = $m[2];
-            } else if (preg_match('/^No entry$/i', $line))
-                $allow_empty = true;
-            else
-                return false;
-        }
-    }
-
-    // numeric options must start from 1
-    if (!$letters && count($opts) > 0 && $lowonum != 1)
-        return false;
-    // must have at least 2 options, but off-form fields don't count
-    if (count($opts) < 2 && get($fj, "position"))
-        return false;
-
-    $text = "";
-    $seqopts = array();
-    for ($onum = $lowonum; $onum < $lowonum + count($opts); ++$onum) {
-        if (!isset($opts[$onum]))       // options out of order
-            return false;
-        $seqopts[] = $opts[$onum];
-    }
-
-    if ($letters) {
-        $seqopts = array_reverse($seqopts, true);
-        $fj->option_letter = chr($lowonum);
-    }
-    $fj->options = array_values($seqopts);
-    if ($allow_empty)
-        $fj->allow_empty = true;
-    return true;
-}
-
 class ReviewForm_SettingParser extends SettingParser {
     private $nrfj;
 
+    public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_"];
+
+    private function check_options($sv, $fid, $fj) {
+        global $Conf;
+        if (!isset($sv->req["options_$fid"])) {
+            $fj->options = array();
+            return get($fj, "position") ? false : true;
+        }
+
+        $text = cleannl($sv->req["options_$fid"]);
+        $letters = ($text && ord($text[0]) >= 65 && ord($text[0]) <= 90);
+        $expect = ($letters ? "[A-Z]" : "[1-9]");
+
+        $opts = array();
+        $lowonum = 10000;
+        $allow_empty = false;
+
+        foreach (explode("\n", $text) as $line) {
+            $line = trim($line);
+            if ($line != "") {
+                if ((preg_match("/^($expect)\\.\\s*(\\S.*)/", $line, $m)
+                     || preg_match("/^($expect)\\s+(\\S.*)/", $line, $m))
+                    && !isset($opts[$m[1]])) {
+                    $onum = ($letters ? ord($m[1]) : (int) $m[1]);
+                    $lowonum = min($lowonum, $onum);
+                    $opts[$onum] = $m[2];
+                } else if (preg_match('/^No entry$/i', $line))
+                    $allow_empty = true;
+                else
+                    return false;
+            }
+        }
+
+        // numeric options must start from 1
+        if (!$letters && count($opts) > 0 && $lowonum != 1)
+            return false;
+        // must have at least 2 options, but off-form fields don't count
+        if (count($opts) < 2 && get($fj, "position"))
+            return false;
+
+        $text = "";
+        $seqopts = array();
+        for ($onum = $lowonum; $onum < $lowonum + count($opts); ++$onum) {
+            if (!isset($opts[$onum]))       // options out of order
+                return false;
+            $seqopts[] = $opts[$onum];
+        }
+
+        if ($letters) {
+            $seqopts = array_reverse($seqopts, true);
+            $fj->option_letter = chr($lowonum);
+        }
+        $fj->options = array_values($seqopts);
+        if ($allow_empty)
+            $fj->allow_empty = true;
+        return true;
+    }
+
     public function parse($sv, $si) {
-        global $Conf, $review_form_setting_prefixes;
+        global $Conf;
         $this->nrfj = (object) array();
         $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
     2. Medium quality
@@ -107,7 +104,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
             if ($f->has_options) {
                 $fj->options = array_values($f->options); // default
-                if (!rf_check_options($sv, $fid, $fj) && $pos > 0) {
+                if (!$this->check_options($sv, $fid, $fj) && $pos > 0) {
                     $sv->set_error("options_$fid", "Invalid options.");
                     if ($option_error)
                         $sv->set_error(null, $option_error);
@@ -136,7 +133,7 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     public function save($sv, $si) {
-        global $Conf, $review_form_setting_prefixes;
+        global $Conf;
         if ($sv->update("review_form", json_encode($this->nrfj))) {
             $rf = ReviewForm::get();
             $scoreModified = array();
@@ -148,7 +145,7 @@ class ReviewForm_SettingParser extends SettingParser {
                     Dbl::free($result);
                 }
             foreach ($rf->fmap as $fid => $f) {
-                foreach ($review_form_setting_prefixes as $fx)
+                foreach (self::$setting_prefixes as $fx)
                     unset($sv->req["$fx$fid"]);
             }
             if (count($scoreModified))
@@ -161,7 +158,7 @@ class ReviewForm_SettingParser extends SettingParser {
 }
 
 function rf_show($sv) {
-    global $Conf, $ConfSitePATH, $review_form_setting_prefixes;
+    global $Conf, $ConfSitePATH;
 
     $rf = ReviewForm::get();
     $fmap = array();
@@ -173,7 +170,7 @@ function rf_show($sv) {
     $req = array();
     if ($sv->use_req())
         foreach ($rf->fmap as $fid => $f) {
-            foreach ($review_form_setting_prefixes as $fx)
+            foreach (ReviewForm_SettingParser::$setting_prefixes as $fx)
                 if (isset($sv->req["$fx$fid"]))
                     $req["$fx$fid"] = $sv->req["$fx$fid"];
         }
