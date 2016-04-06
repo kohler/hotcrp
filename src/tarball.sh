@@ -229,8 +229,8 @@ images/viewas.png
 scripts/.htaccess
 scripts/d3.min.js
 scripts/graph.js
-scripts/jquery-1.12.0.min.js
-scripts/jquery-1.12.0.min.map
+scripts/jquery-1.12.3.min.js
+scripts/jquery-1.12.3.min.map
 scripts/script.js
 scripts/settings.js
 
