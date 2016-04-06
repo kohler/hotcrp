@@ -1477,6 +1477,8 @@ class RespRound_SettingParser extends SettingParser {
                 $sv->save("resp_open$isuf", $v <= 0 ? null : $v);
             if (($v = parse_value($sv, "resp_done$isuf", Si::get("resp_done"))) !== null)
                 $sv->save("resp_done$isuf", $v <= 0 ? null : $v);
+            if (($v = parse_value($sv, "resp_grace$isuf", Si::get("resp_grace"))) !== null)
+                $sv->save("resp_grace$isuf", $v <= 0 ? null : $v);
             if (($v = parse_value($sv, "resp_words$isuf", Si::get("resp_words"))) !== null)
                 $sv->save("resp_words$isuf", $v < 0 ? null : $v);
             if (($v = parse_value($sv, "msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
