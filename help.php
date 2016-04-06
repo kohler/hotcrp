@@ -175,7 +175,7 @@ to navigate through the rest of the search matches.</p>
 You can:</p>
 
 <ul class='compact'>
-<li>Download a <tt>.zip</tt> file with the selected papers.</li>
+<li>Download a <code>.zip</code> file with the selected papers.</li>
 <li>Download all reviews for the selected papers.</li>
 <li>Download tab-separated text files with authors, PC
  conflicts, review scores, and so forth (some options chairs only).</li>
@@ -1420,7 +1420,7 @@ administrator’s identity.</p>");
   yourself, it can be convenient to collect final versions using HotCRP.
   Authors upload final versions just as they did submissions.  You can then <a
   href='" . hoturl("search", "q=dec:yes&amp;t=s") . "'>download
-  all final versions as a <tt>.zip</tt> archive</a>.  (The submitted
+  all final versions as a <code>.zip</code> archive</a>.  (The submitted
   versions are archived for reference.)</p></li>
 
 </ol>");

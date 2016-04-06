@@ -482,7 +482,8 @@ class PaperTable {
             if ($doc && $optionType)
                 $uploader .= " <span class='barsep'>·</span> "
                     . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
-            $uploader .= "</span>";
+            if ($doc)
+                $uploader .= "</span>";
             if ($doc && $optionType)
                 $uploader .= "<span class='fn'><em>Marked for deletion</em></span>";
             if ($doc)
@@ -1014,7 +1015,7 @@ class PaperTable {
         conflicts of interest. ", $Conf->message_html("conflictdef"), "
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
-        echo "  List one conflict per line.  For example: &ldquo;<tt>Jelena Markovic (EPFL)</tt>&rdquo; or, for a whole institution, &ldquo;<tt>EPFL</tt>&rdquo;.</div>",
+        echo "  List one conflict per line.  For example: &ldquo;<samp>Jelena Markovic (EPFL)</samp>&rdquo; or, for a whole institution, &ldquo;<samp>EPFL</samp>&rdquo;.</div>",
             '<div class="papev">',
             $this->entryData("collaborators"),
             "</div></div>\n\n";
@@ -1768,7 +1769,7 @@ class PaperTable {
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . Ht::js_button("Cancel", "popup(null,'w',1)")
     . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
-    . "</div></div></form></div>");
+    . "</div></div></form></div>", "popup_w");
         }
         if ($b) {
             if (!$Me->can_withdraw_paper($prow))

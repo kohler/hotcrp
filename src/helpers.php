@@ -1096,7 +1096,7 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
         $curOutcome = null;
     $outcomes = array_keys($decs);
     if ($curOutcome === null)
-        $text .= "    <option value='' selected='selected'><b>Set decision...</b></option>\n";
+        $text .= "    <option value='' selected='selected'>Set decision...</option>\n";
     foreach ($decs as $dnum => $dname)
         $text .= "    <option value='$dnum'" . ($curOutcome == $dnum && $curOutcome !== null ? " selected='selected'" : "") . ">" . htmlspecialchars($dname) . "</option>\n";
     return $text . "  </select>";

@@ -119,7 +119,7 @@ class Ht {
             }
 
             if ($info === null)
-                $x .= '<option disabled="disabled"></option>';
+                $x .= '<option label=" " disabled="disabled"></option>';
             else if (isset($info->type) && $info->type === "optgroup") {
                 $x .= $optgroup;
                 if ($info->label) {
@@ -431,7 +431,7 @@ class Ht {
         if ($form && $actions)
             $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
         self::stash_html("<div id=\"popup_$idpart\" class=\"popupc\">"
-                         . $content . ($form ? $form : "") . "</div>");
+                         . $content . ($form ? $form : "") . "</div>", "popup_$idpart");
     }
 
     static function xmsg($type, $content) {

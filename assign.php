@@ -565,8 +565,7 @@ if ($Me->can_administer($prow)) {
                 . '<div id="foldass' . $p->contactId . '" class="foldc" style="position:relative">'
                 . '<a id="folderass' . $p->contactId . '" href="#" onclick="return assigntable.open(' . $p->contactId . ')">'
                 . review_type_icon($revtype, false, $title)
-                . Ht::img("_.gif", ">", array("class" => "next")) . '</a>'
-                . '</a>&nbsp;'
+                . Ht::img("_.gif", ">", array("class" => "next")) . '</a>&nbsp;'
                 . Ht::hidden("pcs$p->contactId", $p->conflictType == 0 ? $p->reviewType : -1, array("id" => "pcs$p->contactId"))
                 . '</div></div>';
 

@@ -1229,12 +1229,13 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
     } else
         $loadresult = "<div></div>";
     $opt["class"] = "cbx";
+    $indent = get($opt, "indent");
+    unset($opt["indent"]);
 
     $text = Ht::checkbox("show$type", 1, $checked, $opt)
         . "&nbsp;" . Ht::label($title) . $loadresult;
     $displayOptions[] = (object) array("type" => $type, "text" => $text,
-                "checked" => $checked, "column" => $column,
-                "indent" => defval($opt, "indent"));
+                "checked" => $checked, "column" => $column, "indent" => $indent);
 }
 
 function displayOptionText($text, $column, $opt = array()) {

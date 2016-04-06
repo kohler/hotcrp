@@ -268,7 +268,7 @@ class LoginHelper {
         global $Conf, $Opt;
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
         if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
-            $msg .= " Your password is “<tt>" . htmlspecialchars($user->plaintext_password()) . "</tt>”. All later users will have to sign in normally.";
+            $msg .= " Your password is “<samp>" . htmlspecialchars($user->plaintext_password()) . "</samp>”. All later users will have to sign in normally.";
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $Conf->save_setting("setupPhase", null);
         $Conf->confirmMsg($msg);

@@ -466,7 +466,7 @@ class Mailer {
                 else {
                     $prep->errors[$lcfield] = $text;
                     if (!get($rest, "no_error_quit"))
-                        Conf::msg_error("$field destination “<tt>" . htmlspecialchars($text) . "</tt>” isn't a valid email list.");
+                        Conf::msg_error("$field destination “<samp>" . htmlspecialchars($text) . "</samp>” isn't a valid email list.");
                 }
             }
         $prep->headers["mime-version"] = "MIME-Version: 1.0" . MAILER_EOL;
@@ -556,7 +556,7 @@ class Mailer {
         $a = array_keys($this->_unexpanded);
         natcasesort($a);
         for ($i = 0; $i < count($a); ++$i)
-            $a[$i] = "<tt>" . htmlspecialchars($a[$i]) . "</tt>";
+            $a[$i] = "<code>" . htmlspecialchars($a[$i]) . "</code>";
         if (count($a) == 1)
             return "Keyword-like string " . commajoin($a) . " was not recognized.";
         else

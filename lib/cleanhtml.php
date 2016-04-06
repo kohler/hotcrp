@@ -9,7 +9,7 @@ class CleanHTML {
     private static $emptytags = null;
 
     private static function _cleanHTMLError(&$err, $etype) {
-        $err = "Your HTML code contains $etype. Only HTML content tags are accepted, such as <tt>&lt;p&gt;</tt>, <tt>&lt;strong&gt;</tt>, and <tt>&lt;h1&gt;</tt>, and attributes are restricted.";
+        $err = "Your HTML code contains $etype. Only HTML content tags are accepted, such as <code>&lt;p&gt;</code>, <code>&lt;strong&gt;</code>, and <code>&lt;h1&gt;</code>, and attributes are restricted.";
         return false;
     }
 
