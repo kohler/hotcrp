@@ -2630,13 +2630,15 @@ class Conf {
         if ($on && $this->_save_logs === false)
             $this->_save_logs = array();
         else if (!$on && $this->_save_logs !== false) {
-            $x = $this->_save_logs;
-            $this->_save_logs = false;
-            foreach ($x as $cid_text => $pids) {
+            $qs = [];
+            foreach ($this->_save_logs as $cid_text => $pids) {
                 $pos = strpos($cid_text, "|");
-                $this->log(substr($cid_text, $pos + 1),
-                           substr($cid_text, 0, $pos), $pids);
+                $qs[] = self::format_log_query(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
             }
+            $mresult = Dbl::multi_q_raw(join(";", $qs));
+            while (($result = $mresult->next()))
+                Dbl::free($result);
+            $this->_save_logs = false;
         }
     }
 
@@ -2657,22 +2659,24 @@ class Conf {
         foreach ($pids as $p)
             $ps[] = is_object($p) ? $p->paperId : $p;
 
-        if ($this->_save_logs !== false) {
-            foreach ($ps as $p)
-                $this->_save_logs["$who|$text"][] = $p;
-            return;
-        }
-
-        if (count($ps) == 0)
-            $ps = null;
-        else if (count($ps) == 1)
-            $ps = $ps[0];
+        if ($this->_save_logs === false)
+            Dbl::q_raw(self::format_log_query($text, $who, $ps));
         else {
-            $text .= " (papers " . join(", ", $ps) . ")";
-            $ps = null;
+            $key = "$who|$text";
+            if (!isset($this->_save_logs[$key]))
+                $this->_save_logs[$key] = [];
+            foreach ($ps as $p)
+                $this->_save_logs[$key][$p] = true;
         }
-        $result = Dbl::q("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", get($_SERVER, "REMOTE_ADDR"), (int) $who, $ps, substr($text, 0, 4096));
-        Dbl::free($result);
+    }
+
+    private static function format_log_query($text, $who, $pids) {
+        $pid = null;
+        if (count($pids) == 1)
+            $pid = $pids[0];
+        else if (count($pids) > 1)
+            $text .= " (papers " . join(", ", $pids) . ")";
+        return Dbl::format_query("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", get($_SERVER, "REMOTE_ADDR"), (int) $who, $pid, substr($text, 0, 4096));
     }
 
 
