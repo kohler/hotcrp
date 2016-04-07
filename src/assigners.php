@@ -1088,7 +1088,7 @@ class TagAssigner extends Assigner {
         $vote_adjustments = array();
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"])
-                && (!$m[3] || SearchReviewValue::compare($x["_index"], $m[3], $m[4]))
+                && (!$m[3] || CountMatcher::compare($x["_index"], $m[3], $m[4]))
                 && ($search_ltag
                     || $state->contact->can_change_tag($prow, $x["ltag"],
                                                        $x["_index"], null, $state->override))) {
