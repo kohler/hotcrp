@@ -7,17 +7,35 @@ require_once("src/initweb.php");
 require_once("src/papersearch.php");
 if ($Me->is_empty())
     $Me->escape();
-$getaction = "";
-if (isset($_REQUEST["get"]))
-    $getaction = $_REQUEST["get"];
-else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
-    $getaction = $_REQUEST["getaction"];
 
-// choose a sensible default action (if someone presses enter on a form element)
-if (isset($_REQUEST["default"]) && defval($_REQUEST, "defaultact"))
-    $_REQUEST[$_REQUEST["defaultact"]] = true;
-else if (isset($_REQUEST["default"]))
-    $_REQUEST["download"] = true;
+global $Qreq;
+if (!$Qreq)
+    $Qreq = make_qreq();
+
+if (isset($Qreq->default) && $Qreq->defaultact)
+    $Qreq->fn = $Qreq->defaultact;
+// backwards compat
+if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "tag", "assign", "setdecision", "sendmail"])) {
+    if (isset($Qreq->get)) {
+        $Qreq->fn = "get";
+        $Qreq->getfn = $Qreq->get;
+    } else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
+        $Qreq->fn = "get";
+        $Qreq->getfn = $Qreq->getaction;
+    } else if (isset($Qreq->tagact) || $Qreq->fn === "tagact") {
+        $Qreq->fn = "tag";
+        $Qreq->tagfn = $Qreq->tagtype;
+    } else if (isset($Qreq->setassign) || $Qreq->fn === "setassign") {
+        $Qreq->fn = "assign";
+        $Qreq->assignfn = $Qreq->marktype;
+    } else if (isset($Qreq->setdecision))
+        $Qreq->fn = "setdecision";
+    else if (isset($Qreq->sendmail))
+        $Qreq->fn = "sendmail";
+    else
+        unset($Qreq->fn);
+}
+
 
 // paper group
 $tOpt = PaperSearch::search_types($Me);
@@ -26,33 +44,30 @@ if (count($tOpt) == 0) {
     Conf::msg_error("You are not allowed to search for papers.");
     exit;
 }
-if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
+if (isset($Qreq->t) && !isset($tOpt[$Qreq->t])) {
     Conf::msg_error("You aren’t allowed to search that paper collection.");
-    unset($_REQUEST["t"]);
+    unset($Qreq->t, $_GET["t"], $_POST["t"], $_REQUEST["t"]);
 }
-if (!isset($_REQUEST["t"]))
-    $_REQUEST["t"] = key($tOpt);
+if (!isset($Qreq->t))
+    $Qreq->t = $_GET["t"] = $_POST["t"] = $_REQUEST["t"] = key($tOpt);
 
 // search canonicalization
-if (isset($_REQUEST["q"]))
-    $_REQUEST["q"] = trim($_REQUEST["q"]);
-if (isset($_REQUEST["q"]) && trim($_REQUEST["q"]) == "(All)")
-    $_REQUEST["q"] = "";
-if ((isset($_REQUEST["qa"]) || isset($_REQUEST["qo"]) || isset($_REQUEST["qx"]))
-    && !isset($_REQUEST["q"])) {
-    $_REQUEST["qa"] = defval($_REQUEST, "qa", "");
-    $_REQUEST["q"] = PaperSearch::canonical_query($_REQUEST["qa"], defval($_REQUEST, "qo"), defval($_REQUEST, "qx"));
-} else {
-    unset($_REQUEST["qa"]);
-    unset($_REQUEST["qo"]);
-    unset($_REQUEST["qx"]);
-}
+if (isset($Qreq->q))
+    $Qreq->q = trim($Qreq->q);
+if (isset($Qreq->q) && $Qreq->q == "(All)")
+    $Qreq->q = "";
+if ((isset($Qreq->qa) || isset($Qreq->qo) || isset($Qreq->qx)) && !isset($Qreq->q))
+    $Qreq->q = PaperSearch::canonical_query((string) $Qreq->qa, $Qreq->qo, $Qreq->qx);
+else
+    unset($Qreq->qa, $Qreq->qo, $Qreq->qx, $_GET["qa"], $_GET["qo"], $_GET["qx"], $_POST["qa"], $_POST["qo"], $_POST["qx"], $_REQUEST["qa"], $_REQUEST["qo"], $_REQUEST["qx"]);
+if (isset($Qreq->q))
+    $_REQUEST["q"] = $_GET["q"] = $Qreq->q;
 
 
 // paper selection
 global $SSel;
 if (!$SSel) { /* we might be included by reviewprefs.php */
-    $SSel = SearchSelection::make(make_qreq(), $Me);
+    $SSel = SearchSelection::make($Qreq, $Me);
     SearchSelection::clear_request();
 }
 
@@ -65,10 +80,11 @@ function cleanAjaxResponse(&$response, $type) {
 
 
 // download selected papers
-if (($getaction == "paper" || $getaction == "final"
-     || substr($getaction, 0, 4) == "opt-")
+if ($Qreq->fn == "get"
+    && ($Qreq->getfn == "paper" || $Qreq->getfn == "final"
+        || substr($Qreq->getfn, 0, 4) == "opt-")
     && !$SSel->is_empty()
-    && ($dt = HotCRPDocument::parse_dtype($getaction)) !== null) {
+    && ($dt = HotCRPDocument::parse_dtype($Qreq->getfn)) !== null) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection())));
     $downloads = array();
     while (($row = PaperInfo::fetch($result, $Me))) {
@@ -95,13 +111,14 @@ function topic_ids_to_text($tids, $tmap, $tomap) {
 
 
 // download selected abstracts
-if ($getaction == "abstract" && !$SSel->is_empty() && defval($_REQUEST, "ajax")) {
-    $Search = new PaperSearch($Me, $_REQUEST);
+if ($Qreq->fn == "get" && $Qreq->getfn == "abstract"
+    && !$SSel->is_empty() && $Qreq->ajax) {
+    $Search = new PaperSearch($Me, $Qreq);
     $pl = new PaperList($Search);
     $response = $pl->ajaxColumn("abstract");
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
-} else if ($getaction == "abstract" && !$SSel->is_empty()) {
+} else if ($Qreq->fn == "get" && $Qreq->getfn == "abstract" && !$SSel->is_empty()) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "topics" => 1)));
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
@@ -115,7 +132,7 @@ if ($getaction == "abstract" && !$SSel->is_empty() && defval($_REQUEST, "ajax"))
             $text .= prefix_word_wrap($n, $prow->title, $l);
             $text .= "---------------------------------------------------------------------------\n";
             $l = strlen($text);
-            if ($Me->can_view_authors($prow, $_REQUEST["t"] == "a"))
+            if ($Me->can_view_authors($prow, $Qreq->t == "a"))
                 $text .= prefix_word_wrap("Authors: ", $prow->pretty_text_author_list(), 14);
             if ($prow->topicIds != "") {
                 $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
@@ -137,15 +154,16 @@ if ($getaction == "abstract" && !$SSel->is_empty() && defval($_REQUEST, "ajax"))
 
 
 // other field-based Ajax downloads: tags, collaborators, ...
-if ($getaction && ($fdef = PaperColumn::lookup($getaction))
-    && $fdef->foldable && defval($_REQUEST, "ajax")) {
-    if ($getaction == "authors") {
-        $full = defval($_REQUEST, "aufull", 0);
+if ($Qreq->fn == "get" && $Qreq->getfn
+    && ($fdef = PaperColumn::lookup($Qreq->getfn))
+    && $fdef->foldable && $Qreq->ajax) {
+    if ($Qreq->getfn == "authors") {
+        $full = (int) $Qreq->aufull;
         displayOptionsSet("pldisplay", "aufull", $full);
     }
-    $Search = new PaperSearch($Me, $_REQUEST);
+    $Search = new PaperSearch($Me, $Qreq);
     $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn($getaction);
+    $response = $pl->ajaxColumn($Qreq->getfn);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 }
@@ -157,7 +175,7 @@ function whyNotToText($e) {
 }
 
 function downloadReviews(&$texts, &$errors) {
-    global $getaction, $Opt, $Conf, $SSel;
+    global $Opt, $Conf, $SSel, $Qreq;
 
     $texts = $SSel->reorder($texts);
     if (count($texts) == 0) {
@@ -168,8 +186,8 @@ function downloadReviews(&$texts, &$errors) {
         return;
     }
 
-    $getforms = ($getaction == "revform" || $getaction == "revformz");
-    $gettext = ($getaction == "rev" || $getaction == "revform");
+    $getforms = ($Qreq->getfn == "revform" || $Qreq->getfn == "revformz");
+    $gettext = ($Qreq->getfn == "rev" || $Qreq->getfn == "revform");
 
     $warnings = array();
     $nerrors = 0;
@@ -218,13 +236,15 @@ function downloadReviews(&$texts, &$errors) {
 
 // download review form for selected papers
 // (or blank form if no papers selected)
-if (($getaction == "revform" || $getaction == "revformz")
+if ($Qreq->fn == "get"
+    && ($Qreq->getfn == "revform" || $Qreq->getfn == "revformz")
     && $SSel->is_empty()) {
     $rf = ReviewForm::get();
     $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
     exit;
-} else if ($getaction == "revform" || $getaction == "revformz") {
+} else if ($Qreq->fn == "get"
+           && ($Qreq->getfn == "revform" || $Qreq->getfn == "revformz")) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "myReviewsOpt" => 1)));
 
     $texts = array();
@@ -252,7 +272,9 @@ if (($getaction == "revform" || $getaction == "revformz")
 
 
 // download all reviews for selected papers
-if (($getaction == "rev" || $getaction == "revz") && !$SSel->is_empty()) {
+if ($Qreq->fn == "get"
+    && ($Qreq->getfn == "rev" || $Qreq->getfn == "revz")
+    && !$SSel->is_empty()) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "allReviews" => 1, "reviewerName" => 1)));
 
     $texts = array();
@@ -278,14 +300,14 @@ if (($getaction == "rev" || $getaction == "revz") && !$SSel->is_empty()) {
 
 
 // set tags for selected papers
-function tagaction() {
+function tagaction($Qreq) {
     global $Conf, $Me, $Error, $SSel;
 
     $errors = array();
     $papers = $SSel->selection();
 
-    $act = $_REQUEST["tagtype"];
-    $tagreq = trim(str_replace(",", " ", (string) $_REQUEST["tag"]));
+    $act = $Qreq->tagfn;
+    $tagreq = trim(str_replace(",", " ", (string) $Qreq->tag));
     $tags = preg_split(';\s+;', $tagreq);
 
     if ($act == "da") {
@@ -319,20 +341,19 @@ function tagaction() {
         }
         $assignset->parse(join("", $x));
     } else if (count($papers) && $act == "cr" && $Me->privChair) {
-        $source_tag = trim(defval($_REQUEST, "tagcr_source", ""));
+        $source_tag = trim((string) $Qreq->tagcr_source);
         if ($source_tag == "")
             $source_tag = (substr($tagreq, 0, 2) == "~~" ? substr($tagreq, 2) : $tagreq);
         $tagger = new Tagger;
         if ($tagger->check($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
             && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-            $r = new PaperRank($source_tag, $tagreq, $papers,
-                               defval($_REQUEST, "tagcr_gapless"),
+            $r = new PaperRank($source_tag, $tagreq, $papers, $Qreq->tagcr_gapless,
                                "Search", "search");
-            $r->run(defval($_REQUEST, "tagcr_method"));
+            $r->run($Qreq->tagcr_method);
             $r->apply($assignset);
             $assignset->finish();
-            if ($_REQUEST["q"] === "")
-                $_REQUEST["q"] = "order:$tagreq";
+            if ($Qreq->q === "")
+                $Qreq->q = "order:$tagreq";
         } else
             $assignset->error($tagger->error_html);
     }
@@ -345,31 +366,31 @@ function tagaction() {
     }
     $success = $assignset->execute();
 
-    if (!$Conf->headerPrinted && defval($_REQUEST, "ajax"))
+    if (!$Conf->headerPrinted && $Qreq->ajax)
         $Conf->ajaxExit(array("ok" => $success));
     else if (!$Conf->headerPrinted && $success) {
         if (!$errors)
             $Conf->confirmMsg("Tags saved.");
         $args = array();
         foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
-            if (isset($_REQUEST[$arg]))
-                $args[$arg] = $_REQUEST[$arg];
+            if (isset($Qreq[$arg]))
+                $args[$arg] = $Qreq[$arg];
         redirectSelf($args);
     }
 }
-if (isset($_REQUEST["tagact"]) && $Me->isPC && !$SSel->is_empty()
-    && isset($_REQUEST["tag"]) && check_post())
-    tagaction();
-else if (isset($_REQUEST["tagact"]) && defval($_REQUEST, "ajax"))
+if ($Qreq->fn == "tag" && $Me->isPC && !$SSel->is_empty()
+    && isset($Qreq->tag) && check_post())
+    tagaction($Qreq);
+else if ($Qreq->fn == "tag" && $Qreq->ajax)
     $Conf->ajaxExit(array("ok" => false, "error" => "Malformed request"));
 
 
 // download votes
-if ($getaction == "votes" && !$SSel->is_empty() && defval($_REQUEST, "tag")
-    && $Me->isPC) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "votes"
+    && !$SSel->is_empty() && $Qreq->tag && $Me->isPC) {
     $tagger = new Tagger;
-    if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
-        $showtag = trim($_REQUEST["tag"]); // no "23~" prefix
+    if (($tag = $tagger->check($Qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
+        $showtag = trim($Qreq->tag); // no "23~" prefix
         $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "tagIndex" => $tag)));
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
@@ -383,11 +404,12 @@ if ($getaction == "votes" && !$SSel->is_empty() && defval($_REQUEST, "tag")
 
 
 // download rank
-$settingrank = ($Conf->setting("tag_rank") && defval($_REQUEST, "tag") == "~" . $Conf->setting_data("tag_rank"));
-if ($getaction == "rank" && !$SSel->is_empty() && defval($_REQUEST, "tag")
+$settingrank = ($Conf->setting("tag_rank") && $Qreq->tag == "~" . $Conf->setting_data("tag_rank"));
+if ($Qreq->fn == "get" && $Qreq->getfn == "rank"
+    && !$SSel->is_empty() && $Qreq->tag
     && ($Me->isPC || ($Me->is_reviewer() && $settingrank))) {
     $tagger = new Tagger;
-    if (($tag = $tagger->check($_REQUEST["tag"], Tagger::NOVALUE | Tagger::NOCHAIR))) {
+    if (($tag = $tagger->check($Qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
         $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
         $real = "";
         $null = "\n";
@@ -413,7 +435,7 @@ if ($getaction == "rank" && !$SSel->is_empty() && defval($_REQUEST, "tag")
 # and so forth indicate rank gaps between papers. When you are done,
 # upload the file at\n"
             . "#   " . hoturl_absolute("offline") . "\n\n"
-            . "Tag: " . trim($_REQUEST["tag"]) . "\n"
+            . "Tag: " . trim($Qreq->tag) . "\n"
             . "\n"
             . $real . $null;
         downloadText($text, "rank");
@@ -424,7 +446,7 @@ if ($getaction == "rank" && !$SSel->is_empty() && defval($_REQUEST, "tag")
 
 
 // download text author information for selected papers
-if ($getaction == "authors" && !$SSel->is_empty()
+if ($Qreq->fn == "get" && $Qreq->getfn == "authors" && !$SSel->is_empty()
     && ($Me->privChair || ($Me->isPC && !$Conf->subBlindAlways()))) {
     // first fetch contacts if chair
     $contactline = array();
@@ -477,7 +499,8 @@ if ($getaction == "authors" && !$SSel->is_empty()
 
 
 // download text PC conflict information for selected papers
-if ($getaction == "pcconf" && !$SSel->is_empty() && $Me->privChair) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "pcconf"
+    && !$SSel->is_empty() && $Me->privChair) {
     $result = Dbl::qe_raw("select Paper.paperId, title, group_concat(concat(PaperConflict.contactId, ':', conflictType) separator ' ')
                 from Paper
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
@@ -516,10 +539,11 @@ if ($getaction == "pcconf" && !$SSel->is_empty() && $Me->privChair) {
 
 
 // download text lead or shepherd information for selected papers
-if (($getaction == "lead" || $getaction == "shepherd")
+if ($Qreq->fn == "get"
+    && ($Qreq->getfn == "lead" || $Qreq->getfn == "shepherd")
     && !$SSel->is_empty() && $Me->isPC) {
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "reviewerName" => $getaction)));
-    $shep = $getaction == "shepherd";
+    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "reviewerName" => $Qreq->getfn)));
+    $shep = $Qreq->getfn == "shepherd";
     if ($result) {
         $texts = array();
         while (($row = PaperInfo::fetch($result, $Me)))
@@ -535,7 +559,7 @@ if (($getaction == "lead" || $getaction == "shepherd")
 
 
 // download text contact author information, with email, for selected papers
-if ($getaction == "contact" && $Me->privChair && !$SSel->is_empty()) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "contact" && $Me->privChair && !$SSel->is_empty()) {
     // Note that this is chair only
     $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email
 	from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
@@ -554,7 +578,7 @@ if ($getaction == "contact" && $Me->privChair && !$SSel->is_empty()) {
 
 
 // download current assignments
-if ($getaction == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
     list($header, $texts) = SearchActions::pcassignments_csv_data($Me, $SSel->selection());
     downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
     exit;
@@ -562,7 +586,7 @@ if ($getaction == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
 
 
 // download scores and, maybe, anonymity for selected papers
-if ($getaction == "scores" && $Me->isPC && !$SSel->is_empty()) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "scores" && $Me->isPC && !$SSel->is_empty()) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "allReviewScores" => 1, "reviewerName" => 1)));
 
     // compose scores; NB chair is always forceShow
@@ -657,9 +681,10 @@ function downloadRevpref($extended) {
         exit;
     }
 }
-if (($getaction == "revpref" || $getaction == "revprefx")
+if ($Qreq->fn == "get"
+    && ($Qreq->getfn == "revpref" || $Qreq->getfn == "revprefx")
     && $Me->isPC && !$SSel->is_empty())
-    downloadRevpref($getaction == "revprefx");
+    downloadRevpref($Qreq->getfn == "revprefx");
 
 
 // download all preferences for selected papers
@@ -703,12 +728,13 @@ function downloadAllRevpref() {
         exit;
     }
 }
-if ($getaction == "allrevpref" && $Me->privChair && !$SSel->is_empty())
+if ($Qreq->fn == "get" && $Qreq->getfn == "allrevpref"
+    && $Me->privChair && !$SSel->is_empty())
     downloadAllRevpref();
 
 
 // download topics for selected papers
-if ($getaction == "topics" && !$SSel->is_empty()) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "topics" && !$SSel->is_empty()) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "topics" => 1)));
 
     $texts = array();
@@ -742,7 +768,8 @@ if ($getaction == "topics" && !$SSel->is_empty()) {
 
 
 // download format checker reports for selected papers
-if ($getaction == "checkformat" && $Me->privChair && !$SSel->is_empty()) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "checkformat"
+    && $Me->privChair && !$SSel->is_empty()) {
     $result = Dbl::qe_raw("select paperId, title, mimetype from Paper where paperId" . $SSel->sql_predicate() . " order by paperId");
     $format = $Conf->setting_data("sub_banal", "");
 
@@ -782,7 +809,8 @@ if ($getaction == "checkformat" && $Me->privChair && !$SSel->is_empty()) {
 
 
 // download ACM CMS information for selected papers
-if ($getaction == "acmcms" && !$SSel->is_empty() && $Me->privChair) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "acmcms"
+    && !$SSel->is_empty() && $Me->privChair) {
     $idq = "p.paperId" . $SSel->sql_predicate();
 
     // analyze paper page counts
@@ -824,7 +852,7 @@ if ($getaction == "acmcms" && !$SSel->is_empty() && $Me->privChair) {
 
 
 // download status JSON for selected papers
-if ($getaction == "json" && !$SSel->is_empty() && $Me->privChair) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "json" && !$SSel->is_empty() && $Me->privChair) {
     $pj = array();
     $ps = new PaperStatus($Me, ["forceShow" => true]);
     foreach ($SSel->selection() as $pid)
@@ -848,7 +876,7 @@ function jsonattach_document($dj, $prow, $dtype, $drow) {
     }
 }
 
-if ($getaction == "jsonattach" && !$SSel->is_empty() && $Me->privChair) {
+if ($Qreq->fn == "get" && $Qreq->getfn == "jsonattach" && !$SSel->is_empty() && $Me->privChair) {
     global $jsonattach_zip;
     $jsonattach_zip = new ZipDocument($Opt["downloadPrefix"] . "data.zip");
     $pj = array();
@@ -869,9 +897,9 @@ if ($getaction == "jsonattach" && !$SSel->is_empty() && $Me->privChair) {
 
 
 // set outcome for selected papers
-function search_set_decisions() {
+function search_set_decisions($Qreq) {
     global $Conf, $Me, $SSel;
-    $o = cvtint(@$_REQUEST["decision"]);
+    $o = cvtint($Qreq->decision);
     $decision_map = $Conf->decision_map();
     if (!isset($decision_map[$o]))
         return Conf::msg_error("Bad decision value.");
@@ -889,24 +917,23 @@ function search_set_decisions() {
         $Conf->update_paperacc_setting($o > 0);
         redirectSelf(array("atab" => "decide", "decision" => $o));
     }
-    $_REQUEST["atab"] = "decide";
 }
-if (isset($_REQUEST["setdecision"]) && defval($_REQUEST, "decision", "") != ""
+if ($Qreq->fn == "setdecision" && (string) $Qreq->decision != ""
     && !$SSel->is_empty() && check_post())
-    search_set_decisions();
+    search_set_decisions($Qreq);
 
 
 // "Assign"
-if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
+if ($Qreq->fn == "assign" && (string) $Qreq->assignfn != ""
     && !$SSel->is_empty() && check_post()) {
-    $mt = $_REQUEST["marktype"];
-    $mpc = defval($_REQUEST, "markpc", "0");
+    $mt = $Qreq->assignfn;
+    $mpc = get($Qreq, "markpc", "0");
     $pc = ($mpc == "0" ? null : Contact::find_by_email($mpc));
 
     if (!$Me->privChair)
         Conf::msg_error("Only PC chairs can set assignments and conflicts.");
     else if ($mt == "auto") {
-        $t = (in_array($_REQUEST["t"], array("acc", "s")) ? $_REQUEST["t"] : "all");
+        $t = (in_array($Qreq->t, array("acc", "s")) ? $Qreq->t : "all");
         $q = join("+", $SSel->selection());
         go(hoturl("autoassign", "pap=$q&t=$t&q=$q"));
     } else if ($mt == "lead" || $mt == "shepherd") {
@@ -955,14 +982,14 @@ if (isset($_REQUEST["setassign"]) && defval($_REQUEST, "marktype", "") != ""
 
 
 // send mail
-if (isset($_REQUEST["sendmail"]) && !$SSel->is_empty()) {
+if ($Qreq->fn == "sendmail" && !$SSel->is_empty()) {
     if ($Me->privChair) {
-        $r = (in_array($_REQUEST["recipients"], array("au", "rev")) ? $_REQUEST["recipients"] : "all");
-        if ($SSel->equals_search(new PaperSearch($Me, $_REQUEST)))
-            $x = "q=" . urlencode($_REQUEST["q"]) . "&plimit=1";
+        $r = (in_array($Qreq->recipients, array("au", "rev")) ? $Qreq->recipients : "all");
+        if ($SSel->equals_search(new PaperSearch($Me, $Qreq)))
+            $x = "q=" . urlencode($Qreq->q) . "&plimit=1";
         else
             $x = "p=" . join("+", $SSel->selection());
-        go(hoturl("mail", $x . "&t=" . urlencode($_REQUEST["t"]) . "&recipients=$r"));
+        go(hoturl("mail", $x . "&t=" . urlencode($Qreq->t) . "&recipients=$r"));
     } else
         Conf::msg_error("Only the PC chairs can send mail.");
 }
@@ -1170,7 +1197,7 @@ $Conf->header("Search", "search", actionBar());
 $Conf->echoScript(); // need the JS right away
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
-    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")], make_qreq());
+    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")], $Qreq);
     if (check_post())
         $pl->papersel = $SSel->selection_map();
     $pl_text = $pl->table_html($Search->limitName, [
