@@ -1253,6 +1253,7 @@ Assigner::register("secondary", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""
 Assigner::register("secondaryreview", new ReviewAssigner(0, null, REVIEW_SECONDARY, ""));
 Assigner::register("pcreview", new ReviewAssigner(0, null, REVIEW_PC, ""));
 Assigner::register("ext", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
+Assigner::register("external", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("extreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("externalreview", new ReviewAssigner(0, null, REVIEW_EXTERNAL, ""));
 Assigner::register("review", new ReviewAssigner(0, null, -1, ""));
