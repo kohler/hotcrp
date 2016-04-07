@@ -166,7 +166,15 @@ src/sample.pdf
 src/schema.sql
 src/searchactions.php
 src/settinginfo.json
+src/settings/s_basics.php
+src/settings/s_decisions.php
+src/settings/s_msg.php
 src/settings/s_reviewform.php
+src/settings/s_reviews.php
+src/settings/s_sub.php
+src/settings/s_subform.php
+src/settings/s_tags.php
+src/settings/s_users.php
 src/updateschema.php
 src/useractions.php
 src/userstatus.php

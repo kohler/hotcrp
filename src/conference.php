@@ -374,6 +374,10 @@ class Conf {
         self::$gFormatInfo = null;
     }
 
+    function has_setting($name) {
+        return isset($this->settings[$name]);
+    }
+
     function setting($name, $defval = false) {
         return defval($this->settings, $name, $defval);
     }

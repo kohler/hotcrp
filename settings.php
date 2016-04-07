@@ -11,6 +11,7 @@ if (!$Me->privChair)
 class Si {
     public $name;
     public $short_description;
+    public $group;
     public $type;
     public $internal;
     public $storage_type;
@@ -60,6 +61,18 @@ class Si {
         $this->store($name, "values", $j, "values", "is_array");
         if (isset($j->default_value) && (is_int($j->default_value) || is_string($j->default_value)))
             $this->default_value = $j->default_value;
+        if (isset($j->group)) {
+            if (is_string($j->group))
+                $this->group = $j->group;
+            else if (is_array($j->group)) {
+                $this->group = [];
+                foreach ($j->group as $g)
+                    if (is_string($g))
+                        $this->group[] = $g;
+                    else
+                        trigger_error("setting $name.group format error");
+            }
+        }
 
         if (!$this->type && $this->parser)
             $this->type = "special";
@@ -101,6 +114,25 @@ class Si {
 
     public function storage() {
         return $this->storage ? : $this->name;
+    }
+
+    public function is_interesting(SettingValues $sv) {
+        if (!$this->group) {
+            error_log("$this->name: missing group");
+            return false;
+        }
+        $groups = $this->group;
+        if (is_string($groups))
+            $groups = array($groups);
+        foreach ($groups as $g) {
+            if (isset(SettingGroup::$map[$g]))
+                $g = SettingGroup::$map[$g];
+            if (!isset(SettingGroup::$all[$g]))
+                error_log("$this->name: bad group $g");
+            else if ($sv->group_is_interesting($g))
+                return true;
+        }
+        return false;
     }
 
     static public function get($name, $k = null) {
@@ -170,10 +202,18 @@ class SettingParser {
     }
 }
 
+class SettingRenderer {
+    public function render($sv) {
+    }
+    public function crosscheck($sv) {
+    }
+}
+
 class SettingValues {
     private $errf = array();
     private $errmsg = array();
     private $warnmsg = array();
+    public $interesting_groups = array();
     public $warnings_reported = false;
 
     private $parsers = array();
@@ -241,6 +281,9 @@ class SettingValues {
         } else
             return null;
     }
+    public function group_is_interesting($g) {
+        return isset($this->interesting_groups[$g]);
+    }
 
     public function label($name, $html, $label_id = null) {
         $name1 = is_array($name) ? $name[0] : $name;
@@ -276,19 +319,20 @@ class SettingValues {
         return $si;
     }
 
-    public function sv($name, $default_value = null) {
-        global $Conf;
-        if ($this->use_req())
-            return get($this->req, $name, $default_value);
-        else
-            return $this->oldv($name, $default_value);
+    public function curv($name, $default_value = null) {
+        return $this->si_curv($name, $this->si($name), $default_value);
     }
     public function oldv($name, $default_value = null) {
-        return $this->si_oldv($name, $this->si($name), $default_value);
+        return $this->si_oldv($this->si($name), $default_value);
     }
     public function has_savedv($name) {
         $si = $this->si($name);
         return array_key_exists($si->storage(), $this->savedv);
+    }
+    public function has_interest($name) {
+        $si = $this->si($name);
+        return array_key_exists($si->storage(), $this->savedv)
+            || $si->is_interesting($this);
     }
     public function savedv($name, $default_value = null) {
         $si = $this->si($name);
@@ -300,7 +344,7 @@ class SettingValues {
         if (array_key_exists($s, $this->savedv))
             return $this->si_savedv($s, $si, $default_value);
         else
-            return $this->si_oldv($name, $si, $default_value);
+            return $this->si_oldv($si, $default_value);
     }
 
     public function set_oldv($name, $value) {
@@ -342,18 +386,26 @@ class SettingValues {
             return false;
     }
 
-    private function si_oldv($name, $si, $default_value) {
+    private function si_curv($name, $si, $default_value) {
+        if ($si && $si->group && !$si->is_interesting($this))
+            error_log("$name: bad group $si->group, not interesting here");
+        if ($this->use_req())
+            return get($this->req, $name, $default_value);
+        else
+            return $this->si_oldv($si, $default_value);
+    }
+    private function si_oldv($si, $default_value) {
         global $Conf, $Opt;
         if ($default_value === null)
             $default_value = $si->default_value;
-        if (isset($this->explicit_oldv[$name]))
-            $val = $this->explicit_oldv[$name];
+        if (isset($this->explicit_oldv[$si->name]))
+            $val = $this->explicit_oldv[$si->name];
         else if ($si->storage_type & Si::SI_OPT)
-            $val = get($Opt, substr($name, 4), $default_value);
+            $val = get($Opt, substr($si->name, 4), $default_value);
         else if ($si->storage_type & Si::SI_DATA)
-            $val = $Conf->setting_data($name, $default_value);
+            $val = $Conf->setting_data($si->name, $default_value);
         else
-            $val = $Conf->setting($name, $default_value);
+            $val = $Conf->setting($si->name, $default_value);
         if ($val === $si->invalid_value)
             $val = "";
         return $val;
@@ -368,7 +420,7 @@ class SettingValues {
     }
 
     public function echo_checkbox($name, $text, $onchange = null) {
-        $x = $this->sv($name);
+        $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
             "&nbsp;",
@@ -376,7 +428,7 @@ class SettingValues {
             "<br />\n";
     }
     public function echo_checkbox_row($name, $text, $onchange = null) {
-        $x = $this->sv($name);
+        $x = $this->curv($name);
         echo '<tr><td class="nw">',
             Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
@@ -385,7 +437,7 @@ class SettingValues {
             "</td></tr>\n";
     }
     public function echo_radio_table($name, $varr) {
-        $x = $this->sv($name);
+        $x = $this->curv($name);
         if ($x === null || !isset($varr[$x]))
             $x = 0;
         echo "<table style=\"margin-top:0.25em\">\n";
@@ -402,7 +454,7 @@ class SettingValues {
         echo "</table>\n";
     }
     public function render_entry($name, $js = []) {
-        $v = $this->sv($name);
+        $v = $this->curv($name);
         if (($si = $this->si($name))) {
             if ($si->size)
                 $js["size"] = $si->size;
@@ -434,7 +486,7 @@ class SettingValues {
         $si = $this->si($name);
         $rows = ($si ? $si->size : 0) ? : 10;
         $default = $Conf->message_default_html($name);
-        $current = $this->sv($name, $default);
+        $current = $this->curv($name, $default);
         $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
             . expander(null, 0) . $description . '</a>';
         echo '<div class="fold', ($current == $default ? "c" : "o"), '" data-fold="true">',
@@ -456,7 +508,7 @@ class SettingValues {
         global $Conf;
         if ($v !== null && $this->use_req())
             return $v;
-        else if ($si->date_backup && $this->sv($si->date_backup) == $v)
+        else if ($si->date_backup && $this->curv($si->date_backup) == $v)
             return $si->placeholder;
         else if ($si->placeholder !== "N/A" && $si->placeholder !== "none" && $v === 0)
             return "none";
@@ -488,7 +540,6 @@ class SettingValues {
             return false;
     }
 
-
     static public function make_request() {
         global $Conf;
         $sv = new SettingValues;
@@ -504,19 +555,18 @@ class SettingGroup {
     public $name;
     public $description;
     public $priority;
-    private $render;
+    private $render = array();
 
     static public $all;
     static public $map;
     static private $sorted = false;
 
-    public function __construct($name, $description, $priority, $renderer) {
+    public function __construct($name, $description, $priority) {
         $this->name = $name;
         $this->description = $description;
         $this->priority = $priority;
-        $this->render = [[0, 0, $renderer]];
     }
-    public function add_renderer($priority, $renderer) {
+    public function add_renderer($priority, SettingRenderer $renderer) {
         $x = [$priority, count($this->render), $renderer];
         $this->render[] = $x;
     }
@@ -529,17 +579,25 @@ class SettingGroup {
             return 0;
         });
         foreach ($this->render as $r)
-            call_user_func($r[2], $sv);
+            $r[2]->render($sv);
+    }
+    static public function crosscheck($sv, $groupname) {
+        $sv->interesting_groups[$groupname] = true;
+        foreach (self::$all as $name => $group) {
+            foreach ($group->render as $r)
+                $r[2]->crosscheck($sv);
+        }
     }
 
-    static public function register($name, $description, $priority, $renderer) {
-        assert(!isset(self::$all[$name]) && !isset(self::$map[$name]));
-        self::$all[$name] = new SettingGroup($name, $description, $priority, $renderer);
+    static public function register($name, $description, $priority, SettingRenderer $renderer) {
+        if (isset(self::$map[$name]))
+            $name = self::$map[$name];
+        if (!isset(self::$all[$name]))
+            self::$all[$name] = new SettingGroup($name, $description, $priority);
+        if ($description && !self::$all[$name]->description)
+            self::$all[$name]->description = $description;
+        self::$all[$name]->render[] = [$priority, 0, $renderer];
         self::$sorted = false;
-    }
-    static public function register_renderer($name, $priority, $renderer) {
-        assert(isset(self::$all[$name]));
-        self::$all[$name]->add_renderer($priority, $renderer);
     }
     static public function register_synonym($new_name, $old_name) {
         assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
@@ -559,22 +617,6 @@ class SettingGroup {
         return self::$all;
     }
 }
-
-SettingGroup::register("basics", "Basics", 0, "doInfoGroup");
-SettingGroup::register_synonym("info", "basics");
-SettingGroup::register("users", "Accounts", 100, "doAccGroup");
-SettingGroup::register_synonym("acc", "users");
-SettingGroup::register("msg", "Messages", 200, "doMsgGroup");
-SettingGroup::register("sub", "Submissions", 300, "doSubGroup");
-SettingGroup::register("subform", "Submission form", 400, "doOptGroup");
-SettingGroup::register_synonym("opt", "subform");
-SettingGroup::register("reviews", "Reviews", 500, "doRevGroup");
-SettingGroup::register_synonym("rev", "reviews");
-SettingGroup::register_synonym("review", "reviews");
-SettingGroup::register("tags", "Tags &amp; tracks", 700, "doTagsGroup");
-SettingGroup::register_synonym("tracks", "tags");
-SettingGroup::register("decisions", "Decisions", 800, "doDecGroup");
-SettingGroup::register_synonym("dec", "decisions");
 
 Si::initialize();
 $Sv = SettingValues::make_request();
@@ -742,782 +784,18 @@ function parse_value($sv, $name, $info) {
     return null;
 }
 
-class Tag_SettingParser extends SettingParser {
-    private $tagger;
-    public function __construct() {
-        $this->tagger = new Tagger;
-    }
-    private function parse_list($sv, $si, $checkf, $min_idx) {
-        $ts = array();
-        foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
-            if ($t !== "" && $this->tagger->check($t, $checkf)) {
-                list($tag, $idx) = TagInfo::split_index($t);
-                if ($min_idx)
-                    $t = $tag . "#" . max($min_idx, (float) $idx);
-                $ts[$tag] = $t;
-            } else if ($t !== "")
-                $sv->set_error($si->name, $si->short_description . ": " . $this->tagger->error_html);
-        return array_values($ts);
-    }
-    public function parse($sv, $si) {
-        if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            $sv->update($si->name, join(" ", $ts));
-        }
-
-        if ($si->name == "tag_vote" && isset($sv->req["tag_vote"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
-            if ($sv->update("tag_vote", join(" ", $ts)))
-                $sv->need_lock["PaperTag"] = true;
-        }
-
-        if ($si->name == "tag_approval" && isset($sv->req["tag_approval"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            if ($sv->update("tag_approval", join(" ", $ts)))
-                $sv->need_lock["PaperTag"] = true;
-        }
-
-        if ($si->name == "tag_rank" && isset($sv->req["tag_rank"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            if (count($ts) > 1)
-                $sv->set_error("tag_rank", "At most one rank tag is currently supported.");
-            else
-                $sv->update("tag_rank", join(" ", $ts));
-        }
-
-        if ($si->name == "tag_color") {
-            $ts = array();
-            $any_set = false;
-            foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
-                if (isset($sv->req["tag_color_$k"])) {
-                    $xsi = new Si("tag_color_$k", ["name" => ucfirst($k) . " style tag"]);
-                    $any_set = true;
-                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
-                        $ts[] = $t . "=" . $k;
-                }
-            if ($any_set)
-                $sv->update("tag_color", join(" ", $ts));
-        }
-
-        if ($si->name == "tag_badge") {
-            $ts = array();
-            $any_set = false;
-            foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
-                if (isset($sv->req["tag_badge_$k"])) {
-                    $xsi = new Si("tag_badge_$k", ["name" => ucfirst($k) . " badge style tag"]);
-                    $any_set = true;
-                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
-                        $ts[] = $t . "=" . $k;
-                }
-            if ($any_set)
-                $sv->update("tag_badge", join(" ", $ts));
-        }
-
-        if ($si->name == "tag_au_seerev" && isset($sv->req["tag_au_seerev"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
-            $sv->update("tag_au_seerev", join(" ", $ts));
-        }
-
-        return true;
-    }
-
-    public function save($sv, $si) {
-        if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
-            // check allotments
-            $pcm = pcMembers();
-            foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
-                if ($t === "")
-                    continue;
-                $base = substr($t, 0, strpos($t, "#"));
-                $allotment = substr($t, strlen($base) + 1);
-
-                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
-                $pvals = array();
-                $cvals = array();
-                $negative = false;
-                while (($row = edb_row($result))) {
-                    $who = substr($row[1], 0, strpos($row[1], "~"));
-                    if ($row[2] < 0) {
-                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
-                        $negative = true;
-                    } else {
-                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
-                        $cvals[$who] = defval($cvals, $who, 0) + $row[2];
-                    }
-                }
-
-                foreach ($cvals as $who => $what)
-                    if ($what > $allotment)
-                        $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
-
-                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
-                $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
-
-                $q = array();
-                foreach ($pvals as $pid => $what)
-                    $q[] = "($pid, '" . sqlq($base) . "', $what)";
-                if (count($q) > 0)
-                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
-            }
-        }
-
-        if ($si->name == "tag_approval" && $sv->has_savedv("tag_approval")) {
-            $pcm = pcMembers();
-            foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
-                if ($t === "")
-                    continue;
-                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
-                $pvals = array();
-                $negative = false;
-                while (($row = edb_row($result))) {
-                    $who = substr($row[1], 0, strpos($row[1], "~"));
-                    if ($row[2] < 0) {
-                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
-                        $negative = true;
-                    } else
-                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
-                }
-
-                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
-                $Conf->qe("delete from PaperTag where tag='" . sqlq($t) . "'$q");
-
-                $q = array();
-                foreach ($pvals as $pid => $what)
-                    $q[] = "($pid, '" . sqlq($t) . "', $what)";
-                if (count($q) > 0)
-                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
-            }
-        }
-
-        TagInfo::invalidate_defined_tags();
-    }
-}
-
-class Topic_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
-        foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
-            $sv->need_lock[$t] = true;
-        return true;
-    }
-
-    public function save($sv, $si) {
-        global $Conf;
-        $tmap = $Conf->topic_map();
-        foreach ($sv->req as $k => $v)
-            if ($k === "topnew") {
-                $news = array();
-                foreach (explode("\n", $v) as $n)
-                    if (($n = simplify_whitespace($n)) !== "")
-                        $news[] = "('" . sqlq($n) . "')";
-                if (count($news))
-                    $Conf->qe("insert into TopicArea (topicName) values " . join(",", $news));
-            } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
-                       && ctype_digit(substr($k, 3))) {
-                $k = (int) substr($k, 3);
-                $v = simplify_whitespace($v);
-                if ($v == "") {
-                    $Conf->qe("delete from TopicArea where topicId=$k");
-                    $Conf->qe("delete from PaperTopic where topicId=$k");
-                    $Conf->qe("delete from TopicInterest where topicId=$k");
-                } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
-                    $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
-            }
-        $Conf->invalidate_topics();
-    }
-}
-
-
-function option_request_to_json($sv, &$new_opts, $id, $current_opts) {
-    global $Conf;
-
-    $name = simplify_whitespace(defval($sv->req, "optn$id", ""));
-    if (!isset($sv->req["optn$id"]) && $id[0] !== "n") {
-        if (get($current_opts, $id))
-            $new_opts[$id] = $current_opts[$id];
-        return;
-    } else if ($name === ""
-               || $sv->req["optfp$id"] === "delete"
-               || ($id[0] === "n" && ($name === "New option" || $name === "(Enter new option)")))
-        return;
-
-    $oarg = ["name" => $name, "id" => (int) $id, "final" => false];
-    if ($id[0] === "n") {
-        $nextid = max($Conf->setting("next_optionid", 1), 1);
-        foreach ($new_opts as $haveid => $o)
-            $nextid = max($nextid, $haveid + 1);
-        foreach ($current_opts as $haveid => $o)
-            $nextid = max($nextid, $haveid + 1);
-        $oarg["id"] = $nextid;
-    }
-
-    if (get($sv->req, "optd$id") && trim($sv->req["optd$id"]) != "") {
-        $t = CleanHTML::clean($sv->req["optd$id"], $err);
-        if ($t !== false)
-            $oarg["description"] = $t;
-        else
-            $sv->set_error("optd$id", $err);
-    }
-
-    if (($optvt = get($sv->req, "optvt$id"))) {
-        if (($pos = strpos($optvt, ":")) !== false) {
-            $oarg["type"] = substr($optvt, 0, $pos);
-            if (preg_match('/:final/', $optvt))
-                $oarg["final"] = true;
-            if (preg_match('/:ds_(\d+)/', $optvt, $m))
-                $oarg["display_space"] = (int) $m[1];
-        } else
-            $oarg["type"] = $optvt;
-    } else
-        $oarg["type"] = "checkbox";
-
-    if (PaperOption::type_has_selector($oarg["type"])) {
-        $oarg["selector"] = array();
-        $seltext = trim(cleannl(defval($sv->req, "optv$id", "")));
-        if ($seltext != "") {
-            foreach (explode("\n", $seltext) as $t)
-                $oarg["selector"][] = $t;
-        } else
-            $sv->set_error("optv$id", "Enter selectors one per line.");
-    }
-
-    $oarg["visibility"] = defval($sv->req, "optp$id", "rev");
-    if ($oarg["final"])
-        $oarg["visibility"] = "rev";
-
-    $oarg["position"] = (int) defval($sv->req, "optfp$id", 1);
-
-    $oarg["display"] = defval($sv->req, "optdt$id");
-    if ($oarg["type"] === "pdf" && $oarg["final"])
-        $oarg["display"] = "submission";
-
-    $new_opts[$oarg["id"]] = $o = PaperOption::make($oarg);
-    $o->req_id = $id;
-    $o->is_new = $id[0] === "n";
-}
-
-function option_clean_form_positions($new_opts, $current_opts) {
-    foreach ($new_opts as $id => $o) {
-        $current_o = get($current_opts, $id);
-        $o->old_position = ($current_o ? $current_o->position : $o->position);
-        $o->position_set = false;
-    }
-    for ($i = 0; $i < count($new_opts); ++$i) {
-        $best = null;
-        foreach ($new_opts as $id => $o)
-            if (!$o->position_set
-                && (!$best
-                    || ($o->display() === PaperOption::DISP_SUBMISSION
-                        && $best->display() !== PaperOption::DISP_SUBMISSION)
-                    || $o->position < $best->position
-                    || ($o->position == $best->position
-                        && $o->position != $o->old_position
-                        && $best->position == $best->old_position)
-                    || ($o->position == $best->position
-                        && strcasecmp($o->name, $best->name) < 0)
-                    || ($o->position == $best->position
-                        && strcasecmp($o->name, $best->name) == 0
-                        && strcmp($o->name, $best->name) < 0)))
-                $best = $o;
-        $best->position = $i + 1;
-        $best->position_set = true;
-    }
-}
-
-class Option_SettingParser extends SettingParser {
-    private $stashed_options = false;
-
-    function parse($sv, $si) {
-        $current_opts = PaperOption::option_list();
-
-        // convert request to JSON
-        $new_opts = array();
-        foreach ($current_opts as $id => $o)
-            option_request_to_json($sv, $new_opts, $id, $current_opts);
-        foreach ($sv->req as $k => $v)
-            if (substr($k, 0, 4) == "optn"
-                && !get($current_opts, substr($k, 4)))
-                option_request_to_json($sv, $new_opts, substr($k, 4), $current_opts);
-
-        // check abbreviations
-        $optabbrs = array();
-        foreach ($new_opts as $id => $o)
-            if (preg_match('/\Aopt\d+\z/', $o->abbr))
-                $sv->set_error("optn$o->req_id", "Option name “" . htmlspecialchars($o->name) . "” is reserved. Please pick another option name.");
-            else if (get($optabbrs, $o->abbr))
-                $sv->set_error("optn$o->req_id", "Multiple options abbreviate to “{$o->abbr}”. Please pick option names that abbreviate uniquely.");
-            else
-                $optabbrs[$o->abbr] = $o;
-
-        if (!$sv->has_errors()) {
-            $this->stashed_options = $new_opts;
-            $sv->need_lock["PaperOption"] = true;
-            return true;
-        }
-    }
-
-    public function save($sv, $si) {
-        global $Conf;
-        $new_opts = $this->stashed_options;
-        $current_opts = PaperOption::option_list();
-        option_clean_form_positions($new_opts, $current_opts);
-
-        $newj = (object) array();
-        uasort($new_opts, array("PaperOption", "compare"));
-        $nextid = max($Conf->setting("next_optionid", 1), $Conf->setting("options", 1));
-        foreach ($new_opts as $id => $o) {
-            $newj->$id = $o->unparse();
-            $nextid = max($nextid, $id + 1);
-        }
-        $sv->save("next_optionid", null);
-        $sv->save("options", count($newj) ? json_encode($newj) : null);
-
-        $deleted_ids = array();
-        foreach ($current_opts as $id => $o)
-            if (!get($new_opts, $id))
-                $deleted_ids[] = $id;
-        if (count($deleted_ids))
-            $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
-
-        // invalidate cached option list
-        PaperOption::invalidate_option_list();
-    }
-}
-
-class Decision_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
-        $dec_revmap = array();
-        foreach ($sv->req as $k => &$dname)
-            if (str_starts_with($k, "dec")
-                && ($k === "decn" || ($dnum = cvtint(substr($k, 3), 0)))
-                && ($k !== "decn" || trim($dname) !== "")) {
-                $dname = simplify_whitespace($dname);
-                if ($dname === "")
-                    /* remove decision */;
-                else if (($derror = Conf::decision_name_error($dname)))
-                    $sv->set_error($k, htmlspecialchars($derror));
-                else if (isset($dec_revmap[strtolower($dname)]))
-                    $sv->set_error($k, "Decision name “{$dname}” was already used.");
-                else
-                    $dec_revmap[strtolower($dname)] = true;
-            }
-        unset($dname);
-
-        if (get($sv->req, "decn") && !get($sv->req, "decn_confirm")) {
-            $delta = (defval($sv->req, "dtypn", 1) > 0 ? 1 : -1);
-            $match_accept = (stripos($sv->req["decn"], "accept") !== false);
-            $match_reject = (stripos($sv->req["decn"], "reject") !== false);
-            if ($delta > 0 && $match_reject)
-                $sv->set_error("decn", "You are trying to add an Accept-class decision that has “reject” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
-            else if ($delta < 0 && $match_accept)
-                $sv->set_error("decn", "You are trying to add a Reject-class decision that has “accept” in its name, which is usually a mistake.  To add the decision anyway, check the “Confirm” box and try again.");
-        }
-
-        $sv->need_lock["Paper"] = true;
-        return true;
-    }
-
-    public function save($sv, $si) {
-        global $Conf;
-        // mark all used decisions
-        $decs = $Conf->decision_map();
-        $update = false;
-        foreach ($sv->req as $k => $v)
-            if (str_starts_with($k, "dec") && ($k = cvtint(substr($k, 3), 0))) {
-                if ($v == "") {
-                    $Conf->qe("update Paper set outcome=0 where outcome=$k");
-                    unset($decs[$k]);
-                    $update = true;
-                } else if ($v != $decs[$k]) {
-                    $decs[$k] = $v;
-                    $update = true;
-                }
-            }
-
-        if (defval($sv->req, "decn", "") != "") {
-            $delta = (defval($sv->req, "dtypn", 1) > 0 ? 1 : -1);
-            for ($k = $delta; isset($decs[$k]); $k += $delta)
-                /* skip */;
-            $decs[$k] = $sv->req["decn"];
-            $update = true;
-        }
-
-        if ($update)
-            $sv->save("outcome_map", json_encode($decs));
-    }
-}
-
-class Banal_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
-        global $Conf, $ConfSitePATH;
-        if (!isset($sv->req["sub_banal"])) {
-            $sv->save("sub_banal", 0);
-            return false;
-        }
-
-        // check banal subsettings
-        $old_error_count = $sv->error_count();
-        $bs = array_fill(0, 6, "");
-        if (($s = trim(defval($sv->req, "sub_banal_papersize", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
-            $sout = array();
-            foreach ($ses as $ss)
-                if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
-                    $sout[] = $ss;
-                else if ($ss != "") {
-                    $sv->set_error("sub_banal_papersize", "Invalid paper size.");
-                    $sout = null;
-                    break;
-                }
-            if ($sout && count($sout))
-                $bs[0] = join(" OR ", $sout);
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_pagelimit", ""))) != ""
-            && strcasecmp($s, "N/A") != 0) {
-            if (($sx = cvtint($s, -1)) > 0)
-                $bs[1] = $sx;
-            else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
-                     && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
-                $bs[1] = +$m[1] . "-" . +$m[2];
-            else
-                $sv->set_error("sub_banal_pagelimit", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_columns", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (($sx = cvtint($s, -1)) >= 0)
-                $bs[2] = ($sx > 0 ? $sx : $bs[2]);
-            else
-                $sv->set_error("sub_banal_columns", "Columns must be a whole number.");
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_textblock", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            // change margin specifications into text block measurements
-            if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
-                $s = $m[1];
-                if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
-                    $sv->set_error("sub_banal_pagesize", "You must specify a page size as well as margins.");
-                    $sv->set_error("sub_banal_textblock");
-                } else if (strpos($s, "x") !== false) {
-                    if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
-                        $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
-                        $s = "";
-                    } else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
-                    else if (count($m) == 3)
-                        $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
-                    else
-                        $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
-                } else {
-                    $s = preg_replace('/\s+/', 'x', $s);
-                    if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
-                        $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
-                    else if (!is_array($m))
-                        $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
-                    else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
-                    else if (count($m) == 3)
-                        $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
-                    else
-                        $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
-                }
-                $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
-            }
-            // check text block measurements
-            if ($s && !CheckFormat::parse_dimen($s, 2))
-                $sv->set_error("sub_banal_textblock", "Invalid text block definition.");
-            else if ($s)
-                $bs[3] = $s;
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (!is_numeric($s) || $s <= 0)
-                $sv->error("sub_banal_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
-            else
-                $bs[4] = $s;
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_bodyleading", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (!is_numeric($s) || $s <= 0)
-                $sv->error("sub_banal_bodyleading", "Minimum body leading must be a number bigger than 0.");
-            else
-                $bs[5] = $s;
-        }
-
-        if ($sv->error_count() != $old_error_count)
-            return false;
-
-        // Perhaps we have an old pdftohtml with a bad -zoom.
-        $zoomarg = "";
-        for ($tries = 0; $tries < 2; ++$tries) {
-            $cf = new CheckFormat();
-            $s1 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
-            $e1 = $cf->errors;
-            if ($s1 == 1 && ($e1 & CheckFormat::ERR_PAPERSIZE) && $tries == 0)
-                $zoomarg = ">-zoom=1";
-            else if ($s1 != 2 && $tries == 1)
-                $zoomarg = "";
-        }
-
-        // actually create setting
-        while (count($bs) > 0 && $bs[count($bs) - 1] == "")
-            array_pop($bs);
-        $sv->save("sub_banal_data", join(";", $bs) . $zoomarg);
-        $e1 = $cf->errors;
-        $s2 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
-        $e2 = $cf->errors;
-        $want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
-            | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
-            | CheckFormat::ERR_BODYLEADING;
-        if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2) {
-            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 2 0 1 $want_e2)</td></tr>"
-                . "<tr><td>Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
-            if (trim($cf->banal_stdout))
-                $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";            if (trim($cf->banal_stdout))
-            if (trim($cf->banal_stderr))
-                $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
-            $sv->set_warning(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
-        }
-
-        return false;
-    }
-}
-
-class Track_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
-        $tagger = new Tagger;
-        $tracks = (object) array();
-        $missing_tags = false;
-        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
-            $trackname = trim($sv->req["name_track$i"]);
-            if ($trackname === "" || $trackname === "(tag)")
-                continue;
-            else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
-                     || ($trackname === "_" && $i != 1)) {
-                if ($trackname !== "_")
-                    $sv->set_error("name_track$i", "Track name: " . $tagger->error_html);
-                else
-                    $sv->set_error("name_track$i", "Track name “_” is reserved.");
-                $sv->set_error("tracks");
-                continue;
-            }
-            $t = (object) array();
-            foreach (Track::$map as $type => $value)
-                if (($ttype = defval($sv->req, "${type}_track$i", "")) == "+"
-                    || $ttype == "-") {
-                    $ttag = trim(defval($sv->req, "${type}tag_track$i", ""));
-                    if ($ttag === "" || $ttag === "(tag)") {
-                        $sv->set_error("{$type}_track$i", "Tag missing for track setting.");
-                        $sv->set_error("tracks");
-                    } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
-                               || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
-                        $t->$type = $ttype . $ttag;
-                    else {
-                        $sv->set_error("{$type}_track$i", $tagger->error_html);
-                        $sv->set_error("tracks");
-                    }
-                } else if ($ttype == "none")
-                    $t->$type = "+none";
-            if (count((array) $t) || get($tracks, "_"))
-                $tracks->$trackname = $t;
-        }
-        $sv->save("tracks", count((array) $tracks) ? json_encode($tracks) : null);
-        return false;
-    }
-}
-
-class Round_SettingParser extends SettingParser {
-    private $rev_round_changes = array();
-
-    function parse($sv, $si) {
-        global $Conf;
-        if (!isset($sv->req["rev_roundtag"])) {
-            $sv->save("rev_roundtag", null);
-            return false;
-        }
-        // round names
-        $roundnames = $roundnames_set = array();
-        $roundname0 = $round_deleted = null;
-        for ($i = 0;
-             isset($sv->req["roundname_$i"]) || isset($sv->req["deleteround_$i"]) || !$i;
-             ++$i) {
-            $rname = trim(get_s($sv->req, "roundname_$i"));
-            if ($rname === "(no name)" || $rname === "default" || $rname === "unnamed")
-                $rname = "";
-            if ((get($sv->req, "deleteround_$i") || $rname === "") && $i) {
-                $roundnames[] = ";";
-                if (Dbl::fetch_ivalue("select reviewId from PaperReview where reviewRound=$i limit 1"))
-                    $this->rev_round_changes[] = array($i, 0);
-                if ($round_deleted === null && !isset($sv->req["roundname_0"])
-                    && $i < $sv->req["oldroundcount"])
-                    $round_deleted = $i;
-            } else if ($rname === "")
-                /* ignore */;
-            else if (($rerror = Conf::round_name_error($rname)))
-                $sv->set_error("roundname_$i", $rerror);
-            else if ($i == 0)
-                $roundname0 = $rname;
-            else if (get($roundnames_set, strtolower($rname))) {
-                $roundnames[] = ";";
-                $this->rev_round_changes[] = array($i, $roundnames_set[strtolower($rname)]);
-            } else {
-                $roundnames[] = $rname;
-                $roundnames_set[strtolower($rname)] = $i;
-            }
-        }
-        if ($roundname0 && !get($roundnames_set, strtolower($roundname0))) {
-            $roundnames[] = $roundname0;
-            $roundnames_set[strtolower($roundname0)] = count($roundnames);
-        }
-        if ($roundname0)
-            array_unshift($this->rev_round_changes, array(0, $roundnames_set[strtolower($roundname0)]));
-
-        // round deadlines
-        foreach ($Conf->round_list() as $i => $rname) {
-            $suffix = $i ? "_$i" : "";
-            foreach (Conf::$review_deadlines as $k)
-                $sv->save($k . $suffix, null);
-        }
-        $rtransform = array();
-        if ($roundname0 && ($ri = $roundnames_set[strtolower($roundname0)])
-            && !isset($sv->req["pcrev_soft_$ri"])) {
-            $rtransform[0] = "_$ri";
-            $rtransform[$ri] = false;
-        }
-        if ($round_deleted) {
-            $rtransform[$round_deleted] = "";
-            if (!isset($rtransform[0]))
-                $rtransform[0] = false;
-        }
-        for ($i = 0; $i < count($roundnames) + 1; ++$i)
-            if ((isset($rtransform[$i])
-                 || ($i ? $roundnames[$i - 1] !== ";" : !isset($sv->req["deleteround_0"])))
-                && get($rtransform, $i) !== false) {
-                $isuffix = $i ? "_$i" : "";
-                if (($osuffix = get($rtransform, $i)) === null)
-                    $osuffix = $isuffix;
-                $ndeadlines = 0;
-                foreach (Conf::$review_deadlines as $k) {
-                    $v = parse_value($sv, $k . $isuffix, Si::get($k));
-                    $sv->save($k . $osuffix, $v <= 0 ? null : $v);
-                    $ndeadlines += $v > 0;
-                }
-                if ($ndeadlines == 0 && $osuffix)
-                    $sv->save("pcrev_soft$osuffix", 0);
-                foreach (array("pcrev_", "extrev_") as $k) {
-                    list($soft, $hard) = ["{$k}soft$osuffix", "{$k}hard$osuffix"];
-                    list($softv, $hardv) = [$sv->savedv($soft), $sv->savedv($hard)];
-                    if (!$softv && $hardv)
-                        $sv->save($soft, $hardv);
-                    else if ($hardv && $softv > $hardv) {
-                        $desc = $i ? ", round " . htmlspecialchars($roundnames[$i - 1]) : "";
-                        $sv->set_error($soft, Si::get("{$k}soft", "short_description") . $desc . ": Must come before " . Si::get("{$k}hard", "short_description") . ".");
-                        $sv->set_error($hard);
-                    }
-                }
-            }
-
-        // round list (save after deadlines processing)
-        while (count($roundnames) && $roundnames[count($roundnames) - 1] === ";")
-            array_pop($roundnames);
-        $sv->save("tag_rounds", join(" ", $roundnames));
-
-        // default round
-        $t = trim($sv->req["rev_roundtag"]);
-        $sv->save("rev_roundtag", null);
-        if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed)\z/i', $t))
-            /* do nothing */;
-        else if ($t === "#0") {
-            if ($roundname0)
-                $sv->save("rev_roundtag", $roundname0);
-        } else if (preg_match('/^#[1-9][0-9]*$/', $t)) {
-            $rname = get($roundnames, substr($t, 1) - 1);
-            if ($rname && $rname !== ";")
-                $sv->save("rev_roundtag", $rname);
-        } else if (!($rerror = Conf::round_name_error($t)))
-            $sv->save("rev_roundtag", $t);
-        else
-            $sv->set_error("rev_roundtag", $rerror);
-        if (count($this->rev_round_changes)) {
-            $sv->need_lock["PaperReview"] = true;
-            return true;
-        } else
-            return false;
-    }
-    public function save($sv, $si) {
-        global $Conf;
-        // remove references to deleted rounds
-        foreach ($this->rev_round_changes as $x)
-            $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
-    }
-}
-
-class RespRound_SettingParser extends SettingParser {
-    function parse($sv, $si) {
-        global $Conf;
-        if (!$sv->newv("resp_active"))
-            return false;
-        $old_roundnames = $Conf->resp_round_list();
-        $roundnames = array(1);
-        $roundnames_set = array();
-
-        if (isset($sv->req["resp_roundname"])) {
-            $rname = trim(get_s($sv->req, "resp_roundname"));
-            if ($rname === "" || $rname === "none" || $rname === "1")
-                /* do nothing */;
-            else if (($rerror = Conf::resp_round_name_error($rname)))
-                $sv->set_error("resp_roundname", $rerror);
-            else {
-                $roundnames[0] = $rname;
-                $roundnames_set[strtolower($rname)] = 0;
-            }
-        }
-
-        for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i) {
-            $rname = trim(get_s($sv->req, "resp_roundname_$i"));
-            if ($rname === "" && get($old_roundnames, $i))
-                $rname = $old_roundnames[$i];
-            if ($rname === "")
-                continue;
-            else if (($rerror = Conf::resp_round_name_error($rname)))
-                $sv->set_error("resp_roundname_$i", $rerror);
-            else if (get($roundnames_set, strtolower($rname)) !== null)
-                $sv->set_error("resp_roundname_$i", "Response round name “" . htmlspecialchars($rname) . "” has already been used.");
-            else {
-                $roundnames[] = $rname;
-                $roundnames_set[strtolower($rname)] = $i;
-            }
-        }
-
-        foreach ($roundnames_set as $i) {
-            $isuf = $i ? "_$i" : "";
-            if (($v = parse_value($sv, "resp_open$isuf", Si::get("resp_open"))) !== null)
-                $sv->save("resp_open$isuf", $v <= 0 ? null : $v);
-            if (($v = parse_value($sv, "resp_done$isuf", Si::get("resp_done"))) !== null)
-                $sv->save("resp_done$isuf", $v <= 0 ? null : $v);
-            if (($v = parse_value($sv, "resp_grace$isuf", Si::get("resp_grace"))) !== null)
-                $sv->save("resp_grace$isuf", $v <= 0 ? null : $v);
-            if (($v = parse_value($sv, "resp_words$isuf", Si::get("resp_words"))) !== null)
-                $sv->save("resp_words$isuf", $v < 0 ? null : $v);
-            if (($v = parse_value($sv, "msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
-                $sv->save("msg.resp_instrux$isuf", $v);
-        }
-
-        if (count($roundnames) > 1 || $roundnames[0] !== 1)
-            $sv->save("resp_rounds", join(" ", $roundnames));
-        else
-            $sv->save("resp_rounds", null);
-        return false;
-    }
-}
-
 function truthy($x) {
     return !($x === null || $x === 0 || $x === false
              || $x === "" || $x === "0" || $x === "false");
+}
+
+function opt_yes_no_optional($name) {
+    global $Opt;
+    if (($x = get($Opt, $name)) === 1 || $x === true)
+        return 1;
+    if ($x === 2)
+        return 2;
+    return 0;
 }
 
 function account_value($sv, $si) {
@@ -1549,90 +827,6 @@ function account_value($sv, $si) {
         $sv->save($si->name, $v);
         if ($si->ifnonempty)
             $sv->save($si->ifnonempty, $v === null ? null : 1);
-    }
-}
-
-function setting_warnings($sv, $group) {
-    global $Conf, $Now;
-    if (($sv->has_savedv("sub_open") || !$group || $group === "sub")
-        && $sv->newv("sub_freeze", -1) == 0
-        && $sv->newv("sub_open") > 0
-        && $sv->newv("sub_sub") <= 0)
-        $sv->set_warning(null, "Authors can update their submissions until the deadline, but there is no deadline. This is sometimes unintentional. You probably should (1) specify a paper submission deadline; (2) select “Authors must freeze the final version of each submission”; or (3) manually turn off “Open site for submissions” when submissions complete.");
-
-    $errored = false;
-    foreach ($Conf->round_list() as $i => $rname) {
-        $suffix = $i ? "_$i" : "";
-        foreach (Conf::$review_deadlines as $deadline)
-            if (($sv->has_savedv($deadline . $suffix) || !$group || $group === "reviews")
-                && $sv->newv($deadline . $suffix) > $Now
-                && $sv->newv("rev_open") <= 0
-                && !$errored) {
-                $sv->set_warning("rev_open", "A review deadline is set in the future, but the site is not open for reviewing. This is sometimes unintentional.");
-                $errored = true;
-                break;
-            }
-    }
-
-    if (($sv->has_savedv("au_seerev") || !$group || $group === "reviews" || $group === "decisions")
-        && $sv->newv("au_seerev") != Conf::AUSEEREV_NO
-        && $sv->newv("au_seerev") != Conf::AUSEEREV_TAGS
-        && $sv->oldv("pcrev_soft") > 0
-        && $Now < $sv->oldv("pcrev_soft")
-        && !$sv->has_errors())
-        $sv->set_warning(null, "Authors can see reviews and comments although it is before the review deadline. This is sometimes unintentional.");
-
-    if (($sv->has_savedv("final_open") || !$group || $group === "decisions")
-        && $sv->newv("final_open")
-        && ($sv->newv("final_soft") || $sv->newv("final_done"))
-        && (!$sv->newv("final_done") || $sv->newv("final_done") > $Now)
-        && $sv->newv("seedec") != Conf::SEEDEC_ALL)
-        $sv->set_warning(null, "The system is set to collect final versions, but authors cannot submit final versions until they know their papers have been accepted. You may want to update the the “Who can see paper decisions” setting.");
-
-    if (($sv->has_savedv("seedec") || !$group || $group === "decisions")
-        && $sv->newv("seedec") == Conf::SEEDEC_ALL
-        && $sv->newv("au_seerev") == Conf::AUSEEREV_NO)
-        $sv->set_warning(null, "Authors can see decisions, but not reviews. This is sometimes unintentional.");
-
-    if (($sv->has_savedv("au_seerev") || !$group || $group === "decisions")
-        && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
-        && !$sv->newv("tag_au_seerev")
-        && !$sv->has_error("tag_au_seerev"))
-        $sv->set_warning("tag_au_seerev", "You haven’t set any review visibility tags.");
-
-    if (($sv->savedv("au_seerev") || !$group || $group === "decisions")
-        && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
-        && $sv->newv("tag_au_seerev")
-        && !$sv->has_error("tag_au_seerev")) {
-        $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
-        foreach (explode(" ", $sv->newv("tag_au_seerev")) as $t)
-            if ($t !== "" && !isset($chair_tags[$t]))
-                $sv->set_warning("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only</a>.");
-    }
-
-    if (($sv->savedv("tracks") || !$group || $group === "tags")
-        && $sv->newv("tracks")) {
-        $tracks = json_decode($sv->newv("tracks"), true);
-        $tracknum = 2;
-        foreach ($tracks as $trackname => $t) {
-            $unassrev = get($t, "unassrev");
-            if (get($t, "viewpdf") && $t["viewpdf"] !== $unassrev
-                && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
-                $tnum = ($trackname === "_" ? 1 : $tnum);
-                $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
-                $sv->set_warning("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see PDFs should restrict who can self-assign papers in the same way.");
-            }
-            $tracknum += ($trackname === "_" ? 0 : 1);
-        }
-    }
-
-    if (($sv->savedv("options") || !$group || $group === "subform")
-        && $sv->newv("options")
-        && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
-        $options = json_decode($sv->newv("options"));
-        foreach ((array) $options as $id => $o)
-            if (get($o, "visibility") === "nonblind")
-                $sv->set_warning("optp$id", "The “" . htmlspecialchars($o->name) . "” option is “visible if authors are visible,” but authors are not visible. You may want to change <a href=\"" . hoturl("settings", "group=sub") . "\">Settings &gt; Submissions</a> &gt; Blind submission to “Blind until review.”");
     }
 }
 
@@ -1693,6 +887,7 @@ function do_setting_update($sv) {
         $sv->save("clickthrough_submit", null);
 
     // make settings
+    $changedn = [];
     if (!$sv->has_errors()
         && (count($sv->savedv) || count($sv->save_callbacks))) {
         $tables = "Settings write";
@@ -1700,6 +895,13 @@ function do_setting_update($sv) {
             if ($need)
                 $tables .= ", $t write";
         $Conf->qe("lock tables $tables");
+
+        // load db settings, pre-crosscheck
+        $dbsettings = array();
+        $result = Dbl::qe("select name, value, data from Settings");
+        while (($row = edb_row($result)))
+            $dbsettings[$row[0]] = $row;
+        Dbl::free($result);
 
         // apply settings
         foreach ($sv->save_callbacks as $si) {
@@ -1713,12 +915,16 @@ function do_setting_update($sv) {
                 $okey = substr($n, 4);
                 $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : get($Opt, $okey));
                 $Opt[$okey] = ($v[1] === null ? $v[0] : $v[1]);
-                if ($oldv === $Opt[$okey]) {
-                    $dv[] = $n;
-                    continue; // do not save value in database
-                } else if (!array_key_exists($okey, $OptOverride))
+                if ($oldv === $Opt[$okey])
+                    $v = null; // delete override value in database
+                else if (!array_key_exists($okey, $OptOverride))
                     $OptOverride[$okey] = $oldv;
             }
+            if ($v === null
+                ? !isset($dbsettings[$n])
+                : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1])
+                continue;
+            $changedn[] = $n;
             if ($v !== null) {
                 $aq[] = "(?, ?, ?)";
                 array_push($av, $n, $v[0], $v[1]);
@@ -1735,7 +941,8 @@ function do_setting_update($sv) {
         }
 
         $Conf->qe("unlock tables");
-        $Me->log_activity("Updated settings group '$Group'");
+        if (count($changedn))
+            $Me->log_activity("Updated settings " . join(", ", $changedn));
         $Conf->load_settings();
 
         // contactdb may need to hear about changes to shortName
@@ -1748,11 +955,14 @@ function do_setting_update($sv) {
     ReviewForm::clear_cache();
     if (!$sv->has_errors()) {
         $Conf->save_session("settings_highlight", $sv->error_fields());
-        $Conf->confirmMsg("Changes saved.");
+        if (count($changedn))
+            $Conf->confirmMsg("Changes saved.");
+        else
+            $Conf->warnMsg("No changes.");
         $sv->report();
         redirectSelf();
     } else {
-        setting_warnings($sv, $Group);
+        SettingGroup::crosscheck($sv, $Group);
         $sv->report();
     }
 }
@@ -1761,889 +971,8 @@ if (isset($_REQUEST["update"]) && check_post())
 if (isset($_REQUEST["cancel"]) && check_post())
     redirectSelf();
 
-
-// Accounts
-function doAccGroup($sv) {
-    global $Conf, $Me;
-
-    if ($sv->sv("acct_addr"))
-        $sv->echo_checkbox("acct_addr", "Collect users’ addresses and phone numbers");
-
-    echo "<h3 class=\"settings g\">Program committee &amp; system administrators</h3>";
-
-    echo "<p><a href='", hoturl("profile", "u=new&amp;role=pc"), "' class='button'>Create PC account</a> &nbsp;|&nbsp; ",
-        "Select a user’s name to edit a profile.</p>\n";
-    $pl = new ContactList($Me, false);
-    echo $pl->table_html("pcadminx", hoturl("users", "t=pcadmin"));
-}
-
-function doInfoGroup($sv) {
-    global $Conf, $Opt;
-
-    echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
-    $sv->echo_entry("opt.shortName");
-    echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';
-    echo "<div class=\"g\"></div>\n";
-
-    if ($sv->oldv("opt.longName") == $sv->oldv("opt.shortName"))
-        $sv->set_oldv("opt.longName", "");
-    echo "<div class='f-c'>", $sv->label("opt.longName", "Conference name"), "</div>\n";
-    $sv->echo_entry("opt.longName");
-    echo '<div class="f-h">Example: “14th Workshop on Hot Topics in Operating Systems”</div>';
-    echo "<div class=\"g\"></div>\n";
-
-    echo "<div class='f-c'>", $sv->label("opt.conferenceSite", "Conference URL"), "</div>\n";
-    $sv->echo_entry("opt.conferenceSite");
-    echo '<div class="f-h">Example: “http://yourconference.org/”</div>';
-
-
-    echo '<div class="lg"></div>', "\n";
-
-    echo '<div class="f-c">', $sv->label("opt.contactName", "Name of site contact"), "</div>\n";
-    $sv->echo_entry("opt.contactName");
-    echo '<div class="g"></div>', "\n";
-
-    echo "<div class='f-c'>", $sv->label("opt.contactEmail", "Email of site contact"), "</div>\n";
-    $sv->echo_entry("opt.contactEmail");
-    echo '<div class="f-h">The site contact is the contact point for users if something goes wrong. It defaults to the chair.</div>';
-
-
-    echo '<div class="lg"></div>', "\n";
-
-    echo '<div class="f-c">', $sv->label("opt.emailReplyTo", "Reply-To field for email"), "</div>\n";
-    $sv->echo_entry("opt.emailReplyTo");
-    echo '<div class="g"></div>', "\n";
-
-    echo '<div class="f-c">', $sv->label("opt.emailCc", "Default Cc for reviewer email"), "</div>\n";
-    $sv->echo_entry("opt.emailCc");
-    echo '<div class="f-h">This applies to email sent to reviewers and email sent using the <a href="', hoturl("mail"), '">mail tool</a>. It doesn’t apply to account-related email or email sent to submitters.</div>';
-}
-
-function doMsgGroup($sv) {
-    $sv->echo_message("msg.home", "Home page message");
-    $sv->echo_message("msg.clickthrough_submit", "Clickthrough submission terms",
-               "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
-    $sv->echo_message("msg.submit", "Submission message",
-               "<div class=\"hint fx\">This message will appear on paper editing pages.</div>");
-    $sv->echo_message("msg.clickthrough_review", "Clickthrough reviewing terms",
-               "<div class=\"hint fx\">Users must “accept” these terms to edit a review. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");
-    $sv->echo_message("msg.conflictdef", "Definition of conflict of interest");
-    $sv->echo_message("msg.revprefdescription", "Review preference instructions");
-}
-
-// Submissions
-function doSubGroup($sv) {
-    global $Conf, $Opt;
-
-    $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
-
-    echo "<div class='g'></div>\n";
-    echo "<strong>Blind submission:</strong> Are author names hidden from reviewers?<br />\n";
-    $sv->echo_radio_table("sub_blind", array(Conf::BLIND_ALWAYS => "Yes—submissions are anonymous",
-                               Conf::BLIND_NEVER => "No—author names are visible to reviewers",
-                               Conf::BLIND_UNTILREVIEW => "Blind until review—reviewers can see author names after submitting a review",
-                               Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
-
-    echo "<div class='g'></div>\n<table>\n";
-    $sv->echo_entry_row("sub_reg", "Registration deadline");
-    $sv->echo_entry_row("sub_sub", "Submission deadline");
-    $sv->echo_entry_row("sub_grace", 'Grace period');
-    echo "</table>\n";
-
-    $sv->echo_radio_table("sub_freeze", array(0 => "Allow updates until the submission deadline (usually the best choice)", 1 => "Authors must freeze the final version of each submission"));
-
-
-    echo "<div class='g'></div><table>\n";
-    $sv->echo_checkbox_row('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>");
-    echo "</table>";
-}
-
-// Submission options
-function option_search_term($oname) {
-    $owords = preg_split(',[^a-z_0-9]+,', strtolower(trim($oname)));
-    for ($i = 0; $i < count($owords); ++$i) {
-        $attempt = join("-", array_slice($owords, 0, $i + 1));
-        if (count(PaperOption::search($attempt)) == 1)
-            return $attempt;
-    }
-    return simplify_whitespace($oname);
-}
-
-function doOptGroupOption($sv, $o) {
-    global $Conf;
-
-    if ($o)
-        $id = $o->id;
-    else {
-        $o = PaperOption::make(array("id" => $o,
-                "name" => "(Enter new option)",
-                "description" => "",
-                "type" => "checkbox",
-                "position" => count(PaperOption::option_list()) + 1,
-                "display" => "default"));
-        $id = "n";
-    }
-
-    if ($sv->use_req() && isset($sv->req["optn$id"])) {
-        $o = PaperOption::make(array("id" => $id,
-                "name" => $sv->req["optn$id"],
-                "description" => get($sv->req, "optd$id"),
-                "type" => get($sv->req, "optvt$id", "checkbox"),
-                "visibility" => get($sv->req, "optp$id", ""),
-                "position" => get($sv->req, "optfp$id", 1),
-                "display" => get($sv->req, "optdt$id")));
-        if ($o->has_selector())
-            $o->selector = explode("\n", rtrim(defval($sv->req, "optv$id", "")));
-    }
-
-    echo "<table><tr><td><div class='f-contain'>\n",
-        "  <div class='f-i'>",
-          "<div class='f-c'>",
-          $sv->label("optn$id", ($id === "n" ? "New option name" : "Option name")),
-          "</div>",
-          "<div class='f-e'>",
-          Ht::entry("optn$id", $o->name, $sv->sjs("optn$id", array("placeholder" => "(Enter new option)", "size" => 50))),
-          "</div>\n",
-        "  </div><div class='f-i'>",
-          "<div class='f-c'>",
-          $sv->label("optd$id", "Description"),
-          "</div>",
-          "<div class='f-e'>",
-          Ht::textarea("optd$id", $o->description, array("rows" => 2, "cols" => 50, "id" => "optd$id")),
-          "</div>\n",
-        "  </div></div></td>";
-
-    echo '<td style="padding-left:1em">';
-    if ($id !== "n" && ($examples = $o->example_searches())) {
-        echo '<div class="f-i"><div class="f-c">Example ' . pluralx($examples, "search") . "</div>";
-        foreach ($examples as &$ex)
-            $ex = "<a href=\"" . hoturl("search", array("q" => $ex[0])) . "\">" . htmlspecialchars($ex[0]) . "</a>";
-        echo '<div class="f-e">', join("<br/>", $examples), "</div></div>";
-    }
-
-    echo "</td></tr>\n  <tr><td colspan='2'><table id='foldoptvis$id' class='fold2c fold3o'><tr>";
-
-    echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-        $sv->label("optvt$id", "Type"), "</div><div class='f-e'>";
-
-    $optvt = $o->type;
-    if ($optvt == "text" && $o->display_space > 3)
-        $optvt .= ":ds_" . $o->display_space;
-    if ($o->final)
-        $optvt .= ":final";
-
-    $show_final = $Conf->collectFinalPapers();
-    foreach (PaperOption::option_list() as $ox)
-        $show_final = $show_final || $ox->final;
-
-    $otypes = array();
-    if ($show_final)
-        $otypes["xxx1"] = array("optgroup", "Options for submissions");
-    $otypes["checkbox"] = "Checkbox";
-    $otypes["selector"] = "Selector";
-    $otypes["radio"] = "Radio buttons";
-    $otypes["numeric"] = "Numeric";
-    $otypes["text"] = "Text";
-    if ($o->type == "text" && $o->display_space > 3 && $o->display_space != 5)
-        $otypes[$optvt] = "Multiline text";
-    else
-        $otypes["text:ds_5"] = "Multiline text";
-    $otypes["pdf"] = "PDF";
-    $otypes["slides"] = "Slides";
-    $otypes["video"] = "Video";
-    $otypes["attachments"] = "Attachments";
-    if ($show_final) {
-        $otypes["xxx2"] = array("optgroup", "Options for accepted papers");
-        $otypes["pdf:final"] = "Alternate final version";
-        $otypes["slides:final"] = "Final slides";
-        $otypes["video:final"] = "Final video";
-    }
-    echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
-        "</div></div></td>\n";
-    $Conf->footerScript("do_option_type(\$\$('optvt$id'),true)");
-
-    echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
-        $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",
-        Ht::select("optp$id", array("admin" => "Administrators only", "rev" => "Visible to PC and reviewers", "nonblind" => "Visible if authors are visible"), $o->visibility, array("id" => "optp$id")),
-        "</div></div></td>\n";
-
-    echo "<td class='pad'><div class='f-i'><div class='f-c'>",
-        $sv->label("optfp$id", "Form order"), "</div><div class='f-e'>";
-    $x = array();
-    // can't use "foreach (PaperOption::option_list())" because caller
-    // uses cursor
-    for ($n = 0; $n < count(PaperOption::option_list()); ++$n)
-        $x[$n + 1] = ordinal($n + 1);
-    if ($id === "n")
-        $x[$n + 1] = ordinal($n + 1);
-    else
-        $x["delete"] = "Delete option";
-    echo Ht::select("optfp$id", $x, $o->position, array("id" => "optfp$id")),
-        "</div></div></td>\n";
-
-    echo "<td class='pad fn3'><div class='f-i'><div class='f-c'>",
-        $sv->label("optdt$id", "Display"), "</div><div class='f-e'>";
-    echo Ht::select("optdt$id", ["default" => "Default",
-                                 "prominent" => "Prominent",
-                                 "topics" => "With topics",
-                                 "submission" => "Near submission"],
-                    $o->display_name(), array("id" => "optdt$id")),
-        "</div></div></td>\n";
-
-    if (isset($otypes["pdf:final"]))
-        echo "<td class='pad fx2'><div class='f-i'><div class='f-c'>&nbsp;</div><div class='f-e hint' style='margin-top:0.7ex'>(Set by accepted authors during final version submission period)</div></div></td>\n";
-
-    echo "</tr></table>";
-
-    $rows = 3;
-    if (PaperOption::type_has_selector($optvt) && count($o->selector)) {
-        $value = join("\n", $o->selector) . "\n";
-        $rows = max(count($o->selector), 3);
-    } else
-        $value = "";
-    echo "<div id='foldoptv$id' class='", (PaperOption::type_has_selector($optvt) ? "foldo" : "foldc"),
-        "'><div class='fx'>",
-        "<div class='hint' style='margin-top:1ex'>Enter choices one per line.  The first choice will be the default.</div>",
-        Ht::textarea("optv$id", $value, $sv->sjs("optv$id", array("rows" => $rows, "cols" => 50))),
-        "</div></div>";
-
-    echo "</td></tr></table>\n";
-}
-
-function opt_yes_no_optional($name) {
-    global $Opt;
-    if (($x = get($Opt, $name)) === 1 || $x === true)
-        return 1;
-    if ($x === 2)
-        return 2;
-    return 0;
-}
-
-function doOptGroup($sv) {
-    global $Conf, $Opt;
-
-    echo "<h3 class=\"settings\">Basics</h3>\n";
-
-    echo Ht::select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"], opt_yes_no_optional("noAbstract"));
-
-    echo " <span class=\"barsep\">·</span> ", Ht::select("sub_nopapers", array(0 => "PDF upload required", 2 => "PDF upload optional", 1 => "No PDF"), opt_yes_no_optional("noPapers"));
-
-    if (is_executable("src/banal")) {
-        echo "<div class='g'></div>",
-            Ht::hidden("has_sub_banal", 1),
-            "<table id='foldbanal' class='", ($sv->sv("sub_banal") ? "foldo" : "foldc"), "'>";
-        $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
-        echo '<tr class="fx"><td></td><td class="top"><table class="secondary-settings"><tbody>';
-        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
-            $val = get($bsetting, $i, "");
-            $sv->set_oldv("sub_banal_$name", $val == "" ? "N/A" : $val);
-        }
-        $sv->echo_entry_row("sub_banal_papersize", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
-        $sv->echo_entry_row("sub_banal_pagelimit", "Page limit");
-        $sv->echo_entry_row("sub_banal_textblock", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        echo '</tbody></table></td>', '<td><span class="sep"></span></td>',
-            '<td class="top"><table class="secondary-settings"><tbody>';
-        $sv->echo_entry_row("sub_banal_bodyfontsize", "Minimum body font size", null, "&nbsp;pt");
-        $sv->echo_entry_row("sub_banal_bodyleading", "Minimum leading", null, "&nbsp;pt");
-        $sv->echo_entry_row("sub_banal_columns", "Columns");
-        echo "</tbody></table></td></tr></table>";
-    }
-
-    echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
-        "<table id=\"foldpcconf\" class=\"fold",
-        ($sv->sv("sub_pcconf") ? "o" : "c"), "\">\n";
-    $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts",
-                           "void fold('pcconf',!this.checked)");
-    echo "<tr class='fx'><td></td><td>";
-    $conf = array();
-    foreach (Conflict::$type_descriptions as $n => $d)
-        if ($n)
-            $conf[] = "“{$d}”";
-    $sv->echo_checkbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
-    echo "</td></tr>\n";
-    $sv->echo_checkbox_row("sub_collab", "Collect authors’ other collaborators as text");
-    echo "</table>\n";
-
-
-    echo "<h3 class=\"settings\">Submission options</h3>\n";
-    echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
-    echo "Add options one at a time.\n";
-    echo "<div class='g'></div>\n",
-        Ht::hidden("has_options", 1);
-    $sep = "";
-    $all_options = array_merge(PaperOption::option_list()); // get our own iterator
-    foreach ($all_options as $o) {
-        echo $sep;
-        doOptGroupOption($sv, $o);
-        $sep = "\n<div style=\"margin-top:3em\"></div>\n";
-    }
-
-    echo $sep;
-    doOptGroupOption($sv, null);
-
-
-    // Topics
-    // load topic interests
-    $qinterest = $Conf->query_topic_interest();
-    $result = $Conf->q("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
-    $interests = array();
-    $ninterests = 0;
-    while (($row = edb_row($result))) {
-        if (!isset($interests[$row[0]]))
-            $interests[$row[0]] = array();
-        $interests[$row[0]][$row[1]] = $row[2];
-        $ninterests += ($row[2] ? 1 : 0);
-    }
-
-    echo "<h3 class=\"settings g\">Topics</h3>\n";
-    echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
-    echo "<div class='g'></div>",
-        Ht::hidden("has_topics", 1),
-        "<table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
-    echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
-    $td1 = '<td class="lcaption">Current</td>';
-    foreach ($Conf->topic_map() as $tid => $tname) {
-        if ($sv->use_req() && isset($sv->req["top$tid"]))
-            $tname = $sv->req["top$tid"];
-        echo '<tr>', $td1, '<td class="lentry">',
-            Ht::entry("top$tid", $tname, array("size" => 40, "style" => "width:20em")),
-            '</td>';
-
-        $tinterests = defval($interests, $tid, array());
-        echo '<td class="fx rpentry">', (get($tinterests, 0) ? '<span class="topic-2">' . $tinterests[0] . "</span>" : ""), "</td>",
-            '<td class="fx rpentry">', (get($tinterests, 1) ? '<span class="topic2">' . $tinterests[1] . "</span>" : ""), "</td>";
-
-        if ($td1 !== "<td></td>") {
-            // example search
-            echo "<td class='llentry' style='vertical-align:top' rowspan='40'><div class='f-i'>",
-                "<div class='f-c'>Example search</div>";
-            $oabbrev = strtolower($tname);
-            if (strstr($oabbrev, " ") !== false)
-                $oabbrev = "\"$oabbrev\"";
-            echo "“<a href=\"", hoturl("search", "q=topic:" . urlencode($oabbrev)), "\">",
-                "topic:", htmlspecialchars($oabbrev), "</a>”",
-                "<div class='hint'>Topic abbreviations are also allowed.</div>";
-            if ($ninterests)
-                echo "<a class='hint fn' href=\"#\" onclick=\"return fold('newtoptable')\">Show PC interest counts</a>",
-                    "<a class='hint fx' href=\"#\" onclick=\"return fold('newtoptable')\">Hide PC interest counts</a>";
-            echo "</div></td>";
-        }
-        echo "</tr>\n";
-        $td1 = "<td></td>";
-    }
-    echo '<tr><td class="lcaption top">New<br><span class="hint">Enter one topic per line.</span></td><td class="lentry top">',
-        Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
-        '</td></tr></table>';
-}
-
-// Reviews
-function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
-    global $Conf;
-    $rname = "roundname_$rnum";
-    if ($sv->use_req() && $rnum !== '$')
-        $nameval = (string) get($sv->req, $rname);
-    $rname_si = $sv->si($rname);
-    if ($nameval === "(new round)" || $rnum === '$')
-        $rname_si->placeholder = "(new round)";
-    $sv->set_oldv($rname, $nameval);
-
-    echo '<div class="mg" data-round-number="', $rnum, '"><div>',
-        $sv->label($rname, "Round"), ' &nbsp;',
-        $sv->render_entry($rname);
-    echo '<div class="inb" style="min-width:7em;margin-left:2em">';
-    if ($rnum !== '$' && $review_count)
-        echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $Conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
-    echo '</div>';
-    if ($deletable)
-        echo '<div class="inb" style="padding-left:2em">',
-            Ht::hidden("deleteround_$rnum", ""),
-            Ht::js_button("Delete round", "review_round_settings.kill(this)"),
-            '</div>';
-    if ($rnum === '$')
-        echo '<div class="hint">Names like “R1” and “R2” work well.</div>';
-    echo '</div>';
-
-    // deadlines
-    $entrysuf = $rnum ? "_$rnum" : "";
-    if ($rnum === '$' && count($Conf->round_list()))
-        $dlsuf = "_" . (count($Conf->round_list()) - 1);
-    else if ($rnum !== '$' && $rnum)
-        $dlsuf = "_" . $rnum;
-    else
-        $dlsuf = "";
-    $si = $sv->si("extrev_soft$dlsuf");
-    $si->date_backup = "pcrev_soft$dlsuf";
-    $si = $sv->si("extrev_hard$dlsuf");
-    $si->date_backup = "pcrev_hard$dlsuf";
-
-    echo '<table style="margin-left:3em">';
-    echo '<tr><td>', $sv->label("pcrev_soft$entrysuf", "PC deadline"), ' &nbsp;</td>',
-        '<td class="lentry" style="padding-right:3em">',
-        $sv->render_entry("pcrev_soft$entrysuf"),
-        '</td><td class="lentry">', $sv->label("pcrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        $sv->render_entry("pcrev_hard$entrysuf"),
-        '</td></tr>';
-    echo '<tr><td>', $sv->label("extrev_soft$entrysuf", "External deadline"), ' &nbsp;</td>',
-        '<td class="lentry" style="padding-right:3em">',
-        $sv->render_entry("extrev_soft$entrysuf"),
-        '</td><td class="lentry">', $sv->label("extrev_hard$entrysuf", "Hard deadline"), ' &nbsp;</td><td>',
-        $sv->render_entry("extrev_hard$entrysuf"),
-        '</td></tr>';
-    echo '</table></div>', "\n";
-}
-
-function doRevGroup($sv) {
-    global $Conf;
-
-    $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
-    $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
-
-    echo "<div class='g'></div>\n";
-    $sv->echo_checkbox('pcrev_any', "PC members can review <strong>any</strong> submitted paper");
-
-    echo "<div class='g'></div>\n";
-    echo "<strong>Review anonymity:</strong> Are reviewer names hidden from authors?<br />\n";
-    $sv->echo_radio_table("rev_blind", array(Conf::BLIND_ALWAYS => "Yes—reviews are anonymous",
-                               Conf::BLIND_NEVER => "No—reviewer names are visible to authors",
-                               Conf::BLIND_OPTIONAL => "Depends—reviewers decide whether to expose their names"));
-
-    echo "<div class='g'></div>\n";
-    $sv->echo_checkbox('rev_notifychair', 'Notify PC chairs of newly submitted reviews by email');
-
-
-    // Deadlines
-    echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
-    echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', ($sv->type_hint("date") ? : ""), '</p>';
-
-    $rounds = $Conf->round_list();
-    if ($sv->use_req()) {
-        for ($i = 1; isset($sv->req["roundname_$i"]); ++$i)
-            $rounds[$i] = get($sv->req, "deleteround_$i") ? ";" : trim(get_s($sv->req, "roundname_$i"));
-    }
-
-    // prepare round selector
-    $round_value = trim($sv->sv("rev_roundtag"));
-    $current_round_value = $Conf->setting_data("rev_roundtag", "");
-    if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
-        $round_value = "#0";
-    else if (($round_number = $Conf->round_number($round_value, false))
-             || ($round_number = $Conf->round_number($current_round_value, false)))
-        $round_value = "#" . $round_number;
-    else
-        $round_value = $selector[$current_round_value] = $current_round_value;
-
-    $round_map = edb_map(Dbl::ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
-
-    $print_round0 = true;
-    if ($round_value !== "#0" && $round_value !== ""
-        && $current_round_value !== ""
-        && (!$sv->use_req() || isset($sv->req["roundname_0"]))
-        && !$Conf->round0_defined())
-        $print_round0 = false;
-
-    $selector = array();
-    if ($print_round0)
-        $selector["#0"] = "unnamed";
-    for ($i = 1; $i < count($rounds); ++$i)
-        if ($rounds[$i] !== ";")
-            $selector["#$i"] = (object) array("label" => $rounds[$i], "id" => "rev_roundtag_$i");
-
-    echo '<div id="round_container"', (count($selector) == 1 ? ' style="display:none"' : ''), '>',
-        '<table id="rev_roundtag_table"><tr><td class="lxcaption">',
-        $sv->label("rev_roundtag", "Current round"),
-        '</td><td>',
-        Ht::select("rev_roundtag", $selector, $round_value, $sv->sjs("rev_roundtag")),
-        '</td></tr></table>',
-        '<div class="hint">This round is used for new assignments.</div><div class="g"></div></div>';
-
-    echo '<div id="roundtable">';
-    $num_printed = 0;
-    for ($i = 0; $i < count($rounds); ++$i)
-        if ($i ? $rounds[$i] !== ";" : $print_round0) {
-            echo_round($sv, $i, $i ? $rounds[$i] : "", +get($round_map, $i), count($selector) !== 1);
-            ++$num_printed;
-        }
-    echo '</div><div id="newround" style="display:none">';
-    echo_round($sv, '$', "", "", true);
-    echo '</div><div class="g"></div>';
-    echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
-        ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
-        Ht::hidden("oldroundcount", count($Conf->round_list())),
-        Ht::hidden("has_rev_roundtag", 1);
-    for ($i = 1; $i < count($rounds); ++$i)
-        if ($rounds[$i] === ";")
-            echo Ht::hidden("roundname_$i", "", array("id" => "roundname_$i")),
-                Ht::hidden("deleteround_$i", 1);
-    Ht::stash_script("review_round_settings.init()");
-
-
-    // External reviews
-    echo "<h3 class=\"settings g\">External reviews</h3>\n";
-
-    echo "<div class='g'></div>";
-    $sv->echo_checkbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
-    $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
-
-    echo "<div class='g'></div>\n";
-    $t = expandMailTemplate("requestreview", false);
-    echo "<table id='foldmailbody_requestreview' class='",
-        ($t == expandMailTemplate("requestreview", true) ? "foldc" : "foldo"),
-        "'><tr><td>", foldbutton("mailbody_requestreview"), "</td>",
-        "<td><a href='#' onclick='return fold(\"mailbody_requestreview\")' class='q'><strong>Mail template for external review requests</strong></a>",
-        " <span class='fx'>(<a href='", hoturl("mail"), "'>keywords</a> allowed; set to empty for default)<br /></span>
-<textarea class='tt fx' name='mailbody_requestreview' cols='80' rows='20'>", htmlspecialchars($t["body"]), "</textarea>",
-        "</td></tr></table>\n";
-
-
-    // Review visibility
-    echo "<h3 class=\"settings g\">Visibility</h3>\n";
-
-    echo "Can PC members <strong>see all reviews</strong> except for conflicts?<br />\n";
-    $sv->echo_radio_table("pc_seeallrev", array(Conf::PCSEEREV_YES => "Yes",
-                                  Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same paper",
-                                  Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                                  Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same paper"));
-
-    echo "<div class='g'></div>\n";
-    echo "Can PC members see <strong>reviewer names</strong> except for conflicts?<br />\n";
-    $sv->echo_radio_table("pc_seeblindrev", array(0 => "Yes",
-                                    1 => "Only after completing a review for the same paper<br /><span class='hint'>This setting also hides reviewer-only comments from PC members who have not completed a review for the same paper.</span>"));
-
-    echo "<div class='g'></div>";
-    echo "Can external reviewers see the other reviews for their assigned papers, once they’ve submitted their own?<br />\n";
-    $sv->echo_radio_table("extrev_view", array(2 => "Yes", 1 => "Yes, but they can’t see who wrote blind reviews", 0 => "No"));
-
-
-    // Review ratings
-    echo "<h3 class=\"settings g\">Review ratings</h3>\n";
-
-    echo "Should HotCRP collect ratings of reviews? &nbsp; <a class='hint' href='", hoturl("help", "t=revrate"), "'>(Learn more)</a><br />\n";
-    $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
-}
-
-// Tags and tracks
-function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
-    global $Conf;
-    $tclass = $ttag = "";
-    if ($sv->use_req()) {
-        $tclass = defval($sv->req, "${type}_track$tnum", "");
-        $ttag = defval($sv->req, "${type}tag_track$tnum", "");
-    } else if ($thistrack && get($thistrack, $type)) {
-        if ($thistrack->$type == "+none")
-            $tclass = "none";
-        else {
-            $tclass = substr($thistrack->$type, 0, 1);
-            $ttag = substr($thistrack->$type, 1);
-        }
-    }
-
-    $hint = "";
-    if (is_array($question))
-        list($question, $hint) = [$question[0], '<p class="hint" style="margin:0;max-width:480px">' . $question[1] . '</p>'];
-
-    echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
-    if ($type === "viewtracker")
-        echo "<td class=\"lxcaption\" colspan=\"2\" style=\"padding-top:0.5em\">";
-    else
-        echo "<td style=\"width:2em\"></td><td class=\"lxcaption\">";
-    echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"],
-                    $question, "{$type}_track$tnum"),
-        "</td><td>",
-        Ht::select("{$type}_track$tnum",
-                   array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"),
-                   $tclass,
-                   $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
-        " &nbsp;</td><td style=\"min-width:120px\">",
-        Ht::entry("${type}tag_track$tnum", $ttag,
-                  $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
-        "</td></tr>";
-    if ($hint)
-        echo "<tr><td></td><td colspan=\"3\" style=\"padding-bottom:2px\">", $hint, "</td></tr>";
-}
-
-function do_track($sv, $trackname, $tnum) {
-    global $Conf;
-    echo "<div id=\"trackgroup$tnum\"",
-        ($tnum ? "" : " style=\"display:none\""),
-        "><table style=\"margin-bottom:0.5em\">";
-    echo "<tr><td colspan=\"3\" style=\"padding-bottom:3px\">";
-    if ($trackname === "_")
-        echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
-    else
-        echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
-            Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
-    echo "</td></tr>\n";
-
-    $t = $Conf->setting_json("tracks");
-    $t = $t && $trackname !== "" ? get($t, $trackname) : null;
-    do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
-    do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
-    do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
-    $hint = "";
-    if ($Conf->setting("pc_seeblindrev"))
-        $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
-    do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
-    do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
-    do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
-    if ($trackname === "_")
-        do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
-    echo "</table></div>\n\n";
-}
-
-function doTagsGroup($sv) {
-    global $Conf;
-
-    // Tags
-    $tagger = new Tagger;
-    echo "<h3 class=\"settings\">Tags</h3>\n";
-
-    echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
-    $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
-    echo "<td>", Ht::hidden("has_tag_chair", 1);
-    $sv->echo_entry("tag_chair");
-    echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
-
-    echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
-    $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
-    echo "<td>", Ht::hidden("has_tag_approval", 1);
-    $sv->echo_entry("tag_approval");
-    echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
-
-    echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
-    $x = [];
-    foreach (TagInfo::vote_tags() as $n => $v)
-        $x[] = "$n#$v";
-    $sv->set_oldv("tag_vote", join(" ", $x));
-    echo "<td>", Ht::hidden("has_tag_vote", 1);
-    $sv->echo_entry("tag_vote");
-    echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
-
-    echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
-    $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
-    echo "<td>", Ht::hidden("has_tag_rank", 1);
-    $sv->echo_entry("tag_rank");
-    echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
-    echo "</table>";
-
-    echo "<div class='g'></div>\n";
-    $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
-
-    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_color", ""), $m,
-                   PREG_SET_ORDER);
-    $tag_colors = array();
-    foreach ($m as $x)
-        $tag_colors[TagInfo::canonical_color($x[2])][] = $x[1];
-    $tag_colors_rows = array();
-    foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
-        if ($sv->use_req())
-            $v = defval($sv->req, "tag_color_$k", "");
-        else if (isset($tag_colors[$k]))
-            $v = join(" ", $tag_colors[$k]);
-        else
-            $v = "";
-        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
-    }
-
-    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_badge", ""), $m,
-                   PREG_SET_ORDER);
-    $tag_badges = array();
-    foreach ($m as $x)
-        $tag_badges[$x[2]][] = $x[1];
-    foreach (["black" => "black label", "red" => "red label", "green" => "green label",
-              "blue" => "blue label", "white" => "white label"]
-             as $k => $desc) {
-        if ($sv->use_req())
-            $v = defval($sv->req, "tag_badge_$k", "");
-        else if (isset($tag_badges[$k]))
-            $v = join(" ", $tag_badges[$k]);
-        else
-            $v = "";
-        $tag_colors_rows[] = "<tr class='k0'><td class='lxcaption'></td><td class='lxcaption'><span class='badge {$k}badge' style='margin:0'>$desc</span><td class='lentry' style='font-size:10.5pt'><input type='text' name='tag_badge_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
-    }
-
-    echo Ht::hidden("has_tag_color", 1),
-        '<h3 class="settings g">Styles and colors</h3>',
-        "<div class='hint'>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</div>",
-        "<div class='smg'></div>",
-        "<table id='foldtag_color'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
-        join("", $tag_colors_rows), "</table>\n";
-
-
-    echo '<h3 class="settings g">Tracks</h3>', "\n";
-    echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. <span class='barsep'>·</span> <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
-        Ht::hidden("has_tracks", 1),
-        "<div class=\"smg\"></div>\n";
-    do_track($sv, "", 0);
-    $tracknum = 2;
-    $trackj = $Conf->setting_json("tracks") ? : (object) array();
-    // existing tracks
-    foreach ($trackj as $trackname => $x)
-        if ($trackname !== "_") {
-            do_track($sv, $trackname, $tracknum);
-            ++$tracknum;
-        }
-    // new tracks (if error prevented saving)
-    if ($sv->use_req())
-        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
-            $trackname = trim($sv->req["name_track$i"]);
-            if (!isset($trackj->$trackname)) {
-                do_track($sv, $trackname, $tracknum);
-                ++$tracknum;
-            }
-        }
-    // catchall track
-    do_track($sv, "_", 1);
-    echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
-}
-
-
-// Responses and decisions
-function doDecGroup($sv) {
-    global $Conf, $Opt;
-
-    echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
-    if ($Conf->setting("resp_active"))
-        $no_text = "No, unless responses are open";
-    else
-        $no_text = "No";
-    if (!$Conf->setting("au_seerev", 0)
-        && $Conf->timeAuthorViewReviews())
-        $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
-    $opts = array(Conf::AUSEEREV_NO => $no_text,
-                  Conf::AUSEEREV_YES => "Yes");
-    if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
-        && !get($Opt, "allow_auseerev_unlessincomplete"))
-        $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
-    if (get($Opt, "allow_auseerev_unlessincomplete"))
-        $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
-    $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", ["onfocus" => "$('#au_seerev_" . Conf::AUSEEREV_TAGS . "').click()"]);
-    $sv->echo_radio_table("au_seerev", $opts);
-    echo Ht::hidden("has_tag_au_seerev", 1);
-
-    // Authors' response
-    echo '<div class="g"></div><table id="foldauresp" class="fold2o">';
-    $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", "void fold('auresp',!this.checked,2)");
-    echo '<tr class="fx2"><td></td><td><div id="auresparea">',
-        Ht::hidden("has_resp_rounds", 1);
-
-    // Response rounds
-    if ($sv->use_req()) {
-        $rrounds = array(1);
-        for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i)
-            $rrounds[$i] = $sv->req["resp_roundname_$i"];
-    } else
-        $rrounds = $Conf->resp_round_list();
-    $rrounds["n"] = "";
-    foreach ($rrounds as $i => $rname) {
-        $isuf = $i ? "_$i" : "";
-        $rname_si = $sv->si("resp_roundname$isuf");
-        if (!$i) {
-            $rname = $rname == "1" ? "none" : $rname;
-            $rname_si->placeholder = "none";
-        }
-        $sv->set_oldv("resp_roundname$isuf", $rname);
-
-        echo '<div id="response', $isuf;
-        if ($i)
-            echo '" style="padding-top:1em';
-        if ($i === "n")
-            echo ';display:none';
-        echo '"><table class="secondary-settings"><tbody>';
-        $sv->echo_entry_row("resp_roundname$isuf", "Response name");
-        if ($sv->sv("resp_open$isuf") === 1 && ($x = $sv->sv("resp_done$isuf")))
-            $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
-        $sv->echo_entry_row("resp_open$isuf", "Start time");
-        $sv->echo_entry_row("resp_done$isuf", "Hard deadline");
-        $sv->echo_entry_row("resp_grace$isuf", "Grace period");
-        $sv->echo_entry_row("resp_words$isuf", "Word limit", $i ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit.");
-        echo '</tbody></table><div style="padding-top:4px">';
-        $sv->echo_message_minor("msg.resp_instrux$isuf", "Instructions");
-        echo '</div></div>', "\n";
-    }
-
-    echo '</div><div style="padding-top:1em">',
-        '<button type="button" onclick="settings_add_resp_round()">Add response round</button>',
-        '</div></td></tr></table>';
-    $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
-
-    echo "<div class='g'></div>\n<hr class='hr' />\n",
-        "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
-    $sv->echo_radio_table("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
-                            Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
-                            Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",
-                            Conf::SEEDEC_ALL => "<b>Authors</b>, reviewers, and all PC members (and reviewers can see accepted papers’ author lists)"));
-
-    echo "<div class='g'></div>\n";
-    echo "<table>\n";
-    $decs = $Conf->decision_map();
-    krsort($decs);
-
-    // count papers per decision
-    $decs_pcount = array();
-    $result = $Conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
-    while (($row = edb_row($result)))
-        $decs_pcount[$row[0]] = $row[1];
-
-    // real decisions
-    $n_real_decs = 0;
-    foreach ($decs as $k => $v)
-        $n_real_decs += ($k ? 1 : 0);
-    $caption = "<td class='lcaption' rowspan='$n_real_decs'>Current decision types</td>";
-    foreach ($decs as $k => $v)
-        if ($k) {
-            if ($sv->use_req())
-                $v = defval($sv->req, "dec$k", $v);
-            echo "<tr>", $caption, '<td class="lentry nw">',
-                Ht::entry("dec$k", $v, array("size" => 35)),
-                " &nbsp; ", ($k > 0 ? "Accept class" : "Reject class"), "</td>";
-            if (isset($decs_pcount[$k]) && $decs_pcount[$k])
-                echo '<td class="lentry nw">', plural($decs_pcount[$k], "paper"), "</td>";
-            echo "</tr>\n";
-            $caption = "";
-        }
-
-    // new decision
-    $v = "";
-    $vclass = 1;
-    if ($sv->use_req()) {
-        $v = defval($sv->req, "decn", $v);
-        $vclass = defval($sv->req, "dtypn", $vclass);
-    }
-    echo '<tr><td class="lcaption">',
-        $sv->label("decn", "New decision type"),
-        '<br /></td>',
-        '<td class="lentry nw">',
-        Ht::hidden("has_decisions", 1),
-        Ht::entry("decn", $v, array("id" => "decn", "size" => 35)), ' &nbsp; ',
-        Ht::select("dtypn", array(1 => "Accept class", -1 => "Reject class"), $vclass),
-        "<br /><small>Examples: “Accepted as short paper”, “Early reject”</small>",
-        "</td></tr>";
-    if ($sv->has_error("decn"))
-        echo '<tr><td></td><td class="lentry nw">',
-            Ht::checkbox("decn_confirm", 1, false),
-            '&nbsp;<span class="error">', Ht::label("Confirm"), "</span></td></tr>";
-    echo "</table>\n";
-
-    // Final versions
-    echo "<h3 class=\"settings g\">Final versions</h3>\n";
-    echo '<table id="foldfinal" class="fold2o">';
-    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
-    echo '<tr class="fx2"><td></td><td><table class="secondary-settings"><tbody>';
-    $sv->echo_entry_row("final_soft", "Deadline");
-    $sv->echo_entry_row("final_done", "Hard deadline");
-    $sv->echo_entry_row("final_grace", "Grace period");
-    echo "</tbody></table><div class='g'></div>";
-    $sv->echo_message_minor("msg.finalsubmit", "Instructions");
-    echo "<div class='g'></div>",
-        "<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
-        "</td></tr></table>\n\n";
-    $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
-}
-
-
 if (!$Sv->warnings_reported) {
-    setting_warnings($Sv, $Group);
+    SettingGroup::crosscheck($Sv, $Group);
     $Sv->report();
 }
 
@@ -2676,6 +1005,7 @@ echo "<div class='aahc'>";
 doActionArea(true);
 
 echo "<div>";
+$Sv->interesting_groups[$Group] = true;
 SettingGroup::$all[$Group]->render($Sv);
 echo "</div>";
 

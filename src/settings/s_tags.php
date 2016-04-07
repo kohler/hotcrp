@@ -1,0 +1,398 @@
+<?php
+// src/settings/s_tags.php -- HotCRP settings > tags page
+// HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
+class SettingRenderer_Tags extends SettingRenderer {
+    private function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
+        global $Conf;
+        $tclass = $ttag = "";
+        if ($sv->use_req()) {
+            $tclass = defval($sv->req, "${type}_track$tnum", "");
+            $ttag = defval($sv->req, "${type}tag_track$tnum", "");
+        } else if ($thistrack && get($thistrack, $type)) {
+            if ($thistrack->$type == "+none")
+                $tclass = "none";
+            else {
+                $tclass = substr($thistrack->$type, 0, 1);
+                $ttag = substr($thistrack->$type, 1);
+            }
+        }
+
+        $hint = "";
+        if (is_array($question))
+            list($question, $hint) = [$question[0], '<p class="hint" style="margin:0;max-width:480px">' . $question[1] . '</p>'];
+
+        echo "<tr data-fold=\"true\" class=\"fold", ($tclass == "" || $tclass == "none" ? "c" : "o"), "\">";
+        if ($type === "viewtracker")
+            echo "<td class=\"lxcaption\" colspan=\"2\" style=\"padding-top:0.5em\">";
+        else
+            echo "<td style=\"width:2em\"></td><td class=\"lxcaption\">";
+        echo $sv->label(["{$type}_track$tnum", "{$type}tag_track$tnum"],
+                        $question, "{$type}_track$tnum"),
+            "</td><td>",
+            Ht::select("{$type}_track$tnum",
+                       array("" => "Whole PC", "+" => "PC members with tag", "-" => "PC members without tag", "none" => "Administrators only"),
+                       $tclass,
+                       $sv->sjs("{$type}_track$tnum", array("onchange" => "void foldup(this,event,{f:this.selectedIndex==0||this.selectedIndex==3})"))),
+            " &nbsp;</td><td style=\"min-width:120px\">",
+            Ht::entry("${type}tag_track$tnum", $ttag,
+                      $sv->sjs("{$type}tag_track$tnum", array("class" => "fx", "placeholder" => "(tag)"))),
+            "</td></tr>";
+        if ($hint)
+            echo "<tr><td></td><td colspan=\"3\" style=\"padding-bottom:2px\">", $hint, "</td></tr>";
+    }
+
+    private function do_track($sv, $trackname, $tnum) {
+        global $Conf;
+        echo "<div id=\"trackgroup$tnum\"",
+            ($tnum ? "" : " style=\"display:none\""),
+            "><table style=\"margin-bottom:0.5em\">";
+        echo "<tr><td colspan=\"3\" style=\"padding-bottom:3px\">";
+        if ($trackname === "_")
+            echo "For papers not on other tracks:", Ht::hidden("name_track$tnum", "_");
+        else
+            echo $sv->label("name_track$tnum", "For papers with tag &nbsp;"),
+                Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
+        echo "</td></tr>\n";
+
+        $t = $Conf->setting_json("tracks");
+        $t = $t && $trackname !== "" ? get($t, $trackname) : null;
+        $this->do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
+        $this->do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
+        $this->do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
+        $hint = "";
+        if ($Conf->setting("pc_seeblindrev"))
+            $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
+        $this->do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
+        $this->do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
+        $this->do_track_permission($sv, "unassrev", "Who can self-assign a review?", $tnum, $t);
+        if ($trackname === "_")
+            $this->do_track_permission($sv, "viewtracker", "Who can see the <a href=\"" . hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", $tnum, $t);
+        echo "</table></div>\n\n";
+    }
+
+function render($sv) {
+    global $Conf;
+
+    // Tags
+    $tagger = new Tagger;
+    echo "<h3 class=\"settings\">Tags</h3>\n";
+
+    echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
+    $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
+    echo "<td>", Ht::hidden("has_tag_chair", 1);
+    $sv->echo_entry("tag_chair");
+    echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+
+    echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
+    $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
+    echo "<td>", Ht::hidden("has_tag_approval", 1);
+    $sv->echo_entry("tag_approval");
+    echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+
+    echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
+    $x = [];
+    foreach (TagInfo::vote_tags() as $n => $v)
+        $x[] = "$n#$v";
+    $sv->set_oldv("tag_vote", join(" ", $x));
+    echo "<td>", Ht::hidden("has_tag_vote", 1);
+    $sv->echo_entry("tag_vote");
+    echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+
+    echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
+    $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
+    echo "<td>", Ht::hidden("has_tag_rank", 1);
+    $sv->echo_entry("tag_rank");
+    echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
+    echo "</table>";
+
+    echo "<div class='g'></div>\n";
+    $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
+
+    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_color", ""), $m,
+                   PREG_SET_ORDER);
+    $tag_colors = array();
+    foreach ($m as $x)
+        $tag_colors[TagInfo::canonical_color($x[2])][] = $x[1];
+    $tag_colors_rows = array();
+    foreach (explode("|", TagInfo::BASIC_COLORS) as $k) {
+        if ($sv->use_req())
+            $v = defval($sv->req, "tag_color_$k", "");
+        else if (isset($tag_colors[$k]))
+            $v = join(" ", $tag_colors[$k]);
+        else
+            $v = "";
+        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+    }
+
+    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_badge", ""), $m,
+                   PREG_SET_ORDER);
+    $tag_badges = array();
+    foreach ($m as $x)
+        $tag_badges[$x[2]][] = $x[1];
+    foreach (["black" => "black label", "red" => "red label", "green" => "green label",
+              "blue" => "blue label", "white" => "white label"]
+             as $k => $desc) {
+        if ($sv->use_req())
+            $v = defval($sv->req, "tag_badge_$k", "");
+        else if (isset($tag_badges[$k]))
+            $v = join(" ", $tag_badges[$k]);
+        else
+            $v = "";
+        $tag_colors_rows[] = "<tr class='k0'><td class='lxcaption'></td><td class='lxcaption'><span class='badge {$k}badge' style='margin:0'>$desc</span><td class='lentry' style='font-size:10.5pt'><input type='text' name='tag_badge_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+    }
+
+    echo Ht::hidden("has_tag_color", 1),
+        '<h3 class="settings g">Styles and colors</h3>',
+        "<div class='hint'>Papers and PC members tagged with a style name, or with one of the associated tags, will appear in that style in lists.</div>",
+        "<div class='smg'></div>",
+        "<table id='foldtag_color'><tr><th colspan='2'>Style name</th><th>Tags</th></tr>",
+        join("", $tag_colors_rows), "</table>\n";
+
+
+    echo '<h3 class="settings g">Tracks</h3>', "\n";
+    echo "<div class='hint'>Tracks control the PC members allowed to view or review different sets of papers. <span class='barsep'>·</span> <a href=\"" . hoturl("help", "t=tracks") . "\">What is this?</a></div>",
+        Ht::hidden("has_tracks", 1),
+        "<div class=\"smg\"></div>\n";
+    $this->do_track($sv, "", 0);
+    $tracknum = 2;
+    $trackj = $Conf->setting_json("tracks") ? : (object) array();
+    // existing tracks
+    foreach ($trackj as $trackname => $x)
+        if ($trackname !== "_") {
+            $this->do_track($sv, $trackname, $tracknum);
+            ++$tracknum;
+        }
+    // new tracks (if error prevented saving)
+    if ($sv->use_req())
+        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
+            $trackname = trim($sv->req["name_track$i"]);
+            if (!isset($trackj->$trackname)) {
+                $this->do_track($sv, $trackname, $tracknum);
+                ++$tracknum;
+            }
+        }
+    // catchall track
+    $this->do_track($sv, "_", 1);
+    echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
+}
+
+    function crosscheck($sv) {
+        if ($sv->has_interest("tracks")
+            && $sv->newv("tracks")) {
+            $tracks = json_decode($sv->newv("tracks"), true);
+            $tracknum = 2;
+            foreach ($tracks as $trackname => $t) {
+                $unassrev = get($t, "unassrev");
+                if (get($t, "viewpdf") && $t["viewpdf"] !== $unassrev
+                    && $unassrev !== "+none" && $t["viewpdf"] !== get($t, "view")) {
+                    $tnum = ($trackname === "_" ? 1 : $tnum);
+                    $tdesc = ($trackname === "_" ? "Default track" : "Track “{$trackname}”");
+                    $sv->set_warning("unassrev_track$tnum", "$tdesc: Generally, a track that restricts who can see PDFs should restrict who can self-assign papers in the same way.");
+                }
+                $tracknum += ($trackname === "_" ? 0 : 1);
+            }
+        }
+    }
+}
+
+
+class Tag_SettingParser extends SettingParser {
+    private $tagger;
+    public function __construct() {
+        $this->tagger = new Tagger;
+    }
+    private function parse_list($sv, $si, $checkf, $min_idx) {
+        $ts = array();
+        foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
+            if ($t !== "" && $this->tagger->check($t, $checkf)) {
+                list($tag, $idx) = TagInfo::split_index($t);
+                if ($min_idx)
+                    $t = $tag . "#" . max($min_idx, (float) $idx);
+                $ts[$tag] = $t;
+            } else if ($t !== "")
+                $sv->set_error($si->name, $si->short_description . ": " . $this->tagger->error_html);
+        return array_values($ts);
+    }
+    public function parse($sv, $si) {
+        if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $sv->update($si->name, join(" ", $ts));
+        }
+
+        if ($si->name == "tag_vote" && isset($sv->req["tag_vote"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR, 1);
+            if ($sv->update("tag_vote", join(" ", $ts)))
+                $sv->need_lock["PaperTag"] = true;
+        }
+
+        if ($si->name == "tag_approval" && isset($sv->req["tag_approval"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            if ($sv->update("tag_approval", join(" ", $ts)))
+                $sv->need_lock["PaperTag"] = true;
+        }
+
+        if ($si->name == "tag_rank" && isset($sv->req["tag_rank"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            if (count($ts) > 1)
+                $sv->set_error("tag_rank", "At most one rank tag is currently supported.");
+            else
+                $sv->update("tag_rank", join(" ", $ts));
+        }
+
+        if ($si->name == "tag_color") {
+            $ts = array();
+            $any_set = false;
+            foreach (explode("|", TagInfo::BASIC_COLORS) as $k)
+                if (isset($sv->req["tag_color_$k"])) {
+                    $xsi = new Si("tag_color_$k", ["name" => ucfirst($k) . " style tag"]);
+                    $any_set = true;
+                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                        $ts[] = $t . "=" . $k;
+                }
+            if ($any_set)
+                $sv->update("tag_color", join(" ", $ts));
+        }
+
+        if ($si->name == "tag_badge") {
+            $ts = array();
+            $any_set = false;
+            foreach (explode("|", TagInfo::BASIC_BADGES) as $k)
+                if (isset($sv->req["tag_badge_$k"])) {
+                    $xsi = new Si("tag_badge_$k", ["name" => ucfirst($k) . " badge style tag"]);
+                    $any_set = true;
+                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                        $ts[] = $t . "=" . $k;
+                }
+            if ($any_set)
+                $sv->update("tag_badge", join(" ", $ts));
+        }
+
+        if ($si->name == "tag_au_seerev" && isset($sv->req["tag_au_seerev"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $sv->update("tag_au_seerev", join(" ", $ts));
+        }
+
+        return true;
+    }
+
+    public function save($sv, $si) {
+        if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
+            // check allotments
+            $pcm = pcMembers();
+            foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
+                if ($t === "")
+                    continue;
+                $base = substr($t, 0, strpos($t, "#"));
+                $allotment = substr($t, strlen($base) + 1);
+
+                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
+                $pvals = array();
+                $cvals = array();
+                $negative = false;
+                while (($row = edb_row($result))) {
+                    $who = substr($row[1], 0, strpos($row[1], "~"));
+                    if ($row[2] < 0) {
+                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$base}” vote for paper #$row[0].");
+                        $negative = true;
+                    } else {
+                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + $row[2];
+                        $cvals[$who] = defval($cvals, $who, 0) + $row[2];
+                    }
+                }
+
+                foreach ($cvals as $who => $what)
+                    if ($what > $allotment)
+                        $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
+
+                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
+                $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
+
+                $q = array();
+                foreach ($pvals as $pid => $what)
+                    $q[] = "($pid, '" . sqlq($base) . "', $what)";
+                if (count($q) > 0)
+                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
+            }
+        }
+
+        if ($si->name == "tag_approval" && $sv->has_savedv("tag_approval")) {
+            $pcm = pcMembers();
+            foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
+                if ($t === "")
+                    continue;
+                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
+                $pvals = array();
+                $negative = false;
+                while (($row = edb_row($result))) {
+                    $who = substr($row[1], 0, strpos($row[1], "~"));
+                    if ($row[2] < 0) {
+                        $sv->set_error(null, "Removed " . Text::user_html($pcm[$who]) . "’s negative “{$t}” approval vote for paper #$row[0].");
+                        $negative = true;
+                    } else
+                        $pvals[$row[0]] = defval($pvals, $row[0], 0) + 1;
+                }
+
+                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
+                $Conf->qe("delete from PaperTag where tag='" . sqlq($t) . "'$q");
+
+                $q = array();
+                foreach ($pvals as $pid => $what)
+                    $q[] = "($pid, '" . sqlq($t) . "', $what)";
+                if (count($q) > 0)
+                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
+            }
+        }
+
+        TagInfo::invalidate_defined_tags();
+    }
+}
+
+
+class Track_SettingParser extends SettingParser {
+    public function parse($sv, $si) {
+        $tagger = new Tagger;
+        $tracks = (object) array();
+        $missing_tags = false;
+        for ($i = 1; isset($sv->req["name_track$i"]); ++$i) {
+            $trackname = trim($sv->req["name_track$i"]);
+            if ($trackname === "" || $trackname === "(tag)")
+                continue;
+            else if (!$tagger->check($trackname, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)
+                     || ($trackname === "_" && $i != 1)) {
+                if ($trackname !== "_")
+                    $sv->set_error("name_track$i", "Track name: " . $tagger->error_html);
+                else
+                    $sv->set_error("name_track$i", "Track name “_” is reserved.");
+                $sv->set_error("tracks");
+                continue;
+            }
+            $t = (object) array();
+            foreach (Track::$map as $type => $value)
+                if (($ttype = defval($sv->req, "${type}_track$i", "")) == "+"
+                    || $ttype == "-") {
+                    $ttag = trim(defval($sv->req, "${type}tag_track$i", ""));
+                    if ($ttag === "" || $ttag === "(tag)") {
+                        $sv->set_error("{$type}_track$i", "Tag missing for track setting.");
+                        $sv->set_error("tracks");
+                    } else if (($ttype == "+" && strcasecmp($ttag, "none") == 0)
+                               || $tagger->check($ttag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE))
+                        $t->$type = $ttype . $ttag;
+                    else {
+                        $sv->set_error("{$type}_track$i", $tagger->error_html);
+                        $sv->set_error("tracks");
+                    }
+                } else if ($ttype == "none")
+                    $t->$type = "+none";
+            if (count((array) $t) || get($tracks, "_"))
+                $tracks->$trackname = $t;
+        }
+        $sv->save("tracks", count((array) $tracks) ? json_encode($tracks) : null);
+        return false;
+    }
+}
+
+
+SettingGroup::register("tags", "Tags &amp; tracks", 700, new SettingRenderer_Tags);
+SettingGroup::register_synonym("tracks", "tags");

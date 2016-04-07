@@ -1,10 +1,11 @@
 {
     "acct_addr": {
         "name": "Collect addresses",
-        "type": "checkbox"
+        "type": "checkbox",
+        "require": "src/settings/s_users.php"
     },
     "au_seerev": {
-        "name": "Authors can see reviews",
+        "name": "Authors can see reviews", "group": "decisions",
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 0
     },
     "clickthrough_submit": {
@@ -22,11 +23,11 @@
         "type": "checkbox"
     },
     "extrev_hard": {
-        "name": "External reviewer hard review deadline",
+        "name": "External reviewer hard review deadline", "group": "reviews",
         "type": "ndate", "size": 28, "placeholder": "same as PC", "novalue": true
     },
     "extrev_soft": {
-        "name": "External reviewer soft review deadline",
+        "name": "External reviewer soft review deadline", "group": "reviews",
         "type": "date", "size": 28, "placeholder": "same as PC", "novalue": true
     },
     "extrev_view": {
@@ -43,7 +44,7 @@
     },
     "final_open": {
         "name": "Collect final versions setting",
-        "type": "checkbox"
+        "type": "checkbox", "group": "decisions"
     },
     "final_soft": {
         "name": "Final version upload deadline",
@@ -65,7 +66,8 @@
     },
     "msg.conflictdef": {
         "name": "Definition of conflict of interest",
-        "type": "htmlstring", "size": 5, "message_default": "msg.conflictdef"
+        "type": "htmlstring", "size": 5, "message_default": "msg.conflictdef",
+        "require": "src/settings/s_msg.php"
     },
     "msg.finalsubmit": {
         "name": "Final paper submission message",
@@ -122,10 +124,11 @@
     },
     "opt.shortName": {
         "name": "Conference abbreviation",
-        "type": "simplestring", "size": 20
+        "type": "simplestring", "size": 20,
+        "require": "src/settings/s_basics.php"
     },
     "options": {
-        "parser": "Option_SettingParser",
+        "parser": "Option_SettingParser", "group": "subform",
         "type": "string"
     },
     "options_nextid": {
@@ -158,11 +161,11 @@
         "type": "checkbox"
     },
     "pcrev_hard": {
-        "name": "PC review hard deadline",
+        "name": "PC review hard deadline", "group": "reviews",
         "type": "ndate", "size": 28, "placeholder": "none", "novalue": true
     },
     "pcrev_soft": {
-        "name": "PC review deadline",
+        "name": "PC review deadline", "group": "reviews",
         "type": "date", "size": 28, "placeholder": "none", "novalue": true
     },
     "resp_active": {
@@ -203,7 +206,8 @@
     },
     "rev_open": {
         "name": "Open site for reviewing",
-        "type": "cdate"
+        "type": "cdate",
+        "require": "src/settings/s_reviews.php"
     },
     "rev_ratings": {
         "name": "Collect ratings of reviews",
@@ -222,8 +226,9 @@
         "type": "text", "size": 12, "novalue": true, "placeholder": "unnamed"
     },
     "seedec": {
-        "name": "Decision visibility",
-        "type": "radio", "values": [0, 1, 2, 3]
+        "name": "Decision visibility", "group": "decisions",
+        "type": "radio", "values": [0, 1, 2, 3],
+        "require": "src/settings/s_decisions.php"
     },
     "sub_banal": {
         "type": "checkbox", "parser": "Banal_SettingParser",
@@ -257,7 +262,7 @@
         "type": "text", "size": 18, "placeholder": "N/A", "novalue": true
     },
     "sub_blind": {
-        "name": "Submission anonymity",
+        "name": "Submission anonymity", "group": "sub",
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 2
     },
     "sub_collab": {
@@ -280,11 +285,13 @@
     "sub_nopapers": {
         "name": "Submission PDF required",
         "type": "radio", "values": [0, 1, 2],
-        "storage": "ova.noPapers", "default_value": 0
+        "storage": "ova.noPapers", "default_value": 0,
+        "require": "src/settings/s_subform.php"
     },
     "sub_open": {
-        "name": "Open site for submissions",
-        "type": "cdate"
+        "name": "Open site for submissions", "group": "sub",
+        "type": "cdate",
+        "require": "src/settings/s_sub.php"
     },
     "sub_pcconf": {
         "name": "Collect PC conflicts",
@@ -307,10 +314,11 @@
     },
     "tag_approval": {
         "name": "Approval voting tags",
-        "type": "taglist", "parser": "Tag_SettingParser", "size": 50
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 50,
+        "require": "src/settings/s_tags.php"
     },
     "tag_au_seerev": {
-        "name": "Review visibility tags",
+        "name": "Review visibility tags", "group": "decisions",
         "type": "taglist", "parser": "Tag_SettingParser", "size": 24
     },
     "tag_badge": {
@@ -318,7 +326,7 @@
         "type": "taglist", "parser": "Tag_SettingParser"
     },
     "tag_chair": {
-        "name": "Chair-only tags",
+        "name": "Chair-only tags", "group": "tags",
         "type": "taglist", "parser": "Tag_SettingParser", "size": 50
     },
     "tag_color": {
@@ -344,7 +352,7 @@
         "parser": "Topic_SettingParser"
     },
     "tracks": {
-        "parser": "Track_SettingParser",
+        "parser": "Track_SettingParser", "group": "tags",
         "type": "string"
     }
 }
