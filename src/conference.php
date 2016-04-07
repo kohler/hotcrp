@@ -1874,7 +1874,7 @@ class Conf {
             $whyNot['invalidId'] = 'review';
         else {
             $q = $this->paperQuery($contact, $sel);
-            $result = $this->q($q);
+            $result = $this->qe($q);
 
             if (!$result)
                 $whyNot["dbError"] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);

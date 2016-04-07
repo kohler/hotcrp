@@ -387,7 +387,9 @@ class Assigner {
     }
     function add_locks(&$locks) {
     }
-    function execute($who) {
+    function execute(AssignmentSet $aset) {
+    }
+    function cleanup(AssignmentSet $aset) {
     }
     function notify_tracker() {
         return false;
@@ -660,19 +662,22 @@ class ReviewAssigner extends Assigner {
     function add_locks(&$locks) {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] = $locks["Settings"] = "write";
     }
-    function execute($who) {
+    function execute(AssignmentSet $aset) {
         global $Conf;
         $extra = array();
         if ($this->round && $this->rtype)
             $extra["round_number"] = $Conf->round_number($this->round, true);
-        $reviewId = $who->assign_review($this->pid, $this->cid, $this->rtype, $extra);
+        $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
+        if ($this->unsubmit && $reviewId)
+            Contact::unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
+    }
+    function cleanup(AssignmentSet $aset) {
+        global $Conf;
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
             $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
             HotCRPMailer::send_to($reviewer, $this->notify, $prow);
         }
-        if ($this->unsubmit && $reviewId)
-            Contact::unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
     }
 }
 
@@ -797,10 +802,10 @@ class LeadAssigner extends Assigner {
     function add_locks(&$locks) {
         $locks["Paper"] = $locks["Settings"] = "write";
     }
-    function execute($who) {
-        $who->assign_paper_pc($this->pid, $this->type,
-                              $this->isadd ? $this->cid : 0,
-                              $this->isadd || !$this->cid ? array() : array("old_cid" => $this->cid));
+    function execute(AssignmentSet $aset) {
+        $aset->contact->assign_paper_pc($this->pid, $this->type,
+                $this->isadd ? $this->cid : 0,
+                $this->isadd || !$this->cid ? array() : array("old_cid" => $this->cid));
     }
 }
 
@@ -865,7 +870,7 @@ class ConflictAssigner extends Assigner {
     function add_locks(&$locks) {
         $locks["PaperConflict"] = "write";
     }
-    function execute($who) {
+    function execute(AssignmentSet $aset) {
         if ($this->ctype)
             Dbl::qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
         else
@@ -1150,12 +1155,12 @@ class TagAssigner extends Assigner {
     function add_locks(&$locks) {
         $locks["PaperTag"] = "write";
     }
-    function execute($who) {
+    function execute(AssignmentSet $aset) {
         if ($this->index === null)
             Dbl::qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
         else
             Dbl::qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
-        $who->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
+        $aset->contact->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
     }
     function notify_tracker() {
         return true;
@@ -1232,7 +1237,7 @@ class PreferenceAssigner extends Assigner {
     function add_locks(&$locks) {
         $locks["PaperReviewPreference"] = "write";
     }
-    function execute($who) {
+    function execute(AssignmentSet $aset) {
         if (!$this->pref && $this->exp === null)
             Dbl::qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
         else
@@ -1280,11 +1285,11 @@ Assigner::register("pref", new PreferenceAssigner(0, null, 0, null));
 Assigner::register("revpref", new PreferenceAssigner(0, null, 0, null));
 
 class AssignmentSet {
-    private $assigners = array();
+    public $contact;
     public $filename;
+    private $assigners = array();
     private $errors_ = array();
     private $my_conflicts = null;
-    private $contact;
     private $override_stack = array();
     private $astate;
     private $cmap;
@@ -1897,7 +1902,7 @@ class AssignmentSet {
         Dbl::qe("lock tables " . join(", ", $tables));
 
         foreach ($this->assigners as $assigner)
-            $assigner->execute($this->contact);
+            $assigner->execute($this);
 
         Dbl::qe("unlock tables");
         $Conf->save_logs(false);
@@ -1915,9 +1920,11 @@ class AssignmentSet {
         $Conf->update_paperlead_setting();
 
         $pids = array();
-        foreach ($this->assigners as $assigner)
+        foreach ($this->assigners as $assigner) {
+            $assigner->cleanup($this);
             if ($assigner->pid > 0 && $assigner->notify_tracker())
                 $pids[$assigner->pid] = true;
+        }
         if (count($pids) && opt("trackerCometSite"))
             MeetingTracker::contact_tracker_comet(array_keys($pids));
 
