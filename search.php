@@ -15,7 +15,7 @@ if (!$Qreq)
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
 // backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "tag", "assign", "setdecision", "sendmail"])) {
+if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "tag", "assign", "decide", "sendmail"])) {
     if (isset($Qreq->get)) {
         $Qreq->fn = "get";
         $Qreq->getfn = $Qreq->get;
@@ -28,8 +28,8 @@ if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "tag", "assign", "setdecis
     } else if (isset($Qreq->setassign) || $Qreq->fn === "setassign") {
         $Qreq->fn = "assign";
         $Qreq->assignfn = $Qreq->marktype;
-    } else if (isset($Qreq->setdecision))
-        $Qreq->fn = "setdecision";
+    } else if (isset($Qreq->setdecision) || $Qreq->fn === "setdecision")
+        $Qreq->fn = "decide";
     else if (isset($Qreq->sendmail))
         $Qreq->fn = "sendmail";
     else
@@ -372,7 +372,7 @@ function tagaction($Qreq) {
         if (!$errors)
             $Conf->confirmMsg("Tags saved.");
         $args = array();
-        foreach (array("tag", "tagtype", "tagact", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
+        foreach (array("tag", "fn", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
             if (isset($Qreq[$arg]))
                 $args[$arg] = $Qreq[$arg];
         redirectSelf($args);
@@ -918,7 +918,7 @@ function search_set_decisions($Qreq) {
         redirectSelf(array("atab" => "decide", "decision" => $o));
     }
 }
-if ($Qreq->fn == "setdecision" && (string) $Qreq->decision != ""
+if ($Qreq->fn == "decide" && (string) $Qreq->decision != ""
     && !$SSel->is_empty() && check_post())
     search_set_decisions($Qreq);
 

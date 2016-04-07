@@ -1901,60 +1901,54 @@ function papersel(value, name) {
     return false;
 }
 
-var papersel_check_safe = false;
 function plist_onsubmit() {
-    var e, check_safe = papersel_check_safe;
-    papersel_check_safe = false;
-    if ((e = $$("sel_papstandin")))
-        e.parentNode.removeChild(e);
-    if ($(this).find("input[name='pap[]']:checked").length)
-        /* OK */;
-    else if (check_safe) {
-        e = document.createElement("div");
-        e.id = "sel_papstandin";
-        var values = $(this).find("input[name='pap[]']").map(function () { return this.value; }).get();
-        e.innerHTML = '<input type="hidden" name="pap" value="' + values.join(" ") + "\" />";
-        $$("sel").appendChild(e);
-    } else {
-        alert("Select one or more papers first.");
-        return false;
-    }
-
     // analyze why this is being submitted
-    var s = this.getAttribute("data-submit-name");
-    this.removeAttribute("data-submit-name");
-    if (!s && this.defaultact)
-        s = $(this.defaultact).val();
-    if (!s && document.activeElement) {
+    var fn = this.getAttribute("data-submit-fn");
+    this.removeAttribute("data-submit-fn");
+    if (!fn && this.defaultact)
+        fn = $(this.defaultact).val();
+    if (!fn && document.activeElement) {
         var $td = $(document.activeElement).closest("td"), cname;
         if ($td.length && (cname = $td[0].className.match(/\b(lld\d+)\b/))) {
             var $sub = $td.closest("tr").find("." + cname).find("input[type=submit], button[type=submit]");
             if ($sub.length == 1)
-                s = this.defaultact.value = $sub[0].name;
+                fn = this.defaultact.value = $sub[0].value;
+        }
+    }
+
+    // if nothing selected, either select all or error out
+    $("#sel_papstandin").remove();
+    if (!$(this).find("input[name='pap[]']:checked").length) {
+        var subbtn = fn && $(this).find("input[type=submit], button[type=submit]").filter("[value=" + fn + "]");
+        if (subbtn && subbtn.length == 1 && subbtn[0].hasAttribute("data-plist-submit-all")) {
+            var values = $(this).find("input[name='pap[]']").map(function () { return this.value; }).get();
+            $("#sel").append('<div id="sel_papstandin"><input type="hidden" name="pap" value="' + values.join(" ") + '" /></div>');
+        } else {
+            alert("Select one or more papers first.");
+            return false;
         }
     }
 
     // encode the expected download in the form action, to ease debugging
     if (!this.hasAttribute("data-original-action"))
         this.setAttribute("data-original-action", this.action);
-    var action = this.getAttribute("data-original-action");
-    if (s == "getgo")
-        s = "get-" + $(this.getaction).val();
-    else if (s == "tagact")
-        s = "tag-" + $(this.tagtype).val() + "-" + $(this.tag).val();
-    else if (s == "setassign") {
-        s = "assign-" + $(this.marktype).val();
-        if ($(this.marktype).val() != "auto")
+    var action = this.getAttribute("data-original-action"), s = fn;
+    if (s == "get")
+        s = "get-" + $(this.getfn).val();
+    else if (s == "tag")
+        s = "tag-" + $(this.tagfn).val() + "-" + $(this.tag).val();
+    else if (s == "assign") {
+        s = "assign-" + $(this.assignfn).val();
+        if ($(this.assignfn).val() != "auto")
             s += "-" + $(this.markpc).val();
-    } else if (s == "setdecision")
-        s = "decision-" + $(this.decision).val();
+    } else if (s == "decide")
+        s = "decide-" + $(this.decision).val();
     if (s)
         this.action = hoturl_add(action, "action=" + encodeURIComponent(s));
     return true;
 }
-function plist_submit(check_safe) {
-    $(this).closest("form")[0].setAttribute("data-submit-name", this.name);
-    papersel_check_safe = !!check_safe;
+function plist_submit() {
+    $(this).closest("form")[0].setAttribute("data-submit-fn", this.value);
     return true;
 }
 

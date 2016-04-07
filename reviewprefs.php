@@ -8,20 +8,24 @@ require_once("src/papersearch.php");
 if (!$Me->privChair && !$Me->isPC)
     $Me->escape();
 
+global $Qreq;
+if (!$Qreq)
+    $Qreq = make_qreq();
+
 // set reviewer
 $reviewer_contact = $Me;
 $incorrect_reviewer = false;
-if (@$_REQUEST["reviewer"] && $Me->privChair
-    && $_REQUEST["reviewer"] !== $Me->email
-    && $_REQUEST["reviewer"] !== $Me->contactId) {
+if ($Qreq->reviewer && $Me->privChair
+    && $Qreq->reviewer !== $Me->email
+    && $Qreq->reviewer !== $Me->contactId) {
     $incorrect_reviewer = true;
     foreach (pcMembers() as $pcm)
-        if (strcasecmp($pcm->email, $_REQUEST["reviewer"]) == 0
-            || (string) $pcm->contactId === $_REQUEST["reviewer"]) {
+        if (strcasecmp($pcm->email, $Qreq->reviewer) == 0
+            || (string) $pcm->contactId === $Qreq->reviewer) {
             $reviewer_contact = $pcm;
             $incorrect_reviewer = false;
         }
-} else if (!@$_REQUEST["reviewer"] && !($Me->roles & Contact::ROLE_PC)) {
+} else if (!$Qreq->reviewer && !($Me->roles & Contact::ROLE_PC)) {
     foreach (pcMembers() as $pcm) {
         $reviewer_contact = $pcm;
         break;
@@ -29,23 +33,37 @@ if (@$_REQUEST["reviewer"] && $Me->privChair
 }
 $reviewer = $reviewer_contact->contactId;
 if ($incorrect_reviewer)
-    Conf::msg_error("Reviewer " . htmlspecialchars($_REQUEST["reviewer"]) . " is not on the PC.");
+    Conf::msg_error("Reviewer " . htmlspecialchars($Qreq->reviewer) . " is not on the PC.");
 
 // choose a sensible default action (if someone presses enter on a form element)
-if (isset($_REQUEST["default"]) && isset($_REQUEST["defaultact"])
-    && ($_REQUEST["defaultact"] == "getgo" || $_REQUEST["defaultact"] == "update" || $_REQUEST["defaultact"] == "upload" || $_REQUEST["defaultact"] == "setpaprevpref"))
-    $_REQUEST[$_REQUEST["defaultact"]] = true;
-else if (isset($_REQUEST["default"]))
-    $_REQUEST["update"] = true;
+if (isset($Qreq->default) && $Qreq->defaultact)
+    $Qreq->fn = $Qreq->defaultact;
+// backwards compat
+if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "setpref"])) {
+    if (isset($Qreq->get)) {
+        $Qreq->fn = "get";
+        $Qreq->getfn = $Qreq->get;
+    } else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
+        $Qreq->fn = "get";
+        $Qreq->getfn = $Qreq->getaction;
+    } else if (isset($Qreq->upload) || $Qreq->fn === "upload")
+        $Qreq->fn = "uploadpref";
+    else if (isset($Qreq->setpaprevpref) || $Qreq->fn === "setpaprevpref")
+        $Qreq->fn = "setpref";
+    else
+        unset($Qreq->fn);
+}
+if (!isset($Qreq->fn) && isset($Qreq->default))
+    $Qreq->update = 1;
 
-if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
-    $_REQUEST["get"] = $_REQUEST["getaction"];
-if ((defval($_REQUEST, "get") == "revpref" || defval($_REQUEST, "get") == "revprefx") && !isset($_REQUEST["pap"]) && !isset($_REQUEST["p"]))
-    $_REQUEST["p"] = "all";
+if ($Qreq->fn === "get"
+    && ($Qreq->getfn === "revpref" || $Qreq->getfn === "revprefx")
+    && !isset($Qreq->pap) && !isset($Qreq->p))
+    $Qreq->p = $_REQUEST["p"] = "all";
 
 
 // Update preferences
-function savePreferences() {
+function savePreferences($Qreq) {
     global $Conf, $Me, $OK, $reviewer, $incorrect_reviewer;
     if ($incorrect_reviewer) {
         Conf::msg_error("Preferences not saved.");
@@ -55,7 +73,7 @@ function savePreferences() {
     $setting = array();
     $error = false;
     $pmax = 0;
-    foreach ($_REQUEST as $k => $v)
+    foreach ($Qreq as $k => $v)
         if (strlen($k) > 7 && $k[0] == "r" && substr($k, 0, 7) == "revpref"
             && ($p = cvtint(substr($k, 7))) > 0) {
             if (($pref = parse_preference($v))) {
@@ -88,7 +106,7 @@ function savePreferences() {
 
     $q = array();
     for ($p = 1; $p <= $pmax; $p++)
-        if (($pref = @$setting[$p]) && ($pref[0] || $pref[1] !== null))
+        if (($pref = get($setting, $p)) && ($pref[0] || $pref[1] !== null))
             $q[] = array($p, $reviewer, $pref[0], $pref[1]);
     PaperActions::save_review_preferences($q);
 
@@ -97,15 +115,15 @@ function savePreferences() {
         redirectSelf();
     }
 }
-if (isset($_REQUEST["update"]) && check_post())
-    savePreferences();
+if ($Qreq->update && check_post())
+    savePreferences($Qreq);
 
 
 // Select papers
 global $SSel;
 $SSel = null;
-if (isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"])) {
-    $SSel = SearchSelection::make(make_qreq(), $Me);
+if ($Qreq->fn === "setpref" || $Qreq->fn === "get") {
+    $SSel = SearchSelection::make($Qreq, $Me);
     if ($SSel->is_empty())
         Conf::msg_error("No papers selected.");
 }
@@ -113,13 +131,14 @@ SearchSelection::clear_request();
 
 
 // Set multiple paper preferences
-if (isset($_REQUEST["setpaprevpref"]) && $SSel && !$SSel->is_empty() && check_post()) {
-    if (!parse_preference($_REQUEST["paprevpref"]))
+if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
+    if (!parse_preference($Qreq->pref))
         Conf::msg_error("Preferences must be small positive or negative integers.");
     else {
+        $new_qreq = new Qobject;
         foreach ($SSel->selection() as $p)
-            $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
-        savePreferences();
+            $new_qreq["revpref$p"] = $Qreq->pref;
+        savePreferences($new_qreq);
     }
 }
 
@@ -134,6 +153,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     $lineno = 0;
     $successes = 0;
     $errors = array();
+    $new_qreq = new Qobject;
     foreach (explode("\n", $text) as $line) {
         $line = trim($line);
         $lineno++;
@@ -142,7 +162,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
             /* do nothing */;
         else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {
             if (parse_preference($m[2])) {
-                $_REQUEST["revpref$m[1]"] = $m[2];
+                $new_qreq["revpref$m[1]"] = $m[2];
                 $successes++;
             } else if (strcasecmp($m[2], "conflict") != 0)
                 $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
@@ -159,17 +179,17 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     if (count($errors) > 0)
         Conf::msg_error("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
     if ($successes > 0)
-        savePreferences();
+        savePreferences($new_qreq);
 }
-if (isset($_REQUEST["upload"]) && fileUploaded($_FILES["uploadedFile"])
+if ($Qreq->fn === "uploadpref" && fileUploaded($_FILES["uploadedFile"])
     && check_post())
     parseUploadedPreferences($_FILES["uploadedFile"]["tmp_name"], $_FILES["uploadedFile"]["name"], $reviewer);
-else if (isset($_REQUEST["upload"]))
+else if ($Qreq->fn === "uploadpref")
     Conf::msg_error("Select a preferences file to upload.");
 
 
 // Search actions
-if (isset($_REQUEST["get"]) && $SSel && !$SSel->is_empty()) {
+if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()) {
     include("search.php");
     exit;
 }
@@ -281,7 +301,7 @@ echo "</td></tr></table>\n";
 
 
 // main form
-echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")), array("class" => "assignpc")),
+echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")), array("class" => "assignpc", "onsubmit" => "return plist_onsubmit.call(this)", "id" => "sel")),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1),
     "<div class='pltable_full_ctr'>\n",
