@@ -426,6 +426,7 @@ class CollabPaperColumn extends PaperColumn {
 class AbstractPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+        $this->no_embedded_header = true;
     }
     public function header($pl, $ordinal) {
         return "Abstract";
@@ -435,9 +436,9 @@ class AbstractPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
-        if ($pl->live_table && !$highlight_count
-            && ($format = $row->format_of($row->abstract))) {
-            ++$pl->nformat_onpage;
+        if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
+            if ($pl->live_table)
+                ++$pl->nformat_onpage;
             $t = '<div class="preformat" data-format="' . $format . '.plx">'
                 . $t . '</div>';
         }
@@ -1240,10 +1241,8 @@ class OptionPaperColumn extends PaperColumn {
     public function __construct($opt) {
         parent::__construct($opt ? $opt->abbr : null, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("comparator" => "option_compare"));
-        if ($opt && $opt instanceof TextPaperOption) {
+        if ($opt && $opt instanceof TextPaperOption)
             $this->view = Column::VIEW_ROW;
-            $this->embedded_header = true;
-        }
         $this->minimal = true;
         $this->className = "pl_option";
         if ($opt && $opt->type == "checkbox")
@@ -1303,17 +1302,12 @@ class OptionPaperColumn extends PaperColumn {
             || ($pl->contact->allow_administer($row)
                 && $pl->contact->can_view_paper_option($row, $this->opt, true))) {
             $t = $this->opt->unparse_column_html($pl, $row);
-            if ($t !== "" && $this->embedded_header) {
-                $h = '<em class="plx">' . htmlspecialchars($this->opt->name) . ':</em> ';
-                if (preg_match(',\A(<div.*?>)([\s\S]*)\z,', $t, $m))
-                    $t = $m[1] . $h . $m[2];
+            if (!$ok && $t !== "") {
+                if ($this->view == Column::VIEW_ROW)
+                    $t = '<div class="fx5">' . $t . '</div>';
                 else
-                    $t = $h . $t;
+                    $t = '<span class="fx5">' . $t . '</div>';
             }
-            if (!$ok && $this->embedded_header)
-                $t = '<div class="fx5">' . $t . '</div>';
-            else if (!$ok)
-                $t = '<span class="fx5">' . $t . '</div>';
         }
         return $t;
     }

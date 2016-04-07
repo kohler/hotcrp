@@ -4270,19 +4270,33 @@ function set(f, elt, text, which) {
 }
 
 function make_callback(dofold, type, which) {
-    return function (rv) {
-        var f = fields[type], i, x, elt;
-        x = rv[f.name + ".html"] || {};
+    var f = fields[type], values;
+    function render_some() {
+        var i, x = values, n = 0, elt;
+        values = null;
         for (i in x)
-            if ((elt = $$(f.name + "." + i)))
+            if (n > 128) {
+                values = values || {};
+                values[i] = x[i];
+            } else if ((elt = $$(f.name + "." + i))) {
                 set(f, elt, x[i], which);
-        f.loadable = false;
-        fold(which, dofold, f.name);
-        if (type == "aufull")
-            aufull[!!dofold] = rv;
+                ++n;
+            }
         scorechart();
         plinfo.allpref();
+        render_text.on_page();
+        if (values)
+            setTimeout(render_some, 1);
+    }
+    function callback(rv) {
+        if (type == "aufull")
+            aufull[!!dofold] = rv;
+        values = rv[f.name + ".html"] || {};
+        render_some();
+        f.loadable = false;
+        fold(which, dofold, f.name);
     };
+    return callback;
 }
 
 function show_loading(type, which) {

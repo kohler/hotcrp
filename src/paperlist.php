@@ -840,9 +840,11 @@ class PaperList {
                 $tt .= "\">";
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    if (!$fdef->embedded_header)
-                        $tt .= '<em class="plx">' . $fdef->header($this, -1) . ':</em> ';
-                    $tt .= $c;
+                    if ($c[0] !== "<"
+                        || $fdef->no_embedded_header
+                        || !preg_match('/\A((?:<div.*?>)*)([\s\S]*)\z/', $c, $cm))
+                        $cm = [null, "", $c];
+                    $tt .= $cm[1] . '<em class="plx">' . $fdef->header($this, -1) . ':</em> ' . $cm[2];
                     $fdef->has_content = true;
                 }
                 $tt .= "</div>";
@@ -963,8 +965,6 @@ class PaperList {
                 $j["missing"] = true;
             if ($fdef->foldable)
                 $j["foldnum"] = $fdef->foldable;
-            if ($fdef->embedded_header)
-                $j["embedded_header"] = true;
             $jscol[] = $j;
             if ($fdef->foldable && $fdef->name !== "authors") {
                 $classes[] = "fold$fdef->foldable" . ($fdef->is_folded ? "c" : "o");
