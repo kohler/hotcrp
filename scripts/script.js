@@ -4328,13 +4328,13 @@ function plinfo(type, dofold, which) {
 
         // initiate load
         delete loadargs.aufull;
+        loadargs.fn = "load";
         if (type == "aufull" || type == "au" || type == "anonau") {
-            loadargs.get = "authors";
+            loadargs.field = "authors";
             if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
                 loadargs.aufull = 1;
         } else
-            loadargs.get = type;
-        loadargs.ajax = 1;
+            loadargs.field = type;
         $.ajax({
             url: hoturl_post("search", loadargs),
             type: "POST", timeout: 10000, dataType: "json",
