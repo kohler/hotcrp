@@ -3,6 +3,39 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class GetAbstract_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "topics" => 1)));
+        $texts = array();
+        while ($prow = PaperInfo::fetch($result, $user)) {
+            if (($whyNot = $user->perm_view_paper($prow)))
+                Conf::msg_error(whyNotText($whyNot, "view"));
+            else {
+                $text = "===========================================================================\n";
+                $n = "Paper #" . $prow->paperId . ": ";
+                $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
+                $text .= prefix_word_wrap($n, $prow->title, $l);
+                $text .= "---------------------------------------------------------------------------\n";
+                $l = strlen($text);
+                if ($user->can_view_authors($prow, $qreq->t == "a"))
+                    $text .= prefix_word_wrap("Authors: ", $prow->pretty_text_author_list(), 14);
+                if ($prow->topicIds != ""
+                    && ($tt = $prow->unparse_topics_text()))
+                    $text .= prefix_word_wrap("Topics: ", $tt, 14);
+                if ($l != strlen($text))
+                    $text .= "---------------------------------------------------------------------------\n";
+                $text .= rtrim($prow->abstract) . "\n\n";
+                defappend($texts[$prow->paperId], $text);
+                $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
+            }
+        }
+
+        if (count($texts))
+            downloadText(join("", $ssel->reorder($texts)), "abstract$rfSuffix");
+    }
+}
+
 class GetAuthors_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -58,4 +91,5 @@ class GetAuthors_SearchAction extends SearchAction {
     }
 }
 
+SearchActions::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchActions::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);

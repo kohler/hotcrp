@@ -20,14 +20,14 @@ class SearchActions {
         if (self::$loaded)
             return;
         foreach (expand_includes($ConfSitePATH, "src/search/*.php") as $f)
-            @include $f;
+            include $f;
         if (isset($Opt["searchaction_include"])
             && ($searchaction_include = $Opt["searchaction_include"])) {
             if (!is_array($searchaction_include))
                 $searchaction_include = [$searchaction_include];
             foreach ($searchaction_include as $sa)
                 foreach (expand_includes($ConfSitePATH, $sa) as $f)
-                    @include $f;
+                    include $f;
         }
     }
 

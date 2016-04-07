@@ -140,40 +140,6 @@ if ($Qreq->fn) {
         SearchActions::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
 }
 
-// download selected abstracts
-if ($Qreq->fn == "get" && $Qreq->getfn == "abstract" && !$SSel->is_empty()) {
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "topics" => 1)));
-    $texts = array();
-    list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
-    while ($prow = PaperInfo::fetch($result, $Me)) {
-        if (($whyNot = $Me->perm_view_paper($prow)))
-            Conf::msg_error(whyNotText($whyNot, "view"));
-        else {
-            $text = "===========================================================================\n";
-            $n = "Paper #" . $prow->paperId . ": ";
-            $l = max(14, (int) ((75.5 - strlen($prow->title) - strlen($n)) / 2) + strlen($n));
-            $text .= prefix_word_wrap($n, $prow->title, $l);
-            $text .= "---------------------------------------------------------------------------\n";
-            $l = strlen($text);
-            if ($Me->can_view_authors($prow, $Qreq->t == "a"))
-                $text .= prefix_word_wrap("Authors: ", $prow->pretty_text_author_list(), 14);
-            if ($prow->topicIds != "") {
-                $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
-                $text .= prefix_word_wrap("Topics: ", $tt, 14);
-            }
-            if ($l != strlen($text))
-                $text .= "---------------------------------------------------------------------------\n";
-            $text .= rtrim($prow->abstract) . "\n\n";
-            defappend($texts[$prow->paperId], $text);
-            $rfSuffix = (count($texts) == 1 ? $prow->paperId : "s");
-        }
-    }
-
-    if (count($texts))
-        downloadText(join("", $SSel->reorder($texts)), "abstract$rfSuffix");
-}
-
-
 function whyNotToText($e) {
     $e = preg_replace('|\(?<a.*?</a>\)?\s*\z|i', "", $e);
     return preg_replace('|<.*?>|', "", $e);

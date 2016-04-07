@@ -348,7 +348,7 @@ function topicTable($prow, $active = 0) {
 
     // read from paper row if appropriate
     if ($paperId > 0 && $active < 0 && isset($prow->topicIds))
-        return PaperInfo::unparse_topics($prow->topicIds, @$prow->topicInterest, false);
+        return $prow->unparse_topics_html(false);
 
     // get current topics
     $paperTopic = array();

@@ -378,7 +378,25 @@ class PaperInfo {
         return $this->_topics_array;
     }
 
-    public static function unparse_topics($topicIds, $interests, $comma) {
+    public function unparse_topics_text() {
+        global $Conf;
+        $tarr = $this->topics();
+        if (!$tarr)
+            return "";
+        $out = [];
+        $tmap = $Conf->topic_map();
+        $tomap = $Conf->topic_order_map();
+        foreach ($tarr as $t)
+            $out[$tomap[$t]] = $tmap[$t];
+        ksort($out);
+        return join($Conf->topic_separator(), $out);
+    }
+
+    public function unparse_topics_html($comma) {
+        return self::unparse_topic_list_html($this->topics(), get($this, "topicInterest"), $comma);
+    }
+
+    public static function unparse_topic_list_html($topicIds, $interests, $comma) {
         global $Conf;
         if (!$topicIds)
             return "";
