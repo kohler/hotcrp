@@ -102,18 +102,22 @@ if (isset($_REQUEST["update"]) && check_post())
 
 
 // Select papers
-if ((isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"]))
-    && !SearchActions::parse_requested_selection($Me))
-    Conf::msg_error("No papers selected.");
-SearchActions::clear_requested_selection();
+global $SSel;
+$SSel = null;
+if (isset($_REQUEST["setpaprevpref"]) || isset($_REQUEST["get"])) {
+    $SSel = SearchSelection::make(make_qreq(), $Me);
+    if ($SSel->is_empty())
+        Conf::msg_error("No papers selected.");
+}
+SearchSelection::clear_request();
 
 
 // Set multiple paper preferences
-if (isset($_REQUEST["setpaprevpref"]) && SearchActions::any() && check_post()) {
+if (isset($_REQUEST["setpaprevpref"]) && $SSel && !$SSel->is_empty() && check_post()) {
     if (!parse_preference($_REQUEST["paprevpref"]))
         Conf::msg_error("Preferences must be small positive or negative integers.");
     else {
-        foreach (SearchActions::selection() as $p)
+        foreach ($SSel->selection() as $p)
             $_REQUEST["revpref$p"] = $_REQUEST["paprevpref"];
         savePreferences();
     }
@@ -165,7 +169,7 @@ else if (isset($_REQUEST["upload"]))
 
 
 // Search actions
-if (isset($_REQUEST["get"]) && SearchActions::any()) {
+if (isset($_REQUEST["get"]) && $SSel && !$SSel->is_empty()) {
     include("search.php");
     exit;
 }

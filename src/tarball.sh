@@ -165,6 +165,7 @@ src/reviewtimes.php
 src/sample.pdf
 src/schema.sql
 src/searchactions.php
+src/searchselection.php
 src/settinginfo.json
 src/settings/s_basics.php
 src/settings/s_decisions.php

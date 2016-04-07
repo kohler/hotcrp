@@ -90,15 +90,18 @@ if ((isset($Qreq->prevt) && isset($Qreq->t) && $Qreq->prevt !== $Qreq->t)
     $Qreq->requery = 1;
 }
 
-if (isset($Qreq->saveassignment) && $Qreq->submit)
-    SearchActions::parse_requested_selection($Me, "pap");
-else if (isset($Qreq->saveassignment))
-    SearchActions::parse_requested_selection($Me, "p");
-else if ($Qreq->requery || !SearchActions::parse_requested_selection($Me)) {
-    $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
-    SearchActions::set_selection($search->paperList());
+if (isset($Qreq->saveassignment))
+    $SSel = SearchSelection::make($Qreq, $Me, $Qreq->submit ? "pap" : "p");
+else {
+    $SSel = new SearchSelection;
+    if (!$Qreq->requery)
+        $SSel = SearchSelection::make($Qreq, $Me);
+    if ($SSel->is_empty()) {
+        $search = new PaperSearch($Me, array("t" => $Qreq->t, "q" => $Qreq->q));
+        $SSel = new SearchSelection($search->paperList());
+    }
 }
-sort(SearchActions::$sel);
+$SSel->sort_selection();
 
 // rev_roundtag
 if (($x = $Conf->sanitize_round_name($Qreq->rev_roundtag)) !== false)
@@ -211,7 +214,7 @@ class AutoassignerInterface {
     }
 
     private function result_html() {
-        global $Conf, $Me, $Qreq, $pcsel;
+        global $Conf, $Me, $Qreq, $SSel, $pcsel;
         $assignments = $this->autoassigner->assignments();
         ReviewAssigner::$prefinfo = $this->autoassigner->prefinfo;
         ob_start();
@@ -283,7 +286,7 @@ class AutoassignerInterface {
                 echo Ht::hidden($t, $Qreq[$t]);
         echo Ht::hidden("pcs", join(" ", array_keys($pcsel))),
             join("", $badpairs_inputs),
-            Ht::hidden("p", join(" ", SearchActions::selection())), "\n";
+            Ht::hidden("p", join(" ", $SSel->selection())), "\n";
 
         // save the assignment
         echo Ht::hidden("assignment", join("\n", $assignments)), "\n";
@@ -309,7 +312,7 @@ class AutoassignerInterface {
     }
 
     public function run() {
-        global $Conf, $Me, $Qreq, $pcsel, $badpairs, $scoreselector;
+        global $Conf, $Me, $Qreq, $SSel, $pcsel, $badpairs, $scoreselector;
         assert($this->ok);
         session_write_close(); // this might take a long time
         set_time_limit(240);
@@ -317,7 +320,7 @@ class AutoassignerInterface {
         // prepare autoassigner
         if ($Qreq->seed && is_numeric($Qreq->seed))
             srand((int) $Qreq->seed);
-        $this->autoassigner = $autoassigner = new Autoassigner(SearchActions::selection());
+        $this->autoassigner = $autoassigner = new Autoassigner($SSel->selection());
         if ($Qreq->pctyp === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
             if ($n == 0) {
@@ -383,7 +386,7 @@ if (isset($Qreq->assign) && isset($Qreq->a)
            && isset($Qreq->assignment) && check_post()) {
     $assignset = new AssignmentSet($Me, true);
     $assignset->parse($Qreq->assignment);
-    $assignset->restrict_papers(SearchActions::selection());
+    $assignset->restrict_papers($SSel->selection());
     $assignset->execute(true);
 }
 
@@ -435,7 +438,7 @@ Types of PC review:
 // paper selection
 echo divClass("pap"), "<h3>Paper selection</h3>";
 if (!isset($Qreq->q)) // XXX redundant
-    $Qreq->q = join(" ", SearchActions::selection());
+    $Qreq->q = join(" ", $SSel->selection());
 echo Ht::entry_h("q", $Qreq->q,
                  array("id" => "autoassignq", "placeholder" => "(All)",
                        "size" => 40, "title" => "Enter paper numbers or search terms",
@@ -454,7 +457,7 @@ if (isset($Qreq->requery) || isset($Qreq->haspap)) {
                                          "urlbase" => hoturl_site_relative_raw("autoassign")));
     $plist = new PaperList($search);
     $plist->display .= " reviewers ";
-    $plist->papersel = SearchActions::selection_map();
+    $plist->papersel = $SSel->selection_map();
     echo $plist->table_html("reviewersSel", ["nofooter" => true]),
         Ht::hidden("prevt", $Qreq->t), Ht::hidden("prevq", $Qreq->q),
         Ht::hidden("haspap", 1);

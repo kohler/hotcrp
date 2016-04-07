@@ -72,8 +72,8 @@ function complete_assignment($callback) {
     $assignset = new AssignmentSet($Me, false);
     $assignset->parse($_POST["file"], get($_POST, "filename"),
                       assignment_defaults(), $callback);
-    SearchActions::parse_requested_selection($Me);
-    $assignset->restrict_papers(SearchActions::selection());
+    $SSel = SearchSelection::make(make_qreq(), $Me);
+    $assignset->restrict_papers($SSel->selection());
     return $assignset->execute(true);
 }
 
