@@ -15,8 +15,11 @@ if (!$Qreq)
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
 // backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "tag", "assign", "decide", "sendmail"])) {
-    if (isset($Qreq->get)) {
+if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "decide", "sendmail"])) {
+    if (isset($Qreq->get) && $Qreq->ajax && ($fdef = PaperColumn::lookup($Qreq->get)) && $fdef->foldable) {
+        $Qreq->fn = "load";
+        $Qreq->field = $Qreq->get;
+    } else if (isset($Qreq->get)) {
         $Qreq->fn = "get";
         $Qreq->getfn = $Qreq->get;
     } else if (isset($Qreq->getgo) && isset($Qreq->getaction)) {
@@ -110,15 +113,25 @@ function topic_ids_to_text($tids, $tmap, $tomap) {
 }
 
 
-// download selected abstracts
-if ($Qreq->fn == "get" && $Qreq->getfn == "abstract"
-    && !$SSel->is_empty() && $Qreq->ajax) {
+// other field-based Ajax downloads: tags, collaborators, ...
+if ($Qreq->fn == "load" && $Qreq->field
+    && ($fdef = PaperColumn::lookup($Qreq->field))
+    && $fdef->foldable) {
+    if ($Qreq->field == "authors") {
+        $full = (int) $Qreq->aufull;
+        displayOptionsSet("pldisplay", "aufull", $full);
+    }
     $Search = new PaperSearch($Me, $Qreq);
     $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn("abstract");
+    $response = $pl->ajaxColumn($Qreq->field);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
-} else if ($Qreq->fn == "get" && $Qreq->getfn == "abstract" && !$SSel->is_empty()) {
+} else if ($Qreq->fn == "load")
+    $Conf->ajaxExit(["ok" => false, "error" => "No such field"]);
+
+
+// download selected abstracts
+if ($Qreq->fn == "get" && $Qreq->getfn == "abstract" && !$SSel->is_empty()) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "topics" => 1)));
     $texts = array();
     list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
@@ -150,22 +163,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "abstract"
         downloadText(join("", $SSel->reorder($texts)), "abstract$rfSuffix");
         exit;
     }
-}
-
-
-// other field-based Ajax downloads: tags, collaborators, ...
-if ($Qreq->fn == "get" && $Qreq->getfn
-    && ($fdef = PaperColumn::lookup($Qreq->getfn))
-    && $fdef->foldable && $Qreq->ajax) {
-    if ($Qreq->getfn == "authors") {
-        $full = (int) $Qreq->aufull;
-        displayOptionsSet("pldisplay", "aufull", $full);
-    }
-    $Search = new PaperSearch($Me, $Qreq);
-    $pl = new PaperList($Search);
-    $response = $pl->ajaxColumn($Qreq->getfn);
-    $response["ok"] = (count($response) > 0);
-    $Conf->ajaxExit($response);
 }
 
 

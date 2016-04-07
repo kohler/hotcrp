@@ -1509,6 +1509,8 @@ class Conf {
 
     static private function _cvt_numeric_set($optarr) {
         $ids = array();
+        if (is_object($optarr))
+            $optarr = $optarr->selection();
         foreach (mkarray($optarr) as $x)
             if (($x = cvtint($x)) > 0)
                 $ids[] = $x;
