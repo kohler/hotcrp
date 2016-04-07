@@ -993,18 +993,19 @@ function downloadCSV($info, $header, $filename, $options = array()) {
         $csvt = CsvGenerator::TYPE_COMMA;
     else
         $csvt = CsvGenerator::TYPE_TAB;
-    if (@$options["always_quote"])
+    if (get($options, "always_quote"))
         $csvt |= CsvGenerator::FLAG_ALWAYS_QUOTE;
     $csvg = new CsvGenerator($csvt);
     if ($header)
         $csvg->set_header($header, true);
-    if (@$options["selection"])
+    if (get($options, "selection"))
         $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
     $csvg->add($info);
-    if (@$options["sort"])
+    if (get($options, "sort"))
         $csvg->sort($options["sort"]);
-    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !defval($options, "inline"));
+    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !get($options, "inline"));
     $csvg->download();
+    exit;
 }
 
 function downloadText($text, $filename, $inline = false) {
@@ -1014,6 +1015,7 @@ function downloadText($text, $filename, $inline = false) {
     if ($text !== false) {
         $csvg->add($text);
         $csvg->download();
+        exit;
     }
 }
 

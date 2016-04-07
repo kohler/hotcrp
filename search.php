@@ -159,10 +159,8 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "abstract" && !$SSel->is_empty()) {
         }
     }
 
-    if (count($texts)) {
+    if (count($texts))
         downloadText(join("", $SSel->reorder($texts)), "abstract$rfSuffix");
-        exit;
-    }
 }
 
 
@@ -218,7 +216,6 @@ function downloadReviews(&$texts, &$errors) {
             $text .= join("\n", $warnings) . "\n\n";
         $text .= join("", $texts);
         downloadText($text, $rfname);
-        exit;
     } else {
         $zip = new ZipDocument($Opt["downloadPrefix"] . "reviews.zip");
         $zip->warnings = $warnings;
@@ -239,7 +236,6 @@ if ($Qreq->fn == "get"
     $rf = ReviewForm::get();
     $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
-    exit;
 } else if ($Qreq->fn == "get"
            && ($Qreq->getfn == "revform" || $Qreq->getfn == "revformz")) {
     $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "myReviewsOpt" => 1)));
@@ -394,7 +390,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "votes"
             if ($Me->can_view_tags($row, true))
                 arrayappend($texts[$row->paperId], array($showtag, (float) $row->tagIndex, $row->paperId, $row->title));
         downloadCSV($SSel->reorder($texts), array("tag", "votes", "paper", "title"), "votes");
-        exit;
     } else
         Conf::msg_error($tagger->error_html);
 }
@@ -436,7 +431,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "rank"
             . "\n"
             . $real . $null;
         downloadText($text, "rank");
-        exit;
     } else
         Conf::msg_error($tagger->error_html);
 }
@@ -491,7 +485,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "authors" && !$SSel->is_empty()
     if ($Me->privChair)
         $header[] = "type";
     downloadCSV($SSel->reorder($texts), $header, "authors");
-    exit;
 }
 
 
@@ -530,7 +523,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "pcconf"
         downloadCSV($SSel->reorder($texts),
                     array("paper", "title", "PC email", "conflict type"),
                     "pcconflicts");
-        exit;
     }
 }
 
@@ -550,7 +542,6 @@ if ($Qreq->fn == "get"
                 arrayappend($texts[$row->paperId],
                             array($row->paperId, $row->title, $row->reviewEmail, trim("$row->reviewFirstName $row->reviewLastName")));
         downloadCSV($SSel->reorder($texts), array("paper", "title", "${getaction}email", "${getaction}name"), "${getaction}s");
-        exit;
     }
 }
 
@@ -569,7 +560,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "contact" && $Me->privChair && !$SSel-
             arrayappend($texts[$row[0]], array($row[0], $row[1], $a, $row[4]));
         }
         downloadCSV($SSel->reorder($texts), array("paper", "title", "name", "email"), "contacts");
-        exit;
     }
 }
 
@@ -578,7 +568,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "contact" && $Me->privChair && !$SSel-
 if ($Qreq->fn == "get" && $Qreq->getfn == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
     list($header, $texts) = SearchActions::pcassignments_csv_data($Me, $SSel->selection());
     downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
-    exit;
 }
 
 
@@ -630,7 +619,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "scores" && $Me->isPC && !$SSel->is_em
         if ($any_reviewer_identity)
             array_push($header, "revieweremail", "reviewername");
         downloadCSV($SSel->reorder($texts), $header, "scores", ["selection" => true]);
-        exit;
     } else {
         if (!count($errors))
             $errors[] = "No papers selected.";
@@ -675,7 +663,6 @@ function downloadRevpref($extended) {
     if (count($texts)) {
         $header = "paper,preference,title\n";
         downloadText($header . join("", $SSel->reorder($texts)), "revprefs");
-        exit;
     }
 }
 if ($Qreq->fn == "get"
@@ -722,7 +709,6 @@ function downloadAllRevpref() {
         if ($has_conflict)
             $headers[] = "conflict";
         downloadCSV($SSel->reorder($texts), $headers, "allprefs", ["selection" => true]);
-        exit;
     }
 }
 if ($Qreq->fn == "get" && $Qreq->getfn == "allrevpref"
@@ -756,10 +742,9 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "topics" && !$SSel->is_empty()) {
         arrayappend($texts[$row->paperId], $out);
     }
 
-    if (count($texts)) {
+    if (count($texts))
         downloadCSV($SSel->reorder($texts), array("paper", "title", "topic"), "topics");
-        exit;
-    } else
+    else
         Conf::msg_error(join("", $errors) . "No papers selected.");
 }
 
@@ -844,7 +829,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "acmcms"
     downloadCSV($SSel->reorder($texts), false, "acmcms",
                 ["selection" => ["papertype", "title", "authors", "leademail", "emails"],
                  "always_quote" => true]);
-    exit;
 }
 
 

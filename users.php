@@ -90,7 +90,6 @@ if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
     $people = edb_orows($result);
     downloadCSV($people, array("first", "last", "email", "affiliation"), "users",
                 array("selection" => true));
-    exit;
 }
 
 function urlencode_matches($m) {
@@ -171,7 +170,6 @@ if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
             $selection[] = "ti$id";
         }
     downloadCSV($people, $header, "pcinfo", array("selection" => $selection));
-    exit;
 }
 
 

@@ -125,7 +125,6 @@ if (isset($Qreq->saveassignment) && isset($Qreq->download)
     $assignset->parse($Qreq->assignment);
     $x = $assignset->unparse_csv();
     downloadCSV($x->data, $x->header, "assignments", ["selection" => true, "sort" => SORT_NATURAL]);
-    exit;
 }
 
 $Error = array();

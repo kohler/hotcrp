@@ -243,7 +243,6 @@ function downloadForm($editable) {
     if (count($rrows) == 1 && $rrows[0]->reviewSubmitted)
         $filename .= unparseReviewOrdinal($rrows[0]->reviewOrdinal);
     downloadText($text, $filename, !$editable);
-    exit;
 }
 if (isset($_REQUEST["downloadForm"]))
     downloadForm(true);
