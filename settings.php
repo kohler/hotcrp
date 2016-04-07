@@ -569,20 +569,16 @@ class SettingGroup {
     public function add_renderer($priority, SettingRenderer $renderer) {
         $x = [$priority, count($this->render), $renderer];
         $this->render[] = $x;
+        self::$sorted = false;
     }
     public function render($sv) {
-        usort($this->render, function ($a, $b) {
-            if ($a[0] != $b[0])
-                return $a[0] < $b[0] ? -1 : 1;
-            if ($a[1] != $b[1])
-                return $a[1] < $b[1] ? -1 : 1;
-            return 0;
-        });
+        self::sort();
         foreach ($this->render as $r)
             $r[2]->render($sv);
     }
     static public function crosscheck($sv, $groupname) {
         $sv->interesting_groups[$groupname] = true;
+        self::sort();
         foreach (self::$all as $name => $group) {
             foreach ($group->render as $r)
                 $r[2]->crosscheck($sv);
@@ -596,8 +592,7 @@ class SettingGroup {
             self::$all[$name] = new SettingGroup($name, $description, $priority);
         if ($description && !self::$all[$name]->description)
             self::$all[$name]->description = $description;
-        self::$all[$name]->render[] = [$priority, 0, $renderer];
-        self::$sorted = false;
+        self::$all[$name]->add_renderer($priority, $renderer);
     }
     static public function register_synonym($new_name, $old_name) {
         assert(isset(self::$all[$old_name]) && !isset(self::$map[$old_name]));
@@ -605,16 +600,28 @@ class SettingGroup {
         self::$map[$new_name] = $old_name;
     }
     static public function all() {
-        if (!self::$sorted) {
-            uasort(self::$all, function ($a, $b) {
-                if ($a->priority != $b->priority)
-                    return $a->priority < $b->priority ? -1 : 1;
-                else
-                    return strcasecmp($a->name, $b->name);
-            });
-            self::$sorted = true;
-        }
+        self::sort();
         return self::$all;
+    }
+
+    static private function sort() {
+        if (self::$sorted)
+            return;
+        uasort(self::$all, function ($a, $b) {
+            if ($a->priority != $b->priority)
+                return $a->priority < $b->priority ? -1 : 1;
+            else
+                return strcasecmp($a->name, $b->name);
+        });
+        foreach (self::$all as $name => $group)
+            usort($group->render, function ($a, $b) {
+                if ($a[0] != $b[0])
+                    return $a[0] < $b[0] ? -1 : 1;
+                if ($a[1] != $b[1])
+                    return $a[1] < $b[1] ? -1 : 1;
+                return 0;
+            });
+        self::$sorted = true;
     }
 }
 
