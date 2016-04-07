@@ -35,8 +35,11 @@ if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "
         $Qreq->fn = "decide";
     else if (isset($Qreq->sendmail))
         $Qreq->fn = "sendmail";
-    else
-        unset($Qreq->fn);
+    else {
+        SearchActions::load();
+        if (!SearchActions::has_function($Qreq->fn))
+            unset($Qreq->fn);
+    }
 }
 
 
@@ -113,7 +116,7 @@ function topic_ids_to_text($tids, $tmap, $tomap) {
 }
 
 
-// other field-based Ajax downloads: tags, collaborators, ...
+// Ajax field loading: abstract, tags, collaborators, ...
 if ($Qreq->fn == "load" && $Qreq->field
     && ($fdef = PaperColumn::lookup($Qreq->field))
     && $fdef->foldable) {
@@ -127,8 +130,15 @@ if ($Qreq->fn == "load" && $Qreq->field
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
 } else if ($Qreq->fn == "load")
-    $Conf->ajaxExit(["ok" => false, "error" => "No such field"]);
+    $Conf->ajaxExit(["ok" => false, "error" => "No such field."]);
 
+// look for search action
+if ($Qreq->fn) {
+    SearchActions::load();
+    $subfn = $Qreq[$Qreq->fn . "fn"];
+    if (SearchActions::has_function($Qreq->fn, $subfn))
+        SearchActions::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
+}
 
 // download selected abstracts
 if ($Qreq->fn == "get" && $Qreq->getfn == "abstract" && !$SSel->is_empty()) {
@@ -433,58 +443,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "rank"
         downloadText($text, "rank");
     } else
         Conf::msg_error($tagger->error_html);
-}
-
-
-// download text author information for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "authors" && !$SSel->is_empty()
-    && ($Me->privChair || ($Me->isPC && !$Conf->subBlindAlways()))) {
-    // first fetch contacts if chair
-    $contactline = array();
-    if ($Me->privChair) {
-        $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where Paper.paperId" . $SSel->sql_predicate());
-        while (($row = edb_orow($result))) {
-            $key = $row->paperId . " " . $row->email;
-            if ($row->firstName && $row->lastName)
-                $a = $row->firstName . " " . $row->lastName;
-            else
-                $a = $row->firstName . $row->lastName;
-            $contactline[$key] = array($row->paperId, $row->title, $a, $row->email, $row->affiliation, "contact_only");
-        }
-    }
-
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection())));
-    $texts = array();
-    while (($prow = PaperInfo::fetch($result, $Me))) {
-        if (!$Me->can_view_authors($prow, true))
-            continue;
-        foreach ($prow->author_list() as $au) {
-            $line = array($prow->paperId, $prow->title, $au->name(), $au->email, $au->affiliation);
-
-            if ($Me->privChair) {
-                $key = $au->email ? $prow->paperId . " " . $au->email : "XXX";
-                if (isset($contactline[$key])) {
-                    unset($contactline[$key]);
-                    $line[] = "contact_author";
-                } else
-                    $line[] = "author";
-            }
-
-            arrayappend($texts[$prow->paperId], $line);
-        }
-    }
-
-    // If chair, append the remaining non-author contacts
-    if ($Me->privChair)
-        foreach ($contactline as $key => $line) {
-            $paperId = (int) $key;
-            arrayappend($texts[$paperId], $line);
-        }
-
-    $header = array("paper", "title", "name", "email", "affiliation");
-    if ($Me->privChair)
-        $header[] = "type";
-    downloadCSV($SSel->reorder($texts), $header, "authors");
 }
 
 
