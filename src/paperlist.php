@@ -35,7 +35,7 @@ class PaperListReviewAnalysis {
     }
     public function icon_html($includeLink) {
         global $Conf;
-        if (($title = @ReviewForm::$revtype_names[$this->row->reviewType]))
+        if (($title = get(ReviewForm::$revtype_names, $this->row->reviewType)))
             $title .= " review";
         else
             $title = "Review";
@@ -404,7 +404,7 @@ class PaperList {
                 $sel_opt["final"] = "Final papers";
                 foreach (PaperOption::option_list() as $id => $o)
                     if (($o->type == "pdf" || $o->type == "slides")
-                        && @$o->final)
+                        && $o->final)
                         $sel_opt["opt-" . $o->abbr] = htmlspecialchars(pluralx($o->name, 2));
                 $sel_opt["paper"] = "Submitted papers";
             } else if ($this->any->paper)
@@ -786,7 +786,7 @@ class PaperList {
             if ($row->conflictType > 0 && !$this->contact->can_view_tags($row, false))
                 $trclass .= " conflicttag";
         }
-        if (($highlightclass = @$this->search->highlightmap[$row->paperId]))
+        if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
             $trclass .= " {$highlightclass}tag";
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
@@ -872,7 +872,7 @@ class PaperList {
 
     private function _row_thenval($row) {
         if ($this->search->thenmap)
-            return (int) @$this->search->thenmap[$row->paperId];
+            return get_i($this->search->thenmap, $row->paperId);
         else
             return 0;
     }
@@ -882,7 +882,7 @@ class PaperList {
         if ($this->count != 1 && $thenval != $lastheading)
             $rstate->headingstart[] = count($body);
         if ($thenval != $lastheading) {
-            $heading = (string) @$this->search->headingmap[$thenval];
+            $heading = get_s($this->search->headingmap, $thenval);
             if ($heading == "" || !strcasecmp($heading, "none")) {
                 if ($this->count != 1)
                     $body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
@@ -922,7 +922,7 @@ class PaperList {
         if ($tooltip && strpos($t, "hottooltip") !== false)
             $tooltip = "";
 
-        $s0 = @$this->sorters[0];
+        $s0 = get($this->sorters, 0);
         if ($s0 && $s0->thenmap === null
             && ((($fdef->name == $s0->type || $fdef->name == "edit" . $s0->type)
                  && $sort_url)
@@ -1148,7 +1148,7 @@ class PaperList {
                 array_shift($this->sorters);
         }
 
-        if (@$this->sorters[0]->field)
+        if (get($this->sorters[0], "field"))
             /* all set */;
         else if ($this->sorters[0]->type
                  && ($c = PaperColumn::lookup($this->sorters[0]->type))
