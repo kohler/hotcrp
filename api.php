@@ -55,7 +55,7 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 // requests
 if (isset(SiteLoader::$api_map[$qreq->fn])) {
     $uf = SiteLoader::$api_map[$qreq->fn];
-    if (!($uf[1] & SiteLoader::API_GET) && !check_post())
+    if (!($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
         json_exit(["ok" => false, "error" => "Missing credentials."]);
     if (($uf[1] & SiteLoader::API_PAPER) && !$Conf->paper)
         json_exit(["ok" => false, "error" => "No such paper."]);
