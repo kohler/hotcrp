@@ -1920,14 +1920,24 @@ function plist_onsubmit() {
         return false;
     }
 
-    // encode the expected download in the form action, to ease debugging
-    if (!this.hasAttribute("data-original-action"))
-        this.setAttribute("data-original-action", this.action);
-    var action = this.getAttribute("data-original-action");
+    // analyze why this is being submitted
     var s = this.getAttribute("data-submit-name");
     this.removeAttribute("data-submit-name");
     if (!s && this.defaultact)
         s = $(this.defaultact).val();
+    if (!s && document.activeElement) {
+        var $td = $(document.activeElement).closest("td"), cname;
+        if ($td.length && (cname = $td[0].className.match(/\b(lld\d+)\b/))) {
+            var $sub = $td.closest("tr").find("." + cname).find("input[type=submit], button[type=submit]");
+            if ($sub.length == 1)
+                s = this.defaultact.value = $sub[0].name;
+        }
+    }
+
+    // encode the expected download in the form action, to ease debugging
+    if (!this.hasAttribute("data-original-action"))
+        this.setAttribute("data-original-action", this.action);
+    var action = this.getAttribute("data-original-action");
     if (s == "getgo")
         s = "get-" + $(this.getaction).val();
     else if (s == "tagact")
