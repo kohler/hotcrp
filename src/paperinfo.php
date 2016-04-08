@@ -230,6 +230,13 @@ class PaperInfo {
         return $this->_author_array;
     }
 
+    public function author_by_email($email) {
+        foreach ($this->author_list() as $a)
+            if (strcasecmp($a, $email) == 0)
+                return $a;
+        return null;
+    }
+
     public function parse_author_list() {
         $ai = "";
         foreach ($this->_author_array as $au)

@@ -61,52 +61,51 @@ class GetAbstract_SearchAction extends SearchAction {
 }
 
 class GetAuthors_SearchAction extends SearchAction {
+    static public function contact_map($ssel) {
+        $result = Dbl::qe_raw("select ContactInfo.contactId, firstName, lastName, affiliation, email from ContactInfo join PaperConflict on (PaperConflict.contactId=ContactInfo.contactId) where conflictType>=" . CONFLICT_AUTHOR . " and paperId" . $ssel->sql_predicate() . " group by ContactInfo.contactId");
+        $contact_map = [];
+        while (($row = edb_orow($result))) {
+            $row->contactId = (int) $row->contactId;
+            $contact_map[$row->contactId] = $row;
+        }
+        return $contact_map;
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!($user->privChair || ($user->isPC && !$Conf->subBlindAlways())))
+        if (!($user->is_manager() || ($user->isPC && !$Conf->subBlindAlways())))
             return self::EPERM;
-
-        // first fetch contacts if chair
-        $contactline = array();
-        if ($user->privChair) {
-            $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where Paper.paperId" . $ssel->sql_predicate());
-            while (($row = edb_orow($result))) {
-                $key = $row->paperId . " " . $row->email;
-                $contactline[$key] = array($row->paperId, $row->title, $row->firstName, $row->lastName, $row->email, $row->affiliation, "contact_only");
-            }
-        }
-
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection())));
+        $contact_map = self::contact_map($ssel);
+        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
         $texts = array();
+        $want_contacttype = false;
         while (($prow = PaperInfo::fetch($result, $user))) {
             if (!$user->can_view_authors($prow, true))
                 continue;
-            foreach ($prow->author_list() as $au) {
-                $line = array($prow->paperId, $prow->title, $au->firstName, $au->lastName, $au->email, $au->affiliation);
-
-                if ($user->privChair) {
-                    $key = $au->email ? $prow->paperId . " " . $au->email : "XXX";
-                    if (isset($contactline[$key])) {
-                        unset($contactline[$key]);
-                        $line[] = "contact_author";
-                    } else
-                        $line[] = "author";
+            $admin = $user->can_administer($prow, true);
+            $contact_emails = [];
+            if ($admin) {
+                $want_contacttype = true;
+                foreach ($prow->contacts() as $cid => $c) {
+                    $c = $contact_map[$cid];
+                    $contact_emails[strtolower($c->email)] = $c;
                 }
-
+            }
+            foreach ($prow->author_list() as $au) {
+                $line = [$prow->paperId, $prow->title, $au->firstName, $au->lastName, $au->email, $au->affiliation];
+                $lemail = strtolower($au->email);
+                if ($admin && $lemail && isset($contact_emails[$lemail])) {
+                    $line[] = "yes";
+                    unset($contact_emails[$lemail]);
+                } else if ($admin)
+                    $line[] = "no";
                 arrayappend($texts[$prow->paperId], $line);
             }
+            foreach ($contact_emails as $c)
+                arrayappend($texts[$prow->paperId], [$prow->paperId, $prow->title, $c->firstName, $c->lastName, $c->email, $c->affiliation, "contact_only"]);
         }
-
-        // If chair, append the remaining non-author contacts
-        if ($user->privChair)
-            foreach ($contactline as $key => $line) {
-                $paperId = (int) $key;
-                arrayappend($texts[$paperId], $line);
-            }
-
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
-        if ($user->privChair)
-            $header[] = "type";
+        if ($want_contacttype)
+            $header[] = "iscontact";
         downloadCSV($ssel->reorder($texts), $header, "authors");
     }
 }
@@ -114,16 +113,48 @@ class GetAuthors_SearchAction extends SearchAction {
 /* NB this search action is actually unavailable via the UI */
 class GetContacts_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
-        if (!$user->privChair)
+        global $Conf;
+        if (!$user->is_manager())
             return self::EPERM;
-        $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email
-    from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
-    join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId)
-    where Paper.paperId" . $ssel->sql_predicate() . " order by Paper.paperId");
-        $texts = [];
-        while (($row = edb_row($result)))
-            arrayappend($texts[$row[0]], $row);
-        downloadCSV($ssel->reorder($texts), ["paper", "title", "first", "last", "email"], "contacts");
+        $contact_map = GetAuthors_SearchAction::contact_map($ssel);
+        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
+        while (($prow = PaperInfo::fetch($result, $user)))
+            if ($user->can_administer($prow, true))
+                foreach ($prow->contacts() as $cid => $c) {
+                    $a = $contact_map[$cid];
+                    $aa = $prow->author_by_email($a->email) ? : $a;
+                    arrayappend($texts[$prow->paperId], [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation]);
+                }
+        downloadCSV($ssel->reorder($texts), ["paper", "title", "first", "last", "email", "affiliation"], "contacts");
+    }
+}
+
+class GetPcconflicts_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        if (!$user->is_manager())
+            return self::EPERM;
+        $allConflictTypes = Conflict::$type_descriptions;
+        $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
+        $allConflictTypes[CONFLICT_AUTHOR] = "Author";
+        $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
+        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
+        $pcm = pcMembers();
+        $texts = array();
+        while (($prow = PaperInfo::fetch($result, $user)))
+            if ($user->can_view_conflicts($prow, true)) {
+                $m = [];
+                foreach ($prow->conflicts() as $cid => $c)
+                    if (isset($pcm[$cid])) {
+                        $pc = $pcm[$cid];
+                        $m[$pc->sort_position] = [$prow->paperId, $prow->title, $pc->firstName, $pc->lastName, $pc->email, get($allConflictTypes, $c->conflictType, "Conflict")];
+                    }
+                if ($m) {
+                    ksort($m);
+                    $texts[$prow->paperId] = $m;
+                }
+            }
+        downloadCSV($ssel->reorder($texts), ["paper", "title", "first", "last", "email", "conflicttype"], "pcconflicts");
     }
 }
 
@@ -154,4 +185,5 @@ foreach (PaperOption::option_list() as $o)
 SearchActions::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchActions::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);
 SearchActions::register("get", "contact", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetContacts_SearchAction);
+SearchActions::register("get", "pcconf", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetPcconflicts_SearchAction);
 SearchActions::register("get", "topics", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetTopics_SearchAction);

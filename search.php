@@ -373,45 +373,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "rank"
 }
 
 
-// download text PC conflict information for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "pcconf"
-    && !$SSel->is_empty() && $Me->privChair) {
-    $result = Dbl::qe_raw("select Paper.paperId, title, group_concat(concat(PaperConflict.contactId, ':', conflictType) separator ' ')
-                from Paper
-                left join PaperConflict on (PaperConflict.paperId=Paper.paperId)
-                where Paper.paperId" . $SSel->sql_predicate() . "
-                group by Paper.paperId");
-
-    $pcme = array();
-    foreach (pcMembers() as $pc)
-        $pcme[$pc->contactId] = $pc->email;
-    asort($pcme);
-
-    $allConflictTypes = Conflict::$type_descriptions;
-    $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
-    $allConflictTypes[CONFLICT_AUTHOR] = "Author";
-    $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
-
-    if ($result) {
-        $texts = array();
-        while (($row = edb_row($result))) {
-            $x = " " . $row[2];
-            foreach ($pcme as $pcid => $pcemail) {
-                $pcid = " $pcid:";
-                if (($p = strpos($x, $pcid)) !== false) {
-                    $ctype = (int) substr($x, $p + strlen($pcid));
-                    $ctype = defval($allConflictTypes, $ctype, "Conflict $ctype");
-                    arrayappend($texts[$row[0]], array($row[0], $row[1], $pcemail, $ctype));
-                }
-            }
-        }
-        downloadCSV($SSel->reorder($texts),
-                    array("paper", "title", "PC email", "conflict type"),
-                    "pcconflicts");
-    }
-}
-
-
 // download current assignments
 if ($Qreq->fn == "get" && $Qreq->getfn == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
     list($header, $texts) = SearchActions::pcassignments_csv_data($Me, $SSel->selection());
@@ -689,33 +650,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "jsonattach" && !$SSel->is_empty() && 
     $result = $jsonattach_zip->download();
     exit;
 }
-
-
-// set outcome for selected papers
-function search_set_decisions($Qreq) {
-    global $Conf, $Me, $SSel;
-    $o = cvtint($Qreq->decision);
-    $decision_map = $Conf->decision_map();
-    if (!isset($decision_map[$o]))
-        return Conf::msg_error("Bad decision value.");
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection())));
-    $success = $fails = array();
-    while (($prow = PaperInfo::fetch($result, $Me)))
-        if ($Me->can_set_decision($prow))
-            $success[] = $prow->paperId;
-        else
-            $fails[] = "#" . $prow->paperId;
-    if (count($fails))
-        Conf::msg_error("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
-    if (count($success)) {
-        Dbl::qe("update Paper set outcome=$o where paperId ?a", $success);
-        $Conf->update_paperacc_setting($o > 0);
-        redirectSelf(array("atab" => "decide", "decision" => $o));
-    }
-}
-if ($Qreq->fn == "decide" && (string) $Qreq->decision != ""
-    && !$SSel->is_empty() && check_post())
-    search_set_decisions($Qreq);
 
 
 // "Assign"

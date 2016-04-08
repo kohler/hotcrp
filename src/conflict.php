@@ -44,5 +44,4 @@ class Conflict {
     function is_author() {
         return $this->value >= CONFLICT_AUTHOR;
     }
-
 }
