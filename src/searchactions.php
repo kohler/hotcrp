@@ -19,7 +19,7 @@ class SearchActions {
         global $ConfSitePATH, $Opt;
         if (self::$loaded)
             return;
-        foreach (expand_includes($ConfSitePATH, "src/search/*.php") as $f)
+        foreach (expand_includes($ConfSitePATH, "src/sa/*.php") as $f)
             include $f;
         if (isset($Opt["searchaction_include"])
             && ($searchaction_include = $Opt["searchaction_include"])) {
