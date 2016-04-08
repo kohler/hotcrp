@@ -460,24 +460,6 @@ if ($Qreq->fn == "get"
 }
 
 
-// download text contact author information, with email, for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "contact" && $Me->privChair && !$SSel->is_empty()) {
-    // Note that this is chair only
-    $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email
-	from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
-	join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId)
-	where Paper.paperId" . $SSel->sql_predicate() . " order by Paper.paperId");
-    if ($result) {
-        $texts = array();
-        while (($row = edb_row($result))) {
-            $a = ($row[3] && $row[2] ? "$row[3], $row[2]" : "$row[3]$row[2]");
-            arrayappend($texts[$row[0]], array($row[0], $row[1], $a, $row[4]));
-        }
-        downloadCSV($SSel->reorder($texts), array("paper", "title", "name", "email"), "contacts");
-    }
-}
-
-
 // download current assignments
 if ($Qreq->fn == "get" && $Qreq->getfn == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
     list($header, $texts) = SearchActions::pcassignments_csv_data($Me, $SSel->selection());

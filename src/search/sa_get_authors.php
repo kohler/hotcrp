@@ -48,11 +48,7 @@ class GetAuthors_SearchAction extends SearchAction {
             $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email, affiliation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ") join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId) where Paper.paperId" . $ssel->sql_predicate());
             while (($row = edb_orow($result))) {
                 $key = $row->paperId . " " . $row->email;
-                if ($row->firstName && $row->lastName)
-                    $a = $row->firstName . " " . $row->lastName;
-                else
-                    $a = $row->firstName . $row->lastName;
-                $contactline[$key] = array($row->paperId, $row->title, $a, $row->email, $row->affiliation, "contact_only");
+                $contactline[$key] = array($row->paperId, $row->title, $row->firstName, $row->lastName, $row->email, $row->affiliation, "contact_only");
             }
         }
 
@@ -62,7 +58,7 @@ class GetAuthors_SearchAction extends SearchAction {
             if (!$user->can_view_authors($prow, true))
                 continue;
             foreach ($prow->author_list() as $au) {
-                $line = array($prow->paperId, $prow->title, $au->name(), $au->email, $au->affiliation);
+                $line = array($prow->paperId, $prow->title, $au->firstName, $au->lastName, $au->email, $au->affiliation);
 
                 if ($user->privChair) {
                     $key = $au->email ? $prow->paperId . " " . $au->email : "XXX";
@@ -84,10 +80,26 @@ class GetAuthors_SearchAction extends SearchAction {
                 arrayappend($texts[$paperId], $line);
             }
 
-        $header = array("paper", "title", "name", "email", "affiliation");
+        $header = ["paper", "title", "first", "last", "email", "affiliation"];
         if ($user->privChair)
             $header[] = "type";
         downloadCSV($ssel->reorder($texts), $header, "authors");
+    }
+}
+
+/* NB this search action is actually unavailable via the UI */
+class GetContacts_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        if (!$user->privChair)
+            return self::EPERM;
+        $result = Dbl::qe_raw("select Paper.paperId, title, firstName, lastName, email
+    from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")
+    join ContactInfo on (ContactInfo.contactId=PaperConflict.contactId)
+    where Paper.paperId" . $ssel->sql_predicate() . " order by Paper.paperId");
+        $texts = [];
+        while (($row = edb_row($result)))
+            arrayappend($texts[$row[0]], $row);
+        downloadCSV($ssel->reorder($texts), ["paper", "title", "first", "last", "email"], "contacts");
     }
 }
 
@@ -112,4 +124,5 @@ class GetTopics_SearchAction extends SearchAction {
 
 SearchActions::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchActions::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);
+SearchActions::register("get", "contact", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetContacts_SearchAction);
 SearchActions::register("get", "topics", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetTopics_SearchAction);
