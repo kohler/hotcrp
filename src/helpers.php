@@ -917,6 +917,11 @@ function whyNotText($whyNot, $action) {
     return rtrim($text);
 }
 
+function whyNotHtmlToText($e) {
+    $e = preg_replace('|\(?<a.*?</a>\)?\s*\z|i', "", $e);
+    return preg_replace('|<.*?>|', "", $e);
+}
+
 function actionBar($mode = null, $prow = null) {
     global $Me, $Conf;
     $forceShow = ($Me->is_admin_force() ? "&amp;forceShow=1" : "");

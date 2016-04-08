@@ -101,11 +101,6 @@ if ($Qreq->fn) {
         SearchActions::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
 }
 
-function whyNotToText($e) {
-    $e = preg_replace('|\(?<a.*?</a>\)?\s*\z|i', "", $e);
-    return preg_replace('|<.*?>|', "", $e);
-}
-
 function downloadReviews(&$texts, &$errors) {
     global $Opt, $Conf, $SSel, $Qreq;
 
@@ -114,7 +109,7 @@ function downloadReviews(&$texts, &$errors) {
         if (count($errors) == 0)
             Conf::msg_error("No papers selected.");
         else
-            Conf::msg_error(join("<br />\n", array_keys($errors)) . "<br />Nothing to download.");
+            Conf::msg_error(join("<br />\n", array_keys($errors)) . "<br />\nNothing to download.");
         return;
     }
 
@@ -124,7 +119,7 @@ function downloadReviews(&$texts, &$errors) {
     $warnings = array();
     $nerrors = 0;
     foreach ($errors as $ee => $iserror) {
-        $warnings[] = whyNotToText($ee);
+        $warnings[] = whyNotHtmlToText($ee);
         if ($iserror)
             $nerrors++;
     }
@@ -147,7 +142,7 @@ function downloadReviews(&$texts, &$errors) {
         $text = $header;
         if (count($warnings) && $getforms) {
             foreach ($warnings as $w)
-                $text .= prefix_word_wrap("==-== ", whyNotToText($w), "==-== ");
+                $text .= prefix_word_wrap("==-== ", whyNotHtmlToText($w), "==-== ");
             $text .= "\n";
         } else if (count($warnings))
             $text .= join("\n", $warnings) . "\n\n";
@@ -190,7 +185,7 @@ if ($Qreq->fn == "get"
                 $t = whyNotText($whyNot, "review");
                 $errors[$t] = false;
                 if (!isset($whyNot["deadline"]))
-                    defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotToText($t)) . "\n\n", "==-== "));
+                    defappend($texts[$row->paperId], prefix_word_wrap("==-== ", strtoupper(whyNotHtmlToText($t)) . "\n\n", "==-== "));
             }
             $rrow = $row->reviewContactId ? $row : null;
             defappend($texts[$row->paperId], $rf->textForm($row, $rrow, $Me, null) . "\n");
@@ -649,64 +644,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "jsonattach" && !$SSel->is_empty() && 
                          $Opt["downloadPrefix"] . (is_array($pj) ? "" : "paper" . $SSel->selection_at(0) . "-") . "data.json");
     $result = $jsonattach_zip->download();
     exit;
-}
-
-
-// "Assign"
-if ($Qreq->fn == "assign" && (string) $Qreq->assignfn != ""
-    && !$SSel->is_empty() && check_post()) {
-    $mt = $Qreq->assignfn;
-    $mpc = get($Qreq, "markpc", "0");
-    $pc = ($mpc == "0" ? null : Contact::find_by_email($mpc));
-
-    if (!$Me->privChair)
-        Conf::msg_error("Only PC chairs can set assignments and conflicts.");
-    else if ($mt == "auto") {
-        $t = (in_array($Qreq->t, array("acc", "s")) ? $Qreq->t : "all");
-        $q = join("+", $SSel->selection());
-        go(hoturl("autoassign", "pap=$q&t=$t&q=$q"));
-    } else if ($mt == "lead" || $mt == "shepherd") {
-        if ($Me->assign_paper_pc($SSel->selection(), $mt, $pc))
-            $Conf->confirmMsg(ucfirst(pluralx($SSel->selection(), $mt)) . " set.");
-        else if ($OK)
-            $Conf->confirmMsg("No changes.");
-    } else if (!$pc)
-        Conf::msg_error("“" . htmlspecialchars($mpc) . "” is not a PC member.");
-    else if ($mt == "conflict" || $mt == "unconflict") {
-        if ($mt == "conflict") {
-            Dbl::qe("insert into PaperConflict (paperId, contactId, conflictType) (select paperId, ?, ? from Paper where paperId" . $SSel->sql_predicate() . ") on duplicate key update conflictType=greatest(conflictType, values(conflictType))", $pc->contactId, CONFLICT_CHAIRMARK);
-            $Me->log_activity("Mark conflicts with $mpc", $SSel->selection());
-        } else {
-            Dbl::qe("delete from PaperConflict where PaperConflict.conflictType<? and contactId=? and (paperId" . $SSel->sql_predicate() . ")", CONFLICT_AUTHOR, $pc->contactId);
-            $Me->log_activity("Remove conflicts with $mpc", $SSel->selection());
-        }
-    } else if (substr($mt, 0, 6) == "assign"
-               && ($asstype = substr($mt, 6))
-               && isset(ReviewForm::$revtype_names[$asstype])) {
-        Dbl::qe_raw("lock tables PaperConflict write, PaperReview write, PaperReviewRefused write, Paper write, ActionLog write, Settings write");
-        $result = Dbl::qe_raw("select Paper.paperId, reviewId, reviewType, reviewModified, conflictType from Paper left join PaperReview on (Paper.paperId=PaperReview.paperId and PaperReview.contactId=" . $pc->contactId . ") left join PaperConflict on (Paper.paperId=PaperConflict.paperId and PaperConflict.contactId=" . $pc->contactId .") where Paper.paperId" . $SSel->sql_predicate());
-        $conflicts = array();
-        $assigned = array();
-        $nworked = 0;
-        while (($row = PaperInfo::fetch($result, $Me))) {
-            if ($asstype && $row->conflictType > 0)
-                $conflicts[] = $row->paperId;
-            else if ($asstype && $row->reviewType >= REVIEW_PC && $asstype != $row->reviewType)
-                $assigned[] = $row->paperId;
-            else {
-                $Me->assign_review($row->paperId, $pc->contactId, $asstype);
-                $nworked++;
-            }
-        }
-        if (count($conflicts))
-            Conf::msg_error("Some papers were not assigned because of conflicts (" . join(", ", $conflicts) . ").  If these conflicts are in error, remove them and try to assign again.");
-        if (count($assigned))
-            Conf::msg_error("Some papers were not assigned because the PC member already had an assignment (" . join(", ", $assigned) . ").");
-        if ($nworked)
-            $Conf->confirmMsg(($asstype == 0 ? "Unassigned reviews." : "Assigned reviews."));
-        Dbl::qe_raw("unlock tables");
-        $Conf->update_rev_tokens_setting(false);
-    }
 }
 
 

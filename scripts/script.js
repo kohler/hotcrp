@@ -2013,7 +2013,7 @@ function plactions_dofold() {
     }
     // Assign > "for [USER]"
     if (jQuery("#foldass").length) {
-        val = jQuery("#foldass select[name='marktype']").val();
+        val = jQuery("#foldass select[name='assignfn']").val();
         fold("ass", !!(val && val == "auto"));
         sel = jQuery("#foldass select[name='markpc']");
         if (val == "lead" || val == "shepherd") {
