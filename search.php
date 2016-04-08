@@ -441,25 +441,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "pcconf"
 }
 
 
-// download text lead or shepherd information for selected papers
-if ($Qreq->fn == "get"
-    && ($Qreq->getfn == "lead" || $Qreq->getfn == "shepherd")
-    && !$SSel->is_empty() && $Me->isPC) {
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "reviewerName" => $Qreq->getfn)));
-    $shep = $Qreq->getfn == "shepherd";
-    if ($result) {
-        $texts = array();
-        while (($row = PaperInfo::fetch($result, $Me)))
-            if ($row->reviewEmail
-                && (($shep && $Me->can_view_shepherd($row, true))
-                    || (!$shep && $Me->can_view_lead($row, true))))
-                arrayappend($texts[$row->paperId],
-                            array($row->paperId, $row->title, $row->reviewEmail, trim("$row->reviewFirstName $row->reviewLastName")));
-        downloadCSV($SSel->reorder($texts), array("paper", "title", "${getaction}email", "${getaction}name"), "${getaction}s");
-    }
-}
-
-
 // download current assignments
 if ($Qreq->fn == "get" && $Qreq->getfn == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
     list($header, $texts) = SearchActions::pcassignments_csv_data($Me, $SSel->selection());

@@ -1789,7 +1789,7 @@ class Conf {
 
         if (get($options, "reviewerName")) {
             if ($options["reviewerName"] === "lead" || $options["reviewerName"] === "shepherd")
-                $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=Paper.{$options['reviewerName']}ContactId)";
+                $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=Paper." . $options['reviewerName'] . "ContactId)";
             else if (get($options, "allComments"))
                 $joins[] = "left join ContactInfo as ReviewerContactInfo on (ReviewerContactInfo.contactId=PaperComment.contactId)";
             else if (get($options, "reviewerName"))
