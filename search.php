@@ -77,14 +77,6 @@ if (!$SSel) { /* we might be included by reviewprefs.php */
     SearchSelection::clear_request();
 }
 
-function cleanAjaxResponse(&$response, $type) {
-    global $SSel;
-    foreach ($SSel->selection() as $pid)
-        if (!isset($response[$type . $pid]))
-            $response[$type . $pid] = "";
-}
-
-
 // download selected papers
 if ($Qreq->fn == "get"
     && ($Qreq->getfn == "paper" || $Qreq->getfn == "final"
