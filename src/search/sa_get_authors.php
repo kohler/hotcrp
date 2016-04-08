@@ -91,5 +91,25 @@ class GetAuthors_SearchAction extends SearchAction {
     }
 }
 
+class GetTopics_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "topics" => 1)));
+        $texts = array();
+        $tmap = $Conf->topic_map();
+        while (($row = PaperInfo::fetch($result, $user)))
+            if ($user->can_view_paper($row)) {
+                $out = array();
+                foreach ($row->topics() as $t)
+                    $out[] = [$row->paperId, $row->title, $tmap[$t]];
+                if (!count($out))
+                    $out[] = [$row->paperId, $row->title, "<none>"];
+                arrayappend($texts[$row->paperId], $out);
+            }
+        downloadCSV($ssel->reorder($texts), array("paper", "title", "topic"), "topics");
+    }
+}
+
 SearchActions::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchActions::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);
+SearchActions::register("get", "topics", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetTopics_SearchAction);

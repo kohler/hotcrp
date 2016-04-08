@@ -468,7 +468,7 @@ class TopicListPaperColumn extends PaperColumn {
         return !isset($row->topicIds) || $row->topicIds == "";
     }
     public function content($pl, $row, $rowidx) {
-        return $row->unparse_topics_html(true);
+        return $row->unparse_topics_html(true, $pl->reviewer_contact());
     }
 }
 
@@ -892,7 +892,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         $prefs = $topics = false;
         if ($pl->contact->privChair) {
             $prefs = $row->reviewer_preferences();
-            $topics = $this->topics ? $row->topics() : null;
+            $topics = $this->topics && $row->has_topics();
         }
         $pcm = null;
         if ($pl->contact->isPC)

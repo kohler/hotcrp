@@ -757,7 +757,7 @@ class PaperTable {
 
     private function paptabTopicsOptions($showAllOptions) {
         global $Conf, $Me;
-        $topicdata = topicTable($this->prow, -1);
+        $topicdata = $this->prow->unparse_topics_html(false, $Me);
         $xoptionhtml = array();
         $optionhtml = array();
         $ndocuments = 0;
@@ -2398,7 +2398,7 @@ class PaperTable {
         else if (isset($_REQUEST["commentId"]))
             $sel["commentId"] = $_REQUEST["commentId"];
 
-        $sel["topics"] = $sel["topicInterest"] = $sel["options"] = true;
+        $sel["topics"] = $sel["options"] = true;
         if (($Me->isPC && $Conf->timePCReviewPreferences()) || $Me->privChair)
             $sel["reviewerPreference"] = true;
         if ($Me->isPC || $Conf->setting("tag_rank"))

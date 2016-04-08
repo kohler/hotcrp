@@ -346,10 +346,6 @@ function topicTable($prow, $active = 0) {
     global $Conf;
     $paperId = ($prow ? $prow->paperId : -1);
 
-    // read from paper row if appropriate
-    if ($paperId > 0 && $active < 0 && isset($prow->topicIds))
-        return $prow->unparse_topics_html(false);
-
     // get current topics
     $paperTopic = array();
     $tmap = $Conf->topic_map();

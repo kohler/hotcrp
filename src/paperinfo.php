@@ -362,6 +362,10 @@ class PaperInfo {
         Dbl::free($result);
     }
 
+    public function has_topics() {
+        return count($this->topics()) > 0;
+    }
+
     public function topics() {
         if ($this->_topics_array === null) {
             if (!property_exists($this, "topicIds"))
@@ -370,9 +374,15 @@ class PaperInfo {
                 $this->_topics_array = $this->topicIds;
             else {
                 $this->_topics_array = array();
-                if ($this->topicIds !== "" && $this->topicIds !== null)
-                    foreach (explode(",", $this->topicIds) as $topic)
-                        $this->_topics_array[] = (int) $topic;
+                if ($this->topicIds !== "" && $this->topicIds !== null) {
+                    global $Conf;
+                    foreach (explode(",", $this->topicIds) as $t)
+                        $this->_topics_array[] = (int) $t;
+                    $tomap = $Conf->topic_order_map();
+                    usort($this->_topics_array, function ($a, $b) use ($tomap) {
+                        return $tomap[$a] - $tomap[$b];
+                    });
+                }
             }
         }
         return $this->_topics_array;
@@ -385,15 +395,42 @@ class PaperInfo {
             return "";
         $out = [];
         $tmap = $Conf->topic_map();
-        $tomap = $Conf->topic_order_map();
         foreach ($tarr as $t)
-            $out[$tomap[$t]] = $tmap[$t];
-        ksort($out);
+            $out[] = $tmap[$t];
         return join($Conf->topic_separator(), $out);
     }
 
-    public function unparse_topics_html($comma) {
-        return self::unparse_topic_list_html($this->topics(), get($this, "topicInterest"), $comma);
+    private static function render_topic($t, $i, $tmap, &$long) {
+        $s = '<span class="topic' . ($i ? : 0);
+        $tname = $tmap[$t];
+        if (strlen($tname) <= 50)
+            $s .= ' nw">';
+        else
+            $long = true;
+        return $s . htmlspecialchars($tname) . '</span>';
+    }
+
+    private static function render_topic_list($out, $comma, $long) {
+        global $Conf;
+        if ($comma)
+            return join($Conf->topic_separator(), $out);
+        else if ($long)
+            return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
+        else
+            return join(' <span class="sep">&nbsp;</span> ', $out);
+    }
+
+    public function unparse_topics_html($comma, Contact $interests_user = null) {
+        global $Conf;
+        if (!($topics = $this->topics()))
+            return "";
+        $out = array();
+        $tmap = $Conf->topic_map();
+        $interests = $interests_user ? $interests_user->topic_interest_map() : array();
+        $long = false;
+        foreach ($topics as $t)
+            $out[] = self::render_topic($t, get($interests, $t), $tmap, $long);
+        return self::render_topic_list($out, $comma, $long);
     }
 
     public static function unparse_topic_list_html($topicIds, $interests, $comma) {
@@ -408,24 +445,10 @@ class PaperInfo {
         $tmap = $Conf->topic_map();
         $tomap = $Conf->topic_order_map();
         $long = false;
-        for ($i = 0; $i < count($topicIds); $i++) {
-            $s = '<span class="topic' . ($interests ? $interests[$i] : 0);
-            $tn = $tmap[$topicIds[$i]];
-            if (strlen($tn) <= 50)
-                $s .= ' nw">' . htmlspecialchars($tn);
-            else {
-                $long = true;
-                $s .= '">' . htmlspecialchars($tn);
-            }
-            $out[$tomap[$topicIds[$i]]] = $s . "</span>";
-        }
+        for ($i = 0; $i < count($topicIds); $i++)
+            $out[$tomap[$topicIds[$i]]] = self::render_topic($topicIds[$i], $interests ? $interests[$i] : 0, $tmap, $long);
         ksort($out);
-        if ($comma)
-            return join($Conf->topic_separator(), $out);
-        else if ($long)
-            return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
-        else
-            return join(' <span class="sep">&nbsp;</span> ', $out);
+        return self::render_topic_list($out, $comma, $long);
     }
 
     static public function make_topic_map($pids) {

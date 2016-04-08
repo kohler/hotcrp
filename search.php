@@ -106,16 +106,6 @@ if ($Qreq->fn == "get"
 }
 
 
-function topic_ids_to_text($tids, $tmap, $tomap) {
-    $tx = array();
-    foreach (explode(",", $tids) as $tid)
-        if (($tname = get($tmap, $tid)))
-            $tx[$tomap[$tid]] = $tname;
-    ksort($tx);
-    return join(", ", $tx);
-}
-
-
 // Ajax field loading: abstract, tags, collaborators, ...
 if ($Qreq->fn == "load" && $Qreq->field
     && ($fdef = PaperColumn::lookup($Qreq->field))
@@ -563,7 +553,6 @@ function downloadRevpref($extended) {
     $q = $Conf->paperQuery($Rev, array("paperId" => $SSel->selection(), "topics" => 1, "reviewerPreference" => 1));
     $result = Dbl::qe_raw($q);
     $texts = array();
-    list($tmap, $tomap) = array($Conf->topic_map(), $Conf->topic_order_map());
     while ($prow = PaperInfo::fetch($result, $Rev)) {
         $t = $prow->paperId;
         if ($prow->conflictType > 0)
@@ -576,7 +565,7 @@ function downloadRevpref($extended) {
                 $t .= prefix_word_wrap("#  Authors: ", $prow->pretty_text_author_list(), "#           ");
             $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ");
             if ($prow->topicIds != "") {
-                $tt = topic_ids_to_text($prow->topicIds, $tmap, $tomap);
+                $tt = $prow->unparse_topics_text();
                 $t .= prefix_word_wrap("#   Topics: ", $tt, "#           ");
             }
             $t .= "\n";
@@ -638,39 +627,6 @@ function downloadAllRevpref() {
 if ($Qreq->fn == "get" && $Qreq->getfn == "allrevpref"
     && $Me->privChair && !$SSel->is_empty())
     downloadAllRevpref();
-
-
-// download topics for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "topics" && !$SSel->is_empty()) {
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "topics" => 1)));
-
-    $texts = array();
-    $tmap = $Conf->topic_map();
-    $tomap = $Conf->topic_order_map();
-
-    while (($row = PaperInfo::fetch($result, $Me))) {
-        if (!$Me->can_view_paper($row))
-            continue;
-        $out = array();
-        $topicIds = ($row->topicIds == "" ? "x" : $row->topicIds);
-        foreach (explode(",", $topicIds) as $tid) {
-            if ($tid === "")
-                continue;
-            else if ($tid === "x")
-                list($order, $name) = array(99999, "<none>");
-            else
-                list($order, $name) = array($tomap[$tid], $tmap[$tid]);
-            $out[$order] = array($row->paperId, $row->title, $name);
-        }
-        ksort($out);
-        arrayappend($texts[$row->paperId], $out);
-    }
-
-    if (count($texts))
-        downloadCSV($SSel->reorder($texts), array("paper", "title", "topic"), "topics");
-    else
-        Conf::msg_error(join("", $errors) . "No papers selected.");
-}
 
 
 // download format checker reports for selected papers
