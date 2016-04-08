@@ -2093,7 +2093,7 @@ class Contact {
         if (!is_object($opt) && !($opt = PaperOption::find($opt)))
             return false;
         $rights = $this->rights($prow, $forceShow);
-        if (!$this->can_view_paper($prow))
+        if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
         $oview = $opt->visibility;
         return $rights->act_author_view
@@ -2105,10 +2105,18 @@ class Contact {
                     || $oview == "rev"
                     || ($oview == "nonblind"
                         && $this->can_view_authors($prow, $forceShow)))
-                && ($rights->allow_administer
-                    || $rights->review_type
-                    || !$opt->has_document()
-                    || $Conf->check_tracks($prow, $this, Track::VIEWPDF)));
+                && (!$opt->final
+                    || $this->can_view_decision($prow, $forceShow)));
+    }
+
+    function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
+        global $Conf;
+        if ($this->can_view_paper_option($prow, $opt, $forceShow))
+            return null;
+        if (is_object($opt) && ($opt = PaperOption::find($opt))
+            && ($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
+            return $whyNot;
+        return array_merge($prow->initial_whynot(), ["permission" => 1]);
     }
 
     function can_view_some_paper_option($opt) {

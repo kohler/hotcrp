@@ -881,7 +881,7 @@ function whyNotText($whyNot, $action) {
             $text .= "You can’t $action $thisPaper at the moment. ";
         $text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>) ";
     }
-    if (@$whyNot["override"])
+    if (isset($whyNot["override"]))
         $text .= "“Override deadlines” can override this restriction. ";
     if (isset($whyNot['blindSubmission']))
         $text .= "Submission to this conference is blind. ";
@@ -895,15 +895,15 @@ function whyNotText($whyNot, $action) {
         $text .= "You didn’t write this review, so you can’t change it. ";
     if (isset($whyNot['reviewToken']))
         $text .= "If you know a valid review token, enter it above to edit that review. ";
-    if (@$whyNot["clickthrough"])
+    if (isset($whyNot["clickthrough"]))
         $text .= "You can’t do that until you agree to the current terms. ";
-    if (@$whyNot["otherTwiddleTag"])
+    if (isset($whyNot["otherTwiddleTag"]))
         $text .= "Tag “#" . htmlspecialchars($whyNot["tag"]) . "” doesn’t belong to you. ";
-    if (@$whyNot["chairTag"])
+    if (isset($whyNot["chairTag"]))
         $text .= "Tag “#" . htmlspecialchars($whyNot["tag"]) . "” can only be set by administrators. ";
-    if (@$whyNot["voteTag"])
+    if (isset($whyNot["voteTag"]))
         $text .= "The voting tag “#" . htmlspecialchars($whyNot["tag"]) . "” shouldn’t be changed directly. To vote for this paper, change the “#~" . htmlspecialchars($whyNot["tag"]) . "” tag. ";
-    if (@$whyNot["voteTagNegative"])
+    if (isset($whyNot["voteTagNegative"]))
         $text .= "Negative votes aren’t allowed. ";
     // finish it off
     if (isset($whyNot["chairMode"]))

@@ -1437,7 +1437,8 @@ class Conf {
             $q .= " left join PaperOption o on (o.paperId=p.paperId and o.optionId=$documentType)";
             $sjoin = "o.value";
         }
-        return $this->q($q . " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch");
+        $q .= " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch";
+        return $this->q($q);
     }
 
     function document_row($result, $dtype = DTYPE_SUBMISSION) {
@@ -1448,9 +1449,8 @@ class Conf {
             $dtype = $doc->documentType = (int) $doc->documentType;
         $doc->docclass = new HotCRPDocument($dtype);
         // in modern versions sha1 is set at storage time; before it wasn't
-        if ($doc->paperStorageId && $doc->sha1 == "") {
-            if (!$doc->docclass->load_content($doc))
-                return false;
+        if ($doc->paperStorageId > 1 && $doc->sha1 == ""
+            && $doc->docclass->load_content($doc)) {
             $doc->sha1 = sha1($doc->content, true);
             $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $doc->paperStorageId);
         }

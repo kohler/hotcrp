@@ -77,27 +77,6 @@ if (!$SSel) { /* we might be included by reviewprefs.php */
     SearchSelection::clear_request();
 }
 
-// download selected papers
-if ($Qreq->fn == "get"
-    && ($Qreq->getfn == "paper" || $Qreq->getfn == "final"
-        || substr($Qreq->getfn, 0, 4) == "opt-")
-    && !$SSel->is_empty()
-    && ($dt = HotCRPDocument::parse_dtype($Qreq->getfn)) !== null) {
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection())));
-    $downloads = array();
-    while (($row = PaperInfo::fetch($result, $Me))) {
-        if (($whyNot = $Me->perm_view_paper($row, true)))
-            Conf::msg_error(whyNotText($whyNot, "view"));
-        else
-            $downloads[] = $row->paperId;
-    }
-
-    session_write_close();      // to allow concurrent clicks
-    if ($Conf->downloadPaper($downloads, true, $dt))
-        exit;
-}
-
-
 // Ajax field loading: abstract, tags, collaborators, ...
 if ($Qreq->fn == "load" && $Qreq->field
     && ($fdef = PaperColumn::lookup($Qreq->field))

@@ -3,6 +3,30 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class GetDocument_SearchAction extends SearchAction {
+    private $dt;
+    public function __construct($dt) {
+        $this->dt = $dt;
+    }
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
+        $downloads = [];
+        $opt = PaperOption::find_document($this->dt);
+        while (($row = PaperInfo::fetch($result, $user)))
+            if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
+                Conf::msg_error(whyNotText($whyNot, "view"));
+            else
+                $downloads[] = $row->paperId;
+        if (count($downloads)) {
+            session_write_close(); // it can take a while to generate the download
+            if ($Conf->downloadPaper($downloads, true, $this->dt))
+                exit;
+        }
+        // XXX how to return errors?
+    }
+}
+
 class GetAbstract_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -122,6 +146,11 @@ class GetTopics_SearchAction extends SearchAction {
     }
 }
 
+SearchActions::register("get", "paper", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_SUBMISSION));
+SearchActions::register("get", "final", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_FINAL));
+foreach (PaperOption::option_list() as $o)
+    if ($o->is_document())
+        SearchActions::register("get", "opt-{$o->abbr}", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction($o->id));
 SearchActions::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchActions::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);
 SearchActions::register("get", "contact", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetContacts_SearchAction);
