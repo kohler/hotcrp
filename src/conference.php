@@ -1452,7 +1452,7 @@ class Conf {
         if ($doc->paperStorageId > 1 && $doc->sha1 == ""
             && $doc->docclass->load_content($doc)) {
             $doc->sha1 = sha1($doc->content, true);
-            $this->q("update PaperStorage set sha1='" . sqlq($doc->sha1) . "' where paperStorageId=" . $doc->paperStorageId);
+            Dbl::q("update PaperStorage set sha1=? where paperStorageId=?", $doc->sha1, $doc->paperStorageId);
         }
         return $doc;
     }
