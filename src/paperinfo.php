@@ -404,10 +404,10 @@ class PaperInfo {
         $s = '<span class="topic' . ($i ? : 0);
         $tname = $tmap[$t];
         if (strlen($tname) <= 50)
-            $s .= ' nw">';
+            $s .= ' nw';
         else
             $long = true;
-        return $s . htmlspecialchars($tname) . '</span>';
+        return $s . '">' . htmlspecialchars($tname) . '</span>';
     }
 
     private static function render_topic_list($out, $comma, $long) {
