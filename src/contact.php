@@ -1987,7 +1987,8 @@ class Contact {
         return $this->privChair
             || $rights->allow_author_view
             || ($rights->review_type
-                && $Conf->timeReviewerViewSubmittedPaper())
+                // assigned reviewer can view PDF of withdrawn, but submitted, paper
+                && (!$pdf || $prow->timeSubmitted != 0))
             || ($rights->allow_pc_broad
                 && $Conf->timePCViewPaper($prow, $pdf)
                 && (!$pdf || $Conf->check_tracks($prow, $this, Track::VIEWPDF)));
@@ -2009,9 +2010,6 @@ class Contact {
             $whyNot["notSubmitted"] = 1;
         if ($rights->allow_pc_broad
             && !$Conf->timePCViewPaper($prow, $pdf))
-            $whyNot["deadline"] = "sub_sub";
-        else if ($rights->review_type
-                 && !$Conf->timeReviewerViewSubmittedPaper())
             $whyNot["deadline"] = "sub_sub";
         if ((!$rights->allow_pc_broad
              && !$rights->review_type)
@@ -2061,10 +2059,9 @@ class Contact {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
         return ($rights->nonblind
-                && $prow->timeSubmitted > 0
+                && $prow->timeSubmitted != 0
                 && ($rights->allow_pc_broad
-                    || ($rights->review_type
-                        && $Conf->timeReviewerViewSubmittedPaper())))
+                    || $rights->review_type))
             || ($rights->nonblind
                 && $prow->timeWithdrawn <= 0
                 && $rights->allow_pc_broad
