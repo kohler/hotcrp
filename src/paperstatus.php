@@ -758,6 +758,11 @@ class PaperStatus {
             return false;
         }
 
+        if (get($pj, "error") || get($pj, "error_html")) {
+            $this->set_error_html("error", "Refusing to save paper with error");
+            return false;
+        }
+
         $prow = $old_pj = null;
         if ($paperid)
             $prow = $Conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true],
