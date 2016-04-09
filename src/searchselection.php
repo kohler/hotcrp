@@ -5,6 +5,7 @@
 
 class SearchSelection {
     private $sel = array();
+    private $selmap = null;
 
     public function __construct($papers = null) {
         if ($papers) {
@@ -51,14 +52,21 @@ class SearchSelection {
     }
 
     public function selection_map() {
-        $selmap = array();
-        foreach ($this->sel as $i => $pid)
-            $selmap[$pid] = $i + 1;
-        return $selmap;
+        if ($this->selmap === null) {
+            $this->selmap = array();
+            foreach ($this->sel as $i => $pid)
+                $this->selmap[$pid] = $i + 1;
+        }
+        return $this->selmap;
+    }
+
+    public function selection_index($pid) {
+        return get_i($this->selection_map(), $pid) - 1;
     }
 
     public function sort_selection() {
         sort($this->sel);
+        $this->selmap = null;
     }
 
     public function equals_search($search) {

@@ -185,65 +185,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "acmcms"
 }
 
 
-// download status JSON for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "json" && !$SSel->is_empty() && $Me->privChair) {
-    $pj = array();
-    $ps = new PaperStatus($Me, ["forceShow" => true]);
-    foreach ($SSel->selection() as $pid)
-        if (($j = $ps->load($pid)))
-            $pj[] = $j;
-    if (count($pj) == 1)
-        $pj = $pj[0];
-    header("Content-Type: application/json");
-    header("Content-Disposition: attachment; filename=" . mime_quote_string($Opt["downloadPrefix"] . (is_array($pj) ? "" : "paper" . $SSel->selection_at(0) . "-") . "data.json"));
-    echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
-    exit;
-}
-
-
-// download status JSON plus documents for selected papers
-function jsonattach_document($dj, $prow, $dtype, $drow) {
-    global $jsonattach_zip;
-    if ($drow->docclass->load($drow)) {
-        $dj->content_file = HotCRPDocument::filename($drow);
-        $jsonattach_zip->add_as($drow, $dj->content_file);
-    }
-}
-
-if ($Qreq->fn == "get" && $Qreq->getfn == "jsonattach" && !$SSel->is_empty() && $Me->privChair) {
-    global $jsonattach_zip;
-    $jsonattach_zip = new ZipDocument($Opt["downloadPrefix"] . "data.zip");
-    $pj = array();
-    $ps = new PaperStatus($Me, ["forceShow" => true]);
-    $ps->add_document_callback("jsonattach_document");
-    foreach ($SSel->selection() as $pid)
-        if (($j = $ps->load($pid)))
-            $pj[] = $j;
-        else
-            $jsonattach_zip->warnings[] = "#$pid: No such paper";
-    if (count($pj) == 1)
-        $pj = $pj[0];
-    $jsonattach_zip->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n",
-                         $Opt["downloadPrefix"] . (is_array($pj) ? "" : "paper" . $SSel->selection_at(0) . "-") . "data.json");
-    $result = $jsonattach_zip->download();
-    exit;
-}
-
-
-// send mail
-if ($Qreq->fn == "sendmail" && !$SSel->is_empty()) {
-    if ($Me->privChair) {
-        $r = (in_array($Qreq->recipients, array("au", "rev")) ? $Qreq->recipients : "all");
-        if ($SSel->equals_search(new PaperSearch($Me, $Qreq)))
-            $x = "q=" . urlencode($Qreq->q) . "&plimit=1";
-        else
-            $x = "p=" . join("+", $SSel->selection());
-        go(hoturl("mail", $x . "&t=" . urlencode($Qreq->t) . "&recipients=$r"));
-    } else
-        Conf::msg_error("Only the PC chairs can send mail.");
-}
-
-
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
     $pld = " ";
