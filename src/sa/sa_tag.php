@@ -48,7 +48,7 @@ class Tag_SearchAction extends SearchAction {
             $source_tag = trim((string) $qreq->tagcr_source);
             if ($source_tag == "")
                 $source_tag = (substr($tagreq, 0, 2) == "~~" ? substr($tagreq, 2) : $tagreq);
-            $tagger = new Tagger;
+            $tagger = new Tagger($user);
             if ($tagger->check($tagreq, Tagger::NOPRIVATE | Tagger::NOVALUE)
                 && $tagger->check($source_tag, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
                 $r = new PaperRank($source_tag, $tagreq, $papers, $qreq->tagcr_gapless,

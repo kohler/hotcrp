@@ -102,64 +102,6 @@ if ($Qreq->fn) {
 }
 
 
-// download votes
-if ($Qreq->fn == "get" && $Qreq->getfn == "votes"
-    && !$SSel->is_empty() && $Qreq->tag && $Me->isPC) {
-    $tagger = new Tagger;
-    if (($tag = $tagger->check($Qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
-        $showtag = trim($Qreq->tag); // no "23~" prefix
-        $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "tagIndex" => $tag)));
-        $texts = array();
-        while (($row = PaperInfo::fetch($result, $Me)))
-            if ($Me->can_view_tags($row, true))
-                arrayappend($texts[$row->paperId], array($showtag, (float) $row->tagIndex, $row->paperId, $row->title));
-        downloadCSV($SSel->reorder($texts), array("tag", "votes", "paper", "title"), "votes");
-    } else
-        Conf::msg_error($tagger->error_html);
-}
-
-
-// download rank
-$settingrank = ($Conf->setting("tag_rank") && $Qreq->tag == "~" . $Conf->setting_data("tag_rank"));
-if ($Qreq->fn == "get" && $Qreq->getfn == "rank"
-    && !$SSel->is_empty() && $Qreq->tag
-    && ($Me->isPC || ($Me->is_reviewer() && $settingrank))) {
-    $tagger = new Tagger;
-    if (($tag = $tagger->check($Qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
-        $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
-        $real = "";
-        $null = "\n";
-        while (($row = PaperInfo::fetch($result, $Me)))
-            if ($Me->can_change_tag($row, $tag, null, 1)) {
-                if ($row->tagIndex === null)
-                    $null .= "X\t$row->paperId\t$row->title\n";
-                else if ($real === "" || $lastIndex == $row->tagIndex - 1)
-                    $real .= "\t$row->paperId\t$row->title\n";
-                else if ($lastIndex == $row->tagIndex)
-                    $real .= "=\t$row->paperId\t$row->title\n";
-                else
-                    $real .= str_pad("", min($row->tagIndex - $lastIndex, 5), ">") . "\t$row->paperId\t$row->title\n";
-                $lastIndex = $row->tagIndex;
-            }
-        $text = "# Edit the rank order by rearranging this file's lines.
-
-# The first line has the highest rank. Lines starting with \"#\" are
-# ignored. Unranked papers appear at the end in lines starting with
-# \"X\", sorted by overall merit. Create a rank by removing the \"X\"s and
-# rearranging the lines. Lines starting with \"=\" mark papers with the
-# same rank as the preceding papers. Lines starting with \">>\", \">>>\",
-# and so forth indicate rank gaps between papers. When you are done,
-# upload the file at\n"
-            . "#   " . hoturl_absolute("offline") . "\n\n"
-            . "Tag: " . trim($Qreq->tag) . "\n"
-            . "\n"
-            . $real . $null;
-        downloadText($text, "rank");
-    } else
-        Conf::msg_error($tagger->error_html);
-}
-
-
 // download format checker reports for selected papers
 if ($Qreq->fn == "get" && $Qreq->getfn == "checkformat"
     && $Me->privChair && !$SSel->is_empty()) {

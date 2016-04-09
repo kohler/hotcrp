@@ -196,6 +196,67 @@ class GetScores_SearchAction extends SearchAction {
     }
 }
 
+class GetVotes_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        if (!$user->isPC)
+            return self::EPERM;
+        $tagger = new Tagger($user);
+        if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
+            $showtag = trim($qreq->tag); // no "23~" prefix
+            $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag)));
+            $texts = array();
+            while (($prow = PaperInfo::fetch($result, $user)))
+                if ($user->can_view_tags($prow, true))
+                    arrayappend($texts[$prow->paperId], array($showtag, (float) $prow->tagIndex, $prow->paperId, $prow->title));
+            downloadCSV($ssel->reorder($texts), ["tag", "votes", "paper", "title"], "votes");
+        } else
+            Conf::msg_error($tagger->error_html);
+    }
+}
+
+class GetRank_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        $settingrank = $Conf->setting("tag_rank") && $qreq->tag == "~" . $Conf->setting_data("tag_rank");
+        if (!$user->isPC && !($user->is_reviewer() && $settingrank))
+            return self::EPERM;
+        $tagger = new Tagger($user);
+        if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
+            $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
+            $real = "";
+            $null = "\n";
+            while (($prow = PaperInfo::fetch($result, $user)))
+                if ($user->can_change_tag($prow, $tag, null, 1)) {
+                    if ($prow->tagIndex === null)
+                        $null .= "X\t$prow->paperId\t$prow->title\n";
+                    else if ($real === "" || $lastIndex == $row->tagIndex - 1)
+                        $real .= "\t$prow->paperId\t$prow->title\n";
+                    else if ($lastIndex == $row->tagIndex)
+                        $real .= "=\t$prow->paperId\t$prow->title\n";
+                    else
+                        $real .= str_pad("", min($prow->tagIndex - $lastIndex, 5), ">") . "\t$prow->paperId\t$prow->title\n";
+                    $lastIndex = $prow->tagIndex;
+                }
+            $text = "# Edit the rank order by rearranging this file's lines.
+
+# The first line has the highest rank. Lines starting with \"#\" are
+# ignored. Unranked papers appear at the end in lines starting with
+# \"X\", sorted by overall merit. Create a rank by removing the \"X\"s and
+# rearranging the lines. Lines starting with \"=\" mark papers with the
+# same rank as the preceding papers. Lines starting with \">>\", \">>>\",
+# and so forth indicate rank gaps between papers. When you are done,
+# upload the file at\n"
+                . "#   " . hoturl_absolute("offline") . "\n\n"
+                . "Tag: " . trim($qreq->tag) . "\n"
+                . "\n"
+                . $real . $null;
+            downloadText($text, "rank");
+        } else
+            Conf::msg_error($tagger->error_html);
+    }
+}
+
 class GetLead_SearchAction extends SearchAction {
     private $islead;
     public function __construct($islead) {
@@ -223,5 +284,7 @@ SearchActions::register("get", "revformz", SiteLoader::API_GET, new GetReviewFor
 SearchActions::register("get", "rev", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(false));
 SearchActions::register("get", "revz", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(true));
 SearchActions::register("get", "scores", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetScores_SearchAction);
+SearchActions::register("get", "votes", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetVotes_SearchAction);
+SearchActions::register("get", "rank", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRank_SearchAction);
 SearchActions::register("get", "lead", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(true));
 SearchActions::register("get", "shepherd", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(false));
