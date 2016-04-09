@@ -90,7 +90,7 @@ class PaperStatus {
             return null;
 
         $pj = (object) array();
-        $pj->id = (int) $prow->paperId;
+        $pj->pid = (int) $prow->paperId;
         $pj->title = $prow->title;
 
         if ($prow->timeWithdrawn > 0) {
@@ -748,10 +748,13 @@ class PaperStatus {
         global $Conf, $Now;
 
         $paperid = null;
-        if (isset($pj->id) && is_int($pj->id) && $pj->id > 0)
+        if (isset($pj->pid) && is_int($pj->pid) && $pj->pid > 0)
+            $paperid = $pj->pid;
+        else if (!isset($pj->pid) && isset($pj->id) && is_int($pj->id) && $pj->id > 0)
             $paperid = $pj->id;
-        else if (isset($pj->id)) {
-            $this->set_error_html("id", "Format error [id]");
+        else if (isset($pj->pid) || isset($pj->id)) {
+            $key = isset($pj->pid) ? "pid" : "id";
+            $this->set_error_html($key, "Format error [$key]");
             return false;
         }
 
@@ -761,8 +764,8 @@ class PaperStatus {
                                     $this->contact);
         if ($prow)
             $old_pj = $this->row_to_json($prow, ["forceShow" => true, "docids" => true]);
-        if ($pj && $old_pj && $paperid != $old_pj->id) {
-            $this->set_error_html("id", "Saving paper with different ID");
+        if ($pj && $old_pj && $paperid != $old_pj->pid) {
+            $this->set_error_html("pid", "Saving paper with different ID");
             return false;
         }
 
@@ -907,7 +910,7 @@ class PaperStatus {
             } else {
                 $result = Dbl::qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
-                    || !($paperid = $pj->id = $result->insert_id))
+                    || !($paperid = $pj->pid = $result->insert_id))
                     return $this->set_error_html(false, "Could not create paper.");
                 if (count($this->uploaded_documents))
                     Dbl::qe_raw("update PaperStorage set paperId=$paperid where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
