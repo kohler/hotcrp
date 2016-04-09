@@ -162,6 +162,14 @@ src/review.php
 src/reviewformlibrary.json
 src/reviewtable.php
 src/reviewtimes.php
+src/sa/sa_assign.php
+src/sa/sa_decide.php
+src/sa/sa_get_json.php
+src/sa/sa_get_rev.php
+src/sa/sa_get_revpref.php
+src/sa/sa_get_sub.php
+src/sa/sa_mail.php
+src/sa/sa_tag.php
 src/sample.pdf
 src/schema.sql
 src/searchactions.php
