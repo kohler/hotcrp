@@ -3,6 +3,15 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class GetPcassignments_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        if (!$user->is_manager())
+            return self::EPERM;
+        list($header, $texts) = SearchActions::pcassignments_csv_data($user, $ssel->selection());
+        downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
+    }
+}
+
 class GetReviewBase_SearchAction extends SearchAction {
     protected $isform;
     protected $iszip;
@@ -132,6 +141,61 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     }
 }
 
+class GetScores_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1)));
+
+        // compose scores; NB chair is always forceShow
+        $errors = array();
+        $texts = $any_scores = array();
+        $any_decision = $any_reviewer_identity = false;
+        $rf = ReviewForm::get();
+        $bad_pid = -1;
+        while (($row = PaperInfo::fetch($result, $user))) {
+            if (!$row->reviewSubmitted || $row->paperId == $bad_pid)
+                /* skip */;
+            else if (($whyNot = $user->perm_view_review($row, null, true))) {
+                $errors[] = whyNotText($whyNot, "view reviews for") . "<br />";
+                $bad_pid = $row->paperId;
+            } else {
+                $a = array("paper" => $row->paperId, "title" => $row->title);
+                if ($row->outcome && $user->can_view_decision($row, true))
+                    $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
+                $view_bound = $user->view_score_bound($row, $row, true);
+                $this_scores = false;
+                foreach ($rf->forder as $field => $f)
+                    if ($f->view_score > $view_bound && $f->has_options
+                        && ($row->$field || $f->allow_empty)) {
+                        $a[$f->abbreviation] = $f->unparse_value($row->$field);
+                        $any_scores[$f->abbreviation] = $this_scores = true;
+                    }
+                if ($user->can_view_review_identity($row, $row, true)) {
+                    $any_reviewer_identity = true;
+                    $a["email"] = $row->reviewEmail;
+                    $a["reviewername"] = trim($row->reviewFirstName . " " . $row->reviewLastName);
+                }
+                if ($this_scores)
+                    arrayappend($texts[$row->paperId], $a);
+            }
+        }
+
+        if (count($texts)) {
+            $header = array("paper", "title");
+            if ($any_decision)
+                $header[] = "decision";
+            if ($any_reviewer_identity)
+                array_push($header, "reviewername", "email");
+            $header = array_merge($header, array_keys($any_scores));
+            downloadCSV($ssel->reorder($texts), $header, "scores", ["selection" => true]);
+        } else {
+            if (!count($errors))
+                $errors[] = "No papers selected.";
+            Conf::msg_error(join("", $errors));
+        }
+    }
+}
+
 class GetLead_SearchAction extends SearchAction {
     private $islead;
     public function __construct($islead) {
@@ -152,9 +216,12 @@ class GetLead_SearchAction extends SearchAction {
     }
 }
 
+
+SearchActions::register("get", "pcassignments", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetPcassignments_SearchAction);
 SearchActions::register("get", "revform", SiteLoader::API_GET, new GetReviewForm_SearchAction(false));
 SearchActions::register("get", "revformz", SiteLoader::API_GET, new GetReviewForm_SearchAction(true));
 SearchActions::register("get", "rev", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(false));
 SearchActions::register("get", "revz", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(true));
+SearchActions::register("get", "scores", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetScores_SearchAction);
 SearchActions::register("get", "lead", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(true));
 SearchActions::register("get", "shepherd", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(false));

@@ -160,69 +160,6 @@ if ($Qreq->fn == "get" && $Qreq->getfn == "rank"
 }
 
 
-// download current assignments
-if ($Qreq->fn == "get" && $Qreq->getfn == "pcassignments" && $Me->is_manager() && !$SSel->is_empty()) {
-    list($header, $texts) = SearchActions::pcassignments_csv_data($Me, $SSel->selection());
-    downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
-}
-
-
-// download scores and, maybe, anonymity for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "scores" && $Me->isPC && !$SSel->is_empty()) {
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => $SSel->selection(), "allReviewScores" => 1, "reviewerName" => 1)));
-
-    // compose scores; NB chair is always forceShow
-    $errors = array();
-    $texts = $any_scores = array();
-    $any_decision = $any_reviewer_identity = false;
-    $rf = ReviewForm::get();
-    $bad_pid = -1;
-    while (($row = PaperInfo::fetch($result, $Me))) {
-        if (!$row->reviewSubmitted || $row->paperId == $bad_pid)
-            /* skip */;
-        else if (($whyNot = $Me->perm_view_review($row, null, true))) {
-            $errors[] = whyNotText($whyNot, "view reviews for") . "<br />";
-            $bad_pid = $row->paperId;
-        } else {
-            $a = array("paper" => $row->paperId, "title" => $row->title, "blind" => $row->blind);
-            if ($row->outcome && $Me->can_view_decision($row, true))
-                $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
-            $view_bound = $Me->view_score_bound($row, $row, true);
-            $this_scores = false;
-            foreach ($rf->forder as $field => $f)
-                if ($f->view_score > $view_bound && $f->has_options
-                    && ($row->$field || $f->allow_empty)) {
-                    $a[$f->abbreviation] = $f->unparse_value($row->$field);
-                    $any_scores[$f->abbreviation] = $this_scores = true;
-                }
-            if ($Me->can_view_review_identity($row, $row, true)) {
-                $any_reviewer_identity = true;
-                $a["revieweremail"] = $row->reviewEmail;
-                $a["reviewername"] = trim($row->reviewFirstName . " " . $row->reviewLastName);
-            }
-            if ($this_scores)
-                arrayappend($texts[$row->paperId], $a);
-        }
-    }
-
-    if (count($texts)) {
-        $header = array("paper", "title");
-        if ($Conf->subBlindOptional())
-            $header[] = "blind";
-        if ($any_decision)
-            $header[] = "decision";
-        $header = array_merge($header, array_keys($any_scores));
-        if ($any_reviewer_identity)
-            array_push($header, "revieweremail", "reviewername");
-        downloadCSV($SSel->reorder($texts), $header, "scores", ["selection" => true]);
-    } else {
-        if (!count($errors))
-            $errors[] = "No papers selected.";
-        Conf::msg_error(join("", $errors));
-    }
-}
-
-
 // download format checker reports for selected papers
 if ($Qreq->fn == "get" && $Qreq->getfn == "checkformat"
     && $Me->privChair && !$SSel->is_empty()) {
