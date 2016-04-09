@@ -27,6 +27,41 @@ class GetDocument_SearchAction extends SearchAction {
     }
 }
 
+class GetCheckFormat_SearchAction extends SearchAction {
+    function run(Contact $user, $qreq, $ssel) {
+        global $Conf;
+        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
+        $papers = [];
+        while (($prow = PaperInfo::fetch($result, $user)))
+            if ($user->can_view_pdf($prow))
+                $papers[$prow->paperId] = $prow;
+        $csvg = downloadCSV(false, ["paper", "title", "pages", "format"], "formatcheck");
+        echo $csvg->headerline;
+        $format = $Conf->setting_data("sub_banal", "");
+        foreach ($ssel->reorder($papers) as $prow) {
+            $pages = "?";
+            if ($prow->mimetype == "application/pdf") {
+                $cf = new CheckFormat;
+                $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
+                if ($cf->analyzePaper($prow->paperId, $dtype, $format)) {
+                    $format = array();
+                    foreach (CheckFormat::$error_types as $en => $etxt)
+                        if ($cf->errors & $en)
+                            $format[] = $etxt;
+                    $format = (empty($format) ? "ok" : join(",", $format));
+                    $pages = $cf->pages;
+                } else
+                    $format = "error";
+            } else
+                $format = "notpdf";
+            echo $prow->paperId, ",", CsvGenerator::quote($prow->title), ",", $pages, ",", CsvGenerator::quote($format), "\n";
+            ob_flush();
+            flush();
+        }
+        exit;
+    }
+}
+
 class GetAbstract_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -182,6 +217,7 @@ SearchActions::register("get", "final", SiteLoader::API_GET | SiteLoader::API_PA
 foreach (PaperOption::option_list() as $o)
     if ($o->is_document())
         SearchActions::register("get", "opt-{$o->abbr}", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction($o->id));
+SearchActions::register("get", "checkformat", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetCheckFormat_SearchAction);
 SearchActions::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchActions::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);
 SearchActions::register("get", "contact", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetContacts_SearchAction);

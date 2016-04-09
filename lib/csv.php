@@ -220,7 +220,7 @@ class CsvGenerator {
     private $type;
     private $flags;
     private $lines = array();
-    private $headerline = "";
+    public $headerline = "";
     private $selection = null;
 
     function __construct($type = self::TYPE_COMMA) {

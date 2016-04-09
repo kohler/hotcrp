@@ -1001,12 +1001,16 @@ function downloadCSV($info, $header, $filename, $options = array()) {
         $csvg->set_header($header, true);
     if (get($options, "selection"))
         $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
-    $csvg->add($info);
-    if (get($options, "sort"))
-        $csvg->sort($options["sort"]);
     $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !get($options, "inline"));
-    $csvg->download();
-    exit;
+    if ($info === false)
+        return $csvg;
+    else {
+        $csvg->add($info);
+        if (get($options, "sort"))
+            $csvg->sort($options["sort"]);
+        $csvg->download();
+        exit;
+    }
 }
 
 function downloadText($text, $filename, $inline = false) {

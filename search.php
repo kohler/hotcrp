@@ -102,47 +102,6 @@ if ($Qreq->fn) {
 }
 
 
-// download format checker reports for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "checkformat"
-    && $Me->privChair && !$SSel->is_empty()) {
-    $result = Dbl::qe_raw("select paperId, title, mimetype from Paper where paperId" . $SSel->sql_predicate() . " order by paperId");
-    $format = $Conf->setting_data("sub_banal", "");
-
-    // generate output gradually since this takes so long
-    downloadText(false, "formatcheck", false);
-    echo "#paper\tformat\tpages\ttitle\n";
-
-    // compose report
-    $texts = array();
-    while ($row = edb_row($result))
-        $texts[$row[0]] = $row;
-    foreach ($SSel->reorder($texts) as $row) {
-        if ($row[2] == "application/pdf") {
-            $cf = new CheckFormat;
-            if ($cf->analyzePaper($row[0], false, $format)) {
-                $fchk = array();
-                foreach (CheckFormat::$error_types as $en => $etxt)
-                    if ($cf->errors & $en)
-                        $fchk[] = $etxt;
-                $fchk = (count($fchk) ? join(",", $fchk) : "ok");
-                $pp = $cf->pages;
-            } else {
-                $fchk = "error";
-                $pp = "?";
-            }
-        } else {
-            $fchk = "notpdf";
-            $pp = "?";
-        }
-        echo $row[0], "\t", $fchk, "\t", $pp, "\t", $row[1], "\n";
-        ob_flush();
-        flush();
-    }
-
-    exit;
-}
-
-
 // download ACM CMS information for selected papers
 if ($Qreq->fn == "get" && $Qreq->getfn == "acmcms"
     && !$SSel->is_empty() && $Me->privChair) {
