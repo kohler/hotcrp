@@ -4,9 +4,10 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class GetPcassignments_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
     function run(Contact $user, $qreq, $ssel) {
-        if (!$user->is_manager())
-            return self::EPERM;
         list($header, $texts) = SearchActions::pcassignments_csv_data($user, $ssel->selection());
         downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
     }
@@ -78,6 +79,9 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
     public function __construct($iszip) {
         parent::__construct(true, $iszip);
     }
+    function allow(Contact $user) {
+        return $user->is_reviewer();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $rf = ReviewForm::get();
@@ -116,6 +120,9 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     public function __construct($iszip) {
         parent::__construct(false, $iszip);
     }
+    function allow(Contact $user) {
+        return $user->can_view_some_review();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1)));
@@ -142,6 +149,9 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
 }
 
 class GetScores_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->can_view_some_review();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1)));
@@ -197,10 +207,11 @@ class GetScores_SearchAction extends SearchAction {
 }
 
 class GetVotes_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->isPC;
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!$user->isPC)
-            return self::EPERM;
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
             $showtag = trim($qreq->tag); // no "23~" prefix
@@ -216,6 +227,10 @@ class GetVotes_SearchAction extends SearchAction {
 }
 
 class GetRank_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        global $Conf;
+        return $Conf->setting("tag_rank") && $user->is_reviewer();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $settingrank = $Conf->setting("tag_rank") && $qreq->tag == "~" . $Conf->setting_data("tag_rank");
@@ -262,10 +277,11 @@ class GetLead_SearchAction extends SearchAction {
     public function __construct($islead) {
         $this->islead = $islead;
     }
+    function allow(Contact $user) {
+        return $user->isPC;
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!$user->isPC)
-            return self::EPERM;
         $type = $this->islead ? "lead" : "shepherd";
         $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "reviewerName" => $type)));
         $texts = array();

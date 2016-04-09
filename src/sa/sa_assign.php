@@ -4,6 +4,9 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Assign_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->privChair;
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $mt = $qreq->assignfn;
@@ -12,9 +15,7 @@ class Assign_SearchAction extends SearchAction {
         if ($mpc != "" && $mpc != "0")
             $pc = Contact::find_by_email($mpc);
 
-        if (!$user->privChair)
-            Conf::msg_error("Only PC chairs can set assignments and conflicts.");
-        else if ($mt == "auto") {
+        if ($mt == "auto") {
             $t = (in_array($qreq->t, array("acc", "s")) ? $qreq->t : "all");
             $q = join("+", $ssel->selection());
             go(hoturl("autoassign", "pap=$q&t=$t&q=$q"));

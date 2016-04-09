@@ -15,10 +15,11 @@ class GetJson_SearchAction extends SearchAction {
             $this->zipdoc->add_as($drow, $dj->content_file);
         }
     }
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf, $Opt;
-        if (!$user->is_manager())
-            return self::EPERM;
         $q = $Conf->paperQuery($user, ["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $result = Dbl::qe_raw($q);
         $pj = [];

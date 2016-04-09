@@ -105,10 +105,11 @@ class GetAuthors_SearchAction extends SearchAction {
         }
         return $contact_map;
     }
+    function allow(Contact $user) {
+        return $user->can_view_some_authors();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!($user->is_manager() || ($user->isPC && !$Conf->subBlindAlways())))
-            return self::EPERM;
         $contact_map = self::contact_map($ssel);
         $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
         $texts = array();
@@ -147,10 +148,11 @@ class GetAuthors_SearchAction extends SearchAction {
 
 /* NB this search action is actually unavailable via the UI */
 class GetContacts_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!$user->is_manager())
-            return self::EPERM;
         $contact_map = GetAuthors_SearchAction::contact_map($ssel);
         $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
         while (($prow = PaperInfo::fetch($result, $user)))
@@ -165,10 +167,11 @@ class GetContacts_SearchAction extends SearchAction {
 }
 
 class GetPcconflicts_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!$user->is_manager())
-            return self::EPERM;
         $allConflictTypes = Conflict::$type_descriptions;
         $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
         $allConflictTypes[CONFLICT_AUTHOR] = "Author";

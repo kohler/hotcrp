@@ -5,6 +5,9 @@
 
 class SearchAction {
     const EPERM = "Permission error.";
+    public function allow(Contact $user) {
+        return true;
+    }
     public function run(Contact $user, $qreq, $selection) {
         return "Unsupported.";
     }
@@ -63,6 +66,8 @@ class SearchActions {
             $error = "Missing credentials.";
         else if (($uf[1] & SiteLoader::API_PAPER) && $selection->is_empty())
             $error = "No papers selected.";
+        else if (!$uf[0]->allow($user))
+            $error = "Permission error.";
         else
             $error = $uf[0]->run($user, $qreq, $selection);
         if (is_string($error) && $qreq->ajax)

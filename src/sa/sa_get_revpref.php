@@ -8,6 +8,9 @@ class GetRevpref_SearchAction extends SearchAction {
     public function __construct($extended) {
         $this->extended = $extended;
     }
+    function allow(Contact $user) {
+        return $user->isPC;
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf, $Opt;
         // maybe download preferences for someone else
@@ -45,10 +48,11 @@ class GetRevpref_SearchAction extends SearchAction {
 }
 
 class GetAllRevpref_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->is_manager();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf, $Opt;
-        if (!$user->is_manager())
-            return self::EPERM;
         $q = $Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
         $result = Dbl::qe_raw($q);
         $texts = array();

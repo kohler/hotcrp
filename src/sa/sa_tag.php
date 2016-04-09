@@ -4,10 +4,11 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Tag_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->can_change_some_tag();
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        if (!$user->isPC)
-            return self::EPERM;
         $papers = $ssel->selection();
 
         $act = $qreq->tagfn;

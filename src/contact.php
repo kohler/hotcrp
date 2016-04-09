@@ -2716,6 +2716,10 @@ class Contact {
         return $this->can_administer($prow, $forceShow);
     }
 
+    function can_set_some_decision($forceShow = null) {
+        return $this->can_administer(null, $forceShow);
+    }
+
     function can_view_formula(Formula $formula) {
         return $formula->view_score($this) > $this->permissive_view_score_bound();
     }
@@ -2908,8 +2912,11 @@ class Contact {
         return $whyNot;
     }
 
-    function can_change_some_tag(PaperInfo $prow, $forceShow = null) {
-        return $this->can_change_tag($prow, null, null, null, $forceShow);
+    function can_change_some_tag(PaperInfo $prow = null, $forceShow = null) {
+        if (!$prow)
+            return $this->isPC;
+        else
+            return $this->can_change_tag($prow, null, null, null, $forceShow);
     }
 
     function perm_change_some_tag(PaperInfo $prow, $forceShow = null) {

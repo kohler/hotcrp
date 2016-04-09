@@ -4,6 +4,9 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Decide_SearchAction extends SearchAction {
+    function allow(Contact $user) {
+        return $user->can_set_some_decision(true);
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $o = cvtint($qreq->decision);
@@ -13,7 +16,7 @@ class Decide_SearchAction extends SearchAction {
         $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection())));
         $success = $fails = array();
         while (($prow = PaperInfo::fetch($result, $user)))
-            if ($user->can_set_decision($prow))
+            if ($user->can_set_decision($prow, true))
                 $success[] = $prow->paperId;
             else
                 $fails[] = "#" . $prow->paperId;
