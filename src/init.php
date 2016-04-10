@@ -210,11 +210,15 @@ function expand_includes($sitedir, $files, $expansions = array()) {
     return $results;
 }
 
-function read_included_options($sitedir, $files) {
+function read_included_options($sitedir, &$files) {
     global $Opt;
-    foreach (expand_includes($sitedir, $files) as $f)
-        if (!@include $f)
-            $Opt["missing"][] = $f;
+    if (is_string($files))
+        $files = [$files];
+    for ($i = 0; $i != count($files); ++$i) {
+        foreach (expand_includes($sitedir, $files[$i]) as $f)
+            if (!@include $f)
+                $Opt["missing"][] = $f;
+    }
 }
 
 global $Opt, $OptOverride;
