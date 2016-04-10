@@ -371,29 +371,27 @@ div.multimessage > div:first-child {
 
 /* Line links, as in bottom of search table */
 .linelinks1 .lll1, .linelinks2 .lll2, .linelinks3 .lll3, .linelinks4 .lll4,
-.linelinks5 .lll5 {
+.linelinks5 .lll5, .linelinks6 .lll6, .linelinks7 .lll7, .linelinks8 .lll8 {
 	font-weight: bold;
 }
-.linelinks1 .lll1 a, .linelinks2 .lll2 a,
-.linelinks3 .lll3 a, .linelinks4 .lll4 a,
-.linelinks5 .lll5 a {
+.linelinks1 .lll1 a, .linelinks2 .lll2 a, .linelinks3 .lll3 a, .linelinks4 .lll4 a,
+.linelinks5 .lll5 a, .linelinks6 .lll6 a, .linelinks7 .lll7 a, .linelinks8 .lll8 a {
 	text-decoration: none;
 	color: black;
 }
-.linelinks1 .lll1 a:hover, .linelinks2 .lll2 a:hover,
-.linelinks3 .lll3 a:hover, .linelinks4 .lll4 a:hover,
-.linelinks5 .lll5 a:hover {
+.linelinks1 .lll1 a:hover, .linelinks2 .lll2 a:hover, .linelinks3 .lll3 a:hover, .linelinks4 .lll4 a:hover,
+.linelinks5 .lll5 a:hover, .linelinks6 .lll6 a:hover, .linelinks7 .lll7 a:hover, .linelinks8 .lll8 a:hover {
 	text-decoration: underline;
 }
 .linelinks1 .lld1, .linelinks2 .lld2, .linelinks3 .lld3, .linelinks4 .lld4,
-.linelinks5 .lld5 {
+.linelinks5 .lld5, .linelinks6 .lld6, .linelinks7 .lld7, .linelinks8 .lld8 {
 	display: inline;
 }
 .linelinks1 td.lld1, .linelinks2 td.lld2, .linelinks3 td.lld3, .linelinks4 td.lld4,
-.linelinks5 td.lld5 {
+.linelinks5 td.lld5, .linelinks6 td.lld6, .linelinks7 td.lld7, .linelinks8 td.lld8 {
 	display: table-cell;
 }
-.lld1, .lld2, .lld3, .lld4, .lld5 {
+.lld1, .lld2, .lld3, .lld4, .lld5, .lld6, .lld7, .lld8 {
  	display: none;
 }
 

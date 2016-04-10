@@ -2026,6 +2026,14 @@ class Contact {
         return $this->perm_view_paper($prow, true);
     }
 
+    function can_view_some_pdf() {
+        global $Conf;
+        return $this->privChair
+            || $this->is_author()
+            || $this->has_review()
+            || ($this->isPC && $Conf->timePCViewSomePaper(true));
+    }
+
     function can_view_paper_manager(PaperInfo $prow = null) {
         global $Opt;
         if ($this->privChair)
@@ -2121,6 +2129,8 @@ class Contact {
 
     function can_view_some_paper_option($opt) {
         if (!is_object($opt) && !($opt = PaperOption::find($opt)))
+            return false;
+        if ($opt->has_document() && !$this->can_view_some_pdf())
             return false;
         $oview = $opt->visibility;
         return $this->is_author()

@@ -3,10 +3,47 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class Get_SearchAction extends SearchAction {
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $xactions = SearchActions::list_subactions("get", $user, $qreq, $pl);
+        usort($xactions, function ($a, $b) { return $a[0] - $b[0]; });
+        $sel_opt = array();
+        $last_group = null;
+        foreach ($xactions as $xact) {
+            if ($xact[2] !== $last_group) {
+                $sel_opt[] = ["optgroup", $xact[2]];
+                $last_group = $xact[2];
+            }
+            $sel_opt[] = ["value" => $xact[1], "label" => $xact[3]];
+        }
+        error_log(json_encode($sel_opt));
+        if (!empty($sel_opt)) {
+            $actions[] = [0, "get", "Download", "<b>:</b> &nbsp;"
+                . Ht::select("getfn", $sel_opt, $qreq->getfn,
+                             ["tabindex" => 6, "class" => "wantcrpfocus", "style" => "max-width:10em"])
+                . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
+        }
+    }
+    function run(Contact $user, $qreq, $ssel) {
+        return self::ENOENT;
+    }
+}
+
 class GetDocument_SearchAction extends SearchAction {
     private $dt;
     public function __construct($dt) {
         $this->dt = $dt;
+    }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $opt = PaperOption::find_document($this->dt);
+        if (!$user->can_view_some_pdf())
+            /* skip */;
+        else if ($opt->final && $pl->any->final)
+            $actions[] = [$opt->position, $this->subname, "Documents", $this->dt == DTYPE_FINAL ? "Final papers" : pluralize($opt->name)];
+        else if ($this->dt == DTYPE_SUBMISSION)
+            $actions[] = [$opt->position + 100, $this->subname, "Documents", $pl->any->final ? "Submissions" : "Papers"];
+        else if (!$opt->final)
+            $actions[] = [$opt->position + 100, $this->subname, "Documents", pluralize($opt->name)];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -28,6 +65,10 @@ class GetDocument_SearchAction extends SearchAction {
 }
 
 class GetCheckFormat_SearchAction extends SearchAction {
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        if ($user->is_manager())
+            $actions[] = [199, $this->subname, "Documents", "Format check"];
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
@@ -63,6 +104,9 @@ class GetCheckFormat_SearchAction extends SearchAction {
 }
 
 class GetAbstract_SearchAction extends SearchAction {
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [200, $this->subname, "Paper information", "Abstracts"];
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "topics" => 1)));
@@ -107,6 +151,9 @@ class GetAuthors_SearchAction extends SearchAction {
     }
     function allow(Contact $user) {
         return $user->can_view_some_authors();
+    }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [201, $this->subname, "Paper information", $user->is_manager() ? "Authors &amp; contacts" : "Authors"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -170,6 +217,9 @@ class GetPcconflicts_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [260, $this->subname, "Paper information", "PC conflicts"];
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $allConflictTypes = Conflict::$type_descriptions;
@@ -197,6 +247,11 @@ class GetPcconflicts_SearchAction extends SearchAction {
 }
 
 class GetTopics_SearchAction extends SearchAction {
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        global $Conf;
+        if ($Conf->has_topics())
+            $actions[] = [250, $this->subname, "Paper information", "Topics"];
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "topics" => 1)));
@@ -215,6 +270,7 @@ class GetTopics_SearchAction extends SearchAction {
     }
 }
 
+SearchActions::register("get", null, 0, new Get_SearchAction);
 SearchActions::register("get", "paper", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_SUBMISSION));
 SearchActions::register("get", "final", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_FINAL));
 foreach (PaperOption::option_list() as $o)

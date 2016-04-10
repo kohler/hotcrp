@@ -7,6 +7,47 @@ class Tag_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->can_change_some_tag();
     }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        if (!$user->isPC || Navigation::page() === "reviewprefs")
+            return;
+
+        // tagtype cell
+        $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
+        $tagextra = array("id" => "placttagtype");
+        if ($user->privChair) {
+            $tagopt["xxxb"] = null;
+            $tagopt["da"] = "Clear twiddle";
+            $tagopt["cr"] = "Calculate rank";
+            $tagextra["onchange"] = "plactions_dofold()";
+            Ht::stash_script("plactions_dofold()", "plactions_dofold");
+        }
+
+        // tag name cell
+        $t = "";
+        if ($user->privChair) {
+            $t .= '<span class="fx99"><a class="q" href="#" onclick="return fold(\'placttags\')">'
+                . expander(null, 0) . "</a></span>";
+        }
+        $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
+            . Ht::entry("tag", $qreq->tag,
+                        ["size" => 15, "onfocus" => "autosub('tag',this)", "class" => "wantcrpfocus"])
+            . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "onclick" => "return plist_submit.call(this)"]);
+        if ($user->privChair) {
+            $t .= "<div class='fx'><div style='margin:2px 0'>"
+                . Ht::checkbox("tagcr_gapless", 1, $qreq->tagcr_gapless, array("style" => "margin-left:0"))
+                . "&nbsp;" . Ht::label("Gapless order") . "</div>"
+                . "<div style='margin:2px 0'>Using: &nbsp;"
+                . Ht::select("tagcr_method", PaperRank::methods(), $qreq->tagcr_method)
+                . "</div>"
+                . "<div style='margin:2px 0'>Source tag: &nbsp;~"
+                . Ht::entry("tagcr_source", $qreq->tagcr_source, array("size" => 15))
+                . "</div></div>";
+        }
+
+        $actions[] = [500, "tag", "Tag", "<b>:</b> &nbsp;"
+            . Ht::select("tagfn", $tagopt, $qreq->tagfn, $tagextra) . " &nbsp;",
+            ["id" => "foldplacttags", "class" => "foldc fold99c", "content" => $t]];
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $papers = $ssel->selection();

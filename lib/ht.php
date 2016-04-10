@@ -108,8 +108,10 @@ class Ht {
         $optionstyles = get($js, "optionstyles", null);
         $optgroup = "";
         foreach ($opt as $value => $info) {
-            if (is_array($info) && $info[0] === "optgroup")
+            if (is_array($info) && isset($info[0]) && $info[0] === "optgroup")
                 $info = (object) array("type" => "optgroup", "label" => get($info, 1));
+            else if (is_array($info))
+                $info = (object) $info;
             else if (is_scalar($info)) {
                 $info = (object) array("label" => $info);
                 if (is_array($disabled) && isset($disabled[$value]))
@@ -117,6 +119,8 @@ class Ht {
                 if ($optionstyles && isset($optionstyles[$value]))
                     $info->style = $optionstyles[$value];
             }
+            if (isset($info->value))
+                $value = $info->value;
 
             if ($info === null)
                 $x .= '<option label=" " disabled="disabled"></option>';

@@ -18,6 +18,9 @@ class GetJson_SearchAction extends SearchAction {
     function allow(Contact $user) {
         return $user->is_manager();
     }
+    function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
+        $actions[] = [290 + $this->iszip, $this->subname, "Paper information", $this->iszip ? "JSON with attachments" : "JSON"];
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf, $Opt;
         $q = $Conf->paperQuery($user, ["paperId" => $ssel->selection(), "topics" => true, "options" => true]);

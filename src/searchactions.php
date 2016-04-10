@@ -4,9 +4,13 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SearchAction {
+    public $subname;
+    const ENOENT = "No such action.";
     const EPERM = "Permission error.";
     public function allow(Contact $user) {
         return true;
+    }
+    public function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
     }
     public function run(Contact $user, $qreq, $selection) {
         return "Unsupported.";
@@ -17,11 +21,11 @@ class SearchActions {
     static private $loaded = false;
     static private $byname = [];
 
-
     static function load() {
         global $ConfSitePATH, $Opt;
         if (self::$loaded)
             return;
+        self::$loaded = true;
         foreach (expand_includes($ConfSitePATH, "src/sa/*.php") as $f)
             include $f;
         if (isset($Opt["searchaction_include"])
@@ -39,6 +43,7 @@ class SearchActions {
             self::$byname[$name] = [];
         assert(!isset(self::$byname[$name][(string) $subname]));
         self::$byname[$name][(string) $subname] = [$fn, $flags];
+        $fn->subname = $subname;
     }
 
     static function has_function($name, $subname = null) {
@@ -75,6 +80,24 @@ class SearchActions {
         else if (is_string($error))
             Conf::msg_error($error);
         return $error;
+    }
+
+    static function list_actions(Contact $user, $qreq, PaperList $pl) {
+        self::load();
+        $actions = [];
+        foreach (self::$byname as $ufm)
+            if (isset($ufm[""]) && $ufm[""][0]->allow($user))
+                $ufm[""][0]->list_actions($user, $qreq, $pl, $actions);
+        return $actions;
+    }
+
+    static function list_subactions($name, Contact $user, $qreq, PaperList $pl) {
+        $actions = [];
+        if (isset(self::$byname[$name]))
+            foreach (self::$byname[$name] as $subname => $uf)
+                if ($subname !== "" && $uf[0]->allow($user))
+                    $uf[0]->list_actions($user, $qreq, $pl, $actions);
+        return $actions;
     }
 
 

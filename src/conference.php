@@ -1310,6 +1310,11 @@ class Conf {
         else
             return !$pdf && $this->can_pc_see_all_submissions();
     }
+    function timePCViewSomePaper($pdf) {
+        return $this->setting("papersub")
+            ? !$pdf || $this->_pc_see_pdf
+            : !$pdf || $this->can_pc_see_all_submissions();
+    }
     function timeEmailChairAboutReview() {
         return get($this->settings, "rev_notifychair") > 0;
     }

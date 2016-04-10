@@ -92,7 +92,7 @@ class PaperList {
     private $_reviewer = null;
     private $_xreviewer = false;
     public $review_list;
-    public $live_table;
+    public $table_type;
     public $nformat_onpage;
 
     private $sortable;
@@ -377,161 +377,33 @@ class PaperList {
         return $this->_xreviewer;
     }
 
-    private function _footer($ncol, $listname, $extra) {
+    private function _footer($ncol, $extra) {
         global $Conf;
         if ($this->count == 0)
             return "";
 
-        $revpref = ($listname == "editReviewPreference");
-        $want_plactions_dofold = false;
-        $lllgroups = [];
-
-        // Download
-        $sel_opt = array();
-        if ($revpref) {
-            $sel_opt["revpref"] = "Preference file";
-            $sel_opt["revprefx"] = "Preference file with abstracts";
-            $sel_opt["abstract"] = "Abstracts";
-        } else {
-            if ($this->any->final) {
-                $sel_opt["final"] = "Final papers";
-                foreach (PaperOption::option_list() as $id => $o)
-                    if (($o->type == "pdf" || $o->type == "slides")
-                        && $o->final)
-                        $sel_opt["opt-" . $o->abbr] = htmlspecialchars(pluralx($o->name, 2));
-                $sel_opt["paper"] = "Submitted papers";
-            } else if ($this->any->paper)
-                $sel_opt["paper"] = "Papers";
-            $sel_opt["abstract"] = "Abstracts";
-            $sel_opt["revform"] = "Review forms";
-            $sel_opt["revformz"] = "Review forms (zip)";
-            if ($this->contact->is_reviewer()) {
-                $sel_opt["rev"] = "All reviews";
-                $sel_opt["revz"] = "All reviews (zip)";
-            }
-            if ($this->contact->privChair)
-                $sel_opt["pcassignments"] = "PC assignments";
-        }
-        if ($this->contact->privChair)
-            $sel_opt["authors"] = "Authors &amp; contacts";
-        else if ($this->contact->has_review()
-                 && $Conf->submission_blindness() != Conf::BLIND_ALWAYS)
-            $sel_opt["authors"] = "Authors";
-        $sel_opt["topics"] = "Topics";
-        if ($this->contact->privChair) {
-            $sel_opt["checkformat"] = "Format check";
-            $sel_opt["pcconf"] = "PC conflicts";
-            $sel_opt["allrevpref"] = "PC review preferences";
-        }
-        if (!$revpref && ($this->contact->privChair || ($this->contact->isPC && $Conf->timePCViewAllReviews())))
-            $sel_opt["scores"] = "Scores";
-        if ($Conf->has_any_lead_or_shepherd()) {
-            $sel_opt["lead"] = "Discussion leads";
-            $sel_opt["shepherd"] = "Shepherds";
-        }
-        if ($this->contact->privChair) {
-            $sel_opt["acmcms"] = "ACM CMS report";
-            $sel_opt["json"] = "JSON";
-            $sel_opt["jsonattach"] = "JSON with attachments";
-        }
-        $lllgroups[] = ["get", "Download", "<b>:</b> &nbsp;"
-            . Ht::select("getfn", $sel_opt, $this->qreq->getfn,
-                         ["tabindex" => 6, "class" => "wantcrpfocus"])
-            . "&nbsp; " . Ht::submit("fn", "Go", ["value" => "get", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
+        $revpref = $this->table_type == "editReviewPreference";
+        $lllgroups = SearchActions::list_actions($this->contact, $this->qreq, $this);
 
         // Upload preferences (review preferences only)
         if ($revpref) {
-            $lllgroups[] = ["uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
+            $lllgroups[] = [100, "uploadpref", "Upload", "<b>&nbsp;preference file:</b> &nbsp;"
                 . "<input class=\"wantcrpfocus\" type='file' name='uploadedFile' accept='text/plain' size='20' tabindex='6' onfocus='autosub(\"uploadpref\",this)' />&nbsp; "
                 . Ht::submit("fn", "Go", ["value" => "uploadpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
         }
 
         // Set preferences (review preferences only)
         if ($revpref) {
-            $lllgroups[] = ["setpref", "Set preferences", "<b>:</b> &nbsp;"
+            $lllgroups[] = [200, "setpref", "Set preferences", "<b>:</b> &nbsp;"
                 . Ht::entry("pref", "", array("class" => "wantcrpfocus", "size" => 4, "tabindex" => 6, "onfocus" => 'autosub("setpref",this)'))
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "setpref", "tabindex" => 6, "onclick" => "return plist_submit.call(this)"])];
         }
 
-        // Tags (search+PC only)
-        if ($this->contact->isPC && !$revpref) {
-            $tagopt = array("a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order");
-            $tagextra = array("id" => "placttagtype");
-            if ($this->contact->privChair) {
-                $tagopt["xxxb"] = null;
-                $tagopt["da"] = "Clear twiddle";
-                $tagopt["cr"] = "Calculate rank";
-                $tagextra["onchange"] = "plactions_dofold()";
-                $want_plactions_dofold = true;
-            }
-            $t = "";
-            if ($this->contact->privChair) {
-                $t .= '<span class="fx99"><a class="q" href="#" onclick="return fold(\'placttags\')">'
-                    . expander(null, 0) . "</a></span>";
-            }
-            $t .= 'tag<span class="fn99">(s)</span> &nbsp;'
-                . Ht::entry("tag", $this->qreq->tag,
-                            ["size" => 15, "onfocus" => "autosub('tag',this)", "class" => "wantcrpfocus"])
-                . ' &nbsp;' . Ht::submit("fn", "Go", ["value" => "tag", "onclick" => "return plist_submit.call(this)"]);
-            if ($this->contact->privChair) {
-                $t .= "<div class='fx'><div style='margin:2px 0'>"
-                    . Ht::checkbox("tagcr_gapless", 1, $this->qreq->tagcr_gapless, array("style" => "margin-left:0"))
-                    . "&nbsp;" . Ht::label("Gapless order") . "</div>"
-                    . "<div style='margin:2px 0'>Using: &nbsp;"
-                    . Ht::select("tagcr_method", PaperRank::methods(), $this->qreq->tagcr_method)
-                    . "</div>"
-                    . "<div style='margin:2px 0'>Source tag: &nbsp;~"
-                    . Ht::entry("tagcr_source", $this->qreq->tagcr_source, array("size" => 15))
-                    . "</div></div>";
-            }
-            $lllgroups[] = ["tag", "Tag", "<b>:</b> &nbsp;"
-                . Ht::select("tagfn", $tagopt, $this->qreq->tagfn, $tagextra) . " &nbsp;",
-                            ["id" => "foldplacttags", "class" => "foldc fold99c", "content" => $t]];
-        }
-
-        // Assignments (search+admin only)
-        if ($this->contact->privChair && !$revpref) {
-            $want_plactions_dofold = true;
-            $lllgroups[] = ["assign", "Assign", "<b>:</b> &nbsp;"
-                . Ht::select("assignfn",
-                              array("auto" => "Automatic assignments",
-                                    "zzz1" => null,
-                                    "conflict" => "Conflict",
-                                    "unconflict" => "No conflict",
-                                    "zzz2" => null,
-                                    "assign" . REVIEW_PRIMARY => "Primary review",
-                                    "assign" . REVIEW_SECONDARY => "Secondary review",
-                                    "assign" . REVIEW_PC => "Optional review",
-                                    "assign0" => "Clear review",
-                                    "zzz3" => null,
-                                    "lead" => "Discussion lead",
-                                    "shepherd" => "Shepherd"),
-                              $this->qreq->assignfn,
-                              ["class" => "wantcrpfocus", "onchange" => "plactions_dofold()"])
-                . '<span class="fx"> &nbsp;<span id="atab_assign_for">for</span> &nbsp;'
-                . Ht::select("markpc", pc_members_selector_options(false),
-                             $this->qreq->markpc, array("id" => "markpc"))
-                . "</span> &nbsp;" . Ht::submit("fn", "Go", ["value" => "assign", "onclick" => "return plist_submit.call(this)"])];
-        }
-
-        // Decide, Mail (search+admin only)
-        if ($this->contact->privChair && !$revpref) {
-            $lllgroups[] = ["decide", "Decide", "<b>:</b> Set to &nbsp;"
-                . decisionSelector($this->qreq->decision, null, " class=\"wantcrpfocus\"")
-                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
-
-            $lllgroups[] = ["mail", "Mail", "<b>:</b> &nbsp;"
-                . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $this->qreq->recipients, ["class" => "wantcrpfocus"])
-                . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
-        }
-
+        usort($lllgroups, function ($a, $b) { return $a[0] - $b[0]; });
         $whichlll = 1;
         foreach ($lllgroups as $i => $lllg)
-            if ($this->qreq->fn == $lllg[0] || $this->atab == $lllg[0])
+            if ($this->qreq->fn == $lllg[1] || $this->atab == $lllg[1])
                 $whichlll = $i + 1;
-
-        if ($want_plactions_dofold)
-            Ht::stash_script("plactions_dofold()");
 
         // Linelinks container
         $foot = "  <tr class=\"pl_footrow\">";
@@ -548,8 +420,8 @@ class PaperList {
         foreach ($lllgroups as $i => $lllg) {
             $x = $i + 1;
             $foot .= "<table><tbody><tr>\n"
-                . "    <td class=\"pl_footer_desc lll$x\"><a href=\"" . selfHref(["atab" => $lllg[0]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[1] . "</a></td>\n";
-            for ($j = 2; $j < count($lllg); ++$j) {
+                . "    <td class=\"pl_footer_desc lll$x\"><a href=\"" . selfHref(["atab" => $lllg[1]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[2] . "</a></td>\n";
+            for ($j = 3; $j < count($lllg); ++$j) {
                 $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
                 $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";
                 $foot .= "    <td class=\"$class\"";
@@ -1055,7 +927,7 @@ class PaperList {
     private function _prepare() {
         $this->any = new Qobject;
         $this->count = 0;
-        $this->live_table = false;
+        $this->table_type = false;
         $this->nformat_onpage = 0;
         return true;
     }
@@ -1256,7 +1128,7 @@ class PaperList {
         // need tags for row coloring
         if ($this->contact->can_view_tags(null))
             $this->qopts["tags"] = 1;
-        $this->live_table = true;
+        $this->table_type = $listname;
 
         // get column list, check sort
         $field_list = $this->_list_columns($listname);
@@ -1399,7 +1271,7 @@ class PaperList {
             $foot .= $this->_statistics_rows($rstate, $fieldDef);
         if ($fieldDef[0] instanceof SelectorPaperColumn
             && !defval($options, "nofooter"))
-            $foot .= $this->_footer($ncol, $listname, get_s($options, "footer_extra"));
+            $foot .= $this->_footer($ncol, get_s($options, "footer_extra"));
         if ($foot)
             $enter .= ' <tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
                 . ">\n" . $foot . " </tfoot>\n";

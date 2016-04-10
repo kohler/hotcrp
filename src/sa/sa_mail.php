@@ -5,7 +5,12 @@
 
 class Mail_SearchAction extends SearchAction {
     function allow(Contact $user) {
-        return $user->is_manager();
+        return $user->is_manager() && Navigation::page() !== "reviewprefs";
+    }
+    function list_actions(Contact $user, $qreq, PaperList $plist, &$actions) {
+        $actions[] = [1000, "mail", "Mail", "<b>:</b> &nbsp;"
+            . Ht::select("recipients", array("au" => "Contact authors", "rev" => "Reviewers"), $qreq->recipients, ["class" => "wantcrpfocus"])
+            . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
     }
     function run(Contact $user, $qreq, $ssel) {
         $r = in_array($qreq->recipients, ["au", "rev"]) ? $qreq->recipients : "all";

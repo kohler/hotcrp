@@ -192,8 +192,7 @@ class TitlePaperColumn extends PaperColumn {
 
         $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
 
-        if ($pl->live_table && !$highlight_count
-            && ($format = $row->title_format())) {
+        if (!$highlight_count && ($format = $row->title_format())) {
             ++$pl->nformat_onpage;
             $t .= ' preformat" data-format="' . $format;
         }
@@ -437,8 +436,7 @@ class AbstractPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
-            if ($pl->live_table)
-                ++$pl->nformat_onpage;
+            ++$pl->nformat_onpage;
             $t = '<div class="preformat" data-format="' . $format . '.plx">'
                 . $t . '</div>';
         }
@@ -857,7 +855,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             }
         if (count($ts)) {
             $t = '<span class="has-allpref" data-allpref="' . join(" ", $ts) . '">Loading</span>';
-            if ($pl->live_table && $rowidx % 16 == 15)
+            if ($pl->table_type && $rowidx % 16 == 15)
                 $t .= "<script>plinfo.allpref()</script>";
             return $t;
         } else
@@ -1228,7 +1226,7 @@ class ScorePaperColumn extends PaperColumn {
             else if (isset($row->_xreviewer))
                 $my_score = get($scores, $row->_xreviewer->reviewContactId);
             $t = $this->form_field->unparse_graph($scores, 1, $my_score);
-            if ($pl->live_table && $rowidx % 16 == 15)
+            if ($pl->table_type && $rowidx % 16 == 15)
                 $t .= "<script>scorechart()</script>";
             return $wrap_conflict ? '<span class="fx5">' . $t . '</span>' : $t;
         }
