@@ -102,48 +102,6 @@ if ($Qreq->fn) {
 }
 
 
-// download ACM CMS information for selected papers
-if ($Qreq->fn == "get" && $Qreq->getfn == "acmcms"
-    && !$SSel->is_empty() && $Me->privChair) {
-    $idq = "p.paperId" . $SSel->sql_predicate();
-
-    // analyze paper page counts
-    $pagecount = array();
-    $result = Dbl::qe_raw("select p.paperId, p.finalPaperStorageId, ps.infoJson from Paper p join PaperStorage ps on (ps.paperStorageId=if(p.finalPaperStorageId=0,p.paperStorageId,p.finalPaperStorageId)) where $idq");
-    while (($row = edb_row($result)))
-        if ($row[2] && ($j = json_decode($row[2])) && isset($j->npages))
-            $pagecount[$row[0]] = $j->npages;
-        else {
-            $cf = new CheckFormat;
-            if ($cf->analyzePaper($row[0], !!$row[1]))
-                $pagecount[$row[0]] = $cf->pages;
-        }
-
-    // generate report
-    $result = Dbl::qe_raw("select paperId, title, authorInformation from Paper p where $idq");
-    $texts = array();
-    while (($row = PaperInfo::fetch($result, $Me))) {
-        $papertype = "Full Paper";
-        if (isset($pagecount[$row->paperId]) && $pagecount[$row->paperId] < 5)
-            $papertype = "Short Paper";
-        $aun = $aue = [];
-        foreach ($row->author_list() as $au) {
-            $aun[] = ($au->name() ? : "Unknown")
-                . ":" . ($au->affiliation ? : "Unaffiliated");
-            $aue[] = $au->email ? : "unknown@example.com";
-        }
-        $texts[$row->paperId] = [
-            "papertype" => $papertype, "title" => $row->title,
-            "authors" => join(";", $aun), "leademail" => (string) @$aue[0],
-            "emails" => join(";", array_splice($aue, 1))
-        ];
-    }
-    downloadCSV($SSel->reorder($texts), false, "acmcms",
-                ["selection" => ["papertype", "title", "authors", "leademail", "emails"],
-                 "always_quote" => true]);
-}
-
-
 // set fields to view
 if (isset($_REQUEST["redisplay"])) {
     $pld = " ";

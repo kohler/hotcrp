@@ -28,14 +28,8 @@ class SearchActions {
         self::$loaded = true;
         foreach (expand_includes($ConfSitePATH, "src/sa/*.php") as $f)
             include $f;
-        if (isset($Opt["searchaction_include"])
-            && ($searchaction_include = $Opt["searchaction_include"])) {
-            if (!is_array($searchaction_include))
-                $searchaction_include = [$searchaction_include];
-            foreach ($searchaction_include as $sa)
-                foreach (expand_includes($ConfSitePATH, $sa) as $f)
-                    include $f;
-        }
+        if (isset($Opt["searchaction_include"]) && $Opt["searchaction_include"])
+            read_included_options($ConfSitePATH, $Opt["searchaction_include"]);
     }
 
     static function register($name, $subname, $flags, SearchAction $fn) {
