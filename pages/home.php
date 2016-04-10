@@ -18,7 +18,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])) {
 if (!$Me->is_empty() && !check_post())
     unset($_REQUEST["signout"]);
 if ($Me->has_email()
-    && (!check_post() || strcasecmp($Me->email, @trim($_REQUEST["email"])) == 0))
+    && (!check_post() || strcasecmp($Me->email, trim(req("email"))) == 0))
     unset($_REQUEST["signin"]);
 if (!isset($_REQUEST["email"]) || !isset($_REQUEST["action"]))
     unset($_REQUEST["signin"]);
@@ -44,9 +44,9 @@ if ($Me->is_empty() || isset($_REQUEST["signin"]))
 // perhaps redirect through account
 function need_profile_redirect($user) {
     global $Conf, $Opt;
-    if (!@$user->firstName && !@$user->lastName)
+    if (!get($user, "firstName") && !get($user, "lastName"))
         return true;
-    if (@$Opt["noProfileRedirect"])
+    if (get($Opt, "noProfileRedirect"))
         return false;
     if (!$user->affiliation)
         return true;
@@ -155,7 +155,7 @@ echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
-    $dlt = max(@$Conf->setting("sub_sub"), @$Conf->setting("sub_close"));
+    $dlt = max($Conf->setting("sub_sub"), $Conf->setting("sub_close"));
     $result = Dbl::qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
     $n = $nyes = 0;
     while (($row = edb_row($result))) {
@@ -196,7 +196,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         '<div class="f-contain">';
     if ($Me->is_empty() || isset($_REQUEST["signin"]))
         echo Ht::hidden("testsession", 1);
-    if (@$Opt["contactdb_dsn"] && @$Opt["contactdb_loginFormHeading"])
+    if (get($Opt, "contactdb_dsn") && get($Opt, "contactdb_loginFormHeading"))
         echo $Opt["contactdb_loginFormHeading"];
     $password_reset = $Conf->session("password_reset");
     if ($password_reset && $password_reset->time < $Now - 900) {
@@ -262,7 +262,7 @@ if ($homelist) {
         '<h4><a class="qq" href="', hoturl("search"), '">Search</a>: &nbsp;&nbsp;</h4>';
 
     $tOpt = PaperSearch::search_types($Me);
-    echo Ht::entry("q", @$_REQUEST["q"],
+    echo Ht::entry("q", req("q"),
                    array("id" => "homeq", "size" => 32, "title" => "Enter paper numbers or search terms",
                          "class" => "hotcrp_searchbox", "placeholder" => "(All)")),
         " &nbsp;in&nbsp; ",
@@ -310,7 +310,7 @@ function reviewTokenGroup($non_reviews) {
 if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     echo ($nhome_hr ? $home_hr : ""), "<div class='homegrp' id='homerev'>\n";
     $all_review_fields = ReviewForm::all_fields();
-    $merit_field = @$all_review_fields["overAllMerit"];
+    $merit_field = get($all_review_fields, "overAllMerit");
     $merit_noptions = $merit_field ? count($merit_field->options) : 0;
 
     // Information about my reviews
