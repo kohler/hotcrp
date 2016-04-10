@@ -449,7 +449,7 @@ table.center {
 	margin-right: auto;
 }
 table.pltable {
-	line-height: 125%;
+	line-height: 1.25;
 }
 body#revpref table.pltable, body#accounts table.pltable {
 	margin: 0 auto;
@@ -625,7 +625,7 @@ span.expander > span.in0 {
 	color: black;
 }
 .btn.btn-closer {
-	line-height: 85%;
+	line-height: .85;
 }
 .btn.hottooltip {
 	cursor: pointer;
@@ -1266,7 +1266,7 @@ span.asspref-1 {
 	height: 100%;
         font-family: "Helvetica Neue", Helvetica, verdana, tahoma, sans-serif;
 	font-size: 62.5%;
-	line-height: 125%;
+	line-height: 1.25;
 	text-align: center;
 }
 
@@ -1310,7 +1310,7 @@ table.reviewers_scores {
 	margin-top: -0.5em;
 }
 table.reviewers {
-	line-height: 125%;
+	line-height: 1.25;
 	margin-left: -6px;
 }
 table.reviewers > tbody > tr > td:first-child {
@@ -1469,7 +1469,7 @@ td.pl_name {
 }
 td.pl_uscores {
 	font-size: smaller;
-	line-height: 100%;
+	line-height: 1;
 	padding-left: 0.2em;
 	padding-right: 0.2em;
 	vertical-align: top;
@@ -1544,12 +1544,12 @@ th.pl {
 	vertical-align: bottom;
 	font-size: smaller;
 	text-align: left;
-	line-height: 125%;
+	line-height: 1.25;
 }
 
 tr.plx {
 	font-size: 85%;
-	line-height: 135%;
+	line-height: 1.35;
 }
 em.plx {
 	font-size: inherit;
@@ -1936,7 +1936,7 @@ tr.purpletag, tr.graytag, tr.whitetag {
 .badge {
 	display: inline-block;
 	font-size: 69%;
-	line-height: 100%;
+	line-height: 1;
 	margin-left: 0.75em;
 	padding: 2px 0.3em 3px;
 	border-radius: 0.3em;
@@ -2225,7 +2225,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	color: #ffffff;
 	border: 0 none;
 	font-size: 75%;
-	line-height: 125%;
+	line-height: 1.25;
 }
 .bubble.tooltip {
 	margin: 0 8px;
@@ -2608,7 +2608,7 @@ div.aahc.alert div.aab {
 }
 div.paptext, div.revtext, div.cmttext {
 	position: relative;
-	line-height: 125%;
+	line-height: 1.25;
 }
 div.revpreview, div.cmtpreview {
 	margin: 0.5em -12px 1em;
@@ -2719,7 +2719,7 @@ div.aabut .words {
 }
 #tracker .trackerinfo {
 	margin-left: 48px;
-	line-height: 125%;
+	line-height: 1.25;
 }
 #trackerlogo {
 	float: left;
@@ -2780,7 +2780,7 @@ div.aabut .words {
 }
 
 #trackertable {
-	line-height: 125%;
+	line-height: 1.25;
 	font-size: larger;
 	margin: 0 -24px;
 }
