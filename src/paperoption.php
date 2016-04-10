@@ -150,9 +150,9 @@ class PaperOption {
 
     static function find_document($id) {
         if ($id == DTYPE_SUBMISSION)
-            return new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null));
+            return new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => -1));
         else if ($id == DTYPE_FINAL)
-            return new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null));
+            return new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => -1));
         else
             return self::find($id);
     }
