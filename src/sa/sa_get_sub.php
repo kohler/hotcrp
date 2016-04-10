@@ -16,7 +16,6 @@ class Get_SearchAction extends SearchAction {
             }
             $sel_opt[] = ["value" => $xact[1], "label" => $xact[3]];
         }
-        error_log(json_encode($sel_opt));
         if (!empty($sel_opt)) {
             $actions[] = [0, "get", "Download", "<b>:</b> &nbsp;"
                 . Ht::select("getfn", $sel_opt, $qreq->getfn,
