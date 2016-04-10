@@ -177,11 +177,12 @@ function expand_includes($sitedir, $files, $expansions = array()) {
     if (is_string($files))
         $files = array($files);
     $confname = get($Opt, "confid") ? : get($Opt, "dbName");
+    $expansions["confid"] = $expansions["confname"] = $confname;
+    $expansions["siteclass"] = get($Opt, "siteclass");
     $results = array();
     $cwd = null;
     foreach ($files as $f) {
         if (strpos($f, '$') !== false) {
-            $f = preg_replace(',\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confname, $f);
             foreach ($expansions as $k => $v)
                 if ($v !== false && $v !== null)
                     $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
