@@ -1405,9 +1405,11 @@ div.aabutsep {
 }
 
 /* other list tables */
-#plact {
-	margin-top: 2px;
+#plact > table {
 	float: left;
+}
+.pl_footer_desc {
+	line-height: 2;
 }
 #plactr {
 	padding-top: 2px;

@@ -525,40 +525,44 @@ class PaperList {
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "mail", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => 1])];
         }
 
-        $t = "";
         $whichlll = 1;
-        foreach ($lllgroups as $i => $lllg) {
-            if ($i)
-                $t .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
-            $x = $i + 1;
-            $t .= "    <td class=\"lll$x\"><a href=\"" . selfHref(["atab" => $lllg[0]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[1] . "</a></td>\n";
-            for ($j = 2; $j < count($lllg); ++$j) {
-                $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
-                $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";
-                $t .= "    <td class=\"$class\"";
-                if (isset($cell["id"]))
-                    $t .= " id=\"" . $cell["id"] . "\"";
-                $t .= ">" . $cell["content"] . "</td>\n";
-            }
+        foreach ($lllgroups as $i => $lllg)
             if ($this->qreq->fn == $lllg[0] || $this->atab == $lllg[0])
-                $whichlll = $x;
-        }
+                $whichlll = $i + 1;
+
         if ($want_plactions_dofold)
             Ht::stash_script("plactions_dofold()");
 
         // Linelinks container
-        $foot = "  <tr class=\"pl_footrow\">\n";
-        if ($this->viewmap->columns)
-            $foot .= '   <td class="pl_footer" colspan="' . $ncol . '">';
-        else
-            $foot .= '   <td class="pl_footselector">'
-                . Ht::img("_.gif", "^^", "placthook")
-                . "</td>\n   <td class=\"pl_footer\" colspan=\"" . ($ncol - 1) . '">';
-        return $foot . "<table id=\"plact\" class=\"linelinks$whichlll\"><tbody><tr>\n"
-            . '    <td><a name="plact"><b>Select papers</b></a> (or <a href="'
-            . selfHref(array("selectall" => 1))
-            . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
-            . $t . "   </tr></tbody></table>" . $extra . "</td>\n  </tr>\n";
+        $foot = "  <tr class=\"pl_footrow\">";
+        if (!$this->viewmap->columns) {
+            $foot .= '<td class="pl_footselector">'
+                . Ht::img("_.gif", "^^", "placthook") . "</td>";
+            --$ncol;
+        }
+        $foot .= '<td id="plact" class="pl_footer linelinks' . $whichlll . '" colspan="' . $ncol . '">';
+
+        $foot .= "<table><tbody><tr>\n"
+            . '    <td class="pl_footer_desc"><b>Select papers</b> (or <a href="' . selfHref(["selectall" => 1]) . '#plact" onclick="return papersel(true)">select all ' . $this->count . "</a>), then&nbsp;</td>\n"
+            . "   </tr></tbody></table>";
+        foreach ($lllgroups as $i => $lllg) {
+            $x = $i + 1;
+            $foot .= "<table><tbody><tr>\n"
+                . "    <td class=\"pl_footer_desc lll$x\"><a href=\"" . selfHref(["atab" => $lllg[0]]) . "#plact\" onclick=\"return crpfocus('plact',this)\">" . $lllg[1] . "</a></td>\n";
+            for ($j = 2; $j < count($lllg); ++$j) {
+                $cell = is_array($lllg[$j]) ? $lllg[$j] : ["content" => $lllg[$j]];
+                $class = isset($cell["class"]) ? "lld$x " . $cell["class"] : "lld$x";
+                $foot .= "    <td class=\"$class\"";
+                if (isset($cell["id"]))
+                    $foot .= " id=\"" . $cell["id"] . "\"";
+                $foot .= ">" . $cell["content"] . "</td>\n";
+            }
+            if ($i < count($lllgroups) - 1)
+                $foot .= "    <td>&nbsp;<span class='barsep'>·</span>&nbsp;</td>\n";
+            $foot .= "   </tr></tbody></table>";
+        }
+        $foot .= $extra . "<hr class=\"c\" /></td>\n  </tr>\n";
+        return $foot;
     }
 
     static function _listDescription($listname) {
