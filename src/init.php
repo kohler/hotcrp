@@ -147,15 +147,10 @@ function __autoload($class_name) {
     $f = null;
     if (isset(SiteLoader::$map[$class_name]))
         $f = SiteLoader::$map[$class_name];
-    if (!$f) {
-        $l = strtolower($class_name);
-        if (file_exists("$ConfSitePATH/src/$l.php"))
-            $f = "src/$l.php";
-        else if (file_exists("$ConfSitePATH/lib/$l.php"))
-            $f = "lib/$l.php";
-    }
-    if ($f)
-        require_once("$ConfSitePATH/$f");
+    if (!$f)
+        $f = strtolower($class_name) . ".php";
+    foreach (expand_includes($f, ["autoload" => true]) as $fx)
+        require_once($fx);
 }
 
 require_once("$ConfSitePATH/lib/base.php");
@@ -174,13 +169,16 @@ setlocale(LC_CTYPE, "C");
 // Set up conference options (also used in mailer.php)
 function expand_includes($files, $expansions = array()) {
     global $Opt, $ConfSitePATH;
-    if (is_string($files))
+    if (!is_array($files))
         $files = array($files);
     $confname = get($Opt, "confid") ? : get($Opt, "dbName");
     $expansions["confid"] = $expansions["confname"] = $confname;
     $expansions["siteclass"] = get($Opt, "siteclass");
 
-    $includepath = [$ConfSitePATH . "/"];
+    if (isset($expansions["autoload"]) && strpos($files[0], "/") === false)
+        $includepath = [$ConfSitePATH . "/src/", $ConfSitePATH . "/lib/"];
+    else
+        $includepath = [$ConfSitePATH . "/"];
     if (isset($Opt["includepath"]) && is_array($Opt["includepath"])) {
         foreach ($Opt["includepath"] as $i)
             if ($i)
@@ -189,7 +187,7 @@ function expand_includes($files, $expansions = array()) {
 
     $results = array();
     foreach ($files as $f) {
-        if (strpos($f, '$') !== false) {
+        if (strpos((string) $f, '$') !== false) {
             foreach ($expansions as $k => $v)
                 if ($v !== false && $v !== null)
                     $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
