@@ -40,10 +40,11 @@ class SearchActions {
         $fn->subname = $subname;
     }
 
-    static function has_function($name, $subname = null) {
+    static function has_function($name, $subname = null, $only_explicit = false) {
         if (isset(self::$byname[$name])) {
             $ufm = self::$byname[$name];
-            return isset($ufm[(string) $subname]) || isset($ufm[""]);
+            return isset($ufm[(string) $subname])
+                || (!$only_explicit && isset($ufm[""]));
         } else
             return false;
     }
