@@ -240,14 +240,24 @@ class SettingValues {
     public function has_error($field) {
         return isset($this->errf[$field]);
     }
+    static private function check_error_field($field, &$html) {
+        if ($field instanceof Si) {
+            if ($field->short_description && $html !== false)
+                $html = htmlspecialchars($field->short_description) . ": " . $html;
+            return $field->name;
+        } else
+            return $field;
+    }
     public function set_error($field, $html = false) {
-        if ($field)
-            $this->errf[$field] = 2;
+        $fname = self::check_error_field($field, $html);
+        if ($fname)
+            $this->errf[$fname] = 2;
         if ($html !== false)
             $this->errmsg[] = $html;
         return false;
     }
     public function set_warning($field, $html = false) {
+        $fname = self::check_error_field($field, $html);
         if ($field && !isset($this->errf[$field]))
             $this->errf[$field] = 1;
         if ($html !== false)
@@ -324,6 +334,10 @@ class SettingValues {
     }
     public function oldv($name, $default_value = null) {
         return $this->si_oldv($this->si($name), $default_value);
+    }
+    public function reqv($name, $default_value = null) {
+        $name = str_replace(".", "_", $name);
+        return get($this->req, $name, $default_value);
     }
     public function has_savedv($name) {
         $si = $this->si($name);
@@ -455,6 +469,7 @@ class SettingValues {
     }
     public function render_entry($name, $js = []) {
         $v = $this->curv($name);
+        $t = "";
         if (($si = $this->si($name))) {
             if ($si->size)
                 $js["size"] = $si->size;
@@ -464,8 +479,10 @@ class SettingValues {
                 $v = $this->si_render_date_value($v, $si);
             else if ($si->type === "grace")
                 $v = $this->si_render_grace_value($v, $si);
+            if ($si->parser)
+                $t = Ht::hidden("has_$name", 1);
         }
-        return Ht::entry($name, $v, $this->sjs($name, $js));
+        return Ht::entry($name, $v, $this->sjs($name, $js)) . $t;
     }
     public function echo_entry($name) {
         echo $this->render_entry($name);
@@ -840,7 +857,7 @@ function account_value($sv, $si) {
 function do_setting_update($sv) {
     global $Conf, $Group, $Me, $Now, $Opt, $OptOverride;
     // parse settings
-    foreach (Si::$all as $tag => $si)
+    foreach (Si::$all as $si)
         account_value($sv, $si);
 
     // check date relationships

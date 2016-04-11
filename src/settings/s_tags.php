@@ -81,13 +81,13 @@ function render($sv) {
 
     echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
     $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
-    echo "<td>", Ht::hidden("has_tag_chair", 1);
+    echo "<td>";
     $sv->echo_entry("tag_chair");
     echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
     $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
-    echo "<td>", Ht::hidden("has_tag_approval", 1);
+    echo "<td>";
     $sv->echo_entry("tag_approval");
     echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
@@ -96,13 +96,13 @@ function render($sv) {
     foreach (TagInfo::vote_tags() as $n => $v)
         $x[] = "$n#$v";
     $sv->set_oldv("tag_vote", join(" ", $x));
-    echo "<td>", Ht::hidden("has_tag_vote", 1);
+    echo "<td>";
     $sv->echo_entry("tag_vote");
     echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
 
     echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
     $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
-    echo "<td>", Ht::hidden("has_tag_rank", 1);
+    echo "<td>";
     $sv->echo_entry("tag_rank");
     echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
     echo "</table>";
