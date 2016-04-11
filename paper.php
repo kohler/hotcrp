@@ -398,7 +398,7 @@ function update_paper($pj, $opj, $action, $diffs) {
         $diffs["contacts"] = true;
 
     // submit paper if no error so far
-    $_REQUEST["paperId"] = $_GET["paperId"] = $pj->id;
+    $_REQUEST["paperId"] = $_GET["paperId"] = $pj->pid;
     loadRows();
     if ($action === "final") {
         $submitkey = "timeFinalSubmitted";
