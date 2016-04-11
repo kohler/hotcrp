@@ -36,8 +36,7 @@ class Message {
         if ($lang)
             self::load_one("$ConfSitePATH/conf/messages-local.$lang.csv");
         if (opt("messages_include"))
-            foreach (expand_includes($ConfSitePATH, $Opt["messages_include"],
-                                     array("lang" => $lang)) as $f)
+            foreach (expand_includes($Opt["messages_include"], ["lang" => $lang]) as $f)
                 self::load_one($f);
     }
 

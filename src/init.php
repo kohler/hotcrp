@@ -172,8 +172,8 @@ setlocale(LC_CTYPE, "C");
 
 
 // Set up conference options (also used in mailer.php)
-function expand_includes($sitedir, $files, $expansions = array()) {
-    global $Opt;
+function expand_includes($files, $expansions = array()) {
+    global $Opt, $ConfSitePATH;
     if (is_string($files))
         $files = array($files);
     $confname = get($Opt, "confid") ? : get($Opt, "dbName");
@@ -196,7 +196,7 @@ function expand_includes($sitedir, $files, $expansions = array()) {
         else if (preg_match(',[\[\]\*\?],', $f)) {
             if ($cwd === null) {
                 $cwd = getcwd();
-                chdir($sitedir);
+                chdir($ConfSitePATH);
             }
             foreach (glob($f, GLOB_BRACE) as $x)
                 $results[] = $x;
@@ -204,18 +204,18 @@ function expand_includes($sitedir, $files, $expansions = array()) {
             $results[] = $f;
     }
     foreach ($results as &$f)
-        $f = ($f[0] == "/" ? $f : "$sitedir/$f");
+        $f = ($f[0] == "/" ? $f : "$ConfSitePATH/$f");
     if ($cwd)
         chdir($cwd);
     return $results;
 }
 
-function read_included_options($sitedir, &$files) {
+function read_included_options(&$files) {
     global $Opt;
     if (is_string($files))
         $files = [$files];
     for ($i = 0; $i != count($files); ++$i) {
-        foreach (expand_includes($sitedir, $files[$i]) as $f)
+        foreach (expand_includes($files[$i]) as $f)
             if (!@include $f)
                 $Opt["missing"][] = $f;
     }
@@ -237,7 +237,7 @@ if (!get($Opt, "loaded")) {
     if (get($Opt, "multiconference"))
         Multiconference::init();
     if (get($Opt, "include"))
-        read_included_options($ConfSitePATH, $Opt["include"]);
+        read_included_options($Opt["include"]);
 }
 if (!get($Opt, "loaded") || get($Opt, "missing"))
     Multiconference::fail_bad_options();

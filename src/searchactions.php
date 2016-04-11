@@ -22,14 +22,14 @@ class SearchActions {
     static private $byname = [];
 
     static function load() {
-        global $ConfSitePATH, $Opt;
-        if (self::$loaded)
-            return;
-        self::$loaded = true;
-        foreach (expand_includes($ConfSitePATH, "src/sa/*.php") as $f)
-            include $f;
-        if (isset($Opt["searchaction_include"]) && $Opt["searchaction_include"])
-            read_included_options($ConfSitePATH, $Opt["searchaction_include"]);
+        global $Opt;
+        if (!self::$loaded) {
+            self::$loaded = true;
+            foreach (expand_includes("src/sa/*.php") as $f)
+                include $f;
+            if (isset($Opt["searchaction_include"]) && $Opt["searchaction_include"])
+                read_included_options($Opt["searchaction_include"]);
+        }
     }
 
     static function register($name, $subname, $flags, SearchAction $fn) {

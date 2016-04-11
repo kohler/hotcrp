@@ -175,7 +175,7 @@ class Si {
                 if (preg_match(',\A\s*\{\s*\",s', $si))
                     $info = self::read($info, $si, "include entry $k");
                 else
-                    foreach (expand_includes($ConfSitePATH, $si) as $f)
+                    foreach (expand_includes($si) as $f)
                         if (($x = file_get_contents($f)))
                             $info = self::read($info, $x, $f);
             }
@@ -183,7 +183,7 @@ class Si {
 
         foreach ($info as $k => $v) {
             if (isset($v["require"])) {
-                foreach (expand_includes($ConfSitePATH, $v["require"]) as $f)
+                foreach (expand_includes($v["require"]) as $f)
                     require_once $f;
             }
             $class = "Si";
