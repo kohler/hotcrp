@@ -216,16 +216,24 @@ class CsvGenerator {
     const TYPE_TAB = 2;
     const FLAG_TYPE = 3;
     const FLAG_ALWAYS_QUOTE = 4;
+    const FLAG_CRLF = 8;
+    const FLAG_CR = 16;
+    const FLAG_LF = 0;
 
     private $type;
     private $flags;
     private $lines = array();
     public $headerline = "";
     private $selection = null;
+    private $lf = "\n";
 
     function __construct($type = self::TYPE_COMMA) {
         $this->type = $type & self::FLAG_TYPE;
         $this->flags = $type;
+        if ($this->flags & self::FLAG_CRLF)
+            $this->lf = "\r\n";
+        else if ($this->flags & self::FLAG_CR)
+            $this->lf = "\r";
     }
 
     static function always_quote($text) {
@@ -292,11 +300,11 @@ class CsvGenerator {
                     foreach ($row as &$x)
                         $x = self::quote($x);
                 }
-                $this->lines[] = join(",", $row) . "\n";
+                $this->lines[] = join(",", $row) . $this->lf;
             } else if ($this->type == self::TYPE_TAB)
-                $this->lines[] = join("\t", $row) . "\n";
+                $this->lines[] = join("\t", $row) . $this->lf;
             else
-                $this->lines[] = join("|", $row) . "\n";
+                $this->lines[] = join("|", $row) . $this->lf;
         }
     }
 

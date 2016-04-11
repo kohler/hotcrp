@@ -1000,6 +1000,8 @@ function downloadCSV($info, $header, $filename, $options = array()) {
         $csvt = CsvGenerator::TYPE_TAB;
     if (get($options, "always_quote"))
         $csvt |= CsvGenerator::FLAG_ALWAYS_QUOTE;
+    if (get($options, "crlf"))
+        $csvt |= CsvGenerator::FLAG_CRLF;
     $csvg = new CsvGenerator($csvt);
     if ($header)
         $csvg->set_header($header, true);
