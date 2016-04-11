@@ -40,7 +40,11 @@ class SearchSelection {
     }
 
     public function is_empty() {
-        return count($this->sel) == 0;
+        return empty($this->sel);
+    }
+
+    public function count() {
+        return count($this->sel);
     }
 
     public function selection() {
