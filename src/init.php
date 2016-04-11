@@ -89,7 +89,7 @@ $ConfSitePATH = null;
 // set $ConfSitePATH (path to conference site)
 function set_path_variables() {
     global $ConfSitePATH;
-    if (!@$ConfSitePATH) {
+    if (!isset($ConfSitePATH)) {
         $ConfSitePATH = substr(__FILE__, 0, strrpos(__FILE__, "/"));
         while ($ConfSitePATH !== "" && !file_exists("$ConfSitePATH/src/init.php"))
             $ConfSitePATH = substr($ConfSitePATH, 0, strrpos($ConfSitePATH, "/"));
@@ -179,34 +179,42 @@ function expand_includes($files, $expansions = array()) {
     $confname = get($Opt, "confid") ? : get($Opt, "dbName");
     $expansions["confid"] = $expansions["confname"] = $confname;
     $expansions["siteclass"] = get($Opt, "siteclass");
+
+    $includepath = [$ConfSitePATH . "/"];
+    if (isset($Opt["includepath"]) && is_array($Opt["includepath"])) {
+        foreach ($Opt["includepath"] as $i)
+            if ($i)
+                $includepath[] = str_ends_with($i, "/") ? $i : $i . "/";
+    }
+
     $results = array();
-    $cwd = null;
     foreach ($files as $f) {
         if (strpos($f, '$') !== false) {
             foreach ($expansions as $k => $v)
                 if ($v !== false && $v !== null)
                     $f = preg_replace(',\$\{' . $k . '\}|\$' . $k . '\b,', $v, $f);
                 else if (preg_match(',\$\{' . $k . '\}|\$' . $k . '\b,', $f)) {
-                    $f = false;
+                    $f = "";
                     break;
                 }
         }
-        if ($f === false)
-            /* skip */;
-        else if (preg_match(',[\[\]\*\?],', $f)) {
-            if ($cwd === null) {
-                $cwd = getcwd();
-                chdir($ConfSitePATH);
-            }
-            foreach (glob($f, GLOB_BRACE) as $x)
-                $results[] = $x;
-        } else
-            $results[] = $f;
+        if ((string) $f === "")
+            continue;
+        $matches = [];
+        $globby = preg_match(',[\[\]\*\?\{\}],', $f);
+        foreach ($f[0] === "/" ? array("") : $includepath as $idir) {
+            $e = $idir . $f;
+            if ($globby)
+                $matches = glob($f, GLOB_BRACE);
+            else if (is_readable($e))
+                $matches = [$e];
+            if (!empty($matches))
+                break;
+        }
+        $results = array_merge($results, $matches);
+        if (empty($matches) && !$globby)
+            $results[] = $f[0] === "/" ? $f : $includepath[0] . $f;
     }
-    foreach ($results as &$f)
-        $f = ($f[0] == "/" ? $f : "$ConfSitePATH/$f");
-    if ($cwd)
-        chdir($cwd);
     return $results;
 }
 
