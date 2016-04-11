@@ -84,6 +84,10 @@ class SearchSelection {
         return sql_in_numeric_set($this->sel);
     }
 
+    public function request_value() {
+        return join(" ", $this->sel);
+    }
+
     public function reorder($a) {
         $ax = array();
         foreach ($this->sel as $pid)

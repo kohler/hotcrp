@@ -305,8 +305,7 @@ $Conf->echoScript(); // need the JS right away
 $Search = new PaperSearch($Me, $_REQUEST);
 if (isset($_REQUEST["q"])) {
     $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")], $Qreq);
-    if (check_post())
-        $pl->papersel = $SSel->selection_map();
+    $pl->papersel = $SSel->selection_map();
     $pl_text = $pl->table_html($Search->limitName, [
             "class" => "pltable_full", "table_id" => "foldpl",
             "attributes" => ["data-fold-session" => 'pldisplay.$']
