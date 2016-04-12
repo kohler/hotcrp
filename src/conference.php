@@ -2257,6 +2257,13 @@ class Conf {
         return false;
     }
 
+    static public function msg_debugt($text) {
+        if (is_object($text) || is_array($text) || $text === null || $text === false)
+            $text = json_encode($text);
+        self::$g->msg("merror", Ht::pre_text_wrap($text));
+        return false;
+    }
+
     function post_missing_msg() {
         $this->msg("merror", "Your uploaded data wasn’t received. This can happen on unusually slow connections, or if you tried to upload a file larger than I can accept.");
     }
