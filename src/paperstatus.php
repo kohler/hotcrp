@@ -77,7 +77,7 @@ class PaperStatus {
         }
         foreach ($this->document_callbacks as $cb)
             call_user_func($cb, $d, $prow, $dtype, $drow);
-        return count(get_object_vars($d)) ? $d : null;
+        return empty(get_object_vars($d)) ? null : $d;
     }
 
     function row_to_json($prow, $args = array()) {
@@ -150,7 +150,7 @@ class PaperStatus {
                         $aux->affiliation = $conf->affiliation;
                     $other_contacts[] = $aux;
                 }
-            if (count($other_contacts))
+            if (!empty($other_contacts))
                 $pj->contacts = $other_contacts;
         }
 
@@ -162,7 +162,7 @@ class PaperStatus {
         $topics = array();
         foreach (array_intersect_key($Conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
             $topics[$this->export_ids ? $tid : $tname] = true;
-        if (count($topics))
+        if (!empty($topics))
             $pj->topics = (object) $topics;
 
         if ($prow->paperStorageId > 1
@@ -183,7 +183,7 @@ class PaperStatus {
             $pj->final_submitted_at = (int) $prow->timeFinalSubmitted;
         }
 
-        if (count($prow->options())) {
+        if (!empty($prow->options())) {
             $options = array();
             foreach ($prow->options() as $oa) {
                 $o = $oa->option;
@@ -205,13 +205,13 @@ class PaperStatus {
                     foreach ($oa->documents($prow) as $doc)
                         if (($doc = $this->document_to_json($prow, $o->id, $doc, $args)))
                             $attachments[] = $doc;
-                    if (count($attachments))
+                    if (!empty($attachments))
                         $options[$okey] = $attachments;
                 } else if ($o->is_document() && $oa->value
                            && ($doc = $this->document_to_json($prow, $o->id, $oa->value, $args)))
                     $options[$okey] = $doc;
             }
-            if (count($options))
+            if (!empty($options))
                 $pj->options = (object) $options;
         }
 
@@ -221,7 +221,7 @@ class PaperStatus {
                 if (($ctname = get(Conflict::$type_names, $conf->conflictType)))
                     $pcconflicts[$conf->email] = $ctname;
             }
-            if (count($pcconflicts))
+            if (!empty($pcconflicts))
                 $pj->pc_conflicts = (object) $pcconflicts;
         }
 
@@ -442,9 +442,9 @@ class PaperStatus {
             $collab = [];
             foreach (preg_split('/[\r\n]+/', $pj->collaborators) as $line)
                 $collab[] = preg_replace('/[,;\s]+\z/', '', $line);
-            while (count($collab) && $collab[count($collab) - 1] === "")
+            while (!empty($collab) && $collab[count($collab) - 1] === "")
                 array_pop($collab);
-            if (count($collab))
+            if (!empty($collab))
                 $pj->collaborators = join("\n", $collab) . "\n";
             else
                 $pj->collaborators = "";
@@ -621,10 +621,10 @@ class PaperStatus {
             if (!get($Opt, "noAbstract"))
                 $this->set_error_html("abstract", "Each paper must have an abstract.");
         }
-        if ((is_array(get($pj, "authors")) && !count($pj->authors))
-            || (get($pj, "authors") === null && (!$old_pj || !count($old_pj->authors))))
+        if ((is_array(get($pj, "authors")) && empty($pj->authors))
+            || (get($pj, "authors") === null && (!$old_pj || empty($old_pj->authors))))
             $this->set_error_html("author", "Each paper must have at least one author.");
-        if (count($pj->bad_authors))
+        if (!empty($pj->bad_authors))
             $this->set_error_html("author", "Some authors ignored.");
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj, $prow) as $c)
@@ -637,9 +637,9 @@ class PaperStatus {
                 $this->set_error_html("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
             else
                 $this->set_error_html("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
-        if (count($pj->bad_topics))
+        if (!empty($pj->bad_topics))
             $this->set_warning_html("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
-        if (count($pj->bad_options))
+        if (!empty($pj->bad_options))
             $this->set_warning_html("options", "Unknown options ignored (" . htmlspecialchars(commajoin(array_keys($pj->bad_options))) . ").");
     }
 
@@ -882,7 +882,7 @@ class PaperStatus {
                 $q[] = "timeFinalSubmitted=$time";
         }
 
-        if (count($q)) {
+        if (!empty($q)) {
             if ($Conf->submission_blindness() == Conf::BLIND_NEVER)
                 $q[] = "blind=0";
             else if ($Conf->submission_blindness() != Conf::BLIND_OPTIONAL)
@@ -917,7 +917,7 @@ class PaperStatus {
                 if (!$result
                     || !($paperid = $pj->pid = $result->insert_id))
                     return $this->set_error_html(false, "Could not create paper.");
-                if (count($this->uploaded_documents))
+                if (!empty($this->uploaded_documents))
                     Dbl::qe_raw("update PaperStorage set paperId=$paperid where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
             }
 
@@ -959,13 +959,13 @@ class PaperStatus {
             foreach ($conflict as $email => $type)
                 $q[] = "'" . sqlq($email) . "'";
             $ins = array();
-            if (count($q)) {
+            if (!empty($q)) {
                 $result = Dbl::qe_raw("select contactId, email from ContactInfo where email in (" . join(",", $q) . ")");
                 while (($row = edb_row($result)))
                     $ins[] = "($paperid,$row[0]," . $conflict[strtolower($row[1])] . ")";
             }
             $result = Dbl::qe_raw("delete from PaperConflict where paperId=$paperid");
-            if (count($ins))
+            if (!empty($ins))
                 $result = Dbl::qe_raw("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
         }
 
