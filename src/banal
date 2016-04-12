@@ -1673,11 +1673,14 @@ sub banal_config_p2h ($) {
     my ($major, $minor, $poppler);
 
     if (!defined($zoom)) {
-        unless (open (P2H, "$pdftohtml -v 2>&1 |")) {
+        unless (open(P2H, "$pdftohtml -v 2>&1 |")) {
             print STDERR "$fname: Error: Failed to run $pdftohtml.\n";
+            while (defined($_ = <P2H>)) {
+                print STDERR;
+            }
             return 0;
         }
-        while (<P2H>) {
+        while (defined($_ = <P2H>)) {
             $poppler = 1 if /Poppler/;
             next unless (/pdftohtml version (\d+\.\d+)([a-z]*)/);
             $p2h_version = "$1$2";
