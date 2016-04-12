@@ -62,7 +62,7 @@ class HotCRPDocument extends Filer {
         else {
             $o = PaperOption::find($doc->documentType);
             if ($o && $o->type == "attachments"
-                && ($afn = @$doc->unique_filename ? : $doc->filename))
+                && ($afn = get($doc, "unique_filename") ? : $doc->filename))
                 // do not decorate with MIME type suffix
                 return $fn . "paper" . $doc->paperId . "-" . $o->abbr . "/" . $afn;
             else if ($o && $o->is_document())
@@ -143,9 +143,9 @@ class HotCRPDocument extends Filer {
         $meta = array("conf" => $Opt["dbName"],
                       "pid" => (int) $docinfo->paperId,
                       "dtype" => (int) $dtype);
-        if (@$doc->filter) {
+        if (get($doc, "filter")) {
             $meta["filtertype"] = (int) $doc->filter;
-            if (@$doc->original_sha1)
+            if (get($doc, "original_sha1"))
                 $meta["original_sha1"] = $doc->original_sha1;
         }
         $filename = self::s3_filename($doc);
@@ -172,30 +172,30 @@ class HotCRPDocument extends Filer {
                          "mimetype" => $doc->mimetype,
                          "sha1" => $doc->sha1,
                          "documentType" => $doc->documentType);
-        if (!@$Opt["dbNoPapers"])
+        if (!opt("dbNoPapers"))
             $columns["paper"] = $doc->content;
-        if (@$doc->filename)
+        if (get($doc, "filename"))
             $columns["filename"] = $doc->filename;
-        if (is_string(@$doc->infoJson))
+        if (is_string(get($doc, "infoJson")))
             $columns["infoJson"] = $doc->infoJson;
-        else if (is_object(@$doc->infoJson))
+        else if (is_object(get($doc, "infoJson")))
             $columns["infoJson"] = json_encode($doc->infoJson);
-        else if (is_object(@$doc->metadata))
+        else if (is_object(get($doc, "metadata")))
             $columns["infoJson"] = json_encode($doc->metadata);
-        if ($Conf->sversion >= 74 && @$doc->size)
+        if ($Conf->sversion >= 74 && get($doc, "size"))
             $columns["size"] = $doc->size;
         if ($Conf->sversion >= 82) {
-            if (@$doc->filterType)
+            if (get($doc, "filterType"))
                 $columns["filterType"] = $doc->filterType;
-            else if (@$doc->filter)
+            else if (get($doc, "filter"))
                 $columns["filterType"] = $doc->filter;
-            if (@$doc->originalStorageId)
+            if (get($doc, "originalStorageId"))
                 $columns["originalStorageId"] = $doc->filterType;
-            else if (@$doc->original_id)
+            else if (get($doc, "original_id"))
                 $columns["originalStorageId"] = $doc->original_id;
         }
         return new Filer_Dbstore("PaperStorage", "paperStorageId", $columns,
-                                 @$Opt["dbNoPapers"] ? null : "paper");
+                                 opt("dbNoPapers") ? null : "paper");
     }
 
     public function filestore_pattern($doc) {
@@ -203,7 +203,7 @@ class HotCRPDocument extends Filer {
         if ($this->no_filestore)
             return false;
         if (self::$_docstore === null) {
-            $fdir = @$Opt["docstore"];
+            $fdir = opt("docstore");
             if (!$fdir)
                 return (self::$_docstore = false);
 
@@ -223,8 +223,8 @@ class HotCRPDocument extends Filer {
         $ok = false;
 
         $result = null;
-        if (!@$Opt["dbNoPapers"]
-            && @($doc->paperStorageId > 1))
+        if (!opt("dbNoPapers")
+            && get_i($doc, "paperStorageId") > 1)
             $result = Dbl::q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
         if (!$result || !($row = edb_row($result)) || $row[0] === null)
             $doc->content = "";
@@ -248,7 +248,7 @@ class HotCRPDocument extends Filer {
         }
 
         if (!$ok) {
-            $num = @$doc->paperId ? " #$doc->paperId" : "";
+            $num = get($doc, "paperId") ? " #$doc->paperId" : "";
             $doc->error = true;
             if ($this->dtype == DTYPE_SUBMISSION)
                 $doc->error_text = "Paper$num has not been uploaded.";
