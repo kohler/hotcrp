@@ -263,7 +263,7 @@ class Text {
     }
 
     static function split_last_suffix($last) {
-        if (preg_match('%\A(.*+)\s*(Jr\.?|Sr\.?|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th)\z%i', $last, $m)) {
+        if (preg_match('%\A(.*?\S)(?:\s+|\s*,\s*)(Jr\.?|Sr\.?|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th)\z%i', $last, $m)) {
             if ($m[2] === "Jr" || $m[2] === "Sr")
                 return [$m[1], $m[2] . "."];
             else
