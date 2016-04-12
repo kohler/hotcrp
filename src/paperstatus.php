@@ -946,7 +946,7 @@ class PaperStatus {
             $options = convert_to_utf8(self::options_sql($pj, $paperid));
             $old_options = self::options_sql($old_pj, $paperid);
             if ($options !== $old_options) {
-                $result = Dbl::qe_raw("delete from PaperOption where paperId=$paperid");
+                $result = Dbl::qe("delete from PaperOption where paperId=$paperid and optionId?a", array_keys(PaperOption::option_list()));
                 if ($options)
                     $result = Dbl::qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
             }
