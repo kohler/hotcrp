@@ -1351,6 +1351,19 @@ class Conf {
         return !!get($this->settings, "paperacc");
     }
 
+    function count_submitted_accepted() {
+        $dlt = max($this->setting("sub_sub"), $this->setting("sub_close"));
+        $result = Dbl::qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
+        $n = $nyes = 0;
+        while (($row = edb_row($result))) {
+            $n += $row[1];
+            if ($row[0] > 0)
+                $nyes += $row[1];
+        }
+        Dbl::free($result);
+        return [$n, $nyes];
+    }
+
     function has_any_lead_or_shepherd() {
         return !!get($this->settings, "paperlead");
     }

@@ -155,14 +155,7 @@ echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>
 if (isset($Opt['conferenceSite']) && $Opt['conferenceSite'] != $Opt['paperSite'])
     echo "    <li><a href='", $Opt['conferenceSite'], "'>Conference site</a></li>\n";
 if ($Conf->timeAuthorViewDecision()) {
-    $dlt = max($Conf->setting("sub_sub"), $Conf->setting("sub_close"));
-    $result = Dbl::qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
-    $n = $nyes = 0;
-    while (($row = edb_row($result))) {
-        $n += $row[1];
-        if ($row[0] > 0)
-            $nyes += $row[1];
-    }
+    list($n, $nyes) = $Conf->count_submitted_accepted();
     echo "    <li>", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.</li>\n";
 }
 echo "  </ul>\n</div>\n";
