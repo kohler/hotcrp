@@ -39,16 +39,14 @@ class UnicodeHelper {
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
-                if (strcmp($x[$i], "\xC0") >= 0
-                    && strcmp($x[$i], "\xDF") <= 0
-                    && $i + 1 < $len
+                $ch = ord($x[$i]);
+                if ($ch >= 0xC0 && $ch <= 0xDF && $i + 1 < $len
                     && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_2, substr($x, $i, 2))) !== false) {
                     $out .= substr($x, $first, $i - $first);
                     $out .= trim(substr(UTF8_ALPHA_TRANS_2_OUT, 2 * $w, 2));
                     $first = $i + 2;
                     $i++;
-                } else if (strcmp($x[$i], "\xE0") >= 0
-                           && $i + 2 < $len
+                } else if ($ch >= 0xE0 && $i + 2 < $len
                            && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_3, substr($x, $i, 3))) !== false) {
                     $out .= substr($x, $first, $i - $first);
                     $out .= trim(substr(UTF8_ALPHA_TRANS_3_OUT, 2 * $w, 2));
@@ -62,24 +60,22 @@ class UnicodeHelper {
     }
 
     public static function deaccent_offsets($x) {
-        $offsetmap = array(0, 0);
+        $offsetmap = [[0, 0]];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             $first = 0;
             $len = strlen($x);
             $out = "";
             foreach ($m[0] as $mx) {
                 $i = $mx[1];
-                if (strcmp($x[$i], "\xC0") >= 0
-                    && strcmp($x[$i], "\xDF") <= 0
-                    && $i + 1 < $len
+                $ch = ord($x[$i]);
+                if ($ch >= 0xC0 && $ch <= 0xDF && $i + 1 < $len
                     && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_2, substr($x, $i, 2))) !== false) {
                     $out .= substr($x, $first, $i - $first);
                     $out .= trim(substr(UTF8_ALPHA_TRANS_2_OUT, 2 * $w, 2));
                     $first = $i + 2;
                     array_push($offsetmap, array(strlen($out), $first));
                     $i++;
-                } else if (strcmp($x[$i], "\xE0") >= 0
-                           && $i + 2 < $len
+                } else if ($ch >= 0xE0 && $i + 2 < $len
                            && ($w = self::_utf8FindTransPos(UTF8_ALPHA_TRANS_3, substr($x, $i, 3))) !== false) {
                     $out .= substr($x, $first, $i - $first);
                     $out .= trim(substr(UTF8_ALPHA_TRANS_3_OUT, 2 * $w, 2));

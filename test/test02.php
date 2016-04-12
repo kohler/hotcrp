@@ -138,6 +138,16 @@ xassert_eqq(prefix_word_wrap("+ ", "This\nis\na thing\nto\nbe wrapped.", "- ", 9
 
 xassert_eqq(!!preg_match('/\A\pZ\z/u', ' '), true);
 
+// deaccent tests
+xassert_eqq(UnicodeHelper::deaccent("Á é î ç ø U"), "A e i c o U");
+$do = UnicodeHelper::deaccent_offsets("Á é î ç ø U .\xE2\x84\xAA");
+xassert_eqq($do[0], "A e i c o U .K");
+xassert_eqq(json_encode($do[1]), "[[0,0],[1,2],[3,5],[5,8],[7,11],[9,14],[14,21]]");
+$regex = (object) ["preg_raw" => Text::word_regex("foo"), "preg_utf8" => Text::utf8_word_regex("foo")];
+xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö", $regex),
+            "Is <span class=\"match\">foo</span> bar <span class=\"match\">føo</span> bar <span class=\"match\">fóó</span> bar highlit right? <span class=\"match\">foö</span>");
+
+
 // Qobject tests
 $q = new Qobject(["a" => 1, "b" => 2]);
 xassert_eqq($q->a, 1);
