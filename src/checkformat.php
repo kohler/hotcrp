@@ -175,7 +175,7 @@ class CheckFormat {
         }
 
         // report results
-        if (!$papersize || !count($page))
+        if (!$papersize || !count($pi))
             return $this->msg("error", "Analysis failure: no pages or paper size.");
         $banal_desired = explode(";", $spec);
         $pie = array();
