@@ -112,6 +112,8 @@ class PaperInfo {
     private $_review_id_array = null;
     private $_topics_array = null;
     private $_topic_interest_score_array = null;
+    private $_option_array = null;
+    private $_all_option_array = null;
     private $_conflicts;
     private $_conflicts_email;
 
@@ -562,15 +564,23 @@ class PaperInfo {
     }
 
     public function options() {
-        if (!property_exists($this, "option_array"))
-            PaperOption::parse_paper_options($this);
-        return $this->option_array;
+        if ($this->_option_array === null)
+            $this->_option_array = PaperOption::parse_paper_options($this, false);
+        return $this->_option_array;
     }
 
     public function option($id) {
-        if (!property_exists($this, "option_array"))
-            PaperOption::parse_paper_options($this);
-        return get($this->option_array, $id);
+        return get($this->options(), $id);
+    }
+
+    public function all_options() {
+        if ($this->_all_option_array === null)
+            $this->_all_option_array = PaperOption::parse_paper_options($this, true);
+        return $this->_all_option_array;
+    }
+
+    public function all_option($id) {
+        return get($this->all_options(), $id);
     }
 
     public function document($dtype, $did = 0) {

@@ -9,10 +9,11 @@ class PaperOptionValue {
     public $value;
     public $values;
     public $data;
+    public $data_array;
     private $_documents = null;
 
-    public function __construct(PaperOption $o) {
-        $this->id = $o->id;
+    public function __construct($id, PaperOption $o = null) {
+        $this->id = $id;
         $this->option = $o;
     }
     public function documents($prow) {
@@ -48,6 +49,7 @@ class PaperOption {
     public $abbr;
     public $description;
     public $position;
+    public $ordinal;
     public $final;
     public $visibility; // "rev", "nonblind", "admin"
     private $display;
@@ -113,6 +115,11 @@ class PaperOption {
                 foreach ($optj as $j)
                     self::$list[$j->id] = PaperOption::make($j);
                 uasort(self::$list, array("PaperOption", "compare"));
+                $ordinal = 0;
+                foreach (self::$list as $o) {
+                    $o->ordinal = $ordinal;
+                    ++$ordinal;
+                }
             }
         }
         return self::$list;
@@ -263,7 +270,7 @@ class PaperOption {
 
     private static function sort_multiples($o, $ox) {
         if ($o->type === "attachments")
-            array_multisort($ox->data, SORT_NUMERIC, $ox->values);
+            array_multisort($ox->data_array, SORT_NUMERIC, $ox->values);
     }
 
     private static function load_optdata($pid) {
@@ -275,17 +282,18 @@ class PaperOption {
         return $optdata;
     }
 
-    static function parse_paper_options($prow) {
-        if (!$prow)
-            return 0;
+    static function parse_paper_options(PaperInfo $prow, $all) {
+        $optionIds = get($prow, "optionIds");
+        if ($optionIds === "")
+            return [];
+
         $options = self::option_list();
-        $prow->option_array = array();
-        if (!count($options) || get($prow, "optionIds") === "")
-            return 0;
+        if (!$all && empty($options))
+            return [];
 
         $optsel = array();
-        if (property_exists($prow, "optionIds")) {
-            preg_match_all('/(\d+)#(\d+)/', $prow->optionIds, $m);
+        if ($optionIds !== null) {
+            preg_match_all('/(\d+)#(\d+)/', $optionIds, $m);
             for ($i = 0; $i < count($m[1]); ++$i)
                 arrayappend($optsel[$m[1][$i]], (int) $m[2][$i]);
             $optdata = null;
@@ -297,28 +305,39 @@ class PaperOption {
             }
         }
 
-        foreach ($options as $o)
-            if (isset($optsel[$o->id])) {
-                $ox = new PaperOptionValue($o);
-                if ($o->needs_data() && !$optdata)
-                    $optdata = self::load_optdata($prow->paperId);
-                $ox->values = $optsel[$o->id];
-                if ($o->takes_multiple()) {
-                    if ($o->needs_data()) {
-                        $ox->data = array();
-                        foreach ($ox->values as $v)
-                            $ox->data[] = $optdata[$o->id . "." . $v];
-                    }
-                    self::sort_multiples($o, $ox);
-                } else {
-                    $ox->value = $optsel[$o->id][0];
-                    if ($o->needs_data())
-                        $ox->data = $optdata[$o->id . "." . $ox->value];
-                }
-                $prow->option_array[$o->id] = $ox;
+        $option_array = array();
+        foreach ($optsel as $oid => $ovalues) {
+            $o = get($options, $oid);
+            if (!$o && !$all)
+                continue;
+            $ox = new PaperOptionValue($oid, $o);
+            $needs_data = !$o || $o->needs_data();
+            if ($needs_data && !$optdata)
+                $optdata = self::load_optdata($prow->paperId);
+            $ox->values = $ovalues;
+            if ($needs_data) {
+                $ox->data_array = [];
+                foreach ($ox->values as $v)
+                    $ox->data_array[] = $optdata[$oid . "." . $v];
             }
-
-        return count($prow->option_array);
+            if ($o && $o->takes_multiple())
+                self::sort_multiples($o, $ox);
+            else {
+                $ox->value = $ox->values[0];
+                if ($needs_data)
+                    $ox->data = $optdata[$oid . "." . $ox->value];
+            }
+            $option_array[$oid] = $ox;
+        }
+        uasort($option_array, function ($a, $b) {
+            if ($a->option && $b->option)
+                return $a->option->ordinal - $b->option->ordinal;
+            else if ($a->option || $b->option)
+                return $a->option ? -1 : 1;
+            else
+                return $a->id - $b->id;
+        });
+        return $option_array;
     }
 
     function value_compare($av, $bv) {
