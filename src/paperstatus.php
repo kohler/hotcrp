@@ -77,7 +77,9 @@ class PaperStatus {
         }
         foreach ($this->document_callbacks as $cb)
             call_user_func($cb, $d, $prow, $dtype, $drow);
-        return empty(get_object_vars($d)) ? null : $d;
+        if (empty(get_object_vars($d)))
+            $d = null;
+        return $d;
     }
 
     function row_to_json($prow, $args = array()) {
