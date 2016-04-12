@@ -77,7 +77,7 @@ class PaperStatus {
         }
         foreach ($this->document_callbacks as $cb)
             call_user_func($cb, $d, $prow, $dtype, $drow);
-        if (empty(get_object_vars($d)))
+        if (!count(get_object_vars($d)))
             $d = null;
         return $d;
     }
