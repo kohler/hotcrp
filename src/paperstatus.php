@@ -185,7 +185,7 @@ class PaperStatus {
             $pj->final_submitted_at = (int) $prow->timeFinalSubmitted;
         }
 
-        if (!empty($prow->options())) {
+        if (count($prow->options())) {
             $options = array();
             foreach ($prow->options() as $oa) {
                 $o = $oa->option;
