@@ -8,6 +8,7 @@ class Mimetype {
     const PDF = 2;
     const PS = 3;
     const PPT = 4;
+    const JSON = 8;
 
     public $mimetypeid;
     public $mimetype;
@@ -116,7 +117,7 @@ Mimetype::register(Mimetype::PPT, "application/vnd.ms-powerpoint", ".ppt", "Powe
 Mimetype::register(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
 Mimetype::register(6, "video/mp4", ".mp4");
 Mimetype::register(7, "video/x-msvideo", ".avi");
-Mimetype::register(8, "application/json", ".json");
+Mimetype::register(Mimetype::JSON, "application/json", ".json");
 
 Mimetype::register_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
 Mimetype::register_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
