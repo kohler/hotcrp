@@ -107,6 +107,26 @@ class UnicodeHelper {
         }, $str);
     }
 
+    public static function utf8_to_html_entities($str, $quotes = false) {
+        return preg_replace_callback('/[&<>' . ($quotes ? "\"'" : "") . '\200-\377][\200-\277]*/',
+                                     function ($m) {
+            $e = htmlentities($m[0], ENT_QUOTES);
+            if (substr($e, 0, 1) !== "&") {
+                $n = ord($m[0][0]);
+                if ($n < 0xE0)
+                    $n &= 0x1F;
+                else if ($n < 0xF0)
+                    $n &= 0x0F;
+                else
+                    $n &= 0x07;
+                for ($i = 1; $i < strlen($m[0]); ++$i)
+                    $n = ($n << 6) | (ord($m[0][$i]) & 0x3F);
+                $e = "&#" . $n . ";";
+            }
+            return $e;
+        }, $str);
+    }
+
     public static function utf8_glyphlen($str) {
         return strlen(preg_replace('/\X/u', '.', $str));
     }
