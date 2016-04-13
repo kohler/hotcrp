@@ -107,6 +107,44 @@ class UnicodeHelper {
         }, $str);
     }
 
+    public static function utf8_ord($str) {
+        $n = ord($str[0]);
+        if ($n < 0x80)
+            return $n;
+        else if ($n < 0xC0)
+            return false;
+        else if ($n < 0xE0) {
+            $n &= 0x1F;
+            $need = 1;
+        } else if ($n < 0xF0) {
+            $n &= 0x0F;
+            $need = 2;
+        } else {
+            $n &= 0x07;
+            $need = 3;
+        }
+        if (strlen($str) <= $need)
+            return false;
+        for ($i = 1; $i <= $need; ++$i) {
+            $c = ord($str[$i]);
+            if ($c < 0x80 || $c >= 0xC0)
+                return false;
+            $n = ($n << 6) | ($c & 0x3F);
+        }
+        return $n;
+    }
+
+    public static function utf8_chr($n) {
+        if ($n < 0x80)
+            return chr($n);
+        else if ($n < 0x800)
+            return chr(0xC0 | ($n >> 6)) . chr(0x80 | ($n & 0x3F));
+        else if ($n < 0x10000)
+            return chr(0xE0 | ($n >> 12)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
+        else
+            return chr(0xF0 | ($n >> 18)) . chr(0x80 | (($n >> 12) & 0x3F)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
+    }
+
     public static function utf8_to_html_entities($str, $quotes = false) {
         return preg_replace_callback('/[&<>' . ($quotes ? "\"'" : "") . '\200-\377][\200-\277]*/',
                                      function ($m) {
