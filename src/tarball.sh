@@ -173,7 +173,7 @@ src/sa/sa_mail.php
 src/sa/sa_tag.php
 src/sample.pdf
 src/schema.sql
-src/searchactions.php
+src/searchaction.php
 src/searchselection.php
 src/settinginfo.json
 src/settings/s_basics.php

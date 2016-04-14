@@ -1,5 +1,5 @@
 <?php
-// searchactions.php -- HotCRP helper class for paper search actions
+// searchaction.php -- HotCRP helper class for paper search actions
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
@@ -15,9 +15,8 @@ class SearchAction {
     public function run(Contact $user, $qreq, $selection) {
         return "Unsupported.";
     }
-}
 
-class SearchActions {
+
     static private $loaded = false;
     static private $byname = [];
 
@@ -77,7 +76,7 @@ class SearchActions {
         return $error;
     }
 
-    static function list_actions(Contact $user, $qreq, PaperList $pl) {
+    static function list_all_actions(Contact $user, $qreq, PaperList $pl) {
         self::load();
         $actions = [];
         foreach (self::$byname as $ufm)
@@ -136,3 +135,5 @@ class SearchActions {
         return [$header, $texts];
     }
 }
+
+class SearchActions extends SearchAction {} // backwards compat

@@ -126,4 +126,4 @@ class Tag_SearchAction extends SearchAction {
     }
 }
 
-SearchActions::register("tag", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Tag_SearchAction);
+SearchAction::register("tag", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Tag_SearchAction);

@@ -36,8 +36,8 @@ if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "
     else if (isset($Qreq->sendmail))
         $Qreq->fn = "sendmail";
     else {
-        SearchActions::load();
-        if (!SearchActions::has_function($Qreq->fn))
+        SearchAction::load();
+        if (!SearchAction::has_function($Qreq->fn))
             unset($Qreq->fn);
     }
 }
@@ -95,10 +95,10 @@ if ($Qreq->fn == "load" && $Qreq->field
 
 // look for search action
 if ($Qreq->fn) {
-    SearchActions::load();
+    SearchAction::load();
     $subfn = $Qreq[$Qreq->fn . "fn"];
-    if (SearchActions::has_function($Qreq->fn, $subfn))
-        SearchActions::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
+    if (SearchAction::has_function($Qreq->fn, $subfn))
+        SearchAction::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
 }
 
 

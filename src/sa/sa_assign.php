@@ -87,4 +87,4 @@ class Assign_SearchAction extends SearchAction {
     }
 }
 
-SearchActions::register("assign", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Assign_SearchAction);
+SearchAction::register("assign", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Assign_SearchAction);

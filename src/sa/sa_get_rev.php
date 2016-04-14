@@ -11,7 +11,7 @@ class GetPcassignments_SearchAction extends SearchAction {
         $actions[] = [399, $this->subname, "Review assignments", "PC assignments"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        list($header, $texts) = SearchActions::pcassignments_csv_data($user, $ssel->selection());
+        list($header, $texts) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
         downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
     }
 }
@@ -311,13 +311,13 @@ class GetLead_SearchAction extends SearchAction {
 }
 
 
-SearchActions::register("get", "pcassignments", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetPcassignments_SearchAction);
-SearchActions::register("get", "revform", SiteLoader::API_GET, new GetReviewForm_SearchAction(false));
-SearchActions::register("get", "revformz", SiteLoader::API_GET, new GetReviewForm_SearchAction(true));
-SearchActions::register("get", "rev", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(false));
-SearchActions::register("get", "revz", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(true));
-SearchActions::register("get", "scores", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetScores_SearchAction);
-SearchActions::register("get", "votes", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetVotes_SearchAction);
-SearchActions::register("get", "rank", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRank_SearchAction);
-SearchActions::register("get", "lead", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(true));
-SearchActions::register("get", "shepherd", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(false));
+SearchAction::register("get", "pcassignments", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetPcassignments_SearchAction);
+SearchAction::register("get", "revform", SiteLoader::API_GET, new GetReviewForm_SearchAction(false));
+SearchAction::register("get", "revformz", SiteLoader::API_GET, new GetReviewForm_SearchAction(true));
+SearchAction::register("get", "rev", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(false));
+SearchAction::register("get", "revz", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetReviews_SearchAction(true));
+SearchAction::register("get", "scores", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetScores_SearchAction);
+SearchAction::register("get", "votes", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetVotes_SearchAction);
+SearchAction::register("get", "rank", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRank_SearchAction);
+SearchAction::register("get", "lead", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(true));
+SearchAction::register("get", "shepherd", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetLead_SearchAction(false));

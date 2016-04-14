@@ -383,7 +383,7 @@ class PaperList {
             return "";
 
         $revpref = $this->table_type == "editReviewPreference";
-        $lllgroups = SearchActions::list_actions($this->contact, $this->qreq, $this);
+        $lllgroups = SearchAction::list_all_actions($this->contact, $this->qreq, $this);
 
         // Upload preferences (review preferences only)
         if ($revpref) {

@@ -35,4 +35,4 @@ class Decide_SearchAction extends SearchAction {
     }
 }
 
-SearchActions::register("decide", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Decide_SearchAction);
+SearchAction::register("decide", null, SiteLoader::API_POST | SiteLoader::API_PAPER, new Decide_SearchAction);

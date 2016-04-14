@@ -22,4 +22,4 @@ class Mail_SearchAction extends SearchAction {
     }
 }
 
-SearchActions::register("mail", null, SiteLoader::API_GET | SiteLoader::API_PAPER, new Mail_SearchAction);
+SearchAction::register("mail", null, SiteLoader::API_GET | SiteLoader::API_PAPER, new Mail_SearchAction);

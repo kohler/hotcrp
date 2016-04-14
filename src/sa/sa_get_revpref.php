@@ -97,6 +97,6 @@ class GetAllRevpref_SearchAction extends SearchAction {
     }
 }
 
-SearchActions::register("get", "revpref", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRevpref_SearchAction(false));
-SearchActions::register("get", "revprefx", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRevpref_SearchAction(true));
-SearchActions::register("get", "allrevpref", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAllRevpref_SearchAction);
+SearchAction::register("get", "revpref", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRevpref_SearchAction(false));
+SearchAction::register("get", "revprefx", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetRevpref_SearchAction(true));
+SearchAction::register("get", "allrevpref", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAllRevpref_SearchAction);
