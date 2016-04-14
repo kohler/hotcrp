@@ -16,6 +16,7 @@ class PaperStatus {
     private $export_docids = false;
     private $export_content = false;
     private $disable_users = false;
+    private $prow;
     private $document_callbacks = array();
 
     function __construct($contact, $options = array()) {
@@ -33,10 +34,15 @@ class PaperStatus {
         $this->errf = array();
         $this->errmsg = array();
         $this->nerrors = 0;
+        $this->prow = null;
     }
 
     function add_document_callback($cb) {
         $this->document_callbacks[] = $cb;
+    }
+
+    function paper_row() {
+        return $this->prow;
     }
 
     function load($pid, $args = array()) {
@@ -46,10 +52,10 @@ class PaperStatus {
         return $prow ? $this->row_to_json($prow, $args) : null;
     }
 
-    private function document_to_json($prow, $dtype, $docid, $args) {
+    public function document_to_json($dtype, $docid) {
         global $Conf;
         if (!is_object($docid)) {
-            $dresult = $Conf->document_result($prow, $dtype, $docid);
+            $dresult = $Conf->document_result($this->prow, $dtype, $docid);
             $drow = $Conf->document_row($dresult, $dtype);
             Dbl::free($dresult);
         } else {
@@ -57,7 +63,7 @@ class PaperStatus {
             $docid = $drow ? $drow->paperStorageId : null;
         }
         $d = (object) array();
-        if ($docid && (get($args, "docids") || $this->export_docids))
+        if ($docid && $this->export_docids)
             $d->docid = $docid;
         if ($drow) {
             if ($drow->mimetype)
@@ -76,7 +82,7 @@ class PaperStatus {
                 $d->content_base64 = base64_encode(Filer::content($drow));
         }
         foreach ($this->document_callbacks as $cb)
-            call_user_func($cb, $d, $prow, $dtype, $drow);
+            call_user_func($cb, $d, $this->prow, $dtype, $drow);
         if (!count(get_object_vars($d)))
             $d = null;
         return $d;
@@ -90,6 +96,9 @@ class PaperStatus {
 
         if (!$prow || ($contact && !$contact->can_view_paper($prow)))
             return null;
+        $this->prow = $prow;
+        $old_export_docids = $this->export_docids;
+        $this->export_docids = $this->export_docids || get($args, "docids");
 
         $pj = (object) array();
         $pj->pid = (int) $prow->paperId;
@@ -169,16 +178,12 @@ class PaperStatus {
 
         if ($prow->paperStorageId > 1
             && (!$contact || $contact->can_view_pdf($prow))
-            && ($doc = $this->document_to_json($prow, DTYPE_SUBMISSION,
-                                               (int) $prow->paperStorageId,
-                                               $args)))
+            && ($doc = $this->document_to_json(DTYPE_SUBMISSION, (int) $prow->paperStorageId)))
             $pj->submission = $doc;
 
         if ($prow->finalPaperStorageId > 1
             && (!$contact || $contact->can_view_pdf($prow))
-            && ($doc = $this->document_to_json($prow, DTYPE_FINAL,
-                                               (int) $prow->finalPaperStorageId,
-                                               $args)))
+            && ($doc = $this->document_to_json(DTYPE_FINAL, (int) $prow->finalPaperStorageId)))
             $pj->final = $doc;
         if ($prow->timeFinalSubmitted > 0) {
             $pj->final_submitted = true;
@@ -191,27 +196,9 @@ class PaperStatus {
                 $o = $oa->option;
                 if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
                     continue;
-                $okey = $this->export_ids ? $o->id : $o->abbr;
-                if ($o->type == "checkbox" && $oa->value)
-                    $options[$okey] = true;
-                else if ($o->has_selector()
-                         && ($otext = get($o->selector, $oa->value)))
-                    $options[$okey] = $otext;
-                else if ($o->type == "numeric" && $oa->value != ""
-                         && $oa->value != "0")
-                    $options[$okey] = $oa->value;
-                else if ($o->type == "text" && $oa->data != "")
-                    $options[$okey] = $oa->data;
-                else if ($o->type == "attachments") {
-                    $attachments = array();
-                    foreach ($oa->documents($prow) as $doc)
-                        if (($doc = $this->document_to_json($prow, $o->id, $doc, $args)))
-                            $attachments[] = $doc;
-                    if (!empty($attachments))
-                        $options[$okey] = $attachments;
-                } else if ($o->is_document() && $oa->value
-                           && ($doc = $this->document_to_json($prow, $o->id, $oa->value, $args)))
-                    $options[$okey] = $doc;
+                $result = $o->unparse_json($oa, $this, $contact);
+                if ($result !== null)
+                    $options[$this->export_ids ? $o->id : $o->abbr] = $result;
             }
             if (!empty($options))
                 $pj->options = (object) $options;
@@ -230,6 +217,8 @@ class PaperStatus {
         if ($prow->collaborators && $can_view_authors)
             $pj->collaborators = $prow->collaborators;
 
+        $this->prow = null;
+        $this->export_docids = $old_export_docids;
         return $pj;
     }
 
@@ -270,9 +259,13 @@ class PaperStatus {
         // check existing docid's sha1
         $docid = get($docj, "docid");
         if ($docid) {
-            $oldj = $this->document_to_json($paperid, $dtype, $docid, array("docids" => true));
+            $this->prow = $paperid;
+            $old_export_docids = $this->export_docids;
+            $this->export_docids = true;
+            $oldj = $this->document_to_json($dtype, $docid);
             if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
                 $docid = null;
+            $this->export_docids = $old_export_docids;
         } else if (!$docid && $paperid && get($docj, "sha1")) {
             $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $paperid, $dtype, $docj->sha1);
             if (($row = edb_row($result)))

@@ -355,6 +355,10 @@ class PaperOption {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return null;
+    }
+
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         return null;
     }
@@ -371,6 +375,10 @@ class CheckboxPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->value ? true : null;
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
@@ -407,6 +415,10 @@ class SelectorPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return get($this->selector, $ov->value, null);
+    }
+
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
         return $v !== "" && ctype_digit($v) ? (int) $v : $v;
@@ -433,6 +445,12 @@ class DocumentPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        if (($doc = $ps->document_to_json($this->id, $ov->value)))
+            return $doc;
+        return null;
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
@@ -467,6 +485,10 @@ class NumericPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->value ? : null;
+    }
+
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
         return $v !== "" && ctype_digit($v) ? (int) $v : $v;
@@ -496,6 +518,10 @@ class TextPaperOption extends PaperOption {
             return strcasecmp($av, $bv);
         else
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->data != "" ? $ov->data : null;
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
@@ -537,6 +563,14 @@ class AttachmentsPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        $attachments = array();
+        foreach ($ov->documents($ps->paper_row()) as $doc)
+            if (($doc = $ps->document_to_json($this->id, $doc)))
+                $attachments[] = $doc;
+        return empty($attachments) ? null : $attachments;
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
