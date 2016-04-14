@@ -2258,7 +2258,7 @@ class Conf {
     }
 
     static public function msg_debugt($text) {
-        if (is_object($text) || is_array($text) || $text === null || $text === false)
+        if (is_object($text) || is_array($text) || $text === null || $text === false || $text === true)
             $text = json_encode($text);
         self::$g->msg("merror", Ht::pre_text_wrap($text));
         return false;
