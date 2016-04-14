@@ -239,11 +239,26 @@ function make_qreq() {
         $qreq[$k] = $v;
     foreach ($_POST as $k => $v)
         $qreq[$k] = $v;
+
+    // $_FILES requires special processing since we want error messages.
     $qreq->_FILES = new Qobject;
-    foreach ($_FILES as $f => $finfo)
-        if ($finfo["error"] == UPLOAD_ERR_OK
-            && is_uploaded_file($finfo["tmp_name"]))
-            $qreq->_FILES[$f] = $finfo;
+    $errors = [];
+    foreach ($_FILES as $f => $finfo) {
+        if (($e = $finfo["error"]) == UPLOAD_ERR_OK) {
+            if (is_uploaded_file($finfo["tmp_name"]))
+                $qreq->_FILES[$f] = $finfo;
+        } else {
+            $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";
+            if ($e == UPLOAD_ERR_INI_SIZE || $e == UPLOAD_ERR_FORM_SIZE)
+                $errors[] = $name . "Uploaded file too big. The maximum upload size is " . ini_get("upload_max_filesize") . "B.";
+            else if ($e == UPLOAD_ERR_PARTIAL)
+                $errors[] = $name . "Upload process interrupted.";
+            else if ($e != UPLOAD_ERR_NO_FILE)
+                $errors[] = $name . "Unknown upload error.";
+        }
+    }
+    if (count($errors) && Conf::$g)
+        Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
     return $qreq;
 }
 
