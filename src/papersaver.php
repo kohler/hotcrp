@@ -14,7 +14,7 @@ class PaperSaver {
                 return $a[1] - $b[1];
         });
     }
-    static public function apply_all($user, $pj, $opj, $qreq, $action) {
+    static public function apply_all(Contact $user, $pj, $opj, $qreq, $action) {
         foreach (self::$list as $fn)
             $fn[2]->apply($user, $pj, $opj, $qreq, $action);
     }
@@ -25,7 +25,7 @@ class PaperSaver {
         return $diffs;
     }
 
-    public function apply($user, $pj, $opj, $qreq, $action) {
+    public function apply(Contact $user, $pj, $opj, $qreq, $action) {
     }
     public function diffs(&$diffs, $pj, $opj) {
     }
@@ -50,7 +50,7 @@ class PaperSaver {
 }
 
 class Default_PaperSaver extends PaperSaver {
-    public function apply($user, $pj, $opj, $qreq, $action) {
+    public function apply(Contact $user, $pj, $opj, $qreq, $action) {
         global $Conf;
         // Title, abstract, collaborators
         foreach (array("title", "abstract", "collaborators") as $k)
@@ -108,9 +108,20 @@ class Default_PaperSaver extends PaperSaver {
         }
 
         // Options
+        if (!isset($pj->options))
+            $pj->options = (object) [];
         foreach (PaperOption::option_list() as $o)
-            if ($qreq["has_opt$o->id"])
-                $this->apply_option($pj, $qreq, $o, $action);
+            if ($qreq["has_opt$o->id"]
+                && (!$o->final || $action === "final")) {
+                $okey = $o->abbr;
+                $result = $o->parse_request(get($pj->options, $o->abbr), $qreq, $user, $pj);
+                if ($result === null)
+                    unset($pj->options->$okey);
+                else
+                    $pj->options->$okey = $result;
+            }
+        if (!count(get_object_vars($pj->options)))
+            unset($pj->options);
 
         // PC conflicts
         if ($Conf->setting("sub_pcconf")
@@ -127,49 +138,6 @@ class Default_PaperSaver extends PaperSaver {
                 }
             }
         }
-    }
-
-    private function apply_option($pj, $qreq, $o, $action) {
-        global $Conf;
-        if ($o->final && $action !== "final")
-            return;
-        if (!isset($pj->options))
-            $pj->options = (object) [];
-
-        $okey = $o->abbr;
-        $oreq = "opt$o->id";
-        if ($o->type == "checkbox")
-            $pj->options->$okey = $qreq[$oreq] > 0;
-        else if ($o->type == "selector"
-                 || $o->type == "radio"
-                 || $o->type == "numeric") {
-            $v = trim((string) $qreq[$oreq]);
-            if ($v !== "" && ctype_digit($v))
-                $pj->options->$okey = (int) $v;
-            else
-                $pj->options->$okey = $v;
-        } else if ($o->type == "text") {
-            $pj->options->$okey = trim((string) $qreq[$oreq]);
-        } else if ($o->type == "attachments") {
-            $attachments = get($pj->options, $okey, array());
-            $opfx = $oreq . "_";
-            foreach ($qreq->_FILES ? : [] as $k => $v)
-                if (str_starts_with($k, $opfx))
-                    $attachments[] = Filer::file_upload_json($v);
-            for ($i = 0; $i < count($attachments); ++$i)
-                if (isset($attachments[$i]->docid)
-                    && $qreq["remove_{$oreq}_{$attachments[$i]->docid}"]) {
-                    array_splice($attachments, $i, 1);
-                    --$i;
-                }
-            $pj->options->$okey = $attachments;
-        } else if ($o->is_document()) {
-            if ($qreq->_FILES[$oreq])
-                $pj->options->$okey = Filer::file_upload_json($qreq->_FILES[$oreq]);
-            else if ($qreq["remove_$oreq"])
-                unset($pj->options->$okey);
-        } else
-            unset($pj->options->$okey);
     }
 
     public function diffs(&$diffs, $pj, $opj) {

@@ -355,6 +355,10 @@ class PaperOption {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
     }
 
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        return null;
+    }
+
     function unparse_column_html($pl, $row) {
         return "";
     }
@@ -367,6 +371,10 @@ class CheckboxPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
+    }
+
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        return $qreq["opt$this->id"] > 0;
     }
 
     function unparse_column_html($pl, $row) {
@@ -399,6 +407,11 @@ class SelectorPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        $v = trim((string) $qreq["opt$this->id"]);
+        return $v !== "" && ctype_digit($v) ? (int) $v : $v;
+    }
+
     function unparse_column_html($pl, $row) {
         $v = $row->option($this->id);
         return isset($this->selector[$v]) ? htmlspecialchars($this->selector[$v]) : "";
@@ -422,6 +435,15 @@ class DocumentPaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
 
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        if ($qreq->_FILES["opt$this->id"])
+            return Filer::file_upload_json($qreq->_FILES["opt$this->id"]);
+        else if ($qreq["remove_opt$this->id"])
+            return null;
+        else
+            return $opt_pj;
+    }
+
     function unparse_column_html($pl, $row) {
         if (($v = $row->option($this->id)))
             foreach ($v->documents($row) as $d)
@@ -443,6 +465,11 @@ class NumericPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return PaperOption::basic_value_compare($av, $bv);
+    }
+
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        $v = trim((string) $qreq["opt$this->id"]);
+        return $v !== "" && ctype_digit($v) ? (int) $v : $v;
     }
 
     function unparse_column_html($pl, $row) {
@@ -469,6 +496,10 @@ class TextPaperOption extends PaperOption {
             return strcasecmp($av, $bv);
         else
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
+    }
+
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        return trim((string) $qreq["opt$this->id"]);
     }
 
     function unparse_column_html($pl, $row) {
@@ -506,6 +537,21 @@ class AttachmentsPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
+    }
+
+    function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        $attachments = $opt_pj ? : [];
+        $opfx = "opt{$this->id}_";
+        foreach ($qreq->_FILES ? : [] as $k => $v)
+            if (str_starts_with($k, $opfx))
+                $attachments[] = Filer::file_upload_json($v);
+        for ($i = 0; $i < count($attachments); ++$i)
+            if (isset($attachments[$i]->docid)
+                && $qreq["remove_opt{$this->id}_{$attachments[$i]->docid}"]) {
+                array_splice($attachments, $i, 1);
+                --$i;
+            }
+        return empty($attachments) ? null : $attachments;
     }
 
     function unparse_column_html($pl, $row) {
