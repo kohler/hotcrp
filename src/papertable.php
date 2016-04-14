@@ -80,7 +80,7 @@ class PaperTable {
 
         $this->matchPreg = array();
         $matcher = array();
-        if (($l = SessionList::active()) && @$l->matchPreg)
+        if (($l = SessionList::active()) && isset($l->matchPreg) && $l->matchPreg)
             $matcher = self::_combine_match_preg($matcher, $l->matchPreg);
         if (($mpreg = $Conf->session("temp_matchPreg"))) {
             $matcher = self::_combine_match_preg($matcher, $mpreg);
@@ -231,7 +231,7 @@ class PaperTable {
 
     private function editable_papt($what, $name, $extra = array()) {
         global $Error;
-        if (($id = @$extra["id"]))
+        if (($id = get($extra, "id")))
             $c = '<div class="papeg papg_' . $id . '"><div id="' . $id . '" ';
         else
             $c = '<div class="papeg"><div ';
@@ -255,7 +255,7 @@ class PaperTable {
                 $foldnumarg = $foldnum ? ",$foldnum" : "";
         }
 
-        if (@$extra["type"] === "ps")
+        if (get($extra, "type") === "ps")
             list($divclass, $hdrclass) = array("pst", "psfn");
         else
             list($divclass, $hdrclass) = array("pavt", "pavfn");
@@ -263,7 +263,7 @@ class PaperTable {
         $c = "<div class=\"$divclass";
         if (isset($Error[$what]))
             $c .= " error";
-        if (($fold || $editfolder) && !@$extra["float"])
+        if (($fold || $editfolder) && !get($extra, "float"))
             $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
         $c .= "\"><span class=\"$hdrclass\">";
         if (!$fold) {
@@ -298,7 +298,7 @@ class PaperTable {
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
         }
-        if (@$extra["float"])
+        if (isset($extra["float"]))
             $c .= $extra["float"];
         $c .= "<hr class=\"c\" /></div>";
         return $c;
@@ -708,7 +708,7 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold', (@$Error["authorInformation"] ? " error" : ""),
+            '<div class="pavt childfold', (get($Error, "authorInformation") ? " error" : ""),
             '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
         if (!$viewable || $this->allFolded)
@@ -781,7 +781,7 @@ class PaperTable {
             if ($o->type === "checkbox" && $oa->value)
                 $ox = true;
             else if ($o->has_selector()
-                     && @($otext = $o->selector[$oa->value]))
+                     && ($otext = get($o->selector, $oa->value)))
                 $ox = htmlspecialchars($otext);
             else if ($o->type === "numeric"
                      && $oa->value != "" && $oa->value != "0")
@@ -905,7 +905,7 @@ class PaperTable {
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
 
-        $cerror = @$Error["contactAuthor"] || @$Error["contacts"];
+        $cerror = get($Error, "contactAuthor") || get($Error, "contacts");
         $open = $cerror || $always_unfold
             || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo '<div id="foldcontactauthors" class="papeg ',
@@ -1169,7 +1169,7 @@ class PaperTable {
                     }
                 } else if ($o->type === "numeric")
                     echo "<input type='text' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' />";
-                else if ($o->type === "text" && @$o->display_space <= 1)
+                else if ($o->type === "text" && $o->display_space <= 1)
                     echo "<input type='text' class='papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' />";
                 else if ($o->type === "text")
                     echo Ht::textarea($optid, $myval, array("class" => "papertext", "rows" => 5, "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"));
@@ -1449,7 +1449,7 @@ class PaperTable {
             " <span id='revprefformresult'></span>",
             "</div></form></div></div>\n";
         $Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
-        if (($l = SessionList::active()) && @$l->revprefs && $this->mode === "p")
+        if (($l = SessionList::active()) && isset($l->revprefs) && $l->revprefs && $this->mode === "p")
             $Conf->footerScript("crpfocus('revprefform',null,3)");
     }
 
@@ -1728,7 +1728,7 @@ class PaperTable {
                 $whyNot = $Me->perm_start_paper(false);
             }
             // pay attention only to the deadline
-            if ($whyNot && @$whyNot["deadline"])
+            if ($whyNot && get($whyNot, "deadline"))
                 $whyNot = array("deadline" => $whyNot["deadline"]);
             else
                 $whyNot = null;
@@ -1926,7 +1926,7 @@ class PaperTable {
         echo $form, "<div class='aahc'>";
         $this->canUploadFinal = $prow && $prow->outcome > 0
             && (!($whyNot = $Me->perm_submit_final_paper($prow, true))
-                || @$whyNot["deadline"] === "final_done");
+                || get($whyNot, "deadline") === "final_done");
 
         if (($m = $this->editMessage()))
             echo $m, '<div class="g"></div>';
@@ -2341,12 +2341,12 @@ class PaperTable {
                 $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $pl->ids[0];
             // check if the paper is in the current list
             if (false && ($curpl = SessionList::requested())
-                && @$curpl->listno
+                && isset($curpl->listno) && $curpl->listno
                 && str_starts_with($curpl->listid, "p")
                 && !preg_match(',\Ap/[^/]*//,', $curpl->listid)
                 && array_search($pl->ids[0], $curpl->ids) !== false) {
                 // preserve current list
-                if (@$pl->matchPreg)
+                if (isset($pl->matchPreg) && $pl->matchPreg)
                     $Conf->save_session("temp_matchPreg", $pl->matchPreg);
                 $pl = $curpl;
             } else {
