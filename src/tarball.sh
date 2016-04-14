@@ -154,6 +154,7 @@ src/papercolumn.php
 src/paperinfo.php
 src/paperlist.php
 src/paperoption.php
+src/papersaver.php
 src/papersearch.php
 src/paperstatus.php
 src/papertable.php

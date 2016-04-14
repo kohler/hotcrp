@@ -1,0 +1,225 @@
+<?php
+// papersaver.php -- HotCRP helper for mapping requests to JSON
+// HotCRP is Copyright (c) 2008-2016 Eddie Kohler and Regents of the UC
+// Distributed under an MIT-like license; see LICENSE
+
+class PaperSaver {
+    static private $list = [];
+    static public function register($prio, PaperSaver $saver) {
+        self::$list[] = [$prio, count(self::$list), $saver];
+        usort(self::$list, function ($a, $b) {
+            if ($a[0] != $b[0])
+                return $a[0] - $b[0];
+            else
+                return $a[1] - $b[1];
+        });
+    }
+    static public function apply_all($user, $pj, $opj, $qreq, $action) {
+        foreach (self::$list as $fn)
+            $fn[2]->apply($user, $pj, $opj, $qreq, $action);
+    }
+    static public function all_diffs($pj, $opj) {
+        $diffs = [];
+        foreach (self::$list as $fn)
+            $fn[2]->diffs($diffs, $pj, $opj);
+        return $diffs;
+    }
+
+    public function apply($user, $pj, $opj, $qreq, $action) {
+    }
+    public function diffs(&$diffs, $pj, $opj) {
+    }
+
+    static public function replace_contacts($pj, $qreq) {
+        $pj->contacts = array();
+        foreach ($qreq as $k => $v)
+            if (str_starts_with($k, "contact_")) {
+                $email = html_id_decode(substr($k, 8));
+                $pj->contacts[] = $email;
+            } else if (str_starts_with($k, "newcontact_email")
+                       && trim($v) !== ""
+                       && trim($v) !== "Email") {
+                $suffix = substr($k, strlen("newcontact_email"));
+                $email = trim($v);
+                $name = $qreq["newcontact_name$suffix"];
+                if ($name === "Name")
+                    $name = "";
+                $pj->contacts[] = (object) ["email" => $email, "name" => $name];
+            }
+    }
+}
+
+class Default_PaperSaver extends PaperSaver {
+    public function apply($user, $pj, $opj, $qreq, $action) {
+        global $Conf;
+        // Title, abstract, collaborators
+        foreach (array("title", "abstract", "collaborators") as $k)
+            if (isset($qreq[$k]))
+                $pj->$k = $qreq[$k];
+
+        // Authors
+        $bad_author = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
+        $authors = array();
+        foreach ($qreq as $k => $v)
+            if (preg_match('/\Aau(name|email|aff)(\d+)\z/', $k, $m)
+                && ($v = simplify_whitespace($v)) !== ""
+                && $v !== $bad_author[$m[1]]) {
+                $au = $authors[$m[2]] = (get($authors, $m[2]) ? : (object) array());
+                $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
+                $au->$x = $v;
+            }
+        if (!empty($authors)) {
+            ksort($authors, SORT_NUMERIC);
+            $pj->authors = array_values($authors);
+        }
+
+        // Contacts
+        if ($qreq->setcontacts || $qreq->has_contacts)
+            PaperSaver::replace_contacts($pj, $qreq);
+        else if (!$opj)
+            $pj->contacts = array($user);
+
+        // Status
+        if ($action === "submit")
+            $pj->submitted = true;
+        else if ($action === "final")
+            $pj->final_submitted = true;
+        else
+            $pj->submitted = false;
+
+        // Paper upload
+        if ($qreq->_FILES->paperUpload) {
+            if ($action === "final")
+                $pj->final = Filer::file_upload_json($qreq->_FILES->paperUpload);
+            else if ($action === "update" || $action === "submit")
+                $pj->submission = Filer::file_upload_json($qreq->_FILES->paperUpload);
+        }
+
+        // Blindness
+        if ($action !== "final" && $Conf->subBlindOptional())
+            $pj->nonblind = !$qreq->blind;
+
+        // Topics
+        if ($qreq->has_topics) {
+            $pj->topics = (object) array();
+            foreach ($Conf->topic_map() as $tid => $tname)
+                if (+$qreq["top$tid"] > 0)
+                    $pj->topics->$tname = true;
+        }
+
+        // Options
+        foreach (PaperOption::option_list() as $o)
+            if ($qreq["has_opt$o->id"])
+                $this->apply_option($pj, $qreq, $o, $action);
+
+        // PC conflicts
+        if ($Conf->setting("sub_pcconf")
+            && ($action !== "final" || $user->privChair)
+            && $qreq->has_pcconf) {
+            $cmax = $user->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
+            $pj->pc_conflicts = (object) array();
+            foreach (pcMembers() as $pcid => $pc) {
+                $ctype = cvtint($qreq["pcc$pcid"], 0);
+                $ctype = max(min($ctype, $cmax), 0);
+                if ($ctype) {
+                    $email = $pc->email;
+                    $pj->pc_conflicts->$email = Conflict::$type_names[$ctype];
+                }
+            }
+        }
+    }
+
+    private function apply_option($pj, $qreq, $o, $action) {
+        global $Conf;
+        if ($o->final && $action !== "final")
+            return;
+        if (!isset($pj->options))
+            $pj->options = (object) [];
+
+        $okey = $o->abbr;
+        $oreq = "opt$o->id";
+        if ($o->type == "checkbox")
+            $pj->options->$okey = $qreq[$oreq] > 0;
+        else if ($o->type == "selector"
+                 || $o->type == "radio"
+                 || $o->type == "numeric") {
+            $v = trim((string) $qreq[$oreq]);
+            if ($v !== "" && ctype_digit($v))
+                $pj->options->$okey = (int) $v;
+            else
+                $pj->options->$okey = $v;
+        } else if ($o->type == "text") {
+            $pj->options->$okey = trim((string) $qreq[$oreq]);
+        } else if ($o->type == "attachments") {
+            $attachments = get($pj->options, $okey, array());
+            $opfx = $oreq . "_";
+            foreach ($qreq->_FILES ? : [] as $k => $v)
+                if (str_starts_with($k, $opfx))
+                    $attachments[] = Filer::file_upload_json($v);
+            for ($i = 0; $i < count($attachments); ++$i)
+                if (isset($attachments[$i]->docid)
+                    && $qreq["remove_{$oreq}_{$attachments[$i]->docid}"]) {
+                    array_splice($attachments, $i, 1);
+                    --$i;
+                }
+            $pj->options->$okey = $attachments;
+        } else if ($o->is_document()) {
+            if ($qreq->_FILES[$oreq])
+                $pj->options->$okey = Filer::file_upload_json($qreq->_FILES[$oreq]);
+            else if ($qreq["remove_$oreq"])
+                unset($pj->options->$okey);
+        } else
+            unset($pj->options->$okey);
+    }
+
+    public function diffs(&$diffs, $pj, $opj) {
+        global $Conf;
+        if (!$opj) {
+            $diffs["new"] = true;
+            return;
+        }
+
+        foreach (array("title", "abstract", "collaborators") as $k)
+            if (get_s($pj, $k) !== get_s($opj, $k))
+                $diffs[$k] = true;
+        if (!$this->same_authors($pj, $opj))
+            $diffs["authors"] = true;
+        if (json_encode(get($pj, "topics") ? : (object) array())
+            !== json_encode(get($opj, "topics") ? : (object) array()))
+            $diffs["topics"] = true;
+        $pjopt = get($pj, "options", (object) []);
+        $opjopt = get($opj, "options", (object) []);
+        foreach (PaperOption::option_list() as $o) {
+            $oabbr = $o->abbr;
+            if (!get($pjopt, $oabbr) != !get($opjopt, $oabbr)
+                || (get($pjopt, $oabbr)
+                    && json_encode($pjopt->$oabbr) !== json_encode($opjopt->$oabbr))) {
+                $diffs["options"] = true;
+                break;
+            }
+        }
+        if ($Conf->subBlindOptional() && !get($pj, "nonblind") !== !get($opj, "nonblind"))
+            $diffs["anonymity"] = true;
+        if (json_encode(get($pj, "pc_conflicts")) !== json_encode(get($opj, "pc_conflicts")))
+            $diffs["PC conflicts"] = true;
+        if (json_encode(get($pj, "submission")) !== json_encode(get($opj, "submission")))
+            $diffs["submission"] = true;
+        if (json_encode(get($pj, "final")) !== json_encode(get($opj, "final")))
+            $diffs["final copy"] = true;
+    }
+
+    private function same_authors($pj, $opj) {
+        $pj_ct = count(get($pj, "authors"));
+        $opj_ct = count(get($opj, "authors"));
+        if ($pj_ct != $opj_ct)
+            return false;
+        for ($i = 0; $i != $pj_ct; ++$i)
+            if (get($pj->authors[$i], "email") !== get($opj->authors[$i], "email")
+                || get_s($pj->authors[$i], "affiliation") !== get_s($opj->authors[$i], "affiliation")
+                || Text::name_text($pj->authors[$i]) !== Text::name_text($opj->authors[$i]))
+                return false;
+        return true;
+    }
+}
+
+PaperSaver::register(0, new Default_PaperSaver);

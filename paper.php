@@ -158,221 +158,25 @@ if (isset($_REQUEST["revive"]) && !$newPaper && check_post()) {
 }
 
 
-// extract a “JSON” paper from the posted form
-function paper_json_clone($pj) {
-    if (!$pj)
-        return (object) array();
-    $pj = clone $pj;
-    if (@$pj->options)
-        $pj->options = clone $pj->options;
-    return $pj;
-}
-
-function request_to_json($opj, $action) {
-    global $Conf, $Me;
-    $pj = paper_json_clone($opj);
-
-    // Title, abstract, collaborators
-    foreach (array("title", "abstract", "collaborators") as $k)
-        if (isset($_POST[$k]))
-            $pj->$k = $_POST[$k];
-
-    // Authors
-    $bad_author = ["name" => "Name", "email" => "Email", "aff" => "Affiliation"];
-    $authors = array();
-    foreach ($_POST as $k => $v)
-        if (preg_match('/^au(name|email|aff)(\d+)$/', $k, $m)
-            && ($v = simplify_whitespace($v)) !== ""
-            && $v !== $bad_author[$m[1]]) {
-            $au = $authors[$m[2]] = (@$authors[$m[2]] ? : (object) array());
-            $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
-            $au->$x = $v;
-        }
-    if (count($authors)) {
-        ksort($authors, SORT_NUMERIC);
-        $pj->authors = array_values($authors);
-    }
-
-    // Contacts
-    if (@$_POST["setcontacts"] || @$_POST["has_contacts"])
-        request_contacts_to_json($pj);
-    else if (!$opj)
-        $pj->contacts = array($Me);
-
-    // Status
-    if ($action === "submit")
-        $pj->submitted = true;
-    else if ($action === "final")
-        $pj->final_submitted = true;
-    else
-        $pj->submitted = false;
-
-    // Paper upload
-    if (fileUploaded($_FILES["paperUpload"])) {
-        if ($action === "final")
-            $pj->final = Filer::file_upload_json("paperUpload");
-        else if ($action === "update" || $action === "submit")
-            $pj->submission = Filer::file_upload_json("paperUpload");
-    }
-
-    // Blindness
-    if ($action !== "final" && $Conf->subBlindOptional())
-        $pj->nonblind = !@$_POST["blind"];
-
-    // Topics
-    if (@$_POST["has_topics"]) {
-        $pj->topics = (object) array();
-        foreach ($Conf->topic_map() as $tid => $tname)
-            if (+@$_POST["top$tid"] > 0)
-                $pj->topics->$tname = true;
-    }
-
-    // Options
-    foreach (PaperOption::option_list() as $o)
-        if (@$_POST["has_opt$o->id"])
-            request_option_to_json($pj, $o, $action);
-
-    // PC conflicts
-    if ($Conf->setting("sub_pcconf")
-        && ($action !== "final" || $Me->privChair)
-        && @$_POST["has_pcconf"]) {
-        $cmax = $Me->privChair ? CONFLICT_CHAIRMARK : CONFLICT_MAXAUTHORMARK;
-        $pj->pc_conflicts = (object) array();
-        foreach (pcMembers() as $pcid => $pc) {
-            $ctype = cvtint(defval($_POST, "pcc$pcid", 0), 0);
-            $ctype = max(min($ctype, $cmax), 0);
-            if ($ctype) {
-                $email = $pc->email;
-                $pj->pc_conflicts->$email = Conflict::$type_names[$ctype];
-            }
-        }
-    }
-
-    return $pj;
-}
-
-function request_contacts_to_json($pj) {
-    $pj->contacts = array();
-    foreach ($_POST as $k => $v)
-        if (str_starts_with($k, "contact_")) {
-            $email = html_id_decode(substr($k, 8));
-            $pj->contacts[] = $email;
-        } else if (str_starts_with($k, "newcontact_email")
-                   && trim($v) !== ""
-                   && trim($v) !== "Email") {
-            $suffix = substr($k, strlen("newcontact_email"));
-            $email = trim($_REQUEST[$k]);
-            $name = defval($_REQUEST, "newcontact_name$suffix", "");
-            if ($name === "Name")
-                $name = "";
-            $pj->contacts[] = (object) array("email" => $email,
-                                             "name" => $name);
-        }
-}
-
-function request_option_to_json($pj, $o, $action) {
-    global $Conf, $Me;
-    if (@$o->final && $action !== "final")
-        return;
-    $pj->options = @$pj->options ? : (object) array();
-
-    $okey = $o->abbr;
-    $oreq = "opt$o->id";
-    if ($o->type == "checkbox")
-        $pj->options->$okey = @($_POST[$oreq] > 0);
-    else if ($o->type == "selector"
-             || $o->type == "radio"
-             || $o->type == "numeric") {
-        $v = trim((string) @$_POST[$oreq]);
-        if ($v !== "" && ctype_digit($v))
-            $pj->options->$okey = (int) $v;
-        else
-            $pj->options->$okey = $v;
-    } else if ($o->type == "text") {
-        $pj->options->$okey = trim((string) @$_POST[$oreq]);
-    } else if ($o->type == "attachments") {
-        $attachments = defval($pj->options, $okey, array());
-        $opfx = $oreq . "_";
-        foreach ($_FILES as $k => $v)
-            if (str_starts_with($k, $opfx))
-                $attachments[] = Filer::file_upload_json($k);
-        for ($i = 0; $i < count($attachments); ++$i)
-            if (@$attachments[$i]->docid
-                && @$_POST["remove_{$oreq}_{$attachments[$i]->docid}"]) {
-                array_splice($attachments, $i, 1);
-                --$i;
-            }
-        $pj->options->$okey = $attachments;
-    } else if ($o->is_document()) {
-        if (fileUploaded($_FILES[$oreq]))
-            $pj->options->$okey = Filer::file_upload_json($oreq);
-        else if (@$_POST["remove_$oreq"])
-            unset($pj->options->$okey);
-    } else
-        unset($pj->options->$okey);
-}
-
-function request_differences($pj, $opj, $action) {
-    global $Conf, $Me;
-    if (!$opj)
-        return array("new" => true);
-    $diffs = array();
-    foreach (array("title", "abstract", "collaborators") as $k)
-        if (get_s($pj, $k) !== get_s($opj, $k))
-            $diffs[$k] = true;
-    if (request_authors_differ($pj, $opj))
-        $diffs["authors"] = true;
-    if (json_encode(get($pj, "topics") ? : (object) array())
-        !== json_encode(get($opj, "topics") ? : (object) array()))
-        $diffs["topics"] = true;
-    $pjopt = @$pj->options ? : (object) array();
-    $opjopt = @$opj->options ? : (object) array();
-    foreach (PaperOption::option_list() as $o) {
-        $oabbr = $o->abbr;
-        if (!@$pjopt->$oabbr != !@$opjopt->$oabbr
-            || (@$pjopt->$oabbr
-                && json_encode($pjopt->$oabbr) !== json_encode($opjopt->$oabbr))) {
-            $diffs["options"] = true;
-            break;
-        }
-    }
-    if ($Conf->subBlindOptional() && !@$pj->nonblind !== !@$opj->nonblind)
-        $diffs["anonymity"] = true;
-    if (json_encode(@$pj->pc_conflicts) !== json_encode(@$opj->pc_conflicts))
-        $diffs["PC conflicts"] = true;
-    if (fileUploaded($_FILES["paperUpload"]))
-        $diffs["submission"] = true;
-    return $diffs;
-}
-
-function request_authors_differ($pj, $opj) {
-    if (!@$pj->authors != !@$opj->authors
-        || count($pj->authors) != count($opj->authors))
-        return true;
-    for ($i = 0; $i < count($pj->authors); ++$i)
-        if (@$pj->authors[$i]->email !== @$opj->authors[$i]->email
-            || (string) @$pj->authors[$i]->affiliation !== (string) @$opj->authors[$i]->affiliation
-            || Text::name_text($pj->authors[$i]) !== Text::name_text($opj->authors[$i]))
-            return true;
-    return false;
-}
-
 // send watch messages
+global $Qreq;
+$Qreq = make_qreq();
+
 function final_submit_watch_callback($prow, $minic) {
     if ($minic->can_view_paper($prow))
         HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
 }
 
-function update_paper($pj, $opj, $action, $diffs) {
+function update_paper($pj, $opj, $qreq, $action, $diffs) {
     global $Conf, $Me, $Opt, $OK, $Error, $prow;
     // XXX lock tables
 
     $ps = new PaperStatus($Me);
     $saved = $ps->save($pj);
 
-    if (!$saved && !$prow && fileUploaded($_FILES["paperUpload"]))
+    if (!$saved && !$prow && fileUploaded($qreq->_FILES->paperUpload))
         $ps->set_error_html("paper", "<strong>The submission you tried to upload was ignored.</strong>");
-    if (!@$pj->collaborators && $Conf->setting("sub_collab")) {
+    if (!get($pj, "collaborators") && $Conf->setting("sub_collab")) {
         $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
         $ps->set_warning_html("collaborators", "Please enter the authors’ potential conflicts in the $field field. If none of the authors have potential conflicts, just enter “None”.");
     }
@@ -387,9 +191,9 @@ function update_paper($pj, $opj, $action, $diffs) {
 
     // note differences in contacts
     $contacts = $ocontacts = [];
-    foreach (@$pj->contacts ? : [] as $v)
+    foreach (get($pj, "contacts", []) as $v)
         $contacts[] = strtolower(is_string($v) ? $v : $v->email);
-    if ($opj && @$opj->contacts)
+    if ($opj && get($opj, "contacts"))
         foreach ($opj->contacts as $v)
             $ocontacts[] = strtolower($v->email);
     sort($contacts);
@@ -398,7 +202,7 @@ function update_paper($pj, $opj, $action, $diffs) {
         $diffs["contacts"] = true;
 
     // submit paper if no error so far
-    $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $pj->pid;
+    $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $qreq->paperId = $pj->pid;
     loadRows();
     if ($action === "final") {
         $submitkey = "timeFinalSubmitted";
@@ -407,17 +211,17 @@ function update_paper($pj, $opj, $action, $diffs) {
         $submitkey = "timeSubmitted";
         $storekey = "paperStorageId";
     }
-    $wasSubmitted = $opj && @$opj->submitted;
-    if (@$pj->submitted || $Conf->can_pc_see_all_submissions())
+    $wasSubmitted = $opj && get($opj, "submitted");
+    if (get($pj, "submitted") || $Conf->can_pc_see_all_submissions())
         $Conf->update_papersub_setting(true);
-    if ($wasSubmitted != @$pj->submitted)
+    if ($wasSubmitted != get($pj, "submitted"))
         $diffs["submission"] = 1;
 
     // confirmation message
     if ($action == "final") {
         $actiontext = "Updated final version of";
         $template = "@submitfinalpaper";
-    } else if (@$pj->submitted && !$wasSubmitted) {
+    } else if (get($pj, "submitted") && !$wasSubmitted) {
         $actiontext = "Submitted";
         $template = "@submitpaper";
     } else if (!$opj) {
@@ -439,9 +243,9 @@ function update_paper($pj, $opj, $action, $diffs) {
         else if ($deadline != "N/A")
             $notes[] = "You have until $deadline to make further changes.";
     } else {
-        if (@$pj->submitted)
+        if (get($pj, "submitted"))
             $notes[] = "You will receive email when reviews are available.";
-        else if ($prow->size == 0 && !@$Opt["noPapers"])
+        else if ($prow->size == 0 && !opt("noPapers"))
             $notes[] = "The submission has not yet been uploaded.";
         else if ($Conf->setting("sub_freeze") > 0)
             $notes[] = "The submission has not yet been completed.";
@@ -475,12 +279,12 @@ function update_paper($pj, $opj, $action, $diffs) {
         $Conf->warnMsg($actiontext . " submission #$prow->paperId. " . $notes . $webnotes);
 
     // mail confirmation to all contact authors
-    if (!$Me->privChair || defval($_REQUEST, "doemail") > 0) {
+    if (!$Me->privChair || $qreq->doemail > 0) {
         $options = array("infoNames" => 1);
         if ($Me->privChair && $prow->conflictType < CONFLICT_AUTHOR)
             $options["adminupdate"] = true;
-        if ($Me->privChair && isset($_REQUEST["emailNote"]))
-            $options["reason"] = $_REQUEST["emailNote"];
+        if ($Me->privChair && isset($qreq->emailNote))
+            $options["reason"] = $qreq->emailNote;
         if ($notes !== "")
             $options["notes"] = preg_replace(",</?(?:span.*?|strong)>,", "", $notes) . "\n\n";
         HotCRPMailer::send_contacts($template, $prow, $options);
@@ -495,22 +299,22 @@ function update_paper($pj, $opj, $action, $diffs) {
 }
 
 
-if ((@$_POST["update"] || @$_POST["submitfinal"])
-    && check_post()) {
+if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
     // choose action
     $action = "update";
-    if (@$_POST["submitfinal"] && !$newPaper)
+    if ($Qreq->submitfinal && !$newPaper)
         $action = "final";
-    else if (@$_POST["submitpaper"]
+    else if ($Qreq->submitpaper
              && (($prow && $prow->size > 0)
-                 || fileUploaded($_FILES["paperUpload"])
-                 || @$Opt["noPapers"]))
+                 || $Qreq->_FILES->paperUpload
+                 || opt("noPapers")))
         $action = "submit";
 
     $ps = new PaperStatus($Me);
     $opj = $prow ? $ps->row_to_json($prow, array("docids" => true)) : null;
-    $pj = request_to_json($opj, $action);
-    $diffs = request_differences($pj, $opj, $action);
+    $pj = PaperStatus::clone_json($opj);
+    PaperSaver::apply_all($Me, $pj, $opj, $Qreq, $action);
+    $diffs = PaperSaver::all_diffs($pj, $opj);
 
     // check deadlines
     if ($newPaper)
@@ -520,13 +324,13 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
         $whyNot = $Me->perm_submit_final_paper($prow);
     else {
         $whyNot = $Me->perm_update_paper($prow);
-        if ($whyNot && $action == "submit" && !count($diffs))
+        if ($whyNot && $action == "submit" && empty($diffs))
             $whyNot = $Me->perm_finalize_paper($prow);
     }
 
     // actually update
     if (!$whyNot) {
-        if (update_paper($pj, $opj, $action, $diffs))
+        if (update_paper($pj, $opj, $Qreq, $action, $diffs))
             redirectSelf(array("p" => $prow->paperId, "m" => "edit"));
     } else {
         if ($action == "final")
@@ -544,12 +348,12 @@ if ((@$_POST["update"] || @$_POST["submitfinal"])
              && $Me->can_finalize_paper($prow));
 }
 
-if (isset($_POST["updatecontacts"]) && check_post() && $prow) {
+if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
         $ps = new PaperStatus($Me);
         $opj = $ps->row_to_json($prow, array("docids" => true));
-        $pj = paper_json_clone($opj);
-        request_contacts_to_json($pj);
+        $pj = PaperStatus::clone_json($opj);
+        PaperSaver::replace_contacts($pj, $Qreq);
         if ($ps->save($pj, $opj))
             redirectSelf();
         else {
@@ -565,15 +369,15 @@ if (isset($_POST["updatecontacts"]) && check_post() && $prow) {
 
 
 // delete action
-if (isset($_REQUEST["delete"]) && check_post()) {
+if ($Qreq->delete && check_post()) {
     if ($newPaper)
         $Conf->confirmMsg("Paper deleted.");
     else if (!$Me->privChair)
         Conf::msg_error("Only the program chairs can permanently delete papers. Authors can withdraw papers, which is effectively the same.");
     else {
         // mail first, before contact info goes away
-        if (!$Me->privChair || defval($_REQUEST, "doemail") > 0)
-            HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => defval($_REQUEST, "emailNote", ""), "infoNames" => 1));
+        if (!$Me->privChair || $Qreq->doemail > 0)
+            HotCRPMailer::send_contacts("@deletepaper", $prow, array("reason" => (string) $Qreq->emailNote, "infoNames" => 1));
         // XXX email self?
 
         $error = false;
@@ -597,7 +401,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
 
 
 // correct modes
-$paperTable = new PaperTable($prow, make_qreq());
+$paperTable = new PaperTable($prow, $Qreq);
 $paperTable->resolveComments();
 if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
     $paperTable->resolveReview(false);

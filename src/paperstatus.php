@@ -233,6 +233,18 @@ class PaperStatus {
         return $pj;
     }
 
+
+    static public function clone_json($pj) {
+        $x = (object) [];
+        foreach ($pj ? get_object_vars($pj) : [] as $k => $v)
+            if (is_object($v))
+                $x->$k = self::clone_json($v);
+            else
+                $x->$k = $v;
+        return $x;
+    }
+
+
     public function set_error_html($field, $html) {
         if ($field)
             $this->errf[$field] = true;
