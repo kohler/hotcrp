@@ -145,8 +145,15 @@ class UnicodeHelper {
             return chr(0xF0 | ($n >> 18)) . chr(0x80 | (($n >> 12) & 0x3F)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
     }
 
-    public static function utf8_to_html_entities($str, $quotes = false) {
-        return preg_replace_callback('/[&<>' . ($quotes ? "\"'" : "") . '\200-\377][\200-\277]*/',
+    public static function utf8_to_html_entities($str, $flag = ENT_COMPAT) {
+        assert($flag === ENT_COMPAT || $flag === ENT_QUOTES || $flag === ENT_IGNORE);
+        if ($flag === ENT_COMPAT)
+            $start = "&<>";
+        else if ($flag === ENT_QUOTES)
+            $start = "&<>\"'";
+        else if ($flag === ENT_IGNORE)
+            $start = "";
+        return preg_replace_callback('/[' . $start . '\200-\377][\200-\277]*/',
                                      function ($m) {
             $e = htmlentities($m[0], ENT_QUOTES);
             if (substr($e, 0, 1) !== "&") {
