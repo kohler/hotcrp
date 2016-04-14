@@ -458,7 +458,7 @@ if (isset($_REQUEST["addpc"]) && $Me->allow_administer($prow) && check_post()) {
 
 
 // paper table
-$paperTable = new PaperTable($prow, "assign");
+$paperTable = new PaperTable($prow, make_qreq(), "assign");
 $paperTable->initialize(false, false);
 
 confHeader();

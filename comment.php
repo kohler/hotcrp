@@ -25,7 +25,7 @@ function loadRows() {
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         exit_to_paper();
-    $paperTable = new PaperTable($prow);
+    $paperTable = new PaperTable($prow, make_qreq());
     $paperTable->resolveReview(false);
     $paperTable->resolveComments();
 

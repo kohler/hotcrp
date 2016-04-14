@@ -51,7 +51,7 @@ function loadRows() {
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
-    $paperTable = new PaperTable($prow);
+    $paperTable = new PaperTable($prow, make_qreq());
     $paperTable->resolveReview(true);
 
     if ($paperTable->editrrow && $paperTable->editrrow->contactId == $Me->contactId)

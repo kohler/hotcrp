@@ -597,7 +597,7 @@ if (isset($_REQUEST["delete"]) && check_post()) {
 
 
 // correct modes
-$paperTable = new PaperTable($prow);
+$paperTable = new PaperTable($prow, make_qreq());
 $paperTable->resolveComments();
 if ($paperTable->can_view_reviews() || $paperTable->mode == "re") {
     $paperTable->resolveReview(false);

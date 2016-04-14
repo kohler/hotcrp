@@ -18,6 +18,7 @@ class PaperTable {
     private $allreviewslink;
 
     var $editable;
+    private $qreq;
     private $useRequest;
     private $npapstrip = 0;
     private $npapstrip_tag_entry;
@@ -31,11 +32,12 @@ class PaperTable {
 
     static private $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5, "collaborators" => 5);
 
-    function __construct($prow, $mode = null) {
+    function __construct($prow, $qreq, $mode = null) {
         global $Conf, $Me;
 
         $this->prow = $prow;
         $this->admin = $Me->allow_administer($prow);
+        $this->qreq = $qreq;
 
         if ($this->prow == null) {
             $this->mode = "edit";
@@ -64,16 +66,16 @@ class PaperTable {
             || $Me->allow_administer($prow))
             $ms["assign"] = true;
         if (!$mode)
-            $mode = @$_REQUEST["m"] ? : @$_REQUEST["mode"];
+            $mode = $this->qreq->m ? : $this->qreq->mode;
         if ($mode === "pe")
             $mode = "edit";
         else if ($mode === "view" || $mode === "r")
             $mode = "p";
-        if ($mode && @$ms[$mode])
+        if ($mode && isset($ms[$mode]))
             $this->mode = $mode;
         else
             $this->mode = key($ms);
-        if (@$ms["re"] && isset($_REQUEST["reviewId"]))
+        if (isset($ms["re"]) && isset($this->qreq->reviewId))
             $this->mode = "re";
 
         $this->matchPreg = array();
@@ -100,7 +102,7 @@ class PaperTable {
             $m = array("abstract" => $m, "title" => $m,
                        "authorInformation" => $m, "collaborators" => $m);
         foreach ($m as $k => $v)
-            if (!@$m1[$k])
+            if (!isset($m1[$k]) || !$m1[$k])
                 $m1[$k] = $v;
         return $m1;
     }
@@ -128,8 +130,8 @@ class PaperTable {
         $t .= '"><div id="header_page_submission_inner"><h1 class="paptitle';
 
         if (!$paperTable && !$prow) {
-            if (@$_REQUEST["paperId"] && ctype_digit($_REQUEST["paperId"]))
-                $title = '#' . $_REQUEST["paperId"];
+            if (($pid = req("paperId")) && ctype_digit($pid))
+                $title = "#$pid";
             else
                 $title = "Submission";
             $t .= '">' . $title;
@@ -305,8 +307,8 @@ class PaperTable {
     private function entryData($fieldName, $table_type = false) {
         $this->entryMatches = 0;
 
-        if ($this->useRequest && isset($_REQUEST[$fieldName]))
-            $text = $_REQUEST[$fieldName];
+        if ($this->useRequest && isset($this->qreq[$fieldName]))
+            $text = $this->qreq[$fieldName];
         else if ($this->prow)
             $text = $this->prow->$fieldName;
         else
@@ -407,7 +409,7 @@ class PaperTable {
         global $Conf, $Opt;
         $prow = $this->prow;
         if ($this->useRequest)
-            $checked = !!@$_REQUEST["submitpaper"];
+            $checked = !!$this->qreq->submitpaper;
         else if ($Conf->setting("sub_freeze"))
             $checked = $prow && $prow->timeSubmitted > 0;
         else
@@ -577,8 +579,8 @@ class PaperTable {
 
         $blankAu = array("", "", "", "");
         if ($this->useRequest) {
-            for ($n = 1; @$_POST["auname$n"] || @$_POST["auemail$n"] || @$_POST["auaff$n"]; ++$n)
-                echo self::editable_authors_tr($n, (string) @$_POST["auname$n"], (string) @$_POST["auemail$n"], (string) @$_POST["auaff$n"]);
+            for ($n = 1; $this->qreq["auname$n"] || $this->qreq["auemail$n"] || $this->qreq["auaff$n"]; ++$n)
+                echo self::editable_authors_tr($n, (string) $this->qreq["auname$n"], (string) $this->qreq["auemail$n"], (string) $this->qreq["auaff$n"]);
         } else {
             $aulist = $this->prow ? $this->prow->author_list() : array();
             for ($n = 1; $n <= count($aulist); ++$n) {
@@ -883,8 +885,8 @@ class PaperTable {
         echo $this->editable_papt("contactAuthor", "Contact"),
             '<div class="paphint">You can add more contacts after you register the submission.</div>',
             '<div class="papev">';
-        $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
-        $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
+        $name = $this->useRequest ? trim((string) $this->qreq->newcontact_name) : "";
+        $email = $this->useRequest ? trim((string) $this->qreq->newcontact_email) : "";
         echo '<table><tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
@@ -905,7 +907,7 @@ class PaperTable {
 
         $cerror = @$Error["contactAuthor"] || @$Error["contacts"];
         $open = $cerror || $always_unfold
-            || ($this->useRequest && @$_REQUEST["setcontacts"] == 2);
+            || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo '<div id="foldcontactauthors" class="papeg ',
             ($open ? "foldo" : "foldc"),
             '"><div class="papet childfold fn0" ',
@@ -947,7 +949,7 @@ class PaperTable {
             if (!$au->contactId && (!$au->email || !validate_email($au->email)))
                 continue;
             $control = "contact_" . html_id_encode($au->email);
-            $checked = $this->useRequest ? !!@$_REQUEST[$control] : $au->contactId;
+            $checked = $this->useRequest ? !!$this->qreq[$control] : $au->contactId;
             echo '<tr><td class="lcaption">', $title, '</td><td>';
             if ($au->contactId)
                 echo Ht::checkbox(null, null, true, array("disabled" => true)),
@@ -961,16 +963,16 @@ class PaperTable {
         $title = "Non-authors";
         foreach ($contacts as $au) {
             $control = "contact_" . html_id_encode($au->email);
-            $checked = $this->useRequest ? @$_REQUEST[$control] : true;
+            $checked = $this->useRequest ? $this->qreq[$control] : true;
             echo '<tr><td class="lcaption">', $title, '</td>',
                 '<td>', Ht::checkbox($control, Text::name_text($au), $checked, array("onclick" => "hiliter(this)")),
                 '&nbsp;</td><td>', Ht::label(Text::user_html($au)), '</td>',
                 '</tr>';
             $title = "";
         }
-        $checked = $this->useRequest ? @$_REQUEST["newcontact"] : true;
-        $name = $this->useRequest ? @trim($_REQUEST["newcontact_name"]) : "";
-        $email = $this->useRequest ? @trim($_REQUEST["newcontact_email"]) : "";
+        $checked = $this->useRequest ? $this->qreq->newcontact : true;
+        $name = $this->useRequest ? trim((string) $this->qreq->newcontact_name) : "";
+        $email = $this->useRequest ? trim((string) $this->qreq->newcontact_email) : "";
         echo '<tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
@@ -988,7 +990,7 @@ class PaperTable {
 
     private function editable_anonymity() {
         global $Conf;
-        $blind = ($this->useRequest ? isset($_REQUEST['blind']) : (!$this->prow || $this->prow->blind));
+        $blind = ($this->useRequest ? !!$this->qreq->blind : (!$this->prow || $this->prow->blind));
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
@@ -1138,7 +1140,7 @@ class PaperTable {
             }
 
             if ($this->useRequest)
-                $myval = defval($_REQUEST, $optid);
+                $myval = $this->qreq[$optid];
             else if (!$optx)
                 $myval = null;
             else if ($o->type === "text")
@@ -1195,8 +1197,8 @@ class PaperTable {
         $conflict = array();
         if ($this->useRequest) {
             foreach ($pcm as $id => $row)
-                if (isset($_REQUEST["pcc$id"])
-                    && ($ct = cvtint($_REQUEST["pcc$id"])) > 0)
+                if (isset($this->qreq["pcc$id"])
+                    && ($ct = cvtint($this->qreq["pcc$id"])) > 0)
                     $conflict[$id] = Conflict::force_author_mark($ct, $this->admin);
         }
         if ($this->prow) {
@@ -1339,15 +1341,15 @@ class PaperTable {
     }
 
     private function papstripLead($showedit) {
-        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || defval($_REQUEST, "atab") === "lead", null);
+        $this->_papstripLeadShepherd("lead", "Discussion lead", $showedit || $this->qreq->atab === "lead", null);
     }
 
     private function papstripShepherd($showedit, $fold) {
-        $this->_papstripLeadShepherd("shepherd", "Shepherd", $showedit || defval($_REQUEST, "atab") === "shepherd", $fold);
+        $this->_papstripLeadShepherd("shepherd", "Shepherd", $showedit || $this->qreq->atab === "shepherd", $fold);
     }
 
     private function papstripManager($showedit) {
-        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || defval($_REQUEST, "atab") === "manager", null);
+        $this->_papstripLeadShepherd("manager", "Paper administrator", $showedit || $this->qreq->atab === "manager", null);
     }
 
     private function papstripTags() {
@@ -1365,7 +1367,7 @@ class PaperTable {
 
         $tx = $tagger->unparse_and_link($viewable, $tags, false,
                                         !$this->prow->has_conflict($Me));
-        $unfolded = $is_editable && (isset($Error["tags"]) || defval($_REQUEST, "atab") === "tags");
+        $unfolded = $is_editable && (isset($Error["tags"]) || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
         $color = TagInfo::color_classes($viewable);
@@ -1419,11 +1421,11 @@ class PaperTable {
 
     function papstripOutcomeSelector() {
         global $Conf;
-        $this->_papstripBegin("decision", defval($_REQUEST, "atab") !== "decision");
+        $this->_papstripBegin("decision", $this->qreq->atab !== "decision");
         echo $this->papt("decision", "Decision", array("type" => "ps", "fold" => "decision")),
             '<div class="psv"><form class="fx"><div>';
-        if (isset($_REQUEST["forceShow"]))
-            echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
+        if (isset($this->qreq->forceShow))
+            echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         echo decisionSelector($this->prow->outcome, null, " id='folddecision_d'"),
             '</div></form><p class="fn odname">',
             htmlspecialchars($Conf->decision_name($this->prow->outcome)),
@@ -1438,8 +1440,8 @@ class PaperTable {
             "<div class='psv'>",
             Ht::form_div(hoturl_post("review", "p=" . $this->prow->paperId), array("id" => "revprefform", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('revprefform')", "divclass" => "aahc")),
             Ht::hidden("setrevpref", 1);
-        if (isset($_REQUEST["forceShow"]))
-            echo Ht::hidden("forceShow", $_REQUEST["forceShow"] ? 1 : 0);
+        if (isset($this->qreq->forceShow))
+            echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
         $rp = unparse_preference($this->prow);
         $rp = ($rp == "0" ? "" : $rp);
         echo "<input id='revprefform_d' type='text' size='4' name='revpref' value=\"$rp\" onchange='Miniajax.submit(\"revprefform\")' tabindex='1' />",
@@ -1483,8 +1485,8 @@ class PaperTable {
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
         echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
-        if (isset($_REQUEST["forceShow"]))
-            echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
+        if (isset($this->qreq->forceShow))
+            echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag rank", "~$tag", $myval),
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
@@ -1508,8 +1510,8 @@ class PaperTable {
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
         echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
-        if (isset($_REQUEST["forceShow"]))
-            echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
+        if (isset($this->qreq->forceShow))
+            echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id, $this->papstrip_tag_entry_title("#$tag votes", "~$tag", $myval),
                          array("type" => "ps", "fold" => $id, "float" => $totmark)),
             '<div class="psv"><div class="fx">',
@@ -1533,8 +1535,8 @@ class PaperTable {
 
         $this->papstrip_tag_entry(null, null);
         echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
-        if (isset($_REQUEST["forceShow"]))
-            echo Ht::hidden("forceShow", $_REQUEST["forceShow"]);
+        if (isset($this->qreq->forceShow))
+            echo Ht::hidden("forceShow", $this->qreq->forceShow);
         echo $this->papt($id,
                          Ht::checkbox("tagindex", "0", $myval !== "",
                                       array("id" => "fold" . $id . "_d", "tabindex" => 1,
@@ -1799,7 +1801,7 @@ class PaperTable {
 
         echo Ht::actions($buttons, array("class" => "aab"));
         if ($this->admin && !$top) {
-            $v = defval($_REQUEST, "emailNote", "");
+            $v = (string) $this->qreq->emailNote;
             echo "  <div class='g'></div>\n  <table>\n",
                 "    <tr><td>",
                 Ht::checkbox("doemail", 1, true), "&nbsp;",
@@ -2296,7 +2298,7 @@ class PaperTable {
                 && $_REQUEST["paperId"][0] != "0")
                 return false;
             if (preg_match('/^\s*#?([1-9]\d*)\s*$/s', $_REQUEST["paperId"], $m)) {
-                $_REQUEST["paperId"] = $m[1];
+                $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $m[1];
                 return false;
             }
         }
@@ -2320,7 +2322,7 @@ class PaperTable {
                 $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$Me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
             $result = $Conf->q($q);
             if (($paperId = edb_row($result)))
-                $_REQUEST["paperId"] = $paperId[0];
+                $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $paperId[0];
             return false;
         }
 
@@ -2330,12 +2332,13 @@ class PaperTable {
 
         // actually try to search
         if ($_REQUEST["paperId"] === "(All)")
-            $_REQUEST["paperId"] = "";
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = "";
         $search = new PaperSearch($Me, array("q" => $_REQUEST["paperId"], "t" => defval($_REQUEST, "t", 0)));
         $pl = $search->paperList();
         if (count($pl) == 1) {
             $pl = $search->session_list_object();
-            $_REQUEST["paperId"] = $_REQUEST["p"] = $pl->ids[0];
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] =
+                $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = $pl->ids[0];
             // check if the paper is in the current list
             if (false && ($curpl = SessionList::requested())
                 && @$curpl->listno
@@ -2351,7 +2354,7 @@ class PaperTable {
                 $pl->listno = SessionList::allocate($pl->listid);
                 SessionList::change($pl->listno, $pl);
             }
-            unset($_REQUEST["ls"]);
+            unset($_REQUEST["ls"], $_GET["ls"], $_POST["ls"]);
             SessionList::set_requested($pl->listno);
             // ensure URI makes sense ("paper/2" not "paper/searchterm")
             redirectSelf();
@@ -2365,20 +2368,20 @@ class PaperTable {
 
     static function cleanRequest() {
         if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["p"]))
-            $_REQUEST["paperId"] = $_REQUEST["p"];
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $_REQUEST["p"];
         if (!isset($_REQUEST["reviewId"]) && isset($_REQUEST["r"]))
-            $_REQUEST["reviewId"] = $_REQUEST["r"];
+            $_REQUEST["reviewId"] = $_GET["reviewId"] = $_POST["reviewId"] = $_REQUEST["r"];
         if (!isset($_REQUEST["commentId"]) && isset($_REQUEST["c"]))
-            $_REQUEST["commentId"] = $_REQUEST["c"];
+            $_REQUEST["commentId"] = $_GET["commentId"] = $_POST["commentId"] = $_REQUEST["c"];
         if (!isset($_REQUEST["paperId"])
             && preg_match(',\A/(?:new|\d+)\z,i', Navigation::path()))
-            $_REQUEST["paperId"] = substr(Navigation::path(), 1);
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = substr(Navigation::path(), 1);
         else if (!isset($_REQUEST["reviewId"])
                  && preg_match(',\A/\d+[A-Z]+\z,i', Navigation::path()))
-            $_REQUEST["reviewId"] = substr(Navigation::path(), 1);
+            $_REQUEST["reviewId"] = $_GET["reviewId"] = $_POST["reviewId"] = substr(Navigation::path(), 1);
         if (!isset($_REQUEST["paperId"]) && isset($_REQUEST["reviewId"])
             && preg_match('/^(\d+)[A-Z]+$/', $_REQUEST["reviewId"], $m))
-            $_REQUEST["paperId"] = $m[1];
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $m[1];
     }
 
     static function paperRow(&$whyNot) {
@@ -2419,7 +2422,7 @@ class PaperTable {
             return null;
         }
         if (!isset($_REQUEST["paperId"]))
-            $_REQUEST["paperId"] = $prow->paperId;
+            $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $prow->paperId;
         return $prow;
     }
 
