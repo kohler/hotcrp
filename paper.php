@@ -8,7 +8,7 @@ require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
     $Me->escape();
-if (@$_REQUEST["update"] && check_post() && !$Me->has_database_account()
+if (isset($_REQUEST["update"]) && check_post() && !$Me->has_database_account()
     && $Me->can_start_paper())
     $Me = $Me->activate_database_account();
 $useRequest = isset($_REQUEST["after_login"]);
@@ -17,13 +17,15 @@ foreach (array("emailNote", "reason") as $x)
         unset($_REQUEST[$x], $_GET[$x], $_POST[$x]);
 if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
     && preg_match(',\A(?:new|\d+)\z,i', Navigation::path_component(0))) {
-    $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = Navigation::path_component(0);
+    $_REQUEST["p"] = $_GET["p"] = Navigation::path_component(0);
     if (!isset($_REQUEST["m"]) && ($x = Navigation::path_component(1)))
-        $_REQUEST["m"] = $_GET["m"] = $_POST["m"] = $x;
-    if (@$_REQUEST["m"] === "api" && !isset($_REQUEST["fn"])
+        $_REQUEST["m"] = $_GET["m"] = $x;
+    if (isset($_REQUEST["m"]) && $_REQUEST["m"] === "api"
+        && !isset($_REQUEST["fn"])
         && ($x = Navigation::path_component(2)))
-        $_REQUEST["fn"] = $_GET["fn"] = $_POST["fn"] = $x;
-} else if (!Navigation::path() && @$_REQUEST["p"] && ctype_digit($_REQUEST["p"])
+        $_REQUEST["fn"] = $_GET["fn"] = $x;
+} else if (!Navigation::path() && isset($_REQUEST["p"])
+           && $_REQUEST["p"] && ctype_digit($_REQUEST["p"])
            && !check_post())
     go(selfHref());
 
@@ -56,7 +58,7 @@ $newPaper = (defval($_REQUEST, "p") == "new"
 
 
 // general error messages
-if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
+if (isset($_GET["post"]) && $_GET["post"] && !count($_POST))
     $Conf->post_missing_msg();
 
 
