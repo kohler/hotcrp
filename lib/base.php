@@ -239,14 +239,11 @@ function make_qreq() {
         $qreq[$k] = $v;
     foreach ($_POST as $k => $v)
         $qreq[$k] = $v;
-    $qreq->_FILES = [];
+    $qreq->_FILES = new Qobject;
     foreach ($_FILES as $f => $finfo)
         if ($finfo["error"] == UPLOAD_ERR_OK
-            && is_uploaded_file($finfo["tmp_name"])) {
-            if (!isset($qreq->_FILES))
-                $qreq->_FILES = new Qobject;
+            && is_uploaded_file($finfo["tmp_name"]))
             $qreq->_FILES[$f] = $finfo;
-        }
     return $qreq;
 }
 
