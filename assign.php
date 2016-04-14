@@ -397,7 +397,7 @@ if (isset($_REQUEST["add"]) && check_post()) {
              && $Me->allow_administer($prow)) {
         if (!createAnonymousReview())
             Dbl::qx_raw("unlock tables");
-        unset($_REQUEST["reason"]);
+        unset($_REQUEST["reason"], $_GET["reason"], $_POST["reason"]);
         loadRows();
     } else if (trim($_REQUEST["email"]) === "")
         Conf::msg_error("An email address is required to request a review.");
@@ -407,10 +407,8 @@ if (isset($_REQUEST["add"]) && check_post()) {
         else
             $ok = requestReview($_REQUEST["email"]);
         if ($ok) {
-            unset($_REQUEST["email"]);
-            unset($_REQUEST["name"]);
-            unset($_REQUEST["round"]);
-            unset($_REQUEST["reason"]);
+            foreach (["email", "name", "round", "reason"] as $k)
+                unset($_REQUEST[$k], $_GET[$k], $_POST[$k]);
             redirectSelf();
         } else
             Dbl::qx_raw("unlock tables");
@@ -441,8 +439,8 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
     } else
         Conf::msg_error("No one has proposed that " . htmlspecialchars($email) . " review this paper.");
     Dbl::qx_raw("unlock tables");
-    unset($_REQUEST['email']);
-    unset($_REQUEST['name']);
+    unset($_REQUEST["email"], $_GET["email"], $_POST["email"]);
+    unset($_REQUEST["name"], $_GET["name"], $_POST["name"]);
 }
 
 

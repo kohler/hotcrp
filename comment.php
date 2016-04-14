@@ -169,7 +169,7 @@ else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQU
     if (@$_REQUEST["ajax"])
         $Conf->ajaxExit(array("ok" => false));
 } else if (@$_REQUEST["cancel"] && $crow)
-    $_REQUEST["noedit"] = 1;
+    $_REQUEST["noedit"] = $_GET["noedit"] = $_POST["noedit"] = 1;
 
 
 go(hoturl("paper", array("p" => $prow->paperId,

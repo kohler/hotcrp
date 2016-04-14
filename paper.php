@@ -14,15 +14,15 @@ if (@$_REQUEST["update"] && check_post() && !$Me->has_database_account()
 $useRequest = isset($_REQUEST["after_login"]);
 foreach (array("emailNote", "reason") as $x)
     if (isset($_REQUEST[$x]) && $_REQUEST[$x] == "Optional explanation")
-        unset($_REQUEST[$x]);
+        unset($_REQUEST[$x], $_GET[$x], $_POST[$x]);
 if (!isset($_REQUEST["p"]) && !isset($_REQUEST["paperId"])
     && preg_match(',\A(?:new|\d+)\z,i', Navigation::path_component(0))) {
-    $_REQUEST["p"] = Navigation::path_component(0);
+    $_REQUEST["p"] = $_GET["p"] = $_POST["p"] = Navigation::path_component(0);
     if (!isset($_REQUEST["m"]) && ($x = Navigation::path_component(1)))
-        $_REQUEST["m"] = $x;
+        $_REQUEST["m"] = $_GET["m"] = $_POST["m"] = $x;
     if (@$_REQUEST["m"] === "api" && !isset($_REQUEST["fn"])
         && ($x = Navigation::path_component(2)))
-        $_REQUEST["fn"] = $x;
+        $_REQUEST["fn"] = $_GET["fn"] = $_POST["fn"] = $x;
 } else if (!Navigation::path() && @$_REQUEST["p"] && ctype_digit($_REQUEST["p"])
            && !check_post())
     go(selfHref());
@@ -398,7 +398,7 @@ function update_paper($pj, $opj, $action, $diffs) {
         $diffs["contacts"] = true;
 
     // submit paper if no error so far
-    $_REQUEST["paperId"] = $_GET["paperId"] = $pj->pid;
+    $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $pj->pid;
     loadRows();
     if ($action === "final") {
         $submitkey = "timeFinalSubmitted";

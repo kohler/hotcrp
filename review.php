@@ -16,7 +16,7 @@ if (isset($_REQUEST["email"]) && isset($_REQUEST["password"])
     $after = "";
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
         if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
-            $_REQUEST[$v] = $_REQUEST[$k];
+            $_REQUEST[$v] = $_GET[$v] = $_POST[$v] = $_REQUEST[$k];
     foreach (array("p", "r", "c", "accept", "refuse", "decline") as $opt)
         if (isset($_REQUEST[$opt]))
             $after .= ($after === "" ? "" : "&") . $opt . "=" . urlencode($_REQUEST[$opt]);
@@ -70,14 +70,14 @@ if (isset($_REQUEST["post"]) && $_REQUEST["post"] && !count($_POST))
     $Conf->post_missing_msg();
 else if (isset($_REQUEST["post"]) && isset($_REQUEST["default"])) {
     if (fileUploaded($_FILES["uploadedFile"]))
-        $_REQUEST["uploadForm"] = 1;
+        $_REQUEST["uploadForm"] = $_GET["uploadForm"] = $_POST["uploadForm"] = 1;
     else
-        $_REQUEST["update"] = 1;
+        $_REQUEST["update"] = $_GET["update"] = $_POST["update"] = 1;
 } else if (isset($_REQUEST["submitreview"]))
-    $_REQUEST["update"] = $_REQUEST["ready"] = 1;
+    $_REQUEST["update"] = $_REQUEST["ready"] = $_POST["update"] = $_POST["ready"] = 1;
 else if (isset($_REQUEST["savedraft"])) {
-    $_REQUEST["update"] = 1;
-    unset($_REQUEST["ready"]);
+    $_REQUEST["update"] = $_POST["update"] = 1;
+    unset($_REQUEST["ready"], $_POST["ready"]);
 }
 
 
@@ -124,7 +124,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     loadRows();
 } else if (isset($_REQUEST["update"]) && $paperTable->editrrow
            && $paperTable->editrrow->reviewSubmitted)
-    $_REQUEST["ready"] = 1;
+    $_REQUEST["ready"] = $_POST["ready"] = 1;
 
 
 // review rating action
@@ -144,9 +144,9 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
         else
             $Conf->ajaxExit(array("ok" => 0, "result" => "There was an error while recording your feedback."));
     if (isset($_REQUEST["allr"])) {
-        $_REQUEST["paperId"] = $paperTable->rrow->paperId;
-        unset($_REQUEST["reviewId"]);
-        unset($_REQUEST["r"]);
+        $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $paperTable->rrow->paperId;
+        unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);
+        unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
     }
     loadRows();
 }
@@ -184,10 +184,10 @@ if (isset($_REQUEST["deletereview"]) && check_post()
             if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY && $paperTable->editrrow->requestedBy > 0)
                 Contact::update_review_delegation($paperTable->editrrow->paperId, $paperTable->editrrow->requestedBy, -1);
 
-            unset($_REQUEST["reviewId"]);
-            unset($_REQUEST["r"]);
-            $_REQUEST["paperId"] = $paperTable->editrrow->paperId;
-            go(hoturl("paper", array("p" => $_REQUEST["paperId"], "ls" => @$_REQUEST["ls"])));
+            unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);
+            unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
+            $_REQUEST["paperId"] = $_GET["paperId"] = $paperTable->editrrow->paperId;
+            go(hoturl("paper", array("p" => $_GET["paperId"], "ls" => @$_REQUEST["ls"])));
         }
         redirectSelf();         // normally does not return
         loadRows();
