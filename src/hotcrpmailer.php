@@ -31,6 +31,8 @@ class HotCRPMailer extends Mailer {
 
     function __construct($recipient = null, $row = null, $rest = array()) {
         $this->reset($recipient, $row, $rest);
+        if (isset($rest["combination_type"]))
+            $this->combination_type = $rest["combination_type"];
     }
 
     static private function make_reviewer_contact($x) {
@@ -429,6 +431,7 @@ class HotCRPMailer extends Mailer {
         $contact_info_map = $row->replace_contact_info_map(null);
 
         $preps = $contacts = array();
+        $rest["combination_type"] = 1;
         while ($result && ($contact = $result->fetch_object("Contact"))) {
             $row->assign_contact_info($contact, $contact->contactId);
             if (($p = self::prepare_to($contact, $template, $row, $rest))) {
@@ -474,6 +477,7 @@ class HotCRPMailer extends Mailer {
         $preps = $contacts = array();
         while ($result && ($contact = $result->fetch_object("Contact"))) {
             $row->assign_contact_info($contact, $contact->contactId);
+            $rest["combination_type"] = $contact->can_view_review_identity($row, null, true) ? 1 : 0;
             if (($p = self::prepare_to($contact, $template, $row, $rest))) {
                 $preps[] = $p;
                 $contacts[] = Text::user_html($contact);
@@ -490,6 +494,7 @@ class HotCRPMailer extends Mailer {
     }
 
     static function send_manager($template, $row, $rest = array()) {
+        $rest["combination_type"] = 2;
         if ($row && $row->managerContactId
             && ($c = Contact::find_by_id($row->managerContactId)))
             self::send_to($c, $template, $row, $rest);
