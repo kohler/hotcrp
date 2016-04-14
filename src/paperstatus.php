@@ -131,7 +131,7 @@ class PaperStatus {
                     $aux->last = $au->lastName;
                 if ($au->affiliation)
                     $aux->affiliation = $au->affiliation;
-                $lemail = strtolower((string) $aux->email);
+                $lemail = strtolower((string) $au->email);
                 if ($lemail && ($conf = get($contacts, $lemail))
                     && $conf->conflictType >= CONFLICT_AUTHOR) {
                     $aux->contact = true;
