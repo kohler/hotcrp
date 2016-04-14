@@ -1728,8 +1728,8 @@ class PaperTable {
                 $whyNot = $Me->perm_start_paper(false);
             }
             // pay attention only to the deadline
-            if ($whyNot && get($whyNot, "deadline"))
-                $whyNot = array("deadline" => $whyNot["deadline"]);
+            if ($whyNot && (get($whyNot, "deadline") || get($whyNot, "rejected")))
+                $whyNot = array("deadline" => get($whyNot, "deadline"), "rejected" => get($whyNot, "rejected"));
             else
                 $whyNot = null;
             // produce button
