@@ -239,7 +239,7 @@ class Json {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
         $v = self::decode_part($x, $assoc, $depth, $options);
-        if ($x !== null && $x !== false && !ctype_space($x))
+        if ($x !== null && $x !== false && $x !== "" && !ctype_space($x))
             self::set_error($x, JSON_ERROR_SYNTAX, var_export($x, true));
         self::$error_input = null;
         return $x === null ? null : $v;
@@ -336,7 +336,7 @@ class Json {
         self::$error_type = JSON_ERROR_NONE;
         self::$error_input = $x;
         $v = self::decode_landmarks_part($x, $filename, $assoc, $depth);
-        if ($x !== null && $x !== false && !ctype_space($x))
+        if ($x !== null && $x !== false && $x !== "" && !ctype_space($x))
             self::set_error($x, JSON_ERROR_SYNTAX, var_export($x, true));
         self::$error_input = null;
         return $x === null ? null : $v;
