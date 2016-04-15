@@ -65,6 +65,7 @@ class PaperOption {
     private $display;
     public $display_space;
     public $selector;
+    private $form_priority;
 
     static private $list = null;
 
@@ -103,6 +104,7 @@ class PaperOption {
         if ($disp === null)
             $disp = "topics";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
+        $this->form_priority = get_i($args, "form_priority");
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
@@ -220,6 +222,22 @@ class PaperOption {
         return $type === "pdf" || $type === "slides";
     }
 
+    function display() {
+        if ($this->display === self::DISP_DEFAULT)
+            return $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
+        else
+            return $this->display;
+    }
+
+    function form_priority() {
+        if ($this->form_priority)
+            return $this->form_priority;
+        else if ($this->display == self::DISP_SUBMISSION)
+            return 15000 + $this->ordinal;
+        else
+            return 50000 + $this->ordinal;
+    }
+
     function has_selector() {
         return false;
     }
@@ -244,13 +262,6 @@ class PaperOption {
         if (!self::$display_rmap)
             self::$display_rmap = array_flip(self::$display_map);
         return self::$display_rmap[$this->display];
-    }
-
-    function display() {
-        if ($this->display === self::DISP_DEFAULT)
-            return $this->has_document() ? self::DISP_PROMINENT : self::DISP_TOPICS;
-        else
-            return $this->display;
     }
 
     function unparse() {

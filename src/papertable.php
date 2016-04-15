@@ -328,7 +328,7 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
-    private function editable_title() {
+    private function echo_editable_title() {
         echo $this->editable_papt("title", "Title"),
             '<div class="papev">', $this->entryData("title"), "</div></div>\n\n";
     }
@@ -508,7 +508,10 @@ class PaperTable {
         echo $uploader, "</div>";
     }
 
-    private function echo_editable_submission($flags) {
+    private function echo_editable_submission() {
+        $flags = 0;
+        if (!$this->prow || $this->prow->size == 0)
+            $flags |= PaperTable::ENABLESUBMIT;
         if ($this->canUploadFinal)
             $this->echo_editable_document(PaperOption::find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
         else
@@ -517,20 +520,16 @@ class PaperTable {
     }
 
     private function echo_editable_abstract() {
-        global $Opt;
-        $abs = get($Opt, "noAbstract");
-        if ($abs !== 1 && $abs !== true) {
-            $title = "Abstract";
-            if ($abs === 2)
-                $title .= ' <span class="papfnh">(optional)</span>';
-            echo $this->editable_papt("abstract", $title),
-                '<div class="papev abstract">';
-            if (($f = Conf::format_info($this->prow ? $this->prow->paperFormat : null))
-                && ($t = get($f, "description")))
-                echo $t;
-            echo $this->entryData("abstract"),
-                "</div></div>\n\n";
-        }
+        $title = "Abstract";
+        if ($abs === 2)
+            $title .= ' <span class="papfnh">(optional)</span>';
+        echo $this->editable_papt("abstract", $title),
+            '<div class="papev abstract">';
+        if (($f = Conf::format_info($this->prow ? $this->prow->paperFormat : null))
+            && ($t = get($f, "description")))
+            echo $t;
+        echo $this->entryData("abstract"),
+            "</div></div>\n\n";
     }
 
     private function paptabAbstract() {
@@ -567,7 +566,7 @@ class PaperTable {
             . '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
     }
 
-    private function editable_authors() {
+    private function echo_editable_authors() {
         global $Conf;
 
         echo $this->editable_papt("authorInformation", "Authors"),
@@ -882,8 +881,6 @@ class PaperTable {
 
     private function editable_new_contact_author() {
         global $Me, $Conf;
-        if (!$Me->privChair)
-            return;
         echo $this->editable_papt("contactAuthor", "Contact"),
             '<div class="paphint">You can add more contacts after you register the submission.</div>',
             '<div class="papev">';
@@ -902,7 +899,7 @@ class PaperTable {
         echo "</div></div>\n\n";
     }
 
-    private function editable_contact_author($always_unfold) {
+    private function editable_contact_author($always_unfold = false) {
         global $Conf, $Me, $Error;
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
@@ -988,7 +985,7 @@ class PaperTable {
         echo '</table>', Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")), "</div></div>\n\n";
     }
 
-    private function editable_anonymity() {
+    private function echo_editable_anonymity() {
         global $Conf;
         $blind = ($this->useRequest ? !!$this->qreq->blind : (!$this->prow || $this->prow->blind));
         assert(!!$this->editable);
@@ -1082,7 +1079,7 @@ class PaperTable {
             "</div></div></div>\n\n";
     }
 
-    private function editable_topics() {
+    private function echo_editable_topics() {
         global $Conf;
         assert(!!$this->editable);
         $topicMode = (int) $this->useRequest;
@@ -1128,33 +1125,27 @@ class PaperTable {
         echo Ht::hidden("has_opt$o->id", 1);
     }
 
-    private function editable_options($display_types) {
+    public function echo_editable_option($o) {
         global $Conf, $Me;
         $prow = $this->prow;
-        if (!($opt = PaperOption::option_list()))
-            return;
-        assert(!!$this->editable);
-        foreach ($opt as $o) {
-            if (!($display_types & (1 << $o->display()))
-                || ($o->final && !$this->canUploadFinal)
-                || ($prow && !$Me->can_view_paper_option($prow, $o, true)))
-                continue;
+        $optid = "opt$o->id";
+        $ov = null;
+        if ($prow)
+            $ov = $prow->option($o->id);
+        $ov = $ov ? : new PaperOptionValue($o->id, $o);
+        if ($o->type === "attachments")
+            $this->editable_attachments($o);
+        else if ($o->is_document()) {
+            $this->echo_editable_document($o, $ov->value ? : 0, 0);
+            echo "</div>\n\n";
+        } else
+            $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null, $this);
+    }
 
-            $optid = "opt$o->id";
-            $ov = null;
-            if ($prow)
-                $ov = $prow->option($o->id);
-            $ov = $ov ? : new PaperOptionValue($o->id, $o);
-
-            if ($o->type === "attachments")
-                $this->editable_attachments($o);
-            else if ($o->is_document()) {
-                $this->echo_editable_document($o, $ov->value ? : 0, 0);
-                echo "</div>\n\n";
-            } else
-                $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null,
-                                       $this);
-        }
+    private function make_echo_editable_option($o) {
+        return function () use ($o) {
+            $this->echo_editable_option($o);
+        };
     }
 
     private function editable_pc_conflicts() {
@@ -1897,7 +1888,7 @@ class PaperTable {
     }
 
     private function _echo_editable_body($form) {
-        global $Conf, $Me;
+        global $Conf, $Me, $Opt;
         $prow = $this->prow;
 
         echo $form, "<div class='aahc'>";
@@ -1915,32 +1906,34 @@ class PaperTable {
         $this->echoActions(true);
         echo '<div>';
 
-        $this->editable_title();
-        $this->echo_editable_submission(!$prow || $prow->size == 0 ? PaperTable::ENABLESUBMIT : 0);
-        $this->editable_options(1 << PaperOption::DISP_SUBMISSION);
-
-        // Authorship
-        $this->editable_authors();
-        if (!$prow)
-            $this->editable_new_contact_author();
-        else
-            $this->editable_contact_author(false);
+        $callbacks = [
+            [0, 0, [$this, "echo_editable_title"]],
+            [10000, 1, [$this, "echo_editable_submission"]],
+            [20000, 2, [$this, "echo_editable_authors"]]
+        ];
+        if ($this->prow)
+            $callbacks[] = [20200, count($callbacks), [$this, "editable_contact_author"]];
+        else if ($Me->privChair)
+            $callbacks[] = [20200, count($callbacks), [$this, "editable_new_contact_author"]];
         if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && $this->editable !== "f")
-            $this->editable_anonymity();
-
-        $this->echo_editable_abstract();
-
-        // Topics and options
-        $this->editable_topics();
-        $this->editable_options((1 << PaperOption::DISP_PROMINENT)
-                                | (1 << PaperOption::DISP_TOPICS));
-
-        // Potential conflicts
+            $callbacks[] = [20100, count($callbacks), [$this, "echo_editable_anonymity"]];
+        if (($x = opt("noAbstract")) !== 1 && $x !== true)
+            $callbacks[] = [30000, count($callbacks), [$this, "echo_editable_abstract"]];
+        $callbacks[] = [40000, count($callbacks), [$this, "echo_editable_topics"]];
         if ($this->editable !== "f" || $this->admin) {
-            $this->editable_pc_conflicts();
-            $this->editable_collaborators();
+            $callbacks[] = [60000, count($callbacks), [$this, "editable_pc_conflicts"]];
+            $callbacks[] = [61000, count($callbacks), [$this, "editable_collaborators"]];
         }
+        foreach (PaperOption::option_list() as $opt)
+            if ((!$opt->final || $this->canUploadFinal)
+                && (!$this->prow || $Me->can_view_paper_option($this->prow, $opt, true)))
+                $callbacks[] = [$opt->form_priority(), count($callbacks), $this->make_echo_editable_option($opt)];
+        usort($callbacks, function ($a, $b) {
+            return $a[0] - $b[0] ? : $a[1] - $b[1];
+        });
+        foreach ($callbacks as $f)
+            call_user_func($f[2]);
 
         // Submit button
         echo "</div>";
