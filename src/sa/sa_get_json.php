@@ -26,14 +26,14 @@ class GetJson_SearchAction extends SearchAction {
         $q = $Conf->paperQuery($user, ["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $result = Dbl::qe_raw($q);
         $pj = [];
-        $ps = new PaperStatus($user, ["forceShow" => true]);
+        $ps = new PaperStatus($user, ["forceShow" => true, "hide_docids" => true]);
         if ($this->iszip) {
             $this->zipdoc = new ZipDocument($Opt["downloadPrefix"] . "data.zip");
             $ps->add_document_callback([$this, "document_callback"]);
         }
         while (($prow = PaperInfo::fetch($result, $user)))
             if ($user->can_administer($prow, true))
-                $pj[$prow->paperId] = $ps->row_to_json($prow);
+                $pj[$prow->paperId] = $ps->paper_json($prow);
             else {
                 $pj[$prow->paperId] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this paper."];
                 if ($this->iszip)

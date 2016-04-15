@@ -17,13 +17,13 @@ $user_nobody = new Contact;
 
 $ps = new PaperStatus($user_estrin);
 
-$paper1a = $ps->load(1);
+$paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
 
 $ps->save((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
 xassert(!$ps->nerrors);
 
-$paper1b = $ps->load(1);
+$paper1b = $ps->paper_json(1);
 xassert_eqq($paper1b->title, "Scalable Timers? for Soft State Protocols");
 $paper1b->title = $paper1a->title;
 $paper1b->submitted_at = $paper1a->submitted_at;
@@ -37,7 +37,7 @@ $doc = Filer::file_upload_json([
 $ps->save((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->nerrors);
 
-$paper1c = $ps->load(1);
+$paper1c = $ps->paper_json(1);
 xassert_eqq($paper1c->submission->sha1, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
 
 xassert_exit();

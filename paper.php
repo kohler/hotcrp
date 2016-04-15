@@ -313,7 +313,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
         $action = "submit";
 
     $ps = new PaperStatus($Me);
-    $opj = $prow ? $ps->row_to_json($prow, array("docids" => true)) : null;
+    $opj = $prow ? $ps->paper_json($prow) : null;
     $pj = PaperStatus::clone_json($opj);
     PaperSaver::apply_all($Me, $pj, $opj, $Qreq, $action);
     $diffs = PaperSaver::all_diffs($pj, $opj);
@@ -353,7 +353,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
 if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
         $ps = new PaperStatus($Me);
-        $opj = $ps->row_to_json($prow, array("docids" => true));
+        $opj = $ps->paper_json($prow);
         $pj = PaperStatus::clone_json($opj);
         PaperSaver::replace_contacts($pj, $Qreq);
         if ($ps->save($pj, $opj))

@@ -13,16 +13,17 @@ class PaperStatus {
     private $allow_error = array();
     private $forceShow = null;
     private $export_ids = false;
-    private $export_docids = false;
+    private $hide_docids = false;
     private $export_content = false;
     private $disable_users = false;
     private $prow;
+    private $paperid;
     private $document_callbacks = array();
 
     function __construct($contact, $options = array()) {
         $this->contact = $contact;
         foreach (array("no_email", "allow_error",
-                       "forceShow", "export_ids", "export_docids",
+                       "forceShow", "export_ids", "hide_docids",
                        "export_content", "disable_users") as $k)
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
@@ -45,17 +46,10 @@ class PaperStatus {
         return $this->prow;
     }
 
-    function load($pid, $args = array()) {
-        global $Conf;
-        $prow = $Conf->paperRow(["paperId" => $pid, "topics" => true, "options" => true],
-                                $this->contact);
-        return $prow ? $this->row_to_json($prow, $args) : null;
-    }
-
     public function document_to_json($dtype, $docid) {
         global $Conf;
         if (!is_object($docid)) {
-            $dresult = $Conf->document_result($this->prow, $dtype, $docid);
+            $dresult = $Conf->document_result($this->paperid, $dtype, $docid);
             $drow = $Conf->document_row($dresult, $dtype);
             Dbl::free($dresult);
         } else {
@@ -63,7 +57,7 @@ class PaperStatus {
             $docid = $drow ? $drow->paperStorageId : null;
         }
         $d = (object) array();
-        if ($docid && $this->export_docids)
+        if ($docid && !$this->hide_docids)
             $d->docid = $docid;
         if ($drow) {
             if ($drow->mimetype)
@@ -88,8 +82,10 @@ class PaperStatus {
         return $d;
     }
 
-    function row_to_json($prow, $args = array()) {
+    function paper_json($prow, $args = array()) {
         global $Conf;
+        if (is_int($prow))
+            $prow = $Conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->contact);
         $contact = $this->contact;
         if (get($args, "forceShow"))
             $contact = null;
@@ -97,8 +93,7 @@ class PaperStatus {
         if (!$prow || ($contact && !$contact->can_view_paper($prow)))
             return null;
         $this->prow = $prow;
-        $old_export_docids = $this->export_docids;
-        $this->export_docids = $this->export_docids || get($args, "docids");
+        $this->paperid = $prow->paperId;
 
         $pj = (object) array();
         $pj->pid = (int) $prow->paperId;
@@ -217,8 +212,6 @@ class PaperStatus {
         if ($prow->collaborators && $can_view_authors)
             $pj->collaborators = $prow->collaborators;
 
-        $this->prow = null;
-        $this->export_docids = $old_export_docids;
         return $pj;
     }
 
@@ -250,24 +243,17 @@ class PaperStatus {
         $this->errmsg[] = $html;
     }
 
-    private function upload_document($docj, $paperid, $dtype) {
+    private function upload_document($docj, $dtype) {
         global $Conf;
-        if (!$paperid)
-            $paperid = -1;
-
         // look for an existing document with same sha1;
         // check existing docid's sha1
         $docid = get($docj, "docid");
         if ($docid) {
-            $this->prow = $paperid;
-            $old_export_docids = $this->export_docids;
-            $this->export_docids = true;
             $oldj = $this->document_to_json($dtype, $docid);
             if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
                 $docid = null;
-            $this->export_docids = $old_export_docids;
-        } else if (!$docid && $paperid && get($docj, "sha1")) {
-            $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $paperid, $dtype, $docj->sha1);
+        } else if (!$docid && $this->paperid > 0 && get($docj, "sha1")) {
+            $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $dtype, $docj->sha1);
             if (($row = edb_row($result)))
                 $docid = $row[0];
         }
@@ -277,9 +263,9 @@ class PaperStatus {
             if (is_int(get($docj, "original_id")))
                 $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperStorageId=?", $docj->original_id);
             else if (is_string(get($docj, "original_sha1")))
-                $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $paperid, $docj->original_sha1);
+                $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperid, $docj->original_sha1);
             else if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
-                $result = Dbl::qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($dtype == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $paperid);
+                $result = Dbl::qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($dtype == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperid);
             else
                 $result = null;
             if (($row = edb_orow($result))) {
@@ -296,7 +282,7 @@ class PaperStatus {
         $docclass = new HotCRPDocument($dtype);
         $upload = null;
         if (!$docid && $docclass->load($docj))
-            $upload = $docclass->upload($docj, (object) array("paperId" => $paperid));
+            $upload = $docclass->upload($docj, (object) array("paperId" => $this->paperid));
         if ($docid)
             $docj->docid = $docid;
         else if ($upload && get($upload, "paperStorageId") > 1) {
@@ -617,7 +603,7 @@ class PaperStatus {
         }
     }
 
-    private function check_invariants($pj, $old_pj, $prow) {
+    private function check_invariants($pj, $old_pj) {
         global $Opt;
         // Errors don't prevent saving
         if (get($pj, "title") === ""
@@ -634,7 +620,7 @@ class PaperStatus {
         if (!empty($pj->bad_authors))
             $this->set_error_html("author", "Some authors ignored.");
         $ncontacts = 0;
-        foreach ($this->conflicts_array($pj, $old_pj, $prow) as $c)
+        foreach ($this->conflicts_array($pj, $old_pj) as $c)
             if ($c >= CONFLICT_CONTACTAUTHOR)
                 ++$ncontacts;
         if (!$ncontacts && $old_pj && self::contacts_array($old_pj))
@@ -706,7 +692,7 @@ class PaperStatus {
         return $contacts;
     }
 
-    function conflicts_array($pj, $old_pj, $prow) {
+    function conflicts_array($pj, $old_pj) {
         $x = array();
 
         if ($pj && get($pj, "pc_conflicts") !== null)
@@ -737,7 +723,7 @@ class PaperStatus {
 
         if ($old_pj && get($old_pj, "pc_conflicts")) {
             $can_administer = !$this->contact
-                || $this->contact->can_administer($prow, $this->forceShow);
+                || $this->contact->can_administer($this->prow, $this->forceShow);
             foreach ($old_pj->pc_conflicts as $email => $type)
                 if ($type == CONFLICT_CHAIRMARK) {
                     $lemail = strtolower($email);
@@ -753,6 +739,7 @@ class PaperStatus {
 
     function save($pj) {
         global $Conf, $Now;
+        assert(!$this->hide_docids);
 
         $paperid = null;
         if (isset($pj->pid) && is_int($pj->pid) && $pj->pid > 0)
@@ -770,12 +757,12 @@ class PaperStatus {
             return false;
         }
 
-        $prow = $old_pj = null;
+        $this->prow = $old_pj = null;
+        $this->paperid = $paperid ? : -1;
         if ($paperid)
-            $prow = $Conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true],
-                                    $this->contact);
-        if ($prow)
-            $old_pj = $this->row_to_json($prow, ["forceShow" => true, "docids" => true]);
+            $this->prow = $Conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->contact);
+        if ($this->prow)
+            $old_pj = $this->paper_json($this->prow, ["forceShow" => true]);
         if ($pj && $old_pj && $paperid != $old_pj->pid) {
             $this->set_error_html("pid", "Saving paper with different ID");
             return false;
@@ -786,13 +773,13 @@ class PaperStatus {
             $this->normalize($old_pj, null);
         if ($this->nerrors)
             return false;
-        $this->check_invariants($pj, $old_pj, $prow);
+        $this->check_invariants($pj, $old_pj);
 
         // store all documents
         if (isset($pj->submission) && $pj->submission)
-            $this->upload_document($pj->submission, $paperid, DTYPE_SUBMISSION);
+            $this->upload_document($pj->submission, DTYPE_SUBMISSION);
         if (isset($pj->final) && $pj->final)
-            $this->upload_document($pj->final, $paperid, DTYPE_FINAL);
+            $this->upload_document($pj->final, DTYPE_FINAL);
         if (isset($pj->options) && $pj->options) {
             $option_list = PaperOption::option_list();
             foreach ($pj->options as $id => $oa) {
@@ -800,7 +787,7 @@ class PaperStatus {
                 if ($o->type == "attachments" || $o->is_document()) {
                     $oa = is_array($oa) ? $oa : array($oa);
                     foreach ($oa as $x)
-                        $this->upload_document($x, $paperid, $id);
+                        $this->upload_document($x, $id);
                 }
             }
         }
@@ -958,8 +945,8 @@ class PaperStatus {
         }
 
         // update PaperConflict
-        $conflict = $this->conflicts_array($pj, $old_pj, $prow);
-        $old_conflict = $this->conflicts_array($old_pj, null, null);
+        $conflict = $this->conflicts_array($pj, $old_pj);
+        $old_conflict = $this->conflicts_array($old_pj, null);
         if (join(",", array_keys($conflict)) !== join(",", array_keys($old_conflict))
             || join(",", array_values($conflict)) !== join(",", array_values($old_conflict))) {
             $q = array();
