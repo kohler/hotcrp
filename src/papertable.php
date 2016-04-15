@@ -772,7 +772,8 @@ class PaperTable {
                  && $o->has_document()
                  && $Me->can_view_paper_option($this->prow, $o))
                 || (!$showAllOptions
-                    && !$Me->can_view_paper_option($this->prow, $o)))
+                    && !$Me->can_view_paper_option($this->prow, $o))
+                || $o->display() < 0)
                 continue;
 
             // create option display value

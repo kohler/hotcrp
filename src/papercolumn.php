@@ -1252,7 +1252,8 @@ class OptionPaperColumn extends PaperColumn {
     public static function lookup_all() {
         $reg = array();
         foreach (PaperOption::option_list() as $opt)
-            $reg[] = self::_make_column($opt);
+            if ($opt->display() >= 0)
+                $reg[] = self::_make_column($opt);
         return $reg;
     }
     private static function _make_column($opt) {
@@ -1265,12 +1266,13 @@ class OptionPaperColumn extends PaperColumn {
         $opts = PaperOption::search(substr($name, $p + 1));
         if (count($opts) == 1) {
             reset($opts);
-            return self::_make_column(current($opts));
-        } else {
-            if ($p > 0)
-                self::make_column_error($errors, "No such option “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 1);
-            return null;
-        }
+            $opt = current($opts);
+            if ($opt->display() >= 0)
+                return self::_make_column($opt);
+            self::make_column_error($errors, "Option “" . htmlspecialchars(substr($name, $p + 1)) . "” can’t be displayed.");
+        } else if ($p > 0)
+            self::make_column_error($errors, "No such option “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 1);
+        return null;
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_some_paper_option($this->opt))

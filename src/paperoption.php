@@ -73,9 +73,11 @@ class PaperOption {
     const DISP_PROMINENT = 1;
     const DISP_SUBMISSION = 2;
     const DISP_DEFAULT = 3;
+    const DISP_NONE = -1;
     static private $display_map = [
         "default" => self::DISP_DEFAULT, "submission" => self::DISP_SUBMISSION,
-        "topics" => self::DISP_TOPICS, "prominent" => self::DISP_PROMINENT
+        "topics" => self::DISP_TOPICS, "prominent" => self::DISP_PROMINENT,
+        "none" => self::DISP_NONE
     ];
     static private $display_rmap = null;
 
