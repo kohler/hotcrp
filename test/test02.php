@@ -64,7 +64,10 @@ xassert_array_eqq(CsvParser::split_lines("\na\r\nb\rc\n"),
                   array("\n", "a\r\n", "b\r", "c\n"));
 
 // random PHP behavior tests
-xassert_eqq(substr("", 0, 1), false);
+if (PHP_MAJOR_VERSION >= 7)
+    xassert_eqq(substr("", 0, 1), ""); // UGH
+else
+    xassert_eqq(substr("", 0, 1), false);
 $s = "";
 xassert_eqq(@$s[0], "");
 
