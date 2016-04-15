@@ -187,13 +187,12 @@ class PaperStatus {
 
         if (count($prow->options())) {
             $options = array();
-            foreach ($prow->options() as $oa) {
-                $o = $oa->option;
+            foreach (PaperOption::option_list() as $o) {
                 if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
                     continue;
-                $result = $o->unparse_json($oa, $this, $contact);
-                if ($result !== null)
-                    $options[$this->export_ids ? $o->id : $o->abbr] = $result;
+                $ov = $prow->option($o->id) ? : new PaperOptionValue($o->id, $o);
+                $options[$this->export_ids ? $o->id : $o->abbr] =
+                    $o->unparse_json($ov, $this, $contact);
             }
             if (!empty($options))
                 $pj->options = (object) $options;
@@ -227,6 +226,11 @@ class PaperStatus {
     }
 
 
+    public function set_option_error_html($o, $html) {
+        $this->set_error_html($o->id <= 0 ? $o->abbr : "opt$o->id",
+                              htmlspecialchars($o->name) . ": " . $html);
+    }
+
     public function set_error_html($field, $html) {
         if ($field)
             $this->errf[$field] = true;
@@ -243,29 +247,33 @@ class PaperStatus {
         $this->errmsg[] = $html;
     }
 
-    private function upload_document($docj, $dtype) {
+    public function upload_document($docj, PaperOption $o) {
         global $Conf;
         // look for an existing document with same sha1;
         // check existing docid's sha1
         $docid = get($docj, "docid");
         if ($docid) {
-            $oldj = $this->document_to_json($dtype, $docid);
+            $oldj = $this->document_to_json($o->id, $docid);
             if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
                 $docid = null;
         } else if (!$docid && $this->paperid > 0 && get($docj, "sha1")) {
-            $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $dtype, $docj->sha1);
+            $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, $docj->sha1);
             if (($row = edb_row($result)))
                 $docid = $row[0];
         }
+        if ($docid) {
+            $docj->docid = $docid;
+            return;
+        }
 
         // check filter
-        if (!$docid && get($docj, "filter") && is_int($docj->filter)) {
+        if (get($docj, "filter") && is_int($docj->filter)) {
             if (is_int(get($docj, "original_id")))
                 $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperStorageId=?", $docj->original_id);
             else if (is_string(get($docj, "original_sha1")))
                 $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperid, $docj->original_sha1);
-            else if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL)
-                $result = Dbl::qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($dtype == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperid);
+            else if ($o->id == DTYPE_SUBMISSION || $o->id == DTYPE_FINAL)
+                $result = Dbl::qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($o->id == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperid);
             else
                 $result = null;
             if (($row = edb_orow($result))) {
@@ -279,21 +287,17 @@ class PaperStatus {
         }
 
         // if no sha1 match, upload
-        $docclass = new HotCRPDocument($dtype);
+        $docclass = new HotCRPDocument($o->id);
         $upload = null;
-        if (!$docid && $docclass->load($docj))
+        if ($docclass->load($docj))
             $upload = $docclass->upload($docj, (object) array("paperId" => $this->paperid));
-        if ($docid)
-            $docj->docid = $docid;
-        else if ($upload && get($upload, "paperStorageId") > 1) {
+        if ($upload && get($upload, "paperStorageId") > 1) {
             foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
                 $docj->$k = $upload->$k;
             $this->uploaded_documents[] = $docj->docid = $upload->paperStorageId;
         } else {
-            $opt = PaperOption::find_document($dtype);
             $docj->docid = 1;
-            $this->set_error_html($opt->abbr, htmlspecialchars($opt->name) . ": "
-                                  . ($upload ? $upload->error_html : "empty document"));
+            $this->set_option_error_html($o, $upload ? $upload->error_html : "empty document");
         }
     }
 
@@ -337,53 +341,35 @@ class PaperStatus {
     }
 
     private function normalize_options($pj) {
-        $options = get($pj, "options");
+        $options = $pj->options;
         $pj->options = (object) array();
+        $pj->parsed_options = array();
         $option_list = PaperOption::option_list();
 
-        // canonicalize option values to use IDs, not abbreviations
-        foreach ($options as $id => $oa) {
+        // - canonicalize option values to use IDs, not abbreviations
+        // - parse options into SQL
+        foreach ($options as $id => $oj) {
             $omatches = PaperOption::search($id);
-            if (count($omatches) == 1) {
-                $id = current($omatches)->id;
-                $pj->options->$id = $oa;
-            } else
+            if (count($omatches) != 1) {
                 $pj->bad_options[$id] = true;
+                continue;
+            }
+            $o = current($omatches);
+            // XXX setting decision in JSON?
+            if ($o->final && (!$this->prow || $this->prow->outcome <= 0))
+                continue;
+            $result = null;
+            if ($oj !== null)
+                $result = $o->parse_json($oj, $this);
+            if ($result === null)
+                $result = [];
+            if (!is_array($result))
+                $result = [[$result]];
+            else if (count($result) == 2 && is_string($result[1]))
+                $result = [$result];
+            $pj->parsed_options[$o->id] = $result;
         }
-
-        // check values
-        foreach ($pj->options as $id => $oa) {
-            $o = $option_list[$id];
-            if ($o->type == "checkbox") {
-                if (!is_bool($oa))
-                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be “true” or “false”.");
-            } else if ($o->has_selector()) {
-                if (is_int($oa) && isset($o->selector[$oa]))
-                    /* OK */;
-                else if (is_string($oa)
-                         && ($ov = array_search($oa, $o->selector)) !== false)
-                    $pj->options->$id = $ov;
-                else
-                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option " . htmlspecialchars(json_encode($oa)) . " doesn’t match any of the selectors.");
-            } else if ($o->type == "numeric") {
-                if (!is_int($oa))
-                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be an integer.");
-            } else if ($o->type == "text") {
-                if (!is_string($oa))
-                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option should be a text string.");
-            } else if ($o->has_document()) {
-                if ($o->is_document() && !is_object($oa))
-                    $oa = null;
-                $oa = $oa && !is_array($oa) ? array($oa) : $oa;
-                if (!is_array($oa))
-                    $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option format error.");
-                else
-                    foreach ($oa as $ov)
-                        if (!is_object($ov))
-                            $this->set_error_html("opt$id", htmlspecialchars($o->name) . ": Option format error.");
-            } else
-                unset($pj->options->$id);
-        }
+        ksort($pj->parsed_options);
     }
 
     private function normalize_pc_conflicts($pj) {
@@ -656,24 +642,16 @@ class PaperStatus {
     }
 
     static function options_sql($pj, $paperid) {
-        $x = array();
-        $option_list = PaperOption::option_list();
-        foreach ((array) ($pj ? get($pj, "options") : null) as $id => $oa) {
-            $o = $option_list[$id];
-            if ($o->type == "text") {
-                if ((string) $oa !== "")
-                    $x[] = "($paperid,$o->id,1,'" . sqlq($oa) . "')";
-            } else if ($o->is_document())
-                $x[] = "($paperid,$o->id,$oa->docid,null)";
-            else if ($o->type == "attachments") {
-                $oa = is_array($oa) ? $oa : array($oa);
-                foreach ($oa as $ord => $ov)
-                    $x[] = "($paperid,$o->id,$ov->docid,'" . ($ord + 1) . "')";
-            } else if ($o->type != "checkbox" || $oa)
-                $x[] = "($paperid,$o->id,$oa,null)";
-        }
-        sort($x);
-        return join(",", $x);
+        $q = [];
+        foreach (get($pj, "parsed_options", []) as $id => $ovs)
+            foreach ($ovs as $ov) {
+                if (is_int($ov))
+                    $q[] = "($paperid,$id,$ov,null)";
+                else
+                    $q[] = Dbl::format_query("($paperid,$id,?,?)", $ov[0], get($ov, 1));
+            }
+        sort($q);
+        return join(",", $q);
     }
 
     static private function contacts_array($pj) {
@@ -775,22 +753,11 @@ class PaperStatus {
             return false;
         $this->check_invariants($pj, $old_pj);
 
-        // store all documents
+        // store documents (options already stored)
         if (isset($pj->submission) && $pj->submission)
-            $this->upload_document($pj->submission, DTYPE_SUBMISSION);
+            $this->upload_document($pj->submission, PaperOption::find_document(DTYPE_SUBMISSION));
         if (isset($pj->final) && $pj->final)
-            $this->upload_document($pj->final, DTYPE_FINAL);
-        if (isset($pj->options) && $pj->options) {
-            $option_list = PaperOption::option_list();
-            foreach ($pj->options as $id => $oa) {
-                $o = $option_list[$id];
-                if ($o->type == "attachments" || $o->is_document()) {
-                    $oa = is_array($oa) ? $oa : array($oa);
-                    foreach ($oa as $x)
-                        $this->upload_document($x, $id);
-                }
-            }
-        }
+            $this->upload_document($pj->final, PaperOption::find_document(DTYPE_FINAL));
 
         // create contacts
         foreach (self::contacts_array($pj) as $c) {
@@ -938,7 +905,7 @@ class PaperStatus {
             $options = convert_to_utf8(self::options_sql($pj, $paperid));
             $old_options = self::options_sql($old_pj, $paperid);
             if ($options !== $old_options) {
-                $result = Dbl::qe("delete from PaperOption where paperId=$paperid and optionId?a", array_keys(PaperOption::option_list()));
+                $result = Dbl::qe("delete from PaperOption where paperId=$paperid and optionId?a", array_keys($pj->parsed_options));
                 if ($options)
                     $result = Dbl::qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
             }

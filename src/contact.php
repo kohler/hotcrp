@@ -2127,9 +2127,7 @@ class Contact {
         return array_merge($prow->initial_whynot(), ["permission" => 1]);
     }
 
-    function can_view_some_paper_option($opt) {
-        if (!is_object($opt) && !($opt = PaperOption::find($opt)))
-            return false;
+    function can_view_some_paper_option(PaperOption $opt) {
         if ($opt->has_document() && !$this->can_view_some_pdf())
             return false;
         $oview = $opt->visibility;

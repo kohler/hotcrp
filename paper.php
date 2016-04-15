@@ -204,7 +204,7 @@ function update_paper($pj, $opj, $qreq, $action, $diffs) {
         $diffs["contacts"] = true;
 
     // submit paper if no error so far
-    $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $qreq->paperId = $pj->pid;
+    $_REQUEST["paperId"] = $_GET["paperId"] = $qreq->paperId = $pj->pid;
     loadRows();
     if ($action === "final") {
         $submitkey = "timeFinalSubmitted";

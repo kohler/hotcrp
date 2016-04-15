@@ -114,11 +114,7 @@ class Default_PaperSaver extends PaperSaver {
             if ($qreq["has_opt$o->id"]
                 && (!$o->final || $action === "final")) {
                 $okey = $o->abbr;
-                $result = $o->parse_request(get($pj->options, $o->abbr), $qreq, $user, $pj);
-                if ($result === null)
-                    unset($pj->options->$okey);
-                else
-                    $pj->options->$okey = $result;
+                $pj->options->$okey = $o->parse_request(get($pj->options, $okey), $qreq, $user, $pj);
             }
         if (!count(get_object_vars($pj->options)))
             unset($pj->options);

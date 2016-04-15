@@ -12,9 +12,19 @@ class PaperOptionValue {
     public $data_array;
     private $_documents = null;
 
-    public function __construct($id, PaperOption $o = null) {
+    public function __construct($id, PaperOption $o = null, $values = [0], $data_array = []) {
         $this->id = $id;
         $this->option = $o;
+        $this->values = $values;
+        $this->data_array = $data_array;
+        if ($o && $o->takes_multiple()) {
+            if ($o->type === "attachments")
+                array_multisort($this->data_array, SORT_NUMERIC, $this->values);
+        } else {
+            $this->value = $this->values[0];
+            if (!empty($this->data_array))
+                $this->data = $this->data_array[0];
+        }
     }
     public function documents($prow) {
         assert($this->option->has_document());
@@ -268,11 +278,6 @@ class PaperOption {
                 "yes" => ["{$this->abbr}:yes", $this]];
     }
 
-    private static function sort_multiples($o, $ox) {
-        if ($o->type === "attachments")
-            array_multisort($ox->data_array, SORT_NUMERIC, $ox->values);
-    }
-
     private static function load_optdata($pid) {
         $result = Dbl::qe("select optionId, value, data from PaperOption where paperId=?", $pid);
         $optdata = array();
@@ -310,24 +315,14 @@ class PaperOption {
             $o = get($options, $oid);
             if (!$o && !$all)
                 continue;
-            $ox = new PaperOptionValue($oid, $o);
             $needs_data = !$o || $o->needs_data();
             if ($needs_data && !$optdata)
                 $optdata = self::load_optdata($prow->paperId);
-            $ox->values = $ovalues;
-            if ($needs_data) {
-                $ox->data_array = [];
-                foreach ($ox->values as $v)
-                    $ox->data_array[] = $optdata[$oid . "." . $v];
-            }
-            if ($o && $o->takes_multiple())
-                self::sort_multiples($o, $ox);
-            else {
-                $ox->value = $ox->values[0];
-                if ($needs_data)
-                    $ox->data = $optdata[$oid . "." . $ox->value];
-            }
-            $option_array[$oid] = $ox;
+            $odata = [];
+            if ($needs_data)
+                foreach ($ovalues as $v)
+                    $odata[] = $optdata[$oid . "." . $v];
+            $option_array[$oid] = new PaperOptionValue($oid, $o, $ovalues, $odata);
         }
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)
@@ -363,6 +358,10 @@ class PaperOption {
         return null;
     }
 
+    function parse_json($pj, PaperStatus $ps) {
+        return null;
+    }
+
     function unparse_column_html($pl, $row) {
         return "";
     }
@@ -378,11 +377,17 @@ class CheckboxPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->value ? true : null;
+        return $ov->value ? true : false;
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         return $qreq["opt$this->id"] > 0;
+    }
+
+    function parse_json($pj, PaperStatus $ps) {
+        if (is_bool($pj))
+            return $pj ? 1 : null;
+        $ps->set_option_error_html($this, "Option should be “true” or “false”.");
     }
 
     function unparse_column_html($pl, $row) {
@@ -424,6 +429,15 @@ class SelectorPaperOption extends PaperOption {
         return $v !== "" && ctype_digit($v) ? (int) $v : $v;
     }
 
+    function parse_json($pj, PaperStatus $ps) {
+        if (is_string($pj)
+            && ($v = array_search($pj, $this->selector)) !== false)
+            $pj = $v;
+        if (is_int($pj) && isset($this->selector[$pj]))
+            return $pj;
+        $ps->set_option_error_html($this, "Option doesn’t match any of the selectors.");
+    }
+
     function unparse_column_html($pl, $row) {
         $v = $row->option($this->id);
         return isset($this->selector[$v]) ? htmlspecialchars($this->selector[$v]) : "";
@@ -462,6 +476,14 @@ class DocumentPaperOption extends PaperOption {
             return $opt_pj;
     }
 
+    function parse_json($pj, PaperStatus $ps) {
+        if (is_object($pj)) {
+            $ps->upload_document($pj, $this);
+            return $pj->docid;
+        }
+        $ps->set_option_error_html($this, "Option should be a document.");
+    }
+
     function unparse_column_html($pl, $row) {
         if (($v = $row->option($this->id)))
             foreach ($v->documents($row) as $d)
@@ -492,6 +514,12 @@ class NumericPaperOption extends PaperOption {
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
         return $v !== "" && ctype_digit($v) ? (int) $v : $v;
+    }
+
+    function parse_json($pj, PaperStatus $ps) {
+        if (is_int($pj))
+            return $pj;
+        $ps->set_option_error_html($this, "Option should be an integer.");
     }
 
     function unparse_column_html($pl, $row) {
@@ -526,6 +554,12 @@ class TextPaperOption extends PaperOption {
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         return trim((string) $qreq["opt$this->id"]);
+    }
+
+    function parse_json($pj, PaperStatus $ps) {
+        if (is_string($pj))
+            return [1, $pj];
+        $ps->set_option_error_html($this, "Option should be a string.");
     }
 
     function unparse_column_html($pl, $row) {
@@ -586,6 +620,19 @@ class AttachmentsPaperOption extends PaperOption {
                 --$i;
             }
         return empty($attachments) ? null : $attachments;
+    }
+
+    function parse_json($pj, PaperStatus $ps) {
+        if (is_object($pj))
+            $pj = [$pj];
+        $result = [];
+        foreach ($pj as $docj)
+            if (is_object($docj)) {
+                $ps->upload_document($docj, $this);
+                $result[] = [$docj->docid, "" . (count($result) + 1)];
+            } else
+                $ps->set_option_error_html($this, "Option should be a document.");
+        return $result;
     }
 
     function unparse_column_html($pl, $row) {
