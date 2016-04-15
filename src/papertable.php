@@ -919,9 +919,7 @@ class PaperTable {
             ' title="Edit contacts">', expander(true), 'Contacts</a></span><hr class="c" /></div>',
             '<div class="papet fx0',
             ($cerror ? " error" : ""),
-            '"><span class="papfn">',
-            ($always_unfold ? "" : expander(false)),
-            'Contacts</span><hr class="c" /></div>';
+            '"><span class="papfn">Contacts</span><hr class="c" /></div>';
 
         // Non-editable version
         echo '<div class="papev fn0">';
