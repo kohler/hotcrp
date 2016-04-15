@@ -90,7 +90,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
             $fj->visibility = get($sv->req, "authorView_$fid");
 
-            $x = CleanHTML::clean(defval($sv->req, "description_$fid", ""), $err);
+            $x = CleanHTML::basic_clean(defval($sv->req, "description_$fid", ""), $err);
             if ($x === false) {
                 if (get($f, "description"))
                     $fj->description = $f->description;

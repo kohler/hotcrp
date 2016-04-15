@@ -336,7 +336,7 @@ class Option_SettingParser extends SettingParser {
         }
 
         if (get($sv->req, "optd$id") && trim($sv->req["optd$id"]) != "") {
-            $t = CleanHTML::clean($sv->req["optd$id"], $err);
+            $t = CleanHTML::basic_clean($sv->req["optd$id"], $err);
             if ($t !== false)
                 $oarg["description"] = $t;
             else

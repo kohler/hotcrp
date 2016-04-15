@@ -789,7 +789,7 @@ function parse_value($sv, $name, $info) {
         else
             $err = unparse_setting_error($info, "Invalid URL.");
     } else if ($info->type === "htmlstring") {
-        if (($v = CleanHTML::clean($v, $err)) === false)
+        if (($v = CleanHTML::basic_clean($v, $err)) === false)
             $err = unparse_setting_error($info, $err);
         else if ($info->message_default
                  && $v === $Conf->message_default_html($info->message_default))
