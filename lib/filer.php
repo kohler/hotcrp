@@ -234,6 +234,33 @@ class ZipDocument {
     }
 }
 
+class Filer_UploadJson implements JsonSerializable {
+    public $docid;
+    public $content;
+    public $filename;
+    public $mimetype;
+    public $timestamp;
+    public function __construct($upload) {
+        $this->content = file_get_contents($upload["tmp_name"]);
+        if (isset($upload["name"])
+            && strlen($upload["name"]) <= 255
+            && is_valid_utf8($upload["name"]))
+            $this->filename = $upload["name"];
+        $this->mimetype = Mimetype::type(get($upload, "type", "application/octet-stream"));
+        $this->timestamp = time();
+    }
+    public function jsonSerialize() {
+        $x = array();
+        foreach (get_object_vars($this) as $k => $v)
+            if ($k === "content" && $v !== null) {
+                $v = strlen($v) < 50 ? $v : substr($v, 0, 50) . "...";
+                $x[$k] = convert_to_utf8($v);
+            } else if ($v !== null)
+                $x[$k] = $v;
+        return $x;
+    }
+}
+
 class Filer {
     // override these to tell Filer how to behave
     function mimetypes($doc = null, $docinfo = null) {
@@ -503,30 +530,14 @@ class Filer {
 
     // upload
     static function file_upload_json($upload) {
-        global $Now;
-        $doc = (object) array();
-
         if (is_string($upload) && $upload)
             $upload = $_FILES[$upload];
         if (!$upload || !is_array($upload) || !fileUploaded($upload)
             || !isset($upload["tmp_name"]))
             return set_error_html($doc, "Upload error. Please try again.");
-
-        // prepare document
-        $doc->content = file_get_contents($upload["tmp_name"]);
+        $doc = new Filer_UploadJson($upload);
         if ($doc->content === false || strlen($doc->content) == 0)
             return set_error_html($doc, "The uploaded file was empty. Please try again.");
-
-        if (isset($upload["name"])
-            && strlen($upload["name"]) <= 255
-            && is_valid_utf8($upload["name"]))
-            $doc->filename = $upload["name"];
-        else
-            $doc->filename = null;
-
-        $doc->mimetype = Mimetype::type(get($upload, "type", "application/octet-stream"));
-
-        $doc->timestamp = time();
         return $doc;
     }
     function upload($doc, $docinfo) {
