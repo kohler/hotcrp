@@ -20,7 +20,7 @@ $ps = new PaperStatus($user_estrin);
 $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
 
-$ps->save((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
+$ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
 xassert(!$ps->nerrors);
 
 $paper1b = $ps->paper_json(1);
@@ -34,7 +34,7 @@ $doc = Filer::file_upload_json([
         "tmp_name" => "$ConfSitePATH/src/sample.pdf",
         "tmp_name_safe" => true, "type" => "application/pdf"
     ]);
-$ps->save((object) ["id" => 1, "submission" => $doc]);
+$ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
 xassert(!$ps->nerrors);
 
 $paper1c = $ps->paper_json(1);

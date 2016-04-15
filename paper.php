@@ -174,7 +174,7 @@ function update_paper($pj, $opj, $qreq, $action, $diffs) {
     // XXX lock tables
 
     $ps = new PaperStatus($Me);
-    $saved = $ps->save($pj);
+    $saved = $ps->save_paper_json($pj);
 
     if (!$saved && !$prow && count($qreq->_FILES))
         $ps->set_error_html("paper", "<strong>Your uploaded files were ignored.</strong>");
@@ -356,7 +356,7 @@ if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
         $opj = $ps->paper_json($prow);
         $pj = PaperStatus::clone_json($opj);
         PaperSaver::replace_contacts($pj, $Qreq);
-        if ($ps->save($pj, $opj))
+        if ($ps->save_paper_json($pj, $opj))
             redirectSelf();
         else {
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>");

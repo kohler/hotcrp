@@ -50,7 +50,7 @@ foreach ($jp as $j) {
     $ps = new PaperStatus(null, ["no_email" => true,
                                  "disable_users" => $disable_users,
                                  "allow_error" => ["topics", "options"]]);
-    $res = $ps->save($j);
+    $res = $ps->save_paper_json($j);
     if (!$quiet)
         fwrite(STDERR, $res ? "saved\n" : "failed\n");
     foreach ($ps->error_html() as $msg)

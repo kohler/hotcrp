@@ -191,7 +191,7 @@ $user_floyd = user("floyd@EE.lbl.gov");
 $user_van = user("van@ee.lbl.gov");
 
 $ps = new PaperStatus(null);
-$ps->save((object) [
+$ps->save_paper_json((object) [
     "id" => 1,
     "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,
                   $user_floyd->email, $user_van->email, $anna]

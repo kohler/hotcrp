@@ -737,7 +737,7 @@ class PaperStatus {
         return $x;
     }
 
-    function save($pj) {
+    function save_paper_json($pj) {
         global $Conf, $Now;
         assert(!$this->hide_docids);
 
