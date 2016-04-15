@@ -6,7 +6,7 @@
 class PaperTable {
     const ENABLESUBMIT = 8;
 
-    var $prow;
+    public $prow;
     private $all_rrows = null;
     public $viewable_rrows = null;
     var $crows = null;
@@ -1136,7 +1136,7 @@ class PaperTable {
         $ov = $ov ? : new PaperOptionValue($o->id, $o);
         if ($o->type === "attachments")
             $this->editable_attachments($o);
-        else if ($o->is_document()) {
+        else if ($o instanceof DocumentPaperOption) {
             $this->echo_editable_document($o, $ov->value ? : 0, 0);
             echo "</div>\n\n";
         } else

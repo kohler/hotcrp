@@ -26,7 +26,7 @@ class PaperOptionValue {
                 $this->data = $this->data_array[0];
         }
     }
-    public function documents($prow) {
+    public function documents(PaperInfo $prow) {
         assert($this->option->has_document());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
@@ -52,10 +52,12 @@ class PaperOptionValue {
 }
 
 class PaperOption {
+    const MINFIXEDID = 1000000;
+
     public $id;
     public $name;
     public $type; // checkbox, selector, radio, numeric, text,
-                  // pdf, slides, video, attachments
+                  // pdf, slides, video, attachments, ...
     public $abbr;
     public $description;
     public $position;
@@ -68,6 +70,7 @@ class PaperOption {
     private $form_priority;
 
     static private $list = null;
+    static private $nonfixed_list = null;
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -80,6 +83,15 @@ class PaperOption {
         "none" => self::DISP_NONE
     ];
     static private $display_rmap = null;
+
+    static private $type_map = [
+        "checkbox" => "CheckboxPaperOption",
+        "radio" => "SelectorPaperOption", "selector" => "SelectorPaperOption",
+        "numeric" => "NumericPaperOption",
+        "text" => "TextPaperOption",
+        "pdf" => "DocumentPaperOption", "slides" => "DocumentPaperOption", "video" => "DocumentPaperOption",
+        "attachments" => "AttachmentsPaperOption"
+    ];
 
     function __construct($args) {
         if (is_object($args))
@@ -120,14 +132,48 @@ class PaperOption {
             return $a->id - $b->id;
     }
 
+    static private function add_json($jlist, $fixed, $landmark) {
+        if (is_string($jlist)) {
+            if (($jlistx = json_decode($jlist)) !== false)
+                $jlist = $jlistx;
+            else if (json_last_error()) {
+                Json::decode($jlist);
+                error_log("$landmark: Invalid JSON. " . Json::last_error_msg());
+                return;
+            }
+            if (is_object($jlist))
+                $jlist = [$jlist];
+        }
+        foreach ($jlist as $oj)
+            if (is_object($oj) && isset($oj->id) && is_int($oj->id)
+                && ($oj->id >= self::MINFIXEDID) === $fixed
+                && !isset(self::$list[$oj->id]))
+                self::$list[$oj->id] = PaperOption::make($oj);
+            else
+                error_log("$landmark: bad option");
+    }
+
     static function option_list(Conf $c = null) {
-        global $Conf;
+        global $Conf, $Opt;
         if (self::$list === null) {
             self::$list = array();
             $c = $c ? : $Conf;
-            if (($optj = $c->setting_json("options"))) {
-                foreach ($optj as $j)
-                    self::$list[$j->id] = PaperOption::make($j);
+            if (($optj = $c->setting_json("options")))
+                self::add_json($optj, false, "settings");
+            if (isset($Opt["optionsInclude"])) {
+                $options_include = $Opt["optionsInclude"];
+                if (!is_array($options_include))
+                    $options_include = array($options_include);
+                foreach ($options_include as $k => $oi) {
+                    if (preg_match(',\A\s*\{\s*\",s', $oi))
+                        self::add_json($oi, true, "include entry $k");
+                    else
+                        foreach (expand_includes($oi) as $f)
+                            if (($x = file_get_contents($f)))
+                                self::add_json($x, true, $f);
+                }
+            }
+            if (!empty(self::$list)) {
                 uasort(self::$list, array("PaperOption", "compare"));
                 $ordinal = 0;
                 foreach (self::$list as $o) {
@@ -139,28 +185,30 @@ class PaperOption {
         return self::$list;
     }
 
+    static function nonfixed_option_list() {
+        if (self::$nonfixed_list === null)
+            self::$nonfixed_list = array_filter(self::option_list(), function ($o) {
+                return !$o->fixed();
+            });
+        return self::$nonfixed_list;
+    }
+
     static function make($args) {
+        global $Opt;
         if (is_object($args))
             $args = get_object_vars($args);
         $type = get($args, "type");
-        if ($type === "checkbox")
-            return new CheckboxPaperOption($args);
-        else if ($type === "radio" || $type === "selector")
-            return new SelectorPaperOption($args);
-        else if ($type === "numeric")
-            return new NumericPaperOption($args);
-        else if ($type === "text")
-            return new TextPaperOption($args);
-        else if ($type === "pdf" || $type === "slides" || $type === "video")
-            return new DocumentPaperOption($args);
-        else if ($type === "attachments")
-            return new AttachmentsPaperOption($args);
+        if (isset($Opt["optionTypeClass.$type"]))
+            $typeclass = $Opt["optionTypeClass.$type"];
+        else if (isset(self::$type_map[$type]))
+            $typeclass = self::$type_map[$type];
         else
-            return new PaperOption($args);
+            $typeclass = "PaperOption";
+        return new $typeclass($args);
     }
 
     static function invalidate_option_list() {
-        self::$list = null;
+        self::$list = self::$nonfixed_list = null;
     }
 
     static function find($id) {
@@ -222,6 +270,10 @@ class PaperOption {
 
     static function type_takes_pdf($type) {
         return $type === "pdf" || $type === "slides";
+    }
+
+    function fixed() {
+        return $this->id >= self::MINFIXEDID;
     }
 
     function display() {

@@ -2458,6 +2458,12 @@ div.paphint, div.revhint {
 	max-width: 640px;
 	margin: 2px 0;
 }
+div.paphint > p:first-child, div.revhint > p:first-child {
+	margin-top: 0;
+}
+div.paphint > p:last-child, div.revhint > p:last-child {
+	margin-bottom: 0;
+}
 div.rvl, div.rvr {
 	width: 50%;
 	float: left;
