@@ -12,7 +12,7 @@ class PaperOptionValue {
     public $data_array;
     private $_documents = null;
 
-    public function __construct($id, PaperOption $o = null, $values = [0], $data_array = []) {
+    public function __construct($id, PaperOption $o = null, $values = [], $data_array = []) {
         $this->id = $id;
         $this->option = $o;
         $this->values = $values;
@@ -21,7 +21,7 @@ class PaperOptionValue {
             if ($o->type === "attachments")
                 array_multisort($this->data_array, SORT_NUMERIC, $this->values);
         } else {
-            $this->value = $this->values[0];
+            $this->value = get($this->values, 0);
             if (!empty($this->data_array))
                 $this->data = $this->data_array[0];
         }
@@ -350,11 +350,14 @@ class PaperOption {
             return $av < $bv ? -1 : ($av > $bv ? 1 : 0);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return null;
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
+        return null;
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
         return null;
     }
 
@@ -376,12 +379,19 @@ class CheckboxPaperOption extends PaperOption {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->value ? true : false;
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $reqv = !!($reqv === null ? $ov->value : $reqv);
+        $pt->echo_editable_option_papt($this, Ht::checkbox_h("opt{$this->id}", 1, $reqv) . "&nbsp;" . Ht::label(htmlspecialchars($this->name)));
+        echo "</div>\n\n";
+        Ht::stash_script("jQuery('#opt{$this->id}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         return $qreq["opt$this->id"] > 0;
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->value ? true : false;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -420,13 +430,29 @@ class SelectorPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return get($this->selector, $ov->value, null);
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $reqv = $reqv === null ? $ov->value : $reqv;
+        error_log(var_export($reqv, true));
+        $reqv = isset($this->selector[$reqv]) ? $reqv : 0;
+        $pt->echo_editable_option_papt($this);
+        echo '<div class="papev">';
+        if ($this->type === "selector")
+            echo Ht::select("opt$this->id", $this->selector, $reqv, ["onchange" => "hiliter(this)"]);
+        else
+            foreach ($this->selector as $val => $text) {
+                echo Ht::radio("opt$this->id", $val, $val == $reqv, ["onchange" => "hiliter(this)"]),
+                    "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
+            }
+        echo "</div></div>\n\n";
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
         return $v !== "" && ctype_digit($v) ? (int) $v : $v;
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return get($this->selector, $ov->value, null);
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -461,12 +487,6 @@ class DocumentPaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        if (($doc = $ps->document_to_json($this->id, $ov->value)))
-            return $doc;
-        return null;
-    }
-
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         if ($qreq->_FILES["opt$this->id"])
             return Filer::file_upload_json($qreq->_FILES["opt$this->id"]);
@@ -474,6 +494,12 @@ class DocumentPaperOption extends PaperOption {
             return null;
         else
             return $opt_pj;
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        if (($doc = $ps->document_to_json($this->id, $ov->value)))
+            return $doc;
+        return null;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -507,13 +533,21 @@ class NumericPaperOption extends PaperOption {
         return PaperOption::basic_value_compare($av, $bv);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->value ? : null;
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $reqv = (string) ($reqv === null ? $ov->value : $reqv);
+        $pt->echo_editable_option_papt($this);
+        echo '<div class="papev">',
+            Ht::entry("opt$this->id", $reqv, ["size" => 8, "onchange" => "hiliter(this)"]),
+            "</div></div>\n\n";
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $v = trim((string) $qreq["opt$this->id"]);
         return $v !== "" && ctype_digit($v) ? (int) $v : $v;
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->value ? : null;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -548,12 +582,20 @@ class TextPaperOption extends PaperOption {
             return ($bv !== "" ? 1 : 0) - ($av !== "" ? 1 : 0);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->data != "" ? $ov->data : null;
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $reqv = (string) ($reqv === null ? $ov->data : $reqv);
+        $pt->echo_editable_option_papt($this);
+        echo '<div class="papev">',
+            Ht::textarea("opt$this->id", $reqv, ["class" => "papertext", "rows" => max($this->display_space, 1), "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"]),
+            "</div></div>\n\n";
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         return trim((string) $qreq["opt$this->id"]);
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        return $ov->data != "" ? $ov->data : null;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -599,14 +641,6 @@ class AttachmentsPaperOption extends PaperOption {
         return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
     }
 
-    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        $attachments = array();
-        foreach ($ov->documents($ps->paper_row()) as $doc)
-            if (($doc = $ps->document_to_json($this->id, $doc)))
-                $attachments[] = $doc;
-        return empty($attachments) ? null : $attachments;
-    }
-
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         $attachments = $opt_pj ? : [];
         $opfx = "opt{$this->id}_";
@@ -619,6 +653,14 @@ class AttachmentsPaperOption extends PaperOption {
                 array_splice($attachments, $i, 1);
                 --$i;
             }
+        return empty($attachments) ? null : $attachments;
+    }
+
+    function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
+        $attachments = array();
+        foreach ($ov->documents($ps->paper_row()) as $doc)
+            if (($doc = $ps->document_to_json($this->id, $doc)))
+                $attachments[] = $doc;
         return empty($attachments) ? null : $attachments;
     }
 

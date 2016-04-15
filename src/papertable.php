@@ -452,6 +452,8 @@ class PaperTable {
         if ($docx->description)
             echo '<div class="paphint">', $docx->description, "</div>";
         echo '<div class="papev">';
+        if ($optionType)
+            echo Ht::hidden("has_opt$docx->id", 1);
 
         // current version, if any
         $doc = null;
@@ -1120,6 +1122,14 @@ class PaperTable {
             "</div></div>\n\n";
     }
 
+    public function echo_editable_option_papt(PaperOption $o, $label = null) {
+        echo $this->editable_papt("opt$o->id", $label ? : htmlspecialchars($o->name),
+                                  ["id" => "opt{$o->id}_div"]);
+        if ($o->description)
+            echo '<div class="paphint">', $o->description, "</div>";
+        echo Ht::hidden("has_opt$o->id", 1);
+    }
+
     private function editable_options($display_types) {
         global $Conf, $Me;
         $prow = $this->prow;
@@ -1133,50 +1143,20 @@ class PaperTable {
                 continue;
 
             $optid = "opt$o->id";
-            $optx = ($prow ? $prow->option($o->id) : null);
-            if ($o->type === "attachments") {
+            $ov = null;
+            if ($prow)
+                $ov = $prow->option($o->id);
+            error_log(var_export($ov, true) . "/" . $this->useRequest);
+            $ov = $ov ? : new PaperOptionValue($o->id, $o);
+
+            if ($o->type === "attachments")
                 $this->editable_attachments($o);
-                continue;
-            }
-
-            if ($this->useRequest)
-                $myval = $this->qreq[$optid];
-            else if (!$optx)
-                $myval = null;
-            else if ($o->type === "text")
-                $myval = $optx->data;
-            else
-                $myval = $optx->value;
-
-            if ($o->type === "checkbox") {
-                echo $this->editable_papt($optid, Ht::checkbox_h($optid, 1, $myval) . "&nbsp;" . Ht::label(htmlspecialchars($o->name)),
-                                          array("id" => "{$optid}_div"));
-                if ($o->description)
-                    echo '<div class="paphint">', $o->description, "</div>";
-                Ht::stash_script("jQuery('#{$optid}_div').click(function(e){if(e.target==this)jQuery(this).find('input').click();})");
-            } else if (!$o->is_document()) {
-                echo $this->editable_papt($optid, htmlspecialchars($o->name));
-                if ($o->description)
-                    echo '<div class="paphint">', $o->description, "</div>";
-                echo '<div class="papev">';
-                if ($o->type === "selector")
-                    echo Ht::select("opt$o->id", $o->selector, $myval, array("onchange" => "hiliter(this)"));
-                else if ($o->type === "radio") {
-                    $myval = isset($o->selector[$myval]) ? $myval : 0;
-                    foreach ($o->selector as $val => $text) {
-                        echo Ht::radio("opt$o->id", $val, $val == $myval, array("onchange" => "hiliter(this)"));
-                        echo "&nbsp;", Ht::label(htmlspecialchars($text)), "<br />\n";
-                    }
-                } else if ($o->type === "numeric")
-                    echo "<input type='text' name='$optid' value=\"", htmlspecialchars($myval), "\" size='8' onchange='hiliter(this)' />";
-                else if ($o->type === "text" && $o->display_space <= 1)
-                    echo "<input type='text' class='papertext' name='$optid' value=\"", htmlspecialchars($myval), "\" size='40' onchange='hiliter(this)' />";
-                else if ($o->type === "text")
-                    echo Ht::textarea($optid, $myval, array("class" => "papertext", "rows" => 5, "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"));
-                echo "</div>";
+            else if ($o->is_document()) {
+                $this->echo_editable_document($o, $ov->value ? : 0, 0);
+                echo "</div>\n\n";
             } else
-                $this->echo_editable_document($o, $optx ? $optx->value : 0, 0);
-            echo Ht::hidden("has_$optid", 1), "</div>\n\n";
+                $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null,
+                                       $this);
         }
     }
 
