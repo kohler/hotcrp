@@ -1144,7 +1144,6 @@ class PaperTable {
             $ov = null;
             if ($prow)
                 $ov = $prow->option($o->id);
-            error_log(var_export($ov, true) . "/" . $this->useRequest);
             $ov = $ov ? : new PaperOptionValue($o->id, $o);
 
             if ($o->type === "attachments")
