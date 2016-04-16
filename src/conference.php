@@ -1568,6 +1568,7 @@ class Conf {
         //   "scores" => array(fields to score)
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
+        global $Opt;
 
         $reviewerQuery = isset($options["myReviews"]) || isset($options["allReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]);
         $allReviewerQuery = isset($options["allReviews"]) || isset($options["allReviewScores"]);
@@ -1744,7 +1745,9 @@ class Conf {
             $cols[] = "PaperTopics.topicIds";
         }
 
-        if (get($options, "options") && get($this->settingTexts, "options")) {
+        if (get($options, "options")
+            && (isset($this->settingTexts["options"]) || isset($Opt["optionsInclude"]))
+            && PaperOption::count_option_list()) {
             $joins[] = "left join (select paperId, group_concat(PaperOption.optionId, '#', value) as optionIds from PaperOption where {$papersel}true group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)";
             $cols[] = "PaperOptions.optionIds";
         } else if (get($options, "options"))

@@ -221,6 +221,10 @@ class PaperOption {
         self::$list = self::$nonfixed_list = null;
     }
 
+    static function count_option_list() {
+        return count(self::option_list());
+    }
+
     static function find($id) {
         if (self::$list === null)
             self::option_list();
