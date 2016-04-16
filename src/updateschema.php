@@ -722,7 +722,7 @@ function updateSchema($Conf) {
         $Conf->update_schema_version(94);
     if ($Conf->sversion == 94
         && Dbl::ql("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
-        foreach (PaperOption::option_list($Conf) as $opt)
+        foreach (PaperOption::nonfixed_option_list($Conf) as $opt)
             if ($opt->type === "text")
                 Dbl::ql("delete from PaperOption where optionId={$opt->id} and data=''");
         $Conf->update_schema_version(95);

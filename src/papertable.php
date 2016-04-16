@@ -368,17 +368,15 @@ class PaperTable {
                 $pdfs[] = $dprefix . documentDownload($data, "dlimg", '<span class="pavfn">' . $dname . '</span>') . $stamps;
             }
 
-            foreach (PaperOption::option_list() as $id => $o)
-                if ($o->display() === PaperOption::DISP_SUBMISSION
-                    && $o->has_document()
-                    && $prow
-                    && $Me->can_view_paper_option($prow, $o)
-                    && ($oa = $prow->option($id))) {
-                    foreach ($oa->documents($prow) as $d) {
-                        $name = '<span class="pavfn">' . htmlspecialchars($o->name) . '</span>';
-                        if ($o->type === "attachments")
+            foreach ($prow ? $prow->options() : [] as $id => $ov)
+                if ($ov->option->display() === PaperOption::DISP_SUBMISSION
+                    && $ov->option->has_document()
+                    && $Me->can_view_paper_option($prow, $ov->option)) {
+                    foreach ($ov->documents($prow) as $d) {
+                        $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
+                        if ($ov->option->type === "attachments")
                             $name .= "/" . htmlspecialchars($d->unique_filename);
-                        $pdfs[] = documentDownload($d, count($pdfs) ? "dlimgsp" : "dlimg", $name);
+                        $pdfs[] = documentDownload($d, empty($pdfs) ? "dlimg" : "dlimgsp", $name);
                     }
                 }
 
