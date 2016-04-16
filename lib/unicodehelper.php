@@ -145,17 +145,19 @@ class UnicodeHelper {
             return chr(0xF0 | ($n >> 18)) . chr(0x80 | (($n >> 12) & 0x3F)) . chr(0x80 | (($n >> 6) & 0x3F)) . chr(0x80 | ($n & 0x3F));
     }
 
-    public static function utf8_to_html_entities($str, $flag = ENT_COMPAT) {
-        assert($flag === ENT_COMPAT || $flag === ENT_QUOTES || $flag === ENT_IGNORE);
-        if ($flag === ENT_COMPAT)
-            $start = "&<>";
-        else if ($flag === ENT_QUOTES)
-            $start = "&<>\"'";
-        else if ($flag === ENT_IGNORE)
+    public static function utf8_to_html_entities($str, $flag = ENT_NOQUOTES) {
+        if ($flag & ENT_IGNORE)
             $start = "";
+        else if (($flag & ENT_QUOTES) == ENT_QUOTES)
+            $start = "&<>\"'";
+        else if (($flag & ENT_COMPAT) == ENT_COMPAT)
+            $start = "&<>\"";
+        else
+            $start = "&<>";
+        $flag = ($flag & (ENT_HTML401 | ENT_XML1 | ENT_XHTML | ENT_HTML5)) | ENT_QUOTES;
         return preg_replace_callback('/[' . $start . '\200-\377][\200-\277]*/',
-                                     function ($m) {
-            $e = htmlentities($m[0], ENT_QUOTES);
+                                     function ($m) use ($flag) {
+            $e = htmlentities($m[0], $flag, "UTF-8");
             if (substr($e, 0, 1) !== "&") {
                 $n = ord($m[0][0]);
                 if ($n < 0xE0)
