@@ -49,6 +49,16 @@ class PaperOptionValue {
         }
         return $this->_documents;
     }
+    public function document(PaperInfo $prow, $index) {
+        return get($this->documents($prow), $index);
+    }
+    public function document_content(PaperInfo $prow, $index) {
+        if (($doc = $this->document($prow, $index))
+            && $doc->docclass->load($doc)
+            && ($content = Filer::content($doc)))
+            return $content;
+        return false;
+    }
 }
 
 class PaperOption {
