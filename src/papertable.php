@@ -521,7 +521,7 @@ class PaperTable {
 
     private function echo_editable_abstract() {
         $title = "Abstract";
-        if ($abs === 2)
+        if (opt("noAbstract") === 2)
             $title .= ' <span class="papfnh">(optional)</span>';
         echo $this->editable_papt("abstract", $title),
             '<div class="papev abstract">';
