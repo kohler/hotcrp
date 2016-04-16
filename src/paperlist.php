@@ -163,7 +163,7 @@ class PaperList {
             || $this->contact->is_reviewer()
             || $Conf->timeAuthorViewReviews();
 
-        $this->qopts = array("scores" => array());
+        $this->qopts = array("scores" => [], "options" => true);
         if ($this->search->complexSearch($this->qopts))
             $this->qopts["paperId"] = $this->search->paperList();
         // NB that actually processed the search, setting PaperSearch::viewmap
@@ -604,6 +604,20 @@ class PaperList {
             $rows = $this->_sort($rows);
             if (isset($this->qopts["allReviewScores"]))
                 $this->_sortReviewOrdinal($rows);
+        }
+
+        // set `any->optID`
+        if (($nopts = PaperOption::count_option_list())) {
+            foreach ($rows as $prow) {
+                foreach ($prow->options() as $o)
+                    if (!$this->any["opt$o->id"]
+                        && $this->contact->can_view_paper_option($prow, $o->option)) {
+                        $this->any["opt$o->id"] = true;
+                        --$nopts;
+                    }
+                if (!$nopts)
+                    break;
+            }
         }
 
         Dbl::free($result);
@@ -1206,7 +1220,7 @@ class PaperList {
             $colhead .= " <thead class=\"pltable\">\n  <tr class=\"pl_headrow\">";
             $ord = 0;
             $titleextra = $this->_make_title_header_extra($rstate, $fieldDef,
-                                                          defval($options, "header_links"));
+                                                          get($options, "header_links"));
 
             foreach ($fieldDef as $fdef) {
                 if ($fdef->view != Column::VIEW_COLUMN || $fdef->is_folded)
@@ -1293,10 +1307,8 @@ class PaperList {
         }
 
         foreach ($fieldDef as $fdef)
-            if ($fdef->has_content) {
-                $fname = $fdef->name;
-                $this->any->$fname = true;
-            }
+            if ($fdef->has_content)
+                $this->any[$fdef->name] = true;
         if ($rstate->has_openau)
             $this->any->openau = true;
         if ($rstate->has_anonau)

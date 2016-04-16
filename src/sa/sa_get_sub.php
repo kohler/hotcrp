@@ -6,6 +6,9 @@
 class Get_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $xactions = SearchAction::list_subactions("get", $user, $qreq, $pl);
+        foreach (PaperOption::option_list() as $o)
+            if ($pl->any["opt$o->id"] && $o->is_document())
+                $xactions[] = GetDocument_SearchAction::make_option_action($o);
         usort($xactions, function ($a, $b) { return $a[0] - $b[0]; });
         $sel_opt = array();
         $last_group = null;
@@ -24,7 +27,15 @@ class Get_SearchAction extends SearchAction {
         }
     }
     function run(Contact $user, $qreq, $ssel) {
-        return self::ENOENT;
+        if (substr($qreq->getfn, 0, 4) === "opt-"
+            && ($opts = PaperOption::search(substr($qreq->getfn, 4)))
+            && count($opts) == 1
+            && ($o = current($opts))
+            && $user->can_view_some_paper_option($o)) {
+            $ga = new GetDocument_SearchAction($o->id);
+            return $ga->run($user, $qreq, $ssel);
+        } else
+            return self::ENOENT;
     }
 }
 
@@ -33,16 +44,15 @@ class GetDocument_SearchAction extends SearchAction {
     public function __construct($dt) {
         $this->dt = $dt;
     }
+    static function make_option_action(PaperOption $opt) {
+        return [$opt->position + ($opt->final ? 0 : 100),
+                $opt->id <= 0 ? $opt->abbr : "opt-" . $opt->abbr,
+                "Documents", $opt->id <= 0 ? pluralize($opt->name) : $opt->name];
+    }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $opt = PaperOption::find_document($this->dt);
-        if (!$user->can_view_some_pdf())
-            /* skip */;
-        else if ($opt->final && $pl->any->final)
-            $actions[] = [$opt->position, $this->subname, "Documents", $this->dt == DTYPE_FINAL ? "Final papers" : pluralize($opt->name)];
-        else if ($this->dt == DTYPE_SUBMISSION)
-            $actions[] = [$opt->position + 100, $this->subname, "Documents", $pl->any->final ? "Submissions" : "Papers"];
-        else if (!$opt->final)
-            $actions[] = [$opt->position + 100, $this->subname, "Documents", pluralize($opt->name)];
+        if ($user->can_view_some_paper_option($opt) && (!$opt->final || $pl->any->final))
+            $actions[] = self::make_option_action($opt);
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -269,12 +279,9 @@ class GetTopics_SearchAction extends SearchAction {
     }
 }
 
-SearchAction::register("get", null, 0, new Get_SearchAction);
+SearchAction::register("get", null, SiteLoader::API_GET | SiteLoader::API_PAPER, new Get_SearchAction);
 SearchAction::register("get", "paper", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_SUBMISSION));
 SearchAction::register("get", "final", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction(DTYPE_FINAL));
-foreach (PaperOption::option_list() as $o)
-    if ($o->is_document())
-        SearchAction::register("get", "opt-{$o->abbr}", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetDocument_SearchAction($o->id));
 SearchAction::register("get", "checkformat", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetCheckFormat_SearchAction);
 SearchAction::register("get", "abstract", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAbstract_SearchAction);
 SearchAction::register("get", "authors", SiteLoader::API_GET | SiteLoader::API_PAPER, new GetAuthors_SearchAction);

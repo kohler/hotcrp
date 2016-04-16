@@ -27,7 +27,7 @@ class PaperOptionValue {
         }
     }
     public function documents(PaperInfo $prow) {
-        assert($this->option->has_document());
+        assert($this->option->has_document_storage());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
@@ -316,6 +316,10 @@ class PaperOption {
 
     function has_document() {
         return false;
+    }
+
+    function has_document_storage() {
+        return $this->has_document();
     }
 
     function needs_data() {

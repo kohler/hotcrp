@@ -1502,8 +1502,12 @@ class Conf {
         if (count($docs) == 1 && $docs[0]->paperStorageId <= 1)
             return set_error_html("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
         $downloadname = false;
-        if (count($docs) > 1)
-            $downloadname = $Opt["downloadPrefix"] . pluralx(2, HotCRPDocument::unparse_dtype($documentType)) . ".zip";
+        if (count($docs) > 1) {
+            $name = HotCRPDocument::unparse_dtype($documentType);
+            if ($documentType <= 0)
+                $name = pluralize($name);
+            $downloadname = $Opt["downloadPrefix"] . "$name.zip";
+        }
         return Filer::multidownload($docs, $downloadname, $attachment);
     }
 
