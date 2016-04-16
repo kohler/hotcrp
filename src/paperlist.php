@@ -220,7 +220,7 @@ class PaperList {
     }
 
     function sortdef($always = false) {
-        if (count($this->sorters)
+        if (!empty($this->sorters)
             && $this->sorters[0]->type
             && $this->sorters[0]->thenmap === null
             && ($always || (string) $this->qreq->sort != "")
@@ -357,7 +357,7 @@ class PaperList {
         // `reviewerContact`, but we are careful anyway.
         if ($this->search->reviewer_cid()
             && $this->search->reviewer_cid() != $this->contact->contactId
-            && count($rows)
+            && !empty($rows)
             && !$this->_xreviewer) {
             $by_pid = array();
             foreach ($rows as $row)
@@ -548,7 +548,7 @@ class PaperList {
 
         // prepare query text
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
-        if (!count($this->qopts["scores"]))
+        if (empty($this->qopts["scores"]))
             unset($this->qopts["scores"]);
         $pq = $Conf->paperQuery($this->contact, $this->qopts);
 
@@ -564,7 +564,7 @@ class PaperList {
 
         // prepare review query (see also search > getfn == "reviewers")
         $this->review_list = array();
-        if (isset($this->qopts["reviewList"]) && count($rows)) {
+        if (isset($this->qopts["reviewList"]) && !empty($rows)) {
             $result = Dbl::qe("select Paper.paperId, reviewId, reviewType,
                 reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
                 reviewOrdinal,
@@ -600,7 +600,7 @@ class PaperList {
             $fdef->analyze($this, $rows);
 
         // sort rows
-        if (count($this->sorters)) {
+        if (!empty($this->sorters)) {
             $rows = $this->_sort($rows);
             if (isset($this->qopts["allReviewScores"]))
                 $this->_sortReviewOrdinal($rows);
@@ -849,7 +849,7 @@ class PaperList {
             $classes[] = "fold5" . ($this->qreq->forceShow ? "o" : "c");
         }
         if ($this->viewmap->table_id) {
-            if (count($jsmap))
+            if (!empty($jsmap))
                 Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
             $args = array();
             if ($this->search->q)
@@ -947,7 +947,7 @@ class PaperList {
                     $f = PaperColumn::lookup("edit$k");
                 if (!$f)
                     $f = PaperColumn::lookup($k, $err);
-                if (!$f && count($err->error_html)) {
+                if (!$f && !empty($err->error_html)) {
                     $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
                     $this->error_html = array_merge($this->error_html, $err->error_html);
                 } else if (!$f)
@@ -1142,7 +1142,7 @@ class PaperList {
             return null;
 
         // return IDs if requested
-        if (count($rows) == 0) {
+        if (empty($rows)) {
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw($altq);
@@ -1182,7 +1182,7 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = count($this->search->headingmap) ? -1 : -2;
+        $lastheading = !empty($this->search->headingmap) ? -1 : -2;
         $format_onpage = false;
         foreach ($rows as $row) {
             ++$this->count;
@@ -1240,7 +1240,7 @@ class PaperList {
             $enter .= " " . $options["class"];
         if ($this->listNumber)
             $enter .= " has_hotcrp_list";
-        if (count($foldclasses))
+        if (!empty($foldclasses))
             $enter .= " " . join(" ", $foldclasses);
         if ($this->viewmap->table_id)
             $enter .= "\" id=\"" . $this->viewmap->table_id;
@@ -1254,7 +1254,7 @@ class PaperList {
 
         // maybe make columns, maybe not
         $tbody_class = "pltable";
-        if ($this->viewmap->columns && count($rstate->ids)
+        if ($this->viewmap->columns && !empty($rstate->ids)
             && $this->_column_split($rstate, $colhead, $body)) {
             $enter = '<div class="plsplit_col_ctr_ctr"><div class="plsplit_col_ctr">' . $enter;
             $exit = $exit . "</div></div>";
