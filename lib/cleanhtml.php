@@ -128,7 +128,7 @@ class CleanHTML {
     }
 
     static function basic_clean($t, &$err) {
-        $x = self::main();
+        $x = self::basic();
         return $x->clean($t, $err);
     }
 }
