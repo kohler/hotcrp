@@ -1751,10 +1751,9 @@ class Conf {
 
         if (get($options, "options")
             && (isset($this->settingTexts["options"]) || isset($Opt["optionsInclude"]))
-            && PaperOption::count_option_list()) {
-            $joins[] = "left join (select paperId, group_concat(PaperOption.optionId, '#', value) as optionIds from PaperOption where {$papersel}true group by paperId) as PaperOptions on (PaperOptions.paperId=Paper.paperId)";
-            $cols[] = "PaperOptions.optionIds";
-        } else if (get($options, "options"))
+            && PaperOption::count_option_list())
+            $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
+        else if (get($options, "options"))
             $cols[] = "'' as optionIds";
 
         if (get($options, "tags")) {
