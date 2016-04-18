@@ -1742,12 +1742,8 @@ class Conf {
         if ($myPaperReview == "MyPaperReview")
             $joins[] = "left join PaperReview as MyPaperReview on (MyPaperReview.paperId=Paper.paperId and MyPaperReview.contactId=$contactId)";
 
-        if (get($options, "topics")) {
-            $joins[] = "left join (select paperId, group_concat(PaperTopic.topicId) as topicIds"
-                . " from PaperTopic where {$papersel}true group by paperId)"
-                . " as PaperTopics on (PaperTopics.paperId=Paper.paperId)";
-            $cols[] = "PaperTopics.topicIds";
-        }
+        if (get($options, "topics"))
+            $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
 
         if (get($options, "options")
             && (isset($this->settingTexts["options"]) || isset($Opt["optionsInclude"]))
@@ -1756,17 +1752,13 @@ class Conf {
         else if (get($options, "options"))
             $cols[] = "'' as optionIds";
 
-        if (get($options, "tags")) {
-            $joins[] = "left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag where {$papersel}true group by paperId) as PaperTags on (PaperTags.paperId=Paper.paperId)";
-            $cols[] = "PaperTags.paperTags";
-        }
+        if (get($options, "tags"))
+            $cols[] = "(select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where PaperTag.paperId=Paper.paperId) paperTags";
         if (get($options, "tagIndex") && !is_array($options["tagIndex"]))
             $options["tagIndex"] = array($options["tagIndex"]);
         if (get($options, "tagIndex"))
-            for ($i = 0; $i < count($options["tagIndex"]); ++$i) {
-                $joins[] = "left join PaperTag as TagIndex$i on (TagIndex$i.paperId=Paper.paperId and TagIndex$i.tag='" . sqlq($options["tagIndex"][$i]) . "')";
-                $cols[] = "TagIndex$i.tagIndex as tagIndex" . ($i ? : "");
-            }
+            foreach ($options["tagIndex"] as $i => $tag)
+                $cols[] = "(select tagIndex from PaperTag where PaperTag.paperId=Paper.paperId and PaperTag.tag='" . sqlq($tag) . "') tagIndex" . ($i ? : "");
 
         if (get($options, "reviewerPreference")) {
             $joins[] = "left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=$reviewerContactId)";
@@ -1865,7 +1857,7 @@ class Conf {
                 $pq .= ", PaperComment.commentId";
         }
 
-        //$this->infoMsg(Ht::pre_text_wrap($pq));
+        //Conf::msg_debugt($pq);
         return $pq . "\n";
     }
 
