@@ -5,7 +5,7 @@
 
 function _review_table_actas($rr) {
     global $Me;
-    if (!@$rr->contactId || $rr->contactId == $Me->contactId)
+    if (!get($rr, "contactId") || $rr->contactId == $Me->contactId)
         return "";
     return ' <a href="' . selfHref(array("actas" => $rr->email)) . '">'
         . Ht::img("viewas.png", "[Act as]", array("title" => "Act as " . Text::name_text($rr)))
@@ -16,7 +16,7 @@ function _review_table_round_selector($prow, $rr) {
     global $Conf;
     $sel = $Conf->round_selector_options($rr->reviewRound);
     if (count($sel) <= 1) {
-        if (@$sel["unnamed"] || count($sel) == 0)
+        if (get($sel, "unnamed") || count($sel) == 0)
             return "";
         reset($sel);
         return '&nbsp;<span class="revround" title="Review round">'
@@ -132,8 +132,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $n .= _review_table_actas($rr);
             $t .= '<td class="rl"><span class="taghl">' . $n . '</span>'
                 . ($rtype ? " $rtype" : "") . "</td>";
-            if ($show_colors && (@$rr->contactRoles || @$rr->contactTags)) {
-                $tags = Contact::roles_all_contact_tags(@$rr->contactRoles, @$rr->contactTags);
+            if ($show_colors && (get($rr, "contactRoles") || get($rr, "contactTags"))) {
+                $tags = Contact::roles_all_contact_tags(get($rr, "contactRoles"), get($rr, "contactTags"));
                 if ($tags && ($color = $tagger->viewable_color_classes($tags)))
                     $tclass = $color;
             }
@@ -175,12 +175,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     || ($f->round_mask && !$f->is_round_visible($rr)))
                     /* do nothing */;
                 else if ($rr->$fid) {
-                    if (!@$score_header[$fid])
+                    if (!get($score_header, $fid))
                         $score_header[$fid] = "<th>" . $f->web_abbreviation() . "</th>";
                     $scores[$fid] = '<td class="revscore" data-rf="' . $f->uid . '">'
                         . $f->unparse_value($rr->$fid, ReviewField::VALUE_SC)
                         . '</td>';
-                } else if (@$score_header[$fid] === null)
+                } else if (get($score_header, $fid) === null)
                     $score_header[$fid] = "";
             }
         }
@@ -276,10 +276,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 . $score_header_text . "</tr>\n";
         foreach (array_merge($subrev, $nonsubrev) as $r) {
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
-            if (@$r[2]) {
+            if (get($r, 2)) {
                 foreach ($score_header as $fid => $header_needed)
                     if ($header_needed) {
-                        $x = @$r[2][$fid];
+                        $x = get($r[2], $fid);
                         $t .= $x ? : "<td class=\"revscore rs_$fid\"></td>";
                     }
             } else if (count($score_header))
