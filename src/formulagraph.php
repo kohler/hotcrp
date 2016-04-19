@@ -104,13 +104,13 @@ class FormulaGraph {
             if (!$Me->can_view_paper($prow))
                 continue;
             $revs = $reviewf ? $reviewf($prow, $Me) : [null];
-            $queries = @$this->papermap[$prow->paperId];
+            $queries = get($this->papermap, $prow->paperId);
             foreach ($queries as $q)
-                if (@$query_color_classes[$q] !== "") {
+                if (get($query_color_classes, $q) !== "") {
                     $c = "";
-                    if (@$prow->paperTags && $Me->can_view_tags($prow))
+                    if ($prow->paperTags && $Me->can_view_tags($prow))
                         $c = TagInfo::color_classes($tagger->viewable($prow->paperTags), 2);
-                    if ($c !== "" && (@$query_color_classes[$q] ? : $c) !== $c)
+                    if ($c !== "" && (get($query_color_classes, $q) ? : $c) !== $c)
                         $c = "";
                     $query_color_classes[$q] = $c;
                 }
@@ -128,12 +128,12 @@ class FormulaGraph {
 
         foreach ($data as $q => &$d) {
             $d = (object) ["d" => $d];
-            $s = @$this->query_styles[$q];
+            $s = get($this->query_styles, $q);
             if ($s && $s !== "plain")
                 $d->className = $s;
-            else if ($s && @$query_color_classes[$style])
+            else if ($s && get($query_color_classes, $style))
                 $d->className = $query_color_classes[$style];
-            if (@$this->queries[$q])
+            if (get($this->queries, $q))
                 $d->label = $this->queries[$q];
         }
         unset($d);
@@ -149,7 +149,7 @@ class FormulaGraph {
     private function _paper_style(PaperInfo $prow, Tagger $tagger) {
         global $Me;
         $qnum = $this->papermap[$prow->paperId][0];
-        $s = @$this->query_styles[(int) $qnum];
+        $s = get($this->query_styles, (int) $qnum);
         if (!$s && $this->reviewer_color && $Me->can_view_reviewer_tags($prow))
             return self::REVIEWER_COLOR;
         else if (!$s && @$prow->paperTags && $Me->can_view_tags($prow)
@@ -189,7 +189,7 @@ class FormulaGraph {
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
                     $d[2] .= unparseReviewOrdinal($o);
                 if ($ps === self::REVIEWER_COLOR)
-                    $s = @$this->reviewer_color[$d[0]] ? : "";
+                    $s = get($this->reviewer_color, $d[0]) ? : "";
                 if ($this->fx_query) {
                     foreach ($this->papermap[$prow->paperId] as $q) {
                         $d[0] = $q;
@@ -205,11 +205,11 @@ class FormulaGraph {
     // combine data: [x, y, pids, style, [query]]
 
     public static function barchart_compare($a, $b) {
-        if ((int) @$a[4] != (int) @$b[4])
-            return (int) @$a[4] - (int) @$b[4];
+        if (get_i($a, 4) != get_i($b, 4))
+            return get_i($a, 4) - get_i($b, 4);
         if ($a[0] != $b[0])
             return $a[0] < $b[0] ? -1 : 1;
-        return @strcmp($a[3], $b[3]);
+        return strcmp($a[3], $b[3]);
     }
 
     private function _combine_data($result) {
@@ -235,7 +235,7 @@ class FormulaGraph {
                 if (($x = $fxf($prow, $rcid, $Me)) === null)
                     continue;
                 if ($ps === self::REVIEWER_COLOR)
-                    $s = @$this->reviewer_color[$d[0]] ? : "";
+                    $s = get($this->reviewer_color, $d[0]) ? : "";
                 $d = [$x, $fytrack($prow, $rcid, $Me), $prow->paperId, $s];
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
                     $d[2] .= unparseReviewOrdinal($o);
@@ -251,10 +251,10 @@ class FormulaGraph {
         $ndata = [];
         for ($i = 0; $i != count($data); $i = $j) {
             $d = [$data[$i][0], [$data[$i][1]], [$data[$i][2]], $data[$i][3],
-                  @$data[$i][4]];
+                  get($data[$i], 4)];
             for ($j = $i + 1;
                  $j != count($data) && $data[$j][0] == $d[0]
-                 && @$data[$j][4] == $d[4]
+                 && get($data[$j], 4) == $d[4]
                  && (!$is_sum || $data[$j][3] == $d[3]);
                  ++$j) {
                 $d[1][] = $data[$j][1];
@@ -355,7 +355,7 @@ class FormulaGraph {
         $i = 0;
         $m = [];
         foreach ($Conf->defined_round_list() as $n => $rname)
-            if (@$rs[$n]) {
+            if (get($rs, $n)) {
                 $this->remapped_rounds[++$i] = $rname;
                 $m[$n] = $i;
             }
