@@ -404,7 +404,7 @@ class SettingValues {
         if ($si && $si->group && !$si->is_interesting($this))
             error_log("$name: bad group $si->group, not interesting here");
         if ($this->use_req())
-            return get($this->req, $name, $default_value);
+            return get($this->req, str_replace(".", "_", $name), $default_value);
         else
             return $this->si_oldv($si, $default_value);
     }
