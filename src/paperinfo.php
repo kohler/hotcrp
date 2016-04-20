@@ -351,14 +351,16 @@ class PaperInfo {
         return $this->paperTags;
     }
 
-    public function viewable_tags(Contact $user) {
+    public function viewable_tags(Contact $user, $forceShow = null) {
+        if (!$user->can_view_tags($this, $forceShow))
+            return "";
         return Tagger::strip_nonviewable($this->all_tags_text(), $user);
     }
 
     public function editable_tags(Contact $user) {
         $tags = $this->viewable_tags($user);
         if ($tags !== "") {
-            $privChair = $user && $user->allow_administer($this);
+            $privChair = $user->allow_administer($this);
             $dt = TagInfo::defined_tags();
             $etags = array();
             foreach (explode(" ", $tags) as $t)

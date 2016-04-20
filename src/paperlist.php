@@ -643,9 +643,8 @@ class PaperList {
         $rowidx = count($rstate->ids);
         $rstate->ids[] = (int) $row->paperId;
         $trclass = "k" . $rstate->colorindex;
-        if (@$row->paperTags
-            && $this->contact->can_view_tags($row, true)
-            && ($viewable = $row->viewable_tags($this->contact))
+        if (get($row, "paperTags")
+            && ($viewable = $row->viewable_tags($this->contact, true))
             && ($m = TagInfo::color_classes($viewable))) {
             if (TagInfo::classes_have_colors($m)) {
                 $rstate->hascolors = true;

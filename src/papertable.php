@@ -140,9 +140,8 @@ class PaperTable {
             $t .= '">' . $title;
         } else {
             $title = "#" . $prow->paperId;
-            $viewable_tags = "";
-            if ($Me->can_view_tags($prow)) {
-                $viewable_tags = $prow->viewable_tags($Me);
+            $viewable_tags = $prow->viewable_tags($Me);
+            if ($viewable_tags || $Me->can_view_tags($prow)) {
                 $t .= ' has_hotcrp_tag_classes';
                 if (($color = TagInfo::color_classes($viewable_tags)))
                     $t .= ' ' . $color;
@@ -1024,8 +1023,7 @@ class PaperTable {
                 '<div id="pspcard_body"><div class="pspcard_fold">',
                 '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
 
-            if ($this->prow && $Me->can_view_tags($this->prow)
-                && ($viewable = $this->prow->viewable_tags($Me))) {
+            if ($this->prow && ($viewable = $this->prow->viewable_tags($Me))) {
                 $tagger = new Tagger;
                 $color = TagInfo::color_classes($viewable);
                 echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',

@@ -107,7 +107,7 @@ class FormulaGraph {
             foreach ($queries as $q)
                 if (get($query_color_classes, $q) !== "") {
                     $c = "";
-                    if ($prow->paperTags && $Me->can_view_tags($prow))
+                    if ($prow->paperTags)
                         $c = TagInfo::color_classes($prow->viewable_tags($Me), 2);
                     if ($c !== "" && (get($query_color_classes, $q) ? : $c) !== $c)
                         $c = "";
@@ -151,8 +151,7 @@ class FormulaGraph {
         $s = get($this->query_styles, (int) $qnum);
         if (!$s && $this->reviewer_color && $Me->can_view_reviewer_tags($prow))
             return self::REVIEWER_COLOR;
-        else if (!$s && $prow->paperTags && $Me->can_view_tags($prow)
-                 && ($c = $prow->viewable_tags($Me)))
+        else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($Me)))
             return $c;
         else if ($s === "plain")
             return "";

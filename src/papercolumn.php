@@ -200,8 +200,7 @@ class TitlePaperColumn extends PaperColumn {
         $t .= '" tabindex="5">' . $highlight_text . '</a>'
             . $pl->_contentDownload($row);
 
-        if ($this->has_badges && $pl->contact->can_view_tags($row, true)
-            && (string) $row->paperTags !== ""
+        if ($this->has_badges && (string) $row->paperTags !== ""
             && ($t = $row->viewable_tags($pl->contact)) !== ""
             && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
             $t .= $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
