@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class UserStatus {
-
     private $errf;
     private $errmsg;
     public $nerrors;
@@ -33,7 +32,7 @@ class UserStatus {
     }
 
     function user_to_json($user) {
-        global $Conf;
+        global $Conf, $Me;
         if (!$user)
             return null;
 
@@ -83,9 +82,8 @@ class UserStatus {
                 $cj->follow->allfinal = true;
         }
 
-        if (($tags = $user->all_contact_tags())) {
+        if (($tags = $user->viewable_tags($Me))) {
             $tagger = new Tagger;
-            $tags = $tagger->viewable($tags);
             $cj->tags = explode(" ", $tagger->unparse($tags));
         }
 

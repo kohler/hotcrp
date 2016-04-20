@@ -447,39 +447,15 @@ class Tagger {
     }
 
 
-    public function viewable($tags) {
+    static public function strip_nonviewable($tags, Contact $user = null) {
         if (strpos($tags, "~") !== false) {
             $re = "{ (?:";
-            if ($this->_contactId)
-                $re .= "(?!" . $this->_contactId . "~)";
+            if ($user && $user->contactId)
+                $re .= "(?!" . $user->contactId . "~)";
             $re .= "\\d+~";
-            if (!($this->contact && $this->contact->privChair))
+            if (!($user && $user->privChair))
                 $re .= "|~+";
             $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
-        }
-        return $tags;
-    }
-
-    public function viewable_color_classes($tags) {
-        return TagInfo::color_classes($this->viewable($tags));
-    }
-
-    public function paper_editable($prow) {
-        $tags = $this->viewable($prow->all_tags_text());
-        if ($tags !== "") {
-            $privChair = $this->contact
-                && $this->contact->allow_administer($prow);
-            $dt = TagInfo::defined_tags();
-            $etags = array();
-            foreach (explode(" ", $tags) as $t)
-                if (!($t === ""
-                      || (($v = $dt->check(TagInfo::base($t)))
-                          && ($v->vote
-                              || $v->approval
-                              || ($v->chair && !$privChair)
-                              || ($v->rank && !$privChair)))))
-                    $etags[] = $t;
-            $tags = join(" ", $etags);
         }
         return $tags;
     }

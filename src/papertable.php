@@ -140,15 +140,11 @@ class PaperTable {
             $t .= '">' . $title;
         } else {
             $title = "#" . $prow->paperId;
-            $tagger = null;
             $viewable_tags = "";
             if ($Me->can_view_tags($prow)) {
-                if (($tags = $prow->all_tags_text())) {
-                    $tagger = new Tagger;
-                    $viewable_tags = $tagger->viewable($tags);
-                }
+                $viewable_tags = $prow->viewable_tags($Me);
                 $t .= ' has_hotcrp_tag_classes';
-                if ($tagger && ($color = $tagger->viewable_color_classes($viewable_tags)))
+                if (($color = TagInfo::color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
@@ -171,8 +167,10 @@ class PaperTable {
                 $t .= htmlspecialchars($prow->title);
 
             $t .= '</span></span></a>';
-            if ($viewable_tags)
+            if ($viewable_tags && TagInfo::has_badges()) {
+                $tagger = new Tagger;
                 $t .= $tagger->unparse_badges_html($viewable_tags);
+            }
         }
 
         $t .= '</h1></div></div>';
@@ -1027,16 +1025,14 @@ class PaperTable {
                 '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
 
             if ($this->prow && $Me->can_view_tags($this->prow)
-                && ($tags = $this->prow->all_tags_text()) !== "") {
+                && ($viewable = $this->prow->viewable_tags($Me))) {
                 $tagger = new Tagger;
-                if (($viewable = $tagger->viewable($tags)) !== "") {
-                    $color = TagInfo::color_classes($viewable);
-                    echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',
-                        '<span class="psfn">Tags:</span> ',
-                        $tagger->unparse_and_link($viewable, $tags, false,
-                                                  !$this->prow->has_conflict($Me)),
-                        '</div>';
-                }
+                $color = TagInfo::color_classes($viewable);
+                echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',
+                    '<span class="psfn">Tags:</span> ',
+                    $tagger->unparse_and_link($viewable, $this->prow->all_tags_text(), false,
+                                              !$this->prow->has_conflict($Me)),
+                    '</div>';
             }
 
             echo '<hr class="c" /></div><div class="pspcard_open">';
@@ -1159,7 +1155,6 @@ class PaperTable {
 
         $selectors = $Conf->setting("sub_pcconfsel");
         $show_colors = $Me->can_view_reviewer_tags($this->prow);
-        $tagger = $show_colors ? new Tagger : null;
 
         $conflict = array();
         if ($this->useRequest) {
@@ -1202,7 +1197,7 @@ class PaperTable {
             $ct = defval($conflict, $id, $nonct);
 
             echo '<div class="ctelt"><div class="ctelti';
-            if ($show_colors && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
+            if ($show_colors && ($classes = $p->viewable_color_classes($Me)))
                 echo ' ', $classes;
             echo '">';
 
@@ -1240,11 +1235,10 @@ class PaperTable {
 
         $pcconf = array();
         $pcm = pcMembers();
-        $tagger = new Tagger;
         foreach ($this->prow->pc_conflicts() as $id => $x) {
             $p = $pcm[$id];
             $text = "<p class=\"odname\">" . $Me->name_html_for($p) . "</p>";
-            if ($Me->isPC && ($classes = $tagger->viewable_color_classes($p->all_contact_tags())))
+            if ($Me->isPC && ($classes = $p->viewable_color_classes($Me)))
                 $text = "<div class=\"pscopen $classes taghl\">$text</div>";
             $pcconf[$p->sort_position] = $text;
         }
@@ -1283,10 +1277,8 @@ class PaperTable {
         $text = '<p class="fn odname">' . $n . '</p>';
         if ($Me->can_view_reviewer_tags($this->prow)) {
             $classes = "";
-            if ($p && $p->contactTags) {
-                $tagger = new Tagger;
-                $classes = $tagger->viewable_color_classes($p->contactTags);
-            }
+            if ($p && $p->contactTags)
+                $classes = $p->viewable_color_classes($Me);
             echo '<div class="pscopen taghl', rtrim(" $classes"), '">', $text, '</div>';
         } else
             echo $text;
@@ -1330,7 +1322,7 @@ class PaperTable {
 
         // Note that tags MUST NOT contain HTML special characters.
         $tagger = new Tagger;
-        $viewable = $tagger->viewable($tags);
+        $viewable = $this->prow->viewable_tags($Me);
 
         $tx = $tagger->unparse_and_link($viewable, $tags, false,
                                         !$this->prow->has_conflict($Me));
@@ -1365,7 +1357,7 @@ class PaperTable {
                 echo Ht::xmsg("error", $Error["tags"]);
             $editable = $tags;
             if ($this->prow)
-                $editable = $tagger->paper_editable($this->prow);
+                $editable = $this->prow->editable_tags($Me);
             echo '<div style="position:relative">',
                 '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)">',
                 $tagger->unparse($editable),

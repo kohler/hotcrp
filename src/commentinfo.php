@@ -114,6 +114,11 @@ class CommentInfo {
         return self::_user($this);
     }
 
+    public function viewable_tags(Contact $user) {
+        // NB caller must check can_view_comment_tags
+        return Tagger::strip_nonviewable($this->commentTags, $user);
+    }
+
     public function unparse_json($contact, $include_displayed_at = false) {
         global $Conf;
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
@@ -145,8 +150,7 @@ class CommentInfo {
         // tags
         if ($this->commentTags
             && $contact->can_view_comment_tags($this->prow, $this, null)) {
-            $tagger = new Tagger($contact);
-            if (($tags = $tagger->viewable($this->commentTags)))
+            if (($tags = $this->viewable_tags($contact)))
                 $cj->tags = TagInfo::split($tags);
             if ($tags && ($cc = TagInfo::color_classes($tags)))
                 $cj->color_classes = $cc;
@@ -203,10 +207,10 @@ class CommentInfo {
         if (!$no_title)
             $x .= $this->prow->pretty_text_title();
         if ($this->commentTags
-            && $contact->can_view_comment_tags($this->prow, $this, null)) {
+            && $contact->can_view_comment_tags($this->prow, $this, null)
+            && ($tags = $this->viewable_tags($contact))) {
             $tagger = new Tagger($contact);
-            if (($tags = $tagger->viewable($this->commentTags)))
-                $x .= center_word_wrap($tagger->unparse_hashed($tags));
+            $x .= center_word_wrap($tagger->unparse_hashed($tags));
         }
         $x .= "---------------------------------------------------------------------------\n";
         if ($this->commentOverflow)

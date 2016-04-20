@@ -543,7 +543,7 @@ if ($Me->can_administer($prow)) {
             continue;
 
         // first, name and assignment
-        $color = $tagger->viewable_color_classes($pc->all_contact_tags());
+        $color = $pc->viewable_color_classes($Me);
         echo '<div class="ctelt"><div class="ctelti' . ($color ? " $color" : "") . '">';
         if ($p->conflictType >= CONFLICT_AUTHOR) {
             echo '<div class="pctbass">', review_type_icon(-2),

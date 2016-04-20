@@ -75,9 +75,7 @@ class ReviewTimes {
         }
 
         $users = array();
-        $tagger = null;
-        if ($this->contact->can_view_reviewer_tags())
-            $tagger = new Tagger($this->contact);
+        $tags = $this->contact->can_view_reviewer_tags();
         foreach ($this->r as $cid => $x)
             if ($cid != "conflicts") {
                 $users[$cid] = $u = (object) array();
@@ -86,8 +84,7 @@ class ReviewTimes {
                     $u->name = Text::name_text($p);
                 if (count($x) < $heavy_boundary)
                     $u->light = true;
-                if ($p && $p->contactTags
-                    && ($t = $tagger->viewable_color_classes($p->contactTags)))
+                if ($p && $tags && ($t = $p->viewable_color_classes($this->contact)))
                     $u->color_classes = $t;
             }
 

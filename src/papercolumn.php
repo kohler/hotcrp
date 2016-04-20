@@ -202,7 +202,7 @@ class TitlePaperColumn extends PaperColumn {
 
         if ($this->has_badges && $pl->contact->can_view_tags($row, true)
             && (string) $row->paperTags !== ""
-            && ($t = $pl->tagger->viewable($row->paperTags)) !== ""
+            && ($t = $row->viewable_tags($pl->contact)) !== ""
             && ($t = $pl->tagger->unparse_badges_html($t)) !== "")
             $t .= $pl->maybe_conflict_nooverride($row, $t, $pl->contact->can_view_tags($row, false));
 
@@ -993,7 +993,7 @@ class TagListPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         if ((string) $row->paperTags === "")
             return "";
-        $viewable = $pl->tagger->viewable($row->paperTags);
+        $viewable = $row->viewable_tags($pl->contact);
         $noconf = $row->conflictType <= 0;
         $str = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
                                              $pl->search->highlight_tags(), $noconf);

@@ -134,7 +134,8 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 . ($rtype ? " $rtype" : "") . "</td>";
             if ($show_colors && (get($rr, "contactRoles") || get($rr, "contactTags"))) {
                 $tags = Contact::roles_all_contact_tags(get($rr, "contactRoles"), get($rr, "contactTags"));
-                if ($tags && ($color = $tagger->viewable_color_classes($tags)))
+                $tags = Tagger::strip_nonviewable($tags, $Me);
+                if ($tags && ($color = TagInfo::color_classes($tags)))
                     $tclass = $color;
             }
         }
@@ -341,7 +342,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 $cids[] = $cid = CommentInfo::unparse_html_id($cr);
                 $tclass = "cmtlink";
                 if ($cr->commentTags
-                    && ($tags = $tagger->viewable($cr->commentTags))
+                    && ($tags = Tagger::strip_nonviewable($cr->commentTags, $Me))
                     && $Me->can_view_comment_tags($prow, $cr, null)
                     && ($color = TagInfo::color_classes($tags))) {
                     if (TagInfo::classes_have_colors($color))

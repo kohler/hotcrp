@@ -384,8 +384,7 @@ class ContactList {
                 . join(", ", $m) . '</div>';
         case self::FIELD_TAGS:
             if ($this->contact->isPC
-                && ($tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags))
-                && ($tags = $this->tagger->viewable($tags))) {
+                && ($tags = $row->viewable_tags($this->contact))) {
                 $x = [];
                 foreach (TagInfo::split($tags) as $t)
                     $x[] = '<a class="qq nw" href="' . hoturl("users", "t=%23" . TagInfo::base($t)) . '">' . $this->tagger->unparse_hashed($t) . '</a>';
@@ -637,7 +636,7 @@ class ContactList {
 
         // fetch data
         $rows = array();
-        while (($row = edb_orow($result)))
+        while (($row = $result->fetch_object("Contact")))
             $rows[] = $row;
         return $rows;
     }
@@ -719,15 +718,12 @@ class ContactList {
                 continue;
 
             $trclass = "k" . ($this->count % 2);
-            if ($show_colors) {
-                $tags = Contact::roles_all_contact_tags($row->roles, $row->contactTags);
-                if ($tags && ($m = $this->tagger->viewable_color_classes($tags))) {
-                    if (TagInfo::classes_have_colors($m)) {
-                        $trclass = $m;
-                        $hascolors = true;
-                    } else
-                        $trclass .= " $m";
-                }
+            if ($show_colors && ($m = $row->viewable_color_classes($this->contact))) {
+                if (TagInfo::classes_have_colors($m)) {
+                    $trclass = $m;
+                    $hascolors = true;
+                } else
+                    $trclass .= " $m";
             }
             if ($row->disabled && $this->contact->isPC)
                 $trclass .= " graytext";

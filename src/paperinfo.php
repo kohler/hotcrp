@@ -351,12 +351,35 @@ class PaperInfo {
         return $this->paperTags;
     }
 
+    public function viewable_tags(Contact $user) {
+        return Tagger::strip_nonviewable($this->all_tags_text(), $user);
+    }
+
+    public function editable_tags(Contact $user) {
+        $tags = $this->viewable_tags($user);
+        if ($tags !== "") {
+            $privChair = $user && $user->allow_administer($this);
+            $dt = TagInfo::defined_tags();
+            $etags = array();
+            foreach (explode(" ", $tags) as $t)
+                if (!($t === ""
+                      || (($v = $dt->check(TagInfo::base($t)))
+                          && ($v->vote
+                              || $v->approval
+                              || ($v->chair && !$privChair)
+                              || ($v->rank && !$privChair)))))
+                    $etags[] = $t;
+            $tags = join(" ", $etags);
+        }
+        return $tags;
+    }
+
     public function add_tag_info_json($pj, Contact $user) {
         if (!property_exists($this, "paperTags"))
             $this->load_tags();
         $tagger = new Tagger($user);
-        $editable = $tagger->paper_editable($this);
-        $viewable = $tagger->viewable($this->paperTags);
+        $editable = $this->editable_tags($user);
+        $viewable = $this->viewable_tags($user);
         $tags_view_html = $tagger->unparse_and_link($viewable, $this->paperTags, false, !$this->has_conflict($user));
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);

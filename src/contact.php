@@ -540,8 +540,7 @@ class Contact {
 
     function reviewer_color_classes_for($x) {
         if ($this->isPC && isset($x->contactTags) && $x->contactTags) {
-            $tagger = new Tagger($this);
-            if (($colors = $tagger->viewable_color_classes($x->contactTags))) {
+            if (($colors = $x->viewable_color_classes($this))) {
                 if (TagInfo::classes_have_colors($colors))
                     $colors = "tagcolorspan " . $colors;
                 return $colors;
@@ -618,6 +617,18 @@ class Contact {
 
     function all_contact_tags() {
         return self::roles_all_contact_tags($this->roles, $this->contactTags);
+    }
+
+    function viewable_tags(Contact $user) {
+        if ($user->isPC) {
+            $tags = $this->all_contact_tags();
+            return Tagger::strip_nonviewable($tags, $user);
+        } else
+            return "";
+    }
+
+    function viewable_color_classes(Contact $user) {
+        return TagInfo::color_classes($this->viewable_tags($user));
     }
 
     function capability($pid) {

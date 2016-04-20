@@ -548,12 +548,11 @@ $pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
 $pctags = pcTags();
 if (count($pctags)) {
     $tagsjson = array();
-    $tagger = new Tagger;
     foreach (pcMembers() as $pc)
-        $tagsjson[$pc->contactId] = " " . trim(strtolower($tagger->viewable($pc->all_contact_tags()))) . " ";
+        $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
     $Conf->footerScript("pc_tags_json=" . json_encode($tagsjson) . ";");
     foreach ($pctags as $tagname => $pctag)
-        if ($tagname !== "pc" && $tagger->viewable($tagname))
+        if ($tagname !== "pc" && Tagger::strip_nonviewable($tagname, $Me))
             $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");
 }
 $pctyp_sel[] = array("__flip__", -1, "flip");
@@ -572,7 +571,7 @@ $nrev = new AssignmentCountSet;
 $nrev->load_rev();
 foreach (pcMembers() as $p) {
     $t = '<div class="ctelt"><div class="ctelti';
-    if (($k = $tagger->viewable_color_classes($p->all_contact_tags())))
+    if (($k = $p->viewable_color_classes($Me)))
         $t .= ' ' . $k;
     $t .= '"><table><tr><td class="nw">'
         . Ht::checkbox("pcs[]", $p->contactId, isset($pcsel[$p->contactId]),
