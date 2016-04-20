@@ -39,7 +39,8 @@ class Si {
         "emailheader" => self::SI_DATA, "emailstring" => self::SI_DATA,
         "htmlstring" => self::SI_DATA, "simplestring" => self::SI_DATA,
         "string" => self::SI_DATA, "tag" => self::SI_DATA,
-        "taglist" => self::SI_DATA, "urlstring" => self::SI_DATA
+        "tagbase" => self::SI_DATA, "taglist" => self::SI_DATA,
+        "urlstring" => self::SI_DATA
     ];
 
     private function store($name, $key, $j, $jkey, $typecheck) {
@@ -714,7 +715,7 @@ function unparse_setting_error($info, $text) {
 }
 
 function parse_value($sv, $name, $info) {
-    global $Conf, $Now, $Opt;
+    global $Conf, $Me, $Now, $Opt;
 
     if (!isset($sv->req[$name])) {
         $xname = str_replace(".", "_", $name);
@@ -767,12 +768,20 @@ function parse_value($sv, $name, $info) {
         return $v;
     } else if ($info->type === "simplestring") {
         return simplify_whitespace($v);
+    } else if ($info->type === "tag" || $info->type === "tagbase") {
+        $tagger = new Tagger($Me);
+        $v = trim($v);
+        if ($v === "" && $info->optional)
+            return $v;
+        $v = $tagger->check($v, $info->type === "tagbase" ? Tagger::NOVALUE : 0);
+        if ($v)
+            return $v;
+        $err = unparse_setting_error($info, $tagger->error_html);
     } else if ($info->type === "emailheader") {
         $v = MimeText::encode_email_header("", $v);
         if ($v !== false)
             return ($v == "" ? "" : MimeText::decode_header($v));
-        else
-            $err = unparse_setting_error($info, "Invalid email header.");
+        $err = unparse_setting_error($info, "Invalid email header.");
     } else if ($info->type === "emailstring") {
         $v = trim($v);
         if ($v === "" && $info->optional)

@@ -107,6 +107,16 @@ class TagInfo {
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
     }
 
+    public static function in_list($tag, $taglist) {
+        if (is_string($taglist))
+            $taglist = explode(" ", $taglist);
+        list($base, $index) = self::split_index($tag);
+        if (is_associative_array($taglist))
+            return isset($taglist[$base]);
+        else
+            return in_array($base, $taglist);
+    }
+
     private static function make_tagmap() {
         global $Conf;
         self::$tagmap = $map = new TagMap;

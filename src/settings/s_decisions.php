@@ -171,10 +171,11 @@ function render($sv) {
             && $sv->newv("au_seerev") == Conf::AUSEEREV_TAGS
             && $sv->newv("tag_au_seerev")
             && !$sv->has_error("tag_au_seerev")) {
-            $chair_tags = array_flip(explode(" ", $sv->newv("tag_chair")));
             foreach (explode(" ", $sv->newv("tag_au_seerev")) as $t)
-                if ($t !== "" && !isset($chair_tags[$t]))
+                if ($t !== "" && !TagInfo::in_list($t, $sv->newv("tag_chair"))) {
                     $sv->set_warning("tag_au_seerev", "PC members can change the tag “" . htmlspecialchars($t) . "”, which affects whether authors can see reviews. Such tags should usually be <a href=\"" . hoturl("settings", "group=tags") . "\">chair-only</a>.");
+                    $sv->set_warning("tag_chair");
+                }
         }
     }
 }

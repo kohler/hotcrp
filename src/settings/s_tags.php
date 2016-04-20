@@ -78,34 +78,22 @@ function render($sv) {
     // Tags
     $tagger = new Tagger;
     echo "<h3 class=\"settings\">Tags</h3>\n";
-
-    echo "<table><tr><td class='lxcaption'>", $sv->label("tag_chair", "Chair-only tags"), "</td>";
+    echo "<table class=\"secondary-settings\"><tbody>";
     $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
-    echo "<td>";
-    $sv->echo_entry("tag_chair");
-    echo "<br /><div class='hint'>Only PC chairs can change these tags.  (PC members can still <i>view</i> the tags.)</div></td></tr>";
+    $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.");
 
-    echo "<tr><td class='lxcaption'>", $sv->label("tag_approval", "Approval voting tags"), "</td>";
     $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
-    echo "<td>";
-    $sv->echo_entry("tag_approval");
-    echo "<br /><div class='hint'><a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+    $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
 
-    echo "<tr><td class='lxcaption'>", $sv->label("tag_vote", "Allotment voting tags"), "</td>";
     $x = [];
     foreach (TagInfo::vote_tags() as $n => $v)
         $x[] = "$n#$v";
     $sv->set_oldv("tag_vote", join(" ", $x));
-    echo "<td>";
-    $sv->echo_entry("tag_vote");
-    echo "<br /><div class='hint'>“vote#10” declares an allotment of 10 votes per PC member. <span class='barsep'>·</span> <a href='", hoturl("help", "t=votetags"), "'>What is this?</a></div></td></tr>";
+    $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
 
-    echo "<tr><td class='lxcaption'>", $sv->label("tag_rank", "Ranking tag"), "</td>";
     $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
-    echo "<td>";
-    $sv->echo_entry("tag_rank");
-    echo "<br /><div class='hint'>The <a href='", hoturl("offline"), "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='", hoturl("help", "t=ranking"), "'>What is this?</a></div></td></tr>";
-    echo "</table>";
+    $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
+    echo "</tbody></table>";
 
     echo "<div class='g'></div>\n";
     $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
