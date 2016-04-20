@@ -352,9 +352,12 @@ class PaperInfo {
     }
 
     public function viewable_tags(Contact $user, $forceShow = null) {
-        if (!$user->can_view_tags($this, $forceShow))
+        if ($user->can_view_most_tags($this, $forceShow))
+            return Tagger::strip_nonviewable($this->all_tags_text(), $user);
+        else if ($user->privChair && $user->can_view_tags($this, $forceShow))
+            return Tagger::strip_nonsitewide($this->all_tags_text(), $user);
+        else
             return "";
-        return Tagger::strip_nonviewable($this->all_tags_text(), $user);
     }
 
     public function editable_tags(Contact $user) {
@@ -368,8 +371,9 @@ class PaperInfo {
                       || (($v = $dt->check(TagInfo::base($t)))
                           && ($v->vote
                               || $v->approval
-                              || ($v->chair && !$privChair)
-                              || ($v->rank && !$privChair)))))
+                              || (!$privChair
+                                  && (!$user->privChair || !$v->sitewide)
+                                  && ($v->chair || $v->rank))))))
                     $etags[] = $t;
             $tags = join(" ", $etags);
         }

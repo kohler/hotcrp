@@ -2820,6 +2820,16 @@ class Contact {
             return $this->isPC;
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_pc
+            || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0)
+            || $this->privChair;
+    }
+
+    function can_view_most_tags(PaperInfo $prow = null, $forceShow = null) {
+        global $Conf;
+        if (!$prow)
+            return $this->isPC;
+        $rights = $this->rights($prow, $forceShow);
+        return $rights->allow_pc
             || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
     }
 
@@ -2872,8 +2882,13 @@ class Contact {
             return true;
         $rights = $this->rights($prow, $forceShow);
         if (!($rights->allow_pc
-              && ($rights->can_administer || $Conf->timePCViewPaper($prow, false))))
+              && ($rights->can_administer || $Conf->timePCViewPaper($prow, false)))) {
+            if ($this->privChair
+                && TagInfo::has_sitewide()
+                && (!$tag || (($t = TagInfo::defined_tag($tag)) && $t->sitewide)))
+                return true;
             return false;
+        }
         if (!$tag)
             return true;
         $tag = TagInfo::base($tag);
@@ -2889,7 +2904,9 @@ class Contact {
         } else {
             $t = TagInfo::defined_tag($tag);
             return !$t
-                || (($rights->can_administer || (!$t->chair && !$t->rank))
+                || (($rights->can_administer
+                     || ($this->privChair && $t->sitewide)
+                     || (!$t->chair && !$t->rank))
                     && !$t->vote && !$t->approval);
         }
     }

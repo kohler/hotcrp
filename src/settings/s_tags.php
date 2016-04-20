@@ -82,6 +82,10 @@ function render($sv) {
     $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
     $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.");
 
+    $sv->set_oldv("tag_sitewide", join(" ", array_keys(TagInfo::sitewide_tags())));
+    if ($sv->newv("tag_sitewide") || $Conf->has_any_manager())
+        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Chairs and administrators can view and change these tags for every paper.");
+
     $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
     $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
 
@@ -205,6 +209,11 @@ class Tag_SettingParser extends SettingParser {
     }
     public function parse($sv, $si) {
         if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $sv->update($si->name, join(" ", $ts));
+        }
+
+        if ($si->name == "tag_sitewide" && isset($sv->req["tag_sitewide"])) {
             $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             $sv->update($si->name, join(" ", $ts));
         }

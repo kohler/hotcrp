@@ -12,6 +12,7 @@ class TagMapItem {
     public $chair = false;
     public $vote = false;
     public $approval = false;
+    public $sitewide = false;
     public $rank = false;
     public $colors = null;
     public $badges = null;
@@ -24,6 +25,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     public $nchair = 0;
     public $nvote = 0;
     public $napproval = 0;
+    public $nsitewide = 0;
     public $nrank = 0;
     public $nbadge = 0;
     private $storage = array();
@@ -133,6 +135,12 @@ class TagInfo {
                 $map[self::base($t)]->chair = true;
                 ++$map->nchair;
             }
+        $ct = $Conf->setting_data("tag_sitewide", "");
+        foreach (preg_split('/\s+/', $ct) as $t)
+            if ($t !== "" && !$map[self::base($t)]->sitewide) {
+                $map[self::base($t)]->sitewide = true;
+                ++$map->nsitewide;
+            }
         $vt = $Conf->setting_data("tag_vote", "");
         if ($vt !== "")
             foreach (preg_split('/\s+/', $vt) as $t)
@@ -185,6 +193,10 @@ class TagInfo {
         self::$tagmap = self::$colorre = null;
     }
 
+    public static function has_sitewide() {
+        return !!self::defined_tags()->nsitewide;
+    }
+
     public static function has_vote() {
         return !!self::defined_tags()->nvote;
     }
@@ -215,6 +227,16 @@ class TagInfo {
 
     public static function chair_tags() {
         return self::defined_tags()->tag_array("chair");
+    }
+
+    public static function is_sitewide($tag) {
+        $dt = self::defined_tags();
+        $t = $dt->check(self::base($tag));
+        return $t && $t->sitewide;
+    }
+
+    public static function sitewide_tags() {
+        return self::defined_tags()->tag_array("sitewide");
     }
 
     public static function is_votish($tag) {
@@ -375,7 +397,6 @@ class TagInfo {
         else
             return 1;
     }
-
 }
 
 class Tagger {
@@ -468,6 +489,15 @@ class Tagger {
             $tags = trim(preg_replace($re . ")\\S+}", "", " $tags "));
         }
         return $tags;
+    }
+
+    static public function strip_nonsitewide($tags, Contact $user) {
+        $x = ["\\&"];
+        foreach (TagInfo::sitewide_tags() as $t => $tinfo)
+            $x[] = preg_quote($t) . "[ #=]";
+        $re = "{ (?:(?!" . $user->contactId . "~)\\d+~|~+|(?!"
+            . join("|", $x) . ")\\S)\\S*}i";
+        return trim(preg_replace($re, "", " $tags "));
     }
 
     public function unparse($tags) {
@@ -606,5 +636,4 @@ class Tagger {
         else
             return rtrim($tt);
     }
-
 }

@@ -344,6 +344,10 @@
         "name": "PC can see tags for conflicted papers",
         "type": "checkbox"
     },
+    "tag_sitewide": {
+        "name": "Site-wide tags", "group": "tags",
+        "type": "taglist", "parser": "Tag_SettingParser", "size": 50
+    },
     "tag_vote": {
         "name": "Allotment voting tags",
         "type": "taglist", "parser": "Tag_SettingParser", "size": 50
