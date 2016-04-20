@@ -1780,7 +1780,7 @@ class Contact {
             $rights = $this->rights($prow, $forceShow);
             return $rights->allow_pc;
         } else
-            return $this->privChair || $this->isPC;
+            return $this->isPC;
     }
 
     public function can_view_tracker() {
@@ -2053,7 +2053,7 @@ class Contact {
                 || (($rights->allow_pc || $rights->allow_review)
                     && $this->can_view_review_identity($prow, null, $forceShow));
         } else
-            return $this->privChair || $this->isPC;
+            return $this->isPC;
     }
 
     function can_view_shepherd(PaperInfo $prow, $forceShow = null) {
