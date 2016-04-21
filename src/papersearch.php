@@ -3205,10 +3205,8 @@ class PaperSearch {
 
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $Conf->has_track_tags())
-            || get($this->_query_options, "tags")) {
-            $sqi->add_table("PaperTags", array("left join", "(select paperId, group_concat(' ', tag, '#', tagIndex separator '') as paperTags from PaperTag group by paperId)"));
-            $sqi->add_column("paperTags", "PaperTags.paperTags");
-        }
+            || get($this->_query_options, "tags"))
+            $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
         if (get($this->_query_options, "scores")
             || get($this->_query_options, "reviewTypes")
             || get($this->_query_options, "reviewContactIds")) {
