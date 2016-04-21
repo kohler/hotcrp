@@ -340,7 +340,7 @@ class PaperInfo {
             $this->load_tags();
         if ($this->paperTags !== ""
             && ($pos = stripos($this->paperTags, " $tag#")) !== false)
-            return (int) substr($this->paperTags, $pos + strlen($tag) + 2);
+            return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
         else
             return false;
     }
