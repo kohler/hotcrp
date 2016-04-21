@@ -335,6 +335,11 @@ class PaperInfo {
         return false;
     }
 
+    public function has_viewable_tag($tag, $user) {
+        $tags = $this->viewable_tags($user);
+        return $tags !== "" && stripos($tags, " $tag#") !== false;
+    }
+
     public function tag_value($tag) {
         if (!property_exists($this, "paperTags"))
             $this->load_tags();

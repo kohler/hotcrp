@@ -14,10 +14,17 @@ class TagMapItem {
     public $approval = false;
     public $sitewide = false;
     public $rank = false;
+    public $order_anno = null;
     public $colors = null;
     public $badges = null;
     public function __construct($tag) {
         $this->tag = $tag;
+    }
+    public function order_anno_at($index) {
+        foreach ($this->order_anno ? $this->order_anno->list : [] as $x)
+            if ($x->range[0] <= $index && $index <= $x->range[1])
+                return $x;
+        return null;
     }
 }
 
@@ -28,6 +35,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     public $nsitewide = 0;
     public $nrank = 0;
     public $nbadge = 0;
+    public $norder_anno = 0;
     private $storage = array();
     private $sorted = false;
     public function offsetExists($offset) {
@@ -177,6 +185,12 @@ class TagInfo {
                                 self::canonical_color(substr($k, $p + 1)));
                     ++$map->nbadge;
                 }
+        $xt = $Conf->setting_data("tag_order_anno", "");
+        if ($xt !== "" && ($xt = json_decode($xt)))
+            foreach (get_object_vars($xt) as $t => $v) {
+                $map[$t]->order_anno = $v;
+                ++$map->norder_anno;
+            }
         return $map;
     }
 
@@ -215,6 +229,10 @@ class TagInfo {
 
     public static function has_badges() {
         return !!self::defined_tags()->nbadge;
+    }
+
+    public static function has_order_anno() {
+        return !!self::defined_tags()->norder_anno;
     }
 
     public static function is_chair($tag) {
