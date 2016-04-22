@@ -318,6 +318,13 @@ class AssignmentCsv {
         $this->header = $this->header + $row;
         $this->data[] = $row;
     }
+    public function unparse() {
+        $csvg = new CsvGenerator;
+        $csvg->set_header($this->header, true);
+        $csvg->set_selection($this->header);
+        $csvg->add($this->data);
+        return $csvg->unparse();
+    }
 }
 
 class Assigner {
@@ -883,12 +890,14 @@ class NextTagAssigner {
     public $pidindex = array();
     private $first_index;
     private $next_index;
+    private $isseq;
     function __construct($state, $tag, $index, $isseq) {
         $this->tag = $tag;
         $ltag = strtolower($tag);
         $res = $state->query(array("type" => "tag", "ltag" => $ltag));
         foreach ($res as $x)
-            $this->pidindex[$x["pid"]] = $x["_index"];
+            $this->pidindex[$x["pid"]] = (float) $x["_index"];
+        asort($this->pidindex);
         if ($index === null) {
             $indexes = array_values($this->pidindex);
             sort($indexes);
@@ -896,6 +905,7 @@ class NextTagAssigner {
             $index += ($isseq ? 1 : self::$value_increment_map[mt_rand(0, 9)]);
         }
         $this->first_index = $this->next_index = ceil($index);
+        $this->isseq = $isseq;
     }
     private static $value_increment_map = array(1, 1, 1, 1, 1, 2, 2, 2, 3, 4);
     public function next_index($isseq) {
@@ -904,14 +914,16 @@ class NextTagAssigner {
         return $index;
     }
     public function apply($state) {
+        if ($this->next_index == $this->first_index)
+            return;
         $ltag = strtolower($this->tag);
-        $delta = $this->next_index - $this->first_index;
         foreach ($this->pidindex as $pid => $index)
-            if ($index >= $this->first_index && $delta) {
+            if ($index >= $this->first_index && $index < $this->next_index) {
                 $x = $state->query_unmodified(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
                 if (count($x)) {
-                    $item = $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
-                                              "_tag" => $this->tag, "_index" => $index + $delta));
+                    $item = $state->add(["type" => "tag", "pid" => $pid, "ltag" => $ltag,
+                                         "_tag" => $this->tag,
+                                         "_index" => $this->next_index($this->isseq)]);
                     $item->override = ALWAYS_OVERRIDE;
                 }
             }
