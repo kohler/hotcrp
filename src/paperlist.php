@@ -12,10 +12,12 @@ class PaperListRenderState {
     public $hascolors = false;
     public $skipcallout;
     public $ncol;
+    public $titlecol;
     public $last_trclass = "";
     public $headingstart = array(0);
-    public function __construct($ncol, $skipcallout) {
+    public function __construct($ncol, $titlecol, $skipcallout) {
         $this->ncol = $ncol;
+        $this->titlecol = $titlecol;
         $this->skipcallout = $skipcallout;
     }
 }
@@ -751,16 +753,25 @@ class PaperList {
         $thenval = $this->_row_thenval($row);
         if ($this->count != 1 && $thenval != $lastheading)
             $rstate->headingstart[] = count($body);
-        if ($thenval != $lastheading) {
-            $heading = get_s($this->search->headingmap, $thenval);
-            if ($heading == "" || !strcasecmp($heading, "none")) {
+        while ($lastheading != $thenval) {
+            ++$lastheading;
+            $heading = get($this->search->headingmap, $lastheading);
+            if ($heading === null || strcasecmp($heading, "none") == 0) {
                 if ($this->count != 1)
                     $body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
-                for ($i = $this->count; $i < count($srows) && $this->_row_thenval($srows[$i]) == $thenval; ++$i)
-                    /* do nothing */;
                 $middle = ($this->count == 1 ? "" : " plheading_middle");
-                $body[] = "  <tr class=\"pl plheading$middle\"><td class=\"plheading$middle\" colspan=\"$rstate->ncol\">" . htmlspecialchars(trim($heading)) . " <span class=\"plheading_count\">(" . plural($i - $this->count + 1, "paper") . ")</span></td></tr>\n";
+                $x = "  <tr class=\"pl plheading$middle\">";
+                if ($rstate->titlecol)
+                    $x .= "<td class=\"plheading$middle\" colspan=\"$rstate->titlecol\"></td>";
+                $x .= "<td class=\"plheading$middle\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
+                for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
+                    /* do nothing */;
+                $count = plural($i - $this->count + 1, "paper");
+                if (trim($heading) !== "")
+                    $x .= htmlspecialchars(trim($heading)) . " ";
+                $x .= "<span class=\"plheading_count\">$count</span></td></tr>";
+                $body[] = $x;
                 $rstate->colorindex = 0;
             }
         }
@@ -1168,7 +1179,7 @@ class PaperList {
 
         // get field array
         $fieldDef = array();
-        $ncol = 0;
+        $ncol = $titlecol = 0;
         // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, [fields]
         $next_fold = 7;
         foreach ($field_list as $fdef) {
@@ -1178,6 +1189,8 @@ class PaperList {
                 $fdef->foldable = $next_fold;
                 ++$next_fold;
             }
+            if ($fdef->name == "title")
+                $titlecol = $ncol;
             if ($fdef->view == Column::VIEW_COLUMN && !$fdef->is_folded)
                 ++$ncol;
         }
@@ -1191,7 +1204,7 @@ class PaperList {
                 ++$skipcallout;
 
         // create render state
-        $rstate = new PaperListRenderState($ncol, $skipcallout);
+        $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
 
         // collect row data
         $body = array();
