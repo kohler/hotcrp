@@ -3327,14 +3327,15 @@ class PaperSearch {
             $this->headingmap[0] = $h;
         else if ($order_anno) {
             $this->thenmap = [];
-            $this->headingmap[0] = "[none]";
+            $this->headingmap[0] = "";
             $used_map = [];
             $cur_then = $cur_anno_index = 0;
             $last_anno_index = -1;
+            $olist = $order_anno->list;
             usort($tag_order, "TagInfo::id_index_compar");
             foreach ($tag_order as $i => $to) {
-                while (isset($order_anno->list[$cur_anno_index])
-                       && $to[1] > $order_anno->list[$cur_anno_index]->range[1]) {
+                while (isset($olist[$cur_anno_index + 1])
+                       && $to[1] >= $olist[$cur_anno_index + 1]->lbound) {
                     if (get($order_anno->list[$cur_anno_index], "heading")
                         && !isset($used_map[$cur_anno_index])) {
                         if ($cur_then != 0 || $i != 0)
@@ -3345,8 +3346,7 @@ class PaperSearch {
                     ++$cur_anno_index;
                 }
                 if (isset($order_anno->list[$cur_anno_index])
-                    && $to[1] >= $order_anno->list[$cur_anno_index]->range[0]
-                    && $to[1] <= $order_anno->list[$cur_anno_index]->range[1])
+                    && $to[1] >= $order_anno->list[$cur_anno_index]->lbound)
                     $anno_index = $cur_anno_index;
                 else
                     $anno_index = -1;

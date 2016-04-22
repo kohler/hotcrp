@@ -20,12 +20,6 @@ class TagMapItem {
     public function __construct($tag) {
         $this->tag = $tag;
     }
-    public function order_anno_at($index) {
-        foreach ($this->order_anno ? $this->order_anno->list : [] as $x)
-            if ($x->range[0] <= $index && $index <= $x->range[1])
-                return $x;
-        return null;
-    }
 }
 
 class TagMap implements ArrayAccess, IteratorAggregate {
@@ -127,6 +121,13 @@ class TagInfo {
             return in_array($base, $taglist);
     }
 
+    private static function clean_order_anno($oa) {
+        usort($oa->list, function ($a, $b) {
+            return $a->lbound < $b->lbound ? -1 : ($a->lbound > $b->lbound ? 1 : 0);
+        });
+        return $oa;
+    }
+
     private static function make_tagmap() {
         global $Conf;
         self::$tagmap = $map = new TagMap;
@@ -187,10 +188,11 @@ class TagInfo {
                 }
         $xt = $Conf->setting_data("tag_order_anno", "");
         if ($xt !== "" && ($xt = json_decode($xt)))
-            foreach (get_object_vars($xt) as $t => $v) {
-                $map[$t]->order_anno = $v;
-                ++$map->norder_anno;
-            }
+            foreach (get_object_vars($xt) as $t => $v)
+                if (is_object($v)) {
+                    $map[$t]->order_anno = self::clean_order_anno($v);
+                    ++$map->norder_anno;
+                }
         return $map;
     }
 
