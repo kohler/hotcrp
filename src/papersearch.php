@@ -3328,15 +3328,22 @@ class PaperSearch {
         else if ($order_anno) {
             $this->thenmap = [];
             $this->headingmap[0] = "[none]";
+            $used_map = [];
             $cur_then = $cur_anno_index = 0;
             $last_anno_index = -1;
-            usort($tag_order, function ($a, $b) {
-                return $a[1] < $b[1] ? -1 : ($a[1] > $b[1] ? 1 : $a[0] - $b[0]);
-            });
+            usort($tag_order, "TagInfo::id_index_compar");
             foreach ($tag_order as $i => $to) {
                 while (isset($order_anno->list[$cur_anno_index])
-                       && $to[1] > $order_anno->list[$cur_anno_index]->range[1])
+                       && $to[1] > $order_anno->list[$cur_anno_index]->range[1]) {
+                    if (get($order_anno->list[$cur_anno_index], "heading")
+                        && !isset($used_map[$cur_anno_index])) {
+                        if ($cur_then != 0 || $i != 0)
+                            ++$cur_then;
+                        $this->headingmap[$cur_then] = $order_anno->list[$cur_anno_index]->heading;
+                        $last_anno_index = $cur_anno_index;
+                    }
                     ++$cur_anno_index;
+                }
                 if (isset($order_anno->list[$cur_anno_index])
                     && $to[1] >= $order_anno->list[$cur_anno_index]->range[0]
                     && $to[1] <= $order_anno->list[$cur_anno_index]->range[1])
@@ -3346,10 +3353,11 @@ class PaperSearch {
                 if ($anno_index != $last_anno_index) {
                     if ($cur_then != 0 || $i != 0)
                         ++$cur_then;
-                    if ($anno_index >= 0)
+                    if ($anno_index >= 0) {
                         $this->headingmap[$cur_then] = get($order_anno->list[$anno_index], "heading", "");
-                    else
-                        $this->headingmap[$cur_then] = "[none]";
+                        $used_map[$anno_index] = true;
+                    } else
+                        $this->headingmap[$cur_then] = "";
                     $last_anno_index = $anno_index;
                 }
                 $this->thenmap[$to[0]] = $cur_then;

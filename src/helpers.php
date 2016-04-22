@@ -723,6 +723,12 @@ function commajoin($what, $joinword = "and") {
         return join(", ", array_slice($what, 0, -1)) . ", " . $joinword . " " . $what[count($what) - 1];
 }
 
+function prefix_commajoin($what, $prefix, $joinword = "and") {
+    return commajoin(array_map(function ($x) use ($prefix) {
+        return $prefix . $x;
+    }, $what), $joinword);
+}
+
 function numrangejoin($range) {
     $i = 0;
     $a = array();
@@ -749,6 +755,10 @@ function pluralx($n, $what) {
 function pluralize($what) {
     if ($what == "this")
         return "these";
+    else if ($what == "has")
+        return "have";
+    else if ($what == "is")
+        return "are";
     else if (str_ends_with($what, ")") && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $what, $m))
         return pluralize($m[1]) . $m[2];
     else if (preg_match('/\A.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])\z/', $what)) {
