@@ -3332,21 +3332,22 @@ class PaperSearch {
             $cur_then = $cur_anno_index = 0;
             $last_anno_index = -1;
             $olist = $order_anno->list;
+            $olist[] = (object) ["lbound" => 2147483647, "heading" => "Untagged"];
             usort($tag_order, "TagInfo::id_index_compar");
             foreach ($tag_order as $i => $to) {
                 while (isset($olist[$cur_anno_index + 1])
                        && $to[1] >= $olist[$cur_anno_index + 1]->lbound) {
-                    if (get($order_anno->list[$cur_anno_index], "heading")
+                    if (get($olist[$cur_anno_index], "heading")
                         && !isset($used_map[$cur_anno_index])) {
                         if ($cur_then != 0 || $i != 0)
                             ++$cur_then;
-                        $this->headingmap[$cur_then] = $order_anno->list[$cur_anno_index]->heading;
+                        $this->headingmap[$cur_then] = $olist[$cur_anno_index]->heading;
                         $last_anno_index = $cur_anno_index;
                     }
                     ++$cur_anno_index;
                 }
-                if (isset($order_anno->list[$cur_anno_index])
-                    && $to[1] >= $order_anno->list[$cur_anno_index]->lbound)
+                if (isset($olist[$cur_anno_index])
+                    && $to[1] >= $olist[$cur_anno_index]->lbound)
                     $anno_index = $cur_anno_index;
                 else
                     $anno_index = -1;
@@ -3354,7 +3355,7 @@ class PaperSearch {
                     if ($cur_then != 0 || $i != 0)
                         ++$cur_then;
                     if ($anno_index >= 0) {
-                        $this->headingmap[$cur_then] = get($order_anno->list[$anno_index], "heading", "");
+                        $this->headingmap[$cur_then] = get($olist[$anno_index], "heading", "");
                         $used_map[$anno_index] = true;
                     } else
                         $this->headingmap[$cur_then] = "";
