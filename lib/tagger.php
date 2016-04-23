@@ -14,11 +14,25 @@ class TagMapItem {
     public $approval = false;
     public $sitewide = false;
     public $rank = false;
-    public $order_anno = null;
+    public $order_anno = false;
+    private $order_anno_list = false;
     public $colors = null;
     public $badges = null;
     public function __construct($tag) {
         $this->tag = $tag;
+    }
+    public function order_anno_list() {
+        if ($this->order_anno && $this->order_anno_list == false) {
+            $this->order_anno_list = Dbl::fetch_objects("select * from PaperTagAnno where tag=?", $this->tag);
+            $this->order_anno_list[] = (object) ["tag" => $this->tag, "tagIndex" => TAG_INDEXBOUND, "heading" => "Untagged", "annoId" => null];
+            usort($this->order_anno_list, function ($a, $b) {
+                return $a->tagIndex < $b->tagIndex ? -1 : ($a->tagIndex > $b->tagIndex ? 1 : 0);
+            });
+        }
+        return $this->order_anno_list;
+    }
+    public function order_anno_entry($i) {
+        return get($this->order_anno_list(), $i);
     }
 }
 
@@ -121,13 +135,6 @@ class TagInfo {
             return in_array($base, $taglist);
     }
 
-    private static function clean_order_anno($oa) {
-        usort($oa->list, function ($a, $b) {
-            return $a->lbound < $b->lbound ? -1 : ($a->lbound > $b->lbound ? 1 : 0);
-        });
-        return $oa;
-    }
-
     private static function make_tagmap() {
         global $Conf;
         self::$tagmap = $map = new TagMap;
@@ -190,7 +197,7 @@ class TagInfo {
         if ($xt !== "" && ($xt = json_decode($xt)))
             foreach (get_object_vars($xt) as $t => $v)
                 if (is_object($v)) {
-                    $map[$t]->order_anno = self::clean_order_anno($v);
+                    $map[$t]->order_anno = $v;
                     ++$map->norder_anno;
                 }
         return $map;

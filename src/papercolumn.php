@@ -1044,9 +1044,9 @@ class TagPaperColumn extends PaperColumn {
         ++self::$sortf_ctr;
         $careful = !$pl->contact->privChair
             && $Conf->setting("tag_seeall") <= 0;
-        $unviewable = $empty = $sorter->reverse ? -2147483647 : 2147483647;
+        $unviewable = $empty = $sorter->reverse ? -(TAG_INDEXBOUND - 1) : TAG_INDEXBOUND - 1;
         if ($this->editable)
-            $empty = $sorter->reverse ? -2147483646 : 2147483646;
+            $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
         foreach ($rows as $row)
             if ($careful && !$pl->contact->can_view_tags($row, true))
                 $row->$sortf = $unviewable;

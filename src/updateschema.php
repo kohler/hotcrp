@@ -942,6 +942,17 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 129
         && Dbl::ql("update PaperComment set timeDisplayed=1 where timeDisplayed=0 and timeNotified>0"))
         $Conf->update_schema_version(130);
+    if ($Conf->sversion == 130
+        && Dbl::ql("CREATE TABLE `PaperTagAnno` (
+  `tag` varchar(40) NOT NULL,   # see TAG_MAXLEN in header.php
+  `annoId` int(11) NOT NULL,
+  `tagIndex` float NOT NULL DEFAULT '0',
+  `heading` varbinary(8192) DEFAULT NULL,
+  `annoFormat` tinyint(1) DEFAULT NULL,
+  `infoJson` varbinary(32768) DEFAULT NULL,
+  PRIMARY KEY (`tag`,`annoId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+        $Conf->update_schema_version(131);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

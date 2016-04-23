@@ -346,6 +346,23 @@ CREATE TABLE `PaperTag` (
 
 
 --
+-- Table structure for table `PaperTagAnno`
+--
+
+DROP TABLE IF EXISTS `PaperTagAnno`;
+CREATE TABLE `PaperTagAnno` (
+  `tag` varchar(40) NOT NULL,   # see TAG_MAXLEN in header.php
+  `annoId` int(11) NOT NULL,
+  `tagIndex` float NOT NULL DEFAULT '0',
+  `heading` varbinary(8192) DEFAULT NULL,
+  `annoFormat` tinyint(1) DEFAULT NULL,
+  `infoJson` varbinary(32768) DEFAULT NULL,
+  PRIMARY KEY (`tag`,`annoId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+--
 -- Table structure for table `PaperTopic`
 --
 
@@ -450,7 +467,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 130);
+insert into Settings (name, value) values ('allowPaperOption', 131);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

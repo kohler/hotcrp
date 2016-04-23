@@ -755,8 +755,9 @@ class PaperList {
             $rstate->headingstart[] = count($body);
         while ($lastheading != $thenval) {
             ++$lastheading;
-            $heading = get($this->search->headingmap, $lastheading);
-            if ($heading === null || strcasecmp($heading, "none") == 0) {
+            $ginfo = get($this->search->groupmap, $lastheading);
+            if ($ginfo === null || !isset($ginfo->heading)
+                || strcasecmp($ginfo->heading, "none") == 0) {
                 if ($this->count != 1)
                     $body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
@@ -768,8 +769,8 @@ class PaperList {
                 for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                     /* do nothing */;
                 $count = plural($i - $this->count + 1, "paper");
-                if ($heading !== "")
-                    $x .= $heading . " ";
+                if ($ginfo->heading !== "")
+                    $x .= $ginfo->heading . " ";
                 $x .= "<span class=\"plheading_count\">$count</span></td></tr>";
                 $body[] = $x;
                 $rstate->colorindex = 0;
@@ -1208,7 +1209,7 @@ class PaperList {
 
         // collect row data
         $body = array();
-        $lastheading = !empty($this->search->headingmap) ? -1 : -2;
+        $lastheading = !empty($this->search->groupmap) ? -1 : -2;
         $format_onpage = false;
         foreach ($rows as $row) {
             ++$this->count;

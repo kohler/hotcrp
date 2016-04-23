@@ -739,7 +739,7 @@ class PaperSearch {
     private $_allow_deleted = false;
     private $_reviewWordCounts = false;
     public $thenmap = null;
-    public $headingmap = null;
+    public $groupmap = null;
     public $highlightmap = null;
     public $viewmap;
     public $sorters;
@@ -2024,8 +2024,7 @@ class PaperSearch {
             $qt[] = ($qe ? : new SearchTerm("f"));
         }
         if ($keyword === "HEADING") {
-            if (($heading = simplify_whitespace($word)) !== "")
-                $this->headingmap = array();
+            $heading = simplify_whitespace($word);
             $qt[] = SearchTerm::make_float(["heading" => htmlspecialchars($heading)]);
         }
         if ($keyword === "show" || $keyword === "hide" || $keyword === "edit"
@@ -3084,6 +3083,54 @@ class PaperSearch {
         }
     }
 
+    private function _assign_order_anno_group($g, $order_anno_tag, $anno_index) {
+        if (!isset($this->groupmap[$g]))
+            $this->groupmap[$g] = (object) ["order_anno" => $order_anno_tag->tag];
+        $e = $order_anno_tag->order_anno_entry($anno_index);
+        if ($e) {
+            $this->groupmap[$g]->anno_id = $e->annoId;
+            $this->groupmap[$g]->heading = $e->heading;
+        } else
+            $this->groupmap[$g]->heading = "";
+    }
+
+    private function _assign_order_anno($order_anno_tag, $tag_order) {
+        $this->thenmap = [];
+        $this->_assign_order_anno_group(0, $order_anno_tag, -1);
+        $used_map = [];
+        $cur_then = $cur_anno_index = 0;
+        $last_anno_index = -1;
+        $olist = $order_anno_tag->order_anno_list();
+        usort($tag_order, "TagInfo::id_index_compar");
+        foreach ($tag_order as $i => $to) {
+            while (isset($olist[$cur_anno_index + 1])
+                   && $to[1] >= $olist[$cur_anno_index + 1]->tagIndex) {
+                if ($olist[$cur_anno_index]->heading
+                    && !isset($used_map[$cur_anno_index])) {
+                    if ($cur_then != 0 || $i != 0)
+                        ++$cur_then;
+                    $this->_assign_order_anno_group($cur_then, $order_anno_tag, $cur_anno_index);
+                    $last_anno_index = $cur_anno_index;
+                }
+                ++$cur_anno_index;
+            }
+            if (isset($olist[$cur_anno_index])
+                && $to[1] >= $olist[$cur_anno_index]->tagIndex)
+                $anno_index = $cur_anno_index;
+            else
+                $anno_index = -1;
+            if ($anno_index != $last_anno_index) {
+                if ($cur_then != 0 || $i != 0)
+                    ++$cur_then;
+                $this->_assign_order_anno_group($cur_then, $order_anno_tag, $anno_index);
+                if ($anno_index >= 0)
+                    $used_map[$anno_index] = true;
+                $last_anno_index = $anno_index;
+            }
+            $this->thenmap[$to[0]] = $cur_then;
+        }
+    }
+
     function _search() {
         global $Conf;
         if ($this->_matches === false)
@@ -3198,16 +3245,14 @@ class PaperSearch {
         }
 
         // check for annotated order
-        $order_anno = $order_anno_tag = null;
+        $order_anno_tag = null;
         if ($qe->type !== "then"
             && ($sort = $qe->get_float("sort"))
             && count($sort) == 1
             && preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sort[0], $sortm)
             && ($dt = TagInfo::defined_tag($sortm[1]))
-            && $dt->order_anno) {
-            $order_anno_tag = $dt->tag;
-            $order_anno = $dt->order_anno;
-        }
+            && $dt->order_anno)
+            $order_anno_tag = $dt;
 
         // add permissions tables if we will filter the results
         $need_filter = (($this->needflags & self::F_XVIEW)
@@ -3215,7 +3260,7 @@ class PaperSearch {
                         || $qe->type === "then"
                         || $qe->get_float("heading")
                         || $limit === "rable"
-                        || $order_anno);
+                        || $order_anno_tag);
         if ($need_filter) {
             $sqi->add_rights_columns();
             if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL)
@@ -3225,7 +3270,7 @@ class PaperSearch {
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $Conf->has_track_tags())
             || get($this->_query_options, "tags")
-            || $order_anno)
+            || $order_anno_tag)
             $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
         if (get($this->_query_options, "scores")
             || get($this->_query_options, "reviewTypes")
@@ -3270,7 +3315,7 @@ class PaperSearch {
             return ($this->_matches = false);
         $this->_matches = array();
 
-        // correct query, create thenmap, headingmap, highlightmap
+        // correct query, create thenmap, groupmap, highlightmap
         $need_then = $qe->type === "then";
         $this->thenmap = null;
         if ($need_then && $qe->nthen > 1)
@@ -3302,11 +3347,11 @@ class PaperSearch {
                             $this->highlightmap[$row->paperId] = $qe->highlight_types[$j - $qe->nthen] . "highlight";
                             break;
                         }
-                if ($order_anno) {
-                    if ($row->has_viewable_tag($order_anno_tag, $this->contact))
-                        $tag_order[] = [$row->paperId, $row->tag_value($order_anno_tag)];
+                if ($order_anno_tag) {
+                    if ($row->has_viewable_tag($order_anno_tag->tag, $this->contact))
+                        $tag_order[] = [$row->paperId, $row->tag_value($order_anno_tag->tag)];
                     else
-                        $tag_order[] = [$row->paperId, 2147483647];
+                        $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
                 }
             }
         } else
@@ -3325,51 +3370,16 @@ class PaperSearch {
         if ($qe->type === "then")
             for ($i = 0; $i < $qe->nthen; ++$i)
                 $this->_add_sorters($qe->value[$i], $this->thenmap ? $i : null);
-        $this->headingmap = array();
+        $this->groupmap = [];
         if ($qe->type === "then") {
-            for ($i = 0; $i < $qe->nthen; ++$i)
-                $this->headingmap[$i] = $qe->value[$i]->get_float("heading");
-        } else if (($h = $qe->get_float("heading")))
-            $this->headingmap[0] = $h;
-        else if ($order_anno) {
-            $this->thenmap = [];
-            $this->headingmap[0] = "";
-            $used_map = [];
-            $cur_then = $cur_anno_index = 0;
-            $last_anno_index = -1;
-            $olist = $order_anno->list;
-            $olist[] = (object) ["lbound" => 2147483647, "heading" => "Untagged"];
-            usort($tag_order, "TagInfo::id_index_compar");
-            foreach ($tag_order as $i => $to) {
-                while (isset($olist[$cur_anno_index + 1])
-                       && $to[1] >= $olist[$cur_anno_index + 1]->lbound) {
-                    if (get($olist[$cur_anno_index], "heading")
-                        && !isset($used_map[$cur_anno_index])) {
-                        if ($cur_then != 0 || $i != 0)
-                            ++$cur_then;
-                        $this->headingmap[$cur_then] = $olist[$cur_anno_index]->heading;
-                        $last_anno_index = $cur_anno_index;
-                    }
-                    ++$cur_anno_index;
-                }
-                if (isset($olist[$cur_anno_index])
-                    && $to[1] >= $olist[$cur_anno_index]->lbound)
-                    $anno_index = $cur_anno_index;
-                else
-                    $anno_index = -1;
-                if ($anno_index != $last_anno_index) {
-                    if ($cur_then != 0 || $i != 0)
-                        ++$cur_then;
-                    if ($anno_index >= 0) {
-                        $this->headingmap[$cur_then] = get($olist[$anno_index], "heading", "");
-                        $used_map[$anno_index] = true;
-                    } else
-                        $this->headingmap[$cur_then] = "";
-                    $last_anno_index = $anno_index;
-                }
-                $this->thenmap[$to[0]] = $cur_then;
+            for ($i = 0; $i < $qe->nthen; ++$i) {
+                $h = $qe->value[$i]->get_float("heading");
+                $this->groupmap[$i] = (object) ["heading" => $h];
             }
-        }
+        } else if (($h = $qe->get_float("heading")))
+            $this->groupmap[0] = (object) ["heading" => $h];
+        else if ($order_anno_tag)
+            $this->_assign_order_anno($order_anno_tag, $tag_order);
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions
