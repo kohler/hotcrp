@@ -1918,7 +1918,7 @@ class PaperSearch {
         $quoted = ($word[0] === '"');
         $negated = false;
         if ($quoted)
-            $word = str_replace(array('"', '*'), array('', '\*'), $word);
+            $word = str_replace('*', '\*', preg_replace('/(?:\A"|"\z)/', '', $word));
         if ($keyword === "notag") {
             $keyword = "tag";
             $negated = true;
@@ -2026,7 +2026,7 @@ class PaperSearch {
         if ($keyword === "HEADING") {
             if (($heading = simplify_whitespace($word)) !== "")
                 $this->headingmap = array();
-            $qt[] = SearchTerm::make_float(array("heading" => htmlspecialchars(trim($heading))));
+            $qt[] = SearchTerm::make_float(["heading" => htmlspecialchars($heading)]);
         }
         if ($keyword === "show" || $keyword === "hide" || $keyword === "edit"
             || $keyword === "sort" || $keyword === "showsort"
@@ -2080,6 +2080,12 @@ class PaperSearch {
                 $str = $m[2] . $str;
         }
 
+        // elide colon
+        if ($word === "HEADING") {
+            $str = $word . ":" . ltrim($str);
+            return self::pop_word($str);
+        }
+
         // check for keyword
         $keyword = false;
         if (($colon = strpos($word, ":")) > 0) {
@@ -2090,7 +2096,7 @@ class PaperSearch {
 
         // allow a space after a keyword
         if ($keyword && strlen($word) <= $colon + 1 && preg_match($wordre, $str, $m)) {
-            $word .= $m[0];
+            $word .= ltrim($m[0]);
             $str = substr($str, strlen($m[0]));
         }
 
