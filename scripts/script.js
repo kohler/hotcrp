@@ -4686,10 +4686,9 @@ document.body ? prepare() : $(prepare);
 
 
 // focusing
-jQuery(function () {
-jQuery(".hotradiorelation input, .hotradiorelation select").on("click keypress", function (event) {
-    var x = jQuery(this).closest(".hotradiorelation")
-        .find("input[type='radio']").first();
+$(function () {
+$(".hotradiorelation input, .hotradiorelation select").on("click keypress", function (event) {
+    var x = $(this).closest(".hotradiorelation").find("input[type='radio']").first();
     if (x.length && x[0] !== this)
         x[0].click();
     return true;
