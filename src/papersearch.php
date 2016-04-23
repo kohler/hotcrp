@@ -210,7 +210,7 @@ class SearchTerm {
             if (($substr = $qv->get_float("substr")) !== null
                 && $qv->get_float("heading") === null) {
                 $substr = preg_replace(',\A\(\s*(.*)\s*\)\z,', '$1', $substr);
-                $qv->set_float("heading", $substr);
+                $qv->set_float("heading", htmlspecialchars(trim($substr)));
             }
 
         $this->set("nthen", count($newvalues));
@@ -2026,7 +2026,7 @@ class PaperSearch {
         if ($keyword === "HEADING") {
             if (($heading = simplify_whitespace($word)) !== "")
                 $this->headingmap = array();
-            $qt[] = SearchTerm::make_float(array("heading" => $heading));
+            $qt[] = SearchTerm::make_float(array("heading" => htmlspecialchars(trim($heading))));
         }
         if ($keyword === "show" || $keyword === "hide" || $keyword === "edit"
             || $keyword === "sort" || $keyword === "showsort"
