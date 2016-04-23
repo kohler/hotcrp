@@ -3707,7 +3707,7 @@ function tag_keypress(evt) {
     if (event_modkey(evt) || event_key(evt) != "Enter")
         return true;
     else {
-        this.onchange();
+        tag_onclick.call(this);
         return false;
     }
 }
