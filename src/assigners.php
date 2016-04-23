@@ -987,9 +987,9 @@ class TagAssigner extends Assigner {
         if (!preg_match(',\A(|[^#]*~)([a-zA-Z!@*_:.]+[-a-zA-Z0-9!@*_:.\/]*)\z,i', $xtag, $xm))
             return "Invalid tag “" . htmlspecialchars($xtag) . "”.";
         else if ($m[3] && $m[4] === "")
-            return "Index missing.";
-        else if ($m[3] && !preg_match(',\A(-?\d+|any|all|none|clear)\z,', $m[4]))
-            return "Index must be an integer.";
+            return "Value missing.";
+        else if ($m[3] && !preg_match(',\A([-+]?(?:\d+(?:\.\d*)?|\.\d+)|any|all|none|clear)\z,', $m[4]))
+            return "Value must be a number.";
         else
             list($m[1], $m[2]) = array($xm[1], $xm[2]);
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)

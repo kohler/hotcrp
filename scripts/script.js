@@ -3683,7 +3683,7 @@ function tag_save(elt, success) {
         else if (tv !== null)
             data.addtags = m[1] + "#" + tv;
         else {
-            setajaxcheck(elt, {ok: false, error: "Tag value must be an integer (or “n” to remove the tag)."});
+            setajaxcheck(elt, {ok: false, error: "Value must be a number (or “n” to remove the tag)."});
             return false;
         }
     }
