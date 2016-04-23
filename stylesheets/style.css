@@ -2535,6 +2535,17 @@ div.cmtg {
 div.cmtg:first-child {
 	border-top: 0 none;
 }
+div.cmtcard_link {
+	font-size: 69%;
+	font-weight: bold;
+	color: #666666;
+}
+div.cmtcard_link:first-child {
+	padding: 0 12px 4px;
+}
+div.cmtcard_link:last-child {
+	padding: 4px 12px 0;
+}
 span.cmtfn > span.barsep {
 	color: #eadeb7;
 }

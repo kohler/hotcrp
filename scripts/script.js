@@ -2942,9 +2942,11 @@ function render_cmt_text(textj, cj, chead) {
 }
 
 function add(cj, editing) {
-    var cid = cj_cid(cj), j = $("#" + cid);
+    var cid = cj_cid(cj), j = $("#" + cid), $pc = null;
     if (!j.length) {
         var $c = $("#body").children().last();
+        if (!$c.hasClass("cmtcard") && ($pc = $("#body > .cmtcard").last()).length)
+            $pc.append('<div class="cmtcard_link"><a href="#' + cid + '" class="qq">Later comments &#x25BC;</a></div>');
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
             if (cj.response)
@@ -2956,6 +2958,8 @@ function add(cj, editing) {
             else
                 t = '<div class="cmtcard">';
             $c = $(t + '<div class="cmtcard_body"></div></div>').appendTo("#body");
+            if (!cj.response && $pc && $pc.length)
+                $c.prepend('<div class="cmtcard_link"><a href="#' + ($pc.find("[id]").last().attr("id")) + '" class="qq">Earlier comments &#x25B2;</a></div>');
         }
         if (cj.response)
             j = $('<div class="cmtg"></div>');
