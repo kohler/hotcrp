@@ -2107,15 +2107,15 @@ function handle_clickthrough(form) {
 
 // bad-pairs
 function badpairs_change(more) {
-    var n = $("#bptable").find("tbody > tr").length;
+    var tbody = $("#bptable > tbody"), n = tbody.children().length;
     if (more) {
         ++n;
-        $("#bptable").find("tbody").append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><select name="bpa' + n + '" onchange="badpairs_click()"></select> &nbsp;and&nbsp; <select name="bpb' + n + '" onchange="badpairs_click()"></select></td></tr>');
-        var options = $("#bptable").find("select").first().html();
-        $("#bptable").find("select[name='bpa" + n + "'], select[name='bpb" + n + "']").html(options).val(0);
+        tbody.append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><select name="bpa' + n + '" onchange="badpairs_click()"></select> &nbsp;and&nbsp; <select name="bpb' + n + '" onchange="badpairs_click()"></select></td></tr>');
+        var options = tbody.find("select").first().html();
+        tbody.find("select[name='bpa" + n + "'], select[name='bpb" + n + "']").html(options).val(0);
     } else if (n > 1) {
         --n;
-        $("#bptable").find("tbody > tr:last-child").remove();
+        tbody.children().last().remove();
     }
     return false;
 }
@@ -4021,7 +4021,7 @@ return function (selector, active_dragtag) {
         valuemap = {};
 
         $(function () {
-            plt_tbody = $(selector).find("tbody")[0];
+            plt_tbody = $(selector).children().filter("tbody")[0];
             $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
                 var x = document.createElement("span"), id = this.name.substr(5 + dragtag.length);
                 x.className = "dragtaghandle";
