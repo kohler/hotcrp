@@ -3035,6 +3035,27 @@ function comment_shortcut() {
         return false;
 }
 
+function nextprev_shortcut(evt, key) {
+    var hash = (location.hash || "#").replace(/^#/, ""), $j, walk;
+    var siblingdir = (key == "n" ? "nextSibling" : "previousSibling");
+    var jdir = (key == "n" ? "first" : "last");
+    if (hash && ($j = $("#" + hash)).length
+        && ($j.hasClass("cmtcard") || $j.hasClass("revcard") || $j.hasClass("cmtg"))) {
+        walk = $j[0];
+        if (!walk[siblingdir] && $j.hasClass("cmtg"))
+            walk = $j.closest(".cmtcard")[0];
+        walk = walk[siblingdir];
+        if (walk && !walk.hasAttribute("id") && $(walk).hasClass("cmtcard"))
+            walk = $(walk).find(".cmtg")[jdir]()[0];
+    } else {
+        $j = $(".cmtcard[id], .revcard[id], .cmtcard > .cmtcard_body > .cmtg[id]");
+        walk = $j[jdir]()[0];
+    }
+    if (walk && walk.hasAttribute("id"))
+        location.hash = "#" + walk.getAttribute("id");
+    return true;
+}
+
 function blur_keyup_shortcut(evt) {
     var code;
     // IE compatibility
@@ -3212,6 +3233,8 @@ function shortcut(top_elt) {
                 add(["s", "l"], make_selector_shortcut("lead"));
                 add(["s", "s"], make_selector_shortcut("shepherd"));
                 add(["s", "t"], make_selector_shortcut("tags"));
+                add("n", nextprev_shortcut);
+                add("p", nextprev_shortcut);
             }
         }
         return self;
