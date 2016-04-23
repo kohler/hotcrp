@@ -3659,7 +3659,7 @@ function parse_tagvalue(s) {
     s = s.replace(/^\s+|\s+$/, "").toLowerCase();
     if (s == "y" || s == "yes" || s == "t" || s == "true" || s == "✓")
         return 0;
-    else if (s == "n" || s == "no" || s == "" || s == "f" || s == "false" || s == "na" || s == "n/a")
+    else if (s == "n" || s == "no" || s == "" || s == "f" || s == "false" || s == "na" || s == "n/a" || s == "clear")
         return false;
     else if (s.match(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/))
         return +s;
@@ -3678,10 +3678,8 @@ function tag_save(elt, success) {
         elt.checked ? data.addtags = m[1] : data.deltags = m[1];
     else {
         var tv = parse_tagvalue(elt.value);
-        if (tv === false)
-            data.deltags = m[1];
-        else if (tv !== null)
-            data.addtags = m[1] + "#" + tv;
+        if (tv !== null)
+            data.addtags = m[1] + "#" + (tv !== false ? tv : "clear");
         else {
             setajaxcheck(elt, {ok: false, error: "Value must be a number (or “n” to remove the tag)."});
             return false;
