@@ -3716,16 +3716,26 @@ function PaperRow(l, r, index) {
     this.r = r;
     this.index = index;
     this.tagvalue = false;
-    var inputs = rows[l].getElementsByTagName("input");
-    var i, prefix = "tag:" + dragtag + " ";
-    for (i in inputs)
-        if (inputs[i].name
-            && inputs[i].name.substr(0, prefix.length) == prefix) {
-            this.entry = inputs[i];
-            this.tagvalue = parse_tagvalue(inputs[i].value);
-            break;
-        }
-    this.id = rows[l].getAttribute("data-pid");
+    this.order_anno = false;
+    var i, x;
+    if ((x = rows[l].getAttribute("data-anno-index"))) {
+        this.order_anno = true;
+        this.tagvalue = parse_tagvalue(x);
+        if ((x = rows[l].getAttribute("data-anno-id")))
+            this.order_anno_id = +x;
+        this.id = 0;
+    } else {
+        var inputs = rows[l].getElementsByTagName("input"),
+            prefix = "tag:" + dragtag + " ";
+        for (i in inputs)
+            if (inputs[i].name
+                && inputs[i].name.substr(0, prefix.length) == prefix) {
+                this.entry = inputs[i];
+                this.tagvalue = parse_tagvalue(inputs[i].value);
+                break;
+            }
+        this.id = +rows[l].getAttribute("data-pid");
+    }
     if ((i = rows[l].getAttribute("data-title-hint")))
         this.titlehint = i;
 }
@@ -3836,9 +3846,11 @@ function tag_mousemove(evt) {
     }
 
     // set dragger content and show it
-    m = "#" + rowanal[srcindex].id;
+    m = "";
+    if (rowanal[srcindex].id)
+        m += "#" + rowanal[srcindex].id;
     if (rowanal[srcindex].titlehint)
-        m += " &nbsp;" + rowanal[srcindex].titlehint;
+        m += (m ? " &nbsp;" : "") + rowanal[srcindex].titlehint;
     var v;
     if (srcindex != dragindex) {
         a = calculate_shift(srcindex, dragindex);
@@ -3879,6 +3891,8 @@ function row_move(srcindex, dstindex) {
                 e = 1 - e;
             if (/\bk[01]\b/.test(c))
                 rows[i].className = c.replace(/\bk[01]\b/, "k" + e);
+            else if (/\bplheading\b/.test(c))
+                e = 1;
         }
 }
 
@@ -3947,10 +3961,9 @@ function sorttag_onchange() {
         valuemap[id] = tv;
         for (i = 0; i < rowanal.length; ++i) {
             ltv = valuemap[rowanal[i].id];
-            if (!rowanal[i].entry
-                || (tv !== false && ltv === false)
+            if ((tv !== false && ltv === false)
                 || (tv !== false && ltv !== null && +ltv > +tv)
-                || (ltv === tv && +rowanal[i].id > +id))
+                || (ltv === tv && rowanal[i].id > id))
                 break;
         }
         var had_focus = document.activeElement == that;

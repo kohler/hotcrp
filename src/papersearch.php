@@ -740,6 +740,7 @@ class PaperSearch {
     private $_reviewWordCounts = false;
     public $thenmap = null;
     public $groupmap = null;
+    public $is_order_anno = false;
     public $highlightmap = null;
     public $viewmap;
     public $sorters;
@@ -3084,14 +3085,10 @@ class PaperSearch {
     }
 
     private function _assign_order_anno_group($g, $order_anno_tag, $anno_index) {
-        if (!isset($this->groupmap[$g]))
-            $this->groupmap[$g] = (object) ["order_anno" => $order_anno_tag->tag];
-        $e = $order_anno_tag->order_anno_entry($anno_index);
-        if ($e) {
-            $this->groupmap[$g]->anno_id = $e->annoId;
-            $this->groupmap[$g]->heading = $e->heading;
-        } else
-            $this->groupmap[$g]->heading = "";
+        if (($e = $order_anno_tag->order_anno_entry($anno_index)))
+            $this->groupmap[$g] = $e;
+        else if (!isset($this->groupmap[$g]))
+            $this->groupmap[$g] = (object) ["tag" => $order_anno_tag->tag, "heading" => ""];
     }
 
     private function _assign_order_anno($order_anno_tag, $tag_order) {
@@ -3378,8 +3375,10 @@ class PaperSearch {
             }
         } else if (($h = $qe->get_float("heading")))
             $this->groupmap[0] = (object) ["heading" => $h];
-        else if ($order_anno_tag)
+        else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
+            $this->is_order_anno = true;
+        }
 
         // extract regular expressions and set _reviewer if the query is
         // about exactly one reviewer, and warn about contradictions

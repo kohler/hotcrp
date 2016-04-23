@@ -107,33 +107,47 @@ class PaperApi {
         global $Conf;
         if ($qreq->cancelsettags)
             json_exit(["ok" => true]);
+        if ($prow && !$user->can_view_paper($prow))
+            json_exit(["ok" => false, "error" => "No such paper."]);
 
         // save tags using assigner
-        $x = array("paper,tag");
-        if (isset($qreq->tags)) {
-            $x[] = "$prow->paperId,all#clear";
-            foreach (TagInfo::split($qreq->tags) as $t)
-                $x[] = "$prow->paperId," . CsvGenerator::quote($t);
+        $x = array("paper,action,tag");
+        if ($prow) {
+            if (isset($qreq->tags)) {
+                $x[] = "$prow->paperId,tag,all#clear";
+                foreach (TagInfo::split($qreq->tags) as $t)
+                    $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
+            }
+            foreach (TagInfo::split((string) $qreq->addtags) as $t)
+                $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
+            foreach (TagInfo::split((string) $qreq->deltags) as $t)
+                $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t . "#clear");
         }
-        foreach (TagInfo::split((string) $qreq->addtags) as $t)
-            $x[] = "$prow->paperId," . CsvGenerator::quote($t);
-        foreach (TagInfo::split((string) $qreq->deltags) as $t)
-            $x[] = "$prow->paperId," . CsvGenerator::quote($t . "#clear");
+        if (isset($qreq->taginstrux)) {
+            $pid = -1;
+            foreach (preg_split('/\s+/', $qreq->tagexec) as $x)
+                if ($x !== "" && ctype_digit($x))
+                    $pid = intval($x);
+                else if ($x !== "")
+                    $x[] = "$pid,tag," . CsvGenerator::quote($x);
+        }
         $assigner = new AssignmentSet($user, $user->is_admin_force());
         $assigner->parse(join("\n", $x));
-        $error = join("<br>", $assigner->errors_html());
+        $error = join("<br />", $assigner->errors_html());
         $ok = $assigner->execute();
 
         // exit
         $prow->load_tags();
-        if ($ok) {
+        if ($ok && $prow) {
             $treport = self::tagreport($user, $prow);
             if ($treport->warnings)
                 $Conf->warnMsg(join("<br>", $treport->warnings));
             $taginfo = (object) ["ok" => true];
             $prow->add_tag_info_json($taginfo, $user);
             json_exit($taginfo, true);
-        } else
+        } else if ($ok)
+            json_exit(["ok" => true]);
+        else
             json_exit(["ok" => false, "error" => $error], true);
     }
 

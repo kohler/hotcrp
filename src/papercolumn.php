@@ -1100,7 +1100,7 @@ class EditTagPaperColumn extends TagPaperColumn {
             if (("edit" . $sorter->type == $this->name
                  || $sorter->type == $this->name)
                 && !$sorter->reverse
-                && !$pl->search->thenmap
+                && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value)
                 $s = "," . json_encode($this->dtag);
             $pl->add_header_script("add_edittag_ajax(" . json_encode("#$tid") . $s . ")");
