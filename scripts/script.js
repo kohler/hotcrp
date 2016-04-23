@@ -4021,6 +4021,8 @@ return function (selector, active_dragtag) {
         $(function () {
             plt_tbody = $(selector).children().filter("tbody")[0];
             $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
+                if (this.type === "hidden")
+                    return;
                 var x = document.createElement("span"), id = this.name.substr(5 + dragtag.length);
                 x.className = "dragtaghandle";
                 x.setAttribute("data-pid", id);
