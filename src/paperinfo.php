@@ -357,6 +357,7 @@ class PaperInfo {
     }
 
     public function viewable_tags(Contact $user, $forceShow = null) {
+        // see also Contact::can_view_tag()
         if ($user->can_view_most_tags($this, $forceShow))
             return Tagger::strip_nonviewable($this->all_tags_text(), $user);
         else if ($user->privChair && $user->can_view_tags($this, $forceShow))

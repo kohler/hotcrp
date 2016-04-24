@@ -64,6 +64,23 @@ function check_paper1($paper1) {
     xassert(!$user_kohler->can_view_tags($paper1));
     xassert(!$user_nobody->can_view_tags($paper1));
 
+    xassert($user_chair->can_view_tag($paper1, "foo"));
+    xassert($user_chair->can_view_tag($paper1, "~foo"));
+    xassert($user_chair->can_view_tag($paper1, $user_chair->contactId . "~foo"));
+    xassert($user_chair->can_view_tag($paper1, "~~foo"));
+    xassert($user_chair->can_view_tag($paper1, $user_estrin->contactId . "~foo"));
+    xassert(!$user_estrin->can_view_tag($paper1, "foo"));
+    xassert(!$user_estrin->can_view_tag($paper1, "~foo"));
+    xassert(!$user_estrin->can_view_tag($paper1, $user_chair->contactId . "~foo"));
+    xassert(!$user_estrin->can_view_tag($paper1, "~~foo"));
+    xassert(!$user_estrin->can_view_tag($paper1, $user_estrin->contactId . "~foo"));
+    xassert($user_marina->can_view_tag($paper1, "foo"));
+    xassert($user_marina->can_view_tag($paper1, "~foo"));
+    xassert(!$user_marina->can_view_tag($paper1, $user_chair->contactId . "~foo"));
+    xassert(!$user_marina->can_view_tag($paper1, "~~foo"));
+    xassert(!$user_marina->can_view_tag($paper1, $user_estrin->contactId . "~foo"));
+    xassert($user_marina->can_view_tag($paper1, $user_marina->contactId . "~foo"));
+
     xassert($user_chair->can_update_paper($paper1));
     xassert($user_estrin->can_update_paper($paper1));
     xassert(!$user_marina->can_update_paper($paper1));

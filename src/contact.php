@@ -2833,6 +2833,26 @@ class Contact {
             || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
     }
 
+    function can_view_tag(PaperInfo $prow, $tag, $forceShow = null) {
+        global $Conf;
+        $rights = $this->rights($prow, $forceShow);
+        $tag = TagInfo::base($tag);
+        $twiddle = strpos($tag, "~");
+        return ($rights->allow_pc
+                || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0)
+                || ($this->privChair && TagInfo::is_sitewide($tag)))
+            && ($rights->allow_administer
+                || $twiddle === false
+                || ($twiddle === 0 && $tag[1] !== "~")
+                || ($twiddle > 0
+                    && (substr($tag, 0, $twiddle) == $this->contactId
+                        || TagInfo::is_votish(substr($tag, $twiddle + 1)))));
+    }
+
+    function can_view_peruser_tags(PaperInfo $prow, $tag, $forceShow = null) {
+        return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag", $forceShow);
+    }
+
     function list_submitted_papers_with_viewable_tags() {
         global $Conf;
         $pids = array();
