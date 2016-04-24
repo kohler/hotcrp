@@ -3328,7 +3328,7 @@ function votereport(tag) {
     if (!vr[tag])
         vr[tag] = new Promise().onThen(function (p) {
             $.get(hoturl("api", {fn: "votereport", p: hotcrp_paperid, tag: tag}), null, function (v) {
-                p.fulfill(v.result || "[Error]");
+                p.fulfill(v.ok ? v.result || "" : v.error);
             });
         });
     return vr[tag];

@@ -880,15 +880,13 @@ the aggregated PC vote is visible in the public tag.</p>
 
 <p>For example, assume that an administrator defines a voting tag
  “". _singleVoteTag() . "” with an allotment of 10.
-To use two votes for a paper, a PC member adds the tag
-“~". _singleVoteTag() . "#2” to that paper. The “~” indicates
-that the tag is specific to that PC member, and the number following the “#”
-is the number of votes.
-The system will respond by adding the tag “". _singleVoteTag() . "#2” to that
+To use two votes for a paper, a PC member tags the paper as
+“~". _singleVoteTag() . "#2”. The system
+automatically adds the tag “". _singleVoteTag() . "#2” to that
 paper (note the
-lack of the “~”). This indicates that the paper has two total votes.
+lack of the “~”), indicating that the paper has two total votes.
 As other PC members add their votes with their own “~” tags, the system
-updates the “~”-less tag to reflect the current total.
+updates the main tag to reflect the total.
 (The system ensures no PC member exceeds their allotment.) </p>
 
 <p>
@@ -902,7 +900,7 @@ in the search results (or set up a
 <p>
 Hover to learn how the PC voted:</p>
 
-<p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]") . "</p>");
+<p>" . Ht::img("extagvotehover.png", "[Hovering over a voting tag]", ["width" => 390, "height" => 46]) . "</p>");
 }
 
 

@@ -159,8 +159,10 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "Permission error."]);
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\d+)/', $prow->all_tags_text(), $m);
+        $is_approval = TagInfo::is_approval($tag);
+        $min_vote = $is_approval ? 0 : 0.001;
         for ($i = 0; $i != count($m[0]); ++$i)
-            if ($m[2][$i] > 0)
+            if ($m[2][$i] >= $min_vote)
                 $votemap[$m[1][$i]] = $m[2][$i];
         $pcm = pcMembers();
         uksort($votemap, function ($a, $b) use ($pcm) {
@@ -168,7 +170,6 @@ class PaperApi {
             $bp = get($pcm, $b);
             return ($ap ? $ap->sort_position : -1) - ($bp ? $bp->sort_position : -1);
         });
-        $is_approval = TagInfo::is_approval($tag);
         $result = [];
         foreach ($votemap as $k => $v)
             if ($is_approval)

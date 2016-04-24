@@ -615,16 +615,6 @@ class Tagger {
         if ($vtags === "")
             return "";
 
-        // track votes for vote report
-        $dt = TagInfo::defined_tags();
-        $vote = array();
-        if ($votereport && ($dt->nvote || $dt->napproval)) {
-            preg_match_all('{ (\d+)~(\S+)#(\d+)}',
-                           strtolower(" $alltags"), $m, PREG_SET_ORDER);
-            foreach ($m as $x)
-                $vote[$x[2]][$x[1]] = (int) $x[3];
-        }
-
         // decorate with URL matches
         $tt = "";
 
@@ -644,19 +634,9 @@ class Tagger {
             if (!($base = TagInfo::base($tag)))
                 continue;
             $lbase = strtolower($base);
-            if (($link = $this->link($tag))) {
-                $tx = '<a class="qq nw" href="' . $link . '"';
-                if (count($vote) && TagInfo::is_votish($base)) {
-                    $v = array();
-                    $limit = TagInfo::is_vote($base) ? 1 : 0;
-                    foreach (pcMembers() as $p)
-                        if (($count = get($vote[$lbase], $p->contactId, $limit - 1)) >= $limit)
-                            $v[] = Text::name_html($p) . ($count > 1 ? " ($count)" : "");
-                    if (count($v))
-                        $tx .= ' title="PC votes: ' . htmlspecialchars(join(", ", $v)) . '"';
-                }
-                $tx .= '>#' . $base . '</a>';
-            } else
+            if (($link = $this->link($tag)))
+                $tx = '<a class="qq nw" href="' . $link . '">#' . $base . '</a>';
+            else
                 $tx = "#" . $base;
             $tx .= substr($tag, strlen($base));
             if (isset($byhighlight[$lbase])) {
