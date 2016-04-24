@@ -3891,8 +3891,17 @@ function row_move(srcindex, dstindex) {
                 e = 1 - e;
             if (/\bk[01]\b/.test(c))
                 rows[i].className = c.replace(/\bk[01]\b/, "k" + e);
-            else if (/\bplheading\b/.test(c))
+            else if (/\bplheading\b/.test(c)) {
                 e = 1;
+                var np = 0;
+                for (var j = i + 1; j < rows.length; ++j)
+                    if (rows[j].nodeName == "TR") {
+                        if (/\bplheading\b/.test(rows[j].className))
+                            break;
+                        np += /^plx/.test(rows[j].className) ? 0 : 1;
+                    }
+                $(rows[i]).find(".plheading_count").html(plural(np, "paper"));
+            }
         }
 }
 
