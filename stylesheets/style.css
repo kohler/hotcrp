@@ -937,6 +937,9 @@ td.helplist_dt {
 table.helppage > tbody > tr > td:first-child {
 	padding-left: 16px;
 }
+table.helppage > tbody > tr > td:last-child {
+	padding-right: 16px;
+}
 table.helppage td.sentry form div.nowrap {
 	margin-left: -1px;
 }
