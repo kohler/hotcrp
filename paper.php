@@ -85,6 +85,12 @@ if (isset($_REQUEST["setfollow"]) && $prow && check_post()) {
     PaperActions::set_follow($prow);
     loadRows();
 }
+if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
+    && isset($_GET["fn"]) && isset(SiteLoader::$api_map[$_GET["fn"]])) {
+    $Qreq = make_qreq();
+    SiteLoader::call_api($Qreq->fn, $Me, $Qreq, $prow);
+    json_exit(["ok" => false, "error" => "Internal error."]);
+}
 
 
 // check paper action

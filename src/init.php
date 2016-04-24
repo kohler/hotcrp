@@ -141,6 +141,19 @@ class SiteLoader {
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
         "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET] // hotcrp-comet entrypoint
     ];
+    static public function call_api($fn, $user, $qreq, $prow) {
+        // XXX precondition: $user->can_view_paper($prow) || !$prow
+        if (isset(SiteLoader::$api_map[$fn])) {
+            $uf = SiteLoader::$api_map[$fn];
+            if (!($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
+                json_exit(["ok" => false, "error" => "Missing credentials."]);
+            if (($uf[1] & SiteLoader::API_PAPER) && !$prow)
+                json_exit(["ok" => false, "error" => "No such paper."]);
+            call_user_func($uf[0], $user, $qreq, $prow);
+            return true;
+        }
+        return false;
+    }
 }
 
 function __autoload($class_name) {
