@@ -139,7 +139,8 @@ class SiteLoader {
         "setshepherd" => ["PaperApi::setshepherd_api", self::API_PAPER],
         "settags" => ["PaperApi::settags_api", self::API_POST],
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
-        "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET] // hotcrp-comet entrypoint
+        "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET], // hotcrp-comet entrypoint
+        "votereport" => ["PaperApi::votereport_api", self::API_GET | self::API_PAPER],
     ];
     static public function call_api($fn, $user, $qreq, $prow) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow

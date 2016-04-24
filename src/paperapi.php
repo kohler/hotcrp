@@ -151,6 +151,36 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $error], true);
     }
 
+    static function votereport_api($user, $qreq, $prow) {
+        $tagger = new Tagger($user);
+        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
+            json_exit(["ok" => false, "error" => $tagger->error_html]);
+        if (!$user->can_view_peruser_tags($prow, $tag))
+            json_exit(["ok" => false, "error" => "Permission error."]);
+        $votemap = [];
+        preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\d+)/', $prow->all_tags_text(), $m);
+        for ($i = 0; $i != count($m[0]); ++$i)
+            if ($m[2][$i] > 0)
+                $votemap[$m[1][$i]] = $m[2][$i];
+        $pcm = pcMembers();
+        uksort($votemap, function ($a, $b) use ($pcm) {
+            $ap = get($pcm, $a);
+            $bp = get($pcm, $b);
+            return ($ap ? $ap->sort_position : -1) - ($bp ? $bp->sort_position : -1);
+        });
+        $is_approval = TagInfo::is_approval($tag);
+        $result = [];
+        foreach ($votemap as $k => $v)
+            if ($is_approval)
+                $result[] = $user->reviewer_html_for($k);
+            else
+                $result[] = $user->reviewer_html_for($k) . " ($v)";
+        if (empty($result))
+            json_exit(["ok" => true, "result" => ""]);
+        else
+            json_exit(["ok" => true, "result" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>']);
+    }
+
     static function alltags_api($user, $qreq, $prow) {
         global $Conf;
         if (!$user->isPC)
