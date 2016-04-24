@@ -1418,11 +1418,19 @@ class PaperTable {
             ' class="pste', ($folds ? " $folds" : ""), '">';
     }
 
-    private function papstrip_tag_float($tag, $kind, $reverse) {
+    private function papstrip_tag_float($tag, $kind, $type) {
         if (($totval = $this->prow->tag_value($tag)) === false)
             $totval = "";
-        return '<div class="hotcrp_tag_hideempty floatright" style="display:' . ($totval ? "block" : "none")
-            . '"><a class="qq" href="' . hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
+        $reverse = $type !== "rank";
+        $class = "hotcrp_tag_hideempty floatright";
+        $extradiv = "";
+        if ($type === "vote" || $type === "approval") {
+            $class .= " hottooltip";
+            $extradiv = ' data-hottooltip-dir="h" data-hottooltip-content-promise="votereport(\'' . $tag . '\')"';
+        }
+        return '<div class="' . $class . '" style="display:' . ($totval ? "block" : "none")
+            . '"' . $extradiv
+            . '><a class="qq" href="' . hoturl("search", "q=" . urlencode("show:#$tag sort:" . ($reverse ? "-" : "") . "#$tag")) . '">'
             . '<span class="is-tag-index" data-tag-base="' . $tag . '">' . $totval . '</span> ' . $kind . '</a></div>';
     }
 
@@ -1438,7 +1446,7 @@ class PaperTable {
         $id = "rank_" . html_id_encode($tag);
         if (($myval = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
             $myval = "";
-        $totmark = $this->papstrip_tag_float($tag, "overall", false);
+        $totmark = $this->papstrip_tag_float($tag, "overall", "rank");
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
         echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
@@ -1463,7 +1471,7 @@ class PaperTable {
         $id = "vote_" . html_id_encode($tag);
         if (($myval = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
             $myval = "";
-        $totmark = $this->papstrip_tag_float($tag, "total", true);
+        $totmark = $this->papstrip_tag_float($tag, "total", "vote");
 
         $this->papstrip_tag_entry($id, "foldc fold2c");
         echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));
@@ -1488,7 +1496,7 @@ class PaperTable {
         $id = "approval_" . html_id_encode($tag);
         if (($myval = $this->prow->tag_value($Me->contactId . "~$tag")) === false)
             $myval = "";
-        $totmark = $this->papstrip_tag_float($tag, "total", true);
+        $totmark = $this->papstrip_tag_float($tag, "total", "approval");
 
         $this->papstrip_tag_entry(null, null);
         echo Ht::form_div("", array("id" => "{$id}form", "data-tag-base" => "~$tag", "onsubmit" => "return false"));

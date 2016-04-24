@@ -3322,6 +3322,23 @@ var alltags = new Promise().onThen(function (p) {
         p.fulfill([]);
 });
 
+var votereport = (function () {
+var vr = {};
+function votereport(tag) {
+    if (!vr[tag])
+        vr[tag] = new Promise().onThen(function (p) {
+            $.get(hoturl("api", {fn: "votereport", p: hotcrp_paperid, tag: tag}), null, function (v) {
+                p.fulfill(v.result || "[Error]");
+            });
+        });
+    return vr[tag];
+}
+votereport.clear = function () {
+    vr = {};
+};
+return votereport;
+})();
+
 function completion_item(c) {
     if (typeof c === "string")
         return {s: c};
@@ -4688,6 +4705,7 @@ save_tags.success = function (data) {
             j.closest(".hotcrp_tag_hideempty").toggle(res !== "");
         }
     });
+    votereport.clear();
 };
 $(function () {
     if ($$("foldtags"))

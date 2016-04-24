@@ -2229,6 +2229,9 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 .bubble.tooltip {
 	margin: 0 8px;
 }
+.bubble.tooltip .tagcolorspan, .bubble.graphtip .tagcolorspan {
+	color: #2c2c42;
+}
 .bubble.suggest {
 	background-color: rgba(250, 250, 255, 0.95);
 	color: #333333;
