@@ -130,6 +130,7 @@ class SiteLoader {
     const API_POST = 0;
     const API_GET = 1;
     const API_PAPER = 2;
+    const API_GET_PAPER = 3 /* == API_GET | API_PAPER */;
     static $api_map = [
         "alltags" => ["PaperApi::alltags_api", self::API_GET],
         "setdecision" => ["PaperApi::setdecision_api", self::API_PAPER],
@@ -140,7 +141,7 @@ class SiteLoader {
         "settags" => ["PaperApi::settags_api", self::API_POST],
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
         "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET], // hotcrp-comet entrypoint
-        "votereport" => ["PaperApi::votereport_api", self::API_GET | self::API_PAPER],
+        "votereport" => ["PaperApi::votereport_api", self::API_GET_PAPER],
     ];
     static public function call_api($fn, $user, $qreq, $prow) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
