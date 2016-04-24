@@ -5,7 +5,6 @@
 
 class SettingRenderer_Tags extends SettingRenderer {
     private function do_track_permission($sv, $type, $question, $tnum, $thistrack) {
-        global $Conf;
         $tclass = $ttag = "";
         if ($sv->use_req()) {
             $tclass = defval($sv->req, "${type}_track$tnum", "");
@@ -275,6 +274,7 @@ class Tag_SettingParser extends SettingParser {
     }
 
     public function save($sv, $si) {
+        global $Conf;
         if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
             // check allotments
             $pcm = pcMembers();
@@ -284,7 +284,7 @@ class Tag_SettingParser extends SettingParser {
                 $base = substr($t, 0, strpos($t, "#"));
                 $allotment = substr($t, strlen($base) + 1);
 
-                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
+                $result = Dbl::q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
                 $pvals = array();
                 $cvals = array();
                 $negative = false;
