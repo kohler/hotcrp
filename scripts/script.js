@@ -11,6 +11,10 @@ function $$(id) {
     return document.getElementById(id);
 }
 
+function geval(__str) {
+    return eval(__str);
+}
+
 function serialize_object(x) {
     if (typeof x === "string")
         return x;
@@ -1045,7 +1049,10 @@ return function (content, bubopt) {
 
 
 function tooltip(info) {
-    var j, near, tt;
+    if (window.disable_tooltip)
+        return null;
+
+    var j;
     if (info.tagName)
         info = {element: info};
     j = $(info.element);
@@ -1059,9 +1066,51 @@ function tooltip(info) {
             return $();
     }
 
-    if (info.content == null)
-        info.content = j.attr("data-hottooltip") ||
-            jqnear(j.attr("data-hottooltip-content-selector")).html();
+    var tt = null, content = info.content, bub = null, to = null, refcount = 0;
+    function erase() {
+        to = clearTimeout(to);
+        bub && bub.remove();
+        j.removeData("hotcrp_tooltip");
+        if (window.global_tooltip === tt)
+            window.global_tooltip = null;
+    }
+    function show_bub() {
+        if (content && !bub) {
+            bub = make_bubble(content, {color: "tooltip dark", dir: info.dir});
+            bub.near(info.near || info.element).hover(tt.enter, tt.exit);
+        } else if (content)
+            bub.html(content);
+        else if (bub) {
+            bub && bub.remove();
+            bub = null;
+        }
+    }
+    tt = {
+        enter: function () {
+            to = clearTimeout(to);
+            ++refcount;
+            return tt;
+        },
+        exit: function () {
+            var delay = info.type == "focus" ? 0 : 200;
+            to = clearTimeout(to);
+            if (--refcount == 0)
+                to = setTimeout(erase, delay);
+            return tt;
+        },
+        erase: erase,
+        elt: info.element,
+        html: function (new_content) {
+            if (new_content === undefined)
+                return content;
+            else {
+                content = new_content;
+                bub_show();
+            }
+            return tt;
+        }
+    };
+
     if (info.dir == null)
         info.dir = j.attr("data-hottooltip-dir") || "v";
     if (info.type == null)
@@ -1071,41 +1120,29 @@ function tooltip(info) {
     if (info.near)
         info.near = jqnear(info.near)[0];
 
-    if (!info.content || window.disable_tooltip)
-        return null;
-
-    if ((tt = window.global_tooltip)) {
-        if (tt.elt !== info.element || tt.content !== info.content)
-            tt.erase();
-        else
-            return tt;
+    function complete(new_content) {
+        var tx = window.global_tooltip;
+        content = new_content;
+        if (tx && tx.elt == info.element && tx.html() == content && !info.done)
+            tt = tx;
+        else {
+            tx && tx.erase();
+            j.data("hotcrp_tooltip", tt);
+            show_bub();
+            window.global_tooltip = tt;
+        }
     }
 
-    var bub = make_bubble(info.content, {color: "tooltip dark", dir: info.dir}),
-        to = null, refcount = 0;
-    function erase() {
-        to = clearTimeout(to);
-        bub.remove();
-        j.removeData("hotcrp_tooltip");
-        if (window.global_tooltip === tt)
-            window.global_tooltip = null;
-    }
-    tt = {
-        enter: function () {
-            to = clearTimeout(to);
-            ++refcount;
-        },
-        exit: function () {
-            var delay = info.type == "focus" ? 0 : 200;
-            to = clearTimeout(to);
-            if (--refcount == 0)
-                to = setTimeout(erase, delay);
-        },
-        erase: erase, elt: info.element, content: info.content
-    };
-    j.data("hotcrp_tooltip", tt);
-    bub.near(info.near || info.element).hover(tt.enter, tt.exit);
-    return window.global_tooltip = tt;
+    if (content == null && j[0].hasAttribute("data-hottooltip"))
+        content = j.attr("data-hottooltip");
+    if (content == null && j[0].hasAttribute("data-hottooltip-content-selector"))
+        content = jqnear(j.attr("data-hottooltip-content-selector")).html();
+    if (content == null && j[0].hasAttribute("data-hottooltip-content-promise"))
+        geval.call(this, j[0].getAttribute("data-hottooltip-content-promise")).then(complete);
+    else
+        complete(content);
+    info.done = true;
+    return tt;
 }
 
 function tooltip_enter(evt) {
