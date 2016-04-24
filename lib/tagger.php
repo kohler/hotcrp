@@ -463,8 +463,8 @@ class Tagger {
             $flags |= self::NOCHAIR;
         if ($tag !== "" && $tag[0] === "#")
             $tag = substr($tag, 1);
-        if ($tag === "")
-            return $this->set_error("Empty tag.");
+        if ((string) $tag === "")
+            return $this->set_error("Tag missing.");
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m))
             return $this->set_error("Format error: #" . htmlspecialchars($tag) . " is an invalid tag.");
         if (!($flags & self::ALLOWSTAR) && strpos($tag, "*") !== false)
