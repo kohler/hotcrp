@@ -95,7 +95,7 @@ class PaperList {
     private $_xreviewer = false;
     public $review_list;
     public $table_type;
-    public $nformat_onpage;
+    public $render_needed;
 
     private $sortable;
     private $foldable;
@@ -960,7 +960,7 @@ class PaperList {
         $this->any = new Qobject;
         $this->count = 0;
         $this->table_type = false;
-        $this->nformat_onpage = 0;
+        $this->render_needed = false;
         return true;
     }
 
@@ -1217,19 +1217,19 @@ class PaperList {
         // collect row data
         $body = array();
         $lastheading = !empty($this->search->groupmap) ? -1 : -2;
-        $format_onpage = false;
+        $render_needed = false;
         foreach ($rows as $row) {
             ++$this->count;
             if ($lastheading > -2)
                 $lastheading = $this->_row_check_heading($rstate, $rows, $row, $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
-            if ($this->nformat_onpage && !$format_onpage) {
-                $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
-                $format_onpage = true;
+            if ($this->render_needed && !$render_needed) {
+                $Conf->footerScript('$(plinfo.render_needed)', 'plist_render_needed');
+                $render_needed = true;
             }
-            if ($this->nformat_onpage && $this->count % 16 == 15) {
-                $body[count($body) - 1] .= "  <script>render_text.on_page()</script>\n";
-                $this->nformat_onpage = 0;
+            if ($this->render_needed && $this->count % 16 == 15) {
+                $body[count($body) - 1] .= "  <script>plinfo.render_needed()</script>\n";
+                $this->render_needed = false;
             }
         }
 

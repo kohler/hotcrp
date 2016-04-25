@@ -193,7 +193,7 @@ class TitlePaperColumn extends PaperColumn {
         $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
 
         if (!$highlight_count && ($format = $row->title_format())) {
-            ++$pl->nformat_onpage;
+            $pl->render_needed = true;
             $t .= ' need-format" data-format="' . $format;
         }
 
@@ -435,7 +435,7 @@ class AbstractPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
-            ++$pl->nformat_onpage;
+            $pl->render_needed = true;
             $t = '<div class="need-format" data-format="' . $format . '.plx">'
                 . $t . '</div>';
         }
@@ -854,8 +854,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             }
         if (count($ts)) {
             $t = '<span class="has-allpref" data-allpref="' . join(" ", $ts) . '">Loading</span>';
-            if ($pl->table_type && $rowidx % 16 == 15)
-                $t .= "<script>plinfo.allpref()</script>";
+            $pl->render_needed = true;
             return $t;
         } else
             return '';

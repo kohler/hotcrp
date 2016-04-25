@@ -4334,6 +4334,12 @@ check_version.ignore = function (id) {
 var plinfo = (function () {
 var fields, field_order, aufull = {}, loadargs = {};
 
+function render_needed() {
+    scorechart();
+    plinfo.allpref();
+    render_text.on_page();
+}
+
 function add_column(f, which) {
     var i, index = 0, $j = $("#fold" + which),
         classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
@@ -4396,9 +4402,7 @@ function make_callback(dofold, type, which) {
                 set(f, elt, x[i], which);
                 ++n;
             }
-        scorechart();
-        plinfo.allpref();
-        render_text.on_page();
+        render_needed();
         if (values)
             setTimeout(render_some, 1);
     }
@@ -4503,6 +4507,8 @@ plinfo.allpref = function () {
         $(this).html(t.join(", ")).removeClass("has-allpref");
     });
 };
+
+plinfo.render_needed = render_needed;
 
 return plinfo;
 })();
