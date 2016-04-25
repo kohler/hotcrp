@@ -157,7 +157,7 @@ class PaperTable {
                 $highlight_text = Text::highlight($prow->title, $highlight, $title_matches);
 
             if (!$title_matches && ($format = $prow->title_format()))
-                $t .= '<span class="ptitle preformat" data-format="' . $format . '">';
+                $t .= '<span class="ptitle need-format" data-format="' . $format . '">';
             else
                 $t .= '<span class="ptitle">';
             if ($highlight_text)
@@ -541,7 +541,7 @@ class PaperTable {
             $this->papt("abstract", "Abstract", $extra),
             '<div class="pavb abstract"><div class="paptext format0';
         if ($this->prow && ($format = $this->prow->format_of($text))) {
-            echo ' preformat" data-format="', $format;
+            echo ' need-format" data-format="', $format;
             $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
         }
         echo '">', htmlspecialchars($text), "</div>";

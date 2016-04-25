@@ -91,7 +91,7 @@ function trackertable_paper_row(hc, idx, paper) {
     if (!showpapers)
         hc.push_pop(pcconf ? pcconf : "");
     else if (paper.title && paper.format) {
-        hc.push_pop("<span class=\"ptitle preformat\" data-format=\"" + paper.format + "\">" + text_to_html(paper.title) + "<\/span>");
+        hc.push_pop("<span class=\"ptitle need-format\" data-format=\"" + paper.format + "\">" + text_to_html(paper.title) + "<\/span>");
         tracker_has_format = true;
     } else if (paper.title)
         hc.push_pop(text_to_html(paper.title));

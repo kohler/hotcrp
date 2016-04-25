@@ -194,7 +194,7 @@ class TitlePaperColumn extends PaperColumn {
 
         if (!$highlight_count && ($format = $row->title_format())) {
             ++$pl->nformat_onpage;
-            $t .= ' preformat" data-format="' . $format;
+            $t .= ' need-format" data-format="' . $format;
         }
 
         $t .= '" tabindex="5">' . $highlight_text . '</a>'
@@ -436,7 +436,7 @@ class AbstractPaperColumn extends PaperColumn {
         $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
             ++$pl->nformat_onpage;
-            $t = '<div class="preformat" data-format="' . $format . '.plx">'
+            $t = '<div class="need-format" data-format="' . $format . '.plx">'
                 . $t . '</div>';
         }
         return $t;

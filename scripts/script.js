@@ -1341,7 +1341,7 @@ function tracker_paper_columns(idx, paper) {
         t += '<a class="uu" href="' + escape_entities(url) + '">#' + paper.pid + '</a>';
     t += '</td><td class="trackerbody">';
     if (paper.title) {
-        var f = paper.format ? ' ptitle preformat" data-format="' + paper.format : "";
+        var f = paper.format ? ' ptitle need-format" data-format="' + paper.format : "";
         x.push('<a class="uu' + f + '" href="' + url + '">' + text_to_html(paper.title) + '</a>');
         if (paper.format)
             tracker_has_format = true;
@@ -2381,10 +2381,10 @@ $.extend(render_text, {
     },
     inline: render_inline,
     on_page: function () {
-        $(".preformat").each(function () {
+        $(".need-format").each(function () {
             var $j = $(this), format = this.getAttribute("data-format"),
                 content = this.getAttribute("data-content") || $j.text(), f;
-            $j.removeClass("preformat");
+            $j.removeClass("need-format");
             if (this.tagName == "DIV")
                 f = render_text.call(this, format, content);
             else
