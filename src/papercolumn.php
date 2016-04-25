@@ -1429,6 +1429,8 @@ class FormulaPaperColumn extends PaperColumn {
 
 class TagReportPaperColumn extends PaperColumn {
     private static $registered = array();
+    private $tag;
+    private $viewtype;
     public function __construct($tag) {
         parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag),
                             Column::VIEW_ROW | Column::FOLDABLE);
@@ -1443,30 +1445,39 @@ class TagReportPaperColumn extends PaperColumn {
         self::$registered[] = $fdef;
     }
     public function prepare(PaperList $pl, $visible) {
-        if (!$pl->contact->privChair)
+        if (!$pl->contact->can_view_any_peruser_tags($this->tag))
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
+        $dt = TagInfo::defined_tag($this->tag);
+        if (!$dt || $dt->rank || (!$dt->vote && !$dt->approval))
+            $this->viewtype = 0;
+        else
+            $this->viewtype = $dt->approval ? 1 : 2;
         return true;
     }
     public function header($pl, $ordinal) {
         return "#~" . $this->tag . " tags";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->can_view_tags($row, true);
+        return !$pl->contact->can_view_peruser_tags($row, $this->tag, true);
     }
     public function content($pl, $row, $rowidx) {
-        if (($t = $row->paperTags) === "")
-            return "";
-        $a = array();
-        foreach (pcMembers() as $pcm) {
-            $mytag = " " . $pcm->contactId . "~" . $this->tag . "#";
-            if (($p = strpos($t, $mytag)) !== false) {
-                $n = (int) substr($t, $p + strlen($mytag));
-                $a[] = $pl->contact->name_html_for($pcm) . ($n ? " (#$n)" : "");
-            }
+        $a = [];
+        preg_match_all('/ (\d+)~' . preg_quote($this->tag) . '#(\S+)/i', $row->all_tags_text(), $m);
+        for ($i = 0; $i != count($m[0]); ++$i) {
+            if ($this->viewtype == 2 && $m[2][$i] <= 0)
+                continue;
+            $n = $pl->contact->name_html_for($m[1][$i]);
+            if ($this->viewtype != 1)
+                $n .= " (" . $m[2][$i] . ")";
+            $a[$m[1][$i]] = $n;
         }
-        return join(", ", $a);
+        if (empty($a))
+            return "";
+        $pl->contact->ksort_cid_array($a);
+        $str = '<span class="nw">' . join(',</span>  <span class="nw">', $a) . '</span>';
+        return $pl->maybeConflict($row, $str, $row->conflictType <= 0 || $pl->contact->can_view_peruser_tags($row, $this->tag, false));
     }
 }
 

@@ -47,7 +47,8 @@ class Contact {
     private $updateTime = 0;
     private $data = null;
     private $topic_interest_map_ = null;
-    private $name_for_map_ = array();
+    private $name_for_map_ = [];
+    private $contact_sorter_map_ = [];
     public $defaultWatch = WATCH_COMMENT;
 
     // Roles
@@ -512,8 +513,10 @@ class Contact {
         if (isset($pcm[$cid]))
             $x = $pcm[$cid];
         else if (!is_object($x) || !isset($x->email)
-                 || !isset($x->firstName) || !isset($x->lastName))
+                 || !isset($x->firstName) || !isset($x->lastName)) {
             $x = self::find_by_id($cid);
+            $this->contact_sorter_map_[$cid] = $x->sorter;
+        }
 
         if ($pfx !== "t")
             $n = Text::name_html($x);
@@ -547,6 +550,31 @@ class Contact {
             }
         }
         return "";
+    }
+
+    function ksort_cid_array(&$a) {
+        $pcm = pcMembers();
+        uksort($a, function ($a, $b) use ($pcm) {
+            if (isset($pcm[$a]) && isset($pcm[$b]))
+                return $pcm[$a]->sort_position - $pcm[$b]->sort_position;
+            if (isset($pcm[$a]))
+                $as = $pcm[$a]->sorter;
+            else if (isset($this->contact_sorter_map_[$a]))
+                $as = $this->contact_sorter_map_[$a];
+            else {
+                $x = Contact::find_by_id($a);
+                $as = $this->contact_sorter_map_[$a] = $x->sorter;
+            }
+            if (isset($pcm[$b]))
+                $bs = $pcm[$b]->sorter;
+            else if (isset($this->contact_sorter_map_[$b]))
+                $bs = $this->contact_sorter_map_[$b];
+            else {
+                $x = Contact::find_by_id($b);
+                $bs = $this->contact_sorter_map_[$b] = $x->sorter;
+            }
+            return strcasecmp($as, $bs);
+        });
     }
 
     function has_email() {
@@ -2851,6 +2879,11 @@ class Contact {
 
     function can_view_peruser_tags(PaperInfo $prow, $tag, $forceShow = null) {
         return $this->can_view_tag($prow, ($this->contactId + 1) . "~$tag", $forceShow);
+    }
+
+    function can_view_any_peruser_tags($tag) {
+        return $this->privChair
+            || ($this->isPC && TagInfo::is_votish($tag));
     }
 
     function list_submitted_papers_with_viewable_tags() {
