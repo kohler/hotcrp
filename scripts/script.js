@@ -1222,7 +1222,7 @@ function setLocalTime(elt, servtime) {
             s = strftime("%A %#e %b %Y %#R your time", d);
         else
             s = strftime("%A %#e %b %Y %#r your time", d);
-        if (elt.tagName.toUpperCase() == "SPAN") {
+        if (elt.tagName == "SPAN") {
             elt.innerHTML = " (" + s + ")";
             elt.style.display = "inline";
         } else {
@@ -1291,7 +1291,7 @@ function display_main(is_initial) {
     }
 
     elt.innerHTML = s;
-    elt.style.display = s ? (elt.tagName.toUpperCase() == "SPAN" ? "inline" : "block") : "none";
+    elt.style.display = s ? (elt.tagName == "SPAN" ? "inline" : "block") : "none";
 
     if (!redisplay_timeout && dlname) {
         if (!dltime || dltime - now < 180.5)
@@ -1729,7 +1729,7 @@ function highlightUpdate(which, off) {
     if (!which)
         which = document;
 
-    i = which.tagName ? which.tagName.toUpperCase() : "";
+    i = which.tagName ? which.tagName : "";
     if (i != "INPUT" && i != "BUTTON") {
         ins = which.getElementsByTagName("input");
         for (i = 0; i < ins.length; i++)
@@ -1748,7 +1748,7 @@ function hiliter(elt, off) {
         elt = document.getElementById(elt);
     else if (!elt || elt.preventDefault)
         elt = this;
-    while (elt && elt.tagName && (elt.tagName.toUpperCase() != "DIV"
+    while (elt && elt.tagName && (elt.tagName != "DIV"
                                   || !/\baahc\b/.test(elt.className)))
         elt = elt.parentNode;
     if (!elt || !elt.tagName)
@@ -1893,7 +1893,7 @@ function crpSubmitKeyFilter(elt, e) {
     if (event_modkey(e) || event_key(e) != "Enter")
         return true;
     form = elt;
-    while (form && form.tagName && form.tagName.toUpperCase() != "FORM")
+    while (form && form.tagName && form.tagName != "FORM")
         form = form.parentNode;
     if (form && form.tagName) {
         elt.blur();
@@ -2021,7 +2021,7 @@ function autosub_kp(event) {
     else if (current === false)
         return false;
     form = this;
-    while (form && form.tagName && form.tagName.toUpperCase() != "FORM")
+    while (form && form.tagName && form.tagName != "FORM")
         form = form.parentNode;
     if (form && form.tagName) {
         inputs = form.getElementsByTagName("input");
@@ -2040,7 +2040,7 @@ return function (name, elt) {
     if (da && typeof name === "string")
         da.value = name;
     current = name;
-    if (elt && !elt.onkeypress && elt.tagName.toUpperCase() == "INPUT")
+    if (elt && !elt.onkeypress && elt.tagName == "INPUT")
         elt.onkeypress = autosub_kp;
 };
 
@@ -2385,7 +2385,7 @@ $.extend(render_text, {
             var $j = $(this), format = this.getAttribute("data-format"),
                 content = this.getAttribute("data-content") || $j.text(), f;
             $j.removeClass("preformat");
-            if (this.tagName.toUpperCase() == "DIV")
+            if (this.tagName == "DIV")
                 f = render_text.call(this, format, content);
             else
                 f = render_inline.call(this, format, content);
@@ -3212,8 +3212,7 @@ function shortcut(top_elt) {
         target = evt.target || evt.srcElement;
         // reject modified keys, interesting targets
         if (!key || evt.altKey || evt.ctrlKey || evt.metaKey
-            || (target && target.tagName && target != top_elt
-                && (x = target.tagName.toUpperCase())
+            || (target && (x = target.tagName) && target != top_elt
                 && (x == "TEXTAREA"
                     || x == "SELECT"
                     || (x == "INPUT"
@@ -3225,7 +3224,7 @@ function shortcut(top_elt) {
         for (i = 0; i < x.length; ++i)
             for (j = 0; j < x[i].childNodes.length; ++j) {
                 a = x[i].childNodes[j];
-                if (a.nodeType == 1 && a.tagName.toUpperCase() == "DIV"
+                if (a.nodeType == 1 && a.tagName == "DIV"
                     && a.className.match(/\baahc\b.*\balert\b/)
                     && !x[i].className.match(/\bshortcutok\b/))
                     return true;
@@ -4147,7 +4146,7 @@ function popup(anchor, which, dofold, populate) {
             if (elts[i].className.indexOf("popup_populate") >= 0)
                 populates[elts[i].name] = elts[i];
         form = anchor;
-        while (form && form.tagName && form.tagName.toUpperCase() != "FORM")
+        while (form && form.tagName && form.tagName != "FORM")
             form = form.parentNode;
         elts = (form && form.tagName ? form.getElementsByTagName("input") : []);
         for (i = 0; i < elts.length; ++i)
@@ -4635,7 +4634,7 @@ function doremovedocument(elt) {
         estk = [e];
         while (estk.length) {
             e = estk.pop();
-            tn = e.nodeType == 1 ? e.tagName.toUpperCase() : "";
+            tn = e.nodeType == 1 ? e.tagName : "";
             if (tn == "TD")
                 e.style.textDecoration = "line-through";
             else if (tn == "TABLE" || tn == "TBODY" || tn == "TR")
