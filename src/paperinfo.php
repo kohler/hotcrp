@@ -392,7 +392,7 @@ class PaperInfo {
         $tagger = new Tagger($user);
         $editable = $this->editable_tags($user);
         $viewable = $this->viewable_tags($user);
-        $tags_view_html = $tagger->unparse_and_link($viewable, $this->paperTags, false, !$this->has_conflict($user));
+        $tags_view_html = $tagger->unparse_and_link($viewable, $this->paperTags, false);
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
         $pj->tags_view_html = $tags_view_html;

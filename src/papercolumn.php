@@ -995,7 +995,7 @@ class TagListPaperColumn extends PaperColumn {
         $viewable = $row->viewable_tags($pl->contact);
         $noconf = $row->conflictType <= 0;
         $str = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
-                                             $pl->search->highlight_tags(), $noconf);
+                                             $pl->search->highlight_tags());
         return $pl->maybeConflict($row, $str, $noconf || $pl->contact->can_view_tags($row, false));
     }
 }

@@ -609,8 +609,7 @@ class Tagger {
         return hoturl("search", ["q" => $q]);
     }
 
-    public function unparse_and_link($viewable, $alltags, $highlight = false,
-                                     $votereport = false) {
+    public function unparse_and_link($viewable, $alltags, $highlight = false) {
         $vtags = $this->unparse($viewable);
         if ($vtags === "")
             return "";

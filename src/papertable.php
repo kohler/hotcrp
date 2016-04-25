@@ -1028,8 +1028,7 @@ class PaperTable {
                 $color = TagInfo::color_classes($viewable);
                 echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',
                     '<span class="psfn">Tags:</span> ',
-                    $tagger->unparse_and_link($viewable, $this->prow->all_tags_text(), false,
-                                              !$this->prow->has_conflict($Me)),
+                    $tagger->unparse_and_link($viewable, $this->prow->all_tags_text(), false),
                     '</div>';
             }
 
@@ -1322,8 +1321,7 @@ class PaperTable {
         $tagger = new Tagger;
         $viewable = $this->prow->viewable_tags($Me);
 
-        $tx = $tagger->unparse_and_link($viewable, $tags, false,
-                                        !$this->prow->has_conflict($Me));
+        $tx = $tagger->unparse_and_link($viewable, $tags, false);
         $unfolded = $is_editable && (isset($Error["tags"]) || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
