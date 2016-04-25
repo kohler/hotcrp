@@ -93,6 +93,7 @@ class PaperList {
     public $tagger;
     private $_reviewer = null;
     private $_xreviewer = false;
+    public $row_attr;
     public $review_list;
     public $table_type;
     public $render_needed;
@@ -660,9 +661,10 @@ class PaperList {
             $trclass .= " {$highlightclass}tag";
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
+        $this->row_attr = [];
 
         // main columns
-        $t = "";
+        $tm = "";
         foreach ($fieldDef as $fdef) {
             if ($fdef->view != Column::VIEW_COLUMN)
                 continue;
@@ -671,16 +673,16 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $t .= "<td class=\"pl " . $fdef->className;
+                $tm .= "<td class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
-                    $t .= " fx$fdef->foldable";
-                $t .= "\">";
+                    $tm .= " fx$fdef->foldable";
+                $tm .= "\">";
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    $t .= $c;
+                    $tm .= $c;
                     $fdef->has_content = true;
                 }
-                $t .= "</td>";
+                $tm .= "</td>";
             }
         }
 
@@ -727,10 +729,13 @@ class PaperList {
         } else if ($rstate->row_folded)
             $rstate->row_folded = false;
 
-        $tb = "  <tr class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($row->title, 60));
+        $t = "  <tr";
         if ($this->_row_id_pattern)
-            $tb .= "\" id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern);
-        $t = $tb . "\">" . $t . "</tr>\n";
+            $t .= " id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern) . "\"";
+        $t .= " class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($row->title, 60));
+        foreach ($this->row_attr as $k => $v)
+            $t .= "\" $k=\"" . htmlspecialchars($v);
+        $t .= "\">" . $tm . "</tr>\n";
 
         if ($tt !== "") {
             $t .= "  <tr class=\"plx $trclass\" data-pid=\"$row->paperId\">";
@@ -1363,10 +1368,16 @@ class PaperList {
             $data["$fname.headerhtml"] = $x;
         $m = array();
         foreach ($rows as $rowidx => $row) {
+            $this->row_attr = [];
             if ($fdef->content_empty($this, $row))
                 $m[$row->paperId] = "";
             else
                 $m[$row->paperId] = $fdef->content($this, $row, $rowidx);
+            foreach ($this->row_attr as $k => $v) {
+                if (!isset($data["attr.$k"]))
+                    $data["attr.$k"] = [];
+                $data["attr.$k"][$row->paperId] = $v;
+            }
         }
         $data["$fname.html"] = $m;
 

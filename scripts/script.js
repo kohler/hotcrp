@@ -4332,28 +4332,70 @@ check_version.ignore = function (id) {
 
 // ajax loading of paper information
 var plinfo = (function () {
-var fields, field_order, aufull = {}, loadargs = {};
+var which = "pl", fields, field_order, aufull = {}, loadargs = {};
+
+function paper_attr_near(elt, attr, value) {
+    while (elt && elt.nodeName && elt.nodeName !== "TR")
+        elt = elt.parentNode;
+    var pid = elt && elt.nodeName === "TR" && elt.getAttribute("data-pid");
+    while (elt && elt.nodeName
+           && (elt.nodeName !== "TR" || elt.className.substr(0, 3) === "plx"))
+        elt = elt.previousSibling;
+    if (pid && elt && elt.nodeName === "TR" && elt.getAttribute("data-pid") == pid) {
+        if (value === undefined)
+            return elt.getAttribute(attr);
+        else
+            elt.setAttribute(attr, value);
+    }
+    return null;
+}
+
+function render_allpref() {
+    $(".need-allpref").each(function () {
+        var t = [], atoms = (plinfo.paper_attr_near(this, "data-allpref") || "").split(/ /);
+        for (var i = 0; i != atoms.length; ++i) {
+            var m = /^(\d+)([PT].*)$/.exec(atoms[i]),
+                pc = hotcrp_pc[m[1]], x = '';
+            if (pc.color_classes)
+                x += '<span class="' + pc.color_classes + '">' + pc.name + '</span>';
+            else
+                x += pc.name;
+            x += ' <span class="asspref' + (m[2].charAt(1) === "-" ? "-1" : "1") +
+                '">' + m[2].replace(/-/, "−") /* minus */ + '</span>';
+            t.push(x);
+        }
+        if (t.length) {
+            x = '<span class="nw">' + t.join(',</span> <span class="nw">') + '</span>';
+            $(this).html(x).removeClass("need-allpref");
+        } else
+            $(this).closest("div").empty();
+    });
+}
 
 function render_needed() {
     scorechart();
-    plinfo.allpref();
+    render_allpref();
     render_text.on_page();
 }
 
-function add_column(f, which) {
-    var i, index = 0, $j = $("#fold" + which),
-        classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
-            " fx" + f.foldnum + "\"";
+function field_index(f) {
+    var i, index = 0;
     for (i = 0; i != field_order.length && field_order[i] != f; ++i)
-        if (field_order[i].column && !field_order[i].missing)
+        if (!field_order[i].column == !f.column && !field_order[i].missing)
             ++index;
+    return index;
+}
+
+function add_column(f) {
+    var index = field_index(f), $j = $("#fold" + which),
+        classEnd = " class=\"pl " + (f.className || "pl_" + f.name) +
+            " fx" + f.foldnum + "\"",
+        h = '<th' + classEnd + '>' + f.title + '</th>';
     $j.find("tr.pl_headrow").each(function () {
-        var h = "<th" + classEnd + ">" + f.title + "</th>";
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
+    h = '<td' + classEnd + '></td>';
     $j.find("tr.pl").each(function () {
-        var pid = this.getAttribute("data-pid");
-        var h = "<td" + classEnd + " id=\"" + f.name + "." + pid + "\"></td>";
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     $j.find("tr.plx > td.plx, td.pl_footer, td.plheading").each(function () {
@@ -4362,22 +4404,17 @@ function add_column(f, which) {
     f.missing = false;
 }
 
-function add_row(f, which) {
-    var i, index = 0,
-        classEnd = '" class="' + (f.className || "pl_" + f.name) +
+function add_row(f) {
+    var index = field_index(f),
+        h = '<div class="' + (f.className || "pl_" + f.name) +
             " fx" + f.foldnum + '"></div>';
-    for (i = 0; i != field_order.length && field_order[i] != f; ++i)
-        if (!field_order[i].column && !field_order[i].missing)
-            ++index;
-    $($$("fold" + which)).find("tr.plx > td.plx").each(function () {
-        var pid = this.parentNode.getAttribute("data-pid");
-        var n = $('<div id="' + f.name + '.' + pid + classEnd)[0];
-        this.insertBefore(n, this.childNodes[index] || null);
+    $("#fold" + which).find("tr.plx > td.plx").each(function () {
+        this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
     f.missing = false;
 }
 
-function set(f, elt, text, which) {
+function set(f, elt, text) {
     if (text == null || text == "")
         elt.innerHTML = "";
     else {
@@ -4389,26 +4426,51 @@ function set(f, elt, text, which) {
     }
 }
 
-function make_callback(dofold, type, which) {
+function rowmap(f) {
+    var map = {}, index = f && field_index(f);
+    if (!f) {
+        $("#fold" + which).find("tr.pl").each(function () {
+            map[this.getAttribute("data-pid")] = this;
+        });
+    } else if (f.column) {
+        $("#fold" + which).find("tr.pl").each(function () {
+            map[this.getAttribute("data-pid")] = this.childNodes[index];
+        });
+    } else {
+        $("#fold" + which).find("tr.plx > td.plx").each(function () {
+            map[this.parentNode.getAttribute("data-pid")] = this.childNodes[index];
+        });
+    }
+    return map;
+}
+
+function make_callback(dofold, type) {
     var f = fields[type], values;
     function render_some() {
-        var i, x = values, n = 0, elt;
+        var i, x = values, n = 0, elt, map = rowmap(f);
         values = null;
         for (i in x)
-            if (n > 128) {
+            if (n > 64) {
                 values = values || {};
                 values[i] = x[i];
-            } else if ((elt = $$(f.name + "." + i))) {
-                set(f, elt, x[i], which);
+            } else if (map[i]) {
+                set(f, map[i], x[i]);
                 ++n;
             }
         render_needed();
         if (values)
-            setTimeout(render_some, 1);
+            setTimeout(render_some, 3);
     }
     function callback(rv) {
         if (type == "aufull")
             aufull[!!dofold] = rv;
+        var k, p, e, map;
+        for (k in rv)
+            if (k.substr(0, 5) == "attr.") {
+                map = map || rowmap();
+                for (p in rv[k])
+                    map[p] && map[p].setAttribute(k.substr(5), rv[k][p]);
+            }
         values = rv[f.name + ".html"] || {};
         render_some();
         f.loadable = false;
@@ -4417,29 +4479,26 @@ function make_callback(dofold, type, which) {
     return callback;
 }
 
-function show_loading(type, which) {
+function show_loading(f) {
     return function () {
-        var f = fields[type], i, elt, divs;
-        if (!f.loadable || !(elt = $$("fold" + which)))
-            return;
-        divs = elt.getElementsByTagName("div");
-        for (i = 0; i < divs.length; i++)
-            if (divs[i].id.substr(0, f.name.length) == f.name)
-                set(f, divs[i], "Loading", which);
+        if (f.loadable) {
+            var map = rowmap(f);
+            for (var i in map)
+                set(f, map[i], "Loading");
+        }
     };
 }
 
-function plinfo(type, dofold, which) {
+function plinfo(type, dofold) {
     var elt, f = fields[type];
     if (!f)
         log_jserror("plinfo missing type " + type);
-    which = which || "pl";
     if (dofold && dofold !== true && dofold.checked !== undefined)
         dofold = !dofold.checked;
 
     // fold
     if (!dofold && f.missing)
-        f.column ? add_column(f, which) : add_row(f, which);
+        f.column ? add_column(f) : add_row(f);
     fold(which, dofold, type);
     if ((type == "aufull" || type == "anonau") && !dofold
         && (elt = $$("showau")) && !elt.checked)
@@ -4453,10 +4512,10 @@ function plinfo(type, dofold, which) {
 
     // may need to load information by ajax
     if (type == "aufull" && aufull[!!dofold])
-        make_callback(dofold, type, which)(aufull[!!dofold]);
+        make_callback(dofold, type)(aufull[!!dofold]);
     else if ((!dofold && f.loadable) || type == "aufull") {
         // set up "loading" display
-        setTimeout(show_loading(type, which), 750);
+        setTimeout(show_loading(f), 750);
 
         // initiate load
         delete loadargs.aufull;
@@ -4470,7 +4529,7 @@ function plinfo(type, dofold, which) {
         $.ajax({
             url: hoturl_post("search", loadargs),
             type: "POST", timeout: 10000, dataType: "json",
-            success: make_callback(dofold, type, which)
+            success: make_callback(dofold, type)
         });
     }
 
@@ -4490,24 +4549,7 @@ plinfo.set_fields = function (fo) {
         fields.au = fields.anonau = fields.aufull = fields.authors;
 };
 
-plinfo.allpref = function () {
-    $(".has-allpref").each(function () {
-        var t = [], atoms = this.getAttribute("data-allpref").split(/ /);
-        for (var i = 0; i != atoms.length; ++i) {
-            var m = /^(\d+)([PT].*)$/.exec(atoms[i]),
-                pc = hotcrp_pc[m[1]], x = '<span class="nw">';
-            if (pc.color_classes)
-                x += '<span class="' + pc.color_classes + '">' + pc.name + '</span>';
-            else
-                x += pc.name;
-            x += ' <span class="asspref' + (m[2].charAt(1) === "-" ? "-1" : "1") +
-                '">' + m[2].replace(/-/, "−") /* minus */ + '</span></span>';
-            t.push(x);
-        }
-        $(this).html(t.join(", ")).removeClass("has-allpref");
-    });
-};
-
+plinfo.paper_attr_near = paper_attr_near;
 plinfo.render_needed = render_needed;
 
 return plinfo;

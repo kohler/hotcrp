@@ -153,6 +153,9 @@ span.lgsep {
 .nowrap, .nw {
 	white-space: nowrap;
 }
+span.nw {
+	display: inline-block; /* why? */
+}
 .childfold {
 	cursor: pointer;
 }
@@ -2233,7 +2236,7 @@ select#foldlead_d, select#foldshepherd_d, select#folddecision_d, select#foldmana
 	margin: 0 8px;
 }
 .bubble.tooltip .tagcolorspan, .bubble.graphtip .tagcolorspan {
-	color: #2c2c42;
+	color: #2c2c33;
 }
 .bubble.suggest {
 	background-color: rgba(250, 250, 255, 0.95);

@@ -852,8 +852,9 @@ class PreferenceListPaperColumn extends PaperColumn {
                            && ($tscore = $row->topic_interest_score($pc)))
                     $ts[] = $pcid . "T" . $tscore;
             }
-        if (count($ts)) {
-            $t = '<span class="has-allpref" data-allpref="' . join(" ", $ts) . '">Loading</span>';
+        $pl->row_attr["data-allpref"] = join(" ", $ts);
+        if (!empty($ts)) {
+            $t = '<span class="need-allpref">Loading</span>';
             $pl->render_needed = true;
             return $t;
         } else
