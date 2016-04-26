@@ -706,7 +706,6 @@ class PaperList {
                         $tt .= " fx2";
                         $rstate->has_anonau = true;
                     }
-                    $tt .= "\" id=\"authors." . $row->paperId;
                 } else if ($fdef->foldable)
                     $tt .= " fx" . $fdef->foldable;
                 $tt .= "\">";
