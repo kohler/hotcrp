@@ -59,7 +59,7 @@ function update_schema_create_options($Conf) {
         $opj->name = $row->optionName;
 
         $abbr = PaperOption::abbreviate($opj->name, $opj->id);
-        if (!@$byabbr[$abbr]) {
+        if (!get($byabbr, $abbr)) {
             $opj->abbr = $abbr;
             $byabbr[$abbr] = $opj;
         } else {
@@ -226,7 +226,7 @@ function updateSchema($Conf) {
     global $Opt, $OK;
     // avoid error message abut timezone, set to $Opt
     // (which might be overridden by database values later)
-    if (function_exists("date_default_timezone_set") && @$Opt["timezone"])
+    if (function_exists("date_default_timezone_set") && isset($Opt["timezone"]) && $Opt["timezone"])
         date_default_timezone_set($Opt["timezone"]);
     while (($result = Dbl::ql("insert into Settings set name='__schema_lock', value=1 on duplicate key update value=1"))
            && $result->affected_rows == 0)
@@ -647,7 +647,7 @@ function updateSchema($Conf) {
     if ($Conf->sversion == 75) {
         foreach (array("capability_gc", "s3_scope", "s3_signing_key") as $k)
             if (isset($Conf->settings[$k])) {
-                $Conf->save_setting("__" . $k, $Conf->settings[$k], @$Conf->settingTexts[$k]);
+                $Conf->save_setting("__" . $k, $Conf->settings[$k], get($Conf->settingTexts, $k));
                 $Conf->save_setting($k, null);
             }
         $Conf->update_schema_version(76);
@@ -722,9 +722,9 @@ function updateSchema($Conf) {
         $Conf->update_schema_version(94);
     if ($Conf->sversion == 94
         && Dbl::ql("alter table PaperOption modify `data` varbinary(32768) DEFAULT NULL")) {
-        foreach (PaperOption::nonfixed_option_list($Conf) as $opt)
-            if ($opt->type === "text")
-                Dbl::ql("delete from PaperOption where optionId={$opt->id} and data=''");
+        foreach (PaperOption::nonfixed_option_list($Conf) as $xopt)
+            if ($xopt->type === "text")
+                Dbl::ql("delete from PaperOption where optionId={$xopt->id} and data=''");
         $Conf->update_schema_version(95);
     }
     if ($Conf->sversion == 95
