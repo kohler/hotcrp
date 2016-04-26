@@ -154,13 +154,18 @@ class PaperOption {
             if (is_object($jlist))
                 $jlist = [$jlist];
         }
-        foreach ($jlist as $oj)
-            if (is_object($oj) && isset($oj->id) && is_int($oj->id)
-                && ($oj->id >= self::MINFIXEDID) === $fixed
-                && !isset(self::$list[$oj->id]))
-                self::$list[$oj->id] = PaperOption::make($oj);
-            else
-                error_log("$landmark: bad option");
+        foreach ($jlist as $oj) {
+            if (is_object($oj) && isset($oj->id)) {
+                if (is_string($oj->id) && is_numeric($oj->id))
+                    $oj->id = intval($oj->id);
+                if (is_int($oj->id) && !isset(self::$list[$oj->id])
+                    && ($oj->id >= self::MINFIXEDID) === $fixed) {
+                    self::$list[$oj->id] = PaperOption::make($oj);
+                    continue;
+                }
+            }
+            error_log("$landmark: bad option " . json_encode($oj));
+        }
     }
 
     static function option_list(Conf $c = null) {
