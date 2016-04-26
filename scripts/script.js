@@ -2330,7 +2330,8 @@ function lookup(format) {
     var r, p;
     if (format && (r = renderers[format]))
         return r;
-    if (format && (p = format.indexOf(".")) > 0
+    if (format && typeof format === "string"
+        && (p = format.indexOf(".")) > 0
         && (r = renderers[format.substring(0, p)]))
         return r;
     if (format == null)
