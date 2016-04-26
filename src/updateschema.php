@@ -943,6 +943,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql("update PaperComment set timeDisplayed=1 where timeDisplayed=0 and timeNotified>0"))
         $Conf->update_schema_version(130);
     if ($Conf->sversion == 130
+        && Dbl::ql("DROP TABLE IF EXISTS `PaperTagAnno`")
         && Dbl::ql("CREATE TABLE `PaperTagAnno` (
   `tag` varchar(40) NOT NULL,   # see TAG_MAXLEN in header.php
   `annoId` int(11) NOT NULL,
