@@ -512,7 +512,6 @@ class ContactList {
 
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
         $pq = "select u.contactId,
-        u.contactId as paperId,
         firstName, lastName, email, affiliation, roles, contactTags,
         voicePhoneNumber,
         u.collaborators, lastLogin, disabled";
@@ -635,9 +634,11 @@ class ContactList {
             return NULL;
 
         // fetch data
+        Contact::$allow_nonexistent_properties = true;
         $rows = array();
         while (($row = $result->fetch_object("Contact")))
             $rows[] = $row;
+        Contact::$allow_nonexistent_properties = false;
         return $rows;
     }
 

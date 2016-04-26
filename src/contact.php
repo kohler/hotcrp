@@ -17,6 +17,7 @@ class Contact_Update {
 class Contact {
     static public $rights_version = 1;
     static public $trueuser_privChair = null;
+    static public $allow_nonexistent_properties = false;
 
     public $contactId = 0;
     public $contactDbId = 0;
@@ -205,7 +206,8 @@ class Contact {
         if ($name === "cid")
             $this->contactId = $this->cid = $value;
         else {
-            error_log(caller_landmark(1) . ": writing nonexistent property $name");
+            if (!self::$allow_nonexistent_properties)
+                error_log(caller_landmark(1) . ": writing nonexistent property $name");
             $this->$name = $value;
         }
     }
