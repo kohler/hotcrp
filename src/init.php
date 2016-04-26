@@ -138,6 +138,7 @@ class SiteLoader {
         "setmanager" => ["PaperApi::setmanager_api", self::API_PAPER],
         "setpref" => ["PaperApi::setpref_api", self::API_PAPER],
         "setshepherd" => ["PaperApi::setshepherd_api", self::API_PAPER],
+        "settaganno" => ["PaperApi::settaganno_api", self::API_POST],
         "settags" => ["PaperApi::settags_api", self::API_POST],
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
         "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET], // hotcrp-comet entrypoint

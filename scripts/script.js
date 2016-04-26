@@ -3940,7 +3940,7 @@ function tag_dragto(l) {
         m += '<span style="padding-left:2em';
         if (srcindex !== dragindex)
             m += ';font-weight:bold';
-        m += '">#' + dragtag + '#' + sprintf("%.2g", newval) + '</span>';
+        m += '">#' + dragtag + '#' + sprintf("%.2f", newval).replace(/\.0+$|0+$/, "") + '</span>';
     }
     if (dragindex == srcindex)
         y = rowanal[srcindex].middle();
@@ -3973,6 +3973,8 @@ function calculate_shift(si, di) {
     }
 
     var newval = -Infinity, delta = 0;
+    for (i = 0; i < rowanal.length; ++i)
+        rowanal[i].newvalue = rowanal[i].tagvalue;
     for (i = 0; i < rowanal.length; ++i) {
         if (rowanal[i].tagvalue === false) {
             if (i == 0)
@@ -3981,8 +3983,8 @@ function calculate_shift(si, di) {
                 newval = newval + delta + value_increment();
             else
                 newval = false;
-        } else if (i == di && rowanal[i].isgroup && !rowanal[si].isgroup)
-            newval = newval + delta + value_increment();
+        } else if (rowanal[i].isgroup && i > 0)
+            newval = Math.ceil(newval) + 1;
         else
             newval = rowanal[i].tagvalue + delta;
         if (i == si && si < di) {
@@ -3997,13 +3999,11 @@ function calculate_shift(si, di) {
             newval += sdelta;
             delta += sdelta;
         }
-        if (rowanal[i].tagvalue === false && i >= di)
+        if ((i >= di && rowanal[i].tagvalue === false)
+            || (i >= si && i >= di && rowanal[i].tagvalue >= newval))
             break;
         rowanal[i].newvalue = newval;
     }
-    for (; i < rowanal.length; ++i)
-        if (i != si)
-            rowanal[i].newvalue = false;
 }
 
 function row_move(srcindex) {
@@ -4056,12 +4056,29 @@ function row_move(srcindex) {
         }
 }
 
+function make_drag_group_success(row) {
+    return function (rv) {
+        if (rv.ok && rv.tags)
+            row.setAttribute("data-tags", $.isArray(rv.tags) ? rv.tags.join(" ") : rv.tags);
+        row_move(analyze_rows(row));
+    };
+}
+
 function commit_drag(si, di) {
     calculate_shift(si, di);
     for (var i = 0; i < rowanal.length; ++i)
-        if (rowanal[i].newvalue !== rowanal[i].tagvalue && rowanal[i].entry) {
+        if (rowanal[i].newvalue === rowanal[i].tagvalue)
+            /* do nothing */;
+        else if (rowanal[i].entry) {
             rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
             rowanal[i].entry.onchange();
+        } else if (rowanal[i].annoid) {
+            var data = {tagval: unparse_tagvalue(rowanal[i].newvalue)};
+            $.ajax(ajax_link_errors({
+                url: hoturl_post("api", {fn: "settaganno", tag: dragtag, annoid: rowanal[i].annoid, forceShow: 1}),
+                type: "POST", dataType: "json", data: data,
+                success: make_drag_group_success(plt_tbody.childNodes[rowanal[i].l])
+            }));
         }
 }
 

@@ -151,6 +151,50 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $error], true);
     }
 
+    static function settaganno_api($user, $qreq, $prow) {
+        global $Conf;
+        $tagger = new Tagger($user);
+        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
+            json_exit(["ok" => false, "error" => $tagger->error_html]);
+        if (!$user->privChair
+            && (!$user->isPC || TagInfo::is_chair($tag)))
+            json_exit(["ok" => false, "error" => "Permission error."]);
+        if ((!isset($qreq->annoid) || !ctype_digit($qreq->annoid))
+            || (isset($qreq->tagval) && !is_numeric($qreq->tagval)))
+            json_exit(["ok" => false, "error" => "Bad request."]);
+        $annoid = intval($qreq->annoid);
+        if ($qreq->delete) {
+            if (Dbl::qe("delete from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))
+                json_exit(["ok" => true, "tagval" => false]);
+            else
+                json_exit(["ok" => false]);
+        }
+        if ($qreq->create)
+            Dbl::qe("insert into PaperTagAnno (tag,annoId) values (?,?) on duplicate key update tagIndex=tagIndex", $tag, $annoid);
+        $old_errors = Dbl::$logged_errors;
+        $qx = $qv = [];
+        if (isset($qreq->tagval)) {
+            $qx[] = "tagIndex=?";
+            $qv[] = floatval($qreq->tagval);
+        }
+        if (isset($qreq->heading)) {
+            $qx[] = "heading=?";
+            $qv[] = $qreq->heading === "" ? null : $qreq->heading;
+        }
+        if (!empty($qx)) {
+            array_push($qv, $tag, $annoid);
+            Dbl::qe_apply("update PaperTagAnno set " . join(", ", $qx) . " where tag=? and annoId=?", $qv);
+        }
+        if (Dbl::$logged_errors == $old_errors
+            && ($anno = Dbl::fetch_first_object("select * from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))) {
+            $t = "";
+            if ($anno->tagIndex !== null)
+                $t = $tag . "#" . $anno->tagIndex;
+            json_exit(["ok" => true, "tags" => $t]);
+        } else
+            json_exit(["ok" => false, "error" => "Internal error."]);
+    }
+
     static function votereport_api($user, $qreq, $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
