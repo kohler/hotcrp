@@ -3879,7 +3879,7 @@ function tag_scroll() {
 }
 
 function endgroup_index(i) {
-    if (rowanal[i].isgroup)
+    if (i < rowanal.length && rowanal[i].isgroup)
         while (i + 1 < rowanal.length && !rowanal[i + 1].isgroup)
             ++i;
     return i;
@@ -3908,7 +3908,7 @@ function tag_mousemove(evt) {
 
     // if dragging a group, restrict to groups
     if (rowanal[srcindex].isgroup)
-        while (l > 0 && !rowanal[l].isgroup)
+        while (l > 0 && l < rowanal.length && !rowanal[l].isgroup)
             --l;
     r = endgroup_index(l);
 
@@ -4007,6 +4007,10 @@ function calculate_shift(si, di) {
     var newval = -Infinity, delta = 0;
     for (i = 0; i < rowanal.length; ++i)
         rowanal[i].newvalue = rowanal[i].tagvalue;
+    function adjust_newval(j) {
+        return newval === false ? newval : newval + (rowanal[j].tagvalue - rowanal[si].tagvalue);
+    }
+
     for (i = 0; i < rowanal.length; ++i) {
         if (rowanal[i].tagvalue === false) {
             if (i == 0)
@@ -4032,15 +4036,19 @@ function calculate_shift(si, di) {
             continue;
         else if (i == di) {
             for (j = si; j <= simax; ++j)
-                rowanal[j].newvalue = newval + (rowanal[j].tagvalue - rowanal[si].tagvalue);
-            rowanal[si].newvalue = newval;
+                rowanal[j].newvalue = adjust_newval(j);
             newval += sdelta;
             delta += sdelta;
         }
-        if ((i >= di && rowanal[i].tagvalue === false)
-            || (i >= si && i >= di && rowanal[i].tagvalue >= newval))
+        if (i >= si && i >= di && rowanal[i].tagvalue >= newval)
             break;
         rowanal[i].newvalue = newval;
+    }
+    if (rowanal.length == di) {
+        if (newval !== false)
+            newval += value_increment();
+        for (j = si; j <= simax; ++j)
+            rowanal[j].newvalue = adjust_newval(j);
     }
 }
 
