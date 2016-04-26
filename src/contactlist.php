@@ -198,12 +198,14 @@ class ContactList {
                 $scoresort = $Conf->session("scoresort", "A");
                 if ($scoresort != "A" && $scoresort != "V" && $scoresort != "D")
                     $scoresort = "A";
+                Contact::$allow_nonexistent_properties = true;
                 foreach ($rows as $row) {
                     $scoreinfo = new ScoreInfo(@$row->$fieldId);
                     $row->_sort_info = $scoreinfo->sort_data($scoresort);
                     $row->_sort_avg = $scoreinfo->mean();
                 }
                 usort($rows, array($this, "_sortScores"));
+                Contact::$allow_nonexistent_properties = false;
             }
             break;
         }
