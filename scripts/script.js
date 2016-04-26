@@ -3877,6 +3877,13 @@ function tag_scroll() {
     }
 }
 
+function endgroup_index(i) {
+    if (rowanal[i].isgroup)
+        while (i + 1 < rowanal.length && !rowanal[i + 1].isgroup)
+            ++i;
+    return i;
+}
+
 function tag_mousemove(evt) {
     evt = evt || window.event;
     if (evt.clientX == null)
@@ -3898,13 +3905,15 @@ function tag_mousemove(evt) {
             l = m + 1;
     }
 
-    // if below middle, insert at next location
-    if (l < rowanal.length && y > rowanal[l].middle())
-        ++l;
+    // if dragging a group, restrict to groups
+    if (rowanal[srcindex].isgroup)
+        while (l > 0 && !rowanal[l].isgroup)
+            --l;
+    r = endgroup_index(l);
 
-    // can't scroll above the fake -∞ group
-    if (l == 0 && rowanal[l].isgroup && rowanal[l].annoid === null)
-        ++l;
+    // if below middle, insert at next location
+    if (l < rowanal.length && y > (rowanal[l].top() + rowanal[r].bottom()) / 2)
+        l = r + 1;
 
     // if user drags far away, snap back
     var plt_geometry = $(plt_tbody).geometry();
@@ -3920,7 +3929,7 @@ function tag_mousemove(evt) {
     }
 
     // calculate new dragger position
-    if (l == srcindex || l == srcindex + 1)
+    if (l == srcindex || l == endgroup_index(srcindex) + 1)
         l = srcindex;
     if (l !== dragindex) {
         tag_dragto(l);
@@ -3947,7 +3956,7 @@ function tag_dragto(l) {
     }
 
     // set dragger content and show it
-    var m = "", y;
+    var m = "", x, y;
     if (rowanal[srcindex].id)
         m += "#" + rowanal[srcindex].id;
     if (rowanal[srcindex].titlehint)
@@ -3964,8 +3973,11 @@ function tag_dragto(l) {
         y = rowanal[dragindex].top();
     else
         y = rowanal[rowanal.length - 1].bottom();
-    dragger.html(m).at($(rowanal[srcindex].entry).offset().left - 6, y)
-        .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
+    if (rowanal[srcindex].entry)
+        x = $(rowanal[srcindex].entry).offset().left - 6;
+    else
+        x = $(plt_tbody.childNodes[rowanal[srcindex].l]).geometry().right - 20;
+    dragger.html(m).at(x, y).color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
 }
 
 function value_increment() {
@@ -3978,15 +3990,18 @@ function value_increment() {
 }
 
 function calculate_shift(si, di) {
+    var simax = endgroup_index(si);
     rowanal_gappos = 0;
-    var i, sdelta = value_increment();
+    var i, j, sdelta = value_increment();
     if (rowanal[si].tagvalue !== false
-        && si + 1 < rowanal.length
-        && rowanal[si + 1].tagvalue !== false) {
-        i = rowanal[si + 1].tagvalue - rowanal[si].tagvalue;
+        && simax + 1 < rowanal.length
+        && rowanal[simax + 1].tagvalue !== false) {
+        i = rowanal[simax + 1].tagvalue - rowanal[simax].tagvalue;
         if (i >= 1)
             sdelta = i;
     }
+    if (simax != si && rowanal[simax].tagvalue)
+        sdelta += rowanal[simax].tagvalue - rowanal[si].tagvalue;
 
     var newval = -Infinity, delta = 0;
     for (i = 0; i < rowanal.length; ++i)
@@ -4012,7 +4027,11 @@ function calculate_shift(si, di) {
         } else if (i == si) {
             delta -= sdelta;
             continue;
-        } else if (i == di) {
+        } else if (i >= si && i <= simax)
+            continue;
+        else if (i == di) {
+            for (j = si; j <= simax; ++j)
+                rowanal[j].newvalue = newval + (rowanal[j].tagvalue - rowanal[si].tagvalue);
             rowanal[si].newvalue = newval;
             newval += sdelta;
             delta += sdelta;
@@ -4033,7 +4052,7 @@ function row_move(srcindex) {
             if ((newval !== false && ltv === false)
                 || (newval !== false && ltv !== false && ltv > newval)
                 || (ltv === newval && rowanal[dstindex].id > id)
-                || (ltv === newval && rowanal[dstindex].id == 0 && rowanal[srcindex].id == 0
+                || (ltv === newval && !rowanal[dstindex].id && !rowanal[srcindex].id
                     && rowanal[dstindex].annoid > rowanal[srcindex].annoid))
                 break;
         }
@@ -4168,14 +4187,24 @@ return function (selector, active_dragtag) {
         $(function () {
             plt_tbody = $(selector).children().filter("tbody")[0];
             $(plt_tbody).find("input.edittagval[name^=\"tag:" + dragtag + " \"]").each(function () {
-                if (this.type === "hidden")
-                    return;
-                var x = document.createElement("span"), id = this.name.substr(5 + dragtag.length);
+                if (this.type !== "hidden") {
+                    var x = document.createElement("span");
+                    x.className = "dragtaghandle";
+                    x.setAttribute("title", "Drag to change order");
+                    this.parentElement.insertBefore(x, this.nextSibling);
+                }
+            });
+            $(plt_tbody).find("tr.plheading[data-anno-id] > td:last-child").each(function () {
+                var x = document.createElement("span");
                 x.className = "dragtaghandle";
                 x.setAttribute("title", "Drag to change order");
-                this.parentElement.insertBefore(x, this.nextSibling);
-                x.onmousedown = tag_mousedown;
+                x.style.float = "right";
+                x.style.position = "static";
+                x.style.paddingRight = "24px";
+                this.insertBefore(x, null);
             });
+            $(selector).off(".dragtag_ajax")
+                .on("mousedown.dragtag_ajax", "span.dragtaghandle", tag_mousedown);
         });
     }
 };
