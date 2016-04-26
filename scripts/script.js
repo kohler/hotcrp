@@ -3707,7 +3707,7 @@ window.add_edittag_ajax = (function () {
 var ready, plt_tbody, dragtag, full_dragtag,
     rowanal, rowanal_gaps, rowanal_gappos,
     dragging, srcindex, dragindex, dragger,
-    dragwander, scroller, mousepos, scrolldelta;
+    scroller, mousepos, scrolldelta;
 
 function parse_tagvalue(s) {
     s = s.replace(/^\s+|\s+$/, "").toLowerCase();
@@ -3933,7 +3933,6 @@ function tag_mousemove(evt) {
 
 function tag_dragto(l) {
     dragindex = l;
-    dragwander = dragwander || dragindex != srcindex;
 
     // create dragger
     if (!dragger) {
@@ -4116,7 +4115,7 @@ function tag_mousedown(evt) {
     if (dragging)
         tag_mouseup();
     dragging = this;
-    dragindex = dragwander = null;
+    dragindex = null;
     srcindex = analyze_rows(this);
     if (document.addEventListener) {
         document.addEventListener("mousemove", tag_mousemove, true);
@@ -4171,12 +4170,11 @@ return function (selector, active_dragtag) {
             full_dragtag = hotcrp_user.cid + dragtag;
         $(function () {
             plt_tbody = $(selector).children().filter("tbody")[0];
-            $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
+            $(plt_tbody).find("input.edittagval[name^=\"tag:" + dragtag + " \"]").each(function () {
                 if (this.type === "hidden")
                     return;
                 var x = document.createElement("span"), id = this.name.substr(5 + dragtag.length);
                 x.className = "dragtaghandle";
-                x.setAttribute("data-pid", id);
                 x.setAttribute("title", "Drag to change order");
                 this.parentElement.insertBefore(x, this.nextSibling);
                 x.onmousedown = tag_mousedown;
