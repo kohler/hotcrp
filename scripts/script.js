@@ -3704,8 +3704,9 @@ function add_conflict_ajax(selector) {
 
 
 window.add_edittag_ajax = (function () {
-var ready, dragtag,
-    plt_tbody, dragging, rowanal, srcindex, dragindex, dragger,
+var ready, plt_tbody,
+    dragtag, rowanal, rowanal_gapless,
+    dragging, srcindex, dragindex, dragger,
     dragwander, scroller, mousepos, scrolldelta;
 
 function parse_tagvalue(s) {
@@ -3827,6 +3828,24 @@ function analyze_rows(e) {
         }
     if (l !== null)
         rowanal.push(new PaperRow(l, r, rowanal.length));
+
+    // analyze whether this is a gapless order
+    var sd = 0, nd = 0, s2d = 0, lv = null;
+    for (i = 0; i < rowanal.length; ++i)
+        if (rowanal[i].id && rowanal[i].tagvalue !== false) {
+            if (lv !== null) {
+                var delta = rowanal[i].tagvalue - lv;
+                ++nd;
+                sd += delta;
+                s2d += delta * delta;
+            }
+            lv = rowanal[i].tagvalue;
+        }
+    s2d = Math.sqrt(s2d);
+    rowanal_gapless = false;
+    if (nd >= 3 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
+        rowanal_gapless = true;
+
     return eindex;
 }
 
@@ -3910,12 +3929,12 @@ function tag_dragto(l) {
     }
 
     // calculate new value
-    var a, newval;
+    var newval;
     if (dragindex == srcindex)
         newval = rowanal[dragindex].tagvalue;
     else {
-        a = calculate_shift(srcindex, dragindex);
-        newval = a[srcindex].newvalue;
+        calculate_shift(srcindex, dragindex);
+        newval = rowanal[srcindex].newvalue;
     }
 
     // set dragger content and show it
@@ -3938,6 +3957,50 @@ function tag_dragto(l) {
         y = rowanal[rowanal.length - 1].bottom();
     dragger.html(m).at($(rowanal[srcindex].entry).offset().left - 6, y)
         .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
+}
+
+function value_increment() {
+    if (rowanal_gapless)
+        return 1;
+    else
+        return [1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)];
+}
+
+function calculate_shift(si, di) {
+    var i, sdelta = value_increment();
+    if (rowanal[si].tagvalue !== false
+        && si + 1 < rowanal.length
+        && rowanal[si + 1].tagvalue !== false) {
+        i = rowanal[si + 1].tagvalue - rowanal[si].tagvalue;
+        if (i >= 1)
+            sdelta = i;
+    }
+
+    var newval = -Infinity, delta = 0;
+    for (i = 0; i < rowanal.length; ++i) {
+        if (rowanal[i].tagvalue === false)
+            newval = (i == 0 ? 1 : newval + delta + value_increment());
+        else
+            newval = rowanal[i].tagvalue + delta;
+        if (i == si && si < di) {
+            if (rowanal[i + 1].tagvalue !== false)
+                delta = -(rowanal[i + 1].tagvalue - rowanal[i].tagvalue);
+            continue;
+        } else if (i == si) {
+            delta -= sdelta;
+            continue;
+        } else if (i == di) {
+            rowanal[si].newvalue = newval;
+            newval += sdelta;
+            delta += sdelta;
+        }
+        if (rowanal[i].tagvalue === false && i >= di)
+            break;
+        rowanal[i].newvalue = newval;
+    }
+    for (; i < rowanal.length; ++i)
+        if (i != si)
+            rowanal[i].newvalue = false;
 }
 
 function row_move(srcindex, dstindex) {
@@ -3975,57 +4038,12 @@ function row_move(srcindex, dstindex) {
         }
 }
 
-function calculate_shift(si, di) {
-    var na = [].concat(rowanal), i, j, delta;
-
-    // initialize newvalues, make sure all elements in drag range have values
-    for (i = 0; i < na.length; ++i) {
-        na[i].newvalue = na[i].tagvalue;
-        if (i < di && i != si && na[i].newvalue === false) {
-            j = i - 1 - (i - 1 == si);
-            na[i].newvalue = (i > 0 ? na[i-1].newvalue + 1 : 1);
-        }
-    }
-
-    if (si < di) {
-        if (na[si].newvalue !== na[si+1].newvalue) {
-            delta = na[si].tagvalue - na[si+1].tagvalue;
-            for (i = si + 1; i < di; ++i)
-                na[i].newvalue += delta;
-        }
-        if (di < na.length && na[di].newvalue !== false
-            && na[di].newvalue > na[di-1].newvalue + 2)
-            delta = Math.floor((na[di-1].newvalue + na[di].newvalue)/2);
-        else
-            delta = na[di-1].newvalue + 1;
-    } else {
-        if (di == 0 && na[di].newvalue < 0)
-            delta = na[di].newvalue - 1;
-        else if (di == 0)
-            delta = 1;
-        else if (na[di].newvalue > na[di-1].newvalue + 2)
-            delta = Math.floor((na[di-1].newvalue + na[di].newvalue)/2);
-        else
-            delta = na[di-1].newvalue + 1;
-    }
-    na[si].newvalue = delta;
-    for (i = di; i < na.length; ++i) {
-        if (i != si && na[i].newvalue !== false && na[i].newvalue <= delta) {
-            if (i == di || na[i].tagvalue != na[i-1].tagvalue)
-                ++delta;
-            na[i].newvalue = delta;
-        } else if (i != si)
-            break;
-    }
-    return na;
-}
-
 function commit_drag(si, di) {
-    var na = calculate_shift(si, di), i;
-    for (i = 0; i < na.length; ++i)
-        if (na[i].newvalue !== na[i].tagvalue && na[i].entry) {
-            na[i].entry.value = unparse_tagvalue(na[i].newvalue);
-            na[i].entry.onchange();
+    calculate_shift(si, di);
+    for (var i = 0; i < rowanal.length; ++i)
+        if (rowanal[i].newvalue !== rowanal[i].tagvalue && rowanal[i].entry) {
+            rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
+            rowanal[i].entry.onchange();
         }
 }
 
