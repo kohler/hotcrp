@@ -447,7 +447,7 @@ function searchQuickref() {
     _searchQuickrefRow("", "edit:#discuss", "edit the values for tag “#discuss”");
     _searchQuickrefRow("", "search1 THEN search2", "like “search1 OR search2”, but papers matching “search1” are grouped together and appear earlier in the sorting order");
     _searchQuickrefRow("", "1-5 THEN 6-10 show:compact", "display searches in compact columns");
-    _searchQuickrefRow("", "search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlighttag\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
+    _searchQuickrefRow("", "search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlightmark\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
 }
 
 

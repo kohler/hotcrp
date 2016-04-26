@@ -142,7 +142,7 @@ class PaperApi {
             $treport = self::tagreport($user, $prow);
             if ($treport->warnings)
                 $Conf->warnMsg(join("<br>", $treport->warnings));
-            $taginfo = (object) ["ok" => true];
+            $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
             $prow->add_tag_info_json($taginfo, $user);
             json_exit($taginfo, true);
         } else if ($ok)

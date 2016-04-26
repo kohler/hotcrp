@@ -64,6 +64,8 @@ class PaperColumn extends Column {
     public function prepare(PaperList $pl, $visible) {
         return true;
     }
+    public function annotate_field_js(PaperList $pl, &$fjs) {
+    }
 
     public function analyze($pl, &$rows) {
     }
@@ -983,6 +985,11 @@ class TagListPaperColumn extends PaperColumn {
             $pl->qopts["tags"] = 1;
         return true;
     }
+    public function annotate_field_js(PaperList $pl, &$fjs) {
+        $fjs["highlight_tags"] = $pl->search->highlight_tags();
+        if (TagInfo::has_votish())
+            $fjs["votish_tags"] = array_keys(TagInfo::vote_tags() + TagInfo::approval_tags());
+    }
     public function header($pl, $ordinal) {
         return "Tags";
     }
@@ -990,13 +997,13 @@ class TagListPaperColumn extends PaperColumn {
         return !$pl->contact->can_view_tags($row, true);
     }
     public function content($pl, $row, $rowidx) {
-        if ((string) $row->paperTags === "")
-            return "";
         $viewable = $row->viewable_tags($pl->contact);
-        $noconf = $row->conflictType <= 0;
-        $str = $pl->tagger->unparse_and_link($viewable, $row->paperTags,
-                                             $pl->search->highlight_tags());
-        return $pl->maybeConflict($row, $str, $noconf || $pl->contact->can_view_tags($row, false));
+        $pl->row_attr["data-tags"] = trim($viewable);
+        if ($viewable !== "") {
+            $pl->render_needed = true;
+            return "<span class=\"need-tags\"></span>";
+        } else
+            return "";
     }
 }
 

@@ -655,10 +655,10 @@ class PaperList {
             } else
                 $trclass .= " " . $m;
             if ($row->conflictType > 0 && !$this->contact->can_view_tags($row, false))
-                $trclass .= " conflicttag";
+                $trclass .= " conflictmark";
         }
         if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
-            $trclass .= " {$highlightclass}tag";
+            $trclass .= " {$highlightclass}mark";
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
         $this->row_attr = [];
@@ -856,6 +856,7 @@ class PaperList {
                 $j["missing"] = true;
             if ($fdef->foldable)
                 $j["foldnum"] = $fdef->foldable;
+            $fdef->annotate_field_js($this, $j);
             $jscol[] = $j;
             if ($fdef->foldable && $fdef->name !== "authors") {
                 $classes[] = "fold$fdef->foldable" . ($fdef->is_folded ? "c" : "o");

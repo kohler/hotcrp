@@ -3750,6 +3750,8 @@ function tag_onclick() {
     var that = this;
     tag_save(that, function (rv) {
         setajaxcheck(that, rv);
+        if (rv.pid && rv.tags)
+            plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
     });
 }
 
@@ -4032,6 +4034,8 @@ function sorttag_onchange() {
         row_move(srcindex, i);
         if (had_focus)
             that.focus();
+        if (rv.pid && rv.tags)
+            plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
     });
 }
 
@@ -4332,27 +4336,37 @@ check_version.ignore = function (id) {
 
 // ajax loading of paper information
 var plinfo = (function () {
-var which = "pl", fields, field_order, aufull = {}, loadargs = {};
+var which = "pl", fields, field_order, aufull = {}, loadargs = {}, tagmap = false;
 
-function paper_attr_near(elt, attr, value) {
+function $rows(elt) {
+    var pid, elx;
     while (elt && elt.nodeName && elt.nodeName !== "TR")
         elt = elt.parentNode;
-    var pid = elt && elt.nodeName === "TR" && elt.getAttribute("data-pid");
-    while (elt && elt.nodeName
-           && (elt.nodeName !== "TR" || elt.className.substr(0, 3) === "plx"))
-        elt = elt.previousSibling;
-    if (pid && elt && elt.nodeName === "TR" && elt.getAttribute("data-pid") == pid) {
+    if (!elt || elt.nodeName !== "TR" || !(pid = elt.getAttribute("data-pid")))
+        return $();
+    var dir = elt.className.substr(0, 3) === "plx" ? "previousSibling" : "nextSibling";
+    for (elx = elt[dir]; elx && elx.nodeName && elx.nodeName !== "TR"; )
+        elx = elx[dir];
+    if (!elx || elx.nodeName !== "TR" || elx.getAttribute("data-pid") !== pid)
+        return $();
+    else
+        return $(dir === "previousSibling" ? [elx, elt] : [elt, elx]);
+}
+
+function paper_attr_near(elt, attr, value) {
+    var $j = $rows(elt);
+    if ($j.length) {
         if (value === undefined)
-            return elt.getAttribute(attr);
+            return $j[0].getAttribute(attr);
         else
-            elt.setAttribute(attr, value);
+            $j[0].setAttribute(attr, value);
     }
     return null;
 }
 
 function render_allpref() {
     $(".need-allpref").each(function () {
-        var t = [], atoms = (plinfo.paper_attr_near(this, "data-allpref") || "").split(/ /);
+        var t = [], atoms = (paper_attr_near(this, "data-allpref") || "").split(/ /);
         for (var i = 0; i != atoms.length; ++i) {
             var m = /^(\d+)([PT].*)$/.exec(atoms[i]),
                 pc = hotcrp_pc[m[1]], x = '';
@@ -4372,9 +4386,70 @@ function render_allpref() {
     });
 }
 
+function make_tagmap() {
+    if (tagmap === false) {
+        var i, x, t;
+        tagmap = {};
+        x = fields.tags.highlight_tags || [];
+        for (i = 0; i != x.length; ++i) {
+            t = x[i].toLowerCase();
+            tagmap[t] = (tagmap[t] || 0) | 1;
+        }
+        x = fields.tags.votish_tags || [];
+        for (i = 0; i != x.length; ++i) {
+            t = x[i].toLowerCase();
+            tagmap[t] = (tagmap[t] || 0) | 2;
+            t = hotcrp_user.cid + "~" + t;
+            tagmap[t] = (tagmap[t] || 0) | 2;
+        }
+        if ($.isEmptyObject(tagmap))
+            tagmap = null;
+    }
+    return tagmap;
+}
+
+function render_row_tags(div) {
+    var f = fields.tags, tmap = make_tagmap();
+    var t = [], tags = (paper_attr_near(div, "data-tags") || "").split(/ /);
+    for (var i = 0; i != tags.length; ++i) {
+        var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
+        if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == hotcrp_user.cid)) {
+            twiddle = Math.max(twiddle, 0);
+            var tbase = text.substring(0, hash), tindex = text.substr(hash + 1),
+                tagx = tmap ? tmap[tbase.toLowerCase()] || 0 : 0, h, q;
+            tbase = tbase.substring(twiddle, hash);
+            if (tagx & 2)
+                q = "#" + tbase + " showsort:-#" + tbase;
+            else if (tindex != "0")
+                q = "order:#" + tbase;
+            else
+                q = "#" + tbase;
+            h = '<a href="' + hoturl("search", {q: q}) + '" class="qq nw">#' + tbase + '</a>';
+            if ((tagx & 2) || tindex != "0")
+                h += "#" + tindex;
+            if (tagx & 1)
+                h = '<strong>' + h + '</strong>';
+            t.push([text.substring(twiddle, hash), text.substring(hash + 1), tagx, h]);
+        }
+    }
+    t.sort(function (a, b) {
+        if ((a[2] ^ b[2]) & 1)
+            return a[2] & 1 ? -1 : 1;
+        else
+            return strnatcmp(a[0], b[0]);
+    });
+    if (t.length)
+        $(div).html('<em class="plx">' + f.title + ':</em> ' + $.map(t, function (x) { return x[3]; }).join(" "));
+    else
+        $(div).empty();
+}
+
 function render_needed() {
     scorechart();
     render_allpref();
+    $(".need-tags").each(function () {
+        render_row_tags(this.parentNode);
+    });
     render_text.on_page();
 }
 
@@ -4551,6 +4626,21 @@ plinfo.set_fields = function (fo) {
 
 plinfo.paper_attr_near = paper_attr_near;
 plinfo.render_needed = render_needed;
+plinfo.set_tags = function (pid, tags, color_classes) {
+    var fmap = rowmap();
+    if (fmap[pid]) {
+        var $r = $rows(fmap[pid]);
+        if (fields.tags && !fields.tags.missing) {
+            paper_attr_near($r[0], "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
+            render_row_tags($($r[1]).children("td.plx")[0].childNodes[field_index(fields.tags)]);
+        }
+        if (color_classes)
+            make_pattern_fill(color_classes);
+        $r.removeClass(function (i, klass) {
+            return (klass.match(/(?:^| )(?:\S+tag|k[01])(?= |$)/g) || []).join(" ");
+        }).addClass(color_classes);
+    }
+};
 
 return plinfo;
 })();

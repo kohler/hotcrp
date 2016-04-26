@@ -1628,14 +1628,14 @@ td.pl_tag, td.pl_tagval, td.pl_formula {
 }
 
 td.plc, td.pl_revtype, td.pl_revstat, td.pl_confselector, td.pl_score,
-td.pl_uscores {
+td.pl_uscores, td.pl_edittag {
 	text-align: center;
 }
 
 td.pl_id, td.pl_sel, td.pl_confselector,
 td.pl_revtype, td.pl_assrev, td.pl_editrevpref,
 td.pl_score, td.pl_uscores, td.pl_formula,
-td.pl_tag, td.pl_tagval, td.pl_edittagval {
+td.pl_tag, td.pl_edittag, td.pl_tagval, td.pl_edittagval {
 	white-space: nowrap;
 }
 
@@ -1861,13 +1861,13 @@ tr.purpletag, tr.graytag, tr.whitetag {
 .boldtag.taghl, .boldtag .taghl {
 	font-weight: bold;
 }
-.fold5c .boldtag.conflicttag.taghl, .fold5c .boldtag.conflicttag .taghl {
+.fold5c .boldtag.conflictmark.taghl, .fold5c .boldtag.conflictmark .taghl {
 	font-weight: inherit;
 }
 .italictag.taghl, .italictag .taghl {
 	font-style: italic;
 }
-.fold5c .italictag.conflicttag.taghl, .fold5c .italictag.conflicttag .taghl {
+.fold5c .italictag.conflictmark.taghl, .fold5c .italictag.conflictmark .taghl {
 	font-style: inherit;
 }
 .underlinetag.taghl, .underlinetag .taghl {
@@ -1876,12 +1876,12 @@ tr.purpletag, tr.graytag, tr.whitetag {
 .strikethroughtag.taghl, .strikethroughtag .taghl {
 	text-decoration: line-through;
 }
-.fold5c .underlinetag.conflicttag.taghl, .fold5c .underlinetag.conflicttag .taghl,
-.fold5c .strikethroughtag.conflicttag.taghl, .fold5c .strikethroughtag.conflicttag .taghl {
+.fold5c .underlinetag.conflictmark.taghl, .fold5c .underlinetag.conflictmark .taghl,
+.fold5c .strikethroughtag.conflictmark.taghl, .fold5c .strikethroughtag.conflictmark .taghl {
 	text-decoration: inherit;
 }
-.fold5c .underlinetag.conflicttag a.taghl,
-.fold5c .strikethroughtag.conflicttag a.taghl {
+.fold5c .underlinetag.conflictmark a.taghl,
+.fold5c .strikethroughtag.conflictmark a.taghl {
 	text-decoration: underline;
 }
 .bigtag.taghl, .bigtag .taghl {
@@ -1890,50 +1890,50 @@ tr.purpletag, tr.graytag, tr.whitetag {
 .smalltag.taghl, .smalltag .taghl {
 	font-size: 80%;
 }
-.fold5c .bigtag.conflicttag.taghl, .fold5c .bigtag.conflicttag .taghl,
-.fold5c .smalltag.conflicttag.taghl, .fold5c .smalltag.conflicttag .taghl {
+.fold5c .bigtag.conflictmark.taghl, .fold5c .bigtag.conflictmark .taghl,
+.fold5c .smalltag.conflictmark.taghl, .fold5c .smalltag.conflictmark .taghl {
 	font-size: inherit;
 }
 .dimtag.taghl, .dimtag .taghl {
 	color: gray;
 }
-.fold5c .dimtag.conflicttag.taghl, .fold5c .dimtag.conflicttag .taghl {
+.fold5c .dimtag.conflictmark.taghl, .fold5c .dimtag.conflictmark .taghl {
 	color: inherit;
 }
-.highlighttag.taghl, .highlighttag .taghl,
-.yellowhighlighttag.taghl, .yellowhighlighttag .taghl {
+.highlightmark.taghl, .highlightmark .taghl,
+.yellowhighlightmark.taghl, .yellowhighlightmark .taghl {
 	background-color: #ffeb00;
 	box-shadow: -0.2em 0 0 #ffeb00, 0.2em 0 0 0 #ffeb00;
 }
-.pinkhighlighttag.taghl, .pinkhighlighttag .taghl {
+.pinkhighlightmark.taghl, .pinkhighlightmark .taghl {
 	background-color: #ff9ee5;
 	box-shadow: -0.2em 0 0 #ff9ee5, 0.2em 0 0 0 #ff9ee5;
 }
-.greenhighlighttag.taghl, .greenhighlighttag .taghl {
+.greenhighlightmark.taghl, .greenhighlightmark .taghl {
 	background-color: #70ff63;
 	box-shadow: -0.2em 0 0 #70ff63, 0.2em 0 0 0 #70ff63;
 }
-.bluehighlighttag.taghl, .bluehighlighttag .taghl {
+.bluehighlightmark.taghl, .bluehighlightmark .taghl {
 	background-color: #c4d2ff;
 	box-shadow: -0.2em 0 0 #c4d2ff, 0.2em 0 0 0 #c4d2ff;
 }
-.fold5c .highlighttag.conflicttag.taghl, .fold5c .highlighttag.conflicttag .taghl,
-.fold5c .pinkhighlighttag.conflicttag.taghl, .fold5c .pinkhighlighttag.conflicttag .taghl,
-.fold5c .yellowhighlighttag.conflicttag.taghl, .fold5c .yellowhighlighttag.conflicttag .taghl,
-.fold5c .greenhighlighttag.conflicttag.taghl, .fold5c .greenhighlighttag.conflicttag .taghl,
-.fold5c .bluehighlighttag.conflicttag.taghl, .fold5c .bluehighlighttag.conflicttag .taghl {
+.fold5c .highlightmark.conflictmark.taghl, .fold5c .highlightmark.conflictmark .taghl,
+.fold5c .pinkhighlightmark.conflictmark.taghl, .fold5c .pinkhighlightmark.conflictmark .taghl,
+.fold5c .yellowhighlightmark.conflictmark.taghl, .fold5c .yellowhighlightmark.conflictmark .taghl,
+.fold5c .greenhighlightmark.conflictmark.taghl, .fold5c .greenhighlightmark.conflictmark .taghl,
+.fold5c .bluehighlightmark.conflictmark.taghl, .fold5c .bluehighlightmark.conflictmark .taghl {
 	background-color: inherit;
 	box-shadow: none;
 }
 
-.fold5c .redtag.conflicttag,
-.fold5c .orangetag.conflicttag,
-.fold5c .yellowtag.conflicttag,
-.fold5c .greentag.conflicttag,
-.fold5c .bluetag.conflicttag,
-.fold5c .purpletag.conflicttag,
-.fold5c .graytag.conflicttag,
-.fold5c .whitetag.conflicttag {
+.fold5c .redtag.conflictmark,
+.fold5c .orangetag.conflictmark,
+.fold5c .yellowtag.conflictmark,
+.fold5c .greentag.conflictmark,
+.fold5c .bluetag.conflictmark,
+.fold5c .purpletag.conflictmark,
+.fold5c .graytag.conflictmark,
+.fold5c .whitetag.conflictmark {
 	background-image: none;
 	background-color: inherit;
 }
