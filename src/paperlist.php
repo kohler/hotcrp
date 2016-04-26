@@ -770,9 +770,7 @@ class PaperList {
                 if (isset($ginfo->tag))
                     $x .= " data-anno-tag=\"{$ginfo->tag}\"";
                 if (isset($ginfo->annoId))
-                    $x .= " data-anno-id=\"{$ginfo->annoId}\"";
-                if (isset($ginfo->tagIndex))
-                    $x .= " data-anno-tagval=\"{$ginfo->tagIndex}\"";
+                    $x .= " data-anno-id=\"{$ginfo->annoId}\" data-anno-tagval=\"{$ginfo->tagIndex}\"";
                 $x .= " data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($ginfo->heading, 60)) . "\">";
                 if ($rstate->titlecol)
                     $x .= "<td class=\"plheading$middle\" colspan=\"$rstate->titlecol\"></td>";

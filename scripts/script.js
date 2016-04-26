@@ -3772,17 +3772,15 @@ function PaperRow(l, r, index) {
     this.r = r;
     this.index = index;
     this.tagvalue = false;
-    this.order_anno = false;
+    this.isgroup = false;
     var i, x;
     if (rows[l].getAttribute("data-anno-tag")) {
-        this.order_anno = true;
-        if (rows[l].hasAttribute("data-anno-index")) {
-            this.tagvalue = parse_tagvalue(rows[l].getAttribute("data-anno-index"));
+        this.isgroup = true;
+        if (rows[l].hasAttribute("data-anno-tagval")) {
+            this.tagvalue = parse_tagvalue(rows[l].getAttribute("data-anno-tagval"));
             this.order_anno_id = +rows[l].getAttribute("data-anno-id");
-        } else {
-            this.tagvalue = -Infinity;
+        } else
             this.order_anno_id = null;
-        }
         this.id = 0;
     } else {
         var inputs = rows[l].getElementsByTagName("input"),
@@ -3897,7 +3895,7 @@ function tag_mousemove(evt) {
         ++l;
 
     // can't scroll above the fake -∞ group
-    if (l == 0 && rowanal[l].order_anno && rowanal[l].order_anno_id === null)
+    if (l == 0 && rowanal[l].isgroup && rowanal[l].order_anno_id === null)
         ++l;
 
     // if user drags far away, snap back
@@ -3985,8 +3983,15 @@ function calculate_shift(si, di) {
 
     var newval = -Infinity, delta = 0;
     for (i = 0; i < rowanal.length; ++i) {
-        if (rowanal[i].tagvalue === false)
-            newval = (i == 0 ? 1 : newval + delta + value_increment());
+        if (rowanal[i].tagvalue === false) {
+            if (i == 0)
+                newval = 1;
+            else if (rowanal[i - 1].tagvalue !== false)
+                newval = newval + delta + value_increment();
+            else
+                newval = false;
+        } else if (i == di && rowanal[i].isgroup && !rowanal[si].isgroup)
+            newval = newval + delta + value_increment();
         else
             newval = rowanal[i].tagvalue + delta;
         if (i == si && si < di) {
