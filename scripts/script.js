@@ -3704,7 +3704,7 @@ function add_conflict_ajax(selector) {
 
 
 window.add_edittag_ajax = (function () {
-var ready, dragtag, valuemap,
+var ready, dragtag,
     plt_tbody, dragging, rowanal, srcindex, dragindex, dragger,
     dragwander, scroller, mousepos, scrolldelta;
 
@@ -4037,9 +4037,8 @@ function sorttag_onchange() {
         if (!rv.ok || srcindex === null)
             return;
         var id = rowanal[srcindex].id, i, ltv;
-        valuemap[id] = tv;
         for (i = 0; i < rowanal.length; ++i) {
-            ltv = valuemap[rowanal[i].id];
+            ltv = i === srcindex ? tv : rowanal[i].tagvalue;
             if ((tv !== false && ltv === false)
                 || (tv !== false && ltv !== null && +ltv > +tv)
                 || (ltv === tv && rowanal[i].id > id))
@@ -4110,8 +4109,6 @@ return function (selector, active_dragtag) {
     }
     if (active_dragtag) {
         dragtag = active_dragtag;
-        valuemap = {};
-
         $(function () {
             plt_tbody = $(selector).children().filter("tbody")[0];
             $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
@@ -4124,7 +4121,6 @@ return function (selector, active_dragtag) {
                 this.parentElement.insertBefore(x, this.nextSibling);
                 x.onmousedown = tag_mousedown;
                 this.onchange = sorttag_onchange;
-                valuemap[id] = parse_tagvalue(this.value);
             });
         });
     }
