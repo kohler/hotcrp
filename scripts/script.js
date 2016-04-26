@@ -3704,8 +3704,8 @@ function add_conflict_ajax(selector) {
 
 
 window.add_edittag_ajax = (function () {
-var ready, plt_tbody,
-    dragtag, rowanal, rowanal_gaps, rowanal_gappos,
+var ready, plt_tbody, dragtag, full_dragtag,
+    rowanal, rowanal_gaps, rowanal_gappos,
     dragging, srcindex, dragindex, dragger,
     dragwander, scroller, mousepos, scrolldelta;
 
@@ -3767,32 +3767,23 @@ function tag_keypress(evt) {
 }
 
 function PaperRow(l, r, index) {
-    var rows = plt_tbody.childNodes;
+    var rows = plt_tbody.childNodes, i;
     this.l = l;
     this.r = r;
     this.index = index;
     this.tagvalue = false;
+    var tags = rows[l].getAttribute("data-tags"), m;
+    if (tags && (m = new RegExp("(?:^| )" + full_dragtag + "#(\\S+)").exec(tags)))
+        this.tagvalue = parse_tagvalue(m[1]);
     this.isgroup = false;
-    var i, x;
+    this.id = 0;
     if (rows[l].getAttribute("data-anno-tag")) {
         this.isgroup = true;
-        if (rows[l].hasAttribute("data-anno-tagval")) {
-            this.tagvalue = parse_tagvalue(rows[l].getAttribute("data-anno-tagval"));
-            this.order_anno_id = +rows[l].getAttribute("data-anno-id");
-        } else
-            this.order_anno_id = null;
-        this.id = 0;
+        if (rows[l].hasAttribute("data-anno-id"))
+            this.annoid = +rows[l].getAttribute("data-anno-id");
     } else {
-        var inputs = rows[l].getElementsByTagName("input"),
-            prefix = "tag:" + dragtag + " ";
-        for (i in inputs)
-            if (inputs[i].name
-                && inputs[i].name.substr(0, prefix.length) == prefix) {
-                this.entry = inputs[i];
-                this.tagvalue = parse_tagvalue(inputs[i].value);
-                break;
-            }
         this.id = +rows[l].getAttribute("data-pid");
+        this.entry = $(rows[l]).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
     }
     if ((i = rows[l].getAttribute("data-title-hint")))
         this.titlehint = i;
@@ -3895,7 +3886,7 @@ function tag_mousemove(evt) {
         ++l;
 
     // can't scroll above the fake -∞ group
-    if (l == 0 && rowanal[l].isgroup && rowanal[l].order_anno_id === null)
+    if (l == 0 && rowanal[l].isgroup && rowanal[l].annoid === null)
         ++l;
 
     // if user drags far away, snap back
@@ -4015,7 +4006,22 @@ function calculate_shift(si, di) {
             rowanal[i].newvalue = false;
 }
 
-function row_move(srcindex, dstindex) {
+function row_move(srcindex) {
+    // find new position
+    var id = rowanal[srcindex].id, newval = rowanal[srcindex].tagvalue, ltv, dstindex;
+    for (dstindex = 0; dstindex < rowanal.length; ++dstindex)
+        if (dstindex !== srcindex) {
+            ltv = rowanal[dstindex].tagvalue;
+            if ((newval !== false && ltv === false)
+                || (newval !== false && ltv !== false && ltv > newval)
+                || (ltv === newval && rowanal[dstindex].id > id)
+                || (ltv === newval && rowanal[dstindex].id == 0 && rowanal[srcindex].id == 0
+                    && rowanal[dstindex].annoid > rowanal[srcindex].annoid))
+                break;
+        }
+    if (dstindex === srcindex + 1)
+        return;
+
     // shift row groups
     var rows = plt_tbody.childNodes,
         range = [rowanal[srcindex].l, rowanal[srcindex].r],
@@ -4060,26 +4066,17 @@ function commit_drag(si, di) {
 }
 
 function sorttag_onchange() {
-    var that = this, tv = parse_tagvalue(that.value);
+    var that = this;
     tag_save(that, function (rv) {
         setajaxcheck(that, rv);
-        var srcindex = analyze_rows(that);
-        if (!rv.ok || srcindex === null)
-            return;
-        var id = rowanal[srcindex].id, i, ltv;
-        for (i = 0; i < rowanal.length; ++i) {
-            ltv = i === srcindex ? tv : rowanal[i].tagvalue;
-            if ((tv !== false && ltv === false)
-                || (tv !== false && ltv !== null && +ltv > +tv)
-                || (ltv === tv && rowanal[i].id > id))
-                break;
-        }
-        var had_focus = document.activeElement == that;
-        row_move(srcindex, i);
-        if (had_focus)
-            that.focus();
         if (rv.pid && rv.tags)
             plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
+        var srcindex = analyze_rows(that);
+        if (rv.ok && srcindex !== null) {
+            var had_focus = document.activeElement == that;
+            row_move(srcindex);
+            had_focus && that.focus();
+        }
     });
 }
 
@@ -4138,7 +4135,9 @@ return function (selector, active_dragtag) {
             .on("keypress.edittag_ajax", "input.edittagval", tag_keypress);
     }
     if (active_dragtag) {
-        dragtag = active_dragtag;
+        dragtag = full_dragtag = active_dragtag;
+        if (/^~[^~]/.test(dragtag))
+            full_dragtag = hotcrp_user.cid + dragtag;
         $(function () {
             plt_tbody = $(selector).children().filter("tbody")[0];
             $(plt_tbody).find("input[name^=\"tag:" + dragtag + " \"]").each(function () {
@@ -4671,15 +4670,14 @@ plinfo.set_tags = function (pid, tags, color_classes) {
     var fmap = rowmap();
     if (fmap[pid]) {
         var $r = $rows(fmap[pid]);
-        if (fields.tags && !fields.tags.missing) {
-            paper_attr_near($r[0], "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
-            render_row_tags($($r[1]).children("td.plx")[0].childNodes[field_index(fields.tags)]);
-        }
+        paper_attr_near($r[0], "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
         if (color_classes)
             make_pattern_fill(color_classes);
         $r.removeClass(function (i, klass) {
             return (klass.match(/(?:^| )(?:\S+tag|k[01])(?= |$)/g) || []).join(" ");
         }).addClass(color_classes);
+        if (fields.tags && !fields.tags.missing)
+            render_row_tags($($r[1]).children("td.plx")[0].childNodes[field_index(fields.tags)]);
     }
 };
 

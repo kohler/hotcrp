@@ -1090,6 +1090,7 @@ class TagPaperColumn extends PaperColumn {
 }
 
 class EditTagPaperColumn extends TagPaperColumn {
+    private $editsort;
     public function __construct($name, $tag, $is_value) {
         parent::__construct($name, $tag, $is_value);
         $this->className = ($this->is_value ? "pl_edittagval" : "pl_edittag");
@@ -1100,22 +1101,24 @@ class EditTagPaperColumn extends TagPaperColumn {
         return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare(PaperList $pl, $visible) {
+        $this->editsort = false;
         if (($p = parent::prepare($pl, $visible)) && $visible > 0
             && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
-            $s = "";
             if (("edit" . $sorter->type == $this->name
                  || $sorter->type == $this->name)
                 && !$sorter->reverse
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value)
-                $s = "," . json_encode($this->dtag);
-            $pl->add_header_script("add_edittag_ajax(" . json_encode("#$tid") . $s . ")");
+                $this->editsort = true;
+            $pl->add_header_script("add_edittag_ajax(" . json_encode("#$tid") . ($this->editsort ? "," . json_encode($this->dtag) : "") . ")");
         }
         return $p;
     }
     public function content($pl, $row, $rowidx) {
         $v = $this->_tag_value($row);
+        if ($this->editsort && !isset($pl->row_attr["data-tags"]))
+            $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
             return Ht::hidden("tag:$this->dtag $row->paperId", $v)
                 . ($this->is_value ? (string) $v : ($v ? "&#x2713;" : ""));

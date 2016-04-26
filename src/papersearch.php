@@ -3095,6 +3095,7 @@ class PaperSearch {
     private function _assign_order_anno($order_anno_tag, $tag_order) {
         $this->thenmap = [];
         $this->_assign_order_anno_group(0, $order_anno_tag, -1);
+        $this->groupmap[0]->heading = "none";
         $used_map = [];
         $cur_then = $cur_anno_index = 0;
         $last_anno_index = -1;
