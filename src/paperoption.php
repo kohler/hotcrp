@@ -195,9 +195,9 @@ class PaperOption {
         return self::$list;
     }
 
-    static function nonfixed_option_list() {
+    static function nonfixed_option_list(Conf $c = null) {
         if (self::$nonfixed_list === null)
-            self::$nonfixed_list = array_filter(self::option_list(), function ($o) {
+            self::$nonfixed_list = array_filter(self::option_list($c), function ($o) {
                 return !$o->fixed();
             });
         return self::$nonfixed_list;
