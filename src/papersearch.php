@@ -206,12 +206,13 @@ class SearchTerm {
         }
 
         // set default headings
-        foreach ($newvalues as $qv)
-            if (($substr = $qv->get_float("substr")) !== null
-                && $qv->get_float("heading") === null) {
-                $substr = preg_replace(',\A\(\s*(.*)\s*\)\z,', '$1', $substr);
-                $qv->set_float("heading", htmlspecialchars(trim($substr)));
-            }
+        if (count($newvalues) > 1)
+            foreach ($newvalues as $qv)
+                if (($substr = $qv->get_float("substr")) !== null
+                    && $qv->get_float("heading") === null) {
+                    $substr = preg_replace(',\A\(\s*(.*)\s*\)\z,', '$1', $substr);
+                    $qv->set_float("heading", htmlspecialchars(trim($substr)));
+                }
 
         $this->set("nthen", count($newvalues));
         $this->set("highlights", $newhmasks);
