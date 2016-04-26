@@ -3725,35 +3725,30 @@ function unparse_tagvalue(tv) {
     return tv === false ? "" : tv;
 }
 
-function tag_save(elt, success) {
-    var m = elt.name.match(/^tag:(\S+) (\d+)$/),
-        data = {addtags: "", deltags: ""};
-    if (elt.type.toLowerCase() == "checkbox")
-        elt.checked ? data.addtags = m[1] : data.deltags = m[1];
+function tag_save() {
+    var that = this, m = this.name.match(/^tag:(\S+) (\d+)$/), ch = null, newval;
+    if (this.type.toLowerCase() == "checkbox")
+        ch = this.checked ? m[1] : m[1] + "#clear";
+    else if ((newval = parse_tagvalue(this.value)) !== null)
+        ch = m[1] + "#" + (newval !== false ? newval : "clear");
     else {
-        var tv = parse_tagvalue(elt.value);
-        if (tv !== null)
-            data.addtags = m[1] + "#" + (tv !== false ? tv : "clear");
-        else {
-            setajaxcheck(elt, {ok: false, error: "Value must be a number (or “n” to remove the tag)."});
-            return false;
-        }
+        setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
+        return;
     }
     $.ajax(ajax_link_errors({
-        url: hoturl_post("api", "fn=settags&p=" + m[2] + "&forceShow=1"),
-        type: "POST", dataType: "json", data: data,
-        success: success
+        url: hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
+        type: "POST",
+        success: function (rv) {
+            setajaxcheck(that, rv);
+            if (rv.pid && rv.tags)
+                plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
+            if (m[1] === dragtag && rv.ok) {
+                var had_focus = document.activeElement == that;
+                row_move(analyze_rows(that));
+                had_focus && that.focus();
+            }
+        }
     }));
-    return data;
-}
-
-function tag_onclick() {
-    var that = this;
-    tag_save(that, function (rv) {
-        setajaxcheck(that, rv);
-        if (rv.pid && rv.tags)
-            plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
-    });
 }
 
 function tag_keypress(evt) {
@@ -3761,7 +3756,7 @@ function tag_keypress(evt) {
     if (event_modkey(evt) || event_key(evt) != "Enter")
         return true;
     else {
-        tag_onclick.call(this);
+        tag_save.call(this);
         return false;
     }
 }
@@ -4082,21 +4077,6 @@ function commit_drag(si, di) {
         }
 }
 
-function sorttag_onchange() {
-    var that = this;
-    tag_save(that, function (rv) {
-        setajaxcheck(that, rv);
-        if (rv.pid && rv.tags)
-            plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
-        var srcindex = analyze_rows(that);
-        if (rv.ok && srcindex !== null) {
-            var had_focus = document.activeElement == that;
-            row_move(srcindex);
-            had_focus && that.focus();
-        }
-    });
-}
-
 function tag_mousedown(evt) {
     evt = evt || window.event;
     if (dragging)
@@ -4147,8 +4127,8 @@ return function (selector, active_dragtag) {
     if (!ready) {
         ready = true;
         $(selector).off(".edittag_ajax")
-            .on("click.edittag_ajax", "input.edittag", tag_onclick)
-            .on("change.edittag_ajax", "input.edittagval", tag_onclick)
+            .on("click.edittag_ajax", "input.edittag", tag_save)
+            .on("change.edittag_ajax", "input.edittagval", tag_save)
             .on("keypress.edittag_ajax", "input.edittagval", tag_keypress);
     }
     if (active_dragtag) {
@@ -4166,7 +4146,6 @@ return function (selector, active_dragtag) {
                 x.setAttribute("title", "Drag to change order");
                 this.parentElement.insertBefore(x, this.nextSibling);
                 x.onmousedown = tag_mousedown;
-                this.onchange = sorttag_onchange;
             });
         });
     }
