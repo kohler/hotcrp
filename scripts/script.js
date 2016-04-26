@@ -3729,24 +3729,21 @@ function make_tag_save_callback(elt) {
     return function (rv) {
         var focus = document.activeElement;
         elt && setajaxcheck(elt, rv);
-        var pids = [], p;
-        if (rv.ok && rv.pid) {
-            pids.push(rv.pid);
-            plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
-        } else if (rv.ok && rv.p) {
-            for (p in rv.p) {
-                pids.push(+p);
-                plinfo.set_tags(p, rv.p[p].tags, rv.p[p].color_classes);
-            }
-        }
-        if (rv.ok && dragtag)
+        if (rv.ok) {
+            var pids = rv.p || {}, p;
+            if (rv.pid)
+                pids[rv.pid] = rv;
             for (p in pids) {
-                var si = analyze_rows(pids[p]);
-                if (rowanal[si].entry && rowanal[si].entry != elt)
-                    setajaxcheck(rowanal[si].entry, rv);
-                row_move(si);
+                plinfo.set_tags(+p, pids[p].tags, pids[p].color_classes);
+                if (dragtag) {
+                    var si = analyze_rows(+p);
+                    if (rowanal[si].entry && rowanal[si].entry != elt)
+                        setajaxcheck(rowanal[si].entry, rv);
+                    row_move(si);
+                }
             }
-        focus && focus.focus();
+            focus && focus.focus();
+        }
     }
 }
 
