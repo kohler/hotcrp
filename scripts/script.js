@@ -3725,8 +3725,33 @@ function unparse_tagvalue(tv) {
     return tv === false ? "" : tv;
 }
 
+function make_tag_save_callback(elt) {
+    return function (rv) {
+        var focus = document.activeElement;
+        elt && setajaxcheck(elt, rv);
+        var pids = [], p;
+        if (rv.ok && rv.pid) {
+            pids.push(rv.pid);
+            plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
+        } else if (rv.ok && rv.p) {
+            for (p in rv.p) {
+                pids.push(+p);
+                plinfo.set_tags(p, rv.p[p].tags, rv.p[p].color_classes);
+            }
+        }
+        if (rv.ok && dragtag)
+            for (p in pids) {
+                var si = analyze_rows(pids[p]);
+                if (rowanal[si].entry && rowanal[si].entry != elt)
+                    setajaxcheck(rowanal[si].entry, rv);
+                row_move(si);
+            }
+        focus && focus.focus();
+    }
+}
+
 function tag_save() {
-    var that = this, m = this.name.match(/^tag:(\S+) (\d+)$/), ch = null, newval;
+    var m = this.name.match(/^tag:(\S+) (\d+)$/), ch = null, newval;
     if (this.type.toLowerCase() == "checkbox")
         ch = this.checked ? m[1] : m[1] + "#clear";
     else if ((newval = parse_tagvalue(this.value)) !== null)
@@ -3737,17 +3762,7 @@ function tag_save() {
     }
     $.ajax(ajax_link_errors({
         url: hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
-        type: "POST",
-        success: function (rv) {
-            setajaxcheck(that, rv);
-            if (rv.pid && rv.tags)
-                plinfo.set_tags(rv.pid, rv.tags, rv.color_classes);
-            if (m[1] === dragtag && rv.ok) {
-                var had_focus = document.activeElement == that;
-                row_move(analyze_rows(that));
-                had_focus && that.focus();
-            }
-        }
+        type: "POST", success: make_tag_save_callback(this)
     }));
 }
 
@@ -3795,8 +3810,10 @@ PaperRow.prototype.middle = function () {
 
 function analyze_rows(e) {
     var rows = plt_tbody.childNodes, i, l, r, e, eindex = null;
-    while (e && e.nodeName != "TR")
+    while (e && typeof e !== "number" && e.nodeName != "TR")
         e = e.parentElement;
+
+    // create analysis
     rowanal = [];
     for (i = 0, l = null; i < rows.length; ++i)
         if (rows[i].nodeName == "TR") {
@@ -3812,6 +3829,14 @@ function analyze_rows(e) {
         }
     if (l !== null)
         rowanal.push(new PaperRow(l, r, rowanal.length));
+
+    // search for paper
+    if (typeof e === "number")
+        for (i = 0; i < rowanal.length; ++i)
+            if (rowanal[i].id == e) {
+                eindex = i;
+                break;
+            }
 
     // analyze whether this is a gapless order
     var sd = 0, nd = 0, s2d = 0, lv = null;
@@ -3974,10 +3999,12 @@ function calculate_shift(si, di) {
         if (rowanal[i].tagvalue === false) {
             if (i == 0)
                 newval = 1;
-            else if (rowanal[i - 1].tagvalue !== false)
-                newval = newval + delta + value_increment();
-            else
+            else if (rowanal[i - 1].tagvalue === false)
                 newval = false;
+            else if (i == 1)
+                newval += value_increment();
+            else
+                newval += rowanal[i - 1].tagvalue - rowanal[i - 2].tagvalue;
         } else if (rowanal[i].isgroup && i > 0)
             newval = Math.ceil(newval) + 1;
         else
@@ -4060,13 +4087,14 @@ function make_drag_group_success(row) {
 }
 
 function commit_drag(si, di) {
+    var saves = [], elts;
     calculate_shift(si, di);
     for (var i = 0; i < rowanal.length; ++i)
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
             /* do nothing */;
         else if (rowanal[i].entry) {
             rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
-            rowanal[i].entry.onchange();
+            saves.push(rowanal[i].id + " " + dragtag + "#" + (rowanal[i].newvalue === false ? "clear" : rowanal[i].newvalue));
         } else if (rowanal[i].annoid) {
             var data = {tagval: unparse_tagvalue(rowanal[i].newvalue)};
             $.ajax(ajax_link_errors({
@@ -4075,6 +4103,12 @@ function commit_drag(si, di) {
                 success: make_drag_group_success(plt_tbody.childNodes[rowanal[i].l])
             }));
         }
+    if (saves.length)
+        $.ajax(ajax_link_errors({
+            url: hoturl_post("api", {fn: "settags", forceShow: 1}),
+            type: "POST", dataType: "json", data: {tagassignment: saves.join(",")},
+            success: make_tag_save_callback(rowanal[si].entry)
+        }));
 }
 
 function tag_mousedown(evt) {

@@ -122,14 +122,16 @@ class PaperApi {
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t);
             foreach (TagInfo::split((string) $qreq->deltags) as $t)
                 $x[] = "$prow->paperId,tag," . CsvGenerator::quote($t . "#clear");
-        }
-        if (isset($qreq->taginstrux)) {
+        } else if (isset($qreq->tagassignment)) {
+            $pids = [];
             $pid = -1;
-            foreach (preg_split('/\s+/', $qreq->tagexec) as $x)
-                if ($x !== "" && ctype_digit($x))
-                    $pid = intval($x);
-                else if ($x !== "")
-                    $x[] = "$pid,tag," . CsvGenerator::quote($x);
+            foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w)
+                if ($w !== "" && ctype_digit($w))
+                    $pid = intval($w);
+                else if ($w !== "" && $pid > 0) {
+                    $x[] = "$pid,tag," . CsvGenerator::quote($w);
+                    $pids[$pid] = true;
+                }
         }
         $assigner = new AssignmentSet($user, $user->is_admin_force());
         $assigner->parse(join("\n", $x));
@@ -137,17 +139,23 @@ class PaperApi {
         $ok = $assigner->execute();
 
         // exit
-        $prow->load_tags();
         if ($ok && $prow) {
+            $prow->load_tags();
             $treport = self::tagreport($user, $prow);
             if ($treport->warnings)
                 $Conf->warnMsg(join("<br>", $treport->warnings));
             $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
             $prow->add_tag_info_json($taginfo, $user);
             json_exit($taginfo, true);
-        } else if ($ok)
-            json_exit(["ok" => true]);
-        else
+        } else if ($ok) {
+            $p = [];
+            $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => array_keys($pids), "tags" => true]));
+            while (($prow = PaperInfo::fetch($result, $user))) {
+                $p[$prow->paperId] = (object) [];
+                $prow->add_tag_info_json($p[$prow->paperId], $user);
+            }
+            json_exit(["ok" => true, "p" => $p]);
+        } else
             json_exit(["ok" => false, "error" => $error], true);
     }
 
