@@ -301,33 +301,28 @@ class PaperTable {
         return $c;
     }
 
-    private function entryData($fieldName, $table_type = false) {
-        $this->entryMatches = 0;
-
+    private function editable_textarea($fieldName) {
         if ($this->useRequest && isset($this->qreq[$fieldName]))
             $text = $this->qreq[$fieldName];
-        else if ($this->prow)
-            $text = $this->prow->$fieldName;
         else
-            $text = "";
+            $text = $this->prow ? $this->prow->$fieldName : "";
+        return Ht::textarea($fieldName, $text, ["class" => "papertext", "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => $fieldName === "abstract" ? "true" : null]);
+    }
 
-        if ($this->editable)
-            return Ht::textarea($fieldName, $text,
-                    array("class" => "papertext", "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "onchange" => "hiliter(this)",
-                          "spellcheck" => $fieldName === "abstract" ? "true" : null));
-
+    private function entryData($fieldName, $table_type = false) {
+        $this->entryMatches = 0;
+        $text = $this->prow ? $this->prow->$fieldName : "";
         if ($this->matchPreg && isset(self::$textAreaRows[$fieldName])
             && isset($this->matchPreg[$fieldName]))
             $text = Text::highlight($text, $this->matchPreg[$fieldName], $this->entryMatches);
         else
             $text = htmlspecialchars($text);
-
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
     private function echo_editable_title() {
         echo $this->editable_papt("title", "Title"),
-            '<div class="papev">', $this->entryData("title"), "</div></div>\n\n";
+            '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
     }
 
     static function pdfStamps($data) {
@@ -523,7 +518,7 @@ class PaperTable {
         if (($f = Conf::format_info($this->prow ? $this->prow->paperFormat : null))
             && ($t = get($f, "description")))
             echo $t;
-        echo $this->entryData("abstract"),
+        echo $this->editable_textarea("abstract"),
             "</div></div>\n\n";
     }
 
@@ -540,11 +535,12 @@ class PaperTable {
         echo '<div class="paptab"><div class="paptab_abstract"><div class="pg">',
             $this->papt("abstract", "Abstract", $extra),
             '<div class="pavb abstract"><div class="paptext format0';
-        if ($this->prow && ($format = $this->prow->format_of($text))) {
+        if ($this->prow && !$this->entryMatches
+            && ($format = $this->prow->format_of($text))) {
             echo ' need-format" data-format="', $format;
             $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
         }
-        echo '">', htmlspecialchars($text), "</div>";
+        echo '">', $text, "</div>";
         if ($extra)
             echo '<div class="fn6 textdiv-shade"></div>',
                 '<div class="fn6 textdiv-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
@@ -1012,7 +1008,7 @@ class PaperTable {
         We use this information when assigning PC and external reviews.";
         echo "  List one conflict per line.  For example: &ldquo;<samp>Jelena Markovic (EPFL)</samp>&rdquo; or, for a whole institution, &ldquo;<samp>EPFL</samp>&rdquo;.</div>",
             '<div class="papev">',
-            $this->entryData("collaborators"),
+            $this->editable_textarea("collaborators"),
             "</div></div>\n\n";
     }
 
