@@ -3705,7 +3705,7 @@ function add_conflict_ajax(selector) {
 
 window.add_edittag_ajax = (function () {
 var ready, plt_tbody,
-    dragtag, rowanal, rowanal_gapless,
+    dragtag, rowanal, rowanal_gaps, rowanal_gappos,
     dragging, srcindex, dragindex, dragger,
     dragwander, scroller, mousepos, scrolldelta;
 
@@ -3842,9 +3842,13 @@ function analyze_rows(e) {
             lv = rowanal[i].tagvalue;
         }
     s2d = Math.sqrt(s2d);
-    rowanal_gapless = false;
     if (nd >= 3 && sd >= 0.9 * nd && sd <= 1.1 * nd && s2d >= 0.9 * nd && s2d <= 1.1 * nd)
-        rowanal_gapless = true;
+        rowanal_gaps = null;
+    else {
+        rowanal_gaps = [];
+        while (rowanal_gaps.length < 3)
+            rowanal_gaps.push([1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)]);
+    }
 
     return eindex;
 }
@@ -3960,13 +3964,16 @@ function tag_dragto(l) {
 }
 
 function value_increment() {
-    if (rowanal_gapless)
+    if (!rowanal_gaps)
         return 1;
-    else
-        return [1, 1, 1, 1, 1, 2, 2, 2, 3, 4][Math.floor(Math.random() * 10)];
+    else {
+        rowanal_gappos = (rowanal_gappos + 1) % rowanal_gaps.length;
+        return rowanal_gaps[rowanal_gappos];
+    }
 }
 
 function calculate_shift(si, di) {
+    rowanal_gappos = 0;
     var i, sdelta = value_increment();
     if (rowanal[si].tagvalue !== false
         && si + 1 < rowanal.length
