@@ -322,7 +322,7 @@ function sprintf(fmt) {
                 conv[3] = 6;
             if (conv[4] == "g") {
                 arg = Number(arg).toPrecision(conv[3]).toString();
-                arg = arg.replace(/[.](\d*[1-9])?0+(|e.*)$/,
+                arg = arg.replace(/\.(\d*[1-9])?0+(|e.*)$/,
                                   function (match, p1, p2) {
                                       return (p1 == null ? "" : "." + p1) + p2;
                                   });
@@ -3773,11 +3773,15 @@ function PaperRow(l, r, index) {
     this.tagvalue = false;
     this.order_anno = false;
     var i, x;
-    if ((x = rows[l].getAttribute("data-anno-index"))) {
+    if (rows[l].getAttribute("data-anno-tag")) {
         this.order_anno = true;
-        this.tagvalue = parse_tagvalue(x);
-        if ((x = rows[l].getAttribute("data-anno-id")))
-            this.order_anno_id = +x;
+        if (rows[l].hasAttribute("data-anno-index")) {
+            this.tagvalue = parse_tagvalue(rows[l].getAttribute("data-anno-index"));
+            this.order_anno_id = +rows[l].getAttribute("data-anno-id");
+        } else {
+            this.tagvalue = -Infinity;
+            this.order_anno_id = null;
+        }
         this.id = 0;
     } else {
         var inputs = rows[l].getElementsByTagName("input"),
@@ -3865,15 +3869,21 @@ function tag_mousemove(evt) {
             l = m + 1;
     }
 
-    // find nearest insertion position
+    // if below middle, insert at next location
     if (l < rowanal.length && y > rowanal[l].middle())
         ++l;
+
+    // can't scroll above the fake -∞ group
+    if (l == 0 && rowanal[l].order_anno && rowanal[l].order_anno_id === null)
+        ++l;
+
     // if user drags far away, snap back
     var plt_geometry = $(plt_tbody).geometry();
     if (x < Math.min(geometry.left, plt_geometry.left) - 30
         || x > Math.max(geometry.right, plt_geometry.right) + 30
         || y < plt_geometry.top - 40 || y > plt_geometry.bottom + 40)
         l = srcindex;
+
     // scroll
     if (!scroller && (y < geometry.top || y > geometry.bottom)) {
         scroller = setInterval(tag_scroll, 13);
@@ -3881,17 +3891,16 @@ function tag_mousemove(evt) {
     }
 
     // calculate new dragger position
-    a = l;
-    if (a == srcindex || a == srcindex + 1) {
-        y = rowanal[srcindex].middle();
-        a = srcindex;
-    } else if (a < rowanal.length)
-        y = rowanal[a].top();
-    else
-        y = rowanal[rowanal.length - 1].bottom();
-    if (dragindex === a)
-        return;
-    dragindex = a;
+    if (l == srcindex || l == srcindex + 1)
+        l = srcindex;
+    if (l !== dragindex) {
+        tag_dragto(l);
+        event_stop(evt);
+    }
+}
+
+function tag_dragto(l) {
+    dragindex = l;
     dragwander = dragwander || dragindex != srcindex;
 
     // create dragger
@@ -3900,29 +3909,35 @@ function tag_mousemove(evt) {
         window.disable_tooltip = true;
     }
 
+    // calculate new value
+    var a, newval;
+    if (dragindex == srcindex)
+        newval = rowanal[dragindex].tagvalue;
+    else {
+        a = calculate_shift(srcindex, dragindex);
+        newval = a[srcindex].newvalue;
+    }
+
     // set dragger content and show it
-    m = "";
+    var m = "", y;
     if (rowanal[srcindex].id)
         m += "#" + rowanal[srcindex].id;
     if (rowanal[srcindex].titlehint)
         m += (m ? " &nbsp;" : "") + rowanal[srcindex].titlehint;
-    var v;
-    if (srcindex != dragindex) {
-        a = calculate_shift(srcindex, dragindex);
-        v = a[srcindex].newvalue;
-    } else
-        v = rowanal[srcindex].tagvalue;
-    if (v !== false) {
+    if (newval !== false) {
         m += '<span style="padding-left:2em';
         if (srcindex !== dragindex)
             m += ';font-weight:bold';
-        m += '">#' + dragtag + '#' + v + '</span>';
+        m += '">#' + dragtag + '#' + sprintf("%.2g", newval) + '</span>';
     }
-
+    if (dragindex == srcindex)
+        y = rowanal[srcindex].middle();
+    else if (dragindex < rowanal.length)
+        y = rowanal[dragindex].top();
+    else
+        y = rowanal[rowanal.length - 1].bottom();
     dragger.html(m).at($(rowanal[srcindex].entry).offset().left - 6, y)
         .color("edittagbubble" + (srcindex == dragindex ? " sametag" : ""));
-
-    event_stop(evt);
 }
 
 function row_move(srcindex, dstindex) {
