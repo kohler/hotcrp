@@ -3723,7 +3723,7 @@ function parse_tagvalue(s) {
 }
 
 function unparse_tagvalue(tv) {
-    return tv === false ? "" : tv;
+    return tv === false ? "" : sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
 }
 
 function make_tag_save_callback(elt) {
@@ -3966,7 +3966,7 @@ function tag_dragto(l) {
         m += '<span style="padding-left:2em';
         if (srcindex !== dragindex)
             m += ';font-weight:bold';
-        m += '">#' + dragtag + '#' + sprintf("%.2f", newval).replace(/\.0+$|0+$/, "") + '</span>';
+        m += '">#' + dragtag + '#' + unparse_tagvalue(newval) + '</span>';
     }
     if (dragindex == srcindex)
         y = rowanal[srcindex].middle();
@@ -4119,8 +4119,8 @@ function commit_drag(si, di) {
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
             /* do nothing */;
         else if (rowanal[i].entry) {
-            rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
-            saves.push(rowanal[i].id + " " + dragtag + "#" + (rowanal[i].newvalue === false ? "clear" : rowanal[i].newvalue));
+            var x = rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
+            saves.push(rowanal[i].id + " " + dragtag + "#" + (x === "" ? "clear" : x));
         } else if (rowanal[i].annoid) {
             var data = {tagval: unparse_tagvalue(rowanal[i].newvalue)};
             $.ajax(ajax_link_errors({
@@ -4459,12 +4459,12 @@ function $rows(elt) {
 }
 
 function paper_attr_near(elt, attr, value) {
-    var $j = $rows(elt);
-    if ($j.length) {
+    var $r = $rows(elt);
+    if ($r.length) {
         if (value === undefined)
-            return $j[0].getAttribute(attr);
+            return $r[0].getAttribute(attr);
         else
-            $j[0].setAttribute(attr, value);
+            $r[0].setAttribute(attr, value);
     }
     return null;
 }
