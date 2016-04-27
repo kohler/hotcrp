@@ -1083,7 +1083,7 @@ class TagPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         if (($v = $this->_tag_value($row)) === null)
             return "";
-        else if ($v === 0 && !$this->is_value)
+        else if ($v === 0.0 && !$this->is_value)
             return "&#x2713;";
         else
             return $v;
@@ -1091,7 +1091,7 @@ class TagPaperColumn extends PaperColumn {
     public function text($pl, $row) {
         if (($v = $this->_tag_value($row)) === null)
             return "";
-        else if ($v === 0 && !$this->is_value)
+        else if ($v === 0.0 && !$this->is_value)
             return "X";
         else
             return $v;
@@ -1127,7 +1127,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
-            return $this->is_value ? (string) $v : ($v ? "&#x2713;" : "");
+            return $this->is_value ? (string) $v : ($v === null ? "" : "&#x2713;");
         else if (!$this->is_value)
             return "<input type='checkbox' class='cb edittag' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
                 . ($v !== null ? " checked='checked'" : "") . " />";
