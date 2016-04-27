@@ -2010,6 +2010,18 @@ function pc_tags_members(tag) {
     return answer;
 }
 
+function make_onkeypress_enter(f) {
+    return function (evt) {
+        if (!event_modkey(evt) && event_key(evt) == "Enter") {
+            evt.preventDefault();
+            evt.stopImmediatePropagation();
+            f.call(this);
+            return false;
+        } else
+            return true;
+    };
+}
+
 window.autosub = (function () {
 var current;
 
@@ -2248,14 +2260,16 @@ function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
         elt = $$(elt);
     if (elt) {
+        if (elt.jquery)
+            elt = elt[0];
         make_outline_flasher(elt);
-        if (!rv.ok && !rv.error)
-            rv.error = "Error";
-        if (rv.ok)
+        if (rv && !rv.ok && !rv.error)
+            rv = {error: "Error"};
+        if (!rv || rv.ok)
             make_outline_flasher(elt, "0, 200, 0");
         else
             elt.style.outline = "5px solid red";
-        if (rv.error)
+        if (rv && rv.error)
             make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change");
     }
 }
@@ -3652,20 +3666,10 @@ function add_revpref_ajax(selector, reviewer) {
         });
     }
 
-    function rp_keypress(e) {
-        e = e || window.event;
-        if (event_modkey(e) || event_key(e) != "Enter")
-            return true;
-        else {
-            rp_change.apply(this);
-            return false;
-        }
-    }
-
     $(selector).off(".revpref_ajax")
         .on("focus.revpref_ajax", "input.revpref", rp_focus)
         .on("change.revpref_ajax", "input.revpref", rp_change)
-        .on("keypress.revpref_ajax", "input.revpref", rp_keypress);
+        .on("keypress.revpref_ajax", "input.revpref", make_onkeypress_enter(rp_change));
 }
 
 
@@ -3762,16 +3766,6 @@ function tag_save() {
         url: hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
         type: "POST", success: make_tag_save_callback(this)
     }));
-}
-
-function tag_keypress(evt) {
-    evt = evt || window.event;
-    if (event_modkey(evt) || event_key(evt) != "Enter")
-        return true;
-    else {
-        tag_save.call(this);
-        return false;
-    }
 }
 
 function PaperRow(l, r, index) {
@@ -4189,7 +4183,7 @@ return function (selector, active_dragtag) {
         $(selector).off(".edittag_ajax")
             .on("click.edittag_ajax", "input.edittag", tag_save)
             .on("change.edittag_ajax", "input.edittagval", tag_save)
-            .on("keypress.edittag_ajax", "input.edittagval", tag_keypress);
+            .on("keypress.edittag_ajax", "input.edittagval", make_onkeypress_enter(tag_save));
     }
     if (active_dragtag) {
         dragtag = full_dragtag = active_dragtag;
