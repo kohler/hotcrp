@@ -981,8 +981,13 @@ class ConflictMatchPaperColumn extends PaperColumn {
 }
 
 class TagListPaperColumn extends PaperColumn {
-    public function __construct() {
+    private $editable;
+    public function __construct($editable) {
         parent::__construct("tags", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
+        $this->editable = $editable;
+    }
+    public function make_editable() {
+        return new TagListPaperColumn(true);
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
@@ -1005,7 +1010,9 @@ class TagListPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $viewable = $row->viewable_tags($pl->contact);
         $pl->row_attr["data-tags"] = trim($viewable);
-        if ($viewable !== "") {
+        if ($this->editable)
+            $pl->row_attr["data-tags-editable"] = 1;
+        if ($viewable !== "" || $this->editable) {
             $pl->render_needed = true;
             return "<span class=\"need-tags\"></span>";
         } else
@@ -1618,7 +1625,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new AuthorsPaperColumn);
     PaperColumn::register(new CollabPaperColumn);
     PaperColumn::register_synonym("co", "collab");
-    PaperColumn::register(new TagListPaperColumn);
+    PaperColumn::register(new TagListPaperColumn(false));
     PaperColumn::register(new AbstractPaperColumn);
     PaperColumn::register(new LeadPaperColumn);
     PaperColumn::register(new ShepherdPaperColumn);

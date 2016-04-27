@@ -1507,6 +1507,12 @@ a.row_kill {
 tr:hover > td > a.row_up, tr:hover > td > a.row_down, tr:hover > td > a.row_kill {
 	visibility: visible;
 }
+span.hoveronly {
+	display: none;
+}
+div:hover > span.hoveronly {
+	display: inline-block;
+}
 
 /* paper list tables geometry */
 .pltable_full_ctr {
