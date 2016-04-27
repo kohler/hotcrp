@@ -4021,7 +4021,7 @@ function calculate_shift(si, di) {
                 newval += value_increment();
             else
                 newval += rowanal[i - 1].tagvalue - rowanal[i - 2].tagvalue;
-        } else if (rowanal[i].isgroup && i > 0)
+        } else if (rowanal[i].isgroup && i > 0 && Math.ceil(newval) + 1 < rowanal[i].tagvalue + delta)
             newval = Math.ceil(newval) + 1;
         else
             newval = rowanal[i].tagvalue + delta;
