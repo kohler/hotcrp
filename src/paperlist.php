@@ -763,10 +763,10 @@ class PaperList {
             if ($ginfo === null || !isset($ginfo->heading)
                 || strcasecmp($ginfo->heading, "none") == 0) {
                 if ($this->count != 1)
-                    $body[] = "  <tr class=\"pl plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
+                    $body[] = "  <tr class=\"plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
                 $middle = ($this->count == 1 ? "" : " plheading_middle");
-                $x = "  <tr class=\"pl plheading$middle\"";
+                $x = "  <tr class=\"plheading$middle\"";
                 if (isset($ginfo->tag))
                     $x .= " data-anno-tag=\"{$ginfo->tag}\"";
                 if (isset($ginfo->annoId))
@@ -944,7 +944,7 @@ class PaperList {
                     $pos += strlen($rownum_marker);
                     $x = substr($x, 0, $pos) . preg_replace('/\A\d+/', $number, substr($x, $pos));
                     ++$number;
-                } else if (strpos($x, "<tr class=\"pl plheading_blank") !== false)
+                } else if (strpos($x, "<tr class=\"plheading_blank") !== false)
                     $x = "";
                 else
                     $x = str_replace(" plheading_middle\"", "\"", $x);

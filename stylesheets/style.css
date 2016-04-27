@@ -1791,7 +1791,7 @@ a.pl_sort_def_rev:after {
 	font-size: 90%;
 }
 
-tbody.pltable_colored > tr.pl {
+tbody.pltable_colored > tr.pl, tbody.pltable_colored > tr.plheading {
 	border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 tbody.pltable_colored > tr:first-child {

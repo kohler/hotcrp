@@ -4572,8 +4572,8 @@ function add_column(f) {
     $j.find("tr.pl").each(function () {
         this.insertBefore($(h)[0], this.childNodes[index] || null);
     });
-    $j.find("tr.plx > td.plx, td.pl_footer, td.plheading").each(function () {
-        this.setAttribute("colspan", this.getAttribute("colspan") + 1);
+    $j.find("tr.plx > td.plx, td.pl_footer, td.plheading:last-child").each(function () {
+        this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
     });
     f.missing = false;
 }
