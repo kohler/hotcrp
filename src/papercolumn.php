@@ -60,6 +60,9 @@ class PaperColumn extends Column {
         if ($errors)
             $errors->add($ehtml, $eprio);
     }
+    public function make_editable() {
+        return $this;
+    }
 
     public function prepare(PaperList $pl, $visible) {
         return true;
@@ -715,6 +718,9 @@ class PreferencePaperColumn extends PaperColumn {
             self::make_column_error($errors, "“" . htmlspecialchars(substr($name, $p + 1)) . "” matches more than one PC member.", 2);
         return null;
     }
+    public function make_editable() {
+        return new PreferencePaperColumn($this->name, true, $this->contact);
+    }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->isPC)
             return false;
@@ -1023,6 +1029,9 @@ class TagPaperColumn extends PaperColumn {
         $p = strpos($name, ":") ? : strpos($name, "#");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
+    public function make_editable() {
+        return new EditTagPaperColumn($this->name, $this->dtag, $this->is_value);
+    }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
             return false;
@@ -1092,13 +1101,11 @@ class TagPaperColumn extends PaperColumn {
 class EditTagPaperColumn extends TagPaperColumn {
     private $editsort;
     public function __construct($name, $tag, $is_value) {
+        if ($is_value === null)
+            $is_value = true;
         parent::__construct($name, $tag, $is_value);
-        $this->className = ($this->is_value ? "pl_edittagval" : "pl_edittag");
+        $this->className = $this->is_value ? "pl_edittagval" : "pl_edittag";
         $this->editable = true;
-    }
-    public function make_column($name, $errors) {
-        $p = strpos($name, ":") ? : strpos($name, "#");
-        return parent::register(new EditTagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function prepare(PaperList $pl, $visible) {
         $this->editsort = false;
@@ -1602,8 +1609,6 @@ function initialize_paper_columns() {
     PaperColumn::register(new TopicListPaperColumn);
     PaperColumn::register(new PreferencePaperColumn("pref", false));
     PaperColumn::register_synonym("revpref", "pref");
-    PaperColumn::register(new PreferencePaperColumn("editpref", true));
-    PaperColumn::register_synonym("editrevpref", "editpref");
     PaperColumn::register(new PreferenceListPaperColumn("allpref", false));
     PaperColumn::register_synonym("allrevpref", "allpref");
     PaperColumn::register(new PreferenceListPaperColumn("alltopicpref", true));
@@ -1624,13 +1629,9 @@ function initialize_paper_columns() {
     PaperColumn::register(new FoldAllPaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
-    PaperColumn::register_factory("edittag:", new EditTagPaperColumn(null, null, false));
-    PaperColumn::register_factory("edittagval:", new EditTagPaperColumn(null, null, true));
     PaperColumn::register_factory("opt:", new OptionPaperColumn(null));
-    PaperColumn::register_factory("#", new TagPaperColumn(null, null, false));
-    PaperColumn::register_factory("edit#", new EditTagPaperColumn(null, null, true));
+    PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
-    PaperColumn::register_factory("editpref:", new PreferencePaperColumn(null, true));
 
     if (count(PaperOption::option_list()))
         PaperColumn::register_factory("", new OptionPaperColumn(null));

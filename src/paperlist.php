@@ -976,12 +976,8 @@ class PaperList {
         $viewmap_add = array();
         foreach ($this->viewmap as $k => $v)
             if (!isset($specials[$k])) {
-                $f = null;
                 $err = new ColumnErrors;
-                if ($v === "edit")
-                    $f = PaperColumn::lookup("edit$k");
-                if (!$f)
-                    $f = PaperColumn::lookup($k, $err);
+                $f = PaperColumn::lookup($k, $err);
                 if (!$f && !empty($err->error_html)) {
                     $err->error_html[0] = "Can’t show “" . htmlspecialchars($k) . "”: " . $err->error_html[0];
                     $this->error_html = array_merge($this->error_html, $err->error_html);
@@ -990,13 +986,16 @@ class PaperList {
                 if ($f && $f->name != $k)
                     $viewmap_add[$f->name] = $v;
                 foreach ($field_list as $ff)
-                    if ($f && $ff->name == $f->name)
+                    if ($f && $f->name == $ff->name)
                         $f = null;
                 if ($f && $v)
                     $field_list[] = $f;
             }
         foreach ($viewmap_add as $k => $v)
             $this->viewmap[$k] = $v;
+        foreach ($field_list as $fi => $f)
+            if ($this->viewmap[$f->name] === "edit")
+                $field_list[$fi] = $f->make_editable();
 
         // remove deselected columns;
         // in compactcolumns view, remove non-minimal columns
@@ -1406,5 +1405,4 @@ class PaperList {
         }
         return $x;
     }
-
 }
