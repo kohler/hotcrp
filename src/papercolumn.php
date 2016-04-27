@@ -1120,8 +1120,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
-            return Ht::hidden("tag:$this->dtag $row->paperId", $v)
-                . ($this->is_value ? (string) $v : ($v ? "&#x2713;" : ""));
+            return $this->is_value ? (string) $v : ($v ? "&#x2713;" : "");
         else if (!$this->is_value)
             return "<input type='checkbox' class='cb edittag' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
                 . ($v !== null ? " checked='checked'" : "") . " />";

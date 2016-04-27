@@ -4040,9 +4040,11 @@ function calculate_shift(si, di) {
             newval += sdelta;
             delta += sdelta;
         }
-        if (i >= si && i >= di && rowanal[i].tagvalue >= newval)
+        if ((i >= di && rowanal[i].tagvalue === false)
+            || (i >= si && i >= di && rowanal[i].tagvalue >= newval))
             break;
-        rowanal[i].newvalue = newval;
+        if (rowanal[i].tagvalue !== false)
+            rowanal[i].newvalue = newval;
     }
     if (rowanal.length == di) {
         if (newval !== false)
