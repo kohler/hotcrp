@@ -4435,37 +4435,64 @@ check_version.ignore = function (id) {
 
 // ajax loading of paper information
 var plinfo = (function () {
-var which = "pl", fields, field_order, aufull = {}, loadargs = {}, tagmap = false;
+var which = "pl", fields, field_order, aufull = {}, loadargs = {}, tagmap = false,
+    _bypid = {}, _bypidx = {};
 
-function $rows(elt) {
-    var pid, elx;
-    while (elt && elt.nodeName && elt.nodeName !== "TR")
-        elt = elt.parentNode;
-    if (!elt || elt.nodeName !== "TR" || !(pid = elt.getAttribute("data-pid")))
-        return $();
-    var dir = elt.className.substr(0, 3) === "plx" ? "previousSibling" : "nextSibling";
-    for (elx = elt[dir]; elx && elx.nodeName && elx.nodeName !== "TR"; )
-        elx = elx[dir];
-    if (!elx || elx.nodeName !== "TR" || elx.getAttribute("data-pid") !== pid)
-        return $();
-    else
-        return $(dir === "previousSibling" ? [elx, elt] : [elt, elx]);
+function field_index(f) {
+    var i, index = 0;
+    for (i = 0; i != field_order.length && field_order[i] != f; ++i)
+        if (!field_order[i].column == !f.column && !field_order[i].missing)
+            ++index;
+    return index;
 }
 
-function paper_attr_near(elt, attr, value) {
-    var $r = $rows(elt);
-    if ($r.length) {
-        if (value === undefined)
-            return $r[0].getAttribute(attr);
-        else
-            $r[0].setAttribute(attr, value);
-    }
+function pidmap() {
+    var map = {};
+    $("tr.pl").each(function () {
+        map[+this.getAttribute("data-pid")] = this;
+    });
+    return map;
+}
+
+function pidrow(pid) {
+    if (!(pid in _bypid))
+        _bypid[pid] = $("tr.pl[data-pid='" + pid + "']")[0];
+    return $(_bypid[pid]);
+}
+
+function pidxrow(pid) {
+    if (!(pid in _bypidx))
+        _bypidx[pid] = $("tr.plx[data-pid='" + pid + "'] > td.plx")[0];
+    return $(_bypidx[pid]);
+}
+
+function pidnear(elt) {
+    while (elt && elt.nodeName && elt.nodeName !== "TR")
+        elt = elt.parentNode;
+    var pid;
+    if (elt && elt.nodeName === "TR" && (pid = elt.getAttribute("data-pid")))
+        return +pid;
     return null;
 }
 
+function pidattr(pid, name, value) {
+    if (arguments.length == 2)
+        return pidrow(pid).attr(name);
+    else
+        pidrow(pid).attr(name, value);
+}
+
+function pidfield(pid, f, index) {
+    var row = f.column ? pidrow(pid) : pidxrow(pid);
+    if (row && index == null)
+        index = field_index(f);
+    return $(row.length ? row[0].childNodes[index] : null);
+}
+
+
 function render_allpref() {
     $(".need-allpref").each(function () {
-        var t = [], atoms = (paper_attr_near(this, "data-allpref") || "").split(/ /);
+        var t = [], pid = pidnear(this), atoms = (pidattr(pid, "data-allpref") || "").split(/ /);
         for (var i = 0; i != atoms.length; ++i) {
             var m = /^(\d+)([PT].*)$/.exec(atoms[i]),
                 pc = hotcrp_pc[m[1]], x = '';
@@ -4508,8 +4535,8 @@ function make_tagmap() {
 }
 
 function render_row_tags(div) {
-    var f = fields.tags, tmap = make_tagmap();
-    var t = [], tags = (paper_attr_near(div, "data-tags") || "").split(/ /);
+    var f = fields.tags, tmap = make_tagmap(), pid = pidnear(div);
+    var t = [], tags = (pidattr(pid, "data-tags") || "").split(/ /);
     for (var i = 0; i != tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
         if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == hotcrp_user.cid)) {
@@ -4528,17 +4555,17 @@ function render_row_tags(div) {
                 h += "#" + tindex;
             if (tagx & 1)
                 h = '<strong>' + h + '</strong>';
-            t.push([text.substring(twiddle, hash), text.substring(hash + 1), tagx, h]);
+            t.push([h, text.substring(twiddle, hash), text.substring(hash + 1), tagx]);
         }
     }
     t.sort(function (a, b) {
-        if ((a[2] ^ b[2]) & 1)
-            return a[2] & 1 ? -1 : 1;
+        if ((a[3] ^ b[3]) & 1)
+            return a[3] & 1 ? -1 : 1;
         else
-            return strnatcmp(a[0], b[0]);
+            return strnatcmp(a[1], b[1]);
     });
     if (t.length)
-        $(div).html('<em class="plx">' + f.title + ':</em> ' + $.map(t, function (x) { return x[3]; }).join(" "));
+        $(div).html('<em class="plx">' + f.title + ':</em> ' + $.map(t, function (x) { return x[0]; }).join(" "));
     else
         $(div).empty();
 }
@@ -4550,14 +4577,6 @@ function render_needed() {
         render_row_tags(this.parentNode);
     });
     render_text.on_page();
-}
-
-function field_index(f) {
-    var i, index = 0;
-    for (i = 0; i != field_order.length && field_order[i] != f; ++i)
-        if (!field_order[i].column == !f.column && !field_order[i].missing)
-            ++index;
-    return index;
 }
 
 function add_column(f) {
@@ -4600,35 +4619,17 @@ function set(f, elt, text) {
     }
 }
 
-function rowmap(f) {
-    var map = {}, index = f && field_index(f);
-    if (!f) {
-        $("#fold" + which).find("tr.pl").each(function () {
-            map[this.getAttribute("data-pid")] = this;
-        });
-    } else if (f.column) {
-        $("#fold" + which).find("tr.pl").each(function () {
-            map[this.getAttribute("data-pid")] = this.childNodes[index];
-        });
-    } else {
-        $("#fold" + which).find("tr.plx > td.plx").each(function () {
-            map[this.parentNode.getAttribute("data-pid")] = this.childNodes[index];
-        });
-    }
-    return map;
-}
-
 function make_callback(dofold, type) {
     var f = fields[type], values;
     function render_some() {
-        var i, x = values, n = 0, elt, map = rowmap(f);
+        var p, x = values, n = 0, entry, index = field_index(f);
         values = null;
-        for (i in x)
+        for (p in x)
             if (n > 64) {
                 values = values || {};
-                values[i] = x[i];
-            } else if (map[i]) {
-                set(f, map[i], x[i]);
+                values[p] = x[p];
+            } else if ((entry = pidfield(p, f, index)[0])) {
+                set(f, entry, x[p]);
                 ++n;
             }
         render_needed();
@@ -4638,12 +4639,11 @@ function make_callback(dofold, type) {
     function callback(rv) {
         if (type == "aufull")
             aufull[!!dofold] = rv;
-        var k, p, e, map;
+        var k, p;
         for (k in rv)
             if (k.substr(0, 5) == "attr.") {
-                map = map || rowmap();
                 for (p in rv[k])
-                    map[p] && map[p].setAttribute(k.substr(5), rv[k][p]);
+                    pidattr(p, k.substr(5), rv[k][p]);
             }
         values = rv[f.name + ".html"] || {};
         render_some();
@@ -4656,9 +4656,9 @@ function make_callback(dofold, type) {
 function show_loading(f) {
     return function () {
         if (f.loadable) {
-            var map = rowmap(f);
-            for (var i in map)
-                set(f, map[i], "Loading");
+            var index = field_index(f);
+            for (var p in pidmap())
+                set(f, pidfield(p, f, index)[0], "Loading");
         }
     };
 }
@@ -4723,20 +4723,17 @@ plinfo.set_fields = function (fo) {
         fields.au = fields.anonau = fields.aufull = fields.authors;
 };
 
-plinfo.paper_attr_near = paper_attr_near;
 plinfo.render_needed = render_needed;
 plinfo.set_tags = function (pid, tags, color_classes) {
-    var fmap = rowmap();
-    if (fmap[pid]) {
-        var $r = $rows(fmap[pid]);
-        paper_attr_near($r[0], "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
+    if (pidrow(pid).length) {
+        pidattr(pid, "data-tags", $.isArray(tags) ? tags.join(" ") : tags);
         if (color_classes)
             make_pattern_fill(color_classes);
-        $r.removeClass(function (i, klass) {
+        $("tr.pl, tr.plx").filter("[data-pid='" + pid + "']").removeClass(function (i, klass) {
             return (klass.match(/(?:^| )(?:\S+tag|k[01])(?= |$)/g) || []).join(" ");
         }).addClass(color_classes);
         if (fields.tags && !fields.tags.missing)
-            render_row_tags($($r[1]).children("td.plx")[0].childNodes[field_index(fields.tags)]);
+            render_row_tags(pidfield(pid, fields.tags)[0]);
     }
 };
 
