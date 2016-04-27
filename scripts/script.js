@@ -4461,15 +4461,23 @@ function pidmap() {
     return map;
 }
 
+function populate_bypid(table, selector) {
+    $(selector).each(function () {
+        var tr = this.tagName === "TR" ? this : this.parentNode;
+        if (tr.hasAttribute("data-pid"))
+            table[+tr.getAttribute("data-pid")] = this;
+    });
+}
+
 function pidrow(pid) {
     if (!(pid in _bypid))
-        _bypid[pid] = $("tr.pl[data-pid='" + pid + "']")[0];
+        populate_bypid(_bypid, "tr.pl");
     return $(_bypid[pid]);
 }
 
 function pidxrow(pid) {
     if (!(pid in _bypidx))
-        _bypidx[pid] = $("tr.plx[data-pid='" + pid + "'] > td.plx")[0];
+        populate_bypid(_bypidx, "tr.plx > td.plx");
     return $(_bypidx[pid]);
 }
 
@@ -4499,10 +4507,10 @@ function pidfield(pid, f, index) {
 
 function render_allpref() {
     $(".need-allpref").each(function () {
-        var t = [], pid = pidnear(this), atoms = (pidattr(pid, "data-allpref") || "").split(/ /);
-        for (var i = 0; i != atoms.length; ++i) {
-            var m = /^(\d+)([PT].*)$/.exec(atoms[i]),
-                pc = hotcrp_pc[m[1]], x = '';
+        var t = [], pid = pidnear(this), allpref = pidattr(pid, "data-allpref") || "",
+            atomre = /(\d+)([PT]\S+)/g, m;
+        while ((m = atomre.exec(allpref)) !== null) {
+            var pc = hotcrp_pc[m[1]], x = '';
             if (pc.color_classes)
                 x += '<span class="' + pc.color_classes + '">' + pc.name + '</span>';
             else
@@ -4699,37 +4707,33 @@ function set(f, elt, text) {
 }
 
 function make_callback(dofold, type) {
-    var f = fields[type], values;
+    var f = fields[type], values, tr;
     function render_some() {
-        var p, x = values, n = 0, entry, index = field_index(f);
-        values = null;
-        for (p in x)
-            if (n > 64) {
-                values = values || {};
-                values[p] = x[p];
-            } else if ((entry = pidfield(p, f, index)[0])) {
-                set(f, entry, x[p]);
+        var index = field_index(f), htmlk = f.name + ".html";
+        for (var n = 0; n < 64 && tr; tr = tr.nextSibling)
+            if (tr.nodeName === "TR" && tr.hasAttribute("data-pid") && /\bpl\b/.test(tr.className)) {
+                var p = +tr.getAttribute("data-pid");
+                for (var k in values)
+                    if (k.substr(0, 5) == "attr." && p in values[k])
+                        pidattr(p, k.substr(5), values[k][p]);
+                if (values[htmlk] && p in values[htmlk])
+                    set(f, pidfield(p, f, index)[0], values[htmlk][p]);
                 ++n;
             }
         render_needed();
-        if (values)
-            setTimeout(render_some, 3);
+        if (tr)
+            setTimeout(render_some, 8);
     }
-    function callback(rv) {
+    return function (rv) {
         if (type == "aufull")
             aufull[!!dofold] = rv;
-        var k, p;
-        for (k in rv)
-            if (k.substr(0, 5) == "attr.") {
-                for (p in rv[k])
-                    pidattr(p, k.substr(5), rv[k][p]);
-            }
-        values = rv[f.name + ".html"] || {};
-        render_some();
+        values = rv;
+        tr = $("tbody > tr.pl").first()[0];
+        if (rv.ok)
+            render_some();
         f.loadable = false;
         fold(which, dofold, f.name);
     };
-    return callback;
 }
 
 function show_loading(f) {
