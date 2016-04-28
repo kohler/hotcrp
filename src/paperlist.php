@@ -778,9 +778,10 @@ class PaperList {
                 for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                     /* do nothing */;
                 $count = plural($i - $this->count + 1, "paper");
+                $x .= "<span class=\"plheading_group\">";
                 if ($ginfo->heading !== "")
                     $x .= $ginfo->heading . " ";
-                $x .= "<span class=\"plheading_count\">$count</span></td></tr>";
+                $x .= "</span><span class=\"plheading_count\">$count</span></td></tr>";
                 $body[] = $x;
                 $rstate->colorindex = 0;
             }

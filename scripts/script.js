@@ -4190,6 +4190,57 @@ function tag_mouseup(evt) {
     dragging = srcindex = dragindex = null;
 }
 
+function edittaganno(annoid) {
+    function onclick(evt) {
+        var $d = $(this).closest("div.popupbg");
+        if (this.name === "cancel")
+            $d.remove();
+        else
+            $.ajax(ajax_link_errors({
+                url: hoturl_post("api", {fn: "settaganno", tag: dragtag, annoid: annoid}),
+                type: "POST", dataType: "json", data: {
+                    tagval: $d.find("input[name='tagval']").val(),
+                    heading: $d.find("input[name='heading']").val()
+                }, success: make_onsave($d)
+            }));
+        return false;
+    }
+    function make_onsave($d) {
+        return function (rv) {
+            setajaxcheck($d.find("button[name='save']"), rv);
+            if (rv.ok) {
+                var $r = $("tr.plheading[data-anno-id='" + annoid + "']");
+                make_drag_group_success($r[0])(rv);
+                if (rv.heading === null || rv.heading === "")
+                    $r.find(".plheading_group").text("");
+                else
+                    $r.find(".plheading_group").text(rv.heading + " ");
+                $d.remove();
+            }
+        };
+    }
+    $.ajax(ajax_link_errors({
+        url: hoturl_post("api", {fn: "settaganno", tag: dragtag, annoid: annoid}),
+        type: "POST", success: function (rv) {
+            if (!rv.ok)
+                return;
+            var hc = new HtmlCollector;
+            hc.push('<div class="popupbg">', '</div>');
+            hc.push('<div class="popupo"><form>', '</form></div>');
+            hc.push('<table><tbody>', '</tbody></table>');
+            hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading" type="text" placeholder="none" size="32" /></td></tr>');
+            hc.push('<tr><td class="lcaption nw">Starting tag value</td><td class="lentry"><input name="tagval" type="text" size="5" /></td></tr>');
+            hc.pop();
+            hc.push('<div class="popup_actions"><button name="cancel" type="button">Cancel</button><button name="save" type="submit">Save changes</button></div>');
+            var $d = $(hc.render());
+            $d.find("input[name='heading']").val(rv.heading);
+            $d.find("input[name='tagval']").val(unparse_tagvalue(rv.tagval));
+            $d.find("button").click(onclick);
+            $d.appendTo($(document.body));
+        }
+    }));
+}
+
 return function (selector, active_dragtag) {
     var sel = $$("sel");
     if (!ready) {

@@ -167,9 +167,10 @@ class PaperApi {
         if (!$user->privChair
             && (!$user->isPC || TagInfo::is_chair($tag)))
             json_exit(["ok" => false, "error" => "Permission error."]);
-        if ((!isset($qreq->annoid) || !ctype_digit($qreq->annoid))
-            || (isset($qreq->tagval) && !is_numeric($qreq->tagval)))
+        if (!isset($qreq->annoid) || !ctype_digit($qreq->annoid))
             json_exit(["ok" => false, "error" => "Bad request."]);
+        if (isset($qreq->tagval) && !is_numeric($qreq->tagval))
+            json_exit(["ok" => false, "error" => "Tag value should be a number.", "errf" => ["tagval" => true]]);
         $annoid = intval($qreq->annoid);
         if ($qreq->delete) {
             if (Dbl::qe("delete from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))
@@ -187,7 +188,8 @@ class PaperApi {
         }
         if (isset($qreq->heading)) {
             $qx[] = "heading=?";
-            $qv[] = $qreq->heading === "" ? null : $qreq->heading;
+            $heading = simplify_whitespace($qreq->heading);
+            $qv[] = $heading === "" ? null : $heading;
         }
         if (!empty($qx)) {
             array_push($qv, $tag, $annoid);
@@ -195,10 +197,13 @@ class PaperApi {
         }
         if (Dbl::$logged_errors == $old_errors
             && ($anno = Dbl::fetch_first_object("select * from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))) {
-            $t = "";
-            if ($anno->tagIndex !== null)
-                $t = $tag . "#" . $anno->tagIndex;
-            json_exit(["ok" => true, "tags" => $t]);
+            $j = ["ok" => true, "tags" => ""];
+            if ($anno->tagIndex !== null) {
+                $j["tags"] = $tag . "#" . $anno->tagIndex;
+                $j["tagval"] = (float) $anno->tagIndex;
+            }
+            $j["heading"] = $anno->heading;
+            json_exit($j);
         } else
             json_exit(["ok" => false, "error" => "Internal error."]);
     }
