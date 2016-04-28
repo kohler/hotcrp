@@ -3414,7 +3414,7 @@ function taghelp_tset(elt, displayed) {
 
 function taghelp_q(elt, displayed) {
     var x = completion_split(elt), m, n;
-    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*|#|(?:show|hide):\s*#)([^#\s()]*)$/))) {
+    if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*#)([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return alltags.then(make_suggestions(m[1], false, m[2], n[1], displayed));
     } else if (x && (m = x[0].match(/.*?(\b(?:has|ss|opt|dec|round|topic|style|color|show|hide):\s*)([^"\s()]*|"[^"]*)$/))) {
