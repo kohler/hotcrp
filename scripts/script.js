@@ -2263,19 +2263,27 @@ function make_outline_flasher(elt, rgba, duration) {
 function setajaxcheck(elt, rv) {
     if (typeof elt == "string")
         elt = $$(elt);
-    if (elt) {
-        if (elt.jquery)
-            elt = elt[0];
-        make_outline_flasher(elt);
-        if (rv && !rv.ok && !rv.error)
-            rv = {error: "Error"};
-        if (!rv || rv.ok)
-            make_outline_flasher(elt, "0, 200, 0");
-        else
-            elt.style.outline = "5px solid red";
-        if (rv && rv.error)
-            make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change");
+    if (!elt)
+        return;
+    if (elt.jquery && rv && !rv.ok && rv.errf) {
+        var i, e, $f = elt.closest("form");
+        for (i in rv.errf)
+            if ((e = $f.find("[name='" + i + "']")).length) {
+                elt = e[0];
+                break;
+            }
     }
+    if (elt.jquery)
+        elt = elt[0];
+    make_outline_flasher(elt);
+    if (rv && !rv.ok && !rv.error)
+        rv = {error: "Error"};
+    if (!rv || rv.ok)
+        make_outline_flasher(elt, "0, 200, 0");
+    else
+        elt.style.outline = "5px solid red";
+    if (rv && rv.error)
+        make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change");
 }
 
 function link_urls(t) {
