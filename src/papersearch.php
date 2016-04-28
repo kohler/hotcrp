@@ -211,7 +211,7 @@ class SearchTerm {
                 if (($substr = $qv->get_float("substr")) !== null
                     && $qv->get_float("heading") === null) {
                     $substr = preg_replace(',\A\(\s*(.*)\s*\)\z,', '$1', $substr);
-                    $qv->set_float("heading", htmlspecialchars(trim($substr)));
+                    $qv->set_float("heading", trim($substr));
                 }
 
         $this->set("nthen", count($newvalues));
@@ -2027,7 +2027,7 @@ class PaperSearch {
         }
         if ($keyword === "HEADING") {
             $heading = simplify_whitespace($word);
-            $qt[] = SearchTerm::make_float(["heading" => htmlspecialchars($heading)]);
+            $qt[] = SearchTerm::make_float(["heading" => $heading]);
         }
         if ($keyword === "show" || $keyword === "hide" || $keyword === "edit"
             || $keyword === "sort" || $keyword === "showsort"
@@ -3089,7 +3089,7 @@ class PaperSearch {
         if (($e = $order_anno_tag->order_anno_entry($anno_index)))
             $this->groupmap[$g] = $e;
         else if (!isset($this->groupmap[$g]))
-            $this->groupmap[$g] = (object) ["tag" => $order_anno_tag->tag, "heading" => ""];
+            $this->groupmap[$g] = (object) ["tag" => $order_anno_tag->tag, "heading" => "", "annoFormat" => 0];
     }
 
     private function _assign_order_anno($order_anno_tag, $tag_order) {
@@ -3373,10 +3373,10 @@ class PaperSearch {
         if ($qe->type === "then") {
             for ($i = 0; $i < $qe->nthen; ++$i) {
                 $h = $qe->value[$i]->get_float("heading");
-                $this->groupmap[$i] = (object) ["heading" => $h];
+                $this->groupmap[$i] = (object) ["heading" => $h, "annoFormat" => 0];
             }
         } else if (($h = $qe->get_float("heading")))
-            $this->groupmap[0] = (object) ["heading" => $h];
+            $this->groupmap[0] = (object) ["heading" => $h, "annoFormat" => 0];
         else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
             $this->is_order_anno = true;

@@ -3014,6 +3014,16 @@ class Contact {
         return $this->perm_change_tag($prow, null, null, null, $forceShow);
     }
 
+    function can_change_tag_anno($tag, $forceShow = null) {
+        $twiddle = strpos($tag, "~");
+        return $this->privChair
+            || ($this->isPC
+                && !TagInfo::is_chair($tag)
+                && ($twiddle === false
+                    || ($twiddle === 0 && $tag[1] !== "~")
+                    || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId)));
+    }
+
     function can_view_reviewer_tags(PaperInfo $prow = null) {
         return $this->act_pc($prow);
     }

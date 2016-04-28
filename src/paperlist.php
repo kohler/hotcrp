@@ -778,12 +778,22 @@ class PaperList {
                 for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                     /* do nothing */;
                 $count = plural($i - $this->count + 1, "paper");
-                $x .= "<span class=\"plheading_group\">";
-                if ($ginfo->heading !== "")
-                    $x .= $ginfo->heading . " ";
-                $x .= "</span><span class=\"plheading_count\">$count</span></td></tr>";
+                $x .= "<span class=\"plheading_group";
+                if ($ginfo->heading !== "") {
+                    if (($format = Conf::check_format($ginfo->annoFormat, $ginfo->heading))) {
+                        $x .= " need-format\" data-format=\"$format";
+                        $this->render_needed = true;
+                    }
+                    $x .= "\">" . htmlspecialchars($ginfo->heading) . " ";
+                } else
+                    $x .= "\">";
+                $x .= "</span><span class=\"plheading_count\">$count</span>";
+                if (isset($ginfo->tag) && isset($ginfo->annoId)
+                    && $this->contact->can_change_tag_anno($ginfo->tag))
+                    $x .= "<span class=\"hoveronly\" style=\"font-weight:normal;font-size:smaller\"> <span class=\"barsep\">·</span> <a href=\"#\" onclick=\"return add_edittag_ajax.edit_tag_anno(this)\">Edit</a></span>";
+                $x .= "</td></tr>";
                 $body[] = $x;
-                $rstate->colorindex = 0;
+            $rstate->colorindex = 0;
             }
         }
         return $thenval;

@@ -164,8 +164,7 @@ class PaperApi {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
             json_exit(["ok" => false, "error" => $tagger->error_html]);
-        if (!$user->privChair
-            && (!$user->isPC || TagInfo::is_chair($tag)))
+        if (!$user->can_change_tag_anno($tag))
             json_exit(["ok" => false, "error" => "Permission error."]);
         if (!isset($qreq->annoid) || !ctype_digit($qreq->annoid))
             json_exit(["ok" => false, "error" => "Bad request."]);

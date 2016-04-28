@@ -4198,14 +4198,19 @@ function tag_mouseup(evt) {
     dragging = srcindex = dragindex = null;
 }
 
-function edittaganno(annoid) {
+function edit_tag_anno(annoid) {
+    var mytag = dragtag;
+    if (typeof annoid === "object") {
+        mytag = $(annoid).closest("tr").attr("data-anno-tag");
+        annoid = +$(annoid).closest("tr").attr("data-anno-id");
+    }
     function onclick(evt) {
         var $d = $(this).closest("div.popupbg");
         if (this.name === "cancel")
             $d.remove();
         else
             $.ajax(ajax_link_errors({
-                url: hoturl_post("api", {fn: "settaganno", tag: dragtag, annoid: annoid}),
+                url: hoturl_post("api", {fn: "settaganno", tag: mytag, annoid: annoid}),
                 type: "POST", dataType: "json", data: {
                     tagval: $d.find("input[name='tagval']").val(),
                     heading: $d.find("input[name='heading']").val()
@@ -4218,23 +4223,30 @@ function edittaganno(annoid) {
             setajaxcheck($d.find("button[name='save']"), rv);
             if (rv.ok) {
                 var $r = $("tr.plheading[data-anno-id='" + annoid + "']");
-                make_drag_group_success($r[0])(rv);
+                if (dragtag && dragtag == mytag)
+                    make_drag_group_success($r[0])(rv);
+                var $g = $r.find(".plheading_group").removeAttr("data-format");
                 if (rv.heading === null || rv.heading === "")
-                    $r.find(".plheading_group").text("");
-                else
-                    $r.find(".plheading_group").text(rv.heading + " ");
+                    $g.text("");
+                else {
+                    $g.text(rv.heading + " ");
+                    if (rv.format) {
+                        $g.attr("data-format", rv.format);
+                        render_text.on.call($g[0]);
+                    }
+                }
                 $d.remove();
             }
         };
     }
     $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "settaganno", tag: dragtag, annoid: annoid}),
+        url: hoturl_post("api", {fn: "settaganno", tag: mytag, annoid: annoid}),
         type: "POST", success: function (rv) {
             if (!rv.ok)
                 return;
             var hc = new HtmlCollector;
             hc.push('<div class="popupbg">', '</div>');
-            hc.push('<div class="popupo"><form>', '</form></div>');
+            hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
             hc.push('<table><tbody>', '</tbody></table>');
             hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading" type="text" placeholder="none" size="32" /></td></tr>');
             hc.push('<tr><td class="lcaption nw">Starting tag value</td><td class="lentry"><input name="tagval" type="text" size="5" /></td></tr>');
@@ -4245,11 +4257,12 @@ function edittaganno(annoid) {
             $d.find("input[name='tagval']").val(unparse_tagvalue(rv.tagval));
             $d.find("button").click(onclick);
             $d.appendTo($(document.body));
+            popup_near($d[0].childNodes[0], window);
         }
     }));
 }
 
-return function (selector, active_dragtag) {
+function add_edittag_ajax(selector, active_dragtag) {
     var sel = $$("sel");
     if (!ready) {
         ready = true;
@@ -4288,6 +4301,9 @@ return function (selector, active_dragtag) {
     }
 };
 
+add_edittag_ajax.edit_tag_anno = edit_tag_anno;
+
+return add_edittag_ajax;
 })();
 
 

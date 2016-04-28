@@ -1510,7 +1510,7 @@ tr:hover > td > a.row_up, tr:hover > td > a.row_down, tr:hover > td > a.row_kill
 span.hoveronly {
 	display: none;
 }
-div:hover > span.hoveronly {
+div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 	display: inline-block;
 }
 
@@ -2976,6 +2976,9 @@ div.popupc, div.popupo {
 	min-width: 15em;
 	max-width: 32em;
 	z-index: 60;
+}
+div.popupo.popupcenter {
+	max-width: 64em;
 }
 div.popupc {
 	display: none;
