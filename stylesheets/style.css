@@ -1537,6 +1537,10 @@ td.plheading {
 	font-weight: bold;
 	padding: 0.5ex 0 0.2ex;
 	background: #f0f0f0;
+	border-top: 1px solid #cccccc;
+}
+tr.plheading:first-child > td.plheading {
+	border-top: 0px none;
 }
 span.plheading_count {
 	font-weight: normal;
@@ -1546,8 +1550,6 @@ span.plheading_count {
 td.plheading_blank {
 	height: 0.7ex;
 	background: #f0f0f0;
-}
-td.plheading_middle {
 	border-top: 1px solid #cccccc;
 }
 

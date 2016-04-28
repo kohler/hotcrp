@@ -763,18 +763,17 @@ class PaperList {
             if ($ginfo === null || !isset($ginfo->heading)
                 || strcasecmp($ginfo->heading, "none") == 0) {
                 if ($this->count != 1)
-                    $body[] = "  <tr class=\"plheading_blank plheading_middle\"><td class=\"plheading_blank plheading_middle\" colspan=\"$rstate->ncol\"></td></tr>\n";
+                    $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
-                $middle = ($this->count == 1 ? "" : " plheading_middle");
-                $x = "  <tr class=\"plheading$middle\"";
+                $x = "  <tr class=\"plheading\"";
                 if (isset($ginfo->tag))
                     $x .= " data-anno-tag=\"{$ginfo->tag}\"";
                 if (isset($ginfo->annoId))
                     $x .= " data-anno-id=\"{$ginfo->annoId}\" data-tags=\"{$ginfo->tag}#{$ginfo->tagIndex}\"";
                 $x .= " data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($ginfo->heading, 60)) . "\">";
                 if ($rstate->titlecol)
-                    $x .= "<td class=\"plheading$middle\" colspan=\"$rstate->titlecol\"></td>";
-                $x .= "<td class=\"plheading$middle\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
+                    $x .= "<td class=\"plheading\" colspan=\"$rstate->titlecol\"></td>";
+                $x .= "<td class=\"plheading\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
                 for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                     /* do nothing */;
                 $count = plural($i - $this->count + 1, "paper");
@@ -957,8 +956,6 @@ class PaperList {
                     ++$number;
                 } else if (strpos($x, "<tr class=\"plheading_blank") !== false)
                     $x = "";
-                else
-                    $x = str_replace(" plheading_middle\"", "\"", $x);
                 $nbody[] = $x;
             }
             $nbody[] = "  </tbody>\n</table></div></td>\n";
