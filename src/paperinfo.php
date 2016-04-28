@@ -564,7 +564,7 @@ class PaperInfo {
 
     private function load_reviewer_preferences() {
         global $Conf;
-        $this->allReviewerPreference = Dbl::fetch_first_value("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
+        $this->allReviewerPreference = Dbl::fetch_value("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $this->_prefs_array = null;
     }
 

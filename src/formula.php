@@ -243,7 +243,7 @@ class ConstantFexpr extends Fexpr {
         if (strlen($this->x) == 1 && ctype_alpha($this->x))
             $letter = strtoupper($this->x);
         if ($format === self::FPREFEXPERTISE && $letter >= "X" && $letter <= "Z")
-            $this->x = 89 - ord($word);
+            $this->x = 89 - ord($letter);
         else if ($format instanceof ReviewField && $letter
                  && ($x = $format->parse_value($letter, true)))
             $this->x = $x;
