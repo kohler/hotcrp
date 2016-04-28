@@ -203,6 +203,8 @@ class PaperApi {
                 $j["tagval"] = (float) $anno->tagIndex;
             }
             $j["heading"] = $anno->heading;
+            if (($format = Conf::check_format($anno->annoFormat, (string) $anno->heading)))
+                $j["format"] = $format;
             json_exit($j);
         } else
             json_exit(["ok" => false, "error" => "Internal error."]);

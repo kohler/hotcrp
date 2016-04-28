@@ -2400,6 +2400,18 @@ function render_inline(format, text /* arguments... */) {
     return do_render.call(this, format, true, a);
 }
 
+function on() {
+    var $j = $(this), format = this.getAttribute("data-format"),
+        content = this.getAttribute("data-content") || $j.text(), f;
+    if (this.tagName == "DIV")
+        f = render_text.call(this, format, content);
+    else
+        f = render_inline.call(this, format, content);
+    if (f.format)
+        $j.html(f.content);
+    this.className = this.className.replace(/(?:^| )(?:need-format|format\d+)(?: |$)/g, " ") + "format" + (f.format || 0);
+}
+
 $.extend(render_text, {
     add_format: function (x) {
         x.format && (renderers[x.format] = x);
@@ -2414,19 +2426,8 @@ $.extend(render_text, {
         default_format = format;
     },
     inline: render_inline,
-    on_page: function () {
-        $(".need-format").each(function () {
-            var $j = $(this), format = this.getAttribute("data-format"),
-                content = this.getAttribute("data-content") || $j.text(), f;
-            $j.removeClass("need-format");
-            if (this.tagName == "DIV")
-                f = render_text.call(this, format, content);
-            else
-                f = render_inline.call(this, format, content);
-            if (f.format)
-                $j.removeClass("format0").addClass("format" + f.format).html(f.content);
-        });
-    }
+    on: on,
+    on_page: function () { $(".need-format").each(on); }
 });
 return render_text;
 })();

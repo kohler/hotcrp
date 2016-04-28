@@ -757,6 +757,14 @@ class Conf {
         return get(self::$gFormatInfo, $format);
     }
 
+    static function check_format($format, $text = null) {
+        if ($format === null)
+            $format = self::$gDefaultFormat;
+        if ($format && $text !== null && ($f = self::format_info($format))
+            && ($re = get($f, "simple_regex")) && preg_match($re, $text))
+            $format = 0;
+        return $format;
+    }
 
 
     function session($name, $defval = null) {
