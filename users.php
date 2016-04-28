@@ -72,7 +72,7 @@ if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
     // Ensure that we only select contacts we're allowed to see.
     if (($rows = $pl->rows($_REQUEST["t"]))) {
         foreach ($rows as $row)
-            $allowed_papers[$row->paperId] = true;
+            $allowed_papers[$row->contactId] = true;
     }
     $papersel = array();
     if (isset($_REQUEST["pap"])) {
