@@ -4241,6 +4241,8 @@ function popup(anchor, which, dofold, populate) {
         anchor = anchor || $$("popupanchor_" + which);
     }
 
+    if (elt && /popupbg/.test(elt.parentNode.className))
+        elt.parentNode.style.display = dofold ? "none" : "block";
     if (elt && dofold)
         elt.className = "popupc";
     else if (elt) {
@@ -4273,13 +4275,13 @@ function popup(anchor, which, dofold, populate) {
 
 function override_deadlines(elt, callback) {
     var ejq = jQuery(elt);
-    var djq = jQuery('<div class="popupo"><p>'
+    var djq = jQuery('<div class="popupbg"><div class="popupo"><p>'
                      + (ejq.attr("data-override-text") || "")
                      + " Are you sure you want to override the deadline?</p>"
                      + '<form><div class="popup_actions">'
                      + '<button type="button" name="cancel">Cancel</button>'
                      + '<button type="button" name="submit">Save changes</button>'
-                     + '</div></form></div>');
+                     + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();
     });
@@ -4294,7 +4296,7 @@ function override_deadlines(elt, callback) {
         djq.remove();
     });
     djq.appendTo(document.body);
-    popup_near(djq[0], elt);
+    popup_near(djq[0].childNodes[0], elt);
 }
 
 

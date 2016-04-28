@@ -1717,7 +1717,7 @@ class PaperTable {
             if (!$Me->can_withdraw_paper($prow))
                 $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
-            $Conf->footerHtml("<div id='popup_w' class='popupc'>
+            $Conf->footerHtml("<div class='popupbg' style='display:none'><div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication?  $admins</p>\n"
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
@@ -1730,7 +1730,7 @@ class PaperTable {
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . Ht::js_button("Cancel", "popup(null,'w',1)")
     . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
-    . "</div></div></form></div>", "popup_w");
+    . "</div></div></form></div></div>", "popup_w");
         }
         if ($b) {
             if (!$Me->can_withdraw_paper($prow))

@@ -2959,6 +2959,15 @@ a.help {
 }
 
 /* popup dialogs */
+div.popupbg {
+	background-color: rgba(0, 0, 0, 0.4);
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	z-index: 59;
+}
 div.popupc, div.popupo {
 	border: 3px solid red;
 	padding: 0.5em;
@@ -2966,7 +2975,7 @@ div.popupc, div.popupo {
 	position: absolute;
 	min-width: 15em;
 	max-width: 32em;
-	z-index: 6;
+	z-index: 60;
 }
 div.popupc {
 	display: none;

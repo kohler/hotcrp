@@ -434,8 +434,8 @@ class Ht {
     static function popup($idpart, $content, $form = null, $actions = null) {
         if ($form && $actions)
             $form .= "<div class=\"popup_actions\">" . $actions . "</div></form>";
-        self::stash_html("<div id=\"popup_$idpart\" class=\"popupc\">"
-                         . $content . ($form ? $form : "") . "</div>", "popup_$idpart");
+        self::stash_html("<div class=\"popupbg\" style=\"display:none\"><div id=\"popup_$idpart\" class=\"popupc\">"
+                         . $content . ($form ? $form : "") . "</div></div>", "popup_$idpart");
     }
 
     static function xmsg($type, $content) {
