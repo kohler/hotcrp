@@ -30,7 +30,7 @@ class PaperListReviewAnalysis {
         global $Conf;
         if ($row->reviewId) {
             $this->row = $row;
-            $this->needsSubmit = !@$row->reviewSubmitted;
+            $this->needsSubmit = !get($row, "reviewSubmitted");
             if ($row->reviewRound)
                 $this->round = htmlspecialchars($Conf->round_name($row->reviewRound, true));
         }
