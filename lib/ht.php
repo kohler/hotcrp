@@ -392,6 +392,10 @@ class Ht {
                             '<a href="$1" rel="noreferrer">$1</a>$2', $html);
     }
 
+    static function check_stash($uniqueid) {
+        return get(self::$_stash_map, $uniqueid, false);
+    }
+
     static function mark_stash($uniqueid) {
         $marked = get(self::$_stash_map, $uniqueid);
         self::$_stash_map[$uniqueid] = true;

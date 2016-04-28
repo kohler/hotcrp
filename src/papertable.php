@@ -1277,11 +1277,15 @@ class PaperTable {
             echo $text;
 
         if ($editable) {
-            $sel = pc_members_selector_options(true, $this->prow, $value);
+            $selopt = [0];
+            foreach (pcMembers() as $p)
+                if (!$this->prow
+                    || $p->can_accept_review_assignment($this->prow)
+                    || $p->contactId == $value)
+                    $selopt[] = $p->contactId;
+            $Conf->stash_hotcrp_pc($Me);
             echo '<form class="fx"><div>',
-                Ht::select($type, $sel,
-                           ($value && isset($pc[$value]) ? htmlspecialchars($pc[$value]->email) : "0"),
-                           array("id" => "fold${type}_d")),
+                Ht::select($type, [], 0, ["id" => "fold{$type}_d", "class" => "need-pcselector", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
                 '</div></form>';
             $Conf->footerScript('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"set' . $type . '"})');
         }
@@ -1812,6 +1816,7 @@ class PaperTable {
             && $Conf->timePCReviewPreferences()
             && ($Me->roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)))
             $this->papstripReviewPreference();
+        $Conf->echoScript("$(\".need-pcselector\").each(populate_pcselector)");
     }
 
     function _paptabTabLink($text, $link, $image, $highlight) {

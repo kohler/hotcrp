@@ -1178,18 +1178,14 @@ function pcByEmail($email) {
     return null;
 }
 
-function pc_members_selector_options($include_none, $accept_assignment_prow = null,
-                                     $include_cid = 0) {
+function pc_members_selector_options($include_none) {
     global $Opt;
     $sel = array();
     if ($include_none)
         $sel["0"] = is_string($include_none) ? $include_none : "None";
     $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
     foreach (pcMembers() as $p)
-        if (!$accept_assignment_prow
-            || $p->can_accept_review_assignment($accept_assignment_prow)
-            || $p->contactId == $include_cid)
-            $sel[htmlspecialchars($p->email)] = Text::name_html($p, $textarg);
+        $sel[htmlspecialchars($p->email)] = Text::name_html($p, $textarg);
     return $sel;
 }
 

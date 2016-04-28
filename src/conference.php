@@ -2583,18 +2583,27 @@ class Conf {
         echo Ht::take_stash(), "</body>\n</html>\n";
     }
 
-    public function echo_hotcrp_pc() {
-        global $Me;
+    public function stash_hotcrp_pc(Contact $user) {
         if (!Ht::mark_stash("hotcrp_pc"))
             return;
+        $sortbylast = opt("sortByLastName");
         $hpcj = $list = [];
         foreach (pcMembers() as $pcm) {
-            $hpcj[$pcm->contactId] = $j = (object) ["name" => $Me->name_html_for($pcm), "email" => $pcm->email];
-            if (($color_classes = $Me->reviewer_color_classes_for($pcm)))
+            $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];
+            if (($color_classes = $user->reviewer_color_classes_for($pcm)))
                 $j->color_classes = $color_classes;
+            if ($sortbylast && $pcm->lastName) {
+                $r = Text::analyze_name($pcm);
+                if (strlen($r->lastName) !== strlen($r->name))
+                    $j->lastpos = strlen(htmlspecialchars($r->firstName)) + 1;
+                if ($r->nameAmbiguous && $r->name && $r->email)
+                    $j->emailpos = strlen(htmlspecialchars($r->name)) + 1;
+            }
             $list[] = $pcm->contactId;
         }
         $hpcj["__order__"] = $list;
+        if ($sortbylast)
+            $hpcj["__sort__"] = "last";
         Ht::stash_script("hotcrp_pc=" . json_encode($hpcj) . ";");
     }
 

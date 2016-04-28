@@ -221,9 +221,16 @@ window.escape_entities = (function () {
     return function (s) {
         if (s === null || typeof s === "number")
             return s;
-        return s.replace(re, function (match) {
-            return rep[match];
-        });
+        return s.replace(re, function (match) { return rep[match]; });
+    };
+})();
+
+window.unescape_entities = (function () {
+    var re = /&.*?;/g, rep = {"&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&apos;": "'", "&#039;": "'"};
+    return function (s) {
+        if (s === null || typeof s === "number")
+            return s;
+        return s.replace(re, function (match) { return rep[match]; });
     };
 })();
 
@@ -5196,6 +5203,43 @@ function save_tag_index(e) {
     });
     return false;
 }
+
+
+// PC selectors
+function populate_pcselector() {
+    var optids = hotcrp_pc.__order__, i = 0, opts = [], x, email, name, pos;
+    if (this.hasAttribute("data-pcselector-options"))
+        optids = this.getAttribute("data-pcselector-options").split(/[\s,]+/);
+    else if (this.hasAttribute("data-pcselector-allownone"))
+        i = -1;
+    var selected = this.getAttribute("data-pcselector-selected"), selindex = 0;
+    for (; i < optids.length; ++i) {
+        if (i < 0 || !+optids[i]) {
+            email = "0";
+            name = "None";
+        } else if ((x = hotcrp_pc[optids[i]])) {
+            email = x.email;
+            name = x.name;
+            if (hotcrp_pc.__sort__ === "last" && x.lastpos) {
+                if (x.emailpos)
+                    name = name.substr(x.lastpos, x.emailpos - x.lastpos - 1) + ", " + name.substr(0, x.lastpos - 1) + name.substr(x.emailpos - 1);
+                else
+                    name = name.substr(x.lastpos) + ", " + name.substr(0, x.lastpos - 1);
+            }
+        } else
+            continue;
+        var opt = document.createElement("option");
+        opt.setAttribute("value", email);
+        opt.text = unescape_entities(name);
+        this.add(opt);
+        if (email == selected || (i >= 0 && optids[i] == selected))
+            selindex = this.options.length - 1;
+    }
+    this.selectedIndex = selindex;
+    $(this).removeClass("need-pcselector");
+}
+
+$(function () { $(".need-pcselector").each(populate_pcselector); });
 
 
 // mail

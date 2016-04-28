@@ -836,7 +836,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             if ($this->topics)
                 $pl->qopts["topics"] = 1;
         }
-        $Conf->echo_hotcrp_pc();
+        $Conf->stash_hotcrp_pc($pl->contact);
         return true;
     }
     public function header($pl, $ordinal) {
