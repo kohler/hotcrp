@@ -1675,10 +1675,13 @@ td.pl_title img {
 div.pl_autoassignment > h6 {
 	font-weight: bold;
 }
-tr.pl_headrow td, tr.pl_headrow th {
+tr.pl_headrow > td, tr.pl_headrow > th {
 	border-bottom: 1px solid #999999;
 }
-tr.pl_headrow td, td.pl_footer, tr.pl_headrow th {
+tr.pl_headrow.pl_annorow > td {
+	background: #cccccc;
+}
+tr.pl_headrow > td, td.pl_footer, tr.pl_headrow > th {
 	font-size: smaller;
 }
 tr.pl_footrow > td {
@@ -2981,6 +2984,8 @@ div.popupc, div.popupo {
 }
 div.popupo.popupcenter {
 	max-width: 64em;
+	max-height: 70%;
+	overflow-y: auto;
 }
 div.popupc {
 	display: none;

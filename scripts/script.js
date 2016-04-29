@@ -194,7 +194,10 @@ jQuery.fn.extend({
         return g;
     },
     scrollIntoView: function () {
-        var p = this.geometry(), w = jQuery(window).geometry();
+        var p = this.geometry(), x = this[0].parentNode;
+        while (x && x.tagName && $(x).css("overflow-y") === "visible")
+            x = x.parentNode;
+        var w = jQuery(x && x.tagName ? x : window).geometry();
         if (p.top < w.top)
             this[0].scrollIntoView();
         else if (p.bottom > w.bottom)
@@ -3935,7 +3938,7 @@ function tag_mousemove(evt) {
     }
 
     // if dragging a group, restrict to groups
-    if (rowanal[srcindex].isgroup)
+    if (rowanal[srcindex].isgroup && rowanal[srcindex + 1] && !rowanal[srcindex + 1].isgroup)
         while (l > 0 && l < rowanal.length && !rowanal[l].isgroup)
             --l;
     r = endgroup_index(l);
@@ -4146,16 +4149,61 @@ function row_move(srcindex) {
         }
 }
 
-function make_drag_group_success(row) {
-    return function (rv) {
-        if (rv.ok && rv.tags)
-            row.setAttribute("data-tags", $.isArray(rv.tags) ? rv.tags.join(" ") : rv.tags);
+function add_taganno_draghandle() {
+    var x = document.createElement("span");
+    x.className = "dragtaghandle";
+    x.setAttribute("title", "Drag to change order");
+    x.style.float = "right";
+    x.style.position = "static";
+    x.style.paddingRight = "24px";
+    this.lastChild.insertBefore(x, null);
+}
+
+function add_taganno_row(tag, annoid) {
+    var $r = $("tr.pl_headrow:first-child > th");
+    var titlecol = 0, ncol = $r.length;
+    for (var i = 0; i != ncol; ++i)
+        if ($($r[i]).hasClass("pl_title"))
+            titlecol = i;
+    var h = '<tr class="plheading" data-anno-tag="' + tag + '" data-anno-id="' + annoid + '">';
+    if (titlecol)
+        h += '<td class="plheading" colspan="' + titlecol + '"></td>';
+    h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
+        '<span class="plheading_group"></span>' +
+        '<span class="plheading_count"></span></td></tr>';
+    var row = $(h)[0];
+    add_taganno_draghandle.call(row);
+    plt_tbody.insertBefore(row, null);
+    return row;
+}
+
+function taganno_success(rv) {
+    if (!rv.ok)
+        return;
+    var $headings = $("tr.plheading").filter('[data-anno-tag="' + rv.tag + '"]');
+    var annoid_seen = {};
+    for (var i = 0; i < rv.anno.length; ++i) {
+        var anno = rv.anno[i];
+        var row = $headings.filter('[data-anno-id="' + anno.annoid + '"]')[0];
+        if (!row)
+            row = add_taganno_row(rv.tag, anno.annoid);
+        row.setAttribute("data-tags", anno.annoid === null ? "" : rv.tag + "#" + anno.tagval);
+        var heading = anno.heading === null ? "" : anno.heading;
+        var $g = $(row).find(".plheading_group").attr({"data-format": anno.format || 0, "data-title": heading});
+        $g.text(heading === "" ? heading : heading + " ");
+        anno.format && render_text.on.call($g[0]);
+        annoid_seen[anno.annoid] = true;
         row_move(analyze_rows(row));
-    };
+    }
+    for (i = 0; i < $headings.length && false; ++i) { // remove unmentioned annotations
+        var annoid = $headings[i].getAttribute("data-anno-id");
+        if (annoid !== null && !annoid_seen[annoid])
+            $($headings[i]).remove();
+    }
 }
 
 function commit_drag(si, di) {
-    var saves = [], elts;
+    var saves = [], annosaves = [], elts;
     calculate_shift(si, di);
     for (var i = 0; i < rowanal.length; ++i)
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
@@ -4163,19 +4211,19 @@ function commit_drag(si, di) {
         else if (rowanal[i].entry) {
             var x = rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
             saves.push(rowanal[i].id + " " + dragtag + "#" + (x === "" ? "clear" : x));
-        } else if (rowanal[i].annoid) {
-            var data = {tagval: unparse_tagvalue(rowanal[i].newvalue)};
-            $.ajax(ajax_link_errors({
-                url: hoturl_post("api", {fn: "settaganno", tag: dragtag, annoid: rowanal[i].annoid, forceShow: 1}),
-                type: "POST", dataType: "json", data: data,
-                success: make_drag_group_success(plt_tbody.childNodes[rowanal[i].l])
-            }));
-        }
+        } else if (rowanal[i].annoid)
+            annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
     if (saves.length)
         $.ajax(ajax_link_errors({
             url: hoturl_post("api", {fn: "settags", forceShow: 1}),
             type: "POST", dataType: "json", data: {tagassignment: saves.join(",")},
             success: make_tag_save_callback(rowanal[si].entry)
+        }));
+    if (annosaves.length)
+        $.ajax(ajax_link_errors({
+            url: hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}),
+            type: "POST", dataType: "json", data: {anno: JSON.stringify(annosaves)},
+            success: taganno_success
         }));
 }
 
@@ -4225,7 +4273,7 @@ function tag_mouseup(evt) {
 }
 
 function edit_tag_anno(annoid) {
-    var mytag = dragtag, elt = $(annoid).closest("tr")[0];
+    var mytag = dragtag, elt = $(annoid).closest("tr")[0], annos, last_newannoid = 0;
     if (typeof annoid === "object") {
         mytag = elt.getAttribute("data-anno-tag");
         annoid = elt.hasAttribute("data-anno-id") ? +elt.getAttribute("data-anno-id") : null;
@@ -4234,74 +4282,81 @@ function edit_tag_anno(annoid) {
         var $d = $(this).closest("div.popupbg");
         if (this.name === "cancel")
             $d.remove();
-        else
+        else if (this.name === "add") {
+            var hc = new HtmlCollector;
+            add_anno(hc, {});
+            var $row = $(hc.render());
+            $row.appendTo($d.find(".tagannos"));
+            $row.find("input[name='heading_n" + last_newannoid + "']").focus();
+            $d.find(".popup_bottom").scrollIntoView();
+        } else {
+            var anno = [];
+            for (var i = 0; i < annos.length; ++i) {
+                var heading = $d.find("input[name='heading_" + annos[i].annoid + "']").val();
+                var tagval = $d.find("input[name='tagval_" + annos[i].annoid + "']").val();
+                if (heading != annos[i].heading || tagval != annos[i].tagval)
+                    anno.push({annoid: annos[i].annoid, heading: heading, tagval: tagval});
+            }
+            for (i = 1; i <= last_newannoid; ++i) {
+                heading = $d.find("input[name='heading_n" + i + "']").val();
+                tagval = $d.find("input[name='tagval_n" + i + "']").val();
+                if (heading != "" || tagval != 0)
+                    anno.push({annoid: "new", heading: heading, tagval: tagval});
+            }
             $.ajax(ajax_link_errors({
-                url: hoturl_post("api", {fn: "settaganno", tag: mytag, annoid: annoid, create: 1}),
-                type: "POST", dataType: "json", data: {
-                    tagval: $d.find("input[name='tagval']").val(),
-                    heading: $d.find("input[name='heading']").val()
-                }, success: make_onsave($d)
+                url: hoturl_post("api", {fn: "settaganno", tag: mytag}),
+                type: "POST", dataType: "json", data: {anno: JSON.stringify(anno)},
+                success: make_onsave($d)
             }));
+        }
         return false;
     }
     function make_onsave($d) {
         return function (rv) {
             setajaxcheck($d.find("button[name='save']"), rv);
-            if (rv.ok && rv.annoid && annoid === null) {
-                annoid = rv.annoid;
-                var $r = $("tr.pl_headrow:first-child > th");
-                var titlecol = 0, ncol = $r.length;
-                for (var i = 0; i != ncol; ++i)
-                    if ($($r[i]).hasClass("pl_title"))
-                        titlecol = i;
-                var h = '<tr class="plheading" data-anno-tag="' + mytag +
-                    '" data-anno-id="' + annoid + '">';
-                if (titlecol)
-                    h += '<td class="plheading" colspan="' + titlecol + '"></td>';
-                h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
-                    '<span class="plheading_group"></span>' +
-                    '<span class="plheading_count"></span>' +
-                    '<span class="hoveronly" style="font-weight:normal;font-size:smaller"> <span class="barsep">·</span> <a href="#" onclick="return add_edittag_ajax.edit_tag_anno(this)">Edit</a></span>' +
-                    '</td></tr>';
-                $(plt_tbody).append(h);
-            }
-            if (rv.ok && rv.annoid) {
-                var $r = $("tr.plheading[data-anno-id='" + annoid + "']");
-                var heading = rv.heading === null ? "" : rv.heading;
-                var $g = $r.find(".plheading_group").attr({"data-format": rv.format, "data-title": heading});
-                $g.text(heading === "" ? heading : heading + " ");
-                rv.format && render_text.on.call($g[0]);
-                if (dragtag && dragtag == mytag && $r.length)
-                    make_drag_group_success($r[0])(rv);
+            if (rv.ok) {
+                taganno_success(rv);
                 $d.remove();
             }
         };
     }
+    function add_anno(hc, anno) {
+        var annoid = anno.annoid;
+        if (annoid == null)
+            annoid = "n" + (last_newannoid += 1);
+        hc.push('<div class="settings_revfield"><table><tbody>', '</tbody></table></div>');
+        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="12" /></td></tr>');
+        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="12" /></td></tr>');
+        hc.pop();
+    }
     function show_dialog(rv) {
-        if (!rv.ok)
+        if (!rv.ok || !rv.editable)
             return;
         var hc = new HtmlCollector;
         hc.push('<div class="popupbg">', '</div>');
         hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
-        hc.push('<table><tbody>', '</tbody></table>');
-        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading" type="text" placeholder="none" size="32" /></td></tr>');
-        hc.push('<tr><td class="lcaption nw">Starting tag value</td><td class="lentry"><input name="tagval" type="text" size="5" /></td></tr>');
+        hc.push('<h2>Annotate #' + dragtag + ' order</h2>');
+        hc.push('<div class="tagannos">');
+        annos = rv.anno;
+        for (var i = 0; i < annos.length; ++i)
+            add_anno(hc, annos[i]);
         hc.pop();
-        hc.push('<div class="popup_actions"><button name="cancel" type="button">Cancel</button><button name="save" type="submit">Save changes</button></div>');
+        hc.push('<button name="add" type="button" tabindex="12">Add group</button>');
+        hc.push('<div class="popup_actions"><button name="cancel" type="button" tabindex="13">Cancel</button><button name="save" type="submit" tabindex="12">Save changes</button></div>');
+        hc.push('<div class="popup_bottom"></div>');
         var $d = $(hc.render());
-        $d.find("input[name='heading']").val(rv.heading);
-        $d.find("input[name='tagval']").val(unparse_tagvalue(rv.tagval));
+        for (var i = 0; i < annos.length; ++i) {
+            $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
+            $d.find("input[name='tagval_" + annos[i].annoid + "']").val(unparse_tagvalue(annos[i].tagval));
+        }
         $d.find("button").click(onclick);
         $d.appendTo($(document.body));
         popup_near($d[0].childNodes[0], window);
     }
-    if (annoid === null)
-        show_dialog({ok: true, heading: "", tagval: false});
-    else
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settaganno", tag: mytag, annoid: annoid}),
-            type: "POST", success: show_dialog
-        }));
+    $.ajax(ajax_link_errors({
+        url: hoturl_post("api", {fn: "taganno", tag: mytag}),
+        type: "POST", success: show_dialog
+    }));
 }
 
 function add_edittag_ajax(selector, active_dragtag) {
@@ -4328,15 +4383,7 @@ function add_edittag_ajax(selector, active_dragtag) {
                     this.parentElement.insertBefore(x, this.nextSibling);
                 }
             });
-            $(plt_tbody).find("tr.plheading[data-anno-id] > td:last-child").each(function () {
-                var x = document.createElement("span");
-                x.className = "dragtaghandle";
-                x.setAttribute("title", "Drag to change order");
-                x.style.float = "right";
-                x.style.position = "static";
-                x.style.paddingRight = "24px";
-                this.insertBefore(x, null);
-            });
+            $(plt_tbody).find("tr.plheading[data-anno-id]").each(add_taganno_draghandle);
             $(selector).off(".dragtag_ajax")
                 .on("mousedown.dragtag_ajax", "span.dragtaghandle", tag_mousedown);
         });

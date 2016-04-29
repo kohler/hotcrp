@@ -159,6 +159,20 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $error], true);
     }
 
+    static function taganno_api($user, $qreq, $prow) {
+        global $Conf;
+        $tagger = new Tagger($user);
+        if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
+            json_exit(["ok" => false, "error" => $tagger->error_html]);
+        $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
+              "anno" => []];
+        $dt = TagInfo::make_defined_tag($tag);
+        foreach ($dt->order_anno_list() as $oa)
+            if ($oa->annoId !== null)
+                $j["anno"][] = TagInfo::unparse_anno_json($oa);
+        json_exit($j);
+    }
+
     static function settaganno_api($user, $qreq, $prow) {
         global $Conf;
         $tagger = new Tagger($user);
@@ -166,49 +180,52 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $tagger->error_html]);
         if (!$user->can_change_tag_anno($tag))
             json_exit(["ok" => false, "error" => "Permission error."]);
-        if ($qreq->create && !isset($qreq->annoid))
-            $qreq->annoid = Dbl::fetch_value("select coalesce(max(annoId),0)+1 from PaperTagAnno where tag=?", $tag);
-        if (!isset($qreq->annoid) || !ctype_digit($qreq->annoid))
+        if (!isset($qreq->anno) || ($reqanno = json_decode($qreq->anno)) === false
+            || (!is_object($reqanno) && !is_array($reqanno)))
             json_exit(["ok" => false, "error" => "Bad request."]);
-        if (isset($qreq->tagval) && !is_numeric($qreq->tagval))
-            json_exit(["ok" => false, "error" => "Tag value should be a number.", "errf" => ["tagval" => true]]);
-        $annoid = intval($qreq->annoid);
-        if ($qreq->delete) {
-            if (Dbl::qe("delete from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))
-                json_exit(["ok" => true, "tagval" => false]);
-            else
-                json_exit(["ok" => false]);
-        }
-        if ($qreq->create)
-            Dbl::qe("insert into PaperTagAnno (tag,annoId) values (?,?) on duplicate key update tagIndex=tagIndex", $tag, $annoid);
-        $old_errors = Dbl::$logged_errors;
-        $qx = $qv = [];
-        if (isset($qreq->tagval)) {
-            $qx[] = "tagIndex=?";
-            $qv[] = floatval($qreq->tagval);
-        }
-        if (isset($qreq->heading)) {
-            $qx[] = "heading=?";
-            $heading = simplify_whitespace($qreq->heading);
-            $qv[] = $heading === "" ? null : $heading;
-        }
-        if (!empty($qx)) {
-            array_push($qv, $tag, $annoid);
-            Dbl::qe_apply("update PaperTagAnno set " . join(", ", $qx) . " where tag=? and annoId=?", $qv);
-        }
-        if (Dbl::$logged_errors == $old_errors
-            && ($anno = Dbl::fetch_first_object("select * from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))) {
-            $j = ["ok" => true, "tags" => "", "annoid" => +$anno->annoId];
-            if ($anno->tagIndex !== null) {
-                $j["tags"] = $tag . "#" . $anno->tagIndex;
-                $j["tagval"] = (float) $anno->tagIndex;
+        $q = $qv = $errors = $errf = $inserts = [];
+        $next_annoid = Dbl::fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
+        // parse updates
+        foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
+            if (!isset($anno->annoid)
+                || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid)))
+                json_exit(["ok" => false, "error" => "Bad request."]);
+            if (is_int($anno->annoid))
+                $annoid = $anno->annoid;
+            else {
+                $annoid = $next_annoid;
+                ++$next_annoid;
+                $q[] = "insert into PaperTagAnno (tag,annoId) values (?,?)";
+                array_push($qv, $tag, $annoid);
             }
-            $j["heading"] = $anno->heading;
-            if (($format = Conf::check_format($anno->annoFormat, (string) $anno->heading)))
-                $j["format"] = +$format;
-            json_exit($j);
-        } else
-            json_exit(["ok" => false, "error" => "Internal error."]);
+            if (isset($anno->heading)) {
+                $q[] = "update PaperTagAnno set heading=? where tag=? and annoId=?";
+                array_push($qv, $anno->heading, $tag, $annoid);
+            }
+            if (isset($anno->tagval)) {
+                $tagval = trim($anno->tagval);
+                if ($tagval === "")
+                    $tagval = "0";
+                if (is_numeric($tagval)) {
+                    $q[] = "update PaperTagAnno set tagIndex=? where tag=? and annoId=?";
+                    array_push($qv, floatval($tagval), $tag, $annoid);
+                } else {
+                    $errf["tagval_{$anno->annoid}"] = true;
+                    $errors[] = "Tag value should be a number.";
+                }
+            }
+        }
+        // return error if any
+        if (!empty($errors))
+            json_exit(["ok" => false, "error" => join("<br />", $errors), "errf" => $errf]);
+        // apply changes
+        if (!empty($q)) {
+            $mresult = Dbl::multi_qe_apply(join(";", $q), $qv);
+            while (($result = $mresult->next()))
+                Dbl::free($result);
+        }
+        // return results
+        self::taganno_api($user, $qreq, $prow);
     }
 
     static function votereport_api($user, $qreq, $prow) {

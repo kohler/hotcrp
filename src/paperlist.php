@@ -786,11 +786,7 @@ class PaperList {
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
                     . "\">" . htmlspecialchars($ginfo->heading)
                     . ($ginfo->heading !== "" ? " " : "")
-                    . "</span><span class=\"plheading_count\">$count</span>";
-                if (isset($ginfo->tag) && isset($ginfo->annoId)
-                    && $this->contact->can_change_tag_anno($ginfo->tag))
-                    $x .= "<span class=\"hoveronly\" style=\"font-weight:normal;font-size:smaller\"> <span class=\"barsep\">·</span> <a href=\"#\" onclick=\"return add_edittag_ajax.edit_tag_anno(this)\">Edit</a></span>";
-                $x .= "</td></tr>";
+                    . "</span><span class=\"plheading_count\">$count</span></td></tr>";
                 $body[] = $x;
             $rstate->colorindex = 0;
             }
@@ -1272,10 +1268,10 @@ class PaperList {
             $colhead .= "</tr>\n";
 
             if ($this->search->is_order_anno) {
-                $colhead .= "  <tr class=\"pl_headrow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
+                $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                 if ($rstate->titlecol)
                     $colhead .= "<td colspan=\"$rstate->titlecol\"></td>";
-                $colhead .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return add_edittag_ajax.edit_tag_anno(this)\">Add group</a></td></tr>\n";
+                $colhead .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return add_edittag_ajax.edit_tag_anno(this)\">Annotate order</a></td></tr>\n";
             }
 
             $colhead .= " </thead>\n";

@@ -331,6 +331,16 @@ class TagInfo {
         return $dt->nrank ? $dt->tag_array("rank") : array();
     }
 
+    public static function unparse_anno_json($anno) {
+        $j = (object) ["annoid" => $anno->annoId === null ? null : +$anno->annoId];
+        if ($anno->tagIndex !== null)
+            $j->tagval = (float) $anno->tagIndex;
+        $j->heading = $anno->heading;
+        if (($format = Conf::check_format($anno->annoFormat, (string) $anno->heading)))
+            $j->format = +$format;
+        return $j;
+    }
+
     public static function canonical_color($tag) {
         $tag = strtolower($tag);
         if ($tag === "violet")

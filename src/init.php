@@ -140,6 +140,7 @@ class SiteLoader {
         "setshepherd" => ["PaperApi::setshepherd_api", self::API_PAPER],
         "settaganno" => ["PaperApi::settaganno_api", self::API_POST],
         "settags" => ["PaperApi::settags_api", self::API_POST],
+        "taganno" => ["PaperApi::taganno_api", self::API_GET],
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
         "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET], // hotcrp-comet entrypoint
         "votereport" => ["PaperApi::votereport_api", self::API_GET_PAPER],
