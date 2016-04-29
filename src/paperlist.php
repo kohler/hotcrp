@@ -753,8 +753,7 @@ class PaperList {
             return 0;
     }
 
-    private function _row_check_heading($rstate, $srows, $row, $lastheading, &$body) {
-        $thenval = $this->_row_thenval($row);
+    private function _check_heading($thenval, $rstate, $srows, $lastheading, &$body) {
         if ($this->count != 1 && $thenval != $lastheading)
             $rstate->headingstart[] = count($body);
         while ($lastheading != $thenval) {
@@ -1229,7 +1228,8 @@ class PaperList {
         foreach ($rows as $row) {
             ++$this->count;
             if ($lastheading > -2)
-                $lastheading = $this->_row_check_heading($rstate, $rows, $row, $lastheading, $body);
+                $lastheading = $this->_check_heading($this->_row_thenval($row), $rstate, $rows,
+                                                     $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
                 $Conf->footerScript('$(plinfo.render_needed)', 'plist_render_needed');
@@ -1240,6 +1240,10 @@ class PaperList {
                 $this->need_render = false;
             }
         }
+        if ($lastheading > -2 && $this->search->is_order_anno)
+            while ($lastheading + 1 < count($this->search->groupmap))
+                $lastheading = $this->_check_heading($lastheading + 1, $rstate, $rows,
+                                                     $lastheading, $body);
 
         // header cells
         $colhead = "";

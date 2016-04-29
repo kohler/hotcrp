@@ -39,6 +39,9 @@ class TagMapItem {
     public function order_anno_entry($i) {
         return get($this->order_anno_list(), $i);
     }
+    public function has_order_anno() {
+        return count($this->order_anno_list()) > 1;
+    }
 }
 
 class TagMap implements ArrayAccess, IteratorAggregate {

@@ -3085,6 +3085,19 @@ class PaperSearch {
         }
     }
 
+    private function _check_sort_order_anno($sorters) {
+        $thetag = null;
+        $tagger = new Tagger($this->contact);
+        foreach ($sorters as $sorter) {
+            if (!preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sorter, $m)
+                || !($tag = $tagger->check($m[1]))
+                || ($thetag !== null && $tag !== $thetag))
+                return false;
+            $thetag = $tag;
+        }
+        return $thetag;
+    }
+
     private function _assign_order_anno_group($g, $order_anno_tag, $anno_index) {
         if (($e = $order_anno_tag->order_anno_entry($anno_index)))
             $this->groupmap[$g] = $e;
@@ -3230,10 +3243,7 @@ class PaperSearch {
         $order_anno_tag = null;
         if ($qe->type !== "then"
             && ($sort = $qe->get_float("sort"))
-            && count($sort) == 1
-            && preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sort[0], $sortm)
-            && ($tagger = new Tagger($this->contact))
-            && ($tag = $tagger->check($sortm[1]))) {
+            && ($tag = self::_check_sort_order_anno($sort))) {
             $dt = TagInfo::make_defined_tag($tag);
             if (count($dt->order_anno_list()))
                 $order_anno_tag = $dt;

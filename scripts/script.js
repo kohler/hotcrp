@@ -3772,7 +3772,7 @@ function parse_tagvalue(s) {
 }
 
 function unparse_tagvalue(tv) {
-    return tv === false ? "" : sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
+    return tv === false || tv === null ? "" : sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
 }
 
 function make_tag_save_callback(elt) {
@@ -4825,7 +4825,7 @@ function make_tag_column_callback(f) {
             }
         if (e.find("input").length) {
             e.find(".edittag").prop("checked", tagval !== null);
-            e.find(".edittagval").val(String(tagval));
+            e.find(".edittagval").val(tagval === null ? "" : String(tagval));
         } else if (tagval === "0")
             e.html(/tagval/.test(f.className) ? "0" : "✓");
         else
