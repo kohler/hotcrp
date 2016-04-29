@@ -17,8 +17,8 @@ function admin_home_messages() {
         $m[] = "Your PHP was built without JSON functionality. HotCRP is using its built-in replacements; the native functions would be faster.";
     if ((int) $Opt["globalSessionLifetime"] < $Opt["sessionLifetime"])
         $m[] = "PHP’s systemwide <code>session.gc_maxlifetime</code> setting, which is " . htmlspecialchars($Opt["globalSessionLifetime"]) . " seconds, is less than HotCRP’s preferred session expiration time, which is " . $Opt["sessionLifetime"] . " seconds.  You should update <code>session.gc_maxlifetime</code> in the <code>php.ini</code> file or users may be booted off the system earlier than you expect.";
-    if (!function_exists("imagecreate"))
-        $m[] = $errmarker . "This PHP installation lacks support for the GD library, so HotCRP cannot generate score charts (as backup for browsers that don’t support &lt;canvas&gt;). You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php" . PHP_MAJOR_VERSION . "-gd</code> package.";
+    if (!function_exists("imagecreate") && $Conf->setting("__gd_required"))
+        $m[] = $errmarker . "This PHP installation lacks support for the GD library, so HotCRP can’t generate backup score charts for old browsers. Some of your users require this backup. You should update your PHP installation. For example, on Ubuntu Linux, install the <code>php" . PHP_MAJOR_VERSION . "-gd</code> package.";
     $result = Dbl::qx_raw("show variables like 'max_allowed_packet'");
     $max_file_size = ini_get_bytes("upload_max_filesize");
     if (($row = edb_row($result))

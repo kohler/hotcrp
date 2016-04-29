@@ -15,6 +15,8 @@ if (!isset($_REQUEST["v"])) {
 
 // fail if no GD support so the browser displays alt text
 if (!function_exists("imagecreate")) {
+    require_once("src/init.php");
+    Dbl::q("insert into Settings set name='__gd_required', value=1 on duplicate key update value=1");
     header("HTTP/1.0 503 Service Unavailable");
     exit;
 }
