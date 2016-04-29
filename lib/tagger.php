@@ -22,11 +22,16 @@ class TagMapItem {
         $this->tag = $tag;
     }
     public function order_anno_list() {
-        if ($this->order_anno && $this->order_anno_list == false) {
+        if ($this->order_anno_list == false) {
             $this->order_anno_list = Dbl::fetch_objects("select * from PaperTagAnno where tag=?", $this->tag);
             $this->order_anno_list[] = (object) ["tag" => $this->tag, "tagIndex" => TAG_INDEXBOUND, "heading" => "Untagged", "annoId" => null, "annoFormat" => 0];
             usort($this->order_anno_list, function ($a, $b) {
-                return $a->tagIndex < $b->tagIndex ? -1 : ($a->tagIndex > $b->tagIndex ? 1 : 0);
+                if ($a->tagIndex != $b->tagIndex)
+                    return $a->tagIndex < $b->tagIndex ? -1 : 1;
+                else if (($x = strcasecmp($a->heading, $b->heading)) != 0)
+                    return $x;
+                else
+                    return $a->annoId < $b->annoId ? -1 : 1;
             });
         }
         return $this->order_anno_list;
@@ -210,6 +215,11 @@ class TagInfo {
     public static function defined_tag($tag) {
         $dt = self::defined_tags();
         return $dt->check(self::base($tag));
+    }
+
+    public static function make_defined_tag($tag) {
+        $dt = self::defined_tags();
+        return $dt[self::base($tag)];
     }
 
     public static function invalidate_defined_tags() {

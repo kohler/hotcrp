@@ -166,6 +166,8 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $tagger->error_html]);
         if (!$user->can_change_tag_anno($tag))
             json_exit(["ok" => false, "error" => "Permission error."]);
+        if ($qreq->create && !isset($qreq->annoid))
+            $qreq->annoid = Dbl::fetch_value("select coalesce(max(annoId),0)+1 from PaperTagAnno where tag=?", $tag);
         if (!isset($qreq->annoid) || !ctype_digit($qreq->annoid))
             json_exit(["ok" => false, "error" => "Bad request."]);
         if (isset($qreq->tagval) && !is_numeric($qreq->tagval))
@@ -196,14 +198,14 @@ class PaperApi {
         }
         if (Dbl::$logged_errors == $old_errors
             && ($anno = Dbl::fetch_first_object("select * from PaperTagAnno where tag=? and annoId=?", $tag, $annoid))) {
-            $j = ["ok" => true, "tags" => ""];
+            $j = ["ok" => true, "tags" => "", "annoid" => +$anno->annoId];
             if ($anno->tagIndex !== null) {
                 $j["tags"] = $tag . "#" . $anno->tagIndex;
                 $j["tagval"] = (float) $anno->tagIndex;
             }
             $j["heading"] = $anno->heading;
             if (($format = Conf::check_format($anno->annoFormat, (string) $anno->heading)))
-                $j["format"] = $format;
+                $j["format"] = +$format;
             json_exit($j);
         } else
             json_exit(["ok" => false, "error" => "Internal error."]);

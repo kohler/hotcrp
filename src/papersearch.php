@@ -3096,37 +3096,20 @@ class PaperSearch {
         $this->thenmap = [];
         $this->_assign_order_anno_group(0, $order_anno_tag, -1);
         $this->groupmap[0]->heading = "none";
-        $used_map = [];
-        $cur_then = $cur_anno_index = 0;
-        $last_anno_index = -1;
-        $olist = $order_anno_tag->order_anno_list();
+        $cur_then = $aidx = $tidx = 0;
+        $alist = $order_anno_tag->order_anno_list();
         usort($tag_order, "TagInfo::id_index_compar");
-        foreach ($tag_order as $i => $to) {
-            while (isset($olist[$cur_anno_index + 1])
-                   && $to[1] >= $olist[$cur_anno_index + 1]->tagIndex) {
-                if ($olist[$cur_anno_index]->heading
-                    && !isset($used_map[$cur_anno_index])) {
-                    if ($cur_then != 0 || $i != 0)
-                        ++$cur_then;
-                    $this->_assign_order_anno_group($cur_then, $order_anno_tag, $cur_anno_index);
-                    $last_anno_index = $cur_anno_index;
-                }
-                ++$cur_anno_index;
-            }
-            if (isset($olist[$cur_anno_index])
-                && $to[1] >= $olist[$cur_anno_index]->tagIndex)
-                $anno_index = $cur_anno_index;
-            else
-                $anno_index = -1;
-            if ($anno_index != $last_anno_index) {
-                if ($cur_then != 0 || $i != 0)
+        while ($aidx < count($alist) || $tidx < count($tag_order)) {
+            if ($tidx == count($tag_order)
+                || ($aidx < count($alist) && $alist[$aidx]->tagIndex <= $tag_order[$tidx][1])) {
+                if ($cur_then != 0 || $tidx != 0 || $aidx != 0)
                     ++$cur_then;
-                $this->_assign_order_anno_group($cur_then, $order_anno_tag, $anno_index);
-                if ($anno_index >= 0)
-                    $used_map[$anno_index] = true;
-                $last_anno_index = $anno_index;
+                $this->_assign_order_anno_group($cur_then, $order_anno_tag, $aidx);
+                ++$aidx;
+            } else {
+                $this->thenmap[$tag_order[$tidx][0]] = $cur_then;
+                ++$tidx;
             }
-            $this->thenmap[$to[0]] = $cur_then;
         }
     }
 
@@ -3248,10 +3231,11 @@ class PaperSearch {
         if ($qe->type !== "then"
             && ($sort = $qe->get_float("sort"))
             && count($sort) == 1
-            && preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sort[0], $sortm)
-            && ($dt = TagInfo::defined_tag($sortm[1]))
-            && $dt->order_anno)
-            $order_anno_tag = $dt;
+            && preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sort[0], $sortm)) {
+            $dt = TagInfo::make_defined_tag($sortm[1]);
+            if (count($dt->order_anno_list()))
+                $order_anno_tag = $dt;
+        }
 
         // add permissions tables if we will filter the results
         $need_filter = (($this->needflags & self::F_XVIEW)
@@ -3379,7 +3363,7 @@ class PaperSearch {
             $this->groupmap[0] = (object) ["heading" => $h, "annoFormat" => 0];
         else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
-            $this->is_order_anno = true;
+            $this->is_order_anno = $order_anno_tag->tag;
         }
 
         // extract regular expressions and set _reviewer if the query is
