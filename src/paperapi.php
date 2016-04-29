@@ -190,6 +190,13 @@ class PaperApi {
             if (!isset($anno->annoid)
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid)))
                 json_exit(["ok" => false, "error" => "Bad request."]);
+            if (isset($anno->deleted) && $anno->deleted) {
+                if (is_int($anno->annoid)) {
+                    $q[] = "delete from PaperTagAnno where tag=? and annoId=?";
+                    array_push($qv, $tag, $anno->annoid);
+                }
+                continue;
+            }
             if (is_int($anno->annoid))
                 $annoid = $anno->annoid;
             else {

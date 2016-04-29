@@ -1159,14 +1159,19 @@ function tooltip(info) {
     return tt;
 }
 
-function tooltip_enter(evt) {
+function tooltip_enter() {
     var tt = $(this).data("hotcrp_tooltip") || tooltip(this);
     tt && tt.enter();
 }
 
-function tooltip_leave(evt) {
+function tooltip_leave() {
     var tt = $(this).data("hotcrp_tooltip");
     tt && tt.exit();
+}
+
+function tooltip_erase() {
+    var tt = $(this).data("hotcrp_tooltip");
+    tt && tt.erase();
 }
 
 function add_tooltip() {
@@ -4213,7 +4218,7 @@ function taganno_success(rv) {
         annoid_seen[anno.annoid] = true;
         rv.tag === full_ordertag && row_move(analyze_rows(row));
     }
-    for (i = 0; i < $headings.length && false; ++i) { // remove unmentioned annotations
+    for (i = 0; i < $headings.length; ++i) { // remove unmentioned annotations
         var annoid = $headings[i].getAttribute("data-anno-id");
         if (annoid !== null && !annoid_seen[annoid])
             $($headings[i]).remove();
@@ -4289,14 +4294,17 @@ function tag_mouseup(evt) {
 }
 
 function edit_anno(locator) {
-    var elt = $(locator).closest("tr")[0], annos, last_newannoid = 0;
+    var $d, elt = $(locator).closest("tr")[0], annos, last_newannoid = 0;
     plt_tbody || set_plt_tbody(elt);
     var mytag = elt.getAttribute("data-anno-tag"),
         annoid = elt.hasAttribute("data-anno-id") ? +elt.getAttribute("data-anno-id") : null;
+    function close() {
+        window.global_tooltip && window.global_tooltip.erase();
+        $d.remove();
+    }
     function onclick(evt) {
-        var $d = $(this).closest("div.popupbg");
         if (this.name === "cancel")
-            $d.remove();
+            close();
         else if (this.name === "add") {
             var hc = new HtmlCollector;
             add_anno(hc, {});
@@ -4309,8 +4317,9 @@ function edit_anno(locator) {
             for (var i = 0; i < annos.length; ++i) {
                 var heading = $d.find("input[name='heading_" + annos[i].annoid + "']").val();
                 var tagval = $d.find("input[name='tagval_" + annos[i].annoid + "']").val();
-                if (heading != annos[i].heading || tagval != annos[i].tagval)
-                    anno.push({annoid: annos[i].annoid, heading: heading, tagval: tagval});
+                var deleted = $d.find("input[name='deleted_" + annos[i].annoid + "']").val();
+                if (heading != annos[i].heading || tagval != annos[i].tagval || deleted)
+                    anno.push({annoid: annos[i].annoid, heading: heading, tagval: tagval, deleted: !!deleted});
             }
             for (i = 1; i <= last_newannoid; ++i) {
                 heading = $d.find("input[name='heading_n" + i + "']").val();
@@ -4326,12 +4335,21 @@ function edit_anno(locator) {
         }
         return false;
     }
+    function ondeleteclick() {
+        var $div = $(this).closest(".settings_revfield"), annoid = $div.attr("data-anno-id");
+        $div.find("input[name='tagval_" + annoid + "']").after("[deleted]").remove();
+        $div.append('<input type="hidden" name="deleted_' + annoid + '" value="1" />');
+        $div.find("input[name='heading_" + annoid + "']").prop("disabled", true);
+        tooltip_erase.call(this);
+        $(this).remove();
+        return false;
+    }
     function make_onsave($d) {
         return function (rv) {
             setajaxcheck($d.find("button[name='save']"), rv);
             if (rv.ok) {
                 taganno_success(rv);
-                $d.remove();
+                close();
             }
         };
     }
@@ -4339,10 +4357,12 @@ function edit_anno(locator) {
         var annoid = anno.annoid;
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
-        hc.push('<div class="settings_revfield"><table><tbody>', '</tbody></table></div>');
+        hc.push('<div class="settings_revfield" data-anno-id="' + annoid + '"><table><tbody>', '</tbody></table></div>');
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="12" /></td></tr>');
-        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="12" /></td></tr>');
-        hc.pop();
+        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="12" />', '</td></tr>');
+        if (anno.annoid)
+            hc.push(' <a class="btn btn-transparent btn-closer deletegroup-link hottooltip" href="#" style="display:inline-block;margin-left:0.5em" data-hottooltip="Delete group">x</a>');
+        hc.pop_n(2);
     }
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
@@ -4359,12 +4379,16 @@ function edit_anno(locator) {
         hc.push('<button name="add" type="button" tabindex="12">Add group</button>');
         hc.push('<div class="popup_actions"><button name="cancel" type="button" tabindex="13">Cancel</button><button name="save" type="submit" tabindex="12">Save changes</button></div>');
         hc.push('<div class="popup_bottom"></div>');
-        var $d = $(hc.render());
+        $d = $(hc.render());
         for (var i = 0; i < annos.length; ++i) {
             $d.find("input[name='heading_" + annos[i].annoid + "']").val(annos[i].heading);
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(unparse_tagvalue(annos[i].tagval));
         }
-        $d.find("button").click(onclick);
+        $d.on("click", "button", onclick).on("click", "a.deletegroup-link", ondeleteclick);
+        $d.find(".hottooltip").each(add_tooltip);
+        $d.click(function (evt) {
+            evt.target == $d[0] && close();
+        });
         $d.appendTo($(document.body));
         popup_near($d[0].childNodes[0], window);
     }

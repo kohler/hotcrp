@@ -627,6 +627,7 @@ span.expander > span.in0 {
 }
 .btn.btn-closer {
 	line-height: .85;
+	border-radius: 0;
 }
 .btn.hottooltip {
 	cursor: pointer;
