@@ -198,7 +198,7 @@ class TitlePaperColumn extends PaperColumn {
         $highlight_text = Text::highlight($row->title, $this->highlight, $highlight_count);
 
         if (!$highlight_count && ($format = $row->title_format())) {
-            $pl->render_needed = true;
+            $pl->need_render = true;
             $t .= ' need-format" data-format="' . $format
                 . '" data-title="' . htmlspecialchars($row->title);
         }
@@ -441,7 +441,7 @@ class AbstractPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
-            $pl->render_needed = true;
+            $pl->need_render = true;
             $t = '<div class="need-format" data-format="' . $format . '.plx">'
                 . $t . '</div>';
         }
@@ -864,7 +864,7 @@ class PreferenceListPaperColumn extends PaperColumn {
         $pl->row_attr["data-allpref"] = join(" ", $ts);
         if (!empty($ts)) {
             $t = '<span class="need-allpref">Loading</span>';
-            $pl->render_needed = true;
+            $pl->need_render = true;
             return $t;
         } else
             return '';
@@ -995,6 +995,8 @@ class TagListPaperColumn extends PaperColumn {
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
+        if ($visible && $this->editable && ($tid = $pl->table_id()))
+            $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
         return true;
     }
     public function annotate_field_js(PaperList $pl, &$fjs) {
@@ -1014,7 +1016,7 @@ class TagListPaperColumn extends PaperColumn {
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
         if ($viewable !== "" || $this->editable) {
-            $pl->render_needed = true;
+            $pl->need_render = true;
             return "<span class=\"need-tags\"></span>";
         } else
             return "";
@@ -1124,9 +1126,11 @@ class EditTagPaperColumn extends TagPaperColumn {
                  || $sorter->type == $this->name)
                 && !$sorter->reverse
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
-                && $this->is_value)
+                && $this->is_value) {
                 $this->editsort = true;
-            $pl->add_header_script("add_edittag_ajax(" . json_encode("#$tid") . ($this->editsort ? "," . json_encode($this->dtag) : "") . ")");
+                $pl->row_attr["data-drag-tag"] = $this->dtag;
+            }
+            $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
         }
         return $p;
     }
@@ -1136,12 +1140,16 @@ class EditTagPaperColumn extends TagPaperColumn {
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
             return $this->is_value ? (string) $v : ($v === null ? "" : "&#x2713;");
-        else if (!$this->is_value)
-            return "<input type='checkbox' class='cb edittag' name='tag:$this->dtag $row->paperId' value='x' tabindex='6'"
-                . ($v !== null ? " checked='checked'" : "") . " />";
-        else
-            return "<input type='text' class='edittagval' size='4' name='tag:$this->dtag $row->paperId' value=\""
-                . ($v !== null ? htmlspecialchars($v) : "") . "\" tabindex='6' />";
+        if (!$this->is_value)
+            return '<input type="checkbox" class="cb edittag" name="tag:' . "$this->dtag $row->paperId" . '" value="x" tabindex="6"'
+                . ($v !== null ? ' checked="checked"' : '') . " />";
+        $t = '<input type="text" class="edittagval';
+        if ($this->editsort) {
+            $t .= " need-draghandle";
+            $pl->need_render = true;
+        }
+        return $t . '" size="4" name="tag:' . "$this->dtag $row->paperId" . '" value="'
+            . ($v !== null ? htmlspecialchars($v) : "") . '" tabindex="6" />';
     }
 }
 

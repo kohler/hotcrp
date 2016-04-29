@@ -3231,8 +3231,10 @@ class PaperSearch {
         if ($qe->type !== "then"
             && ($sort = $qe->get_float("sort"))
             && count($sort) == 1
-            && preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sort[0], $sortm)) {
-            $dt = TagInfo::make_defined_tag($sortm[1]);
+            && preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $sort[0], $sortm)
+            && ($tagger = new Tagger($this->contact))
+            && ($tag = $tagger->check($sortm[1]))) {
+            $dt = TagInfo::make_defined_tag($tag);
             if (count($dt->order_anno_list()))
                 $order_anno_tag = $dt;
         }

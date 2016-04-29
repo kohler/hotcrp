@@ -3731,11 +3731,33 @@ function add_conflict_ajax(selector) {
 }
 
 
-window.add_edittag_ajax = (function () {
-var ready, plt_tbody, dragtag, full_dragtag,
+window.plinfo_tags = (function () {
+var ready, plt_tbody, full_ordertag, dragtag, full_dragtag,
     rowanal, rowanal_gaps, rowanal_gappos, highlight_entries,
     dragging, srcindex, dragindex, dragger,
     scroller, mousepos, scrolldelta;
+
+function canonicalize_tag(tag) {
+    return tag && /^~[^~]/.test(tag) ? hotcrp_user.cid + tag : tag;
+}
+
+function set_plt_tbody(e) {
+    var table = $(e).closest("table.pltable");
+    full_ordertag = canonicalize_tag(table.attr("data-order-tag"));
+    full_ordertag && plinfo.on_set_tags(set_tags_callback);
+    dragtag = table.attr("data-drag-tag");
+    full_dragtag = canonicalize_tag(dragtag);
+    plt_tbody = $(table).children().filter("tbody")[0];
+
+    table.off(".edittag_ajax")
+        .on("click.edittag_ajax", "input.edittag", tag_save)
+        .on("change.edittag_ajax", "input.edittagval", tag_save)
+        .on("keypress.edittag_ajax", "input.edittagval", make_onkeypress_enter(tag_save));
+    if (full_dragtag) {
+        table.on("mousedown.edittag_ajax", "span.dragtaghandle", tag_mousedown);
+        $(function () { $(plt_tbody).find("tr.plheading").filter("[data-anno-id]").find("td.plheading").each(add_draghandle); });
+    }
+}
 
 function parse_tagvalue(s) {
     s = s.replace(/^\s+|\s+$/, "").toLowerCase();
@@ -3800,7 +3822,7 @@ function PaperRow(l, r, index) {
     this.index = index;
     this.tagvalue = false;
     var tags = rows[l].getAttribute("data-tags"), m;
-    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_dragtag) + "#(\\S+)").exec(tags)))
+    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(full_ordertag) + "#(\\S+)").exec(tags)))
         this.tagvalue = parse_tagvalue(m[1]);
     this.isgroup = false;
     this.id = 0;
@@ -3810,7 +3832,8 @@ function PaperRow(l, r, index) {
             this.annoid = +rows[l].getAttribute("data-anno-id");
     } else {
         this.id = +rows[l].getAttribute("data-pid");
-        this.entry = $(rows[l]).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
+        if (dragtag)
+            this.entry = $(rows[l]).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
     }
 }
 PaperRow.prototype.top = function () {
@@ -4052,10 +4075,13 @@ function calculate_shift(si, di) {
                 newval += value_increment();
             else
                 newval += rowanal[i - 1].tagvalue - rowanal[i - 2].tagvalue;
-        } else if (rowanal[i].isgroup && i > 0 && Math.ceil(newval) + 1 < rowanal[i].tagvalue + delta)
-            newval = Math.ceil(newval) + 1;
-        else
+        } else {
+            if (i > 0
+                && rowanal[i].tagvalue > rowanal[i - 1].tagvalue + value_increment()
+                && rowanal[i].tagvalue > newval)
+                delta = 0;
             newval = rowanal[i].tagvalue + delta;
+        }
         if (i == si && si < di) {
             if (rowanal[i + 1].tagvalue !== false)
                 delta = -(rowanal[i + 1].tagvalue - rowanal[i].tagvalue);
@@ -4149,15 +4175,6 @@ function row_move(srcindex) {
         }
 }
 
-function add_taganno_draghandle() {
-    var x = document.createElement("span");
-    x.className = "dragtaghandle";
-    x.setAttribute("title", "Drag to change order");
-    x.style.float = "right";
-    x.style.position = "static";
-    x.style.paddingRight = "24px";
-    this.lastChild.insertBefore(x, null);
-}
 
 function add_taganno_row(tag, annoid) {
     var $r = $("tr.pl_headrow:first-child > th");
@@ -4167,12 +4184,13 @@ function add_taganno_row(tag, annoid) {
             titlecol = i;
     var h = '<tr class="plheading" data-anno-tag="' + tag + '" data-anno-id="' + annoid + '">';
     if (titlecol)
-        h += '<td class="plheading" colspan="' + titlecol + '"></td>';
+        h += '<td class="plheading_spacer" colspan="' + titlecol + '"></td>';
     h += '<td class="plheading" colspan="' + (ncol - titlecol) + '">' +
         '<span class="plheading_group"></span>' +
         '<span class="plheading_count"></span></td></tr>';
     var row = $(h)[0];
-    add_taganno_draghandle.call(row);
+    if (tag === full_dragtag)
+        add_draghandle.call($(row).find("td.plheading")[0]);
     plt_tbody.insertBefore(row, null);
     return row;
 }
@@ -4193,7 +4211,7 @@ function taganno_success(rv) {
         $g.text(heading === "" ? heading : heading + " ");
         anno.format && render_text.on.call($g[0]);
         annoid_seen[anno.annoid] = true;
-        row_move(analyze_rows(row));
+        rv.tag === full_ordertag && row_move(analyze_rows(row));
     }
     for (i = 0; i < $headings.length && false; ++i) { // remove unmentioned annotations
         var annoid = $headings[i].getAttribute("data-anno-id");
@@ -4208,8 +4226,8 @@ function commit_drag(si, di) {
     for (var i = 0; i < rowanal.length; ++i)
         if (rowanal[i].newvalue === rowanal[i].tagvalue)
             /* do nothing */;
-        else if (rowanal[i].entry) {
-            var x = rowanal[i].entry.value = unparse_tagvalue(rowanal[i].newvalue);
+        else if (rowanal[i].id) {
+            var x = unparse_tagvalue(rowanal[i].newvalue);
             saves.push(rowanal[i].id + " " + dragtag + "#" + (x === "" ? "clear" : x));
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
@@ -4265,19 +4283,16 @@ function tag_mouseup(evt) {
     }
     if (scroller)
         scroller = (clearInterval(scroller), null);
-
     if (srcindex !== null && (dragindex === null || srcindex != dragindex))
         commit_drag(srcindex, dragindex);
-
     dragging = srcindex = dragindex = null;
 }
 
-function edit_tag_anno(annoid) {
-    var mytag = dragtag, elt = $(annoid).closest("tr")[0], annos, last_newannoid = 0;
-    if (typeof annoid === "object") {
-        mytag = elt.getAttribute("data-anno-tag");
+function edit_anno(locator) {
+    var elt = $(locator).closest("tr")[0], annos, last_newannoid = 0;
+    plt_tbody || set_plt_tbody(elt);
+    var mytag = elt.getAttribute("data-anno-tag"),
         annoid = elt.hasAttribute("data-anno-id") ? +elt.getAttribute("data-anno-id") : null;
-    }
     function onclick(evt) {
         var $d = $(this).closest("div.popupbg");
         if (this.name === "cancel")
@@ -4335,7 +4350,7 @@ function edit_tag_anno(annoid) {
         var hc = new HtmlCollector;
         hc.push('<div class="popupbg">', '</div>');
         hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
-        hc.push('<h2>Annotate #' + dragtag + ' order</h2>');
+        hc.push('<h2>Annotate #' + mytag.replace(/^\d+~/, "~") + ' order</h2>');
         hc.push('<div class="tagannos">');
         annos = rv.anno;
         for (var i = 0; i < annos.length; ++i)
@@ -4359,40 +4374,27 @@ function edit_tag_anno(annoid) {
     }));
 }
 
-function add_edittag_ajax(selector, active_dragtag) {
-    var sel = $$("sel");
-    if (!ready) {
-        ready = true;
-        $(selector).off(".edittag_ajax")
-            .on("click.edittag_ajax", "input.edittag", tag_save)
-            .on("change.edittag_ajax", "input.edittagval", tag_save)
-            .on("keypress.edittag_ajax", "input.edittagval", make_onkeypress_enter(tag_save));
-    }
-    if (active_dragtag) {
-        dragtag = full_dragtag = active_dragtag;
-        if (/^~[^~]/.test(dragtag))
-            full_dragtag = hotcrp_user.cid + dragtag;
-        plinfo.on_set_tags(set_tags_callback);
-        $(function () {
-            plt_tbody = $(selector).children().filter("tbody")[0];
-            $(plt_tbody).find("input.edittagval[name^=\"tag:" + dragtag + " \"]").each(function () {
-                if (this.type !== "hidden") {
-                    var x = document.createElement("span");
-                    x.className = "dragtaghandle";
-                    x.setAttribute("title", "Drag to change order");
-                    this.parentElement.insertBefore(x, this.nextSibling);
-                }
-            });
-            $(plt_tbody).find("tr.plheading[data-anno-id]").each(add_taganno_draghandle);
-            $(selector).off(".dragtag_ajax")
-                .on("mousedown.dragtag_ajax", "span.dragtaghandle", tag_mousedown);
-        });
-    }
+function plinfo_tags(selector) {
+    plt_tbody || set_plt_tbody($(selector));
 };
 
-add_edittag_ajax.edit_tag_anno = edit_tag_anno;
+function add_draghandle() {
+    var x = document.createElement("span");
+    x.className = "dragtaghandle";
+    x.setAttribute("title", "Drag to change order");
+    if (this.tagName === "TD") {
+        x.style.float = "right";
+        x.style.position = "static";
+        x.style.paddingRight = "24px";
+        this.insertBefore(x, null);
+    } else
+        this.parentElement.insertBefore(x, this.nextSibling);
+    $(this).removeClass("need-draghandle");
+}
 
-return add_edittag_ajax;
+plinfo_tags.edit_anno = edit_anno;
+plinfo_tags.add_draghandle = add_draghandle;
+return plinfo_tags;
 })();
 
 
@@ -4837,6 +4839,7 @@ function render_needed() {
     $(".need-tags").each(function () {
         render_row_tags(this.parentNode);
     });
+    $(".need-draghandle").each(plinfo_tags.add_draghandle);
     render_text.on_page();
 }
 

@@ -96,7 +96,7 @@ class PaperList {
     public $row_attr;
     public $review_list;
     public $table_type;
-    public $render_needed;
+    public $need_render;
 
     private $sortable;
     private $foldable;
@@ -772,7 +772,7 @@ class PaperList {
                     $x .= " data-anno-id=\"{$ginfo->annoId}\" data-tags=\"{$ginfo->tag}#{$ginfo->tagIndex}\"";
                 $x .= ">";
                 if ($rstate->titlecol)
-                    $x .= "<td class=\"plheading\" colspan=\"$rstate->titlecol\"></td>";
+                    $x .= "<td class=\"plheading_spacer\" colspan=\"$rstate->titlecol\"></td>";
                 $x .= "<td class=\"plheading\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
                 for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
                     /* do nothing */;
@@ -781,14 +781,14 @@ class PaperList {
                 if ($ginfo->heading !== ""
                     && ($format = Conf::check_format($ginfo->annoFormat, $ginfo->heading))) {
                     $x .= " need-format\" data-format=\"$format";
-                    $this->render_needed = true;
+                    $this->need_render = true;
                 }
                 $x .= "\" data-title=\"" . htmlspecialchars($ginfo->heading)
                     . "\">" . htmlspecialchars($ginfo->heading)
                     . ($ginfo->heading !== "" ? " " : "")
                     . "</span><span class=\"plheading_count\">$count</span></td></tr>";
                 $body[] = $x;
-            $rstate->colorindex = 0;
+                $rstate->colorindex = 0;
             }
         }
         return $thenval;
@@ -967,7 +967,7 @@ class PaperList {
         $this->any = new Qobject;
         $this->count = 0;
         $this->table_type = false;
-        $this->render_needed = false;
+        $this->need_render = false;
         return true;
     }
 
@@ -1062,6 +1062,7 @@ class PaperList {
 
     private function _prepare_columns($field_list) {
         $field_list2 = array();
+        $this->row_attr = [];
         foreach ($field_list as $fdef)
             if ($fdef) {
                 $fdef->is_folded = $this->is_folded($fdef);
@@ -1175,6 +1176,7 @@ class PaperList {
             return null;
         }
         $field_list = $this->_columns($field_list, true);
+        $body_attr = $this->row_attr;
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
@@ -1223,19 +1225,19 @@ class PaperList {
         // collect row data
         $body = array();
         $lastheading = !empty($this->search->groupmap) ? -1 : -2;
-        $render_needed = false;
+        $need_render = false;
         foreach ($rows as $row) {
             ++$this->count;
             if ($lastheading > -2)
                 $lastheading = $this->_row_check_heading($rstate, $rows, $row, $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
-            if ($this->render_needed && !$render_needed) {
+            if ($this->need_render && !$need_render) {
                 $Conf->footerScript('$(plinfo.render_needed)', 'plist_render_needed');
-                $render_needed = true;
+                $need_render = true;
             }
-            if ($this->render_needed && $this->count % 16 == 15) {
+            if ($this->need_render && $this->count % 16 == 15) {
                 $body[count($body) - 1] .= "  <script>plinfo.render_needed()</script>\n";
-                $this->render_needed = false;
+                $this->need_render = false;
             }
         }
 
@@ -1271,7 +1273,7 @@ class PaperList {
                 $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                 if ($rstate->titlecol)
                     $colhead .= "<td colspan=\"$rstate->titlecol\"></td>";
-                $colhead .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return add_edittag_ajax.edit_tag_anno(this)\">Annotate order</a></td></tr>\n";
+                $colhead .= "<td colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\"><a href=\"#\" onclick=\"return plinfo_tags.edit_anno(this)\">Annotate order</a></td></tr>\n";
             }
 
             $colhead .= " </thead>\n";
@@ -1295,7 +1297,11 @@ class PaperList {
             $enter .= "\" id=\"" . $this->viewmap->table_id;
         if (defval($options, "attributes"))
             foreach ($options["attributes"] as $n => $v)
-                $enter .= "\" $n=\"$v";
+                $enter .= "\" $n=\"" . htmlspecialchars($v);
+        if ($this->search->is_order_anno)
+            $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
+        foreach ($body_attr as $k => $v)
+            $enter .= "\" $k=\"" . htmlspecialchars($v);
         if ($this->listNumber)
             $enter .= '" data-hotcrp-list="' . $this->listNumber;
         $enter .= "\" data-fold=\"true\">\n";
@@ -1325,9 +1331,12 @@ class PaperList {
             $enter .= ' <tfoot' . ($rstate->hascolors ? ' class="pltable_colored"' : "")
                 . ">\n" . $foot . " </tfoot>\n";
 
+        // body
+        $enter .= " <tbody class=\"$tbody_class\">\n";
+
         // header scripts to set up delegations
         if ($this->_header_script)
-            $enter .= '<script>' . $this->_header_script . "</script>\n";
+            $enter .= '  <script>' . $this->_header_script . "</script>\n";
 
         // session variable to remember the list
         if ($this->listNumber) {
@@ -1350,7 +1359,7 @@ class PaperList {
             $this->any->anonau = true;
 
         $this->ids = $rstate->ids;
-        return $enter . " <tbody class=\"$tbody_class\">\n" . join("", $body) . " </tbody>\n" . $exit;
+        return $enter . join("", $body) . " </tbody>\n" . $exit;
     }
 
     function ajaxColumn($fieldId) {

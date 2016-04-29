@@ -498,7 +498,8 @@ class Tagger {
         } else {
             if ($flags & self::NOPRIVATE)
                 return $this->set_error("Twiddle tags aren’t allowed here.");
-            if ($m[1] !== "~" && !($flags & self::ALLOWCONTACTID))
+            if ($m[1] !== "~" && !($flags & self::ALLOWCONTACTID)
+                && (!$this->_contactId || $m[1] !== $this->_contactId . "~"))
                 return $this->set_error("Format error: #{$tag} is an invalid tag.");
             if ($m[1] === "~" && $this->_contactId)
                 $m[1] = $this->_contactId . "~";
