@@ -597,11 +597,9 @@ most tags, certain tags may be changed only by PC chairs$chairtags.  $setting</p
 
     _subhead("Tag values and discussion orders", "
 <p>Tags have optional per-paper numeric values, which are displayed as
-“tag#100”.  Searching for a tag with “<a
-href='" . hoturl("search", "q=order:tag") . "'>order:tag</a>” will
-return the papers sorted by the tag value.  This is useful, for example, for
-PC meeting discussion orders.  Change the order by editing the tag values.
-Search for specific values with search terms like “<a
+“#tag#100”. Search for “<a
+href='" . hoturl("search", "q=order:tag") . "'>order:tag</a>” to
+sort tagged papers by value. You can also search for specific values with search terms like “<a
 href='" . hoturl("search", "q=%23discuss%232") . "'>#discuss#2</a>”
 or “<a
 href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.</p>
@@ -610,14 +608,16 @@ href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.</p>
 using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
 papers you want, sort them into the right order, select their checkboxes, and
 choose <b>Define order</b> in the tag action area.  If no sort gives what
-you want, search for the desired paper numbers in order&mdash;for instance,
+you want, search for the desired paper numbers in order—for instance,
 you might search for “<a href='" . hoturl("search", "q=4+1+12+9") . "'>4 1 12
-19</a>”&mdash;then <b>Select all</b> and <b>Define order</b>.  To add
+19</a>”—then <b>Select all</b> and <b>Define order</b>. To add
 new papers at the end of an existing discussion order, use <b>Add to order</b>.
 To insert papers into an existing order, use <b>Add to order</b> with a tag
 value; for example, to insert starting at value 5, use <b>Add to order</b> with
 “#tag#5”.  The rest of the order is renumbered to accomodate the
 insertion.</p>
+
+<p>It’s also possible to drag papers into order using a search like <a href='" . hoturl("search", "q=editsort:%23tag") . "'>editsort:#tag</a>.</p>
 
 <p><b>Define order</b> might assign values “#tag#1”,
 “#tag#3”, “#tag#6”, and “#tag#7”

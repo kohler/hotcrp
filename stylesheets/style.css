@@ -843,6 +843,9 @@ h3.helppage:first-child {
 h4.helppage {
 	margin: 0.8em 0 0;
 }
+div.helppagetext {
+	line-height: 1.25;
+}
 table#foldtag_color th {
 	text-align: left;
 	font-size: smaller;
