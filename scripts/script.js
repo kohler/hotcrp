@@ -3809,8 +3809,6 @@ function PaperRow(l, r, index) {
         this.id = +rows[l].getAttribute("data-pid");
         this.entry = $(rows[l]).find("input[name='tag:" + dragtag + " " + this.id + "']")[0];
     }
-    if ((i = rows[l].getAttribute("data-title-hint")))
-        this.titlehint = i;
 }
 PaperRow.prototype.top = function () {
     return $(plt_tbody.childNodes[this.l]).offset().top;
@@ -3820,6 +3818,20 @@ PaperRow.prototype.bottom = function () {
 };
 PaperRow.prototype.middle = function () {
     return (this.top() + this.bottom()) / 2;
+};
+PaperRow.prototype.titlehint = function () {
+    var tg = $(plt_tbody.childNodes[this.l]).find("a.ptitle, span.plheading_group"),
+        titletext = null, m;
+    if (tg.length) {
+        titletext = tg[0].getAttribute("data-title");
+        if (!titletext)
+            titletext = tg.text();
+        if (titletext && titletext.length > 60 && (m = /^.{0,60}(?=\s)/.exec(titletext)))
+            titletext = m[0] + "…";
+        else if (titletext && titletext.length > 60)
+            titletext = titletext.substr(0, 60) + "…";
+    }
+    return titletext;
 };
 
 function analyze_rows(e) {
@@ -3976,8 +3988,8 @@ function tag_dragto(l) {
     var m = "", x, y;
     if (rowanal[srcindex].id)
         m += "#" + rowanal[srcindex].id;
-    if (rowanal[srcindex].titlehint)
-        m += (m ? " &nbsp;" : "") + rowanal[srcindex].titlehint;
+    if ((x = rowanal[srcindex].titlehint()))
+        m += (m ? " &nbsp;" : "") + x;
     if (newval !== false) {
         m += '<span style="padding-left:2em';
         if (srcindex !== dragindex)

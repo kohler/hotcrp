@@ -731,7 +731,7 @@ class PaperList {
         $t = "  <tr";
         if ($this->_row_id_pattern)
             $t .= " id=\"" . str_replace("#", $row->paperId, $this->_row_id_pattern) . "\"";
-        $t .= " class=\"pl $trclass\" data-pid=\"$row->paperId\" data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($row->title, 60));
+        $t .= " class=\"pl $trclass\" data-pid=\"$row->paperId";
         foreach ($this->row_attr as $k => $v)
             $t .= "\" $k=\"" . htmlspecialchars($v);
         $t .= "\">" . $tm . "</tr>\n";
@@ -770,7 +770,7 @@ class PaperList {
                     $x .= " data-anno-tag=\"{$ginfo->tag}\"";
                 if (isset($ginfo->annoId))
                     $x .= " data-anno-id=\"{$ginfo->annoId}\" data-tags=\"{$ginfo->tag}#{$ginfo->tagIndex}\"";
-                $x .= " data-title-hint=\"" . htmlspecialchars(UnicodeHelper::utf8_abbreviate($ginfo->heading, 60)) . "\">";
+                $x .= ">";
                 if ($rstate->titlecol)
                     $x .= "<td class=\"plheading\" colspan=\"$rstate->titlecol\"></td>";
                 $x .= "<td class=\"plheading\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
@@ -780,7 +780,8 @@ class PaperList {
                 $x .= "<span class=\"plheading_group";
                 if ($ginfo->heading !== "") {
                     if (($format = Conf::check_format($ginfo->annoFormat, $ginfo->heading))) {
-                        $x .= " need-format\" data-format=\"$format";
+                        $x .= " need-format\" data-format=\"$format\" data-title=\""
+                            . htmlspecialchars($ginfo->heading);
                         $this->render_needed = true;
                     }
                     $x .= "\">" . htmlspecialchars($ginfo->heading) . " ";

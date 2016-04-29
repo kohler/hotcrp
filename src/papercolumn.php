@@ -199,7 +199,8 @@ class TitlePaperColumn extends PaperColumn {
 
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->render_needed = true;
-            $t .= ' need-format" data-format="' . $format;
+            $t .= ' need-format" data-format="' . $format
+                . '" data-title="' . htmlspecialchars($row->title);
         }
 
         $t .= '" tabindex="5">' . $highlight_text . '</a>'
