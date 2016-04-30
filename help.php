@@ -513,6 +513,110 @@ Tags also affect color highlighting in paper lists.</p>
 to their creators.  Tags with two twiddles, such as “#~~tag”, are
 visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 
+    _subhead("Finding tags", "
+<p>A paper’s tags are shown like this on the paper page:</p>
+
+<div class='pspcard_container' style='position:static'><div class='pspcard'><div class='pspcard_body'>
+<div class='psc psc1'>
+ <div class='pst'>
+  <span class='psfn'>Tags</span>
+  <span class='pstedit'><a class='xx'><span style='display:inline-block;position:relative;width:15px'>" . Ht::img("edit.png", "[Edit]", "bmabs") . "</span>&nbsp;<u class='x'>Edit</u></a></span>
+  <hr class='c' /></div>
+<div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
+</div></div></div><hr class='c' />
+
+<p>To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "</p>
+
+<p>You can also search with “show:tags” to see all paper tags, or “show:#tagname” to
+see a particular tag as a column.</p>
+
+<p>Tags are only shown to PC members and administrators.
+$conflictmsg3$setting
+Additionally, twiddle tags, which have names like “#~tag”, are
+visible only to their creators; each PC member has an independent set.
+Tags are not case sensitive.</p>");
+
+    _subhead("<a name='changing'>Changing tags</a>", "
+<p>To change a paper’s tags, go to the paper page and select the Tags box’s " . Ht::img("edit.png", "[Edit]") . "&nbsp;Edit
+link. Then enter one or more alphanumeric tags separated by spaces.</p>
+
+<p>" . Ht::img("extagsset.png", "[Tag entry on review screen]") . "</p>
+
+<p>To set tags from
+<a href='" . hoturl("search") . "'>search</a>, you can select papers and
+use the action area:</p>
+
+<p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]") . "</p>
+
+<p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes tags
+from the selected papers, and <b>Define</b> adds the tag to the selected
+papers and removes it from all others.  The chair-only <b>Clear twiddle</b>
+action removes a tag and all users’ matching twiddle tags.</p></li>
+
+<p>Or add tag editors to the search page using keywords. Search for “<a
+href='" . hoturl("search", "q=edit:tag:tagname") . "'>edit:tag:tagname</a>” to
+get a column of checkboxes; checked papers are given the “#tagname” tag.
+Search for “<a href='" . hoturl("search", "q=edit:tagval:tagname") .
+"'>edit:tagval:tagname</a>” to set <a href='#values'>tag values</a>. Or search
+for “<a href='" . hoturl("search", "q=edit:tags") . "'>edit:tags</a>” to edit
+papers’ full tag lists.</p>
+
+<p>Finally, the chair may upload tag assignments using the <a href='" .
+hoturl("bulkassign") . "'>bulk assignment page</a>.</p>
+
+<p>Although any PC member can view or search
+most tags, certain tags may be changed only by PC chairs$chairtags.  $setting</p>");
+
+    _subhead("<a id='values'>Tag values and discussion orders</a>", "
+<p>Tags have optional numeric values, which are displayed as
+“#tag#100”. Search for “<a
+href='" . hoturl("search", "q=order:tag") . "'>order:tag</a>” to
+sort tagged papers by value. You can also search for specific values with search terms like “<a
+href='" . hoturl("search", "q=%23discuss%232") . "'>#discuss#2</a>”
+or “<a
+href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.</p>
+
+<p>It’s common to assign increasing tag values to a set of papers.  Do this
+using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
+papers you want, sort them into the right order, select their checkboxes, and
+choose <b>Define order</b> in the tag action area.  If no sort gives what
+you want, search for the desired paper numbers in order—for instance,
+“<a href='" . hoturl("search", "q=4+1+12+9") . "'>4 1 12
+19</a>”—then <b>Select all</b> and <b>Define order</b>. To add
+new papers at the end of an existing discussion order, use <b>Add to order</b>.
+To insert papers into an existing order, use <b>Add to order</b> with a tag
+value; for example, to insert starting at value 5, use <b>Add to order</b> with
+“#tag#5”.  The rest of the order is renumbered to accomodate the
+insertion.</p>
+
+<p>Even easier, you can <em>drag</em> papers into order using a search like “<a href='" . hoturl("search", "q=editsort:%23tag") . "'>editsort:#tag</a>”.</p>
+
+<p><b>Define order</b> might assign values “#tag#1”,
+“#tag#3”, “#tag#6”, and “#tag#7”
+to adjacent papers.  The gaps make it harder to infer
+conflicted papers’ positions.  (Any given gap might or might not hold a
+conflicted paper.)  The <b>Define gapless order</b> action assigns
+strictly sequential values, like “#tag#1”,
+“#tag#2”, “#tag#3”, “#tag#4”.
+<b>Define order</b> is better for most purposes.</p>
+
+<p>The <a href=\"" . hoturl("autoassign", "a=discorder") . "\">autoassigner</a>
+has special support for creating discussion orders. It tries to group papers
+with similar PC conflicts, which can make the meeting run smoother.</p>");
+
+    _subhead("Tag colors", "
+<p>The tag names “red”, “orange”, “yellow”,
+“green”, “blue”, “purple”, and
+“gray” act as highlight colors. For example, papers tagged with
+“#red” will appear red in paper lists (for people who can see that
+tag).  Tag a paper “#~red” to make it red on your displays, but not
+others’. Other styles are available; try
+“#bold”, “#italic”, “#big”, “#small”, and “#dim”. System administrators can <a
+href='" . hoturl("settings", "group=tags") . "'>associate other tags with colors</a>
+so that, for example, “<a
+href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
+as gray.</p>");
+
     _subhead("Using tags", "
 <p>Here are some example ways to use tags.</p>
 
@@ -521,7 +625,7 @@ visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
  Mark low-ranked submissions with tag “#nodiscuss”, then ask the PC to
  <a href='" . hoturl("search", "q=%23nodiscuss") . "'>search for “#nodiscuss”</a>
  (<a href='" . hoturl("search", "q=tag:nodiscuss") . "'>“tag:nodiscuss”</a> also works).
- PC members can easily check the list for controversial papers they’d like to discuss despite their ranking.
+ PC members can check the list for papers they’d like to discuss anyway.
  They can email the chairs about such papers, or, even easier, add a “#discussanyway” tag.
  (You might make the “#nodiscuss” tag chair-only so an evil PC member couldn’t add it to a high-ranked paper, but it’s usually better to trust the PC.)</li>
 
@@ -550,7 +654,7 @@ visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
 
 <li><strong>Define a discussion order for the PC meeting.</strong>
  Publishing the order lets PC members prepare to discuss upcoming papers.
- Define an ordered tag such as “#discuss” (see below for how), then ask the PC to <a href='" . hoturl("search", "q=order:discuss") . "'>search for “order:discuss”</a>.
+ Define an ordered tag such as “#discuss”, then ask the PC to <a href='" . hoturl("search", "q=order:discuss") . "'>search for “order:discuss”</a>.
  The PC can now see the order and use quick links to go from paper to paper.$conflictmsg2</li>
 
 <li><strong>Mark tentative decisions during the PC meeting</strong> either
@@ -558,99 +662,6 @@ visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
  “#reject” tags.</li>
 
 </ul>");
-
-    _subhead("Finding tags", "
-<p>A paper’s tags are shown like this:</p>
-
-<div class='pspcard_container' style='position:static'><div class='pspcard'><div class='pspcard_body'>
-<div class='psc psc1'>
- <div class='pst'>
-  <span class='psfn'>Tags</span>
-  <span class='pstedit'><a class='xx'><span style='display:inline-block;position:relative;width:15px'>" . Ht::img("edit.png", "[Edit]", "bmabs") . "</span>&nbsp;<u class='x'>Edit</u></a></span>
-  <hr class='c' /></div>
-<div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
-</div></div></div><hr class='c' />
-
-<p>To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "</p>
-
-<p>Tags are only shown to PC members and administrators.
-$conflictmsg3$setting
-Additionally, twiddle tags, which have names like “#~tag”, are
-visible only to their creators; each PC member has an independent set.
-Tags are not case sensitive.</p>");
-
-    _subhead("<a name='changing'>Changing tags</a>", "
-<p>To change a paper’s tags, click the Tags box’s " . Ht::img("edit.png", "[Edit]") . "&nbsp;Edit
-link, then enter one or more alphanumeric tags separated by spaces.</p>
-
-<p>" . Ht::img("extagsset.png", "[Tag entry on review screen]") . "</p>
-
-<p>To tag multiple papers at once, find the papers in a
-<a href='" . hoturl("search") . "'>search</a>, select
-their checkboxes, and add tags using the action area.</p>
-
-<p>" . Ht::img("extagssearch.png", "[Setting tags on the search page]") . "</p>
-
-<p><b>Add</b> adds tags to the selected papers, <b>Remove</b> removes existing
-tags from the selected papers, and <b>Define</b> adds the tag to all selected
-papers and removes it from all non-selected papers.  The chair-only <b>Clear
-twiddle</b> action removes a tag and all users’ matching twiddle tags.</p>
-
-<p>The chair may also upload tags using the <a href='" . hoturl("bulkassign") . "'>bulk
-assignment page</a>.</p>
-
-<p>Although any PC member can view or search
-most tags, certain tags may be changed only by PC chairs$chairtags.  $setting</p>");
-
-    _subhead("Tag values and discussion orders", "
-<p>Tags have optional per-paper numeric values, which are displayed as
-“#tag#100”. Search for “<a
-href='" . hoturl("search", "q=order:tag") . "'>order:tag</a>” to
-sort tagged papers by value. You can also search for specific values with search terms like “<a
-href='" . hoturl("search", "q=%23discuss%232") . "'>#discuss#2</a>”
-or “<a
-href='" . hoturl("search", "q=%23discuss%3E1") . "'>#discuss>1</a>”.</p>
-
-<p>It’s common to assign increasing tag values to a set of papers.  Do this
-using the <a href='" . hoturl("search") . "'>search screen</a>.  Search for the
-papers you want, sort them into the right order, select their checkboxes, and
-choose <b>Define order</b> in the tag action area.  If no sort gives what
-you want, search for the desired paper numbers in order—for instance,
-you might search for “<a href='" . hoturl("search", "q=4+1+12+9") . "'>4 1 12
-19</a>”—then <b>Select all</b> and <b>Define order</b>. To add
-new papers at the end of an existing discussion order, use <b>Add to order</b>.
-To insert papers into an existing order, use <b>Add to order</b> with a tag
-value; for example, to insert starting at value 5, use <b>Add to order</b> with
-“#tag#5”.  The rest of the order is renumbered to accomodate the
-insertion.</p>
-
-<p>It’s also possible to drag papers into order using a search like <a href='" . hoturl("search", "q=editsort:%23tag") . "'>editsort:#tag</a>.</p>
-
-<p><b>Define order</b> might assign values “#tag#1”,
-“#tag#3”, “#tag#6”, and “#tag#7”
-to adjacent papers.  The gaps make it harder to infer
-conflicted papers’ positions.  (Any given gap might or might not hold a
-conflicted paper.)  The <b>Define gapless order</b> action assigns
-strictly sequential values, like “#tag#1”,
-“#tag#2”, “#tag#3”, “#tag#4”.
-<b>Define order</b> is better for most purposes.</p>
-
-<p>The <a href=\"" . hoturl("autoassign", "a=discorder") . "\">autoassigner</a>
-has special support for creating discussion orders. It tries to group papers
-with similar PC conflicts, which can make the meeting run smoother.</p>");
-
-    _subhead("Tag colors", "
-<p>The tag names “red”, “orange”, “yellow”,
-“green”, “blue”, “purple”, and
-“gray” act as highlight colors. For example, papers tagged with
-“#red” will appear red in paper lists (for people who can see that
-tag).  Tag a paper “#~red” to make it red on your displays, but not
-others’. Other styles are available; try
-“#bold”, “#italic”, “#big”, “#small”, and “#dim”. System administrators can <a
-href='" . hoturl("settings", "group=tags") . "'>associate other tags with colors</a>
-so that, for example, “<a
-href='" . hoturl("search", "q=%23reject") . "'>#reject</a>” papers show up
-as gray.</p>");
 }
 
 
