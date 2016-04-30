@@ -1033,7 +1033,6 @@ class TagPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_COLUMN | Column::COMPLETABLE, array("comparator" => "tag_compare"));
         $this->dtag = $tag;
         $this->is_value = $is_value;
-        $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
     }
     public function make_column($name, $errors) {
         $p = strpos($name, ":") ? : strpos($name, "#");
@@ -1041,6 +1040,10 @@ class TagPaperColumn extends PaperColumn {
     }
     public function make_editable() {
         return new EditTagPaperColumn($this->name, $this->dtag, $this->is_value);
+    }
+    public function sorts_my_tag($sorter) {
+        return preg_match('/\A(?:edit)?(?:#|tag:|tagval:)\s*(\S+)\z/i', $sorter->type, $m)
+            && strcasecmp($m[1], $this->dtag) == 0;
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_tags(null))
@@ -1053,6 +1056,7 @@ class TagPaperColumn extends PaperColumn {
         $this->ctag = strtolower(" $ctag#");
         if ($visible)
             $pl->qopts["tags"] = 1;
+        $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
         return true;
     }
     public function completion_name() {
@@ -1122,8 +1126,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         if (($p = parent::prepare($pl, $visible)) && $visible > 0
             && ($tid = $pl->table_id())) {
             $sorter = get($pl->sorters, 0);
-            if (("edit" . $sorter->type == $this->name
-                 || $sorter->type == $this->name)
+            if ($this->sorts_my_tag($sorter)
                 && !$sorter->reverse
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value) {
