@@ -4063,7 +4063,7 @@ function calculate_shift(si, di) {
     if (simax != si && rowanal[simax].tagvalue)
         sdelta += rowanal[simax].tagvalue - rowanal[si].tagvalue;
 
-    var newval = -Infinity, delta = 0;
+    var newval = -Infinity, delta = 0, si_moved = false;
     for (i = 0; i < rowanal.length; ++i)
         rowanal[i].newvalue = rowanal[i].tagvalue;
     function adjust_newval(j) {
@@ -4085,6 +4085,12 @@ function calculate_shift(si, di) {
                 && rowanal[i].tagvalue > rowanal[i - 1].tagvalue + value_increment()
                 && rowanal[i].tagvalue > newval)
                 delta = 0;
+            if (i == di && !si_moved && !rowanal[si].isgroup && i > 0) {
+                if (rowanal[i - 1].isgroup)
+                    delta = rowanal[i - 1].newvalue - rowanal[i].tagvalue;
+                else if (rowanal[i].isgroup)
+                    delta = rowanal[i - 1].newvalue + value_increment() - rowanal[i].tagvalue;
+            }
             newval = rowanal[i].tagvalue + delta;
         }
         if (i == si && si < di) {
@@ -4096,11 +4102,14 @@ function calculate_shift(si, di) {
             continue;
         } else if (i >= si && i <= simax)
             continue;
-        else if (i == di) {
+        else if (i == di && !si_moved) {
             for (j = si; j <= simax; ++j)
                 rowanal[j].newvalue = adjust_newval(j);
-            newval += sdelta;
             delta += sdelta;
+            newval = rowanal[simax].newvalue;
+            --i;
+            si_moved = true;
+            continue;
         }
         if ((i >= di && rowanal[i].tagvalue === false)
             || (i >= si && i >= di && rowanal[i].tagvalue >= newval))
