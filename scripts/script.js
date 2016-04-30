@@ -768,7 +768,7 @@ return function (content, bubopt) {
     else if (typeof bubopt === "string")
         bubopt = {color: bubopt};
 
-    var nearpos = null, dirspec = bubopt.dir || "r", dir = null,
+    var nearpos = null, dirspec = bubopt.dir, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
     var bubdiv = $('<div class="bubble' + color + '" style="margin:0"><div class="bubtail bubtail0' + color + '" style="width:0;height:0"></div><div class="bubcontent"></div><div class="bubtail bubtail1' + color + '" style="width:0;height:0"></div></div>')[0];
@@ -901,6 +901,8 @@ return function (content, bubopt) {
             sizes = calculate_sizes(color);
 
         // parse dirspec
+        if (dirspec == null)
+            dirspec = "r";
         var noflip = /!/.test(dirspec),
             noconstrain = /\*/.test(dirspec),
             dsx = dirspec.replace(/[^a0-3neswtrblhv]/, ""),
@@ -989,8 +991,12 @@ return function (content, bubopt) {
     var bubble = {
         near: function (epos, reference) {
             var i, off;
-            if (typeof epos === "string" || epos.tagName || epos.jquery)
-                epos = $(epos).geometry(true);
+            if (typeof epos === "string" || epos.tagName || epos.jquery) {
+                epos = $(epos);
+                if (dirspec == null)
+                    dirspec = epos.attr("data-hottooltip-dir");
+                epos = epos.geometry(true);
+            }
             for (i = 0; i < 4; ++i)
                 if (!(lcdir[i] in epos) && (lcdir[i ^ 2] in epos))
                     epos[lcdir[i]] = epos[lcdir[i ^ 2]];
@@ -2298,7 +2304,7 @@ function setajaxcheck(elt, rv) {
     else
         elt.style.outline = "5px solid red";
     if (rv && rv.error)
-        make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change");
+        make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change hide");
 }
 
 function link_urls(t) {
@@ -4818,7 +4824,7 @@ function edittags_callback(rv) {
     if (!rv.ok || !rv.pid || !(div = pidfield(rv.pid, fields.tags)))
         return;
     $(div).html('<em class="plx">Tags:</em> '
-                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1"></textarea>'
+                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" data-hottooltip-dir="v"></textarea>'
                 + ' &nbsp;<button name="tagsave ' + rv.pid + '" type="button">Save</button>'
                 + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button">Cancel</button>');
     $(div).find("textarea").val(rv.tags_edit_text).on("keydown", make_onkeypress_enter(edittags_click)).autogrow();
@@ -4828,6 +4834,7 @@ function edittags_callback(rv) {
 
 function edittags_click() {
     var div = this.parentNode, pid = pidnear(div);
+    $(div).find("textarea").trigger("hide");
     if (this.tagName !== "BUTTON" || this.name.charAt(3) == "s") {
         $.ajax(ajax_link_errors({
             url: hoturl_post("api", {fn: "settags", p: pid,
