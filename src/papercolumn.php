@@ -1056,6 +1056,20 @@ class TagPaperColumn extends PaperColumn {
         $this->ctag = strtolower(" $ctag#");
         if ($visible)
             $pl->qopts["tags"] = 1;
+        if ($visible && $this->is_value === null) {
+            foreach ($pl->sorters as $sorter)
+                if ($this->sorts_my_tag($sorter))
+                    $this->is_value = true;
+            $btag = $this->dtag;
+            if (($twiddle = strpos($btag, "~")) !== false && $btag[$twiddle + 1] !== "~")
+                $btag = substr($btag, $twiddle + 1);
+            if ($this->is_value === null && TagInfo::is_vote($btag))
+                $this->is_value = true;
+            if ($this->is_value === null && TagInfo::is_approval($btag) && $twiddle === 0)
+                $this->is_value = false;
+            if ($this->is_value === null)
+                $this->is_value = !!Dbl::fetch_value("select paperId from PaperTag where tag=? and tagIndex!=0 limit 1", $this->dtag);
+        }
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
         return true;
     }
@@ -1115,8 +1129,6 @@ class TagPaperColumn extends PaperColumn {
 class EditTagPaperColumn extends TagPaperColumn {
     private $editsort;
     public function __construct($name, $tag, $is_value) {
-        if ($is_value === null)
-            $is_value = true;
         parent::__construct($name, $tag, $is_value);
         $this->className = $this->is_value ? "pl_edittagval" : "pl_edittag";
         $this->editable = true;
