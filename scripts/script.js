@@ -5207,9 +5207,12 @@ save_tags.success = function (data) {
         var t = $.trim(this.className.replace(/\b\w*tag\b/g, ""));
         this.className = t + " " + (data.color_classes || "");
     });
-    $("#foldtags .psv .fn").html(data.tags_view_html == "" ? "None" : data.tags_view_html);
+    var h = data.tags_view_html == "" ? "None" : data.tags_view_html,
+        $j = $("#foldtags .psv .fn");
+    if ($j.length && $j.html() !== h)
+        $j.html(h);
     if (data.response)
-        $("#foldtags .psv .fn").prepend(data.response);
+        $j.prepend(data.response);
     if (!$("#foldtags textarea").is(":visible"))
         $("#foldtags textarea").val(data.tags_edit_text);
     $(".is-tag-index").each(function () {

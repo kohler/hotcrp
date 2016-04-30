@@ -108,7 +108,7 @@ table.vbar td.quicklinks, #trackerconnect {
 
 
 /* generic horizontal styles */
-a.q, a.u {
+a.q, a.u, a.qx {
 	color: black;
 }
 a.qq, a.uu, a.maillink {
@@ -117,12 +117,12 @@ a.qq, a.uu, a.maillink {
 a.q:active, a.u:active, a.qq:active, a.uu:active, a.maillink:active {
 	color: red;
 }
-a.q, a.qq, a.x, a.xx,
+a.q, a.qq, a.qx, a.x, a.xx,
 div.papmodex > a, div.papmodex:hover > a.xx, div.leftmenu_item > a,
 a.pnum, a.ptitle, a.maillink, u.x, .noul {
 	text-decoration: none;
 }
-a.q:hover, a.qq:hover, a.x:hover, a.xx:hover u.x,
+a.q:hover, a.qq:hover, a.x:hover,
 div.papmodex:hover > a, div.leftmenu_item:hover > a,
 tr.pl:hover a.pnum, tr.pl:hover a.ptitle, a.ptitle.uu,
 .childfold:hover a.q, a.maillink:hover, a:hover u.x, .ul {
@@ -2070,7 +2070,7 @@ div.pspcard {
 	padding: 5px 0;
 	border-radius: 4px;
 }
-div#pspcard_body {
+div.pspcard_body {
 	padding: 0 8px;
 	background: white;
 	border-radius: 2px;
@@ -2081,7 +2081,7 @@ div.pspcard_fold {
 div#papstriptagsedit {
 	font-size: 8.7pt;
 }
-div#pspcard_body textarea, div#pspcard_body select {
+div.pspcard_body textarea, div.pspcard_body select {
 	font-size: inherit;
 }
 div.psc {
@@ -2132,6 +2132,11 @@ span.pstedit {
 }
 .foldo span.pstedit.fn {
 	display: none;
+}
+span.psteditimg {
+	display: inline-block;
+	position: relative;
+	width: 15px;
 }
 div.pshint {
 	font-size: smaller;

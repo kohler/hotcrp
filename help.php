@@ -562,7 +562,14 @@ visible only to PC chairs.  All other tags are visible to the entire PC.</p>");
     _subhead("Finding tags", "
 <p>A paper’s tags are shown like this:</p>
 
-<p>" . Ht::img("extagsnone.png", "[Tag list on review screen]") . "</p>
+<div class='pspcard_container' style='position:static'><div class='pspcard'><div class='pspcard_body'>
+<div class='psc psc1'>
+ <div class='pst'>
+  <span class='psfn'>Tags</span>
+  <span class='pstedit'><a class='xx'><span style='display:inline-block;position:relative;width:15px'>" . Ht::img("edit.png", "[Edit]", "bmabs") . "</span>&nbsp;<u class='x'>Edit</u></a></span>
+  <hr class='c' /></div>
+<div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
+</div></div></div><hr class='c' />
 
 <p>To find all papers with tag “#discuss”:&nbsp; " . _searchForm("#discuss") . "</p>
 

@@ -207,7 +207,6 @@ images/edit18.png
 images/edit24.png
 images/exassignone.png
 images/exsearchaction.png
-images/extagsnone.png
 images/extagssearch.png
 images/extagsset.png
 images/extagvotehover.png

@@ -291,7 +291,7 @@ class PaperTable {
             $c .= "<span class=\"pstedit fn\">"
                 . "<a class=\"xx hottooltip\" href=\"" . selfHref(array("atab" => $what))
                 . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-hottooltip=\"Edit\">"
-                . "<span style='display:inline-block;position:relative;width:15px'>"
+                . "<span class=\"psteditimg\">"
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
         }
@@ -1016,7 +1016,7 @@ class PaperTable {
         global $Conf, $Me;
         if (!$this->npapstrip) {
             echo '<div class="pspcard_container"><div class="pspcard">',
-                '<div id="pspcard_body"><div class="pspcard_fold">',
+                '<div class="pspcard_body"><div class="pspcard_fold">',
                 '<div style="float:right;margin-left:1em"><span class="psfn">More ', expander(true), '</span></div>';
 
             if ($this->prow && ($viewable = $this->prow->viewable_tags($Me))) {
@@ -1332,7 +1332,7 @@ class PaperTable {
             echo Ht::form_div(hoturl("paper", "p=" . $this->prow->paperId), array("id" => "tagform", "onsubmit" => "return save_tags()"));
 
         echo $this->papt("tags", "Tags", array("type" => "ps", "editfolder" => ($is_editable ? "tags" : 0))),
-            '<div class="psv" style="position:relative">';
+            '<div class="psv">';
         if ($is_editable) {
             // tag report form
             $treport = PaperApi::tagreport($Me, $this->prow);
@@ -1355,7 +1355,7 @@ class PaperTable {
             if ($this->prow)
                 $editable = $this->prow->editable_tags($Me);
             echo '<div style="position:relative">',
-                '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)">',
+                '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)" style="width:99%">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div style="padding:1ex 0;text-align:right">',
