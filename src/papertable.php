@@ -1355,12 +1355,12 @@ class PaperTable {
             if ($this->prow)
                 $editable = $this->prow->editable_tags($Me);
             echo '<div style="position:relative">',
-                '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)" style="width:99%">',
+                '<textarea id="foldtags_d" cols="20" rows="4" name="tags" onkeypress="return crpSubmitKeyFilter(this, event)" style="width:99%" tabindex="12">',
                 $tagger->unparse($editable),
                 "</textarea></div>",
                 '<div style="padding:1ex 0;text-align:right">',
-                Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)")),
-                " &nbsp;", Ht::submit("Save", array("class" => "bsm")),
+                Ht::submit("cancelsettags", "Cancel", array("class" => "bsm", "onclick" => "return fold('tags',1)", "tabindex" => 13)),
+                " &nbsp;", Ht::submit("Save", array("class" => "bsm", "tabindex" => 12)),
                 "</div>",
                 "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                 "</div>";
