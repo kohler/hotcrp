@@ -962,6 +962,12 @@ class TagAssigner extends Assigner {
             $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
     }
+    private function cannot_view_error(AssignmentState $state, $pid, $tag) {
+        if ($state->prow($pid)->conflict_type($state->contact))
+            return "You have a conflict with paper #$pid.";
+        else
+            return "You can’t view that tag for paper #$pid.";
+    }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
@@ -1029,6 +1035,11 @@ class TagAssigner extends Assigner {
         else
             $index = $m[3] ? cvtnum($m[4], 0) : null;
 
+        // if you can't view the tag, you can't set the tag
+        // (information exposure)
+        if (!$state->contact->can_view_tag($state->prow($pid), $tag, $state->override))
+            return $this->cannot_view_error($state, $pid, $tag);
+
         // save assignment
         $ltag = strtolower($tag);
         if ($index === null
@@ -1043,7 +1054,7 @@ class TagAssigner extends Assigner {
         if ($vtag)
             $this->account_votes($pid, $vtag, $state);
     }
-    private function apply_next_index($pid, $tag, $state, $m) {
+    private function apply_next_index($pid, $tag, AssignmentState $state, $m) {
         $ltag = strtolower($tag);
         $index = cvtnum($m[3] ? $m[4] : null, null);
         // NB ignore $index on second & subsequent nexttag assignments
@@ -1053,7 +1064,7 @@ class TagAssigner extends Assigner {
         unset($fin->pidindex[$pid]);
         return $fin->next_index($this->isadd == self::NEXTSEQ);
     }
-    private function apply_remove($pid, $contact, $state, $m) {
+    private function apply_remove($pid, $contact, AssignmentState $state, $m) {
         $prow = $state->prow($pid);
 
         // resolve twiddle portion
@@ -1094,6 +1105,11 @@ class TagAssigner extends Assigner {
             $m[4] = cvtint($m[4], 0);
         }
 
+        // if you can't view the tag, you can't clear the tag
+        // (information exposure)
+        if ($search_ltag && !$state->contact->can_view_tag($prow, $search_ltag, $state->override))
+            return $this->cannot_view_error($state, $pid, $search_ltag);
+
         // query
         $res = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $search_ltag));
         $tag_re = '{\A' . $m[1] . $m[2] . '\z}i';
@@ -1102,8 +1118,7 @@ class TagAssigner extends Assigner {
             if (preg_match($tag_re, $x["ltag"])
                 && (!$m[3] || CountMatcher::compare($x["_index"], $m[3], $m[4]))
                 && ($search_ltag
-                    || $state->contact->can_change_tag($prow, $x["ltag"],
-                                                       $x["_index"], null, $state->override))) {
+                    || $state->contact->can_change_tag($prow, $x["ltag"], $x["_index"], null, $state->override))) {
                 $state->remove($x);
                 if (($v = TagInfo::votish_base($x["ltag"])))
                     $vote_adjustments[$v] = true;
