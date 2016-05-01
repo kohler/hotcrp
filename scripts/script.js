@@ -4797,7 +4797,7 @@ function render_row_tags(div) {
         else
             return strnatcmp(a[1], b[1]);
     });
-    if (pidattr(pid, "data-tags-editable") !== null) {
+    if (pidattr(pid, "data-tags-editable") != null) {
         if (!t.length)
             t.push(["none"]);
         t[t.length - 1][0] += ' <span class="hoveronly"><span class="barsep">·</span> <a class="edittags-link" href="#">Edit</a></span>';
