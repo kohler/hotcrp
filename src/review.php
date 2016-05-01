@@ -1430,9 +1430,10 @@ $blind\n";
                                     array("class" => "b",
                                           "onclick" => "popup(this,'ref',0)"));
             // Also see $_REQUEST["refuse"] case in review.php.
-            $Conf->footerHtml("<div id='popup_ref' class='popupc'>
-  <p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>
-  " . Ht::form_div($reviewPostLink) . Ht::hidden("refuse", "refuse")
+            $Conf->footerHtml("<div id='popup_ref' class='popupc'>"
+    . Ht::form_div($reviewPostLink)
+    . Ht::hidden("refuse", "refuse")
+    . "<p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>"
     . Ht::textarea("reason", null,
                    array("id" => "refusereviewreason", "rows" => 3, "cols" => 40,
                          "placeholder" => "Optional explanation", "spellcheck" => "true"))

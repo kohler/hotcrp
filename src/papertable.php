@@ -1723,15 +1723,15 @@ class PaperTable {
                     . Ht::label("Override deadlines") . "</div>";
             $Conf->footerHtml("<div class='popupbg' style='display:none'><div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
-  publication?  $admins</p>\n"
+  publication? $admins</p>\n"
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
     . Ht::textarea("reason", null,
                    array("id" => "withdrawreason", "rows" => 3, "cols" => 40,
                          "style" => "width:99%", "placeholder" => "Optional explanation", "spellcheck" => "true"))
     . $override
-    . "<div class='popup_actions' style='margin-top:10px'>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
+    . "<div class='popup_actions'>"
     . Ht::js_button("Cancel", "popup(null,'w',1)")
     . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
     . "</div></div></form></div></div>", "popup_w");
@@ -1753,13 +1753,15 @@ class PaperTable {
 
         if ($this->admin && $prow) {
             $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)"), "(admin only)");
-            Ht::popup("delp",
-                "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>",
-                Ht::form(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit")),
-                Ht::hidden("doemail", 1, array("class" => "popup_populate"))
-                    . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
-                    . Ht::js_button("Cancel", "popup(null,'delp',1)")
-                    . Ht::submit("delete", "Delete paper", array("class" => "bb")));
+            $Conf->footerHtml("<div class='popupbg' style='display:none'><div id='popup_delp' class='popupc'>"
+    . Ht::form_div(hoturl_post("paper", "p={$prow->paperId}&amp;m=edit"))
+    . "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>\n"
+    . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
+    . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
+    . "<div class='popup_actions'>"
+    . Ht::js_button("Cancel", "popup(null,'delp',1)")
+    . Ht::submit("delete", "Delete paper", array("class" => "bb"))
+    . "</div></div></form></div></div>", "popup_delp");
         }
 
         echo Ht::actions($buttons, array("class" => "aab"));

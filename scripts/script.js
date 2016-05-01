@@ -4327,6 +4327,7 @@ function edit_anno(locator) {
             $row.appendTo($d.find(".tagannos"));
             $row.find("input[name='heading_n" + last_newannoid + "']").focus();
             $d.find(".popup_bottom").scrollIntoView();
+            popup_near($d[0].childNodes[0], window);
         } else {
             var anno = [];
             for (var i = 0; i < annos.length; ++i) {
@@ -4386,12 +4387,12 @@ function edit_anno(locator) {
         hc.push('<div class="popupbg">', '</div>');
         hc.push('<div class="popupo popupcenter"><form>', '</form></div>');
         hc.push('<h2>Annotate #' + mytag.replace(/^\d+~/, "~") + ' order</h2>');
-        hc.push('<div class="tagannos">');
+        hc.push('<div class="tagannos">', '</div>');
         annos = rv.anno;
         for (var i = 0; i < annos.length; ++i)
             add_anno(hc, annos[i]);
         hc.pop();
-        hc.push('<button name="add" type="button" tabindex="1000">Add group</button>');
+        hc.push('<div class="g"><button name="add" type="button" tabindex="1000">Add group</button></div>');
         hc.push('<div class="popup_actions"><button name="cancel" type="button" tabindex="1001">Cancel</button><button name="save" type="submit" tabindex="1000">Save changes</button></div>');
         hc.push('<div class="popup_bottom"></div>');
         $d = $(hc.render());

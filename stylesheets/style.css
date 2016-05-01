@@ -3003,10 +3003,17 @@ div.popupc p:first-child, div.popupo p:first-child {
 	margin-top: 0;
 }
 div.popup_actions {
+	margin-top: 8px;
 	text-align: right;
 }
-div.popup_actions button, div.popup_actions input {
+div.popup_actions > button:first-child {
+	margin-left: 0;
+}
+div.popup_actions > button, div.popup_actions > input {
 	margin-left: 1em;
+}
+div.popup_actions > button.popup_space {
+	margin-right: 2em;
 }
 
 /* scores */
