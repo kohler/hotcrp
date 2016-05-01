@@ -4373,8 +4373,8 @@ function edit_anno(locator) {
         if (annoid == null)
             annoid = "n" + (last_newannoid += 1);
         hc.push('<div class="settings_revfield" data-anno-id="' + annoid + '"><table><tbody>', '</tbody></table></div>');
-        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="12" /></td></tr>');
-        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="12" />', '</td></tr>');
+        hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="1000" /></td></tr>');
+        hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="1000" />', '</td></tr>');
         if (anno.annoid)
             hc.push(' <a class="btn btn-transparent btn-closer deletegroup-link hottooltip" href="#" style="display:inline-block;margin-left:0.5em" data-hottooltip="Delete group">x</a>');
         hc.pop_n(2);
@@ -4391,8 +4391,8 @@ function edit_anno(locator) {
         for (var i = 0; i < annos.length; ++i)
             add_anno(hc, annos[i]);
         hc.pop();
-        hc.push('<button name="add" type="button" tabindex="12">Add group</button>');
-        hc.push('<div class="popup_actions"><button name="cancel" type="button" tabindex="13">Cancel</button><button name="save" type="submit" tabindex="12">Save changes</button></div>');
+        hc.push('<button name="add" type="button" tabindex="1000">Add group</button>');
+        hc.push('<div class="popup_actions"><button name="cancel" type="button" tabindex="1001">Cancel</button><button name="save" type="submit" tabindex="1000">Save changes</button></div>');
         hc.push('<div class="popup_bottom"></div>');
         $d = $(hc.render());
         for (var i = 0; i < annos.length; ++i) {
