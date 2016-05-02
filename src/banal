@@ -88,6 +88,8 @@ banal has three modes of operation:
 
 -no_app   do not calculate application
 
+-json     JSON output
+
 -version  report the version of banal
 
 EOF
@@ -967,6 +969,87 @@ sub p2h_serious_font_bug ($) {
     return 0;
 }
 
+my %json_escapes = (
+    "\n" => "\\n",
+    "\r" => "\\r",
+    "\f" => "\\f",
+    "\t" => "\\t",
+    "\"" => "\\\"",
+    "\\" => "\\\\",
+    "/" => "\\/"
+);
+
+sub json_quote ($) {
+    my($x) = $_[0];
+    $x =~ s{[\n\r\f\t\"\\/]}{$json_escapes{$&}}ge;
+    "\"$x\"";
+}
+
+sub report_json ($) {
+    my ($doc) = @_;
+
+    print "{\n";
+    print "  \"filename\": ", json_quote($file), ",\n";
+
+    my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}};
+    for my $i (1 .. $doc->{npages}) {
+        my $page = $doc->{pages}->{$i};
+        my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
+        $dx->{pw}->{sprintf "%.0f", $pbb->{width} * 72} += 1;
+        $dx->{ph}->{sprintf "%.0f", $pbb->{height} * 72} += 1;
+        $dx->{tw}->{sprintf "%.0f", $tbb->{width} * 72} += 1;
+        $dx->{th}->{sprintf "%.0f", $tbb->{height} * 72} += 1;
+        $dx->{mt}->{sprintf "%.0f", $tbb->{top} * 72} += 1;
+        $dx->{ml}->{sprintf "%.0f", $tbb->{left} * 72} += 1;
+    }
+    my($pw, $ph) = (modevalkey($dx->{pw}), modevalkey($dx->{ph}));
+    my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
+    my($mt, $ml) = (modevalkey($dx->{mt}), modevalkey($dx->{ml}));
+
+    my ($doc_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pw, $ph;
+    my ($doc_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $tw, $th;
+    my ($doc_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $mt, $pw - ($ml + $tw), $ph - ($mt + $th), $ml;
+    my ($doc_bfs);
+    if (p2h_font_bug($doc)) {
+        $doc_bfs = "\"bodyfontsize\": null";
+    } else {
+        $doc_bfs = sprintf "\"bodyfontsize\": %g", $doc->{pagespec}->{bodyfont};
+    }
+    my ($doc_l) = sprintf "\"leading\": %g", $doc->{pagespec}->{lead};
+    my ($doc_c) = sprintf "\"columns\": %d", $doc->{pages}->{1}->{pagespec}->{ncols};
+    print "  $doc_ps,\n  $doc_tb,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n  \"pages\": [";
+    $sep = "\n";
+
+    my %pages;
+    for my $i (1 .. $doc->{npages}) {
+        my $page = $doc->{pages}->{$i};
+        my @val = ();
+
+        my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
+        my($pw, $ph) = ($pbb->{width}, $pbb->{height});
+        my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pw * 72, $ph * 72;
+        push @val, $page_ps if $page_ps ne $doc_ps;
+        my($w, $h, $l, $t) = ($tbb->{width}, $tbb->{height}, $tbb->{left}, $tbb->{top});
+        my($page_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $w * 72, $h * 72;
+        push @val, $page_tb if $page_tb ne $doc_tb;
+        my($page_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $t * 72, ($pw - ($l + $w)) * 72, ($ph - ($t + $h)) * 72, $l * 72;
+        push @val, $page_margin if $page_margin ne $doc_margin;
+        my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{pagespec}->{bodyfont};
+        push @val, $page_bfs if $page_bfs ne $doc_bfs;
+        my($page_l) = sprintf "\"leading\": %g", $page->{pagespec}->{lead};
+        push @val, $page_l if $page_l ne $doc_l;
+        my($page_c) = sprintf "\"columns\": %d", $page->{pagespec}->{ncols};
+        push @val, $page_c if $page_c ne $doc_c;
+        push @val, sprintf "\"d\": %d", $page->{pagespec}->{density};
+        push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
+            if $page->{pagespec}->{type} ne "body";
+
+        print $sep, "    {\n      ", join(",\n      ", @val), "\n    }";
+        $sep = ",\n";
+    }
+    print "\n  ]\n}\n";
+}
+
 sub report_verbose ($) {
     my ($doc) = @_;
     my ($page) = $doc->{pages}->{1};
@@ -1619,8 +1702,10 @@ sub banal_file ($$) {
         pass_judgement ($doc, $spec);
     } elsif (defined $stats) {
         report_stats ($doc);
+    } elsif (defined $json) {
+        report_json ($doc);
     } else {
-        report_verbose ($doc)
+        report_verbose ($doc);
     }
 }
 
