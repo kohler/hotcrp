@@ -3174,7 +3174,7 @@ class Contact {
                     $perm->can_comment = true;
                 else if ($admin && $this->can_comment($prow, null, false))
                     $perm->can_comment = "override";
-                if (get($dl, "resp"))
+                if (get($dl, "resps"))
                     foreach ($Conf->resp_round_list() as $i => $rname) {
                         $crow = (object) array("commentType" => COMMENTTYPE_RESPONSE, "commentRound" => $i);
                         $v = false;
