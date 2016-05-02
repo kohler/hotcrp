@@ -1686,7 +1686,6 @@ sub banal_config_p2h ($) {
             $p2h_version = "$1$2";
             $major = $1;
             $minor = $2;
-            print "version $major$minor\n";
         }
         close (P2H);
 
