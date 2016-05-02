@@ -92,6 +92,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $otypes["pdf:final"] = "Alternate final version";
             $otypes["slides:final"] = "Final slides";
             $otypes["video:final"] = "Final video";
+            $otypes["attachments:final"] = "Final attachments";
         }
         echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
             "</div></div></td>\n";
