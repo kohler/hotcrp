@@ -210,7 +210,7 @@ class CheckFormat {
                 if (($pp = cvtint(get($pg, "columns", $ncol))) > 0
                     && $pp != $p
                     && defval($pg, "pagetype", "body") == "body")
-                    $px[] = $n + 1;
+                    $px[] = $i + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0)) {
                 $pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px);
                 $this->errors |= self::ERR_COLUMNS;
