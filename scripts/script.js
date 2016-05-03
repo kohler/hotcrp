@@ -4736,7 +4736,7 @@ function render_allpref() {
             t.push(x);
         }
         if (t.length) {
-            x = '<span class="nw">' + t.join(',</span> <span class="nw">') + '</span>';
+            x = '<span class="nb">' + t.join(',</span> <span class="nb">') + '</span>';
             $(this).html(x).removeClass("need-allpref");
         } else
             $(this).closest("div").empty();

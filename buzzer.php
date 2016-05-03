@@ -77,9 +77,9 @@ function trackertable_paper_row(hc, idx, paper) {
     if (paper.pc_conflicts) {
         pcconf = [];
         for (var i = 0; i < paper.pc_conflicts.length; ++i)
-            pcconf.push("<span class=\"nw\">" + text_to_html(paper.pc_conflicts[i].name) + "<\/span>");
+            pcconf.push(text_to_html(paper.pc_conflicts[i].name));
         pcconf = "<em class=\"plx\">PC conflicts:</em> " +
-            (pcconf.length ? pcconf.join(", ") : "None");
+            (pcconf.length ? "<span class=\"nb\">" + pcconf.join(",</span> <span class=\"nb\">") + "</span>" : "None");
     }
 
     hc.push("<tr class=\"trackertable" + idx + (showpapers && pcconf ? " t" : " t b") + "\">", "<\/tr>");

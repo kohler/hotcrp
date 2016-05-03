@@ -352,7 +352,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
             }
         if (count($cids) > 0) {
-            $pret = '<div class="revnotes"><a href="#' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nw">' . join(',</span> <span class="nw">', $cnames) . "</span></div>";
+            $pret = '<div class="revnotes"><a href="#' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nb">' . join(',</span> <span class="nb">', $cnames) . "</span></div>";
             $any_comments = true;
         }
     }

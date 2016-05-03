@@ -1511,7 +1511,7 @@ class TagReportPaperColumn extends PaperColumn {
         if (empty($a))
             return "";
         $pl->contact->ksort_cid_array($a);
-        $str = '<span class="nw">' . join(',</span>  <span class="nw">', $a) . '</span>';
+        $str = '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
         return $pl->maybeConflict($row, $str, $row->conflictType <= 0 || $pl->contact->can_view_peruser_tags($row, $this->tag, false));
     }
 }

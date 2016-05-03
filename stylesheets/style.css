@@ -150,10 +150,10 @@ span.sep {
 span.lgsep {
 	padding-right: 2em;
 }
-.nowrap, .nw {
+.nw, .nb {
 	white-space: nowrap;
 }
-span.nw {
+span.nb {
 	display: inline-block; /* why? */
 }
 .childfold {
