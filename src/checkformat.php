@@ -133,7 +133,7 @@ class CheckFormat {
         if (isset($Opt["pdftohtml"]))
             putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
 
-        $banal_run = "perl src/banal -no_app ";
+        $banal_run = "perl src/banal -json ";
         if (($gtpos = strpos($spec, ">")) !== false) {
             $banal_run .= substr($spec, $gtpos + 1) . " ";
             $spec = substr($spec, 0, $gtpos);
@@ -149,53 +149,33 @@ class CheckFormat {
         $this->banal_status = proc_close($banal_proc);
 
         // analyze banal's output
-        $pi = array();
-        $papersize = null;
-        $page = null;
-        foreach (preg_split("/[\r\n]/", $this->banal_stdout) as $b) {
-            if (preg_match('/^Paper size:\s+(.*?)\s*$/i', $b, $m)
-                && ($p = self::parse_dimen($m[1], 2)))
-                $papersize = $p;
-            else if (preg_match('/^Page\s+(\d+)/i', $b, $m)) {
-                $page = $m[1];
-                $pi[$page] = array("pageno" => $m[1]);
-            } else if ($page && preg_match('/^\s*text region:\s+(.*?)\s*$/i', $b, $m)
-                       && ($p = self::parse_dimen($m[1], 2)))
-                $pi[$page]["block"] = $p;
-            else if ($page && preg_match('/^\s*body font:\s+(\S+)/i', $b, $m)
-                     && ($p = self::parse_dimen($m[1], 1)))
-                $pi[$page]["bodyfont"] = $p;
-            else if ($page && preg_match('/^\s*leading:\s+(\S+)/i', $b, $m)
-                     && ($p = self::parse_dimen($m[1], 1)))
-                $pi[$page]["leading"] = $p;
-            else if ($page && preg_match('/^\s*columns:\s+(\d+)/i', $b, $m))
-                $pi[$page]["columns"] = $m[1];
-            else if ($page && preg_match('/^\s*type:\s+(\S+)/i', $b, $m))
-                $pi[$page]["type"] = $m[1];
-        }
+        $bj = json_decode($this->banal_stdout);
+        if (!$bj || !isset($bj->pages) || !isset($bj->papersize)
+            || !is_array($bj->pages) || !is_array($bj->papersize)
+            || count($bj->papersize) != 2)
+            return $this->msg("error", "Analysis failure: no pages or paper size.");
 
         // report results
-        if (!$papersize || !count($pi))
-            return $this->msg("error", "Analysis failure: no pages or paper size.");
         $banal_desired = explode(";", $spec);
         $pie = array();
 
         // paper size
         if (count($banal_desired) > 0 && $banal_desired[0]) {
+            $papersize = $bj->papersize;
             $psdefs = array();
             $ok = false;
             foreach (explode(" OR ", $banal_desired[0]) as $p) {
                 if (!($p = self::parse_dimen($p, 2)))
                     continue;
-                if (abs($p[0] - $papersize[0]) < 9
-                    && abs($p[1] - $papersize[1]) < 9) {
+                if (abs($p[0] - $papersize[1]) < 9
+                    && abs($p[1] - $papersize[0]) < 9) {
                     $ok = true;
                     break;
                 }
                 $psdefs[] = self::unparse_dimen($p, "paper");
             }
             if (!$ok && count($psdefs)) {
-                $pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or") . ", got " . self::unparse_dimen($papersize, "paper");
+                $pie[] = "Paper size mismatch: expected " . commajoin($psdefs, "or") . ", got " . self::unparse_dimen([$papersize[1], $papersize[0]], "paper");
                 $this->errors |= self::ERR_PAPERSIZE;
             }
         }
@@ -207,11 +187,11 @@ class CheckFormat {
             $m[2] = (isset($m[2]) ? $m[2] : 0);
             $minpages = ($m[2] ? $m[1] : null);
             $maxpages = ($m[2] ? $m[2] : $m[1]);
-            if ($m[2] && count($pi) < $m[1]) {
-                $pie[] = "Too few pages: expected " . plural($m[1], "or more page") . ", found " . count($pi);
+            if ($m[2] && count($bj->pages) < $m[1]) {
+                $pie[] = "Too few pages: expected " . plural($m[1], "or more page") . ", found " . count($bj->pages);
                 $this->errors |= self::ERR_PAGELIMIT;
-            } else if (count($pi) > ($m[2] ? $m[2] : $m[1])) {
-                $pie[] = "Too many pages: the limit is " . plural($m[2] ? $m[2] : $m[1], "page") . ", found " . count($pi);
+            } else if (count($bj->pages) > ($m[2] ? $m[2] : $m[1])) {
+                $pie[] = "Too many pages: the limit is " . plural($m[2] ? $m[2] : $m[1], "page") . ", found " . count($bj->pages);
                 $this->errors |= self::ERR_PAGELIMIT;
             }
         }
@@ -221,10 +201,12 @@ class CheckFormat {
         if (count($banal_desired) > 2 && $banal_desired[2]
             && ($p = cvtint($banal_desired[2])) > 0) {
             $px = array();
-            foreach ($pi as $pg)
-                if (($pp = cvtint(defval($pg, "columns"))) > 0 && $pp != $p
-                    && defval($pg, "type") == "body")
-                    $px[] = $pg["pageno"];
+            $ncol = get($bj, "columns", 0);
+            foreach ($bj->pages as $i => $pg)
+                if (($pp = cvtint(get($pg, "columns", $ncol))) > 0
+                    && $pp != $p
+                    && defval($pg, "type", "body") == "body")
+                    $px[] = $n + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0)) {
                 $pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px);
                 $this->errors |= self::ERR_COLUMNS;
@@ -237,14 +219,15 @@ class CheckFormat {
             $px = array();
             $py = array();
             $maxx = $maxy = 0;
-            foreach ($pi as $pg)
-                if (($pp = defval($pg, "block"))) {
-                    if ($pp[0] - $p[0] >= 9) {
-                        $px[] = $pg["pageno"];
+            $tb = get($bj, "textblock");
+            foreach ($bj->pages as $i => $pg)
+                if (($pp = defval($pg, "textblock", $tb)) && is_array($pp)) {
+                    if ($pp[1] - $p[0] >= 9) {
+                        $px[] = $i + 1;
                         $maxx = max($maxx, $pp[0]);
                     }
-                    if ($pp[1] - $p[1] >= 9) {
-                        $py[] = $pg["pageno"];
+                    if ($pp[0] - $p[1] >= 9) {
+                        $py[] = $i + 1;
                         $maxy = max($maxy, $pp[1]);
                     }
                 }
@@ -274,12 +257,14 @@ class CheckFormat {
             $px = array();
             $bodypages = 0;
             $minval = 1000;
-            foreach ($pi as $pg) {
-                if (defval($pg, "type") == "body")
+            $bfs = get($bj, "bodyfontsize");
+            foreach ($bj->pages as $i => $pg) {
+                if (get($pg, "type", "body") == "body")
                     $bodypages++;
-                if (($pp = cvtnum(defval($pg, "bodyfont"))) > 0
-                    && $pp < $p && defval($pg, "type") == "body") {
-                    $px[] = $pg["pageno"];
+                if (($pp = cvtnum(get($pg, "bodyfontsize", $bfs))) > 0
+                    && $pp < $p
+                    && get($pg, "type", "body") == "body") {
+                    $px[] = $i + 1;
                     $minval = min($minval, $pp);
                 }
             }
@@ -298,10 +283,12 @@ class CheckFormat {
             && ($p = cvtnum($banal_desired[5])) > 0) {
             $px = array();
             $minval = 1000;
-            foreach ($pi as $pg)
-                if (($pp = cvtnum(defval($pg, "leading"))) > 0
-                    && $pp < $p && defval($pg, "type") == "body") {
-                    $px[] = $pg["pageno"];
+            $l = get($bj, "leading");
+            foreach ($bj->pages as $i => $pg)
+                if (($pp = cvtnum(get($pg, "leading", $l))) > 0
+                    && $pp < $p
+                    && get($pg, "type", "body") == "body") {
+                    $px[] = $i + 1;
                     $minval = min($minval, $pp);
                 }
             if (count($px) > 0) {

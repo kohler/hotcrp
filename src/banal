@@ -988,8 +988,7 @@ sub json_quote ($) {
 sub report_json ($) {
     my ($doc) = @_;
 
-    print "{\n";
-    print "  \"filename\": ", json_quote($file), ",\n";
+    printf "{\n  \"at\": %d,\n", time;
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}};
     for my $i (1 .. $doc->{npages}) {
@@ -1006,8 +1005,8 @@ sub report_json ($) {
     my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
     my($mt, $ml) = (modevalkey($dx->{mt}), modevalkey($dx->{ml}));
 
-    my ($doc_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pw, $ph;
-    my ($doc_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $tw, $th;
+    my ($doc_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $ph, $pw;
+    my ($doc_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $th, $tw;
     my ($doc_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $mt, $pw - ($ml + $tw), $ph - ($mt + $th), $ml;
     my ($doc_bfs);
     if (p2h_font_bug($doc)) {
@@ -1025,12 +1024,18 @@ sub report_json ($) {
         my $page = $doc->{pages}->{$i};
         my @val = ();
 
+        if ($page->{num} =~ /\A\d+\z/ && $page->{num} ne $i) {
+            push @val, sprintf "\"pageno\": %d", $page->{num};
+        } elsif ($page->{num} ne $i) {
+            push @val, sprintf "\"pageno\": %s", json_quote($page->{num});
+        }
+
         my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
         my($pw, $ph) = ($pbb->{width}, $pbb->{height});
-        my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pw * 72, $ph * 72;
+        my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $ph * 72, $pw * 72;
         push @val, $page_ps if $page_ps ne $doc_ps;
         my($w, $h, $l, $t) = ($tbb->{width}, $tbb->{height}, $tbb->{left}, $tbb->{top});
-        my($page_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $w * 72, $h * 72;
+        my($page_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $h * 72, $w * 72;
         push @val, $page_tb if $page_tb ne $doc_tb;
         my($page_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $t * 72, ($pw - ($l + $w)) * 72, ($ph - ($t + $h)) * 72, $l * 72;
         push @val, $page_margin if $page_margin ne $doc_margin;

@@ -596,11 +596,12 @@ class Banal_SettingParser extends SettingParser {
             | CheckFormat::ERR_BODYLEADING;
         if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2) {
             $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 2 0 1 $want_e2)</td></tr>"
-                . "<tr><td>Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
+                . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
             if (trim($cf->banal_stdout))
                 $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";            if (trim($cf->banal_stdout))
             if (trim($cf->banal_stderr))
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
+            $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", array_map(function ($x) { return $x[1]; }, $cf->msgs)) . "</td></tr>";
             $sv->set_warning(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
         }
 
