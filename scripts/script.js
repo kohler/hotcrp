@@ -42,13 +42,13 @@ function add_callback(cb1, cb2) {
 
 
 // promises
-function Promise(value) {
+function HPromise(value) {
     this.value = value;
     this.state = value === undefined ? false : 1;
     this.c = [];
 }
-Promise.prototype.then = function (yes, no) {
-    var next = new Promise;
+HPromise.prototype.then = function (yes, no) {
+    var next = new HPromise;
     this.c.push([no, yes, next]);
     if (this.state !== false)
         this._resolve();
@@ -58,7 +58,7 @@ Promise.prototype.then = function (yes, no) {
     }
     return next;
 };
-Promise.prototype._resolve = function () {
+HPromise.prototype._resolve = function () {
     var i, x, f, v;
     for (i in this.c) {
         x = this.c[i];
@@ -75,21 +75,21 @@ Promise.prototype._resolve = function () {
     }
     this.c = [];
 };
-Promise.prototype.fulfill = function (value) {
+HPromise.prototype.fulfill = function (value) {
     if (this.state === false) {
         this.value = value;
         this.state = 1;
         this._resolve();
     }
 };
-Promise.prototype.reject = function (reason) {
+HPromise.prototype.reject = function (reason) {
     if (this.state === false) {
         this.value = reason;
         this.state = 0;
         this._resolve();
     }
 };
-Promise.prototype.onThen = function (f) {
+HPromise.prototype.onThen = function (f) {
     this.on = add_callback(this.on, f);
     return this;
 };
@@ -3367,7 +3367,7 @@ function strnatcmp(a, b) {
         return 1;
 }
 
-var alltags = new Promise().onThen(function (p) {
+var alltags = new HPromise().onThen(function (p) {
     if (hotcrp_user.is_pclike)
         jQuery.get(hoturl("api", "fn=alltags"), null, function (v) {
             var tlist = (v && v.tags) || [];
@@ -3382,7 +3382,7 @@ var votereport = (function () {
 var vr = {};
 function votereport(tag) {
     if (!vr[tag])
-        vr[tag] = new Promise().onThen(function (p) {
+        vr[tag] = new HPromise().onThen(function (p) {
             $.get(hoturl("api", {fn: "votereport", p: hotcrp_paperid, tag: tag}), null, function (v) {
                 p.fulfill(v.ok ? v.result || "" : v.error);
             });
@@ -3404,7 +3404,7 @@ function completion_item(c) {
         return c;
 }
 
-var search_completion = new Promise().onThen(function (search_completion) {
+var search_completion = new HPromise().onThen(function (search_completion) {
     jQuery.get(hoturl("api", "fn=searchcompletion"), null, function (v) {
         var sc = (v && v.searchcompletion) || [],
             scs = $.grep(sc, function (x) { return typeof x === "string"; }),
@@ -3439,7 +3439,7 @@ function taghelp_tset(elt, displayed) {
         n = x[1].match(/^([^#\s]*)/);
         return alltags.then(make_suggestions(m[1], false, m[2], n[1], displayed));
     } else
-        return new Promise(null);
+        return new HPromise(null);
 }
 
 function taghelp_q(elt, displayed) {
@@ -3451,7 +3451,7 @@ function taghelp_q(elt, displayed) {
         n = x[1].match(/^([^\s()]*)/);
         return search_completion.then(make_suggestions(m[1], true, m[2], n[1], displayed));
     } else
-        return new Promise(null);
+        return new HPromise(null);
 }
 
 function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
