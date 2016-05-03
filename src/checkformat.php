@@ -274,7 +274,7 @@ class CheckFormat {
             }
             if ($bodypages == 0)
                 $pie[] = "Warning: No pages seemed to contain body text; results may be off";
-            else if ($bodypages <= 0.5 * count($pi))
+            else if ($bodypages <= 0.5 * count($bj->pages))
                 $pie[] = "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off";
             if (count($px) > 0) {
                 $pie[] = "Body font too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . numrangejoin($px);
