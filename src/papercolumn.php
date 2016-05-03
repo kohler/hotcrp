@@ -430,7 +430,6 @@ class CollabPaperColumn extends PaperColumn {
 class AbstractPaperColumn extends PaperColumn {
     public function __construct() {
         parent::__construct("abstract", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
-        $this->no_embedded_header = true;
     }
     public function header($pl, $ordinal) {
         return "Abstract";
@@ -442,8 +441,7 @@ class AbstractPaperColumn extends PaperColumn {
         $t = Text::highlight($row->abstract, get($pl->search->matchPreg, "abstract"), $highlight_count);
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
             $pl->need_render = true;
-            $t = '<div class="need-format" data-format="' . $format . '.plx">'
-                . $t . '</div>';
+            $t = '<div class="need-format" data-format="' . $format . '.abs.plx">' . $t . '</div>';
         }
         return $t;
     }

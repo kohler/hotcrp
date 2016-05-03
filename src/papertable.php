@@ -537,7 +537,7 @@ class PaperTable {
             '<div class="pavb abstract"><div class="paptext format0';
         if ($this->prow && !$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
-            echo ' need-format" data-format="', $format;
+            echo ' need-format" data-format="', $format, '.abs';
             $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
         }
         echo '">', $text, "</div>";

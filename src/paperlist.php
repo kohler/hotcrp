@@ -712,8 +712,7 @@ class PaperList {
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
                     if ($c[0] !== "<"
-                        || $fdef->no_embedded_header
-                        || !preg_match('/\A((?:<div.*?>)*)([\s\S]*)\z/', $c, $cm))
+                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
                         $cm = [null, "", $c];
                     $tt .= $cm[1] . '<em class="plx">' . $fdef->header($this, -1) . ':</em> ' . $cm[2];
                     $fdef->has_content = true;

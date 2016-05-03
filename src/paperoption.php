@@ -695,9 +695,13 @@ class TextPaperOption extends PaperOption {
 
     function unparse_column_html($pl, $row) {
         $v = $row->option($this->id);
-        if ($v && $v->data !== null && $v->data !== "")
-            return '<div class="format0">' . Ht::link_urls(htmlspecialchars($v->data)) . '</div>';
-        else
+        if ($v && $v->data !== null && $v->data !== "") {
+            if (($format = $row->format_of($v->data))) {
+                $pl->need_render = true;
+                return '<div class="need-format" data-format="' . $format . '.plx">' . htmlspecialchars($v->data) . '</div>';
+            } else
+                return '<div class="format0">' . Ht::link_urls(htmlspecialchars($v->data)) . '</div>';
+        } else
             return "";
     }
 }

@@ -2400,12 +2400,12 @@ function do_render(format, is_inline, a) {
     return {format: 0, content: render0(a[0])};
 }
 
-var render_text = function (format, text /* arguments... */) {
+function render_text(format, text /* arguments... */) {
     var a = [text], i;
     for (i = 2; i < arguments.length; ++i)
         a.push(arguments[i]);
     return do_render.call(this, format, false, a);
-};
+}
 
 function render_inline(format, text /* arguments... */) {
     var a = [text], i;
@@ -2416,11 +2416,18 @@ function render_inline(format, text /* arguments... */) {
 
 function on() {
     var $j = $(this), format = this.getAttribute("data-format"),
-        content = this.getAttribute("data-content") || $j.text(), f;
+        content = this.getAttribute("data-content") || $j.text(), args = null, f, i;
+    if ((i = format.indexOf(".")) > 0) {
+        var a = format.split(/\./);
+        format = a[0];
+        args = {};
+        for (i = 1; i < a.length; ++i)
+            args[a[i]] = true;
+    }
     if (this.tagName == "DIV")
-        f = render_text.call(this, format, content);
+        f = render_text.call(this, format, content, args);
     else
-        f = render_inline.call(this, format, content);
+        f = render_inline.call(this, format, content, args);
     if (f.format)
         $j.html(f.content);
     var s = $.trim(this.className.replace(/(?:^| )(?:(?:need-format|format\d+)(?: |$))*/g, " "));
