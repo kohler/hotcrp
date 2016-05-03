@@ -2423,7 +2423,8 @@ function on() {
         f = render_inline.call(this, format, content);
     if (f.format)
         $j.html(f.content);
-    this.className = this.className.replace(/(?:^| )(?:need-format|format\d+)(?: |$)/g, " ") + "format" + (f.format || 0);
+    var s = $.trim(this.className.replace(/(?:^| )(?:(?:need-format|format\d+)(?: |$))*/g, " "));
+    this.className = s + (s ? " format" : "format") + (f.format || 0);
 }
 
 $.extend(render_text, {
