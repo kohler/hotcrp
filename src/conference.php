@@ -120,7 +120,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 131) {
+        if ($this->sversion < 132) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -1480,7 +1480,38 @@ class Conf {
             $doc->sha1 = sha1($doc->content, true);
             Dbl::q("update PaperStorage set sha1=? where paperStorageId=?", $doc->sha1, $doc->paperStorageId);
         }
+        // unparse infoJson
+        if ($doc->infoJson) {
+            $doc->infoJson_str = $doc->infoJson;
+            $doc->infoJson = json_decode($doc->infoJson);
+        }
         return $doc;
+    }
+
+    function update_document_metadata($doc, $delta) {
+        if ($doc->paperStorageId <= 1)
+            return false;
+        while (1) {
+            $old_str = isset($doc->infoJson_str) ? $doc->infoJson_str : null;
+            $metadata = null;
+            if (is_string($old_str))
+                $metadata = json_decode($old_str);
+            $metadata = is_object($metadata) ? $metadata : (object) [];
+            foreach ($delta as $k => $v)
+                if ($v === null)
+                    unset($metadata->$v);
+                else
+                    $metadata->$k = $v;
+            $metadata_str = count(get_object_vars($metadata)) ? json_encode($metadata) : null;
+            $ijq = isset($old_str) ? "=" : " is ";
+            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $doc->paperStorageId, $old_str);
+            if ($result->affected_rows != 0)
+                break;
+            $doc->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId);
+        }
+        $doc->infoJson_str = $metadata_str;
+        $doc->infoJson = $metadata;
+        return true;
     }
 
     private function __downloadPaper($paperId, $attachment, $documentType, $docid) {

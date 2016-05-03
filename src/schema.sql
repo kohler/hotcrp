@@ -319,7 +319,7 @@ CREATE TABLE `PaperStorage` (
   `sha1` varbinary(20) NOT NULL DEFAULT '',
   `documentType` int(3) NOT NULL DEFAULT '0',
   `filename` varbinary(255) DEFAULT NULL,
-  `infoJson` varbinary(8192) DEFAULT NULL,
+  `infoJson` varbinary(32768) DEFAULT NULL,
   `size` bigint(11) DEFAULT NULL,
   `filterType` int(3) DEFAULT NULL,
   `originalStorageId` int(11) DEFAULT NULL,
@@ -467,7 +467,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 131);
+insert into Settings (name, value) values ('allowPaperOption', 132);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

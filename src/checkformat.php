@@ -128,28 +128,32 @@ class CheckFormat {
         return 0;
     }
 
-    function analyzeFile($filename, $spec, $documentId = 0) {
-        global $Conf, $Opt;
+    static private function split_spec($spec) {
+        if (($gtpos = strpos($spec, ">")) !== false)
+            return [substr($spec, 0, $gtpos), substr($spec, $gtpos + 1)];
+        else
+            return [$spec, null];
+    }
+
+    private function run_banal($filename, $args) {
+        global $Opt;
         if (isset($Opt["pdftohtml"]))
             putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
-
-        $banal_run = "perl src/banal -json ";
-        if (($gtpos = strpos($spec, ">")) !== false) {
-            $banal_run .= substr($spec, $gtpos + 1) . " ";
-            $spec = substr($spec, 0, $gtpos);
-        }
-
+        $banal_run = "perl src/banal -no_app -json ";
+        if ($args)
+            $banal_run .= $args . " ";
         $pipes = null;
         $banal_proc = proc_open($banal_run . escapeshellarg($filename),
-            [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
+                                [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
         $this->banal_stdout = stream_get_contents($pipes[1]);
         $this->banal_stderr = stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
         $this->banal_status = proc_close($banal_proc);
+        return json_decode($this->banal_stdout);
+    }
 
-        // analyze banal's output
-        $bj = json_decode($this->banal_stdout);
+    private function check_banal_json($bj, $spec) {
         if (!$bj || !isset($bj->pages) || !isset($bj->papersize)
             || !is_array($bj->pages) || !is_array($bj->papersize)
             || count($bj->papersize) != 2)
@@ -195,7 +199,7 @@ class CheckFormat {
                 $this->errors |= self::ERR_PAGELIMIT;
             }
         }
-        $this->pages = count($pi);
+        $this->pages = count($bj->pages);
 
         // number of columns
         if (count($banal_desired) > 2 && $banal_desired[2]
@@ -205,7 +209,7 @@ class CheckFormat {
             foreach ($bj->pages as $i => $pg)
                 if (($pp = cvtint(get($pg, "columns", $ncol))) > 0
                     && $pp != $p
-                    && defval($pg, "type", "body") == "body")
+                    && defval($pg, "pagetype", "body") == "body")
                     $px[] = $n + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0)) {
                 $pie[] = "Wrong number of columns: expected " . plural($p, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px);
@@ -259,11 +263,11 @@ class CheckFormat {
             $minval = 1000;
             $bfs = get($bj, "bodyfontsize");
             foreach ($bj->pages as $i => $pg) {
-                if (get($pg, "type", "body") == "body")
+                if (get($pg, "pagetype", "body") == "body")
                     $bodypages++;
                 if (($pp = cvtnum(get($pg, "bodyfontsize", $bfs))) > 0
                     && $pp < $p
-                    && get($pg, "type", "body") == "body") {
+                    && get($pg, "pagetype", "body") == "body") {
                     $px[] = $i + 1;
                     $minval = min($minval, $pp);
                 }
@@ -287,7 +291,7 @@ class CheckFormat {
             foreach ($bj->pages as $i => $pg)
                 if (($pp = cvtnum(get($pg, "leading", $l))) > 0
                     && $pp < $p
-                    && get($pg, "type", "body") == "body") {
+                    && get($pg, "pagetype", "body") == "body") {
                     $px[] = $i + 1;
                     $minval = min($minval, $pp);
                 }
@@ -298,8 +302,6 @@ class CheckFormat {
         }
 
         // results
-        if ($documentId > 1)
-            Dbl::q("update PaperStorage set infoJson='{\"npages\":" . $this->pages . "}' where paperStorageId=$documentId");
         if (count($pie) > 0) {
             $this->msg("warn", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
             return 1;
@@ -309,23 +311,40 @@ class CheckFormat {
         }
     }
 
+    public function check_file($filename, $spec) {
+        list($spec, $args) = self::split_spec($spec);
+        $bj = $this->run_banal($filename, $args);
+        return $this->check_banal_json($bj, $spec);
+    }
+
     function _analyzePaper($paperId, $documentType, $spec, &$tmpdir) {
-        global $Conf, $prow, $Opt;
+        global $Conf, $Opt;
         $result = $Conf->document_result($paperId, $documentType);
         if (!($row = $Conf->document_row($result))
-            || !$row->docclass->load($row)
             || $row->paperStorageId <= 1)
             return $this->msg("error", "No such paper.");
         if ($row->mimetype != "application/pdf")
             return $this->msg("error", "The format checker only works for PDF files.");
-        if (!isset($row->filestore)) {
-            if (!$tmpdir && ($tmpdir = tempdir()) == false)
-                return $this->msg("error", "Cannot create temporary directory.");
-            if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
-                return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
-            $row->filestore = "$tmpdir/paper.pdf";
+        list($spec, $banal_args) = self::split_spec($spec);
+        if ($row->infoJson && isset($row->infoJson->banal)
+            && $row->infoJson->banal->at >= @filemtime("src/banal")
+            && get($row->infoJson->banal, "args") == $banal_args)
+            $bj = $row->infoJson->banal;
+        else {
+            if (!$row->docclass->load($row))
+                return $this->msg("error", "Paper cannot be loaded.");
+            if (!isset($row->filestore)) {
+                if (!$tmpdir && ($tmpdir = tempdir()) == false)
+                    return $this->msg("error", "Cannot create temporary directory.");
+                if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
+                    return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
+                $row->filestore = "$tmpdir/paper.pdf";
+            }
+            $bj = $this->run_banal($row->filestore, $banal_args);
+            if ($bj && is_object($bj) && isset($bj->pages))
+                $Conf->update_document_metadata($row, ["npages" => count($bj->pages), "banal" => $bj]);
         }
-        return $this->analyzeFile($row->filestore, $spec, $row->paperStorageId);
+        return $this->check_banal_json($bj, $spec);
     }
 
     function analyzePaper($paperId, $documentType, $spec = "") {

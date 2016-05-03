@@ -576,7 +576,7 @@ class Banal_SettingParser extends SettingParser {
         $zoomarg = "";
         for ($tries = 0; $tries < 2; ++$tries) {
             $cf = new CheckFormat();
-            $s1 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
+            $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
             $e1 = $cf->errors;
             if ($s1 == 1 && ($e1 & CheckFormat::ERR_PAPERSIZE) && $tries == 0)
                 $zoomarg = ">-zoom=1";
@@ -589,7 +589,7 @@ class Banal_SettingParser extends SettingParser {
             array_pop($bs);
         $sv->save("sub_banal_data", join(";", $bs) . $zoomarg);
         $e1 = $cf->errors;
-        $s2 = $cf->analyzeFile("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
+        $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
         $e2 = $cf->errors;
         $want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
             | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE

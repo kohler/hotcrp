@@ -68,8 +68,12 @@ class PaperStatus {
                 $d->timestamp = (int) $drow->timestamp;
             if (get($drow, "filename"))
                 $d->filename = $drow->filename;
-            if (get($drow, "infoJson")
-                && ($meta = json_decode($drow->infoJson)))
+            $meta = null;
+            if (isset($drow->infoJson) && is_object($drow->infoJson))
+                $meta = $drow->infoJson;
+            else if (isset($drow->infoJson) && is_string($drow->infoJson))
+                $meta = json_decode($drow->infoJson);
+            if ($meta)
                 $d->metadata = $meta;
             if ($this->export_content
                 && $drow->docclass->load($drow))

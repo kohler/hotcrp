@@ -954,6 +954,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
   PRIMARY KEY (`tag`,`annoId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
         $Conf->update_schema_version(131);
+    if ($Conf->sversion == 131
+        && Dbl::ql("alter table PaperStorage modify `infoJson` varbinary(32768) DEFAULT NULL"))
+        $Conf->update_schema_version(132);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

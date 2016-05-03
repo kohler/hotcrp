@@ -1,6 +1,7 @@
-#!/usr/bin/perl -s
+#!/usr/bin/perl
 #
 # Copyright (C) 2007 Geoffrey M. Voelker
+# Copyright (c) 2016 Eddie Kohler
 #
 # banal -- analyze pdf formatting
 #
@@ -27,7 +28,8 @@
 use Data::Dumper;
 use File::Basename;
 use File::Temp;
-my($FILE);
+use POSIX;
+my($FILE, $banal_text_fudge);
 
 sub usage {
     print <<EOF;
@@ -99,6 +101,33 @@ EOF
 # version
 $banal_version = 1.2;
 
+# parse args
+local($report, $stats, $judge, $no_app, $json, $version, $debug_pdftohtml,
+      $paper, $pages, $font, $leading, $cols, $width, $height, $fudge, $format, $zoom);
+for (my $i = 0; $i < @ARGV; ) {
+    no strict "refs";
+    if ($ARGV[$i] =~ /\A--?(report|stats|judge|no[-_]app|json|version|debug[-_]pdftohtml)\z/) {
+        my($name) = $1;
+        $name =~ s/_/-/;
+        ${$name} = 1;
+        splice @ARGV, $i, 1;
+    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom)=(.*)\z/) {
+        ${$1} = $2;
+        splice @ARGV, $i, 1;
+    } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom)\z/ && $i + 1 < @ARGV) {
+        ${$1} = $ARGV[$i + 1];
+        splice @ARGV, $i, 2;
+    } elsif ($ARGV[$i] =~ /\A-/) {
+        print STDERR "banal: bad option ", $ARGV[$i], "\n";
+        usage;
+    } else {
+        $i += 1;
+    }
+}
+
+my(@switches);
+push @switches, "-zoom=$zoom" if defined $zoom;
+
 # zoom value
 if ((defined $zoom) && ($zoom !~ /^[1-9]\d*(\.\d*)?$/)) {
     print STDERR "banal: bad -zoom\n";
@@ -107,14 +136,14 @@ if ((defined $zoom) && ($zoom !~ /^[1-9]\d*(\.\d*)?$/)) {
 
 # mapping from pdftohtml units to inches
 #$p2h_per_inch = 72;
-$p2h_per_inch;
+my $p2h_per_inch;
 
 # scale factor from pdftohtml units to points
 #$p2h_to_points = 72 / $p2h_per_inch;
-$p2h_to_points;
+my $p2h_to_points;
 
 # minimum amount of text on page for it to be interesting
-$banal_min_density = 8000;
+my $banal_min_density = 8000;
 
 # fudge factor when judging text regions (in inches).
 $banal_text_fudge = 0.05;
@@ -122,12 +151,16 @@ $banal_text_fudge = 0.05;
 # minimum number of pages that have to fail the text region specs.
 # often papers have 1-2 pages where text on a table or figure extends
 # into the margin.  when judging an entire paper, we'll let those slide...
-$banal_judge_min_fail_pages = 3;
+my $banal_judge_min_fail_pages = 3;
 
 # policy to use to estimate leading
-$banal_leading_policy;
+my $banal_leading_policy;
+
+# round margins and text blocks to this number of points
+my $grid = 4;
 
 # pdftohtml executable
+my $pdftohtml;
 if (exists $ENV{"PDFTOHTML"}) {
     $pdftohtml = $ENV{"PDFTOHTML"};
 } elsif (exists $ENV{"PHP_PDFTOHTML"}) {
@@ -141,49 +174,15 @@ if (exists $ENV{"PDFTOHTML"}) {
 #print STDERR "using $pdftohtml...\n";
 
 # version of pdftohtml program
-$p2h_version = 0;
+my $p2h_version = 0;
 
 # full path of file being analyzed
-$banal_fullpath = '';
+my $banal_fullpath = '';
 # file name of file being analyzed
-$banal_filename = '';
+my $banal_filename = '';
 
-# sketch of perl data structures used
-$page = "
-$num
-$pagedata
-$pagespec
-";
-
-$pagedata = "
-
-
-";
-
-$pagespec = "
-$paperbb
-$regionbb
-$bodyfont
-$ncols
-";
-
-
-$bbox = "
-$top
-$left
-$width
-$height
-";
-
-$segdata = "
-%widths
-%lefts
-%rights
-%tops
-%bots
-%leads
-";
-
+my $use_raw_leading;
+my $title = '';
 
 # return min key in hash
 sub minkey ($) {
@@ -324,7 +323,7 @@ sub calc_doc_app ($) {
     my ($doc) = @_;
     my ($fname) = $doc->{fullpath};
 
-    my ($creator, $title, $producer, $creatortool, $ptex);
+    my ($creator, $producer, $creatortool, $ptex);
     my ($rdftitle, $pdfproducer);
     my ($indirect, $quartzpdf, $pdfmachine, $cmrfont, $texfont);
 
@@ -819,7 +818,6 @@ sub calc_doc_leading ($) {
             $leads = $segs->{leads};
             foreach $k (keys %$leads) {
                 $doc_leads{$k} += $segs->{leads}->{$k};
-                $lcount++;
             }
         }
 
@@ -989,17 +987,28 @@ sub report_json ($) {
     my ($doc) = @_;
 
     printf "{\n  \"at\": %d,\n", time;
+    printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}};
+    my $px = {};
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
         my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
-        $dx->{pw}->{sprintf "%.0f", $pbb->{width} * 72} += 1;
-        $dx->{ph}->{sprintf "%.0f", $pbb->{height} * 72} += 1;
-        $dx->{tw}->{sprintf "%.0f", $tbb->{width} * 72} += 1;
-        $dx->{th}->{sprintf "%.0f", $tbb->{height} * 72} += 1;
-        $dx->{mt}->{sprintf "%.0f", $tbb->{top} * 72} += 1;
-        $dx->{ml}->{sprintf "%.0f", $tbb->{left} * 72} += 1;
+        my($tl) = POSIX::floor($tbb->{left} * 72 / $grid) * $grid;
+        my($tt) = POSIX::floor($tbb->{top} * 72 / $grid) * $grid;
+        my($tr) = POSIX::ceil(($tbb->{left} + $tbb->{width}) * 72 / $grid) * $grid;
+        my($tb) = POSIX::ceil(($tbb->{top} + $tbb->{height}) * 72 / $grid) * $grid;
+        my($pd) = {"pw" => (sprintf "%.0f", $pbb->{width} * 72 / $grid) * $grid,
+                   "ph" => (sprintf "%.0f", $pbb->{height} * 72 / $grid) * $grid,
+                   "mt" => $tt,
+                   "ml" => $tl,
+                   "tw" => $tr - $tl,
+                   "th" => $tb - $tt};
+        $px->{$i} = $pd;
+        my($k, $v);
+        while (($k, $v) = each %$pd) {
+            $dx->{$k}->{$v} += 1;
+        }
     }
     my($pw, $ph) = (modevalkey($dx->{pw}), modevalkey($dx->{ph}));
     my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
@@ -1030,14 +1039,12 @@ sub report_json ($) {
             push @val, sprintf "\"pageno\": %s", json_quote($page->{num});
         }
 
-        my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
-        my($pw, $ph) = ($pbb->{width}, $pbb->{height});
-        my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $ph * 72, $pw * 72;
+        my($pd) = $px->{$i};
+        my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pd->{ph}, $pd->{pw};
         push @val, $page_ps if $page_ps ne $doc_ps;
-        my($w, $h, $l, $t) = ($tbb->{width}, $tbb->{height}, $tbb->{left}, $tbb->{top});
-        my($page_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $h * 72, $w * 72;
+        my($page_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $pd->{th}, $pd->{tw};
         push @val, $page_tb if $page_tb ne $doc_tb;
-        my($page_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $t * 72, ($pw - ($l + $w)) * 72, ($ph - ($t + $h)) * 72, $l * 72;
+        my($page_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
         push @val, $page_margin if $page_margin ne $doc_margin;
         my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{pagespec}->{bodyfont};
         push @val, $page_bfs if $page_bfs ne $doc_bfs;
@@ -1064,20 +1071,20 @@ sub report_verbose ($) {
         print STDERR $file, "\n";
         print STDERR "$banal_filename: Error: pdftohtml encountered font problems...some info likely bogus.\n";
     }
-    printf ("Paper size: %.2fin x %.2fin\n", $doc->{pagespec}->{paperbb}->{width}, $doc->{pagespec}->{paperbb}->{height});
-    printf ("Text region: %.2fin x %.2fin\n", $doc->{textbb}->{width},
-            $doc->{textbb}->{height});
-    printf ("Margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n",
-            $doc->{textbb}->{left},
-            $doc->{textbb}->{rmarg},
-            $doc->{textbb}->{top},
-            $doc->{textbb}->{bmarg});
-    printf ("Body font size: %.2fpt", $doc->{pagespec}->{bodyfont});
+    printf "Paper size: %.2fin x %.2fin\n", $doc->{pagespec}->{paperbb}->{width}, $doc->{pagespec}->{paperbb}->{height};
+    printf "Text region: %.2fin x %.2fin\n", $doc->{textbb}->{width},
+           $doc->{textbb}->{height};
+    printf "Margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n",
+           $doc->{textbb}->{left},
+           $doc->{textbb}->{rmarg},
+           $doc->{textbb}->{top},
+           $doc->{textbb}->{bmarg};
+    printf "Body font size: %.2fpt", $doc->{pagespec}->{bodyfont};
     if (p2h_font_bug ($doc)) {
         print " (bogus)";
     }
     print "\n";
-    printf ("Leading: %.1fpt\n", $doc->{pagespec}->{lead});
+    printf "Leading: %.1fpt\n", $doc->{pagespec}->{lead};
     print "Columns: ", $page->{pagespec}->{ncols}, "\n";
     print "Pages: ", $doc->{npages}, "\n";
     print "App: ", $doc->{app}, "\n" if $doc->{app} ne "";
@@ -1095,17 +1102,17 @@ sub report_verbose ($) {
         $top_i = $page->{pagespec}->{textbb}->{top};
         $bot_i = $page->{pagespec}->{paperbb}->{height} -
             ($top_i + $page->{pagespec}->{textbb}->{height});
-        printf ("  margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n", 
-                $left_i, $right_i, $top_i, $bot_i);
+        printf "  margins: %.2fin x %.2fin x %.2fin x %.2fin (l/r/t/b)\n",
+               $left_i, $right_i, $top_i, $bot_i;
 
-        printf ("  body font: %gpt (id %d)\n", $page->{pagespec}->{bodyfont},
-                $page->{pagedata}->{bodyfont}->{id});
-        printf ("  leading: %gpt\n", $page->{pagespec}->{lead});
-        printf ("  columns: %d\n", $page->{pagespec}->{ncols});
+        printf "  body font: %gpt (id %d)\n", $page->{pagespec}->{bodyfont},
+               $page->{pagedata}->{bodyfont}->{id};
+        printf "  leading: %gpt\n", $page->{pagespec}->{lead};
+        printf "  columns: %d\n", $page->{pagespec}->{ncols};
         print   "  type: ", $page->{pagespec}->{type}, "\n";
 
         $density = $page->{pagespec}->{density};
-        printf ("  density: %d\n", $density);
+        printf "  density: %d\n", $density;
     }
 }
 
@@ -1122,7 +1129,7 @@ sub report_stats ($) {
         print STDERR "$banal_filename: Warning: pdftohtml encountered font problems...some info likely bogus.\n";
     }
 
-    printf ("$file\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\t%s\n",
+    printf  "$file\t%.2fx%.2f\t%.2fx%.2f\t%.2fx%.2fx%.2fx%.2f\t%d\t%.1f\t%d\t%d\t%s\n",
             # page width x height
             $doc->{pagespec}->{paperbb}->{width}, 
             $doc->{pagespec}->{paperbb}->{height},
@@ -1143,8 +1150,7 @@ sub report_stats ($) {
             # pages
             $doc->{npages},
             # app
-            $doc->{app},
-            );
+            $doc->{app};
 }
 
 sub judge_paper_size ($$) {
@@ -1203,23 +1209,6 @@ sub judge_body_font ($$) {
         $msg .= sprintf ("Font: body font too small %dpt (min %dpt)\n",
                          $doc->{pagespec}->{bodyfont}, $spec->{font});
     }
-    return $msg if (1);
-
-    # largest occuring bod
-    # skip font on last page...typically smaller bibliography font
-    for $i (1..($doc->{npages} - 1)) {
-        $page = $doc->{pages}->{$i};
-
-        # ignore pages with sparse text.
-        # crude, but tough to use as a loophole.
-        next if ($page->{pagespec}->{density} < $banal_min_density);
-
-        $fonts->{$page->{pagespec}->{bodyfont}}++;
-    }
-
-    $bodyfont = modevalkey ($fonts);
-#    next unless ($spec->{font} >= $bodyfont);
-
     return $msg;
 }
 
@@ -1358,14 +1347,6 @@ sub pass_judgement ($$) {
         $msg =~ s/^(.)/  $1/mg;  # indent
         print $file, ":\n";
         print $msg;
-    }
-
-    if ($sc11_user_feedback && $doc->{app} ne "") {
-        if ($doc->{app} eq 'word') {
-            print "\n", $sc11_word_msg, "\n";
-        } elsif ($doc->{app} eq 'tex') {
-            print "\n", $sc11_tex_msg, "\n";
-        }
     }
 }
 
@@ -1615,17 +1596,6 @@ sub banal_get_spec () {
 
     return $s unless (defined $judge);
 
-    if (defined $testspec) {
-        $s->{paper} = 'letter';
-        $s->{pages} = 14;
-        $s->{font} = 10;
-        $s->{lead} = 12.0;
-        $s->{cols} = 2;
-        $s->{width} = 6.5;
-        $s->{height} = 9;
-        $s->{fudge} = $banal_text_fudge;
-    }
-
     if (defined $paper) {
         if ($paper ne 'letter' && $paper ne 'A4') {
             die ("$banal_filename: Error: Unknown paper type '$paper'.\n");
@@ -1752,7 +1722,7 @@ sub banal_open_input ($) {
         print STDERR "$fname: Error: Failed to open file.\n";
         return 0;
     }
-    binmode (FILE, ":utf8");
+    binmode ($FILE, ":utf8");
 
     return 1;
 }
@@ -1831,7 +1801,7 @@ sub main () {
         # open input file into FILE
         next unless (banal_open_input ($file));
         banal_file ($file, $spec);
-        close (FILE);
+        close $FILE;
     }
     return 0;
 }
