@@ -353,7 +353,7 @@ class PaperTable {
 
             $dprefix = "";
             $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            if (($data = $prow->document($dtype))) {
+            if (($data = $prow->document($dtype)) && $data->paperStorageId > 1) {
                 if (($stamps = self::pdfStamps($data)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 $dname = $dtype == DTYPE_FINAL ? "Final version" : "Submission";
