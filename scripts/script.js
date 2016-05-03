@@ -4445,8 +4445,13 @@ function popup_near(elt, anchor) {
     var wg = $(window).geometry();
     var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
     var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-    elt.style.left = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) + "px";
-    elt.style.top = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) + "px";
+    var parent_offset = {left: 0, top: 0};
+    if (/popupbg/.test(elt.parentNode.className))
+        parent_offset = $(elt.parentNode).offset();
+    x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - parent_offset.left;
+    y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
+    elt.style.left = x + "px";
+    elt.style.top = y + "px";
 }
 
 function popup(anchor, which, dofold, populate) {
