@@ -687,7 +687,7 @@ class TextPaperOption extends PaperOption {
 
     function parse_json($pj, PaperStatus $ps) {
         if (is_string($pj))
-            return [1, $pj];
+            return trim($pj) === "" ? null : [1, $pj];
         $ps->set_option_error_html($this, "Option should be a string.");
     }
 
