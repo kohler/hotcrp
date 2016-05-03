@@ -459,10 +459,10 @@ class PaperStatus {
                     // borrow from old author information
                     if ($aux->email && $aux->first === "" && $aux->last === ""
                         && ($old_au = get($old_au_by_email, strtolower($aux->email)))) {
-                        $aux->first = $old_au->first;
-                        $aux->last = $old_au->last;
+                        $aux->first = get($old_au, "first", "");
+                        $aux->last = get($old_au, "last", "");
                         if ($aux->affiliation === "")
-                            $aux->affiliation = $old_au->affiliation;
+                            $aux->affiliation = get($old_au, "affiliation", "");
                     }
                     if ($aux->first !== "" || $aux->last !== ""
                         || $aux->email !== "" || $aux->affiliation !== "")
