@@ -539,7 +539,8 @@ class PaperTable {
             && ($format = $this->prow->format_of($text))) {
             echo ' need-format" data-format="', $format, '.abs';
             $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
-        }
+        } else
+            $text = Ht::link_urls(Text::single_line_paragraphs($text));
         echo '">', $text, "</div>";
         if ($extra)
             echo '<div class="fn6 textdiv-shade"></div>',

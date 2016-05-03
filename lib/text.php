@@ -382,4 +382,18 @@ class Text {
     public static function is_boring_word($word) {
         return isset(self::$boring_words[strtolower($word)]);
     }
+
+    public static function single_line_paragraphs($text) {
+        preg_match_all('/.*?(?:\r\n?|\n|\z)/', $text, $m);
+        $out = "";
+        $last = false;
+        foreach ($m[0] as $line) {
+            if ($line !== "" && $last && !ctype_space(substr($line, 0, 1)))
+                $out = rtrim($out) . " " . $line;
+            else
+                $out .= $line;
+            $last = strlen($line) > 50;
+        }
+        return $out;
+    }
 }
