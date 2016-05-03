@@ -704,7 +704,7 @@ if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
     echo '<h3 class="profile">Roles</h3>', "\n",
-      "<table><tr><td class=\"nowrap\">\n";
+      "<table><tr><td class=\"nw\">\n";
     foreach (array("chair" => "PC chair",
                    "pc" => "PC member",
                    "no" => "Not on the PC") as $k => $v) {
@@ -713,7 +713,7 @@ if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {
             "&nbsp;", Ht::label($v), "<br />\n";
     }
 
-    echo "</td><td><span class='sep'></span></td><td class='nowrap'>";
+    echo "</td><td><span class='sep'></span></td><td class='nw'>";
     echo Ht::checkbox_h("ass", 1, !!@($formcj->roles->sysadmin)), "&nbsp;</td>",
         "<td>", Ht::label("Sysadmin"), "<br/>",
         '<div class="hint">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</div></td></tr></table>', "\n";

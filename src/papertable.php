@@ -331,10 +331,10 @@ class PaperTable {
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
-            $t[] = "<span class='nowrap hottooltip' data-hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->printableTimestamp($tm) . "</span>";
+            $t[] = "<span class='nw hottooltip' data-hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->printableTimestamp($tm) . "</span>";
         $sha1 = defval($data, "sha1");
         if ($sha1)
-            $t[] = "<span class='nowrap hottooltip' data-hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
+            $t[] = "<span class='nw hottooltip' data-hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
         if (count($t) > 0)
             return "<span class='hint'>" . join(" <span class='barsep'>·</span> ", $t) . "</span>";
         else
@@ -406,7 +406,7 @@ class PaperTable {
             $checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
         echo "<div id='foldisready' class='",
             (($prow && $storageId > 1) || get($Opt, "noPapers") ? "foldo" : "foldc"),
-            "'><table class='fx'><tr><td class='nowrap'>",
+            "'><table class='fx'><tr><td class='nw'>",
             Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
         if ($Conf->setting('sub_freeze'))
             echo "</td><td>", Ht::label("<strong>The submission is complete.</strong>"),
@@ -451,7 +451,7 @@ class PaperTable {
         if ($prow && $Me->can_view_pdf($prow) && $storageId > 1
             && (($doc = $prow->document($documentType, $storageId)))) {
             echo "<table id='current_$inputid'><tr>",
-                "<td class='nowrap'>", documentDownload($doc), "</td>";
+                "<td class='nw'>", documentDownload($doc), "</td>";
             if ($doc->mimetype === "application/pdf" && $banal)
                 echo "<td><span class='sep'></span></td><td><a href='#' onclick='return docheckformat($documentType)'>Check format</a></td>";
             if (($stamps = self::pdfStamps($doc)))
@@ -1092,7 +1092,7 @@ class PaperTable {
             foreach ($optx->documents($prow) as $doc) {
                 $oname = "opt" . $o->id . "_" . $doc->paperStorageId;
                 echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
-                    "<td class='nowrap'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
+                    "<td class='nw'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
                     "<td class='fx'><span class='sep'></span></td>",
                     "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
                 if (($stamps = self::pdfStamps($doc)))

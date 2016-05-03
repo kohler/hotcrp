@@ -611,7 +611,7 @@ class Autoassigner {
             $x = ", possibly because of conflicts or previously declined reviews in the PC members you selected";
         else
             $x = ", possibly because the selected PC members didn’t review these papers";
-        $y = (count($b) > 1 ? " (<a class='nowrap' href='" . hoturl("search", "q=$pidx") . "'>list them</a>)" : "");
+        $y = (count($b) > 1 ? " (<a class='nw' href='" . hoturl("search", "q=$pidx") . "'>list them</a>)" : "");
         $Conf->warnMsg("I wasn’t able to complete the assignment$x.  The following papers got fewer than the required number of assignments: " . join(", ", $b) . $y . ".");
     }
 

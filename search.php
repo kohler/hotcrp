@@ -643,7 +643,7 @@ if ($pl && $pl->count > 0) {
         if (isset($cbodies[$i]) && $cbodies[$i]) {
             $klass = $ncolumns ? "padlb " : "";
             if (isset($cheaders[$i]))
-                $header .= "  <td class='${klass}nowrap'>" . $cheaders[$i] . "</td>\n";
+                $header .= "  <td class='${klass}nw'>" . $cheaders[$i] . "</td>\n";
             else
                 $header .= "  <td></td>\n";
             $body .= "  <td class='${klass}top'><table>" . $cbodies[$i] . "</table></td>\n";
@@ -739,11 +739,11 @@ echo "</div>";
 echo "</td></tr>
 <tr><td class='tllx'><table><tr>
   <td><div class='tll1'><a class='tla' onclick='return crpfocus(\"searchform\", 1)' href=\"", selfHref(array("tab" => "basic")), "\">Search</a></div></td>
-  <td><div class='tll2'><a class='tla nowrap' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
+  <td><div class='tll2'><a class='tla nw' onclick='return crpfocus(\"searchform\", 2)' href=\"", selfHref(array("tab" => "advanced")), "\">Advanced search</a></div></td>\n";
 if ($ss)
-    echo "  <td><div class='tll4'><a class='tla nowrap' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
+    echo "  <td><div class='tll4'><a class='tla nw' onclick='fold(\"searchform\",1,4);return crpfocus(\"searchform\",4)' href=\"", selfHref(array("tab" => "ss")), "\">Saved searches</a></div></td>\n";
 if ($pl && $pl->count > 0)
-    echo "  <td><div class='tll3'><a class='tla nowrap' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
+    echo "  <td><div class='tll3'><a class='tla nw' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>\n</table>\n\n";
 if ($pl && $pl->count > 0)
     // `echoScript()` not necessary because we've already got the script

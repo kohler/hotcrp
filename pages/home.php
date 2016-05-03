@@ -406,7 +406,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
     if ($Me->isPC && $Conf->has_any_lead_or_shepherd()
         && $Me->is_discussion_lead()) {
-        echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nowrap">Your discussion leads</a>';
+        echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';
         $sep = $xsep;
     }
     if ($Me->isPC && $Conf->timePCReviewPreferences()) {

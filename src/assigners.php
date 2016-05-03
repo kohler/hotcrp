@@ -1820,7 +1820,7 @@ class AssignmentSet {
             uasort($list, "Contact::compare");
             $t = "";
             foreach ($list as $x)
-                $t .= ($t ? ", " : "") . '<span class="nowrap">'
+                $t .= ($t ? ", " : "") . '<span class="nw">'
                     . $x->text . '</span>';
             if (isset($this->my_conflicts[$pid])) {
                 if ($this->my_conflicts[$pid] !== true)

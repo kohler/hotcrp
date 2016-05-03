@@ -60,7 +60,7 @@ function _alternateRow($caption, $entry, $next = null) {
             $caption = '<a class="qq" name="' . $anchor . '" href="#' . $anchor
                 . '">' . $caption . '</a>';
         }
-        echo '<tr><td class="sentry nowrap" colspan="2">',
+        echo '<tr><td class="sentry nw" colspan="2">',
             '<h4 class="helppage">', $caption, '</h4>', $below, '</td></tr>', "\n";
         $rowidx = null;
     }
@@ -98,7 +98,7 @@ function _searchForm($forwhat, $other = null, $size = 20) {
     if ($other && preg_match_all('/(\w+)=([^&]*)/', $other, $matches, PREG_SET_ORDER))
         foreach ($matches as $m)
             $text .= Ht::hidden($m[1], urldecode($m[2]));
-    return Ht::form_div(hoturl("search"), array("method" => "get", "divclass" => "nowrap"))
+    return Ht::form_div(hoturl("search"), array("method" => "get", "divclass" => "nw"))
         . "<input type='text' name='q' value=\""
         . htmlspecialchars($forwhat) . "\" size='$size' /> &nbsp;"
         . Ht::submit("go", "Search")

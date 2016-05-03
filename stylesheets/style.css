@@ -947,9 +947,6 @@ table.helppage > tbody > tr > td:first-child {
 table.helppage > tbody > tr > td:last-child {
 	padding-right: 16px;
 }
-table.helppage td.sentry form div.nowrap {
-	margin-left: -1px;
-}
 ul.compact {
 	margin-top: 0.5em;
 	margin-bottom: 0;

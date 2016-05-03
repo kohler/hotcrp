@@ -893,7 +893,7 @@ function whyNotText($whyNot, $action) {
                 $text .= "Authors can’t view paper reviews at the moment. ";
         } else
             $text .= "You can’t $action $thisPaper at the moment. ";
-        $text .= "(<a class='nowrap' href='" . hoturl("deadlines") . "'>View deadlines</a>) ";
+        $text .= "(<a class='nw' href='" . hoturl("deadlines") . "'>View deadlines</a>) ";
     }
     if (isset($whyNot["override"]))
         $text .= "“Override deadlines” can override this restriction. ";
@@ -921,11 +921,11 @@ function whyNotText($whyNot, $action) {
         $text .= "Negative votes aren’t allowed. ";
     // finish it off
     if (isset($whyNot["chairMode"]))
-        $text .= "(<a class='nowrap' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>) ";
+        $text .= "(<a class='nw' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>) ";
     if (isset($whyNot["forceShow"]) && $whyNot["forceShow"] === true)
         $text .= "(As an administrator, you can override your conflict.) ";
     else if (isset($whyNot["forceShow"]))
-        $text .= "(<a class='nowrap' href=\"". selfHref(array("forceShow" => 1)) . "\">Override conflict</a>) ";
+        $text .= "(<a class='nw' href=\"". selfHref(array("forceShow" => 1)) . "\">Override conflict</a>) ";
     if ($text && $action == "view")
         $text .= "Enter a paper number above, or <a href='" . hoturl("search", "q=") . "'>list the papers you can view</a>. ";
     return rtrim($text);
@@ -970,9 +970,9 @@ function actionBar($mode = null, $prow = null) {
     if ($quicklinks_txt)
         $x .= $quicklinks_txt;
     if ($quicklinks_txt && $Me->privChair && $listtype == "p")
-        $x .= "  <td id=\"trackerconnect\" class=\"nowrap\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" data-hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+        $x .= "  <td id=\"trackerconnect\" class=\"nw\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" data-hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
 
-    $x .= "  <td class='gopaper nowrap'>" . goPaperForm($goBase, $xmode) . "</td>\n";
+    $x .= "  <td class='gopaper nw'>" . goPaperForm($goBase, $xmode) . "</td>\n";
 
     return $x . "</tr></table>";
 }
