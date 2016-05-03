@@ -208,7 +208,7 @@ class UserStatus {
             if (!get($cj, "id") && $old_user && $old_user->contactId)
                 $cj->id = $old_user->contactId;
             if (get($cj, "id") && !is_int($cj->id))
-                $this->errf("id", "Format error [id]");
+                $this->set_error("id", "Format error [id]");
             if ($old_user && get($cj, "email")
                 && strtolower($old_user->email) !== strtolower($cj->email)
                 && Contact::id_by_email($cj->email))
