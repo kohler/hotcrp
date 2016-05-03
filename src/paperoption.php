@@ -640,6 +640,8 @@ class NumericPaperOption extends PaperOption {
     function parse_json($pj, PaperStatus $ps) {
         if (is_int($pj))
             return $pj;
+        else if ($v === "" || $v === null)
+            return null;
         $ps->set_option_error_html($this, "Option should be an integer.");
     }
 
