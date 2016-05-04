@@ -735,7 +735,7 @@ class PaperList {
             $t .= "\" $k=\"" . htmlspecialchars($v);
         $t .= "\">" . $tm . "</tr>\n";
 
-        if ($tt !== "" || $this->table_id) {
+        if ($tt !== "" || $this->table_id()) {
             $t .= "  <tr class=\"plx $trclass\" data-pid=\"$row->paperId\">";
             if ($rstate->skipcallout > 0)
                 $t .= "<td colspan=\"$rstate->skipcallout\"></td>";
