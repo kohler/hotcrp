@@ -6,8 +6,8 @@
 class Get_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $xactions = SearchAction::list_subactions("get", $user, $qreq, $pl);
-        foreach (PaperOption::option_list() as $o)
-            if ($pl->any["opt$o->id"] && $o->is_document())
+        foreach (PaperOption::option_ids() as $oid)
+            if ($pl->any["opt$oid"] && ($o = PaperOption::find($oid)) && $o->is_document())
                 $xactions[] = GetDocument_SearchAction::make_option_action($o);
         usort($xactions, function ($a, $b) { return $a[0] - $b[0]; });
         $sel_opt = array();

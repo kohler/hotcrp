@@ -348,7 +348,6 @@ class PaperStatus {
         $options = $pj->options;
         $pj->options = (object) array();
         $pj->parsed_options = array();
-        $option_list = PaperOption::option_list();
 
         // - canonicalize option values to use IDs, not abbreviations
         // - parse options into SQL

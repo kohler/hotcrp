@@ -1725,7 +1725,7 @@ class PaperSearch {
                 if ($i)
                     $x[] = "“{$rname}response”";
             }
-            foreach (PaperOption::option_list() as $o)
+            foreach (PaperOption::option_json_list() as $o)
                 array_push($x, "“" . htmlspecialchars($o->abbr) . "”");
             $this->warn("Unknown “has:” search. I understand " . commajoin($x) . ".");
             $qt[] = new SearchTerm("f");
@@ -3718,7 +3718,7 @@ class PaperSearch {
                 if ($i)
                     $res[] = "has:draft{$rname}response";
             }
-        foreach (PaperOption::option_list() as $o)
+        foreach (PaperOption::user_option_list($this->contact) as $o)
             if ($this->contact->can_view_some_paper_option($o))
                 array_push($res, "has:{$o->abbr}", "opt:{$o->abbr}");
         if ($this->contact->is_reviewer() && $Conf->has_rounds()
@@ -3747,7 +3747,7 @@ class PaperSearch {
                     && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
                     $cats[$cat] = true;
             foreach (PaperColumn::$factories as $f) {
-                foreach ($f[1]->completion_instances() as $c)
+                foreach ($f[1]->completion_instances($this->contact) as $c)
                     if (($cat = $c->completion_name())
                         && $c->prepare($pl, PaperColumn::PREP_COMPLETION))
                         $cats[$cat] = true;

@@ -71,7 +71,6 @@ class PaperOption {
     public $abbr;
     public $description;
     public $position;
-    public $ordinal;
     public $final;
     public $visibility; // "rev", "nonblind", "admin"
     private $display;
@@ -79,6 +78,8 @@ class PaperOption {
     public $selector;
     private $form_priority;
 
+    static private $jlist = null;
+    static private $jmap = [];
     static private $list = null;
     static private $nonfixed_list = null;
 
@@ -109,10 +110,13 @@ class PaperOption {
         $this->id = (int) $args["id"];
         $this->name = $args["name"];
         $this->type = $args["type"];
-        if (!($this->abbr = get_s($args, "abbr")))
-            $this->abbr = self::abbreviate($this->name, $this->id);
+        $this->abbr = $args["abbr"];
         $this->description = get_s($args, "description");
-        $this->position = get_i($args, "position");
+        $p = get($args, "position");
+        if ((is_int($p) || is_float($p)) && $p > 0)
+            $this->position = $p;
+        else
+            $this->position = 99999;
         $this->final = !!get($args, "final");
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
@@ -135,9 +139,25 @@ class PaperOption {
         $this->selector = get($args, "selector");
     }
 
+    static function make($args) {
+        global $Opt;
+        if (is_object($args))
+            $args = get_object_vars($args);
+        $type = get($args, "type");
+        if (isset($Opt["optionTypeClass.$type"]))
+            $typeclass = $Opt["optionTypeClass.$type"];
+        else if (isset(self::$type_map[$type]))
+            $typeclass = self::$type_map[$type];
+        else
+            $typeclass = "PaperOption";
+        return new $typeclass($args);
+    }
+
     static function compare($a, $b) {
-        if ($a->position != $b->position)
-            return $a->position - $b->position;
+        $ap = isset($a->position) ? (float) $a->position : 99999;
+        $bp = isset($b->position) ? (float) $b->position : 99999;
+        if ($ap != $bp)
+            return $ap < $bp ? -1 : 1;
         else
             return $a->id - $b->id;
     }
@@ -155,12 +175,15 @@ class PaperOption {
                 $jlist = [$jlist];
         }
         foreach ($jlist as $oj) {
-            if (is_object($oj) && isset($oj->id)) {
+            if (is_object($oj) && isset($oj->id) && isset($oj->name)) {
                 if (is_string($oj->id) && is_numeric($oj->id))
                     $oj->id = intval($oj->id);
-                if (is_int($oj->id) && !isset(self::$list[$oj->id])
-                    && ($oj->id >= self::MINFIXEDID) === $fixed) {
-                    self::$list[$oj->id] = PaperOption::make($oj);
+                if (is_int($oj->id) && !isset(self::$jlist[$oj->id])
+                    && ($oj->id >= self::MINFIXEDID) === $fixed
+                    && is_string($oj->name)) {
+                    if (!isset($oj->abbr) || $oj->abbr == "")
+                        $oj->abbr = self::abbreviate($oj->name, $oj->id);
+                    self::$jlist[$oj->id] = $oj;
                     continue;
                 }
             }
@@ -168,10 +191,10 @@ class PaperOption {
         }
     }
 
-    static function option_list(Conf $c = null) {
+    static function option_json_list(Conf $c = null) {
         global $Conf, $Opt;
-        if (self::$list === null) {
-            self::$list = array();
+        if (self::$jlist === null) {
+            self::$jlist = self::$jmap = [];
             $c = $c ? : $Conf;
             if (($optj = $c->setting_json("options")))
                 self::add_json($optj, false, "settings");
@@ -188,52 +211,66 @@ class PaperOption {
                                 self::add_json($x, true, $f);
                 }
             }
-            if (!empty(self::$list)) {
-                uasort(self::$list, array("PaperOption", "compare"));
-                $ordinal = 0;
-                foreach (self::$list as $o) {
-                    $o->ordinal = $ordinal;
-                    ++$ordinal;
-                }
-            }
+            uasort(self::$jlist, ["PaperOption", "compare"]);
+        }
+        return self::$jlist;
+    }
+
+    static function option_ids(Conf $c = null) {
+        return array_keys(self::option_json_list($c));
+    }
+
+    static function find($id) {
+        if (!array_key_exists($id, self::$jmap)) {
+            $oj = get(self::option_json_list(), $id);
+            self::$jmap[$id] = $oj ? PaperOption::make($oj) : null;
+        }
+        return self::$jmap[$id];
+    }
+
+    static function option_list(Conf $c = null) {
+        global $Conf, $Opt;
+        if (self::$list === null) {
+            self::$list = [];
+            foreach (self::option_json_list($c) as $id => $oj)
+                self::$list[$id] = self::find($id);
         }
         return self::$list;
     }
 
     static function nonfixed_option_list(Conf $c = null) {
-        if (self::$nonfixed_list === null)
-            self::$nonfixed_list = array_filter(self::option_list($c), function ($o) {
-                return !$o->fixed();
-            });
+        if (self::$nonfixed_list === null) {
+            self::$nonfixed_list = [];
+            foreach (self::option_json_list($c) as $id => $oj)
+                if ($id < self::MINFIXEDID)
+                    self::$nonfixed_list[$id] = self::find($id);
+        }
         return self::$nonfixed_list;
     }
 
-    static function make($args) {
-        global $Opt;
-        if (is_object($args))
-            $args = get_object_vars($args);
-        $type = get($args, "type");
-        if (isset($Opt["optionTypeClass.$type"]))
-            $typeclass = $Opt["optionTypeClass.$type"];
-        else if (isset(self::$type_map[$type]))
-            $typeclass = self::$type_map[$type];
+    static function nonfinal_option_list() {
+        $list = [];
+        foreach (self::option_json_list() as $id => $oj)
+            if (!get($oj, "final") && ($o = self::find($id)) && !$o->final)
+                $list[$id] = $o;
+        return $list;
+    }
+
+    static function user_option_list(Contact $user) {
+        global $Conf;
+        if ($Conf->has_any_accepts() && $user->can_view_some_decision())
+            return PaperOption::option_list();
         else
-            $typeclass = "PaperOption";
-        return new $typeclass($args);
+            return PaperOption::nonfinal_option_list();
     }
 
     static function invalidate_option_list() {
-        self::$list = self::$nonfixed_list = null;
+        self::$jlist = self::$list = self::$nonfixed_list = null;
+        self::$jmap = [];
     }
 
     static function count_option_list() {
-        return count(self::option_list());
-    }
-
-    static function find($id) {
-        if (self::$list === null)
-            self::option_list();
-        return get(self::$list, $id);
+        return count(self::option_json_list());
     }
 
     static function find_document($id) {
@@ -254,23 +291,21 @@ class PaperOption {
         else if ($name === (string) DTYPE_FINAL
                  || $name === "final")
             return array(DTYPE_FINAL => self::find_document(DTYPE_FINAL));
-        if (self::$list === null)
-            self::option_list();
         if ($name === "" || $name === "none")
             return array();
-        else if ($name === "any")
-            return self::$list;
+        if ($name === "any")
+            return self::option_list();
         if (substr($name, 0, 4) === "opt-")
             $name = substr($name, 4);
         $oabbr = array();
-        foreach (self::$list as $o)
-            if ($o->abbr === $name)
-                return array($o->id => $o);
+        foreach (self::option_json_list() as $id => $oj)
+            if ($oj->abbr === $name)
+                return array($id => self::find($id));
             else
-                $oabbr[$o->id] = $o->abbr;
+                $oabbr[$id] = $oj->abbr;
         $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
         foreach ($oabbr as $id => &$x)
-            $x = self::$list[$id];
+            $x = self::find($id);
         return $oabbr;
     }
 
@@ -306,9 +341,9 @@ class PaperOption {
         if ($this->form_priority)
             return $this->form_priority;
         else if ($this->display == self::DISP_SUBMISSION)
-            return 15000 + $this->ordinal;
+            return 15000 + $this->position;
         else
-            return 50000 + $this->ordinal;
+            return 50000 + $this->position;
     }
 
     function has_selector() {
@@ -380,10 +415,6 @@ class PaperOption {
         if ($optionIds === "")
             return [];
 
-        $options = self::option_list();
-        if (!$all && empty($options))
-            return [];
-
         $optsel = array();
         if ($optionIds !== null) {
             preg_match_all('/(\d+)#(\d+)/', $optionIds, $m);
@@ -400,7 +431,7 @@ class PaperOption {
 
         $option_array = array();
         foreach ($optsel as $oid => $ovalues) {
-            $o = get($options, $oid);
+            $o = PaperOption::find($oid);
             if (!$o && !$all)
                 continue;
             $needs_data = !$o || $o->needs_data();
@@ -414,7 +445,7 @@ class PaperOption {
         }
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)
-                return $a->option->ordinal - $b->option->ordinal;
+                return PaperOption::compare($a->option, $b->option);
             else if ($a->option || $b->option)
                 return $a->option ? -1 : 1;
             else

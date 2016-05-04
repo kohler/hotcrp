@@ -1899,9 +1899,8 @@ class PaperTable {
             $callbacks[] = [60000, count($callbacks), [$this, "editable_pc_conflicts"]];
             $callbacks[] = [61000, count($callbacks), [$this, "editable_collaborators"]];
         }
-        foreach (PaperOption::option_list() as $opt)
-            if ((!$opt->final || $this->canUploadFinal)
-                && (!$this->prow || $Me->can_view_paper_option($this->prow, $opt, true)))
+        foreach ($this->canUploadFinal ? PaperOption::option_list() : PaperOption::nonfinal_option_list() as $opt)
+            if (!$this->prow || $Me->can_view_paper_option($this->prow, $opt, true))
                 $callbacks[] = [$opt->form_priority(), count($callbacks), $this->make_echo_editable_option($opt)];
         usort($callbacks, function ($a, $b) {
             return $a[0] - $b[0] ? : $a[1] - $b[1];

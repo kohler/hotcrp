@@ -88,7 +88,7 @@ class PaperColumn extends Column {
         else
             return false;
     }
-    public function completion_instances() {
+    public function completion_instances(Contact $user) {
         return array($this);
     }
 
@@ -1241,7 +1241,7 @@ class ScorePaperColumn extends PaperColumn {
         else
             return null;
     }
-    public function completion_instances() {
+    public function completion_instances(Contact $user) {
         return self::lookup_all();
     }
     public function content_empty($pl, $row) {
@@ -1287,9 +1287,9 @@ class OptionPaperColumn extends PaperColumn {
             $this->className .= " plrd";
         $this->opt = $opt;
     }
-    public static function lookup_all() {
+    public static function lookup_all(Contact $user) {
         $reg = array();
-        foreach (PaperOption::option_list() as $opt)
+        foreach (PaperOption::user_option_list($user) as $opt)
             if ($opt->display() >= 0)
                 $reg[] = self::_make_column($opt);
         return $reg;
@@ -1328,8 +1328,8 @@ class OptionPaperColumn extends PaperColumn {
     public function completion_name() {
         return $this->opt ? $this->opt->abbr : null;
     }
-    public function completion_instances() {
-        return self::lookup_all();
+    public function completion_instances(Contact $user) {
+        return self::lookup_all($user);
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_paper_option($row, $this->opt, true);
@@ -1653,7 +1653,7 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
 
-    if (count(PaperOption::option_list()))
+    if (PaperOption::count_option_list())
         PaperColumn::register_factory("", new OptionPaperColumn(null));
 
     foreach (ReviewForm::all_fields() as $f)
