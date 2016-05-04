@@ -98,6 +98,13 @@ class Contact {
             $this->db_load();
     }
 
+    public static function fetch($result) {
+        $acct = $result ? $result->fetch_object("Contact") : null;
+        if ($acct && !is_int($acct->contactId))
+            $acct->db_load();
+        return $acct;
+    }
+
     private function merge($user) {
         global $Conf;
         if (is_array($user))
@@ -390,7 +397,7 @@ class Contact {
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where email=?", $email);
-            $acct = $result ? $result->fetch_object("Contact") : null;
+            $acct = self::fetch($result);
             Dbl::free($result);
         }
         return $acct;
@@ -400,7 +407,7 @@ class Contact {
         $acct = null;
         if (($cdb = self::contactdb())) {
             $result = Dbl::ql($cdb, "select * from ContactInfo where contactDbId=?", $cid);
-            $acct = $result ? $result->fetch_object("Contact") : null;
+            $acct = self::fetch($result);
             Dbl::free($result);
         }
         return $acct;
@@ -1059,7 +1066,7 @@ class Contact {
 
     static function find_by_id($cid) {
         $result = Dbl::qe("select ContactInfo.* from ContactInfo where contactId=?", $cid);
-        $c = $result ? $result->fetch_object("Contact") : null;
+        $c = self::fetch($result);
         Dbl::free($result);
         return $c;
     }
@@ -1078,7 +1085,7 @@ class Contact {
         $acct = null;
         if (($email = trim((string) $email)) !== "") {
             $result = Dbl::qe("select * from ContactInfo where email=?", $email);
-            $acct = $result ? $result->fetch_object("Contact") : null;
+            $acct = self::fetch($result);
             Dbl::free($result);
         }
         return $acct;

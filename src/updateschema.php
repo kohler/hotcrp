@@ -183,7 +183,7 @@ function update_schema_unaccented_name($Conf) {
 
 function update_schema_transfer_country($Conf) {
     $result = Dbl::ql($Conf->dblink, "select * from ContactInfo where `data` is not null and `data`!='{}'");
-    while ($result && ($c = $result->fetch_object("Contact"))) {
+    while ($result && ($c = Contact::fetch($result))) {
         if (($country = $c->data("country")))
             Dbl::ql($Conf->dblink, "update ContactInfo set country=? where contactId=?", $country, $c->contactId);
     }

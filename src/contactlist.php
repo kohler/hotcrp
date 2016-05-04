@@ -638,7 +638,7 @@ class ContactList {
         // fetch data
         Contact::$allow_nonexistent_properties = true;
         $rows = array();
-        while (($row = $result->fetch_object("Contact")))
+        while (($row = Contact::fetch($result)))
             $rows[] = $row;
         Contact::$allow_nonexistent_properties = false;
         return $rows;

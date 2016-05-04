@@ -7,7 +7,7 @@ class UserActions {
     static private function modify_password_mail($where, $dopassword, $sendtype, $ids) {
         $j = (object) array("ok" => true);
         $result = Dbl::qe("select * from ContactInfo where $where and contactId ?a", $ids);
-        while ($result && ($Acct = $result->fetch_object("Contact"))) {
+        while ($result && ($Acct = Contact::fetch($result))) {
             if ($dopassword)
                 $Acct->change_password(null, null, Contact::CHANGE_PASSWORD_NO_CDB);
             if ($sendtype && !$Acct->disabled)

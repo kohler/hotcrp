@@ -208,7 +208,7 @@ class AssignerContacts {
         if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_id, $cid)))
             return $c;
         $result = Dbl::qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
-        $c = $result ? $result->fetch_object("Contact") : null;
+        $c = Contact::fetch($result);
         if (!$c)
             $c = new Contact(array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => ""));
         Dbl::free($result);
@@ -225,7 +225,7 @@ class AssignerContacts {
         if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_lemail, $lemail)))
             return $c;
         $result = Dbl::qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
-        $c = $result ? $result->fetch_object("Contact") : null;
+        $c = Contact::fetch($result);
         Dbl::free($result);
         return $this->store($c);
     }
@@ -1443,7 +1443,7 @@ class AssignmentSet {
             foreach (pcMembers() as $p)
                 $this->reviewer_set[$p->contactId] = $p;
             $result = Dbl::qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 group by ContactInfo.contactId");
-            while ($result && ($row = $result->fetch_object("Contact")))
+            while ($result && ($row = Contact::fetch($result)))
                 $this->reviewer_set[$row->contactId] = $row;
             Dbl::free($result);
         }

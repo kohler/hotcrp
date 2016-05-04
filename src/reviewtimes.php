@@ -70,7 +70,7 @@ class ReviewTimes {
                 $need_contacts[] = $cid;
         if (count($need_contacts)) {
             $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where contactId ?a", $need_contacts);
-            while ($result && ($row = $result->fetch_object("Contact")))
+            while ($result && ($row = Contact::fetch($result)))
                 $contacts[$row->contactId] = $row;
         }
 

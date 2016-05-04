@@ -1135,7 +1135,7 @@ function pcMembers() {
         $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
         $by_name_text = array();
         $pctags = array("pc" => "pc");
-        while ($result && ($row = $result->fetch_object("Contact"))) {
+        while ($result && ($row = Contact::fetch($result))) {
             $pc[$row->contactId] = $row;
             if ($row->firstName || $row->lastName) {
                 $name_text = Text::name_text($row);

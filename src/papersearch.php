@@ -611,7 +611,7 @@ class ContactSearch {
             }
             $result = Dbl::qe_raw("select firstName, lastName, unaccentedName, email, contactId, roles from ContactInfo where " . join(" or ", $q));
             $cs = array();
-            while ($result && ($row = $result->fetch_object("Contact")))
+            while ($result && ($row = Contact::fetch($result)))
                 $cs[$row->contactId] = $row;
         }
 

@@ -894,7 +894,7 @@ class PaperInfo {
         $result = Dbl::qe_raw($q);
         $watchers = array();
         $lastContactId = 0;
-        while ($result && ($row = $result->fetch_object("Contact"))) {
+        while ($result && ($row = Contact::fetch($result))) {
             if ($row->contactId == $lastContactId
                 || ($contact && $row->contactId == $contact->contactId)
                 || Contact::is_anonymous_email($row->email))

@@ -330,7 +330,7 @@ class FormulaGraph {
         $cids = array_filter(array_keys($cids), "is_numeric");
         $result = Dbl::qe("select contactId, firstName, lastName, email, roles, contactTags from ContactInfo where contactId ?a", $cids);
         $this->reviewers = [];
-        while ($result && ($c = $result->fetch_object("Contact")))
+        while ($result && ($c = Contact::fetch($result)))
             $this->reviewers[$c->contactId] = $c;
         Dbl::free($result);
         uasort($this->reviewers, "Contact::compare");
