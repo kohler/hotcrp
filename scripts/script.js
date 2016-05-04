@@ -3462,19 +3462,19 @@ function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
         for (var i = 0; i < tlist.length; ++i) {
             var titem = completion_item(tlist[i]),
                 text = titem.s, ltext = titem.s.toLowerCase(),
-                pos = 0, h = "";
+                pos = 0, h, className = "suggestion";
+
             if (include_pfx) {
                 if (ltext.substr(0, pfx.length) !== pfx)
                     continue;
                 pos = pfx.length;
-            }
-            var start = '">' + pfx, ncdelete = 0;
+                h = text;
+            } else
+                h = pfx + text;
+
             if (!lprecaret.length
                 || ltext.substr(pos, lprecaret.length) === lprecaret) {
-                if (lprecaret.length) {
-                    start += escape_entities(text.substr(pos, lprecaret.length));
-                    pos += lprecaret.length;
-                }
+                pos += lprecaret.length;
                 if (best_postcaret_index === null)
                     best_postcaret_index = res.length;
                 if (lpostcaret.length) {
@@ -3485,19 +3485,16 @@ function make_suggestions(pfx, include_pfx, precaret, postcaret, displayed) {
                     }
                 } else if (text.length == pos)
                     best_postcaret_index = res.length;
-            } else {
-                // continue
-                ncdelete = lprecaret.length;
-            }
+                className = "suggestion smatch";
+            } else
+                className = "suggestion";
 
-            var posttext = escape_entities(text.substr(pos));
-            res.push('<div class="suggestion" data-autocomplete="' + ncdelete + ' ' +posttext + start + posttext + '</div>');
+            res.push('<div class="' + className + '">' + escape_entities(h) + '</div>');
         }
         if (res.length) {
             if (best_postcaret_index !== null)
-                res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion"/, '<div class="suggestion active"');
-            return {list: res, precaret_length: pfx.length + precaret.length,
-                    postcaret_length: postcaret.length};
+                res[best_postcaret_index] = res[best_postcaret_index].replace(/^<div class="suggestion/, '<div class="suggestion active');
+            return {list: res, lengths: [pfx.length + precaret.length, postcaret.length]};
         } else
             return null;
     };
@@ -3529,14 +3526,14 @@ function suggest(elt, klass, cleanf) {
             '">' + cinfo.list.join('') + '</div>';
 
         var $elt = jQuery(elt), shadow = textarea_shadow($elt),
-            matchpos = elt.selectionStart - cinfo.precaret_length;
+            matchpos = elt.selectionStart - cinfo.lengths[0];
         shadow.text(elt.value.substring(0, matchpos))
             .append("<span>&#x2060;</span>")
             .append(document.createTextNode(elt.value.substring(matchpos)));
         var $pos = shadow.find("span").geometry(), soff = shadow.offset();
         $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
         tagdiv.html(t).near($pos, elt);
-        tagdiv.self().attr("data-autocomplete-postcaret-length", cinfo.postcaret_length);
+        tagdiv.self().attr("data-autocomplete-pos", matchpos + " " + (matchpos + cinfo.lengths[0]) + " " + (matchpos + cinfo.lengths[0] + cinfo.lengths[1]));
         shadow.remove();
     }
 
@@ -3545,35 +3542,33 @@ function suggest(elt, klass, cleanf) {
     }
 
     function maybe_complete($ac, ignore_empty_completion) {
-        var common = null, ndelete, attr, i, j;
+        var common = null, text, i, smatch = true;
         for (i = 0; i != $ac.length; ++i) {
-            attr = $ac[i].getAttribute("data-autocomplete");
-            common = common === null ? attr : common_prefix(attr, common);
+            text = $($ac[i]).text();
+            common = common === null ? text : common_prefix(common, text);
+            if (smatch && !/smatch/.test($ac[i].className))
+                smatch = false;
         }
         if (common === null)
             return null;
         else if ($ac.length == 1)
-            return do_complete(common, true, ignore_empty_completion);
+            return do_complete(common, smatch, true, ignore_empty_completion);
         else {
             interacted = true;
-            return do_complete(common, false, ignore_empty_completion);
+            return do_complete(common, smatch, false, ignore_empty_completion);
         }
     }
 
-    function do_complete(text, done, ignore_empty_completion) {
-        var space = text.indexOf(" "), nkill = +text.substring(0, space);
-        text = text.substring(space + 1);
-        var pc_len = +tagdiv.self().attr("data-autocomplete-postcaret-length");
-        if (!pc_len && (nkill || text == "") && ignore_empty_completion) {
+    function do_complete(text, smatch, done, ignore_empty_completion) {
+        var poss = tagdiv.self().attr("data-autocomplete-pos").split(" ");
+        if (poss[1] != poss[2] && (!smatch || text == "") && ignore_empty_completion) {
             done && kill();
             return null; /* null == no completion occurred (false == failed) */
         }
         done && (text += " ");
-        var start = elt.selectionStart;
-        var val = elt.value.substring(0, start - nkill) + text +
-            elt.value.substring(start + pc_len);
+        var val = elt.value.substring(0, +poss[0]) + text + elt.value.substring(+poss[2]);
         $(elt).val(val);
-        elt.selectionStart = elt.selectionEnd = start - nkill + text.length;
+        elt.selectionStart = elt.selectionEnd = +poss[0] + text.length;
         done ? kill() : setTimeout(display, 1);
         return true;
     }
