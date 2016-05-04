@@ -442,6 +442,9 @@ class AbstractPaperColumn extends PaperColumn {
         if (!$highlight_count && ($format = $row->format_of($row->abstract))) {
             $pl->need_render = true;
             $t = '<div class="need-format" data-format="' . $format . '.abs.plx">' . $t . '</div>';
+        } else {
+            $t = Ht::link_urls(Text::single_line_paragraphs($t));
+            $t = preg_replace('/(?:\r\n?){2,}|\n{2,}/', " ¶ ", $t);
         }
         return $t;
     }
