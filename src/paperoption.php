@@ -666,14 +666,12 @@ class NumericPaperOption extends PaperOption {
     }
 
     function unparse_column_html(PaperList $pl, $row) {
-        $v = $row->option($this->id);
-        return $v && $v->value !== null ? $v->value : "";
+        return $this->unparse_page_html($row);
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
-        foreach ($ov->documents($row) as $d)
-            return [documentDownload($d, "sdlimg", htmlspecialchars($this->name)), true];
-        return "";
+        $v = $row->option($this->id);
+        return $v && $v->value !== null ? $v->value : "";
     }
 }
 

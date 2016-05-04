@@ -791,7 +791,7 @@ class PaperTable {
                     $x = '<div>' . $ox[0] . '</div>';
                 else {
                     if ($ox[0][0] !== "<"
-                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
+                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $ox[0], $cm))
                         $cm = [null, "", $ox[0]];
                     $x = '<div class="papov">' . $cm[1] . '<span class="papon">'
                         . $on . ':</span> ' . $cm[2] . '</div>';
