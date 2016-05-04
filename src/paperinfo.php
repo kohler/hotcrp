@@ -118,6 +118,10 @@ class PaperInfo {
     private $_conflicts_email;
 
     function __construct($p = null, $contact = null) {
+        $this->merge($p, $contact);
+    }
+
+    private function merge($p, $contact) {
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -137,7 +141,10 @@ class PaperInfo {
     }
 
     static public function fetch($result, $contact) {
-        return $result ? $result->fetch_object("PaperInfo", array(null, $contact)) : null;
+        $prow = $result ? $result->fetch_object("PaperInfo", [null, $contact]) : null;
+        if ($prow && !is_int($prow->paperId))
+            $prow->merge(null, $contact);
+        return $prow;
     }
 
     static public function table_name() {

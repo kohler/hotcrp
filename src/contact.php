@@ -2911,7 +2911,7 @@ class Contact {
                 $q .= "\nleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
                 where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId)";
             $result = Dbl::qe($q, $Conf->track_tags());
-            while ($result && ($prow = $result->fetch_object("PaperInfo")))
+            while ($result && ($prow = PaperInfo::fetch($result, $this)))
                 if ((int) $prow->reviewType >= REVIEW_PC
                     || $Conf->check_tracks($prow, $this, Track::VIEW))
                     $pids[] = (int) $prow->paperId;

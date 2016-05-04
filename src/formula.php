@@ -971,7 +971,10 @@ class Formula {
 
 
     public function __construct(/* $fobj OR $expression, [$allowReview] */) {
-        $args = func_get_args();
+        $this->merge(func_get_args());
+    }
+
+    private function merge($args) {
         if (count($args) && is_object($args[0])) {
             foreach ($args[0] as $k => $v)
                 $this->$k = $v;
@@ -979,6 +982,14 @@ class Formula {
             $this->expression = $args[0];
             $this->allowReview = !!get($args, 1);
         }
+        $this->formulaId = (int) $this->formulaId;
+    }
+
+    static public function fetch($result) {
+        $formula = $result ? $result->fetch_object("Formula") : null;
+        if ($formula && !is_int($formula->formulaId))
+            $formula->merge([]);
+        return $formula;
     }
 
 

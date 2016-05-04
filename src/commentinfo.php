@@ -25,11 +25,10 @@ class CommentInfo {
 
 
     function __construct($x = null, $prow = null) {
-        $this->merge(is_object($x) ? $x : null);
-        $this->prow = $prow;
+        $this->merge(is_object($x) ? $x : null, $prow);
     }
 
-    private function merge($x) {
+    private function merge($x, $prow) {
         global $Conf;
         if ($x)
             foreach ($x as $k => $v)
@@ -40,10 +39,14 @@ class CommentInfo {
         $this->commentRound = (int) $this->commentRound;
         if ($Conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
             $this->authorOrdinal = $this->ordinal;
+        $this->prow = $prow;
     }
 
     static public function fetch($result, $prow) {
-        return $result ? $result->fetch_object("CommentInfo", array(null, $prow)) : null;
+        $cinfo = $result ? $result->fetch_object("CommentInfo", [null, $prow]) : null;
+        if ($cinfo && !is_int($cinfo->commentId))
+            $cinfo->merge(null, $prow);
+        return $cinfo;
     }
 
 
@@ -389,7 +392,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
         // reload
         if ($text !== "") {
             $comments = $this->prow->fetch_comments("commentId=$cmtid");
-            $this->merge($comments[$cmtid]);
+            $this->merge($comments[$cmtid], $this->prow);
             if ($this->timeNotified == $this->timeModified) {
                 self::$watching = $this;
                 $this->prow->notify(WATCHTYPE_COMMENT, "CommentInfo::watch_callback", $contact);

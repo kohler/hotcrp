@@ -1664,7 +1664,7 @@ function initialize_paper_columns() {
 
     if ($Conf && $Conf->setting("formulas")) {
         $result = Dbl::q("select * from Formula order by lower(name)");
-        while ($result && ($row = $result->fetch_object("Formula"))) {
+        while ($result && ($row = Formula::fetch($result))) {
             $fid = $row->formulaId;
             FormulaPaperColumn::register(new FormulaPaperColumn("formula$fid", $row));
         }
