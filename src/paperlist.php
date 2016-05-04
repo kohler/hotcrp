@@ -498,7 +498,7 @@ class PaperList {
             return "selconf id title authors abstract tags authorsmatch collabmatch foldall";
         case "editReviewPreference":
             $this->_default_linkto("paper");
-            return "sel id title topicscore revtype editrevpref authors abstract topics";
+            return "sel id title topicscore revtype editpref authors abstract topics";
         case "reviewers":
             $this->_default_linkto("assign");
             return "selon id title status";

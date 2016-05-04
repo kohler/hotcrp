@@ -1629,6 +1629,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new TopicListPaperColumn);
     PaperColumn::register(new PreferencePaperColumn("pref", false));
     PaperColumn::register_synonym("revpref", "pref");
+    PaperColumn::register(new PreferencePaperColumn("editpref", true));
     PaperColumn::register(new PreferenceListPaperColumn("allpref", false));
     PaperColumn::register_synonym("allrevpref", "allpref");
     PaperColumn::register(new PreferenceListPaperColumn("alltopicpref", true));
