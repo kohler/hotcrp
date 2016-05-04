@@ -437,6 +437,13 @@ span.topic-2, span.topic-1 {
 span.topic4, span.topic3, span.topic2, span.topic1 {
 	font-weight: bold;
 }
+p.topicp {
+	margin: 0;
+}
+p.topicp > span {
+	display: inline-block;
+	margin-right: 1em;
+}
 .papon {
 	color: #333333;
 }

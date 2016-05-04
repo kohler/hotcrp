@@ -453,7 +453,7 @@ class PaperInfo {
         else if ($long)
             return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
         else
-            return join(' <span class="sep">&nbsp;</span> ', $out);
+            return '<p class="topicp">' . join(' ', $out) . '</p>';
     }
 
     public function unparse_topics_html($comma, Contact $interests_user = null) {
