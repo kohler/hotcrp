@@ -453,7 +453,11 @@ class PaperOption {
         return null;
     }
 
-    function unparse_column_html($pl, $row) {
+    function unparse_column_html(PaperList $pl, $row) {
+        return "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
         return "";
     }
 }
@@ -488,9 +492,13 @@ class CheckboxPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be “true” or “false”.");
     }
 
-    function unparse_column_html($pl, $row) {
+    function unparse_column_html(PaperList $pl, $row) {
         $v = $row->option($this->id);
         return $v && $v->value ? "✓" : "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
+        return $ov->value ? ["✓&nbsp;" . htmlspecialchars($this->name), true] : "";
     }
 }
 
@@ -551,9 +559,15 @@ class SelectorPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option doesn’t match any of the selectors.");
     }
 
-    function unparse_column_html($pl, $row) {
-        $v = $row->option($this->id);
-        return isset($this->selector[$v]) ? htmlspecialchars($this->selector[$v]) : "";
+    function unparse_column_html(PaperList $pl, $row) {
+        $ov = $row->option($this->id);
+        return $ov ? $this->unparse_page_html($row, $ov) : "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
+        if (isset($this->selector[$ov->value]))
+            return htmlspecialchars($this->selector[$ov->value]);
+        return "";
     }
 }
 
@@ -597,10 +611,16 @@ class DocumentPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be a document.");
     }
 
-    function unparse_column_html($pl, $row) {
+    function unparse_column_html(PaperList $pl, $row) {
         if (($v = $row->option($this->id)))
             foreach ($v->documents($row) as $d)
                 return documentDownload($d, "sdlimg", "", true);
+        return "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
+        foreach ($ov->documents($row) as $d)
+            return [documentDownload($d, "sdlimg", htmlspecialchars($this->name)), true];
         return "";
     }
 }
@@ -645,9 +665,15 @@ class NumericPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be an integer.");
     }
 
-    function unparse_column_html($pl, $row) {
+    function unparse_column_html(PaperList $pl, $row) {
         $v = $row->option($this->id);
         return $v && $v->value !== null ? $v->value : "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
+        foreach ($ov->documents($row) as $d)
+            return [documentDownload($d, "sdlimg", htmlspecialchars($this->name)), true];
+        return "";
     }
 }
 
@@ -693,16 +719,25 @@ class TextPaperOption extends PaperOption {
         $ps->set_option_error_html($this, "Option should be a string.");
     }
 
-    function unparse_column_html($pl, $row) {
-        $v = $row->option($this->id);
-        if ($v && $v->data !== null && $v->data !== "") {
-            if (($format = $row->format_of($v->data))) {
-                $pl->need_render = true;
-                return '<div class="need-format" data-format="' . $format . '.plx">' . htmlspecialchars($v->data) . '</div>';
-            } else
-                return '<div class="format0">' . Ht::link_urls(htmlspecialchars($v->data)) . '</div>';
-        } else
+    private function unparse_html($row, PaperOptionValue $ov, PaperList $pl = null) {
+        if ($ov->data === null || $ov->data === "")
             return "";
+        if (($format = $row->format_of($ov->data))) {
+            if ($pl)
+                $pl->need_render = true;
+            return '<div class="need-format" data-format="' . $format
+                . ($pl ? '.plx' : '.abs') . '">' . htmlspecialchars($ov->data) . '</div>';
+        } else
+            return '<div class="format0">' . Ht::link_urls(htmlspecialchars($ov->data)) . '</div>';
+    }
+
+    function unparse_column_html(PaperList $pl, $row) {
+        $ov = $row->option($this->id);
+        return $ov ? $this->unparse_html($row, $ov, $pl) : "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
+        return $this->unparse_html($row, $ov, null);
     }
 }
 
@@ -770,13 +805,21 @@ class AttachmentsPaperOption extends PaperOption {
         return $result;
     }
 
-    function unparse_column_html($pl, $row) {
+    private function unparse_html($row, PaperOptionValue $ov, $no_size) {
         $docs = [];
-        if (($v = $row->option($this->id)))
-            foreach ($v->documents($row) as $d) {
-                $name = htmlspecialchars($d->unique_filename);
-                $docs[] = documentDownload($d, count($docs) ? "sdlimgsp" : "sdlimg", $name, true);
-            }
-        return join("<br>", $docs);
+        foreach ($ov->documents($row) as $d) {
+            $name = htmlspecialchars($d->unique_filename);
+            $docs[] = documentDownload($d, count($docs) ? "sdlimgsp" : "sdlimg", $name, $no_size);
+        }
+        return join("<br />", $docs);
+    }
+
+    function unparse_column_html(PaperList $pl, $row) {
+        $ov = $row->option($this->id);
+        return $ov ? $this->unparse_html($row, $ov, true) : "";
+    }
+
+    function unparse_page_html($row, PaperOptionValue $ov) {
+        return $this->unparse_html($row, $ov, false);
     }
 }

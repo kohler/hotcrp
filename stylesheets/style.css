@@ -437,7 +437,10 @@ span.topic-2, span.topic-1 {
 span.topic4, span.topic3, span.topic2, span.topic1 {
 	font-weight: bold;
 }
-span.optvalue {
+.papon {
+	color: #333333;
+}
+.papov {
 	color: #555555;
 }
 .dim {

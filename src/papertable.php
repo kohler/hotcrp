@@ -769,58 +769,33 @@ class PaperTable {
                 continue;
 
             // create option display value
-            $show_on = true;
-            $on = htmlspecialchars($o->name);
-            $ox = "";
-            if ($o->type === "checkbox" && $oa->value)
-                $ox = true;
-            else if ($o->has_selector()
-                     && ($otext = get($o->selector, $oa->value)))
-                $ox = htmlspecialchars($otext);
-            else if ($o->type === "numeric"
-                     && $oa->value != "" && $oa->value != "0")
-                $ox = htmlspecialchars($oa->value);
-            else if ($o->type === "text"
-                     && $oa->data != "") {
-                $ox = htmlspecialchars($oa->data);
-                if ($o->display_space > 1)
-                    $ox = nl2br($ox);
-                $ox = Ht::link_urls($ox);
-            } else if ($o->type === "attachments") {
-                $ox = array();
-                foreach ($oa->documents($this->prow) as $doc)
-                    $ox[] = documentDownload($doc, "sdlimg", htmlspecialchars($doc->unique_filename));
-                $ox = join("<br />\n", $ox);
-            } else if ($o->is_document() && $oa->value > 1) {
-                $show_on = false;
-                if ($o->type === "pdf")
-                    /* make fake document */
-                    $doc = (object) array("paperId" => $this->prow->paperId, "mimetype" => "application/pdf", "documentType" => $o->id);
-                else
-                    $doc = $this->prow->document($o->id, $oa->value);
-                if ($doc)
-                    $ox = documentDownload($doc, "sdlimg", $on);
-            }
-            if ($ox === "")
+            $ox = $o->unparse_page_html($this->prow, $oa);
+            if (!is_array($ox))
+                $ox = [$ox, false];
+            if ($ox[0] === null || $ox[0] === "")
                 continue;
 
             // display it
+            $on = htmlspecialchars($o->name);
             $folded = $showAllOptions && !$Me->can_view_paper_option($this->prow, $o, false);
             if ($o->display() !== PaperOption::DISP_TOPICS) {
                 $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
                     . '<div class="pavt"><span class="pavfn">'
-                    . ($show_on ? $on : $ox) . "</span>"
+                    . ($ox[1] ? $ox[0] : $on) . "</span>"
                     . '<hr class="c" /></div>';
-                if ($show_on && $ox !== true)
-                    $x .= "<div class='pavb'>" . $ox . "</div>";
+                if (!$ox[1])
+                    $x .= '<div class="pavb">' . $ox[0] . "</div>";
                 $xoptionhtml[] = $x . "</div>\n";
             } else {
-                if ($ox === true)
-                    $x = $on . "<br />";
-                else if ($show_on)
-                    $x = $on . ": <span class='optvalue'>" . $ox . "</span><br />";
-                else
-                    $x = $ox . "<br />";
+                if ($ox[1])
+                    $x = '<div>' . $ox[0] . '</div>';
+                else {
+                    if ($ox[0][0] !== "<"
+                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
+                        $cm = [null, "", $ox[0]];
+                    $x = '<div class="papov">' . $cm[1] . '<span class="papon">'
+                        . $on . ':</span> ' . $cm[2] . '</div>';
+                }
                 if ($folded) {
                     $x = "<span class='fx8'>" . $x . "</span>";
                     ++$nfolded;
@@ -831,8 +806,8 @@ class PaperTable {
             }
         }
 
-        if (count($xoptionhtml))
-            echo "<div class='pg'>", join("", $xoptionhtml), "</div>\n";
+        if (!empty($xoptionhtml))
+            echo '<div class="pg">', join("", $xoptionhtml), "</div>\n";
 
         if ($topicdata !== "" || count($optionhtml)) {
             $infotypes = array();
@@ -863,11 +838,11 @@ class PaperTable {
                 $tanda = $options_name;
             }
 
-            if (count($optionhtml)) {
+            if (!empty($optionhtml)) {
                 echo "<div class='pg", ($extra ? "" : $eclass),
                     ($nfolded == count($optionhtml) ? " fx8" : ""), "'>",
                     $this->papt("options", array($options_name, $tanda), $extra),
-                    "<div class='pavb$eclass'>", join("", $optionhtml), "</div></div>\n\n";
+                    "<div class=\"pavb$eclass\">", join("", $optionhtml), "</div></div>\n\n";
             }
         }
     }
