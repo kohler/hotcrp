@@ -3561,7 +3561,8 @@ function suggest(elt, klass, cleanf) {
 
     function do_complete(text, smatch, done, ignore_empty_completion) {
         var poss = tagdiv.self().attr("data-autocomplete-pos").split(" ");
-        if (poss[1] != poss[2] && (!smatch || text == "") && ignore_empty_completion) {
+        if ((!smatch || text == elt.value.substring(+poss[0], +poss[2]))
+            && ignore_empty_completion) {
             done && kill();
             return null; /* null == no completion occurred (false == failed) */
         }
@@ -3609,7 +3610,7 @@ function suggest(elt, klass, cleanf) {
             }
             if (next)
                 $active = $(next);
-            else if (isleft)
+            else
                 return false;
         }
         $active.addClass("active");
