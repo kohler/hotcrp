@@ -871,13 +871,14 @@ class PaperTable {
         echo "</div></div>\n\n";
     }
 
-    private function echo_editable_contact_author() {
+    private function echo_editable_contact_author($always_unfold = false) {
         global $Conf, $Me, $Error;
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
 
         $cerror = get($Error, "contactAuthor") || get($Error, "contacts");
-        $open = $cerror || ($this->useRequest && $this->qreq->setcontacts == 2);
+        $open = $cerror || $always_unfold
+            || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo '<div id="foldcontactauthors" class="papeg ',
             ($open ? "foldo" : "foldc"),
             '"><div class="papet childfold fn0" ',
@@ -1956,7 +1957,7 @@ class PaperTable {
         if (!$this->editable && $this->mode === "edit") {
             echo $form;
             if ($prow->timeSubmitted > 0)
-                $this->editable_contact_author(true);
+                $this->echo_editable_contact_author(true);
             $this->echoActions(false);
             echo "</form>";
         } else if (!$this->editable && $Me->act_author_view($prow) && !$Me->contactId) {
