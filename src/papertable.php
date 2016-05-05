@@ -328,7 +328,7 @@ class PaperTable {
             '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
     }
 
-    static function pdfStamps($data) {
+    static public function pdf_stamps_html($data) {
         global $Conf;
 
         $t = array();
@@ -357,7 +357,7 @@ class PaperTable {
             $dprefix = "";
             $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
             if (($data = $prow->document($dtype)) && $data->paperStorageId > 1) {
-                if (($stamps = self::pdfStamps($data)))
+                if (($stamps = self::pdf_stamps_html($data)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 $dname = $dtype == DTYPE_FINAL ? "Final version" : "Submission";
                 $pdfs[] = $dprefix . documentDownload($data, "dlimg", '<span class="pavfn">' . $dname . '</span>') . $stamps;
@@ -420,7 +420,7 @@ class PaperTable {
         $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
     }
 
-    private function echo_editable_document(PaperOption $docx, $storageId, $flags) {
+    public function echo_editable_document(PaperOption $docx, $storageId, $flags) {
         global $Conf, $Me, $Opt;
 
         $prow = $this->prow;
@@ -440,10 +440,11 @@ class PaperTable {
             return;
 
         $accepts = $docclass->mimetypes();
-        if (count($accepts))
+        if (count($accepts)) {
             echo $this->editable_papt($docx->abbr, htmlspecialchars($docx->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
-        if ($docx->description)
-            echo '<div class="paphint">', $docx->description, "</div>";
+            if ($docx->description)
+                echo '<div class="paphint">', $docx->description, "</div>";
+        }
         echo '<div class="papev">';
         if ($optionType)
             echo Ht::hidden("has_opt$docx->id", 1);
@@ -457,7 +458,7 @@ class PaperTable {
                 "<td class='nw'>", documentDownload($doc), "</td>";
             if ($doc->mimetype === "application/pdf" && $banal)
                 echo "<td><span class='sep'></span></td><td><a href='#' onclick='return docheckformat($documentType)'>Check format</a></td>";
-            if (($stamps = self::pdfStamps($doc)))
+            if (($stamps = self::pdf_stamps_html($doc)))
                 echo "<td><span class='sep'></span></td><td>$stamps</td>";
             echo "</tr></table>\n";
         }
@@ -1073,7 +1074,7 @@ class PaperTable {
                     "<td class='nw'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
                     "<td class='fx'><span class='sep'></span></td>",
                     "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
-                if (($stamps = self::pdfStamps($doc)))
+                if (($stamps = self::pdf_stamps_html($doc)))
                     echo "<td class='fx'><span class='sep'></span></td><td class='fx'>$stamps</td>";
                 echo "</tr></table></div>\n";
             }
@@ -1091,26 +1092,13 @@ class PaperTable {
         echo Ht::hidden("has_opt$o->id", 1);
     }
 
-    public function echo_editable_option($o) {
-        global $Conf, $Me;
-        $prow = $this->prow;
-        $optid = "opt$o->id";
-        $ov = null;
-        if ($prow)
-            $ov = $prow->option($o->id);
-        $ov = $ov ? : new PaperOptionValue($o->id, $o);
-        if ($o->type === "attachments")
-            $this->editable_attachments($o);
-        else if ($o instanceof DocumentPaperOption) {
-            $this->echo_editable_document($o, $ov->value ? : 0, 0);
-            echo "</div>\n\n";
-        } else
-            $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null, $this);
-    }
-
     private function make_echo_editable_option($o) {
         return function () use ($o) {
-            $this->echo_editable_option($o);
+            $ov = null;
+            if ($this->prow)
+                $ov = $this->prow->option($o->id);
+            $ov = $ov ? : new PaperOptionValue($o->id, $o);
+            $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null, $this);
         };
     }
 

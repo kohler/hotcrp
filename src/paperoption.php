@@ -621,6 +621,11 @@ class DocumentPaperOption extends PaperOption {
         return ($av && $av->value ? 1 : 0) - ($bv && $bv->value ? 1 : 0);
     }
 
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $pt->echo_editable_document($this, $ov->value ? : 0, 0);
+        echo "</div>\n\n";
+    }
+
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         if ($qreq->_FILES["opt$this->id"])
             return Filer::file_upload_json($qreq->_FILES["opt$this->id"]);
@@ -798,6 +803,25 @@ class AttachmentsPaperOption extends PaperOption {
 
     function value_compare($av, $bv) {
         return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
+    }
+
+    function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
+        $pt->echo_editable_option_papt($this, htmlspecialchars($this->name) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
+        echo '<div class="papev">';
+        $docclass = new HotCRPDocument($o->id, $o);
+        foreach ($ov->documents($pt->prow) as $doc) {
+            $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
+            echo "<div id=\"removable_$oname\" class=\"foldo\"><table id=\"current_$oname\"><tr>",
+                "<td class=\"nw\">", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
+                '<td class="fx"><span class="sep"></span></td>',
+                "<td class=\"fx\"><a id=\"remover_$oname\" href=\"#remover_$oname\" onclick=\"return doremovedocument(this)\">Delete</a></td>";
+            if (($stamps = PaperTable::pdf_stamps_html($doc)))
+                echo '<td class="fx"><span class="sep"></span></td><td class="fx">', $stamps, "</td>";
+            echo "</tr></table></div>\n";
+        }
+        echo '<div id="opt', $this->id, '_new"></div>',
+            Ht::js_button("Add attachment", "addattachment($this->id)"),
+            "</div></div>\n\n";
     }
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
