@@ -110,7 +110,9 @@ class PaperOption {
         $this->id = (int) $args["id"];
         $this->name = $args["name"];
         $this->type = $args["type"];
-        $this->abbr = $args["abbr"];
+        $this->abbr = get_s($args, "abbr");
+        if ($this->abbr == "")
+            $this->abbr = self::abbreviate($this->name, $this->id);
         $this->description = get_s($args, "description");
         $p = get($args, "position");
         if ((is_int($p) || is_float($p)) && $p > 0)
