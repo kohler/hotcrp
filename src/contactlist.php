@@ -296,7 +296,10 @@ class ContactList {
         case self::FIELD_LASTVISIT:
             if (!$row->lastLogin)
                 return "Never";
-            return $Conf->printableTimeShort($row->lastLogin);
+            else if ($this->contact->privChair)
+                return $Conf->printableTimeShort($row->lastLogin);
+            else
+                return $Conf->unparse_time_obscure($row->lastLogin);
         case self::FIELD_SELECTOR:
         case self::FIELD_SELECTOR_ON:
             $this->any->sel = true;
