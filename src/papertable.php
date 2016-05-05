@@ -17,7 +17,10 @@ class PaperTable {
     var $mode;
     private $allreviewslink;
 
-    var $editable;
+    public $editable;
+    public $edit_fields;
+    public $edit_fields_position;
+
     private $qreq;
     private $useRequest;
     private $npapstrip = 0;
@@ -847,7 +850,7 @@ class PaperTable {
         }
     }
 
-    private function editable_new_contact_author() {
+    private function echo_editable_new_contact_author() {
         global $Me, $Conf;
         echo $this->editable_papt("contactAuthor", "Contact"),
             '<div class="paphint">You can add more contacts after you register the submission.</div>',
@@ -867,14 +870,13 @@ class PaperTable {
         echo "</div></div>\n\n";
     }
 
-    private function editable_contact_author($always_unfold = false) {
+    private function echo_editable_contact_author() {
         global $Conf, $Me, $Error;
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
 
         $cerror = get($Error, "contactAuthor") || get($Error, "contacts");
-        $open = $cerror || $always_unfold
-            || ($this->useRequest && $this->qreq->setcontacts == 2);
+        $open = $cerror || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo '<div id="foldcontactauthors" class="papeg ',
             ($open ? "foldo" : "foldc"),
             '"><div class="papet childfold fn0" ',
@@ -963,7 +965,7 @@ class PaperTable {
             "</div>\n\n";
     }
 
-    private function editable_collaborators() {
+    private function echo_editable_collaborators() {
         global $Conf;
         if (!$Conf->setting("sub_collab"))
             return;
@@ -1112,7 +1114,7 @@ class PaperTable {
         };
     }
 
-    private function editable_pc_conflicts() {
+    private function echo_editable_pc_conflicts() {
         global $Conf, $Me;
 
         assert(!!$this->editable);
@@ -1861,6 +1863,10 @@ class PaperTable {
         echo "</form></div></div>";
     }
 
+    private function add_edit_field($prio, $callback, $name) {
+        $this->edit_fields[] = [$prio, count($this->edit_fields), $callback, $name];
+    }
+
     private function _echo_editable_body($form) {
         global $Conf, $Me, $Opt;
         $prow = $this->prow;
@@ -1880,33 +1886,34 @@ class PaperTable {
         $this->echoActions(true);
         echo '<div>';
 
-        $callbacks = [
-            [0, 0, [$this, "echo_editable_title"]],
-            [10000, 1, [$this, "echo_editable_submission"]],
-            [20000, 2, [$this, "echo_editable_authors"]]
-        ];
+        $this->edit_fields = [];
+        $this->add_edit_field(0, [$this, "echo_editable_title"], "title");
+        $this->add_edit_field(10000, [$this, "echo_editable_submission"], "submission");
+        $this->add_edit_field(20000, [$this, "echo_editable_authors"], "authors");
         if ($this->prow)
-            $callbacks[] = [20200, count($callbacks), [$this, "editable_contact_author"]];
+            $this->add_edit_field(20200, [$this, "echo_editable_contact_author"], "contact_author");
         else if ($Me->privChair)
-            $callbacks[] = [20200, count($callbacks), [$this, "editable_new_contact_author"]];
+            $this->add_edit_field(20200, [$this, "echo_editable_new_contact_author"], "new_contact_author");
         if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && $this->editable !== "f")
-            $callbacks[] = [20100, count($callbacks), [$this, "echo_editable_anonymity"]];
+            $this->add_edit_field(20100, [$this, "echo_editable_anonymity"], "anonymity");
         if (($x = opt("noAbstract")) !== 1 && $x !== true)
-            $callbacks[] = [30000, count($callbacks), [$this, "echo_editable_abstract"]];
-        $callbacks[] = [40000, count($callbacks), [$this, "echo_editable_topics"]];
+            $this->add_edit_field(30000, [$this, "echo_editable_abstract"], "abstract");
+        $this->add_edit_field(40000, [$this, "echo_editable_topics"], "topics");
         if ($this->editable !== "f" || $this->admin) {
-            $callbacks[] = [60000, count($callbacks), [$this, "editable_pc_conflicts"]];
-            $callbacks[] = [61000, count($callbacks), [$this, "editable_collaborators"]];
+            $this->add_edit_field(60000, [$this, "echo_editable_pc_conflicts"], "pc_conflicts");
+            $this->add_edit_field(61000, [$this, "echo_editable_collaborators"], "collaborators");
         }
         foreach ($this->canUploadFinal ? PaperOption::option_list() : PaperOption::nonfinal_option_list() as $opt)
             if (!$this->prow || $Me->can_view_paper_option($this->prow, $opt, true))
-                $callbacks[] = [$opt->form_priority(), count($callbacks), $this->make_echo_editable_option($opt)];
-        usort($callbacks, function ($a, $b) {
+                $this->add_edit_field($opt->form_priority(), $this->make_echo_editable_option($opt), $opt);
+        usort($this->edit_fields, function ($a, $b) {
             return $a[0] - $b[0] ? : $a[1] - $b[1];
         });
-        foreach ($callbacks as $f)
-            call_user_func($f[2]);
+        for ($this->edit_fields_position = 0;
+             $this->edit_fields_position < count($this->edit_fields);
+             ++$this->edit_fields_position)
+            call_user_func($this->edit_fields[$this->edit_fields_position][2]);
 
         // Submit button
         echo "</div>";
