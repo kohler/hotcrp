@@ -77,7 +77,7 @@ function render($sv) {
     // Tags
     $tagger = new Tagger;
     echo "<h3 class=\"settings\">Tags</h3>\n";
-    echo "<table class=\"secondary-settings\"><tbody>";
+    echo "<table><tbody class=\"secondary-settings\">";
     $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
     $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.");
 

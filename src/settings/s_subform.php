@@ -160,7 +160,7 @@ function render($sv) {
             Ht::hidden("has_sub_banal", 1),
             "<table id='foldbanal' class='", ($sv->curv("sub_banal") ? "foldo" : "foldc"), "'>";
         $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
-        echo '<tr class="fx"><td></td><td class="top"><table class="secondary-settings"><tbody>';
+        echo '<tr class="fx"><td></td><td class="top"><table><tbody class="secondary-settings">';
         $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
             $val = get($bsetting, $i, "");
@@ -170,7 +170,7 @@ function render($sv) {
         $sv->echo_entry_row("sub_banal_pagelimit", "Page limit");
         $sv->echo_entry_row("sub_banal_textblock", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         echo '</tbody></table></td>', '<td><span class="sep"></span></td>',
-            '<td class="top"><table class="secondary-settings"><tbody>';
+            '<td class="top"><table><tbody class="secondary-settings">';
         $sv->echo_entry_row("sub_banal_bodyfontsize", "Minimum body font size", null, "&nbsp;pt");
         $sv->echo_entry_row("sub_banal_bodyleading", "Minimum leading", null, "&nbsp;pt");
         $sv->echo_entry_row("sub_banal_columns", "Columns");

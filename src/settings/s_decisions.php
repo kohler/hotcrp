@@ -54,7 +54,7 @@ function render($sv) {
             echo '" style="padding-top:1em';
         if ($i === "n")
             echo ';display:none';
-        echo '"><table class="secondary-settings"><tbody>';
+        echo '"><table><tbody class="secondary-settings">';
         $sv->echo_entry_row("resp_roundname$isuf", "Response name");
         if ($sv->curv("resp_open$isuf") === 1 && ($x = $sv->curv("resp_done$isuf")))
             $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
@@ -134,7 +134,7 @@ function render($sv) {
     echo "<h3 class=\"settings g\">Final versions</h3>\n";
     echo '<table id="foldfinal" class="fold2o">';
     $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
-    echo '<tr class="fx2"><td></td><td><table class="secondary-settings"><tbody>';
+    echo '<tr class="fx2"><td></td><td><table><tbody class="secondary-settings">';
     $sv->echo_entry_row("final_soft", "Deadline");
     $sv->echo_entry_row("final_done", "Hard deadline");
     $sv->echo_entry_row("final_grace", "Grace period");
