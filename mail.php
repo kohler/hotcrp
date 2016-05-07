@@ -469,7 +469,7 @@ if (isset($_REQUEST["monreq"])) {
     $plist = new PaperList(new PaperSearch($Me, ["t" => "req", "q" => ""]), ["list" => true, "foldable" => true]);
     $ptext = $plist->table_html("reqrevs", ["header_links" => true, "table_id" => "foldpl"]);
     if ($plist->count == 0)
-        $Conf->infoMsg("You have not requested any external reviews.  <a href='", hoturl("index"), "'>Return home</a>");
+        $Conf->infoMsg("You have not requested any external reviews.  <a href='" . hoturl("index") . "'>Return home</a>");
     else {
         echo "<h2>Requested reviews</h2>\n\n", $ptext, "<div class='info'>";
         if ($plist->any->need_review)
