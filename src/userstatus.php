@@ -7,7 +7,7 @@ class UserStatus {
     private $errf;
     private $errmsg;
     public $nerrors;
-    private $send_email = null;
+    public $send_email = null;
     private $no_deprivilege_self = false;
     private $allow_error = array();
 

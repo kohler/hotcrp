@@ -361,6 +361,8 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
     $cj = (object) array();
     web_request_as_json($cj);
     pc_request_as_json($cj);
+    if ($newProfile)
+        $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if ($UserStatus->nerrors)
         Conf::msg_error("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
