@@ -56,7 +56,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
         return $user->is_manager();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [360, $this->subname, "Review assignments", "PC review preferences"];
+        $actions[] = [2060, $this->subname, "Review assignments", "PC review preferences"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf, $Opt;

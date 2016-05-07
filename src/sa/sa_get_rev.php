@@ -8,7 +8,7 @@ class GetPcassignments_SearchAction extends SearchAction {
         return $user->is_manager();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [399, $this->subname, "Review assignments", "PC assignments"];
+        $actions[] = [2099, $this->subname, "Review assignments", "PC assignments"];
     }
     function run(Contact $user, $qreq, $ssel) {
         list($header, $texts) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
@@ -86,7 +86,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
         return $user->is_reviewer();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [300 + $this->iszip, $this->subname, "Review assignments", "Review forms" . ($this->iszip ? " (zip)" : "")];
+        $actions[] = [2000 + $this->iszip, $this->subname, "Review assignments", "Review forms" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -130,7 +130,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         return $user->can_view_some_review();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [460 + $this->iszip, $this->subname, "Reviews", "Reviews" . ($this->iszip ? " (zip)" : "")];
+        $actions[] = [3060 + $this->iszip, $this->subname, "Reviews", "Reviews" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -162,7 +162,7 @@ class GetScores_SearchAction extends SearchAction {
         return $user->can_view_some_review();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [470, $this->subname, "Reviews", "Scores"];
+        $actions[] = [3070, $this->subname, "Reviews", "Scores"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -295,7 +295,7 @@ class GetLead_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         global $Conf;
         if ($Conf->has_any_lead_or_shepherd())
-            $actions[] = [491 - $this->islead, $this->subname, "Reviews", $this->islead ? "Discussion leads" : "Shepherds"];
+            $actions[] = [3091 - $this->islead, $this->subname, "Reviews", $this->islead ? "Discussion leads" : "Shepherds"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;

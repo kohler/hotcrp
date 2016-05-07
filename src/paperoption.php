@@ -115,10 +115,10 @@ class PaperOption {
             $this->abbr = self::abbreviate($this->name, $this->id);
         $this->description = get_s($args, "description");
         $p = get($args, "position");
-        if ((is_int($p) || is_float($p)) && $p > 0)
+        if ((is_int($p) || is_float($p)) && ($this->id <= 0 || $p > 0))
             $this->position = $p;
         else
-            $this->position = 99999;
+            $this->position = 999;
         $this->final = !!get($args, "final");
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
@@ -277,9 +277,9 @@ class PaperOption {
 
     static function find_document($id) {
         if ($id == DTYPE_SUBMISSION)
-            return new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => -1));
+            return new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0));
         else if ($id == DTYPE_FINAL)
-            return new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => -1));
+            return new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0));
         else
             return self::find($id);
     }

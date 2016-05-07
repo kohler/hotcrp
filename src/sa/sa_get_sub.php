@@ -76,7 +76,7 @@ class GetDocument_SearchAction extends SearchAction {
 class GetCheckFormat_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         if ($user->is_manager())
-            $actions[] = [199, $this->subname, "Documents", "Format check"];
+            $actions[] = [999, $this->subname, "Documents", "Format check"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -114,7 +114,7 @@ class GetCheckFormat_SearchAction extends SearchAction {
 
 class GetAbstract_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [200, $this->subname, "Paper information", "Abstracts"];
+        $actions[] = [1000, $this->subname, "Paper information", "Abstracts"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -162,7 +162,7 @@ class GetAuthors_SearchAction extends SearchAction {
         return $user->can_view_some_authors();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [201, $this->subname, "Paper information", $user->is_manager() ? "Authors &amp; contacts" : "Authors"];
+        $actions[] = [1001, $this->subname, "Paper information", $user->is_manager() ? "Authors &amp; contacts" : "Authors"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -227,7 +227,7 @@ class GetPcconflicts_SearchAction extends SearchAction {
         return $user->is_manager();
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [260, $this->subname, "Paper information", "PC conflicts"];
+        $actions[] = [1060, $this->subname, "Paper information", "PC conflicts"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
@@ -259,7 +259,7 @@ class GetTopics_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         global $Conf;
         if ($Conf->has_topics())
-            $actions[] = [250, $this->subname, "Paper information", "Topics"];
+            $actions[] = [1050, $this->subname, "Paper information", "Topics"];
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
