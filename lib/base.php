@@ -233,6 +233,10 @@ function req_s($idx, $default = null) {
     return (string) req($idx, $default);
 }
 
+function set_req($idx, $value) {
+    $_GET[$idx] = $_POST[$idx] = $_REQUEST[$idx] = $value;
+}
+
 function make_qreq() {
     $qreq = new Qobject;
     foreach ($_GET as $k => $v)

@@ -38,27 +38,28 @@ $newProfile = false;
 $useRequest = false;
 $UserStatus = new UserStatus;
 
-if (!isset($_REQUEST["u"]) && isset($_REQUEST["user"]))
-    $_REQUEST["u"] = $_REQUEST["user"];
-if (!isset($_REQUEST["u"]) && isset($_REQUEST["contact"]))
-    $_REQUEST["u"] = $_REQUEST["contact"];
-if (!isset($_REQUEST["u"])
-    && preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path()))
-    $_REQUEST["u"] = substr(Navigation::path(), 1);
-if ($Me->privChair && @$_REQUEST["new"])
-    $_REQUEST["u"] = "new";
+if (req("u") === null) {
+    if (req("user"))
+        set_req("u", req("user"));
+    else if (req("contact"))
+        set_req("u", req("contact"));
+    else if (preg_match(',\A/(?:new|[^\s/]+)\z,i', Navigation::path()))
+        set_req("u", substr(Navigation::path(), 1));
+}
+if ($Me->privChair && req("new"))
+    set_req("u", "new");
 
 
 // Load user.
 $Acct = $Me;
-if ($Me->privChair && @$_REQUEST["u"]) {
-    if ($_REQUEST["u"] === "new") {
+if ($Me->privChair && req("u")) {
+    if (req("u") === "new") {
         $Acct = new Contact;
         $newProfile = true;
-    } else if (($id = cvtint($_REQUEST["u"])) > 0)
+    } else if (($id = cvtint(req("u"))) > 0)
         $Acct = Contact::find_by_id($id);
     else
-        $Acct = Contact::find_by_email($_REQUEST["u"]);
+        $Acct = Contact::find_by_email(req("u"));
 }
 
 // Redirect if requested user isn't loaded user.
@@ -107,19 +108,20 @@ function pc_request_as_json($cj) {
     global $Conf, $Me, $Acct;
     if ($Me->privChair && isset($_REQUEST["pctype"])) {
         $cj->roles = (object) array();
-        if (@$_REQUEST["pctype"] === "chair")
+        $pctype = req("pctype");
+        if ($pctype === "chair")
             $cj->roles->chair = $cj->roles->pc = true;
-        if (@$_REQUEST["pctype"] === "pc")
+        if ($pctype === "pc")
             $cj->roles->pc = true;
-        if (@$_REQUEST["ass"])
+        if (req("ass"))
             $cj->roles->sysadmin = true;
     }
     $cj->follow = (object) array();
-    if (@$_REQUEST["watchcomment"])
+    if (req("watchcomment"))
         $cj->follow->reviews = true;
-    if (($Me->privChair || $Acct->isPC) && @$_REQUEST["watchcommentall"])
+    if (($Me->privChair || $Acct->isPC) && req("watchcommentall"))
         $cj->follow->allreviews = true;
-    if ($Me->privChair && @$_REQUEST["watchfinalall"])
+    if ($Me->privChair && req("watchfinalall"))
         $cj->follow->allfinal = true;
     if ($Me->privChair && isset($_REQUEST["contactTags"]))
         $cj->tags = explode(" ", simplify_whitespace($_REQUEST["contactTags"]));
@@ -143,7 +145,7 @@ function web_request_as_json($cj) {
         $cj->id = $Acct->contactId;
 
     if (!Contact::external_login())
-        $cj->email = trim(defval($_REQUEST, "uemail", ""));
+        $cj->email = trim(req_s("uemail", ""));
     else if ($newProfile)
         $cj->email = trim(defval($_REQUEST, "newUsername", ""));
     else
@@ -151,13 +153,15 @@ function web_request_as_json($cj) {
 
     foreach (array("firstName", "lastName", "preferredEmail", "affiliation",
                    "collaborators", "addressLine1", "addressLine2",
-                   "city", "state", "zipCode", "country", "voicePhoneNumber") as $k)
-        if (isset($_REQUEST[$k]))
-            $cj->$k = $_REQUEST[$k];
+                   "city", "state", "zipCode", "country", "voicePhoneNumber") as $k) {
+        $v = req($k);
+        if ($v !== null && ($cj->id !== "new" || trim($v) !== ""))
+            $cj->$k = $v;
+    }
 
     if (!Contact::external_login() && !$newProfile
         && $Me->can_change_password($Acct)) {
-        if (@$_REQUEST["whichpassword"] === "t" && @$_REQUEST["upasswordt"])
+        if (req("whichpassword") === "t" && req("upasswordt"))
             $pw = $pw2 = @trim($_REQUEST["upasswordt"]);
         else {
             $pw = @trim($_REQUEST["upassword"]);
@@ -275,27 +279,39 @@ function parseBulkFile($text, $filename) {
     $unknown_topics = array();
     $errors = array();
 
+    $ignore_empty = array_flip(["firstname", "first", "firstName",
+            "lastname", "last", "lastName", "fullname", "fullName", "name",
+            "voice", "voicePhoneNumber", "phone", "address1", "addressLine1",
+            "address2", "addressLine2", "province", "state", "region",
+            "postalcode", "zip", "zipCode", "country"]);
+
     while (($line = $csv->next()) !== false) {
         $cj = clone $cj_template;
         foreach ($line as $k => $v)
-            $cj->$k = $v;
+            if ($v !== "" || !isset($ignore_empty[$k]))
+                $cj->$k = $v;
         foreach (array("firstname" => "firstName", "first" => "firstName",
                        "lastname" => "lastName", "last" => "lastName",
                        "fullname" => "name", "fullName" => "name",
                        "voice" => "voicePhoneNumber", "phone" => "voicePhoneNumber",
                        "address1" => "addressLine1", "province" => "state", "region" => "state",
                        "address2" => "addressLine2", "postalcode" => "zipCode",
-                       "zip" => "zipCode", "tags" => "contactTags") as $k => $x)
-            if (isset($cj->$k) && !isset($cj->$x))
-                $cj->$x = $cj->$k;
-        // thou shalt not set passwords by bulk update
-        unset($cj->password, $cj->password_plaintext, $cj->new_password);
+                       "zip" => "zipCode", "tags" => "contactTags") as $k => $xk)
+            if (isset($cj->$k)) {
+                if (!isset($cj->$xk))
+                    $cj->$xk = $cj->$k;
+                unset($cj->$k);
+            }
+        // clean up name
         if (isset($cj->name) && !isset($cj->firstName) && !isset($cj->lastName))
             list($cj->firstName, $cj->lastName) = Text::split_name($cj->name);
+        // thou shalt not set passwords by bulk update
+        unset($cj->password, $cj->password_plaintext, $cj->new_password);
+        // topics
         if (count($topic_revmap)) {
             foreach (array_keys($line) as $k)
                 if (preg_match('/^topic:\s*(.*?)\s*$/i', $k, $m)) {
-                    if (($ti = @$topic_revmap[strtolower($m[1])]) !== null) {
+                    if (($ti = get($topic_revmap, strtolower($m[1]))) !== null) {
                         $x = $line[$k];
                         if (strtolower($x) === "low")
                             $x = -2;
@@ -303,7 +319,7 @@ function parseBulkFile($text, $filename) {
                             $x = 4;
                         else if (!is_numeric($x))
                             $x = 0;
-                        if (!@$cj->topics)
+                        if (!isset($cj->topics))
                             $cj->topics = (object) array();
                         $cj->topics->$ti = $x;
                     } else
@@ -347,12 +363,12 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
         Conf::msg_error("Internal error: cannot read file.");
     else
         parseBulkFile($text, $_FILES["bulk"]["name"]);
-    $_REQUEST["bulkentry"] = "";
+    set_req("bulkentry", "");
     redirectSelf(array("anchor" => "bulk"));
 } else if (isset($_REQUEST["bulkregister"]) && $newProfile) {
     $success = true;
-    if (@$_REQUEST["bulkentry"]
-        && $_REQUEST["bulkentry"] !== "Enter users one per line")
+    if (req("bulkentry")
+        && req("bulkentry") !== "Enter users one per line")
         $success = parseBulkFile($_REQUEST["bulkentry"], "");
     if (!$success)
         $Conf->save_session("profile_bulkentry", array($Now, $_REQUEST["bulkentry"]));
@@ -516,12 +532,15 @@ function textinput($name, $value, $size, $id = false, $password = false) {
         . 'size="' . $size . '" value="' . $value . '" />';
 }
 
-function create_modes($hlbulk) {
+function echo_modes($hlbulk) {
+    global $Me, $Acct, $newProfile;
     echo '<div class="psmode">',
-        '<div class="', ($hlbulk ? "papmode" : "papmodex"), '">',
-        Ht::js_link("New account", "fold('bulk',true,9)"),
-        '</div><div class="', ($hlbulk ? "papmodex" : "papmode"), '">',
-        Ht::js_link("Bulk update", "fold('bulk',false,9)"),
+        '<div class="', ($hlbulk == 0 ? "papmodex" : "papmode"), '">',
+        Ht::link($newProfile || $Me->email == $Acct->email ? "Your profile" : "Profile", selfHref(["u" => null])),
+        '</div><div class="', ($hlbulk == 1 ? "papmodex" : "papmode"), '">',
+        Ht::auto_link("New account", $newProfile ? "fold('bulk',true,9)" : hoturl("profile", "u=new")),
+        '</div><div class="', ($hlbulk == 2 ? "papmodex" : "papmode"), '">',
+        Ht::auto_link("Bulk update", $newProfile ? "fold('bulk',false,9)" : hoturl("profile", "u=new&amp;bulkregister=1")),
         '</div></div><hr class="c" style="margin-bottom:24px" />', "\n";
 }
 
@@ -534,7 +553,7 @@ $useRequest = !$Acct->has_database_account() && isset($_REQUEST["watchcomment"])
 if ($UserStatus->nerrors)
     $need_highlight = $useRequest = true;
 
-if (!$UserStatus->nerrors && @$Conf->session("freshlogin") === "redirect") {
+if (!$UserStatus->nerrors && $Conf->session("freshlogin") === "redirect") {
     $Conf->save_session("freshlogin", null);
     $ispc = $Acct->is_pclike();
     $msgs = array();
@@ -578,7 +597,7 @@ else
     $formcj = $UserStatus->user_to_json($Acct);
 $pcrole = @($formcj->roles->chair) ? "chair" : (@($formcj->roles->pc) ? "pc" : "no");
 if (!$useRequest && $Me->privChair && $newProfile
-    && (@$_REQUEST["role"] == "chair" || @$_REQUEST["role"] == "pc"))
+    && (req("role") == "chair" || req("role") == "pc"))
     $pcrole = $_REQUEST["role"];
 
 
@@ -590,7 +609,7 @@ else if ($Me->contactId != $Acct->contactId)
 if (isset($_REQUEST["ls"]))
     $form_params[] = "ls=" . urlencode($_REQUEST["ls"]);
 if ($newProfile)
-    echo '<div id="foldbulk" class="fold9' . (@$_REQUEST["bulkregister"] ? "o" : "c") . '"><div class="fn9">';
+    echo '<div id="foldbulk" class="fold9' . (req("bulkregister") ? "o" : "c") . '"><div class="fn9">';
 
 echo Ht::form(hoturl_post("profile", join("&amp;", $form_params)),
               array("id" => "accountform", "autocomplete" => "off")),
@@ -610,7 +629,9 @@ echo '<div id="foldaccount" class="form foldc ',
     (fileUploaded($_FILES["bulk"]) ? "fold2o" : "fold2c"), '">';
 
 if ($newProfile)
-    create_modes(false);
+    echo_modes(1);
+else if ($Me->privChair)
+    echo_modes(0);
 
 echo '<div class="f-contain">', "\n\n";
 if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
@@ -810,7 +831,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   Deleting the user will also " . commajoin($y) . ".</p>";
         } else
             $dialog = "";
-        $Conf->footerHtml("<div id='popup_d' class='popupc'>
+        $Conf->footerHtml("<div class=\"popupbg\" style=\"display:none\"><div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog
@@ -818,7 +839,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     <div class='popup_actions'>"
       . Ht::js_button("Cancel", "popup(null,'d',1)")
       . Ht::submit("delete", "Delete user", array("class" => "bb"))
-      . "</div></form></div>");
+      . "</div></form></div></div>");
     }
 }
 if (!$newProfile && $Acct->contactId == $Me->contactId)
@@ -849,9 +870,9 @@ if ($newProfile) {
         // But chrome defaults to autofilling the password changer
         // unless we supply an earlier password input.
         Ht::password("chromefooler", "", array("style" => "display:none"));
-    create_modes(true);
+    echo_modes(2);
 
-    $bulkentry = @$_REQUEST["bulkentry"];
+    $bulkentry = req("bulkentry");
     if ($bulkentry === null
         && ($session_bulkentry = $Conf->session("profile_bulkentry"))
         && is_array($session_bulkentry) && $session_bulkentry[0] > $Now - 5) {
