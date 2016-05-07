@@ -191,7 +191,7 @@ class PaperList {
             $this->viewmap->rownum = true;
     }
 
-    function _sort($rows) {
+    private function _sort($rows, $duplicates) {
         global $magic_sort_info;      /* ugh, PHP constraints */
 
         $code = "global \$magic_sort_info; \$x = 0;\n";
@@ -215,6 +215,14 @@ class PaperList {
         }
 
         $code .= "if (!\$x) \$x = \$a->paperId - \$b->paperId;\n";
+
+        if ($duplicates)
+            foreach ($rows as $row)
+                if (isset($row->reviewId)) {
+                    $code .= "if (!\$x) \$x = PaperList::review_row_compare(\$a, \$b);\n";
+                    break;
+                }
+
         $code .= "return \$x < 0 ? -1 : (\$x == 0 ? 0 : 1);\n";
 
         usort($rows, create_function("\$a, \$b", $code));
@@ -536,13 +544,26 @@ class PaperList {
         return $field_list;
     }
 
-    static public function review_list_compar($a, $b) {
+    static public function review_row_compare($a, $b) {
+        if ($a->paperId != $b->paperId)
+            return $a->paperId < $b->paperId ? -1 : 1;
         if (!$a->reviewOrdinal !== !$b->reviewOrdinal)
             return $a->reviewOrdinal ? -1 : 1;
-        if ($a->reviewOrdinal != $b->reviewOrdinal)
+        else if ($a->reviewOrdinal != $b->reviewOrdinal)
             return $a->reviewOrdinal < $b->reviewOrdinal ? -1 : 1;
-        return strcmp($a->sorter, $b->sorter);
+        else if ($a->timeRequested != $b->timeRequested)
+            return $a->timeRequested < $b->timeRequested ? -1 : 1;
+        else if (isset($a->sorter) && isset($b->sorter)
+                 && ($x = strcmp($a->sorter, $b->sorter)) != 0)
+            return $x;
+        else if ($a->reviewType != $b->reviewType)
+            return $a->reviewType < $b->reviewType ? 1 : -1;
+        else if ($a->reviewId != $b->reviewId)
+            return $a->reviewId < $b->reviewId ? -1 : 1;
+        else
+            return 0;
     }
+
 
     private function _rows($field_list) {
         global $Conf;
@@ -555,15 +576,16 @@ class PaperList {
             unset($this->qopts["scores"]);
         $pq = $Conf->paperQuery($this->contact, $this->qopts);
 
-        // make query
+        // make query, fetch rows
         $result = Dbl::qe_raw($pq);
         if (!$result)
             return null;
-
-        // fetch rows
-        $rows = array();
-        while (($row = PaperInfo::fetch($result, $this->contact)))
-            $rows[$row->paperId] = $row;
+        $rows = $pids = array();
+        while (($row = PaperInfo::fetch($result, $this->contact))) {
+            $rows[] = $row;
+            $pids[$row->paperId] = true;
+        }
+        Dbl::free($result);
 
         // prepare review query (see also search > getfn == "reviewers")
         $this->review_list = array();
@@ -575,14 +597,15 @@ class PaperList {
                 from Paper
                 join PaperReview using (paperId)
                 join ContactInfo on (PaperReview.contactId=ContactInfo.contactId)
-                where paperId?a", array_keys($rows));
+                where paperId?a", array_keys($pids));
             while (($row = edb_orow($result))) {
                 Contact::set_sorter($row);
                 $this->review_list[$row->paperId][] = $row;
             }
             foreach ($this->review_list as &$revlist)
-                usort($revlist, "PaperList::review_list_compar");
+                usort($revlist, "PaperList::review_row_compare");
             unset($revlist);
+            Dbl::free($result);
         }
 
         // prepare PC topic interests
@@ -596,6 +619,7 @@ class PaperList {
             $result = Dbl::qe("select contactId, topicId, " . $Conf->query_topic_interest() . " from TopicInterest");
             while (($row = edb_row($result)))
                 $pcm[$row[0]]->topicInterest[$row[1]] = $row[2];
+            Dbl::free($result);
         }
 
         // analyze rows (usually noop)
@@ -604,7 +628,7 @@ class PaperList {
 
         // sort rows
         if (!empty($this->sorters)) {
-            $rows = $this->_sort($rows);
+            $rows = $this->_sort($rows, count($rows) != count($pids));
             if (isset($this->qopts["allReviewScores"]))
                 $this->_sortReviewOrdinal($rows);
         }
@@ -623,7 +647,6 @@ class PaperList {
             }
         }
 
-        Dbl::free($result);
         return $rows;
     }
 

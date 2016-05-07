@@ -1162,11 +1162,15 @@ class Conf {
         return $this->_printableTime($value, true, $useradjust, $preadjust);
     }
     function obscure_time($timestamp) {
-        $timestamp = (int) ($timestamp + 0.5);
-        $offset = 0;
-        if (($zone = timezone_open(date_default_timezone_get())))
-            $offset = $zone->getOffset(new DateTime("@$timestamp"));
-        return $timestamp - (($timestamp + $offset) % 86400) + 43200;
+        if ($timestamp !== null)
+            $timestamp = (int) ($timestamp + 0.5);
+        if ($timestamp > 0) {
+            $offset = 0;
+            if (($zone = timezone_open(date_default_timezone_get())))
+                $offset = $zone->getOffset(new DateTime("@$timestamp"));
+            $timestamp += 43200 - ($timestamp + $offset) % 86400;
+        }
+        return $timestamp;
     }
     function unparse_time_obscure($value, $useradjust = false, $preadjust = null) {
         return $this->_printableTime($value, "obscure", $useradjust, $preadjust);
@@ -2033,6 +2037,7 @@ class Conf {
             return null;
         }
 
+        // this review order is also implemented by PaperList::review_row_compare
         $q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
                 order by " . join(", ", $order) . ", reviewOrdinal, timeRequested, reviewType desc, reviewId";
 

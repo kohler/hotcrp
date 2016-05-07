@@ -2443,8 +2443,8 @@ class PaperTable {
                     || (!$this->editrrow && $Me->is_my_review($rr)))
                     $this->editrrow = $rr;
         }
-        if ($this->mode === "p" && $prow && !count($this->viewable_rrows)
-            && !count($this->mycrows)
+        if ($this->mode === "p" && $prow && empty($this->viewable_rrows)
+            && empty($this->mycrows)
             && $prow->has_author($Me)
             && !$Me->allow_administer($prow)
             && ($Conf->timeFinalizePaper($prow) || $prow->timeSubmitted <= 0))

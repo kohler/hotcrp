@@ -467,7 +467,7 @@ else if ((@$_REQUEST["check"] || @$_REQUEST["group"] || @$_REQUEST["ungroup"])
 
 if (isset($_REQUEST["monreq"])) {
     $plist = new PaperList(new PaperSearch($Me, ["t" => "req", "q" => ""]), ["list" => true, "foldable" => true]);
-    $ptext = $plist->table_html("reqrevs", ["header_links" => true, "table_id" => "foldpl"]);
+    $ptext = $plist->table_html("reqrevs", ["class" => "pltable_full", "header_links" => true, "table_id" => "foldpl"]);
     if ($plist->count == 0)
         $Conf->infoMsg("You have not requested any external reviews.  <a href='" . hoturl("index") . "'>Return home</a>");
     else {

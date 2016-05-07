@@ -594,8 +594,14 @@ class ReviewDelegationPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         global $Conf;
-        $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail) . "<br /><small>Last login: ";
-        return $t . ($row->reviewLastLogin ? $Conf->printableTimeShort($row->reviewLastLogin) : "Never") . "</small>";
+        $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
+        if ($pl->contact->isPC) {
+            $time = $row->reviewLastLogin;
+            if (!$pl->contact->privChair)
+                $time = $Conf->obscure_time($time);
+            $t .= "<br /><small class=\"nw\">Last update: " . ($time ? $Conf->printableTimeShort($time) : "Never") . "</small>";
+        }
+        return $t;
     }
 }
 
