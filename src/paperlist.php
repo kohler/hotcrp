@@ -592,7 +592,7 @@ class PaperList {
         if (isset($this->qopts["reviewList"]) && !empty($rows)) {
             $result = Dbl::qe("select Paper.paperId, reviewId, reviewType,
                 reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
-                reviewOrdinal,
+                reviewOrdinal, timeRequested,
                 PaperReview.contactId, lastName, firstName, email
                 from Paper
                 join PaperReview using (paperId)
