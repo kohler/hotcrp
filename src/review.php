@@ -729,7 +729,7 @@ class ReviewForm {
 
         // get the current time
         $now = time();
-        if ($rrow && $rrow->reviewModified && $rrow->reviewModified > $now)
+        if ($rrow && $rrow->reviewModified > 1 && $rrow->reviewModified > $now)
             $now = $rrow->reviewModified + 1;
 
         // potentially assign review ordinal (requires table locking since
@@ -1004,7 +1004,7 @@ class ReviewForm {
             else
                 $x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
         }
-        if ($rrow && $rrow->reviewModified && $contact->can_view_review_time($prow, $rrow))
+        if ($rrow && $rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow))
             $x .= "==-== Updated " . $Conf->printableTime($rrow->reviewModified) . "\n";
 
         if ($prow)
@@ -1105,7 +1105,7 @@ $blind\n";
         if (@$rrow->reviewOrdinal)
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= center_word_wrap($n);
-        if ($rrow->reviewModified && $contact->can_view_review_time($prow, $rrow)) {
+        if ($rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow)) {
             $n = "Updated " . $Conf->printableTime($rrow->reviewModified);
             $x .= center_word_wrap($n);
         }
@@ -1550,7 +1550,7 @@ $blind\n";
             echo $sep, "Review token ", encode_token((int) $rrow->reviewToken);
             $sep = $xsep;
         }
-        if ($rrow && $rrow->reviewModified > 0 && $Me->can_view_review_time($prow, $rrow)) {
+        if ($rrow && $rrow->reviewModified > 1 && $Me->can_view_review_time($prow, $rrow)) {
             echo $sep, "Updated ", $Conf->printableTime($rrow->reviewModified);
             $sep = $xsep;
         }
@@ -1574,7 +1574,7 @@ $blind\n";
     </tr></table></div>\n";
 
         // ready?
-        $ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified && !$rrow->reviewSubmitted));
+        $ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified > 1 && !$rrow->reviewSubmitted));
 
         // review card
         echo '<div class="revcard_body">';
@@ -1663,7 +1663,7 @@ $blind\n";
         }
         if ($showtoken)
             $rj["author_token"] = encode_token((int) $rrow->reviewToken);
-        if ($rrow->reviewModified > 0 && $contact->can_view_review_time($prow, $rrow)) {
+        if ($rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow)) {
             $rj["modified_at"] = (int) $rrow->reviewModified;
             $rj["modified_at_text"] = $Conf->printableTime($rrow->reviewModified);
         }
@@ -1712,11 +1712,13 @@ $blind\n";
         if (strlen($rrow->shortTitle) != strlen($rrow->title))
             $t .= "...";
         $t .= "</a>";
-        if ($contact->can_view_review_time($rrow, $rrow))
-            $time = $Conf->parseableTime($rrow->reviewModified, false);
-        else
-            $time = $Conf->unparse_time_obscure($Conf->obscure_time($rrow->reviewModified));
-        $t .= $barsep . $time;
+        if ($rrow->reviewModified > 1) {
+            if ($contact->can_view_review_time($rrow, $rrow))
+                $time = $Conf->parseableTime($rrow->reviewModified, false);
+            else
+                $time = $Conf->unparse_time_obscure($Conf->obscure_time($rrow->reviewModified));
+            $t .= $barsep . $time;
+        }
         if ($contact->can_view_review_identity($rrow, $rrow, false))
             $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
         $t .= "</small><br /><a class='q'" . substr($a, 3) . ">";

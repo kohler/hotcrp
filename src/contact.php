@@ -3269,7 +3269,7 @@ class Contact {
         $reviewId = $rrow ? $rrow->reviewId : 0;
 
         // can't delete a review that's in progress
-        if ($type <= 0 && $rrow && $rrow->reviewType && $rrow->reviewModified) {
+        if ($type <= 0 && $rrow && $rrow->reviewType && $rrow->reviewModified > 1) {
             if ($rrow->reviewType >= REVIEW_SECONDARY)
                 $type = REVIEW_PC;
             else

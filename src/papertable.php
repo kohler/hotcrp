@@ -2061,7 +2061,7 @@ class PaperTable {
         // text format link
         $viewable = array();
         foreach ($this->viewable_rrows as $rr)
-            if ($rr->reviewModified > 0) {
+            if ($rr->reviewModified > 1) {
                 $viewable[] = "reviews";
                 break;
             }
@@ -2082,7 +2082,7 @@ class PaperTable {
 
         $rcjs = [];
         foreach ($this->viewable_rrows as $rr)
-            if ($rr->reviewSubmitted || $rr->reviewModified > 0)
+            if ($rr->reviewSubmitted || $rr->reviewModified > 1)
                 $rcjs[] = $rf->unparse_review_json($prow, $rr, $Me, true);
         if ($this->include_comments())
             foreach ($this->mycrows as $cr)
