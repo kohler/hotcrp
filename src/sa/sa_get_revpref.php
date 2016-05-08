@@ -30,24 +30,23 @@ class GetRevpref_SearchAction extends SearchAction {
         $result = Dbl::qe_raw($q);
         $texts = array();
         while (($prow = PaperInfo::fetch($result, $Rev))) {
-            $t = $prow->paperId . "," . CsvGenerator::quote($prow->title);
+            $item = ["paper" => $prow->paperId, "title" => $prow->title];
             if ($prow->conflictType > 0)
-                $t .= ",conflict";
+                $item["preference"] = "conflict";
             else
-                $t .= "," . unparse_preference($prow);
-            $t .= "\n";
+                $item["preference"] = unparse_preference($prow);
             if ($this->extended) {
+                $x = "";
                 if ($Rev->can_view_authors($prow, false))
-                    $t .= prefix_word_wrap("#  Authors: ", $prow->pretty_text_author_list(), "#           ");
-                $t .= prefix_word_wrap("# Abstract: ", rtrim($prow->abstract), "#           ");
+                    $x .= prefix_word_wrap(" Authors: ", $prow->pretty_text_author_list(), "          ");
+                $x .= prefix_word_wrap("Abstract: ", rtrim($prow->abstract), "          ");
                 if ($prow->topicIds != "")
-                    $t .= prefix_word_wrap("#   Topics: ", $prow->unparse_topics_text(), "#           ");
-                $t .= "\n";
+                    $x .= prefix_word_wrap("  Topics: ", $prow->unparse_topics_text(), "          ");
+                $item["__postcomment__"] = $x;
             }
-            defappend($texts[$prow->paperId], $t);
+            $texts[$prow->paperId][] = $item;
         }
-
-        downloadCSV(join("", $ssel->reorder($texts)), ["paper", "title", "preference"], "revprefs");
+        downloadCSV($ssel->reorder($texts), ["paper", "title", "preference"], "revprefs", ["selection" => true]);
     }
 }
 

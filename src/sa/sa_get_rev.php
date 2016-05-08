@@ -12,7 +12,7 @@ class GetPcassignments_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         list($header, $texts) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
-        downloadCSV($texts, $header, "pcassignments", array("selection" => $header));
+        downloadCSV($texts, $header, "pcassignments", ["selection" => true]);
     }
 }
 

@@ -226,14 +226,16 @@ class CsvGenerator {
     public $headerline = "";
     private $selection = null;
     private $lf = "\n";
+    private $comment;
 
-    function __construct($type = self::TYPE_COMMA) {
+    function __construct($type = self::TYPE_COMMA, $comment = false) {
         $this->type = $type & self::FLAG_TYPE;
         $this->flags = $type;
         if ($this->flags & self::FLAG_CRLF)
             $this->lf = "\r\n";
         else if ($this->flags & self::FLAG_CR)
             $this->lf = "\r";
+        $this->comment = $comment;
     }
 
     static function always_quote($text) {
@@ -258,7 +260,7 @@ class CsvGenerator {
     }
 
     function select($row) {
-        if (!is_array($this->selection))
+        if (!$this->selection)
             return $row;
         $selected = array();
         $i = 0;
@@ -290,21 +292,28 @@ class CsvGenerator {
             foreach ($row as $x)
                 $this->add($x);
         } else {
-            if (is_array($this->selection))
-                $row = $this->select($row);
+            $srow = $this->selection ? $this->select($row) : $row;
             if ($this->type == self::TYPE_COMMA) {
                 if ($this->flags & self::FLAG_ALWAYS_QUOTE) {
-                    foreach ($row as &$x)
+                    foreach ($srow as &$x)
                         $x = self::always_quote($x);
                 } else {
-                    foreach ($row as &$x)
+                    foreach ($srow as &$x)
                         $x = self::quote($x);
                 }
-                $this->lines[] = join(",", $row) . $this->lf;
+                $this->lines[] = join(",", $srow) . $this->lf;
             } else if ($this->type == self::TYPE_TAB)
-                $this->lines[] = join("\t", $row) . $this->lf;
+                $this->lines[] = join("\t", $srow) . $this->lf;
             else
-                $this->lines[] = join("|", $row) . $this->lf;
+                $this->lines[] = join("|", $srow) . $this->lf;
+            if ($this->comment && $this->selection && ($cmt = get($row, "__postcomment__"))) {
+                preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $cmt, $m);
+                if ($m[1][count($m[1]) - 1] === "")
+                    array_pop($m[1]);
+                foreach ($m[1] as $x)
+                    $this->lines[] = $this->comment . $x . $this->lf;
+                $this->lines[] = $this->lf;
+            }
         }
     }
 
@@ -320,7 +329,10 @@ class CsvGenerator {
     }
 
     function set_selection($selection) {
-        $this->selection = $selection;
+        if (is_associative_array($selection))
+            $this->selection = array_keys($selection);
+        else
+            $this->selection = $selection;
     }
 
     function download_headers($downloadname = null, $attachment = null) {
