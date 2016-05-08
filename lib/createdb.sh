@@ -123,6 +123,25 @@ done
 check_mysqlish MYSQL mysql
 check_mysqlish MYSQLADMIN mysqladmin
 
+### Print hotcrp.com message
+if ! $quiet && ! $batch; then
+    echo 1>&2
+    echo "* This script initializes a local HotCRP installation." 1>&2
+    echo "* You are responsible for supporting this installation." 1>&2
+    echo "*" 1>&2
+    echo "* Supported installations are available at https://hotcrp.com/" 1>&2
+    echo "* for a per-submission fee (ACM- and USENIX-sponsored conferences" 1>&2
+    echo "* can take advantage of site-wide agreements)." 1>&2
+    echo 1>&2
+    while true; do
+        echo_n "Type \"ok\" to continue: "
+        read OK
+        expr "$OK" : "[yYqQ].*" >/dev/null && break
+        expr "$OK" : "[oO][kK].*" >/dev/null && break
+    done
+    expr "$OK" : "[qQ].*" >/dev/null && exit 1
+fi
+
 # attempt to secure password handling
 # (It is considered insecure to supply a MySQL password on the command
 # line; in some MySQL versions it actually generates a warning.)
