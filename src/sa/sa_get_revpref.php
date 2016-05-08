@@ -46,7 +46,7 @@ class GetRevpref_SearchAction extends SearchAction {
             }
             $texts[$prow->paperId][] = $item;
         }
-        downloadCSV($ssel->reorder($texts), ["paper", "title", "preference"], "revprefs", ["selection" => true]);
+        return new Csv_SearchResult("revprefs", ["paper", "title", "preference"], $ssel->reorder($texts), true);
     }
 }
 
@@ -92,7 +92,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
             $headers[] = "topic_score";
         if ($has_conflict)
             $headers[] = "conflict";
-        downloadCSV($ssel->reorder($texts), $headers, "allprefs", ["selection" => true]);
+        return new Csv_SearchResult("allprefs", $headers, $ssel->reorder($texts), true);
     }
 }
 

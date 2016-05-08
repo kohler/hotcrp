@@ -11,8 +11,8 @@ class GetPcassignments_SearchAction extends SearchAction {
         $actions[] = [2099, $this->subname, "Review assignments", "PC assignments"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        list($header, $texts) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
-        downloadCSV($texts, $header, "pcassignments", ["selection" => true]);
+        list($header, $items) = SearchAction::pcassignments_csv_data($user, $ssel->selection());
+        return new Csv_SearchResult("pcassignments", $header, $items, true);
     }
 }
 
@@ -209,7 +209,7 @@ class GetScores_SearchAction extends SearchAction {
             if ($any_reviewer_identity)
                 array_push($header, "reviewername", "email");
             $header = array_merge($header, array_keys($any_scores));
-            downloadCSV($ssel->reorder($texts), $header, "scores", ["selection" => true]);
+            return new Csv_SearchResult("scores", $header, $ssel->reorder($texts), true);
         } else {
             if (!count($errors))
                 $errors[] = "No papers selected.";
@@ -232,7 +232,7 @@ class GetVotes_SearchAction extends SearchAction {
             while (($prow = PaperInfo::fetch($result, $user)))
                 if ($user->can_view_tags($prow, true))
                     arrayappend($texts[$prow->paperId], array($showtag, (float) $prow->tagIndex, $prow->paperId, $prow->title));
-            downloadCSV($ssel->reorder($texts), ["tag", "votes", "paper", "title"], "votes");
+            return new Csv_SearchResult("votes", ["tag", "votes", "paper", "title"], $ssel->reorder($texts));
         } else
             Conf::msg_error($tagger->error_html);
     }
@@ -306,7 +306,7 @@ class GetLead_SearchAction extends SearchAction {
             if ($row->reviewEmail
                 && ($this->islead ? $user->can_view_lead($row, true) : $user->can_view_shepherd($row, true)))
                 arrayappend($texts[$row->paperId], [$row->paperId, $row->title, $row->reviewFirstName, $row->reviewLastName, $row->reviewEmail]);
-        downloadCSV($ssel->reorder($texts), array("paper", "title", "first", "last", "{$type}email"), "{$type}s");
+        return new Csv_SearchResult("{$type}s", ["paper", "title", "first", "last", "{$type}email"], $ssel->reorder($texts));
     }
 }
 

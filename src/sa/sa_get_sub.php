@@ -198,7 +198,7 @@ class GetAuthors_SearchAction extends SearchAction {
         $header = ["paper", "title", "first", "last", "email", "affiliation"];
         if ($want_contacttype)
             $header[] = "iscontact";
-        downloadCSV($ssel->reorder($texts), $header, "authors");
+        return new Csv_SearchResult("authors", $header, $ssel->reorder($texts));
     }
 }
 
@@ -218,7 +218,7 @@ class GetContacts_SearchAction extends SearchAction {
                     $aa = $prow->author_by_email($a->email) ? : $a;
                     arrayappend($texts[$prow->paperId], [$prow->paperId, $prow->title, $aa->firstName, $aa->lastName, $aa->email, $aa->affiliation]);
                 }
-        downloadCSV($ssel->reorder($texts), ["paper", "title", "first", "last", "email", "affiliation"], "contacts");
+        return new Csv_SearchResult("contacts", ["paper", "title", "first", "last", "email", "affiliation"], $ssel->reorder($texts));
     }
 }
 
@@ -251,7 +251,7 @@ class GetPcconflicts_SearchAction extends SearchAction {
                     $texts[$prow->paperId] = $m;
                 }
             }
-        downloadCSV($ssel->reorder($texts), ["paper", "title", "first", "last", "email", "conflicttype"], "pcconflicts");
+        return new Csv_SearchResult("pcconflicts", ["paper", "title", "first", "last", "email", "conflicttype"], $ssel->reorder($texts));
     }
 }
 
@@ -275,7 +275,7 @@ class GetTopics_SearchAction extends SearchAction {
                     $out[] = [$row->paperId, $row->title, "<none>"];
                 arrayappend($texts[$row->paperId], $out);
             }
-        downloadCSV($ssel->reorder($texts), array("paper", "title", "topic"), "topics");
+        return new Csv_SearchResult("topics", ["paper", "title", "topic"], $ssel->reorder($texts));
     }
 }
 

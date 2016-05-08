@@ -3,6 +3,22 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class SearchResult {
+}
+
+class Csv_SearchResult extends SearchResult {
+    public $name;
+    public $header;
+    public $items;
+    public $selection;
+    function __construct($name, $header, $items, $selection = false) {
+        $this->name = $name;
+        $this->header = $header;
+        $this->items = $items;
+        $this->selection = $selection;
+    }
+}
+
 class SearchAction {
     public $subname;
     const ENOENT = "No such search action.";
@@ -60,20 +76,22 @@ class SearchAction {
         if (is_array($selection))
             $selection = new SearchSelection($selection);
         if (!$uf)
-            $error = "No such search action.";
+            $res = "No such search action.";
         else if (!($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
-            $error = "Missing credentials.";
+            $res = "Missing credentials.";
         else if (($uf[1] & SiteLoader::API_PAPER) && $selection->is_empty())
-            $error = "No papers selected.";
+            $res = "No papers selected.";
         else if (!$uf[0]->allow($user))
-            $error = "Permission error.";
+            $res = "Permission error.";
         else
-            $error = $uf[0]->run($user, $qreq, $selection);
-        if (is_string($error) && $qreq->ajax)
-            json_exit(["ok" => false, "error" => $error]);
-        else if (is_string($error))
-            Conf::msg_error($error);
-        return $error;
+            $res = $uf[0]->run($user, $qreq, $selection);
+        if (is_string($res) && $qreq->ajax)
+            json_exit(["ok" => false, "error" => $res]);
+        else if (is_string($res))
+            Conf::msg_error($res);
+        else if ($res instanceof Csv_SearchResult)
+            downloadCSV($res->items, $res->header, $res->name, $res->selection ? ["selection" => true] : []);
+        return $res;
     }
 
     static function list_all_actions(Contact $user, $qreq, PaperList $pl) {
@@ -135,5 +153,3 @@ class SearchAction {
         return [$header, $texts];
     }
 }
-
-class SearchActions extends SearchAction {} // backwards compat
