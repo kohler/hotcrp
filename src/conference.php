@@ -1172,14 +1172,14 @@ class Conf {
         }
         return $timestamp;
     }
-    function unparse_time_obscure($value, $useradjust = false, $preadjust = null) {
-        return $this->_printableTime($value, "obscure", $useradjust, $preadjust);
+    function unparse_time_short($value) {
+        return $this->_printableTime($value, false, false, null);
     }
-    function printableTimestamp($value, $useradjust = false, $preadjust = null) {
-        return $this->_printableTime($value, "timestamp", $useradjust, $preadjust);
+    function unparse_time_full($value) {
+        return $this->_printableTime($value, "timestamp", false, null);
     }
-    function printableTimeShort($value, $useradjust = false, $preadjust = null) {
-        return $this->_printableTime($value, false, $useradjust, $preadjust);
+    function unparse_time_obscure($value) {
+        return $this->_printableTime($value, "obscure", false, null);
     }
     function unparse_time_log($value) {
         return date("d/M/Y:H:i:s O", $value);

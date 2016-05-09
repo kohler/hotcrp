@@ -596,10 +596,13 @@ class ReviewDelegationPaperColumn extends PaperColumn {
         global $Conf;
         $t = Text::user_html($row->reviewFirstName, $row->reviewLastName, $row->reviewEmail);
         if ($pl->contact->isPC) {
-            $time = $row->reviewLastLogin;
-            if (!$pl->contact->privChair)
-                $time = $Conf->obscure_time($time);
-            $t .= "<br /><small class=\"nw\">Last update: " . ($time ? $Conf->printableTimeShort($time) : "Never") . "</small>";
+            if (!$row->reviewLastLogin)
+                $time = "Never";
+            else if ($pl->contact->privChair)
+                $time = $Conf->unparse_time_short($row->reviewLastLogin);
+            else
+                $time = $Conf->unparse_time_obscure($row->reviewLastLogin);
+            $t .= "<br /><small class=\"nw\">Last update: $time</small>";
         }
         return $t;
     }
@@ -1543,7 +1546,7 @@ class TimestampPaperColumn extends PaperColumn {
         global $Conf;
         $t = max($row->timeFinalSubmitted, $row->timeSubmitted, 0);
         if ($t > 0)
-            return $Conf->printableTimestamp($t);
+            return $Conf->unparse_time_full($t);
         else
             return "";
     }

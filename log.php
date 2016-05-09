@@ -206,7 +206,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
     $n++;
     if ($n == 1) {
         if ($start != 0 && !$firstDate)
-            $_REQUEST["date"] = $Conf->printableTimeShort($row->timestamp);
+            $_REQUEST["date"] = $Conf->unparse_time_short($row->timestamp);
         else if ($firstDate) {
             $offset = $start % $count;
             $page = (int) ($start / $count) + ($offset ? 2 : 1);
@@ -217,7 +217,7 @@ while (($row = edb_orow($result)) && ($n < $count || $page === false)) {
 
     $act = $row->action;
     $t = "<td class='pl pl_logid'>" . htmlspecialchars($row->logId) . "</td>"
-        . "<td class='pl pl_time'>" . $Conf->printableTimeShort($row->timestamp) . "</td>"
+        . "<td class='pl pl_time'>" . $Conf->unparse_time_short($row->timestamp) . "</td>"
         . "<td class='pl pl_ip'>" . htmlspecialchars($row->ipaddr) . "</td>"
         . "<td class='pl pl_name'>";
     if ($row->email) {

@@ -294,12 +294,12 @@ class ContactList {
         case self::FIELD_AFFILIATION_ROW:
             return htmlspecialchars($row->affiliation);
         case self::FIELD_LASTVISIT:
-            if (!$row->lastLogin)
+            if (!$row->activity_at)
                 return "Never";
             else if ($this->contact->privChair)
-                return $Conf->printableTimeShort($row->lastLogin);
+                return $Conf->unparse_time_short($row->activity_at);
             else
-                return $Conf->unparse_time_obscure($row->lastLogin);
+                return $Conf->unparse_time_obscure($row->activity_at);
         case self::FIELD_SELECTOR:
         case self::FIELD_SELECTOR_ON:
             $this->any->sel = true;

@@ -334,7 +334,7 @@ class PaperTable {
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
-            $t[] = "<span class='nw hottooltip' data-hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->printableTimestamp($tm) . "</span>";
+            $t[] = "<span class='nw hottooltip' data-hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->unparse_time_full($tm) . "</span>";
         $sha1 = defval($data, "sha1");
         if ($sha1)
             $t[] = "<span class='nw hottooltip' data-hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
