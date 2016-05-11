@@ -252,8 +252,6 @@ class Ht {
         if (($temp = get($js, "placeholder"))) {
             if ($value === null || $value === "" || $value === $temp)
                 $js["class"] = trim(get_s($js, "class") . " temptext");
-            if ($value === null || $value === "")
-                $value = $temp;
             self::stash_script("jQuery(hotcrp_load.temptext)", "temptext");
         }
     }

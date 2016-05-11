@@ -1202,12 +1202,18 @@ function ttaction(event) {
     $e.toggleClass("temptext", event.type != "focus" && (v === "" || v === p));
 }
 
-return function (e) {
-    if (typeof e === "number")
-        e = this;
-    $(e).on("focus blur change", ttaction);
-    ttaction.call(e, {});
-};
+if (Object.prototype.toString.call(window.operamini) === '[object OperaMini]'
+    || !("placeholder" in document.createElement("input"))
+    || !("placeholder" in document.createElement("textarea")))
+    return function (e) {
+        e = typeof e === "number" ? this : e;
+        $(e).on("focus blur change", ttaction);
+        ttaction.call(e, {type: "blur"});
+    };
+else
+    return function (e) {
+        ttaction.call(typeof e === "number" ? this : e, {type: "focus"});
+    };
 })();
 
 
