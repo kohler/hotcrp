@@ -183,7 +183,7 @@ echo Ht::form_div(hoturl_post("bulkassign", "upload=1"),
 // Upload
 echo '<div class="f-contain"><div class="f-i"><div class="f-e">',
     Ht::textarea("bulkentry", req_s("bulkentry"),
-                 ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments"]),
+                 ["rows" => 1, "cols" => 80, "placeholder" => "Enter assignments", "class" => "need-autogrow"]),
     '</div></div></div>';
 
 echo '<div class="g"><strong>OR</strong> &nbsp;',
@@ -222,7 +222,7 @@ echo "<table class='fx'><tr><td>",
     Ht::checkbox("requestreview_notify", 1, true),
     "&nbsp;</td><td>", Ht::label("Send email to external reviewers:"), "</td></tr>
 <tr><td></td><td>",
-    Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true")),
+    Ht::textarea("requestreview_body", $t, array("class" => "tt", "cols" => 80, "rows" => 20, "spellcheck" => "true", "class" => "need-autogrow")),
     "</td></tr></table>\n";
 
 echo '<div class="g"></div><div class="aa">', Ht::submit("Prepare assignments"),
@@ -348,5 +348,5 @@ gives the preference value.</dd>
 
 </div>\n";
 
-$Conf->footerScript('$("#tsel").trigger("change");$("textarea").autogrow()');
+$Conf->footerScript('$("#tsel").trigger("change")');
 $Conf->footer();

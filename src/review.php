@@ -574,7 +574,7 @@ class ReviewForm {
                 if ($format_description)
                     echo $format_description;
                 echo Ht::textarea($field, $fval,
-                        array("class" => "reviewtext", "rows" => $f->display_space,
+                        array("class" => "reviewtext need-autogrow", "rows" => $f->display_space,
                               "cols" => 60, "onchange" => "hiliter(this)",
                               "spellcheck" => "true"));
             }

@@ -2221,8 +2221,6 @@ class PaperTable {
         $rf = ReviewForm::get();
         $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
         $rf->show($prow, $this->all_rrows, $this->editrrow, $opt);
-        Ht::stash_script("jQuery('textarea.reviewtext').autogrow()",
-                         "reviewtext_autogrow");
     }
 
 

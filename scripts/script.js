@@ -5793,3 +5793,5 @@ $.fn.autogrow = function () {
 	return this;
 };
 })(jQuery);
+
+$(function () { $(".need-autogrow").autogrow().removeClass("need-autogrow"); });
