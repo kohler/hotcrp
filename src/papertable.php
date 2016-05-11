@@ -556,9 +556,9 @@ class PaperTable {
 
     private static function editable_authors_tr($n, $name, $email, $aff) {
         return '<tr><td class="rxcaption">' . $n . '.</td><td class="lentry">'
-            . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "style" => "margin:2px 0.5em 2px 0")) . ' '
-            . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "style" => "margin:2px 0.5em 2px 0")) . ' '
-            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "style" => "margin:2px 0.5em 2px 0")) . "</td>"
+            . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow auname")) . ' '
+            . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow auemail")) . ' '
+            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow auaff")) . "</td>"
             . '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
     }
 

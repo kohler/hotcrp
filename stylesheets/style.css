@@ -2541,6 +2541,19 @@ div.rvg:first-child {
 div.rvg:last-child {
 	padding-bottom: 0;
 }
+input.auname, input.auaff, input.auemail {
+	margin: 2px 0.5em 2px 0;
+}
+input.auname, input.auaff {
+	min-width: 268px;
+	width: 268px;
+	max-width: 600px;
+}
+input.auemail {
+	min-width: 248px;
+	width: 248px;
+	max-width: 600px;
+}
 
 /* review ratings */
 div.rev_rating {
