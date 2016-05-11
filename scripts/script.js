@@ -1193,24 +1193,20 @@ jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });
 
 // temporary text
 window.mktemptext = (function () {
-function ttaction(e, what) {
-    var $e = $(e), p = $e.attr("placeholder"), v = $e.val();
-    if (what > 0 && v === p)
+function ttaction(event) {
+    var $e = $(this), p = $e.attr("placeholder"), v = $e.val();
+    if (event.type == "focus" && v === p)
         $e.val("");
-    if (what < 0 && (v === "" | v === p))
+    if (event.type == "blur" && (v === "" | v === p))
         $e.val(p);
-    $e.toggleClass("temptext", what <= 0 && (v === "" || v === p));
+    $e.toggleClass("temptext", event.type != "focus" && (v === "" || v === p));
 }
-
-function ttfocus()  { ttaction(this, 1);  }
-function ttblur()   { ttaction(this, -1); }
-function ttchange() { ttaction(this, 0);  }
 
 return function (e) {
     if (typeof e === "number")
         e = this;
-    $(e).on("focus", ttfocus).on("blur", ttblur).on("change", ttchange);
-    ttaction(e, -1);
+    $(e).on("focus blur change", ttaction);
+    ttaction.call(e, {});
 };
 })();
 
