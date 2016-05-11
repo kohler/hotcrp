@@ -5757,7 +5757,7 @@ function textarea_shadow($self) {
 }
 
 (function ($) {
-function do_autogrow($self) {
+function do_autogrow_textarea($self) {
     if ($self.data("autogrowing")) {
         $self.data("autogrowing")();
         return;
@@ -5786,10 +5786,36 @@ function do_autogrow($self) {
 
     $self.on("change keyup keydown", update).data("autogrowing", update);
     $(window).resize(update);
-    update();
+    $self.val() && update();
+}
+function do_autogrow_text_input($self) {
+    if ($self.data("autogrowing")) {
+        $self.data("autogrowing")();
+        return;
+    }
+
+    var shadow;
+    var update = function (event) {
+        var width = $self.width(), val = $self[0].value;
+        if (width <= 0)
+            return;
+        if (!shadow) {
+            shadow = textarea_shadow($self);
+            var p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth"]);
+            shadow.css({width: "auto", display: "table-cell", paddingLeft: $self.css("paddingLeft"), paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"});
+        }
+        shadow.text($self[0].value + "  ");
+        var ws = $self.css(["minWidth", "maxWidth"]);
+        $self.outerWidth(Math.max(Math.min(shadow.outerWidth(), parseFloat(ws.maxWidth), $(window).width()), parseFloat(ws.minWidth)));
+    }
+
+    $self.on("change input", update).data("autogrowing", update);
+    $(window).resize(update);
+    $self.val() && update();
 }
 $.fn.autogrow = function () {
-    this.filter("textarea").each(function () { do_autogrow($(this)); });
+    this.filter("textarea").each(function () { do_autogrow_textarea($(this)); });
+    this.filter("input[type='text']").each(function () { do_autogrow_text_input($(this)); });
 	return this;
 };
 })(jQuery);
