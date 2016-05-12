@@ -3,6 +3,187 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class BanalSettings {
+    static public function render($prefix, $sv) {
+        global $Conf;
+        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data($prefix, "")));
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
+            $val = get($bsetting, $i, "");
+            $sv->set_oldv("{$prefix}_$name", $val == "" ? "N/A" : $val);
+        }
+
+        echo '<table class="', ($sv->curv($prefix) ? "foldo" : "foldc"), '" data-fold="true">';
+        $sv->echo_checkbox_row($prefix, "PDF format checker<span class=\"fx\">:</span>",
+                               "void foldup(this,null,{f:!this.checked})");
+        echo '<tr class="fx"><td></td><td class="top">',
+            Ht::hidden("has_$prefix", 1),
+            '<table><tbody class="secondary-settings">';
+        $sv->echo_entry_row("{$prefix}_papersize", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
+        $sv->echo_entry_row("{$prefix}_pagelimit", "Page limit");
+        $sv->echo_entry_row("{$prefix}_textblock", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        echo '</tbody></table></td><td><span class="sep"></span></td>',
+            '<td class="top"><table><tbody class="secondary-settings">';
+        $sv->echo_entry_row("{$prefix}_bodyfontsize", "Minimum body font size", null, "&nbsp;pt");
+        $sv->echo_entry_row("{$prefix}_bodyleading", "Minimum leading", null, "&nbsp;pt");
+        $sv->echo_entry_row("{$prefix}_columns", "Columns");
+        echo "</tbody></table></td></tr></table>";
+    }
+    static private function old_zoomarg() {
+        global $Conf;
+        $data = $Conf->setting_data("sub_banal");
+        if (($gt = strpos($data, ">")) !== false)
+            return substr($data, $gt);
+        return "";
+    }
+    static private function check_banal($sv) {
+        global $ConfSitePATH;
+        $cf = new CheckFormat;
+
+        // Perhaps we have an old pdftohtml with a bad -zoom.
+        $zoomarg = "";
+        for ($tries = 0; $tries < 2; ++$tries) {
+            $cf->errors = 0;
+            $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
+            if ($s1 == 1 && ($cf->errors & CheckFormat::ERR_PAPERSIZE) && $tries == 0)
+                $zoomarg = ">-zoom=1";
+            else if ($s1 == 2 || $tries == 0)
+                break;
+            else
+                $zoomarg = "";
+        }
+
+        // verify that banal works
+        $e1 = $cf->errors;
+        $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
+        $e2 = $cf->errors;
+        $want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
+            | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
+            | CheckFormat::ERR_BODYLEADING;
+        if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2) {
+            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 2 0 1 $want_e2)</td></tr>"
+                . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
+            if (trim($cf->banal_stdout))
+                $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";            if (trim($cf->banal_stdout))
+            if (trim($cf->banal_stderr))
+                $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
+            $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", array_map(function ($x) { return $x[1]; }, $cf->msgs)) . "</td></tr>";
+            $sv->set_warning(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
+        }
+
+        return $zoomarg;
+    }
+    static public function parse($prefix, $sv, $check) {
+        global $Conf, $ConfSitePATH;
+        if (!isset($sv->req[$prefix])) {
+            $sv->save($prefix, 0);
+            return false;
+        }
+
+        // check banal subsettings
+        $old_error_count = $sv->error_count();
+        $bs = array_fill(0, 6, "");
+        if (($s = trim(defval($sv->req, "{$prefix}_papersize", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
+            $sout = array();
+            foreach ($ses as $ss)
+                if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
+                    $sout[] = $ss;
+                else if ($ss != "") {
+                    $sv->set_error("{$prefix}_papersize", "Invalid paper size.");
+                    $sout = null;
+                    break;
+                }
+            if ($sout && count($sout))
+                $bs[0] = join(" OR ", $sout);
+        }
+
+        if (($s = trim(defval($sv->req, "{$prefix}_pagelimit", ""))) != ""
+            && strcasecmp($s, "N/A") != 0) {
+            if (($sx = cvtint($s, -1)) > 0)
+                $bs[1] = $sx;
+            else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
+                     && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
+                $bs[1] = +$m[1] . "-" . +$m[2];
+            else
+                $sv->set_error("{$prefix}_pagelimit", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
+        }
+
+        if (($s = trim(defval($sv->req, "{$prefix}_columns", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            if (($sx = cvtint($s, -1)) >= 0)
+                $bs[2] = ($sx > 0 ? $sx : $bs[2]);
+            else
+                $sv->set_error("{$prefix}_columns", "Columns must be a whole number.");
+        }
+
+        if (($s = trim(defval($sv->req, "{$prefix}_textblock", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            // change margin specifications into text block measurements
+            if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
+                $s = $m[1];
+                if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
+                    $sv->set_error("{$prefix}_pagesize", "You must specify a page size as well as margins.");
+                    $sv->set_error("{$prefix}_textblock");
+                } else if (strpos($s, "x") !== false) {
+                    if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
+                        $sv->set_error("{$prefix}_textblock", "Invalid margin definition.");
+                        $s = "";
+                    } else if (count($m) == 2)
+                        $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
+                    else if (count($m) == 3)
+                        $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
+                    else
+                        $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
+                } else {
+                    $s = preg_replace('/\s+/', 'x', $s);
+                    if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
+                        $sv->set_error("{$prefix}_textblock", "Invalid margin definition.");
+                    else if (!is_array($m))
+                        $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
+                    else if (count($m) == 2)
+                        $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
+                    else if (count($m) == 3)
+                        $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
+                    else
+                        $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
+                }
+                $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
+            }
+            // check text block measurements
+            if ($s && !CheckFormat::parse_dimen($s, 2))
+                $sv->set_error("{$prefix}_textblock", "Invalid text block definition.");
+            else if ($s)
+                $bs[3] = $s;
+        }
+
+        if (($s = trim(defval($sv->req, "{$prefix}_bodyfontsize", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            if (!is_numeric($s) || $s <= 0)
+                $sv->error("{$prefix}_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
+            else
+                $bs[4] = $s;
+        }
+
+        if (($s = trim(defval($sv->req, "{$prefix}_bodyleading", ""))) != ""
+            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
+            if (!is_numeric($s) || $s <= 0)
+                $sv->error("{$prefix}_bodyleading", "Minimum body leading must be a number bigger than 0.");
+            else
+                $bs[5] = $s;
+        }
+
+        if ($sv->error_count() == $old_error_count) {
+            while (count($bs) > 0 && $bs[count($bs) - 1] == "")
+                array_pop($bs);
+            $zoomarg = $check ? self::check_banal($sv) : self::old_zoomarg();
+            $sv->save("{$prefix}_data", join(";", $bs) . $zoomarg);
+        }
+
+        return false;
+    }
+}
+
 class SettingRenderer_SubForm extends SettingRenderer {
     private function render_option($sv, $o) {
         global $Conf;
@@ -156,25 +337,8 @@ function render($sv) {
     echo " <span class=\"barsep\">·</span> ", Ht::select("sub_nopapers", array(0 => "PDF upload required", 2 => "PDF upload optional", 1 => "No PDF"), opt_yes_no_optional("noPapers"));
 
     if (is_executable("src/banal")) {
-        echo "<div class='g'></div>",
-            Ht::hidden("has_sub_banal", 1),
-            "<table id='foldbanal' class='", ($sv->curv("sub_banal") ? "foldo" : "foldc"), "'>";
-        $sv->echo_checkbox_row("sub_banal", "PDF format checker<span class='fx'>:</span>", "void fold('banal',!this.checked)");
-        echo '<tr class="fx"><td></td><td class="top"><table><tbody class="secondary-settings">';
-        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal", "")));
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
-            $val = get($bsetting, $i, "");
-            $sv->set_oldv("sub_banal_$name", $val == "" ? "N/A" : $val);
-        }
-        $sv->echo_entry_row("sub_banal_papersize", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
-        $sv->echo_entry_row("sub_banal_pagelimit", "Page limit");
-        $sv->echo_entry_row("sub_banal_textblock", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
-        echo '</tbody></table></td>', '<td><span class="sep"></span></td>',
-            '<td class="top"><table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("sub_banal_bodyfontsize", "Minimum body font size", null, "&nbsp;pt");
-        $sv->echo_entry_row("sub_banal_bodyleading", "Minimum leading", null, "&nbsp;pt");
-        $sv->echo_entry_row("sub_banal_columns", "Columns");
-        echo "</tbody></table></td></tr></table>";
+        echo "<div class='g'></div>";
+        BanalSettings::render("sub_banal", $sv);
     }
 
     echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
@@ -469,143 +633,7 @@ class Option_SettingParser extends SettingParser {
 
 class Banal_SettingParser extends SettingParser {
     public function parse($sv, $si) {
-        global $Conf, $ConfSitePATH;
-        if (!isset($sv->req["sub_banal"])) {
-            $sv->save("sub_banal", 0);
-            return false;
-        }
-
-        // check banal subsettings
-        $old_error_count = $sv->error_count();
-        $bs = array_fill(0, 6, "");
-        if (($s = trim(defval($sv->req, "sub_banal_papersize", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
-            $sout = array();
-            foreach ($ses as $ss)
-                if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
-                    $sout[] = $ss;
-                else if ($ss != "") {
-                    $sv->set_error("sub_banal_papersize", "Invalid paper size.");
-                    $sout = null;
-                    break;
-                }
-            if ($sout && count($sout))
-                $bs[0] = join(" OR ", $sout);
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_pagelimit", ""))) != ""
-            && strcasecmp($s, "N/A") != 0) {
-            if (($sx = cvtint($s, -1)) > 0)
-                $bs[1] = $sx;
-            else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
-                     && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
-                $bs[1] = +$m[1] . "-" . +$m[2];
-            else
-                $sv->set_error("sub_banal_pagelimit", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_columns", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (($sx = cvtint($s, -1)) >= 0)
-                $bs[2] = ($sx > 0 ? $sx : $bs[2]);
-            else
-                $sv->set_error("sub_banal_columns", "Columns must be a whole number.");
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_textblock", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            // change margin specifications into text block measurements
-            if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
-                $s = $m[1];
-                if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
-                    $sv->set_error("sub_banal_pagesize", "You must specify a page size as well as margins.");
-                    $sv->set_error("sub_banal_textblock");
-                } else if (strpos($s, "x") !== false) {
-                    if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
-                        $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
-                        $s = "";
-                    } else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
-                    else if (count($m) == 3)
-                        $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
-                    else
-                        $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
-                } else {
-                    $s = preg_replace('/\s+/', 'x', $s);
-                    if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
-                        $sv->set_error("sub_banal_textblock", "Invalid margin definition.");
-                    else if (!is_array($m))
-                        $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
-                    else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
-                    else if (count($m) == 3)
-                        $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
-                    else
-                        $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
-                }
-                $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
-            }
-            // check text block measurements
-            if ($s && !CheckFormat::parse_dimen($s, 2))
-                $sv->set_error("sub_banal_textblock", "Invalid text block definition.");
-            else if ($s)
-                $bs[3] = $s;
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (!is_numeric($s) || $s <= 0)
-                $sv->error("sub_banal_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
-            else
-                $bs[4] = $s;
-        }
-
-        if (($s = trim(defval($sv->req, "sub_banal_bodyleading", ""))) != ""
-            && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (!is_numeric($s) || $s <= 0)
-                $sv->error("sub_banal_bodyleading", "Minimum body leading must be a number bigger than 0.");
-            else
-                $bs[5] = $s;
-        }
-
-        if ($sv->error_count() != $old_error_count)
-            return false;
-
-        // Perhaps we have an old pdftohtml with a bad -zoom.
-        $zoomarg = "";
-        for ($tries = 0; $tries < 2; ++$tries) {
-            $cf = new CheckFormat();
-            $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
-            $e1 = $cf->errors;
-            if ($s1 == 1 && ($e1 & CheckFormat::ERR_PAPERSIZE) && $tries == 0)
-                $zoomarg = ">-zoom=1";
-            else if ($s1 != 2 && $tries == 1)
-                $zoomarg = "";
-        }
-
-        // actually create setting
-        while (count($bs) > 0 && $bs[count($bs) - 1] == "")
-            array_pop($bs);
-        $sv->save("sub_banal_data", join(";", $bs) . $zoomarg);
-        $e1 = $cf->errors;
-        $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
-        $e2 = $cf->errors;
-        $want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
-            | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
-            | CheckFormat::ERR_BODYLEADING;
-        if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2) {
-            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 2 0 1 $want_e2)</td></tr>"
-                . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
-            if (trim($cf->banal_stdout))
-                $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";            if (trim($cf->banal_stdout))
-            if (trim($cf->banal_stderr))
-                $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
-            $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", array_map(function ($x) { return $x[1]; }, $cf->msgs)) . "</td></tr>";
-            $sv->set_warning(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
-        }
-
-        return false;
+        return BanalSettings::parse("sub_banal", $sv, true);
     }
 }
 
