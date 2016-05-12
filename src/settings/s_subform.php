@@ -159,10 +159,13 @@ class BanalSettings {
 
         if (($s = trim(defval($sv->req, "{$prefix}_bodyfontsize", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (!is_numeric($s) || $s <= 0)
-                $sv->error("{$prefix}_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
-            else
+            if (preg_match('/\A[\d.]+\z/', $s) && is_numeric($s) && $s > 0)
                 $bs[4] = $s;
+            else if (preg_match('/\A([\d.]+)\s*(?:-|–)\s*([\d.]+)\z/', $s, $m)
+                     && is_numeric($m[1]) && is_numeric($m[2]) && $m[1] > 0 && $m[2] >= $m[1])
+                $bs[4] = $m[1] . "-" . $m[2];
+            else
+                $sv->error("{$prefix}_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
         }
 
         if (($s = trim(defval($sv->req, "{$prefix}_bodyleading", ""))) != ""

@@ -257,27 +257,36 @@ class CheckFormat {
 
         // font size
         if (count($banal_desired) > 4 && $banal_desired[4]
-            && ($p = cvtnum($banal_desired[4])) > 0) {
-            $px = array();
+            && preg_match('/\A([\d.]+)(?:-([\d.]+))?\z/', $banal_desired[4], $m)) {
+            $minptsize = cvtnum($m[1]);
+            $maxptsize = isset($m[2]) ? cvtnum($m[2], 0) : 0;
+            $lopx = $hipx = [];
             $bodypages = 0;
             $minval = 1000;
+            $maxval = 0;
             $bfs = get($bj, "bodyfontsize");
-            foreach ($bj->pages as $i => $pg) {
-                if (get($pg, "pagetype", "body") == "body")
-                    $bodypages++;
-                if (($pp = cvtnum(get($pg, "bodyfontsize", $bfs))) > 0
-                    && $pp < $p
-                    && get($pg, "pagetype", "body") == "body") {
-                    $px[] = $i + 1;
-                    $minval = min($minval, $pp);
+            foreach ($bj->pages as $i => $pg)
+                if (get($pg, "pagetype", "body") == "body") {
+                    $pp = cvtnum(get($pg, "bodyfontsize", $bfs));
+                    ++$bodypages;
+                    if ($pp > 0 && $pp < $minptsize) {
+                        $lopx[] = $i + 1;
+                        $minval = min($minval, $pp);
+                    }
+                    if ($pp > 0 && $maxptsize > 0 && $pp > $maxptsize) {
+                        $hipx[] = $i + 1;
+                        $maxval = max($maxval, $pp);
+                    }
                 }
-            }
             if ($bodypages == 0)
                 $pie[] = "Warning: No pages seemed to contain body text; results may be off";
             else if ($bodypages <= 0.5 * count($bj->pages))
                 $pie[] = "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off";
-            if (count($px) > 0) {
-                $pie[] = "Body font too small: minimum ${p}pt, saw values as small as ${minval}pt on " . pluralx($px, "page") . " " . numrangejoin($px);
+            if (!empty($lopx) || !empty($hipx)) {
+                if (!empty($lopx))
+                    $pie[] = "Body font too small: minimum {$minptsize}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx);
+                if (!empty($hipx))
+                    $pie[] = "Body font too large: maximum {$maxptsize}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx);
                 $this->errors |= self::ERR_BODYFONTSIZE;
             }
         }
