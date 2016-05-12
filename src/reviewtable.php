@@ -82,28 +82,32 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         // review ID
         $id = "Review";
         if ($rr->reviewSubmitted)
-            $id .= "&nbsp;#" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
+            $id .= " #" . $prow->paperId . unparseReviewOrdinal($rr->reviewOrdinal);
         else if ($rr->reviewType == REVIEW_SECONDARY && $rr->reviewNeedsSubmit <= 0)
-            $id .= "&nbsp;(delegated)";
+            $id .= " (delegated)";
+        else if ($rr->reviewModified > 1)
+            $id .= " (in progress)";
         else if ($rr->reviewModified > 0)
-            $id .= "&nbsp;(in&nbsp;progress)";
+            $id .= " (accepted)";
         else
-            $id .= "&nbsp;(not&nbsp;started)";
+            $id .= " (not started)";
         $rlink = unparseReviewOrdinal($rr);
+        $t .= '<td class="nw">';
         if ($rrow && $rrow->reviewId == $rr->reviewId) {
             if ($Me->contactId == $rr->contactId && !$rr->reviewSubmitted)
                 $id = "Your $id";
-            $t .= '<td><a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a></td>';
+            $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '" class="q"><b>' . $id . '</b></a>';
         } else if (!$canView)
-            $t .= "<td>$id</td>";
+            $t .= $id;
         else if ($rrow || $rr->reviewModified <= 0
                  || (($mode === "re" || $mode === "assign")
                      && $Me->can_review($prow, $rr)))
-            $t .= '<td><a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a></td>';
+            $t .= '<a href="' . hoturl("review", "p=$prow->paperId&r=$rlink") . '">' . $id . '</a>';
         else if (Navigation::page() !== "paper")
-            $t .= '<td><a href="' . hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a></td>';
+            $t .= '<a href="' . hoturl("paper", "p=$prow->paperId#r$rlink") . '">' . $id . '</a>';
         else
-            $t .= '<td><a href="#r' . $rlink . '">' . $id . '</a></td>';
+            $t .= '<a href="#r' . $rlink . '">' . $id . '</a>';
+        $t .= '</td>';
 
         // primary/secondary glyph
         if ($conflictType > 0 && !$admin)

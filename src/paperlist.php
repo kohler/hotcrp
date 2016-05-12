@@ -58,10 +58,12 @@ class PaperListReviewAnalysis {
         else if ($this->row->reviewType == REVIEW_SECONDARY
                  && $this->row->reviewNeedsSubmit <= 0)
             return "Delegated";
-        else if ($this->row->reviewModified == 0)
-            return "Not&nbsp;started";
-        else
+        else if ($this->row->reviewModified > 1)
             return "In&nbsp;progress";
+        else if ($this->row->reviewModified > 0)
+            return "Accepted";
+        else
+            return "Not&nbsp;started";
     }
     public function status_html() {
         $t = $this->description_html();
