@@ -1765,7 +1765,7 @@ class Conf {
             array_push($cols, "PaperReview.reviewType, PaperReview.reviewId",
                        "PaperReview.reviewModified, PaperReview.reviewSubmitted",
                        "PaperReview.reviewNeedsSubmit, PaperReview.reviewOrdinal",
-                       "PaperReview.reviewBlind, PaperReview.reviewToken",
+                       "PaperReview.reviewBlind, PaperReview.reviewToken, PaperReview.timeRequested",
                        "PaperReview.contactId as reviewContactId, PaperReview.requestedBy",
                        "max($myPaperReview.reviewType) as myReviewType",
                        "max($myPaperReview.reviewSubmitted) as myReviewSubmitted",
