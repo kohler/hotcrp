@@ -809,7 +809,7 @@ class AttachmentsPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this, htmlspecialchars($this->name) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
         echo '<div class="papev">';
         $docclass = new HotCRPDocument($this->id, $this);
-        foreach ($ov->documents($pt->prow) as $doc) {
+        foreach ($pt->prow ? $ov->documents($pt->prow) : [] as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
             echo "<div id=\"removable_$oname\" class=\"foldo\"><table id=\"current_$oname\"><tr>",
                 "<td class=\"nw\">", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
