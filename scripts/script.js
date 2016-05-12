@@ -5142,6 +5142,7 @@ function docheckformat(dt) {    // NB must return void
         fold("checkformat" + dt, 0);
         Miniajax.submit("checkformatform" + dt, null, 10000);
     }
+    return false;
 }
 
 function addattachment(oid) {
