@@ -1327,7 +1327,7 @@ class Contact {
         else {
             $keyid = self::preferred_password_keyid($iscdb);
             $key = self::password_hmac_key($keyid);
-            $salt = hotcrp_random_bytes(16);
+            $salt = random_bytes(16);
             return " " . $method . " " . $keyid . " " . $salt
                 . hash_hmac($method, $salt . $input, $key, true);
         }

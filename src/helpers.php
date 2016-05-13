@@ -1265,28 +1265,21 @@ function displayOptionsSet($sessionvar, $var = null, $val = null) {
 }
 
 
-function hotcrp_random_bytes($length = 16, $secure_only = false) {
-    $key = @file_get_contents("/dev/urandom", false, null, 0, $length);
-    if (($key === false || $key === "")
-        && function_exists("openssl_random_pseudo_bytes")) {
-        $key = openssl_random_pseudo_bytes($length, $strong);
-        $key = ($strong ? $key : false);
+if (!function_exists("random_bytes")) {
+    function random_bytes($length) {
+        $x = @file_get_contents("/dev/urandom", false, null, 0, $length);
+        if (($x === false || $x === "")
+            && function_exists("openssl_random_pseudo_bytes")) {
+            $x = openssl_random_pseudo_bytes($length, $strong);
+            $x = $strong ? $x : false;
+        }
+        return $x === "" ? false : $x;
     }
-    if (($key === false || $key === "") && !$secure_only) {
-        $key = "";
-        while (strlen($key) < $length)
-            $key .= pack("V", mt_rand());
-        $key = substr($key, 0, $length);
-    }
-    if ($key === false || $key === "")
-        return false;
-    else
-        return $key;
 }
 
 function hotcrp_random_password($length = 14) {
     global $Opt;
-    $bytes = hotcrp_random_bytes($length + 10, true);
+    $bytes = random_bytes($length + 10);
     if ($bytes === false) {
         $bytes = "";
         while (strlen($bytes) < $length)

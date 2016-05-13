@@ -24,7 +24,7 @@ class CapabilityManager {
         $capid = false;
 
         for ($tries = 0; !$capid && $tries < 4; ++$tries)
-            if (($salt = hotcrp_random_bytes(16)) !== false) {
+            if (($salt = random_bytes(16)) !== false) {
                 Dbl::ql($this->dblink, "insert into Capability set capabilityType=$capabilityType, contactId=?, paperId=?, timeExpires=?, salt=?, data=?",
                         $contactId, $paperId, $timeExpires, $salt, $data);
                 $capid = $this->dblink->insert_id;

@@ -146,7 +146,7 @@ class Conf {
         // set conferenceKey
         if (!isset($Opt["conferenceKey"])) {
             if (!isset($this->settingTexts["conf_key"])
-                && ($key = hotcrp_random_bytes(32)) !== false)
+                && ($key = random_bytes(32)) !== false)
                 $this->save_setting("conf_key", 1, $key);
             $Opt["conferenceKey"] = defval($this->settingTexts, "conf_key", "");
         }
@@ -154,7 +154,7 @@ class Conf {
         // set capability key
         if (!get($this->settings, "cap_key")
             && !get($Opt, "disableCapabilities")
-            && !(($key = hotcrp_random_bytes(16)) !== false
+            && !(($key = random_bytes(16)) !== false
                  && ($key = base64_encode($key))
                  && $this->save_setting("cap_key", 1, $key)))
             $Opt["disableCapabilities"] = true;
