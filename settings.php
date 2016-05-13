@@ -685,7 +685,7 @@ $Sv = SettingValues::make_request();
 
 function choose_setting_group() {
     global $Conf;
-    $Group = get($_REQUEST, "group");
+    $Group = req("group");
     if (!$Group && preg_match(',\A/(\w+)\z,i', Navigation::path()))
         $Group = substr(Navigation::path(), 1);
     if (isset(SettingGroup::$map[$Group]))

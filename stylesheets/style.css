@@ -2500,6 +2500,7 @@ div.paphint, div.revhint {
 	color: #555555;
 	max-width: 640px;
 	margin: 2px 0;
+	line-height: 1.25;
 }
 div.paphint > p:first-child, div.revhint > p:first-child {
 	margin-top: 0;

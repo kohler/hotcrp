@@ -10,12 +10,15 @@ class Csv_SearchResult extends SearchResult {
     public $name;
     public $header;
     public $items;
-    public $selection;
+    public $options = [];
     function __construct($name, $header, $items, $selection = false) {
         $this->name = $name;
         $this->header = $header;
         $this->items = $items;
-        $this->selection = $selection;
+        if (is_array($selection))
+            $this->options = $selection;
+        else if ($selection)
+            $this->options["selection"] = true;
     }
 }
 
@@ -90,7 +93,7 @@ class SearchAction {
         else if (is_string($res))
             Conf::msg_error($res);
         else if ($res instanceof Csv_SearchResult)
-            downloadCSV($res->items, $res->header, $res->name, $res->selection ? ["selection" => true] : []);
+            downloadCSV($res->items, $res->header, $res->name, $res->options);
         return $res;
     }
 

@@ -680,6 +680,14 @@ function hoturl_absolute_base() {
     return siteurl_absolute_base;
 }
 
+function hoturl_go(page, options) {
+    window.location = hoturl(page, options);
+}
+
+function hoturl_post_go(page, options) {
+    window.location = hoturl_post(page, options);
+}
+
 
 // rangeclick
 function rangeclick(evt, elt, kind) {
