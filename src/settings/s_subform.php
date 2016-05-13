@@ -23,8 +23,8 @@ class BanalSettings {
         $sv->echo_entry_row("sub_banal_textblock$suffix", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         echo '</tbody></table></td><td><span class="sep"></span></td>',
             '<td class="top"><table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("sub_banal_bodyfontsize$suffix", "Minimum body font size", null, "&nbsp;pt");
-        $sv->echo_entry_row("sub_banal_bodyleading$suffix", "Minimum leading", null, "&nbsp;pt");
+        $sv->echo_entry_row("sub_banal_bodyfontsize$suffix", "Minimum body font size", null, ["after_entry" => "&nbsp;pt"]);
+        $sv->echo_entry_row("sub_banal_bodyleading$suffix", "Minimum leading", null, ["after_entry" => "&nbsp;pt"]);
         $sv->echo_entry_row("sub_banal_columns$suffix", "Columns");
         echo "</tbody></table></td></tr></table>";
     }

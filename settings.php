@@ -510,9 +510,14 @@ class SettingValues {
     public function echo_entry($name) {
         echo $this->render_entry($name);
     }
-    public function echo_entry_row($name, $description, $hint = null, $after_entry = null) {
+    public function echo_entry_row($name, $description, $hint = null, $js = []) {
+        $after_entry = null;
+        if (isset($js["after_entry"])) {
+            $after_entry = $js["after_entry"];
+            unset($js["after_entry"]);
+        }
         echo '<tr><td class="lcaption nw">', $this->label($name, $description),
-            '</td><td class="lentry">', $this->render_entry($name);
+            '</td><td class="lentry">', $this->render_entry($name, $js);
         if ($after_entry)
             echo $after_entry;
         if (($si = $this->si($name)) && ($thint = $this->type_hint($si->type)))

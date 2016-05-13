@@ -5799,16 +5799,21 @@ function do_autogrow_text_input($self) {
 
     var shadow;
     var update = function (event) {
-        var width = $self.width(), val = $self[0].value;
+        var width = $self.width(), val = $self[0].value, ws;
         if (width <= 0)
             return;
         if (!shadow) {
             shadow = textarea_shadow($self);
             var p = $self.css(["paddingRight", "paddingLeft", "borderLeftWidth", "borderRightWidth"]);
             shadow.css({width: "auto", display: "table-cell", paddingLeft: $self.css("paddingLeft"), paddingLeft: (parseFloat(p.paddingRight) + parseFloat(p.paddingLeft) + parseFloat(p.borderLeftWidth) + parseFloat(p.borderRightWidth)) + "px"});
+            ws = $self.css(["minWidth", "maxWidth"]);
+            if (ws.minWidth == "0px")
+                $self.css("minWidth", width + "px");
+            if (ws.maxWidth == "none")
+                $self.css("maxWidth", "640px");
         }
         shadow.text($self[0].value + "  ");
-        var ws = $self.css(["minWidth", "maxWidth"]);
+        ws = $self.css(["minWidth", "maxWidth"]);
         $self.outerWidth(Math.max(Math.min(shadow.outerWidth(), parseFloat(ws.maxWidth), $(window).width()), parseFloat(ws.minWidth)));
     }
 

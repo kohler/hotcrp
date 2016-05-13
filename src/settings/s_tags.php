@@ -79,20 +79,20 @@ function render($sv) {
     echo "<h3 class=\"settings\">Tags</h3>\n";
     echo "<table><tbody class=\"secondary-settings\">";
     $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
-    $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.");
+    $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-autogrow"]);
 
     $sv->set_oldv("tag_sitewide", join(" ", array_keys(TagInfo::sitewide_tags())));
     if ($sv->newv("tag_sitewide") || $Conf->has_any_manager())
-        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Chairs and administrators can view and change these tags for every paper.");
+        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Chairs and administrators can view and change these tags for every paper.", ["class" => "need-autogrow"]);
 
     $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
-    $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
+    $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
 
     $x = [];
     foreach (TagInfo::vote_tags() as $n => $v)
         $x[] = "$n#$v";
     $sv->set_oldv("tag_vote", join(" ", $x));
-    $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
+    $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
 
     $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
     $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
