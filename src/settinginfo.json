@@ -24,11 +24,13 @@
     },
     "extrev_hard": {
         "name": "External reviewer hard review deadline", "group": "reviews",
-        "type": "ndate", "size": 28, "placeholder": "same as PC", "novalue": true
+        "type": "ndate", "size": 28, "placeholder": "same as PC", "novalue": true,
+        "extensible": true
     },
     "extrev_soft": {
         "name": "External reviewer soft review deadline", "group": "reviews",
-        "type": "date", "size": 28, "placeholder": "same as PC", "novalue": true
+        "type": "date", "size": 28, "placeholder": "same as PC", "novalue": true,
+        "extensible": true
     },
     "extrev_view": {
         "name": "External reviewers can view reviews",
@@ -79,7 +81,8 @@
     },
     "msg.resp_instrux": {
         "name": "Authors’ response instructions",
-        "type": "htmlstring", "size": 3, "message_default": "msg.resp_instrux"
+        "type": "htmlstring", "size": 3, "message_default": "msg.resp_instrux",
+        "extensible": true
     },
     "msg.revprefdescription": {
         "name": "Review preference instructions",
@@ -162,11 +165,13 @@
     },
     "pcrev_hard": {
         "name": "PC review hard deadline", "group": "reviews",
-        "type": "ndate", "size": 28, "placeholder": "none", "novalue": true
+        "type": "ndate", "size": 28, "placeholder": "none", "novalue": true,
+        "extensible": true
     },
     "pcrev_soft": {
         "name": "PC review deadline", "group": "reviews",
-        "type": "date", "size": 28, "placeholder": "none", "novalue": true
+        "type": "date", "size": 28, "placeholder": "none", "novalue": true,
+        "extensible": true
     },
     "resp_active": {
         "name": "Collect authors’ responses",
@@ -174,15 +179,15 @@
     },
     "resp_done": {
         "name": "Authors’ response hard deadline",
-        "type": "date"
+        "type": "date", "extensible": true
     },
     "resp_grace": {
         "name": "Authors’ response grace period",
-        "type": "grace"
+        "type": "grace", "extensible": true
     },
     "resp_open": {
         "name": "Authors’ response start time",
-        "type": "date"
+        "type": "date", "extensible": true
     },
     "resp_rounds": {
         "parser": "RespRound_SettingParser",
@@ -190,11 +195,12 @@
     },
     "resp_roundname": {
         "name": "Response name",
-        "type": "tag", "size": 20, "novalue": true
+        "type": "tag", "size": 20, "novalue": true, "extensible": true
     },
     "resp_words": {
         "name": "Authors’ response word limit",
-        "type": "zint", "size": 5, "placeholder": "none", "default_value": 500
+        "type": "zint", "size": 5, "placeholder": "none", "default_value": 500,
+        "extensible": true
     },
     "rev_blind": {
         "name": "Review anonymity",
@@ -223,7 +229,8 @@
     },
     "roundname": {
         "name": "Review round name",
-        "type": "text", "size": 12, "novalue": true, "placeholder": "unnamed"
+        "type": "text", "size": 12, "novalue": true, "placeholder": "unnamed",
+        "extensible": true
     },
     "seedec": {
         "name": "Decision visibility", "group": "decisions",
@@ -232,34 +239,40 @@
     },
     "sub_banal": {
         "type": "checkbox", "parser": "Banal_SettingParser",
-        "storage": "val.sub_banal"
+        "storage": "val.sub_banal", "extensible": true
     },
     "sub_banal_data": {
-        "internal": true, "type": "string", "storage": "sub_banal"
+        "internal": true, "type": "string", "storage": "sub_banal", "extensible": true
     },
     "sub_banal_bodyfontsize": {
         "name": "PDF format checker minimum body font size",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "extensible": true
     },
     "sub_banal_bodyleading": {
         "name": "PDF format checker minimum body leading",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "extensible": true
     },
     "sub_banal_columns": {
         "name": "PDF format checker column count",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "extensible": true
     },
     "sub_banal_pagelimit": {
         "name": "PDF format checker page limit",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true
+        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "extensible": true
     },
     "sub_banal_papersize": {
         "name": "PDF format checker paper size",
-        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true
+        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true,
+        "extensible": true
     },
     "sub_banal_textblock": {
         "name": "PDF format checker text block size",
-        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true
+        "type": "text", "size": 18, "placeholder": "N/A", "novalue": true,
+        "extensible": true
     },
     "sub_blind": {
         "name": "Submission anonymity", "group": "sub",

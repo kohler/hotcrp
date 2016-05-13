@@ -132,18 +132,21 @@ function render($sv) {
 
     // Final versions
     echo "<h3 class=\"settings g\">Final versions</h3>\n";
-    echo '<table id="foldfinal" class="fold2o">';
-    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx">:</span></b>', "void fold('final',!this.checked,2)");
+    echo '<div class="fold2o" data-fold="true">';
+    echo '<table>';
+    $sv->echo_checkbox_row('final_open', '<b>Collect final versions of accepted papers<span class="fx2">:</span></b>', "void foldup(this,event,{f:'c'})");
     echo '<tr class="fx2"><td></td><td><table><tbody class="secondary-settings">';
     $sv->echo_entry_row("final_soft", "Deadline");
     $sv->echo_entry_row("final_done", "Hard deadline");
     $sv->echo_entry_row("final_grace", "Grace period");
     echo "</tbody></table><div class='g'></div>";
     $sv->echo_message_minor("msg.finalsubmit", "Instructions");
-    echo "<div class='g'></div>",
-        "<small>To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</small>",
-        "</td></tr></table>\n\n";
-    $Conf->footerScript("fold('final',!\$\$('cbfinal_open').checked)");
+    echo '<div class="g"></div>';
+    BanalSettings::render("_m1", $sv);
+    echo "</td></tr></table>",
+        "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
+        "</div>\n\n";
+    $Conf->footerScript("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
 }
 
     function crosscheck($sv) {

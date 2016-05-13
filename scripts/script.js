@@ -1838,15 +1838,17 @@ function fold(elt, dofold, foldtype) {
 
 function foldup(e, event, opts) {
     var dofold = false, attr, m, foldnum;
+    if (typeof opts === "number")
+        opts = {n: opts};
+    else if (!opts)
+        opts = {};
+    if (opts.f === "c")
+        opts.f = !e.checked;
     while (e && (!e.id || e.id.substr(0, 4) != "fold")
            && (!e.getAttribute || !e.getAttribute("data-fold")))
         e = e.parentNode;
     if (!e)
         return true;
-    if (typeof opts === "number")
-        opts = {n: opts};
-    else if (!opts)
-        opts = {};
     foldnum = opts.n || 0;
     if (!foldnum && (m = e.className.match(/\bfold(\d*)[oc]\b/)))
         foldnum = m[1];

@@ -14,6 +14,7 @@ class Si {
     public $group;
     public $type;
     public $internal;
+    public $extensible;
     public $storage_type;
     public $storage = null;
     public $optional = false;
@@ -51,12 +52,12 @@ class Si {
     }
 
     public function __construct($name, $j) {
-        assert(!preg_match('/_(?:\$|n|\d+)\z/', $name));
+        assert(!preg_match('/_(?:\$|n|m?\d+)\z/', $name));
         $this->name = $name;
         $this->store($name, "short_description", $j, "name", "is_string");
         foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
-        foreach (["internal", "optional", "novalue", "disabled"] as $k)
+        foreach (["internal", "optional", "novalue", "disabled", "extensible"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
         $this->store($name, "values", $j, "values", "is_array");
@@ -138,10 +139,14 @@ class Si {
 
     static public function get($name, $k = null) {
         if (!isset(self::$all[$name])
-            && preg_match('/\A(.*)(_(?:\$|n|\d+))\z/', $name, $m)
+            && preg_match('/\A(.*)(_(?:\$|n|m?\d+))\z/', $name, $m)
             && isset(self::$all[$m[1]])) {
             $si = clone self::$all[$m[1]];
+            if (!$si->extensible)
+                error_log("$name: cloning non-extensible setting $si->name");
             $si->name = $name;
+            if ($si->storage)
+                $si->storage .= $m[2];
             self::$all[$name] = $si;
         }
         if (!isset(self::$all[$name]))
@@ -225,6 +230,7 @@ class SettingValues {
     public $savedv = array();
     public $explicit_oldv = array();
     private $hint_status = array();
+    private $req_has = array();
 
     public function __construct() {
     }
@@ -328,6 +334,22 @@ class SettingValues {
         if (!$si)
             error_log(caller_landmark(2) . ": setting $name: missing information");
         return $si;
+    }
+    public function req_si($si) {
+        $xname = str_replace(".", "_", $si->name);
+        $xsis = [];
+        foreach (get($this->has_req, $xname, []) as $suffix) {
+            $xsi = $this->si($si->name . $suffix);
+            if ($xsi->parser)
+                $has_value = truthy(get($this->req, "has_$xname$suffix"));
+            else
+                $has_value = isset($this->req["$xname$suffix"])
+                    || (($xsi->type === "ctype" || $xsi->type === "checkbox")
+                        && truthy(get($this->req, "has_$xname$suffix")));
+            if ($has_value)
+                $xsis[] = $xsi;
+        }
+        return $xsis;
     }
 
     public function curv($name, $default_value = null) {
@@ -563,8 +585,18 @@ class SettingValues {
         $sv = new SettingValues;
         $sv->errf = $Conf->session("settings_highlight", array());
         $Conf->save_session("settings_highlight", null);
-        foreach ($_POST as $k => $v)
+        $got = [];
+        foreach ($_POST as $k => $v) {
             $sv->req[$k] = $v;
+            if (preg_match('/\A(?:has_)?(\S+?)(|_n|_m?\d+)\z/', $k, $m)) {
+                if (!isset($sv->has_req[$m[1]]))
+                    $sv->has_req[$m[1]] = [];
+                if (!isset($got[$m[1] . $m[2]])) {
+                    $sv->has_req[$m[1]][] = $m[2];
+                    $got[$m[1] . $m[2]] = true;
+                }
+            }
+        }
         return $sv;
     }
 }
@@ -831,35 +863,26 @@ function opt_yes_no_optional($name) {
     return 0;
 }
 
-function account_value($sv, $si) {
-    if ($si->internal)
+function account_value($sv, $si1) {
+    if ($si1->internal)
         return;
-
-    $xname = str_replace(".", "_", $si->name);
-    if ($si->parser)
-        $has_value = truthy(get($sv->req, "has_$xname"));
-    else
-        $has_value = isset($sv->req[$xname])
-            || (($si->type === "cdate" || $si->type === "checkbox")
-                && truthy(get($sv->req, "has_$xname")));
-    if (!$has_value)
-        return;
-
-    if ($si->disabled || $si->novalue || !$si->type || $si->type === "none")
-        /* ignore changes to disabled/novalue settings */;
-    else if ($si->parser) {
-        $p = $sv->parser($si);
-        if ($p->parse($sv, $si))
-            $sv->save_callbacks[$si->name] = $si;
-    } else {
-        $v = parse_value($sv, $si->name, $si);
-        if ($v === null)
-            return;
-        if (is_int($v) && $v <= 0 && $si->type !== "radio" && $si->type !== "zint")
-            $v = null;
-        $sv->save($si->name, $v);
-        if ($si->ifnonempty)
-            $sv->save($si->ifnonempty, $v === null ? null : 1);
+    foreach ($sv->req_si($si1) as $si) {
+        if ($si->disabled || $si->novalue || !$si->type || $si->type === "none")
+            /* ignore changes to disabled/novalue settings */;
+        else if ($si->parser) {
+            $p = $sv->parser($si);
+            if ($p->parse($sv, $si))
+                $sv->save_callbacks[$si->name] = $si;
+        } else {
+            $v = parse_value($sv, $si->name, $si);
+            if ($v === null)
+                return;
+            if (is_int($v) && $v <= 0 && $si->type !== "radio" && $si->type !== "zint")
+                $v = null;
+            $sv->save($si->name, $v);
+            if ($si->ifnonempty)
+                $sv->save($si->ifnonempty, $v === null ? null : 1);
+        }
     }
 }
 

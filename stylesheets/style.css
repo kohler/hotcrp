@@ -852,6 +852,11 @@ h3.settings, h3.helppage, h3.profile {
 h3.settings:first-child {
 	margin-top: 0;
 }
+p.settingtext {
+	max-width: 640px;
+	margin: 0.65em 0;
+	line-height: 1.25;
+}
 h3.helppage:first-child {
 	margin-top: 16px;
 }

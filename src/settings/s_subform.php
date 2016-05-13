@@ -4,28 +4,28 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class BanalSettings {
-    static public function render($prefix, $sv) {
+    static public function render($suffix, $sv) {
         global $Conf;
-        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data($prefix, "")));
+        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal$suffix", "")));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
             $val = get($bsetting, $i, "");
-            $sv->set_oldv("{$prefix}_$name", $val == "" ? "N/A" : $val);
+            $sv->set_oldv("sub_banal_$name$suffix", $val == "" ? "N/A" : $val);
         }
 
-        echo '<table class="', ($sv->curv($prefix) ? "foldo" : "foldc"), '" data-fold="true">';
-        $sv->echo_checkbox_row($prefix, "PDF format checker<span class=\"fx\">:</span>",
-                               "void foldup(this,null,{f:!this.checked})");
+        echo '<table class="', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '" data-fold="true">';
+        $sv->echo_checkbox_row("sub_banal$suffix", "PDF format checker<span class=\"fx\">:</span>",
+                               "void foldup(this,null,{f:'c'})");
         echo '<tr class="fx"><td></td><td class="top">',
-            Ht::hidden("has_$prefix", 1),
+            Ht::hidden("has_sub_banal$suffix", 1),
             '<table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("{$prefix}_papersize", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
-        $sv->echo_entry_row("{$prefix}_pagelimit", "Page limit");
-        $sv->echo_entry_row("{$prefix}_textblock", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
+        $sv->echo_entry_row("sub_banal_papersize$suffix", "Paper size", "Examples: “letter”, “A4”, “8.5in&nbsp;x&nbsp;14in”,<br />“letter OR A4”");
+        $sv->echo_entry_row("sub_banal_pagelimit$suffix", "Page limit");
+        $sv->echo_entry_row("sub_banal_textblock$suffix", "Text block", "Examples: “6.5in&nbsp;x&nbsp;9in”, “1in&nbsp;margins”");
         echo '</tbody></table></td><td><span class="sep"></span></td>',
             '<td class="top"><table><tbody class="secondary-settings">';
-        $sv->echo_entry_row("{$prefix}_bodyfontsize", "Minimum body font size", null, "&nbsp;pt");
-        $sv->echo_entry_row("{$prefix}_bodyleading", "Minimum leading", null, "&nbsp;pt");
-        $sv->echo_entry_row("{$prefix}_columns", "Columns");
+        $sv->echo_entry_row("sub_banal_bodyfontsize$suffix", "Minimum body font size", null, "&nbsp;pt");
+        $sv->echo_entry_row("sub_banal_bodyleading$suffix", "Minimum leading", null, "&nbsp;pt");
+        $sv->echo_entry_row("sub_banal_columns$suffix", "Columns");
         echo "</tbody></table></td></tr></table>";
     }
     static private function old_zoomarg() {
@@ -72,17 +72,17 @@ class BanalSettings {
 
         return $zoomarg;
     }
-    static public function parse($prefix, $sv, $check) {
+    static public function parse($suffix, $sv, $check) {
         global $Conf, $ConfSitePATH;
-        if (!isset($sv->req[$prefix])) {
-            $sv->save($prefix, 0);
+        if (!isset($sv->req["sub_banal$suffix"])) {
+            $sv->save("sub_banal$suffix", 0);
             return false;
         }
 
         // check banal subsettings
         $old_error_count = $sv->error_count();
         $bs = array_fill(0, 6, "");
-        if (($s = trim(defval($sv->req, "{$prefix}_papersize", ""))) != ""
+        if (($s = trim(defval($sv->req, "sub_banal_papersize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
             $sout = array();
@@ -90,7 +90,7 @@ class BanalSettings {
                 if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
                     $sout[] = $ss;
                 else if ($ss != "") {
-                    $sv->set_error("{$prefix}_papersize", "Invalid paper size.");
+                    $sv->set_error("sub_banal_papersize$suffix", "Invalid paper size.");
                     $sout = null;
                     break;
                 }
@@ -98,7 +98,7 @@ class BanalSettings {
                 $bs[0] = join(" OR ", $sout);
         }
 
-        if (($s = trim(defval($sv->req, "{$prefix}_pagelimit", ""))) != ""
+        if (($s = trim(defval($sv->req, "sub_banal_pagelimit$suffix", ""))) != ""
             && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) > 0)
                 $bs[1] = $sx;
@@ -106,28 +106,28 @@ class BanalSettings {
                      && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
                 $bs[1] = +$m[1] . "-" . +$m[2];
             else
-                $sv->set_error("{$prefix}_pagelimit", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
+                $sv->set_error("sub_banal_pagelimit$suffix", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
         }
 
-        if (($s = trim(defval($sv->req, "{$prefix}_columns", ""))) != ""
+        if (($s = trim(defval($sv->req, "sub_banal_columns$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) >= 0)
                 $bs[2] = ($sx > 0 ? $sx : $bs[2]);
             else
-                $sv->set_error("{$prefix}_columns", "Columns must be a whole number.");
+                $sv->set_error("sub_banal_columns$suffix", "Columns must be a whole number.");
         }
 
-        if (($s = trim(defval($sv->req, "{$prefix}_textblock", ""))) != ""
+        if (($s = trim(defval($sv->req, "sub_banal_textblock$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             // change margin specifications into text block measurements
             if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
                 $s = $m[1];
                 if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
-                    $sv->set_error("{$prefix}_pagesize", "You must specify a page size as well as margins.");
-                    $sv->set_error("{$prefix}_textblock");
+                    $sv->set_error("sub_banal_pagesize$suffix", "You must specify a page size as well as margins.");
+                    $sv->set_error("sub_banal_textblock$suffix");
                 } else if (strpos($s, "x") !== false) {
                     if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
-                        $sv->set_error("{$prefix}_textblock", "Invalid margin definition.");
+                        $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
                         $s = "";
                     } else if (count($m) == 2)
                         $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
@@ -138,7 +138,7 @@ class BanalSettings {
                 } else {
                     $s = preg_replace('/\s+/', 'x', $s);
                     if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
-                        $sv->set_error("{$prefix}_textblock", "Invalid margin definition.");
+                        $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
                     else if (!is_array($m))
                         $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
                     else if (count($m) == 2)
@@ -152,12 +152,12 @@ class BanalSettings {
             }
             // check text block measurements
             if ($s && !CheckFormat::parse_dimen($s, 2))
-                $sv->set_error("{$prefix}_textblock", "Invalid text block definition.");
+                $sv->set_error("sub_banal_textblock$suffix", "Invalid text block definition.");
             else if ($s)
                 $bs[3] = $s;
         }
 
-        if (($s = trim(defval($sv->req, "{$prefix}_bodyfontsize", ""))) != ""
+        if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             if (preg_match('/\A[\d.]+\z/', $s) && is_numeric($s) && $s > 0)
                 $bs[4] = $s;
@@ -165,13 +165,13 @@ class BanalSettings {
                      && is_numeric($m[1]) && is_numeric($m[2]) && $m[1] > 0 && $m[2] >= $m[1])
                 $bs[4] = $m[1] . "-" . $m[2];
             else
-                $sv->error("{$prefix}_bodyfontsize", "Minimum body font size must be a number bigger than 0.");
+                $sv->error("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
         }
 
-        if (($s = trim(defval($sv->req, "{$prefix}_bodyleading", ""))) != ""
+        if (($s = trim(defval($sv->req, "sub_banal_bodyleading$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             if (!is_numeric($s) || $s <= 0)
-                $sv->error("{$prefix}_bodyleading", "Minimum body leading must be a number bigger than 0.");
+                $sv->error("sub_banal_bodyleading$suffix", "Minimum body leading must be a number bigger than 0.");
             else
                 $bs[5] = $s;
         }
@@ -180,7 +180,7 @@ class BanalSettings {
             while (count($bs) > 0 && $bs[count($bs) - 1] == "")
                 array_pop($bs);
             $zoomarg = $check ? self::check_banal($sv) : self::old_zoomarg();
-            $sv->save("{$prefix}_data", join(";", $bs) . $zoomarg);
+            $sv->save("sub_banal_data$suffix", join(";", $bs) . $zoomarg);
         }
 
         return false;
@@ -341,7 +341,7 @@ function render($sv) {
 
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>";
-        BanalSettings::render("sub_banal", $sv);
+        BanalSettings::render("", $sv);
     }
 
     echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
@@ -361,8 +361,7 @@ function render($sv) {
 
 
     echo "<h3 class=\"settings\">Submission options</h3>\n";
-    echo "Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML.  ";
-    echo "Add options one at a time.\n";
+    echo "<p class=\"settingtext\">Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
     echo "<div class='g'></div>\n",
         Ht::hidden("has_options", 1);
     $sep = "";
@@ -391,9 +390,8 @@ function render($sv) {
     }
 
     echo "<h3 class=\"settings g\">Topics</h3>\n";
-    echo "Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.\n";
-    echo "<div class='g'></div>",
-        Ht::hidden("has_topics", 1),
+    echo "<p class=\"settingtext\">Enter topics one per line.  Authors select the topics that apply to their papers; PC members use this information to find papers they'll want to review.  To delete a topic, delete its name.</p>\n";
+    echo Ht::hidden("has_topics", 1),
         "<table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = '<td class="lcaption">Current</td>';
@@ -636,7 +634,10 @@ class Option_SettingParser extends SettingParser {
 
 class Banal_SettingParser extends SettingParser {
     public function parse($sv, $si) {
-        return BanalSettings::parse("sub_banal", $sv, true);
+        if (substr($si->name, 0, 9) === "sub_banal")
+            return BanalSettings::parse(substr($si->name, 9), $sv, true);
+        else
+            return false;
     }
 }
 
