@@ -97,11 +97,14 @@ if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
 if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $ajax = defval($_REQUEST, "ajax", 0);
     $cf = new CheckFormat();
-    $dt = HotCRPDocument::parse_dtype(@$_REQUEST["dt"]);
+    $dt = HotCRPDocument::parse_dtype(req("dt"));
     if ($dt === null)
-        $dt = @$_REQUEST["final"] ? DTYPE_FINAL : DTYPE_SUBMISSION;
-    if ($Conf->setting("sub_banal$dt"))
-        $format = $Conf->setting_data("sub_banal$dt", "");
+        $dt = req("final") ? DTYPE_FINAL : DTYPE_SUBMISSION;
+    $suffix = "";
+    if ($dt)
+        $suffix = $dt < 0 ? "_m" . -$dt : "_" . $dt;
+    if ($Conf->setting("sub_banal$suffix"))
+        $format = $Conf->setting_data("sub_banal$suffix", "");
     else
         $format = $Conf->setting_data("sub_banal", "");
     $status = $cf->analyzePaper($prow->paperId, $dt, $format);

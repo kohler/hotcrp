@@ -428,9 +428,13 @@ class PaperTable {
         $documentType = $docx->id;
         $optionType = $docx->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
-        $banal = $Conf->setting("sub_banal")
-            && ($optionType === null || $optionType === "pdf")
-            && $main_submission;
+        $banal = false;
+        if ($optionType === null || $optionType === "pdf") {
+            $suffix = "";
+            if ($documentType)
+                $suffix = $documentType < 0 ? "_m" . -$documentType : "_" . $documentType;
+            $banal = $Conf->setting("sub_banal$suffix");
+        }
 
         $filetypes = array();
         $accepts = array();
