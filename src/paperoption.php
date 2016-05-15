@@ -686,7 +686,7 @@ class NumericPaperOption extends PaperOption {
         $reqv = (string) ($reqv === null ? $ov->value : $reqv);
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
-            Ht::entry("opt$this->id", $reqv, ["size" => 8, "onchange" => "hiliter(this)"]),
+            Ht::entry("opt$this->id", $reqv, ["size" => 8, "onchange" => "hiliter(this)", "class" => trim($pt->error_class("opt$this->id"))]),
             "</div></div>\n\n";
     }
 
@@ -741,7 +741,7 @@ class TextPaperOption extends PaperOption {
         $reqv = (string) ($reqv === null ? $ov->data : $reqv);
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
-            Ht::textarea("opt$this->id", $reqv, ["class" => "papertext", "rows" => max($this->display_space, 1), "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"]),
+            Ht::textarea("opt$this->id", $reqv, ["class" => "papertext" . $pt->error_class("opt$this->id"), "rows" => max($this->display_space, 1), "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"]),
             "</div></div>\n\n";
     }
 

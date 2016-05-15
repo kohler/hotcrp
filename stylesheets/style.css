@@ -1042,7 +1042,8 @@ div.error, td.error, tr.error > td {
 span.setting_error, label.setting_error, input.setting_error {
 	color: #ff0000;
 }
-td.lentry.error input, div.error input {
+td.lentry.error input, div.error input, input.error, textarea.error {
+	background-color: #ffeeee;
 	font-weight: normal;
 }
 div.error > div.f-c, .papet.error > .papfn {

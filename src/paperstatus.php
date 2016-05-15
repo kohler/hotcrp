@@ -621,7 +621,7 @@ class PaperStatus {
             $this->set_error_html("author", "Some authors ignored.");
         foreach ($pj->bad_email_authors as $k => $aux) {
             $this->set_error_html("author", null);
-            $this->set_error_html("auemail$k", "“" . htmlspecialchars($aux->email) . "” is not a valid email address.");
+            $this->set_error_html("auemail" . ($k + 1), "“" . htmlspecialchars($aux->email) . "” is not a valid email address.");
         }
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj) as $c)

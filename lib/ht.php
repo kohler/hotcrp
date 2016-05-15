@@ -14,8 +14,10 @@ class Ht {
     const ATTR_SKIP = 1;
     const ATTR_BOOL = 2;
     const ATTR_BOOLTEXT = 3;
+    const ATTR_NOEMPTY = 4;
     private static $_attr_type = array("accept-charset" => self::ATTR_SKIP,
                                        "action" => self::ATTR_SKIP,
+                                       "class" => self::ATTR_NOEMPTY,
                                        "disabled" => self::ATTR_BOOL,
                                        "enctype" => self::ATTR_SKIP,
                                        "method" => self::ATTR_SKIP,
@@ -30,8 +32,10 @@ class Ht {
         if ($js)
             foreach ($js as $k => $v) {
                 $t = get(self::$_attr_type, $k);
-                if ($v === null || $t === self::ATTR_SKIP
-                    || ($v === false && $t !== self::ATTR_BOOLTEXT))
+                if ($v === null
+                    || $t === self::ATTR_SKIP
+                    || ($v === false && $t !== self::ATTR_BOOLTEXT)
+                    || ($v === "" && $t === self::ATTR_NOEMPTY))
                     /* nothing */;
                 else if ($t === self::ATTR_BOOL)
                     $x .= ($v ? " $k=\"$k\"" : "");

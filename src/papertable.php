@@ -234,16 +234,20 @@ class PaperTable {
         echo "</div>";
     }
 
-    private function has_error($f) {
+    public function has_error($f) {
         if ($f === "authorInformation")
             $f = "author";
         return $this->edit_status && $this->edit_status->has_error($f);
     }
 
+    public function error_class($f) {
+        return $this->has_error($f) ? " error" : "";
+    }
+
     private function editable_papt($what, $name, $extra = array()) {
         $id = get($extra, "id");
         return '<div class="papeg' . ($id ? " papg_$id" : "")
-            . '"><div class="papet' . ($this->has_error($what) ? " error" : "")
+            . '"><div class="papet' . $this->error_class($what)
             . ($id ? "\" id=\"$id" : "")
             . '"><span class="papfn">' . $name . '</span><hr class="c" /></div>';
     }
@@ -266,9 +270,7 @@ class PaperTable {
         else
             list($divclass, $hdrclass) = array("pavt", "pavfn");
 
-        $c = "<div class=\"$divclass";
-        if ($this->has_error($what))
-            $c .= " error";
+        $c = "<div class=\"$divclass" . $this->error_class($what);
         if (($fold || $editfolder) && !get($extra, "float"))
             $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
         $c .= "\"><span class=\"$hdrclass\">";
@@ -315,7 +317,7 @@ class PaperTable {
             $text = $this->qreq[$fieldName];
         else
             $text = $this->prow ? $this->prow->$fieldName : "";
-        return Ht::textarea($fieldName, $text, ["class" => "papertext", "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => $fieldName === "abstract" ? "true" : null]);
+        return Ht::textarea($fieldName, $text, ["class" => "papertext" . $this->error_class($fieldName), "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => $fieldName === "abstract" ? "true" : null]);
     }
 
     private function entryData($fieldName, $table_type = false) {
@@ -564,11 +566,11 @@ class PaperTable {
             $Conf->echoScript("render_text.on_page()");
     }
 
-    private static function editable_authors_tr($n, $name, $email, $aff) {
+    private function editable_authors_tr($n, $name, $email, $aff) {
         return '<tr><td class="rxcaption">' . $n . '.</td><td class="lentry">'
-            . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow auname")) . ' '
-            . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow auemail")) . ' '
-            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow auaff")) . "</td>"
+            . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow auname" . $this->error_class("auname$n"))) . ' '
+            . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow auemail" . $this->error_class("auemail$n"))) . ' '
+            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow auaff" . $this->error_class("auaff$n"))) . "</td>"
             . '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
     }
 
@@ -582,12 +584,12 @@ class PaperTable {
         echo " Any author with an account on this site can edit the submission.</div>",
             '<div class="papev"><table id="auedittable" class="auedittable">',
             '<tbody data-last-row-blank="true" data-min-rows="5" data-row-template="',
-            htmlspecialchars(self::editable_authors_tr('$', "", "", "")), '">';
+            htmlspecialchars($this->editable_authors_tr('$', "", "", "")), '">';
 
         $blankAu = array("", "", "", "");
         if ($this->useRequest) {
             for ($n = 1; $this->qreq["auname$n"] || $this->qreq["auemail$n"] || $this->qreq["auaff$n"]; ++$n)
-                echo self::editable_authors_tr($n, (string) $this->qreq["auname$n"], (string) $this->qreq["auemail$n"], (string) $this->qreq["auaff$n"]);
+                echo $this->editable_authors_tr($n, (string) $this->qreq["auname$n"], (string) $this->qreq["auemail$n"], (string) $this->qreq["auaff$n"]);
         } else {
             $aulist = $this->prow ? $this->prow->author_list() : array();
             for ($n = 1; $n <= count($aulist); ++$n) {
@@ -596,11 +598,11 @@ class PaperTable {
                     $auname = $au->lastName . ", " . $au->firstName;
                 else
                     $auname = $au->name();
-                echo self::editable_authors_tr($n, $auname, $au->email, $au->affiliation);
+                echo $this->editable_authors_tr($n, $auname, $au->email, $au->affiliation);
             }
         }
         do {
-            echo self::editable_authors_tr($n, "", "", "");
+            echo $this->editable_authors_tr($n, "", "", "");
         } while (++$n <= 5);
         echo "</tbody></table></div></div>\n\n";
     }
