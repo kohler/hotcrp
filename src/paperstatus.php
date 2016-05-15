@@ -345,34 +345,22 @@ class PaperStatus {
     }
 
     private function normalize_options($pj) {
+        // canonicalize option values to use IDs, not abbreviations
         $options = $pj->options;
         $pj->options = (object) array();
-        $pj->parsed_options = array();
-
-        // - canonicalize option values to use IDs, not abbreviations
-        // - parse options into SQL
         foreach ($options as $id => $oj) {
             $omatches = PaperOption::search($id);
-            if (count($omatches) != 1) {
+            if (count($omatches) != 1)
                 $pj->bad_options[$id] = true;
-                continue;
+            else {
+                $o = current($omatches);
+                // XXX setting decision in JSON?
+                if ($o->final && (!$this->prow || $this->prow->outcome <= 0))
+                    continue;
+                $oid = $o->id;
+                $pj->options->$oid = $oj;
             }
-            $o = current($omatches);
-            // XXX setting decision in JSON?
-            if ($o->final && (!$this->prow || $this->prow->outcome <= 0))
-                continue;
-            $result = null;
-            if ($oj !== null)
-                $result = $o->parse_json($oj, $this);
-            if ($result === null)
-                $result = [];
-            if (!is_array($result))
-                $result = [[$result]];
-            else if (count($result) == 2 && is_string($result[1]))
-                $result = [$result];
-            $pj->parsed_options[$o->id] = $result;
         }
-        ksort($pj->parsed_options);
     }
 
     private function normalize_pc_conflicts($pj) {
@@ -412,7 +400,7 @@ class PaperStatus {
                 || strcasecmp($lemail, $Me->email) == 0);
     }
 
-    function normalize($pj, $old_pj) {
+    private function normalize($pj, $old_pj) {
         // Errors prevent saving
         global $Conf, $Now;
 
@@ -592,6 +580,24 @@ class PaperStatus {
         }
     }
 
+    private function check_options($pj) {
+        $pj->parsed_options = array();
+        foreach ($pj->options as $oid => $oj) {
+            $o = PaperOption::find($oid);
+            $result = null;
+            if ($oj !== null)
+                $result = $o->parse_json($oj, $this);
+            if ($result === null)
+                $result = [];
+            if (!is_array($result))
+                $result = [[$result]];
+            else if (count($result) == 2 && is_string($result[1]))
+                $result = [$result];
+            $pj->parsed_options[$o->id] = $result;
+        }
+        ksort($pj->parsed_options);
+    }
+
     private function check_invariants($pj, $old_pj) {
         global $Opt;
         // Errors don't prevent saving
@@ -619,6 +625,8 @@ class PaperStatus {
                 $this->set_error_html("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
             else
                 $this->set_error_html("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
+        if (get($pj, "options"))
+            $this->check_options($pj);
         if (!empty($pj->bad_topics))
             $this->set_warning_html("topics", "Unknown topics ignored (" . htmlspecialchars(commajoin($pj->bad_topics)) . ").");
         if (!empty($pj->bad_options))
