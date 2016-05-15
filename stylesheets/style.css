@@ -1165,6 +1165,7 @@ span.author, span.conflict {
 pre.entryexample {
 	padding: 0.5em;
 	background: #eeeeee;
+	border: 1px solid #dddddd;
 	display: table-cell;
 }
 pre.entryexample.dark {
@@ -2526,8 +2527,8 @@ div.papegroup {
 	margin: 12px -12px;
 	padding: 12px 12px;
 	background: #eae8f2;
-	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8f2 4px, #eae8f2 51%, transparent 51%),
-		linear-gradient(to top, rgba(234,232,242,0), #eae8f2 4px, #eae8f2 51%, transparent 51%);
+	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%),
+		linear-gradient(to top, rgba(234,232,242,0), #eae8ee 4px, #eae8ee 51%, transparent 51%);
 }
 div.papegroup > *:first-child {
 	margin-top: 0;
