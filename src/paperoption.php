@@ -403,6 +403,10 @@ class PaperOption {
                 "yes" => ["{$this->abbr}:yes", $this]];
     }
 
+    function add_search_completion(&$res) {
+        array_push($res, "has:{$this->abbr}", "opt:{$this->abbr}");
+    }
+
     private static function load_optdata($pid) {
         $result = Dbl::qe("select optionId, value, data from PaperOption where paperId=?", $pid);
         $optdata = array();

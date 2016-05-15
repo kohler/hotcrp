@@ -3685,7 +3685,7 @@ class PaperSearch {
                     $res[] = $k;
         }
 
-        array_push($res, "has:submission", "has:abstract", "has:finalcopy");
+        array_push($res, "has:submission", "has:abstract");
         if ($this->amPC && $Conf->has_any_manager())
             $res[] = "has:admin";
         if ($this->amPC && $Conf->has_any_lead_or_shepherd())
@@ -3698,6 +3698,8 @@ class PaperSearch {
                 unset($dm[0]);
                 $res = array_merge($res, self::simple_search_completion("dec:", $dm, Text::SEARCH_UNPRIVILEGE_EXACT));
             }
+            if ($Conf->setting("final_open"))
+                $res[] = "has:final";
         }
         if ($this->amPC || $this->contact->can_view_some_decision())
             $res[] = "has:shepherd";
@@ -3720,7 +3722,7 @@ class PaperSearch {
             }
         foreach (PaperOption::user_option_list($this->contact) as $o)
             if ($this->contact->can_view_some_paper_option($o))
-                array_push($res, "has:{$o->abbr}", "opt:{$o->abbr}");
+                $o->add_search_completion($res);
         if ($this->contact->is_reviewer() && $Conf->has_rounds()
             && (!$category || $category === "round")) {
             $res[] = array("pri" => -1, "nosort" => true, "i" => array("round:any", "round:none"));
