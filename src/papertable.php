@@ -16,6 +16,7 @@ class PaperTable {
     var $editrrow = null;
     var $mode;
     private $allreviewslink;
+    private $edit_status = null;
 
     public $editable;
     public $edit_fields;
@@ -116,6 +117,10 @@ class PaperTable {
         $this->allFolded = $this->mode === "re" || $this->mode === "assign"
             || ($this->mode !== "edit"
                 && (count($this->all_rrows) || count($this->crows)));
+    }
+
+    function set_edit_status(PaperStatus $status) {
+        $this->edit_status = $status;
     }
 
     function can_view_reviews() {
@@ -229,21 +234,26 @@ class PaperTable {
         echo "</div>";
     }
 
+    private function has_error($f) {
+        if ($f === "authorInformation")
+            $f = "author";
+        return $this->edit_status && $this->edit_status->has_error($f);
+    }
+
     private function editable_papt($what, $name, $extra = array()) {
-        global $Error;
         if (($id = get($extra, "id")))
             $c = '<div class="papeg papg_' . $id . '"><div id="' . $id . '" ';
         else
             $c = '<div class="papeg"><div ';
         $c .= 'class="papet';
-        if (isset($Error[$what]))
+        if ($this->has_error($what))
             $c .= " error";
         return $c . '"><span class="papfn">' . $name
             . '</span><hr class="c" /></div>';
     }
 
     private function papt($what, $name, $extra = array()) {
-        global $Error, $Conf;
+        global $Conf;
         $type = defval($extra, "type", "pav");
         $fold = defval($extra, "fold", false);
         $editfolder = defval($extra, "editfolder", false);
@@ -261,7 +271,7 @@ class PaperTable {
             list($divclass, $hdrclass) = array("pavt", "pavfn");
 
         $c = "<div class=\"$divclass";
-        if (isset($Error[$what]))
+        if ($this->has_error($what))
             $c .= " error";
         if (($fold || $editfolder) && !get($extra, "float"))
             $c .= " childfold\" onclick=\"return foldup(this,event$foldnumarg)";
@@ -688,7 +698,7 @@ class PaperTable {
     }
 
     private function paptabAuthors($skip_contacts) {
-        global $Conf, $Me, $Error;
+        global $Conf, $Me;
 
         $viewable = $Me->can_view_authors($this->prow, false);
         if (!$viewable && !$Me->can_view_authors($this->prow, true)) {
@@ -709,7 +719,7 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold', (get($Error, "authorInformation") ? " error" : ""),
+            '<div class="pavt childfold', ($this->has_error("authorInformation") ? " error" : ""),
             '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
         if (!$viewable || $this->allFolded)
@@ -876,11 +886,11 @@ class PaperTable {
     }
 
     private function echo_editable_contact_author($always_unfold = false) {
-        global $Conf, $Me, $Error;
+        global $Conf, $Me;
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
 
-        $cerror = get($Error, "contactAuthor") || get($Error, "contacts");
+        $cerror = $this->has_error("contactAuthor") || $this->has_error("contacts");
         $open = $cerror || $always_unfold
             || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo '<div id="foldcontactauthors" class="papeg ',
@@ -1280,7 +1290,7 @@ class PaperTable {
     }
 
     private function papstripTags() {
-        global $Conf, $Me, $Error;
+        global $Conf, $Me;
         if (!$this->prow || !$Me->can_view_tags($this->prow))
             return;
         $tags = $this->prow->all_tags_text();
@@ -1293,7 +1303,7 @@ class PaperTable {
         $viewable = $this->prow->viewable_tags($Me);
 
         $tx = $tagger->unparse_and_link($viewable, $tags, false);
-        $unfolded = $is_editable && (isset($Error["tags"]) || $this->qreq->atab === "tags");
+        $unfolded = $is_editable && ($this->has_error("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
         $color = TagInfo::color_classes($viewable);
@@ -1320,8 +1330,6 @@ class PaperTable {
             if ($treport->messages)
                 echo Ht::xmsg("info", join("<br>", $treport->messages));
             echo "</div>";
-            if (isset($Error["tags"]))
-                echo Ht::xmsg("error", $Error["tags"]);
             $editable = $tags;
             if ($this->prow)
                 $editable = $this->prow->editable_tags($Me);

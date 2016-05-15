@@ -943,4 +943,8 @@ class PaperStatus {
     function error_fields() {
         return $this->errf;
     }
+
+    function has_error($field = null) {
+        return $field ? isset($this->errf[$field]) : !empty($this->errf);
+    }
 }

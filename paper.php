@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-$Error = array();
+$ps = null;
 require_once("src/initweb.php");
 require_once("src/papertable.php");
 if ($Me->is_empty())
@@ -64,12 +64,10 @@ if (isset($_GET["post"]) && $_GET["post"] && !count($_POST))
 
 // grab paper row
 function loadRows() {
-    global $prow, $Conf, $Error;
+    global $prow, $Conf;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
         errorMsgExit(whyNotText($whyNot, "view"));
-    if (isset($Error["paperId"]) && $Error["paperId"] != $prow->paperId)
-        $Error = array();
 }
 $prow = null;
 if (!$newPaper)
@@ -178,11 +176,10 @@ function final_submit_watch_callback($prow, $minic) {
         HotCRPMailer::send_to($minic, "@finalsubmitnotify", $prow);
 }
 
-function update_paper($pj, $opj, $qreq, $action, $diffs) {
-    global $Conf, $Me, $Opt, $OK, $Error, $prow;
+function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
+    global $Conf, $Me, $Opt, $OK, $prow;
     // XXX lock tables
 
-    $ps = new PaperStatus($Me);
     $saved = $ps->save_paper_json($pj);
 
     if (!$saved && !$prow && count($qreq->_FILES))
@@ -191,8 +188,6 @@ function update_paper($pj, $opj, $qreq, $action, $diffs) {
         $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
         $ps->set_warning_html("collaborators", "Please enter the authors’ potential conflicts in the $field field. If none of the authors have potential conflicts, just enter “None”.");
     }
-
-    $Error = $ps->error_fields();
 
     if (!$saved) {
         $emsg = $ps->error_html();
@@ -302,7 +297,7 @@ function update_paper($pj, $opj, $qreq, $action, $diffs) {
     }
 
     // other mail confirmations
-    if ($action == "final" && $OK && !count($Error))
+    if ($action == "final" && $OK && !$ps->has_error())
         $prow->notify(WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
     $Me->log_activity($actiontext, $prow->paperId);
@@ -341,7 +336,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
 
     // actually update
     if (!$whyNot) {
-        if (update_paper($pj, $opj, $Qreq, $action, $diffs))
+        if (update_paper($ps, $pj, $opj, $Qreq, $action, $diffs))
             redirectSelf(array("p" => $prow->paperId, "m" => "edit"));
     } else {
         if ($action == "final")
@@ -367,10 +362,8 @@ if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
         PaperSaver::replace_contacts($pj, $Qreq);
         if ($ps->save_paper_json($pj, $opj))
             redirectSelf();
-        else {
+        else
             Conf::msg_error("<ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>");
-            $Error = $ps->error_fields();
-        }
     } else
         Conf::msg_error(whyNotText(array("permission" => 1), "update contacts for"));
 
@@ -430,10 +423,9 @@ if ($paperTable->mode == "edit") {
 } else
     $editable = false;
 
-if (get($Error, "author"))
-    $Error["authorInformation"] = true;
-
 $paperTable->initialize($editable, $editable && $useRequest);
+if ($ps && $paperTable->mode === "edit")
+    $paperTable->set_edit_status($ps);
 
 // produce paper table
 confHeader();
