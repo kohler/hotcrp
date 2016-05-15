@@ -238,7 +238,8 @@ class PaperStatus {
     public function set_error_html($field, $html) {
         if ($field)
             $this->errf[$field] = true;
-        $this->errmsg[] = $html;
+        if ($html)
+            $this->errmsg[] = $html;
         if (!$field
             || !$this->allow_error
             || array_search($field, $this->allow_error) === false)
@@ -422,7 +423,7 @@ class PaperStatus {
 
         // Authors
         $au_by_email = array();
-        $pj->bad_authors = array();
+        $pj->bad_authors = $pj->bad_email_authors = array();
         if (isset($pj->authors)) {
             if (!is_array($pj->authors))
                 $this->set_error_html("author", "Format error [authors]");
@@ -459,8 +460,12 @@ class PaperStatus {
                     $aux->index = count($pj->authors) + count($pj->bad_authors);
                     if (is_object($au) && isset($au->contact))
                         $aux->contact = !!$au->contact;
-                    if (get($aux, "email"))
-                        $au_by_email[strtolower($aux->email)] = $aux;
+                    if ($aux->email) {
+                        $lemail = strtolower($aux->email);
+                        $au_by_email[$lemail] = $aux;
+                        if (!validate_email($lemail) && !isset($old_au_by_email[$lemail]))
+                            $pj->bad_email_authors[$k] = $aux;
+                    }
                 } else
                     $this->set_error_html("author", "Format error [authors]");
         }
@@ -614,6 +619,10 @@ class PaperStatus {
             $this->set_error_html("author", "Each paper must have at least one author.");
         if (!empty($pj->bad_authors))
             $this->set_error_html("author", "Some authors ignored.");
+        foreach ($pj->bad_email_authors as $k => $aux) {
+            $this->set_error_html("author", null);
+            $this->set_error_html("auemail$k", "“" . htmlspecialchars($aux->email) . "” is not a valid email address.");
+        }
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj) as $c)
             if ($c >= CONFLICT_CONTACTAUTHOR)
