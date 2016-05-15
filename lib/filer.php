@@ -32,8 +32,6 @@ class ZipDocument {
     }
 
     function clean() {
-        if ($this->tmpdir_)
-            exec("/bin/rm -rf $this->tmpdir_");
         $this->tmpdir_ = null;
         $this->files = array();
         $this->warnings = array();

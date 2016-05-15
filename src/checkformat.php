@@ -370,8 +370,6 @@ class CheckFormat {
 
         $tmpdir = null;
         $status = $this->_analyzePaper($paperId, $documentType, $spec, $tmpdir);
-        if ($tmpdir)
-            exec("/bin/rm -rf $tmpdir");
 
         if ($limit > 0)
             Dbl::q("update Settings set value=value-1 where name='__banal_count' and data='$t'");

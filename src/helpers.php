@@ -655,6 +655,11 @@ function goPaperForm($baseUrl = null, $args = array()) {
     return $x;
 }
 
+function rm_rf_tempdir($tempdir) {
+    assert(substr($tempdir, 0, 1) === "/");
+    exec("/bin/rm -rf " . escapeshellarg($tempdir));
+}
+
 function clean_tempdirs() {
     $dir = null;
     if (function_exists("sys_get_temp_dir"))
@@ -669,13 +674,8 @@ function clean_tempdirs() {
         if (preg_match('/\Ahotcrptmp\d+\z/', $fname)
             && is_dir("$dir/$fname")
             && ($mtime = @filemtime("$dir/$fname")) !== false
-            && $mtime < $now - 1800) {
-            $xdirh = @opendir("$dir/$fname");
-            while (($xfname = readdir($xdirh)) !== false)
-                @unlink("$dir/$fname/$xfname");
-            @closedir("$dir/$fname");
-            @rmdir("$dir/$fname");
-        }
+            && $mtime < $now - 1800)
+            rm_rf_tempdir("$dir/$fname");
     closedir($dirh);
 }
 
@@ -689,8 +689,10 @@ function tempdir($mode = 0700) {
         $dir = substr($dir, 0, -1);
     for ($i = 0; $i < 100; $i++) {
         $path = $dir . "/hotcrptmp" . mt_rand(0, 9999999);
-        if (mkdir($path, $mode))
+        if (mkdir($path, $mode)) {
+            register_shutdown_function("rm_rf_tempdir", $path);
             return $path;
+        }
     }
     return false;
 }
