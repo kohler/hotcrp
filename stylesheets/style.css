@@ -2674,6 +2674,22 @@ div.cmtg div.xwarning {
 	background: linear-gradient(to bottom, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%),
 		linear-gradient(to top, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%);
 }
+div.papeg div.xwarning {
+	background: #ffffdd;
+	border: 0 none;
+	margin: 5px -12px;
+	padding: 0;
+}
+div.papeg div.xwarning > div.xmsg0, div.papeg div.xwarning > div.xmsg1 {
+	height: 3px;
+	background: #ffff00;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxOCI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2ZmMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNi4xODY1MiwxOCwzLjgxMzQ4LDAsOS45MTQwNiwwLC0wLjA4NTkzNzUsMTgiIGZpbGw9IiMwMDAiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy44MTM0OCwxOCwxMy44MTM1LDAsMTkuOTE0MSwwLDkuOTE0MDYsMTgiIGZpbGw9IiMwMDAiIC8+PC9zdmc+);
+;
+}
+div.papeg div.xwarning > div.xmsgc {
+	padding: 5px 12px;
+	font-size: 90%;
+}
 div.cmtg div.xmerror {
 	border-top: 2px solid red;
 	border-bottom: 2px solid red;

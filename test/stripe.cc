@@ -373,4 +373,9 @@ int main() {
     for (const char** name1 = names; *name1; ++name1)
         for (const char** name2 = name1 + 1; *name2; ++name2)
             makeit(*name1, *name2);
+
+    Stripe s(M_PI / 3);
+    s.add(Rgba{0xff, 0xff, 0, 1}, 3);
+    s.add(Rgba{0, 0, 0, 1}, 5);
+    fprintf(stdout, "%s\n", s.svg_base64().c_str());
 }
