@@ -1045,7 +1045,7 @@ span.setting_error, label.setting_error, input.setting_error {
 td.lentry.error input, div.error input {
 	font-weight: normal;
 }
-div.error > div.f-c {
+div.error > div.f-c, .papet.error > .papfn {
 	color: #ff0000;
 }
 input.error,

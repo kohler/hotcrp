@@ -241,15 +241,11 @@ class PaperTable {
     }
 
     private function editable_papt($what, $name, $extra = array()) {
-        if (($id = get($extra, "id")))
-            $c = '<div class="papeg papg_' . $id . '"><div id="' . $id . '" ';
-        else
-            $c = '<div class="papeg"><div ';
-        $c .= 'class="papet';
-        if ($this->has_error($what))
-            $c .= " error";
-        return $c . '"><span class="papfn">' . $name
-            . '</span><hr class="c" /></div>';
+        $id = get($extra, "id");
+        return '<div class="papeg' . ($id ? " papg_$id" : "")
+            . '"><div class="papet' . ($this->has_error($what) ? " error" : "")
+            . ($id ? "\" id=\"$id" : "")
+            . '"><span class="papfn">' . $name . '</span><hr class="c" /></div>';
     }
 
     private function papt($what, $name, $extra = array()) {
