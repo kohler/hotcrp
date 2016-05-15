@@ -8,7 +8,7 @@ class PaperStatus {
     private $uploaded_documents;
     private $errf;
     private $errmsg;
-    public $nerrors;
+    private $has_errors;
     private $no_email = false;
     private $allow_error = array();
     private $forceShow = null;
@@ -34,7 +34,7 @@ class PaperStatus {
         $this->uploaded_documents = array();
         $this->errf = array();
         $this->errmsg = array();
-        $this->nerrors = 0;
+        $this->has_errors = false;
         $this->prow = null;
     }
 
@@ -242,7 +242,7 @@ class PaperStatus {
         if (!$field
             || !$this->allow_error
             || array_search($field, $this->allow_error) === false)
-            ++$this->nerrors;
+            $this->has_errors = true;
     }
 
     public function set_warning_html($field, $html) {
@@ -752,7 +752,7 @@ class PaperStatus {
         $this->normalize($pj, $old_pj);
         if ($old_pj)
             $this->normalize($old_pj, null);
-        if ($this->nerrors)
+        if ($this->has_errors)
             return false;
         $this->check_invariants($pj, $old_pj);
 
@@ -772,7 +772,7 @@ class PaperStatus {
         }
 
         // catch errors
-        if ($this->nerrors)
+        if ($this->has_errors)
             return false;
 
         // update Paper table
@@ -945,6 +945,6 @@ class PaperStatus {
     }
 
     function has_error($field = null) {
-        return $field ? isset($this->errf[$field]) : !empty($this->errf);
+        return $field ? isset($this->errf[$field]) : $this->has_errors;
     }
 }

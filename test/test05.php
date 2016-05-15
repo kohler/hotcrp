@@ -21,7 +21,7 @@ $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
 
 $ps->save_paper_json((object) ["id" => 1, "title" => "Scalable Timers? for Soft State Protocols"]);
-xassert(!$ps->nerrors);
+xassert(!$ps->has_error());
 
 $paper1b = $ps->paper_json(1);
 xassert_eqq($paper1b->title, "Scalable Timers? for Soft State Protocols");
@@ -35,7 +35,7 @@ $doc = Filer::file_upload_json([
         "tmp_name_safe" => true, "type" => "application/pdf"
     ]);
 $ps->save_paper_json((object) ["id" => 1, "submission" => $doc]);
-xassert(!$ps->nerrors);
+xassert(!$ps->has_error());
 
 $paper1c = $ps->paper_json(1);
 xassert_eqq($paper1c->submission->sha1, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
