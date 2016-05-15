@@ -2525,9 +2525,9 @@ div.papeg, div.rveg {
 div.papegroup {
 	margin: 12px -12px;
 	padding: 12px 12px;
-	background: #eeeeff;
-	background: linear-gradient(to bottom, rgba(227,214,193,0), #e3d6c1 4px, #e3d6c1 51%, transparent 51%),
-		linear-gradient(to top, rgba(227,214,193,0), #e3d6c1 4px, #e3d6c1 51%, transparent 51%);
+	background: #eae8f2;
+	background: linear-gradient(to bottom, rgba(234,232,242,0), #eae8f2 4px, #eae8f2 51%, transparent 51%),
+		linear-gradient(to top, rgba(234,232,242,0), #eae8f2 4px, #eae8f2 51%, transparent 51%);
 }
 div.papegroup > *:first-child {
 	margin-top: 0;
