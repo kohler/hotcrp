@@ -181,6 +181,9 @@ class BanalSettings {
                 array_pop($bs);
             $zoomarg = $check ? self::check_banal($sv) : self::old_zoomarg();
             $sv->save("sub_banal_data$suffix", join(";", $bs) . $zoomarg);
+            if ($suffix === "" && !$sv->oldv("sub_banal_m1")
+                && !isset($sv->req["has_sub_banal_m1"]))
+                $sv->save("sub_banal_data_m1", join(";", $bs) . $zoomarg);
         }
 
         return false;
