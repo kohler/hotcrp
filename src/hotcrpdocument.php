@@ -193,7 +193,7 @@ class HotCRPDocument extends Filer {
             else if (get($doc, "filter"))
                 $columns["filterType"] = $doc->filter;
             if (get($doc, "originalStorageId"))
-                $columns["originalStorageId"] = $doc->filterType;
+                $columns["originalStorageId"] = $doc->originalStorageId;
             else if (get($doc, "original_id"))
                 $columns["originalStorageId"] = $doc->original_id;
         }
