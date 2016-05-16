@@ -1936,11 +1936,14 @@ class PaperTable {
 
         if ($prow)
             $this->_papstrip();
-        if ($this->npapstrip) {
-            echo "</div></div></div></div>\n",
-                '<div class="papcard"><div class="papcard_body">';
-        } else
-            echo '<div class="pedcard"><div class="pedcard_body">';
+        if ($this->npapstrip)
+            echo "</div></div></div></div>\n<div class=\"papcard\">";
+        else
+            echo '<div class="pedcard">';
+        if ($this->editable)
+            echo '<div class="pedcard_body">';
+        else
+            echo '<div class="papcard_body">';
 
         $form_js = array("id" => "paperedit");
         if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
