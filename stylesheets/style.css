@@ -3049,7 +3049,7 @@ a.help {
 }
 
 /* popup dialogs */
-div.popupbg {
+.popupbg {
 	background-color: rgba(0, 0, 0, 0.4);
 	position: fixed;
 	top: 0;
@@ -3057,8 +3057,9 @@ div.popupbg {
 	left: 0;
 	right: 0;
 	z-index: 59;
+	display: none;
 }
-div.popupc, div.popupo {
+.popupc, .popupo {
 	border: 3px solid red;
 	padding: 0.5em;
 	background: #fff2f2;
@@ -3067,29 +3068,23 @@ div.popupc, div.popupo {
 	max-width: 32em;
 	z-index: 60;
 }
-div.popupo.popupcenter {
+.popupo.popupcenter {
 	max-width: 64em;
 	max-height: 70%;
 	overflow-y: auto;
 }
-div.popupc {
+.popupc {
 	display: none;
 }
-div.popupc p:first-child, div.popupo p:first-child {
+.popupc p:first-child, .popupo p:first-child {
 	margin-top: 0;
 }
-div.popup_actions {
+.popup-actions {
 	margin-top: 8px;
-	text-align: right;
 }
-div.popup_actions > button:first-child {
-	margin-left: 0;
-}
-div.popup_actions > button, div.popup_actions > input {
+.popup-actions .popup-btn {
+	float: right;
 	margin-left: 1em;
-}
-div.popup_actions > button.popup_space {
-	margin-right: 2em;
 }
 
 /* scores */

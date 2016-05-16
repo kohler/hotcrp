@@ -187,24 +187,23 @@ if ($Me->privChair) {
     echo '<td style="padding-left:2em">',
         Ht::js_button("Kiosk mode", "popup(this,'kiosk',0,true)"),
         '</td>';
-    $Conf->footerHtml('<div id="popup_kiosk" class="popupc">
+    $Conf->footerHtml('<div class="popupbg"><div id="popup_kiosk" class="popupc">
 <p>Kiosk mode is a discussion status page with no
 other site privileges. It’s safe to leave a browser in kiosk mode
 open in the hallway.</p>
-<p><b>Kiosk mode will sign you out of the site.</b>
-Do not use kiosk mode on your main browser. Instead, sign in to
-another browser and navigate to this page.
-Or use these URLs:</p>
+<p><b>Kiosk mode will sign your browser out of the site.</b>
+Do not use kiosk mode on your main browser. These URLs access kiosk
+mode without signing in:</p>
 <p><table><tr><td class="lcaption nw">With papers</td>
 <td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[1])) . '</td></tr>
 <tr><td class="lcaption nw">Conflicts only</td>
 <td>' . hoturl_absolute("buzzer", array("__PATH__" => $kiosk_keys[0])) . '</td></tr></table></p>'
     . Ht::form_div(hoturl_post("buzzer"))
-    . '<div class="popup_actions">'
     . Ht::hidden("buzzer_showpapers", 1, array("class" => "popup_populate"))
-    . Ht::js_button("Cancel", "popup(null,'kiosk',1)")
-    . Ht::submit("signout_to_kiosk", "Enter kiosk mode", array("class" => "bb"))
-    . '</div></div></form>');
+    . '<div class="popup-actions">'
+    . Ht::submit("signout_to_kiosk", "Enter kiosk mode", ["class" => "popup-btn"])
+    . Ht::js_button("Cancel", "popup(null,'kiosk',1)", ["class" => "popup-btn"])
+    . '</div></div></form></div></div>');
 }
 
 echo "</tr></table></form>\n";

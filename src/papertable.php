@@ -1705,7 +1705,7 @@ class PaperTable {
             if (!$Me->can_withdraw_paper($prow))
                 $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
-            $Conf->footerHtml("<div class='popupbg' style='display:none'><div id='popup_w' class='popupc'>
+            $Conf->footerHtml("<div class='popupbg'><div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication? $admins</p>\n"
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
@@ -1715,9 +1715,9 @@ class PaperTable {
     . $override
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
-    . "<div class='popup_actions'>"
-    . Ht::js_button("Cancel", "popup(null,'w',1)")
-    . Ht::submit("withdraw", "Withdraw paper", array("class" => "bb"))
+    . "<div class='popup-actions'>"
+    . Ht::submit("withdraw", "Withdraw paper", ["class" => "popup-btn"])
+    . Ht::js_button("Cancel", "popup(null,'w',1)", ["class" => "popup-btn"])
     . "</div></div></form></div></div>", "popup_w");
         }
         if ($b) {
@@ -1744,14 +1744,14 @@ class PaperTable {
 
         if ($this->admin && $this->prow) {
             $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)"), "(admin only)");
-            $Conf->footerHtml("<div class='popupbg' style='display:none'><div id='popup_delp' class='popupc'>"
+            $Conf->footerHtml("<div class='popupbg'><div id='popup_delp' class='popupc'>"
     . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
     . "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
-    . "<div class='popup_actions'>"
-    . Ht::js_button("Cancel", "popup(null,'delp',1)")
-    . Ht::submit("delete", "Delete paper", array("class" => "bb"))
+    . "<div class='popup-actions'>"
+    . Ht::submit("delete", "Delete paper", ["class" => "popup-btn dangerous"])
+    . Ht::js_button("Cancel", "popup(null,'delp',1)", ["class" => "popup-btn"])
     . "</div></div></form></div></div>", "popup_delp");
         }
 

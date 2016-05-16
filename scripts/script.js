@@ -4409,7 +4409,7 @@ function edit_anno(locator) {
             add_anno(hc, annos[i]);
         hc.pop();
         hc.push('<div class="g"><button name="add" type="button" tabindex="1000">Add group</button></div>');
-        hc.push('<div class="popup_actions"><button name="cancel" type="button" tabindex="1001">Cancel</button><button name="save" type="submit" tabindex="1000">Save changes</button></div>');
+        hc.push('<div class="popup-actions"><button name="save" type="submit" tabindex="1000" class="popup-btn">Save changes</button><button name="cancel" type="button" tabindex="1001" class="popup-btn">Cancel</button></div>');
         hc.push('<div class="popup_bottom"></div>');
         $d = $(hc.render());
         for (var i = 0; i < annos.length; ++i) {
@@ -4456,19 +4456,20 @@ return plinfo_tags;
 
 // popup dialogs
 function popup_near(elt, anchor) {
+    var parent_offset = {left: 0, top: 0};
+    if (/popupbg/.test(elt.parentNode.className)) {
+        elt.parentNode.style.display = "block";
+        parent_offset = $(elt.parentNode).offset();
+    }
     var anchorPos = $(anchor).geometry();
     var wg = $(window).geometry();
     var x = (anchorPos.right + anchorPos.left - elt.offsetWidth) / 2;
     var y = (anchorPos.top + anchorPos.bottom - elt.offsetHeight) / 2;
-    var parent_offset = {left: 0, top: 0};
-    if (/popupbg/.test(elt.parentNode.className))
-        parent_offset = $(elt.parentNode).offset();
     x = Math.max(wg.left + 5, Math.min(wg.right - 5 - elt.offsetWidth, x)) - parent_offset.left;
     y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
     elt.style.left = x + "px";
     elt.style.top = y + "px";
-    var efocus = $(elt).find("input, button")[0];
-    console.log(efocus);
+    var efocus = $(elt).find("input, button, textarea, select").filter(":visible").filter(":not(.dangerous)")[0];
     efocus && efocus.focus();
 }
 
@@ -4479,11 +4480,11 @@ function popup(anchor, which, dofold, populate) {
         anchor = anchor || $$("popupanchor_" + which);
     }
 
-    if (elt && /popupbg/.test(elt.parentNode.className))
-        elt.parentNode.style.display = dofold ? "none" : "block";
-    if (elt && dofold)
+    if (dofold) {
         elt.className = "popupc";
-    else if (elt) {
+        if (/popupbg/.test(elt.parentNode.className))
+            elt.parentNode.style.display = "none";
+    } else {
         elt.className = "popupo";
         popup_near(elt, anchor);
     }
@@ -4516,9 +4517,9 @@ function override_deadlines(elt, callback) {
     var djq = jQuery('<div class="popupbg"><div class="popupo"><p>'
                      + (ejq.attr("data-override-text") || "")
                      + " Are you sure you want to override the deadline?</p>"
-                     + '<form><div class="popup_actions">'
-                     + '<button type="button" name="cancel">Cancel</button>'
-                     + '<button type="button" name="submit">Save changes</button>'
+                     + '<form><div class="popup-actions">'
+                     + '<button type="button" name="submit" class="popup-btn">Save changes</button>'
+                     + '<button type="button" name="cancel" class="popup-btn">Cancel</button>'
                      + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();

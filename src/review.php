@@ -1437,9 +1437,9 @@ $blind\n";
     . Ht::textarea("reason", null,
                    array("id" => "refusereviewreason", "rows" => 3, "cols" => 40,
                          "placeholder" => "Optional explanation", "spellcheck" => "true"))
-    . '<div class="popup_actions">'
-    . Ht::js_button("Cancel", "popup(null,'ref',1)")
-    . Ht::submit("Decline review", array("class" => "bb"))
+    . '<div class="popup-actions">'
+    . Ht::submit("Decline review", ["class" => "popup-btn"])
+    . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "popup-btn"])
     . "</div></div></form></div>", "declinereviewform");
             $buttons[] = "";
         }
@@ -1468,9 +1468,9 @@ $blind\n";
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
-  " . Ht::form_div($reviewPostLink, array("divclass" => "popup_actions"))
-    . Ht::js_button("Cancel", "popup(null,'d',1)")
-    . Ht::submit("deletereview", "Delete review", array("class" => "bb"))
+  " . Ht::form_div($reviewPostLink, array("divclass" => "popup-actions"))
+    . Ht::submit("deletereview", "Delete review", ["class" => "popup-btn dangerous"])
+    . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "popup-btn"])
     . "</div></form></div>");
         }
 

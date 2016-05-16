@@ -804,14 +804,14 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");
     if (count($tracks->soleAuthor)) {
-        $Conf->footerHtml("<div id='popup_d' class='popupc'>
+        $Conf->footerHtml("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
   <p><strong>This user cannot be deleted</strong> because they are the sole
   contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
   Delete these papers from the database or add alternate paper contacts and
   you will be able to delete this user.</p>
-  <div class='popup_actions'>"
-    . Ht::js_button("Close", "popup(null,'d',1)")
-    . "</div></div>");
+  <div class='popup-actions'>"
+    . Ht::js_button("Close", "popup(null,'d',1)", ["class" => "popup-btn"])
+    . "</div></div></div>");
     } else {
         if (count($tracks->author) + count($tracks->review) + count($tracks->comment)) {
             $x = $y = array();
@@ -831,14 +831,14 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   Deleting the user will also " . commajoin($y) . ".</p>";
         } else
             $dialog = "";
-        $Conf->footerHtml("<div class=\"popupbg\" style=\"display:none\"><div id='popup_d' class='popupc'>
+        $Conf->footerHtml("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog
   <form method='post' action=\"" . hoturl_post("profile", "u=" . urlencode($Acct->email)) . "\" enctype='multipart/form-data' accept-charset='UTF-8'>
-    <div class='popup_actions'>"
-      . Ht::js_button("Cancel", "popup(null,'d',1)")
-      . Ht::submit("delete", "Delete user", array("class" => "bb"))
+    <div class='popup-actions'>"
+      . Ht::submit("delete", "Delete user", ["class" => "popup-btn dangerous"])
+      . Ht::js_button("Cancel", "popup(null,'d',1)", ["class" => "popup-btn"])
       . "</div></form></div></div>");
     }
 }
