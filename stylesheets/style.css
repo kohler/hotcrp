@@ -282,11 +282,13 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 	margin-top: 0.75em;
 	margin-bottom: 0;
 }
-div.xinfo, div.xconfirm, div.xwarning, div.xmerror {
-	padding: 0.5em;
+div.xmsg {
 	margin: 4px 0;
 	font-weight: normal;
 	font-style: normal;
+}
+div.xmsg > div.xmsgc {
+	padding: 0.5em;
 }
 div.xinfo {
 	background: #eeeeff;
@@ -621,31 +623,30 @@ span.expander > span.in0 {
 	color: #aaaaaa;
 }
 
-.btn {
+.tbtn, .tbtn-on {
 	border-radius: 5px;
         display: inline-block;
         padding: 2px 4px;
         text-decoration: none;
-        cursor: pointer;
-}
-.btn.btn-default {
-        background: #4444cc;
         color: white;
 }
-.btn.btn-danger {
-        background: #cc4444;
-        color: white;
+.tbtn {
+	background: #4444cc;
 }
-.btn.btn-transparent {
+.tbtn-on {
+	background: #cc4444;
+}
+.tbtn.hottooltip, .tbtn-on.hottooltip, .closebtn {
+	cursor: pointer;
+}
+.closebtn {
+        display: inline-block;
+        padding: 2px 4px;
+        text-decoration: none;
 	border: 1px solid black;
 	color: black;
-}
-.btn.btn-closer {
 	line-height: .85;
 	border-radius: 0;
-}
-.btn.hottooltip {
-	cursor: pointer;
 }
 
 /* checkboxes */
@@ -2679,17 +2680,26 @@ div.pedcard_body div.xmerror, div.pedcard_body div.xwarning, div.pedcard_body di
 	margin: 8px -12px;
 	padding: 0;
 }
+div.pedcard_body div.xinfo {
+	background: #f8f4ff;
+	border: 0 none;
+}
+div.pedcard_body div.xinfo > div.xmsg0, div.pedcard_body div.xinfo > div.xmsg1 {
+	height: 2px;
+	background: #cec1ff;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNjZWMxZmYiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTEuNzkyOTcsNSwzLjIwNzAzLDAsNSwwLC0wLDUiIGZpbGw9IiM5OTk5YmYiIC8+PHBvbHlsaW5lIHBvaW50cz0iMy4yMDcwMyw1LDguMjA3MDMsMCwxMCwwLDUsNSIgZmlsbD0iIzk5OTliZiIgLz48L3N2Zz4=)
+}
 div.pedcard_body div.xwarning {
 	background: #ffffdd;
 	border: 0 none;
 }
-div.pedcard_body div.xwarning > div.xmsg0, div.pedcard_body div.xwarning > div.xmsg1 {
+div.xwarning > div.xmsg0, div.xwarning > div.xmsg1 {
 	height: 4px;
 	background: #ffff00;
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjYiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZjAiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTMsNiwzLDAsNiwwLDAsNiIgZmlsbD0iIzY5NjkwMyIgLz48cG9seWxpbmUgcG9pbnRzPSIzLDYsOSwwLDEyLDAsNiw2IiBmaWxsPSIjNjk2OTAzIiAvPjwvc3ZnPg==);
 }
-div.pedcard_body div.xmerror > div.xmsg0, div.pedcard_body div.xmerror > div.xmsg1 {
-	height: 8px;
+div.xmerror > div.xmsg0, div.xmerror > div.xmsg1 {
+	height: 6px;
 	background: #ffff00;
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNiwxMiw2LDAsMTIsMCwwLDEyIiBmaWxsPSIjNDAwMDAwIiAvPjxwb2x5bGluZSBwb2ludHM9IjYsMTIsMTgsMCwyNCwwLDEyLDEyIiBmaWxsPSIjNDAwMDAwIiAvPjwvc3ZnPg==);
 }

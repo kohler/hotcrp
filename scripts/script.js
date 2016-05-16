@@ -1414,7 +1414,7 @@ function tracker_html(mytracker) {
     if (dl.is_admin) {
         var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
         t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="' + escape_entities(dt) + '"></div>';
-        t += '<div style="float:right"><a class="btn btn-transparent btn-closer hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
+        t += '<div style="float:right"><a class="closebtn hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="trackerlogo"></div>';
     if (dl.tracker && dl.tracker.position_at)
@@ -1439,10 +1439,10 @@ function display_tracker() {
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
-            e.className = "btn btn-danger hottooltip";
+            e.className = "tbtn-on hottooltip";
             e.setAttribute("data-hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
         } else {
-            e.className = "btn btn-default hottooltip";
+            e.className = "tbtn hottooltip";
             e.setAttribute("data-hottooltip", "Start meeting tracker");
         }
     }
@@ -2916,7 +2916,7 @@ function save_editor(elt, action, really) {
                 papercomment.add(cmts.cnew);
         }
         if (!data.ok)
-            x.j.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror">' + data.error + '</div>' : data.msg);
+            x.j.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
         else if (data.cmt)
             render_cmt(x.j, data.cmt, editing_response, data.msg);
         else
@@ -4393,7 +4393,7 @@ function edit_anno(locator) {
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="1000" /></td></tr>');
         hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="1000" />', '</td></tr>');
         if (anno.annoid)
-            hc.push(' <a class="btn btn-transparent btn-closer deletegroup-link hottooltip" href="#" style="display:inline-block;margin-left:0.5em" data-hottooltip="Delete group">x</a>');
+            hc.push(' <a class="closebtn deletegroup-link hottooltip" href="#" style="display:inline-block;margin-left:0.5em" data-hottooltip="Delete group">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -5215,7 +5215,7 @@ function save_tags() {
     function done(msg) {
         $("#foldtags .xmerror").remove();
         if (msg)
-            $("#papstriptagsedit").prepend('<div class="xmsg xmerror">' + msg + '</div>');
+            $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + msg + '</div><div class="xmsg1"></div></div>');
     }
     $.ajax(ajax_link_errors({
         url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),

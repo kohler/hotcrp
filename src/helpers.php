@@ -972,7 +972,7 @@ function actionBar($mode = null, $prow = null) {
     if ($quicklinks_txt)
         $x .= $quicklinks_txt;
     if ($quicklinks_txt && $Me->privChair && $listtype == "p")
-        $x .= "  <td id=\"trackerconnect\" class=\"nw\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"btn btn-default hottooltip\" data-hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
+        $x .= "  <td id=\"trackerconnect\" class=\"nw\"><a id=\"trackerconnectbtn\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(1)\" class=\"tbtn hottooltip\" data-hottooltip=\"Start meeting tracker\">&#9759;</a><td>\n";
 
     $x .= "  <td class='gopaper nw'>" . goPaperForm($goBase, $xmode) . "</td>\n";
 

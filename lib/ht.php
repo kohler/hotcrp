@@ -295,47 +295,19 @@ class Ht {
             return "";
         $js = $js ? : array();
         if (!isset($js["class"]))
-            $js["class"] = "aa";
+            $js["class"] = "aab";
         $t = "<div" . self::extra($js) . ">";
-        if ($js["class"] === "aab") {
-            foreach ($actions as $a) {
-                $t .= '<div class="aabut">';
-                if (is_array($a)) {
-                    $t .= $a[0];
-                    if (count($a) > 1)
-                        $t .= '<br><span class="hint">' . $a[1] . '</span>';
-                } else
-                    $t .= $a;
-                $t .= '</div>';
-            }
-            $t .= '<hr class="c">';
-        } else if (count($actions) > 1 || is_array($actions[0])) {
-            $t .= "<table class=\"pt_buttons\"><tr>";
-            $explains = 0;
-            foreach ($actions as $a) {
-                $t .= "<td class=\"ptb_button\">";
-                if (is_array($a)) {
-                    $t .= $a[0];
-                    $explains += count($a) > 1;
-                } else
-                    $t .= $a;
-                $t .= "</td>";
-            }
-            $t .= "</tr>";
-            if ($explains) {
-                $t .= "<tr>";
-                foreach ($actions as $a) {
-                    $t .= "<td class=\"ptb_explain\">";
-                    if (is_array($a) && count($a) > 1)
-                        $t .= $a[1];
-                    $t .= "</td>";
-                }
-                $t .= "</tr>";
-            }
-            $t .= "</table>";
-        } else
-            $t .= $actions[0];
-        return $t . $extra_text . "</div>\n";
+        foreach ($actions as $a) {
+            $t .= '<div class="aabut">';
+            if (is_array($a)) {
+                $t .= $a[0];
+                if (count($a) > 1)
+                    $t .= '<br><span class="hint">' . $a[1] . '</span>';
+            } else
+                $t .= $a;
+            $t .= '</div>';
+        }
+        return $t . '<hr class="c" />' . $extra_text . "</div>\n";
     }
 
     static function pre($html) {

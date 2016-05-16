@@ -389,4 +389,12 @@ int main() {
         fprintf(stdout, "%s\n", s.svg().c_str());
         fprintf(stdout, "%s\n", s.svg_base64().c_str());
     }
+
+    {
+        Stripe s(M_PI / 4);
+        s.add(Rgba{0xce, 0xc1, 0xff, 1}, 2);
+        s.add(Rgba{0x99, 0x99, 0xbf, 1}, 1);
+        fprintf(stdout, "%s\n", s.svg().c_str());
+        fprintf(stdout, "%s\n", s.svg_base64().c_str());
+    }
 }
