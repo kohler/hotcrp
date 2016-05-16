@@ -1730,15 +1730,22 @@ class PaperTable {
     }
 
     function echoActions($top) {
-        global $Conf, $Me;
-        $prow = $this->prow;
+        global $Conf;
+
+        if ($this->admin && !$top) {
+            $v = (string) $this->qreq->emailNote;
+            echo "<div>", Ht::checkbox("doemail", 1, true), "&nbsp;",
+                Ht::label("Email authors, including:"), "&nbsp; ",
+                Ht::entry("emailNote", $v,
+                          array("id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation")), "</div>\n";
+        }
 
         $buttons = $this->_collectActionButtons();
 
-        if ($this->admin && $prow) {
+        if ($this->admin && $this->prow) {
             $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)"), "(admin only)");
             $Conf->footerHtml("<div class='popupbg' style='display:none'><div id='popup_delp' class='popupc'>"
-    . Ht::form_div(hoturl_post("paper", "p={$prow->paperId}&amp;m=edit"))
+    . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
     . "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
@@ -1749,16 +1756,6 @@ class PaperTable {
         }
 
         echo Ht::actions($buttons, array("class" => "aab"));
-        if ($this->admin && !$top) {
-            $v = (string) $this->qreq->emailNote;
-            echo "  <div class='g'></div>\n  <table>\n",
-                "    <tr><td>",
-                Ht::checkbox("doemail", 1, true), "&nbsp;",
-                Ht::label("Email authors, including:"), "&nbsp; ",
-                Ht::entry("emailNote", $v,
-                          array("id" => "emailNote", "size" => 30, "placeholder" => "Optional explanation")),
-                "</td></tr>\n  </table>\n";
-        }
     }
 
 
