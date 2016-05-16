@@ -344,8 +344,7 @@ CREATE TABLE `PaperStorage` (
   `originalStorageId` int(11) DEFAULT NULL,
   PRIMARY KEY (`paperStorageId`),
   UNIQUE KEY `paperStorageId` (`paperStorageId`),
-  KEY `paperId` (`paperId`),
-  KEY `mimetype` (`mimetype`)
+  KEY `byPaper` (`paperId`,`documentType`,`timestamp`,`paperStorageId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -486,7 +485,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 136);
+insert into Settings (name, value) values ('allowPaperOption', 137);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

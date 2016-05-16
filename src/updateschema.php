@@ -989,6 +989,11 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql("alter table PaperStorage add `mimetypeid` int(11) NOT NULL DEFAULT '0'")
         && Dbl::ql("update PaperStorage, Mimetype set PaperStorage.mimetypeid=Mimetype.mimetypeid where PaperStorage.mimetype=Mimetype.mimetype"))
         $Conf->update_schema_version(136);
+    if ($Conf->sversion == 136
+        && Dbl::ql("alter table PaperStorage drop key `paperId`")
+        && Dbl::ql("alter table PaperStorage drop key `mimetype`")
+        && Dbl::ql("alter table PaperStorage add key `byPaper` (`paperId`,`documentType`,`timestamp`,`paperStorageId`)"))
+        $Conf->update_schema_version(137);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }
