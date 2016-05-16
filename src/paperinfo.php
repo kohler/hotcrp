@@ -93,6 +93,63 @@ class PaperInfo_Author {
     }
 }
 
+class PaperDocumentInfo {
+    public $paperStorageId;
+    public $paperId;
+    public $documentType;
+    public $timestamp;
+    public $mimetype;
+    public $mimetypeid;
+    public $sha1;
+    public $size;
+    public $content;
+    public $compression;
+    public $filename;
+    public $unique_filename;
+    public $infoJson;
+    public $infoJson_str;
+    public $filterType;
+    public $originalStorageId;
+    public $docclass;
+    public $is_partial = false;
+
+    public function __construct($p = null) {
+        $this->merge($p);
+    }
+
+    private function merge($p) {
+        if ($p)
+            foreach ($p as $k => $v)
+                $this->$k = $v;
+        $this->paperStorageId = (int) $this->paperStorageId;
+        $this->paperId = (int) $this->paperId;
+        $this->documentType = (int) $this->documentType;
+        $this->timestamp = (int) $this->timestamp;
+        $this->mimetypeid = (int) $this->mimetypeid;
+        $this->size = (int) $this->size;
+        if (is_string($this->infoJson))
+            $this->infoJson_str = $this->infoJson;
+        $this->infoJson = $this->infoJson ? json_decode($this->infoJson) : null;
+        $this->filterType = $this->filterType ? (int) $this->filterType : null;
+        $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
+        $this->docclass = HotCRPDocument::get($this->documentType);
+
+        // in modern versions sha1 is set at storage time; before it wasn't
+        if ($this->paperStorageId > 1 && $this->sha1 == ""
+            && $this->docclass->load_content($this)) {
+            $this->sha1 = sha1($this->content, true);
+            Dbl::q("update PaperStorage set sha1=? where paperStorageId=?", $this->sha1, $this->paperStorageId);
+        }
+    }
+
+    static public function fetch($result) {
+        $di = $result ? $result->fetch_object("PaperDocumentInfo") : null;
+        if ($di && !is_int($di->paperStorageId))
+            $di->merge(null);
+        return $di;
+    }
+}
+
 class PaperInfo {
     public $paperId;
     public $title;
@@ -114,6 +171,7 @@ class PaperInfo {
     private $_topic_interest_score_array = null;
     private $_option_array = null;
     private $_all_option_array = null;
+    private $_document_array = null;
     private $_conflicts;
     private $_conflicts_email;
 
@@ -617,24 +675,53 @@ class PaperInfo {
         return get($this->all_options(), $id);
     }
 
-    public function document($dtype, $did = 0) {
-        assert($did || $dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL);
-        if ($dtype == DTYPE_SUBMISSION || $dtype == DTYPE_FINAL) {
-            if ($this->finalPaperStorageId <= 0)
-                $psi = [DTYPE_SUBMISSION, $this->paperStorageId];
+    private function _add_documents($dids) {
+        if ($this->_document_array === null)
+            $this->_document_array = [];
+        $result = Dbl::qe("select paperStorageId, $this->paperId paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId ?a", $dids);
+        while (($di = PaperDocumentInfo::fetch($result)))
+            $this->_document_array[$di->paperStorageId] = $di;
+        Dbl::free($result);
+    }
+
+    public function document($dtype, $did = 0, $full = false) {
+        if ($did <= 0) {
+            if ($dtype == DTYPE_SUBMISSION)
+                $did = $this->paperStorageId;
+            else if ($dtype == DTYPE_FINAL)
+                $did = $this->finalPaperStorageId;
+            else if (($oa = $this->option($dtype)) && $oa->option->is_document())
+                $did = $oa->value;
             else
-                $psi = [DTYPE_FINAL, $this->finalPaperStorageId];
-            if ($did == 0 || $did == $psi[1])
-                return (object) ["paperId" => $this->paperId,
-                                 "documentType" => $psi[0],
-                                 "paperStorageId" => $psi[1],
-                                 "mimetype" => get_s($this, "mimetype"),
-                                 "size" => get_i($this, "size"),
-                                 "timestamp" => get_i($this, "timestamp"),
-                                 "sha1" => get_s($this, "sha1")];
+                assert(false);
         }
-        // load document object from database if pre-loaded version doesn't work
-        return Dbl::fetch_first_object("select paperId, documentType, paperStorageId, mimetype, size, timestamp, sha1, filename from PaperStorage where paperStorageId=?", $did);
+        if ($did <= 0)
+            return null;
+
+        if ($this->_document_array !== null && isset($this->_document_array[$did]))
+            return $this->_document_array[$did];
+
+        if ((($dtype == DTYPE_SUBMISSION && $did == $this->paperStorageId && $this->finalPaperStorageId <= 0)
+             || ($dtype == DTYPE_FINAL && $did == $this->finalPaperStorageId))
+            && !$full)
+            return new PaperDocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => get($this, "mimetype"), "sha1" => get($this, "sha1"), "size" => get($this, "size"), "is_partial" => true]);
+
+        if ($this->_document_array === null) {
+            $x = [];
+            if ($this->paperStorageId > 0)
+                $x[] = $this->paperStorageId;
+            if ($this->finalPaperStorageId > 0)
+                $x[] = $this->finalPaperStorageId;
+            foreach ($this->options() as $oa)
+                if ($oa->option->has_document_storage())
+                    $x = array_merge($x, $oa->values);
+            if ($did > 0)
+                $x[] = $did;
+            $this->_add_documents($x);
+        }
+        if ($did > 0 && !isset($this->_document_array[$did]))
+            $this->_add_documents([$did]);
+        return $did > 0 ? get($this->_document_array, $did) : null;
     }
 
     public function num_reviews_submitted() {

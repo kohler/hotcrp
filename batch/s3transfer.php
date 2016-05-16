@@ -31,7 +31,8 @@ foreach ($sids as $sid) {
         compression, sha1, documentType, filename, infoJson,
         paper is null as paper_null
         from PaperStorage where paperStorageId=$sid");
-    $doc = $Conf->document_row($result, null);
+    $doc = PaperDocumentInfo::fetch($result);
+    Dbl::free($result);
     if ($doc->paper_null && !$doc->docclass->filestore_check($doc))
         continue;
     $saved = $checked = $doc->docclass->s3_check($doc);

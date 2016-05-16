@@ -48,13 +48,11 @@ class PaperStatus {
 
     public function document_to_json($dtype, $docid) {
         global $Conf;
-        if (!is_object($docid)) {
-            $dresult = $Conf->document_result($this->paperid, $dtype, $docid);
-            $drow = $Conf->document_row($dresult, $dtype);
-            Dbl::free($dresult);
-        } else {
+        if (!is_object($docid))
+            $drow = $this->prow ? $this->prow->document($dtype, $docid) : null;
+        else {
             $drow = $docid;
-            $docid = $drow ? $drow->paperStorageId : null;
+            $docid = $drow->paperStorageId;
         }
         $d = (object) array();
         if ($docid && !$this->hide_docids)

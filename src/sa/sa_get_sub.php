@@ -62,11 +62,11 @@ class GetDocument_SearchAction extends SearchAction {
         while (($row = PaperInfo::fetch($result, $user)))
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
                 Conf::msg_error(whyNotText($whyNot, "view"));
-            else
-                $downloads[] = $row->paperId;
+            else if (($doc = $row->document($opt->id)))
+                $downloads[] = $doc;
         if (count($downloads)) {
             session_write_close(); // it can take a while to generate the download
-            if ($Conf->downloadPaper($downloads, true, $this->dt))
+            if ($Conf->download_documents($downloads, true))
                 exit;
         }
         // XXX how to return errors?
@@ -87,13 +87,12 @@ class GetCheckFormat_SearchAction extends SearchAction {
                 $papers[$prow->paperId] = $prow;
         $csvg = downloadCSV(false, ["paper", "title", "pages", "format"], "formatcheck");
         echo $csvg->headerline;
-        $format = $Conf->setting_data("sub_banal", "");
         foreach ($ssel->reorder($papers) as $prow) {
             $pages = "?";
             if ($prow->mimetype == "application/pdf") {
                 $cf = new CheckFormat;
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
-                if ($cf->analyzePaper($prow->paperId, $dtype, $format)) {
+                if ($cf->check_document($prow, $dtype)) {
                     $format = array();
                     foreach (CheckFormat::$error_types as $en => $etxt)
                         if ($cf->errors & $en)

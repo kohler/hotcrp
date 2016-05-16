@@ -98,14 +98,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
     $dt = HotCRPDocument::parse_dtype(req("dt"));
     if ($dt === null)
         $dt = req("final") ? DTYPE_FINAL : DTYPE_SUBMISSION;
-    $suffix = "";
-    if ($dt)
-        $suffix = $dt < 0 ? "_m" . -$dt : "_" . $dt;
-    if ($Conf->setting("sub_banal$suffix"))
-        $format = $Conf->setting_data("sub_banal$suffix", "");
-    else
-        $format = $Conf->setting_data("sub_banal", "");
-    $status = $cf->analyzePaper($prow->paperId, $dt, $format);
+    $status = $cf->check_document($prow, $dt);
 
     // chairs get a hint message about multiple checking
     if ($Me->privChair) {

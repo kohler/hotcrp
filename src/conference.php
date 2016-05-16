@@ -1448,55 +1448,6 @@ class Conf {
         return array_keys($ids);
     }
 
-    function document_result($prow, $documentType, $docid = null) {
-        global $Opt;
-        if (is_array($prow) && count($prow) <= 1)
-            $prow = (count($prow) ? $prow[0] : -1);
-        if (is_numeric($prow))
-            $paperMatch = "=" . $prow;
-        else if (is_array($prow))
-            $paperMatch = " in (" . join(",", $prow) . ")";
-        else
-            $paperMatch = "=" . $prow->paperId;
-        $q = "select p.paperId, s.mimetype, s.sha1, s.timestamp, ";
-        if (!get($Opt, "docstore") && !is_array($prow))
-            $q .= "s.paper as content, ";
-        $q .= "s.filename, s.infoJson, $documentType documentType, s.paperStorageId from Paper p";
-        if ($docid)
-            $sjoin = $docid;
-        else if ($documentType == DTYPE_SUBMISSION)
-            $sjoin = "p.paperStorageId";
-        else if ($documentType == DTYPE_FINAL)
-            $sjoin = "p.finalPaperStorageId";
-        else {
-            $q .= " left join PaperOption o on (o.paperId=p.paperId and o.optionId=$documentType)";
-            $sjoin = "o.value";
-        }
-        $q .= " left join PaperStorage s on (s.paperStorageId=$sjoin) where p.paperId$paperMatch";
-        return $this->q($q);
-    }
-
-    function document_row($result, $dtype = DTYPE_SUBMISSION) {
-        if (!($doc = edb_orow($result)))
-            return $doc;
-        // type doesn't matter
-        if ($dtype === null && isset($doc->documentType))
-            $dtype = $doc->documentType = (int) $doc->documentType;
-        $doc->docclass = new HotCRPDocument($dtype);
-        // in modern versions sha1 is set at storage time; before it wasn't
-        if ($doc->paperStorageId > 1 && $doc->sha1 == ""
-            && $doc->docclass->load_content($doc)) {
-            $doc->sha1 = sha1($doc->content, true);
-            Dbl::q("update PaperStorage set sha1=? where paperStorageId=?", $doc->sha1, $doc->paperStorageId);
-        }
-        // unparse infoJson
-        if ($doc->infoJson) {
-            $doc->infoJson_str = $doc->infoJson;
-            $doc->infoJson = json_decode($doc->infoJson);
-        }
-        return $doc;
-    }
-
     function update_document_metadata($doc, $delta) {
         if ($doc->paperStorageId <= 1)
             return false;
@@ -1523,45 +1474,24 @@ class Conf {
         return true;
     }
 
-    private function __downloadPaper($paperId, $attachment, $documentType, $docid) {
-        global $Opt, $Me;
-
-        if (is_object($docid))
-            $docs = array($docid);
-        else {
-            $result = $this->document_result($paperId, $documentType, $docid);
-            if (!$result) {
-                $this->log("Download error: " . $this->dblink->error, $Me, $paperId);
-                return set_error_html("Database error while downloading paper.");
-            } else if (edb_nrows($result) == 0)
-                return set_error_html("No such document.");
-
-            // Check data
-            $docs = array();
-            while (($doc = $this->document_row($result, $documentType))) {
-                if (!$doc->mimetype)
-                    $doc->mimetype = Mimetype::PDF;
-                $doc->filename = HotCRPDocument::filename($doc);
-                $docs[] = $doc;
-            }
-            Dbl::free($result);
+    public function download_documents($docs, $attachment) {
+        global $Opt;
+        if (count($docs) == 1 && $docs[0]->paperStorageId <= 1) {
+            self::msg_error("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
+            return false;
         }
 
-        if (count($docs) == 1 && $docs[0]->paperStorageId <= 1)
-            return set_error_html("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
+        foreach ($docs as $doc)
+            $doc->filename = HotCRPDocument::filename($doc);
         $downloadname = false;
         if (count($docs) > 1) {
-            $name = HotCRPDocument::unparse_dtype($documentType);
-            if ($documentType <= 0)
+            $name = HotCRPDocument::unparse_dtype($docs[0]->documentType);
+            if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);
             $downloadname = $Opt["downloadPrefix"] . "$name.zip";
-        }
-        return Filer::multidownload($docs, $downloadname, $attachment);
-    }
 
-    function downloadPaper($paperId, $attachment, $documentType = DTYPE_SUBMISSION, $docid = null) {
-        global $Me;
-        $result = $this->__downloadPaper($paperId, $attachment, $documentType, $docid);
+        }
+        $result = Filer::multidownload($docs, $downloadname, $attachment);
         if ($result->error) {
             self::msg_error($result->error_html);
             return false;

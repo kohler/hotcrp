@@ -25,6 +25,7 @@ class CheckFormat {
     public $banal_stdout;
     public $banal_sterr;
     public $banal_status;
+    private $tempdir = null;
 
     function __construct() {
         $this->msgs = array();
@@ -326,54 +327,59 @@ class CheckFormat {
         return $this->check_banal_json($bj, $spec);
     }
 
-    function _analyzePaper($paperId, $documentType, $spec, &$tmpdir) {
+    function check_document(PaperInfo $prow, $dtype, $did = 0) {
         global $Conf, $Opt;
-        $result = $Conf->document_result($paperId, $documentType);
-        if (!($row = $Conf->document_row($result))
-            || $row->paperStorageId <= 1)
-            return $this->msg("error", "No such paper.");
-        if ($row->mimetype != "application/pdf")
-            return $this->msg("error", "The format checker only works for PDF files.");
-        list($spec, $banal_args) = self::split_spec($spec);
-        if ($row->infoJson && isset($row->infoJson->banal)
-            && $row->infoJson->banal->at >= @filemtime("src/banal")
-            && get($row->infoJson->banal, "args") == $banal_args)
-            $bj = $row->infoJson->banal;
-        else {
-            if (!$row->docclass->load($row))
-                return $this->msg("error", "Paper cannot be loaded.");
-            if (!isset($row->filestore)) {
-                if (!$tmpdir && ($tmpdir = tempdir()) == false)
-                    return $this->msg("error", "Cannot create temporary directory.");
-                if (file_put_contents("$tmpdir/paper.pdf", $row->content) != strlen($row->content))
-                    return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
-                $row->filestore = "$tmpdir/paper.pdf";
-            }
-            $bj = $this->run_banal($row->filestore, $banal_args);
-            if ($bj && is_object($bj) && isset($bj->pages))
-                $Conf->update_document_metadata($row, ["npages" => count($bj->pages), "banal" => $bj]);
+
+        $suffix = "";
+        if ($dtype)
+            $suffix = $dtype < 0 ? "_m" . -$dtype : "_" . $dtype;
+        if ($Conf->setting("sub_banal$suffix"))
+            $formatspec = $Conf->setting_data("sub_banal$suffix", "");
+        else
+            $formatspec = $Conf->setting_data("sub_banal", "");
+        if ($formatspec === "") {
+            $this->msg("confirm", "There are no formatting requirements defined for this document.");
+            return 2;
         }
+        if (!($doc = $prow->document($dtype, $did, true)) || $doc->paperStorageId <= 1)
+            return $this->msg("error", "No such document.");
+        if ($doc->mimetype != "application/pdf")
+            return $this->msg("error", "The format checker only works for PDF files.");
+
+        list($spec, $banal_args) = self::split_spec($formatspec);
+        if ($doc->infoJson && isset($doc->infoJson->banal)
+            && $doc->infoJson->banal->at >= @filemtime("src/banal")
+            && get($doc->infoJson->banal, "args") == $banal_args)
+            $bj = $doc->infoJson->banal;
+        else {
+            // constrain the number of concurrent banal executions to banalLimit
+            // (counter resets every 2 seconds)
+            $t = (int) (time() / 2);
+            $n = ($Conf->setting_data("__banal_count") == $t ? $Conf->setting("__banal_count") + 1 : 1);
+            $limit = get($Opt, "banalLimit", 8);
+            if ($limit > 0 && $n > $limit)
+                return $this->msg("error", "Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
+            if ($limit > 0)
+                Dbl::q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
+
+            if (!$doc->docclass->load($doc))
+                return $this->msg("error", "Paper cannot be loaded.");
+            if (!isset($doc->filestore)) {
+                if (!$this->tempdir && ($this->tempdir = tempdir()) == false)
+                    return $this->msg("error", "Cannot create temporary directory.");
+                if (file_put_contents("$this->tempdir/paper.pdf", $doc->content) != strlen($doc->content))
+                    return $this->msg("error", "Failed to save PDF to temporary file for analysis.");
+                $doc->filestore = "$this->tempdir/paper.pdf";
+            }
+            $bj = $this->run_banal($doc->filestore, $banal_args);
+            if ($bj && is_object($bj) && isset($bj->pages))
+                $Conf->update_document_metadata($doc, ["npages" => count($bj->pages), "banal" => $bj]);
+
+            if ($limit > 0)
+                Dbl::q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
+        }
+
         return $this->check_banal_json($bj, $spec);
-    }
-
-    function analyzePaper($paperId, $documentType, $spec = "") {
-        global $Conf, $Opt;
-        // constrain the number of concurrent banal executions to banalLimit
-        // (counter resets every 2 seconds)
-        $t = (int) (time() / 2);
-        $n = ($Conf->setting_data("__banal_count") == $t ? $Conf->setting("__banal_count") + 1 : 1);
-        $limit = get($Opt, "banalLimit", 8);
-        if ($limit > 0 && $n > $limit)
-            return $this->msg("error", "Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
-        if ($limit > 0)
-            Dbl::q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
-
-        $tmpdir = null;
-        $status = $this->_analyzePaper($paperId, $documentType, $spec, $tmpdir);
-
-        if ($limit > 0)
-            Dbl::q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
-        return $status;
     }
 
     function reportMessages() {

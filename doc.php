@@ -68,18 +68,20 @@ function document_download() {
              && !$Me->can_view_paper_option($prow, $documentType, true))
         document_error("403 Forbidden", "You don’t have permission to view this document.");
 
+    $doc = null;
     if ($attachment_filename) {
         $oa = $prow->option($documentType);
-        foreach ($oa ? $oa->documents($prow) : array() as $doc)
-            if ($doc->unique_filename == $attachment_filename)
-                $docid = $doc;
-        if (!$docid)
-            document_error("404 Not Found", "No such attachment “" . htmlspecialchars($orig_s) . "”.");
-    }
+        foreach ($oa ? $oa->documents($prow) : array() as $xdoc)
+            if ($xdoc->unique_filename == $attachment_filename)
+                $doc = $xdoc;
+    } else
+        $doc = $prow->document($documentType);
+    if (!$doc)
+        document_error("404 Not Found", "No such " . ($attachment_filename ? "attachment" : "document") . " “" . htmlspecialchars($orig_s) . "”.");
 
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
-    if ($Conf->downloadPaper($prow, cvtint(@$_REQUEST["save"]) > 0, $documentType, $docid))
+    if ($Conf->download_documents([$doc], cvtint(@$_REQUEST["save"]) > 0))
         exit;
 
     document_error("500 Server Error", null);

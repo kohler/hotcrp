@@ -10,6 +10,7 @@ class HotCRPDocument extends Filer {
     private $no_filestore = false;
     static private $_s3_document = false;
     static private $_docstore = null;
+    static private $map = [];
 
     public function __construct($dtype, $option = null) {
         $this->dtype = $dtype;
@@ -17,6 +18,12 @@ class HotCRPDocument extends Filer {
             $this->option = $option;
         else if ($this->dtype > 0)
             $this->option = PaperOption::find($dtype);
+    }
+
+    static public function get($dtype) {
+        if (!isset(self::$map[$dtype]))
+            self::$map[$dtype] = new HotCRPDocument($dtype);
+        return self::$map[$dtype];
     }
 
     public function set_no_database_storage() {
