@@ -2188,14 +2188,14 @@ class Conf {
         if (PHP_SAPI == "cli") {
             if ($type === "xmerror" || $type === "merror")
                 fwrite(STDERR, "$text\n");
-            else if ($type === "xwarning" || $type === "mxwarning"
+            else if ($type === "xwarning" || $type === "warning"
                      || !defined("HOTCRP_TESTHARNESS"))
                 fwrite(STDOUT, "$text\n");
         } else if ($this->save_messages) {
             ensure_session();
             $this->save_session_array("msgs", true, array($type, $text));
         } else if ($type[0] == "x")
-            echo Ht::xmsg($text, $type);
+            echo Ht::xmsg($type, $text);
         else
             echo "<div class=\"$type\">$text</div>";
     }
