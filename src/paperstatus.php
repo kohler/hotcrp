@@ -883,7 +883,7 @@ class PaperStatus {
                 $new_joindoc = $pj->final;
             else if ($newFinalPaperStorageId === null && $old_pj && isset($old_pj->final))
                 $new_joindoc = $old_pj->final;
-            else if ($newPaperStorageId > 0)
+            else if ($newPaperStorageId > 1)
                 $new_joindoc = $pj->submission;
             else if ($newPaperStorageId === null && $old_pj && isset($old_pj->submission))
                 $new_joindoc = $old_pj->submission;
