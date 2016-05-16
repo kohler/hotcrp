@@ -640,7 +640,7 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        if (($doc = $ps->document_to_json($this->id, $ov->value)))
+        if ($ov->value && ($doc = $ps->document_to_json($this->id, $ov->value)))
             return $doc;
         return null;
     }
