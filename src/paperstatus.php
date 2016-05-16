@@ -810,18 +810,24 @@ class PaperStatus {
                              && !$pj->nonblind != !$old_pj->nonblind)))
             $q[] = "blind=" . (get($pj, "nonblind") ? 0 : 1);
 
+        $newPaperStorageId = null;
         if (!$old_pj || get($pj, "submission") !== null) {
             $new_id = get($pj, "submission") ? $pj->submission->docid : 1;
             $old_id = $old_pj && get($old_pj, "submission") ? $old_pj->submission->docid : 1;
-            if (!$old_pj || $new_id != $old_id)
+            if (!$old_pj || $new_id != $old_id) {
                 $q[] = "paperStorageId=$new_id";
+                $newPaperStorageId = $new_id;
+            }
         }
 
+        $newFinalPaperStorageId = null;
         if (!$old_pj || get($pj, "final") !== null) {
             $new_id = get($pj, "final") ? $pj->final->docid : 0;
             $old_id = $old_pj && get($old_pj, "final") ? $old_pj->final->docid : 0;
-            if (!$old_pj || $new_id != $old_id)
+            if (!$old_pj || $new_id != $old_id) {
                 $q[] = "finalPaperStorageId=$new_id";
+                $newFinalPaperStorageId = $new_id;
+            }
         }
 
         if (get($pj, "withdrawn") !== null
@@ -867,22 +873,30 @@ class PaperStatus {
             else if ($Conf->submission_blindness() != Conf::BLIND_OPTIONAL)
                 $q[] = "blind=1";
 
-            $joindoc = $old_joindoc = null;
-            if (get($pj, "final")) {
-                $joindoc = $pj->final;
-                $old_joindoc = $old_pj ? get($old_pj, "final") : null;
-            } else if (get($pj, "submission")) {
-                $joindoc = $pj->submission;
-                $old_joindoc = $old_pj ? get($old_pj, "submission") : null;
-            }
-            if ($joindoc
-                && (!$old_joindoc || $old_joindoc->docid != $joindoc->docid)
-                && get($joindoc, "size") && get($joindoc, "timestamp")) {
-                $q[] = "size=" . $joindoc->size;
-                $q[] = "mimetype='" . sqlq($joindoc->mimetype) . "'";
-                $q[] = "sha1='" . sqlq($joindoc->sha1) . "'";
-                $q[] = "timestamp=" . $joindoc->timestamp;
-            } else if (!$joindoc)
+            if ($old_pj && isset($old_pj->final))
+                $old_joindoc = $old_pj->final;
+            else if ($old_pj && isset($old_pj->submission))
+                $old_joindoc = $old_pj->submission;
+            else
+                $old_joindoc = null;
+            if ($newFinalPaperStorageId > 0)
+                $new_joindoc = $pj->final;
+            else if ($newFinalPaperStorageId === null && $old_pj && isset($old_pj->final))
+                $new_joindoc = $old_pj->final;
+            else if ($newPaperStorageId > 0)
+                $new_joindoc = $pj->submission;
+            else if ($newPaperStorageId === null && $old_pj && isset($old_pj->submission))
+                $new_joindoc = $old_pj->submission;
+            else
+                $new_joindoc = null;
+            if ($new_joindoc
+                && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)
+                && get($new_joindoc, "size") && get($new_joindoc, "timestamp")) {
+                $q[] = "size=" . $new_joindoc->size;
+                $q[] = "mimetype='" . sqlq($new_joindoc->mimetype) . "'";
+                $q[] = "sha1='" . sqlq($new_joindoc->sha1) . "'";
+                $q[] = "timestamp=" . $new_joindoc->timestamp;
+            } else if (!$old_joindoc)
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
 
             if ($paperid) {

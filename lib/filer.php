@@ -540,16 +540,20 @@ class Filer {
     }
     function upload($doc, $docinfo) {
         global $Conf;
-        if (is_object($doc)) {
-            $doc = clone $doc;
-            if (!$this->load($doc) && !get($doc, "error_html"))
-                set_error_html($doc, "The uploaded file was empty.");
-        } else
-            $doc = self::file_upload_json($doc);
+        if (!is_object($doc)) {
+            error_log(caller_landmark() . ": Filer::upload called with non-object");
+            return null;
+        }
+
+        $doc = clone $doc;
+        if (!$this->load($doc) && !get($doc, "error_html"))
+            set_error_html($doc, "The uploaded file was empty.");
         if (get($doc, "error"))
             return $doc;
 
         // Check if paper one of the allowed mimetypes.
+        if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
+            $doc->mimetype = $doc->type;
         if (!get($doc, "mimetype"))
             $doc->mimetype = "application/octet-stream";
         // Sniff content since MacOS browsers supply bad mimetypes.
