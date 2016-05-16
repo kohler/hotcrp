@@ -436,13 +436,9 @@ class PaperTable {
         $documentType = $docx->id;
         $optionType = $docx->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
-        $banal = false;
-        if ($optionType === null || $optionType === "pdf") {
-            $suffix = "";
-            if ($documentType)
-                $suffix = $documentType < 0 ? "_m" . -$documentType : "_" . $documentType;
-            $banal = $Conf->setting("sub_banal$suffix");
-        }
+        $banal_spec = $banal_result = false;
+        if ($optionType === null || $optionType === "pdf")
+            $banal_spec = CheckFormat::document_spec($documentType);
 
         $filetypes = array();
         $accepts = array();
@@ -463,15 +459,25 @@ class PaperTable {
 
         // current version, if any
         $doc = null;
+        $banal_cf = null;
         $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
         if ($prow && $Me->can_view_pdf($prow) && $storageId > 1
-            && (($doc = $prow->document($documentType, $storageId)))) {
+            && (($doc = $prow->document($documentType, $storageId, true)))) {
+            if ($banal_spec && $doc->mimetype !== "application/pdf")
+                $banal_spec = false;
+            if ($banal_spec) {
+                $banal_cf = new CheckFormat(true);
+                $banal_cf->check_document($prow, $doc);
+            }
+
             echo "<table id='current_$inputid'><tr>",
                 "<td class='nw'>", documentDownload($doc), "</td>";
-            if ($doc->mimetype === "application/pdf" && $banal)
-                echo "<td><span class='sep'></span></td><td><a href='#' onclick='return docheckformat($documentType)'>Check format</a></td>";
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo "<td><span class='sep'></span></td><td>$stamps</td>";
+            if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_NONE)
+                echo "<td><span class='sep'></span></td><td><a href='#' onclick='return docheckformat($documentType)'>Check format</a></td>";
+            else if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_OK)
+                echo "<td><span class='sep'></span></td><td><span class=\"confirm\">Format OK</span></td>";
             echo "</tr></table>\n";
         }
 
@@ -500,13 +506,14 @@ class PaperTable {
                 $uploader .= "</div>";
         }
 
-        if ($prow && $storageId > 1 && $banal
-            && defval($prow, "mimetype", "application/pdf") === "application/pdf") {
+        if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_NONE) {
             echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xmsg xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
             $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType"), array("id" => "checkformatform$documentType", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('checkformatform$documentType')"))
                               . Ht::hidden("checkformat", 1)
                               . "</div></form>");
-        }
+        } else if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_PROBLEM)
+            echo "<div id=\"foldcheckformat$documentType\" class=\"foldo\">",
+                join("", $banal_cf->messages()), "</div>";
 
         if ($documentType == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);

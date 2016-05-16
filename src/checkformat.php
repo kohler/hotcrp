@@ -4,13 +4,16 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class CheckFormat {
-
     const ERR_PAPERSIZE = 1;
     const ERR_PAGELIMIT = 2;
     const ERR_COLUMNS = 4;
     const ERR_TEXTBLOCK = 8;
     const ERR_BODYFONTSIZE = 16;
     const ERR_BODYLEADING = 32;
+
+    const STATUS_NONE = 0;
+    const STATUS_PROBLEM = 1;
+    const STATUS_OK = 2;
 
     public static $error_types = array(self::ERR_PAPERSIZE => "papersize",
                            self::ERR_PAGELIMIT => "pagelimit",
@@ -19,18 +22,18 @@ class CheckFormat {
                            self::ERR_BODYFONTSIZE => "bodyfontsize",
                            self::ERR_BODYLEADING => "bodyleading");
 
-    var $msgs = array();
+    public $msgs = array();
     public $errors = 0;
     public $pages = 0;
+    public $status = 0;
     public $banal_stdout;
     public $banal_sterr;
     public $banal_status;
     private $tempdir = null;
+    public $no_run = false;
 
-    function __construct() {
-        $this->msgs = array();
-        $this->errors = 0;
-        $this->pages = 0;
+    function __construct($no_run = false) {
+        $this->no_run = $no_run;
     }
 
     public static function parse_dimen($text, $ndimen = -1) {
@@ -126,7 +129,7 @@ class CheckFormat {
 
     function msg($type, $what) {
         $this->msgs[] = array($type, $what);
-        return 0;
+        return self::STATUS_NONE;
     }
 
     static private function split_spec($spec) {
@@ -155,6 +158,7 @@ class CheckFormat {
     }
 
     private function check_banal_json($bj, $spec) {
+        $this->status = self::STATUS_NONE;
         if (!$bj || !isset($bj->pages) || !isset($bj->papersize)
             || !is_array($bj->pages) || !is_array($bj->papersize)
             || count($bj->papersize) != 2)
@@ -313,12 +317,13 @@ class CheckFormat {
 
         // results
         if (count($pie) > 0) {
-            $this->msg("warn", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
-            return 1;
+            $this->msg("warning", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $pie) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
+            $this->status = self::STATUS_PROBLEM;
         } else {
             $this->msg("confirm", "Congratulations, this paper seems to comply with the basic submission format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure that the paper is correctly formatted.");
-            return 2;
+            $this->status = self::STATUS_OK;
         }
+        return $this->status;
     }
 
     public function check_file($filename, $spec) {
@@ -327,30 +332,41 @@ class CheckFormat {
         return $this->check_banal_json($bj, $spec);
     }
 
-    function check_document(PaperInfo $prow, $dtype, $did = 0) {
-        global $Conf, $Opt;
-
+    static public function document_spec($dtype) {
+        global $Conf;
         $suffix = "";
         if ($dtype)
             $suffix = $dtype < 0 ? "_m" . -$dtype : "_" . $dtype;
         if ($Conf->setting("sub_banal$suffix"))
-            $formatspec = $Conf->setting_data("sub_banal$suffix", "");
+            return $Conf->setting_data("sub_banal$suffix", "");
         else
-            $formatspec = $Conf->setting_data("sub_banal", "");
-        if ($formatspec === "") {
-            $this->msg("confirm", "There are no formatting requirements defined for this document.");
-            return 2;
+            return "";
+    }
+
+    function check_document(PaperInfo $prow, $dtype, $doc = 0) {
+        global $Conf, $Opt;
+        if (is_object($dtype)) {
+            $doc = $dtype;
+            $dtype = $doc->documentType;
         }
-        if (!($doc = $prow->document($dtype, $did, true)) || $doc->paperStorageId <= 1)
+        if (!is_object($doc))
+            $doc = $prow->document($dtype, $doc, true);
+        if (!$doc || $doc->paperStorageId <= 1)
             return $this->msg("error", "No such document.");
         if ($doc->mimetype != "application/pdf")
             return $this->msg("error", "The format checker only works for PDF files.");
+
+        $formatspec = self::document_spec($doc->documentType);
+        if ($formatspec === "")
+            return $this->msg("error", "There are no formatting requirements defined for this document.");
 
         list($spec, $banal_args) = self::split_spec($formatspec);
         if ($doc->infoJson && isset($doc->infoJson->banal)
             && $doc->infoJson->banal->at >= @filemtime("src/banal")
             && get($doc->infoJson->banal, "args") == $banal_args)
             $bj = $doc->infoJson->banal;
+        else if ($this->no_run)
+            return $this->msg("error", "Not running the format checker.");
         else {
             // constrain the number of concurrent banal executions to banalLimit
             // (counter resets every 2 seconds)
@@ -382,16 +398,10 @@ class CheckFormat {
         return $this->check_banal_json($bj, $spec);
     }
 
-    function reportMessages() {
-        global $Conf;
+    public function messages() {
+        $t = [];
         foreach ($this->msgs as $m)
-            if ($m[0] == "error")
-                Conf::msg_error($m[1]);
-            else if ($m[0] == "warn")
-                $Conf->warnMsg($m[1]);
-            else if ($m[0] == "confirm")
-                $Conf->confirmMsg($m[1]);
-            else if ($m[0] == "info")
-                $Conf->infoMsg($m[1]);
+            $t[] = Ht::xmsg($m[0], $m[1]);
+        return $t;
     }
 }

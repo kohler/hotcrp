@@ -108,9 +108,7 @@ if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
             $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='" . hoturl("search", "q=") . "'>search page</a>.");
     }
 
-    $cf->reportMessages();
-    if ($ajax)
-        $Conf->ajaxExit(array("status" => $status), true);
+    $Conf->ajaxExit(array("status" => $status, "response" => join("", $cf->messages())), true);
 }
 
 
