@@ -554,7 +554,7 @@ class Filer {
             $doc->mimetype = "application/octet-stream";
         // Sniff content since MacOS browsers supply bad mimetypes.
         if (($m = Mimetype::sniff(self::content($doc))))
-            $doc->mimetype = $m;
+            $doc->mimetype = $m->mimetype;
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
 

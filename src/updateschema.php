@@ -957,6 +957,38 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 131
         && Dbl::ql("alter table PaperStorage modify `infoJson` varbinary(32768) DEFAULT NULL"))
         $Conf->update_schema_version(132);
+    if ($Conf->sversion == 132
+        && Dbl::ql("DROP TABLE IF EXISTS `Mimetype`")
+        && Dbl::ql("CREATE TABLE `Mimetype` (
+  `mimetypeid` int(11) NOT NULL,
+  `mimetype` varbinary(200) NOT NULL,
+  `extension` varbinary(10) DEFAULT NULL,
+  `description` varbinary(200) DEFAULT NULL,
+  `inline` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`mimetypeid`),
+  UNIQUE KEY `mimetypeid` (`mimetypeid`),
+  UNIQUE KEY `mimetype` (`mimetype`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+        $Conf->update_schema_version(133);
+    if ($Conf->sversion == 133) {
+        $qs = $qvs = [];
+        foreach (Mimetype::builtins() as $m) {
+            $qs[] = "(?, ?, ?, ?, ?)";
+            array_push($qvs, $m->mimetypeid, $m->mimetype, $m->extension, $m->description, $m->inline ? 1 : 0);
+        }
+        if (Dbl::ql_apply("insert into Mimetype (mimetypeid, mimetype, extension, description, inline) values " . join(", ", $qs), $qvs))
+            $Conf->update_schema_version(134);
+    }
+    if ($Conf->sversion == 134) {
+        foreach (Dbl::fetch_first_columns("select distinct mimetype from PaperStorage") as $mt)
+            Mimetype::lookup($mt);
+        if ($OK)
+            $Conf->update_schema_version(135);
+    }
+    if ($Conf->sversion == 135
+        && Dbl::ql("alter table PaperStorage add `mimetypeid` int(11) NOT NULL DEFAULT '0'")
+        && Dbl::ql("update PaperStorage, Mimetype set PaperStorage.mimetypeid=Mimetype.mimetypeid where PaperStorage.mimetype=Mimetype.mimetype"))
+        $Conf->update_schema_version(136);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

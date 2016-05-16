@@ -44,7 +44,7 @@ if (@$arg["f"])
 if (@$arg["m"])
     $doc->mimetype = $arg["m"];
 else if (($m = Mimetype::sniff($doc->content)))
-    $doc->mimetype = $m;
+    $doc->mimetype = $m->mimetype;
 else
     $doc->mimetype = "application/octet-stream";
 $docclass->store($doc, $docinfo);

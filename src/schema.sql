@@ -114,6 +114,24 @@ CREATE TABLE `MailLog` (
 
 
 --
+-- Table structure for table `Mimetype`
+--
+
+DROP TABLE IF EXISTS `Mimetype`;
+CREATE TABLE `Mimetype` (
+  `mimetypeid` int(11) NOT NULL,
+  `mimetype` varbinary(200) NOT NULL,
+  `extension` varbinary(10) DEFAULT NULL,
+  `description` varbinary(200) DEFAULT NULL,
+  `inline` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`mimetypeid`),
+  UNIQUE KEY `mimetypeid` (`mimetypeid`),
+  UNIQUE KEY `mimetype` (`mimetype`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+--
 -- Table structure for table `Paper`
 --
 
@@ -314,6 +332,7 @@ CREATE TABLE `PaperStorage` (
   `paperId` int(11) NOT NULL,
   `timestamp` int(11) NOT NULL,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
+  `mimetypeid` int(11) NOT NULL DEFAULT '0',
   `paper` longblob,
   `compression` tinyint(1) NOT NULL DEFAULT '0',
   `sha1` varbinary(20) NOT NULL DEFAULT '',
@@ -467,7 +486,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 132);
+insert into Settings (name, value) values ('allowPaperOption', 136);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
@@ -484,4 +503,16 @@ insert into Settings (name, value, data) values ('outcome_map', 1, '{"0":"Unspec
 -- default review form
 insert into Settings (name, value, data) values ('review_form',1,'{"overAllMerit":{"name":"Overall merit","position":1,"visibility":"au","options":["Reject","Weak reject","Weak accept","Accept","Strong accept"]},"reviewerQualification":{"name":"Reviewer expertise","position":2,"visibility":"au","options":["No familiarity","Some familiarity","Knowledgeable","Expert"]},"suitableForShort":{"name":"Suitable for short paper","visibility":"au","options":["Not suitable","Can''t tell","Suitable"]},"paperSummary":{"name":"Paper summary","position":3,"display_space":5,"visibility":"au"},"commentsToAuthor":{"name":"Comments for author","position":4,"display_space":15,"visibility":"au"},"commentsToPC":{"name":"Comments for PC","position":5,"display_space":10,"visibility":"pc"}}');
 
-insert into PaperStorage set paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain', paper='' on duplicate key update paper='';
+insert ignore into PaperStorage set
+    paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',
+    mimetypeid=1, paper='', sha1=x'da39a3ee5e6b4b0d3255bfef95601890afd80709',
+    documentType=0, size=0;
+insert ignore into Mimetype (mimetypeid, mimetype, extension, description, inline)
+    values (1, 'text/plain', '.txt', 'text', 1),
+           (2, 'application/pdf', '.pdf', 'PDF', 1),
+           (3, 'application/postscript', '.ps', 'PostScript', 0),
+           (4, 'application/vnd.ms-powerpoint', '.ppt', 'PowerPoint', 0),
+           (5, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.pptx', 'PowerPoint', 0),
+           (6, 'video/mp4', '.mp4', null, 0),
+           (7, 'video/x-msvideo', '.avi', null, 0),
+           (8, 'application/json', '.json', "JSON", 0);

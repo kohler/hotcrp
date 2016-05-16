@@ -172,6 +172,9 @@ class HotCRPDocument extends Filer {
                          "mimetype" => $doc->mimetype,
                          "sha1" => $doc->sha1,
                          "documentType" => $doc->documentType);
+        $columns["mimetype"] = $doc->mimetype;
+        if ($Conf->sversion >= 136 && ($m = Mimetype::lookup($doc->mimetype)))
+            $columns["mimetypeid"] = $m->mimetypeid;
         if (!opt("dbNoPapers"))
             $columns["paper"] = $doc->content;
         if (get($doc, "filename"))

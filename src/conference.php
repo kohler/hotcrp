@@ -120,7 +120,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 132) {
+        if ($this->sversion < 136) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -933,6 +933,11 @@ class Conf {
         $any = $this->invariantq("select email from ContactInfo where password='*' limit 1");
         if ($any)
             trigger_error($Opt["dbName"] . " invariant error: password '*'");
+
+        // mimetypes match
+        $any = $this->invariantq("select paperStorageId from PaperStorage s left join Mimetype m using (mimetypeid) where s.mimetype!=m.mimetype or m.mimetype is null limit 1");
+        if ($any)
+            trigger_error($Opt["dbName"] . " invariant error: bad mimetypeid");
     }
 
 

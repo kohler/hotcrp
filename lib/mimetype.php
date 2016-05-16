@@ -9,50 +9,61 @@ class Mimetype {
     const PS = 3;
     const PPT = 4;
     const JSON = 8;
+    const MAX_BUILTIN = 8;
 
     public $mimetypeid;
     public $mimetype;
     public $extension;
     public $description;
+    public $inline;
 
-    static $tmap = array();
-    static $alltypes = array();
+    private static $tmap = array();
 
-    public function __construct($id, $type, $extension, $description = null) {
-        $this->mimetypeid = (int) $id;
-        $this->mimetype = $type;
-        $this->extension = $extension;
-        $this->description = $description;
+    static function make($id, $type, $extension, $description = null, $inline = false) {
+        $m = new Mimetype;
+        $m->mimetypeid = $id;
+        $m->mimetype = $type;
+        $m->extension = $extension;
+        $m->description = $description;
+        $m->inline = $inline;
+        self::register($m);
     }
 
-    static function register($id, $type, $extension, $description = null) {
-        $m = new Mimetype($id, $type, $extension, $description);
-        self::$tmap[$type] = self::$tmap[$id] = $m;
-        if ($extension)
-            self::$tmap[$extension] = $m;
-        self::$alltypes[] = $m;
+    static function register($m) {
+        $m->mimetypeid = (int) $m->mimetypeid;
+        $m->inline = !!$m->inline;
+        self::$tmap[$m->mimetype] = self::$tmap[$m->mimetypeid] = $m;
+        if ($m->extension)
+            self::$tmap[$m->extension] = $m;
+        return $m;
     }
 
-    static function register_synonym($synonym, $type) {
+    static function make_synonym($synonym, $type) {
         self::$tmap[$synonym] = self::$tmap[$type];
     }
 
-    static function lookup($type) {
+    static function lookup($type, $nocreate = false) {
         if (!$type)
             return null;
         else if (is_object($type))
             return $type;
-        else if (isset(self::$tmap[$type]))
+        else if (array_key_exists($type, self::$tmap))
             return self::$tmap[$type];
-        else
-            return null;
+        else {
+            while (1) {
+                $result = Dbl::qe("select * from Mimetype where mimetype=?", $type);
+                $m = $result ? $result->fetch_object("Mimetype") : null;
+                Dbl::free($m);
+                if ($m || $nocreate)
+                    break;
+                Dbl::qe("insert into Mimetype (mimetypeid, mimetype) select max(greatest(1000,1+mimetypeid)), ? from Mimetype", $type);
+            }
+            return $m ? self::register($m) : null;
+        }
     }
 
     static function lookup_extension($extension) {
-        foreach (self::$alltypes as $t)
-            if ($t->extension === $extension)
-                return $t;
-        return null;
+        return $extension ? get(self::$tmap, $extension) : null;
     }
 
     static function type($type) {
@@ -95,30 +106,37 @@ class Mimetype {
 
     static function disposition_inline($type) {
         $x = self::lookup($type);
-        return $x && $x->mimetypeid <= 2;
+        return $x && $x->inline;
+    }
+
+    static function builtins() {
+        $x = [];
+        for ($i = 1; $i <= self::MAX_BUILTIN; ++$i)
+            $x[] = self::$tmap[$i];
+        return $x;
     }
 
     static function sniff($content) {
         if (strncmp("%PDF-", $content, 5) == 0)
-            return "application/pdf";
+            return self::$tmap[self::PDF];
         else if (strncmp("%!PS-", $content, 5) == 0)
-            return "application/postscript";
+            return self::$tmap[self::PS];
         else if (substr($content, 512, 4) == "\x00\x6E\x1E\xF0")
-            return "application/vnd.ms-powerpoint";
+            return self::$tmap[self::PPT];
         else
             return null;
     }
 }
 
-Mimetype::register(Mimetype::TXT, "text/plain", ".txt", "text");
-Mimetype::register(Mimetype::PDF, "application/pdf", ".pdf", "PDF");
-Mimetype::register(Mimetype::PS, "application/postscript", ".ps", "PostScript");
-Mimetype::register(Mimetype::PPT, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
-Mimetype::register(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
-Mimetype::register(6, "video/mp4", ".mp4");
-Mimetype::register(7, "video/x-msvideo", ".avi");
-Mimetype::register(Mimetype::JSON, "application/json", ".json");
+Mimetype::make(Mimetype::TXT, "text/plain", ".txt", "text", true);
+Mimetype::make(Mimetype::PDF, "application/pdf", ".pdf", "PDF", true);
+Mimetype::make(Mimetype::PS, "application/postscript", ".ps", "PostScript");
+Mimetype::make(Mimetype::PPT, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
+Mimetype::make(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
+Mimetype::make(6, "video/mp4", ".mp4");
+Mimetype::make(7, "video/x-msvideo", ".avi");
+Mimetype::make(Mimetype::JSON, "application/json", ".json", "JSON");
 
-Mimetype::register_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
-Mimetype::register_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
-Mimetype::register_synonym("application/x-mspowerpoint", "application/vnd.ms-powerpoint");
+Mimetype::make_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
+Mimetype::make_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
+Mimetype::make_synonym("application/x-mspowerpoint", "application/vnd.ms-powerpoint");
