@@ -4467,6 +4467,9 @@ function popup_near(elt, anchor) {
     y = Math.max(wg.top + 5, Math.min(wg.bottom - 5 - elt.offsetHeight, y)) - parent_offset.top;
     elt.style.left = x + "px";
     elt.style.top = y + "px";
+    var efocus = $(elt).find("input, button")[0];
+    console.log(efocus);
+    efocus && efocus.focus();
 }
 
 function popup(anchor, which, dofold, populate) {
