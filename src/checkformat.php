@@ -262,9 +262,10 @@ class CheckFormat {
 
         // font size
         if (count($banal_desired) > 4 && $banal_desired[4]
-            && preg_match('/\A([\d.]+)(?:-([\d.]+))?\z/', $banal_desired[4], $m)) {
+            && preg_match('/\A([\d.]+)(?:-([\d.]+))?(?:d([\d.]+))?\z/', $banal_desired[4], $m)) {
             $minptsize = cvtnum($m[1]);
             $maxptsize = isset($m[2]) ? cvtnum($m[2], 0) : 0;
+            $graceptsize = isset($m[3]) ? cvtnum($m[3], 0) : 0;
             $lopx = $hipx = [];
             $bodypages = 0;
             $minval = 1000;
@@ -274,11 +275,11 @@ class CheckFormat {
                 if (get($pg, "pagetype", "body") == "body") {
                     $pp = cvtnum(get($pg, "bodyfontsize", $bfs));
                     ++$bodypages;
-                    if ($pp > 0 && $pp < $minptsize) {
+                    if ($pp > 0 && $pp < $minptsize - $graceptsize) {
                         $lopx[] = $i + 1;
                         $minval = min($minval, $pp);
                     }
-                    if ($pp > 0 && $maxptsize > 0 && $pp > $maxptsize) {
+                    if ($pp > 0 && $maxptsize > 0 && $pp > $maxptsize + $graceptsize) {
                         $hipx[] = $i + 1;
                         $maxval = max($maxval, $pp);
                     }
