@@ -338,9 +338,11 @@ function render($sv) {
 
     echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 
-    echo Ht::select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"], opt_yes_no_optional("noAbstract"));
+    $sv->set_oldv("sub_noabstract", opt_yes_no_optional("noAbstract"));
+    echo Ht::select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"], $sv->curv("sub_noabstract"));
 
-    echo " <span class=\"barsep\">·</span> ", Ht::select("sub_nopapers", array(0 => "PDF upload required", 2 => "PDF upload optional", 1 => "No PDF"), opt_yes_no_optional("noPapers"));
+    $sv->set_oldv("sub_nopapers", opt_yes_no_optional("noPapers"));
+    echo " <span class=\"barsep\">·</span> ", Ht::select("sub_nopapers", array(0 => "PDF upload required", 2 => "PDF upload optional", 1 => "No PDF"), $sv->curv("sub_nopapers"));
 
     if (is_executable("src/banal")) {
         echo "<div class='g'></div>";
