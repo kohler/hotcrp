@@ -1057,12 +1057,13 @@ echo "</div></div>\n",
 Ht::stash_script("jQuery(\".leftmenu_item\").click(divclick)");
 
 function doActionArea($top) {
-    echo "<div class='aa'>",
-        Ht::submit("update", "Save changes", array("class" => "bb")),
-        " &nbsp;", Ht::submit("cancel", "Cancel"), "</div>";
+    echo '<div class="aab aabr aabig">',
+        '<div class="aabut">', Ht::submit("update", "Save changes", ["class" => "btn btn-default"]), '</div>',
+        '<div class="aabut">', Ht::submit("cancel", "Cancel", ["class" => "btn"]), '</div>',
+        '<hr class="c" /></div>';
 }
 
-echo "<div class='aahc'>";
+echo '<div class="aahc">';
 doActionArea(true);
 
 echo "<div>";

@@ -7,6 +7,7 @@ class SettingRenderer_Decisions extends SettingRenderer {
 function render($sv) {
     global $Conf, $Opt;
 
+    echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
     if ($Conf->setting("resp_active"))
         $no_text = "No, unless responses are open";
@@ -72,8 +73,9 @@ function render($sv) {
         '</div></td></tr></table>';
     $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
-    echo "<div class='g'></div>\n<hr class='hr' />\n",
-        "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
+    echo "<h3 class=\"settings g\">Decisions</h3>\n";
+
+    echo "Who can see paper <b>decisions</b> (accept/reject)?<br />\n";
     $sv->echo_radio_table("seedec", array(Conf::SEEDEC_ADMIN => "Only administrators",
                             Conf::SEEDEC_NCREV => "Reviewers and non-conflicted PC members",
                             Conf::SEEDEC_REV => "Reviewers and <em>all</em> PC members",

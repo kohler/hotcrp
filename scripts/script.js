@@ -1752,32 +1752,6 @@ var hotcrp_load = {
 };
 
 
-function highlightUpdate(which, off) {
-    var ins, i, result;
-    if (typeof which == "string") {
-        result = $$(which + "result");
-        if (result && !off)
-            result.innerHTML = "";
-        which = $$(which);
-    }
-
-    if (!which)
-        which = document;
-
-    i = which.tagName ? which.tagName : "";
-    if (i != "INPUT" && i != "BUTTON") {
-        ins = which.getElementsByTagName("input");
-        for (i = 0; i < ins.length; i++)
-            if (ins[i].className.substr(0, 2) == "hb")
-                highlightUpdate(ins[i], off);
-    }
-
-    if (which.className != null) {
-        result = which.className.replace(" alert", "");
-        which.className = (off ? result : result + " alert");
-    }
-}
-
 function hiliter(elt, off) {
     if (typeof elt === "string")
         elt = document.getElementById(elt);
@@ -1786,9 +1760,7 @@ function hiliter(elt, off) {
     while (elt && elt.tagName && (elt.tagName != "DIV"
                                   || !/\baahc\b/.test(elt.className)))
         elt = elt.parentNode;
-    if (!elt || !elt.tagName)
-        highlightUpdate(null, off);
-    else if (elt.className)
+    if (elt && elt.tagName && elt.className)
         elt.className = elt.className.replace(" alert", "") + (off ? "" : " alert");
 }
 
@@ -2786,24 +2758,24 @@ function render_editing(hc, cj) {
         hc.pop_n(2);
 
         // actions
-        hc.push('<hr class="c"><div class="aab" style="margin-bottom:0">', '<hr class="c"></div>');
-        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Save</button>' + bnote + '</div>');
+        hc.push('<hr class="c"><div class="aab aabr" style="margin-bottom:0">', '<hr class="c"></div>');
+        hc.push('<div class="aabut"><button type="button" name="submit" class="btn btn-default">Save</button>' + bnote + '</div>');
     } else {
         // actions
         // XXX allow_administer
         hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
-        hc.push('<hr class="c"><div class="aab" style="margin-bottom:0">', '<hr class="c"></div>');
+        hc.push('<hr class="c"><div class="aab aabr" style="margin-bottom:0">', '<hr class="c"></div>');
         if (cj.is_new || cj.draft)
-            hc.push('<div class="aabut"><button type="button" name="savedraft">Save draft</button>' + bnote + '</div>');
-        hc.push('<div class="aabut"><button type="button" name="submit" class="bb">Submit</button>' + bnote + '</div>');
+            hc.push('<div class="aabut"><button type="button" name="savedraft" class="btn">Save draft</button>' + bnote + '</div>');
+        hc.push('<div class="aabut"><button type="button" name="submit" class="btn btn-default">Submit</button>' + bnote + '</div>');
     }
     if (render_text.format_can_preview(cj.format))
-        hc.push('<div class="aabut"><button type="button" name="preview">Preview</button></div>');
-    hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
+        hc.push('<div class="aabut"><button type="button" name="preview" class="btn">Preview</button></div>');
+    hc.push('<div class="aabut"><button type="button" name="cancel" class="btn">Cancel</button></div>');
     if (!cj.is_new) {
         hc.push('<div class="aabutsep">&nbsp;</div>');
         x = cj.response ? "Delete response" : "Delete comment";
-        hc.push('<div class="aabut"><button type="button" name="delete">' + x + '</button></div>');
+        hc.push('<div class="aabut"><button type="button" name="delete" class="btn">' + x + '</button></div>');
     }
     if (cj.response && resp_rounds[cj.response].words > 0) {
         hc.push('<div class="aabutsep">&nbsp;</div>');

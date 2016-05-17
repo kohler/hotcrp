@@ -487,7 +487,7 @@ if (isset($_REQUEST["monreq"])) {
 echo Ht::form_div(hoturl_post("mail", "check=1")),
     Ht::hidden_default_submit("default", 1), "
 
-<div class='aa' style='padding-left:8px'>
+<div class='aa aahc' style='padding-left:8px'>
   <strong>Template:</strong> &nbsp;";
 $tmpl = array();
 foreach ($mailTemplates as $k => $v) {
@@ -501,9 +501,9 @@ foreach ($tmpl as $k => &$v) {
 }
 if (!isset($_REQUEST["template"]) || !isset($tmpl[$_REQUEST["template"]]))
     $_REQUEST["template"] = "genericmailtool";
-echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "highlightUpdate(\"loadtmpl\")")),
+echo Ht::select("template", $tmpl, $_REQUEST["template"], array("onchange" => "hiliter(\"loadtmpl\")")),
     " &nbsp;",
-    Ht::submit("loadtmpl", "Load", array("id" => "loadtmpl")),
+    Ht::submit("loadtmpl", "Load", ["id" => "loadtmpl"]),
     " &nbsp;
  <span class='hint'>Templates are mail texts tailored for common conference tasks.</span>
 </div>

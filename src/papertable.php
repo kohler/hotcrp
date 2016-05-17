@@ -317,7 +317,7 @@ class PaperTable {
             $text = $this->qreq[$fieldName];
         else
             $text = $this->prow ? $this->prow->$fieldName : "";
-        return Ht::textarea($fieldName, $text, ["class" => "papertext" . $this->error_class($fieldName), "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => $fieldName === "abstract" ? "true" : null]);
+        return Ht::textarea($fieldName, $text, ["class" => "papertext" . $this->error_class($fieldName), "rows" => self::$textAreaRows[$fieldName], "cols" => 60, "spellcheck" => $fieldName === "abstract" ? "true" : null]);
     }
 
     private function entryData($fieldName, $table_type = false) {
@@ -489,12 +489,16 @@ class PaperTable {
             $uploader .= "<input id='$inputid' type='file' name='$inputid'";
             if (count($accepts) == 1)
                 $uploader .= " accept='" . $accepts[0]->mimetype . "'";
-            $uploader .= " size='30' onchange='hiliter(this)";
-            if ($documentType == DTYPE_SUBMISSION)
-                $uploader .= ";fold(\"isready\",0)";
-            if ($flags & self::ENABLESUBMIT)
-                $uploader .= ";form.submitpaper.disabled=false";
-            $uploader .= "' />";
+            $uploader .= ' size="30"';
+            if ($documentType == DTYPE_SUBMISSION || ($flags & self::ENABLESUBMIT)) {
+                $uploader .= ' onchange="false';
+                if ($documentType == DTYPE_SUBMISSION)
+                    $uploader .= ";fold(\"isready\",0)";
+                if ($flags & self::ENABLESUBMIT)
+                    $uploader .= ";form.submitpaper.disabled=false";
+                $uploader .= '"';
+            }
+            $uploader .= " />";
             if ($doc && $optionType)
                 $uploader .= " <span class='barsep'>·</span> "
                     . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
@@ -880,12 +884,10 @@ class PaperTable {
         echo '<table><tr><td class="lcaption">Add</td>',
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
-                      array("id" => "newcontact_name", "size" => 30,
-                            "onchange" => "hiliter(this)", "placeholder" => "Name")),
+                      ["id" => "newcontact_name", "size" => 30, "placeholder" => "Name"]),
             '&nbsp;&nbsp;',
             Ht::entry('newcontact_email', $email,
-                      array("id" => "newcontact_email", "size" => 20,
-                            "onchange" => "hiliter(this)", "placeholder" => "Email")),
+                      ["id" => "newcontact_email", "size" => 20, "placeholder" => "Email"]),
             '</td></tr></table>';
         echo "</div></div>\n\n";
     }
@@ -943,7 +945,7 @@ class PaperTable {
                 echo Ht::checkbox(null, null, true, array("disabled" => true)),
                     Ht::hidden($control, Text::name_text($au));
             else
-                echo Ht::checkbox($control, Text::name_text($au), $checked, array("onclick" => "hiliter(this)"));
+                echo Ht::checkbox($control, Text::name_text($au), $checked);
             echo '&nbsp;</td><td>', Ht::label(Text::user_html_nolink($au)),
                 '</td></tr>';
             $title = "";
@@ -953,7 +955,7 @@ class PaperTable {
             $control = "contact_" . html_id_encode($au->email);
             $checked = $this->useRequest ? $this->qreq[$control] : true;
             echo '<tr><td class="lcaption">', $title, '</td>',
-                '<td>', Ht::checkbox($control, Text::name_text($au), $checked, array("onclick" => "hiliter(this)")),
+                '<td>', Ht::checkbox($control, Text::name_text($au), $checked),
                 '&nbsp;</td><td>', Ht::label(Text::user_html($au)), '</td>',
                 '</tr>';
             $title = "";
@@ -965,12 +967,12 @@ class PaperTable {
             '<td></td><td>',
             Ht::entry('newcontact_name', $name,
                       array("id" => "newcontact_name", "size" => 30,
-                            "onchange" => "hiliter(this)", "placeholder" => "Name",
+                            "placeholder" => "Name",
                             "class" => $cerror ? "error" : null)),
             '&nbsp;&nbsp;',
             Ht::entry('newcontact_email', $email,
                       array("id" => "newcontact_email", "size" => 20,
-                            "onchange" => "hiliter(this)", "placeholder" => "Email",
+                            "placeholder" => "Email",
                             "class" => $cerror ? "error" : null)),
             '</td></tr>';
         echo '</table>', Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")), "</div></div>\n\n";
@@ -1155,8 +1157,7 @@ class PaperTable {
         $nonct = Conflict::make_nonconflict();
         if ($selectors) {
             $ctypes = Conflict::$type_descriptions;
-            $extra = array("onchange" => "hiliter(this)",
-                           "class" => "pctbconfselector");
+            $extra = array("class" => "pctbconfselector");
             if ($this->admin) {
                 $ctypes["xsep"] = null;
                 $ctypes[CONFLICT_CHAIRMARK] = "Confirmed conflict";
@@ -1651,11 +1652,11 @@ class PaperTable {
         if ($prow && $prow->timeWithdrawn > 0) {
             $revivable = $Conf->timeFinalizePaper($prow);
             if ($revivable)
-                $b = Ht::submit("revive", "Revive paper");
+                $b = Ht::submit("revive", "Revive paper", ["class" => "btn"]);
             else {
                 $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn papers has passed.";
                 if ($this->admin)
-                    $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", array("data-override-text" => $b, "data-override-submit" => "revive")), "(admin only)");
+                    $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
             return array($b);
         }
@@ -1681,22 +1682,22 @@ class PaperTable {
                 $whyNot = null;
             // produce button
             if (!$whyNot)
-                $buttons[] = array(Ht::submit($updater, "Save changes", array("class" => "bb")), "");
+                $buttons[] = array(Ht::submit($updater, "Save changes", ["class" => "btn btn-default"]), "");
             else if ($this->admin)
-                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("data-override-text" => whyNotText($whyNot, $prow ? "update" : "register"), "data-override-submit" => $updater)), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => whyNotText($whyNot, $prow ? "update" : "register"), "data-override-submit" => $updater]), "(admin only)");
             else if ($prow && $prow->timeSubmitted > 0)
-                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", array("class" => "b")), "");
+                $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             else if ($Conf->timeFinalizePaper($prow))
-                $buttons[] = array(Ht::submit("update", "Save changes", array("class" => "bb")));
+                $buttons[] = array(Ht::submit("update", "Save changes", ["class" => "btn"]));
         }
 
         // withdraw button
         if (!$prow || !$Me->can_withdraw_paper($prow, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
-            $b = Ht::submit("withdraw", "Withdraw paper");
+            $b = Ht::submit("withdraw", "Withdraw paper", ["class" => "btn"]);
         else {
-            $b = Ht::button("Withdraw paper", array("onclick" => "popup(this,'w',0,true)"));
+            $b = Ht::button("Withdraw paper", ["class" => "btn", "onclick" => "popup(this,'w',0,true)"]);
             $admins = "";
             if ((!$this->admin || $prow->has_author($Me))
                 && !$Conf->timeFinalizePaper($prow))
@@ -1743,7 +1744,7 @@ class PaperTable {
         $buttons = $this->_collectActionButtons();
 
         if ($this->admin && $this->prow) {
-            $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)"), "(admin only)");
+            $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
             $Conf->footerHtml("<div class='popupbg'><div id='popup_delp' class='popupc'>"
     . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
     . "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>\n"
@@ -1755,7 +1756,7 @@ class PaperTable {
     . "</div></div></form></div></div>", "popup_delp");
         }
 
-        echo Ht::actions($buttons, array("class" => "aab"));
+        echo Ht::actions($buttons, array("class" => "aab aabr aabig"));
     }
 
 
@@ -1983,6 +1984,8 @@ class PaperTable {
         }
 
         $Conf->footerScript("shortcut().add()");
+        if ($this->editable)
+            $Conf->footerScript('hiliter_children("#paperedit")');
     }
 
     private function _paptabSepContaining($t) {

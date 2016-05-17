@@ -419,7 +419,6 @@ function divClass($name, $classes = null) {
 }
 
 echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE))),
-    '<div class="aahc">',
     "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "' class='q'><strong>Automatic</strong></a></li>
@@ -435,7 +434,7 @@ Types of PC review:
 </div></div>\n";
 
 // paper selection
-echo divClass("pap"), "<h3>Paper selection</h3>";
+echo divClass("pap", "aahc"), "<h3>Paper selection</h3>";
 if (!isset($Qreq->q)) // XXX redundant
     $Qreq->q = join(" ", $SSel->selection());
 echo Ht::entry_h("q", $Qreq->q,
@@ -444,10 +443,10 @@ echo Ht::entry_h("q", $Qreq->q,
                        "class" => "hotcrp_searchbox",
                        "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $Qreq->t, array("onchange" => "highlightUpdate(\"requery\")"));
+    echo Ht::select("t", $tOpt, $Qreq->t, array("onchange" => "hiliter(\"requery\")"));
 else
     echo join("", $tOpt);
-echo " &nbsp; ", Ht::submit("requery", "List", array("id" => "requery"));
+echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery", "class" => "btn btn-alertable"]);
 if (isset($Qreq->requery) || isset($Qreq->haspap)) {
     echo "<br /><span class='hint'>Assignments will apply to the selected papers.</span>
 <div class='g'></div>";
@@ -466,7 +465,8 @@ echo "</div>\n";
 
 
 // action
-echo divClass("ass"), "<h3>Action</h3>";
+echo '<div class="aahc">';
+echo divClass("ass"), "<h3>Action</h3>", "</div>";
 echo divClass("rev", "hotradiorelation");
 doRadio("a", "rev", "Ensure each selected paper has <i>at least</i>");
 echo "&nbsp; ",

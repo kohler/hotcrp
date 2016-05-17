@@ -466,7 +466,7 @@ if ($pl) {
                     ++$nchecked;
             }
         if (count($displayOptions) > $n) {
-            $onchange = "highlightUpdate(\"redisplay\")";
+            $onchange = "hiliter(\"redisplay\")";
             if ($Me->privChair)
                 $onchange .= ";plinfo.extra()";
             displayOptionText("<div style='padding-top:1ex'>Sort by: &nbsp;"
