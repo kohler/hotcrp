@@ -423,7 +423,7 @@ class PaperTable {
             echo "</td><td>", Ht::label("<strong>The submission is complete.</strong>"),
                 "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
         else
-            echo Ht::label("The submission is ready for review.");
+            echo Ht::label("<strong>The submission is ready for review.</strong>");
         echo "</td></tr></table></div>\n";
         $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
     }
