@@ -233,11 +233,11 @@ class CheckFormat {
                 if (($pp = defval($pg, "textblock", $tb)) && is_array($pp)) {
                     if ($pp[1] - $p[0] >= 9) {
                         $px[] = $i + 1;
-                        $maxx = max($maxx, $pp[0]);
+                        $maxx = max($maxx, $pp[1]);
                     }
                     if ($pp[0] - $p[1] >= 9) {
                         $py[] = $i + 1;
-                        $maxy = max($maxy, $pp[1]);
+                        $maxy = max($maxy, $pp[0]);
                     }
                 }
             if (count($px) > 0) {
