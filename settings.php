@@ -438,11 +438,11 @@ class SettingValues {
         if (isset($this->explicit_oldv[$si->name]))
             $val = $this->explicit_oldv[$si->name];
         else if ($si->storage_type & Si::SI_OPT)
-            $val = get($Opt, substr($si->name, 4), $default_value);
+            $val = get($Opt, substr($si->storage(), 4), $default_value);
         else if ($si->storage_type & Si::SI_DATA)
-            $val = $Conf->setting_data($si->name, $default_value);
+            $val = $Conf->setting_data($si->storage(), $default_value);
         else
-            $val = $Conf->setting($si->name, $default_value);
+            $val = $Conf->setting($si->storage(), $default_value);
         if ($val === $si->invalid_value)
             $val = "";
         return $val;
