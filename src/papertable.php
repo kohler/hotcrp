@@ -493,7 +493,7 @@ class PaperTable {
             if ($documentType == DTYPE_SUBMISSION || ($flags & self::ENABLESUBMIT)) {
                 $uploader .= ' onchange="false';
                 if ($documentType == DTYPE_SUBMISSION)
-                    $uploader .= ";fold(\"isready\",0)";
+                    $uploader .= ";fold('isready',0)";
                 if ($flags & self::ENABLESUBMIT)
                     $uploader .= ";form.submitpaper.disabled=false";
                 $uploader .= '"';
