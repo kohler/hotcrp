@@ -2231,8 +2231,13 @@ function author_change(e, delta) {
         });
     }
 
-    hiliter($tbody[0]);
     return false;
+}
+
+function paperform_checkready() {
+    var $j = $("#paperisready:visible:checked");
+    var t = $j.length ? "Save submission" : "Save draft";
+    $("#paperform").find(".btn-savepaper").html(t);
 }
 
 
@@ -5134,7 +5139,7 @@ function docheckformat(dt) {    // NB must return void
 function addattachment(oid) {
     var ctr = $$("opt" + oid + "_new"), n = ctr.childNodes.length,
         e = document.createElement("div");
-    e.innerHTML = "<input type='file' name='opt" + oid + "_new_" + n + "' size='30' onchange='hiliter(this)' />";
+    e.innerHTML = "<input type='file' name='opt" + oid + "_new_" + n + "' size='30' />";
     ctr.appendChild(e);
     e.childNodes[0].click();
 }

@@ -406,26 +406,35 @@ class PaperTable {
         echo join("", $out);
     }
 
-    private function echo_editable_complete($storageId) {
-        global $Conf, $Opt;
-        $prow = $this->prow;
+    private function is_ready() {
+        return $this->is_ready_checked() && ($this->prow || opt("noPapers"));
+    }
+
+    private function is_ready_checked() {
+        global $Conf;
         if ($this->useRequest)
-            $checked = !!$this->qreq->submitpaper;
-        else if ($Conf->setting("sub_freeze"))
-            $checked = $prow && $prow->timeSubmitted > 0;
+            return !!$this->qreq->submitpaper;
+        else if ($this->prow && $this->prow->timeSubmitted > 0)
+            return true;
         else
-            $checked = !$prow || $storageId <= 1 || $prow->timeSubmitted > 0;
+            return !$Conf->setting("sub_freeze")
+                && (!$this->prow || (!opt("noPapers") && $this->prow->paperStorageId <= 1));
+    }
+
+    private function echo_editable_complete() {
+        global $Conf, $Opt;
+        $checked = $this->is_ready_checked();
         echo "<div id='foldisready' class='",
-            (($prow && $storageId > 1) || get($Opt, "noPapers") ? "foldo" : "foldc"),
+            (($this->prow && $this->prow->paperStorageId > 1) || get($Opt, "noPapers") ? "foldo" : "foldc"),
             "'><table class='fx'><tr><td class='nw'>",
-            Ht::checkbox_h("submitpaper", 1, $checked, array("id" => "paperisready")), "&nbsp;";
+            Ht::checkbox("submitpaper", 1, $checked, ["id" => "paperisready", "onchange" => "paperform_checkready()"]), "&nbsp;";
         if ($Conf->setting('sub_freeze'))
             echo "</td><td>", Ht::label("<strong>The submission is complete.</strong>"),
                 "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
         else
             echo Ht::label("<strong>The submission is ready for review.</strong>");
         echo "</td></tr></table></div>\n";
-        $Conf->footerScript("jQuery(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0)})");
+        $Conf->footerScript("$(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0);paperform_checkready()})");
     }
 
     public function echo_editable_document(PaperOption $docx, $storageId, $flags) {
@@ -493,7 +502,7 @@ class PaperTable {
             if ($documentType == DTYPE_SUBMISSION || ($flags & self::ENABLESUBMIT)) {
                 $uploader .= ' onchange="false';
                 if ($documentType == DTYPE_SUBMISSION)
-                    $uploader .= ";fold('isready',0)";
+                    $uploader .= ";fold('isready',0);paperform_checkready()";
                 if ($flags & self::ENABLESUBMIT)
                     $uploader .= ";form.submitpaper.disabled=false";
                 $uploader .= '"';
@@ -982,7 +991,7 @@ class PaperTable {
         global $Conf;
         $blind = ($this->useRequest ? !!$this->qreq->blind : (!$this->prow || $this->prow->blind));
         assert(!!$this->editable);
-        echo $this->editable_papt("blind", Ht::checkbox_h("blind", 1, $blind)
+        echo $this->editable_papt("blind", Ht::checkbox("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
             '<div class="paphint">', htmlspecialchars(Conf::$gShortName), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
             "</div>\n\n";
@@ -1198,8 +1207,8 @@ class PaperTable {
                 $checked = $ct->is_conflict();
                 $disabled = $checked && ($ct->is_author() || (!$ct->is_author_mark() && !$this->admin));
                 echo '<table><tr><td>',
-                    Ht::checkbox_h("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
-                                   $checked, array("id" => "pcc$id", "disabled" => $disabled)),
+                    Ht::checkbox("pcc$id", $checked ? $ct->value : CONFLICT_AUTHORMARK,
+                                 $checked, array("id" => "pcc$id", "disabled" => $disabled)),
                     '&nbsp;</td><td>', $label, '</td></tr></table>';
             }
             echo '<hr class="c" />', "</div></div>";
@@ -1681,14 +1690,15 @@ class PaperTable {
             else
                 $whyNot = null;
             // produce button
+            $save_name = $this->is_ready() ? "Save submission" : "Save draft";
             if (!$whyNot)
-                $buttons[] = array(Ht::submit($updater, "Save changes", ["class" => "btn btn-default"]), "");
+                $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-default btn-savepaper"]), "");
             else if ($this->admin)
-                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => whyNotText($whyNot, $prow ? "update" : "register"), "data-override-submit" => $updater]), "(admin only)");
+                $buttons[] = array(Ht::js_button($save_name, "override_deadlines(this)", ["class" => "btn btn-default btn-savepaper", "data-override-text" => whyNotText($whyNot, $prow ? "update" : "register"), "data-override-submit" => $updater]), "(admin only)");
             else if ($prow && $prow->timeSubmitted > 0)
                 $buttons[] = array(Ht::submit("updatecontacts", "Save contacts", ["class" => "btn"]), "");
             else if ($Conf->timeFinalizePaper($prow))
-                $buttons[] = array(Ht::submit("update", "Save changes", ["class" => "btn"]));
+                $buttons[] = array(Ht::submit("update", $save_name, ["class" => "btn btn-savepaper"]));
         }
 
         // withdraw button
@@ -1921,7 +1931,7 @@ class PaperTable {
 
         // Submit button
         echo "</div>";
-        $this->echo_editable_complete($this->prow ? $this->prow->paperStorageId : 0);
+        $this->echo_editable_complete();
         $this->echoActions(false);
 
         echo "</div></form>";
@@ -1943,7 +1953,7 @@ class PaperTable {
         else
             echo '<div class="papcard_body">';
 
-        $form_js = array("id" => "paperedit");
+        $form_js = array("id" => "paperform");
         if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
             && !$Conf->setting('sub_freeze'))
             $form_js["onsubmit"] = "return docheckpaperstillready()";
@@ -1985,7 +1995,7 @@ class PaperTable {
 
         $Conf->footerScript("shortcut().add()");
         if ($this->editable)
-            $Conf->footerScript('hiliter_children("#paperedit")');
+            $Conf->footerScript('hiliter_children("#paperform")');
     }
 
     private function _paptabSepContaining($t) {
