@@ -4,23 +4,9 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class CheckFormat {
-    const ERR_PAPERSIZE = 1;
-    const ERR_PAGELIMIT = 2;
-    const ERR_COLUMNS = 4;
-    const ERR_TEXTBLOCK = 8;
-    const ERR_BODYFONTSIZE = 16;
-    const ERR_BODYLEADING = 32;
-
     const STATUS_NONE = 0;
     const STATUS_PROBLEM = 1;
     const STATUS_OK = 2;
-
-    public static $error_types = array(self::ERR_PAPERSIZE => "papersize",
-                           self::ERR_PAGELIMIT => "pagelimit",
-                           self::ERR_COLUMNS => "columns",
-                           self::ERR_TEXTBLOCK => "textblock",
-                           self::ERR_BODYFONTSIZE => "bodyfontsize",
-                           self::ERR_BODYLEADING => "bodyleading");
 
     public $msgs = [];
     public $errf = [];
