@@ -91,27 +91,6 @@ if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
 }
 
 
-// check paper action
-if (isset($_REQUEST["checkformat"]) && $prow && $Conf->setting("sub_banal")) {
-    $ajax = defval($_REQUEST, "ajax", 0);
-    $cf = new CheckFormat();
-    $dt = HotCRPDocument::parse_dtype(req("dt"));
-    if ($dt === null)
-        $dt = req("final") ? DTYPE_FINAL : DTYPE_SUBMISSION;
-    $status = $cf->check_document($prow, $dt);
-
-    // chairs get a hint message about multiple checking
-    if ($Me->privChair) {
-        $nbanal = $Conf->session("nbanal", 0) + 1;
-        $Conf->save_session("nbanal", $nbanal);
-        if ($nbanal >= 3 && $nbanal <= 6)
-            $cf->msg("info", "To run the format checker for many papers, use Download &gt; Format check on the <a href='" . hoturl("search", "q=") . "'>search page</a>.");
-    }
-
-    $Conf->ajaxExit(array("status" => $status, "response" => join("", $cf->messages_html())), true);
-}
-
-
 // withdraw and revive actions
 if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
     if (!($whyNot = $Me->perm_withdraw_paper($prow))) {
