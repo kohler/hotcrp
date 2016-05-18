@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class FormatSpec {
-    public $papersize;      // [DIMEN, ...]
+    public $papersize = []; // [DIMEN, ...]
     public $pagelimit;      // [MIN, MAX]
     public $columns;        // NCOLUMNS
     public $textblock;      // [WIDTH, HEIGHT]
@@ -14,22 +14,29 @@ class FormatSpec {
     private $is_empty;
 
     public function __construct($str) {
-        if (($gt = strpos($str, ">")) !== false) {
-            $this->banal_args = substr($str, $gt + 1);
-            $str = substr($str, 0, $gt);
-        }
+        if (is_string($str) && substr($str, 0, 1) === "{")
+            $str = json_decode($str);
+        if (is_object($str)) {
+            foreach ($str as $k => $v)
+                $this->$k = $v;
+        } else {
+            if (($gt = strpos($str, ">")) !== false) {
+                $this->banal_args = substr($str, $gt + 1);
+                $str = substr($str, 0, $gt);
+            }
 
-        $x = explode(";", $str);
-        $this->papersize = [];
-        foreach (explode(" OR ", get($x, 0, "")) as $d)
-            if (($dx = self::parse_dimen($d, 2)))
-                $this->papersize[] = $dx;
-        if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', get($x, 1, ""), $m))
-            $this->pagelimit = isset($m[2]) && $m[2] !== "" ? [$m[1], $m[2]] : [0, $m[1]];
-        $this->columns = cvtint(get($x, 2), null);
-        $this->textblock = self::parse_dimen(get($x, 3), 2);
-        $this->bodyfontsize = self::parse_range(get($x, 4));
-        $this->bodyleading = self::parse_range(get($x, 5));
+            $x = explode(";", $str);
+            $this->papersize = [];
+            foreach (explode(" OR ", get($x, 0, "")) as $d)
+                if (($dx = self::parse_dimen($d, 2)))
+                    $this->papersize[] = $dx;
+            if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', get($x, 1, ""), $m))
+                $this->pagelimit = isset($m[2]) && $m[2] !== "" ? [$m[1], $m[2]] : [0, $m[1]];
+            $this->columns = cvtint(get($x, 2), null);
+            $this->textblock = self::parse_dimen(get($x, 3), 2);
+            $this->bodyfontsize = self::parse_range(get($x, 4));
+            $this->bodyleading = self::parse_range(get($x, 5));
+        }
 
         $this->is_empty = empty($this->papersize) && !$this->pagelimit
             && !$this->columns && !$this->textblock && !$this->bodyfontsize
