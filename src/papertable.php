@@ -520,7 +520,7 @@ class PaperTable {
         }
 
         if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_NONE) {
-            echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'><div class='xmsg xinfo'>Checking format, please wait (this can take a while)...</div></div></div>";
+            echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'>" . Ht::xmsg("info", "Checking format, please wait (this can take a while)...") . "</div></div>";
             $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType"), array("id" => "checkformatform$documentType", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('checkformatform$documentType')"))
                               . Ht::hidden("checkformat", 1)
                               . "</div></form>");
