@@ -165,7 +165,7 @@ class BanalSettings {
                 && (!isset($m[3]) || (is_numeric($m[3]) && $m[3] >= 0)))
                 $bs[4] = $m[1] . (isset($m[2]) ? "-" . $m[2] : "") . (isset($m[3]) ? "d" . $m[3] : "");
             else
-                $sv->error("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
+                $sv->set_error("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
         }
 
         if (($s = trim(defval($sv->req, "sub_banal_bodyleading$suffix", ""))) != ""
