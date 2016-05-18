@@ -6,10 +6,10 @@
 class BanalSettings {
     static public function render($suffix, $sv) {
         global $Conf;
-        $bsetting = explode(";", preg_replace("/>.*/", "", $Conf->setting_data("sub_banal$suffix", "")));
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $name) {
-            $val = get($bsetting, $i, "");
-            $sv->set_oldv("sub_banal_$name$suffix", $val == "" ? "N/A" : $val);
+        $cfs = new CheckFormatSpec($sv->curv("sub_banal_data$suffix"));
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $k) {
+            $val = $cfs->unparse_key($k);
+            $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
         }
 
         echo '<table class="', ($sv->curv("sub_banal$suffix") ? "foldo" : "foldc"), '" data-fold="true">';
@@ -30,10 +30,8 @@ class BanalSettings {
     }
     static private function old_zoomarg() {
         global $Conf;
-        $data = $Conf->setting_data("sub_banal");
-        if (($gt = strpos($data, ">")) !== false)
-            return substr($data, $gt);
-        return "";
+        $cfs = new CheckFormatSpec($Conf->setting_data("sub_banal"));
+        return $cfs->banal_args;
     }
     static private function check_banal($sv) {
         global $ConfSitePATH;
@@ -81,51 +79,53 @@ class BanalSettings {
 
         // check banal subsettings
         $old_error_count = $sv->error_count();
-        $bs = array_fill(0, 6, "");
+        $cfs = new CheckFormatSpec($sv->oldv("sub_banal_data$suffix"));
+        $cfs->papersize = [];
         if (($s = trim(defval($sv->req, "sub_banal_papersize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
-            $sout = array();
             foreach ($ses as $ss)
-                if ($ss != "" && CheckFormat::parse_dimen($ss, 2))
-                    $sout[] = $ss;
+                if ($ss != "" && ($d = CheckFormat::parse_dimen($ss, 2)))
+                    $cfs->papersize[] = $d;
                 else if ($ss != "") {
                     $sv->set_error("sub_banal_papersize$suffix", "Invalid paper size.");
                     $sout = null;
                     break;
                 }
-            if ($sout && count($sout))
-                $bs[0] = join(" OR ", $sout);
         }
 
+        $cfs->pagelimit = null;
         if (($s = trim(defval($sv->req, "sub_banal_pagelimit$suffix", ""))) != ""
             && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) > 0)
-                $bs[1] = $sx;
+                $cfs->pagelimit = [0, $sx];
             else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
                      && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
-                $bs[1] = +$m[1] . "-" . +$m[2];
+                $cfs->pagelimit = [+$m[1], +$m[2]];
             else
                 $sv->set_error("sub_banal_pagelimit$suffix", "Page limit must be a whole number bigger than 0, or a page range such as <code>2-4</code>.");
         }
 
+        $cfs->columns = 0;
         if (($s = trim(defval($sv->req, "sub_banal_columns$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) >= 0)
-                $bs[2] = ($sx > 0 ? $sx : $bs[2]);
+                $cfs->columns = $sx;
             else
                 $sv->set_error("sub_banal_columns$suffix", "Columns must be a whole number.");
         }
 
+        $cfs->textblock = null;
         if (($s = trim(defval($sv->req, "sub_banal_textblock$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             // change margin specifications into text block measurements
             if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
                 $s = $m[1];
-                if (!($ps = CheckFormat::parse_dimen($bs[0]))) {
+                if (!$cfs->pagesize || count($cfs->pagesize) != 1) {
                     $sv->set_error("sub_banal_pagesize$suffix", "You must specify a page size as well as margins.");
                     $sv->set_error("sub_banal_textblock$suffix");
                 } else if (strpos($s, "x") !== false) {
+                    $ps = $cfs->pagesize[0];
                     if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
                         $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
                         $s = "";
@@ -136,6 +136,7 @@ class BanalSettings {
                     else
                         $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
                 } else {
+                    $ps = $cfs->pagesize[0];
                     $s = preg_replace('/\s+/', 'x', $s);
                     if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
                         $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
@@ -151,39 +152,40 @@ class BanalSettings {
                 $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
             }
             // check text block measurements
-            if ($s && !CheckFormat::parse_dimen($s, 2))
+            if ($s && ($s = CheckFormat::parse_dimen($s, 2)))
+                $cfs->textblock = $s;
+            else
                 $sv->set_error("sub_banal_textblock$suffix", "Invalid text block definition.");
-            else if ($s)
-                $bs[3] = $s;
         }
 
+        $cfs->bodyfontsize = null;
         if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (preg_match('/\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ)\s*([\d.]+))?\z/', $s, $m)
+            $xx = preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+/?-|±)\s*([\d.]+))?\z,', $s, $m);
+            if (preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+/?-|±)\s*([\d.]+))?\z,', $s, $m)
                 && is_numeric($m[1]) && $m[1] > 0
-                && (!isset($m[2]) || (is_numeric($m[2]) && $m[2] > 0))
-                && (!isset($m[3]) || (is_numeric($m[3]) && $m[3] >= 0)))
-                $bs[4] = $m[1] . (isset($m[2]) ? "-" . $m[2] : "") . (isset($m[3]) ? "d" . $m[3] : "");
+                && (!isset($m[2]) || $m[2] === "" || (is_numeric($m[2]) && $m[2] > 0))
+                && (!isset($m[3]) || $m[3] === "" || (is_numeric($m[3]) && $m[3] >= 0)))
+                $cfs->bodyfontsize = [+$m[1], isset($m[2]) && $m[2] !== "" ? +$m[2] : 0, isset($m[3]) && $m[3] !== "" ? +$m[3] : 0];
             else
                 $sv->set_error("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
         }
 
+        $cfs->bodyleading = null;
         if (($s = trim(defval($sv->req, "sub_banal_bodyleading$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (!is_numeric($s) || $s <= 0)
-                $sv->error("sub_banal_bodyleading$suffix", "Minimum body leading must be a number bigger than 0.");
+            if (is_numeric($s) && $s > 0)
+                $cfs->bodyleading = [+$s, 0, 0];
             else
-                $bs[5] = $s;
+                $sv->set_error("sub_banal_bodyleading$suffix", "Minimum body leading must be a number bigger than 0.");
         }
 
         if ($sv->error_count() == $old_error_count) {
-            while (count($bs) > 0 && $bs[count($bs) - 1] == "")
-                array_pop($bs);
-            $zoomarg = $check ? self::check_banal($sv) : self::old_zoomarg();
-            $sv->save("sub_banal_data$suffix", join(";", $bs) . $zoomarg);
+            $cfs->banal_args = $check ? self::check_banal($sv) : self::old_zoomarg();
+            $sv->save("sub_banal_data$suffix", $cfs->unparse());
             if ($suffix === "" && !$sv->oldv("sub_banal_m1")
                 && !isset($sv->req["has_sub_banal_m1"]))
-                $sv->save("sub_banal_data_m1", join(";", $bs) . $zoomarg);
+                $sv->save("sub_banal_data_m1", $cfs->unparse());
         }
 
         return false;
