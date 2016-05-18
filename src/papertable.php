@@ -32,6 +32,7 @@ class PaperTable {
     private $entryMatches;
     private $canUploadFinal;
     private $admin;
+    private $cf = null;
     private $quit = false;
 
     static private $textAreaRows = array("title" => 1, "abstract" => 5, "authorInformation" => 5, "collaborators" => 5);
@@ -445,9 +446,6 @@ class PaperTable {
         $documentType = $docx->id;
         $optionType = $docx->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);
-        $banal_spec = $banal_result = false;
-        if ($optionType === null || $optionType === "pdf")
-            $banal_spec = CheckFormat::document_spec($documentType);
 
         $filetypes = array();
         $accepts = array();
@@ -468,26 +466,30 @@ class PaperTable {
 
         // current version, if any
         $doc = null;
-        $banal_cf = null;
+        $has_cf = false;
         $inputid = ($optionType ? "opt" . $documentType : "paperUpload");
         if ($prow && $Me->can_view_pdf($prow) && $storageId > 1
             && (($doc = $prow->document($documentType, $storageId, true)))) {
-            if ($banal_spec && $doc->mimetype !== "application/pdf")
-                $banal_spec = false;
-            if ($banal_spec) {
-                $banal_cf = new CheckFormat(true);
-                $banal_cf->check_document($prow, $doc);
+            if ($doc->mimetype === "application/pdf") {
+                if (!$this->cf)
+                    $this->cf = new CheckFormat(true);
+                if (($has_cf = $this->cf->has_spec($documentType)))
+                    $this->cf->check_document($prow, $doc);
             }
 
             echo "<table id='current_$inputid'><tr>",
-                "<td class='nw'>", documentDownload($doc), "</td>";
+                "<td class='nw'>", documentDownload($doc), "</td><td>";
             if (($stamps = self::pdf_stamps_html($doc)))
-                echo "<td><span class='sep'></span></td><td>$stamps</td>";
-            if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_NONE)
-                echo "<td><span class='sep'></span></td><td><a href='#' onclick='return docheckformat($documentType)'>Check format</a></td>";
-            else if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_OK)
-                echo "<td><span class='sep'></span></td><td><span class=\"confirm\">Format OK</span></td>";
-            echo "</tr></table>\n";
+                echo "<span class='sep'></span>", $stamps;
+            if ($has_cf && ($this->cf->status == CheckFormat::STATUS_NONE || $this->cf->need_run))
+                echo "<span class='sep'></span><a href='#' onclick='return docheckformat.call(this, $documentType)'>Check format</a>";
+            else if ($has_cf) {
+                if ($this->cf->status == CheckFormat::STATUS_OK)
+                    echo "<span class='sep'></span><span class=\"confirm\">Format OK</span>";
+                if ($this->cf->possible_run)
+                    echo '<span class="sep"></span><a href="#" onclick="return docheckformat.call(this, ', $documentType, ')">Recheck format</a>';
+            }
+            echo "</td></tr></table>\n";
         }
 
         // uploader
@@ -519,14 +521,14 @@ class PaperTable {
                 $uploader .= "</div>";
         }
 
-        if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_NONE) {
-            echo "<div id='foldcheckformat$documentType' class='foldc'><div id='checkformatform${documentType}result' class='fx'>" . Ht::xmsg("info", "Checking format, please wait (this can take a while)...") . "</div></div>";
-            $Conf->footerHtml(Ht::form_div(hoturl_post("paper", "p=$prow->paperId&amp;dt=$documentType"), array("id" => "checkformatform$documentType", "class" => "fold7c", "onsubmit" => "return Miniajax.submit('checkformatform$documentType')"))
-                              . Ht::hidden("checkformat", 1)
-                              . "</div></form>");
-        } else if ($banal_cf && $banal_cf->status == CheckFormat::STATUS_PROBLEM)
-            echo "<div id=\"foldcheckformat$documentType\" class=\"foldo\">",
-                join("", $banal_cf->messages()), "</div>";
+        if ($has_cf) {
+            echo '<div id="foldcheckformat', $documentType, '" class="',
+                $this->cf->status == CheckFormat::STATUS_PROBLEM ? "foldo" : "foldc",
+                '" data-docid="', $doc->paperStorageId, '">';
+            if ($this->cf->status == CheckFormat::STATUS_PROBLEM)
+                echo join("", $this->cf->messages_html());
+            echo '</div>';
+        }
 
         if ($documentType == DTYPE_FINAL)
             echo Ht::hidden("submitpaper", 1);

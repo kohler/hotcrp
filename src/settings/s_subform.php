@@ -40,7 +40,6 @@ class BanalSettings {
         // Perhaps we have an old pdftohtml with a bad -zoom.
         $zoomarg = "";
         for ($tries = 0; $tries < 2; ++$tries) {
-            $cf->clear();
             $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
             if ($s1 == 1 && $cf->has_error("papersize") && $tries == 0)
                 $zoomarg = ">-zoom=1";
@@ -53,7 +52,6 @@ class BanalSettings {
         // verify that banal works
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodyleading"];
         $e1 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
-        $cf->clear();
         $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
         $e2 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
         $want_e2 = join(",", $interesting_keys);

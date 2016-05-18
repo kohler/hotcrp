@@ -325,4 +325,14 @@ class PaperApi {
             $j = ["ok" => false, "error" => "Bad preference"];
         json_exit($j);
     }
+
+    static function checkformat_api($user, $qreq, $prow) {
+        $dtype = cvtint($qreq->dt, 0);
+        $opt = PaperOption::find_document($dtype);
+        if (!$opt || !$user->can_view_paper_option($prow, $opt))
+            json_exit(["ok" => false, "error" => "Permission error."]);
+        $cf = new CheckFormat;
+        $status = $cf->check_document($prow, $dt, $qreq->docid);
+        json_exit(["ok" => $status != CheckFormat::STATUS_NONE, "status" => $status, "response" => join("", $cf->messages_html())]);
+    }
 }

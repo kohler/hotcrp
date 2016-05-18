@@ -91,7 +91,6 @@ class GetCheckFormat_SearchAction extends SearchAction {
         foreach ($ssel->reorder($papers) as $prow) {
             $pages = "?";
             if ($prow->mimetype == "application/pdf") {
-                $cf->clear();
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
                 if ($cf->check_document($prow, $dtype)) {
                     $format = empty($cf->errf) ? "ok" : join(",", array_keys($cf->errf));

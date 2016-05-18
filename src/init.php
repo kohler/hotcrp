@@ -135,6 +135,7 @@ class SiteLoader {
     const API_GET_PAPER = 3 /* == API_GET | API_PAPER */;
     static $api_map = [
         "alltags" => ["PaperApi::alltags_api", self::API_GET],
+        "checkformat" => ["PaperApi::checkformat_api", self::API_GET_PAPER],
         "setdecision" => ["PaperApi::setdecision_api", self::API_PAPER],
         "setlead" => ["PaperApi::setlead_api", self::API_PAPER],
         "setmanager" => ["PaperApi::setmanager_api", self::API_PAPER],

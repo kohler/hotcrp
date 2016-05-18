@@ -5126,13 +5126,22 @@ function savedisplayoptions() {
 }
 
 function docheckformat(dt) {    // NB must return void
-    var form = $$("checkformatform" + dt);
-    if (!form)
-        log_jserror({error: "bad checkformatform", dt: dt});
-    else if (form.onsubmit) {
-        fold("checkformat" + dt, 0);
-        Miniajax.submit("checkformatform" + dt, null, 10000);
-    }
+    var $j = $("#foldcheckformat" + dt);
+    if (this && "tagName" in this && this.tagName === "A")
+        $(this).hide();
+    var running = setTimeout(function () {
+        $j.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
+    }, 1000);
+    $.ajax(ajax_link_errors({
+        url: hoturl_post("api", "fn=checkformat&p=" + hotcrp_paperid),
+        type: "POST", dataType: "json", timeout: 20000,
+        data: {dt: dt, docid: $j.attr("docid")},
+        success: function (data) {
+            clearTimeout(running);
+            if (data.ok)
+                $j.html(data.response);
+        }
+    }));
     return false;
 }
 

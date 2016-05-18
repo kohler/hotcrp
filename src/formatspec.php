@@ -11,7 +11,8 @@ class FormatSpec {
     public $bodyfontsize;   // [MIN, MAX, GRACE]
     public $bodyleading;    // [MIN, MAX, GRACE]
     public $banal_args = false;
-    private $is_empty;
+    public $checkers;
+    private $_is_banal_empty;
 
     public function __construct($str) {
         if (is_string($str) && substr($str, 0, 1) === "{")
@@ -37,14 +38,17 @@ class FormatSpec {
             $this->bodyfontsize = self::parse_range(get($x, 4));
             $this->bodyleading = self::parse_range(get($x, 5));
         }
-
-        $this->is_empty = empty($this->papersize) && !$this->pagelimit
+        $this->_is_banal_empty = empty($this->papersize) && !$this->pagelimit
             && !$this->columns && !$this->textblock && !$this->bodyfontsize
             && !$this->bodyleading;
     }
 
     public function is_empty() {
-        return $this->is_empty;
+        return !$this->checkers && $this->is_banal_empty();
+    }
+
+    public function is_banal_empty() {
+        return $this->_is_banal_empty;
     }
 
     public function unparse_key($k) {
@@ -66,12 +70,21 @@ class FormatSpec {
     }
 
     public function unparse() {
-        $x = array_fill(0, 6, "");
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $k)
-            $x[$i] = $this->unparse_key($k);
-        while (!empty($x) && !$x[count($x) - 1])
-            array_pop($x);
-        return join(";", $x) . ($this->banal_args ? ">" . $this->banal_args : "");
+        if ($this->checkers) {
+            $a = [];
+            foreach (get_object_vars($this) as $k => $v)
+                if (substr($k, 0, 1) !== "_"
+                    && $v !== null && $v !== "" && (!empty($v) || $k !== "papersize"))
+                    $a[$k] = $v;
+            return empty($a) ? "" : json_encode($a);
+        } else {
+            $x = array_fill(0, 6, "");
+            foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $k)
+                $x[$i] = $this->unparse_key($k);
+            while (!empty($x) && !$x[count($x) - 1])
+                array_pop($x);
+            return join(";", $x) . ($this->banal_args ? ">" . $this->banal_args : "");
+        }
     }
 
 
