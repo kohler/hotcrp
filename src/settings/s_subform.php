@@ -6,7 +6,7 @@
 class BanalSettings {
     static public function render($suffix, $sv) {
         global $Conf;
-        $cfs = new CheckFormatSpec($sv->curv("sub_banal_data$suffix"));
+        $cfs = new FormatSpec($sv->curv("sub_banal_data$suffix"));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $k) {
             $val = $cfs->unparse_key($k);
             $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
@@ -30,7 +30,7 @@ class BanalSettings {
     }
     static private function old_zoomarg() {
         global $Conf;
-        $cfs = new CheckFormatSpec($Conf->setting_data("sub_banal"));
+        $cfs = new FormatSpec($Conf->setting_data("sub_banal"));
         return $cfs->banal_args;
     }
     static private function check_banal($sv) {
@@ -40,9 +40,9 @@ class BanalSettings {
         // Perhaps we have an old pdftohtml with a bad -zoom.
         $zoomarg = "";
         for ($tries = 0; $tries < 2; ++$tries) {
-            $cf->errors = 0;
+            $cf->clear();
             $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
-            if ($s1 == 1 && ($cf->errors & CheckFormat::ERR_PAPERSIZE) && $tries == 0)
+            if ($s1 == 1 && $cf->has_error("papersize") && $tries == 0)
                 $zoomarg = ">-zoom=1";
             else if ($s1 == 2 || $tries == 0)
                 break;
@@ -51,14 +51,14 @@ class BanalSettings {
         }
 
         // verify that banal works
-        $e1 = $cf->errors;
+        $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodyleading"];
+        $e1 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
+        $cf->clear();
         $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
-        $e2 = $cf->errors;
-        $want_e2 = CheckFormat::ERR_PAPERSIZE | CheckFormat::ERR_PAGELIMIT
-            | CheckFormat::ERR_TEXTBLOCK | CheckFormat::ERR_BODYFONTSIZE
-            | CheckFormat::ERR_BODYLEADING;
-        if ($s1 != 2 || $e1 != 0 || $s2 != 1 || ($e2 & $want_e2) != $want_e2) {
-            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 2 0 1 $want_e2)</td></tr>"
+        $e2 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
+        $want_e2 = join(",", $interesting_keys);
+        if ($s1 != 2 || $e1 != "none" || $s2 != 1 || $e2 != $want_e2) {
+            $errors = "<div class=\"fx\"><table><tr><td>Analysis:&nbsp;</td><td>$s1 $e1 $s2 $e2 (expected 2 none 1 $want_e2)</td></tr>"
                 . "<tr><td class=\"nw\">Exit status:&nbsp;</td><td>" . htmlspecialchars($cf->banal_status) . "</td></tr>";
             if (trim($cf->banal_stdout))
                 $errors .= "<tr><td>Stdout:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stdout) . "</pre></td></tr>";            if (trim($cf->banal_stdout))
@@ -79,13 +79,13 @@ class BanalSettings {
 
         // check banal subsettings
         $old_error_count = $sv->error_count();
-        $cfs = new CheckFormatSpec($sv->oldv("sub_banal_data$suffix"));
+        $cfs = new FormatSpec($sv->oldv("sub_banal_data$suffix"));
         $cfs->papersize = [];
         if (($s = trim(defval($sv->req, "sub_banal_papersize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
             $ses = preg_split('/\s*,\s*|\s+OR\s+/i', $s);
             foreach ($ses as $ss)
-                if ($ss != "" && ($d = CheckFormat::parse_dimen($ss, 2)))
+                if ($ss != "" && ($d = FormatSpec::parse_dimen($ss, 2)))
                     $cfs->papersize[] = $d;
                 else if ($ss != "") {
                     $sv->set_error("sub_banal_papersize$suffix", "Invalid paper size.");
@@ -99,7 +99,7 @@ class BanalSettings {
             && strcasecmp($s, "N/A") != 0) {
             if (($sx = cvtint($s, -1)) > 0)
                 $cfs->pagelimit = [0, $sx];
-            else if (preg_match('/\A(\d+)\s*-\s*(\d+)\z/', $s, $m)
+            else if (preg_match('/\A(\d+)\s*(?:-|–)\s*(\d+)\z/', $s, $m)
                      && $m[1] > 0 && $m[2] > 0 && $m[1] <= $m[2])
                 $cfs->pagelimit = [+$m[1], +$m[2]];
             else
@@ -126,7 +126,7 @@ class BanalSettings {
                     $sv->set_error("sub_banal_textblock$suffix");
                 } else if (strpos($s, "x") !== false) {
                     $ps = $cfs->pagesize[0];
-                    if (!($m = CheckFormat::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
+                    if (!($m = FormatSpec::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
                         $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
                         $s = "";
                     } else if (count($m) == 2)
@@ -138,7 +138,7 @@ class BanalSettings {
                 } else {
                     $ps = $cfs->pagesize[0];
                     $s = preg_replace('/\s+/', 'x', $s);
-                    if (!($m = CheckFormat::parse_dimen($s)) || (is_array($m) && count($m) > 4))
+                    if (!($m = FormatSpec::parse_dimen($s)) || (is_array($m) && count($m) > 4))
                         $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
                     else if (!is_array($m))
                         $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
@@ -149,10 +149,10 @@ class BanalSettings {
                     else
                         $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
                 }
-                $s = (is_array($s) ? CheckFormat::unparse_dimen($s) : "");
+                $s = (is_array($s) ? FormatSpec::unparse_dimen($s) : "");
             }
             // check text block measurements
-            if ($s && ($s = CheckFormat::parse_dimen($s, 2)))
+            if ($s && ($s = FormatSpec::parse_dimen($s, 2)))
                 $cfs->textblock = $s;
             else
                 $sv->set_error("sub_banal_textblock$suffix", "Invalid text block definition.");
@@ -161,22 +161,16 @@ class BanalSettings {
         $cfs->bodyfontsize = null;
         if (($s = trim(defval($sv->req, "sub_banal_bodyfontsize$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            $xx = preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+/?-|±)\s*([\d.]+))?\z,', $s, $m);
-            if (preg_match(',\A([\d.]+)(?:\s*(?:-|–)\s*([\d.]+))?(?:\s*(?:[dD]|Δ|\+/?-|±)\s*([\d.]+))?\z,', $s, $m)
-                && is_numeric($m[1]) && $m[1] > 0
-                && (!isset($m[2]) || $m[2] === "" || (is_numeric($m[2]) && $m[2] > 0))
-                && (!isset($m[3]) || $m[3] === "" || (is_numeric($m[3]) && $m[3] >= 0)))
-                $cfs->bodyfontsize = [+$m[1], isset($m[2]) && $m[2] !== "" ? +$m[2] : 0, isset($m[3]) && $m[3] !== "" ? +$m[3] : 0];
-            else
+            $cfs->bodyfontsize = FormatSpec::parse_range($s);
+            if (!$cfs->bodyfontsize)
                 $sv->set_error("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
         }
 
         $cfs->bodyleading = null;
         if (($s = trim(defval($sv->req, "sub_banal_bodyleading$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            if (is_numeric($s) && $s > 0)
-                $cfs->bodyleading = [+$s, 0, 0];
-            else
+            $cfs->bodyleading = FormatSpec::parse_range($s);
+            if (!$cfs->bodyleading)
                 $sv->set_error("sub_banal_bodyleading$suffix", "Minimum body leading must be a number bigger than 0.");
         }
 

@@ -108,7 +108,6 @@ class SiteLoader {
         "AssignmentSet" => "src/assigners.php",
         "BanalSettings" => "src/settings/s_subform.php",
         "CapabilityManager" => "src/capability.php",
-        "CheckFormatSpec" => "src/checkformat.php",
         "ColumnErrors" => "lib/column.php",
         "ContactSearch" => "src/papersearch.php",
         "CountMatcher" => "src/papersearch.php",

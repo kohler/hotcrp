@@ -135,6 +135,7 @@ src/conflict.php
 src/contact.php
 src/contactlist.php
 src/distoptions.php
+src/formatspec.php
 src/formula.php
 src/formulagraph.php
 src/helpers.php

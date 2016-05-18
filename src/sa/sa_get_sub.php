@@ -87,17 +87,14 @@ class GetCheckFormat_SearchAction extends SearchAction {
                 $papers[$prow->paperId] = $prow;
         $csvg = downloadCSV(false, ["paper", "title", "pages", "format"], "formatcheck");
         echo $csvg->headerline;
+        $cf = new CheckFormat;
         foreach ($ssel->reorder($papers) as $prow) {
             $pages = "?";
             if ($prow->mimetype == "application/pdf") {
-                $cf = new CheckFormat;
+                $cf->clear();
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
                 if ($cf->check_document($prow, $dtype)) {
-                    $format = array();
-                    foreach (CheckFormat::$error_types as $en => $etxt)
-                        if ($cf->errors & $en)
-                            $format[] = $etxt;
-                    $format = (empty($format) ? "ok" : join(",", $format));
+                    $format = empty($cf->errf) ? "ok" : join(",", array_keys($cf->errf));
                     $pages = $cf->pages;
                 } else
                     $format = "error";
