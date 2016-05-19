@@ -83,7 +83,7 @@ class CheckFormat implements FormatChecker {
                     break;
                 }
             if (!$ok)
-                $this->msg_format("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper"));
+                $this->msg_format("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper"));
         }
 
         // number of pages
