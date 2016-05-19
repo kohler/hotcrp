@@ -216,6 +216,7 @@ class SettingRenderer {
 }
 
 class SettingValues {
+    public $user;
     private $errf = array();
     private $errmsg = array();
     private $warnmsg = array();
@@ -232,7 +233,8 @@ class SettingValues {
     private $hint_status = array();
     private $req_has = array();
 
-    public function __construct() {
+    public function __construct($user) {
+        $this->user = $user;
     }
 
     public function use_req() {
@@ -585,9 +587,9 @@ class SettingValues {
             return false;
     }
 
-    static public function make_request() {
+    static public function make_request($user) {
         global $Conf;
-        $sv = new SettingValues;
+        $sv = new SettingValues($user);
         $sv->errf = $Conf->session("settings_highlight", array());
         $Conf->save_session("settings_highlight", null);
         $got = [];
@@ -681,7 +683,7 @@ class SettingGroup {
 }
 
 Si::initialize();
-$Sv = SettingValues::make_request();
+$Sv = SettingValues::make_request($Me);
 
 function choose_setting_group() {
     global $Conf;
@@ -744,113 +746,101 @@ function expandMailTemplate($name, $default) {
     return $null_mailer->expand_template($name, $default);
 }
 
-function unparse_setting_error($info, $text) {
-    if ($info->short_description)
-        return "$info->short_description: $text";
-    else
-        return $text;
-}
+function parse_value($sv, $si) {
+    global $Conf, $Now, $Opt;
 
-function parse_value($sv, $name, $info) {
-    global $Conf, $Me, $Now, $Opt;
-
-    if (!isset($sv->req[$name])) {
-        $xname = str_replace(".", "_", $name);
+    if (!isset($sv->req[$si->name])) {
+        $xname = str_replace(".", "_", $si->name);
         if (isset($sv->req[$xname]))
-            $sv->req[$name] = $sv->req[$xname];
-        else if ($info->type === "checkbox" || $info->type === "cdate")
+            $sv->req[$si->name] = $sv->req[$xname];
+        else if ($si->type === "checkbox" || $si->type === "cdate")
             return 0;
         else
             return null;
     }
 
-    $v = trim($sv->req[$name]);
-    if (($info->placeholder && $info->placeholder === $v)
-        || ($info->invalid_value && $info->invalid_value === $v))
+    $v = trim($sv->req[$si->name]);
+    if (($si->placeholder && $si->placeholder === $v)
+        || ($si->invalid_value && $si->invalid_value === $v))
         $v = "";
 
-    if ($info->type === "checkbox")
+    if ($si->type === "checkbox")
         return $v != "" ? 1 : 0;
-    else if ($info->type === "cdate" && $v == "1")
+    else if ($si->type === "cdate" && $v == "1")
         return 1;
-    else if ($info->type === "date" || $info->type === "cdate"
-             || $info->type === "ndate") {
+    else if ($si->type === "date" || $si->type === "cdate"
+             || $si->type === "ndate") {
         if ($v == "" || !strcasecmp($v, "N/A") || !strcasecmp($v, "same as PC")
-            || $v == "0" || ($info->type !== "ndate" && !strcasecmp($v, "none")))
+            || $v == "0" || ($si->type !== "ndate" && !strcasecmp($v, "none")))
             return -1;
         else if (!strcasecmp($v, "none"))
             return 0;
         else if (($v = $Conf->parse_time($v)) !== false)
             return $v;
-        else
-            $err = unparse_setting_error($info, "Invalid date.");
-    } else if ($info->type === "grace") {
+        $err = "Invalid date.";
+    } else if ($si->type === "grace") {
         if (($v = parseGrace($v)) !== null)
             return intval($v);
-        else
-            $err = unparse_setting_error($info, "Invalid grace period.");
-    } else if ($info->type === "int" || $info->type === "zint") {
+        $err = "Invalid grace period.";
+    } else if ($si->type === "int" || $si->type === "zint") {
         if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
             return intval($v);
-        else
-            $err = unparse_setting_error($info, "Should be a number.");
-    } else if ($info->type === "string") {
+        $err = "Should be a number.";
+    } else if ($si->type === "string") {
         // Avoid storing the default message in the database
-        if (substr($name, 0, 9) == "mailbody_") {
-            $t = expandMailTemplate(substr($name, 9), true);
+        if (substr($si->name, 0, 9) == "mailbody_") {
+            $t = expandMailTemplate(substr($si->name, 9), true);
             $v = cleannl($v);
             if ($t["body"] == $v)
                 return "";
         }
         return $v;
-    } else if ($info->type === "simplestring") {
+    } else if ($si->type === "simplestring") {
         return simplify_whitespace($v);
-    } else if ($info->type === "tag" || $info->type === "tagbase") {
-        $tagger = new Tagger($Me);
+    } else if ($si->type === "tag" || $si->type === "tagbase") {
+        $tagger = new Tagger($sv->user);
         $v = trim($v);
-        if ($v === "" && $info->optional)
+        if ($v === "" && $si->optional)
             return $v;
-        $v = $tagger->check($v, $info->type === "tagbase" ? Tagger::NOVALUE : 0);
+        $v = $tagger->check($v, $si->type === "tagbase" ? Tagger::NOVALUE : 0);
         if ($v)
             return $v;
-        $err = unparse_setting_error($info, $tagger->error_html);
-    } else if ($info->type === "emailheader") {
+        $err = $tagger->error_html;
+    } else if ($si->type === "emailheader") {
         $v = MimeText::encode_email_header("", $v);
         if ($v !== false)
             return ($v == "" ? "" : MimeText::decode_header($v));
-        $err = unparse_setting_error($info, "Invalid email header.");
-    } else if ($info->type === "emailstring") {
+        $err = "Invalid email header.";
+    } else if ($si->type === "emailstring") {
         $v = trim($v);
-        if ($v === "" && $info->optional)
+        if ($v === "" && $si->optional)
             return "";
         else if (validate_email($v) || $v === $v_active)
             return $v;
-        else
-            $err = unparse_setting_error($info, "Invalid email.");
-    } else if ($info->type === "urlstring") {
+        $err = "Invalid email.";
+    } else if ($si->type === "urlstring") {
         $v = trim($v);
-        if (($v === "" && $info->optional)
+        if (($v === "" && $si->optional)
             || preg_match(',\A(?:https?|ftp)://\S+\z,', $v))
             return $v;
-        else
-            $err = unparse_setting_error($info, "Invalid URL.");
-    } else if ($info->type === "htmlstring") {
-        if (($v = CleanHTML::basic_clean($v, $err)) === false)
-            $err = unparse_setting_error($info, $err);
-        else if ($info->message_default
-                 && $v === $Conf->message_default_html($info->message_default))
-            return "";
-        else
+        $err = "Invalid URL.";
+    } else if ($si->type === "htmlstring") {
+        if (($v = CleanHTML::basic_clean($v, $err)) !== false) {
+            if ($si->message_default
+                && $v === $Conf->message_default_html($si->message_default))
+                return "";
             return $v;
-    } else if ($info->type === "radio") {
-        foreach ($info->values as $allowedv)
+        }
+        /* $err set by CleanHTML::basic_clean */
+    } else if ($si->type === "radio") {
+        foreach ($si->values as $allowedv)
             if ((string) $allowedv === $v)
                 return $allowedv;
-        $err = unparse_setting_error($info, "Parse error (unexpected value).");
+        $err = "Parse error (unexpected value).";
     } else
         return $v;
 
-    $sv->set_error($name, $err);
+    $sv->set_error($si, $err);
     return null;
 }
 
@@ -879,8 +869,8 @@ function account_value($sv, $si1) {
             if ($p->parse($sv, $si))
                 $sv->save_callbacks[$si->name] = $si;
         } else {
-            $v = parse_value($sv, $si->name, $si);
-            if ($v === null)
+            $v = parse_value($sv, $si);
+            if ($v === null || $v === false)
                 return;
             if (is_int($v) && $v <= 0 && $si->type !== "radio" && $si->type !== "zint")
                 $v = null;
@@ -892,7 +882,7 @@ function account_value($sv, $si1) {
 }
 
 function do_setting_update($sv) {
-    global $Conf, $Group, $Me, $Now, $Opt, $OptOverride;
+    global $Conf, $Group, $Now, $Opt, $OptOverride;
     // parse settings
     foreach (Si::$all as $si)
         account_value($sv, $si);
@@ -904,7 +894,8 @@ function do_setting_update($sv) {
         if (!$dv1 && $dv2)
             $sv->save($dn1, $dv2);
         else if ($dv2 && $dv1 > $dv2) {
-            $sv->set_error($dn1, unparse_setting_error(Si::get($dn1), "Must come before " . Si::get($dn2, "short_description") . "."));
+            $si = Si::get($dn1);
+            $sv->set_error($si, "Must come before " . Si::get($dn2, "short_description") . ".");
             $sv->set_error($dn2);
         }
     if ($sv->has_savedv("sub_sub"))
@@ -921,7 +912,8 @@ function do_setting_update($sv) {
         foreach (explode(" ", $sv->newv("resp_rounds")) as $i => $rname) {
             $isuf = $i ? "_$i" : "";
             if ($sv->newv("resp_open$isuf") > $sv->newv("resp_done$isuf")) {
-                $sv->set_error("resp_open$isuf", unparse_setting_error(Si::get("resp_open"), "Must come before " . Si::get("resp_done", "short_description") . "."));
+                $si = Si::get("resp_open$isuf");
+                $sv->set_error($si, "Must come before " . Si::get("resp_done", "short_description") . ".");
                 $sv->set_error("resp_done$isuf");
             }
         }
@@ -1003,7 +995,7 @@ function do_setting_update($sv) {
 
         $Conf->qe("unlock tables");
         if (count($changedn))
-            $Me->log_activity("Updated settings " . join(", ", $changedn));
+            $sv->user->log_activity("Updated settings " . join(", ", $changedn));
         $Conf->load_settings();
 
         // contactdb may need to hear about changes to shortName
