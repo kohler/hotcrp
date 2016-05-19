@@ -314,7 +314,7 @@ class CheckFormat implements FormatChecker {
 
         $done_banal = false;
         $spec = $this->dt_specs[$dtype];
-        foreach ($spec->checkers as $chk) {
+        foreach ($spec->checkers ? : [] as $chk) {
             if ($chk === "banal" || $chk === "CheckFormat") {
                 $checker = $this;
                 $done_banal = true;
