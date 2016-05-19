@@ -15,6 +15,10 @@ class FormatSpec {
     private $_is_banal_empty;
 
     public function __construct($str) {
+        $this->merge($str);
+    }
+
+    public function merge($str) {
         if (is_string($str) && substr($str, 0, 1) === "{")
             $str = json_decode($str);
         if (is_object($str)) {
@@ -197,4 +201,8 @@ class FormatSpec {
         else
             return "??" . $to;
     }
+}
+
+interface FormatChecker {
+    public function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc);
 }

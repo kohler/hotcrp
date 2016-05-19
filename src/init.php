@@ -113,6 +113,7 @@ class SiteLoader {
         "CountMatcher" => "src/papersearch.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
+        "FormatChecker" => "src/formatspec.php",
         "FormulaPaperColumn" => "src/papercolumn.php",
         "JsonSerializable" => "lib/json.php",
         "LoginHelper" => "lib/login.php",
