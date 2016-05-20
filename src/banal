@@ -1015,7 +1015,6 @@ sub report_json ($) {
     my($mt, $ml) = (modevalkey($dx->{mt}), modevalkey($dx->{ml}));
 
     my ($doc_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $ph, $pw;
-    my ($doc_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $th, $tw;
     my ($doc_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $mt, $pw - ($ml + $tw), $ph - ($mt + $th), $ml;
     my ($doc_bfs);
     if (p2h_font_bug($doc)) {
@@ -1025,7 +1024,7 @@ sub report_json ($) {
     }
     my ($doc_l) = sprintf "\"leading\": %g", $doc->{pagespec}->{lead};
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{pages}->{1}->{pagespec}->{ncols};
-    print "  $doc_ps,\n  $doc_tb,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n  \"pages\": [";
+    print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n  \"pages\": [";
     $sep = "\n";
 
     my %pages;
@@ -1042,8 +1041,6 @@ sub report_json ($) {
         my($pd) = $px->{$i};
         my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pd->{ph}, $pd->{pw};
         push @val, $page_ps if $page_ps ne $doc_ps;
-        my($page_tb) = sprintf "\"textblock\": [%.0f, %.0f]", $pd->{th}, $pd->{tw};
-        push @val, $page_tb if $page_tb ne $doc_tb;
         my($page_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
         push @val, $page_margin if $page_margin ne $doc_margin;
         my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{pagespec}->{bodyfont};
