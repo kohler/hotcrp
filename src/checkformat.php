@@ -114,16 +114,20 @@ class CheckFormat implements FormatChecker {
             $px = array();
             $py = array();
             $maxx = $maxy = 0;
-            $tb = get($bj, "textblock");
+            $docpsiz = get($bj, "papersize");
+            $docmarg = get($bj, "margin");
             foreach ($bj->pages as $i => $pg)
-                if (($pp = defval($pg, "textblock", $tb)) && is_array($pp)) {
-                    if ($pp[1] - $spec->textblock[0] >= 9) {
+                if (($psiz = defval($pg, "papersize", $docpsiz)) && is_array($psiz)
+                    && ($marg = defval($pg, "margin", $docmarg)) && is_array($marg)) {
+                    $pwidth = $psiz[1] - $marg[1] - $marg[3];
+                    $pheight = $psiz[0] - $marg[0] - $marg[2];
+                    if ($pwidth - $spec->textblock[0] >= 9) {
                         $px[] = $i + 1;
-                        $maxx = max($maxx, $pp[1]);
+                        $maxx = max($maxx, $pwidth);
                     }
-                    if ($pp[0] - $spec->textblock[1] >= 9) {
+                    if ($pheight - $spec->textblock[1] >= 9) {
                         $py[] = $i + 1;
-                        $maxy = max($maxy, $pp[0]);
+                        $maxy = max($maxy, $pheight);
                     }
                 }
             if (count($px) > 0)
