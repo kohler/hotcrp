@@ -288,15 +288,15 @@ class RespRound_SettingParser extends SettingParser {
 
         foreach ($roundnames_set as $i) {
             $isuf = $i ? "_$i" : "";
-            if (($v = parse_value($sv, "resp_open$isuf", Si::get("resp_open"))) !== null)
+            if (($v = parse_value($sv, Si::get("resp_open$isuf"))) !== null)
                 $sv->save("resp_open$isuf", $v <= 0 ? null : $v);
-            if (($v = parse_value($sv, "resp_done$isuf", Si::get("resp_done"))) !== null)
+            if (($v = parse_value($sv, Si::get("resp_done$isuf"))) !== null)
                 $sv->save("resp_done$isuf", $v <= 0 ? null : $v);
-            if (($v = parse_value($sv, "resp_grace$isuf", Si::get("resp_grace"))) !== null)
+            if (($v = parse_value($sv, Si::get("resp_grace$isuf"))) !== null)
                 $sv->save("resp_grace$isuf", $v <= 0 ? null : $v);
-            if (($v = parse_value($sv, "resp_words$isuf", Si::get("resp_words"))) !== null)
+            if (($v = parse_value($sv, Si::get("resp_words$isuf"))) !== null)
                 $sv->save("resp_words$isuf", $v < 0 ? null : $v);
-            if (($v = parse_value($sv, "msg.resp_instrux$isuf", Si::get("msg.resp_instrux"))) !== null)
+            if (($v = parse_value($sv, Si::get("msg.resp_instrux$isuf"))) !== null)
                 $sv->save("msg.resp_instrux$isuf", $v);
         }
 

@@ -260,14 +260,9 @@ class CheckFormat implements FormatChecker {
                 $bj = null;
         }
 
-        if (!$bj && $cf->no_run) {
+        if (!$bj && $cf->no_run)
             $cf->need_run = true;
-            $cf->status = self::STATUS_NONE;
-            return;
-        }
-        if (!$bj && !$cf->load_document($doc))
-            return;
-        if (!$bj) {
+        else if (!$bj && $cf->load_document($doc)) {
             // constrain the number of concurrent banal executions to banalLimit
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
@@ -288,7 +283,10 @@ class CheckFormat implements FormatChecker {
                 Dbl::q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
         }
 
-        $cf->check_banal_json($bj, $spec);
+        if ($bj)
+            $cf->check_banal_json($bj, $spec);
+        else
+            $cf->status = CheckFormat::STATUS_NONE;
     }
 
     public function has_spec($dtype) {
