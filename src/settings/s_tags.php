@@ -197,11 +197,11 @@ class Tag_SettingParser extends SettingParser {
     private function parse_list($sv, $si, $checkf, $min_idx) {
         $ts = array();
         foreach (preg_split('/\s+/', $sv->req[$si->name]) as $t)
-            if ($t !== "" && $this->tagger->check($t, $checkf)) {
-                list($tag, $idx) = TagInfo::split_index($t);
+            if ($t !== "" && ($tx = $this->tagger->check($t, $checkf))) {
+                list($tag, $idx) = TagInfo::split_index($tx);
                 if ($min_idx)
-                    $t = $tag . "#" . max($min_idx, (float) $idx);
-                $ts[$tag] = $t;
+                    $tx = $tag . "#" . max($min_idx, (float) $idx);
+                $ts[$tag] = $tx;
             } else if ($t !== "")
                 $sv->set_error($si->name, $si->short_description . ": " . $this->tagger->error_html);
         return array_values($ts);
