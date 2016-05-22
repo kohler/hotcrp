@@ -675,6 +675,10 @@ class PaperInfo {
         return get($this->all_options(), $id);
     }
 
+    public function invalidate_options() {
+        $this->_option_array = $this->_all_option_array = null;
+    }
+
     private function _add_documents($dids) {
         if ($this->_document_array === null)
             $this->_document_array = [];

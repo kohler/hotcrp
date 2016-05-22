@@ -2554,12 +2554,14 @@ table.revoff span.revfn {
 div.papev, div.revev {
 	margin: 5px 0;
 }
+p.paptext, div.papinfo, div.revhint {
+	max-width: 640px;
+	line-height: 1.25;
+}
 div.paphint, div.revhint {
 	font-size: 90%;
 	color: #555555;
-	max-width: 640px;
 	margin: 2px 0;
-	line-height: 1.25;
 }
 div.paphint > p:first-child, div.revhint > p:first-child {
 	margin-top: 0;
