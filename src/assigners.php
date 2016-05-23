@@ -1845,7 +1845,7 @@ class AssignmentSet {
                                   array("t" => defval($_REQUEST, "t", "s"),
                                         "q" => $query_order));
         $plist = new PaperList($search);
-        echo $plist->table_html("reviewers", ["nofooter" => 1]);
+        echo $plist->table_html("reviewers", ["nofooter" => 1, "class" => "pltable_full", "table_id" => "foldpl"]);
 
         $deltarev = new AssignmentCountSet;
         foreach ($this->assigners as $assigner)
