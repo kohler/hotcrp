@@ -228,6 +228,7 @@ class CheckFormat implements FormatChecker {
         $this->errf = $this->metadata_updates = [];
         $this->status = self::STATUS_OK;
         $this->need_run = $this->possible_run = false;
+        $this->msgs = [];
     }
 
     public function check_file($filename, $spec) {
