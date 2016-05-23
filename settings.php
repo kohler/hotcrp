@@ -228,6 +228,7 @@ class SettingValues {
     public $need_lock = array();
 
     public $req = array();
+    public $req_files = array();
     public $savedv = array();
     public $explicit_oldv = array();
     private $hint_status = array();
@@ -604,6 +605,11 @@ class SettingValues {
                 }
             }
         }
+        foreach ($_FILES as $f => $finfo)
+            if (($e = $finfo["error"]) == UPLOAD_ERR_OK) {
+                if (is_uploaded_file($finfo["tmp_name"]))
+                    $sv->req_files[$f] = $finfo;
+            }
         return $sv;
     }
 }
