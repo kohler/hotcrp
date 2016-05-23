@@ -127,13 +127,14 @@ class PaperList {
         global $Conf;
         $this->search = $search;
         $this->contact = $this->search->contact;
-        $this->qreq = $qreq ? : new Qobject;
+        $qreq = $qreq ? : new Qobject;
+        $this->qreq = $qreq;
 
         $this->sortable = isset($args["sort"]) && $args["sort"];
         if ($this->sortable && is_string($args["sort"]))
             $this->sorters[] = ListSorter::parse_sorter($args["sort"]);
-        else if ($this->sortable && $this->qreq->sort)
-            $this->sorters[] = ListSorter::parse_sorter($this->qreq->sort);
+        else if ($this->sortable && $qreq->sort)
+            $this->sorters[] = ListSorter::parse_sorter($qreq->sort);
         else
             $this->sorters[] = ListSorter::parse_sorter("");
 
@@ -141,8 +142,7 @@ class PaperList {
             || $this->contact->privChair /* “Override conflicts” fold */;
 
         $this->_paper_link_page = "";
-        if (isset($qreq->linkto)
-            && ($qreq->linkto == "paper" || $qreq->linkto == "review" || $qreq->linkto == "assign"))
+        if ($qreq->linkto === "paper" || $qreq->linkto === "review" || $qreq->linkto === "assign")
             $this->_paper_link_page = $qreq->linkto;
         $this->listNumber = 0;
         if (get($args, "list"))
@@ -161,7 +161,7 @@ class PaperList {
             }
             $this->_reviewer = $r;
         }
-        $this->atab = $this->qreq->atab;
+        $this->atab = $qreq->atab;
         $this->_row_id_pattern = get($args, "row_id_pattern");
 
         $this->tagger = new Tagger($this->contact);
