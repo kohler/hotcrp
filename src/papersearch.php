@@ -834,16 +834,16 @@ class PaperSearch {
         "ext" => 1, "cext" => 1, "iext" => 1, "pext" => 1);
 
 
-    function __construct($me, $options, $reviewer = false) {
+    function __construct($user, $options, $reviewer = false) {
         global $Conf;
         if (is_string($options))
             $options = array("q" => $options);
 
         // contact facts
-        $this->contact = $me;
-        $this->privChair = $me->privChair;
-        $this->amPC = $me->isPC;
-        $this->cid = $me->contactId;
+        $this->contact = $user;
+        $this->privChair = $user->privChair;
+        $this->amPC = $user->isPC;
+        $this->cid = $user->contactId;
 
         // paper selection
         $ptype = get_s($options, "t");
@@ -851,21 +851,21 @@ class PaperSearch {
             $ptype = "";
         if ($this->privChair && !$ptype && $Conf->timeUpdatePaper())
             $this->limitName = "all";
-        else if (($me->privChair && $ptype === "act")
-                 || ($me->isPC
+        else if (($user->privChair && $ptype === "act")
+                 || ($user->isPC
                      && (!$ptype || $ptype === "act" || $ptype === "all")
                      && $Conf->can_pc_see_all_submissions()))
             $this->limitName = "act";
-        else if ($me->privChair && $ptype === "unm")
+        else if ($user->privChair && $ptype === "unm")
             $this->limitName = "unm";
-        else if ($me->isPC && (!$ptype || $ptype === "s" || $ptype === "unm"))
+        else if ($user->isPC && (!$ptype || $ptype === "s" || $ptype === "unm"))
             $this->limitName = "s";
-        else if ($me->isPC && ($ptype === "und" || $ptype === "undec"))
+        else if ($user->isPC && ($ptype === "und" || $ptype === "undec"))
             $this->limitName = "und";
-        else if ($me->isPC && ($ptype === "acc" || $ptype === "revs"
-                               || $ptype === "reqrevs" || $ptype === "req"
-                               || $ptype === "lead" || $ptype === "rable"
-                               || $ptype === "manager"))
+        else if ($user->isPC && ($ptype === "acc" || $ptype === "revs"
+                                 || $ptype === "reqrevs" || $ptype === "req"
+                                 || $ptype === "lead" || $ptype === "rable"
+                                 || $ptype === "manager"))
             $this->limitName = $ptype;
         else if ($this->privChair && ($ptype === "all" || $ptype === "unsub"))
             $this->limitName = $ptype;
@@ -873,16 +873,16 @@ class PaperSearch {
             $this->limitName = $ptype;
         else if ($ptype === "rable")
             $this->limitName = "r";
-        else if (!$me->is_reviewer())
+        else if (!$user->is_reviewer())
             $this->limitName = "a";
-        else if (!$me->is_author())
+        else if (!$user->is_author())
             $this->limitName = "r";
         else
             $this->limitName = "ar";
 
         // track other information
         $this->allowAuthor = false;
-        if ($me->privChair || $me->is_author()
+        if ($user->privChair || $user->is_author()
             || ($this->amPC && $Conf->submission_blindness() != Conf::BLIND_ALWAYS))
             $this->allowAuthor = true;
 
@@ -3591,41 +3591,41 @@ class PaperSearch {
     }
 
 
-    static function search_types($me) {
+    static function search_types($user) {
         global $Conf;
         $tOpt = array();
-        if ($me->isPC && $Conf->can_pc_see_all_submissions())
+        if ($user->isPC && $Conf->can_pc_see_all_submissions())
             $tOpt["act"] = "Active papers";
-        if ($me->isPC)
+        if ($user->isPC)
             $tOpt["s"] = "Submitted papers";
-        if ($me->isPC && $Conf->timePCViewDecision(false) && $Conf->has_any_accepts())
+        if ($user->isPC && $Conf->timePCViewDecision(false) && $Conf->has_any_accepts())
             $tOpt["acc"] = "Accepted papers";
-        if ($me->privChair)
+        if ($user->privChair)
             $tOpt["all"] = "All papers";
-        if ($me->privChair && !$Conf->can_pc_see_all_submissions()
+        if ($user->privChair && !$Conf->can_pc_see_all_submissions()
             && defval($_REQUEST, "t") === "act")
             $tOpt["act"] = "Active papers";
-        if ($me->is_reviewer())
+        if ($user->is_reviewer())
             $tOpt["r"] = "Your reviews";
-        if ($me->has_outstanding_review()
-            || ($me->is_reviewer() && defval($_REQUEST, "t") === "rout"))
+        if ($user->has_outstanding_review()
+            || ($user->is_reviewer() && defval($_REQUEST, "t") === "rout"))
             $tOpt["rout"] = "Your incomplete reviews";
-        if ($me->isPC)
+        if ($user->isPC)
             $tOpt["req"] = "Your review requests";
-        if ($me->isPC && $Conf->has_any_lead_or_shepherd()
-            && $me->is_discussion_lead())
+        if ($user->isPC && $Conf->has_any_lead_or_shepherd()
+            && $user->is_discussion_lead())
             $tOpt["lead"] = "Your discussion leads";
-        if ($me->isPC && $Conf->has_any_manager()
-            && ($me->privChair || $me->is_manager()))
+        if ($user->isPC && $Conf->has_any_manager()
+            && ($user->privChair || $user->is_manager()))
             $tOpt["manager"] = "Papers you administer";
-        if ($me->is_author())
+        if ($user->is_author())
             $tOpt["a"] = "Your submissions";
         return $tOpt;
     }
 
-    static function manager_search_types($me) {
+    static function manager_search_types($user) {
         global $Conf;
-        if ($me->privChair) {
+        if ($user->privChair) {
             if ($Conf->has_any_manager())
                 $tOpt = array("manager" => "Papers you administer",
                               "unm" => "Unmanaged submissions",
