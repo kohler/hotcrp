@@ -1463,6 +1463,8 @@ class Conf {
                 else
                     $metadata->$k = $v;
             $metadata_str = count(get_object_vars($metadata)) ? json_encode($metadata) : null;
+            if ($old_str === $metadata_str) // already done
+                return true;
             $ijq = isset($old_str) ? "=" : " is ";
             $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $doc->paperStorageId, $old_str);
             if ($result->affected_rows != 0)
