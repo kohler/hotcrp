@@ -747,10 +747,14 @@ class PaperList {
                 $tt .= "\">";
                 if (!$empty
                     && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    if ($c[0] !== "<"
-                        || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
-                        $cm = [null, "", $c];
-                    $tt .= $cm[1] . '<em class="plx">' . $fdef->header($this, -1) . ':</em> ' . $cm[2];
+                    $ch = $fdef->header($this, -1);
+                    if ($ch) {
+                        if ($c[0] !== "<"
+                            || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
+                            $cm = [null, "", $c];
+                        $tt .= $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
+                    } else
+                        $tt .= $c;
                     $fdef->has_content = true;
                 }
                 $tt .= "</div>";
