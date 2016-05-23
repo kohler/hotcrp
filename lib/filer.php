@@ -679,6 +679,55 @@ class Filer {
         }
         return $container;
     }
+
+
+    public function is_archive($doc) {
+        return $doc->filename
+            && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename);
+    }
+
+    public function archive_listing($doc) {
+        if (!$this->load_to_filestore($doc))
+            return false;
+        $type = null;
+        if (preg_match('/\.zip\z/i', $doc->filename))
+            $type = "zip";
+        else if (preg_match('/\.(?:tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename))
+            $type = "tar";
+        else if (!$doc->filename) {
+            $contents = file_get_contents($doc->filestore, false, null, 0, 1000);
+            if (str_starts_with($contents, "\x1F\x9D")
+                || str_starts_with($contents, "\x1F\xA0")
+                || str_starts_with($contents, "BZh")
+                || str_starts_with($contents, "\x1F\x8B")
+                || str_starts_with($contents, "\xFD7zXZ\x00"))
+                $type = "tar";
+            else if (str_starts_with($contents, "ustar\x0000")
+                     || str_starts_with($contents, "ustar  \x00"))
+                $type = "tar";
+            else if (str_starts_with($contents, "PK\x03\x04")
+                     || str_starts_with($contents, "PK\x05\x06")
+                     || str_starts_with($contents, "PK\x07\x08"))
+                $type = "zip";
+        }
+        if (!$type)
+            return false;
+        if ($type === "zip")
+            $cmd = "zipinfo -1 ";
+        else
+            $cmd = "tar tf ";
+        $cmd .= escapeshellarg($doc->filestore);
+        $pipes = null;
+        $proc = proc_open($cmd, [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
+        $out = stream_get_contents($pipes[1]);
+        $err = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($proc);
+        if ($status != 0 || $err != "")
+            error_log("failed $cmd: status $status, stderr $err");
+        return explode("\n", rtrim($out));
+    }
 }
 
 class Filer_Dbstore {
