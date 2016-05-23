@@ -72,6 +72,7 @@ class PaperOption {
     public $description;
     public $position;
     public $final;
+    public $nonpaper;
     public $visibility; // "rev", "nonblind", "admin"
     private $display;
     public $display_space;
@@ -120,6 +121,7 @@ class PaperOption {
         else
             $this->position = 999;
         $this->final = !!get($args, "final");
+        $this->nonpaper = !!get($args, "nonpaper");
 
         $vis = get($args, "visibility") ? : get($args, "view_type");
         if ($vis !== "rev" && $vis !== "nonblind" && $vis !== "admin")
@@ -219,7 +221,11 @@ class PaperOption {
     }
 
     static function option_ids(Conf $c = null) {
-        return array_keys(self::option_json_list($c));
+        $m = [];
+        foreach (self::option_json_list($c) as $id => $oj)
+            if (!get($oj, "nonpaper"))
+                $m[] = $id;
+        return $m;
     }
 
     static function find($id) {
@@ -235,7 +241,9 @@ class PaperOption {
         if (self::$list === null) {
             self::$list = [];
             foreach (self::option_json_list($c) as $id => $oj)
-                self::$list[$id] = self::find($id);
+                if (!get($oj, "nonpaper")
+                    && ($o = self::find($id)) && !$o->nonpaper)
+                    self::$list[$id] = $o;
         }
         return self::$list;
     }
@@ -244,8 +252,9 @@ class PaperOption {
         if (self::$nonfixed_list === null) {
             self::$nonfixed_list = [];
             foreach (self::option_json_list($c) as $id => $oj)
-                if ($id < self::MINFIXEDID)
-                    self::$nonfixed_list[$id] = self::find($id);
+                if ($id < self::MINFIXEDID && !get($oj, "nonpaper")
+                    && ($o = self::find($id)) && !$o->nonpaper)
+                    self::$nonfixed_list[$id] = $o;
         }
         return self::$nonfixed_list;
     }
@@ -253,7 +262,8 @@ class PaperOption {
     static function nonfinal_option_list() {
         $list = [];
         foreach (self::option_json_list() as $id => $oj)
-            if (!get($oj, "final") && ($o = self::find($id)) && !$o->final)
+            if (!get($oj, "nonpaper") && !get($oj, "final")
+                && ($o = self::find($id)) && !$o->nonpaper && !$o->final)
                 $list[$id] = $o;
         return $list;
     }
@@ -301,14 +311,34 @@ class PaperOption {
             $name = substr($name, 4);
         $oabbr = array();
         foreach (self::option_json_list() as $id => $oj)
-            if ($oj->abbr === $name)
-                return array($id => self::find($id));
-            else
+            if ($oj->abbr === $name) {
+                $oabbr = [$id => $oj->abbr];
+                break;
+            } else
                 $oabbr[$id] = $oj->abbr;
         $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        foreach ($oabbr as $id => &$x)
-            $x = self::find($id);
-        return $oabbr;
+        $omap = [];
+        foreach ($oabbr as $id => $x)
+            if (($o = self::find($id)) && !$o->nonpaper)
+                $omap[$id] = $o;
+        return $omap;
+    }
+
+    static function search_nonpaper($name) {
+        $name = strtolower($name);
+        $oabbr = array();
+        foreach (self::option_json_list() as $id => $oj)
+            if ($oj->abbr === $name) {
+                $oabbr = [$id => $oj->abbr];
+                break;
+            } else
+                $oabbr[$id] = $oj->abbr;
+        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
+        $omap = [];
+        foreach ($oabbr as $id => $x)
+            if (($o = self::find($id)) && $o->nonpaper)
+                $omap[$id] = $o;
+        return $omap;
     }
 
     static function abbreviate($name, $id) {
