@@ -46,7 +46,7 @@ $null_mailer = new HotCRPMailer(null, null, array_merge(array("width" => false),
 if (isset($_REQUEST["monreq"]))
     $_REQUEST["template"] = "myreviewremind";
 if (isset($_REQUEST["template"]) && !isset($_REQUEST["check"]))
-    $_REQUEST["loadtmpl"] = 1;
+    $_REQUEST["loadtmpl"] = -1;
 
 // paper selection
 if (!isset($_REQUEST["q"]) || trim($_REQUEST["q"]) == "(All)")
@@ -87,10 +87,11 @@ if (isset($_REQUEST["p"]) && is_array($_REQUEST["p"])
 if (isset($_REQUEST["loadtmpl"])) {
     $t = defval($_REQUEST, "template", "genericmailtool");
     if (!isset($mailTemplates[$t])
-        || !isset($mailTemplates[$t]["mailtool_name"]))
+        || (!isset($mailTemplates[$t]["mailtool_name"]) && !isset($mailTemplates[$t]["mailtool_priority"])))
         $t = "genericmailtool";
     $template = $mailTemplates[$t];
-    $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
+    if (!isset($_REQUEST["recipients"]) || $_REQUEST["loadtmpl"] != -1)
+        $_REQUEST["recipients"] = defval($template, "mailtool_recipients", "s");
     if (isset($template["mailtool_search_type"]))
         $_REQUEST["t"] = $template["mailtool_search_type"];
     $_REQUEST["subject"] = $null_mailer->expand($template["subject"]);
