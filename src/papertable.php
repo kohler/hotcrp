@@ -481,7 +481,7 @@ class PaperTable {
                 "<td class='nw'>", documentDownload($doc), "</td><td>";
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo "<span class='sep'></span>", $stamps;
-            if ($has_cf && ($this->cf->status == CheckFormat::STATUS_NONE || $this->cf->need_run))
+            if ($has_cf && ($this->cf->status == CheckFormat::STATUS_ERROR || $this->cf->need_run))
                 echo "<span class='sep'></span><a href='#' onclick='return docheckformat.call(this, $documentType)'>Check format</a>";
             else if ($has_cf) {
                 if ($this->cf->status == CheckFormat::STATUS_OK)

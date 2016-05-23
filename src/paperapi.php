@@ -333,6 +333,6 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "Permission error."]);
         $cf = new CheckFormat;
         $status = $cf->check_document($prow, $dtype, $qreq->docid);
-        json_exit(["ok" => $status != CheckFormat::STATUS_NONE, "status" => $status, "response" => join("", $cf->messages_html())]);
+        json_exit(["ok" => $status != CheckFormat::STATUS_ERROR, "status" => $status, "response" => join("", $cf->messages_html())]);
     }
 }

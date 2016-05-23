@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class CheckFormat implements FormatChecker {
-    const STATUS_NONE = 0;
+    const STATUS_ERROR = 0;
     const STATUS_PROBLEM = 1;
     const STATUS_OK = 2;
 
@@ -38,7 +38,7 @@ class CheckFormat implements FormatChecker {
     public function msg_fail($what) {
         if ($what)
             $this->msgs[0][] = $what;
-        return $this->status = self::STATUS_NONE;
+        return $this->status = self::STATUS_ERROR;
     }
 
     public function msg_format($field, $what) {
@@ -290,7 +290,7 @@ class CheckFormat implements FormatChecker {
         if ($bj)
             $cf->check_banal_json($bj, $spec);
         else
-            $cf->status = CheckFormat::STATUS_NONE;
+            $cf->status = CheckFormat::STATUS_ERROR;
     }
 
     public function has_spec($dtype) {
@@ -339,6 +339,12 @@ class CheckFormat implements FormatChecker {
         return $this->status;
     }
 
+    public function errors() {
+        return get($this->msgs, 0, []);
+    }
+    public function warnings() {
+        return get($this->msgs, 1, []);
+    }
     public function messages_html() {
         $t = [];
         foreach (get($this->msgs, 0, []) as $m)
