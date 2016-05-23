@@ -250,6 +250,12 @@ class PaperStatus {
         $this->errmsg[] = $html;
     }
 
+    public function set_document_prow($prow) {
+        // XXX this is butt ugly
+        $this->prow = $prow;
+        $this->paperid = $prow->paperId ? : -1;
+    }
+
     public function upload_document($docj, PaperOption $o) {
         global $Conf;
         // look for an existing document with same sha1;
@@ -259,7 +265,7 @@ class PaperStatus {
             $oldj = $this->document_to_json($o->id, $docid);
             if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
                 $docid = null;
-        } else if (!$docid && $this->paperid > 0 && get($docj, "sha1")) {
+        } else if (!$docid && $this->paperid != -1 && get($docj, "sha1")) {
             $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, $docj->sha1);
             if (($row = edb_row($result)))
                 $docid = $row[0];
@@ -300,7 +306,7 @@ class PaperStatus {
             $this->uploaded_documents[] = $docj->docid = $upload->paperStorageId;
         } else {
             $docj->docid = 1;
-            $this->set_option_error_html($o, $upload ? $upload->error_html : "empty document");
+            $this->set_option_error_html($o, $upload ? $upload->error_html : "Empty document.");
         }
     }
 

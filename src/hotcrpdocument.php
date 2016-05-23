@@ -68,14 +68,18 @@ class HotCRPDocument extends Filer {
             $fn .= "final" . $doc->paperId;
         else {
             $o = PaperOption::find($doc->documentType);
+            if ($o && $o->nonpaper && $doc->paperId < 0) {
+                $fn .= $o->abbr;
+                $oabbr = "";
+            } else {
+                $fn .= "paper" . $doc->paperId;
+                $oabbr = $o ? "-" . $o->abbr : "-unknown";
+            }
             if ($o && $o->type == "attachments"
                 && ($afn = get($doc, "unique_filename") ? : $doc->filename))
                 // do not decorate with MIME type suffix
-                return $fn . "paper" . $doc->paperId . "-" . $o->abbr . "/" . $afn;
-            else if ($o && $o->is_document())
-                $fn .= "paper" . $doc->paperId . "-" . $o->abbr;
-            else
-                $fn .= "paper" . $doc->paperId . "-unknown";
+                return $fn . $oabbr . "/" . $afn;
+            $fn .= $oabbr;
         }
         return $fn . Mimetype::extension($doc->mimetype);
     }

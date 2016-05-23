@@ -47,23 +47,37 @@ function document_download() {
             list($paperId, $dtname, $attachment_filename) = [intval($m[1]), $m[2], get($m, 3)];
         else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:\.[^/]+|/+(.*))\z,', $s, $m))
             list($paperId, $dtname, $attachment_filename) = [intval($m[2]), $m[1], get($m, 3)];
+        else if (preg_match(',\A([^/]+?)(?:\.[^/]+|/+(.*))\z,', $s, $m)
+                 && ($nonpaper_options = PaperOption::search_nonpaper($m[1]))
+                 && count($nonpaper_options) == 1) {
+            list($paperId, $attachment_filename) = [-2, get($m, 2)];
+            $documentType = key($nonpaper_options);
+        }
         if ($dtname !== null)
             $documentType = HotCRPDocument::parse_dtype($dtname ? : "paper");
     }
 
     if ($documentType === null
         || !($o = PaperOption::find_document($documentType))
-        || ($attachment_filename && $o->type != "attachments"))
+        || ($attachment_filename && $o->type != "attachments")
+        || $o->nonpaper !== ($paperId < 0))
         document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");
 
-    $prow = $Conf->paperRow($paperId, $Me, $whyNot);
-    if (!$prow)
-        document_error("404 Not Found", whyNotText($whyNot, "view"));
-    else if (($whyNot = $Me->perm_view_pdf($prow)))
-        document_error("403 Forbidden", whyNotText($whyNot, "view"));
-    else if ($documentType > 0
-             && !$Me->can_view_paper_option($prow, $documentType, true))
-        document_error("403 Forbidden", "You don’t have permission to view this document.");
+    if ($o->nonpaper) {
+        $prow = new PaperInfo(["paperId" => -2, "optionIds" => $o->id . "#" . $Conf->setting($o->abbr, 0)]);
+        if (($o->visibility === "admin" && !$Me->privChair)
+            || ($o->visibility !== "all" && !$Me->isPC))
+            document_error("403 Forbidden", "You don’t have permission to view this document.");
+    } else {
+        $prow = $Conf->paperRow($paperId, $Me, $whyNot);
+        if (!$prow)
+            document_error("404 Not Found", whyNotText($whyNot, "view"));
+        else if (($whyNot = $Me->perm_view_pdf($prow)))
+            document_error("403 Forbidden", whyNotText($whyNot, "view"));
+        else if ($documentType > 0
+                 && !$Me->can_view_paper_option($prow, $documentType, true))
+            document_error("403 Forbidden", "You don’t have permission to view this document.");
+    }
 
     $doc = null;
     if ($attachment_filename) {
