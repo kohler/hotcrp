@@ -347,7 +347,7 @@ class SettingValues {
                 $has_value = truthy(get($this->req, "has_$xname$suffix"));
             else
                 $has_value = isset($this->req["$xname$suffix"])
-                    || (($xsi->type === "ctype" || $xsi->type === "checkbox")
+                    || (($xsi->type === "cdate" || $xsi->type === "checkbox")
                         && truthy(get($this->req, "has_$xname$suffix")));
             if ($has_value)
                 $xsis[] = $xsi;
