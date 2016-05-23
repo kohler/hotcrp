@@ -21,7 +21,7 @@ class FormatSpec {
     public function merge($str) {
         if (is_string($str) && substr($str, 0, 1) === "{")
             $str = json_decode($str);
-        if (is_object($str)) {
+        if (!is_string($str)) {
             foreach ($str as $k => $v)
                 $this->$k = $v;
         } else {
