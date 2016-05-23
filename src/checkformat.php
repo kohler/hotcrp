@@ -351,9 +351,9 @@ class CheckFormat implements FormatChecker {
         foreach (get($this->msgs, 0, []) as $m)
             $t[] = Ht::xmsg("error", $m[1]);
         if (!empty($this->msgs[1])) {
-            $t[] = Ht::xmsg("warning", "This paper may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $this->msgs[1]) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
+            $t[] = Ht::xmsg("warning", "This document may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $this->msgs[1]) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
         } else if ($this->status == self::STATUS_OK)
-            $t[] = Ht::xmsg("confirm", "Congratulations, this paper seems to comply with the basic submission format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure that the paper is correctly formatted.");
+            $t[] = Ht::xmsg("confirm", "Congratulations, this document seems to comply with the basic submission format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
         return $t;
     }
 }
