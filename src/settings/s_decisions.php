@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Decisions extends SettingRenderer {
-function render($sv) {
+function render(SettingValues $sv) {
     global $Conf, $Opt;
 
     echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
@@ -151,7 +151,7 @@ function render($sv) {
     $Conf->footerScript("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
 }
 
-    function crosscheck($sv) {
+    function crosscheck(SettingValues $sv) {
         global $Conf, $Now;
 
         if ($sv->has_interest("final_open")
@@ -187,7 +187,7 @@ function render($sv) {
 
 
 class Decision_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
+    public function parse(SettingValues $sv, Si $si) {
         $dec_revmap = array();
         foreach ($sv->req as $k => &$dname)
             if (str_starts_with($k, "dec")
@@ -219,7 +219,7 @@ class Decision_SettingParser extends SettingParser {
         return true;
     }
 
-    public function save($sv, $si) {
+    public function save(SettingValues $sv, Si $si) {
         global $Conf;
         // mark all used decisions
         $decs = $Conf->decision_map();
@@ -250,7 +250,7 @@ class Decision_SettingParser extends SettingParser {
 }
 
 class RespRound_SettingParser extends SettingParser {
-    function parse($sv, $si) {
+    function parse(SettingValues $sv, Si $si) {
         global $Conf;
         if (!$sv->newv("resp_active"))
             return false;

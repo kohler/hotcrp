@@ -185,7 +185,7 @@ class BanalSettings {
 }
 
 class SettingRenderer_SubForm extends SettingRenderer {
-    private function render_option($sv, $o) {
+    private function render_option(SettingValues $sv, $o) {
         global $Conf;
 
         if ($o)
@@ -327,7 +327,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
         echo "</td></tr></table>\n";
     }
 
-function render($sv) {
+function render(SettingValues $sv) {
     global $Conf, $Opt;
 
     echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
@@ -427,7 +427,7 @@ function render($sv) {
         Ht::textarea("topnew", $sv->use_req() ? get($sv->req, "topnew") : "", array("cols" => 40, "rows" => 2, "style" => "width:20em")),
         '</td></tr></table>';
 }
-    function crosscheck($sv) {
+    function crosscheck(SettingValues $sv) {
         if (($sv->has_interest("options") || $sv->has_interest("sub_blind"))
             && $sv->newv("options")
             && $sv->newv("sub_blind") == Conf::BLIND_ALWAYS) {
@@ -441,13 +441,13 @@ function render($sv) {
 
 
 class Topic_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
+    public function parse(SettingValues $sv, Si $si) {
         foreach (["TopicArea", "PaperTopic", "TopicInterest"] as $t)
             $sv->need_lock[$t] = true;
         return true;
     }
 
-    public function save($sv, $si) {
+    public function save(SettingValues $sv, Si $si) {
         global $Conf;
         $tmap = $Conf->topic_map();
         foreach ($sv->req as $k => $v)
@@ -573,7 +573,7 @@ class Option_SettingParser extends SettingParser {
         }
     }
 
-    function parse($sv, $si) {
+    function parse(SettingValues $sv, Si $si) {
         $current_opts = PaperOption::nonfixed_option_list();
 
         // convert request to JSON
@@ -602,7 +602,7 @@ class Option_SettingParser extends SettingParser {
         }
     }
 
-    public function save($sv, $si) {
+    public function save(SettingValues $sv, Si $si) {
         global $Conf;
         $new_opts = $this->stashed_options;
         $current_opts = PaperOption::nonfixed_option_list();
@@ -632,7 +632,7 @@ class Option_SettingParser extends SettingParser {
 
 
 class Banal_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
+    public function parse(SettingValues $sv, Si $si) {
         if (substr($si->name, 0, 9) === "sub_banal")
             return BanalSettings::parse(substr($si->name, 9), $sv, true);
         else

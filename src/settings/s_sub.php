@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Submissions extends SettingRenderer {
-function render($sv) {
+function render(SettingValues $sv) {
     global $Conf, $Opt;
 
     $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
@@ -29,7 +29,7 @@ function render($sv) {
     $sv->echo_checkbox_row('pc_seeall', "PC can see <i>all registered papers</i> until submission deadline<br /><small>Check this box if you want to collect review preferences before most papers are submitted. After the submission deadline, PC members can only see submitted papers.</small>");
     echo "</table>";
 }
-    function crosscheck($sv) {
+    function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sub_open")
             && $sv->newv("sub_freeze", -1) == 0
             && $sv->newv("sub_open") > 0

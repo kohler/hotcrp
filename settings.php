@@ -201,17 +201,17 @@ class Si {
 }
 
 class SettingParser {
-    public function parse($sv, $si) {
+    public function parse(SettingValues $sv, Si $si) {
         return false;
     }
-    public function save($sv, $si) {
+    public function save(SettingValues $sv, Si $si) {
     }
 }
 
 class SettingRenderer {
-    public function render($sv) {
+    public function render(SettingValues $sv) {
     }
-    public function crosscheck($sv) {
+    public function crosscheck(SettingValues $sv) {
     }
 }
 

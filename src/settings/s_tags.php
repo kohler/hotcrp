@@ -71,7 +71,7 @@ class SettingRenderer_Tags extends SettingRenderer {
         echo "</table></div>\n\n";
     }
 
-function render($sv) {
+function render(SettingValues $sv) {
     global $Conf;
 
     // Tags
@@ -169,7 +169,7 @@ function render($sv) {
     echo Ht::button("Add track", array("onclick" => "settings_add_track()"));
 }
 
-    function crosscheck($sv) {
+    function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("tracks")
             && $sv->newv("tracks")) {
             $tracks = json_decode($sv->newv("tracks"), true);
@@ -206,7 +206,7 @@ class Tag_SettingParser extends SettingParser {
                 $sv->set_error($si->name, $si->short_description . ": " . $this->tagger->error_html);
         return array_values($ts);
     }
-    public function parse($sv, $si) {
+    public function parse(SettingValues $sv, Si $si) {
         if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
             $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
             $sv->update($si->name, join(" ", $ts));
@@ -273,7 +273,7 @@ class Tag_SettingParser extends SettingParser {
         return true;
     }
 
-    public function save($sv, $si) {
+    public function save(SettingValues $sv, Si $si) {
         global $Conf;
         if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
             // check allotments
@@ -348,7 +348,7 @@ class Tag_SettingParser extends SettingParser {
 
 
 class Track_SettingParser extends SettingParser {
-    public function parse($sv, $si) {
+    public function parse(SettingValues $sv, Si $si) {
         $tagger = new Tagger;
         $tracks = (object) array();
         $missing_tags = false;

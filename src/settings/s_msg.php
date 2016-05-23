@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Messages extends SettingRenderer{
-    function render($sv) {
+    function render(SettingValues $sv) {
         $sv->echo_message("msg.home", "Home page message");
         $sv->echo_message("msg.clickthrough_submit", "Clickthrough submission terms",
                    "<div class=\"hint fx\">Users must “accept” these terms to edit or submit a paper. Use HTML and include a headline, such as “&lt;h2&gt;Submission terms&lt;/h2&gt;”.</div>");

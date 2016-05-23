@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Basics extends SettingRenderer {
-function render($sv) {
+function render(SettingValues $sv) {
     global $Conf, $Opt;
 
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";

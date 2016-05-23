@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class SettingRenderer_Users extends SettingRenderer {
-    function render($sv) {
+    function render(SettingValues $sv) {
         global $Me;
         if ($sv->curv("acct_addr"))
             $sv->echo_checkbox("acct_addr", "Collect users’ addresses and phone numbers");

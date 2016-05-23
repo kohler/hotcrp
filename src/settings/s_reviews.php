@@ -59,7 +59,7 @@ class SettingRenderer_Reviews extends SettingRenderer {
         echo '</table></div>', "\n";
     }
 
-function render($sv) {
+function render(SettingValues $sv) {
     global $Conf;
 
     $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
@@ -188,7 +188,7 @@ function render($sv) {
     $sv->echo_radio_table("rev_ratings", array(REV_RATINGS_PC => "Yes, PC members can rate reviews", REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews", REV_RATINGS_NONE => "No"));
 }
 
-    function crosscheck($sv) {
+    function crosscheck(SettingValues $sv) {
         global $Conf, $Now;
         $errored = false;
         foreach ($Conf->round_list() as $i => $rname) {
@@ -218,7 +218,7 @@ function render($sv) {
 class Round_SettingParser extends SettingParser {
     private $rev_round_changes = array();
 
-    function parse($sv, $si) {
+    function parse(SettingValues $sv, Si $si) {
         global $Conf;
         if (!isset($sv->req["rev_roundtag"])) {
             $sv->save("rev_roundtag", null);
@@ -333,7 +333,7 @@ class Round_SettingParser extends SettingParser {
         } else
             return false;
     }
-    public function save($sv, $si) {
+    public function save(SettingValues $sv, Si $si) {
         global $Conf;
         // remove references to deleted rounds
         foreach ($this->rev_round_changes as $x)
