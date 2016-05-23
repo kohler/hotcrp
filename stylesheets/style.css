@@ -743,21 +743,11 @@ div.aahc.alert .aa, div.aahc.alert .aax {
 
 
 /* Ajax checks */
-span.ajaxcheck, span.ajaxcheck_good, span.ajaxcheck_bad {
-	display: inline-block;
+.marksuccess {
+	color: #00bb00;
 }
-.ajaxcheck, .ajaxcheck_good, .ajaxcheck_bad {
-	width: 8px;
-	height: 9px;
-}
-.ajaxcheck_good, .ajaxcheck_bad {
-	background-image: url(../images/sprite.png?2);
-}
-.ajaxcheck_good {
-	background-position: -52px 0;
-}
-.ajaxcheck_bad {
-	background-position: -52px -10px;
+.markfailure {
+	color: #ff0000;
 }
 .savesuccess:before {
 	content: "\2713";

@@ -10,6 +10,7 @@ class PaperOptionValue {
     public $values;
     public $data;
     public $data_array;
+    public $anno = null;
     private $_documents = null;
 
     public function __construct($id, PaperOption $o = null, $values = [], $data_array = []) {

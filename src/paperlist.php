@@ -93,6 +93,7 @@ class PaperList {
     public $scoresOk = false;
     public $search;
     public $tagger;
+    public $check_format;
     private $_reviewer = null;
     private $_xreviewer = false;
     public $tbody_attr;
@@ -106,6 +107,7 @@ class PaperList {
     private $foldable;
     var $listNumber;
     private $_paper_link_page;
+    private $_paper_link_mode;
     private $viewmap;
     private $atab;
     private $_row_id_pattern = null;
@@ -124,7 +126,7 @@ class PaperList {
 
     static public $include_stash = true;
 
-    function __construct($search, $args = array(), $qreq = null) {
+    function __construct($search, $args = array(), Qobject $qreq = null) {
         global $Conf;
         $this->search = $search;
         $this->contact = $this->search->contact;
@@ -145,6 +147,10 @@ class PaperList {
         $this->_paper_link_page = "";
         if ($qreq->linkto === "paper" || $qreq->linkto === "review" || $qreq->linkto === "assign")
             $this->_paper_link_page = $qreq->linkto;
+        else if ($qreq->linkto === "paperedit") {
+            $this->_paper_link_page = "paper";
+            $this->_paper_link_mode = "edit";
+        }
         $this->listNumber = 0;
         if (get($args, "list"))
             $this->listNumber = SessionList::allocate($search->listId($this->sortdef()));
@@ -302,10 +308,14 @@ class PaperList {
 
     function _paperLink($row) {
         global $Conf;
-        $pt = $this->_paper_link_page ? $this->_paper_link_page : "paper";
+        $pt = $this->_paper_link_page ? : "paper";
         $pl = "p=" . $row->paperId;
         $doreview = isset($row->reviewId) && isset($row->reviewFirstName);
-        if ($doreview) {
+        if (!$doreview && $pt === "review")
+            $pt = "paper";
+        if ($pt === "paper" && $this->_paper_link_mode)
+            $pl .= "&amp;m=" . $this->_paper_link_mode;
+        else if ($doreview) {
             $rord = unparseReviewOrdinal($row);
             if ($pt == "paper" && $row->reviewSubmitted > 0)
                 $pl .= "#r" . $rord;
@@ -314,8 +324,7 @@ class PaperList {
                 if ($row->reviewSubmitted > 0)
                     $pl .= "&amp;m=r";
             }
-        } else if ($pt === "review")
-            $pt = "paper";
+        }
         return hoturl($pt, $pl);
     }
 
@@ -1201,7 +1210,10 @@ class PaperList {
         $this->table_type = $listname;
 
         // get column list, check sort
-        $field_list = $this->_list_columns($listname);
+        if (isset($options["field_list"]))
+            $field_list = $options["field_list"];
+        else
+            $field_list = $this->_list_columns($listname);
         if (!$field_list) {
             Conf::msg_error("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
             return null;
