@@ -22,16 +22,16 @@ function document_error($status, $msg) {
 function document_download() {
     global $Conf, $Me, $Opt;
 
-    $documentType = HotCRPDocument::parse_dtype(@$_REQUEST["dt"]);
+    $documentType = HotCRPDocument::parse_dtype(req("dt"));
     if ($documentType === null)
-        $documentType = @$_REQUEST["final"] ? DTYPE_FINAL : DTYPE_SUBMISSION;
+        $documentType = req("final") ? DTYPE_FINAL : DTYPE_SUBMISSION;
     $attachment_filename = false;
     $docid = null;
 
-    if (isset($_REQUEST["p"]))
-        $paperId = cvtint(@$_REQUEST["p"]);
-    else if (isset($_REQUEST["paperId"]))
-        $paperId = cvtint(@$_REQUEST["paperId"]);
+    if (isset($_GET["p"]))
+        $paperId = cvtint($_GET["p"]);
+    else if (isset($_GET["paperId"]))
+        $paperId = cvtint($_GET["paperId"]);
     else {
         $s = $orig_s = preg_replace(',\A/*,', "", Navigation::path());
         $documentType = $dtname = null;
@@ -44,19 +44,16 @@ function document_download() {
             else if (preg_match(',\A([^/]+)/+(.*)\z,', $m[2], $mm))
                 list($dtype, $attachment_filename) = array($m[1], $m[2]);
         } else if (preg_match(',\A(?:paper)?(\d+)-?([-A-Za-z0-9_]*)(?:\.[^/]+|/+(.*))\z,', $s, $m))
-            list($paperId, $dtname, $attachment_filename) = array(intval($m[1]), $m[2], @$m[3]);
+            list($paperId, $dtname, $attachment_filename) = [intval($m[1]), $m[2], get($m, 3)];
         else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:\.[^/]+|/+(.*))\z,', $s, $m))
-            list($paperId, $dtname, $attachment_filename) = array(intval($m[2]), $m[1], @$m[3]);
+            list($paperId, $dtname, $attachment_filename) = [intval($m[2]), $m[1], get($m, 3)];
         if ($dtname !== null)
             $documentType = HotCRPDocument::parse_dtype($dtname ? : "paper");
-        if ($documentType !== null && $attachment_filename) {
-            $o = PaperOption::find($documentType);
-            if (!$o || $o->type != "attachments")
-                $documentType = null;
-        }
     }
 
-    if ($documentType === null)
+    if ($documentType === null
+        || !($o = PaperOption::find_document($documentType))
+        || ($attachment_filename && $o->type != "attachments"))
         document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");
 
     $prow = $Conf->paperRow($paperId, $Me, $whyNot);
@@ -81,7 +78,7 @@ function document_download() {
 
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
-    if ($Conf->download_documents([$doc], cvtint(@$_REQUEST["save"]) > 0))
+    if ($Conf->download_documents([$doc], cvtint($_GET["save"]) > 0))
         exit;
 
     document_error("500 Server Error", null);
