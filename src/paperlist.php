@@ -1304,7 +1304,9 @@ class PaperList {
 
             $colhead .= "</tr>\n";
 
-            if ($this->search->is_order_anno) {
+            if ($this->search->is_order_anno
+                && isset($this->tbody_attr["data-drag-tag"])
+                && $this->tbody_attr["data-drag-tag"] == $this->search->is_order_anno) {
                 $colhead .= "  <tr class=\"pl_headrow pl_annorow\" data-anno-tag=\"{$this->search->is_order_anno}\">";
                 if ($rstate->titlecol)
                     $colhead .= "<td colspan=\"$rstate->titlecol\"></td>";
