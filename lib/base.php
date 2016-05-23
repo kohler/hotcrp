@@ -237,6 +237,19 @@ function set_req($idx, $value) {
     $_GET[$idx] = $_POST[$idx] = $_REQUEST[$idx] = $value;
 }
 
+function uploaded_file_error($finfo) {
+    $e = $finfo["error"];
+    $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";
+    if ($e == UPLOAD_ERR_INI_SIZE || $e == UPLOAD_ERR_FORM_SIZE)
+        return $name . "Uploaded file too big. The maximum upload size is " . ini_get("upload_max_filesize") . "B.";
+    else if ($e == UPLOAD_ERR_PARTIAL)
+        return $name . "Upload process interrupted.";
+    else if ($e != UPLOAD_ERR_NO_FILE)
+        return $name . "Unknown upload error.";
+    else
+        return false;
+}
+
 function make_qreq() {
     $qreq = new Qobject;
     foreach ($_GET as $k => $v)
@@ -251,15 +264,8 @@ function make_qreq() {
         if (($e = $finfo["error"]) == UPLOAD_ERR_OK) {
             if (is_uploaded_file($finfo["tmp_name"]))
                 $qreq->_FILES[$f] = $finfo;
-        } else {
-            $name = get($finfo, "name") ? "<span class=\"lineno\">" . htmlspecialchars($finfo["name"]) . ":</span> " : "";
-            if ($e == UPLOAD_ERR_INI_SIZE || $e == UPLOAD_ERR_FORM_SIZE)
-                $errors[] = $name . "Uploaded file too big. The maximum upload size is " . ini_get("upload_max_filesize") . "B.";
-            else if ($e == UPLOAD_ERR_PARTIAL)
-                $errors[] = $name . "Upload process interrupted.";
-            else if ($e != UPLOAD_ERR_NO_FILE)
-                $errors[] = $name . "Unknown upload error.";
-        }
+        } else if (($err = uploaded_file_error($finfo)))
+            $errors[] = $err;
     }
     if (count($errors) && Conf::$g)
         Conf::msg_error("<div class=\"parseerr\"><p>" . join("</p>\n<p>", $errors) . "</p></div>");
