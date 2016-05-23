@@ -8,6 +8,10 @@ class CheckFormat implements FormatChecker {
     const STATUS_PROBLEM = 1;
     const STATUS_OK = 2;
 
+    const RUN_YES = 0;
+    const RUN_PREFER_NO = 1;
+    const RUN_NO = 2;
+
     private $msgs = [];
     public $errf = [];
     public $pages = 0;
@@ -17,14 +21,14 @@ class CheckFormat implements FormatChecker {
     public $banal_sterr;
     public $banal_status;
     private $tempdir = null;
-    public $no_run = false;
+    public $allow_run = self::RUN_YES;
     public $need_run = false;
     public $possible_run = false;
     private $dt_specs = [];
     private $checkers = [];
 
-    public function __construct($no_run = false) {
-        $this->no_run = $no_run;
+    public function __construct($allow_run = self::RUN_YES) {
+        $this->allow_run = $allow_run;
     }
 
     public function has_error($field = null) {
@@ -256,11 +260,11 @@ class CheckFormat implements FormatChecker {
         if (!($bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == $spec->banal_args
               && $bj->at >= $Now - 86400)) {
             $cf->possible_run = true;
-            if (!$cf->no_run)
+            if ($cf->allow_run != CheckFormat::RUN_YES)
                 $bj = null;
         }
 
-        if (!$bj && $cf->no_run)
+        if (!$bj && $cf->allow_run == CheckFormat::RUN_NO)
             $cf->need_run = true;
         else if (!$bj && $cf->load_document($doc)) {
             // constrain the number of concurrent banal executions to banalLimit

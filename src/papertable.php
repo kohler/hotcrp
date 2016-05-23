@@ -472,7 +472,7 @@ class PaperTable {
             && (($doc = $prow->document($documentType, $storageId, true)))) {
             if ($doc->mimetype === "application/pdf") {
                 if (!$this->cf)
-                    $this->cf = new CheckFormat(true);
+                    $this->cf = new CheckFormat(CheckFormat::RUN_NO);
                 if (($has_cf = $this->cf->has_spec($documentType)))
                     $this->cf->check_document($prow, $doc);
             }
