@@ -246,22 +246,22 @@
     },
     "sub_banal_bodyfontsize": {
         "name": "PDF format checker minimum body font size",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     "sub_banal_bodyleading": {
         "name": "PDF format checker minimum body leading",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     "sub_banal_columns": {
         "name": "PDF format checker column count",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     "sub_banal_pagelimit": {
         "name": "PDF format checker page limit",
-        "type": "text", "size": 4, "placeholder": "N/A", "novalue": true,
+        "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
     "sub_banal_papersize": {
