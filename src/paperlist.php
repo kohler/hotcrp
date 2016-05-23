@@ -100,6 +100,7 @@ class PaperList {
     public $review_list;
     public $table_type;
     public $need_render;
+    public $has_editable_tags = false;
 
     private $sortable;
     private $foldable;
@@ -789,6 +790,14 @@ class PaperList {
                 if ($this->count != 1)
                     $body[] = "  <tr class=\"plheading_blank\"><td class=\"plheading_blank\" colspan=\"$rstate->ncol\"></td></tr>\n";
             } else {
+                for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
+                    /* do nothing */;
+                $count = plural($i - $this->count + 1, "paper");
+                // Leave off an empty "Untagged" section unless editing
+                if ($count == 0 && isset($ginfo->tag) && !isset($ginfo->annoId)
+                    && !$this->has_editable_tags)
+                    continue;
+
                 $x = "  <tr class=\"plheading\"";
                 if (isset($ginfo->tag))
                     $x .= " data-anno-tag=\"{$ginfo->tag}\"";
@@ -798,9 +807,6 @@ class PaperList {
                 if ($rstate->titlecol)
                     $x .= "<td class=\"plheading_spacer\" colspan=\"$rstate->titlecol\"></td>";
                 $x .= "<td class=\"plheading\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
-                for ($i = $this->count - 1; $i < count($srows) && $this->_row_thenval($srows[$i]) == $lastheading; ++$i)
-                    /* do nothing */;
-                $count = plural($i - $this->count + 1, "paper");
                 $x .= "<span class=\"plheading_group";
                 if ($ginfo->heading !== ""
                     && ($format = Conf::check_format($ginfo->annoFormat, $ginfo->heading))) {

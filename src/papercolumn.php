@@ -1007,6 +1007,8 @@ class TagListPaperColumn extends PaperColumn {
             $pl->qopts["tags"] = 1;
         if ($visible && $this->editable && ($tid = $pl->table_id()))
             $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
+        if ($this->editable)
+            $pl->has_editable_tags = true;
         return true;
     }
     public function annotate_field_js(PaperList $pl, &$fjs) {
@@ -1067,6 +1069,8 @@ class TagPaperColumn extends PaperColumn {
         if ($visible)
             $pl->qopts["tags"] = 1;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
+        if ($this->editable)
+            $pl->has_editable_tags = true;
         return true;
     }
     public function completion_name() {
