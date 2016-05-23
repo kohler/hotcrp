@@ -495,8 +495,10 @@ class PaperTable {
         // uploader
         $uploader = "";
         if (count($accepts)) {
-            if ($doc)
-                $uploader .= "<div class='g'></div><div id='removable_$inputid' class='foldo'><span class='fx'>Replace:&nbsp; ";
+            if ($doc) {
+                echo '<div class="g" id="removable_', $inputid, '">';
+                $uploader .= 'Replace:&nbsp; ';
+            }
             $uploader .= "<input id='$inputid' type='file' name='$inputid'";
             if (count($accepts) == 1)
                 $uploader .= " accept='" . $accepts[0]->mimetype . "'";
@@ -513,10 +515,6 @@ class PaperTable {
             if ($doc && $optionType)
                 $uploader .= " <span class='barsep'>·</span> "
                     . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
-            if ($doc)
-                $uploader .= "</span>";
-            if ($doc && $optionType)
-                $uploader .= "<span class='fn'><em>Marked for deletion</em></span>";
             if ($doc)
                 $uploader .= "</div>";
         }

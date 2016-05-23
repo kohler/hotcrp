@@ -5176,27 +5176,15 @@ function docheckpaperstillready() {
 }
 
 function doremovedocument(elt) {
-    var name = elt.id.replace(/^remover_/, ""), e, estk, tn, i;
-    if (!(e = $$("remove_" + name))) {
-        e = document.createElement("span");
-        e.innerHTML = '<input type="hidden" id="remove_' + name + '" name="remove_' + name + '" value="" />';
-        elt.parentNode.insertBefore(e.firstChild, elt);
-        e = $$("remove_" + name);
-    }
-    e.value = 1;
+    var name = elt.id.replace(/^remover_/, ""), e;
+    if (!$$("remove_" + name))
+        $(elt.parentNode).append('<input type="hidden" id="remove_' + name + '" name="remove_' + name + '" value="" />');
+    $$("remove_" + name).value = 1;
     if ((e = $$("current_" + name))) {
-        estk = [e];
-        while (estk.length) {
-            e = estk.pop();
-            tn = e.nodeType == 1 ? e.tagName : "";
-            if (tn == "TD")
-                e.style.textDecoration = "line-through";
-            else if (tn == "TABLE" || tn == "TBODY" || tn == "TR")
-                for (i = e.childNodes.length - 1; i >= 0; --i)
-                    estk.push(e.childNodes[i]);
-        }
+        $(e).find("td").first().css("textDecoration", "line-through");
+        $(e).find("td").last().html('<span class="sep"></span><strong><em>To be deleted</em></strong>');
     }
-    fold("removable_" + name);
+    $("#removable_" + name).hide();
     hiliter(elt);
     return false;
 }
