@@ -87,16 +87,16 @@ class CheckFormat implements FormatChecker {
                     break;
                 }
             if (!$ok)
-                $this->msg_format("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper"));
+                $this->msg_format("papersize", "Paper size mismatch: expected " . commajoin(array_map(function ($d) { return FormatSpec::unparse_dimen($d, "paper"); }, $spec->papersize), "or") . ", got " . FormatSpec::unparse_dimen([$papersize[1], $papersize[0]], "paper") . ".");
         }
 
         // number of pages
         $minpages = $maxpages = null;
         if ($spec->pagelimit) {
             if (count($bj->pages) < $spec->pagelimit[0])
-                $this->msg_format("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . count($bj->pages));
+                $this->msg_format("pagelimit", "Too few pages: expected " . plural($spec->pagelimit[0], "or more page") . ", found " . count($bj->pages) . ".");
             else if (count($bj->pages) > $spec->pagelimit[1])
-                $this->msg_format("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found " . count($bj->pages));
+                $this->msg_format("pagelimit", "Too many pages: the limit is " . plural($spec->pagelimit[1], "page") . ", found " . count($bj->pages) . ".");
         }
         $this->pages = count($bj->pages);
 
@@ -110,7 +110,7 @@ class CheckFormat implements FormatChecker {
                     && defval($pg, "pagetype", "body") == "body")
                     $px[] = $i + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0))
-                $this->msg_format("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px));
+                $this->msg_format("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px) . ".");
         }
 
         // text block
@@ -140,14 +140,14 @@ class CheckFormat implements FormatChecker {
                     . (count($px) > 1 ? "up to " : "")
                     . ((int) (100 * $maxx / $spec->textblock[0] + .5) - 100)
                     . "% on " . pluralx($px, "page") . " "
-                    . numrangejoin($px));
+                    . numrangejoin($px) . ".");
             if (count($py) > 0)
                 $this->msg_format("textblock", "Margins too small: text height exceeds "
                     . FormatSpec::unparse_dimen($spec->textblock[1]) . " by "
                     . (count($py) > 1 ? "up to " : "")
                     . ((int) (100 * $maxy / $spec->textblock[1] + .5) - 100)
                     . "% on " . pluralx($py, "page") . " "
-                    . numrangejoin($py));
+                    . numrangejoin($py) . ".");
         }
 
         // font size
@@ -172,13 +172,13 @@ class CheckFormat implements FormatChecker {
                     }
                 }
             if ($bodypages == 0)
-                $this->msg_format(false, "Warning: No pages seemed to contain body text; results may be off");
+                $this->msg_format(false, "Warning: No pages seemed to contain body text; results may be off.");
             else if ($bodypages <= 0.5 * count($bj->pages))
-                $this->msg_format(false, "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off");
+                $this->msg_format(false, "Warning: Only " . plural($bodypages, "page") . " seemed to contain body text; results may be off.");
             if (!empty($lopx))
-                $this->msg_format("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx));
+                $this->msg_format("bodyfontsize", "Body font too small: minimum {$spec->bodyfontsize[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".");
             if (!empty($hipx))
-                $this->msg_format("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx));
+                $this->msg_format("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".");
         }
 
         // leading
@@ -201,9 +201,9 @@ class CheckFormat implements FormatChecker {
                     }
                 }
             if (!empty($lopx))
-                $this->msg_format("bodyleading", "<a href=\"http://en.wikipedia.org/wiki/Leading\">Leading</a> (line spacing) too small: minimum {$spec->bodyleading[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx));
+                $this->msg_format("bodyleading", "<a href=\"http://en.wikipedia.org/wiki/Leading\">Leading</a> (line spacing) too small: minimum {$spec->bodyleading[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".");
             if (!empty($hipx))
-                $this->msg_format("bodyleading", "<a href=\"http://en.wikipedia.org/wiki/Leading\">Leading</a> (line spacing) too large: minimum {$spec->bodyleading[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx));
+                $this->msg_format("bodyleading", "<a href=\"http://en.wikipedia.org/wiki/Leading\">Leading</a> (line spacing) too large: minimum {$spec->bodyleading[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".");
         }
     }
 
