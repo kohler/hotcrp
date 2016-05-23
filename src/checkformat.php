@@ -258,10 +258,11 @@ class CheckFormat implements FormatChecker {
         $bj = null;
         if ($doc->infoJson && isset($doc->infoJson->banal))
             $bj = $doc->infoJson->banal;
-        if (!($bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == $spec->banal_args
-              && $bj->at >= $Now - 86400)) {
+        $bj_ok = $bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == $spec->banal_args;
+        if (!$bj_ok || $bj->at >= $Now - 86400) {
             $cf->possible_run = true;
-            if ($cf->allow_run != CheckFormat::RUN_YES)
+            if ($cf->allow_run == CheckFormat::RUN_YES
+                || (!$bj_ok && $cf->allow_run == CheckFormat::RUN_PREFER_NO))
                 $bj = null;
         }
 
