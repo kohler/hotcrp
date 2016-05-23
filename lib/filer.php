@@ -641,7 +641,6 @@ class Filer {
         return array($fdir, $xfpath . $fpath);
     }
     private static function _make_fpath_parents($fdir, $fpath) {
-        if ($fdir || $fpath)
         $lastslash = strrpos($fpath, "/");
         $container = substr($fpath, 0, $lastslash);
         while (str_ends_with($container, "/"))
