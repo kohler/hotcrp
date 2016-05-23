@@ -95,6 +95,7 @@ class PaperList {
     public $tagger;
     private $_reviewer = null;
     private $_xreviewer = false;
+    public $tbody_attr;
     public $row_attr;
     public $review_list;
     public $table_type;
@@ -1085,7 +1086,7 @@ class PaperList {
 
     private function _prepare_columns($field_list) {
         $field_list2 = array();
-        $this->row_attr = [];
+        $this->tbody_attr = [];
         foreach ($field_list as $fdef)
             if ($fdef) {
                 $fdef->is_folded = $this->is_folded($fdef);
@@ -1093,6 +1094,7 @@ class PaperList {
                 if ($fdef->prepare($this, $fdef->is_folded ? 0 : 1))
                     $field_list2[] = $fdef;
             }
+        assert(empty($this->row_attr));
         return $field_list2;
     }
 
@@ -1199,7 +1201,6 @@ class PaperList {
             return null;
         }
         $field_list = $this->_columns($field_list, true);
-        $body_attr = $this->row_attr;
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
@@ -1328,7 +1329,7 @@ class PaperList {
                 $enter .= "\" $n=\"" . htmlspecialchars($v);
         if ($this->search->is_order_anno)
             $enter .= "\" data-order-tag=\"{$this->search->is_order_anno}";
-        foreach ($body_attr as $k => $v)
+        foreach ($this->tbody_attr as $k => $v)
             $enter .= "\" $k=\"" . htmlspecialchars($v);
         if ($this->listNumber)
             $enter .= '" data-hotcrp-list="' . $this->listNumber;

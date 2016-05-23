@@ -1141,7 +1141,7 @@ class EditTagPaperColumn extends TagPaperColumn {
                 && (!$pl->search->thenmap || $pl->search->is_order_anno)
                 && $this->is_value) {
                 $this->editsort = true;
-                $pl->row_attr["data-drag-tag"] = $this->dtag;
+                $pl->tbody_attr["data-drag-tag"] = $this->dtag;
             }
             $pl->add_header_script("plinfo_tags(" . json_encode("#$tid") . ")", "plinfo_tags");
         }
