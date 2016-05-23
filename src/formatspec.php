@@ -175,15 +175,16 @@ class FormatSpec {
             else if (abs($n[0] - 595.27) <= 5 && abs($n[1] - 841.89) <= 5)
                 return $to == "basic" ? "A4" : "A4 paper (210mm x 297mm)";
         }
-        if ($to == "basic" || $to == "paper")
-            $to = null;
         if (is_array($n)) {
+            // \xC2\xA0 is utf-8 for U+00A0 NONBREAKING SPACE
+            $ex = $to == "paper" ? "\xC2\xA0x\xC2\xA0" : " x ";
             $t = "";
             foreach ($n as $v)
-                // \xC2\xA0 is utf-8 for U+00A0 NONBREAKING SPACE
-                $t .= ($t == "" ? "" : "\xC2\xA0x\xC2\xA0") . self::unparse_dimen($v, $to);
+                $t .= ($t == "" ? "" : $ex) . self::unparse_dimen($v, $to);
             return $t;
         }
+        if ($to == "basic" || $to == "paper")
+            $to = null;
         if (!$to && $n < 18)
             $to = "pt";
         else if (!$to && abs($n - 18 * (int) (($n + 9) / 18)) <= 0.5)
