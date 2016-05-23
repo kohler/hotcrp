@@ -20,7 +20,6 @@ class CheckFormat implements FormatChecker {
     public $banal_stdout;
     public $banal_sterr;
     public $banal_status;
-    private $tempdir = null;
     public $allow_run = self::RUN_YES;
     public $need_run = false;
     public $possible_run = false;
@@ -241,15 +240,8 @@ class CheckFormat implements FormatChecker {
     }
 
     public function load_document($doc) {
-        if (!$doc->docclass->load($doc))
-            return $cf->msg_fail("Paper cannot be loaded.");
-        if (!isset($doc->filestore)) {
-            if (!$this->tempdir && ($this->tempdir = tempdir()) == false)
-                return $this->msg_fail("Cannot create temporary directory.");
-            if (file_put_contents("$this->tempdir/paper.pdf", $doc->content) != strlen($doc->content))
-                return $this->msg_fail("Failed to save PDF to temporary file for analysis.");
-            $doc->filestore = "$this->tempdir/paper.pdf";
-        }
+        if (!$doc->docclass->load_to_filestore($doc))
+            return $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
         return true;
     }
 

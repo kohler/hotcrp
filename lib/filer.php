@@ -260,6 +260,8 @@ class Filer_UploadJson implements JsonSerializable {
 }
 
 class Filer {
+    static public $tempdir;
+
     // override these to tell Filer how to behave
     function mimetypes($doc = null, $docinfo = null) {
         // Return the acceptable mimetypes for $doc.
@@ -314,7 +316,7 @@ class Filer {
             return $doc->content = @file_get_contents($filename);
         return false;
     }
-    function load($doc) {
+    public function load($doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
             && ($fsinfo = $this->_filestore($doc))
@@ -325,7 +327,27 @@ class Filer {
         return ($has_content && $this->validate_content($doc))
             || $this->load_content($doc);
     }
-    function store($doc, $docinfo) {
+    public function load_to_filestore($doc) {
+        if (!$this->load($doc))
+            return false;
+        if (!isset($doc->filestore)) {
+            if (!self::$tempdir && (self::$tempdir = tempdir()) == false) {
+                set_error_html($doc, "Cannot create temporary directory.");
+                return false;
+            }
+            $sha1 = self::text_sha1($doc);
+            if ($sha1 === false)
+                $sha1 = $doc->sha1 = sha1($doc->content);
+            $path = self::$tempdir . "/" . $sha1 . Mimetype::extension(self::_mimetype($doc));
+            if (file_put_contents($path, $doc->content) != strlen($doc->content)) {
+                set_error_html($doc, "Failed to save document to temporary file.");
+                return false;
+            }
+            $doc->filestore = $path;
+        }
+        return true;
+    }
+    public function store($doc, $docinfo) {
         // load content (if unloaded)
         // XXX loading enormous documents into memory...?
         if (!$this->load($doc, $docinfo)
