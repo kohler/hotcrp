@@ -288,10 +288,17 @@ class CheckFormat implements FormatChecker {
     }
 
     public function has_spec($dtype) {
+        return ($spec = $this->spec($dtype)) && !$spec->is_empty();
+    }
+
+    public function spec($dtype) {
         if (!array_key_exists($dtype, $this->dt_specs))
             $this->dt_specs[$dtype] = self::document_spec($dtype);
-        $spec = $this->dt_specs[$dtype];
-        return $spec && !$spec->is_empty();
+        return $this->dt_specs[$dtype];
+    }
+
+    public function set_spec($dtype, FormatSpec $spec) {
+        $this->dt_specs[$dtype] = $spec;
     }
 
     public function check_document(PaperInfo $prow, $dtype, $doc = 0) {
