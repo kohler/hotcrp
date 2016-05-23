@@ -1404,7 +1404,7 @@ class PaperList {
         }
 
         foreach ($fieldDef as $fdef)
-            if ($fdef->has_content)
+            if ($fdef->has_content && !isset($this->any[$fdef->name]))
                 $this->any[$fdef->name] = true;
         if ($rstate->has_openau)
             $this->any->openau = true;
