@@ -92,7 +92,7 @@ function document_download() {
 
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
-    if ($Conf->download_documents([$doc], cvtint($_GET["save"]) > 0))
+    if ($Conf->download_documents([$doc], cvtint(req("save")) > 0))
         exit;
 
     document_error("500 Server Error", null);
