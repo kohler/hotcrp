@@ -378,7 +378,7 @@ class PaperTable {
                     && $Me->can_view_paper_option($prow, $ov->option)) {
                     foreach ($ov->documents($prow) as $d) {
                         $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
-                        if ($ov->option->type === "attachments")
+                        if ($ov->option->has_attachments())
                             $name .= "/" . htmlspecialchars($d->unique_filename);
                         $pdfs[] = documentDownload($d, empty($pdfs) ? "dlimg" : "dlimgsp", $name);
                     }

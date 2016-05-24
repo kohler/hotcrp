@@ -697,7 +697,7 @@ class PaperInfo {
             else if (($oa = $this->option($dtype)) && $oa->option->is_document())
                 $did = $oa->value;
             else
-                assert(false);
+                error_log("asked for nonexistent $dtype document, cannot find it (option " . var_export($oa, true) . ")");
         }
         if ($did <= 0)
             return null;

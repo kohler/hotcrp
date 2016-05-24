@@ -75,7 +75,7 @@ class HotCRPDocument extends Filer {
                 $fn .= "paper" . $doc->paperId;
                 $oabbr = $o ? "-" . $o->abbr : "-unknown";
             }
-            if ($o && $o->type == "attachments"
+            if ($o && $o->has_attachments()
                 && ($afn = get($doc, "unique_filename") ? : $doc->filename))
                 // do not decorate with MIME type suffix
                 return $fn . $oabbr . "/" . $afn;

@@ -59,7 +59,7 @@ function document_download() {
 
     if ($documentType === null
         || !($o = PaperOption::find_document($documentType))
-        || ($attachment_filename && $o->type != "attachments")
+        || ($attachment_filename && !$o->has_attachments())
         || $o->nonpaper !== ($paperId < 0))
         document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");
 

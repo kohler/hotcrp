@@ -1649,7 +1649,7 @@ class PaperSearch {
                         $qo[] = new OptionMatcher($o, $ocompar, $m[1], $oval);
                     else
                         $warn[] = "Submission option “" . htmlspecialchars($o->name) . "” takes integer values.";
-                } else if ($o->type === "attachments") {
+                } else if ($o->has_attachments()) {
                     if ($oval === "any")
                         $qo[] = new OptionMatcher($o, "!=", 0, $oval);
                     else if (preg_match('/\A\s*([-+]?\d+)\s*\z/', $oval, $m)) {

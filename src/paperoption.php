@@ -19,7 +19,7 @@ class PaperOptionValue {
         $this->values = $values;
         $this->data_array = $data_array;
         if ($o && $o->takes_multiple()) {
-            if ($o->type === "attachments")
+            if ($o->has_attachments())
                 array_multisort($this->data_array, SORT_NUMERIC, $this->values);
         } else {
             $this->value = get($this->values, 0);
@@ -392,6 +392,10 @@ class PaperOption {
 
     function has_document_storage() {
         return $this->has_document();
+    }
+
+    function has_attachments() {
+        return false;
     }
 
     function needs_data() {
@@ -817,6 +821,10 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function has_document() {
+        return true;
+    }
+
+    function has_attachments() {
         return true;
     }
 
