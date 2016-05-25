@@ -214,12 +214,9 @@ class CheckFormat implements FormatChecker {
         $spec = "";
         if ($Conf->setting("sub_banal$suffix"))
             $spec = $Conf->setting_data("sub_banal$suffix", "");
-        $fspec = null;
-        if ($spec !== "") {
-            $fspec = new FormatSpec($spec);
-            if (($xspec = opt("sub_banal$suffix")))
-                $fspec->merge($xspec);
-        }
+        $fspec = new FormatSpec($spec);
+        if (($xspec = opt("sub_banal$suffix")))
+            $fspec->merge($xspec);
         return $fspec;
     }
 
@@ -316,11 +313,9 @@ class CheckFormat implements FormatChecker {
             return $this->msg_fail("The document has changed.");
         if ($doc->mimetype != "application/pdf")
             return $this->msg_fail("The format checker only works for PDF files.");
-        if (!$this->has_spec($dtype))
-            return $this->msg_fail("There are no formatting requirements defined for this document.");
 
         $done_banal = false;
-        $spec = $this->dt_specs[$dtype];
+        $spec = $this->spec($dtype);
         foreach ($spec->checkers ? : [] as $chk) {
             if ($chk === "banal" || $chk === "CheckFormat") {
                 $checker = $this;
@@ -332,7 +327,7 @@ class CheckFormat implements FormatChecker {
             }
             $checker->check($this, $spec, $prow, $doc);
         }
-        if (!$done_banal && !$spec->is_banal_empty())
+        if (!$done_banal)
             $this->check($this, $spec, $prow, $doc);
 
         if (!empty($this->metadata_updates))
