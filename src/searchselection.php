@@ -27,6 +27,10 @@ class SearchSelection {
         if ($user && $ps === "all") {
             $s = new PaperSearch($user, $qreq);
             $ps = $s->paperList();
+            if ($s->has_sort()) {
+                $plist = new PaperList($s);
+                $ps = $plist->id_array();
+            }
         } else if ($ps === "all")
             $ps = null;
         if (is_string($ps))
