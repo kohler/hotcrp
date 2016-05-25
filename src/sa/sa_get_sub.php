@@ -64,6 +64,12 @@ class GetDocument_SearchAction extends SearchAction {
                 Conf::msg_error(whyNotText($whyNot, "view"));
             else if (($doc = $row->document($opt->id)))
                 $downloads[] = $doc;
+            else {
+                $x = (object) ["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $opt->name . " missing."];
+                if ($opt->id <= 0)
+                    $x->mimetype = Mimetype::type(Mimetype::PDF);
+                $downloads[] = $x;
+            }
         if (count($downloads)) {
             session_write_close(); // it can take a while to generate the download
             if ($Conf->download_documents($downloads, true))

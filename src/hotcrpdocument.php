@@ -81,7 +81,9 @@ class HotCRPDocument extends Filer {
                 return $fn . $oabbr . "/" . $afn;
             $fn .= $oabbr;
         }
-        return $fn . Mimetype::extension($doc->mimetype);
+        if (isset($doc->mimetype))
+            $fn .= Mimetype::extension($doc->mimetype);
+        return $fn;
     }
 
     public function mimetypes($doc = null, $docinfo = null) {

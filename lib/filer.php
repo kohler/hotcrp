@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class ZipDocumentFile {
+class ZipDocument_File {
     public $filename;
     public $filestore;
     public $sha1;
@@ -49,6 +49,13 @@ class ZipDocument {
     }
 
     private function _add($doc, $filename, $check_filename) {
+        // maybe this is a warning container
+        if (is_object($doc) && isset($doc->error) && $doc->error) {
+            $this->warnings[] = (isset($doc->filename) ? $doc->filename . ": " : "")
+                . (isset($doc->error_html) ? htmlspecialchars_decode($doc->error_html) : "Unknown error.");
+            return;
+        }
+
         // check filename
         if (!$filename && is_object($doc) && isset($doc->filename))
             $filename = $doc->filename;
@@ -77,7 +84,7 @@ class ZipDocument {
         // add document to filestore list
         if (is_array($this->filestore) && isset($doc->filestore)
             && ($sha1 = Filer::binary_sha1($doc)) !== null) {
-            $this->filestore[] = new ZipDocumentFile($filename, $doc->filestore, $sha1);
+            $this->filestore[] = new ZipDocument_File($filename, $doc->filestore, $sha1);
             return self::_add_done($doc, true);
         }
 
@@ -454,13 +461,13 @@ class Filer {
             return false;
         list($fsdir, $fspath) = $fsinfo;
         if (!self::prepare_filestore($fsdir, $fspath)) {
-            $no_error || set_error_html($doc, "Internal error: filestore cannot be initialized");
+            $no_error || set_error_html($doc, "Internal error: docstore cannot be initialized.");
             return false;
         }
         $content = self::content($doc);
         if (file_put_contents($fspath, $content) != strlen($content)) {
             @unlink($fspath);
-            $no_error || set_error_html($doc, "Internal error: filestore failure");
+            $no_error || set_error_html($doc, "Internal error: docstore failure.");
             return false;
         }
         @chmod($fspath, 0660 & ~umask());

@@ -1492,7 +1492,6 @@ class Conf {
             if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);
             $downloadname = $Opt["downloadPrefix"] . "$name.zip";
-
         }
         $result = Filer::multidownload($docs, $downloadname, $attachment);
         if ($result->error) {
