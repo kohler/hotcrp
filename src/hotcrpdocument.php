@@ -88,21 +88,12 @@ class HotCRPDocument extends Filer {
         global $Opt;
         if ($this->dtype > 0 && !$this->option)
             return null;
-        $otype = ($this->option ? $this->option->type : "pdf");
-        $mimetypes = array();
-        if (PaperOption::type_takes_pdf($otype))
-            $mimetypes[] = Mimetype::lookup(".pdf");
-        if (!$this->option && !defval($Opt, "disablePS"))
-            $mimetypes[] = Mimetype::lookup(".ps");
-        if ($otype == "slides") {
-            $mimetypes[] = Mimetype::lookup(".ppt");
-            $mimetypes[] = Mimetype::lookup(".pptx");
-        }
-        if ($otype == "video") {
-            $mimetypes[] = Mimetype::lookup(".mp4");
-            $mimetypes[] = Mimetype::lookup(".avi");
-        }
-        return $mimetypes;
+        else if ($this->option)
+            return $this->option->mimetypes();
+        else if (opt("disablePS"))
+            return [Mimetype::lookup(Mimetype::PDF)];
+        else
+            return [Mimetype::lookup(Mimetype::PDF), Mimetype::lookup(Mimetype::PS)];
     }
 
     public static function s3_document() {

@@ -485,7 +485,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 137);
+insert into Settings (name, value) values ('allowPaperOption', 138);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
@@ -514,4 +514,6 @@ insert ignore into Mimetype (mimetypeid, mimetype, extension, description, inlin
            (5, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.pptx', 'PowerPoint', 0),
            (6, 'video/mp4', '.mp4', null, 0),
            (7, 'video/x-msvideo', '.avi', null, 0),
-           (8, 'application/json', '.json', "JSON", 0);
+           (8, 'application/json', '.json', 'JSON', 0),
+           (9, 'image/jpeg', '.jpg', 'JPEG', 0),
+           (10, 'image/png', '.png', 'PNG', 0);

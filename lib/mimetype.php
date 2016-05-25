@@ -9,7 +9,9 @@ class Mimetype {
     const PS = 3;
     const PPT = 4;
     const JSON = 8;
-    const MAX_BUILTIN = 8;
+    const JPG = 9;
+    const PNG = 10;
+    const MAX_BUILTIN = 10;
 
     public $mimetypeid;
     public $mimetype;
@@ -123,6 +125,12 @@ class Mimetype {
             return self::$tmap[self::PS];
         else if (substr($content, 512, 4) == "\x00\x6E\x1E\xF0")
             return self::$tmap[self::PPT];
+        else if (substr($content, 0, 4) == "\xFF\xD8\xFF\xD8"
+                 || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE0" && substr($content, 6, 6) == "JFIF\x00\x01")
+                 || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE1" && substr($content, 6, 6) == "Exif\x00\x01"))
+            return self::$tmap[self::JPG];
+        else if (substr($content, 0, 8) == "\x89PNG\r\n\x1A\x0A")
+            return self::$tmap[self::PNG];
         else
             return null;
     }
@@ -136,6 +144,8 @@ Mimetype::make(5, "application/vnd.openxmlformats-officedocument.presentationml.
 Mimetype::make(6, "video/mp4", ".mp4");
 Mimetype::make(7, "video/x-msvideo", ".avi");
 Mimetype::make(Mimetype::JSON, "application/json", ".json", "JSON");
+Mimetype::make(Mimetype::JPG, "image/jpeg", ".jpg", "JPEG");
+Mimetype::make(Mimetype::PNG, "image/png", ".png", "PNG");
 
 Mimetype::make_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
 Mimetype::make_synonym("application/powerpoint", "application/vnd.ms-powerpoint");

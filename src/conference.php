@@ -120,7 +120,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 137) {
+        if ($this->sversion < 138) {
             require_once("updateschema.php");
             $oldOK = $OK;
             updateSchema($this);
@@ -1449,7 +1449,8 @@ class Conf {
     }
 
     function update_document_metadata($doc, $delta) {
-        if ($doc->paperStorageId <= 1)
+        $paperStorageId = isset($doc->paperStorageId) ? $doc->paperStorageId : $doc->docid;
+        if ($paperStorageId <= 1)
             return false;
         while (1) {
             $old_str = isset($doc->infoJson_str) ? $doc->infoJson_str : null;
@@ -1466,10 +1467,10 @@ class Conf {
             if ($old_str === $metadata_str) // already done
                 return true;
             $ijq = isset($old_str) ? "=" : " is ";
-            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $doc->paperStorageId, $old_str);
+            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $paperStorageId, $old_str);
             if ($result->affected_rows != 0)
                 break;
-            $doc->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId);
+            $doc->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $paperStorageId);
         }
         $doc->infoJson_str = $metadata_str;
         $doc->infoJson = $metadata;

@@ -622,7 +622,8 @@ function hoturl(page, options) {
     else if (page === "api") {
         hoturl_clean(x, "fn=(\\w+)");
         want_forceShow = true;
-    }
+    } else if (page === "doc")
+        hoturl_clean(x, "file=([^&]+)");
     if (x.o && hotcrp_list
         && (m = x.o.match(/^(.*(?:^|&)ls=)([^&]*)((?:&|$).*)$/))
         && hotcrp_list.id == decodeURIComponent(m[2]))
@@ -2293,7 +2294,7 @@ function setajaxcheck(elt, rv) {
     else
         elt.style.outline = "5px solid red";
     if (rv && rv.error)
-        make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change hide");
+        make_bubble(rv.error, "errorbubble").near(elt).removeOn(elt, "input change click hide");
 }
 
 function link_urls(t) {

@@ -47,11 +47,10 @@ function document_download() {
             list($paperId, $dtname, $attachment_filename) = [intval($m[1]), $m[2], get($m, 3)];
         else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:\.[^/]+|/+(.*))\z,', $s, $m))
             list($paperId, $dtname, $attachment_filename) = [intval($m[2]), $m[1], get($m, 3)];
-        else if (preg_match(',\A([^/]+?)(?:\.[^/]+|/+(.*))\z,', $s, $m)
-                 && ($nonpaper_options = PaperOption::search_nonpaper($m[1]))
-                 && count($nonpaper_options) == 1) {
+        else if (preg_match(',\A([^/]+?)(?:\.[^/]+|/+(.*)|)\z,', $s, $m)
+                 && ($nonpaper_option = PaperOption::match_nonpaper($m[1]))) {
             list($paperId, $attachment_filename) = [-2, get($m, 2)];
-            $documentType = key($nonpaper_options);
+            $documentType = $nonpaper_option->id;
         }
         if ($dtname !== null)
             $documentType = HotCRPDocument::parse_dtype($dtname ? : "paper");
@@ -64,7 +63,7 @@ function document_download() {
         document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");
 
     if ($o->nonpaper) {
-        $prow = new PaperInfo(["paperId" => -2, "optionIds" => $o->id . "#" . $Conf->setting($o->abbr, 0)]);
+        $prow = new PaperInfo(["paperId" => -2]);
         if (($o->visibility === "admin" && !$Me->privChair)
             || ($o->visibility !== "all" && !$Me->isPC))
             document_error("403 Forbidden", "You don’t have permission to view this document.");

@@ -28,7 +28,7 @@ class PaperOptionValue {
         }
     }
     public function documents(PaperInfo $prow) {
-        assert($this->option->has_document_storage());
+        assert($this->option && $this->option->has_document_storage());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
@@ -102,7 +102,7 @@ class PaperOption {
         "numeric" => "NumericPaperOption",
         "text" => "TextPaperOption",
         "pdf" => "DocumentPaperOption", "slides" => "DocumentPaperOption", "video" => "DocumentPaperOption",
-        "attachments" => "AttachmentsPaperOption"
+        "document" => "DocumentPaperOption", "attachments" => "AttachmentsPaperOption"
     ];
 
     function __construct($args) {
@@ -324,6 +324,12 @@ class PaperOption {
         return $omap;
     }
 
+    static function match($name) {
+        $omap = self::search($name);
+        reset($omap);
+        return count($omap) == 1 ? current($omap) : null;
+    }
+
     static function search_nonpaper($name) {
         $name = strtolower($name);
         $oabbr = array();
@@ -341,6 +347,12 @@ class PaperOption {
         return $omap;
     }
 
+    static function match_nonpaper($name) {
+        $omap = self::search_nonpaper($name);
+        reset($omap);
+        return count($omap) == 1 ? current($omap) : null;
+    }
+
     static function abbreviate($name, $id) {
         $abbr = strtolower(UnicodeHelper::deaccent($name));
         $abbr = preg_replace('/[^a-z_0-9]+/', "-", $abbr);
@@ -352,10 +364,6 @@ class PaperOption {
 
     static function type_has_selector($type) {
         return $type === "radio" || $type === "selector";
-    }
-
-    static function type_takes_pdf($type) {
-        return $type === "pdf" || $type === "slides";
     }
 
     function fixed() {
@@ -396,6 +404,10 @@ class PaperOption {
 
     function has_attachments() {
         return false;
+    }
+
+    function mimetypes() {
+        return null;
     }
 
     function needs_data() {
@@ -653,6 +665,17 @@ class DocumentPaperOption extends PaperOption {
 
     function has_document() {
         return true;
+    }
+
+    function mimetypes() {
+        if ($this->type === "pdf")
+            return [Mimetype::lookup(".pdf")];
+        else if ($this->type === "slides")
+            return [Mimetype::lookup(".pdf"), Mimetype::lookup(".ppt"), Mimetype::lookup(".pptx")];
+        else if ($this->type === "video")
+            return [Mimetype::lookup(".mp4"), Mimetype::lookup(".avi")];
+        else
+            return null;
     }
 
     function value_compare($av, $bv) {
