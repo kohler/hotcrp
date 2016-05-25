@@ -173,7 +173,7 @@ div.lg { /* large gap */
 div.mg { /* medium gap */
 	margin: 1em 0;
 }
-div.g { /* small gap */
+.g { /* small gap */
 	margin: 0.65em 0;
 }
 div.ug { /* microgap */
