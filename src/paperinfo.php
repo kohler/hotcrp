@@ -159,6 +159,7 @@ class PaperInfo {
     public $timeSubmitted;
     public $timeWithdrawn;
     public $paperStorageId;
+    public $finalPaperStorageId;
     public $managerContactId;
     public $paperFormat;
 
