@@ -108,7 +108,7 @@ for (my $i = 0; $i < @ARGV; ) {
     no strict "refs";
     if ($ARGV[$i] =~ /\A--?(report|stats|judge|no[-_]app|json|version|debug[-_]pdftohtml)\z/) {
         my($name) = $1;
-        $name =~ s/_/-/;
+        $name =~ s/-/_/g;
         ${$name} = 1;
         splice @ARGV, $i, 1;
     } elsif ($ARGV[$i] =~ /\A--?(paper|pages|font|leading|cols|width|height|fudge|format|zoom)=(.*)\z/) {
