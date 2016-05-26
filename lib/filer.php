@@ -571,14 +571,12 @@ class Filer {
         global $Conf;
         if (!is_object($doc)) {
             error_log(caller_landmark() . ": Filer::upload called with non-object");
-            return null;
+            return false;
         }
-
-        $doc = clone $doc;
         if (!$this->load($doc) && !get($doc, "error_html"))
-            set_error_html($doc, "The uploaded file was empty.");
+            set_error_html($doc, "Empty document.");
         if (get($doc, "error"))
-            return $doc;
+            return false;
 
         // Check if paper one of the allowed mimetypes.
         if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
@@ -598,13 +596,13 @@ class Filer {
         if ($i >= count($mimetypes) && count($mimetypes)) {
             $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
             $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
-            return set_error_html($doc, $e);
+            set_error_html($doc, $e);
+            return false;
         }
 
         if (!get($doc, "timestamp"))
             $doc->timestamp = time();
-        $this->store($doc, $docinfo);
-        return $doc;
+        return $this->store($doc, $docinfo);
     }
 
     // SHA-1 helpers

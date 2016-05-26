@@ -297,13 +297,12 @@ class PaperStatus {
 
         // if no sha1 match, upload
         $docclass = new HotCRPDocument($o->id);
-        $upload = null;
-        if ($docclass->load($docj))
-            $upload = $docclass->upload($docj, (object) array("paperId" => $this->paperid));
-        if ($upload && get($upload, "paperStorageId") > 1) {
+        $newdocj = clone $docj;
+        if ($docclass->upload($newdocj, (object) ["paperId" => $this->paperid])
+            && get($newdocj, "paperStorageId") > 1) {
             foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
-                $docj->$k = $upload->$k;
-            $this->uploaded_documents[] = $docj->docid = $upload->paperStorageId;
+                $docj->$k = $newdocj->$k;
+            $this->uploaded_documents[] = $docj->docid = $newdocj->paperStorageId;
         } else {
             $docj->docid = 1;
             $this->set_option_error_html($o, $upload ? $upload->error_html : "Empty document.");
