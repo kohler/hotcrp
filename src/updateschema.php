@@ -998,6 +998,17 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         $Conf->update_schema_version(137);
     if ($Conf->sversion == 137 && update_schema_builtin_mimetypes())
         $Conf->update_schema_version(138);
+    if (($Conf->sversion == 138 || $Conf->sversion == 139)
+        && Dbl::ql("DROP TABLE IF EXISTS `FilteredDocument`")
+        && Dbl::ql("CREATE TABLE `FilteredDocument` (
+  `inDocId` int(11) NOT NULL,
+  `filterType` int(11) NOT NULL,
+  `outDocId` int(11) NOT NULL,
+  `createdAt` int(11) NOT NULL,
+  PRIMARY KEY (`inDocId`,`filterType`),
+  UNIQUE KEY `inDocFilter` (`inDocId`,`filterType`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8"))
+        $Conf->update_schema_version(140);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

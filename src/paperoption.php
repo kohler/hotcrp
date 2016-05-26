@@ -164,33 +164,18 @@ class PaperOption {
             return $a->id - $b->id;
     }
 
-    static private function add_json($jlist, $fixed, $landmark) {
-        if (is_string($jlist)) {
-            if (($jlistx = json_decode($jlist)) !== false)
-                $jlist = $jlistx;
-            else if (json_last_error()) {
-                Json::decode($jlist);
-                error_log("$landmark: Invalid JSON. " . Json::last_error_msg());
-                return;
-            }
-            if (is_object($jlist))
-                $jlist = [$jlist];
-        }
-        foreach ($jlist as $oj) {
-            if (is_object($oj) && isset($oj->id) && isset($oj->name)) {
-                if (is_string($oj->id) && is_numeric($oj->id))
-                    $oj->id = intval($oj->id);
-                if (is_int($oj->id) && !isset(self::$jlist[$oj->id])
-                    && ($oj->id >= self::MINFIXEDID) === $fixed
-                    && is_string($oj->name)) {
-                    if (!isset($oj->abbr) || $oj->abbr == "")
-                        $oj->abbr = self::abbreviate($oj->name, $oj->id);
-                    self::$jlist[$oj->id] = $oj;
-                    continue;
-                }
-            }
-            error_log("$landmark: bad option " . json_encode($oj));
-        }
+    static public function _add_json($oj, $fixed) {
+        if (is_string($oj->id) && is_numeric($oj->id))
+            $oj->id = intval($oj->id);
+        if (is_int($oj->id) && !isset(self::$jlist[$oj->id])
+            && ($oj->id >= self::MINFIXEDID) === $fixed
+            && isset($oj->name) && is_string($oj->name)) {
+            if (!isset($oj->abbr) || $oj->abbr == "")
+                $oj->abbr = self::abbreviate($oj->name, $oj->id);
+            self::$jlist[$oj->id] = $oj;
+            return true;
+        } else
+            return false;
     }
 
     static function option_json_list(Conf $c = null) {
@@ -198,21 +183,10 @@ class PaperOption {
         if (self::$jlist === null) {
             self::$jlist = self::$jmap = [];
             $c = $c ? : $Conf;
-            if (($optj = $c->setting_json("options")))
-                self::add_json($optj, false, "settings");
-            if (isset($Opt["optionsInclude"])) {
-                $options_include = $Opt["optionsInclude"];
-                if (!is_array($options_include))
-                    $options_include = array($options_include);
-                foreach ($options_include as $k => $oi) {
-                    if (preg_match(',\A\s*\{\s*\",s', $oi))
-                        self::add_json($oi, true, "include entry $k");
-                    else
-                        foreach (expand_includes($oi) as $f)
-                            if (($x = file_get_contents($f)))
-                                self::add_json($x, true, $f);
-                }
-            }
+            if (($olist = $c->setting_json("options")))
+                expand_json_includes_callback($olist, "PaperOption::_add_json", false);
+            if (($olist = opt("fixedOptions")))
+                expand_json_includes_callback($olist, "PaperOption::_add_json", true);
             uasort(self::$jlist, ["PaperOption", "compare"]);
         }
         return self::$jlist;

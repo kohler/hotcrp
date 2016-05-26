@@ -248,6 +248,36 @@ function read_included_options(&$files) {
     }
 }
 
+function expand_json_includes_callback($includelist, $callback, $extra_arg = null) {
+    $includes = [];
+    foreach (is_array($includelist) ? $includelist : [$includelist] as $k => $str)
+        if (is_string($str) && str_starts_with($str, "@")) {
+            foreach (expand_includes(substr($str, 1)) as $f)
+                if (($x = file_get_contents($f)))
+                    $includes[] = [$x, $f];
+        } else
+            $includes[] = [$str, "entry $k"];
+    foreach ($includes as $xentry) {
+        list($entry, $landmark) = $xentry;
+        if (is_string($entry)) {
+            if (($x = json_decode($entry)) !== false)
+                $entry = $x;
+            else {
+                if (json_last_error()) {
+                    Json::decode($entry);
+                    error_log("$landmark: Invalid JSON. " . Json::last_error_msg());
+                }
+                continue;
+            }
+        }
+        if (is_object($entry) && !isset($entry->id))
+            $entry = get_object_vars($entry);
+        foreach (is_array($entry) ? $entry : [$entry] as $obj)
+            if (!is_object($obj) || !isset($obj->id) || !call_user_func($callback, $obj, $extra_arg))
+                error_log("$landmark: Invalid $callback " . json_encode($obj) . ".");
+    }
+}
+
 global $Opt, $OptOverride;
 if (!$Opt)
     $Opt = array();

@@ -145,7 +145,7 @@ class HotCRPDocument extends Filer {
         $s3 = self::s3_document();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
         $meta = array("conf" => $Opt["dbName"],
-                      "pid" => (int) $docinfo->paperId,
+                      "pid" => isset($doc->paperId) ? (int) $doc->paperId : (int) $docinfo->paperId,
                       "dtype" => (int) $dtype);
         if (get($doc, "filter")) {
             $meta["filtertype"] = (int) $doc->filter;
@@ -169,7 +169,8 @@ class HotCRPDocument extends Filer {
         global $Conf, $Opt;
         if ($this->no_database)
             return null;
-        $doc->paperId = $docinfo->paperId;
+        if (!isset($doc->paperId))
+            $doc->paperId = $docinfo->paperId;
         $doc->documentType = $this->dtype;
         $columns = array("paperId" => $docinfo->paperId,
                          "timestamp" => $doc->timestamp,

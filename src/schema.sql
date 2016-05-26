@@ -75,6 +75,22 @@ CREATE TABLE `ContactInfo` (
 
 
 --
+-- Table structure for table `FilteredDocument`
+--
+
+DROP TABLE IF EXISTS `FilteredDocument`;
+CREATE TABLE `FilteredDocument` (
+  `inDocId` int(11) NOT NULL,
+  `filterType` int(11) NOT NULL,
+  `outDocId` int(11) NOT NULL,
+  `createdAt` int(11) NOT NULL,
+  PRIMARY KEY (`inDocId`,`filterType`),
+  UNIQUE KEY `inDocFilter` (`inDocId`,`filterType`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+--
 -- Table structure for table `Formula`
 --
 
@@ -485,7 +501,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 138);
+insert into Settings (name, value) values ('allowPaperOption', 140);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

@@ -56,6 +56,13 @@ function document_download() {
             $documentType = HotCRPDocument::parse_dtype($dtname ? : "paper");
     }
 
+    $filters = [];
+    if (isset($_GET["filter"])) {
+        foreach (explode(" ", $_GET["filter"]) as $filtername)
+            if ($filtername && ($filter = FileFilter::find_by_name($filtername)))
+                $filters[] = $filter;
+    }
+
     if ($documentType === null
         || !($o = PaperOption::find_document($documentType))
         || ($attachment_filename && !$o->has_attachments())
@@ -88,6 +95,10 @@ function document_download() {
         $doc = $prow->document($documentType);
     if (!$doc)
         document_error("404 Not Found", "No such " . ($attachment_filename ? "attachment" : "document") . " “" . htmlspecialchars($orig_s) . "”.");
+
+    // pass through filters
+    foreach ($filters as $filter)
+        $doc = $filter->apply($doc, $prow) ? : $doc;
 
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
