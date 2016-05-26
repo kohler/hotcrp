@@ -182,10 +182,11 @@ class HotCRPDocument extends Filer {
             $columns["paper"] = $doc->content;
         if (get($doc, "filename"))
             $columns["filename"] = $doc->filename;
-        if (is_string(get($doc, "infoJson")))
-            $columns["infoJson"] = $doc->infoJson;
-        else if (is_object(get($doc, "infoJson")))
-            $columns["infoJson"] = json_encode($doc->infoJson);
+        $infoJson = get($doc, "infoJson");
+        if (is_string($infoJson))
+            $columns["infoJson"] = $infoJson;
+        else if (is_object($infoJson) || is_associative_array($infoJson))
+            $columns["infoJson"] = json_encode($infoJson);
         else if (is_object(get($doc, "metadata")))
             $columns["infoJson"] = json_encode($doc->metadata);
         if ($Conf->sversion >= 74 && get($doc, "size"))
