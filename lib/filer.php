@@ -609,22 +609,24 @@ class Filer {
 
     // SHA-1 helpers
     static function text_sha1($doc) {
-        if (is_object($doc))
-            $doc = get($doc, "sha1");
-        if (is_string($doc) && strlen($doc) === 20)
-            return bin2hex($doc);
-        else if (is_string($doc) && strlen($doc) === 40 && ctype_xdigit($doc))
-            return strtolower($doc);
+        $sha1 = is_object($doc) ? get($doc, "sha1") : $doc;
+        if (is_string($sha1) && strlen($sha1) > 40)
+            $sha1 = trim($sha1);
+        if (is_string($sha1) && strlen($sha1) === 20)
+            return bin2hex($sha1);
+        else if (is_string($sha1) && strlen($sha1) === 40 && ctype_xdigit($sha1))
+            return strtolower($sha1);
         else
             return false;
     }
     static function binary_sha1($doc) {
-        if (is_object($doc))
-            $doc = get($doc, "sha1");
-        if (is_string($doc) && strlen($doc) === 20)
-            return $doc;
-        else if (is_string($doc) && strlen($doc) === 40 && ctype_xdigit($doc))
-            return hex2bin($doc);
+        $sha1 = is_object($doc) ? get($doc, "sha1") : $doc;
+        if (is_string($sha1) && strlen($sha1) > 40)
+            $sha1 = trim($sha1);
+        if (is_string($sha1) && strlen($sha1) === 20)
+            return $sha1;
+        else if (is_string($sha1) && strlen($sha1) === 40 && ctype_xdigit($sha1))
+            return hex2bin($sha1);
         else
             return false;
     }
