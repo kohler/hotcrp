@@ -362,7 +362,6 @@ function displayOptionCheckbox($type, $column, $title, $opt = array()) {
         $loadresult = "<div id='${type}loadformresult'></div>";
     } else
         $loadresult = "<div></div>";
-    $opt["class"] = "cbx";
     $indent = get($opt, "indent");
     unset($opt["indent"]);
 
@@ -658,7 +657,7 @@ if ($pl && $pl->count > 0) {
     if ($Me->privChair)
         echo "<td class='padlb'>",
             Ht::checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
-                          array("id" => "showforce", "class" => "cbx",
+                          array("id" => "showforce",
                                 "onchange" => "fold('pl',!this.checked,'force');$('#forceShow').val(this.checked?1:0)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 

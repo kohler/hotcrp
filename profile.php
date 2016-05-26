@@ -758,11 +758,11 @@ if ($newProfile || $Acct->isPC || $Me->privChair) {
     $topics = $Conf->topic_map();
     if (count($topics)) {
         echo '<div id="topicinterest"><h3 class="profile">Topic interests</h3>', "\n",
-            "<div class='hint'>
+            '<div class="hint">
     Please indicate your interest in reviewing papers on these conference
     topics. We use this information to help match papers to reviewers.</div>
-    <table class='topicinterest'>
-       <tr><td></td><th>Low</th><th style='width:2.2em'>-</th><th style='width:2.2em'>-</th><th style='width:2.2em'>-</th><th>High</th></tr>\n";
+    <table class="topicinterest">
+       <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest" style="width:2.2em">-</th><th class="ti_interest">High</th></tr>', "\n";
 
         $interests = array(-2, -1.5,  -1, -0.5,  0, 1,  2, 3,  4);
         foreach ($topics as $id => $name) {

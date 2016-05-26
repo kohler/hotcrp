@@ -139,27 +139,27 @@ function searchbar() {
             if ($_REQUEST[$x])
                 $urls[] = "$x=" . urlencode($_REQUEST[$x]);
         $url = hoturl("log", join("&amp;", $urls));
-        echo "<table class='lognav'><tr><td id='newest'><div>";
+        echo "<table class='lognav'><tr><td><div class='lognavdr'>";
         if ($page > 1)
             echo "<a href='$url&amp;page=1'><strong>Newest</strong></a> &nbsp;|&nbsp;&nbsp;";
-        echo "</div></td><td id='newer'><div>";
+        echo "</div></td><td><div class='lognavxr'>";
         if ($page > 1)
             echo "<a href='$url&amp;page=", ($page - 1), "'><strong>", Ht::img("_.gif", "<-", array("class" => "prev")), " Newer</strong></a>";
-        echo "</div></td><td id='newnum'><div>";
+        echo "</div></td><td><div class='lognavdr'>";
         if ($page - $nlinks > 1)
             echo "&nbsp;...";
         for ($p = max($page - $nlinks - 1, 0); $p + 1 < $page; $p++)
             echo "&nbsp;<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>";
-        echo "</div></td><td id='thisnum'><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td id='oldnum'><div>";
+        echo "</div></td><td><div><strong class='thispage'>&nbsp;", $page, "&nbsp;</strong></div></td><td><div class='lognavd'>";
         $o = ($offset ? $offset - $count : 0);
         for ($p = $page; $p * $count + $o < $start + min($nlinks * $count + 1, $nrows); $p++)
             echo "<a href='$url&amp;page=", ($p + 1), "'>", ($p + 1), "</a>&nbsp;";
         if ($nrows == $maxNrows)
             echo "...&nbsp;";
-        echo "</div></td><td id='older'><div>";
+        echo "</div></td><td><div class='lognavx'>";
         if ($nrows > $count)
             echo "<a href='$url&amp;page=", ($page + 1), "'><strong>Older ", Ht::img("_.gif", "->", array("class" => "next")), "</strong></a>";
-        echo "</div></td><td id='oldest'><div>";
+        echo "</div></td><td><div class='lognavd'>";
         if ($nrows > $count)
             echo "&nbsp;&nbsp;|&nbsp; <a href='$url&amp;page=earliest'><strong>Oldest</strong></a>";
         echo "</div></td></tr></table>";

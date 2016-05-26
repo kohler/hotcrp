@@ -25,41 +25,41 @@ h2.paptitle {
 	text-indent: -1.5em;
 	margin-left: 1.5em;
 }
-div.pspcard_container, div.leftmenu_menucontainer {
+.pspcard_container, .leftmenu_menucontainer {
 	float: none;
 	position: static;
 	width: auto;
 	margin-left: 0;
 	margin-bottom: 16px;
 }
-div.pspcard_fold {
+.pspcard_fold {
 	padding: 7px 0;
 	display: block;
 }
-div.pspcard_open {
+.pspcard_open {
 	display: none;
 }
-div.paptab {
+.paptab {
 	float: none;
 	width: 100%;
 }
-div.paptab_abstract {
+.paptab_abstract {
 	padding-right: 0;
 }
-div.paptab_authors {
+.paptab_authors {
 	padding-top: 1em;
 }
-div.papcard, div.pedcard, div.notecard, div.revcard, div.cmtcard {
+.papcard, .pedcard, .notecard, .revcard, .cmtcard {
 	margin-left: 0;
 }
-div.leftmenu_content_container {
+.leftmenu_content_container {
 	margin: 0 -12px;
 }
-div.leftmenu_content {
+.leftmenu_content {
 	padding-left: 12px;
 	padding-right: 12px;
 }
-div.helplist_item {
+.helplist_item {
 	margin-left: -12px;
 	margin-right: -12px;
 	padding-left: 12px;
@@ -68,6 +68,6 @@ div.helplist_item {
 input, textarea {
 	max-width: 100%;
 }
-table.pltable {
+.pltable {
 	font-size: smaller;
 }

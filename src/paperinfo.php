@@ -503,7 +503,7 @@ class PaperInfo {
     }
 
     private static function render_topic($t, $i, $tmap, &$long) {
-        $s = '<span class="topic' . ($i ? : 0);
+        $s = '<span class="topicsp topic' . ($i ? : 0);
         $tname = $tmap[$t];
         if (strlen($tname) <= 50)
             $s .= ' nw';

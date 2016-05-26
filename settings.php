@@ -286,7 +286,7 @@ class SettingValues {
         foreach ($this->warnmsg as $m)
             if ($m && $m !== true && $m !== 1)
                 $msgs[] = "Warning: " . $m;
-        $mt = '<div class="multimessage"><div>' . join('</div><div>', $msgs) . '</div></div>';
+        $mt = '<div class="multimessage"><div class="mmm">' . join('</div><div class="mmm">', $msgs) . '</div></div>';
         if (count($msgs) && $any_errors)
             Conf::msg_error($mt);
         else if (count($msgs))

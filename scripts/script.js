@@ -2519,7 +2519,7 @@ function render_review_body(rrow) {
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors"})[f.visibility] || f.visibility) +
                 ')</div>';
-        t += '</div><hr class="c" /></div><div class="revv';
+        t += '</div><hr class="c" /></div><div class="revv revv' + "glr".charAt(display);
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
