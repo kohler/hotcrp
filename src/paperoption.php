@@ -96,7 +96,7 @@ class PaperOption {
     ];
     static private $display_rmap = null;
 
-    static private $type_map = [
+    static private $factory_class_map = [
         "checkbox" => "CheckboxPaperOption",
         "radio" => "SelectorPaperOption", "selector" => "SelectorPaperOption",
         "numeric" => "NumericPaperOption",
@@ -147,14 +147,12 @@ class PaperOption {
         global $Opt;
         if (is_object($args))
             $args = get_object_vars($args);
-        $type = get($args, "type");
-        if (isset($Opt["optionTypeClass.$type"]))
-            $typeclass = $Opt["optionTypeClass.$type"];
-        else if (isset(self::$type_map[$type]))
-            $typeclass = self::$type_map[$type];
-        else
-            $typeclass = "PaperOption";
-        return new $typeclass($args);
+        if (($factory = get($args, "factory")))
+            return call_user_func($factory, $args);
+        $fclass = get($args, "factory_class");
+        $fclass = $fclass ? : get(self::$factory_class_map, get($args, "type"));
+        $fclass = $fclass ? : "PaperOption";
+        return new $fclass($args);
     }
 
     static function compare($a, $b) {
