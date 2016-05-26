@@ -42,7 +42,9 @@ class DocumentInfo {
         if (is_string($this->infoJson)) {
             $this->infoJson_str = $this->infoJson;
             $this->infoJson = json_decode($this->infoJson);
-        } else if (!is_object($this->infoJson))
+        } else if (is_associative_array($this->infoJson))
+            $this->infoJson = array_to_object_recursive($this->infoJson);
+        else if (!is_object($this->infoJson))
             $this->infoJson = null;
         $this->filterType = $this->filterType ? (int) $this->filterType : null;
         $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
