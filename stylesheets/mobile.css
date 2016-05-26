@@ -59,6 +59,14 @@ h2.paptitle {
 	padding-left: 12px;
 	padding-right: 12px;
 }
+.leftmenu_body .xmsg {
+	margin-left: -12px;
+	margin-right: -12px;
+}
+.leftmenu_body .xmsgc {
+	padding-left: 12px;
+	padding-right: 12px;
+}
 .helplist_item {
 	margin-left: -12px;
 	margin-right: -12px;
