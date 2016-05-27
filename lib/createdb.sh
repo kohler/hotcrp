@@ -124,7 +124,7 @@ check_mysqlish MYSQL mysql
 check_mysqlish MYSQLADMIN mysqladmin
 
 ### Print hotcrp.com message
-if ! $quiet && ! $batch; then
+if ! $quiet && ! $batch && ! [ -n "$options_file" -a -f "$options_file" ]; then
     echo 1>&2
     echo "* This script initializes a local HotCRP installation." 1>&2
     echo "* You are responsible for supporting this installation." 1>&2
