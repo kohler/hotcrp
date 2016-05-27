@@ -81,6 +81,8 @@ class HotCRPDocument extends Filer {
                 return $fn . $oabbr . "/" . $afn;
             $fn .= $oabbr;
         }
+        if ($filters === null && isset($doc->filters_applied))
+            $filters = $doc->filters_applied;
         if ($filters) {
             foreach (is_array($filters) ? $filters : [$filters] as $filter)
                 if ($filter instanceof FileFilter)

@@ -23,6 +23,8 @@ class DocumentInfo {
     public $originalStorageId;
     public $docclass;
     public $is_partial = false;
+    public $filters_applied;
+    public $error;
     public $error_html;
 
     public function __construct($p = null) {
@@ -121,6 +123,8 @@ class DocumentInfo {
     const L_NOSIZE = 2;
     public function link_html($html = "", $flags = 0, $filters = null) {
         global $Conf;
+        if ($filters === null)
+            $filters = $this->filters_applied;
         $p = HotCRPDocument::url($this, $filters);
 
         $finalsuffix = "";

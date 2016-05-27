@@ -56,6 +56,10 @@ class FileFilter {
         $result = Dbl::qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
         $fdoc = DocumentInfo::fetch($result);
         Dbl::free($result);
+        if ($fdoc) {
+            $fdoc->filters_applied = $doc->filters_applied;
+            $fdoc->filters_applied[] = $this;
+        }
         return $fdoc;
     }
 
