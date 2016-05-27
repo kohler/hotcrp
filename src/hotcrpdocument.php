@@ -81,6 +81,13 @@ class HotCRPDocument extends Filer {
                 return $fn . $oabbr . "/" . $afn;
             $fn .= $oabbr;
         }
+        if ($filters) {
+            foreach (is_array($filters) ? $filters : [$filters] as $filter)
+                if ($filter instanceof FileFilter)
+                    $fn .= "-" . $filter->name;
+                else if (is_string($filter) && FileFilter::find_by_name($filter))
+                    $fn .= "-" . $filter;
+        }
         if (isset($doc->mimetype))
             $fn .= Mimetype::extension($doc->mimetype);
         return $fn;

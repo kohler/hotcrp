@@ -4,8 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class FileFilter {
-    protected $id;
-    protected $name;
+    public $id;
+    public $name;
 
     static private $filter_by_name;
     static private $filter_by_id;
@@ -40,6 +40,10 @@ class FileFilter {
     static public function find_by_name($name) {
         self::load();
         return get(self::$filter_by_name, $name);
+    }
+    static public function all() {
+        self::load();
+        return self::$filter_by_id;
     }
 
     public function find_filtered($doc) {

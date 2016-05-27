@@ -79,6 +79,10 @@ class DocumentInfo {
             return false;
     }
 
+    public function filename($filters = null) {
+        return HotCRPDocument::filename($this, $filters);
+    }
+
     public function compute_sha1() {
         $sha1 = Filer::binary_sha1($this->sha1);
         if ($sha1 === false && is_string($this->content))

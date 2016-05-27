@@ -27,6 +27,7 @@ function document_download() {
         $documentType = req("final") ? DTYPE_FINAL : DTYPE_SUBMISSION;
     $attachment_filename = false;
     $docid = null;
+    $filters = [];
 
     if (isset($_GET["p"]))
         $paperId = cvtint($_GET["p"]);
@@ -34,29 +35,50 @@ function document_download() {
         $paperId = cvtint($_GET["paperId"]);
     else {
         $s = $orig_s = preg_replace(',\A/*,', "", Navigation::path());
-        $documentType = $dtname = null;
+        $dtname = null;
+        $base_dtname = "paper";
         if (str_starts_with($s, $Opt["downloadPrefix"]))
             $s = substr($s, strlen($Opt["downloadPrefix"]));
-        if (preg_match(',\Ap(?:aper)?(\d+)/+(.*)\z,', $s, $m)) {
+        if (preg_match(',\A(?:p|paper|)(\d+)/+(.*)\z,', $s, $m)) {
             $paperId = intval($m[1]);
             if (preg_match(',\A([^/]+)\.[^/]+\z,', $m[2], $mm))
                 $dtname = $mm[1];
             else if (preg_match(',\A([^/]+)/+(.*)\z,', $m[2], $mm))
-                list($dtype, $attachment_filename) = array($m[1], $m[2]);
-        } else if (preg_match(',\A(?:paper)?(\d+)-?([-A-Za-z0-9_]*)(?:\.[^/]+|/+(.*))\z,', $s, $m))
-            list($paperId, $dtname, $attachment_filename) = [intval($m[1]), $m[2], get($m, 3)];
-        else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:\.[^/]+|/+(.*))\z,', $s, $m))
+                list($dtname, $attachment_filename) = array($m[1], $m[2]);
+        } else if (preg_match(',\A(p|paper|final|)(\d+)-?([-A-Za-z0-9_]*)(?:\.[^/]+|/+(.*))\z,', $s, $m)) {
+            list($paperId, $dtname, $attachment_filename) = [intval($m[2]), $m[3], get($m, 4)];
+            if ($m[1] === "final")
+                $base_dtname = "final";
+        } else if (preg_match(',\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:\.[^/]+|/+(.*))\z,', $s, $m))
             list($paperId, $dtname, $attachment_filename) = [intval($m[2]), $m[1], get($m, 3)];
-        else if (preg_match(',\A([^/]+?)(?:\.[^/]+|/+(.*)|)\z,', $s, $m)
-                 && ($nonpaper_option = PaperOption::match_nonpaper($m[1]))) {
-            list($paperId, $attachment_filename) = [-2, get($m, 2)];
-            $documentType = $nonpaper_option->id;
+        else if (preg_match(',\A([^/]+?)(?:\.[^/]+|/+(.*)|)\z,', $s, $m))
+            list($paperId, $dtname, $attachment_filename) = [-2, $m[1], get($m, 2)];
+
+        $documentType = null;
+        while ($dtname !== null && $documentType === null) {
+            if ($paperId < 0)
+                $documentType = PaperOption::match_nonpaper($dtname);
+            else
+                $documentType = HotCRPDocument::parse_dtype($dtname ? : $base_dtname);
+            if ($documentType !== null)
+                break;
+            $filter = null;
+            foreach (FileFilter::all() as $ff)
+                if (str_ends_with($dtname, "-" . $ff->name) || $dtname === $ff->name) {
+                    $filter = $ff;
+                    break;
+                }
+            if (!$filter)
+                break;
+            array_unshift($filters, $filter);
+            $dtname = substr($dtname, 0, strlen($dtname) - strlen($ff->name));
+            if (str_ends_with($dtname, "-"))
+                $dtname = substr($dtname, 0, strlen($dtname) - 1);
         }
-        if ($dtname !== null)
-            $documentType = HotCRPDocument::parse_dtype($dtname ? : "paper");
+        if (is_object($documentType))
+            $documentType = $documentType->id;
     }
 
-    $filters = [];
     if (isset($_GET["filter"])) {
         foreach (explode(" ", $_GET["filter"]) as $filtername)
             if ($filtername && ($filter = FileFilter::find_by_name($filtername)))
