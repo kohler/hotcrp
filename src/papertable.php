@@ -1091,30 +1091,6 @@ class PaperTable {
         }
     }
 
-    private function editable_attachments($o) {
-        echo $this->editable_papt($o->id, htmlspecialchars($o->name)
-                                  . " <span class='papfnh'>(max " . ini_get("upload_max_filesize") . "B per file)</span>");
-        if ($o->description)
-            echo "<div class='paphint'>", $o->description, "</div>";
-        echo '<div class="papev">', Ht::hidden("has_opt$o->id", 1);
-        if (($prow = $this->prow) && ($optx = $prow->option($o->id))) {
-            $docclass = new HotCRPDocument($o->id, $o);
-            foreach ($optx->documents($prow) as $doc) {
-                $oname = "opt" . $o->id . "_" . $doc->paperStorageId;
-                echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
-                    "<td class='nw'>", $doc->link_html(htmlspecialchars($doc->unique_filename)), "</td>",
-                    "<td class='fx'><span class='sep'></span></td>",
-                    "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
-                if (($stamps = self::pdf_stamps_html($doc)))
-                    echo "<td class='fx'><span class='sep'></span></td><td class='fx'>$stamps</td>";
-                echo "</tr></table></div>\n";
-            }
-        }
-        echo "<div id='opt", $o->id, "_new'></div>",
-            Ht::js_button("Add attachment", "addattachment($o->id)"),
-            "</div></div>\n\n";
-    }
-
     public function echo_editable_option_papt(PaperOption $o, $label = null) {
         echo $this->editable_papt("opt$o->id", $label ? : htmlspecialchars($o->name),
                                   ["id" => "opt{$o->id}_div"]);
