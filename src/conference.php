@@ -1726,7 +1726,7 @@ class Conf {
             $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
 
         if (get($options, "options")
-            && (isset($this->settingTexts["options"]) || isset($Opt["optionsInclude"]))
+            && (isset($this->settingTexts["options"]) || isset($Opt["fixedOptions"]))
             && PaperOption::count_option_list())
             $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
         else if (get($options, "options"))
