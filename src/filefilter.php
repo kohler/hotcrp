@@ -45,6 +45,12 @@ class FileFilter {
         self::load();
         return self::$filter_by_id;
     }
+    static public function apply_named($doc, PaperInfo $prow, $name) {
+        if (($filter = self::find_by_name($name))
+            && ($xdoc = $filter->apply($doc, $prow)))
+            return $xdoc;
+        return $doc;
+    }
 
     public function find_filtered($doc) {
         $result = Dbl::qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
