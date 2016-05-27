@@ -87,6 +87,10 @@ xassert_match($x->a[0], ",^x.txt:2(?::|\$),");
 xassert_match($x->a[1], ",^x.txt:2(?::|\$),");
 xassert_match($x->b->c, ",^x.txt:4(?::|\$),");
 xassert_match($x->b->__LANDMARK__, ",^x.txt:3(?::|\$),");
+xassert_eqq(Json::decode("[1-2]"), null);
+xassert_eqq(json_decode("[1-2]"), null);
+xassert_eqq(Json::decode("[1,2,3-4,5,6-10,11]"), null);
+xassert_eqq(json_decode("[1,2,3-4,5,6-10,11]"), null);
 
 // obscure_time tests
 $t = $Conf->parse_time("1 Sep 2010 00:00:01");
