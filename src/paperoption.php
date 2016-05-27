@@ -848,7 +848,7 @@ class AttachmentsPaperOption extends PaperOption {
         $docclass = new HotCRPDocument($this->id, $this);
         foreach ($pt->prow ? $ov->documents($pt->prow) : [] as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
-            echo "<div id=\"removable_$oname\" class=\"foldo\"><table id=\"current_$oname\"><tr>",
+            echo "<div id=\"removable_$oname\" class=\"ug foldo\"><table id=\"current_$oname\"><tr>",
                 "<td class=\"nw\">", $doc->link_html(htmlspecialchars($doc->unique_filename)), "</td>",
                 '<td class="fx"><span class="sep"></span></td>',
                 "<td class=\"fx\"><a id=\"remover_$oname\" href=\"#remover_$oname\" onclick=\"return doremovedocument(this)\">Delete</a></td>";
