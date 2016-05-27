@@ -380,7 +380,7 @@ class PaperTable {
                         $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
                         if ($ov->option->has_attachments())
                             $name .= "/" . htmlspecialchars($d->unique_filename);
-                        $pdfs[] = documentDownload($d, empty($pdfs) ? "dlimg" : "dlimgsp", $name);
+                        $pdfs[] = documentDownload($d, "dlimg", $name);
                     }
                 }
 

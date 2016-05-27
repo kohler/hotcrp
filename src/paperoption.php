@@ -901,7 +901,7 @@ class AttachmentsPaperOption extends PaperOption {
         $docs = [];
         foreach ($ov->documents($row) as $d) {
             $name = htmlspecialchars($d->unique_filename);
-            $docs[] = documentDownload($d, count($docs) ? "sdlimgsp" : "sdlimg", $name, $no_size);
+            $docs[] = documentDownload($d, "sdlimg", $name, $no_size);
         }
         return join("<br />", $docs);
     }
