@@ -369,7 +369,7 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($data)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 $dname = $dtype == DTYPE_FINAL ? "Final version" : "Submission";
-                $pdfs[] = $dprefix . documentDownload($data, "dlimg", '<span class="pavfn">' . $dname . '</span>') . $stamps;
+                $pdfs[] = $dprefix . $data->link_html('<span class="pavfn">' . $dname . '</span>') . $stamps;
             }
 
             foreach ($prow ? $prow->options() : [] as $id => $ov)
@@ -380,7 +380,7 @@ class PaperTable {
                         $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
                         if ($ov->option->has_attachments())
                             $name .= "/" . htmlspecialchars($d->unique_filename);
-                        $pdfs[] = documentDownload($d, "dlimg", $name);
+                        $pdfs[] = $d->link_html($name);
                     }
                 }
 
@@ -478,7 +478,7 @@ class PaperTable {
             }
 
             echo "<table id='current_$inputid'><tr>",
-                "<td class='nw'>", documentDownload($doc), "</td><td>";
+                "<td class='nw'>", $doc->link_html(), "</td><td>";
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo "<span class='sep'></span>", $stamps;
             if ($has_cf && ($this->cf->status == CheckFormat::STATUS_ERROR || $this->cf->need_run))
@@ -1102,7 +1102,7 @@ class PaperTable {
             foreach ($optx->documents($prow) as $doc) {
                 $oname = "opt" . $o->id . "_" . $doc->paperStorageId;
                 echo "<div id='removable_$oname' class='foldo'><table id='current_$oname'><tr>",
-                    "<td class='nw'>", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
+                    "<td class='nw'>", $doc->link_html(htmlspecialchars($doc->unique_filename)), "</td>",
                     "<td class='fx'><span class='sep'></span></td>",
                     "<td class='fx'><a id='remover_$oname' href='#remover_$oname' onclick='return doremovedocument(this)'>Delete</a></td>";
                 if (($stamps = self::pdf_stamps_html($doc)))

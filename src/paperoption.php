@@ -685,13 +685,13 @@ class DocumentPaperOption extends PaperOption {
     function unparse_column_html(PaperList $pl, $row) {
         if (($v = $row->option($this->id)))
             foreach ($v->documents($row) as $d)
-                return documentDownload($d, "sdlimg", "", true);
+                return $d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
         return "";
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
         foreach ($ov->documents($row) as $d)
-            return [documentDownload($d, "sdlimg", htmlspecialchars($this->name)), true];
+            return [$d->link_html(htmlspecialchars($this->name), DocumentInfo::L_SMALL), true];
         return "";
     }
 }
@@ -849,7 +849,7 @@ class AttachmentsPaperOption extends PaperOption {
         foreach ($pt->prow ? $ov->documents($pt->prow) : [] as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
             echo "<div id=\"removable_$oname\" class=\"foldo\"><table id=\"current_$oname\"><tr>",
-                "<td class=\"nw\">", documentDownload($doc, "dlimg", htmlspecialchars($doc->unique_filename)), "</td>",
+                "<td class=\"nw\">", $doc->link_html(htmlspecialchars($doc->unique_filename)), "</td>",
                 '<td class="fx"><span class="sep"></span></td>',
                 "<td class=\"fx\"><a id=\"remover_$oname\" href=\"#remover_$oname\" onclick=\"return doremovedocument(this)\">Delete</a></td>";
             if (($stamps = PaperTable::pdf_stamps_html($doc)))
@@ -897,21 +897,19 @@ class AttachmentsPaperOption extends PaperOption {
         return $result;
     }
 
-    private function unparse_html($row, PaperOptionValue $ov, $no_size) {
+    private function unparse_html($row, PaperOptionValue $ov, $flags) {
         $docs = [];
-        foreach ($ov->documents($row) as $d) {
-            $name = htmlspecialchars($d->unique_filename);
-            $docs[] = documentDownload($d, "sdlimg", $name, $no_size);
-        }
+        foreach ($ov->documents($row) as $d)
+            $docs[] = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
         return join("<br />", $docs);
     }
 
     function unparse_column_html(PaperList $pl, $row) {
         $ov = $row->option($this->id);
-        return $ov ? $this->unparse_html($row, $ov, true) : "";
+        return $ov ? $this->unparse_html($row, $ov, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) : "";
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
-        return $this->unparse_html($row, $ov, false);
+        return $this->unparse_html($row, $ov, DocumentInfo::L_SMALL);
     }
 }

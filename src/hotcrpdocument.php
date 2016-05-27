@@ -59,7 +59,7 @@ class HotCRPDocument extends Filer {
             return null;
     }
 
-    public static function filename($doc) {
+    public static function filename($doc, $filters = null) {
         global $Opt;
         $fn = $Opt["downloadPrefix"];
         if ($doc->documentType == DTYPE_SUBMISSION)
@@ -270,10 +270,10 @@ class HotCRPDocument extends Filer {
         return $ok;
     }
 
-    static function url($doc) {
+    static function url($doc, $filters = null) {
         assert(property_exists($doc, "mimetype") && isset($doc->documentType));
         if ($doc->mimetype)
-            $f = "file=" . rawurlencode(self::filename($doc));
+            $f = "file=" . rawurlencode(self::filename($doc, $filters));
         else {
             $f = "p=$doc->paperId";
             if ($doc->documentType == DTYPE_FINAL)

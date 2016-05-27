@@ -308,40 +308,6 @@ function reviewType($paperId, $row, $long = 0) {
         return "";
 }
 
-function documentDownload($doc, $dlimg_class = "dlimg", $text = null, $no_size = false) {
-    global $Conf;
-    $p = HotCRPDocument::url($doc);
-    $finalsuffix = ($doc->documentType == DTYPE_FINAL ? "f" : "");
-    $sp = "&nbsp;";
-    $imgsize = ($dlimg_class[0] == "s" ? "" : "24");
-    if ($doc->mimetype == "application/postscript")
-        $x = "<a href=\"$p\" class=\"q\">" . Ht::img("postscript${finalsuffix}${imgsize}.png", "[PS]", $dlimg_class);
-    else if ($doc->mimetype == "application/pdf")
-        $x = "<a href=\"$p\" class=\"q\">" . Ht::img("pdf${finalsuffix}${imgsize}.png", "[PDF]", $dlimg_class);
-    else
-        $x = "<a href=\"$p\" class=\"q\">" . Ht::img("generic${finalsuffix}${imgsize}.png", "[Download]", $dlimg_class);
-    if ($text)
-        $x .= $sp . $text;
-    if (isset($doc->size) && $doc->size > 0 && !$no_size) {
-        $x .= "&nbsp;<span class=\"dlsize\">" . ($text ? "(" : "");
-        if ($doc->size > 921)
-            $x .= round($doc->size / 1024);
-        else
-            $x .= max(round($doc->size / 102.4), 1) / 10;
-        $x .= "kB" . ($text ? ")" : "") . "</span>";
-    }
-    return $x . "</a>";
-}
-
-function paperDownload($prow, $final = false) {
-    global $Conf, $Me;
-    // don't let PC download papers in progress
-    if ($prow->timeSubmitted <= 0 && !$Me->can_view_pdf($prow))
-        return "";
-    $doc = $prow->document($final ? DTYPE_FINAL : DTYPE_SUBMISSION);
-    return $doc ? documentDownload($doc) : "";
-}
-
 function topicTable($prow, $active = 0) {
     global $Conf;
     $paperId = ($prow ? $prow->paperId : -1);

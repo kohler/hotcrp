@@ -110,4 +110,41 @@ class DocumentInfo {
             $this->docclass = HotCRPDocument::get($this->documentType);
         return $this->docclass->upload($this, (object) ["paperId" => $this->paperId]);
     }
+
+    const L_SMALL = 1;
+    const L_NOSIZE = 2;
+    public function link_html($html, $flags = 0, $filters = null) {
+        global $Conf;
+        $p = HotCRPDocument::url($this, $filters);
+
+        $finalsuffix = "";
+        if ($this->documentType == DTYPE_FINAL
+            || ($this->documentType > 0 && ($o = PaperOption::find($this->documentType)) && $o->final))
+            $finalsuffix = "f";
+
+        if ($this->mimetype == "application/pdf")
+            list($img, $alt) = ["pdf", "[PDF]"];
+        else if ($this->mimetype == "application/postscript")
+            list($img, $alt) = ["postscript", "[PS]"];
+        else {
+            $img = "generic";
+            $m = Mimetype::lookup($this->mimetype, true);
+            $alt = "[" . ($m && $m->description ? : $this->mimetype) . "]";
+        }
+
+        $small = ($flags & self::L_SMALL) != 0;
+        $x = '<a href="' . $p . '" class="q">'
+            . Ht::img($img . $finalsuffix . ($small ? "" : "24") . ".png", $alt, $small ? "sdlimg" : "dlimg");
+        if ($html)
+            $x .= "&nbsp;" . $html;
+        if (isset($this->size) && $this->size > 0 && !($flags && self::L_NOSIZE)) {
+            $x .= "&nbsp;<span class=\"dlsize\">" . ($html ? "(" : "");
+            if ($this->size > 921)
+                $x .= round($this->size / 1024);
+            else
+                $x .= max(round($this->size / 102.4), 1) / 10;
+            $x .= "kB" . ($html ? ")" : "") . "</span>";
+        }
+        return $x . "</a>";
+    }
 }
