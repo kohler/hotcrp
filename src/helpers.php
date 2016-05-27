@@ -366,7 +366,7 @@ class SessionList {
     static private $active_listid = null;
     static private $active_list = null;
     static private $requested_list = false;
-    static private function decode_ids($ids) {
+    static public function decode_ids($ids) {
         if (($a = json_decode($ids)) !== null)
             return $a;
         $a = [];
@@ -380,7 +380,7 @@ class SessionList {
                 $a[] = (int) $p;
         return $a;
     }
-    static private function encode_ids($ids) {
+    static public function encode_ids($ids) {
         if (count($ids) < 30)
             return json_encode($ids);
         $a = array();

@@ -92,6 +92,13 @@ xassert_eqq(json_decode("[1-2]"), null);
 xassert_eqq(Json::decode("[1,2,3-4,5,6-10,11]"), null);
 xassert_eqq(json_decode("[1,2,3-4,5,6-10,11]"), null);
 
+// SessionList tests
+xassert_eqq(json_encode(SessionList::decode_ids("[1-2]")), "[1,2]");
+xassert_eqq(json_encode(SessionList::decode_ids("[1,2,3-4,5,6-10,11]")), "[1,2,3,4,5,6,7,8,9,10,11]");
+xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,2]))), "[1,2]");
+xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,2,3,4,5,6,7,8,9,10,11]))), "[1,2,3,4,5,6,7,8,9,10,11]");
+xassert_eqq(json_encode(SessionList::decode_ids(SessionList::encode_ids([1,3,5,7,9,10,11]))), "[1,3,5,7,9,10,11]");
+
 // obscure_time tests
 $t = $Conf->parse_time("1 Sep 2010 00:00:01");
 $t0 = $Conf->obscure_time($t);
