@@ -129,7 +129,6 @@ $Opt["passwordHmacKey"] = null;
 
 // PAPER STORAGE
 //
-//   disablePS       Set to true to disable PostScript format submissions.
 //   noPapers        Set to true to collect abstracts only, not papers.
 //   docstore        Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
@@ -143,8 +142,6 @@ $Opt["passwordHmacKey"] = null;
 //   s3_secret       Amazon AWS secret access key (used for S3).
 //   dbNoPapers      Set to true to not store papers in the database.
 //                   Requires filestore, S3 storage, or both.
-
-$Opt["disablePS"] = true;
 
 
 // TIMES AND DATES

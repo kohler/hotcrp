@@ -99,10 +99,8 @@ class HotCRPDocument extends Filer {
             return null;
         else if ($this->option)
             return $this->option->mimetypes();
-        else if (opt("disablePS"))
-            return [Mimetype::lookup(Mimetype::PDF)];
         else
-            return [Mimetype::lookup(Mimetype::PDF), Mimetype::lookup(Mimetype::PS)];
+            return [Mimetype::lookup(Mimetype::PDF)];
     }
 
     public static function s3_document() {

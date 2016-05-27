@@ -15,4 +15,3 @@ $Opt["contactEmail"] = "ekohler@hotcrp.lcdf.org";
 $Opt["sendEmail"] = false;
 $Opt["debugShowSensitiveEmail"] = true;
 $Opt["emailFrom"] = "you@example.com";
-$Opt["disablePS"] = true;
