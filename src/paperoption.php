@@ -83,6 +83,7 @@ class PaperOption {
     static private $jmap = [];
     static private $list = null;
     static private $nonfixed_list = null;
+    static private $docmap = [];
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -250,7 +251,7 @@ class PaperOption {
 
     static function invalidate_option_list() {
         self::$jlist = self::$list = self::$nonfixed_list = null;
-        self::$jmap = [];
+        self::$jmap = self::$docmap = [];
     }
 
     static function count_option_list() {
@@ -258,12 +259,16 @@ class PaperOption {
     }
 
     static function find_document($id) {
-        if ($id == DTYPE_SUBMISSION)
-            return new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0));
-        else if ($id == DTYPE_FINAL)
-            return new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0));
-        else
-            return self::find($id);
+        if (!array_key_exists($id, self::$docmap)) {
+            if ($id == DTYPE_SUBMISSION)
+                $o = new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0));
+            else if ($id == DTYPE_FINAL)
+                $o = new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0));
+            else
+                $o = self::find($id);
+            self::$docmap[$id] = $o;
+        }
+        return self::$docmap[$id];
     }
 
     static function search($name) {
@@ -640,7 +645,7 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function mimetypes() {
-        if ($this->type === "pdf")
+        if ($this->type === "pdf" || $this->id <= 0)
             return [Mimetype::lookup(".pdf")];
         else if ($this->type === "slides")
             return [Mimetype::lookup(".pdf"), Mimetype::lookup(".ppt"), Mimetype::lookup(".pptx")];

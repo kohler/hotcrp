@@ -54,6 +54,12 @@ class GetDocument_SearchAction extends SearchAction {
         if ($user->can_view_some_paper_option($opt) && (!$opt->final || $pl->any->final))
             $actions[] = self::make_option_action($opt);
     }
+    static function error_document(PaperOption $opt, PaperInfo $row) {
+        $x = (object) ["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $opt->name . " missing."];
+        if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
+            $x->mimetype = $mimetypes[0]->mimetype;
+        return $x;
+    }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
@@ -64,12 +70,8 @@ class GetDocument_SearchAction extends SearchAction {
                 Conf::msg_error(whyNotText($whyNot, "view"));
             else if (($doc = $row->document($opt->id)))
                 $downloads[] = $doc;
-            else {
-                $x = (object) ["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $opt->name . " missing."];
-                if ($opt->id <= 0)
-                    $x->mimetype = Mimetype::type(Mimetype::PDF);
-                $downloads[] = $x;
-            }
+            else
+                $downloads[] = self::error_document($opt, $row);
         if (count($downloads)) {
             session_write_close(); // it can take a while to generate the download
             if ($Conf->download_documents($downloads, true))
