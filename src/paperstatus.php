@@ -305,7 +305,7 @@ class PaperStatus {
             $this->uploaded_documents[] = $docj->docid = $newdocj->paperStorageId;
         } else {
             $docj->docid = 1;
-            $this->set_option_error_html($o, $upload ? $upload->error_html : "Empty document.");
+            $this->set_option_error_html($o, $newdocj ? $newdocj->error_html : "Empty document.");
         }
     }
 
