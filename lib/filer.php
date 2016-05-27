@@ -364,13 +364,15 @@ class Filer {
             return false;
         // calculate SHA-1, complain on mismatch
         $sha1 = sha1($content, true);
-        if (isset($doc->sha1) && self::binary_sha1($doc) !== $sha1) {
+        if (isset($doc->sha1) && $doc->sha1 !== false && $doc->sha1 !== ""
+            && self::binary_sha1($doc) !== $sha1) {
             set_error_html($doc, "Document claims checksum " . self::text_sha1($doc) . ", but has checksum " . bin2hex($sha1) . ".");
             return false;
         }
         $doc->sha1 = $sha1;
-        if (!isset($doc->size))
-            $doc->size = strlen($content);
+        if (isset($doc->size) && $doc->size && $doc->size != strlen($content))
+            set_error_html($doc, "Document claims length " . $doc->size . ", but has length " . strlen($content) . ".");
+        $doc->size = strlen($content);
         $content = null;
         // actually store
         if (($dbinfo = $this->dbstore($doc, $docinfo)))

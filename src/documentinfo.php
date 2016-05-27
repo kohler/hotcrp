@@ -11,7 +11,7 @@ class DocumentInfo {
     public $mimetype;
     public $mimetypeid;
     public $sha1 = false;
-    public $size = 0;
+    public $size;
     public $content = false;
     public $compression;
     public $filename;
