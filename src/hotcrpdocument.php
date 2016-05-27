@@ -269,7 +269,7 @@ class HotCRPDocument extends Filer {
             if ($this->dtype == DTYPE_SUBMISSION)
                 $doc->error_text = "Paper$num has not been uploaded.";
             else if ($this->dtype == DTYPE_FINAL)
-                $doc->error_text = "Paper{$num}’s final copy has not been uploaded.";
+                $doc->error_text = "Paper{$num}’s final version has not been uploaded.";
         }
 
         $doc->size = strlen($doc->content);
