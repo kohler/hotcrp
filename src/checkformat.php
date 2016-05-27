@@ -14,6 +14,7 @@ class CheckFormat implements FormatChecker {
 
     private $msgs = [];
     public $errf = [];
+    public $field_status = [];
     public $pages = 0;
     public $metadata_updates = [];
     public $status;
@@ -36,7 +37,7 @@ class CheckFormat implements FormatChecker {
 
     public function msg_fail($what) {
         if ($what)
-            $this->msgs[0][] = $what;
+            $this->msgs[] = ["fail", $what];
         return $this->status = self::STATUS_ERROR;
     }
 
@@ -44,7 +45,7 @@ class CheckFormat implements FormatChecker {
         if ($field)
             $this->errf[$field] = true;
         if ($what)
-            $this->msgs[1][] = $what;
+            $this->msgs[] = [$field, $what];
         if ($this->status == self::STATUS_OK)
             $this->status = self::STATUS_PROBLEM;
         return $this->status;
@@ -335,18 +336,29 @@ class CheckFormat implements FormatChecker {
         return $this->status;
     }
 
+    private function field_status($f) {
+        return get($this->field_status, $f, $f === "fail" ? CheckFormat::STATUS_ERROR : CheckFormat::STATUS_PROBLEM);
+    }
     public function errors() {
-        return get($this->msgs, 0, []);
+        $x = [];
+        foreach ($this->msgs as $m)
+            if ($this->field_status($m[0]) === CheckFormat::STATUS_ERROR)
+                $x[] = $m[1];
+        return $x;
     }
     public function warnings() {
-        return get($this->msgs, 1, []);
+        $x = [];
+        foreach ($this->msgs as $m)
+            if ($this->field_status($m[0]) === CheckFormat::STATUS_PROBLEM)
+                $x[] = $m[1];
+        return $x;
     }
     public function messages_html() {
         $t = [];
-        foreach (get($this->msgs, 0, []) as $m)
-            $t[] = Ht::xmsg("error", $m);
-        if (!empty($this->msgs[1])) {
-            $t[] = Ht::xmsg("warning", "This document may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $this->msgs[1]) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
+        if (($x = $this->errors()))
+            $t[] = Ht::xmsg("error", '<div>' . join('</div><div>', $x) . '</div>');
+        if (($x = $this->warnings())) {
+            $t[] = Ht::xmsg("warning", "This document may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $x) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
         } else if ($this->status == self::STATUS_OK)
             $t[] = Ht::xmsg("confirm", "Congratulations, this document seems to comply with the basic submission format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
         return $t;
