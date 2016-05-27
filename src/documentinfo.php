@@ -10,9 +10,9 @@ class DocumentInfo {
     public $timestamp;
     public $mimetype;
     public $mimetypeid;
-    public $sha1 = false;
+    public $sha1;
     public $size;
-    public $content = false;
+    public $content;
     public $compression;
     public $filename;
     public $unique_filename;
@@ -49,6 +49,8 @@ class DocumentInfo {
         $this->filterType = $this->filterType ? (int) $this->filterType : null;
         $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
         $this->docclass = HotCRPDocument::get($this->documentType);
+        if (isset($this->paper) && !isset($this->content))
+            $this->content = $this->paper;
 
         // in modern versions sha1 is set at storage time; before it wasn't
         if ($this->paperStorageId > 1 && $this->sha1 == ""
