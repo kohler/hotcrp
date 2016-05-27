@@ -117,7 +117,7 @@ class DocumentInfo {
 
     const L_SMALL = 1;
     const L_NOSIZE = 2;
-    public function link_html($html, $flags = 0, $filters = null) {
+    public function link_html($html = "", $flags = 0, $filters = null) {
         global $Conf;
         $p = HotCRPDocument::url($this, $filters);
 
