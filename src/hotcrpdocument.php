@@ -53,8 +53,10 @@ class HotCRPDocument extends Filer {
             return DTYPE_SUBMISSION;
         else if ($dname === "final")
             return DTYPE_FINAL;
+        else if (($o = PaperOption::match($dname)))
+            return $o->id;
         else
-            return PaperOption::match($dname);
+            return null;
     }
 
     public static function filename($doc) {
