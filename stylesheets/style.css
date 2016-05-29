@@ -2523,15 +2523,15 @@ body#offline .revcard {
 .rvg:last-child {
 	padding-bottom: 0;
 }
-.auname, .auaff, .auemail {
+.eauname, .eauaff, .eauemail {
 	margin: 2px 0.5em 2px 0;
 }
-.auname, .auaff {
+.eauname, .eauaff {
 	min-width: 268px;
 	width: 268px;
 	max-width: 600px;
 }
-.auemail {
+.eauemail {
 	min-width: 248px;
 	width: 248px;
 	max-width: 600px;

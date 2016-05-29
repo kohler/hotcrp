@@ -157,4 +157,16 @@ class DocumentInfo {
         }
         return $x . "</a>";
     }
+
+    public function npages() {
+        global $Conf;
+        if ((!$this->infoJson || !isset($this->infoJson->npages))
+            && $this->docclass->load_to_filestore($this)) {
+            $cf = new CheckFormat();
+            $spec = $cf->spec(DTYPE_SUBMISSION);
+            if (($bj = $cf->run_banal($this->filestore, $spec->banal_args)))
+                $Conf->update_document_metadata($doc, ["npages" => $cf->pages, "banal" => $bj]);
+        }
+        return $this->infoJson && isset($this->infoJson->npages) ? $this->infoJson->npages : false;
+    }
 }
