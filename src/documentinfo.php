@@ -171,11 +171,21 @@ class DocumentInfo {
         return $x . "</a>";
     }
 
+    public function metadata() {
+        if ($this->is_partial && !isset($this->infoJson) && !isset($this->infoJson_str)) {
+            $this->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId) ? : "";
+            $this->infoJson = json_decode($this->infoJson_str);
+        }
+        return $this->infoJson;
+    }
+
     public function update_metadata($delta) {
         if ($this->paperStorageId <= 1)
             return false;
         while (1) {
-            $old_str = isset($this->infoJson_str) ? $this->infoJson_str : null;
+            $old_str = null;
+            if (isset($this->infoJson_str) && $this->infoJson_str !== "")
+                $old_str = $this->infoJson_str;
             $metadata = null;
             if (is_string($old_str))
                 $metadata = json_decode($old_str);
@@ -202,8 +212,8 @@ class DocumentInfo {
     public function npages() {
         if ($this->mimetype && $this->mimetype != "application/pdf")
             return false;
-        else if (isset($this->infoJson) && isset($this->infoJson->npages))
-            return $this->infoJson->npages;
+        else if (($m = $this->metadata()) && isset($m->npages))
+            return $m->npages;
         else if ($this->docclass->load_to_filestore($this)) {
             $cf = new CheckFormat;
             $cf->clear();

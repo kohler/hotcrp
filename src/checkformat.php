@@ -251,8 +251,8 @@ class CheckFormat implements FormatChecker {
     public function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
         global $Conf, $Opt, $Now;
         $bj = null;
-        if ($doc->infoJson && isset($doc->infoJson->banal))
-            $bj = $doc->infoJson->banal;
+        if (($m = $doc->metadata()) && isset($m->banal))
+            $bj = $m->banal;
         $bj_ok = $bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == self::$banal_args;
         if (!$bj_ok || $bj->at >= $Now - 86400) {
             $cf->possible_run = true;
