@@ -127,7 +127,7 @@ class Mimetype {
             return self::$tmap[self::PPT];
         else if (substr($content, 0, 4) == "\xFF\xD8\xFF\xD8"
                  || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE0" && substr($content, 6, 6) == "JFIF\x00\x01")
-                 || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE1" && substr($content, 6, 6) == "Exif\x00\x01"))
+                 || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE1" && substr($content, 6, 6) == "Exif\x00\x00"))
             return self::$tmap[self::JPG];
         else if (substr($content, 0, 8) == "\x89PNG\r\n\x1A\x0A")
             return self::$tmap[self::PNG];
