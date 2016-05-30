@@ -39,6 +39,7 @@ class DocumentInfo {
         $this->paperId = (int) $this->paperId;
         $this->documentType = (int) $this->documentType;
         $this->timestamp = (int) $this->timestamp;
+        assert(!!$this->mimetype);
         $this->mimetypeid = (int) $this->mimetypeid;
         $this->size = (int) $this->size;
         if (is_string($this->infoJson)) {
