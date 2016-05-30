@@ -45,7 +45,7 @@ class CheckFormat implements FormatChecker {
         if ($field)
             $this->errf[$field] = true;
         if ($what)
-            $this->msgs[] = [$field, $what];
+            $this->msgs[] = [$field ? : "", $what];
         if ($this->status == self::STATUS_OK)
             $this->status = self::STATUS_PROBLEM;
         return $this->status;
