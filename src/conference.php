@@ -1448,35 +1448,6 @@ class Conf {
         return array_keys($ids);
     }
 
-    function update_document_metadata($doc, $delta) {
-        $paperStorageId = isset($doc->paperStorageId) ? $doc->paperStorageId : $doc->docid;
-        if ($paperStorageId <= 1)
-            return false;
-        while (1) {
-            $old_str = isset($doc->infoJson_str) ? $doc->infoJson_str : null;
-            $metadata = null;
-            if (is_string($old_str))
-                $metadata = json_decode($old_str);
-            $metadata = is_object($metadata) ? $metadata : (object) [];
-            foreach ($delta as $k => $v)
-                if ($v === null)
-                    unset($metadata->$v);
-                else
-                    $metadata->$k = $v;
-            $metadata_str = count(get_object_vars($metadata)) ? json_encode($metadata) : null;
-            if ($old_str === $metadata_str) // already done
-                return true;
-            $ijq = isset($old_str) ? "=" : " is ";
-            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $paperStorageId, $old_str);
-            if ($result->affected_rows != 0)
-                break;
-            $doc->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $paperStorageId);
-        }
-        $doc->infoJson_str = $metadata_str;
-        $doc->infoJson = $metadata;
-        return true;
-    }
-
     public function download_documents($docs, $attachment) {
         global $Opt;
         if (count($docs) == 1 && $docs[0]->paperStorageId <= 1) {

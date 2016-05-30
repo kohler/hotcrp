@@ -332,7 +332,7 @@ class CheckFormat implements FormatChecker {
             $this->check($this, $spec, $prow, $doc);
 
         if (!empty($this->metadata_updates))
-            $Conf->update_document_metadata($doc, $this->metadata_updates);
+            $doc->update_metadata($this->metadata_updates);
         return $this->status;
     }
 

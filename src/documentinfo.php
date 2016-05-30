@@ -69,13 +69,6 @@ class DocumentInfo {
         return $di;
     }
 
-    static public function find_by_id($id) {
-        $result = Dbl::qe("select * from PaperStorage where paperStorageId=?", $id);
-        $doc = self::fetch($result);
-        Dbl::free($result);
-        return $doc;
-    }
-
     static public function id_by_sha1($paperId, $dtype, $sha1) {
         if (($sha1 = Filer::binary_sha1($sha1)) !== false)
             return Dbl::fetch_ivalue("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $paperId, $dtype, $sha1) ? : false;
@@ -87,13 +80,14 @@ class DocumentInfo {
         if (is_string($upload) && $upload)
             $upload = $_FILES[$upload];
         if (!$upload || !is_array($upload) || !fileUploaded($upload)
-            || !isset($upload["tmp_name"]))
-            return new DocumentInfo(["error" => true, "error_html" => "Upload error. Please try again."]);
+            || !isset($upload["tmp_name"])
+            || ($content = file_get_contents($upload["tmp_name"])) === false
+            || $content === "")
+            return null;
         $args = [
             "paperId" => $paperId, "documentType" => $documentType,
-            "timestamp" => time(),
-            "mimetype" => Mimetype::type(get($upload, "type", "application/octet-stream")),
-            "content" => file_get_contents($upload["tmp_name"])
+            "content" => $content, "timestamp" => time(),
+            "mimetype" => Mimetype::type(get($upload, "type", "application/octet-stream"))
         ];
         if (isset($upload["name"]) && strlen($upload["name"]) <= 255
             && is_valid_utf8($upload["name"]))
@@ -177,15 +171,31 @@ class DocumentInfo {
         return $x . "</a>";
     }
 
-    public function npages() {
-        global $Conf;
-        if ((!$this->infoJson || !isset($this->infoJson->npages))
-            && $this->docclass->load_to_filestore($this)) {
-            $cf = new CheckFormat();
-            $spec = $cf->spec(DTYPE_SUBMISSION);
-            if (($bj = $cf->run_banal($this->filestore, $spec->banal_args)))
-                $Conf->update_document_metadata($doc, ["npages" => $cf->pages, "banal" => $bj]);
+    function update_metadata($delta) {
+        if ($this->paperStorageId <= 1)
+            return false;
+        while (1) {
+            $old_str = isset($this->infoJson_str) ? $this->infoJson_str : null;
+            $metadata = null;
+            if (is_string($old_str))
+                $metadata = json_decode($old_str);
+            $metadata = is_object($metadata) ? $metadata : (object) [];
+            foreach ($delta as $k => $v)
+                if ($v === null)
+                    unset($metadata->$v);
+                else
+                    $metadata->$k = $v;
+            $metadata_str = count(get_object_vars($metadata)) ? json_encode($metadata) : null;
+            if ($old_str === $metadata_str) // already done
+                return true;
+            $ijq = isset($old_str) ? "=" : " is ";
+            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $this->paperStorageId, $old_str);
+            if ($result->affected_rows != 0)
+                break;
+            $this->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId);
         }
-        return $this->infoJson && isset($this->infoJson->npages) ? $this->infoJson->npages : false;
+        $this->infoJson_str = $metadata_str;
+        $this->infoJson = $metadata;
+        return true;
     }
 }
