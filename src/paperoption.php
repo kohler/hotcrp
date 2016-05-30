@@ -666,7 +666,7 @@ class DocumentPaperOption extends PaperOption {
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         if ($qreq->_FILES["opt$this->id"])
-            return DocumentInfo::make_file_upload($qreq->_FILES["opt$this->id"]);
+            return DocumentInfo::make_file_upload($pj->pid, $this->id, $qreq->_FILES["opt$this->id"]);
         else if ($qreq["remove_opt$this->id"])
             return null;
         else
@@ -871,7 +871,7 @@ class AttachmentsPaperOption extends PaperOption {
         $opfx = "opt{$this->id}_";
         foreach ($qreq->_FILES ? : [] as $k => $v)
             if (str_starts_with($k, $opfx))
-                $attachments[] = DocumentInfo::make_file_upload($v);
+                $attachments[] = DocumentInfo::make_file_upload($pj->pid, $this->id, $v);
         for ($i = 0; $i < count($attachments); ++$i)
             if (isset($attachments[$i]->docid)
                 && $qreq["remove_opt{$this->id}_{$attachments[$i]->docid}"]) {
