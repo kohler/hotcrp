@@ -189,11 +189,12 @@ class ZipDocument {
         if (count($this->filestore) > 0 && get($Opt, "docstore")
             && get($Opt, "docstoreAccelRedirect")) {
             // calculate sha1 for zipfile contents
-            usort($this->filestore, function ($a, $b) {
+            $sorted_filestore = $this->filestore;
+            usort($sorted_filestore, function ($a, $b) {
                 return strcmp($a->filename, $b->filename);
             });
-            $sha1_input = count($this->filestore) . "\n";
-            foreach ($this->filestore as $f)
+            $sha1_input = count($sorted_filestore) . "\n";
+            foreach ($sorted_filestore as $f)
                 $sha1_input .= $f->filename . "\n" . $f->sha1 . "\n";
             if (count($this->warnings))
                 $sha1_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
@@ -595,7 +596,7 @@ class Filer {
         for ($i = 0; $i < count($mimetypes); ++$i)
             if ($mimetypes[$i]->mimetype === $doc->mimetype)
                 break;
-        if ($i >= count($mimetypes) && count($mimetypes)) {
+        if ($i >= count($mimetypes) && count($mimetypes) && !$doc->filterType) {
             $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
             $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
             set_error_html($doc, $e);

@@ -150,3 +150,4 @@ Mimetype::make(Mimetype::PNG, "image/png", ".png", "PNG");
 Mimetype::make_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
 Mimetype::make_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
 Mimetype::make_synonym("application/x-mspowerpoint", "application/vnd.ms-powerpoint");
+Mimetype::make_synonym(".jpeg", "image/jpeg");
