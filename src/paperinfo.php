@@ -651,8 +651,10 @@ class PaperInfo {
 
         if ((($dtype == DTYPE_SUBMISSION && $did == $this->paperStorageId && $this->finalPaperStorageId <= 0)
              || ($dtype == DTYPE_FINAL && $did == $this->finalPaperStorageId))
-            && !$full)
-            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => get($this, "mimetype"), "sha1" => get($this, "sha1"), "size" => get($this, "size"), "is_partial" => true]);
+            && !$full) {
+            $infoJson = get($this, $dtype == DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson");
+            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => get($this, "mimetype"), "sha1" => get($this, "sha1"), "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true]);
+        }
 
         if ($this->_document_array === null) {
             $x = [];

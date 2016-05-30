@@ -198,4 +198,21 @@ class DocumentInfo {
         $this->infoJson = $metadata;
         return true;
     }
+
+    public function npages() {
+        if ($this->mimetype != "application/pdf")
+            return false;
+        else if (isset($this->infoJson) && isset($this->infoJson->npages))
+            return $this->infoJson->npages;
+        else if ($this->docclass->load_to_filestore($this)) {
+            $cf = new CheckFormat;
+            $cf->clear();
+            $bj = $cf->run_banal($this->filestore);
+            if ($bj && is_object($bj) && isset($bj->pages)) {
+                $this->update_metadata(["npages" => count($bj->pages), "banal" => $bj]);
+                return count($bj->pages);
+            }
+        }
+        return null;
+    }
 }

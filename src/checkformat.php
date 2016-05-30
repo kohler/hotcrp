@@ -226,7 +226,7 @@ class CheckFormat implements FormatChecker {
         return $fspec;
     }
 
-    private function clear() {
+    public function clear() {
         $this->errf = $this->metadata_updates = [];
         $this->status = self::STATUS_OK;
         $this->need_run = $this->possible_run = false;
