@@ -83,6 +83,24 @@ class DocumentInfo {
             return false;
     }
 
+    static public function make_file_upload($upload) {
+        if (is_string($upload) && $upload)
+            $upload = $_FILES[$upload];
+        if (!$upload || !is_array($upload) || !fileUploaded($upload)
+            || !isset($upload["tmp_name"]))
+            return new DocumentInfo(["error" => true, "error_html" => "Upload error. Please try again."]);
+        $args = [
+            "timestamp" => time(),
+            "mimetype" => Mimetype::type(get($upload, "type", "application/octet-stream")),
+            "content" => file_get_contents($upload["tmp_name"])
+        ];
+        if (isset($upload["name"]) && strlen($upload["name"]) <= 255
+            && is_valid_utf8($upload["name"]))
+            $args["filename"] = $upload["name"];
+        return new DocumentInfo($args);
+    }
+
+
     public function filename($filters = null) {
         return HotCRPDocument::filename($this, $filters);
     }

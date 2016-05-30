@@ -265,7 +265,7 @@ class PaperStatus {
             $oldj = $this->document_to_json($o->id, $docid);
             if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
                 $docid = null;
-        } else if (!$docid && $this->paperid != -1 && get($docj, "sha1")) {
+        } else if ($this->paperid != -1 && get($docj, "sha1")) {
             $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, $docj->sha1);
             if (($row = edb_row($result)))
                 $docid = $row[0];
