@@ -200,7 +200,7 @@ class DocumentInfo {
     }
 
     public function npages() {
-        if ($this->mimetype != "application/pdf")
+        if ($this->mimetype && $this->mimetype != "application/pdf")
             return false;
         else if (isset($this->infoJson) && isset($this->infoJson->npages))
             return $this->infoJson->npages;
