@@ -442,7 +442,7 @@ class Filer {
 
     // filestore functions
     function filestore_check($doc) {
-        $fsinfo = self::_filestore($doc);
+        $fsinfo = $this->_filestore($doc);
         return $fsinfo && is_readable($fsinfo[1]);
     }
     static function prepare_filestore($parent, $path) {
@@ -636,8 +636,10 @@ class Filer {
         return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
     private function _filestore($doc) {
-        if (!($fsinfo = $this->filestore_pattern($doc)) || get($doc, "error"))
+        if (!($fsinfo = $this->filestore_pattern($doc)))
             return $fsinfo;
+        if (get($doc, "error"))
+            return null;
 
         list($fdir, $fpath) = $fsinfo;
         $sha1 = false;
