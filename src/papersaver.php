@@ -15,6 +15,8 @@ class PaperSaver {
         });
     }
     static public function apply_all(Contact $user, $pj, $opj, $qreq, $action) {
+        if (!isset($pj->pid))
+            $pj->pid = -1;
         foreach (self::$list as $fn)
             $fn[2]->apply($user, $pj, $opj, $qreq, $action);
     }

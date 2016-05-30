@@ -742,12 +742,10 @@ class PaperStatus {
         global $Conf, $Now;
         assert(!$this->hide_docids);
 
-        $paperid = null;
-        if (isset($pj->pid) && is_int($pj->pid) && $pj->pid > 0)
-            $paperid = $pj->pid;
-        else if (!isset($pj->pid) && isset($pj->id) && is_int($pj->id) && $pj->id > 0)
-            $paperid = $pj->id;
-        else if (isset($pj->pid) || isset($pj->id)) {
+        $paperid = get($pj, "pid", get($pj, "id", null));
+        if ($paperid !== null && is_int($paperid) && $paperid <= 0)
+            $paperid = null;
+        if ($paperid !== null && !is_int($paperid)) {
             $key = isset($pj->pid) ? "pid" : "id";
             $this->set_error_html($key, "Format error [$key]");
             return false;
