@@ -26,9 +26,14 @@ class CheckFormat implements FormatChecker {
     public $possible_run = false;
     private $dt_specs = [];
     private $checkers = [];
+    static private $banal_args;
 
     public function __construct($allow_run = self::RUN_YES) {
         $this->allow_run = $allow_run;
+        if (self::$banal_args === null) {
+            $z = opt("banalZoom");
+            self::$banal_args = $z ? "-zoom=$z" : "";
+        }
     }
 
     public function has_error($field = null) {
@@ -51,13 +56,13 @@ class CheckFormat implements FormatChecker {
         return $this->status;
     }
 
-    private function run_banal($filename, $args) {
+    public function run_banal($filename) {
         global $Opt;
         if (isset($Opt["pdftohtml"]))
             putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
         $banal_run = "perl src/banal -no_app -json ";
-        if ($args)
-            $banal_run .= $args . " ";
+        if (self::$banal_args)
+            $banal_run .= self::$banal_args . " ";
         $pipes = null;
         $banal_proc = proc_open($banal_run . escapeshellarg($filename),
                                 [1 => ["pipe", "w"], 2 => ["pipe", "w"]], $pipes);
@@ -232,7 +237,7 @@ class CheckFormat implements FormatChecker {
         if (is_string($spec))
             $spec = new FormatSpec($spec);
         $this->clear();
-        $bj = $this->run_banal($filename, $spec->banal_args);
+        $bj = $this->run_banal($filename);
         $this->check_banal_json($bj, $spec);
         return $this->status;
     }
@@ -248,7 +253,7 @@ class CheckFormat implements FormatChecker {
         $bj = null;
         if ($doc->infoJson && isset($doc->infoJson->banal))
             $bj = $doc->infoJson->banal;
-        $bj_ok = $bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == $spec->banal_args;
+        $bj_ok = $bj && $bj->at >= @filemtime("src/banal") && get($bj, "args") == self::$banal_args;
         if (!$bj_ok || $bj->at >= $Now - 86400) {
             $cf->possible_run = true;
             if ($cf->allow_run == CheckFormat::RUN_YES
@@ -269,7 +274,7 @@ class CheckFormat implements FormatChecker {
             if ($limit > 0)
                 Dbl::q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
-            $bj = $cf->run_banal($doc->filestore, $spec->banal_args);
+            $bj = $cf->run_banal($doc->filestore);
             if ($bj && is_object($bj) && isset($bj->pages)) {
                 $cf->metadata_updates["npages"] = count($bj->pages);
                 $cf->metadata_updates["banal"] = $bj;

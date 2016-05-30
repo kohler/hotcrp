@@ -171,7 +171,7 @@ class DocumentInfo {
         return $x . "</a>";
     }
 
-    function update_metadata($delta) {
+    public function update_metadata($delta) {
         if ($this->paperStorageId <= 1)
             return false;
         while (1) {

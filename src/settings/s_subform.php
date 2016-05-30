@@ -28,31 +28,14 @@ class BanalSettings {
         $sv->echo_entry_row("sub_banal_columns$suffix", "Columns");
         echo "</tbody></table></td></tr></table>";
     }
-    static private function old_zoomarg() {
-        global $Conf;
-        $cfs = new FormatSpec($Conf->setting_data("sub_banal"));
-        return $cfs->banal_args;
-    }
     static private function check_banal($sv) {
         global $ConfSitePATH;
         $cf = new CheckFormat;
-
-        // Perhaps we have an old pdftohtml with a bad -zoom.
-        $zoomarg = "";
-        for ($tries = 0; $tries < 2; ++$tries) {
-            $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14" . $zoomarg);
-            if ($s1 == 1 && $cf->has_error("papersize") && $tries == 0)
-                $zoomarg = ">-zoom=1";
-            else if ($s1 == 2 || $tries == 0)
-                break;
-            else
-                $zoomarg = "";
-        }
-
-        // verify that banal works
         $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodyleading"];
+        $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
         $e1 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
-        $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15" . $zoomarg);
+        $e1_papersize = $cf->has_error("papersize");
+        $s2 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "a4;1;;3inx3in;14;15");
         $e2 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
         $want_e2 = join(",", $interesting_keys);
         if ($s1 != 2 || $e1 != "none" || $s2 != 1 || $e2 != $want_e2) {
@@ -64,9 +47,9 @@ class BanalSettings {
                 $errors .= "<tr><td>Stderr:&nbsp;</td><td><pre class=\"email\">" . htmlspecialchars($cf->banal_stderr) . "</pre></td></tr>";
             $errors .= "<tr><td>Check:&nbsp;</td><td>" . join("<br />\n", array_map(function ($x) { return $x[1]; }, $cf->msgs)) . "</td></tr>";
             $sv->set_warning(null, "Running the automated paper checker on a sample PDF file produced unexpected results. You should disable it for now. <div id=\"foldbanal_warning\" class=\"foldc\">" . foldbutton("banal_warning", 0, "Checker output") . $errors . "</table></div></div>");
+            if ($s1 == 1 && $e1_papersize)
+                $sv->set_warning(null, "(Try setting <code>\$Opt[\"banalZoom\"]</code> to 1.)");
         }
-
-        return $zoomarg;
     }
     static public function parse($suffix, $sv, $check) {
         global $Conf, $ConfSitePATH;
@@ -173,7 +156,8 @@ class BanalSettings {
         }
 
         if ($sv->error_count() == $old_error_count) {
-            $cfs->banal_args = $check ? self::check_banal($sv) : self::old_zoomarg();
+            if ($check)
+                self::check_banal($sv);
             $sv->save("sub_banal_data$suffix", $cfs->unparse());
             if ($suffix === "" && !$sv->oldv("sub_banal_m1")
                 && !isset($sv->req["has_sub_banal_m1"]))

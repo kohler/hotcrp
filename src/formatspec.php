@@ -10,7 +10,6 @@ class FormatSpec {
     public $textblock;      // [WIDTH, HEIGHT]
     public $bodyfontsize;   // [MIN, MAX, GRACE]
     public $bodyleading;    // [MIN, MAX, GRACE]
-    public $banal_args = false;
     public $checkers;
     private $_is_banal_empty;
 
@@ -25,11 +24,8 @@ class FormatSpec {
             foreach ($str as $k => $v)
                 $this->$k = $v;
         } else {
-            if (($gt = strpos($str, ">")) !== false) {
-                $this->banal_args = substr($str, $gt + 1);
+            if (($gt = strpos($str, ">")) !== false)
                 $str = substr($str, 0, $gt);
-            }
-
             $x = explode(";", $str);
             $this->papersize = [];
             foreach (explode(" OR ", get($x, 0, "")) as $d)
@@ -87,7 +83,7 @@ class FormatSpec {
                 $x[$i] = $this->unparse_key($k);
             while (!empty($x) && !$x[count($x) - 1])
                 array_pop($x);
-            return join(";", $x) . ($this->banal_args ? ">" . $this->banal_args : "");
+            return join(";", $x);
         }
     }
 
