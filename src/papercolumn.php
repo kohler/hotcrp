@@ -356,7 +356,7 @@ class AuthorsPaperColumn extends PaperColumn {
                     $name = $initial . substr($name, strlen($first));
                 $auy[] = $name;
                 if ($affmap[$i] !== null) {
-                    $out[] = $this->aufull ? commajoin($auy) : join(", ", $auy);
+                    $out[] = join(", ", $auy);
                     $affout[] = Text::highlight($affmap[$i], $highlight, $didhl);
                     $any_affhl = $any_affhl || $didhl;
                     $auy = [];
@@ -367,10 +367,7 @@ class AuthorsPaperColumn extends PaperColumn {
                 foreach ($out as $i => &$x)
                     $x .= ' <span class="auaff">(' . $affout[$i] . ')</span>';
             }
-            if ($this->aufull)
-                return commajoin($out);
-            else
-                return join($any_affhl ? "; " : ", ", $out);
+            return join($any_affhl || $this->aufull ? "; " : ", ", $out);
         }
     }
     public function text($pl, $row) {
