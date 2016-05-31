@@ -914,7 +914,7 @@ class PaperList {
         }
         // authorship requires special handling
         if ($rstate->has_openau || $rstate->has_anonau) {
-            $classes[] = "fold1" . ($this->is_folded("au") ? "c" : "o");
+            $classes[] = "fold1" . ($this->is_folded("authors") ? "c" : "o");
             $jsmap[] = "\"au\":1,\"aufull\":4";
         }
         if ($rstate->has_anonau) {
