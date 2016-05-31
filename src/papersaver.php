@@ -70,6 +70,24 @@ class Default_PaperSaver extends PaperSaver {
                 $x = ($m[1] == "aff" ? "affiliation" : $m[1]);
                 $au->$x = $v;
             }
+        // some people are idiots
+        foreach ($authors as $au)
+            if (isset($au->affiliation) && validate_email($au->affiliation)) {
+                $aff = $au->affiliation;
+                if (!isset($au->email)) {
+                    $au->email = $aff;
+                    unset($au->affiliation);
+                } else if (!validate_email($au->email)) {
+                    if (!isset($au->name) || strpos($au->name, " ") === false) {
+                        $au->name = trim(get($au, "name", "") . " " . $au->email);
+                        $au->email = $aff;
+                        unset($au->affiliation);
+                    } else {
+                        $au->affiliation = $au->email;
+                        $au->email = $aff;
+                    }
+                }
+            }
         if (!empty($authors)) {
             ksort($authors, SORT_NUMERIC);
             $pj->authors = array_values($authors);
