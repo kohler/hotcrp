@@ -739,7 +739,10 @@ class ReviewForm {
             $diff_view_score = max($diff_view_score, VIEWSCORE_AUTHOR);
             $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
             if (!$rrow || !$rrow->reviewOrdinal) {
-                $result = $Conf->qe("lock tables PaperReview write");
+                $table_suffix = "";
+                if ($Conf->au_seerev == Conf::AUSEEREV_TAGS)
+                    $table_suffix = ", PaperTag read";
+                $result = $Conf->qe("lock tables PaperReview write" . $table_suffix);
                 if (!$result)
                     return $result;
                 $locked = true;
