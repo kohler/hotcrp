@@ -691,7 +691,7 @@ class ReviewForm {
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
         global $Conf, $Opt;
-        $newsubmit = @$req["ready"] && !@$req["unready"]
+        $newsubmit = get($req, "ready") && !get($req, "unready")
             && (!$rrow || !$rrow->reviewSubmitted);
         $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
         $admin = $contact->allow_administer($prow);
@@ -757,7 +757,7 @@ class ReviewForm {
         $usedReviewToken = $contact->review_token_cid($prow, $rrow);
 
         // blind? reviewer type? edit version?
-        $reviewBlind = $Conf->is_review_blind(!!@$req["blind"]);
+        $reviewBlind = $Conf->is_review_blind(!!get($req, "blind"));
         if ($rrow && $reviewBlind != $rrow->reviewBlind)
             $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
         $q[] = "reviewBlind=" . ($reviewBlind ? 1 : 0);
@@ -772,10 +772,10 @@ class ReviewForm {
         if ($diff_view_score > VIEWSCORE_FALSE && $Conf->sversion >= 98)
             $q[] = "reviewWordCount=" . $wc;
         if (isset($req["reviewFormat"]) && $Conf->sversion >= 104
-            && @$Opt["formatInfo"]) {
+            && opt("formatInfo")) {
             $fmt = null;
             foreach ($Opt["formatInfo"] as $k => $f)
-                if (@$f["name"] && strcasecmp($f["name"], $req["reviewFormat"]) == 0)
+                if (get($f, "name") && strcasecmp($f["name"], $req["reviewFormat"]) == 0)
                     $fmt = (int) $k;
             if (!$fmt && $req["reviewFormat"]
                 && preg_match('/\A(?:plain\s*)?(?:text)?\z/i', $f["reviewFormat"]))
@@ -1096,13 +1096,13 @@ $blind\n";
         global $Conf;
         assert($prow !== null && $rrow !== null);
 
-        $rrow_contactId = @$rrow->reviewContactId ? : (@$rrow->contactId ? : 0);
+        $rrow_contactId = get($rrow, "reviewContactId") ? : (get($rrow, "contactId") ? : 0);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";
         $n = Conf::$gShortName . " Review";
-        if (@$rrow->reviewOrdinal)
+        if (get($rrow, "reviewOrdinal"))
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= center_word_wrap($n);
         if ($rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow)) {
@@ -1336,7 +1336,7 @@ $blind\n";
         }
 
         $confirm = array();
-        $single = @$tf["singlePaper"];
+        $single = get($tf, "singlePaper");
         if (isset($tf["confirm"]) && count($tf["confirm"]) > 0)
             $confirm = array_merge($confirm, $tf["confirm"]);
         if (isset($tf["newlySubmitted"]) && count($tf["newlySubmitted"]) > 0)

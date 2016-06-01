@@ -144,7 +144,7 @@ function setTagIndexes() {
     else if (isset($_REQUEST["setvote"]))
         $Conf->confirmMsg("Votes saved.");
     else
-        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for &ldquo;order:$tag&rdquo;</a>.");
+        $Conf->confirmMsg("Ranking saved.  To view it, <a href='" . hoturl("search", "q=order:" . urlencode($tag)) . "'>search for “order:{$tag}”</a>.");
 }
 if ((isset($_REQUEST["setvote"]) || isset($_REQUEST["setrank"]))
     && $Me->is_reviewer() && check_post())
