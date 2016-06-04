@@ -1353,12 +1353,14 @@ class Conf {
     }
 
     function is_review_blind($rrow) {
+        $rb = $this->settings["rev_blind"];
+        if ($rb == self::BLIND_ALWAYS)
+            return true;
+        else if ($rb != self::BLIND_OPTIONAL)
+            return false;
         if (is_object($rrow))
             $rrow = (bool) $rrow->reviewBlind;
-        $rb = $this->settings["rev_blind"];
-        return $rb == self::BLIND_ALWAYS
-            || ($rb == self::BLIND_OPTIONAL
-                && ($rrow === null || $rrow));
+        return $rrow === null || $rrow;
     }
     function review_blindness() {
         return $this->settings["rev_blind"];
