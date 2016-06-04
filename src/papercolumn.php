@@ -67,6 +67,9 @@ class PaperColumn extends Column {
     public function prepare(PaperList $pl, $visible) {
         return true;
     }
+    public function realize(PaperList $pl) {
+        return $this;
+    }
     public function annotate_field_js(PaperList $pl, &$fjs) {
     }
 
@@ -1367,6 +1370,8 @@ class FormulaPaperColumn extends PaperColumn {
     public $formula;
     private $formula_function;
     public $statistics;
+    private $results;
+    private $any_real;
     public function __construct($name, $formula) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "formula_compare"));
@@ -1419,8 +1424,12 @@ class FormulaPaperColumn extends PaperColumn {
         $this->formula_function = $this->formula->compile_function($pl->contact);
         if ($visible)
             $this->formula->add_query_options($pl->qopts, $pl->contact);
-        $this->statistics = new ScoreInfo;
         return true;
+    }
+    public function realize(PaperList $pl) {
+        $f = clone $this;
+        $f->statistics = new ScoreInfo;
+        return $f;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         $formulaf = $this->formula_function;
@@ -1445,19 +1454,40 @@ class FormulaPaperColumn extends PaperColumn {
         else
             return htmlspecialchars($x);
     }
+    public function analyze($pl, &$rows) {
+        $formulaf = $this->formula_function;
+        $this->results = [];
+        $this->any_real = false;
+        $isreal = $this->formula->result_format_is_real();
+        foreach ($rows as $row) {
+            $s = $this->results[$row->paperId] = $formulaf($row, null, $pl->contact);
+            if ($row->conflictType > 0 && $pl->contact->allow_administer($row))
+                $s = $formulaf($row, null, $pl->contact, null, true);
+            if ($isreal && !$this->any_real && is_float($s)
+                && round($s * 100) % 100 != 0)
+                $this->any_real = true;
+        }
+        assert(!!$this->statistics);
+    }
+    private function unparse($s, $user) {
+        $t = $this->formula->unparse_html($s, $user);
+        if ($this->any_real && is_float($t))
+            $t = sprintf("%.2f", $t);
+        return $t;
+    }
     public function content($pl, $row, $rowidx) {
         $formulaf = $this->formula_function;
-        $s = $formulaf($row, null, $pl->contact);
-        $t = $this->formula->unparse_html($s, $pl->contact);
+        $t = $this->unparse($this->results[$row->paperId], $pl->contact);
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
             $ss = $formulaf($row, null, $pl->contact, null, true);
-            $tt = $this->formula->unparse_html($ss, $pl->contact);
+            $tt = $this->unparse($ss, $pl->contact);
             if ($tt !== $t) {
                 $this->statistics->add($ss);
                 return '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
             }
         }
-        $this->statistics->add($s);
+        // XXX conflict override
+        $this->statistics->add($this->results[$row->paperId]);
         return $t;
     }
     public function text($pl, $row) {

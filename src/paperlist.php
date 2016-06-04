@@ -1066,7 +1066,7 @@ class PaperList {
                     && ($field = PaperColumn::lookup($sorter->type))
                     && $field->prepare($this, PaperColumn::PREP_SORT)
                     && $field->comparator)
-                    $sorter->field = $field;
+                    $sorter->field = $field->realize($this);
                 else if ($sorter->type) {
                     if ($this->contact->can_view_tags(null)
                         && ($tagger = new Tagger)
@@ -1089,7 +1089,7 @@ class PaperList {
         else if ($this->sorters[0]->type
                  && ($c = PaperColumn::lookup($this->sorters[0]->type))
                  && $c->prepare($this, PaperColumn::PREP_SORT))
-            $this->sorters[0]->field = $c;
+            $this->sorters[0]->field = $c->realize($this);
         else
             $this->sorters[0]->field = $this->default_sort_column;
         $this->sorters[0]->type = $this->sorters[0]->field->name;
@@ -1111,7 +1111,7 @@ class PaperList {
                 $fdef->is_folded = $this->is_folded($fdef);
                 $fdef->has_content = false;
                 if ($fdef->prepare($this, $fdef->is_folded ? 0 : 1))
-                    $field_list2[] = $fdef;
+                    $field_list2[] = $fdef->realize($this);
             }
         assert(empty($this->row_attr));
         return $field_list2;

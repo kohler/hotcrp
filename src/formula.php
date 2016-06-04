@@ -1435,6 +1435,17 @@ class Formula {
     public function result_format() {
         return $this->check() ? $this->_format : null;
     }
+    public function result_format_is_real() {
+        if (!$this->check())
+            return null;
+        else if ($this->_format instanceof ReviewField)
+            return !$this->_format->option_letter;
+        else if ($this->_format === Fexpr::FREVIEWER || $this->_format === Fexpr::FBOOL
+                 || $this->_format === Fexpr::FPREFEXPERTISE)
+            return false;
+        else
+            return true;
+    }
 
     public function can_combine() {
         return $this->check() && $this->_parse->can_combine();
