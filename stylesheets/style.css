@@ -504,19 +504,6 @@ span.impending a {
 }
 
 /* buttons */
-/* All input styles starting with "hb" are treated specially by script. */
-a.button, input.hb {
-	background: #ffffbb;
-	border-top: 1px solid #eeee66;
-	border-left: 2px solid #eeee66;
-	border-bottom: 1px solid #999966;
-	border-right: 2px solid #999966;
-	white-space: nowrap;
-}
-a.button {
-	text-decoration: none;
-	color: black;
-}
 input.bsm, button.bsm, select.bsm {
 	font-size: smaller;
 }
@@ -528,48 +515,6 @@ input.alert, button.alert {
 }
 input.bb, button.bb {
 	font-weight: bold;
-}
-input.hb.alert {
-	font-weight: bold;
-	background: #ffaaaa;
-	border-top: 1px solid #ee6666;
-	border-left: 2px solid #ee6666;
-	border-bottom: 1px solid #996666;
-	border-right: 2px solid #996666;
-}
-a.button_small {
-	font-size: smaller;
-	background: #ffffbb;
-	border-top: 1px solid #eeee66;
-	border-left: 2px solid #eeee66;
-	border-bottom: 1px solid #999966;
-	border-right: 2px solid #999966;
-	white-space: nowrap;
-}
-a.button, a.button_small {
-	padding: 1px 0.25em;
-	text-decoration: none;
-	color: black;
-}
-a.button_small.alert {
-	font-size: smaller;
-	font-weight: bold;
-	background: #ffaaaa;
-	border-top: 1px solid #ee6666;
-	border-left: 2px solid #ee6666;
-	border-bottom: 1px solid #996666;
-	border-right: 2px solid #996666;
-	white-space: nowrap;
-}
-a.button_small.on, a.button.on {
-	background: #ddddaa;
-	border-top: 1px solid #999966;
-	border-left: 2px solid #999966;
-	border-bottom: 1px solid #dddd66;
-	border-right: 2px solid #dddd66;
-}
-a.button_small {
-	vertical-align: 1px;
 }
 span.expander {
 	display: inline-block;
@@ -626,10 +571,16 @@ span.expander > span.in0 {
 	padding: 2px 6px 3px;
 	font-family: inherit;
 	font-size: 10pt;
+	white-space: nowrap;
+	text-indent: 0;
 }
-.btn:hover, .btn:active {
+.btn:hover {
 	border: 1px solid #cccccc;
 	background-image: linear-gradient(#eee, #ddd);
+}
+.btn:active {
+	border: 1px solid #aaaaaa;
+	background-image: linear-gradient(#c3c3c3, #d3d3d3);
 }
 .btn.btn-default {
 	border: 1px solid #6b73b5;

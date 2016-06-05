@@ -91,7 +91,7 @@ if (isset($_REQUEST["uploadForm"])
     if (!($req = $rf->parseTextForm($tf)))
         /* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
-        $rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.<br /><a class='button_small' href='" . hoturl("review", "p=" . $req['paperId']) . "'>Review paper #" . $req['paperId'] . "</a> <a class='button_small' href='" . hoturl("offline") . "'>General review upload site</a>");
+        $rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.");
     else if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
         $rf->tfError($tf, true, whyNotText($whyNot, "review"));
     else {
