@@ -821,7 +821,7 @@ function parse_value($sv, $si) {
         $v = trim($v);
         if ($v === "" && $si->optional)
             return "";
-        else if (validate_email($v) || $v === $v_active)
+        else if (validate_email($v) || $v === $sv->oldv($si->name, null))
             return $v;
         $err = "Invalid email.";
     } else if ($si->type === "urlstring") {
