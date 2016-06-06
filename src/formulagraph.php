@@ -152,7 +152,7 @@ class FormulaGraph {
         if (!$s && $this->reviewer_color && $Me->can_view_reviewer_tags($prow))
             return self::REVIEWER_COLOR;
         else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($Me)))
-            return $c;
+            return trim(TagInfo::color_classes($c));
         else if ($s === "plain")
             return "";
         else
