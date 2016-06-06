@@ -682,7 +682,7 @@ class PaperInfo {
 
     public function num_reviews_assigned() {
         if (!property_exists($this, "startedReviewCount"))
-            $this->startedReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted or reviewNeedsSubmit>0)");
+            $this->startedReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted>0 or reviewNeedsSubmit>0)");
         return (int) $this->startedReviewCount;
     }
 
@@ -691,7 +691,7 @@ class PaperInfo {
             if (isset($this->reviewCount) && isset($this->startedReviewCount) && $this->reviewCount === $this->startedReviewCount)
                 $this->inProgressReviewCount = $this->reviewCount;
             else
-                $this->inProgressReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted is null and reviewModified>0");
+                $this->inProgressReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted>0 or reviewModified>0)");
         }
         return (int) $this->inProgressReviewCount;
     }

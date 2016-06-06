@@ -1608,15 +1608,15 @@ class Conf {
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
 
         // started reviews
-        if (get($options, "startedReviewCount")) {
-            $joins[] = "left join (select paperId, count(*) count from PaperReview where {$papersel}(reviewSubmitted or reviewNeedsSubmit>0) group by paperId) R_started on (R_started.paperId=Paper.paperId)";
-            $cols[] = "coalesce(R_started.count,0) startedReviewCount";
-        }
+        if (get($options, "startedReviewCount"))
+            $cols[] = "(select count(*) from PaperReview where paperId=Paper.paperId and (reviewSubmitted>0 or reviewNeedsSubmit>0)) startedReviewCount";
+        if (get($options, "inProgressReviewCount"))
+            $cols[] = "(select count(*) from PaperReview where paperId=Paper.paperId and (reviewSubmitted>0 or reviewModified>0)) inProgressReviewCount";
 
         // submitted reviews
         $j = "select paperId, count(*) count";
         $before_ncols = count($cols);
-        if (get($options, "startedReviewCount"))
+        if (get($options, "startedReviewCount") || get($options, "inProgressReviewCount"))
             $cols[] = "coalesce(R_submitted.count,0) reviewCount";
         if (get($options, "scores"))
             foreach ($options["scores"] as $fid) {

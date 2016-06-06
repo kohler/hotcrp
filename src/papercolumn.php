@@ -268,13 +268,15 @@ class ReviewStatusPaperColumn extends PaperColumn {
     }
     public function prepare(PaperList $pl, $visible) {
         global $Conf;
-        if ($pl->contact->is_reviewer()
-            || $Conf->timeAuthorViewReviews()
-            || $pl->contact->privChair) {
+        if ($pl->contact->privChair)
             $pl->qopts["startedReviewCount"] = true;
-            return true;
-        } else
+        else if ($pl->contact->is_reviewer())
+            $pl->qopts["startedReviewCount"] = $pl->qopts["inProgressReviewCount"] = true;
+        else if ($Conf->timeAuthorViewReviews())
+            $pl->qopts["inProgressReviewCount"] = true;
+        else
             return false;
+        return true;
     }
     public function sort_prepare($pl, &$rows, $sorter) {
         foreach ($rows as $row) {
