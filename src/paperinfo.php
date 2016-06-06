@@ -4,42 +4,68 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperContactInfo {
+    public $contactId;
     public $conflict_type = 0;
     public $review_type = 0;
     public $review_submitted = null;
     public $review_needs_submit = 1;
     public $review_token_cid = null;
 
-    function __construct() {
+    function __construct($cid = null) {
+        if ($cid)
+            $this->contactId = $cid;
     }
 
-    static function load($pid, $cid, $rev_tokens = null) {
+    private function merge() {
+        $this->contactId = (int) $this->contactId;
+        $this->conflict_type = (int) $this->conflict_type;
+        $this->review_type = (int) $this->review_type;
+        $this->review_submitted = (int) $this->review_submitted;
+        $this->review_needs_submit = (int) $this->review_needs_submit;
+        $this->review_token_cid = (int) $this->review_token_cid;
+        if ($this->review_token_cid == $this->contactId)
+            $this->review_token_cid = null;
+    }
+
+    static function load_into(&$cmap, $pid, $cid, $rev_tokens = null) {
+        global $Me;
         $result = null;
-        if ($cid) {
-            $review_matcher = array("PaperReview.contactId=$cid");
-            if ($rev_tokens && count($rev_tokens))
-                $review_matcher[] = "PaperReview.reviewToken in (" . join(",", $rev_tokens) . ")";
-            $result = Dbl::qe_raw("select conflictType as conflict_type,
+        $q = "select conflictType as conflict_type,
                 reviewType as review_type,
                 reviewSubmitted as review_submitted,
                 reviewNeedsSubmit as review_needs_submit,
-                PaperReview.contactId as review_token_cid
-                from (select $pid paperId) crap
-                left join PaperConflict on (PaperConflict.paperId=crap.paperId and PaperConflict.contactId=$cid)
-                left join PaperReview on (PaperReview.paperId=crap.paperId and (" . join(" or ", $review_matcher) . "))");
+                PaperReview.contactId as review_token_cid";
+        if ($cid && !$rev_tokens
+            && (!$Me || ($Me->contactId != $cid && $Me->is_manager()))
+            && ($pcm = pcMembers()) && isset($pcm[$cid])) {
+            $cids = array_keys($pcm);
+            $cidqs = array_map(function ($cid) { return "select $cid contactId"; }, $cids);
+            $result = Dbl::qe_raw("$q, ContactInfo.contactId
+                from (select $pid paperId) P
+                join ContactInfo
+                left join PaperReview on (PaperReview.paperId=$pid and PaperReview.contactId=ContactInfo.contactId)
+                left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=ContactInfo.contactId)
+                where (roles&" . Contact::ROLE_PC . ")!=0");
+        } else {
+            $cids = [$cid];
+            if ($cid) {
+                $q = "$q, $cid contactId
+                from (select $pid paperId) P
+                left join PaperReview on (PaperReview.paperId=P.paperId and (PaperReview.contactId=$cid";
+                if ($rev_tokens)
+                    $q .= " or PaperReview.reviewToken in (" . join(",", $rev_tokens) . ")";
+                $result = Dbl::qe_raw("$q))
+                    left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=$cid)");
+            }
         }
-        if ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
-            $ci->conflict_type = (int) $ci->conflict_type;
-            $ci->review_type = (int) $ci->review_type;
-            $ci->review_submitted = (int) $ci->review_submitted;
-            $ci->review_needs_submit = (int) $ci->review_needs_submit;
-            $ci->review_token_cid = (int) $ci->review_token_cid;
-            if ($ci->review_token_cid == $cid)
-                $ci->review_token_cid = null;
-        } else
-            $ci = new PaperContactInfo;
+        while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
+            $ci->merge();
+            $cmap[$ci->contactId] = $ci;
+        }
         Dbl::free($result);
-        return $ci;
+        foreach ($cids as $cid)
+            if (!isset($cmap[$cid]))
+                $cmap[$cid] = new PaperContactInfo($cid);
     }
 
     static function load_my($object, $cid) {
@@ -187,8 +213,7 @@ class PaperInfo {
             $this->_contact_info_rights_version = Contact::$rights_version;
         }
         if (!array_key_exists($cid, $this->_contact_info))
-            $this->_contact_info[$cid] =
-                PaperContactInfo::load($this->paperId, $cid, $rev_tokens);
+            PaperContactInfo::load_into($this->_contact_info, $this->paperId, $cid, $rev_tokens);
         return $this->_contact_info[$cid];
     }
 
