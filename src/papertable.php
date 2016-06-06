@@ -1953,6 +1953,9 @@ class PaperTable {
         } else {
             if ($this->mode === "edit" && ($m = $this->editMessage()))
                 echo $m, "<div class='g'></div>\n";
+            $status_info = $Me->paper_status_info($this->prow);
+            echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
+                htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
             $this->paptabAbstract();
             echo '<div class="paptab"><div class="paptab_authors">';
@@ -1987,15 +1990,7 @@ class PaperTable {
     function _paptabReviewLinks($rtable, $editrrow, $ifempty) {
         global $Me;
         require_once("reviewtable.php");
-        $status_info = $Me->paper_status_info($this->prow);
-        $out = "<span class=\"pstat $status_info[0]\">"
-            . htmlspecialchars($status_info[1]) . "</span>";
-
-        if ($this->prow->has_author($Me))
-            $out .= ' <span class="barsep">·</span> You are an <span class="author">author</span> of this paper.';
-        else if ($this->prow->has_conflict($Me))
-            $out .= ' <span class="barsep">·</span> You have a <span class="conflit">conflict</span> with this paper.';
-        $this->_paptabSepContaining('<p class="xd">' . $out . '</p>');
+        echo '<hr class="papcard_sep" />';
 
         $t = "";
         if ($rtable)

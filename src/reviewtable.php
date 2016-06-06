@@ -450,6 +450,11 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($any_comments)
         CommentInfo::echo_script($prow);
 
+    if ($prow->has_author($Me))
+        $t = '<p class="xd">You are an <span class="author">author</span> of this paper.</p>' . $t;
+    else if ($prow->has_conflict($Me))
+        $t = '<p class="xd">You have a <span class="conflict">conflict</span> with this paper.</p>' . $t;
+
     if (($list = SessionList::active()) && ($pret || $t))
         return '<div class="has_hotcrp_list" data-hotcrp-list="' . $list->listno . '">'
             . $pret . $t . '</div>';
