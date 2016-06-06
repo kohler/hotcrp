@@ -368,7 +368,12 @@ class PaperTable {
             if (($data = $prow->document($dtype)) && $data->paperStorageId > 1) {
                 if (($stamps = self::pdf_stamps_html($data)))
                     $stamps = "<span class='sep'></span>" . $stamps;
-                $dname = $dtype == DTYPE_FINAL ? "Final version" : "Submission";
+                if ($dtype == DTYPE_FINAL)
+                    $dname = "Final version";
+                else if ($prow->timeSubmitted > 0)
+                    $dname = "Submission";
+                else
+                    $dname = "Current version";
                 $pdfs[] = $dprefix . $data->link_html('<span class="pavfn">' . $dname . '</span>') . $stamps;
             }
 
