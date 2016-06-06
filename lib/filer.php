@@ -468,12 +468,14 @@ class Filer {
             return false;
         }
         $content = self::content($doc);
-        if (file_put_contents($fspath, $content) != strlen($content)) {
-            @unlink($fspath);
-            $no_error || set_error_html($doc, "Internal error: docstore failure.");
-            return false;
+        if (!is_readable($fspath) || file_get_contents($fspath) !== $content) {
+            if (file_put_contents($fspath, $content) != strlen($content)) {
+                @unlink($fspath);
+                $no_error || set_error_html($doc, "Internal error: docstore failure.");
+                return false;
+            }
+            @chmod($fspath, 0660 & ~umask());
         }
-        @chmod($fspath, 0660 & ~umask());
         $doc->filestore = $fspath;
         return true;
     }
