@@ -2127,7 +2127,7 @@ class PaperSearch {
         $x = array_pop($stack);
         if (!$curqe)
             return $x->leftqe;
-        else if ($x->op->op === "+")
+        else if ($x->op->op === "+" || $x->op->op === "(")
             return $curqe;
         else
             return SearchTerm::make_opstr($x->op, $x->leftqe, $curqe, $x->substr);
