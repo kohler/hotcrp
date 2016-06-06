@@ -128,6 +128,12 @@ $pl = new PaperList(new PaperSearch($user_shenker, "au:berkeley"));
 $j = $pl->text_json("id title");
 xassert_eqq(join(";", array_keys($j)), "1;6;13;15;24");
 
+// "and"
+assert_search_papers($user_shenker, "au:berkeley fountain", "24");
+assert_search_papers($user_shenker, "au:berkeley (fountain)", "24");
+assert_search_papers($user_shenker, "au:berkeley (fountain", "24");
+assert_search_papers($user_shenker, "au:berkeley fountain)", "24");
+
 // sorting works
 assert_search_papers($user_shenker, "au:berkeley sort:title", "24 15 13 1 6");
 
