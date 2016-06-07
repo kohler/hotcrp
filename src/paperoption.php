@@ -13,15 +13,14 @@ class PaperOptionValue {
     public $anno = null;
     private $_documents = null;
 
-    public function __construct($id, PaperOption $o = null, $values = [], $data_array = []) {
-        $this->id = $id;
+    public function __construct(PaperOption $o, $values = [], $data_array = []) {
+        $this->id = $o->id;
         $this->option = $o;
         $this->values = $values;
         $this->data_array = $data_array;
-        if ($o && $o->takes_multiple()) {
-            if ($o->has_attachments())
-                array_multisort($this->data_array, SORT_NUMERIC, $this->values);
-        } else {
+        if ($o->takes_multiple() && $o->has_attachments())
+            array_multisort($this->data_array, SORT_NUMERIC, $this->values);
+        if (count($values) == 1 || !$o->takes_multiple()) {
             $this->value = get($this->values, 0);
             if (!empty($this->data_array))
                 $this->data = $this->data_array[0];
@@ -201,12 +200,16 @@ class PaperOption {
         return $m;
     }
 
-    static function find($id) {
-        if (!array_key_exists($id, self::$jmap)) {
+    static function find($id, $force = false) {
+        if (array_key_exists($id, self::$jmap))
+            $o = self::$jmap[$id];
+        else {
             $oj = get(self::option_json_list(), $id);
-            self::$jmap[$id] = $oj ? PaperOption::make($oj) : null;
+            $o = self::$jmap[$id] = $oj ? PaperOption::make($oj) : null;
         }
-        return self::$jmap[$id];
+        if (!$o && $force)
+            $o = self::$jmap[$id] = new UnknownPaperOption($id);
+        return $o;
     }
 
     static function option_list(Conf $c = null) {
@@ -460,17 +463,17 @@ class PaperOption {
 
         $option_array = array();
         foreach ($optsel as $oid => $ovalues) {
-            $o = PaperOption::find($oid);
-            if (!$o && !$all)
+            $o = PaperOption::find($oid, $all);
+            if (!$o)
                 continue;
-            $needs_data = !$o || $o->needs_data();
+            $needs_data = $o->needs_data();
             if ($needs_data && !$optdata)
                 $optdata = self::load_optdata($prow->paperId);
             $odata = [];
             if ($needs_data)
                 foreach ($ovalues as $v)
                     $odata[] = $optdata[$oid . "." . $v];
-            $option_array[$oid] = new PaperOptionValue($oid, $o, $ovalues, $odata);
+            $option_array[$oid] = new PaperOptionValue($o, $ovalues, $odata);
         }
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)
@@ -916,5 +919,19 @@ class AttachmentsPaperOption extends PaperOption {
 
     function unparse_page_html($row, PaperOptionValue $ov) {
         return $this->unparse_html($row, $ov, DocumentInfo::L_SMALL);
+    }
+}
+
+class UnknownPaperOption extends PaperOption {
+    function __construct($id) {
+        parent::__construct(["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"]);
+    }
+
+    function needs_data() {
+        return true;
+    }
+
+    function takes_multiple() {
+        return true;
     }
 }

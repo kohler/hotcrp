@@ -1109,7 +1109,7 @@ class PaperTable {
             $ov = null;
             if ($this->prow)
                 $ov = $this->prow->option($o->id);
-            $ov = $ov ? : new PaperOptionValue($o->id, $o);
+            $ov = $ov ? : new PaperOptionValue($o);
             $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null, $this);
         };
     }
