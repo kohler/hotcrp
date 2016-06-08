@@ -3194,6 +3194,7 @@ class PaperSearch {
             else
                 $filters[] = "Paper.managerContactId=" . $this->cid;
             $filters[] = "Paper.timeSubmitted>0";
+            $this->needflags |= self::F_MANAGER;
         }
 
         // decision limitation parts
