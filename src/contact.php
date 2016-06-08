@@ -2031,9 +2031,10 @@ class Contact {
 
     function can_view_paper(PaperInfo $prow, $pdf = false) {
         global $Conf;
+        if ($this->privChair)
+            return true;
         $rights = $this->rights($prow, "any");
-        return $this->privChair
-            || $rights->allow_author_view
+        return $rights->allow_author_view
             || ($rights->review_type
                 // assigned reviewer can view PDF of withdrawn, but submitted, paper
                 && (!$pdf || $prow->timeSubmitted != 0))

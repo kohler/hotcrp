@@ -463,10 +463,14 @@ class RevprefSearchMatcher extends ContactCountMatcher {
 }
 
 class SearchQueryInfo {
+    private $user;
     public $tables = array();
     public $columns = array();
     public $negated = false;
 
+    public function __construct($user) {
+        $this->user = $user;
+    }
     public function add_table($table, $joiner = false) {
         assert($joiner || !count($this->tables));
         $this->tables[$table] = $joiner;
@@ -475,12 +479,34 @@ class SearchQueryInfo {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
-    public function add_rights_columns() {
+    public function add_conflict_columns() {
+        if (!isset($this->tables["PaperConflict"]))
+            $this->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId={$this->user->contactId}"));
+        $this->columns["conflictType"] = "PaperConflict.conflictType";
+    }
+    public function add_reviewer_columns() {
         global $Conf;
+        if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL)
+            $this->columns["paperBlind"] = "Paper.blind";
+        if (!isset($this->tables["MyReview"])) {
+            $qb = "";
+            if (($tokens = $this->user->review_tokens()))
+                $qb = " or MyReview.reviewToken in (" . join(",", $tokens) . ")";
+            $this->add_table("MyReview", array("left join", "PaperReview", "(MyReview.contactId={$this->user->contactId}$qb)"));
+            $this->add_column("myReviewType", "MyReview.reviewType");
+            $this->add_column("myReviewNeedsSubmit", "MyReview.reviewNeedsSubmit");
+            $this->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
+        }
+    }
+    public function add_rights_columns() {
         if (!isset($this->columns["managerContactId"]))
             $this->columns["managerContactId"] = "Paper.managerContactId";
         if (!isset($this->columns["leadContactId"]))
             $this->columns["leadContactId"] = "Paper.leadContactId";
+        if (!$this->user->privChair) {
+            $this->add_conflict_columns();
+            $this->add_reviewer_columns();
+        }
     }
 }
 
@@ -3140,7 +3166,7 @@ class PaperSearch {
         //Conf::msg_info(Ht::pre_text(var_export($qe, true)));
 
         // collect clauses into tables, columns, and filters
-        $sqi = new SearchQueryInfo;
+        $sqi = new SearchQueryInfo($this->contact);
         $sqi->add_table("Paper");
         $sqi->add_column("paperId", "Paper.paperId");
         // always include columns needed by rights machinery
@@ -3206,21 +3232,10 @@ class PaperSearch {
             $filters[] = "Paper.managerContactId=0";
 
         // add common tables: conflicts, my own review, paper blindness
-        if ($this->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR)) {
-            $sqi->add_table("PaperConflict", array("left join", "PaperConflict", "PaperConflict.contactId=$this->cid"));
-            $sqi->add_column("conflictType", "PaperConflict.conflictType");
-        }
-        if ($this->needflags & self::F_REVIEWER) {
-            if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL)
-                $sqi->add_column("paperBlind", "Paper.blind");
-            $qb = "";
-            if (($tokens = $this->contact->review_tokens()))
-                $qb = " or MyReview.reviewToken in (" . join(",", $tokens) . ")";
-            $sqi->add_table("MyReview", array("left join", "PaperReview", "(MyReview.contactId=$this->cid$qb)"));
-            $sqi->add_column("myReviewType", "MyReview.reviewType");
-            $sqi->add_column("myReviewNeedsSubmit", "MyReview.reviewNeedsSubmit");
-            $sqi->add_column("myReviewSubmitted", "MyReview.reviewSubmitted");
-        }
+        if ($this->needflags & (self::F_MANAGER | self::F_NONCONFLICT | self::F_AUTHOR))
+            $sqi->add_conflict_columns();
+        if ($this->needflags & self::F_REVIEWER)
+            $sqi->add_reviewer_columns();
 
         // check for annotated order
         $order_anno_tag = null;
