@@ -930,24 +930,6 @@ class PaperSearch {
         $this->_allow_deleted = defval($options, "allow_deleted", false);
     }
 
-    // begin changing contactId to cid
-    public function __get($name) {
-        if ($name === "contactId") {
-            trigger_error(caller_landmark() . ": PaperSearch->contactId deprecated, use cid", E_USER_NOTICE);
-            return $this->cid;
-        } else
-            return null;
-    }
-
-    public function __set($name, $value) {
-        if ($name === "contactId") {
-            error_log(caller_landmark() . ": PaperSearch->contactId deprecated, use cid");
-            $this->cid = $value;
-        } else
-            $this->$name = $value;
-    }
-
-
     function warn($text) {
         $this->warnings[] = $text;
     }
