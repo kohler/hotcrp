@@ -9,8 +9,8 @@ class PaperOptionValue {
     public $option;
     public $value;
     public $values;
-    public $data;
-    public $data_array;
+    private $_data;
+    private $_data_array;
     public $anno = null;
     private $_documents = null;
 
@@ -19,13 +19,14 @@ class PaperOptionValue {
         $this->id = $o->id;
         $this->option = $o;
         $this->values = $values;
-        $this->data_array = $data_array;
-        if ($o->takes_multiple() && $o->has_attachments())
-            array_multisort($this->data_array, SORT_NUMERIC, $this->values);
+        $this->_data_array = $_data_array;
+        if ($o->takes_multiple() && $o->has_attachments()
+            && count($this->values) > 1)
+            array_multisort($this->_data_array, SORT_NUMERIC, $this->values);
         if (count($values) == 1 || !$o->takes_multiple()) {
             $this->value = get($this->values, 0);
-            if (!empty($this->data_array))
-                $this->data = $this->data_array[0];
+            if (!empty($this->_data_array))
+                $this->_data = $this->_data_array[0];
         }
     }
     public function documents() {
@@ -60,6 +61,9 @@ class PaperOptionValue {
             && ($content = Filer::content($doc)))
             return $content;
         return false;
+    }
+    public function data() {
+        return $this->_data;
     }
 }
 
@@ -767,9 +771,9 @@ class TextPaperOption extends PaperOption {
     }
 
     function value_compare($av, $bv) {
-        $av = $av ? $av->data : null;
+        $av = $av ? $av->data() : null;
         $av = $av !== null ? $av : "";
-        $bv = $bv ? $bv->data : null;
+        $bv = $bv ? $bv->data() : null;
         $bv = $bv !== null ? $bv : "";
         if ($av !== "" && $bv !== "")
             return strcasecmp($av, $bv);
@@ -778,7 +782,7 @@ class TextPaperOption extends PaperOption {
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
-        $reqv = (string) ($reqv === null ? $ov->data : $reqv);
+        $reqv = (string) ($reqv === null ? $ov->data() : $reqv);
         $pt->echo_editable_option_papt($this);
         echo '<div class="papev">',
             Ht::textarea("opt$this->id", $reqv, ["class" => "papertext" . $pt->error_class("opt$this->id"), "rows" => max($this->display_space, 1), "cols" => 60, "onchange" => "hiliter(this)", "spellcheck" => "true"]),
@@ -790,7 +794,8 @@ class TextPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->data != "" ? $ov->data : null;
+        $d = $ov->data();
+        return $d != "" ? $d : null;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -800,15 +805,16 @@ class TextPaperOption extends PaperOption {
     }
 
     private function unparse_html($row, PaperOptionValue $ov, PaperList $pl = null) {
-        if ($ov->data === null || $ov->data === "")
+        $d = $ov->data();
+        if ($d === null || $d === "")
             return "";
-        if (($format = $row->format_of($ov->data))) {
+        if (($format = $row->format_of($d))) {
             if ($pl)
                 $pl->need_render = true;
             return '<div class="need-format" data-format="' . $format
-                . ($pl ? '.plx' : '.abs') . '">' . htmlspecialchars($ov->data) . '</div>';
+                . ($pl ? '.plx' : '.abs') . '">' . htmlspecialchars($d) . '</div>';
         } else
-            return '<div class="format0">' . Ht::link_urls(htmlspecialchars($ov->data)) . '</div>';
+            return '<div class="format0">' . Ht::link_urls(htmlspecialchars($d)) . '</div>';
     }
 
     function unparse_column_html(PaperList $pl, $row) {
