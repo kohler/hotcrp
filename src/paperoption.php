@@ -8,7 +8,7 @@ class PaperOptionValue {
     public $id;
     public $option;
     public $value;
-    public $values;
+    private $_values;
     private $_data;
     private $_data_array;
     public $anno = null;
@@ -18,24 +18,27 @@ class PaperOptionValue {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        $this->values = $values;
-        $this->_data_array = $_data_array;
-        if ($o->takes_multiple() && $o->has_attachments()
-            && count($this->values) > 1)
-            array_multisort($this->_data_array, SORT_NUMERIC, $this->values);
-        if (count($values) == 1 || !$o->takes_multiple()) {
-            $this->value = get($this->values, 0);
+        $this->assign($values, $data_array, false);
+    }
+    private function assign($values, $data_array, $recurse) {
+        $this->_values = $values;
+        $this->_data_array = $data_array;
+        if (count($this->_values) > 1 && $this->option->has_attachments()
+            && $this->_data_array !== null)
+            array_multisort($this->_data_array, SORT_NUMERIC, $this->_values);
+        if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
+            $this->value = get($this->_values, 0);
             if (!empty($this->_data_array))
                 $this->_data = $this->_data_array[0];
         }
     }
     public function documents() {
-        assert($this->prow || empty($this->values));
+        assert($this->prow || empty($this->_values));
         assert($this->option->has_document_storage());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
-            foreach ($this->values as $docid)
+            foreach ($this->sorted_values() as $docid)
                 if ($docid > 1 && ($d = $this->prow->document($this->id, $docid))) {
                     $d->unique_filename = $d->filename;
                     while (get($by_unique_filename, $d->unique_filename)) {
@@ -62,8 +65,34 @@ class PaperOptionValue {
             return $content;
         return false;
     }
+    public function value_count() {
+        return count($this->_values);
+    }
+    public function unsorted_values() {
+        return $this->_values;
+    }
+    public function sorted_values() {
+        if ($this->_data_array === null && count($this->_values) > 1)
+            $this->_load_data();
+        return $this->_values;
+    }
     public function data() {
+        if ($this->_data_array === null)
+            $this->_load_data();
         return $this->_data;
+    }
+    private function _load_data() {
+        if ($this->_data_array === null) {
+            $odata = PaperOption::load_optdata($this->prow->paperId);
+            if ($this->option instanceof UnknownPaperOption)
+                $allopt = $this->prow->all_options();
+            else
+                $allopt = $this->prow->options();
+            foreach ($allopt as $oid => $opt)
+                $opt->assign($odata["v"][$oid], $odata["d"][$oid], true);
+            if ($this->_data_array === null)
+                $this->assign($odata["v"][$this->id], $odata["d"][$this->id], true);
+        }
     }
 }
 
@@ -397,10 +426,6 @@ class PaperOption {
         return null;
     }
 
-    function needs_data() {
-        return false;
-    }
-
     function takes_multiple() {
         return false;
     }
@@ -440,11 +465,13 @@ class PaperOption {
         array_push($res, "has:{$this->abbr}", "opt:{$this->abbr}");
     }
 
-    private static function load_optdata($pid) {
+    public static function load_optdata($pid) {
         $result = Dbl::qe("select optionId, value, data from PaperOption where paperId=?", $pid);
-        $optdata = array();
-        while (($row = edb_row($result)))
-            $optdata[$row[0] . "." . $row[1]] = $row[2];
+        $optdata = ["v" => [], "d" => []];
+        while (($row = edb_row($result))) {
+            $optdata["v"][$row[0]][] = (int) $row[1];
+            $optdata["d"][$row[0]][] = $row[2];
+        }
         Dbl::free($result);
         return $optdata;
     }
@@ -454,34 +481,18 @@ class PaperOption {
         if ($optionIds === "")
             return [];
 
-        $optsel = array();
         if ($optionIds !== null) {
             preg_match_all('/(\d+)#(\d+)/', $optionIds, $m);
+            $optdata = ["v" => [], "d" => []];
             for ($i = 0; $i < count($m[1]); ++$i)
-                arrayappend($optsel[$m[1][$i]], (int) $m[2][$i]);
-            $optdata = null;
-        } else {
+                $optdata["v"][$m[1][$i]][] = (int) $m[2][$i];
+        } else
             $optdata = self::load_optdata($prow->paperId);
-            foreach ($optdata as $k => $v) {
-                $dot = strpos($k, ".");
-                arrayappend($optsel[substr($k, 0, $dot)], (int) substr($k, $dot + 1));
-            }
-        }
 
         $option_array = array();
-        foreach ($optsel as $oid => $ovalues) {
-            $o = PaperOption::find($oid, $all);
-            if (!$o)
-                continue;
-            $needs_data = $o->needs_data();
-            if ($needs_data && !$optdata)
-                $optdata = self::load_optdata($prow->paperId);
-            $odata = [];
-            if ($needs_data)
-                foreach ($ovalues as $v)
-                    $odata[] = $optdata[$oid . "." . $v];
-            $option_array[$oid] = new PaperOptionValue($prow, $o, $ovalues, $odata);
-        }
+        foreach ($optdata["v"] as $oid => $ovalues)
+            if (($o = PaperOption::find($oid, $all)))
+                $option_array[$oid] = new PaperOptionValue($prow, $o, $ovalues, get($optdata["d"], $oid));
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)
                 return PaperOption::compare($a->option, $b->option);
@@ -766,10 +777,6 @@ class TextPaperOption extends PaperOption {
         parent::__construct($args);
     }
 
-    function needs_data() {
-        return true;
-    }
-
     function value_compare($av, $bv) {
         $av = $av ? $av->data() : null;
         $av = $av !== null ? $av : "";
@@ -840,10 +847,6 @@ class AttachmentsPaperOption extends PaperOption {
         return true;
     }
 
-    function needs_data() {
-        return true;
-    }
-
     function takes_multiple() {
         return true;
     }
@@ -856,7 +859,7 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     function value_compare($av, $bv) {
-        return ($av && count($av->values) ? 1 : 0) - ($bv && count($bv->values) ? 1 : 0);
+        return ($av && $av->value_count() ? 1 : 0) - ($bv && $bv->value_count() ? 1 : 0);
     }
 
     function echo_editable_html(PaperOptionValue $ov, $reqv, PaperTable $pt) {
@@ -934,10 +937,6 @@ class AttachmentsPaperOption extends PaperOption {
 class UnknownPaperOption extends PaperOption {
     function __construct($id) {
         parent::__construct(["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"]);
-    }
-
-    function needs_data() {
-        return true;
     }
 
     function takes_multiple() {

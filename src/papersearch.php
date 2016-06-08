@@ -3017,7 +3017,7 @@ class PaperSearch {
             if ($om->kind) {
                 $ov = $row->option($om->option->id);
                 if ($om->kind === "attachment-count" && $ov)
-                    return CountMatcher::compare(count($ov->values), $om->compar, $om->value);
+                    return CountMatcher::compare($ov->value_count(), $om->compar, $om->value);
                 else if ($om->kind === "attachment-name" && $ov) {
                     $reg = self::analyze_field_preg($om->value);
                     foreach ($ov->documents() as $doc)

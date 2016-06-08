@@ -692,7 +692,7 @@ class PaperInfo {
                 $x[] = $this->finalPaperStorageId;
             foreach ($this->options() as $oa)
                 if ($oa->option->has_document_storage())
-                    $x = array_merge($x, $oa->values);
+                    $x = array_merge($x, $oa->unsorted_values());
             if ($did > 0)
                 $x[] = $did;
             $this->_add_documents($x);
