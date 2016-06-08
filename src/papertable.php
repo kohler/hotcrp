@@ -381,7 +381,7 @@ class PaperTable {
                 if ($ov->option->display() === PaperOption::DISP_SUBMISSION
                     && $ov->option->has_document()
                     && $Me->can_view_paper_option($prow, $ov->option)) {
-                    foreach ($ov->documents($prow) as $d) {
+                    foreach ($ov->documents() as $d) {
                         $name = '<span class="pavfn">' . htmlspecialchars($ov->option->name) . '</span>';
                         if ($ov->option->has_attachments())
                             $name .= "/" . htmlspecialchars($d->unique_filename);
@@ -1109,7 +1109,7 @@ class PaperTable {
             $ov = null;
             if ($this->prow)
                 $ov = $this->prow->option($o->id);
-            $ov = $ov ? : new PaperOptionValue($o);
+            $ov = $ov ? : new PaperOptionValue($this->prow, $o);
             $o->echo_editable_html($ov, $this->useRequest ? $this->qreq["opt$o->id"] : null, $this);
         };
     }

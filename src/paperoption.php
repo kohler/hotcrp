@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperOptionValue {
+    public $prow;
     public $id;
     public $option;
     public $value;
@@ -13,7 +14,8 @@ class PaperOptionValue {
     public $anno = null;
     private $_documents = null;
 
-    public function __construct(PaperOption $o, $values = [], $data_array = []) {
+    public function __construct($prow, PaperOption $o, $values = [], $data_array = []) {
+        $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
         $this->values = $values;
@@ -26,13 +28,14 @@ class PaperOptionValue {
                 $this->data = $this->data_array[0];
         }
     }
-    public function documents(PaperInfo $prow) {
-        assert($this->option && $this->option->has_document_storage());
+    public function documents() {
+        assert($this->prow || empty($this->values));
+        assert($this->option->has_document_storage());
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
             foreach ($this->values as $docid)
-                if ($docid > 1 && ($d = $prow->document($this->id, $docid))) {
+                if ($docid > 1 && ($d = $this->prow->document($this->id, $docid))) {
                     $d->unique_filename = $d->filename;
                     while (get($by_unique_filename, $d->unique_filename)) {
                         if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $d->unique_filename, $m))
@@ -48,11 +51,11 @@ class PaperOptionValue {
         }
         return $this->_documents;
     }
-    public function document(PaperInfo $prow, $index) {
-        return get($this->documents($prow), $index);
+    public function document($index) {
+        return get($this->documents(), $index);
     }
-    public function document_content(PaperInfo $prow, $index) {
-        if (($doc = $this->document($prow, $index))
+    public function document_content($index) {
+        if (($doc = $this->document($index))
             && $doc->docclass->load($doc)
             && ($content = Filer::content($doc)))
             return $content;
@@ -473,7 +476,7 @@ class PaperOption {
             if ($needs_data)
                 foreach ($ovalues as $v)
                     $odata[] = $optdata[$oid . "." . $v];
-            $option_array[$oid] = new PaperOptionValue($o, $ovalues, $odata);
+            $option_array[$oid] = new PaperOptionValue($prow, $o, $ovalues, $odata);
         }
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)
@@ -692,13 +695,13 @@ class DocumentPaperOption extends PaperOption {
 
     function unparse_column_html(PaperList $pl, $row) {
         if (($v = $row->option($this->id)))
-            foreach ($v->documents($row) as $d)
+            foreach ($v->documents() as $d)
                 return $d->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
         return "";
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
-        foreach ($ov->documents($row) as $d)
+        foreach ($ov->documents() as $d)
             return [$d->link_html(htmlspecialchars($this->name), DocumentInfo::L_SMALL), true];
         return "";
     }
@@ -854,7 +857,7 @@ class AttachmentsPaperOption extends PaperOption {
         $pt->echo_editable_option_papt($this, htmlspecialchars($this->name) . ' <span class="papfnh">(max ' . ini_get("upload_max_filesize") . "B per file)</span>");
         echo '<div class="papev">';
         $docclass = new HotCRPDocument($this->id, $this);
-        foreach ($pt->prow ? $ov->documents($pt->prow) : [] as $doc) {
+        foreach ($ov->documents() as $doc) {
             $oname = "opt" . $this->id . "_" . $doc->paperStorageId;
             echo "<div id=\"removable_$oname\" class=\"ug foldo\"><table id=\"current_$oname\"><tr>",
                 "<td class=\"nw\">", $doc->link_html(htmlspecialchars($doc->unique_filename)), "</td>",
@@ -886,7 +889,7 @@ class AttachmentsPaperOption extends PaperOption {
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
         $attachments = array();
-        foreach ($ov->documents($ps->paper_row()) as $doc)
+        foreach ($ov->documents() as $doc)
             if (($doc = $ps->document_to_json($this->id, $doc)))
                 $attachments[] = $doc;
         return empty($attachments) ? null : $attachments;
@@ -907,7 +910,7 @@ class AttachmentsPaperOption extends PaperOption {
 
     private function unparse_html($row, PaperOptionValue $ov, $flags) {
         $docs = [];
-        foreach ($ov->documents($row) as $d)
+        foreach ($ov->documents() as $d)
             $docs[] = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
         return join("<br />", $docs);
     }
