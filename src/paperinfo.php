@@ -131,6 +131,8 @@ class PaperInfo {
     public $finalPaperStorageId;
     public $managerContactId;
     public $paperFormat;
+    // $paperTags: DO NOT LIST (property_exists() is meaningful)
+    // $optionIds: DO NOT LIST (property_exists() is meaningful)
 
     private $_contact_info = array();
     private $_contact_info_rights_version = 0;
@@ -164,8 +166,9 @@ class PaperInfo {
             $this->_contact_info_rights_version = Contact::$rights_version;
             $this->assign_contact_info($this, $cid);
         }
-        if (property_exists($this, "paperTags") && $this->paperTags === null)
-            $this->paperTags = "";
+        foreach (["paperTags", "optionIds"] as $k)
+            if (property_exists($this, $k) && $this->$k === null)
+                $this->$k = "";
     }
 
     static public function fetch($result, $contact) {
