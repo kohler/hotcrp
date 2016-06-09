@@ -3011,10 +3011,7 @@ class PaperSearch {
             if (!$this->_clauseTermCheckFlags($t, $row))
                 return false;
             $fieldname = $t->link;
-            if ($t->value[0] === "none")
-                return $row->$fieldname == 0;
-            else
-                return $row->$fieldname != 0;
+            return $row->$fieldname != 0;
         } else if ($tt === "option") {
             if (!$this->_clauseTermCheckFlags($t, $row))
                 return false;
