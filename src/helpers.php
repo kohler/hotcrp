@@ -1147,11 +1147,10 @@ function pcByEmail($email) {
 }
 
 function pc_members_selector_options($include_none) {
-    global $Opt;
     $sel = array();
     if ($include_none)
         $sel["0"] = is_string($include_none) ? $include_none : "None";
-    $textarg = array("lastFirst" => @$Opt["sortByLastName"]);
+    $textarg = array("lastFirst" => opt("sortByLastName"));
     foreach (pcMembers() as $p)
         $sel[htmlspecialchars($p->email)] = Text::name_html($p, $textarg);
     return $sel;
