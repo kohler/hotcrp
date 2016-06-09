@@ -271,16 +271,16 @@ class PaperApi {
 
         if ($user->allow_administer(null)) {
             $need_paper = true;
-            if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
+            if ($Conf->has_any_manager() && !$Conf->tag_seeall)
                 $conflict_where = "(p.managerContactId=0 or p.managerContactId=$user->contactId or pc.conflictType is null)";
         } else if ($Conf->check_track_sensitivity(Track::VIEW)) {
             $where[] = "t.paperId ?a";
             $args[] = $user->list_submitted_papers_with_viewable_tags();
         } else {
             $need_paper = true;
-            if ($Conf->has_any_manager() && !$Conf->setting("tag_seeall"))
+            if ($Conf->has_any_manager() && !$Conf->tag_seeall)
                 $conflict_where = "(p.managerContactId=$user->contactId or pc.conflictType is null)";
-            else if (!$Conf->setting("tag_seeall"))
+            else if (!$Conf->tag_seeall)
                 $conflict_where = "pc.conflictType is null";
         }
 

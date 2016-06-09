@@ -497,7 +497,7 @@ function tags() {
         if ($Me->privChair)
             $setting = "  (<a href='" . hoturl("settings", "group=tags") . "'>Change this setting</a>)";
 
-        if ($Conf->setting("tag_seeall") > 0) {
+        if ($Conf->tag_seeall) {
             $conflictmsg3 = "Currently PC members can see tags for any paper, including conflicts.";
         } else {
             $conflictmsg1 = " or conflicted PC members";

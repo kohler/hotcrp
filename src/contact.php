@@ -2859,7 +2859,7 @@ class Contact {
             return $this->isPC;
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_pc
-            || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0)
+            || ($rights->allow_pc_broad && $Conf->tag_seeall)
             || $this->privChair;
     }
 
@@ -2869,7 +2869,7 @@ class Contact {
             return $this->isPC;
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_pc
-            || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0);
+            || ($rights->allow_pc_broad && $Conf->tag_seeall);
     }
 
     function can_view_tag(PaperInfo $prow, $tag, $forceShow = null) {
@@ -2878,7 +2878,7 @@ class Contact {
         $tag = TagInfo::base($tag);
         $twiddle = strpos($tag, "~");
         return ($rights->allow_pc
-                || ($rights->allow_pc_broad && $Conf->setting("tag_seeall") > 0)
+                || ($rights->allow_pc_broad && $Conf->tag_seeall)
                 || ($this->privChair && TagInfo::is_sitewide($tag)))
             && ($rights->allow_administer
                 || $twiddle === false
@@ -2900,14 +2900,13 @@ class Contact {
     function list_submitted_papers_with_viewable_tags() {
         global $Conf;
         $pids = array();
-        $tag_seeall = $Conf->setting("tag_seeall");
         if (!$this->isPC)
             return $pids;
         else if (!$this->privChair && $Conf->check_track_sensitivity(Track::VIEW)) {
             $q = "select p.paperId, pt.paperTags, r.reviewType from Paper p
                 left join (select paperId, group_concat(' ', tag, '#', tagIndex order by tag separator '') as paperTags from PaperTag where tag ?a group by paperId) as pt on (pt.paperId=p.paperId)
                 left join PaperReview r on (r.paperId=p.paperId and r.contactId=$this->contactId)";
-            if ($tag_seeall)
+            if ($Conf->tag_seeall)
                 $q .= "\nwhere p.timeSubmitted>0";
             else
                 $q .= "\nleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
@@ -2919,7 +2918,7 @@ class Contact {
                     $pids[] = (int) $prow->paperId;
             Dbl::free($result);
             return $pids;
-        } else if (!$this->privChair && !$tag_seeall) {
+        } else if (!$this->privChair && !$Conf->tag_seeall) {
             $q = "select p.paperId from Paper p
                 left join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
                 where p.timeSubmitted>0 and ";
@@ -2927,7 +2926,7 @@ class Contact {
                 $q .= "(pc.conflictType is null or p.managerContactId=$this->contactId)";
             else
                 $q .= "pc.conflictType is null";
-        } else if ($this->privChair && $Conf->has_any_manager() && !$tag_seeall)
+        } else if ($this->privChair && $Conf->has_any_manager() && !$Conf->tag_seeall)
             $q = "select p.paperId from Paper p
                 left join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
                 where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId or p.managerContactId=0)";

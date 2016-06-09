@@ -29,6 +29,7 @@ class Conf {
     private $_pc_see_pdf = null;
     public $au_seerev;
     public $tag_au_seerev;
+    public $tag_seeall;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -251,6 +252,7 @@ class Conf {
         $this->tag_au_seerev = null;
         if ($this->au_seerev == self::AUSEEREV_TAGS)
             $this->tag_au_seerev = explode(" ", get_s($this->settingTexts, "tag_au_seerev"));
+        $this->tag_seeall = get($this->settings, "tag_seeall", 0) > 0;
     }
 
     private function crosscheck_track_settings($j) {

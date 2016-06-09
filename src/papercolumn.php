@@ -1090,8 +1090,7 @@ class TagPaperColumn extends PaperColumn {
         global $Conf;
         $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
         ++self::$sortf_ctr;
-        $careful = !$pl->contact->privChair
-            && $Conf->setting("tag_seeall") <= 0;
+        $careful = !$pl->contact->privChair && !$Conf->tag_seeall;
         $unviewable = $empty = $sorter->reverse ? -(TAG_INDEXBOUND - 1) : TAG_INDEXBOUND - 1;
         if ($this->editable)
             $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
