@@ -1504,7 +1504,7 @@ $blind\n";
         $reviewPostLink = hoturl_post("review", $reviewLinkArgs);
         $reviewDownloadLink = hoturl("review", $reviewLinkArgs . "&amp;downloadForm=1" . $forceShow);
 
-        echo Ht::form($reviewPostLink, array("class" => "revcard")),
+        echo Ht::form($reviewPostLink, array("class" => "editrevform")),
             '<div class="aahc">',
             Ht::hidden_default_submit("default", "");
         if ($rrow)
@@ -1609,7 +1609,7 @@ $blind\n";
         // top save changes
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "top", $reviewPostLink);
-            echo Ht::actions($buttons, array("class" => "aab", "style" => "margin-top:0"));
+            echo Ht::actions($buttons, array("class" => "aa", "style" => "margin-top:0"));
         }
 
         // blind?
@@ -1628,13 +1628,13 @@ $blind\n";
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
             $buttons = $this->_review_buttons($prow, $rrow, "bottom", $reviewPostLink);
-            echo Ht::actions($buttons, array("class" => "aab", "style" => "margin-bottom:0"));
+            echo Ht::actions($buttons, array("class" => "aa", "style" => "margin-bottom:0"));
             if ($rrow && $rrow->reviewSubmitted && !$admin)
                 echo '<div class="hint">Only administrators can remove or unsubmit the review at this point.</div>';
         }
 
         echo "</div></div></div></form>\n\n";
-        Ht::stash_script('hiliter_children("form.revcard")', "form_revcard");
+        Ht::stash_script('hiliter_children(".editrevform")', "form_revcard");
     }
 
     function unparse_review_json($prow, $rrow, $contact, $include_displayed_at = false) {
