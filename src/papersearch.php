@@ -349,6 +349,61 @@ class CountMatcher {
     }
 }
 
+class TagSearchMatcher {
+    public $tags = [];
+    public $index1 = null;
+    public $index2 = null;
+    private $_re;
+
+    public function tagmatch_sql($user) {
+        $args = [];
+        foreach ($this->tags as $value) {
+            if (($starpos = strpos($value, "*")) !== false) {
+                $arg = "(\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
+                if ($starpos == 0)
+                    $arg .= " and \3 not like '%~%'";
+                $arg .= ")";
+            } else if ($value === "any" || $value === "none")
+                $arg = "(\3 is not null and (\3 not like '%~%' or \3 like '{$user->contactId}~%'" . ($user->privChair ? " or \3 like '~~%'" : "") . "))";
+            else
+                $arg = "\3='" . sqlq($value) . "'";
+            $args[] = $arg;
+        }
+        return join(" or ", $args);
+    }
+    public function index_wheresql() {
+        $extra = "";
+        if ($this->index1)
+            $extra .= " and %.tagIndex" . $this->index1->countexpr();
+        if ($this->index2)
+            $extra .= " and %.tagIndex" . $this->index2->countexpr();
+        return $extra;
+    }
+    public function evaluate($user, $tags) {
+        if (!$this->_re) {
+            $res = [];
+            foreach ($this->tags as $value)
+                if (($starpos = strpos($value, "*")) !== false)
+                    $res[] = '(?!.*~)' . str_replace('\\*', '.*', preg_quote($value));
+                else if ($value === "any" && $user->privChair)
+                    $res[] = "(?:{$user->contactId}~.*|~~.*|(?!.*~).*)";
+                else if ($value === "any")
+                    $res[] = "(?:{$user->contactId}~.*|(?!.*~).*)";
+                else
+                    $res[] = preg_quote($value);
+            $this->_re = '/\A(?:' . join("|", $res) . ')\z/i';
+        }
+        foreach (TagInfo::split($tags) as $ti) {
+            list($tag, $index) = TagInfo::split_index($ti);
+            if (preg_match($this->_re, $tag)
+                && (!$this->index1 || $this->index1->test($index))
+                && (!$this->index2 || $this->index2->test($index)))
+                return true;
+        }
+        return false;
+    }
+}
+
 class CommentTagMatcher extends CountMatcher {
     public $tag;
 
@@ -1544,18 +1599,18 @@ class PaperSearch {
                 return;
         }
 
+        $value = new TagSearchMatcher;
         if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?\d+)(?:\.\.\.?|-)(-?\d+)\z/', $word, $m)) {
             $tagword = $m[1];
-            $compar = array(null, ">=" . $m[2], "<=" . $m[3]);
+            $value->index1 = new CountMatcher(">=$m[2]");
+            $value->index2 = new CountMatcher("<=$m[3]");
         } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
             && $m[1] !== "any" && $m[1] !== "none"
             && ($m[2] !== "" || $m[3] !== "")) {
             $tagword = $m[1];
-            $compar = array(null, CountMatcher::canonical_comparator($m[3]) . $m[4]);
-        } else {
+            $value->index1 = new CountMatcher($m[3] . $m[4]);
+        } else
             $tagword = $word;
-            $compar = array(null);
-        }
 
         $negated = false;
         if (substr($tagword, 0, 1) === "-" && $keyword === "tag") {
@@ -1563,21 +1618,19 @@ class PaperSearch {
             $tagword = ltrim(substr($tagword, 1));
         }
 
-        $tags = $this->_expand_tag($tagword, $keyword === "tag");
-        if (!count($tags))
+        $value->tags = $this->_expand_tag($tagword, $keyword === "tag");
+        if (empty($value->tags))
             return new SearchTerm("f");
-        if (count($tags) === 1 && $tags[0] === "none") {
-            $tags[0] = "any";
+        if (count($value->tags) === 1 && $value->tags[0] === "none") {
+            $value->tags[0] = "any";
             $negated = !$negated;
         }
 
-        foreach ($tags as $tag)
-            $compar[0] = $this->_search_one_tag($tag, $compar[0]);
-        $term = new SearchTerm("tag", self::F_XVIEW, $compar);
+        $term = new SearchTerm("tag", self::F_XVIEW, $value);
         if ($negated)
             $term = SearchTerm::make_not($term);
         else if ($keyword === "order" || $keyword === "rorder" || !$keyword)
-            $term->set_float("sort", array(($keyword === "rorder" ? "-" : "") . "#" . $tags[0]));
+            $term->set_float("sort", array(($keyword === "rorder" ? "-" : "") . "#" . $value->tags[0]));
         $qt[] = $term;
     }
 
@@ -2797,11 +2850,8 @@ class PaperSearch {
             for ($i = 0; $i < count($t->value); $i += 2)
                 $sqi->add_column($t->value[$i], "Paper." . $t->value[$i]);
         } else if ($tt === "tag") {
-            $extra = "";
-            for ($i = 1; $i < count($t->value); ++$i)
-                $extra .= " and %.tagIndex" . $t->value[$i];
-            $this->_clauseTermSetTable($t, $t->value[0], null, "Tag",
-                                       "PaperTag", "tag", $extra,
+            $this->_clauseTermSetTable($t, $t->value->tagmatch_sql($this->contact), null, "Tag",
+                                       "PaperTag", "tag", $t->value->index_wheresql(),
                                        $sqi, $f);
         } else if ($tt === "topic") {
             $this->_clauseTermSetTable($t, $t->value, null, "Topic",
@@ -2868,6 +2918,9 @@ class PaperSearch {
         return $t->value->wordcountexpr->test($this->_reviewWordCounts[$rrow->reviewId]);
     }
 
+    private function _clauseTermCheckTags($t, $row) {
+    }
+
     private function _clauseTermCheckFlags($t, $row) {
         $flags = $t->flags;
         if (($flags & self::F_MANAGER)
@@ -2887,6 +2940,13 @@ class PaperSearch {
                 return false;
             if ($t->type === "tag" && !$this->contact->can_view_tags($row, true))
                 return false;
+            if ($t->type === "tag"
+                && $this->contact->privChair
+                && $row->managerContactId > 0
+                && $row->paperTags) {
+                $fieldname = $t->link;
+                $row->$fieldname = $t->value->evaluate($this->contact, $row->viewable_tags($this->contact)) ? 1 : 0;
+            }
             if (($t->type === "au" || $t->type === "au_cid" || $t->type === "co")
                 && !$this->contact->can_view_authors($row, true))
                 return false;
@@ -3264,7 +3324,10 @@ class PaperSearch {
         // XXX some of this should be shared with paperQuery
         if (($need_filter && $Conf->has_track_tags())
             || get($this->_query_options, "tags")
-            || $order_anno_tag)
+            || $order_anno_tag
+            || ($this->contact->privChair
+                && $Conf->has_any_manager()
+                && TagInfo::has_sitewide()))
             $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
         if (get($this->_query_options, "scores")
             || get($this->_query_options, "reviewTypes")

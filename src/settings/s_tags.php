@@ -83,7 +83,7 @@ function render(SettingValues $sv) {
 
     $sv->set_oldv("tag_sitewide", join(" ", array_keys(TagInfo::sitewide_tags())));
     if ($sv->newv("tag_sitewide") || $Conf->has_any_manager())
-        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Chairs and administrators can view and change these tags for every paper.", ["class" => "need-autogrow"]);
+        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-autogrow"]);
 
     $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
     $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
