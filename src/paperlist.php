@@ -636,6 +636,7 @@ class PaperList {
         }
 
         // analyze rows (usually noop)
+        PaperContactInfo::$list_rows = $rows;
         foreach ($field_list as $fdef)
             $fdef->analyze($this, $rows);
 
@@ -1185,6 +1186,10 @@ class PaperList {
         return $t;
     }
 
+    private function _cleanup() {
+        PaperContactInfo::$list_rows = null;
+    }
+
     public function id_array() {
         if (!$this->_prepare())
             return null;
@@ -1195,6 +1200,7 @@ class PaperList {
         $idarray = array();
         foreach ($rows as $row)
             $idarray[] = (int) $row->paperId;
+        $this->_cleanup();
         return $idarray;
     }
 
@@ -1412,6 +1418,7 @@ class PaperList {
             $this->any->anonau = true;
 
         $this->ids = $rstate->ids;
+        $this->_cleanup();
         return $enter . join("", $body) . " </tbody>\n" . $exit;
     }
 
@@ -1455,6 +1462,7 @@ class PaperList {
 
         if ($fdef->has_content)
             $this->any->$fname = true;
+        $this->_cleanup();
         return $data;
     }
 
@@ -1478,6 +1486,8 @@ class PaperList {
                     $p[$fdef->name] = $text;
             $x[$row->paperId] = (object) $p;
         }
+
+        $this->_cleanup();
         return $x;
     }
 }

@@ -5,11 +5,13 @@
 
 class PaperContactInfo {
     public $contactId;
+    public $paperId; // not always set
     public $conflict_type = 0;
     public $review_type = 0;
-    public $review_submitted = null;
+    public $review_submitted = 0;
     public $review_needs_submit = 1;
-    public $review_token_cid = null;
+    public $review_token_cid = 0;
+    static public $list_rows = null;
 
     function __construct($cid = null) {
         if ($cid)
@@ -21,7 +23,10 @@ class PaperContactInfo {
         $this->conflict_type = (int) $this->conflict_type;
         $this->review_type = (int) $this->review_type;
         $this->review_submitted = (int) $this->review_submitted;
-        $this->review_needs_submit = (int) $this->review_needs_submit;
+        if ($this->review_needs_submit !== null)
+            $this->review_needs_submit = (int) $this->review_needs_submit;
+        else
+            $this->review_needs_submit = 1;
         $this->review_token_cid = (int) $this->review_token_cid;
         if ($this->review_token_cid == $this->contactId)
             $this->review_token_cid = null;
@@ -35,11 +40,30 @@ class PaperContactInfo {
                 reviewSubmitted as review_submitted,
                 reviewNeedsSubmit as review_needs_submit,
                 PaperReview.contactId as review_token_cid";
+        if (self::$list_rows && !$rev_tokens) {
+            $result = Dbl::qe_raw("$q, $cid contactId, Paper.paperId paperId
+                from Paper
+                left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
+                left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
+                where Paper.paperId in (" . join(", ", array_map(function ($row) { return $row->paperId; }, self::$list_rows)) . ")");
+            $found = false;
+            $map = [];
+            while ($result && ($ci = $result->fetch_object("PaperContactInfo"))) {
+                $ci->merge();
+                $map[$ci->paperId] = $ci;
+                if ($ci->paperId == $pid)
+                    $cmap[$cid] = $found = $ci;
+            }
+            Dbl::free($result);
+            foreach (self::$list_rows as $row)
+                $row->assign_contact_info($map[$row->paperId], $cid);
+            if ($found)
+                return;
+        }
         if ($cid && !$rev_tokens
             && (!$Me || ($Me->contactId != $cid && $Me->is_manager()))
             && ($pcm = pcMembers()) && isset($pcm[$cid])) {
             $cids = array_keys($pcm);
-            $cidqs = array_map(function ($cid) { return "select $cid contactId"; }, $cids);
             $result = Dbl::qe_raw("$q, ContactInfo.contactId
                 from (select $pid paperId) P
                 join ContactInfo
