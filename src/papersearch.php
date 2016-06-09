@@ -1566,11 +1566,15 @@ class PaperSearch {
         $tags = $this->_expand_tag($tagword, $keyword === "tag");
         if (!count($tags))
             return new SearchTerm("f");
+        if (count($tags) === 1 && $tags[0] === "none") {
+            $tags[0] = "any";
+            $negated = !$negated;
+        }
 
         foreach ($tags as $tag)
             $compar[0] = $this->_search_one_tag($tag, $compar[0]);
         $term = new SearchTerm("tag", self::F_XVIEW, $compar);
-        if ($tags[0] === "none")
+        if ($negated)
             $term = SearchTerm::make_not($term);
         else if ($keyword === "order" || $keyword === "rorder" || !$keyword)
             $term->set_float("sort", array(($keyword === "rorder" ? "-" : "") . "#" . $tags[0]));
