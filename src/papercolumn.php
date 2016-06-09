@@ -1040,6 +1040,7 @@ class TagListPaperColumn extends PaperColumn {
 class TagPaperColumn extends PaperColumn {
     protected $is_value;
     protected $dtag;
+    protected $xtag;
     protected $ctag;
     protected $editable = false;
     static private $sortf_ctr = 0;
@@ -1067,7 +1068,8 @@ class TagPaperColumn extends PaperColumn {
         $tagger = new Tagger($pl->contact);
         if (!($ctag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID)))
             return false;
-        $this->ctag = strtolower(" $ctag#");
+        $this->xtag = strtolower($ctag);
+        $this->ctag = " {$this->xtag}#";
         if ($visible)
             $pl->qopts["tags"] = 1;
         $this->className = ($this->is_value ? "pl_tagval" : "pl_tag");
@@ -1094,7 +1096,7 @@ class TagPaperColumn extends PaperColumn {
         if ($this->editable)
             $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
         foreach ($rows as $row)
-            if ($careful && !$pl->contact->can_view_tags($row, true))
+            if ($careful && !$pl->contact->can_view_tag($row, $this->xtag, true))
                 $row->$sortf = $unviewable;
             else if (($row->$sortf = $this->_tag_value($row)) === null)
                 $row->$sortf = $empty;
@@ -1108,7 +1110,7 @@ class TagPaperColumn extends PaperColumn {
         return "#$this->dtag";
     }
     public function content_empty($pl, $row) {
-        return !$pl->contact->can_view_tags($row, true);
+        return !$pl->contact->can_view_tag($row, $this->xtag, true);
     }
     public function content($pl, $row, $rowidx) {
         if (($v = $this->_tag_value($row)) === null)
