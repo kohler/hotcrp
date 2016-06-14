@@ -9,7 +9,7 @@ class FormatSpec {
     public $columns;        // NCOLUMNS
     public $textblock;      // [WIDTH, HEIGHT]
     public $bodyfontsize;   // [MIN, MAX, GRACE]
-    public $bodyleading;    // [MIN, MAX, GRACE]
+    public $bodylineheight; // [MIN, MAX, GRACE]
     public $checkers;
     private $_is_banal_empty;
 
@@ -25,6 +25,8 @@ class FormatSpec {
         else if (!is_string($str)) {
             foreach ($str as $k => $v)
                 $this->$k = $v;
+            if (isset($this->bodyleading) && !isset($this->bodylineheight))
+                $this->bodylineheight = $this->bodyleading;
         } else {
             if (($gt = strpos($str, ">")) !== false)
                 $str = substr($str, 0, $gt);
@@ -38,11 +40,11 @@ class FormatSpec {
             $this->columns = cvtint(get($x, 2), null);
             $this->textblock = self::parse_dimen(get($x, 3), 2);
             $this->bodyfontsize = self::parse_range(get($x, 4));
-            $this->bodyleading = self::parse_range(get($x, 5));
+            $this->bodylineheight = self::parse_range(get($x, 5));
         }
         $this->_is_banal_empty = empty($this->papersize) && !$this->pagelimit
             && !$this->columns && !$this->textblock && !$this->bodyfontsize
-            && !$this->bodyleading;
+            && !$this->bodylineheight;
     }
 
     public function is_empty() {
@@ -66,8 +68,8 @@ class FormatSpec {
             return self::unparse_dimen($this->textblock, "basic");
         if ($k == "bodyfontsize")
             return self::unparse_range($this->bodyfontsize);
-        if ($k == "bodyleading")
-            return self::unparse_range($this->bodyleading);
+        if ($k == "bodylineheight")
+            return self::unparse_range($this->bodylineheight);
         return "";
     }
 
@@ -81,7 +83,7 @@ class FormatSpec {
             return empty($a) ? "" : json_encode($a);
         } else {
             $x = array_fill(0, 6, "");
-            foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $i => $k)
+            foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $i => $k)
                 $x[$i] = $this->unparse_key($k);
             while (!empty($x) && !$x[count($x) - 1])
                 array_pop($x);

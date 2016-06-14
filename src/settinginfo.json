@@ -249,8 +249,8 @@
         "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },
-    "sub_banal_bodyleading": {
-        "name": "PDF format checker minimum body leading",
+    "sub_banal_bodylineheight": {
+        "name": "PDF format checker minimum body line height",
         "type": "text", "size": 5, "placeholder": "N/A", "novalue": true,
         "extensible": true
     },

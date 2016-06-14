@@ -7,7 +7,7 @@ class BanalSettings {
     static public function render($suffix, $sv) {
         global $Conf;
         $cfs = new FormatSpec($sv->curv("sub_banal_data$suffix"));
-        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodyleading"] as $k) {
+        foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
             $val = $cfs->unparse_key($k);
             $sv->set_oldv("sub_banal_$k$suffix", $val == "" ? "N/A" : $val);
         }
@@ -24,14 +24,14 @@ class BanalSettings {
         echo '</tbody></table></td><td><span class="sep"></span></td>',
             '<td class="top"><table><tbody class="secondary-settings">';
         $sv->echo_entry_row("sub_banal_bodyfontsize$suffix", "Minimum body font size", null, ["after_entry" => "&nbsp;pt"]);
-        $sv->echo_entry_row("sub_banal_bodyleading$suffix", "Minimum leading", null, ["after_entry" => "&nbsp;pt"]);
+        $sv->echo_entry_row("sub_banal_bodylineheight$suffix", "Minimum line height", null, ["after_entry" => "&nbsp;pt"]);
         $sv->echo_entry_row("sub_banal_columns$suffix", "Columns");
         echo "</tbody></table></td></tr></table>";
     }
     static private function check_banal($sv) {
         global $ConfSitePATH;
         $cf = new CheckFormat;
-        $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodyleading"];
+        $interesting_keys = ["papersize", "pagelimit", "textblock", "bodyfontsize", "bodylineheight"];
         $s1 = $cf->check_file("$ConfSitePATH/src/sample.pdf", "letter;2;;6.5inx9in;12;14");
         $e1 = join(",", array_intersect(array_keys($cf->errf), $interesting_keys)) ? : "none";
         $e1_papersize = $cf->has_error("papersize");
@@ -147,12 +147,12 @@ class BanalSettings {
                 $sv->set_error("sub_banal_bodyfontsize$suffix", "Minimum body font size must be a number bigger than 0.");
         }
 
-        $cfs->bodyleading = null;
-        if (($s = trim(defval($sv->req, "sub_banal_bodyleading$suffix", ""))) != ""
+        $cfs->bodylineheight = null;
+        if (($s = trim(defval($sv->req, "sub_banal_bodylineheight$suffix", ""))) != ""
             && strcasecmp($s, "any") != 0 && strcasecmp($s, "N/A") != 0) {
-            $cfs->bodyleading = FormatSpec::parse_range($s);
-            if (!$cfs->bodyleading)
-                $sv->set_error("sub_banal_bodyleading$suffix", "Minimum body leading must be a number bigger than 0.");
+            $cfs->bodylineheight = FormatSpec::parse_range($s);
+            if (!$cfs->bodylineheight)
+                $sv->set_error("sub_banal_bodylineheight$suffix", "Minimum body line height must be a number bigger than 0.");
         }
 
         if ($sv->error_count() == $old_error_count) {

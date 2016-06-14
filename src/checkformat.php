@@ -186,8 +186,8 @@ class CheckFormat implements FormatChecker {
                 $this->msg_format("bodyfontsize", "Body font too large: maximum {$spec->bodyfontsize[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".");
         }
 
-        // leading
-        if ($spec->bodyleading) {
+        // line height
+        if ($spec->bodylineheight) {
             $lopx = $hipx = [];
             $minval = 1000;
             $maxval = 0;
@@ -195,20 +195,20 @@ class CheckFormat implements FormatChecker {
             foreach ($bj->pages as $i => $pg)
                 if (get($pg, "pagetype", "body") == "body") {
                     $pp = cvtnum(get($pg, "leading", $l));
-                    if ($pp > 0 && $pp < $spec->bodyleading[0] - $spec->bodyleading[2]) {
+                    if ($pp > 0 && $pp < $spec->bodylineheight[0] - $spec->bodylineheight[2]) {
                         $lopx[] = $i + 1;
                         $minval = min($minval, $pp);
                     }
-                    if ($pp > 0 && $spec->bodyleading[1] > 0
-                        && $pp > $spec->bodyleading[1] + $spec->bodyleading[2]) {
+                    if ($pp > 0 && $spec->bodylineheight[1] > 0
+                        && $pp > $spec->bodylineheight[1] + $spec->bodylineheight[2]) {
                         $hipx[] = $i + 1;
                         $maxval = max($maxval, $pp);
                     }
                 }
             if (!empty($lopx))
-                $this->msg_format("bodyleading", "<a href=\"http://en.wikipedia.org/wiki/Leading\">Leading</a> (line spacing) too small: minimum {$spec->bodyleading[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".");
+                $this->msg_format("bodylineheight", "Line height too small: minimum {$spec->bodylineheight[0]}pt, saw values as small as {$minval}pt on " . pluralx($lopx, "page") . " " . numrangejoin($lopx) . ".");
             if (!empty($hipx))
-                $this->msg_format("bodyleading", "<a href=\"http://en.wikipedia.org/wiki/Leading\">Leading</a> (line spacing) too large: minimum {$spec->bodyleading[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".");
+                $this->msg_format("bodylineheight", "Line height too large: minimum {$spec->bodylineheight[1]}pt, saw values as large as {$maxval}pt on " . pluralx($hipx, "page") . " " . numrangejoin($hipx) . ".");
         }
     }
 
