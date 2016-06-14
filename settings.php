@@ -791,6 +791,8 @@ function parse_value($sv, $si) {
     } else if ($si->type === "int" || $si->type === "zint") {
         if (preg_match("/\\A[-+]?[0-9]+\\z/", $v))
             return intval($v);
+        if ($v == "" && $si->placeholder)
+            return 0;
         $err = "Should be a number.";
     } else if ($si->type === "string") {
         // Avoid storing the default message in the database
