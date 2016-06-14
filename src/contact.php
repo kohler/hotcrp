@@ -2170,7 +2170,7 @@ class Contact {
         global $Conf;
         if ($this->can_view_paper_option($prow, $opt, $forceShow))
             return null;
-        if (is_object($opt) && ($opt = PaperOption::find($opt))
+        if ((is_object($opt) || ($opt = PaperOption::find($opt)))
             && ($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
             return $whyNot;
         return array_merge($prow->initial_whynot(), ["permission" => 1]);
