@@ -1,6 +1,57 @@
 HotCRP NEWS
 ===========
 
+## Version
+
+* Sort reviews & comments by post time, rather than putting all the reviews
+  first and all the comments later.
+
+* Support comments with >32768 bytes.
+
+* Search: New keywords including `pref:USER`, `edit:tags`.
+
+* Support annotated tag orders.
+
+* Graphs: `boxplot` graphs, better tooltips, more colors.
+
+* Styles: “Labels”! A tag can appear after the paper title in a wee lozenge. I
+  like this, but I'm not sure anyone else cares.
+
+* Styles: If you tag a paper with multiple colors, you will get a **RAINBOW**,
+  because we dynamically create the fill pattern.
+
+* Completion: Nicer UI.
+
+* Formulas: New expressions including `argmin`, `argmax`, `reviewer`,
+  `reviewer:#pc`, `quantile`, `median`, `sqrt`, `exp`, `pow`. Fix comparisons
+  of letter scores.
+
+* Autoassigner: Provide checkboxes so only a subset of the assignment can be
+  applied.
+
+* Bulk assignment: Add “Unsubmit review” assignment type; support changing
+  review rounds.
+
+* Settings: Add a track permission for “can see reviewer names.”
+
+* User pages: Tag actions.
+
+* Internal: Performance improvements. Reduce query load; render paper lists
+  more in Javascript.
+
+* Internal: Major refactoring of the settings system, search actions, format
+  checking, and paper options. Support external plugins for all these.
+
+* Many bug fixes. Work with newer MySQLs; fix review delegation; improve
+  tracker; bug fixes in min-cost max-flow assignment; fix an
+  information-exposure bug where enterprising PC members could discover tags
+  for conflicted papers.
+
+* Thanks for feature requests and bug reports to many users including Emery
+  Berger, Michele Nelson, Shriram Krishnamurthi, Chris Kanich, Don Porter,
+  Oleg Vaskevich, Eijiro Sumii, Marcos Aguilera.
+
+
 ## Version 2.99 - 21.Nov.2015
 
 * Support real-valued tag indexes and tag indexes for PC members.
