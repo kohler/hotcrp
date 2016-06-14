@@ -343,7 +343,7 @@ class AggregateFexpr extends Fexpr {
         return $v;
     }
 
-    public function loop_info() {
+    private function loop_info(FormulaCompiler $state) {
         if ($this->op === "all")
             return ["null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", self::cast_bool("~x~")];
         if ($this->op === "any")
@@ -401,7 +401,7 @@ class AggregateFexpr extends Fexpr {
     public function compile(FormulaCompiler $state) {
         if ($this->op == "my")
             return $state->_compile_my($this->args[0]);
-        if (($li = $this->loop_info())) {
+        if (($li = $this->loop_info($state))) {
             $t = $state->_compile_loop($li[0], $li[1], $this);
             return get($li, 2) ? str_replace("~x~", $t, $li[2]) : $t;
         }
