@@ -1,7 +1,7 @@
 HotCRP NEWS
 ===========
 
-## Version
+## Version 2.100 - 15.Jun.2016
 
 * Sort reviews & comments by post time, rather than putting all the reviews
   first and all the comments later.

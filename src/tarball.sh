@@ -1,7 +1,7 @@
-export VERSION=2.99
+export VERSION=2.100
 
 # check that schema.sql and updateschema.php agree on schema version
-updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*, *//;s/[;)].*//'`
+updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
 schemanum=`grep 'allowPaperOption' src/schema.sql | sed 's/.*, *//;s/).*//'`
 if [ "$updatenum" != "$schemanum" ]; then
     echo "error: allowPaperOption schema number in src/schema.sql ($schemanum)" 1>&2
@@ -78,6 +78,7 @@ batch/.htaccess
 batch/adddoc.php
 batch/addusers.php
 batch/checkinvariants.php
+batch/fixdelegation.php
 batch/killinactivedoc.php
 batch/s3test.php
 batch/s3transfer.php
@@ -135,6 +136,7 @@ src/conflict.php
 src/contact.php
 src/contactlist.php
 src/distoptions.php
+src/documentinfo.php
 src/filefilter.php
 src/formatspec.php
 src/formula.php
