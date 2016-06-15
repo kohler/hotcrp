@@ -816,7 +816,7 @@ class PreferencePaperColumn extends PaperColumn {
         $conflicted = $this->is_direct ? $row->reviewerConflictType > 0
             : $row->has_conflict($this->contact);
         if ($conflicted && !$pl->contact->allow_administer($row))
-            return review_type_icon(-1);
+            return isset($pl->columns["revtype"]) ? "" : review_type_icon(-1);
         else if (!$this->editable)
             return $this->show_content($pl, $row, false);
         else {

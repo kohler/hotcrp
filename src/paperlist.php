@@ -88,6 +88,7 @@ class PaperList {
     public $display;
 
     // columns access
+    public $columns = array();
     public $sorters = array();
     public $contact;
     public $scoresOk = false;
@@ -1251,11 +1252,13 @@ class PaperList {
         // folds: au:1, anonau:2, fullrow:3, aufull:4, force:5, rownum:6, [fields]
         $next_fold = 7;
         foreach ($field_list as $fdef) {
-            if ($fdef->view != Column::VIEW_NONE)
+            if ($fdef->view != Column::VIEW_NONE) {
                 $fieldDef[] = $fdef;
-            if ($fdef->view != Column::VIEW_NONE && $fdef->foldable) {
-                $fdef->foldable = $next_fold;
-                ++$next_fold;
+                $this->columns[$fdef->name] = true;
+                if ($fdef->foldable) {
+                    $fdef->foldable = $next_fold;
+                    ++$next_fold;
+                }
             }
             if ($fdef->name == "title")
                 $titlecol = $ncol;
