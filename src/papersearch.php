@@ -3665,12 +3665,12 @@ class PaperSearch {
         if ($user->privChair)
             $tOpt["all"] = "All papers";
         if ($user->privChair && !$Conf->can_pc_see_all_submissions()
-            && defval($_REQUEST, "t") === "act")
+            && req("t") === "act")
             $tOpt["act"] = "Active papers";
         if ($user->is_reviewer())
             $tOpt["r"] = "Your reviews";
         if ($user->has_outstanding_review()
-            || ($user->is_reviewer() && defval($_REQUEST, "t") === "rout"))
+            || ($user->is_reviewer() && req("t") === "rout"))
             $tOpt["rout"] = "Your incomplete reviews";
         if ($user->isPC)
             $tOpt["req"] = "Your review requests";

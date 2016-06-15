@@ -103,27 +103,26 @@ if ($Qreq->fn) {
 
 
 // set fields to view
-if (isset($_REQUEST["redisplay"])) {
+if ($Qreq->redisplay) {
     $pld = " ";
-    foreach ($_REQUEST as $k => $v)
+    foreach ($Qreq as $k => $v)
         if (substr($k, 0, 4) == "show" && $v)
             $pld .= substr($k, 4) . " ";
     $Conf->save_session("pldisplay", $pld);
 }
 displayOptionsSet("pldisplay");
-if (defval($_REQUEST, "scoresort") == "M")
-    $_REQUEST["scoresort"] = "C";
-if (isset($_REQUEST["scoresort"])
-    && isset(ListSorter::$score_sorts[$_REQUEST["scoresort"]]))
-    $Conf->save_session("scoresort", $_REQUEST["scoresort"]);
+if ($Qreq->scoresort == "M")
+    $Qreq->scoresort = "C";
+if ($Qreq->scoresort && isset(ListSorter::$score_sorts[$Qreq->scoresort]))
+    $Conf->save_session("scoresort", $Qreq->scoresort);
 if (!$Conf->session("scoresort"))
     $Conf->save_session("scoresort", ListSorter::default_score_sort());
-if (isset($_REQUEST["redisplay"]))
+if ($Qreq->redisplay)
     redirectSelf(array("tab" => "display"));
 
 
 // save display options
-if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
+if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
     if ($Conf->session("pldisplay") !== " overAllMerit ") {
         $pldisplay = explode(" ", trim($Conf->session("pldisplay")));
         sort($pldisplay);
@@ -136,7 +135,7 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
         Dbl::qe_raw("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)");
     else
         Dbl::qe_raw("delete from Settings where name='scoresort_default'");
-    if ($OK && defval($_REQUEST, "ajax"))
+    if ($OK && $Qreq->ajax)
         $Conf->ajaxExit(array("ok" => 1));
     else if ($OK)
         $Conf->confirmMsg("Display options saved.");
@@ -146,8 +145,8 @@ if (isset($_REQUEST["savedisplayoptions"]) && $Me->privChair) {
 // save formula
 function visible_formulas() {
     return array_filter(FormulaPaperColumn::$list, function ($f) {
-        global $Me;
-        return $_REQUEST["t"] == "a"
+        global $Me, $Qreq;
+        return $Qreq->t == "a"
             ? $Me->can_view_formula_as_author($f)
             : $Me->can_view_formula($f);
     });
@@ -161,7 +160,7 @@ function formulas_with_new() {
 }
 
 function saveformulas() {
-    global $Conf, $Me, $OK;
+    global $Conf, $Me, $OK, $Qreq;
 
     // parse names and expressions
     $ok = true;
@@ -169,8 +168,8 @@ function saveformulas() {
     $names = array();
 
     foreach (formulas_with_new() as $fdef) {
-        $name = simplify_whitespace(defval($_REQUEST, "name_$fdef->formulaId", $fdef->name));
-        $expr = simplify_whitespace(defval($_REQUEST, "expression_$fdef->formulaId", $fdef->expression));
+        $name = simplify_whitespace(defval($Qreq, "name_$fdef->formulaId", $fdef->name));
+        $expr = simplify_whitespace(defval($Qreq, "expression_$fdef->formulaId", $fdef->expression));
 
         if ($name != "" && $expr != "") {
             if (isset($names[$name]))
@@ -206,7 +205,7 @@ function saveformulas() {
         }
     }
 
-    $_REQUEST["tab"] = "formulas";
+    $_REQUEST["tab"] = $_GET["tab"] = "formulas";
     if ($ok) {
         foreach ($changes as $change)
             Dbl::qe_raw($change);
@@ -217,15 +216,15 @@ function saveformulas() {
     }
 }
 
-if (isset($_REQUEST["saveformulas"]) && $Me->isPC && check_post())
+if ($Qreq->saveformulas && $Me->isPC && check_post())
     saveformulas();
 
 
 // save formula
 function savesearch() {
-    global $Conf, $Me, $OK;
+    global $Conf, $Me, $OK, $Qreq;
 
-    $name = simplify_whitespace(defval($_REQUEST, "ssname", ""));
+    $name = simplify_whitespace(defval($Qreq, "ssname", ""));
     $tagger = new Tagger;
     if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
         if ($name == "")
@@ -236,16 +235,16 @@ function savesearch() {
 
     // support directly recursive definition (to e.g. change display options)
     if (($t = $Conf->setting_data("ss:$name")) && ($t = json_decode($t))) {
-        if (isset($_REQUEST["q"]) && $_REQUEST["q"] == "ss:$name")
-            $_REQUEST["q"] = (isset($t->q) ? $t->q : "");
+        if (isset($Qreq->q) && trim($Qreq->q) == "ss:$name")
+            $Qreq->q = (isset($t->q) ? $t->q : "");
         if (isset($t->owner) && !$Me->privChair && $t->owner != $Me->contactId)
             return Conf::msg_error("You don’t have permission to change “ss:" . htmlspecialchars($name) . "”.");
     }
 
     $arr = array();
     foreach (array("q", "qt", "t", "sort") as $k)
-        if (isset($_REQUEST[$k]))
-            $arr[$k] = $_REQUEST[$k];
+        if (isset($Qreq[$k]))
+            $arr[$k] = $Qreq[$k];
     if ($Me->privChair)
         $arr["owner"] = "chair";
     else
@@ -272,7 +271,7 @@ function savesearch() {
         $arr["display"] = trim(join(" ", array_keys($display)));
     }
 
-    if (isset($_REQUEST["deletesearch"])) {
+    if ($Qreq->deletesearch) {
         Dbl::qe_raw("delete from Settings where name='ss:" . sqlq($name) . "'");
         redirectSelf();
     } else {
@@ -281,15 +280,14 @@ function savesearch() {
     }
 }
 
-if ((isset($_REQUEST["savesearch"]) || isset($_REQUEST["deletesearch"]))
-    && $Me->isPC && check_post()) {
+if (($Qreq->savesearch || $Qreq->deletesearch) && $Me->isPC && check_post()) {
     savesearch();
-    $_REQUEST["tab"] = "ss";
+    $_REQUEST["tab"] = $_GET["tab"] = "ss";
 }
 
 
 // exit early if Ajax
-if (defval($_REQUEST, "ajax"))
+if ($Qreq->ajax)
     $Conf->ajaxExit(array("response" => ""));
 
 
@@ -302,9 +300,9 @@ if ($Me->privChair)
 // search
 $Conf->header("Search", "search", actionBar());
 $Conf->echoScript(); // need the JS right away
-$Search = new PaperSearch($Me, $_REQUEST);
-if (isset($_REQUEST["q"])) {
-    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => defval($_REQUEST, "display")], $Qreq);
+$Search = new PaperSearch($Me, $Qreq);
+if (isset($Qreq->q)) {
+    $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => $Qreq->display], $Qreq);
     $pl->papersel = $SSel->selection_map();
     $pl_text = $pl->table_html($Search->limitName, [
             "class" => "pltable_full", "table_id" => "foldpl",
@@ -317,25 +315,25 @@ if (isset($_REQUEST["q"])) {
 
 
 // set up the search form
-if (isset($_REQUEST["redisplay"]))
+if ($Qreq->redisplay)
     $activetab = 3;
-else if (isset($_REQUEST["qa"]) || defval($_REQUEST, "qt", "n") != "n")
+else if (isset($Qreq->qa) || defval($Qreq, "qt", "n") != "n")
     $activetab = 2;
 else
     $activetab = 1;
 $tabs = array("display" => 3, "advanced" => 2, "basic" => 1, "normal" => 1,
               "ss" => 4);
 $searchform_formulas = "c";
-if (isset($tabs[defval($_REQUEST, "tab", "x")]))
-    $activetab = $tabs[$_REQUEST["tab"]];
-else if (defval($_REQUEST, "tab", "x") == "formulas") {
+if (isset($tabs[defval($Qreq, "tab", "x")]))
+    $activetab = $tabs[$Qreq->tab];
+else if (defval($Qreq, "tab", "x") == "formulas") {
     $activetab = 3;
     $searchform_formulas = "o";
 }
 if ($activetab == 3 && (!$pl || $pl->count == 0))
     $activetab = 1;
 
-$tselect = PaperSearch::searchTypeSelector($tOpt, $_REQUEST["t"], 1);
+$tselect = PaperSearch::searchTypeSelector($tOpt, $Qreq->t, 1);
 
 
 // SEARCH FORMS
@@ -345,11 +343,11 @@ $displayOptions = array();
 $display_options_extra = "";
 
 function display_option_checked($type) {
-    global $pl, $pldisplay;
+    global $pl, $pldisplay, $Qreq;
     if ($pl)
         return !$pl->is_folded($type);
     else
-        return defval($_REQUEST, "show$type") || strpos($pldisplay, " $type ") !== false;
+        return $Qreq["show$type"] || strpos($pldisplay, " $type ") !== false;
 }
 
 function displayOptionCheckbox($type, $column, $title, $opt = array()) {
@@ -382,8 +380,8 @@ function displayOptionText($text, $column, $opt = array()) {
 if ($pl) {
     $viewAcceptedAuthors =
         $Me->is_reviewer() && $Conf->timeReviewerViewAcceptedAuthors();
-    $viewAllAuthors = ($_REQUEST["t"] == "a"
-                       || ($_REQUEST["t"] == "acc" && $viewAcceptedAuthors)
+    $viewAllAuthors = ($Qreq->t == "a"
+                       || ($Qreq->t == "acc" && $viewAcceptedAuthors)
                        || $Conf->subBlindNever());
 
     displayOptionText("<strong>Show:</strong>", 1);
@@ -421,7 +419,7 @@ if ($pl) {
 
     // Tags group
     if ($Me->isPC && $pl->any->tags) {
-        $opt = array("disabled" => ($_REQUEST["t"] == "a" && !$Me->privChair));
+        $opt = array("disabled" => ($Qreq->t == "a" && !$Me->privChair));
         displayOptionCheckbox("tags", 1, "Tags", $opt);
         if ($Me->privChair) {
             $opt["indent"] = true;
@@ -450,7 +448,7 @@ if ($pl) {
     // Scores group
     if ($pl->scoresOk == "present") {
         $rf = ReviewForm::get();
-        if ($Me->is_reviewer() && $_REQUEST["t"] != "a")
+        if ($Me->is_reviewer() && $Qreq->t != "a")
             $revViewScore = $Me->permissive_view_score_bound();
         else
             $revViewScore = VIEWSCORE_AUTHOR - 1;
@@ -489,7 +487,7 @@ echo "<table id='searchform' class='tablinks$activetab fold3$searchform_formulas
 
 // Basic search
 echo Ht::form_div(hoturl("search"), array("method" => "get")),
-    Ht::entry("q", defval($_REQUEST, "q", ""),
+    Ht::entry("q", (string) $Qreq->q,
               array("id" => "searchform1_d", "size" => 40, "tabindex" => 1,
                     "style" => "width:30em", "class" => "hotcrp_searchbox")),
     " &nbsp;in &nbsp;$tselect &nbsp;\n",
@@ -526,22 +524,22 @@ if ($Me->isPC) {
     $qtOpt["re"] = "Reviewers";
     $qtOpt["tag"] = "Tags";
 }
-if (!isset($qtOpt[defval($_REQUEST, "qt", "")]))
-    $_REQUEST["qt"] = "n";
-echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
+if (!isset($qtOpt[(string) $Qreq->qt]))
+    $_REQUEST["qt"] = $_GET["qt"] = $Qreq->qt = "n";
+echo Ht::select("qt", $qtOpt, $Qreq->qt, array("tabindex" => 1)),
     "</td>
 </tr>
 <tr><td><div class='g'></div></td></tr>
 <tr>
   <td class='lxcaption'>With <b>all</b> the words</td>
-  <td class='lentry'><input id='searchform2_d' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($_REQUEST, "qa", defval($_REQUEST, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
+  <td class='lentry'><input id='searchform2_d' type='text' size='40' style='width:30em' name='qa' value=\"", htmlspecialchars(defval($Qreq, "qa", defval($Qreq, "q", ""))), "\" tabindex='1' /><span class='sep'></span></td>
   <td rowspan='3'>", Ht::submit("Search", array("tabindex" => 2)), "</td>
 </tr><tr>
   <td class='lxcaption'>With <b>any</b> of the words</td>
-  <td class='lentry'><input type='text' size='40' name='qo' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qo", "")), "\" tabindex='1' /></td>
+  <td class='lentry'><input type='text' size='40' name='qo' style='width:30em' value=\"", htmlspecialchars(defval($Qreq, "qo", "")), "\" tabindex='1' /></td>
 </tr><tr>
   <td class='lxcaption'><b>Without</b> the words</td>
-  <td class='lentry'><input type='text' size='40' name='qx' style='width:30em' value=\"", htmlspecialchars(defval($_REQUEST, "qx", "")), "\" tabindex='1' /></td>
+  <td class='lentry'><input type='text' size='40' name='qx' style='width:30em' value=\"", htmlspecialchars(defval($Qreq, "qx", "")), "\" tabindex='1' /></td>
 </tr>
 <tr>
   <td class='lxcaption'></td>
@@ -551,12 +549,12 @@ echo Ht::select("qt", $qtOpt, $_REQUEST["qt"], array("tabindex" => 1)),
 echo "</div>";
 
 function echo_request_as_hidden_inputs($specialscore = false) {
-    global $pl;
+    global $pl, $Qreq;
     foreach (array("q", "qa", "qo", "qx", "qt", "t", "sort") as $x)
-        if (isset($_REQUEST[$x])
-            && ($x != "q" || !isset($_REQUEST["qa"]))
+        if (isset($Qreq[$x])
+            && ($x != "q" || !isset($Qreq->qa))
             && ($x != "sort" || !$specialscore || !$pl))
-            echo Ht::hidden($x, $_REQUEST[$x]);
+            echo Ht::hidden($x, $Qreq[$x]);
     if ($specialscore && $pl)
         echo Ht::hidden("sort", $pl->sortdef(true));
 }
@@ -596,8 +594,8 @@ if ($Me->isPC || $Me->privChair) {
             "<tr><td>", foldbutton("ssearchnew"), "</td>",
             "<td><a class='q fn' href='#' onclick='return fold(\"ssearchnew\")'>New saved search</a><div class='fx'>",
             "Save ";
-        if (defval($_REQUEST, "q"))
-            echo "search “", htmlspecialchars($_REQUEST["q"]), "”";
+        if ($Qreq->q)
+            echo "search “", htmlspecialchars($Qreq->q), "”";
         else
             echo "empty search";
         echo " as:<br />ss:<input type='text' name='ssname' value='' size='20' /> &nbsp;",
@@ -656,13 +654,13 @@ if ($pl && $pl->count > 0) {
     // Conflict display
     if ($Me->privChair)
         echo "<td class='padlb'>",
-            Ht::checkbox("showforce", 1, !!defval($_REQUEST, "forceShow"),
+            Ht::checkbox("showforce", 1, !!$Qreq->forceShow,
                           array("id" => "showforce",
                                 "onchange" => "fold('pl',!this.checked,'force');$('#forceShow').val(this.checked?1:0)")),
             "&nbsp;", Ht::label("Override conflicts", "showforce"), "</td>";
 
     // Edit formulas link
-    if ($Me->isPC && $_REQUEST["t"] != "a")
+    if ($Me->isPC && $Qreq->t != "a")
         echo "<td class='padlb'>", Ht::js_button("Edit formulas", "fold('searchform',0,3)"), "</td>";
 
     echo "<td class='padlb'>";
@@ -706,8 +704,8 @@ would display the sum of a paper&rsquo;s Overall merit scores.
         $fs = visible_formulas();
         $fs["n"] = (object) array("formulaId" => "n", "name" => "", "expression" => "", "createdBy" => 0);
         foreach ($fs as $formulaId => $fdef) {
-            $name = defval($_REQUEST, "name_$formulaId", $fdef->name);
-            $expression = defval($_REQUEST, "expression_$formulaId", $fdef->expression);
+            $name = defval($Qreq, "name_$formulaId", $fdef->name);
+            $expression = defval($Qreq, "expression_$formulaId", $fdef->expression);
             $disabled = ($Me->privChair || $fdef->createdBy > 0 ? "" : " disabled='disabled'");
             echo "<tr>";
             if ($fdef->formulaId == "n")
@@ -766,15 +764,15 @@ if ($pl) {
             Ht::hidden_default_submit("default", 1);
 
     echo $pl_text;
-    if ($pl->count == 0 && $_REQUEST["t"] != "s") {
+    if ($pl->count == 0 && $Qreq->t != "s") {
         $a = array();
         foreach (array("q", "qa", "qo", "qx", "qt", "sort", "showtags") as $xa)
-            if (isset($_REQUEST[$xa])
-                && ($xa != "q" || !isset($_REQUEST["qa"])))
-                $a[] = "$xa=" . urlencode($_REQUEST[$xa]);
+            if (isset($Qreq[$xa])
+                && ($xa != "q" || !isset($Qreq->qa)))
+                $a[] = "$xa=" . urlencode($Qreq[$xa]);
         reset($tOpt);
-        echo " in ", strtolower($tOpt[$_REQUEST["t"]]);
-        if (key($tOpt) != $_REQUEST["t"] && $_REQUEST["t"] !== "all")
+        echo " in ", strtolower($tOpt[$Qreq->t]);
+        if (key($tOpt) != $Qreq->t && $Qreq->t !== "all")
             echo " (<a href=\"", hoturl("search", join("&amp;", $a)), "\">Repeat search in ", strtolower(current($tOpt)), "</a>)";
     }
 
