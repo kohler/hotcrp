@@ -105,7 +105,7 @@ class PaperList {
 
     private $sortable;
     private $foldable;
-    var $listNumber;
+    private $listNumber;
     private $_paper_link_page;
     private $_paper_link_mode;
     private $viewmap;
