@@ -1571,19 +1571,6 @@ class PaperSearch {
         return $ret;
     }
 
-    private function _search_one_tag($value, $old_arg) {
-        if (($starpos = strpos($value, "*")) !== false) {
-            $arg = "(\3 like '" . str_replace("*", "%", sqlq_for_like($value)) . "'";
-            if ($starpos == 0)
-                $arg .= " and \3 not like '%~%'";
-            $arg .= ")";
-        } else if ($value === "any" || $value === "none")
-            $arg = "(\3 is not null and (\3 not like '%~%' or \3 like '{$this->cid}~%'" . ($this->privChair ? " or \3 like '~~%'" : "") . "))";
-        else
-            $arg = "\3='" . sqlq($value) . "'";
-        return $old_arg ? "$old_arg or $arg" : $arg;
-    }
-
     private function _search_tags($word, $keyword, &$qt) {
         global $Conf;
         if ($word[0] === "#")
@@ -1642,15 +1629,14 @@ class PaperSearch {
         if (!preg_match(',\A(any|none|' . TagInfo::BASIC_COLORS_PLUS . ')\z,', $word))
             return new SearchTerm("f");
         $any = $word === "any" || $word === "none";
-        $qx = array();
+        $value = new TagSearchMatcher;
         foreach (TagInfo::color_tags($any ? null : $word) as $tag) {
-            array_push($qx, sqlq($tag), sqlq("{$this->cid}~$tag"));
+            array_push($value->tags, $tag, "{$this->cid}~$tag");
             if ($this->privChair)
-                $qx[] = sqlq("~~$tag");
+                $value->tags[] = "~~$tag";
         }
-        if (count($qx))
-            $qe = new SearchTerm("tag", self::F_XVIEW,
-                                 array("\3 in ('" . join("','", $qx) . "')"));
+        if (count($value->tags))
+            $qe = new SearchTerm("tag", self::F_XVIEW, $value);
         else
             $qe = new SearchTerm("f");
         if ($word === "none")
