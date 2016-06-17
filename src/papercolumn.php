@@ -1502,6 +1502,8 @@ class FormulaPaperColumn extends PaperColumn {
         return $this->statistics && $this->statistics->count();
     }
     public function statistic($pl, $what) {
+        if ($what == ScoreInfo::SUM && !$this->formula->result_format_is_real())
+            return "";
         return $this->formula->unparse_html($this->statistics->statistic($what), $pl->contact);
     }
 }
