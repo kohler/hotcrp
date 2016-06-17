@@ -914,7 +914,8 @@ class PaperTable {
         $cerror = $this->has_error("contactAuthor") || $this->has_error("contacts");
         $open = $cerror || $always_unfold
             || ($this->useRequest && $this->qreq->setcontacts == 2);
-        echo '<div id="foldcontactauthors" class="papeg ',
+        echo Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")),
+            '<div id="foldcontactauthors" class="papeg ',
             ($open ? "foldo" : "foldc"),
             '"><div class="papet childfold fn0" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
@@ -989,7 +990,7 @@ class PaperTable {
                             "placeholder" => "Email",
                             "class" => $cerror ? "error" : null)),
             '</td></tr>';
-        echo '</table>', Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")), "</div></div>\n\n";
+        echo "</table></div></div>\n\n";
     }
 
     private function echo_editable_anonymity() {
