@@ -529,7 +529,7 @@ class PaperTable {
                 $this->cf->status == CheckFormat::STATUS_PROBLEM ? "foldo" : "foldc",
                 '" data-docid="', $doc->paperStorageId, '">';
             if ($this->cf->status == CheckFormat::STATUS_PROBLEM)
-                echo join("", $this->cf->messages_html());
+                echo $this->cf->document_report($prow, $doc);
             echo '</div>';
         }
 

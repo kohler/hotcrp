@@ -43,6 +43,7 @@ class CheckFormat implements FormatChecker {
     public function msg_fail($what) {
         if ($what)
             $this->msgs[] = ["fail", $what];
+        $this->errf["fail"] = true;
         return $this->status = self::STATUS_ERROR;
     }
 
@@ -242,7 +243,7 @@ class CheckFormat implements FormatChecker {
         return $this->status;
     }
 
-    public function load_document($doc) {
+    public function load_to_filestore($doc) {
         if (!$doc->docclass->load_to_filestore($doc))
             return $cf->msg_fail(isset($doc->error_html) ? $doc->error_html : "Paper cannot be loaded.");
         return true;
@@ -263,7 +264,7 @@ class CheckFormat implements FormatChecker {
 
         if (!$bj && $cf->allow_run == CheckFormat::RUN_NO)
             $cf->need_run = true;
-        else if (!$bj && $cf->load_document($doc)) {
+        else if (!$bj && $cf->load_to_filestore($doc)) {
             // constrain the number of concurrent banal executions to banalLimit
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
@@ -304,28 +305,33 @@ class CheckFormat implements FormatChecker {
         $this->dt_specs[$dtype] = $spec;
     }
 
-    public function check_document(PaperInfo $prow, $dtype, $doc = 0) {
+    public function fetch_document(PaperInfo $prow, $dtype, $docid = 0) {
+        $doc = $prow->document($dtype, $docid, true);
+        if (!$doc || $doc->paperStorageId <= 1)
+            $this->msg_fail("No such document.");
+        else if ($doc->paperId != $prow->paperId || $doc->documentType != $dtype)
+            $this->msg_fail("The document has changed.");
+        else
+            return $doc;
+        return null;
+    }
+
+    public function check_document(PaperInfo $prow, $doc) {
         global $Conf, $Opt;
         $this->clear();
-        if (is_object($dtype)) {
-            $doc = $dtype;
-            $dtype = $doc->documentType;
-        }
-        if (!is_object($doc))
-            $doc = $prow->document($dtype, $doc, true);
-        if (!$doc || $doc->paperStorageId <= 1)
+        if (!$doc && !isset($this->errf["fail"]))
             return $this->msg_fail("No such document.");
-        if ($doc->paperId != $prow->paperId || $doc->documentType != $dtype)
-            return $this->msg_fail("The document has changed.");
-        if ($doc->mimetype != "application/pdf")
+        else if (!$doc)
+            return self::STATUS_ERROR;
+        else if ($doc->mimetype != "application/pdf")
             return $this->msg_fail("The format checker only works for PDF files.");
 
-        $done_banal = false;
-        $spec = $this->spec($dtype);
+        $done_me = false;
+        $spec = $this->spec($doc->documentType);
         foreach ($spec->checkers ? : [] as $chk) {
             if ($chk === "banal" || $chk === "CheckFormat") {
                 $checker = $this;
-                $done_banal = true;
+                $done_me = true;
             } else {
                 if (!isset($this->checkers[$chk]))
                     $this->checkers[$chk] = new $chk;
@@ -333,7 +339,7 @@ class CheckFormat implements FormatChecker {
             }
             $checker->check($this, $spec, $prow, $doc);
         }
-        if (!$done_banal)
+        if (!$done_me)
             $this->check($this, $spec, $prow, $doc);
 
         if (!empty($this->metadata_updates))
@@ -344,28 +350,41 @@ class CheckFormat implements FormatChecker {
     private function field_status($f) {
         return get($this->field_status, $f, $f === "fail" ? CheckFormat::STATUS_ERROR : CheckFormat::STATUS_PROBLEM);
     }
-    public function errors() {
+    public function errors($include_fields = false) {
         $x = [];
         foreach ($this->msgs as $m)
             if ($this->field_status($m[0]) === CheckFormat::STATUS_ERROR)
-                $x[] = $m[1];
+                $x[] = $include_fields ? $m : $m[1];
         return $x;
     }
-    public function warnings() {
+    public function warnings($include_fields = false) {
         $x = [];
         foreach ($this->msgs as $m)
             if ($this->field_status($m[0]) === CheckFormat::STATUS_PROBLEM)
-                $x[] = $m[1];
+                $x[] = $include_fields ? $m : $m[1];
         return $x;
     }
-    public function messages_html() {
-        $t = [];
+    public function messages($include_fields = false) {
+        return $include_fields ? $this->msgs : array_map(function ($m) { return $m[1]; }, $this->msgs);
+    }
+    public function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
+        $t = "";
         if (($x = $this->errors()))
-            $t[] = Ht::xmsg("error", '<div>' . join('</div><div>', $x) . '</div>');
+            $t .= Ht::xmsg("error", '<div>' . join('</div><div>', $x) . '</div>');
         if (($x = $this->warnings())) {
-            $t[] = Ht::xmsg("warning", "This document may violate the submission format requirements.  Errors are:\n<ul><li>" . join("</li>\n<li>", $x) . "</li></ul>\nOnly submissions that comply with the requirements will be considered.  However, the automated format checker uses heuristics and can make mistakes, especially on figures.  If you are confident that the paper already complies with all format requirements, you may submit it as is.");
+            $t .= Ht::xmsg("warning", "This document may violate the submission format requirements. Errors are:\n<ul><li>" . join("</li>\n<li>", $x) . "</li></ul>\nSubmissions that violate the requirements will not be considered. However, the automated format checker uses heuristics and can make mistakes, especially on figures. If you are confident that the paper already complies with all format requirements, you may submit it as is.");
         } else if ($this->status == self::STATUS_OK)
-            $t[] = Ht::xmsg("confirm", "Congratulations, this document seems to comply with the basic submission format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
+            $t .= Ht::xmsg("confirm", "Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
         return $t;
+    }
+    public function document_report(PaperInfo $prow, $doc) {
+        $spec = $this->spec($doc ? $doc->documentType : DTYPE_SUBMISSION);
+        if ($doc) {
+            foreach ($spec->checkers ? : [] as $chk)
+                if ($chk !== "banal" && $chk !== "CheckFormat" && isset($this->checkers[$chk])
+                    && ($report = $this->checkers[$chk]->report($this, $spec, $prow, $doc)))
+                    return $report;
+        }
+        return $this->report($this, $spec, $prow, $doc);
     }
 }

@@ -332,7 +332,8 @@ class PaperApi {
         if (!$opt || !$user->can_view_paper_option($prow, $opt))
             json_exit(["ok" => false, "error" => "Permission error."]);
         $cf = new CheckFormat;
-        $status = $cf->check_document($prow, $dtype, $qreq->docid);
-        json_exit(["ok" => $status != CheckFormat::STATUS_ERROR, "status" => $status, "response" => join("", $cf->messages_html())]);
+        $doc = $cf->fetch_document($prow, $dtype, $qreq->docid);
+        $status = $cf->check_document($prow, $doc);
+        json_exit(["ok" => $status != CheckFormat::STATUS_ERROR, "status" => $status, "response" => $cf->document_report($prow, $doc)]);
     }
 }

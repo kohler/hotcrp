@@ -206,4 +206,5 @@ class FormatSpec {
 
 interface FormatChecker {
     public function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc);
+    public function report(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc);
 }
