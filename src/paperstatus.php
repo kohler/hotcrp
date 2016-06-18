@@ -201,8 +201,9 @@ class PaperStatus {
                 if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
                     continue;
                 $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
-                $options[$this->export_ids ? $o->id : $o->abbr] =
-                    $o->unparse_json($ov, $this, $contact);
+                $oj = $o->unparse_json($ov, $this, $contact);
+                if ($oj !== null)
+                    $options[$this->export_ids ? $o->id : $o->abbr] = $oj;
             }
             if (!empty($options))
                 $pj->options = (object) $options;
@@ -609,9 +610,9 @@ class PaperStatus {
         foreach ($pj->options as $oid => $oj) {
             $o = PaperOption::find($oid);
             $result = null;
-            if ($oj !== null)
+            if ($oj !== null && $oj !== false)
                 $result = $o->parse_json($oj, $this);
-            if ($result === null)
+            if ($result === null || $result === false)
                 $result = [];
             if (!is_array($result))
                 $result = [[$result]];

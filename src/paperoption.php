@@ -695,9 +695,12 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        if ($ov->value && ($doc = $ps->document_to_json($this->id, $ov->value)))
+        if (!$ov->value)
+            return false;
+        else if (($doc = $ps->document_to_json($this->id, $ov->value)))
             return $doc;
-        return null;
+        else
+            return null;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -751,7 +754,7 @@ class NumericPaperOption extends PaperOption {
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
-        return $ov->value ? : null;
+        return $ov->value ? : false;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -802,7 +805,7 @@ class TextPaperOption extends PaperOption {
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
         $d = $ov->data();
-        return $d != "" ? $d : null;
+        return $d != "" ? $d : false;
     }
 
     function parse_json($pj, PaperStatus $ps) {
@@ -901,7 +904,7 @@ class AttachmentsPaperOption extends PaperOption {
         foreach ($ov->documents() as $doc)
             if (($doc = $ps->document_to_json($this->id, $doc)))
                 $attachments[] = $doc;
-        return empty($attachments) ? null : $attachments;
+        return empty($attachments) ? false : $attachments;
     }
 
     function parse_json($pj, PaperStatus $ps) {
