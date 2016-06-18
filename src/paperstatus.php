@@ -42,6 +42,10 @@ class PaperStatus {
         $this->document_callbacks[] = $cb;
     }
 
+    function user() {
+        return $this->contact;
+    }
+
     function paper_row() {
         return $this->prow;
     }
