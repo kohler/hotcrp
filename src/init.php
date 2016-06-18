@@ -270,10 +270,11 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
                 continue;
             }
         }
-        if (is_object($entry) && !isset($entry->id))
+        if (is_object($entry) && !isset($entry->id) && !isset($entry->factory)
+            && !isset($entry->factory_class))
             $entry = get_object_vars($entry);
         foreach (is_array($entry) ? $entry : [$entry] as $obj)
-            if (!is_object($obj) || !isset($obj->id) || !call_user_func($callback, $obj, $extra_arg))
+            if (!is_object($obj) || !call_user_func($callback, $obj, $extra_arg))
                 error_log("$landmark: Invalid $callback " . json_encode($obj) . ".");
     }
 }

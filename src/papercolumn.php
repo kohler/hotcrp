@@ -7,6 +7,8 @@ class PaperColumn extends Column {
     static public $by_name = [];
     static public $factories = [];
     static private $synonyms = [];
+    static private $j_by_name = null;
+    static private $j_factories = null;
 
     const PREP_SORT = -1;
     const PREP_FOLDED = 0; // value matters
@@ -24,6 +26,31 @@ class PaperColumn extends Column {
         return get(self::$by_name, $lname, null);
     }
 
+    public static function _add_json($cj) {
+        if (is_object($cj) && isset($cj->name) && is_string($cj->name)) {
+            self::$j_by_name[strtolower($cj->name)] = $cj;
+            return true;
+        } else if (is_object($cj) && isset($cj->prefix) && is_string($cj->prefix)) {
+            self::$j_factories[] = $cj;
+            return true;
+        } else
+            return false;
+    }
+    private static function _expand_json($cj) {
+        $f = null;
+        if (($factory_class = get($cj, "factory_class")))
+            $f = new $factory_class($cj);
+        else if (($factory = get($cj, "factory")))
+            $f = call_user_func($factory, $cj);
+        else
+            return null;
+        if (isset($cj->name))
+            self::$by_name[strtolower($cj->name)] = $f;
+        else
+            self::$factories[] = [strtolower($cj->prefix), $f];
+        return $f;
+    }
+
     public static function lookup($name, $errors = null) {
         $lname = strtolower($name);
         if (isset(self::$synonyms[$lname]))
@@ -37,6 +64,18 @@ class PaperColumn extends Column {
         if (($colon = strpos($lname, ":")) > 0
             && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
             return self::lookup($syn . substr($lname, $colon));
+        if (self::$j_by_name === null) {
+            self::$j_by_name = self::$j_factories = [];
+            if (($jlist = opt("paperColumns")))
+                expand_json_includes_callback($jlist, "PaperColumn::_add_json");
+        }
+        if (isset(self::$j_by_name[$name]))
+            return self::_expand_json(self::$j_by_name[$name]);
+        foreach (self::$j_factories as $fj)
+            if (str_starts_with($lname, strtolower($fj->prefix))
+                && ($fx = self::_expand_json($fj))
+                && ($x = $fx->make_column($name, $errors)))
+                return $x;
         return null;
     }
 
