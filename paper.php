@@ -160,7 +160,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     }
 
     if (!$saved) {
-        $emsg = $ps->error_html();
+        $emsg = $ps->messages();
         Conf::msg_error("There were errors in saving your paper. Please fix them and try again." . (count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
@@ -240,8 +240,8 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     $notes = join(" ", $notes);
 
     $webnotes = "";
-    if (count($ps->error_html()))
-        $webnotes .= " <ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>";
+    if (count($ps->messages()))
+        $webnotes .= " <ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>";
 
     if (!count($diffs)) {
         $Conf->warnMsg("There were no changes to submission #$prow->paperId. " . $notes . $webnotes);
@@ -333,7 +333,7 @@ if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
         if ($ps->save_paper_json($pj, $opj))
             redirectSelf();
         else
-            Conf::msg_error("<ul><li>" . join("</li><li>", $ps->error_html()) . "</li></ul>");
+            Conf::msg_error("<ul><li>" . join("</li><li>", $ps->messages()) . "</li></ul>");
     } else
         Conf::msg_error(whyNotText(array("permission" => 1), "update contacts for"));
 
@@ -396,6 +396,11 @@ if ($paperTable->mode == "edit") {
 $paperTable->initialize($editable, $editable && $useRequest);
 if ($ps && $paperTable->mode === "edit")
     $paperTable->set_edit_status($ps);
+else if ($prow && $paperTable->mode === "edit") {
+    $ps = new PaperStatus($Me, ["forceShow" => true]);
+    $ps->paper_json($prow, ["msgs" => true]);
+    $paperTable->set_edit_status($ps);
+}
 
 // produce paper table
 confHeader();

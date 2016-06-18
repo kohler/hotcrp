@@ -53,7 +53,7 @@ foreach ($jp as $j) {
     $res = $ps->save_paper_json($j);
     if (!$quiet)
         fwrite(STDERR, $res ? "saved\n" : "failed\n");
-    foreach ($ps->error_html() as $msg)
+    foreach ($ps->messages() as $msg)
         fwrite(STDERR, $prefix . htmlspecialchars_decode($msg) . "\n");
     if (!$res)
         exit(1);

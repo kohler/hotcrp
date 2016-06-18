@@ -7,8 +7,9 @@ class PaperStatus {
     private $contact = null;
     private $uploaded_documents;
     private $errf;
-    private $errmsg;
+    private $msgs;
     private $has_errors;
+    private $no_msgs = false;
     private $no_email = false;
     private $allow_error = array();
     private $forceShow = null;
@@ -31,9 +32,9 @@ class PaperStatus {
     }
 
     function clear() {
-        $this->uploaded_documents = array();
-        $this->errf = array();
-        $this->errmsg = array();
+        $this->uploaded_documents = [];
+        $this->errf = [];
+        $this->msgs = [];
         $this->has_errors = false;
         $this->prow = null;
     }
@@ -98,6 +99,9 @@ class PaperStatus {
 
         if (!$prow || ($contact && !$contact->can_view_paper($prow)))
             return null;
+        $was_no_msgs = $this->no_msgs;
+        $this->no_msgs = !get($args, "msgs");
+
         $this->prow = $prow;
         $this->paperid = $prow->paperId;
 
@@ -216,7 +220,12 @@ class PaperStatus {
 
         if ($prow->collaborators && $can_view_authors)
             $pj->collaborators = $prow->collaborators;
+        if (!$prow->collaborators && $can_view_authors && $Conf->setting("sub_collab")) {
+            $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
+            $this->set_warning_html("collaborators", "Please enter the authors’ potential conflicts in the $field field. If none of the authors have potential conflicts, just enter “None”.");
+        }
 
+        $this->no_msgs = $was_no_msgs;
         return $pj;
     }
 
@@ -238,20 +247,23 @@ class PaperStatus {
     }
 
     public function set_error_html($field, $html) {
-        if ($field)
-            $this->errf[$field] = true;
-        if ($html)
-            $this->errmsg[] = $html;
-        if (!$field
-            || !$this->allow_error
-            || array_search($field, $this->allow_error) === false)
-            $this->has_errors = true;
+        $this->msg($field, $html, true);
     }
 
     public function set_warning_html($field, $html) {
-        if ($field)
-            $this->errf[$field] = true;
-        $this->errmsg[] = $html;
+        $this->msg($field, $html, false);
+    }
+
+    public function msg($field, $html, $is_error) {
+        if (!$this->no_msgs) {
+            if ($field)
+                $this->errf[$field] = true;
+            if ($html)
+                $this->msgs[] = [$field, $html, $is_error];
+            if ($is_error && (!$field || !$this->allow_error
+                              || array_search($field, $this->allow_error) === false))
+                $this->has_errors = true;
+        }
     }
 
     public function set_document_prow($prow) {
@@ -972,8 +984,13 @@ class PaperStatus {
         return $paperid;
     }
 
-    function error_html() {
-        return $this->errmsg;
+    function messages($include_fields = false) {
+        return $include_fields ? $this->msgs : array_map(function ($m) { return $m[1]; }, $this->msgs);
+    }
+
+    function messages_for($field, $include_fields = false) {
+        $m = empty($this->msgs) ? [] : array_filter($this->msgs, function ($m) use ($field) { return $m[0] === $field; });
+        return $include_fields || empty($m) ? $m : array_map(function ($m) { return $m[1]; }, $m);
     }
 
     function error_fields() {
