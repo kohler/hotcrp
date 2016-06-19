@@ -446,7 +446,7 @@ class PaperStatus {
         $pj->bad_authors = $pj->bad_email_authors = array();
         if (isset($pj->authors)) {
             if (!is_array($pj->authors))
-                $this->set_error_html("author", "Format error [authors]");
+                $this->set_error_html("authors", "Format error [authors]");
             // old author information
             $old_au_by_email = [];
             if ($old_pj && isset($old_pj->authors)) {
@@ -487,7 +487,7 @@ class PaperStatus {
                             $pj->bad_email_authors[$k] = $aux;
                     }
                 } else
-                    $this->set_error_html("author", "Format error [authors]");
+                    $this->set_error_html("authors", "Format error [authors]");
         }
 
         // Status
@@ -636,11 +636,11 @@ class PaperStatus {
         }
         if ((is_array(get($pj, "authors")) && empty($pj->authors))
             || (get($pj, "authors") === null && (!$old_pj || empty($old_pj->authors))))
-            $this->set_error_html("author", "Each paper must have at least one author.");
+            $this->set_error_html("authors", "Each paper must have at least one author.");
         if (!empty($pj->bad_authors))
-            $this->set_error_html("author", "Some authors ignored.");
+            $this->set_error_html("authors", "Some authors ignored.");
         foreach ($pj->bad_email_authors as $k => $aux) {
-            $this->set_error_html("author", null);
+            $this->set_error_html("authors", null);
             $this->set_error_html("auemail" . ($k + 1), "“" . htmlspecialchars($aux->email) . "” is not a valid email address.");
         }
         $ncontacts = 0;

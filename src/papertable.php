@@ -238,7 +238,7 @@ class PaperTable {
 
     public function has_error($f) {
         if ($f === "authorInformation")
-            $f = "author";
+            $f = "authors";
         return $this->edit_status && $this->edit_status->has_error($f);
     }
 
@@ -615,12 +615,12 @@ class PaperTable {
     private function echo_editable_authors() {
         global $Conf;
 
-        echo $this->editable_papt("authorInformation", "Authors"),
+        echo $this->editable_papt("authors", "Authors"),
             "<div class='paphint'>List the authors one per line, including email addresses and affiliations.";
         if ($Conf->submission_blindness() == Conf::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo " Any author with an account on this site can edit the submission.</div>",
-            $this->messages_for("authorInformation"),
+            $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable">',
             '<tbody data-last-row-blank="true" data-min-rows="5" data-row-template="',
             htmlspecialchars($this->editable_authors_tr('$', "", "", "")), '">';
@@ -756,7 +756,7 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold', ($this->has_error("authorInformation") ? " error" : ""),
+            '<div class="pavt childfold', ($this->has_error("authors") ? " error" : ""),
             '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
         if (!$viewable || $this->allFolded)
