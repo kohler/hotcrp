@@ -287,6 +287,12 @@ div.merror p, div.info p, div.warning p, div.confirm p, div.help p {
 .xmsgc, .ymsgc {
 	padding: 0.5em;
 }
+.xmsgc > p:first-child, .ymsgc > p:first-child {
+	margin-top: 0;
+}
+.xmsgc > p:last-child, .ymsgc > p:last-child {
+	margin-bottom: 0;
+}
 .xinfo {
 	background: #eeeeff;
 	border: 1px solid #ccccee;
@@ -318,9 +324,13 @@ span.hastitle {
 /* multimessage */
 .mmm {
 	margin-top: 0.5em;
+	margin-bottom: 0.5em;
 }
 .mmm:first-child {
 	margin-top: 0;
+}
+.mmm:last-child {
+	margin-bottom: 0;
 }
 
 
@@ -2605,6 +2615,8 @@ body#offline .revcard {
 .pedcard_body .xmerror, .pedcard_body .xwarning, .pedcard_body .xinfo {
 	margin: 8px -12px;
 	padding: 0;
+	border-left: 0 none;
+	border-right: 0 none;
 }
 .pedcard_body .xinfo {
 	background: #f8f4ff;
