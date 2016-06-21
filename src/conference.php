@@ -1403,20 +1403,6 @@ class Conf {
     }
 
 
-    function echoScript($script = "") {
-        Ht::stash_script($script);
-        echo Ht::unstash();
-    }
-
-    function footerScript($script, $uniqueid = null) {
-        Ht::stash_script($script, $uniqueid);
-    }
-
-    function footerHtml($html, $uniqueid = null) {
-        Ht::stash_html($html, $uniqueid);
-    }
-
-
     function set_siteurl($base) {
         global $Opt;
         $old_siteurl = Navigation::siteurl();
