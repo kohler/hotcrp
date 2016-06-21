@@ -181,6 +181,7 @@ class DocumentInfo {
     }
 
     public function update_metadata($delta) {
+        global $Conf;
         if ($this->paperStorageId <= 1)
             return false;
         while (1) {
@@ -199,6 +200,10 @@ class DocumentInfo {
             $metadata_str = count(get_object_vars($metadata)) ? json_encode($metadata) : null;
             if ($old_str === $metadata_str) // already done
                 return true;
+            else if ($metadata_str !== null && strlen($metadata_str) > 32768) {
+                error_log(caller_landmark() . ": " . $Conf->opt->dbName . ": update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
+                return false;
+            }
             $ijq = isset($old_str) ? "=" : " is ";
             $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $this->paperStorageId, $old_str);
             if ($result->affected_rows != 0)
