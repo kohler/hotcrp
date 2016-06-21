@@ -186,7 +186,7 @@ xassert(!Contact::is_anonymous_email("anonymous@example.com"));
 xassert(!Contact::is_anonymous_email("example@anonymous"));
 
 // Mailer::allow_send tests
-$Opt["sendEmail"] = true;
+$Conf->set_opt("sendEmail", true);
 xassert(Mailer::allow_send("ass@butt.com"));
 xassert(Mailer::allow_send("ass@example.edu"));
 xassert(!Mailer::allow_send("ass"));
@@ -198,7 +198,7 @@ xassert(!Mailer::allow_send("ass@example.net"));
 xassert(!Mailer::allow_send("ass@Example.com"));
 xassert(!Mailer::allow_send("ass@Example.ORG"));
 xassert(!Mailer::allow_send("ass@Example.net"));
-$Opt["sendEmail"] = false;
+$Conf->set_opt("sendEmail", false);
 xassert(!Mailer::allow_send("ass@butt.com"));
 xassert(!Mailer::allow_send("ass@example.edu"));
 

@@ -57,4 +57,7 @@ class Qobject implements ArrayAccess, IteratorAggregate, Countable, JsonSerializ
     public function make_object() {
         return (object) get_object_vars($this);
     }
+    public function contains($key) {
+        return property_exists($this, $offset);
+    }
 }

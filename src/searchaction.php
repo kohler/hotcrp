@@ -40,13 +40,13 @@ class SearchAction {
     static private $byname = [];
 
     static function load() {
-        global $Opt;
+        global $Conf;
         if (!self::$loaded) {
             self::$loaded = true;
             foreach (expand_includes("src/sa/*.php") as $f)
                 include $f;
-            if (isset($Opt["searchaction_include"]) && $Opt["searchaction_include"])
-                read_included_options($Opt["searchaction_include"]);
+            if (isset($Conf->opt->searchaction_include) && $Conf->opt->searchaction_include)
+                read_included_options($Conf->opt->searchaction_include);
         }
     }
 

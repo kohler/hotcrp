@@ -37,13 +37,13 @@ class ListSorter {
                                        "Y" => "My score");
 
     public static function default_score_sort($nosession = false) {
-        global $Conf, $Opt;
+        global $Conf;
         if (!$nosession && $Conf && ($sv = $Conf->session("scoresort")))
             return $sv;
         else if ($Conf && ($s = $Conf->setting_data("scoresort_default")))
             return $s;
         else
-            return defval($Opt, "defaultScoreSort", "C");
+            return opt("defaultScoreSort", "C");
     }
 
     public static function parse_sorter($text) {

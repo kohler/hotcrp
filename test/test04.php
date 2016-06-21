@@ -7,19 +7,8 @@ global $ConfSitePATH;
 $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 
 global $Opt;
-$Opt = array();
-
-function reset_cdb($active) {
-    global $Conf, $Opt;
-    if ($active) {
-        $Opt["contactdb_dsn"] = "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb";
-        $Opt["contactdb_passwordHmacKeyid"] = "c1";
-    } else
-        unset($Opt["contactdb_dsn"]);
-    $Conf && Contact::contactdb(true);
-}
-
-reset_cdb(true);
+$Opt = array("contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/hotcrp_testdb_cdb",
+             "contactdb_passwordHmacKeyid" => "c1");
 require_once("$ConfSitePATH/test/setup.php");
 
 function user($email) {
@@ -44,7 +33,8 @@ function save_password($email, $encoded_password, $iscdb = false) {
 $user_chair = Contact::find_by_email("chair@_.com");
 $marina = "marina@poema.ru";
 
-$Opt["safePasswords"] = $Opt["contactdb_safePasswords"] = 0;
+$Conf->set_opt("safePasswords", 0);
+$Conf->set_opt("contactdb_safePasswords", 0);
 user($marina)->change_password(null, "rosdevitch", 0);
 xassert_eqq(password($marina), "");
 xassert_eqq(password($marina, true), "rosdevitch");
@@ -97,7 +87,8 @@ xassert_eqq(password($marina, true), "isdevitch");
 
 // start upgrading passwords
 if (function_exists("password_needs_rehash")) {
-    $Opt["safePasswords"] = $Opt["contactdb_safePasswords"] = 2;
+    $Conf->set_opt("safePasswords", 2);
+    $Conf->set_opt("contactdb_safePasswords", 2);
     xassert(user($marina)->check_password("isdevitch"));
     xassert_eqq(substr(password($marina, true), 0, 2), " \$");
     xassert_eqq(password($marina), "");

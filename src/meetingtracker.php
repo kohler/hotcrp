@@ -63,10 +63,10 @@ class MeetingTracker {
     }
 
     static function contact_tracker_comet($pids = null) {
-        global $Opt, $Now;
+        global $Conf, $Now;
 
-        $comet_dir = get($Opt, "trackerCometUpdateDirectory");
-        $comet_url = get($Opt, "trackerCometSite");
+        $comet_dir = $Conf->opt->trackerCometUpdateDirectory;
+        $comet_url = $Conf->opt->trackerCometSite;
         if (!$comet_dir && !$comet_url)
             return;
 
@@ -193,7 +193,7 @@ class MeetingTracker {
     }
 
     static function info_for($acct) {
-        global $Conf, $Opt, $Now;
+        global $Conf, $Now;
         $tracker = self::lookup();
         if (!$tracker->trackerid || !$acct->can_view_tracker())
             return false;
@@ -210,7 +210,7 @@ class MeetingTracker {
                                  "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
-        if (!!get($Opt, "trackerHideConflicts"))
+        if ($Conf->opt->trackerHideConflicts)
             $status->hide_conflicts = true;
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);

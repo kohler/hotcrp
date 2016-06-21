@@ -35,6 +35,7 @@ class Conf {
     public $au_seerev;
     public $tag_au_seerev;
     public $tag_seeall;
+    public $opt;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -377,6 +378,7 @@ class Conf {
 
         // set defaultFormat
         $this->default_format = (int) get($Opt, "defaultFormat");
+        $this->opt = new Qobject($Opt);
         self::$gFormatInfo = null;
     }
 
@@ -385,16 +387,30 @@ class Conf {
     }
 
     function setting($name, $defval = false) {
-        return defval($this->settings, $name, $defval);
+        return get($this->settings, $name, $defval);
     }
 
     function setting_data($name, $defval = false) {
-        return defval($this->settingTexts, $name, $defval);
+        return get($this->settingTexts, $name, $defval);
     }
 
     function setting_json($name, $defval = false) {
-        $x = defval($this->settingTexts, $name, $defval);
+        $x = get($this->settingTexts, $name, $defval);
         return (is_string($x) ? json_decode($x) : $x);
+    }
+
+    function opt($name, $defval = false) {
+        return get($this->opt, $name, $defval);
+    }
+
+    function set_opt($name, $value) {
+        global $Opt;
+        $Opt[$name] = $this->opt[$name] = $value;
+    }
+
+    function unset_opt($name) {
+        global $Opt;
+        unset($Opt[$name], $this->opt[$name]);
     }
 
 
@@ -756,12 +772,11 @@ class Conf {
 
 
     public function format_info($format) {
-        global $Opt;
         if (self::$gFormatInfo === null) {
-            if (is_array(get($Opt, "formatInfo")))
-                self::$gFormatInfo = $Opt["formatInfo"];
-            else if (is_string(get($Opt, "formatInfo")))
-                self::$gFormatInfo = json_decode($Opt["formatInfo"], true);
+            if (is_array($this->opt->formatInfo))
+                self::$gFormatInfo = $this->opt->formatInfo;
+            else if (is_string($this->opt->formatInfo))
+                self::$gFormatInfo = json_decode($this->opt->formatInfo, true);
             if (!self::$gFormatInfo)
                 self::$gFormatInfo = array();
         }
@@ -886,27 +901,25 @@ class Conf {
     }
 
     function check_invariants() {
-        global $Opt;
-
         $any = $this->invariantq("select paperId from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . " limit 1");
         if ($any !== !!get($this->settings, "papersub"))
-            trigger_error($Opt["dbName"] . " invariant error: papersub");
+            trigger_error($this->opt->dbName . " invariant error: papersub");
 
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
         if ($any !== !!get($this->settings, "paperacc"))
-            trigger_error($Opt["dbName"] . " invariant error: paperacc");
+            trigger_error($this->opt->dbName . " invariant error: paperacc");
 
         $any = $this->invariantq("select reviewId from PaperReview where reviewToken!=0 limit 1");
         if ($any !== !!get($this->settings, "rev_tokens"))
-            trigger_error($Opt["dbName"] . " invariant error: rev_tokens");
+            trigger_error($this->opt->dbName . " invariant error: rev_tokens");
 
         $any = $this->invariantq("select paperId from Paper where leadContactId>0 or shepherdContactId>0 limit 1");
         if ($any !== !!get($this->settings, "paperlead"))
-            trigger_error($Opt["dbName"] . " invariant error: paperlead");
+            trigger_error($this->opt->dbName . " invariant error: paperlead");
 
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
         if ($any !== !!get($this->settings, "papermanager"))
-            trigger_error($Opt["dbName"] . " invariant error: papermanager");
+            trigger_error($this->opt->dbName . " invariant error: papermanager");
 
         // no empty text options
         $text_options = array();
@@ -917,13 +930,13 @@ class Conf {
             $q = Dbl::format_query("select paperId from PaperOption where optionId ?a and data='' limit 1", $text_options);
             $any = $this->invariantq($q);
             if ($any)
-                trigger_error($Opt["dbName"] . " invariant error: text option with empty text");
+                trigger_error($this->opt->dbName . " invariant error: text option with empty text");
         }
 
         // no funky PaperConflict entries
         $any = $this->invariantq("select paperId from PaperConflict where conflictType<=0 limit 1");
         if ($any)
-            trigger_error($Opt["dbName"] . " invariant error: PaperConflict with zero conflictType");
+            trigger_error($this->opt->dbName . " invariant error: PaperConflict with zero conflictType");
 
         // reviewNeedsSubmit is defined correctly
         $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
@@ -935,22 +948,22 @@ class Conf {
             and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
             limit 1");
         if ($any)
-            trigger_error($Opt["dbName"] . " invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+            trigger_error($this->opt->dbName . " invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
 
         // anonymous users are disabled
         $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
         if ($any)
-            trigger_error($Opt["dbName"] . " invariant error: anonymous user is not disabled");
+            trigger_error($this->opt->dbName . " invariant error: anonymous user is not disabled");
 
         // no one has password '*'
         $any = $this->invariantq("select email from ContactInfo where password='*' limit 1");
         if ($any)
-            trigger_error($Opt["dbName"] . " invariant error: password '*'");
+            trigger_error($this->opt->dbName . " invariant error: password '*'");
 
         // mimetypes match
         $any = $this->invariantq("select paperStorageId from PaperStorage s left join Mimetype m using (mimetypeid) where s.mimetype!=m.mimetype or m.mimetype is null limit 1");
         if ($any)
-            trigger_error($Opt["dbName"] . " invariant error: bad mimetypeid");
+            trigger_error($this->opt->dbName . " invariant error: bad mimetypeid");
     }
 
 
@@ -1078,64 +1091,52 @@ class Conf {
 
     // times
 
-    static function _dateFormat($type) {
-        global $Opt;
-        if (!isset($Opt["_dateFormatInitialized"])) {
-            if (!isset($Opt["time24hour"]) && isset($Opt["time24Hour"]))
-                $Opt["time24hour"] = $Opt["time24Hour"];
-            if (!isset($Opt["dateFormatLong"]) && isset($Opt["dateFormat"]))
-                $Opt["dateFormatLong"] = $Opt["dateFormat"];
-            if (!isset($Opt["dateFormat"])) {
-                if (isset($Opt["time24hour"]) && $Opt["time24hour"])
-                    $Opt["dateFormat"] = "j M Y H:i:s";
-                else
-                    $Opt["dateFormat"] = "j M Y g:i:sa";
-            }
-            if (!isset($Opt["dateFormatLong"]))
-                $Opt["dateFormatLong"] = "l " . $Opt["dateFormat"];
-            if (!isset($Opt["dateFormatObscure"]))
-                $Opt["dateFormatObscure"] = "j M Y";
-            if (!isset($Opt["timestampFormat"]))
-                $Opt["timestampFormat"] = $Opt["dateFormat"];
-            if (!isset($Opt["dateFormatSimplifier"])) {
-                if (isset($Opt["time24hour"]) && $Opt["time24hour"])
-                    $Opt["dateFormatSimplifier"] = "/:00(?!:)/";
-                else
-                    $Opt["dateFormatSimplifier"] = "/:00(?::00|)(?= ?[ap]m)/";
-            }
-            if (!isset($Opt["dateFormatTimezone"]))
-                $Opt["dateFormatTimezone"] = null;
-            $Opt["_dateFormatInitialized"] = true;
+    private function _dateFormat($type) {
+        if (!isset($this->opt->_dateFormatInitialized)) {
+            if (!isset($this->opt->time24hour) && isset($this->opt->time24Hour))
+                $this->opt->time24hour = $this->opt->time24Hour;
+            if (!isset($this->opt->dateFormatLong) && isset($this->opt->dateFormat))
+                $this->opt->dateFormatLong = $this->opt->dateFormat;
+            if (!isset($this->opt->dateFormat))
+                $this->opt->dateFormat = $this->opt->time24hour ? "j M Y H:i:s" : "j M Y g:i:sa";
+            if (!isset($this->opt->dateFormatLong))
+                $this->opt->dateFormatLong = "l " . $this->opt->dateFormat;
+            if (!isset($this->opt->dateFormatObscure))
+                $this->opt->dateFormatObscure = "j M Y";
+            if (!isset($this->opt->timestampFormat))
+                $this->opt->timestampFormat = $this->opt->dateFormat;
+            if (!isset($this->opt->dateFormatSimplifier))
+                $this->opt->dateFormatSimplifier = $this->opt->time24hour ? "/:00(?!:)/" : "/:00(?::00|)(?= ?[ap]m)/";
+            $this->opt->_dateFormatInitialized = true;
         }
         if ($type == "timestamp")
-            return $Opt["timestampFormat"];
+            return $this->opt->timestampFormat;
         else if ($type == "obscure")
-            return $Opt["dateFormatObscure"];
+            return $this->opt->dateFormatObscure;
         else if ($type)
-            return $Opt["dateFormatLong"];
+            return $this->opt->dateFormatLong;
         else
-            return $Opt["dateFormat"];
+            return $this->opt->dateFormat;
     }
 
     function parseableTime($value, $include_zone) {
-        global $Opt;
-        $f = self::_dateFormat(false);
+        $f = $this->_dateFormat(false);
         $d = date($f, $value);
-        if ($Opt["dateFormatSimplifier"])
-            $d = preg_replace($Opt["dateFormatSimplifier"], "", $d);
+        if ($this->opt->dateFormatSimplifier)
+            $d = preg_replace($this->opt->dateFormatSimplifier, "", $d);
         if ($include_zone) {
-            if ($Opt["dateFormatTimezone"] === null)
+            if ($this->opt->dateFormatTimezone === null)
                 $d .= " " . date("T", $value);
-            else if ($Opt["dateFormatTimezone"])
-                $d .= " " . $Opt["dateFormatTimezone"];
+            else if ($this->opt->dateFormatTimezone)
+                $d .= " " . $this->opt->dateFormatTimezone;
         }
         return $d;
     }
     function parse_time($d, $reference = null) {
-        global $Now, $Opt;
+        global $Now;
         if ($reference === null)
             $reference = $Now;
-        if (!isset($Opt["dateFormatTimezoneRemover"])
+        if (!isset($this->opt->dateFormatTimezoneRemover)
             && function_exists("timezone_abbreviations_list")) {
             $mytz = date_default_timezone_get();
             $x = array();
@@ -1146,27 +1147,26 @@ class Conf {
             }
             if (count($x) == 0)
                 $x[] = preg_quote(date("T", $reference));
-            $Opt["dateFormatTimezoneRemover"] =
+            $this->opt->dateFormatTimezoneRemover =
                 "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
         }
-        if (get($Opt, "dateFormatTimezoneRemover"))
-            $d = preg_replace($Opt["dateFormatTimezoneRemover"], " ", $d);
+        if ($this->opt->dateFormatTimezoneRemover)
+            $d = preg_replace($this->opt->dateFormatTimezoneRemover, " ", $d);
         $d = preg_replace('/\butc([-+])/i', 'GMT$1', $d);
         return strtotime($d, $reference);
     }
 
     function _printableTime($value, $type, $useradjust, $preadjust = null) {
-        global $Opt;
         if ($value <= 0)
             return "N/A";
-        $t = date(self::_dateFormat($type), $value);
-        if ($Opt["dateFormatSimplifier"])
-            $t = preg_replace($Opt["dateFormatSimplifier"], "", $t);
+        $t = date($this->_dateFormat($type), $value);
+        if ($this->opt->dateFormatSimplifier)
+            $t = preg_replace($this->opt->dateFormatSimplifier, "", $t);
         if ($type !== "obscure") {
-            if ($Opt["dateFormatTimezone"] === null)
+            if ($this->opt->dateFormatTimezone === null)
                 $t .= " " . date("T", $value);
-            else if ($Opt["dateFormatTimezone"])
-                $t .= " " . $Opt["dateFormatTimezone"];
+            else if ($this->opt->dateFormatTimezone)
+                $t .= " " . $this->opt->dateFormatTimezone;
         }
         if ($preadjust)
             $t .= $preadjust;
@@ -1417,13 +1417,14 @@ class Conf {
 
 
     function set_siteurl($base) {
-        global $Opt;
         $old_siteurl = Navigation::siteurl();
         $base = Navigation::set_siteurl($base);
-        if ($Opt["assetsUrl"] === $old_siteurl) {
-            $Opt["assetsUrl"] = $base;
-            Ht::$img_base = $Opt["assetsUrl"] . "images/";
+        if ($this->opt->assetsUrl === $old_siteurl) {
+            $this->opt->assetsUrl = $base;
+            Ht::$img_base = $this->opt->assetsUrl . "images/";
         }
+        if ($this->opt->scriptAssetsUrl === $old_siteurl)
+            $this->opt->scriptAssetsUrl = $base;
     }
 
 
@@ -1452,7 +1453,6 @@ class Conf {
     }
 
     public function download_documents($docs, $attachment) {
-        global $Opt;
         if (count($docs) == 1 && $docs[0]->paperStorageId <= 1) {
             self::msg_error("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
             return false;
@@ -1526,7 +1526,6 @@ class Conf {
         //   "scores" => array(fields to score)
         //   "assignments"
         //   "order" => $sql    $sql is SQL 'order by' clause (or empty)
-        global $Opt;
 
         $reviewerQuery = isset($options["myReviews"]) || isset($options["allReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]);
         $allReviewerQuery = isset($options["allReviews"]) || isset($options["allReviewScores"]);
@@ -1700,7 +1699,7 @@ class Conf {
             $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
 
         if (get($options, "options")
-            && (isset($this->settingTexts["options"]) || isset($Opt["fixedOptions"]))
+            && (isset($this->settingTexts["options"]) || isset($this->opt->fixedOptions))
             && PaperOption::count_option_list())
             $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
         else if (get($options, "options"))
@@ -2227,11 +2226,11 @@ class Conf {
     //
 
     function make_css_link($url, $media = null) {
-        global $ConfSitePATH, $Opt;
+        global $ConfSitePATH;
         $t = '<link rel="stylesheet" type="text/css" href="';
         if (str_starts_with($url, "stylesheets/")
             || !preg_match(',\A(?:https?:|/),i', $url))
-            $t .= $Opt["assetsUrl"];
+            $t .= $this->opt->assetsUrl;
         $t .= $url;
         if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
             $t .= "?mtime=$mtime";
@@ -2241,24 +2240,24 @@ class Conf {
     }
 
     function make_script_file($url, $no_strict = false) {
-        global $ConfSitePATH, $Opt;
+        global $ConfSitePATH;
         if (str_starts_with($url, "scripts/")) {
             $post = "";
             if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
                 $post = "mtime=$mtime";
-            if (get($Opt, "strictJavascript") && !$no_strict)
-                $url = $Opt["scriptAssetsUrl"] . "cacheable.php?file=" . urlencode($url)
+            if ($this->opt->strictJavascript && !$no_strict)
+                $url = $this->opt->scriptAssetsUrl . "cacheable.php?file=" . urlencode($url)
                     . "&strictjs=1" . ($post ? "&$post" : "");
             else
-                $url = $Opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
-            if ($Opt["scriptAssetsUrl"] === Navigation::siteurl())
+                $url = $this->opt->scriptAssetsUrl . $url . ($post ? "?$post" : "");
+            if ($this->scriptAssetsUrl === Navigation::siteurl())
                 return Ht::script_file($url);
         }
         return Ht::script_file($url, array("crossorigin" => "anonymous"));
     }
 
     private function header_head($title) {
-        global $Me, $ConfSitePATH, $Opt;
+        global $Me, $ConfSitePATH;
         // load session list and clear its cookie
         $list = SessionList::active();
         SessionList::set_requested(0);
@@ -2269,23 +2268,23 @@ class Conf {
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta name=\"google\" content=\"notranslate\" />\n";
 
-        if (isset($Opt["fontScript"]))
-            echo $Opt["fontScript"];
+        if ($this->opt->fontScript)
+            echo $this->opt->fontScript;
 
         echo $this->make_css_link("stylesheets/style.css"), "\n";
-        if (get($Opt, "mobileStylesheet")) {
+        if ($this->opt->mobileStylesheet) {
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
             echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 768px)"), "\n";
         }
-        if (isset($Opt["stylesheets"]))
-            foreach (mkarray($Opt["stylesheets"]) as $css)
+        if ($this->opt->stylesheets)
+            foreach (mkarray($this->opt->stylesheets) as $css)
                 echo $this->make_css_link($css), "\n";
 
         // favicon
-        if (($favicon = defval($Opt, "favicon", "images/review24.png"))) {
+        if (($favicon = isset($this->opt->favicon) ? $this->opt->favicon : "images/review24.png")) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
-                if (get($Opt, "assetsUrl") && substr($favicon, 0, 7) === "images/")
-                    $favicon = $Opt["assetsUrl"] . $favicon;
+                if ($this->opt->assetsUrl && substr($favicon, 0, 7) === "images/")
+                    $favicon = $this->opt->assetsUrl . $favicon;
                 else
                     $favicon = Navigation::siteurl() . $favicon;
             }
@@ -2308,13 +2307,13 @@ class Conf {
         }
         if ($title)
             echo $title, " - ";
-        echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
+        echo htmlspecialchars($this->short_name), "</title>\n</head>\n";
 
         // jQuery
         $stash = Ht::unstash();
-        if (isset($Opt["jqueryUrl"]))
-            $jquery = $Opt["jqueryUrl"];
-        else if (get($Opt, "jqueryCdn"))
+        if (isset($this->opt->jqueryUrl))
+            $jquery = $this->opt->jqueryUrl;
+        else if ($this->opt->jqueryCdn)
             $jquery = "//code.jquery.com/jquery-1.12.3.min.js";
         else
             $jquery = "scripts/jquery-1.12.3.min.js";
@@ -2328,7 +2327,7 @@ class Conf {
             Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
-        Ht::stash_script("assetsurl=" . json_encode($Opt["assetsUrl"]) . ";");
+        Ht::stash_script("assetsurl=" . json_encode($this->opt->assetsUrl) . ";");
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
@@ -2348,12 +2347,12 @@ class Conf {
             Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
-        if (!get($Opt, "noDefaultScript"))
+        if (!$this->opt->noDefaultScript)
             Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
 
         // other scripts
-        if (get($Opt, "scripts"))
-            foreach ($Opt["scripts"] as $file)
+        if ($this->opt->scripts)
+            foreach ($this->opt->scripts as $file)
                 Ht::stash_html($this->make_script_file($file) . "\n");
 
         if ($stash)
@@ -2369,7 +2368,7 @@ class Conf {
     }
 
     function header($title, $id, $actionBar, $title_div = null) {
-        global $ConfSitePATH, $Me, $Now, $Opt;
+        global $ConfSitePATH, $Me, $Now;
         if ($this->headerPrinted)
             return;
 
@@ -2392,7 +2391,7 @@ class Conf {
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . (get($Opt, "time24hour") ? 1 : 0) . ")");
+        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . ($this->opt->time24hour ? 1 : 0) . ")");
 
         // deadlines settings
         if ($Me)
@@ -2414,7 +2413,7 @@ class Conf {
         $site_div = '<div id="header_site" class="'
             . ($is_home ? "header_site_home" : "header_site_page")
             . '"><h1><a class="qq" href="' . hoturl("index") . '">'
-            . htmlspecialchars($Opt["shortName"]);
+            . htmlspecialchars($this->short_name);
         if (!$is_home)
             $site_div .= ' <span style="font-weight:normal">Home</span>';
         $site_div .= '</a></h1></div>';
@@ -2448,9 +2447,9 @@ class Conf {
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
             $profile_html .= '<a href="' . hoturl("help", $x) . '">Help</a>';
-            if (!$Me->has_email() && !isset($Opt["httpAuthLogin"]))
+            if (!$Me->has_email() && !$this->opt->httpAuthLogin)
                 $profile_html .= $xsep . '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
-            if (!$Me->is_empty() || isset($Opt["httpAuthLogin"]))
+            if (!$Me->is_empty() || $this->opt->httpAuthLogin)
                 $profile_html .= $xsep . '<a href="' . hoturl_post("index", "signout=1") . '">Sign&nbsp;out</a>';
         }
 
@@ -2459,7 +2458,7 @@ class Conf {
         if (!$title_div && $actionBar)
             $title_div = '<hr class="c" />';
 
-        $renderf = get($Opt, "headerRenderer");
+        $renderf = $this->opt->headerRenderer;
         if (!$renderf)
             $renderf = "Conf::echo_header";
         if (is_array($renderf)) {
@@ -2471,8 +2470,8 @@ class Conf {
         echo "  <hr class=\"c\" /></div>\n";
 
         echo "<div id=\"initialmsgs\">\n";
-        if (get($Opt, "maintenance"))
-            echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."), "</div>";
+        if ($this->opt->maintenance)
+            echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($this->opt->maintenance) ? $this->opt->maintenance : "Please check back later."), "</div>";
         $this->save_messages = false;
         if (($msgs = $this->session("msgs")) && count($msgs)) {
             $this->save_session("msgs", null);
@@ -2492,8 +2491,8 @@ class Conf {
         if ($Me && $Me->privChair
             && (!isset($_SESSION["updatecheck"])
                 || $_SESSION["updatecheck"] + 20 <= $Now)
-            && (!isset($Opt["updatesSite"]) || $Opt["updatesSite"])) {
-            $m = defval($Opt, "updatesSite", "//hotcrp.lcdf.org/updates");
+            && (!isset($this->opt->updatesSite) || $this->opt->updatesSite)) {
+            $m = isset($this->opt->updatesSite) ? $this->opt->updatesSite : "//hotcrp.lcdf.org/updates";
             $m .= (strpos($m, "?") === false ? "?" : "&")
                 . "addr=" . urlencode($_SERVER["SERVER_ADDR"])
                 . "&base=" . urlencode(Navigation::siteurl())
@@ -2517,12 +2516,12 @@ class Conf {
     }
 
     function footer() {
-        global $Opt, $Me, $ConfSitePATH;
+        global $Me, $ConfSitePATH;
         echo "</div>\n", // class='body'
             "<div id='footer'>\n  <div id='footer_crp'>",
-            defval($Opt, "extraFooter", ""),
+            (string) $this->opt->extraFooter,
             "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a>";
-        if (!defval($Opt, "noFooterVersion", 0)) {
+        if (!$this->opt->noFooterVersion) {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
                 if (is_dir("$ConfSitePATH/.git")) {
@@ -2541,7 +2540,7 @@ class Conf {
     public function stash_hotcrp_pc(Contact $user) {
         if (!Ht::mark_stash("hotcrp_pc"))
             return;
-        $sortbylast = opt("sortByLastName");
+        $sortbylast = $this->opt->sortByLastName;
         $hpcj = $list = [];
         foreach (pcMembers() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];
@@ -2664,7 +2663,6 @@ class Conf {
     //
 
     public function capability_manager($for = null) {
-        global $Opt;
         if ($for && substr($for, 0, 1) === "U") {
             if (($cdb = Contact::contactdb()))
                 return new CapabilityManager($cdb, "U");

@@ -216,8 +216,8 @@ function get_i($var, $idx, $default = null) {
 }
 
 function opt($idx, $default = null) {
-    global $Opt;
-    return get($Opt, $idx, $default);
+    global $Conf, $Opt;
+    return get($Conf ? $Conf->opt : $Opt, $idx, $default);
 }
 
 function req($idx, $default = null) {

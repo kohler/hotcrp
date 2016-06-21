@@ -753,7 +753,7 @@ function expandMailTemplate($name, $default) {
 }
 
 function parse_value($sv, $si) {
-    global $Conf, $Now, $Opt;
+    global $Conf, $Now;
 
     if (!isset($sv->req[$si->name])) {
         $xname = str_replace(".", "_", $si->name);
