@@ -171,11 +171,8 @@ if (($v = $Conf->message_html("home")))
 
 // Sign in
 if (!$Me->isPC) {
-    $confname = Conf::$gLongName;
-    if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
-        $confname .= " (" . Conf::$gShortName . ")";
     echo '<div class="homegrp">
-Welcome to the ', htmlspecialchars($confname), " submissions site.";
+Welcome to the ', htmlspecialchars($Conf->full_name()), " submissions site.";
     if (opt("conferenceSite"))
         echo " For general conference information, see <a href=\"", htmlspecialchars(opt("conferenceSite")), "\">", htmlspecialchars(opt("conferenceSite")), "</a>.";
     echo '</div>';

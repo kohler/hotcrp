@@ -795,6 +795,7 @@ class PaperList {
     }
 
     private function _check_heading($thenval, $rstate, $srows, $lastheading, &$body) {
+        global $Conf;
         if ($this->count != 1 && $thenval != $lastheading)
             $rstate->headingstart[] = count($body);
         while ($lastheading != $thenval) {
@@ -824,7 +825,7 @@ class PaperList {
                 $x .= "<td class=\"plheading\" colspan=\"" . ($rstate->ncol - $rstate->titlecol) . "\">";
                 $x .= "<span class=\"plheading_group";
                 if ($ginfo->heading !== ""
-                    && ($format = Conf::check_format($ginfo->annoFormat, $ginfo->heading))) {
+                    && ($format = $Conf->check_format($ginfo->annoFormat, $ginfo->heading))) {
                     $x .= " need-format\" data-format=\"$format";
                     $this->need_render = true;
                 }

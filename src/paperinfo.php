@@ -268,7 +268,8 @@ class PaperInfo {
     }
 
     public function format_of($text, $check_simple = false) {
-        return Conf::check_format($this->paperFormat, $check_simple ? $text : null);
+        global $Conf;
+        return $Conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }
 
     public function title_format() {

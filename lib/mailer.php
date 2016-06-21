@@ -111,7 +111,7 @@ class Mailer {
     }
 
     function expandvar($what, $isbool = false) {
-        global $Opt;
+        global $Conf, $Opt;
         $len = strlen($what);
 
         // generic expansions: OPT, URLENC
@@ -138,18 +138,14 @@ class Mailer {
         }
 
         // expansions that do not require a recipient
-        if ($what == "%CONFNAME%") {
-            $t = Conf::$gLongName;
-            if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
-                $t .= " (" . Conf::$gShortName . ")";
-            return $t;
-        }
+        if ($what == "%CONFNAME%")
+            return $Conf->full_name();
         if ($what == "%CONFSHORTNAME%")
-            return Conf::$gShortName;
+            return $Conf->short_name;
         if ($what == "%CONFLONGNAME%")
-            return Conf::$gLongName;
+            return $Conf->long_name;
         if ($what == "%SIGNATURE%")
-            return get($Opt, "emailSignature") ? : "- " . Conf::$gShortName . " Submissions";
+            return get($Opt, "emailSignature") ? : "- " . $Conf->short_name . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
             return $this->expand_user(Contact::site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")

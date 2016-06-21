@@ -67,10 +67,10 @@ class GetReviewBase_SearchAction extends SearchAction {
             $text .= join("", $texts);
             downloadText($text, $rfname);
         } else {
-            $zip = new ZipDocument(opt("downloadPrefix") . "reviews.zip");
+            $zip = new ZipDocument($Conf->download_prefix . "reviews.zip");
             $zip->warnings = $warnings;
             foreach ($texts as $pid => $text)
-                $zip->add($header . $text, opt("downloadPrefix") . $rfname . $pid . ".txt");
+                $zip->add($header . $text, $Conf->download_prefix . $rfname . $pid . ".txt");
             $result = $zip->download();
             if (!$result->error)
                 exit;

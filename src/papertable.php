@@ -563,13 +563,14 @@ class PaperTable {
     }
 
     private function echo_editable_abstract() {
+        global $Conf;
         $title = "Abstract";
         if (opt("noAbstract") === 2)
             $title .= ' <span class="papfnh">(optional)</span>';
         echo $this->editable_papt("abstract", $title),
             $this->messages_for("abstract"),
             '<div class="papev abstract">';
-        if (($f = Conf::format_info($this->prow ? $this->prow->paperFormat : null))
+        if (($f = $Conf->format_info($this->prow ? $this->prow->paperFormat : null))
             && ($t = get($f, "description")))
             echo $t;
         echo $this->editable_textarea("abstract"),
@@ -1013,7 +1014,7 @@ class PaperTable {
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
-            '<div class="paphint">', htmlspecialchars(Conf::$gShortName), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+            '<div class="paphint">', htmlspecialchars($Conf->short_name), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
             $this->messages_for("blind"),
             "</div>\n\n";
     }

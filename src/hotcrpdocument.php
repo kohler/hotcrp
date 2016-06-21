@@ -60,7 +60,8 @@ class HotCRPDocument extends Filer {
     }
 
     public static function filename($doc, $filters = null) {
-        $fn = opt("downloadPrefix");
+        global $Conf;
+        $fn = $Conf->download_prefix;;
         if ($doc->documentType == DTYPE_SUBMISSION)
             $fn .= "paper" . $doc->paperId;
         else if ($doc->documentType == DTYPE_FINAL)

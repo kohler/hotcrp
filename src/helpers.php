@@ -969,6 +969,7 @@ function unparseReviewOrdinal($ord) {
 }
 
 function downloadCSV($info, $header, $filename, $options = array()) {
+    global $Conf;
     if (defval($options, "type", "csv") == "csv" && !opt("disableCsv"))
         $csvt = CsvGenerator::TYPE_COMMA;
     else
@@ -982,7 +983,7 @@ function downloadCSV($info, $header, $filename, $options = array()) {
         $csvg->set_header($header, true);
     if (get($options, "selection"))
         $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
-    $csvg->download_headers(opt("downloadPrefix") . $filename . $csvg->extension(), !get($options, "inline"));
+    $csvg->download_headers($Conf->download_prefix . $filename . $csvg->extension(), !get($options, "inline"));
     if ($info === false)
         return $csvg;
     else {
@@ -995,8 +996,9 @@ function downloadCSV($info, $header, $filename, $options = array()) {
 }
 
 function downloadText($text, $filename, $inline = false) {
+    global $Conf;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
-    $csvg->download_headers(opt("downloadPrefix") . $filename . $csvg->extension(), !$inline);
+    $csvg->download_headers($Conf->download_prefix . $filename . $csvg->extension(), !$inline);
     if ($text !== false) {
         $csvg->add($text);
         $csvg->download();

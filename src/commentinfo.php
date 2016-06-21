@@ -189,7 +189,7 @@ class CommentInfo {
 
         // format
         if (($fmt = $this->commentFormat) === null)
-            $fmt = Conf::$gDefaultFormat;
+            $fmt = $Conf->default_format;
         if ($fmt)
             $cj->format = (int) $fmt;
         return $cj;

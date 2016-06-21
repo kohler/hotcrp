@@ -37,8 +37,8 @@ function document_download() {
         $s = $orig_s = preg_replace(',\A/*,', "", Navigation::path());
         $dtname = null;
         $base_dtname = "paper";
-        if (str_starts_with($s, opt("downloadPrefix")))
-            $s = substr($s, strlen(opt("downloadPrefix")));
+        if (str_starts_with($s, $Conf->download_prefix))
+            $s = substr($s, strlen($Conf->download_prefix));
         if (preg_match(',\A(?:p|paper|)(\d+)/+(.*)\z,', $s, $m)) {
             $paperId = intval($m[1]);
             if (preg_match(',\A([^/]+)\.[^/]+\z,', $m[2], $mm))

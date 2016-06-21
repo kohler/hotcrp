@@ -335,11 +335,12 @@ class TagInfo {
     }
 
     public static function unparse_anno_json($anno) {
+        global $Conf;
         $j = (object) ["annoid" => $anno->annoId === null ? null : +$anno->annoId];
         if ($anno->tagIndex !== null)
             $j->tagval = (float) $anno->tagIndex;
         $j->heading = $anno->heading;
-        if (($format = Conf::check_format($anno->annoFormat, (string) $anno->heading)))
+        if (($format = $Conf->check_format($anno->annoFormat, (string) $anno->heading)))
             $j->format = +$format;
         return $j;
     }

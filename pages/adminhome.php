@@ -28,7 +28,7 @@ function admin_home_messages() {
     // Conference names
     if (opt("shortNameDefaulted"))
         $m[] = "<a href=\"" . hoturl("settings", "group=basics") . "\">Set the conference abbreviation</a> to a short name for your conference, such as “OSDI ’14”.";
-    else if (simplify_whitespace(Conf::$gShortName) != Conf::$gShortName)
+    else if (simplify_whitespace($Conf->short_name) != $Conf->short_name)
         $m[] = "The <a href=\"" . hoturl("settings", "group=basics") . "\">conference abbreviation</a> setting has a funny value. To fix it, remove leading and trailing spaces, use only space characters (no tabs or newlines), and make sure words are separated by single spaces (never two or more).";
     $site_contact = Contact::site_contact();
     if (!$site_contact->email || $site_contact->email == "you@example.com")

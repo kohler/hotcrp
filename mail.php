@@ -117,7 +117,7 @@ if (isset($_REQUEST["monreq"]))
 else
     $Conf->header("Mail", "mail", actionBar());
 
-$subjectPrefix = "[" . Conf::$gShortName . "] ";
+$subjectPrefix = "[" . $Conf->short_name . "] ";
 
 
 class MailSender {
@@ -583,7 +583,7 @@ if ($Me->is_manager()) {
 
 // ** SUBJECT
 echo "  <tr><td class='mhnp nw'>Subject:</td><td class='mhdp'>",
-    "<tt>[", htmlspecialchars(Conf::$gShortName), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
+    "<tt>[", htmlspecialchars($Conf->short_name), "]&nbsp;</tt><input type='text' class='textlite-tt' name='subject' value=\"", htmlspecialchars($_REQUEST["subject"]), "\" size='64' /></td></tr>
 
  <tr><td></td><td class='mhb'>\n",
     Ht::textarea("emailBody", $_REQUEST["emailBody"],

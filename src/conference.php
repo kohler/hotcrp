@@ -27,6 +27,11 @@ class Conf {
     public $sversion;
     private $_pc_seeall_cache = null;
     private $_pc_see_pdf = null;
+
+    public $short_name;
+    public $long_name;
+    public $default_format;
+    public $download_prefix;
     public $au_seerev;
     public $tag_au_seerev;
     public $tag_seeall;
@@ -49,9 +54,6 @@ class Conf {
     public $paper = null; // current paper row
 
     static public $g;
-    static public $gShortName;
-    static public $gLongName;
-    static public $gDefaultFormat;
     static private $gFormatInfo;
     static public $no_invalidate_caches = false;
 
@@ -290,8 +292,8 @@ class Conf {
             $Opt["shortName"] = $Opt["longName"];
         if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
             $Opt["downloadPrefix"] = $confid . "-";
-        self::$gShortName = $Opt["shortName"];
-        self::$gLongName = $Opt["longName"];
+        $this->short_name = $Opt["shortName"];
+        $this->long_name = $Opt["longName"];
 
         // expand ${confid}, ${confshortname}
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",
@@ -302,6 +304,8 @@ class Conf {
                 $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
                 $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $Opt["shortName"], $Opt[$k]);
             }
+        $this->download_prefix = $Opt["downloadPrefix"];
+
         foreach (array("emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
             if (isset($Opt[$k]) && is_string($Opt[$k])
                 && strpos($Opt[$k], "$") !== false) {
@@ -372,7 +376,7 @@ class Conf {
             $Opt["contactdb_safePasswords"] = $Opt["safePasswords"];
 
         // set defaultFormat
-        self::$gDefaultFormat = (int) get($Opt, "defaultFormat");
+        $this->default_format = (int) get($Opt, "defaultFormat");
         self::$gFormatInfo = null;
     }
 
@@ -393,6 +397,13 @@ class Conf {
         return (is_string($x) ? json_decode($x) : $x);
     }
 
+
+    function full_name() {
+        if ($this->short_name && $this->short_name != $this->long_name)
+            return $this->long_name . " (" . $this->short_name . ")";
+        else
+            return $this->long_name;
+    }
 
 
     function decision_map() {
@@ -744,7 +755,7 @@ class Conf {
     }
 
 
-    static function format_info($format) {
+    public function format_info($format) {
         global $Opt;
         if (self::$gFormatInfo === null) {
             if (is_array(get($Opt, "formatInfo")))
@@ -755,14 +766,14 @@ class Conf {
                 self::$gFormatInfo = array();
         }
         if ($format === null)
-            $format = self::$gDefaultFormat;
+            $format = $this->default_format;
         return get(self::$gFormatInfo, $format);
     }
 
-    static function check_format($format, $text = null) {
+    public function check_format($format, $text = null) {
         if ($format === null)
-            $format = self::$gDefaultFormat;
-        if ($format && $text !== null && ($f = self::format_info($format))
+            $format = $this->default_format;
+        if ($format && $text !== null && ($f = $this->format_info($format))
             && ($re = get($f, "simple_regex")) && preg_match($re, $text))
             $format = 0;
         return $format;
@@ -1452,7 +1463,7 @@ class Conf {
             $name = HotCRPDocument::unparse_dtype($docs[0]->documentType);
             if ($docs[0]->documentType <= 0)
                 $name = pluralize($name);
-            $downloadname = $Opt["downloadPrefix"] . "$name.zip";
+            $downloadname = $this->download_prefix . "$name.zip";
         }
         $result = Filer::multidownload($docs, $downloadname, $attachment);
         if ($result->error) {
@@ -2384,8 +2395,8 @@ class Conf {
         // deadlines settings
         if ($Me)
             Ht::stash_script("hotcrp_deadlines.init(" . json_encode($Me->my_deadlines($this->paper)) . ")");
-        if (self::$gDefaultFormat)
-            Ht::stash_script("render_text.set_default_format(" . self::$gDefaultFormat . ")");
+        if ($this->default_format)
+            Ht::stash_script("render_text.set_default_format(" . $this->default_format . ")");
 
         // meeting tracker
         $trackerowner = ($trackerstate = $this->setting_json("tracker"))
