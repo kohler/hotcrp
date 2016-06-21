@@ -2250,7 +2250,7 @@ class Conf {
                     . "&strictjs=1" . ($post ? "&$post" : "");
             else
                 $url = $this->opt->scriptAssetsUrl . $url . ($post ? "?$post" : "");
-            if ($this->scriptAssetsUrl === Navigation::siteurl())
+            if ($this->opt->scriptAssetsUrl === Navigation::siteurl())
                 return Ht::script_file($url);
         }
         return Ht::script_file($url, array("crossorigin" => "anonymous"));
