@@ -312,7 +312,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
     }
 
 function render(SettingValues $sv) {
-    global $Conf, $Opt;
+    global $Conf;
 
     echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 

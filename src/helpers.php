@@ -167,12 +167,11 @@ function hoturl_post($page, $options = null) {
 }
 
 function hoturl_absolute($page, $options = null) {
-    global $Opt;
-    return $Opt["paperSite"] . "/" . hoturl_site_relative($page, $options);
+    return opt("paperSite") . "/" . hoturl_site_relative($page, $options);
 }
 
 function hoturl_absolute_nodefaults($page, $options = null) {
-    global $Opt, $_hoturl_defaults;
+    global $_hoturl_defaults;
     $defaults = $_hoturl_defaults;
     $_hoturl_defaults = null;
     $url = hoturl_absolute($page, $options);
@@ -221,7 +220,6 @@ function fileUploaded(&$var) {
 }
 
 function selfHref($extra = array(), $options = null) {
-    global $Opt;
     // clean parameters from pathinfo URLs
     foreach (array("paperId" => "p", "pap" => "p", "reviewId" => "r", "commentId" => "c") as $k => $v)
         if (isset($_REQUEST[$k]) && !isset($_REQUEST[$v]))
@@ -971,8 +969,7 @@ function unparseReviewOrdinal($ord) {
 }
 
 function downloadCSV($info, $header, $filename, $options = array()) {
-    global $Opt;
-    if (defval($options, "type", "csv") == "csv" && !isset($Opt["disableCsv"]))
+    if (defval($options, "type", "csv") == "csv" && !opt("disableCsv"))
         $csvt = CsvGenerator::TYPE_COMMA;
     else
         $csvt = CsvGenerator::TYPE_TAB;
@@ -985,7 +982,7 @@ function downloadCSV($info, $header, $filename, $options = array()) {
         $csvg->set_header($header, true);
     if (get($options, "selection"))
         $csvg->set_selection($options["selection"] === true ? $header : $options["selection"]);
-    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !get($options, "inline"));
+    $csvg->download_headers(opt("downloadPrefix") . $filename . $csvg->extension(), !get($options, "inline"));
     if ($info === false)
         return $csvg;
     else {
@@ -998,9 +995,8 @@ function downloadCSV($info, $header, $filename, $options = array()) {
 }
 
 function downloadText($text, $filename, $inline = false) {
-    global $Opt;
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
-    $csvg->download_headers($Opt["downloadPrefix"] . $filename . $csvg->extension(), !$inline);
+    $csvg->download_headers(opt("downloadPrefix") . $filename . $csvg->extension(), !$inline);
     if ($text !== false) {
         $csvg->add($text);
         $csvg->download();
@@ -1094,11 +1090,11 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
 }
 
 function pcMembers() {
-    global $Conf, $Opt, $PcMembersCache;
+    global $Conf, $PcMembersCache;
     if (!@$PcMembersCache
         || $Conf->setting("pc") <= 0
         || $PcMembersCache[0] < $Conf->setting("pc")
-        || $PcMembersCache[1] != @$Opt["sortByLastName"]) {
+        || $PcMembersCache[1] != opt("sortByLastName")) {
         $pc = array();
         $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
         $by_name_text = array();
@@ -1125,7 +1121,7 @@ function pcMembers() {
             $row->sort_position = $order;
             ++$order;
         }
-        $PcMembersCache = array($Conf->setting("pc"), @$Opt["sortByLastName"], $pc, $pctags);
+        $PcMembersCache = array($Conf->setting("pc"), opt("sortByLastName"), $pc, $pctags);
     }
     return $PcMembersCache[2];
 }
@@ -1245,12 +1241,11 @@ if (!function_exists("random_bytes")) {
 }
 
 function hotcrp_random_password($length = 14) {
-    global $Opt;
     $bytes = random_bytes($length + 10);
     if ($bytes === false) {
         $bytes = "";
         while (strlen($bytes) < $length)
-            $bytes .= sha1($Opt["conferenceKey"] . pack("V", mt_rand()));
+            $bytes .= sha1(opt("conferenceKey") . pack("V", mt_rand()));
     }
 
     $l = "a e i o u y a e i o u y a e i o u y a e i o u y a e i o u y b c d g h j k l m n p r s t u v w trcrbrfrthdrchphwrstspswprslcl2 3 4 5 6 7 8 9 - @ _ + = ";

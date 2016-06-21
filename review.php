@@ -207,7 +207,7 @@ function downloadView($prow, $rr, $editable) {
 }
 
 function downloadForm($editable) {
-    global $rf, $Conf, $Me, $prow, $paperTable, $Opt;
+    global $rf, $Conf, $Me, $prow, $paperTable;
     $explicit = true;
     if ($paperTable->rrow)
         $rrows = array($paperTable->rrow);
@@ -252,7 +252,7 @@ else if (isset($_REQUEST["text"]))
 
 // refuse review action
 function refuseReview() {
-    global $Conf, $Opt, $Me, $prow, $paperTable;
+    global $Conf, $Me, $prow, $paperTable;
 
     Dbl::qe_raw("lock tables PaperReview write, PaperReviewRefused write");
 

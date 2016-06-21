@@ -14,7 +14,6 @@ class CapabilityManager {
     }
 
     public function create($capabilityType, $options = array()) {
-        global $Opt;
         $contactId = defval($options, "contactId", 0);
         if (!$contactId && ($user = @$options["user"]))
             $contactId = $this->prefix === "U" ? $user->contactDbId : $user->contactId;

@@ -5,7 +5,7 @@
 
 class SettingRenderer_Decisions extends SettingRenderer {
 function render(SettingValues $sv) {
-    global $Conf, $Opt;
+    global $Conf;
 
     echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
@@ -19,9 +19,9 @@ function render(SettingValues $sv) {
     $opts = array(Conf::AUSEEREV_NO => $no_text,
                   Conf::AUSEEREV_YES => "Yes");
     if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
-        && !get($Opt, "allow_auseerev_unlessincomplete"))
+        && !opt("allow_auseerev_unlessincomplete"))
         $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
-    if (get($Opt, "allow_auseerev_unlessincomplete"))
+    if (opt("allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
     $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", ["onfocus" => "$('#au_seerev_" . Conf::AUSEEREV_TAGS . "').click()"]);
     $sv->echo_radio_table("au_seerev", $opts);

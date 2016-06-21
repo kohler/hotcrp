@@ -330,7 +330,7 @@ class MailSender {
     }
 
     private function run() {
-        global $Conf, $Opt, $Me, $Error, $subjectPrefix, $mailer_options;
+        global $Conf, $Me, $Error, $subjectPrefix, $mailer_options;
 
         $subject = trim(defval($_REQUEST, "subject", ""));
         if (substr($subject, 0, strlen($subjectPrefix)) != $subjectPrefix)
@@ -395,7 +395,7 @@ class MailSender {
                     $preperrors[$emsg] = true;
                 }
             } else if ($this->process_prep($prep, $last_prep, $row)) {
-                if ((!$Me->privChair || @$Opt["chairHidePasswords"])
+                if ((!$Me->privChair || opt("chairHidePasswords"))
                     && !@$last_prep->sensitive) {
                     $srest = array_merge($rest, array("sensitivity" => "display"));
                     $mailer->reset($contact, $row, $srest);
@@ -445,14 +445,14 @@ if (substr($_REQUEST["subject"], 0, strlen($subjectPrefix)) == $subjectPrefix)
     $_REQUEST["subject"] = substr($_REQUEST["subject"], strlen($subjectPrefix));
 if (isset($_REQUEST["cc"]) && $Me->privChair)
     $_REQUEST["cc"] = simplify_whitespace($_REQUEST["cc"]);
-else if (isset($Opt["emailCc"]))
-    $_REQUEST["cc"] = $Opt["emailCc"] ? $Opt["emailCc"] : "";
+else if (opt("emailCc"))
+    $_REQUEST["cc"] = opt("emailCc");
 else
     $_REQUEST["cc"] = Text::user_email_to(Contact::site_contact());
 if (isset($_REQUEST["replyto"]) && $Me->privChair)
     $_REQUEST["replyto"] = simplify_whitespace($_REQUEST["replyto"]);
 else
-    $_REQUEST["replyto"] = defval($Opt, "emailReplyTo", "");
+    $_REQUEST["replyto"] = opt("emailReplyTo", "");
 
 
 // Check or send

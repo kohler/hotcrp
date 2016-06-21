@@ -27,7 +27,7 @@ else
 if (!$Acct)
     error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
 
-if (isset($Opt["ldapLogin"]) || isset($Opt["httpAuthLogin"]))
+if (opt("ldapLogin") || opt("httpAuthLogin"))
     error_go(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
 
 // don't show information about the current user, if there is one
@@ -72,8 +72,8 @@ if (Conf::$gShortName && Conf::$gShortName != Conf::$gLongName)
     $confname .= " (" . Conf::$gShortName . ")";
 echo "<div class='homegrp'>
 Welcome to the ", htmlspecialchars($confname), " submissions site.";
-if (isset($Opt["conferenceSite"]))
-    echo " For general information about ", htmlspecialchars(Conf::$gShortName), ", see <a href=\"", htmlspecialchars($Opt["conferenceSite"]), "\">the conference site</a>.";
+if (opt("conferenceSite"))
+    echo " For general information about ", htmlspecialchars(Conf::$gShortName), ", see <a href=\"", htmlspecialchars(opt("conferenceSite")), "\">the conference site</a>.";
 
 echo "</div>
 <hr class='home' />

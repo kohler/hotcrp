@@ -624,14 +624,13 @@ class PaperStatus {
     }
 
     private function check_invariants($pj, $old_pj) {
-        global $Opt;
         // Errors don't prevent saving
         if (get($pj, "title") === ""
             || (get($pj, "title") === null && (!$old_pj || !$old_pj->title)))
             $this->set_error_html("title", "Each paper must have a title.");
         if (get($pj, "abstract") === ""
             || (get($pj, "abstract") === null && (!$old_pj || !$old_pj->abstract))) {
-            if (!get($Opt, "noAbstract"))
+            if (!opt("noAbstract"))
                 $this->set_error_html("abstract", "Each paper must have an abstract.");
         }
         if ((is_array(get($pj, "authors")) && empty($pj->authors))

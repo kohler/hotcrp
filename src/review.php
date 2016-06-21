@@ -690,7 +690,7 @@ class ReviewForm {
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
-        global $Conf, $Opt;
+        global $Conf;
         $newsubmit = get($req, "ready") && !get($req, "unready")
             && (!$rrow || !$rrow->reviewSubmitted);
         $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
@@ -777,7 +777,7 @@ class ReviewForm {
         if (isset($req["reviewFormat"]) && $Conf->sversion >= 104
             && opt("formatInfo")) {
             $fmt = null;
-            foreach ($Opt["formatInfo"] as $k => $f)
+            foreach (opt("formatInfo") as $k => $f)
                 if (get($f, "name") && strcasecmp($f["name"], $req["reviewFormat"]) == 0)
                     $fmt = (int) $k;
             if (!$fmt && $req["reviewFormat"]
@@ -1481,7 +1481,7 @@ $blind\n";
     }
 
     function show($prow, $rrows, $rrow, &$options) {
-        global $Conf, $Opt, $Me, $useRequest;
+        global $Conf, $Me, $useRequest;
 
         if (!$options)
             $options = array();

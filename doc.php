@@ -20,7 +20,7 @@ function document_error($status, $msg) {
 
 // Determine the intended paper
 function document_download() {
-    global $Conf, $Me, $Opt;
+    global $Conf, $Me;
 
     $documentType = HotCRPDocument::parse_dtype(req("dt"));
     if ($documentType === null)
@@ -37,8 +37,8 @@ function document_download() {
         $s = $orig_s = preg_replace(',\A/*,', "", Navigation::path());
         $dtname = null;
         $base_dtname = "paper";
-        if (str_starts_with($s, $Opt["downloadPrefix"]))
-            $s = substr($s, strlen($Opt["downloadPrefix"]));
+        if (str_starts_with($s, opt("downloadPrefix")))
+            $s = substr($s, strlen(opt("downloadPrefix")));
         if (preg_match(',\A(?:p|paper|)(\d+)/+(.*)\z,', $s, $m)) {
             $paperId = intval($m[1]);
             if (preg_match(',\A([^/]+)\.[^/]+\z,', $m[2], $mm))

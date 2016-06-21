@@ -438,10 +438,10 @@ class PaperTable {
     }
 
     private function echo_editable_complete() {
-        global $Conf, $Opt;
+        global $Conf;
         $checked = $this->is_ready_checked();
         echo "<div id='foldisready' class='",
-            (($this->prow && $this->prow->paperStorageId > 1) || get($Opt, "noPapers") ? "foldo" : "foldc"),
+            (($this->prow && $this->prow->paperStorageId > 1) || opt("noPapers") ? "foldo" : "foldc"),
             "'><table class='fx'><tr><td class='nw'>",
             Ht::checkbox("submitpaper", 1, $checked, ["id" => "paperisready", "onchange" => "paperform_checkready()"]), "&nbsp;";
         if ($Conf->setting('sub_freeze'))
@@ -454,7 +454,7 @@ class PaperTable {
     }
 
     public function echo_editable_document(PaperOption $docx, $storageId, $flags) {
-        global $Conf, $Me, $Opt;
+        global $Conf, $Me;
 
         $prow = $this->prow;
         $docclass = new HotCRPDocument($docx->id, $docx);
@@ -465,7 +465,7 @@ class PaperTable {
         $filetypes = array();
         $accepts = array();
         if ($main_submission
-            && (get($Opt, "noPapers") === 1 || get($Opt, "noPapers") === true)
+            && (opt("noPapers") === 1 || opt("noPapers") === true)
             && $documentType == DTYPE_SUBMISSION)
             return;
 
@@ -577,9 +577,9 @@ class PaperTable {
     }
 
     private function paptabAbstract() {
-        global $Conf, $Opt;
+        global $Conf;
         $text = $this->entryData("abstract");
-        if (trim($text) === "" && get($Opt, "noAbstract"))
+        if (trim($text) === "" && opt("noAbstract"))
             return;
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
@@ -1600,7 +1600,7 @@ class PaperTable {
     }
 
     private function editMessage() {
-        global $Conf, $Me, $Opt;
+        global $Conf, $Me;
         if (!($prow = $this->prow))
             return $this->_edit_message_new_paper();
 
@@ -1615,7 +1615,7 @@ class PaperTable {
             if ($Me->can_update_paper($prow)) {
                 if ($Conf->setting("sub_freeze"))
                     $t = "A final version of this paper must be submitted before it can be reviewed.";
-                else if ($prow->paperStorageId <= 1 && !get($Opt, "noPapers"))
+                else if ($prow->paperStorageId <= 1 && !opt("noPapers"))
                     $t = "The submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
                     $t = "The submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
@@ -1882,7 +1882,7 @@ class PaperTable {
     }
 
     private function _echo_editable_body($form) {
-        global $Conf, $Me, $Opt;
+        global $Conf, $Me;
         $prow = $this->prow;
 
         echo $form, "<div class='aahc'>";

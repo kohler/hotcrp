@@ -147,7 +147,7 @@ function final_submit_watch_callback($prow, $minic) {
 }
 
 function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
-    global $Conf, $Me, $Opt, $OK, $prow;
+    global $Conf, $Me, $OK, $prow;
     // XXX lock tables
 
     $saved = $ps->save_paper_json($pj);

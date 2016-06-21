@@ -60,8 +60,7 @@ class HotCRPDocument extends Filer {
     }
 
     public static function filename($doc, $filters = null) {
-        global $Opt;
-        $fn = $Opt["downloadPrefix"];
+        $fn = opt("downloadPrefix");
         if ($doc->documentType == DTYPE_SUBMISSION)
             $fn .= "paper" . $doc->paperId;
         else if ($doc->documentType == DTYPE_FINAL)
@@ -96,7 +95,6 @@ class HotCRPDocument extends Filer {
     }
 
     public function mimetypes($doc = null, $docinfo = null) {
-        global $Opt;
         if ($this->dtype > 0 && !$this->option)
             return null;
         else if ($this->option)
@@ -141,7 +139,6 @@ class HotCRPDocument extends Filer {
     }
 
     public function s3_store($doc, $docinfo, $trust_sha1 = false) {
-        global $Opt;
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
         if (!$trust_sha1 && Filer::binary_sha1($doc) !== sha1($doc->content, true)) {
@@ -151,7 +148,7 @@ class HotCRPDocument extends Filer {
         }
         $s3 = self::s3_document();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
-        $meta = array("conf" => $Opt["dbName"],
+        $meta = array("conf" => opt("dbName"),
                       "pid" => isset($doc->paperId) ? (int) $doc->paperId : (int) $docinfo->paperId,
                       "dtype" => (int) $dtype);
         if (get($doc, "filter")) {
@@ -173,7 +170,7 @@ class HotCRPDocument extends Filer {
     }
 
     public function dbstore($doc, $docinfo) {
-        global $Conf, $Opt;
+        global $Conf;
         if ($this->no_database)
             return null;
         if (!isset($doc->paperId))
@@ -215,7 +212,7 @@ class HotCRPDocument extends Filer {
     }
 
     public function filestore_pattern($doc) {
-        global $Opt, $ConfSitePATH;
+        global $ConfSitePATH;
         if ($this->no_filestore)
             return false;
         if (self::$_docstore === null) {
@@ -224,7 +221,7 @@ class HotCRPDocument extends Filer {
                 return (self::$_docstore = false);
 
             $fpath = $fdir;
-            $use_subdir = defval($Opt, "docstoreSubdir", false);
+            $use_subdir = opt("docstoreSubdir", false);
             if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
                 $fpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
             $fpath .= "/%h%x";

@@ -16,7 +16,7 @@ class GetRevpref_SearchAction extends SearchAction {
             $actions[] = [$this->extended ? -99 : -100, $this->subname, null, $this->extended ? "Preference file with abstracts" : "Preference file"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf, $Opt;
+        global $Conf;
         // maybe download preferences for someone else
         $Rev = $user;
         if (($cid = cvtint($qreq->reviewer)) > 0 && $user->privChair) {
@@ -58,7 +58,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
         $actions[] = [2060, $this->subname, "Review assignments", "PC review preferences"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf, $Opt;
+        global $Conf;
         $q = $Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
         $result = Dbl::qe_raw($q);
         $texts = array();

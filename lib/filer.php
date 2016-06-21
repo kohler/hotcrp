@@ -180,14 +180,14 @@ class ZipDocument {
     }
 
     private function create() {
-        global $Now, $Opt;
+        global $Now;
         if (!($tmpdir = $this->tmpdir()))
             return set_error_html("Could not create temporary directory.");
 
         // maybe cache zipfile in docstore
         $zip_filename = "$tmpdir/_hotcrp.zip";
-        if (count($this->filestore) > 0 && get($Opt, "docstore")
-            && get($Opt, "docstoreAccelRedirect")) {
+        if (!empty($this->filestore) && opt("docstore")
+            && opt("docstoreAccelRedirect")) {
             // calculate sha1 for zipfile contents
             $sorted_filestore = $this->filestore;
             usort($sorted_filestore, function ($a, $b) {
@@ -200,8 +200,8 @@ class ZipDocument {
                 $sha1_input .= "README-warnings.txt\n" . join("\n", $this->warnings) . "\n";
             $zipfile_sha1 = sha1($sha1_input, false);
             // look for zipfile
-            $zfn = $Opt["docstore"] . "/tmp/" . $zipfile_sha1 . ".zip";
-            if (Filer::prepare_filestore($Opt["docstore"], $zfn)) {
+            $zfn = opt("docstore") . "/tmp/" . $zipfile_sha1 . ".zip";
+            if (Filer::prepare_filestore(opt("docstore"), $zfn)) {
                 if (file_exists($zfn)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
                         @touch($zfn);
@@ -212,7 +212,7 @@ class ZipDocument {
         }
 
         // actually run zip
-        if (!($zipcmd = get($Opt, "zipCommand", "zip")))
+        if (!($zipcmd = opt("zipCommand", "zip")))
             return set_error_html("<code>zip</code> is not supported on this installation.");
         $this->_add_filestore();
         if (count($this->warnings))
@@ -482,10 +482,10 @@ class Filer {
 
     // download
     static function download_file($filename, $no_accel = false) {
-        global $Opt, $zlib_output_compression;
+        global $zlib_output_compression;
         // if docstoreAccelRedirect, output X-Accel-Redirect header
-        if (($dar = get($Opt, "docstoreAccelRedirect"))
-            && ($ds = get($Opt, "docstore"))
+        if (($dar = opt("docstoreAccelRedirect"))
+            && ($ds = opt("docstore"))
             && !$no_accel) {
             if (!str_ends_with($ds, "/"))
                 $ds .= "/";

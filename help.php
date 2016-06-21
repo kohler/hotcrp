@@ -244,7 +244,7 @@ function meaningful_round_name() {
 }
 
 function searchQuickref() {
-    global $rowidx, $Conf, $Opt, $Me;
+    global $rowidx, $Conf, $Me;
 
     // how to report author searches?
     if ($Conf->subBlindNever())
@@ -409,7 +409,7 @@ function searchQuickref() {
             list($greater, $less, $hint) = array("greater", "less", "");
         else {
             $hint = "<br /><small>(better scores are closer to A than Z)</small>";
-            if (defval($Opt, "smartScoreCompare"))
+            if (opt("smartScoreCompare"))
                 list($greater, $less) = array("better", "worse");
             else
                 list($greater, $less) = array("worse", "better");

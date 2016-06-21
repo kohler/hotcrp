@@ -187,7 +187,7 @@ function web_request_as_json($cj) {
 }
 
 function save_user($cj, $user_status, $Acct, $allow_modification) {
-    global $Conf, $Me, $Opt, $OK, $newProfile;
+    global $Conf, $Me, $OK, $newProfile;
     if ($newProfile)
         $Acct = null;
 
@@ -634,7 +634,7 @@ else if ($Me->privChair)
     echo_modes(0);
 
 echo '<div class="f-contain">', "\n\n";
-if (!isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"]))
+if (!opt("ldapLogin") && !opt("httpAuthLogin"))
     echofield(0, "uemail", "Email", textinput("uemail", contact_value("uemail", "email"), 52, "account_d"));
 else if (!$newProfile) {
     echofield(0, "uemail", "Username", contact_value("uemail", "email"));
@@ -662,7 +662,7 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 }
 
 
-if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
+if (!$newProfile && !opt("ldapLogin") && !opt("httpAuthLogin")
     && $Me->can_change_password($Acct)) {
     echo '<div id="foldpassword" class="',
         ($UserStatus->has_error("password") ? "fold3o" : "fold3c"),
@@ -677,8 +677,8 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
             '<div class="', feclass("password"), '">', Ht::password("oldpassword", "", array("size" => 24)), '</div>',
             '</div>';
     }
-    if (@$Opt["contactdb_dsn"] && @$Opt["contactdb_loginFormHeading"])
-        echo $Opt["contactdb_loginFormHeading"];
+    if (opt("contactdb_dsn") && opt("contactdb_loginFormHeading"))
+        echo opt("contactdb_loginFormHeading");
     echo '<div class="f-i"><div class="f-ix">
   <div class="', fcclass("password"), '">New password</div>
   <div class="', feclass("password"), '">', Ht::password("upassword", "", array("size" => 24, "class" => "fn"));

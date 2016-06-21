@@ -5,7 +5,7 @@
 
 class SettingRenderer_Submissions extends SettingRenderer {
 function render(SettingValues $sv) {
-    global $Conf, $Opt;
+    global $Conf;
 
     $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
 

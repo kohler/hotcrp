@@ -1899,7 +1899,7 @@ class AssignmentSet {
     }
 
     function execute($verbose = false) {
-        global $Conf, $Now, $Opt;
+        global $Conf, $Now;
         if (count($this->errors_) || !count($this->assigners)) {
             if ($verbose && count($this->errors_))
                 $this->report_errors();

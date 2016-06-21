@@ -1390,7 +1390,6 @@ class PaperSearch {
     }
 
     private function _search_review_field($word, $f, &$qt, $quoted, $noswitch = false) {
-        global $Opt;
         $countexpr = ">0";
         $contacts = null;
         $contactword = "";
@@ -1417,7 +1416,7 @@ class PaperSearch {
                 else {
                     $score = $m[3];
                     if ($f->option_letter) {
-                        if (!get($Opt, "smartScoreCompare") || $noswitch) {
+                        if (!opt("smartScoreCompare") || $noswitch) {
                             // switch meaning of inequality
                             if ($m[2][0] === "<")
                                 $m[2] = ">" . substr($m[2], 1);

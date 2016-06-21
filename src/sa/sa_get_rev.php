@@ -24,7 +24,7 @@ class GetReviewBase_SearchAction extends SearchAction {
         $this->iszip = $iszip;
     }
     protected function finish($ssel, $texts, $errors) {
-        global $Conf, $Opt;
+        global $Conf;
         $texts = $ssel->reorder($texts);
         if (empty($texts)) {
             if (empty($errors))
@@ -67,10 +67,10 @@ class GetReviewBase_SearchAction extends SearchAction {
             $text .= join("", $texts);
             downloadText($text, $rfname);
         } else {
-            $zip = new ZipDocument($Opt["downloadPrefix"] . "reviews.zip");
+            $zip = new ZipDocument(opt("downloadPrefix") . "reviews.zip");
             $zip->warnings = $warnings;
             foreach ($texts as $pid => $text)
-                $zip->add($header . $text, $Opt["downloadPrefix"] . $rfname . $pid . ".txt");
+                $zip->add($header . $text, opt("downloadPrefix") . $rfname . $pid . ".txt");
             $result = $zip->download();
             if (!$result->error)
                 exit;
