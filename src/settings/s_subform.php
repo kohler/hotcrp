@@ -102,33 +102,27 @@ class BanalSettings {
             // change margin specifications into text block measurements
             if (preg_match('/^(.*\S)\s+mar(gins?)?/i', $s, $m)) {
                 $s = $m[1];
-                if (!$cfs->pagesize || count($cfs->pagesize) != 1) {
-                    $sv->set_error("sub_banal_pagesize$suffix", "You must specify a page size as well as margins.");
+                if (!$cfs->papersize || count($cfs->papersize) != 1) {
+                    $sv->set_error("sub_banal_papersize$suffix", "You must specify a paper size as well as margins.");
                     $sv->set_error("sub_banal_textblock$suffix");
-                } else if (strpos($s, "x") !== false) {
-                    $ps = $cfs->pagesize[0];
-                    if (!($m = FormatSpec::parse_dimen($s)) || !is_array($m) || count($m) > 4) {
+                } else {
+                    $ps = $cfs->papersize[0];
+                    if (strpos($s, "x") === false) {
+                        $s = preg_replace('/\s+(?=[\d.])/', 'x', trim($s));
+                        $css = 1;
+                    } else
+                        $css = 0;
+                    if (!($m = FormatSpec::parse_dimen($s)) || (is_array($m) && count($m) > 4)) {
                         $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
                         $s = "";
-                    } else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[0], $ps[1] - 2 * $m[1]);
-                    else if (count($m) == 3)
-                        $s = array($ps[0] - 2 * $m[0], $ps[1] - $m[1] - $m[2]);
-                    else
-                        $s = array($ps[0] - $m[0] - $m[2], $ps[1] - $m[1] - $m[3]);
-                } else {
-                    $ps = $cfs->pagesize[0];
-                    $s = preg_replace('/\s+/', 'x', $s);
-                    if (!($m = FormatSpec::parse_dimen($s)) || (is_array($m) && count($m) > 4))
-                        $sv->set_error("sub_banal_textblock$suffix", "Invalid margin definition.");
-                    else if (!is_array($m))
+                    } else if (!is_array($m))
                         $s = array($ps[0] - 2 * $m, $ps[1] - 2 * $m);
                     else if (count($m) == 2)
-                        $s = array($ps[0] - 2 * $m[1], $ps[1] - 2 * $m[0]);
+                        $s = array($ps[0] - 2 * $m[$css], $ps[1] - 2 * $m[1 - $css]);
                     else if (count($m) == 3)
-                        $s = array($ps[0] - 2 * $m[1], $ps[1] - $m[0] - $m[2]);
+                        $s = array($ps[0] - $m[$css] - $m[2 - $css], $ps[1] - $m[1 - $css] - $m[1 + $css]);
                     else
-                        $s = array($ps[0] - $m[1] - $m[3], $ps[1] - $m[0] - $m[2]);
+                        $s = array($ps[0] - $m[$css] - $m[2 + $css], $ps[1] - $m[1 - $css] - $m[3 - $css]);
                 }
                 $s = (is_array($s) ? FormatSpec::unparse_dimen($s) : "");
             }
