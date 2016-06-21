@@ -50,13 +50,17 @@ class Dbl {
     const F_ALLOWERROR = 16;
     const F_MULTI = 32;
 
-    static public $logged_errors = 0;
+    static public $nerrors = 0;
     static public $default_dblink;
     static private $error_handler = "Dbl::default_error_handler";
     static private $log_queries = false;
     static private $log_queries_limit = 0;
     static public $check_warnings = true;
     static public $landmark_sanitizer = "/^Dbl::/";
+
+    static function has_error() {
+        return self::$nerrors > 0;
+    }
 
     static function make_dsn($opt) {
         if (isset($opt["dsn"])) {
@@ -267,13 +271,12 @@ class Dbl {
 
     static public function do_result($dblink, $flags, $qstr, $result) {
         if ($result === false && $dblink->errno) {
-            if ($flags & (self::F_LOG | self::F_ERROR)) {
-                ++self::$logged_errors;
-                if ($flags & self::F_ERROR)
-                    call_user_func(self::$error_handler, $dblink, $qstr);
-                else
-                    error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
-            }
+            if (!($flags & self::F_ALLOWERROR))
+                ++self::$nerrors;
+            if ($flags & self::F_ERROR)
+                call_user_func(self::$error_handler, $dblink, $qstr);
+            else if ($flags & self::F_LOG)
+                error_log(self::landmark() . ": database error: " . $dblink->error . " in $qstr");
         } else if ($result === false || $result === true)
             $result = new Dbl_Result($dblink);
         if (self::$check_warnings && !($flags & self::F_ALLOWERROR)

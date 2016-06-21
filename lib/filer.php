@@ -385,7 +385,7 @@ class Filer {
 
     // dbstore functions
     function store_database($dbinfo, $doc) {
-        global $Conf, $OK;
+        global $Conf;
         $N = 400000;
         $idcol = $dbinfo->id_column;
         $while = "while storing document in database";
@@ -413,7 +413,6 @@ class Filer {
             $doc->$idcol = $result->insert_id;
             if (!$doc->$idcol) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
-                $OK = false;
                 return;
             }
         }
@@ -425,7 +424,7 @@ class Filer {
                     $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "')";
             if (!count($a))
                 break;
-            if (!$Conf->q("update $dbinfo->table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
+            if (!$Conf->q_raw("update $dbinfo->table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
                 return;
             }
@@ -433,7 +432,7 @@ class Filer {
 
         // check that paper storage succeeded
         if ($dbinfo->check_contents
-            && (!($result = $Conf->qe("select length($dbinfo->check_contents) from $dbinfo->table where $idcol=" . $doc->$idcol))
+            && (!($result = $Conf->qe_raw("select length($dbinfo->check_contents) from $dbinfo->table where $idcol=" . $doc->$idcol))
                 || !($row = edb_row($result))
                 || $row[0] != strlen(self::content($doc)))) {
             set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");

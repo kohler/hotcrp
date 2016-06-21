@@ -232,7 +232,7 @@ function update_schema_drop_keys_if_exist($table, $key) {
 }
 
 function updateSchema($Conf) {
-    global $Opt, $OK;
+    global $Opt;
     // avoid error message abut timezone, set to $Opt
     // (which might be overridden by database values later)
     if (function_exists("date_default_timezone_set") && isset($Opt["timezone"]) && $Opt["timezone"])
@@ -308,8 +308,9 @@ function updateSchema($Conf) {
         // It's OK if this fails!  Update 11 added reviewRound to
         // PaperReviewArchive (so old databases have the column), but I forgot
         // to upgrade schema.sql (so new databases lack the column).
+        $old_nerrors = Dbl::$nerrors;
         Dbl::ql("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'");
-        $OK = true;
+        Dbl::$nerrors = $old_nerrors;
         $Conf->update_schema_version(16);
     }
     if ($Conf->sversion == 16
@@ -984,7 +985,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 134) {
         foreach (Dbl::fetch_first_columns("select distinct mimetype from PaperStorage") as $mt)
             Mimetype::lookup($mt);
-        if ($OK)
+        if (!Dbl::has_error())
             $Conf->update_schema_version(135);
     }
     if ($Conf->sversion == 135

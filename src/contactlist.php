@@ -634,7 +634,7 @@ class ContactList {
         order by lastName, firstName, email";
 
         // make query
-        $result = $Conf->qe($pq);
+        $result = $Conf->qe_raw($pq);
         if (!$result)
             return NULL;
 

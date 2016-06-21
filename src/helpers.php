@@ -664,14 +664,14 @@ function tempdir($mode = 0700) {
 
 // watch functions
 function saveWatchPreference($paperId, $contactId, $watchtype, $on) {
-    global $Conf, $OK;
+    global $Conf;
     $explicit = ($watchtype << WATCHSHIFT_EXPLICIT);
     $selected = ($watchtype << WATCHSHIFT_NORMAL);
     $onvalue = $explicit | ($on ? $selected : 0);
     Dbl::qe("insert into PaperWatch (paperId, contactId, watch)
                 values ($paperId, $contactId, $onvalue)
                 on duplicate key update watch = (watch & ~" . ($explicit | $selected) . ") | $onvalue");
-    return $OK;
+    return !Dbl::has_error();
 }
 
 

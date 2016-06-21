@@ -758,7 +758,7 @@ The automatic and bulk assignment pages also let you set a review round.</p>");
         }
         $rounds = array();
         if ($Conf->has_rounds()) {
-            $result = $Conf->qe("select distinct reviewRound from PaperReview");
+            $result = $Conf->qe_raw("select distinct reviewRound from PaperReview");
             while (($row = edb_row($result)))
                 if ($row[0] && ($rname = $Conf->round_name($row[0], false)))
                     $rounds[] = "“<a href=\""

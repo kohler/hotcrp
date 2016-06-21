@@ -18,7 +18,7 @@ if (!$Conf->setting_data("s3_bucket")) {
     exit(1);
 }
 
-$result = $Conf->qe("select paperStorageId from PaperStorage where paperStorageId>1");
+$result = $Conf->qe_raw("select paperStorageId from PaperStorage where paperStorageId>1");
 $sids = array();
 while (($row = edb_row($result)))
     $sids[] = (int) $row[0];
@@ -27,7 +27,7 @@ $failures = 0;
 foreach ($sids as $sid) {
     if ($active !== false && !isset($active[$sid]))
         continue;
-    $result = $Conf->qe("select paperStorageId, paperId, timestamp, mimetype,
+    $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
         compression, sha1, documentType, filename, infoJson,
         paper is null as paper_null
         from PaperStorage where paperStorageId=$sid");
@@ -53,7 +53,7 @@ foreach ($sids as $sid) {
         ++$failures;
     }
     if ($saved && $kill)
-        $Conf->qe("update PaperStorage set paper=null where paperStorageId=$sid");
+        $Conf->qe_raw("update PaperStorage set paper=null where paperStorageId=$sid");
 }
 if ($failures) {
     fwrite(STDERR, "Failed to save " . plural($failures, "document") . ".\n");

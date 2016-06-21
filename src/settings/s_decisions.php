@@ -88,7 +88,7 @@ function render(SettingValues $sv) {
 
     // count papers per decision
     $decs_pcount = array();
-    $result = $Conf->qe("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
+    $result = $Conf->qe_raw("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
     while (($row = edb_row($result)))
         $decs_pcount[$row[0]] = $row[1];
 
@@ -227,7 +227,7 @@ class Decision_SettingParser extends SettingParser {
         foreach ($sv->req as $k => $v)
             if (str_starts_with($k, "dec") && ($k = cvtint(substr($k, 3), 0))) {
                 if ($v == "") {
-                    $Conf->qe("update Paper set outcome=0 where outcome=$k");
+                    $Conf->qe_raw("update Paper set outcome=0 where outcome=$k");
                     unset($decs[$k]);
                     $update = true;
                 } else if ($v != $decs[$k]) {

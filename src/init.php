@@ -81,8 +81,7 @@ define("CAPTYPE_CHANGEEMAIL", 2);
 
 define("ALWAYS_OVERRIDE", 9999);
 
-global $OK, $Now, $ConfSitePATH;
-$OK = 1;
+global $Now, $ConfSitePATH;
 $Now = time();
 $ConfSitePATH = null;
 

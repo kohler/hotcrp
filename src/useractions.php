@@ -20,11 +20,11 @@ class UserActions {
 
     static function disable($ids, $contact) {
         global $Conf;
-        $old_logged_errors = Dbl::$logged_errors;
+        $old_nerrors = Dbl::$nerrors;
         $enabled_cids = Dbl::fetch_first_columns("select contactId from ContactInfo where contactId ?a and disabled=0 and contactId!=?", $ids, $contact->contactId);
         if ($enabled_cids)
             Dbl::qe("update ContactInfo set disabled=1 where contactId ?a", $enabled_cids);
-        if (Dbl::$logged_errors > $old_logged_errors)
+        if (Dbl::$nerrors > $old_nerrors)
             return (object) ["error" => true];
         else if (!count($enabled_cids))
             return (object) ["ok" => true, "warnings" => ["Those accounts were already disabled."]];
@@ -39,12 +39,12 @@ class UserActions {
 
     static function enable($ids, $contact) {
         global $Conf;
-        $old_logged_errors = Dbl::$logged_errors;
+        $old_nerrors = Dbl::$nerrors;
         Dbl::qe("update ContactInfo set disabled=1 where contactId ?a and password='' and contactId!=?", $ids, $contact->contactId);
         $disabled_cids = Dbl::fetch_first_columns("select contactId from ContactInfo where contactId ?a and disabled=1 and contactId!=?", $ids, $contact->contactId);
         if ($disabled_cids)
             Dbl::qe("update ContactInfo set disabled=0 where contactId ?a", $disabled_cids);
-        if (Dbl::$logged_errors > $old_logged_errors)
+        if (Dbl::$nerrors > $old_nerrors)
             return (object) ["error" => true];
         else if (!count($disabled_cids))
             return (object) ["ok" => true, "warnings" => ["Those accounts were already enabled."]];

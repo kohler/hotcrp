@@ -362,7 +362,7 @@ function render(SettingValues $sv) {
     // Topics
     // load topic interests
     $qinterest = $Conf->query_topic_interest();
-    $result = $Conf->q("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
+    $result = $Conf->q_raw("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
     $interests = array();
     $ninterests = 0;
     while (($row = edb_row($result))) {
@@ -441,17 +441,17 @@ class Topic_SettingParser extends SettingParser {
                     if (($n = simplify_whitespace($n)) !== "")
                         $news[] = "('" . sqlq($n) . "')";
                 if (count($news))
-                    $Conf->qe("insert into TopicArea (topicName) values " . join(",", $news));
+                    $Conf->qe_raw("insert into TopicArea (topicName) values " . join(",", $news));
             } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
                        && ctype_digit(substr($k, 3))) {
                 $k = (int) substr($k, 3);
                 $v = simplify_whitespace($v);
                 if ($v == "") {
-                    $Conf->qe("delete from TopicArea where topicId=$k");
-                    $Conf->qe("delete from PaperTopic where topicId=$k");
-                    $Conf->qe("delete from TopicInterest where topicId=$k");
+                    $Conf->qe_raw("delete from TopicArea where topicId=$k");
+                    $Conf->qe_raw("delete from PaperTopic where topicId=$k");
+                    $Conf->qe_raw("delete from TopicInterest where topicId=$k");
                 } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
-                    $Conf->qe("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
+                    $Conf->qe_raw("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
             }
         $Conf->invalidate_topics();
     }
@@ -607,7 +607,7 @@ class Option_SettingParser extends SettingParser {
             if (!get($new_opts, $id))
                 $deleted_ids[] = $id;
         if (count($deleted_ids))
-            $Conf->qe("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
+            $Conf->qe_raw("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
 
         // invalidate cached option list
         PaperOption::invalidate_option_list();

@@ -13,7 +13,7 @@ $Error = array();
 // load mail from log
 if (isset($_REQUEST["fromlog"]) && ctype_digit($_REQUEST["fromlog"])
     && $Me->privChair) {
-    $result = $Conf->qe("select * from MailLog where mailId=" . $_REQUEST["fromlog"]);
+    $result = $Conf->qe_raw("select * from MailLog where mailId=" . $_REQUEST["fromlog"]);
     if (($row = edb_orow($result))) {
         foreach (array("recipients", "q", "t", "cc", "replyto", "subject", "emailBody") as $field)
             if (isset($row->$field) && !isset($_REQUEST[$field]))
@@ -348,7 +348,7 @@ class MailSender {
         $q = $this->recip->query($paper_sensitive);
         if (!$q)
             return Conf::msg_error("Bad recipients value");
-        $result = $Conf->qe($q);
+        $result = $Conf->qe_raw($q);
         if (!$result)
             return;
         $recipients = defval($_REQUEST, "recipients", "");
@@ -426,7 +426,7 @@ class MailSender {
         else if (!$this->sending)
             $this->echo_actions();
         if ($revinform)
-            $Conf->qe("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
+            $Conf->qe_raw("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
         echo "</div></form>";
         echo Ht::unstash_script("fold('mail', null);");
         $Conf->footer();
@@ -593,7 +593,7 @@ echo "  <tr><td class='mhnp nw'>Subject:</td><td class='mhdp'>",
 
 
 if ($Me->privChair) {
-    $result = $Conf->qe("select * from MailLog order by mailId desc limit 18");
+    $result = $Conf->qe_raw("select * from MailLog order by mailId desc limit 18");
     if (edb_nrows($result)) {
         echo "<div style='padding-top:12px'>",
             "<strong>Recent mails:</strong>\n";

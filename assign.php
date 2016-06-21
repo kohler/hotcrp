@@ -197,10 +197,10 @@ if (isset($_REQUEST["update"]) && $Me->allow_administer($prow) && check_post()) 
     pcAssignments();
     Dbl::qe_raw("unlock tables");
     $Conf->update_rev_tokens_setting(false);
-    if ($OK)
+    if (!Dbl::has_error())
         $Conf->confirmMsg("Assignments saved.");
     if (defval($_REQUEST, "ajax"))
-        $Conf->ajaxExit(array("ok" => $OK));
+        $Conf->ajaxExit(array("ok" => !Dbl::has_error()));
     else {
         redirectSelf();
         // NB normally redirectSelf() does not return

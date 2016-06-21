@@ -46,7 +46,7 @@ class Assign_SearchAction extends SearchAction {
         } else if ($mt == "lead" || $mt == "shepherd") {
             if ($user->assign_paper_pc($ssel->selection(), $mt, $pc))
                 $Conf->confirmMsg(ucfirst(pluralx($ssel->selection(), $mt)) . " set.");
-            else if ($OK)
+            else if (!Dbl::has_error())
                 $Conf->confirmMsg("No changes.");
         } else if (!$pc)
             Conf::msg_error("“" . htmlspecialchars($mpc) . "” is not a PC member.");

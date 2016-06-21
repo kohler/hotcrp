@@ -21,7 +21,7 @@ if (!$Conf->dblink->multi_query(file_get_contents("$ConfSitePATH/src/schema.sql"
 while ($Conf->dblink->more_results())
     Dbl::free($Conf->dblink->next_result());
 // No setup phase.
-$Conf->qe("delete from Settings where name='setupPhase'");
+$Conf->qe_raw("delete from Settings where name='setupPhase'");
 $Conf->load_settings();
 // Contactdb.
 if (($cdb = Contact::contactdb())) {

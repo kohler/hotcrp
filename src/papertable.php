@@ -697,7 +697,7 @@ class PaperTable {
         $aulist = $this->prow->author_list();
 
         // find contact author information, combine with author table
-        $result = $Conf->qe("select firstName, lastName, email, '' as affiliation, contactId
+        $result = $Conf->qe_raw("select firstName, lastName, email, '' as affiliation, contactId
                 from ContactInfo join PaperConflict using (contactId)
                 where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR);
         $contacts = array();
@@ -1154,7 +1154,7 @@ class PaperTable {
                     $conflict[$id] = Conflict::force_author_mark($ct, $this->admin);
         }
         if ($this->prow) {
-            $result = $Conf->qe("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId);
+            $result = $Conf->qe_raw("select contactId, conflictType from PaperConflict where paperId=" . $this->prow->paperId);
             while (($row = edb_row($result))) {
                 $ct = new Conflict($row[1]);
                 if (!$this->useRequest || (!$ct->is_author_mark() && !$this->admin))
@@ -1519,7 +1519,7 @@ class PaperTable {
               && $Me->contactId > 0))
             return;
         // watch note
-        $result = $Conf->q("select
+        $result = $Conf->q_raw("select
         ContactInfo.contactId, reviewType, commentId, conflictType, watch
         from ContactInfo
         left join PaperReview on (PaperReview.paperId=$prow->paperId and PaperReview.contactId=ContactInfo.contactId)
@@ -2283,7 +2283,7 @@ class PaperTable {
                 $q .= "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$Me->contactId)";
             else
                 $q .= "join ContactInfo on (ContactInfo.paperId=Paper.paperId and ContactInfo.contactId=$Me->contactId and ContactInfo.conflictType>=" . CONFLICT_AUTHOR . ")";
-            $result = $Conf->q($q);
+            $result = $Conf->q_raw($q);
             if (($paperId = edb_row($result)))
                 $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $paperId[0];
             return false;

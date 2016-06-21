@@ -337,7 +337,7 @@ class Round_SettingParser extends SettingParser {
         global $Conf;
         // remove references to deleted rounds
         foreach ($this->rev_round_changes as $x)
-            $Conf->qe("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
+            $Conf->qe_raw("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
     }
 }
 

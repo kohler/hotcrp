@@ -139,10 +139,7 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     else
         Dbl::qe_raw("insert into ReviewRating (reviewId, contactId, rating) values (" . $paperTable->rrow->reviewId . ", $Me->contactId, " . $_REQUEST["rating"] . ") on duplicate key update rating=" . $_REQUEST["rating"]);
     if (defval($_REQUEST, "ajax", 0))
-        if ($OK)
-            $Conf->ajaxExit(array("ok" => 1, "result" => "Thanks! Your feedback has been recorded."));
-        else
-            $Conf->ajaxExit(array("ok" => 0, "result" => "There was an error while recording your feedback."));
+        $Conf->ajaxExit(["ok" => !Dbl::has_error(), "result" => "Thanks! Your feedback has been recorded."]);
     if (isset($_REQUEST["allr"])) {
         $_REQUEST["paperId"] = $_GET["paperId"] = $_POST["paperId"] = $paperTable->rrow->paperId;
         unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);

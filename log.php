@@ -180,7 +180,7 @@ if (!$firstDate && $page !== false) {
 }
 
 //$Conf->infoMsg(nl2br(htmlspecialchars($query)));
-$result = $Conf->qe($query);
+$result = $Conf->qe_raw($query);
 $nrows = edb_nrows($result);
 if ($firstDate || $page === false)
     $maxNrows = $nrows;

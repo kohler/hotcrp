@@ -10,14 +10,14 @@ $MergeError = "";
 
 function crpmergeone($table, $field, $oldid, $newid) {
     global $Conf, $MergeError;
-    if (!$Conf->q("update $table set $field=$newid where $field=$oldid"))
+    if (!$Conf->q_raw("update $table set $field=$newid where $field=$oldid"))
         $MergeError .= $Conf->db_error_html(true);
 }
 
 function crpmergeoneignore($table, $field, $oldid, $newid) {
     global $Conf, $MergeError;
-    if (!$Conf->q("update ignore $table set $field=$newid where $field=$oldid")
-        && !$Conf->q("delete from $table where $field=$oldid"))
+    if (!$Conf->q_raw("update ignore $table set $field=$newid where $field=$oldid")
+        && !$Conf->q_raw("delete from $table where $field=$oldid"))
         $MergeError .= $Conf->db_error_html(true);
 }
 
@@ -29,14 +29,14 @@ function crpmerge_database($old_user, $new_user) {
     $oldid = $old_user->contactId;
     $newid = $new_user->contactId;
 
-    $Conf->q("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, PaperWatch write, ReviewRating write");
+    $Conf->q_raw("lock tables Paper write, ContactInfo write, PaperConflict write, ActionLog write, TopicInterest write, PaperComment write, PaperReview write, PaperReview as B write, PaperReviewPreference write, PaperReviewRefused write, ReviewRequest write, PaperWatch write, ReviewRating write");
 
     crpmergeone("Paper", "leadContactId", $oldid, $newid);
     crpmergeone("Paper", "shepherdContactId", $oldid, $newid);
     crpmergeone("Paper", "managerContactId", $oldid, $newid);
 
     // paper authorship
-    $result = $Conf->qe("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($old_user->email) . "\t%'"));
+    $result = $Conf->qe_raw("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($old_user->email) . "\t%'"));
     $qs = array();
     while (($row = PaperInfo::fetch($result, null))) {
         foreach ($row->author_list() as $au)
@@ -45,20 +45,20 @@ function crpmerge_database($old_user, $new_user) {
         $qs[] = "update Paper set authorInformation='" . sqlq($row->parse_author_list()) . "' where paperId=$row->paperId";
     }
     foreach ($qs as $q)
-        $Conf->qe($q);
+        $Conf->qe_raw($q);
 
     // ensure uniqueness in PaperConflict
-    $result = $Conf->qe("select paperId, conflictType from PaperConflict where contactId=$oldid");
+    $result = $Conf->qe_raw("select paperId, conflictType from PaperConflict where contactId=$oldid");
     $values = "";
     while (($row = edb_row($result)))
         $values .= ", ($row[0], $newid, $row[1])";
     if ($values)
-        $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))");
-    $Conf->qe("delete from PaperConflict where contactId=$oldid");
+        $Conf->qe_raw("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($values, 2) . " on duplicate key update conflictType=greatest(conflictType, values(conflictType))");
+    $Conf->qe_raw("delete from PaperConflict where contactId=$oldid");
 
     if (($old_user->roles | $new_user->roles) != $new_user->roles) {
         $new_user->roles |= $old_user->roles;
-        $Conf->qe("update ContactInfo set roles=$new_user->roles where contactId=$newid");
+        $Conf->qe_raw("update ContactInfo set roles=$new_user->roles where contactId=$newid");
     }
 
     crpmergeone("ActionLog", "contactId", $oldid, $newid);
@@ -77,11 +77,11 @@ function crpmerge_database($old_user, $new_user) {
 
     // Remove the old contact record
     if ($MergeError == "") {
-        if (!$Conf->q("delete from ContactInfo where contactId=$oldid"))
+        if (!$Conf->q_raw("delete from ContactInfo where contactId=$oldid"))
             $MergeError .= $Conf->db_error_html(true);
     }
 
-    $Conf->qe("unlock tables");
+    $Conf->qe_raw("unlock tables");
 
     // Update PC settings if we need to
     if ($old_user->isPC)

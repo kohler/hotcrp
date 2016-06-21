@@ -304,13 +304,13 @@ class Tag_SettingParser extends SettingParser {
                         $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
 
                 $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
-                $Conf->qe("delete from PaperTag where tag='" . sqlq($base) . "'$q");
+                $Conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
 
                 $q = array();
                 foreach ($pvals as $pid => $what)
                     $q[] = "($pid, '" . sqlq($base) . "', $what)";
                 if (count($q) > 0)
-                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
+                    $Conf->qe_raw("insert into PaperTag values " . join(", ", $q));
             }
         }
 
@@ -319,7 +319,7 @@ class Tag_SettingParser extends SettingParser {
             foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
                 if ($t === "")
                     continue;
-                $result = $Conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
+                $result = $Conf->q_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
                 $pvals = array();
                 $negative = false;
                 while (($row = edb_row($result))) {
@@ -332,13 +332,13 @@ class Tag_SettingParser extends SettingParser {
                 }
 
                 $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
-                $Conf->qe("delete from PaperTag where tag='" . sqlq($t) . "'$q");
+                $Conf->qe_raw("delete from PaperTag where tag='" . sqlq($t) . "'$q");
 
                 $q = array();
                 foreach ($pvals as $pid => $what)
                     $q[] = "($pid, '" . sqlq($t) . "', $what)";
                 if (count($q) > 0)
-                    $Conf->qe("insert into PaperTag values " . join(", ", $q));
+                    $Conf->qe_raw("insert into PaperTag values " . join(", ", $q));
             }
         }
 

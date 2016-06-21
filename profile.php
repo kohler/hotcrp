@@ -83,7 +83,7 @@ if (($Acct->contactId != $Me->contactId || !$Me->has_database_account())
     && $Acct->has_email()
     && !$Acct->firstName && !$Acct->lastName && !$Acct->affiliation
     && !isset($_REQUEST["post"])) {
-    $result = $Conf->qe("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
+    $result = $Conf->qe_raw("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$Acct->contactId and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
     while (($prow = PaperInfo::fetch($result, $Me)))
         foreach ($prow->author_list() as $au)
             if (strcasecmp($au->email, $Acct->email) == 0
@@ -187,7 +187,7 @@ function web_request_as_json($cj) {
 }
 
 function save_user($cj, $user_status, $Acct, $allow_modification) {
-    global $Conf, $Me, $OK, $newProfile;
+    global $Conf, $Me, $newProfile;
     if ($newProfile)
         $Acct = null;
 
@@ -414,7 +414,7 @@ function databaseTracks($who) {
                              "comment" => array());
 
     // find authored papers
-    $result = $Conf->qe("select Paper.paperId, count(pc.contactId)
+    $result = $Conf->qe_raw("select Paper.paperId, count(pc.contactId)
         from Paper
         join PaperConflict c on (c.paperId=Paper.paperId and c.contactId=$who and c.conflictType>=" . CONFLICT_AUTHOR . ")
         join PaperConflict pc on (pc.paperId=Paper.paperId and pc.conflictType>=" . CONFLICT_AUTHOR . ")
@@ -426,14 +426,14 @@ function databaseTracks($who) {
     }
 
     // find reviews
-    $result = $Conf->qe("select paperId from PaperReview
+    $result = $Conf->qe_raw("select paperId from PaperReview
         where PaperReview.contactId=$who
         group by paperId order by paperId");
     while (($row = edb_row($result)))
         $tracks->review[] = $row[0];
 
     // find comments
-    $result = $Conf->qe("select paperId from PaperComment
+    $result = $Conf->qe_raw("select paperId from PaperComment
         where PaperComment.contactId=$who
         group by paperId order by paperId");
     while (($row = edb_row($result)))
@@ -446,7 +446,7 @@ function textArrayPapers($pids) {
     return commajoin(preg_replace('/(\d+)/', "<a href='" . hoturl("paper", "p=\$1&amp;ls=" . join("+", $pids)) . "'>\$1</a>", $pids));
 }
 
-if (isset($_REQUEST["delete"]) && $OK && check_post()) {
+if (isset($_REQUEST["delete"]) && !Dbl::has_error() && check_post()) {
     if (!$Me->privChair)
         Conf::msg_error("Only administrators can delete users.");
     else if ($Acct->contactId == $Me->contactId)
@@ -461,7 +461,7 @@ if (isset($_REQUEST["delete"]) && $OK && check_post()) {
                            "PaperReviewPreference", "PaperReviewRefused",
                            "PaperWatch", "ReviewRating", "TopicInterest")
                      as $table)
-                $Conf->qe("delete from $table where contactId=$Acct->contactId");
+                $Conf->qe_raw("delete from $table where contactId=$Acct->contactId");
             // delete twiddle tags
             $assigner = new AssignmentSet($Me, true);
             $assigner->parse("paper,tag\nall,{$Acct->contactId}~all#clear\n");
@@ -578,7 +578,7 @@ if (!$UserStatus->nerrors && $Conf->session("freshlogin") === "redirect") {
         $amsg .= " if you have none.";
     }
     if ($ispc) {
-        $result = $Conf->q("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
+        $result = $Conf->q_raw("select count(ta.topicId), count(ti.topicId) from TopicArea ta left join TopicInterest ti on (ti.contactId=$Me->contactId and ti.topicId=ta.topicId)");
         if (($row = edb_row($result)) && $row[0] && !$row[1]) {
             $msgs[] = "tell us your topic interests";
             $amsg .= "  We use your topic interests to assign you papers you might like.";

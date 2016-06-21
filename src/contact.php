@@ -919,9 +919,9 @@ class Contact {
             $tf = array();
             foreach ($cj->topics as $k => $v)
                 $tf[] = "($this->contactId,$k,$v)";
-            $Conf->qe("delete from TopicInterest where contactId=$this->contactId");
+            $Conf->qe_raw("delete from TopicInterest where contactId=$this->contactId");
             if (count($tf))
-                $Conf->qe("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
+                $Conf->qe_raw("insert into TopicInterest (contactId,topicId,interest) values " . join(",", $tf));
         }
 
         // Roles

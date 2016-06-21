@@ -101,13 +101,13 @@ class Conf {
     //
 
     function load_settings() {
-        global $Opt, $OptOverride, $Now, $OK;
+        global $Opt, $OptOverride, $Now;
 
         // load settings from database
         $this->settings = array();
         $this->settingTexts = array();
 
-        $result = $this->q("select name, value, data from Settings");
+        $result = $this->q_raw("select name, value, data from Settings");
         while ($result && ($row = $result->fetch_row())) {
             $this->settings[$row[0]] = (int) $row[1];
             if ($row[2] !== null)
@@ -125,9 +125,9 @@ class Conf {
         $this->sversion = $this->settings["allowPaperOption"];
         if ($this->sversion < 140) {
             require_once("updateschema.php");
-            $oldOK = $OK;
+            $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
-            $OK = $oldOK;
+            Dbl::$nerrors = $old_nerrors;
         }
         if ($this->sversion < 73)
             self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
@@ -135,7 +135,7 @@ class Conf {
         // invalidate caches after loading from backup
         if (isset($this->settings["frombackup"])
             && $this->invalidateCaches()) {
-            $this->qe("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
+            $this->qe_raw("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
             unset($this->settings["frombackup"]);
         } else
             $this->invalidateCaches(array("rf" => true));
@@ -167,7 +167,7 @@ class Conf {
             foreach (array($this->dblink, Contact::contactdb()) as $db)
                 if ($db)
                     Dbl::ql($db, "delete from Capability where timeExpires>0 and timeExpires<$Now");
-            $this->q("insert into Settings (name, value) values ('__capability_gc', $Now) on duplicate key update value=values(value)");
+            $this->q_raw("insert into Settings (name, value) values ('__capability_gc', $Now) on duplicate key update value=values(value)");
             $this->settings["__capability_gc"] = $Now;
         }
 
@@ -442,7 +442,7 @@ class Conf {
     function topic_map() {
         $x = get($this->settingTexts, "topic_map");
         if (!$x) {
-            $result = $this->qe("select topicId, topicName from TopicArea order by topicName");
+            $result = $this->qe_raw("select topicId, topicName from TopicArea order by topicName");
             $to = $tx = array();
             while (($row = edb_row($result))) {
                 if (strcasecmp(substr($row[1], 0, 7), "none of") == 0)
@@ -840,35 +840,35 @@ class Conf {
     function update_papersub_setting($forsubmit) {
         $papersub = defval($this->settings, "papersub");
         if ($papersub === null && $forsubmit)
-            $this->q("insert into Settings (name, value) values ('papersub',1) on duplicate key update value=value");
+            $this->q_raw("insert into Settings (name, value) values ('papersub',1) on duplicate key update value=value");
         else if ($papersub <= 0 || !$forsubmit)
             // see also settings.php
-            $this->q("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
+            $this->q_raw("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
         $this->settings["papersub"] = Dbl::fetch_ivalue("select value from Settings where name='papersub'");
     }
 
     function update_paperacc_setting($foraccept) {
         if (!isset($this->settings["paperacc"]) && $foraccept)
-            $this->q("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update value=value");
+            $this->q_raw("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update value=value");
         else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
-            $this->q("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
+            $this->q_raw("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
         $this->settings["paperacc"] = Dbl::fetch_ivalue("select value from Settings where name='paperacc'");
     }
 
     function update_rev_tokens_setting($always) {
         if ($always || defval($this->settings, "rev_tokens", 0) < 0) {
-            $this->qe("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
+            $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
             $this->settings["rev_tokens"] = Dbl::fetch_ivalue("select value from Settings where name='rev_tokens'");
         }
     }
 
     function update_paperlead_setting() {
-        $this->qe("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)");
+        $this->qe_raw("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)");
         $this->settings["paperlead"] = Dbl::fetch_ivalue("select value from Settings where name='paperlead'");
     }
 
     function update_papermanager_setting() {
-        $this->qe("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
+        $this->qe_raw("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
         $this->settings["papermanager"] = Dbl::fetch_ivalue("select value from Settings where name='papermanager'");
     }
 
@@ -958,7 +958,7 @@ class Conf {
         $qname = $this->dblink->escape_string($name);
         $change = false;
         if ($value === null && $data === null) {
-            if ($this->qe("delete from Settings where name='$qname'")) {
+            if ($this->qe_raw("delete from Settings where name='$qname'")) {
                 unset($this->settings[$name]);
                 unset($this->settingTexts[$name]);
                 $change = true;
@@ -970,7 +970,7 @@ class Conf {
                 $dval = "'" . $this->dblink->escape_string($data) . "'";
             else
                 $dval = "'" . $this->dblink->escape_string(json_encode($data)) . "'";
-            if ($this->qe("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)")) {
+            if ($this->qe_raw("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)")) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
                 $change = true;
@@ -995,7 +995,6 @@ class Conf {
     }
 
     function invalidateCaches($caches = null) {
-        global $OK;
         if (self::$no_invalidate_caches)
             return;
         $inserts = array();
@@ -1018,25 +1017,34 @@ class Conf {
         }
         $ok = true;
         if (count($inserts))
-            $ok = $ok && ($this->qe("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);
+            $ok = $ok && ($this->qe_raw("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);
         if (count($removes))
-            $ok = $ok && ($this->qe("delete from Settings where name in (" . join(",", $removes) . ")") !== false);
+            $ok = $ok && ($this->qe_raw("delete from Settings where name in (" . join(",", $removes) . ")") !== false);
         return $ok;
     }
 
-    function ql($query) {
-        $result = $this->dblink->query($query);
-        if (!$result)
-            error_log(caller_landmark() . ": " . $this->dblink->error);
-        return $result;
+    function q($query) {
+        return Dbl::q_raw($this->dblink, $query);
     }
 
-    function q($query) {
-        global $OK;
-        $result = $this->dblink->query($query);
-        if ($result === false)
-            $OK = false;
-        return $result;
+    function q_raw($query) {
+        return Dbl::q_raw($this->dblink, $query);
+    }
+
+    function ql($query) {
+        return Dbl::ql_raw($this->dblink, $query);
+    }
+
+    function ql_raw($query) {
+        return Dbl::ql_raw($this->dblink, $query);
+    }
+
+    function qe($query) {
+        return Dbl::qe_raw($this->dblink, $query);
+    }
+
+    function qe_raw($query) {
+        return Dbl::qe_raw($this->dblink, $query);
     }
 
     function db_error_html($getdb = true, $while = "") {
@@ -1058,7 +1066,6 @@ class Conf {
     }
 
     function query_error_handler($dblink, $query) {
-        global $OK;
         $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
         if (PHP_SAPI == "cli")
             fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
@@ -1066,11 +1073,6 @@ class Conf {
             error_log("$landmark: database error: $dblink->error in $query");
             self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
-        $OK = false;
-    }
-
-    function qe($query) {
-        return Dbl::qe_raw($this->dblink, $query);
     }
 
 
@@ -1441,7 +1443,7 @@ class Conf {
             $q[] = "select value from PaperOption where optionId in ("
                 . join(",", $document_option_ids) . ") and value>1";
 
-        $result = $this->qe(join(" UNION ", $q));
+        $result = $this->qe_raw(join(" UNION ", $q));
         $ids = array();
         while (($row = edb_row($result)))
             $ids[(int) $row[0]] = true;
@@ -1831,7 +1833,7 @@ class Conf {
             $whyNot['invalidId'] = 'review';
         else {
             $q = $this->paperQuery($contact, $sel);
-            $result = $this->qe($q);
+            $result = $this->qe_raw($q);
 
             if (!$result)
                 $whyNot["dbError"] = "Database error while fetching paper (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
@@ -1847,7 +1849,7 @@ class Conf {
     }
 
     function review_rows($q, $contact) {
-        $result = $this->qe($q);
+        $result = $this->qe_raw($q);
         $rrows = array();
         while (($row = PaperInfo::fetch($result, $contact)))
             $rrows[$row->reviewId] = $row;
@@ -1862,7 +1864,7 @@ class Conf {
     }
 
     function comment_rows($q, $contact) {
-        $result = $this->qe($q);
+        $result = $this->qe_raw($q);
         $crows = array();
         while (($row = PaperInfo::fetch($result, $contact))) {
             $crows[$row->commentId] = $row;
@@ -1950,7 +1952,7 @@ class Conf {
         $q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
                 order by " . join(", ", $order) . ", reviewOrdinal, timeRequested, reviewType desc, reviewId";
 
-        $result = $this->q($q);
+        $result = $this->q_raw($q);
         if (!$result) {
             $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
             return null;

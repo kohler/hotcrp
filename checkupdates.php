@@ -11,7 +11,7 @@ else
 
 if ($Me->privChair && isset($_REQUEST["ignore"])) {
     $when = time() + 86400 * 2;
-    $Conf->qe("insert into Settings (name, value) values ('ignoreupdate_" . sqlq($_REQUEST["ignore"]) . "', $when) on duplicate key update value=$when");
+    $Conf->qe_raw("insert into Settings (name, value) values ('ignoreupdate_" . sqlq($_REQUEST["ignore"]) . "', $when) on duplicate key update value=$when");
 }
 
 $messages = array();

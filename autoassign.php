@@ -69,7 +69,7 @@ if (!isset($Qreq->badpairs) && !isset($Qreq->assign) && !count($_POST)) {
         }
     if (count($x) || $Conf->setting_data("autoassign_badpairs")
         || (!isset($Qreq->badpairs) != !$Conf->setting("autoassign_badpairs")))
-        $Conf->q("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($Qreq->badpairs) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
+        $Conf->q_raw("insert into Settings (name, value, data) values ('autoassign_badpairs', " . (isset($Qreq->badpairs) ? 1 : 0) . ", '" . sqlq(join(" ", $x)) . "') on duplicate key update data=values(data), value=values(value)");
 }
 // set $badpairs array
 $badpairs = array();

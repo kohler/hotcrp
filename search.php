@@ -135,9 +135,9 @@ if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
         Dbl::qe_raw("insert into Settings (name, value, data) values ('scoresort_default', 1, '" . sqlq($Conf->session("scoresort")) . "') on duplicate key update data=values(data)");
     else
         Dbl::qe_raw("delete from Settings where name='scoresort_default'");
-    if ($OK && $Qreq->ajax)
-        $Conf->ajaxExit(array("ok" => 1));
-    else if ($OK)
+    if (!Dbl::has_error() && $Qreq->ajax)
+        $Conf->ajaxExit(array("ok" => true));
+    else if (!Dbl::has_error())
         $Conf->confirmMsg("Display options saved.");
 }
 
@@ -160,7 +160,7 @@ function formulas_with_new() {
 }
 
 function saveformulas() {
-    global $Conf, $Me, $OK, $Qreq;
+    global $Conf, $Me, $Qreq;
 
     // parse names and expressions
     $ok = true;
@@ -209,7 +209,7 @@ function saveformulas() {
     if ($ok) {
         foreach ($changes as $change)
             Dbl::qe_raw($change);
-        if ($OK) {
+        if (!Dbl::has_error()) {
             $Conf->confirmMsg("Formulas saved.");
             redirectSelf();
         }
@@ -222,7 +222,7 @@ if ($Qreq->saveformulas && $Me->isPC && check_post())
 
 // save formula
 function savesearch() {
-    global $Conf, $Me, $OK, $Qreq;
+    global $Conf, $Me, $Qreq;
 
     $name = simplify_whitespace(defval($Qreq, "ssname", ""));
     $tagger = new Tagger;

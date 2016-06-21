@@ -93,9 +93,9 @@ function saveAssignments($qreq, $reviewer) {
     }
 
     if ($ins)
-        $Conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
+        $Conf->qe_raw("insert into PaperConflict (paperId, contactId, conflictType) values " . substr($ins, 2) . " on duplicate key update conflictType=greatest(conflictType,values(conflictType))");
     if ($del)
-        $Conf->qe("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")");
+        $Conf->qe_raw("delete from PaperConflict where contactId=$reviewer and (" . substr($del, 4) . ")");
 
     $Conf->update_rev_tokens_setting(false);
 
@@ -152,7 +152,7 @@ else
 echo "<table><tr><td><div class='aahc assignpc_pcsel'>",
     Ht::form_div(hoturl("manualassign"), array("method" => "get", "id" => "selectreviewerform"));
 
-$result = $Conf->qe("select ContactInfo.contactId, count(reviewId)
+$result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
                 from ContactInfo
                 left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
                 where (roles&" . Contact::ROLE_PC . ")!=0
@@ -219,7 +219,7 @@ if ($reviewer > 0) {
     $col = array(array(), array(), array());
 
     // Conflict information
-    $result = $Conf->qe("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
+    $result = $Conf->qe_raw("select firstName, lastName, affiliation, collaborators from ContactInfo where contactId=$reviewer");
     if ($result && ($row = edb_orow($result))) {
         if ($row->collaborators)
             $col[1][] = "<div class='f-c'>Collaborators</div><div class='f-e'>"
@@ -260,7 +260,7 @@ if ($reviewer > 0) {
     }
 
     // Topic links
-    $result = $Conf->qe("select topicId, " . $Conf->query_topic_interest() . " from TopicArea join TopicInterest using (topicId) where contactId=$reviewer");
+    $result = $Conf->qe_raw("select topicId, " . $Conf->query_topic_interest() . " from TopicArea join TopicInterest using (topicId) where contactId=$reviewer");
     $interest = array(array(), array());
     while (($row = edb_row($result)))
         if ($row[1] != 0)

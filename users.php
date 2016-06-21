@@ -86,7 +86,7 @@ if ((isset($_REQUEST["pap"]) && is_array($_REQUEST["pap"]))
 }
 
 if ($getaction == "nameemail" && isset($papersel) && $Me->isPC) {
-    $result = $Conf->qe("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
+    $result = $Conf->qe_raw("select firstName first, lastName last, email, affiliation from ContactInfo where " . paperselPredicate($papersel) . " order by lastName, firstName, email");
     $people = edb_orows($result);
     downloadCSV($people, array("first", "last", "email", "affiliation"), "users",
                 array("selection" => true));
@@ -98,7 +98,7 @@ function urlencode_matches($m) {
 
 if ($getaction == "pcinfo" && isset($papersel) && $Me->privChair) {
     assert($Conf->sversion >= 73);
-    $result = $Conf->qe("select firstName first, lastName last, email,
+    $result = $Conf->qe_raw("select firstName first, lastName last, email,
         preferredEmail preferred_email, affiliation,
         voicePhoneNumber phone,
         collaborators, defaultWatch, roles, disabled, contactTags tags, data,

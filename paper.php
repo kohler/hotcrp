@@ -147,7 +147,7 @@ function final_submit_watch_callback($prow, $minic) {
 }
 
 function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
-    global $Conf, $Me, $OK, $prow;
+    global $Conf, $Me, $prow;
     // XXX lock tables
 
     $saved = $ps->save_paper_json($pj);
@@ -267,7 +267,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
     }
 
     // other mail confirmations
-    if ($action == "final" && $OK && !$ps->has_error())
+    if ($action == "final" && !Dbl::has_error() && !$ps->has_error())
         $prow->notify(WATCHTYPE_FINAL_SUBMIT, "final_submit_watch_callback", $Me);
 
     $Me->log_activity($actiontext, $prow->paperId);

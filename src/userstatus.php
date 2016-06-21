@@ -91,7 +91,7 @@ class UserStatus {
             && $user->contactId
             && ($tm = $Conf->topic_map())
             && count($tm)) {
-            $result = $Conf->qe("select topicId, " . $Conf->query_topic_interest() . " from TopicInterest where contactId=$user->contactId");
+            $result = $Conf->qe_raw("select topicId, " . $Conf->query_topic_interest() . " from TopicInterest where contactId=$user->contactId");
             $topics = (object) array();
             while (($row = edb_row($result))) {
                 $k = $row[0];

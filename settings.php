@@ -955,7 +955,7 @@ function do_setting_update($sv) {
         foreach ($sv->need_lock as $t => $need)
             if ($need)
                 $tables .= ", $t write";
-        $Conf->qe("lock tables $tables");
+        $Conf->qe_raw("lock tables $tables");
 
         // load db settings, pre-crosscheck
         $dbsettings = array();
@@ -1001,7 +1001,7 @@ function do_setting_update($sv) {
             //Conf::msg_info(Ht::pre_text_wrap(Dbl::format_query_apply("insert into Settings (name, value, data) values\n\t" . join(",\n\t", $aq) . "\n\ton duplicate key update value=values(value), data=values(data)", $av)));
         }
 
-        $Conf->qe("unlock tables");
+        $Conf->qe_raw("unlock tables");
         if (count($changedn))
             $sv->user->log_activity("Updated settings " . join(", ", $changedn));
         $Conf->load_settings();

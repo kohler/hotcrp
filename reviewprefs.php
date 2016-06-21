@@ -64,7 +64,7 @@ if ($Qreq->fn === "get"
 
 // Update preferences
 function savePreferences($Qreq) {
-    global $Conf, $Me, $OK, $reviewer, $incorrect_reviewer;
+    global $Conf, $Me, $reviewer, $incorrect_reviewer;
     if ($incorrect_reviewer) {
         Conf::msg_error("Preferences not saved.");
         return;
@@ -102,7 +102,7 @@ function savePreferences($Qreq) {
                 $deletes[] = "paperId between $p0 and $p";
         }
     if (count($deletes))
-        $Conf->qe("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")");
+        $Conf->qe_raw("delete from PaperReviewPreference where contactId=$reviewer and (" . join(" or ", $deletes) . ")");
 
     $q = array();
     for ($p = 1; $p <= $pmax; $p++)
@@ -110,7 +110,7 @@ function savePreferences($Qreq) {
             $q[] = array($p, $reviewer, $pref[0], $pref[1]);
     PaperActions::save_review_preferences($q);
 
-    if ($OK) {
+    if (!Dbl::has_error()) {
         $Conf->confirmMsg("Preferences saved.");
         redirectSelf();
     }
@@ -241,7 +241,7 @@ if ($Me->privChair) {
     echo "<tr><td class='lxcaption'><strong>Preferences:</strong> &nbsp;</td><td class='lentry'>";
 
     $prefcount = array();
-    $result = $Conf->qe("select contactId, count(preference) from PaperReviewPreference where preference!=0 group by contactId");
+    $result = $Conf->qe_raw("select contactId, count(preference) from PaperReviewPreference where preference!=0 group by contactId");
     while (($row = edb_row($result)))
         $prefcount[$row[0]] = $row[1];
 

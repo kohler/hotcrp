@@ -743,11 +743,11 @@ class ReviewForm {
                 $table_suffix = "";
                 if ($Conf->au_seerev == Conf::AUSEEREV_TAGS)
                     $table_suffix = ", PaperTag read";
-                $result = $Conf->qe("lock tables PaperReview write" . $table_suffix);
+                $result = $Conf->qe_raw("lock tables PaperReview write" . $table_suffix);
                 if (!$result)
                     return $result;
                 $locked = true;
-                $result = $Conf->qe("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId");
+                $result = $Conf->qe_raw("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId");
                 if ($result) {
                     $crow = edb_row($result);
                     $q[] = "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
@@ -807,18 +807,18 @@ class ReviewForm {
 
         // actually affect database
         if ($rrow) {
-            $result = $Conf->qe("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId");
+            $result = $Conf->qe_raw("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId");
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
         } else {
-            $result = Dbl::qe_raw("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, reviewRound=" . $Conf->current_round() . ", " . join(", ", $q));
+            $result = $Conf->qe_raw("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, reviewRound=" . $Conf->current_round() . ", " . join(", ", $q));
             $reviewId = $result ? $result->insert_id : null;
             $contactId = $contact->contactId;
         }
 
         // unlock tables even if problem
         if ($locked)
-            $Conf->qe("unlock tables");
+            $Conf->qe_raw("unlock tables");
         if (!$result)
             return $result;
 
@@ -866,7 +866,7 @@ class ReviewForm {
 
         // if external, forgive the requestor from finishing their review
         if ($rrow && $rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy && $submit)
-            $Conf->q("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+            $Conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
 
         if ($tf !== null) {
             $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
