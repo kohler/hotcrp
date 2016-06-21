@@ -1347,7 +1347,7 @@ class PaperList {
             $foldclasses = $this->_analyze_folds($rstate, $fieldDef);
         $enter = "";
         if (self::$include_stash)
-            $enter .= Ht::take_stash();
+            $enter .= Ht::unstash();
         $enter .= "<table class=\"pltable plt_" . htmlspecialchars($listname);
         if (defval($options, "class"))
             $enter .= " " . $options["class"];

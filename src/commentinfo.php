@@ -71,7 +71,7 @@ class CommentInfo {
                 }
                 $t[] = "papercomment.set_resp_round(" . json_encode($rname) . "," . json_encode($j) . ")";
             }
-            $Conf->echoScript(join($t, ";"));
+            echo Ht::unstash_script(join($t, ";"));
         }
     }
 

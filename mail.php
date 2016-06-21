@@ -214,7 +214,7 @@ class MailSender {
             echo '<div class="fn2 warning">Scroll down to send the prepared mail once the page finishes loading.</div>',
                 "</div>\n";
         }
-        $Conf->echoScript("fold('mail',0,2)");
+        echo Ht::unstash_script("fold('mail',0,2)");
         $this->started = true;
     }
 
@@ -232,7 +232,7 @@ class MailSender {
         }
         if (!$this->sending && $this->groupable)
             $s .= "\$('.mail_groupable').show();";
-        $Conf->echoScript($s);
+        echo Ht::unstash_script($s);
     }
 
     private static function fix_body($prep) {
@@ -409,7 +409,7 @@ class MailSender {
                 $this->echo_prologue();
                 $nwarnings = $mailer->nwarnings();
                 echo "<div id='foldmailwarn$nwarnings' class='hidden'><div class='warning'>", join("<br />", $mailer->warnings()), "</div></div>";
-                $Conf->echoScript("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
+                echo Ht::unstash_script("\$\$('mailwarnings').innerHTML = \$\$('foldmailwarn$nwarnings').innerHTML;");
             }
 
             if ($this->sending && $revinform !== null)
@@ -428,7 +428,7 @@ class MailSender {
         if ($revinform)
             $Conf->qe("update PaperReview set timeRequestNotified=" . time() . " where " . join(" or ", $revinform));
         echo "</div></form>";
-        $Conf->echoScript("fold('mail', null);");
+        echo Ht::unstash_script("fold('mail', null);");
         $Conf->footer();
         exit;
     }

@@ -29,7 +29,7 @@ if (!$Graph || !isset($Graphs[$Graph]))
 
 // Header and body
 $Conf->header("Graphs", "graphbody", actionBar());
-$Conf->echoScript("");
+echo Ht::unstash();
 echo $Conf->make_script_file("scripts/d3.min.js", true);
 echo $Conf->make_script_file("scripts/graph.js");
 
@@ -42,7 +42,7 @@ if ($Graph == "procrastination") {
     echo "<h2>Procrastination</h2>\n";
     echo_graph();
     $rt = new ReviewTimes($Me);
-    $Conf->echoScript('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode($rt->json()) . '); })');
+    echo Ht::unstash_script('jQuery(function () { hotcrp_graphs.procrastination("#hotgraph",' . json_encode($rt->json()) . '); })');
 }
 
 
@@ -120,7 +120,7 @@ if ($Graph == "formula") {
             echo "<h2>", htmlspecialchars($fg->fy->expression), " vs. ", htmlspecialchars($fg->fx->expression), "</h2>\n";
         echo_graph();
 
-        $Conf->echoScript("");
+        echo Ht::unstash();
         echo '<script>hotgraph_info={data:', json_encode($fg->data()), ",\n",
             '  selector:"#hotgraph",', $fg->axis_info_settings("x"),
             ',', $fg->axis_info_settings("y"), "};\n";

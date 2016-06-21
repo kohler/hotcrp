@@ -1038,7 +1038,7 @@ if (!$Sv->warnings_reported) {
 }
 
 $Conf->header("Settings &nbsp;&#x2215;&nbsp; <strong>" . SettingGroup::$all[$Group]->description . "</strong>", "settings", actionBar());
-$Conf->echoScript(""); // clear out other script references
+echo Ht::unstash(); // clear out other script references
 echo $Conf->make_script_file("scripts/settings.js"), "\n";
 
 echo Ht::form(hoturl_post("settings", "group=$Group"), array("id" => "settingsform"));

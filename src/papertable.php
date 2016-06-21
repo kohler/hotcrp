@@ -188,7 +188,7 @@ class PaperTable {
 
         $Conf->header($title, $id, actionBar($action_mode, $prow), $t);
         if ($format)
-            $Conf->echoScript("render_text.on_page()");
+            echo Ht::unstash_script("render_text.on_page()");
     }
 
     private function abstract_foldable($abstract) {
@@ -601,7 +601,7 @@ class PaperTable {
                 '<div class="fn6 textdiv-expander"><a class="x" href="#" onclick="return foldup(this,event,{n:6,s:\'foldpaperb\'})">[more]</a></div>';
         echo "</div></div></div></div>\n";
         if ($extra)
-            $Conf->echoScript("render_text.on_page()");
+            echo Ht::unstash_script("render_text.on_page()");
     }
 
     private function editable_authors_tr($n, $name, $email, $aff) {
@@ -1810,7 +1810,7 @@ class PaperTable {
             && $Conf->timePCReviewPreferences()
             && ($Me->roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)))
             $this->papstripReviewPreference();
-        $Conf->echoScript("$(\".need-pcselector\").each(populate_pcselector)");
+        echo Ht::unstash_script("$(\".need-pcselector\").each(populate_pcselector)");
     }
 
     function _paptabTabLink($text, $link, $image, $highlight) {
@@ -2155,7 +2155,7 @@ class PaperTable {
 
         if ($ncmt)
             CommentInfo::echo_script($this->prow);
-        $Conf->echoScript($s);
+        echo Ht::unstash_script($s);
     }
 
     function paptabComments() {

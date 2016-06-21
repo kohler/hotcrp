@@ -54,7 +54,7 @@ function keep_browser_alive($assignset, $lineno, $line) {
             $text .= " processing";
         else
             $text .= " <code>" . htmlspecialchars(join(",", $line)) . "</code>";
-        $Conf->echoScript("\$\$('mailcount').innerHTML=" . json_encode($text) . ";");
+        echo Ht::unstash_script("\$\$('mailcount').innerHTML=" . json_encode($text) . ";");
         flush();
         while (@ob_end_flush())
             /* skip */;
@@ -62,9 +62,9 @@ function keep_browser_alive($assignset, $lineno, $line) {
 }
 
 function finish_browser_alive() {
-    global $Conf, $csv_preparing;
+    global $csv_preparing;
     if ($csv_preparing)
-        $Conf->echoScript("fold('mail',null)");
+        echo Ht::unstash_script("fold('mail',null)");
 }
 
 function complete_assignment($callback) {

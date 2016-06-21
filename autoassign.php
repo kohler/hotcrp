@@ -298,8 +298,7 @@ class AutoassignerInterface {
         global $Conf;
         if ($this->live && microtime(true) - $this->start_at > 1) {
             $this->live = false;
-            echo "</div>\n";
-            $Conf->echoScript("");
+            echo "</div>\n", Ht::unstash();
         }
         if (!$this->live) {
             $t = '<h3>Preparing assignment</h3><p><strong>Status:</strong> ' . htmlspecialchars($status);
@@ -365,8 +364,7 @@ class AutoassignerInterface {
         else {
             PaperList::$include_stash = false;
             $result_html = $this->result_html();
-            echo Ht::take_stash(), '<script>$$("propass").innerHTML=',
-                json_encode($result_html), ";</script>\n";
+            echo Ht::unstash_script('$$("propass").innerHTML=' . json_encode($result_html)), "\n";
         }
         if ($this->autoassigner->assignments()) {
             $Conf->footer();

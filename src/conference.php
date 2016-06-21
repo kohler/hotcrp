@@ -1405,7 +1405,7 @@ class Conf {
 
     function echoScript($script = "") {
         Ht::stash_script($script);
-        echo Ht::take_stash();
+        echo Ht::unstash();
     }
 
     function footerScript($script, $uniqueid = null) {
@@ -2312,7 +2312,7 @@ class Conf {
         echo htmlspecialchars($Opt["shortName"]), "</title>\n</head>\n";
 
         // jQuery
-        $stash = Ht::take_stash();
+        $stash = Ht::unstash();
         if (isset($Opt["jqueryUrl"]))
             $jquery = $Opt["jqueryUrl"];
         else if (get($Opt, "jqueryCdn"))
@@ -2487,7 +2487,7 @@ class Conf {
 
         // If browser owns tracker, send it the script immediately
         if ($trackerowner)
-            $this->echoScript();
+            echo Ht::unstash();
 
         // Callback for version warnings
         if ($Me && $Me->privChair
@@ -2536,7 +2536,7 @@ class Conf {
                 echo "<!-- Version ", HOTCRP_VERSION, " -->";
         }
         echo "</div>\n  <hr class=\"c\" /></div>\n";
-        echo Ht::take_stash(), "</body>\n</html>\n";
+        echo Ht::unstash(), "</body>\n</html>\n";
     }
 
     public function stash_hotcrp_pc(Contact $user) {

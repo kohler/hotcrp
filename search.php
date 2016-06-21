@@ -299,7 +299,7 @@ if ($Me->privChair)
 
 // search
 $Conf->header("Search", "search", actionBar());
-$Conf->echoScript(); // need the JS right away
+echo Ht::unstash(); // need the JS right away
 $Search = new PaperSearch($Me, $Qreq);
 if (isset($Qreq->q)) {
     $pl = new PaperList($Search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "display" => $Qreq->display], $Qreq);
@@ -743,8 +743,7 @@ if ($pl && $pl->count > 0)
     echo "  <td><div class='tll3'><a class='tla nw' onclick='fold(\"searchform\",1,3);return crpfocus(\"searchform\",3)' href=\"", selfHref(array("tab" => "display")), "\">Display options</a></div></td>\n";
 echo "</tr></table></td></tr>\n</table>\n\n";
 if ($pl && $pl->count > 0)
-    // `echoScript()` not necessary because we've already got the script
-    echo "<script>crpfocus(\"searchform\",$activetab,1)</script>";
+    echo Ht::unstash_script("crpfocus(\"searchform\",$activetab,1)");
 else
     Ht::stash_script("crpfocus(\"searchform\",$activetab)");
 

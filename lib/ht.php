@@ -421,13 +421,22 @@ class Ht {
         }
     }
 
-    static function take_stash() {
+    static function unstash() {
         $stash = self::$_stash;
         if (self::$_stash_inscript)
             $stash .= "</script>";
         self::$_stash = "";
         self::$_stash_inscript = false;
         return $stash;
+    }
+
+    static function unstash_script($js) {
+        self::stash_script($js);
+        return self::unstash();
+    }
+
+    static function take_stash() {
+        return self::unstash();
     }
 
 

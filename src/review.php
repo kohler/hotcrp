@@ -1494,8 +1494,7 @@ $blind\n";
             $rj = $this->unparse_review_json($prow, $rrow, $Me);
             if (get($options, "editmessage"))
                 $rj->message_html = $options["editmessage"];
-            Ht::stash_script("review_form.add_review(" . json_encode($rj) . ");\n");
-            echo Ht::take_stash();
+            echo Ht::unstash_script("review_form.add_review(" . json_encode($rj) . ");\n");
             return;
         }
 

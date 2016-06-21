@@ -212,7 +212,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
                      array("size" => 36, "tabindex" => 1, "id" => "signin_password")),
         "</div>\n</div>\n";
     if ($password_reset)
-        $Conf->echoScript("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode($password_reset->password) . ")})");
+        echo Ht::unstash_script("jQuery(function(){jQuery(\"#signin_password\").val(" . json_encode($password_reset->password) . ")})");
     if (isset($Opt["ldapLogin"]))
         echo Ht::hidden("action", "login");
     else {
