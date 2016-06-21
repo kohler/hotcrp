@@ -1023,28 +1023,28 @@ class Conf {
         return $ok;
     }
 
-    function q($query) {
-        return Dbl::q_raw($this->dblink, $query);
+    function q(/* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), 0);
     }
 
-    function q_raw($query) {
-        return Dbl::q_raw($this->dblink, $query);
+    function q_raw(/* $qstr */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW);
     }
 
-    function ql($query) {
-        return Dbl::ql_raw($this->dblink, $query);
+    function ql(/* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
     }
 
-    function ql_raw($query) {
-        return Dbl::ql_raw($this->dblink, $query);
+    function ql_raw(/* $qstr */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG | Dbl::F_RAW);
     }
 
-    function qe($query) {
-        return Dbl::qe_raw($this->dblink, $query);
+    function qe(/* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR);
     }
 
-    function qe_raw($query) {
-        return Dbl::qe_raw($this->dblink, $query);
+    function qe_raw(/* $qstr */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR | Dbl::F_RAW);
     }
 
     function db_error_html($getdb = true, $while = "") {

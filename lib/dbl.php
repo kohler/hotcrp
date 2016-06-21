@@ -269,6 +269,18 @@ class Dbl {
         }
     }
 
+    static function do_query_on($dblink, $args, $flags) {
+        list($ignored_dblink, $qstr, $argv) = self::query_args($args, $flags, true);
+        if (!($flags & self::F_RAW))
+            $qstr = self::format_query_args($dblink, $qstr, $argv);
+        if ($qstr)
+            return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
+        else {
+            error_log(self::landmark() . ": empty query");
+            return false;
+        }
+    }
+
     static public function do_result($dblink, $flags, $qstr, $result) {
         if ($result === false && $dblink->errno) {
             if (!($flags & self::F_ALLOWERROR))
