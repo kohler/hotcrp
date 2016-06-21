@@ -100,7 +100,7 @@ echo '<div class="f-i">
     "</div>
 </div></form>
 <hr class='home' /></div>\n";
-$Conf->footerScript("crpfocus(\"login\", null, 2)");
+Ht::stash_script("crpfocus(\"login\", null, 2)");
 
 echo '<hr class="c" />', "\n";
 $Conf->footer();

@@ -310,7 +310,7 @@ if (count($tOpt) > 1) {
 
     echo "<table><tr><td><strong>Show:</strong> &nbsp;</td>
   <td class='pad'>";
-    $Conf->footerScript('foldmap.ul={"aff":2,"tags":3,"topics":1};');
+    Ht::stash_script('foldmap.ul={"aff":2,"tags":3,"topics":1};');
     foreach (array("aff" => "Affiliations", "collab" => "Collaborators",
                    "tags" => "Tags", "topics" => "Topics") as $fold => $text)
         if (@$pl->have_folds[$fold] !== null) {

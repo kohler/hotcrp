@@ -282,7 +282,7 @@ if (!$Conf->subBlindAlways() || $Me->privChair) {
         . Ht::checkbox("showaufull", 1, strpos($pldisplay, " aufull ") !== false,
                        array("onchange" => "plinfo('aufull',this)", "id" => "showaufull"))
         . "&nbsp;" . Ht::label("Full author info") . "</span>";
-    $Conf->footerScript("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
+    Ht::stash_script("plinfo.extra=function(type,dofold){var x=(type=='au'?!dofold:(\$\$('showau')||{}).checked);fold('redisplayform',!x,10)};");
 }
 if ($pl->any->abstract)
     $show_data[] = '<span class="sep">'

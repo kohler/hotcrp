@@ -314,7 +314,7 @@ class ReviewField {
             }
             $retstr .= '<br /><span class="sc_sum">' . $avgtext . "</span></div>";
         }
-        $Conf->footerScript("$(scorechart)", "scorechart");
+        Ht::stash_script("$(scorechart)", "scorechart");
 
         return $retstr;
     }
@@ -662,7 +662,7 @@ class ReviewForm {
             if ($tf)
                 self::tfError($tf, false, $w);
             else
-                $Conf->warnMsg($w);
+                Conf::msg_warning($w);
             $req["unready"] = true;
         }
         return ($nokfields > 0);
@@ -1433,7 +1433,7 @@ $blind\n";
                                     array("class" => "b",
                                           "onclick" => "popup(this,'ref',0)"));
             // Also see $_REQUEST["refuse"] case in review.php.
-            $Conf->footerHtml("<div id='popup_ref' class='popupc'>"
+            Ht::stash_html("<div id='popup_ref' class='popupc'>"
     . Ht::form_div($reviewPostLink)
     . Ht::hidden("refuse", "refuse")
     . "<p style='margin:0 0 0.3em'>Select “Decline review” to decline this review. Thank you for keeping us informed.</p>"
@@ -1467,7 +1467,7 @@ $blind\n";
             if ($submitted)
                 $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
             $buttons[] = array(Ht::js_button("Delete review", "popup(this,'d',0)"), "(admin only)");
-            $Conf->footerHtml("<div id='popup_d' class='popupc'>
+            Ht::stash_html("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
   undone</strong>.</p>
@@ -1494,7 +1494,8 @@ $blind\n";
             $rj = $this->unparse_review_json($prow, $rrow, $Me);
             if (get($options, "editmessage"))
                 $rj->message_html = $options["editmessage"];
-            $Conf->echoScript("review_form.add_review(" . json_encode($rj) . ");\n");
+            Ht::stash_script("review_form.add_review(" . json_encode($rj) . ");\n");
+            echo Ht::take_stash();
             return;
         }
 

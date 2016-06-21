@@ -1288,7 +1288,7 @@ class PaperList {
                                                      $lastheading, $body);
             $body[] = $this->_row_text($rstate, $row, $fieldDef);
             if ($this->need_render && !$need_render) {
-                $Conf->footerScript('$(plinfo.render_needed)', 'plist_render_needed');
+                Ht::stash_script('$(plinfo.render_needed)', 'plist_render_needed');
                 $need_render = true;
             }
             if ($this->need_render && $this->count % 16 == 15) {

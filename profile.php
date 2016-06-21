@@ -695,7 +695,7 @@ if (!$newProfile && !isset($Opt["ldapLogin"]) && !isset($Opt["httpAuthLogin"])
         if (Contact::password_storage_cleartext())
             echo "The password is stored in our database in cleartext and will be mailed to you if you have forgotten it, so don’t use a login password or any other high-security password.";
         if ($Me->privChair) {
-            $Conf->footerScript("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
+            Ht::stash_script("function shift_password(dir){var form=$$(\"accountform\");fold(\"account\",dir);if(form&&form.whichpassword)form.whichpassword.value=dir?\"\":\"t\";return false}");
             if (Contact::password_storage_cleartext())
                 echo " <span class=\"sep\"></span>";
             echo "<span class='f-cx'><a class='fn' href='#' onclick='return shift_password(0)'>Show password</a><a class='fx' href='#' onclick='return shift_password(1)'>Hide password</a></span>";
@@ -804,7 +804,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
     $tracks = databaseTracks($Acct->contactId);
     $buttons[] = array(Ht::js_button("Delete user", "popup(this,'d',0)"), "(admin only)");
     if (count($tracks->soleAuthor)) {
-        $Conf->footerHtml("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
+        Ht::stash_html("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
   <p><strong>This user cannot be deleted</strong> because they are the sole
   contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".
   Delete these papers from the database or add alternate paper contacts and
@@ -831,7 +831,7 @@ if ($Me->privChair && !$newProfile && $Me->contactId != $Acct->contactId) {
   Deleting the user will also " . commajoin($y) . ".</p>";
         } else
             $dialog = "";
-        $Conf->footerHtml("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
+        Ht::stash_html("<div class=\"popupbg\"><div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   user from the database and <strong>cannot be undone</strong>.</p>
   $dialog
@@ -922,7 +922,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
 if ($newProfile)
-    $Conf->footerScript('if(/bulk/.test(location.hash))fold("bulk",false,9)');
-$Conf->footerScript('hiliter_children("#accountform");$("textarea").autogrow()');
-$Conf->footerScript('crpfocus("account")');
+    Ht::stash_script('if(/bulk/.test(location.hash))fold("bulk",false,9)');
+Ht::stash_script('hiliter_children("#accountform");$("textarea").autogrow()');
+Ht::stash_script('crpfocus("account")');
 $Conf->footer();

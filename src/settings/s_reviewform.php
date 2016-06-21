@@ -176,7 +176,7 @@ function render(SettingValues $sv) {
                     $req["$fx$fid"] = $sv->req["$fx$fid"];
         }
 
-    $Conf->footerHtml('<div id="review_form_caption_description" style="display:none">'
+    Ht::stash_html('<div id="review_form_caption_description" style="display:none">'
       . '<p>Enter an HTML description for the review form.
 Include any guidance you’d like to provide for reviewers.
 Note that complex HTML will not appear on offline review forms.</p></div>'
@@ -191,7 +191,7 @@ are better). For example:</p>
 <p>Normally scores are mandatory: a review with a missing score cannot be
 submitted. Add a line “<code>No entry</code>” to make the score optional.</p></div>');
 
-    $Conf->footerScript("review_form_settings("
+    Ht::stash_script("review_form_settings("
                         . json_encode($fmap) . ","
                         . json_encode($rf->unparse_full_json()) . ","
                         . json_encode($samples) . ","

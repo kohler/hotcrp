@@ -187,7 +187,7 @@ if ($Me->privChair) {
     echo '<td style="padding-left:2em">',
         Ht::js_button("Kiosk mode", "popup(this,'kiosk',0,true)"),
         '</td>';
-    $Conf->footerHtml('<div class="popupbg"><div id="popup_kiosk" class="popupc">
+    Ht::stash_html('<div class="popupbg"><div id="popup_kiosk" class="popupc">
 <p>Kiosk mode is a discussion status page with no
 other site privileges. It’s safe to leave a browser in kiosk mode
 open in the hallway.</p>

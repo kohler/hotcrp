@@ -88,8 +88,8 @@ class PaperOptionValue {
                 $allopt = $this->prow->all_options();
             else
                 $allopt = $this->prow->options();
-            foreach ($allopt as $oid => $opt)
-                $opt->assign($odata["v"][$oid], $odata["d"][$oid], true);
+            foreach ($allopt as $oid => $option)
+                $option->assign($odata["v"][$oid], $odata["d"][$oid], true);
             if ($this->_data_array === null)
                 $this->assign($odata["v"][$this->id], $odata["d"][$this->id], true);
         }
@@ -180,7 +180,6 @@ class PaperOption {
     }
 
     static function make($args) {
-        global $Opt;
         if (is_object($args))
             $args = get_object_vars($args);
         if (($factory = get($args, "factory")))
@@ -215,7 +214,7 @@ class PaperOption {
     }
 
     static function option_json_list(Conf $c = null) {
-        global $Conf, $Opt;
+        global $Conf;
         if (self::$jlist === null) {
             self::$jlist = self::$jmap = [];
             $c = $c ? : $Conf;
@@ -249,7 +248,7 @@ class PaperOption {
     }
 
     static function option_list(Conf $c = null) {
-        global $Conf, $Opt;
+        global $Conf;
         if (self::$list === null) {
             self::$list = [];
             foreach (self::option_json_list($c) as $id => $oj)

@@ -224,7 +224,7 @@ if (!$Me->has_email() || isset($_REQUEST["signin"])) {
         echo Ht::radio("action", "new", false, array("tabindex" => 2)),
             "&nbsp;", Ht::label("I’m a new user and want to create an account");
         echo "\n</div>\n";
-        $Conf->footerScript("function login_type() {
+        Ht::stash_script("function login_type() {
     var act = jQuery(\"#homeacct input[name=action]:checked\")[0] || jQuery(\"#signin_action_login\")[0];
     fold(\"homeacct\", act.value != \"login\");
     var felt = act.value != \"login\" || !jQuery(\"#signin_email\").val().length;
@@ -237,7 +237,7 @@ jQuery(\"#homeacct input[name='action']\").on('click',login_type);jQuery(login_t
         Ht::submit("signin", "Sign in", array("tabindex" => 1, "id" => "signin_signin")),
         "</div></div></form>
 <hr class='home' /></div>\n";
-    $Conf->footerScript("crpfocus(\"login\", null, 2)");
+    Ht::stash_script("crpfocus(\"login\", null, 2)");
 }
 
 
@@ -459,7 +459,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
             "<h4><a href=\"#\" onclick=\"return foldup(this,event,{n:20})\" class=\"x homeactivity\">Recent activity<span class='fx20'>:</span></a></h4>",
             "</div>";
         if (!$Conf->session("foldhomeactivity", 1))
-            $Conf->footerScript("foldup(jQuery(\"#homeactivity\")[0],null,{n:20})");
+            Ht::stash_script("foldup(jQuery(\"#homeactivity\")[0],null,{n:20})");
     }
 
     echo "</div>\n";

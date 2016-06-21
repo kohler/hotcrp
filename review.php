@@ -38,7 +38,7 @@ function confHeader() {
 function errorMsgExit($msg) {
     global $Conf;
     confHeader();
-    $Conf->footerScript("shortcut().add()");
+    Ht::stash_script("shortcut().add()");
     $msg && Conf::msg_error($msg);
     Conf::$g->footer();
     exit;

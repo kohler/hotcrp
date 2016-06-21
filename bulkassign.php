@@ -348,5 +348,5 @@ gives the preference value.</dd>
 
 </div>\n";
 
-$Conf->footerScript('$("#tsel").trigger("change")');
+Ht::stash_script('$("#tsel").trigger("change")');
 $Conf->footer();

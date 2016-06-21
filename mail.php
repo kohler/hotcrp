@@ -563,7 +563,7 @@ echo 'Assignments since:&nbsp; ',
 
 echo '<div class="fx9 g"></div></div>';
 
-$Conf->footerScript("setmailpsel(\$\$(\"recipients\"))");
+Ht::stash_script("setmailpsel(\$\$(\"recipients\"))");
 
 echo "</td></tr>\n";
 

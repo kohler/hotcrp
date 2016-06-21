@@ -261,7 +261,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
         }
         echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
             "</div></div></td>\n";
-        $Conf->footerScript("do_option_type(\$\$('optvt$id'),true)");
+        Ht::stash_script("do_option_type(\$\$('optvt$id'),true)");
 
         echo "<td class='fn2 pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optp$id", "Visibility"), "</div><div class='f-e'>",

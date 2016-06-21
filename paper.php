@@ -44,7 +44,7 @@ function errorMsgExit($msg) {
         $Conf->ajaxExit(array("ok" => false));
     } else {
         confHeader();
-        $Conf->footerScript("shortcut().add()");
+        Ht::stash_script("shortcut().add()");
         $msg && Conf::msg_error($msg);
         Conf::$g->footer();
         exit;

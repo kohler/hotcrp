@@ -71,7 +71,7 @@ function render(SettingValues $sv) {
     echo '</div><div style="padding-top:1em">',
         '<button type="button" onclick="settings_add_resp_round()">Add response round</button>',
         '</div></td></tr></table>';
-    $Conf->footerScript("fold('auresp',!\$\$('cbresp_active').checked,2)");
+    Ht::stash_script("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
     echo "<h3 class=\"settings g\">Decisions</h3>\n";
 
@@ -148,7 +148,7 @@ function render(SettingValues $sv) {
     echo "</td></tr></table>",
         "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
         "</div>\n\n";
-    $Conf->footerScript("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
+    Ht::stash_script("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
 }
 
     function crosscheck(SettingValues $sv) {

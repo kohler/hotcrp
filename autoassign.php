@@ -550,7 +550,7 @@ if (count($pctags)) {
     $tagsjson = array();
     foreach (pcMembers() as $pc)
         $tagsjson[$pc->contactId] = " " . trim(strtolower($pc->viewable_tags($Me))) . " ";
-    $Conf->footerScript("pc_tags_json=" . json_encode($tagsjson) . ";");
+    Ht::stash_script("pc_tags_json=" . json_encode($tagsjson) . ";");
     foreach ($pctags as $tagname => $pctag)
         if ($tagname !== "pc" && Tagger::strip_nonviewable($tagname, $Me))
             $pctyp_sel[] = array($pctag, "pc_tags_members(\"$tagname\")", "#$pctag");

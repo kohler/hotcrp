@@ -669,15 +669,15 @@ if ($pl && $pl->count > 0) {
         echo Ht::js_button("Make default", "savedisplayoptions()",
                            array("id" => "savedisplayoptionsbutton",
                                  "disabled" => true)), "&nbsp; ";
-        $Conf->footerHtml("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
+        Ht::stash_html("<form id='savedisplayoptionsform' method='post' action='" . hoturl_post("search", "savedisplayoptions=1") . "' enctype='multipart/form-data' accept-charset='UTF-8'>"
                           . "<div>" . Ht::hidden("scoresort", $Conf->session("scoresort"), array("id" => "scoresortsave")) . "</div></form>");
-        $Conf->footerScript("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
+        Ht::stash_script("plinfo.extra=function(){\$\$('savedisplayoptionsbutton').disabled=false};");
         // strings might be in different orders, so sort before comparing
         $pld = explode(" ", trim($Conf->setting_data("pldisplay_default", " overAllMerit ")));
         sort($pld);
         if ($Conf->session("pldisplay") != " " . ltrim(join(" ", $pld) . " ")
             || $Conf->session("scoresort") != ListSorter::default_score_sort(true))
-            $Conf->footerScript("plinfo.extra()");
+            Ht::stash_script("plinfo.extra()");
     }
 
     echo Ht::submit("Redisplay", array("id" => "redisplay")), "</td>";
@@ -746,7 +746,7 @@ if ($pl && $pl->count > 0)
     // `echoScript()` not necessary because we've already got the script
     echo "<script>crpfocus(\"searchform\",$activetab,1)</script>";
 else
-    $Conf->footerScript("crpfocus(\"searchform\",$activetab)");
+    Ht::stash_script("crpfocus(\"searchform\",$activetab)");
 
 
 if ($pl) {

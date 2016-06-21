@@ -292,7 +292,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= "</tr>\n";
         }
         if ($score_header_text)
-            $Conf->footerScript("review_form.score_tooltips($(\"table.reviewers_scores\"))", "score_tooltips");
+            Ht::stash_script("review_form.score_tooltips($(\"table.reviewers_scores\"))", "score_tooltips");
         return $t . "</table>\n" . $notetxt;
     } else
         return $notetxt;

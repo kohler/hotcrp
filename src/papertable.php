@@ -450,7 +450,7 @@ class PaperTable {
         else
             echo Ht::label("<strong>The submission is ready for review.</strong>");
         echo "</td></tr></table></div>\n";
-        $Conf->footerScript("$(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0);paperform_checkready()})");
+        Ht::stash_script("$(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0);paperform_checkready()})");
     }
 
     public function echo_editable_document(PaperOption $docx, $storageId, $flags) {
@@ -592,7 +592,7 @@ class PaperTable {
         if ($this->prow && !$this->entryMatches
             && ($format = $this->prow->format_of($text))) {
             echo ' need-format" data-format="', $format, '.abs';
-            $Conf->footerScript('$(render_text.on_page)', 'render_on_page');
+            Ht::stash_script('$(render_text.on_page)', 'render_on_page');
         } else
             $text = Ht::link_urls(Text::single_line_paragraphs($text));
         echo '">', $text, "</div>";
@@ -1061,7 +1061,7 @@ class PaperTable {
             }
 
             echo '<hr class="c" /></div><div class="pspcard_open">';
-            $Conf->footerScript('$(".pspcard_fold").click(function(e){$(".pspcard_fold").hide();$(".pspcard_open").show();e.preventDefault();return false})');
+            Ht::stash_script('$(".pspcard_fold").click(function(e){$(".pspcard_fold").hide();$(".pspcard_open").show();e.preventDefault();return false})');
         }
         echo '<div';
         if ($foldid)
@@ -1283,7 +1283,7 @@ class PaperTable {
             echo '<form class="fx"><div>',
                 Ht::select($type, [], 0, ["id" => "fold{$type}_d", "class" => "need-pcselector", "data-pcselector-options" => join(" ", $selopt), "data-pcselector-selected" => $value]),
                 '</div></form>';
-            $Conf->footerScript('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"set' . $type . '"})');
+            Ht::stash_script('make_pseditor("' . $type . '",{p:' . $this->prow->paperId . ',fn:"set' . $type . '"})');
         }
 
         if ($wholefold === null)
@@ -1358,7 +1358,7 @@ class PaperTable {
                 "</div>",
                 "<span class='hint'><a href='", hoturl("help", "t=tags"), "'>Learn more</a> <span class='barsep'>·</span> <strong>Tip:</strong> Twiddle tags like &ldquo;~tag&rdquo; are visible only to you.</span>",
                 "</div>";
-            $Conf->footerScript("suggest(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
+            Ht::stash_script("suggest(\"foldtags_d\",\"taghelp_p\",taghelp_tset)");
         } else
             echo '<div class="taghl">', ($tx === "" ? "None" : $tx), '</div>';
         echo "</div>";
@@ -1379,7 +1379,7 @@ class PaperTable {
             '</div></form><p class="fn odname">',
             htmlspecialchars($Conf->decision_name($this->prow->outcome)),
             "</p></div></div>\n";
-        $Conf->footerScript('make_pseditor("decision",{p:' . $this->prow->paperId . ',fn:"setdecision"})');
+        Ht::stash_script('make_pseditor("decision",{p:' . $this->prow->paperId . ',fn:"setdecision"})');
     }
 
     function papstripReviewPreference() {
@@ -1397,9 +1397,9 @@ class PaperTable {
             " ", Ht::submit("Save", array("class" => "fx7")),
             " <span id='revprefformresult'></span>",
             "</div></form></div></div>\n";
-        $Conf->footerScript("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
+        Ht::stash_script("Miniajax.onload(\"revprefform\");shortcut(\"revprefform_d\").add()");
         if (($l = SessionList::active()) && isset($l->revprefs) && $l->revprefs && $this->mode === "p")
-            $Conf->footerScript("crpfocus('revprefform',null,3)");
+            Ht::stash_script("crpfocus('revprefform',null,3)");
     }
 
     private function papstrip_tag_entry($id, $folds) {
@@ -1550,7 +1550,7 @@ class PaperTable {
             Ht::submit("Save", array("class" => "fx7")),
             "</div></div></form></div>\n\n";
 
-        $Conf->footerScript("Miniajax.onload(\"watchform\")");
+        Ht::stash_script("Miniajax.onload(\"watchform\")");
     }
 
 
@@ -1716,7 +1716,7 @@ class PaperTable {
             if (!$Me->can_withdraw_paper($prow))
                 $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
-            $Conf->footerHtml("<div class='popupbg'><div id='popup_w' class='popupc'>
+            Ht::stash_html("<div class='popupbg'><div id='popup_w' class='popupc'>
   <p>Are you sure you want to withdraw this paper from consideration and/or
   publication? $admins</p>\n"
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
@@ -1755,7 +1755,7 @@ class PaperTable {
 
         if ($this->admin && $this->prow) {
             $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
-            $Conf->footerHtml("<div class='popupbg'><div id='popup_delp' class='popupc'>"
+            Ht::stash_html("<div class='popupbg'><div id='popup_delp' class='popupc'>"
     . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
     . "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
@@ -1996,9 +1996,9 @@ class PaperTable {
                 "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }
 
-        $Conf->footerScript("shortcut().add()");
+        Ht::stash_script("shortcut().add()");
         if ($this->editable)
-            $Conf->footerScript('hiliter_children("#paperform")');
+            Ht::stash_script('hiliter_children("#paperform")');
     }
 
     private function _paptabSepContaining($t) {
@@ -2409,9 +2409,9 @@ class PaperTable {
                 $min_view_score = min($min_view_score, $Me->view_score_bound($this->prow, $rrow));
             }
         $rf = ReviewForm::get();
-        $Conf->footerScript("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score)) . ")");
+        Ht::stash_script("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score)) . ")");
         if ($Me->can_view_review_ratings())
-            $Conf->footerScript("review_form.set_ratings(" . json_encode($rf->unparse_ratings_json()) . ")");
+            Ht::stash_script("review_form.set_ratings(" . json_encode($rf->unparse_ratings_json()) . ")");
 
         $rrid = strtoupper(defval($_REQUEST, "reviewId", ""));
         while ($rrid !== "" && $rrid[0] === "0")
