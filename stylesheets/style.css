@@ -182,6 +182,11 @@ span.nb {
 .c, .clear {
 	clear: both;
 }
+.c-after:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after {
+	clear: both;
+	content: "";
+	display: table;
+}
 form {
 	margin-bottom: 0;
 	display: inline;
