@@ -327,7 +327,7 @@ function render(SettingValues $sv) {
         BanalSettings::render("", $sv);
     }
 
-    echo "<h3 class=\"settings\">Conflicts &amp; collaborators</h3>\n",
+    echo "<h3 class=\"settings\">Conflicts and collaborators</h3>\n",
         "<table id=\"foldpcconf\" class=\"fold",
         ($sv->curv("sub_pcconf") ? "o" : "c"), "\">\n";
     $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts",
@@ -343,8 +343,8 @@ function render(SettingValues $sv) {
     echo "</table>\n";
 
 
-    echo "<h3 class=\"settings\">Submission options</h3>\n";
-    echo "<p class=\"settingtext\">Options are selected by authors at submission time.  Examples have included “PC-authored paper,” “Consider this paper for a Best Student Paper award,” and “Allow the shadow PC to see this paper.”  The “option name” should be brief (“PC paper,” “Best Student Paper,” “Shadow PC”).  The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
+    echo "<h3 class=\"settings\">Options and attachments</h3>\n";
+    echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Best Student Paper,” “Supplemental material”). The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
     echo "<div class='g'></div>\n",
         Ht::hidden("has_options", 1);
     $sep = "";
