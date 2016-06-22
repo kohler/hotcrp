@@ -251,7 +251,7 @@ class PaperTable {
         return '<div class="papeg' . ($id ? " papg_$id" : "")
             . '"><div class="papet' . $this->error_class($what)
             . ($id ? "\" id=\"$id" : "")
-            . '"><span class="papfn">' . $name . '</span><hr class="c" /></div>';
+            . '"><span class="papfn">' . $name . '</span></div>';
     }
 
     public function messages_for($field) {
@@ -318,7 +318,7 @@ class PaperTable {
         }
         if (isset($extra["float"]))
             $c .= $extra["float"];
-        $c .= "<hr class=\"c\" /></div>";
+        $c .= "</div>";
         return $c;
     }
 
@@ -773,7 +773,7 @@ class PaperTable {
             echo '</span>';
         if (!$viewable || $this->allFolded)
             echo '</a>';
-        echo '</span><hr class="c" /></div>';
+        echo '</span></div>';
 
         // contents
         $inauthors = "";
@@ -838,7 +838,7 @@ class PaperTable {
                 $x = '<div class="pgsm' . ($folded ? " fx8" : "") . '">'
                     . '<div class="pavt"><span class="pavfn">'
                     . ($ox[1] ? $ox[0] : $on) . "</span>"
-                    . '<hr class="c" /></div>';
+                    . '</div>';
                 if (!$ox[1])
                     $x .= '<div class="pavb">' . $ox[0] . "</div>";
                 $xoptionhtml[] = $x . "</div>\n";
@@ -936,10 +936,10 @@ class PaperTable {
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
             '><span class="papfn"><a class="qq" href="#" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
-            ' title="Edit contacts">', expander(true), 'Contacts</a></span><hr class="c" /></div>',
+            ' title="Edit contacts">', expander(true), 'Contacts</a></span></div>',
             '<div class="papet fx0',
             ($cerror ? " error" : ""),
-            '"><span class="papfn">Contacts</span><hr class="c" /></div>';
+            '"><span class="papfn">Contacts</span></div>';
 
         // Non-editable version
         echo '<div class="papev fn0">';
@@ -1061,7 +1061,7 @@ class PaperTable {
                     '</div>';
             }
 
-            echo '<hr class="c" /></div><div class="pspcard_open">';
+            echo '</div><div class="pspcard_open">';
             Ht::stash_script('$(".pspcard_fold").click(function(e){$(".pspcard_fold").hide();$(".pspcard_open").show();e.preventDefault();return false})');
         }
         echo '<div';
@@ -1212,7 +1212,7 @@ class PaperTable {
                                  $checked, array("id" => "pcc$id", "disabled" => $disabled)),
                     '&nbsp;</td><td>', $label, '</td></tr></table>';
             }
-            echo '<hr class="c" />', "</div></div>";
+            echo "</div></div>";
         }
         echo "</div>\n</div></div>\n\n";
     }
@@ -1854,7 +1854,7 @@ class PaperTable {
             if ($canAssign)
                 $t .= $this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign18.png", $this->mode === "assign");
 
-            $t .= "<hr class=\"c\" /></div>";
+            $t .= "</div>";
         }
 
         return $t;
@@ -1982,7 +1982,7 @@ class PaperTable {
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"
                                  && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions($Me->can_administer($prow));
-            echo '</div></div><hr class="c" />';
+            echo '</div></div>';
         }
         $this->echoDivExit();
 
