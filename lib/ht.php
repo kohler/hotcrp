@@ -307,7 +307,7 @@ class Ht {
                 $t .= $a;
             $t .= '</div>';
         }
-        return $t . '<hr class="c" />' . $extra_text . "</div>\n";
+        return $t . $extra_text . "</div>\n";
     }
 
     static function pre($html) {

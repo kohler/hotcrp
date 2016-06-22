@@ -2519,7 +2519,7 @@ function render_review_body(rrow) {
                 (({secret: "secret", admin: "shown only to chairs",
                    pc: "hidden from authors"})[f.visibility] || f.visibility) +
                 ')</div>';
-        t += '</div><hr class="c" /></div><div class="revv revv' + "glr".charAt(display);
+        t += '</div></div><div class="revv revv' + "glr".charAt(display);
 
         if (!f.options) {
             x = render_text(rrow.format, rrow[f.uid], f.uid);
@@ -2532,7 +2532,7 @@ function render_review_body(rrow) {
 
         t += '</div></div>';
         if (display == 2)
-            t += '<hr class="c" /></div>';
+            t += '</div>';
         last_display = display;
     }
     return t;
@@ -2736,7 +2736,7 @@ function render_editing(hc, cj) {
     hc.push('<textarea name="comment" class="reviewtext cmttext" rows="5" cols="60" style="clear:both"></textarea></div>');
     if (!cj.response) {
         // visibility
-        hc.push('<div class="cmteditinfo f-i fold2o">', '<hr class="c"></div>');
+        hc.push('<div class="cmteditinfo f-i fold2o">', '</div>');
         hc.push('<div class="f-ix">', '</div>');
         hc.push('<div class="f-c">Visibility</div>');
         hc.push('<div class="f-e">', '</div>');
@@ -2764,13 +2764,13 @@ function render_editing(hc, cj) {
         hc.pop_n(2);
 
         // actions
-        hc.push('<hr class="c"><div class="aab aabr" style="margin-bottom:0">', '<hr class="c"></div>');
+        hc.push('<div class="aab aabr" style="margin-bottom:0">', '</div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="btn btn-default">Save</button>' + bnote + '</div>');
     } else {
         // actions
         // XXX allow_administer
         hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
-        hc.push('<hr class="c"><div class="aab aabr" style="margin-bottom:0">', '<hr class="c"></div>');
+        hc.push('<div class="aab aabr" style="margin-bottom:0">', '</div>');
         if (cj.is_new || cj.draft)
             hc.push('<div class="aabut"><button type="button" name="savedraft" class="btn">Save draft</button>' + bnote + '</div>');
         hc.push('<div class="aabut"><button type="button" name="submit" class="btn btn-default">Submit</button>' + bnote + '</div>');
@@ -3029,8 +3029,10 @@ function add(cj, editing) {
     var cid = cj_cid(cj), j = $("#" + cid), $pc = null;
     if (!j.length) {
         var $c = $("#body").children().last();
-        if (!$c.hasClass("cmtcard") && ($pc = $("#body > .cmtcard").last()).length)
-            $pc.append('<div class="cmtcard_link"><a href="#' + cid + '" class="qq">Later comments &#x25BC;</a></div>');
+        if (!$c.hasClass("cmtcard") && ($pc = $("#body > .cmtcard").last()).length) {
+            if (!cj.is_new)
+                $pc.append('<div class="cmtcard_link"><a href="#' + cid + '" class="qq">Later comments &#x25BC;</a></div>');
+        }
         if (!$c.hasClass("cmtcard") || cj.response || $c.hasClass("response")) {
             var t;
             if (cj.response)

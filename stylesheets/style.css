@@ -182,7 +182,8 @@ span.nb {
 .c, .clear {
 	clear: both;
 }
-.c-after:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after {
+.c-after:after, .pst:after, .pavt:after, .papet:after, .submission_modes:after,
+.revvt:after, .revet:after, .rvg:after, .cmteditinfo:after, .aa:after, .aab:after {
 	clear: both;
 	content: "";
 	display: table;

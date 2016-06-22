@@ -551,7 +551,7 @@ class ReviewForm {
                 echo '<div class="revvis">(shown only to chairs)</div>';
             else if ($f->view_score < VIEWSCORE_AUTHOR)
                 echo '<div class="revvis">(hidden from authors)</div>';
-            echo '</div><hr class="c" /></div>';
+            echo '</div></div>';
 
             if ($f->description)
                 echo '<div class="revhint">', $f->description, "</div>";
@@ -1564,7 +1564,7 @@ $blind\n";
             echo "</span>\n";
 
         if (defval($options, "editmessage"))
-            echo "<div class='hint'>", defval($options, "editmessage"), "</div>\n";
+            echo '<div class="hint">', defval($options, "editmessage"), "</div>\n";
 
         // download?
         echo '<hr class="c" />';
