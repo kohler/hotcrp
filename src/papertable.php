@@ -216,7 +216,7 @@ class PaperTable {
         }
 
         // collect folders
-        $folders = array("c-after");
+        $folders = array("clearfix");
         if ($this->prow) {
             $ever_viewable = $Me->can_view_authors($this->prow, true);
             $viewable = $ever_viewable && $Me->can_view_authors($this->prow, false);
@@ -1186,7 +1186,7 @@ class PaperTable {
                 $label .= '<div class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</div>';
             $ct = defval($conflict, $id, $nonct);
 
-            echo '<div class="ctelt"><div class="ctelti c-after';
+            echo '<div class="ctelt"><div class="ctelti clearfix';
             if ($show_colors && ($classes = $p->viewable_color_classes($Me)))
                 echo ' ', $classes;
             echo '">';
