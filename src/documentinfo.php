@@ -54,9 +54,15 @@ class DocumentInfo {
         $this->docclass = HotCRPDocument::get($this->documentType);
         if (isset($this->paper) && !isset($this->content))
             $this->content = $this->paper;
+        if ($this->error_html)
+            $this->error = true;
 
-        // in modern versions sha1 is set at storage time; before it wasn't
-        if ($this->paperStorageId > 1 && $this->sha1 == ""
+        // set sha1 if content is available
+        if ($this->content && $this->sha1 == "")
+            $this->sha1 = sha1($this->content, true);
+        // set sha1 in database if needed ()
+        if ($this->paperStorageId > 1
+            && $this->sha1 == ""
             && $this->docclass->load_content($this)) {
             $this->sha1 = sha1($this->content, true);
             Dbl::q("update PaperStorage set sha1=? where paperStorageId=?", $this->sha1, $this->paperStorageId);
@@ -81,18 +87,22 @@ class DocumentInfo {
         if (is_string($upload) && $upload)
             $upload = $_FILES[$upload];
         if (!$upload || !is_array($upload) || !fileUploaded($upload)
-            || !isset($upload["tmp_name"])
-            || ($content = file_get_contents($upload["tmp_name"])) === false
-            || $content === "")
+            || !isset($upload["tmp_name"]))
             return null;
-        $args = [
-            "paperId" => $paperId, "documentType" => $documentType,
-            "content" => $content, "timestamp" => time(),
-            "mimetype" => Mimetype::type(get($upload, "type", "application/octet-stream"))
-        ];
+        $args = ["paperId" => $paperId,
+                 "documentType" => $documentType,
+                 "timestamp" => time(),
+                 "mimetype" => Mimetype::type(get($upload, "type", "application/octet-stream"))];
         if (isset($upload["name"]) && strlen($upload["name"]) <= 255
             && is_valid_utf8($upload["name"]))
             $args["filename"] = $upload["name"];
+        $fnhtml = isset($args["filename"]) ? " “" . htmlspecialchars($args["filename"]) . "”" : "";
+        if (($content = file_get_contents($upload["tmp_name"])) === false)
+            $args["error_html"] = "Uploaded file$fnhtml could not be read.";
+        else if ($content === "")
+            $args["error_html"] = "Uploaded file$fnhtml was empty, not saving.";
+        else
+            $args["content"] = $content;
         return new DocumentInfo($args);
     }
 

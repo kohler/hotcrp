@@ -275,6 +275,12 @@ class PaperStatus {
 
     public function upload_document($docj, PaperOption $o) {
         global $Conf;
+        if (get($docj, "error") || get($docj, "error_html")) {
+            $this->set_option_error_html($o, get($docj, "error_html", "Upload error."));
+            $docj->docid = 1;
+            return;
+        }
+
         // look for an existing document with same sha1;
         // check existing docid's sha1
         $docid = get($docj, "docid");
