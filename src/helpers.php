@@ -761,9 +761,9 @@ function tabLength($text, $all) {
     return $len;
 }
 
-function ini_get_bytes($varname) {
+function ini_get_bytes($varname, $value = null) {
     // from PHP manual
-    $val = trim(ini_get($varname));
+    $val = trim($value ? : ini_get($varname));
     $last = strtolower($val[strlen($val)-1]);
     switch ($last) {
     case 'g':
