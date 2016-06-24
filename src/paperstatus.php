@@ -242,11 +242,6 @@ class PaperStatus {
     }
 
 
-    public function set_option_error_html($o, $html) {
-        $this->set_error_html($o->id <= 0 ? $o->abbr : "opt$o->id",
-                              htmlspecialchars($o->name) . ": " . $html);
-    }
-
     public function set_error_html($field, $html) {
         $this->msg($field, $html, true);
     }
@@ -266,6 +261,17 @@ class PaperStatus {
                 $this->has_errors = true;
         }
     }
+
+    public function set_option_error_html($o, $html) {
+        $this->set_error_html($o->id <= 0 ? $o->abbr : "opt$o->id",
+                              htmlspecialchars($o->name) . ": " . $html);
+    }
+
+    public function set_option_warning_html($o, $html) {
+        $this->set_warning_html($o->id <= 0 ? $o->abbr : "opt$o->id",
+                                htmlspecialchars($o->name) . ": " . $html);
+    }
+
 
     public function set_document_prow($prow) {
         // XXX this is butt ugly
