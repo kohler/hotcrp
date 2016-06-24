@@ -635,6 +635,8 @@ class Filer {
 
     // private functions
     private static function _mimetype($doc) {
+        if (!isset($doc->mimetype) && !isset($doc->mimetypeid))
+            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
     private function _filestore($doc) {
