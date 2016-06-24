@@ -115,12 +115,26 @@ served by HotCRP. This normally happens automatically. However, if
 the URL path is `/`, you may need to turn off your server’s default
 handlers for subdirectories such as `/doc`.
 
-4. Update the systemwide setting for PHP’s `session.gc_maxlifetime`
-configuration variable. This provides an upper bound on HotCRP session
-lifetimes (the amount of idle time before a user is logged out
-automatically). On Unix machines, systemwide PHP settings are often
-stored in `/etc/php.ini`. The suggested value for this setting is
-86400, e.g., 24 hours:
+4. Update PHP settings.
+
+    The first three settings, `upload_max_filesize`, `post_max_size`, and
+`max_input_vars`, may be changed system-wide or in HotCRP’s `.htaccess` and
+`.user.ini` files.
+
+  * `upload_max_filesize`: Set to the largest file upload HotCRP should accept.
+    `15M` is a good default.
+
+  * `post_max_size`: Set to the largest total upload HotCRP should accept. Must
+    be at least as big as `upload_max_filesize`. `20M` is a good default.
+
+  * `max_input_vars`: Set to the largest number of distinct input variables
+    HotCRP should accept. `4096` is a good default.
+
+    The last setting, `session.gc_maxlifetime`, must be changed globally. This
+provides an upper bound on HotCRP session lifetimes (the amount of idle time
+before a user is logged out automatically). On Unix machines, systemwide PHP
+settings are often stored in `/etc/php.ini`. The suggested value for this
+setting is 86400, e.g., 24 hours:
 
         session.gc_maxlifetime = 86400
 
