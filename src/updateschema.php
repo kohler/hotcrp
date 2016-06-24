@@ -581,13 +581,13 @@ function updateSchema($Conf) {
         && Dbl::ql("alter table PaperTopic modify `paperId` int(11) NOT NULL")
         && Dbl::ql("drop table if exists ChairTag"))
         $Conf->update_schema_version(60);
-    if ($Conf->sversion == 60
-        && Dbl::ql("insert into Settings (name,value,data) select concat('msg.',substr(name,1,length(name)-3)), value, data from Settings where name='homemsg' or name='conflictdefmsg'")
-        && $Conf->update_schema_version(61)) {
-        foreach (array("conflictdef", "home") as $k)
-            if (isset($Conf->settingTexts["${k}msg"]))
-                $Conf->settingTexts["msg.$k"] = $Conf->settingTexts["${k}msg"];
-        $Conf->settings["allowPaperOption"] = 61;
+    if ($Conf->sversion == 60) {
+        foreach (["conflictdef", "home"] as $k)
+            if ($Conf->setting_data("{$k}msg", false) !== false) {
+                $Conf->save_setting("msg.$k", 1, $Conf->setting_data("{$k}msg"));
+                $Conf->save_setting("{$k}msg", null);
+            }
+        $Conf->update_schema_version(61);
     }
     if ($Conf->sversion == 61
         && Dbl::ql("alter table Capability modify `data` varbinary(4096) DEFAULT NULL"))
@@ -656,8 +656,8 @@ function updateSchema($Conf) {
         $Conf->update_schema_version(75);
     if ($Conf->sversion == 75) {
         foreach (array("capability_gc", "s3_scope", "s3_signing_key") as $k)
-            if (isset($Conf->settings[$k])) {
-                $Conf->save_setting("__" . $k, $Conf->settings[$k], get($Conf->settingTexts, $k));
+            if ($Conf->setting($k)) {
+                $Conf->save_setting("__" . $k, $Conf->setting($k), $Conf->setting_data($k));
                 $Conf->save_setting($k, null);
             }
         $Conf->update_schema_version(76);

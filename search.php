@@ -562,9 +562,7 @@ function echo_request_as_hidden_inputs($specialscore = false) {
 // Saved searches
 $ss = array();
 if ($Me->isPC || $Me->privChair) {
-    foreach ($Conf->settingTexts as $k => $v)
-        if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
-            $ss[substr($k, 3)] = $v;
+    $ss = $Conf->saved_searches();
     if (count($ss) > 0 || $pl) {
         echo "<div class='tld4' style='padding-bottom:1ex'>";
         ksort($ss);

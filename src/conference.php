@@ -23,7 +23,7 @@ class Conf {
     public $dblink = null;
 
     var $settings;
-    var $settingTexts;
+    private $settingTexts;
     public $sversion;
     private $_pc_seeall_cache = null;
     private $_pc_see_pdf = null;
@@ -792,6 +792,15 @@ class Conf {
             && ($re = get($f, "simple_regex")) && preg_match($re, $text))
             $format = 0;
         return $format;
+    }
+
+
+    function saved_searches() {
+        $ss = [];
+        foreach ($this->settingTexts as $k => $v)
+            if (substr($k, 0, 3) === "ss:" && ($v = json_decode($v)))
+                $ss[substr($k, 3)] = $v;
+        return $ss;
     }
 
 

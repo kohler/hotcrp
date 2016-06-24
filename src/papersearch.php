@@ -3727,9 +3727,8 @@ class PaperSearch {
         $res = array();
 
         if ($this->amPC && (!$category || $category === "ss")) {
-            foreach ($Conf->settingTexts as $k => $v)
-                if (substr($k, 0, 3) == "ss:" && ($v = json_decode($v)))
-                    $res[] = $k;
+            foreach ($Conf->saved_searches() as $k => $v)
+                $res[] = "ss:" . $k;
         }
 
         array_push($res, "has:submission", "has:abstract");
