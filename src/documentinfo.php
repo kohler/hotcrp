@@ -3,7 +3,7 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-class DocumentInfo {
+class DocumentInfo implements JsonSerializable {
     public $paperStorageId = 0;
     public $paperId = 0;
     public $documentType = 0;
@@ -244,5 +244,17 @@ class DocumentInfo {
             }
         }
         return null;
+    }
+
+    public function jsonSerialize() {
+        $x = [];
+        foreach (get_object_vars($this) as $k => $v)
+            if ($k === "content" && is_string($v) && strlen($v) > 50)
+                $x[$k] = substr($v, 0, 50) . "…";
+            else if ($k === "sha1" && is_string($v))
+                $x[$k] = Filer::text_sha1($v);
+            else if ($k !== "docclass" && $k !== "infoJson_str" && $v !== null)
+                $x[$k] = $v;
+        return $x;
     }
 }
