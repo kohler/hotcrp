@@ -294,15 +294,16 @@ class PaperStatus {
         $docid = get($docj, "docid");
         if ($docid) {
             $oldj = $this->document_to_json($o->id, $docid);
-            if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
+            if (get($docj, "sha1") && get($oldj, "sha1") !== Filer::text_sha1($docj->sha1))
                 $docid = null;
         } else if ($this->paperid != -1 && get($docj, "sha1")) {
-            $oldj = Dbl::fetch_first_object("select paperStorageId, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, $docj->sha1);
+            $oldj = Dbl::fetch_first_object("select paperStorageId, sha1, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, Filer::binary_sha1($docj->sha1));
             if ($oldj)
                 $docid = $oldj->paperStorageId;
         }
         if ($docid) {
             $docj->docid = $docid;
+            $docj->sha1 = Filer::binary_sha1($oldj->sha1);
             $docj->timestamp = $oldj->timestamp;
             $docj->size = $oldj->size;
             $docj->mimetype = $oldj->mimetype;
@@ -314,7 +315,7 @@ class PaperStatus {
             if (is_int(get($docj, "original_id")))
                 $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperStorageId=?", $docj->original_id);
             else if (is_string(get($docj, "original_sha1")))
-                $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperid, $docj->original_sha1);
+                $result = Dbl::qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperid, Filer::binary_sha1($docj->original_sha1));
             else if ($o->id == DTYPE_SUBMISSION || $o->id == DTYPE_FINAL)
                 $result = Dbl::qe("select PaperStorage.paperStorageId, PaperStorage.timestamp, PaperStorage.sha1 from PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper." . ($o->id == DTYPE_SUBMISSION ? "paperStorageId" : "finalPaperStorageId") . "=PaperStorage.paperStorageId) where Paper.paperId=?", $this->paperid);
             else
@@ -930,7 +931,7 @@ class PaperStatus {
                 && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)) {
                 $q[] = "size=" . $new_joindoc->size;
                 $q[] = "mimetype='" . sqlq($new_joindoc->mimetype) . "'";
-                $q[] = "sha1='" . sqlq($new_joindoc->sha1) . "'";
+                $q[] = "sha1='" . sqlq(Filer::binary_sha1($new_joindoc->sha1)) . "'";
                 $q[] = "timestamp=" . $new_joindoc->timestamp;
             } else if (!$old_joindoc)
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
