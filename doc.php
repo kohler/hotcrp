@@ -123,7 +123,7 @@ function document_download() {
         $doc = $filter->apply($doc, $prow) ? : $doc;
 
     // check for If-Not-Modified
-    if ($doc->sha1) {
+    if ($doc->sha1 && function_exists("getallheaders")) {
         foreach (getallheaders() as $k => $v)
             if (strcasecmp($k, "If-None-Match") == 0
                 && $v === "\"" . Filer::text_sha1($doc) . "\"") {
