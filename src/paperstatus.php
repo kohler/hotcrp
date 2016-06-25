@@ -322,6 +322,7 @@ class PaperStatus {
                     $docj->timestamp = (int) $docj->original_timestamp;
             } else
                 unset($docj->original_id);
+            Dbl::free($result);
         }
 
         // if no sha1 match, upload
