@@ -81,17 +81,20 @@ class HotCRPDocument extends Filer {
                 return $fn . $oabbr . "/" . $afn;
             $fn .= $oabbr;
         }
+        $mimetype = get($doc, "mimetype");
         if ($filters === null && isset($doc->filters_applied))
             $filters = $doc->filters_applied;
-        if ($filters) {
-            foreach (is_array($filters) ? $filters : [$filters] as $filter)
-                if ($filter instanceof FileFilter)
+        if ($filters)
+            foreach (is_array($filters) ? $filters : [$filters] as $filter) {
+                if (is_string($filter))
+                    $filter = FileFilter::find_by_name($filter);
+                if ($filter instanceof FileFilter) {
                     $fn .= "-" . $filter->name;
-                else if (is_string($filter) && FileFilter::find_by_name($filter))
-                    $fn .= "-" . $filter;
-        }
-        if (isset($doc->mimetype))
-            $fn .= Mimetype::extension($doc->mimetype);
+                    $mimetype = $filter->mimetype($doc, $mimetype);
+                }
+            }
+        if ($mimetype)
+            $fn .= Mimetype::extension($mimetype);
         return $fn;
     }
 
@@ -275,7 +278,7 @@ class HotCRPDocument extends Filer {
         return $ok;
     }
 
-    static function url($doc, $filters = null) {
+    static function url($doc, $filters = null, $rest = null) {
         assert(property_exists($doc, "mimetype") && isset($doc->documentType));
         if ($doc->mimetype)
             $f = "file=" . rawurlencode(self::filename($doc, $filters));
@@ -286,6 +289,11 @@ class HotCRPDocument extends Filer {
             else if ($doc->documentType > 0)
                 $f .= "&amp;dt=$doc->documentType";
         }
+        if ($rest && is_array($rest)) {
+            foreach ($rest as $k => $v)
+                $f .= "&amp;" . urlencode($k) . "=" . urlencode($v);
+        } else if ($rest)
+            $f .= "&amp;" . $rest;
         return hoturl("doc", $f);
     }
 }

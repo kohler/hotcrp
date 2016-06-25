@@ -63,6 +63,10 @@ class FileFilter {
         return $fdoc;
     }
 
+    public function mimetype($doc, $mimetype) {
+        return $mimetype;
+    }
+
     public function apply($doc, PaperInfo $prow) {
         return false;
     }

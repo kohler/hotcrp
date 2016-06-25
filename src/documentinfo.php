@@ -143,13 +143,17 @@ class DocumentInfo {
         return $this->docclass->upload($this, (object) ["paperId" => $this->paperId]);
     }
 
+    public function url($filters = null, $rest = null) {
+        if ($filters === null)
+            $filters = $this->filters_applied;
+        return HotCRPDocument::url($this, $filters, $rest);
+    }
+
     const L_SMALL = 1;
     const L_NOSIZE = 2;
     public function link_html($html = "", $flags = 0, $filters = null) {
         global $Conf;
-        if ($filters === null)
-            $filters = $this->filters_applied;
-        $p = HotCRPDocument::url($this, $filters);
+        $p = $this->url($filters);
 
         $finalsuffix = "";
         if ($this->documentType == DTYPE_FINAL
