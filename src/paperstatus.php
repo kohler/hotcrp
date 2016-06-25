@@ -68,8 +68,10 @@ class PaperStatus {
             if ($drow->sha1 !== null && $drow->sha1 !== "")
                 $d->sha1 = bin2hex($drow->sha1);
             if ($drow->timestamp)
-                $d->timestamp = (int) $drow->timestamp;
-            if (get($drow, "filename"))
+                $d->timestamp = $drow->timestamp;
+            if ($drow->size)
+                $d->size = $drow->size;
+            if ($drow->filename)
                 $d->filename = $drow->filename;
             $meta = null;
             if (isset($drow->infoJson) && is_object($drow->infoJson))
@@ -301,6 +303,9 @@ class PaperStatus {
         }
         if ($docid) {
             $docj->docid = $docid;
+            $docj->timestamp = $oldj->timestamp;
+            $docj->size = $oldj->size;
+            $docj->mimetype = $oldj->mimetype;
             return;
         }
 
@@ -922,8 +927,7 @@ class PaperStatus {
             else
                 $new_joindoc = null;
             if ($new_joindoc
-                && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)
-                && get($new_joindoc, "size") && get($new_joindoc, "timestamp")) {
+                && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)) {
                 $q[] = "size=" . $new_joindoc->size;
                 $q[] = "mimetype='" . sqlq($new_joindoc->mimetype) . "'";
                 $q[] = "sha1='" . sqlq($new_joindoc->sha1) . "'";
