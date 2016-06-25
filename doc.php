@@ -123,13 +123,18 @@ function document_download() {
         $doc = $filter->apply($doc, $prow) ? : $doc;
 
     // check for If-Not-Modified
-    if ($doc->sha1 && function_exists("getallheaders")) {
-        foreach (getallheaders() as $k => $v)
-            if (strcasecmp($k, "If-None-Match") == 0
-                && $v === "\"" . Filer::text_sha1($doc) . "\"") {
-                header("HTTP/1.1 304 Not Modified");
-                exit;
-            }
+    if ($doc->sha1) {
+        $ifnonematch = null;
+        if (function_exists("getallheaders")) {
+            foreach (getallheaders() as $k => $v)
+                if (strcasecmp($k, "If-None-Match") == 0)
+                    $ifnonematch = $v;
+        } else
+            $ifnonematch = get($_SERVER, "HTTP_IF_NONE_MATCH");
+        if ($ifnonematch && $ifnonematch === "\"" . Filer::text_sha1($doc) . "\"") {
+            header("HTTP/1.1 304 Not Modified");
+            exit;
+        }
     }
 
     // Actually download paper.
