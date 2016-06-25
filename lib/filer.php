@@ -629,8 +629,10 @@ class Filer {
             return bin2hex($sha1);
         else if (is_string($sha1) && strlen($sha1) === 40 && ctype_xdigit($sha1))
             return strtolower($sha1);
-        else
+        else {
+            error_log("Filer::text_sha1: invalid input " . var_export($sha1, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             return false;
+        }
     }
     static function binary_sha1($doc) {
         $sha1 = is_object($doc) ? get($doc, "sha1") : $doc;
@@ -640,8 +642,10 @@ class Filer {
             return $sha1;
         else if (is_string($sha1) && strlen($sha1) === 40 && ctype_xdigit($sha1))
             return hex2bin($sha1);
-        else
+        else {
+            error_log("Filer::binary_sha1: invalid input " . var_export($sha1, true) . ", caller " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             return false;
+        }
     }
 
     // private functions
