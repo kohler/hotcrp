@@ -162,6 +162,7 @@ CREATE TABLE `Paper` (
   `timeWithdrawn` int(11) NOT NULL DEFAULT '0',
   `timeFinalSubmitted` int(11) NOT NULL DEFAULT '0',
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
+  # `sha1` copied from PaperStorage to reduce joins
   `sha1` varbinary(20) NOT NULL DEFAULT '',
   `finalPaperStorageId` int(11) NOT NULL DEFAULT '0',
   `blind` tinyint(1) NOT NULL DEFAULT '1',

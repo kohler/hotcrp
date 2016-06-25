@@ -295,9 +295,9 @@ class PaperStatus {
             if (get($docj, "sha1") && get($oldj, "sha1") !== $docj->sha1)
                 $docid = null;
         } else if ($this->paperid != -1 && get($docj, "sha1")) {
-            $result = Dbl::qe("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, $docj->sha1);
-            if (($row = edb_row($result)))
-                $docid = $row[0];
+            $oldj = Dbl::fetch_first_object("select paperStorageId, timestamp, size, mimetype from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperid, $o->id, $docj->sha1);
+            if ($oldj)
+                $docid = $oldj->paperStorageId;
         }
         if ($docid) {
             $docj->docid = $docid;
