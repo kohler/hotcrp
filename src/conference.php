@@ -973,6 +973,14 @@ class Conf {
         $any = $this->invariantq("select paperStorageId from PaperStorage s left join Mimetype m using (mimetypeid) where s.mimetype!=m.mimetype or m.mimetype is null limit 1");
         if ($any)
             trigger_error($this->opt->dbName . " invariant error: bad mimetypeid");
+
+        // paper denormalizations match
+        $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and (p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        if ($any)
+            trigger_error($this->opt->dbName . " invariant error: bad Paper denormalization, paper #" . self::$invariant_row[0]);
+        $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>0 and (p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
+        if ($any)
+            trigger_error($this->opt->dbName . " invariant error: bad Paper final denormalization, paper #" . self::$invariant_row[0]);
     }
 
 
