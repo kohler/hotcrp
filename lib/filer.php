@@ -754,8 +754,10 @@ class Filer {
         fclose($pipes[1]);
         fclose($pipes[2]);
         $status = proc_close($proc);
+        if ($err != "")
+            $err = preg_replace('/^tar: Ignoring unknown[^\n]*\n*/m', '', $err);
         if ($status != 0 || $err != "")
-            error_log("failed $cmd: status $status, stderr $err");
+            error_log("$cmd problem: status $status, stderr $err");
         return explode("\n", rtrim($out));
     }
 }
