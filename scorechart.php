@@ -140,7 +140,7 @@ if ($s == 0) {
 }
 
 session_cache_limiter("");
-header("Cache-Control: public, max-age=31557600");
+header("Cache-Control: max-age=31557600, public");
 header("Expires: " . gmdate("D, d M Y H:i:s", time() + 31557600) . " GMT");
 header("Content-Type: image/png");
 imagepng($pic);

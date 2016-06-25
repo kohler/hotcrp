@@ -122,9 +122,22 @@ function document_download() {
     foreach ($filters as $filter)
         $doc = $filter->apply($doc, $prow) ? : $doc;
 
+    // check for If-Not-Modified
+    if ($doc->sha1) {
+        foreach (getallheaders() as $k => $v)
+            if (strcasecmp($k, "If-None-Match") == 0
+                && $v === "\"" . Filer::text_sha1($doc) . "\"") {
+                header("HTTP/1.1 304 Not Modified");
+                exit;
+            }
+    }
+
     // Actually download paper.
     session_write_close();      // to allow concurrent clicks
-    if ($Conf->download_documents([$doc], cvtint(req("save")) > 0))
+    $opts = ["attachment" => cvtint(req("save")) > 0];
+    if ($doc->sha1 && ($x = req("sha1")) && $x === Filer::text_sha1($doc))
+        $opts["cacheable"] = true;
+    if ($Conf->download_documents([$doc], $opts))
         exit;
 
     document_error("500 Server Error", null);

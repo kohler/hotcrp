@@ -4,7 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 session_cache_limiter("");
-header("Cache-Control: public, max-age=315576000");
+header("Cache-Control: max-age=315576000, public");
 header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
 
 // *** NB This file does not include all of the HotCRP infrastructure! ***

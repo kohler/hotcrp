@@ -511,8 +511,8 @@ class Filer {
             $doc->docclass = $this;
         return self::multidownload($doc, $downloadname, $attachment);
     }
-    static function multidownload($doc, $downloadname = null, $attachment = null) {
-        global $zlib_output_compression;
+    static function multidownload($doc, $downloadname = null, $opts = null) {
+        global $Now, $zlib_output_compression;
         if (is_array($doc) && count($doc) == 1) {
             $doc = $doc[0];
             $downloadname = null;
@@ -538,6 +538,11 @@ class Filer {
         // Print paper
         $doc_mimetype = self::_mimetype($doc);
         header("Content-Type: " . Mimetype::type($doc_mimetype));
+        $attachment = null;
+        if (is_bool($opts))
+            $attachment = $opts;
+        else if (is_array($opts) && isset($opts["attachment"]))
+            $attachment = $opts["attachment"];
         if ($attachment === null)
             $attachment = !Mimetype::disposition_inline($doc_mimetype);
         if (!$downloadname) {
@@ -546,8 +551,14 @@ class Filer {
                 $downloadname = substr($downloadname, $slash + 1);
         }
         header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+        if (is_array($opts) && get($opts, "cacheable")) {
+            header("Cache-Control: max-age=315576000, private");
+            header("Expires: " . gmdate("D, d M Y H:i:s", $Now + 315576000) . " GMT");
+        }
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
+        if ($doc->sha1)
+            header("ETag: \"" . self::text_sha1($doc) . "\"");
         if (($filename = self::content_filename($doc)))
             self::download_file($filename, get($doc, "no_cache") || get($doc, "no_accel"));
         else {
