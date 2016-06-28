@@ -335,7 +335,7 @@ class Autoassigner {
             return $nperpc * count($this->pcm);
         $n = 0;
         foreach ($papers as $ct)
-            $n += $ct;
+            $n += max($ct, 0);
         return $n;
     }
 
@@ -573,8 +573,7 @@ class Autoassigner {
             $navailable = 0;
             if ($nperpc) {
                 foreach ($this->pcm as $cid => $p)
-                    if ($this->load[$cid] < $nperpc)
-                        $navailable += $nperpc - $load;
+                    $navailable += max($nperpc - $this->load[$cid], 0);
             }
             if ($nmissing == 0 || $navailable == 0)
                 break;
