@@ -389,8 +389,8 @@ class PaperInfo {
         return false;
     }
 
-    public function has_viewable_tag($tag, $user) {
-        $tags = $this->viewable_tags($user);
+    public function has_viewable_tag($tag, $user, $forceShow = null) {
+        $tags = $this->viewable_tags($user, $forceShow);
         return $tags !== "" && stripos(" " . $tags, " $tag#") !== false;
     }
 

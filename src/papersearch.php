@@ -3390,7 +3390,7 @@ class PaperSearch {
                             break;
                         }
                 if ($order_anno_tag) {
-                    if ($row->has_viewable_tag($order_anno_tag->tag, $this->contact))
+                    if ($row->has_viewable_tag($order_anno_tag->tag, $this->contact, true))
                         $tag_order[] = [$row->paperId, $row->tag_value($order_anno_tag->tag)];
                     else
                         $tag_order[] = [$row->paperId, TAG_INDEXBOUND];
