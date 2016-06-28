@@ -205,7 +205,7 @@ class Autoassigner {
             if (!isset($this->pcm[$cid])) {
                 $result = Dbl::qe("select paperId from PaperReview where contactId=? and paperId ?a", $cid, $this->papersel);
                 while (($row = edb_row($result)))
-                    $this->prefs[$cid][$row[0]] = self::POLDASSIGN;
+                    $this->prefs[$cid][$row[0]] = self::PNOASSIGN;
                 Dbl::free($result);
             }
 
