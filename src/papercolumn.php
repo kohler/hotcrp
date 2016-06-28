@@ -1119,12 +1119,6 @@ class TagPaperColumn extends PaperColumn {
     public function completion_name() {
         return $this->dtag ? "#$this->dtag" : "#<tag>";
     }
-    protected function _tag_value($row) {
-        if (($p = strpos($row->paperTags, $this->ctag)) === false)
-            return null;
-        else
-            return (float) substr($row->paperTags, $p + strlen($this->ctag));
-    }
     public function sort_prepare($pl, &$rows, $sorter) {
         global $Conf;
         $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
@@ -1136,7 +1130,7 @@ class TagPaperColumn extends PaperColumn {
         foreach ($rows as $row)
             if ($careful && !$pl->contact->can_view_tag($row, $this->xtag, true))
                 $row->$sortf = $unviewable;
-            else if (($row->$sortf = $this->_tag_value($row)) === null)
+            else if (($row->$sortf = $row->tag_value($this->xtag)) === null)
                 $row->$sortf = $empty;
     }
     public function tag_compare($a, $b, $sorter) {
@@ -1151,7 +1145,7 @@ class TagPaperColumn extends PaperColumn {
         return !$pl->contact->can_view_tag($row, $this->xtag, true);
     }
     public function content($pl, $row, $rowidx) {
-        if (($v = $this->_tag_value($row)) === null)
+        if (($v = $row->tag_value($this->xtag)) === null)
             return "";
         else if ($v === 0.0 && !$this->is_value)
             return "&#x2713;";
@@ -1159,7 +1153,7 @@ class TagPaperColumn extends PaperColumn {
             return $v;
     }
     public function text($pl, $row) {
-        if (($v = $this->_tag_value($row)) === null)
+        if (($v = $row->tag_value($this->xtag)) === null)
             return "";
         else if ($v === 0.0 && !$this->is_value)
             return "X";
@@ -1194,7 +1188,7 @@ class EditTagPaperColumn extends TagPaperColumn {
         return $p;
     }
     public function content($pl, $row, $rowidx) {
-        $v = $this->_tag_value($row);
+        $v = $row->tag_value($this->xtag);
         if ($this->editsort && !isset($pl->row_attr["data-tags"]))
             $pl->row_attr["data-tags"] = $this->dtag . "#" . $v;
         if (!$pl->contact->can_change_tag($row, $this->dtag, 0, 0, true))
