@@ -1302,6 +1302,7 @@ Assigner::register("conflict", new ConflictAssigner(0, null, CONFLICT_CHAIRMARK)
 Assigner::register("noconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("clearconflict", new ConflictAssigner(0, null, 0));
 Assigner::register("tag", new TagAssigner(0, true, null, 0));
+Assigner::register("settag", new TagAssigner(0, true, null, 0));
 Assigner::register("notag", new TagAssigner(0, false, null, 0));
 Assigner::register("cleartag", new TagAssigner(0, false, null, 0));
 Assigner::register("nexttag", new TagAssigner(0, TagAssigner::NEXT, null, 0));
