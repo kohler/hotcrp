@@ -346,6 +346,16 @@ assert_search_papers($user_chair, "order:fart", "1 2 3 6 5 4");
 xassert_assign($Admin, true, "action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n");
 assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
 
+xassert_assign($Admin, true, "action,paper,tag\ncleartag,8,fArt\n");
+assert_search_papers($user_chair, "order:fart", "7 1 2 3 6 5 4");
+
+xassert_assign($Admin, true, "action,paper,tag\ntag,8,fArt#4\n");
+assert_search_papers($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
+
+$paper8 = $Conf->paperRow(8, $user_chair);
+xassert_eqq($paper8->tag_value("fart"), 4.0);
+xassert(strpos($paper8->all_tags_text(), " fArt#") !== false);
+
 // round searches
 assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");
