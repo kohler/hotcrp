@@ -164,6 +164,9 @@ span.nb {
 .childfold {
 	cursor: pointer;
 }
+.wait, body.wait input, body.wait button {
+	cursor: wait !important;
+}
 
 
 /* generic vertical styles */
