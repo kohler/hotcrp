@@ -325,10 +325,16 @@ class MinCostMaxFlow {
             $v->npos = 0;
         }
         $this->pushrelabel_make_distance();
-        foreach ($this->source->e as $e) {
-            $e->flow = $e->cap;
-            $e->dst->excess += $e->cap;
-            $e->src->excess -= $e->cap;
+        foreach ($this->e as $e) {
+            if ($e->src === $this->source)
+                $f = $e->cap;
+            else if ($e->mincap > 0)
+                $f = $e->mincap;
+            else
+                continue;
+            $e->flow = $f;
+            $e->dst->excess += $f;
+            $e->src->excess -= $f;
         }
 
         // initialize list
