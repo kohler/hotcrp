@@ -636,7 +636,8 @@ class ReviewAssigner extends Assigner {
                 $t .= ' <span class="revround" title="Review round">'
                     . htmlspecialchars($this->round) . '</span>';
             if (self::$prefinfo
-                && ($pref = get(self::$prefinfo, "$this->pid $this->cid")))
+                && ($cpref = get(self::$prefinfo, $this->cid))
+                && ($pref = get($cpref, $this->pid)))
                 $t .= unparse_preference_span($pref);
         } else
             $t = 'clear ' . $t . ' review';
@@ -864,7 +865,8 @@ class ConflictAssigner extends Assigner {
         else
             $t .= "(remove conflict)";
         if (ReviewAssigner::$prefinfo
-            && ($pref = get(ReviewAssigner::$prefinfo, "$this->pid $this->cid")))
+            && ($cpref = get(ReviewAssigner::$prefinfo, $this->cid))
+            && ($pref = get($cpref, $this->pid)))
             $t .= unparse_preference_span($pref);
         return $t;
     }

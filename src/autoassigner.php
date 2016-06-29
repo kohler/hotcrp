@@ -93,7 +93,7 @@ class Autoassigner {
             if (!isset($papers[$row[0]]) || !isset($this->pcm[$row[1]]))
                 continue;
             $this->ass[] = "$row[0],conflict," . $this->pcm[$row[1]]->email;
-            $this->prefinfo["$row[0] $row[1]"] = $row[2];
+            $this->prefinfo[(int) $row[1]][(int) $row[0]] = $row[2];
         }
         Dbl::free($result);
     }
@@ -130,7 +130,7 @@ class Autoassigner {
             $q .= " and reviewType={$reviewtype}";
         $result = Dbl::qe($q . " group by contactId", array_keys($this->pcm));
         while (($row = edb_row($result)))
-            $this->load[$row[0]] = (int) $row[1];
+            $this->load[(int) $row[0]] = (int) $row[1];
         Dbl::free($result);
     }
 
@@ -138,7 +138,7 @@ class Autoassigner {
         $q = "select {$action}ContactId, count(paperId) from Paper where paperId ?A group by {$action}ContactId";
         $result = Dbl::qe($q, $this->papersel);
         while (($row = edb_row($result)))
-            $this->load[$row[0]] = (int) $row[1];
+            $this->load[(int) $row[0]] = (int) $row[1];
         Dbl::free($result);
     }
 
@@ -184,7 +184,7 @@ class Autoassigner {
                 $topic_interest_score = $row->topic_interest_score($p);
                 if (($exp = $row->expertise) !== null)
                     $exp = (int) $exp;
-                $this->prefinfo["$row->paperId $row->contactId"] = array($row->preference, $exp, $topic_interest_score);
+                $this->prefinfo[$row->contactId][$row->paperId] = array($row->preference, $exp, $topic_interest_score);
                 if ($row->myReviewType == $reviewtype)
                     $eassa[$row->paperId] = self::EOLDASSIGN;
                 else if ($row->myReviewType > 0)
