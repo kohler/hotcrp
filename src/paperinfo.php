@@ -793,7 +793,7 @@ class PaperInfo {
     public function submitted_reviewers() {
         if (!property_exists($this, "reviewContactIds"))
             $this->load_score_array(true, ["contactId", "reviewContactIds"]);
-        return json_decode("[" . ($this->allReviewContactIds ? : "") . "]");
+        return json_decode("[" . ($this->reviewContactIds ? : "") . "]");
     }
 
     public function viewable_submitted_reviewers($contact, $forceShow) {
