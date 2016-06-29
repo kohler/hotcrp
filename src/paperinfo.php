@@ -332,7 +332,7 @@ class PaperInfo {
             return $ci ? $ci->review_type : 0;
         }
         if (!isset($this->allReviewTypes) && isset($this->reviewTypes)
-            && ($x = get($this->submitted_review_types())) !== null)
+            && ($x = get($this->submitted_review_types(), $cid)) !== null)
             return $x;
         return get($this->all_review_types(), $cid);
     }
