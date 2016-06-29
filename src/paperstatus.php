@@ -699,7 +699,7 @@ class PaperStatus {
         return join(",", $x);
     }
 
-    static function options_sql($pj, $paperid) {
+    static private function options_sql($pj, $paperid) {
         $q = [];
         foreach (get($pj, "parsed_options", []) as $id => $ovs)
             foreach ($ovs as $ov) {
@@ -972,7 +972,11 @@ class PaperStatus {
         // update PaperOption
         if (get($pj, "options")) {
             $options = convert_to_utf8(self::options_sql($pj, $paperid));
-            $old_options = self::options_sql($old_pj, $paperid);
+            if ($old_pj) {
+                $this->check_options($old_pj);
+                $old_options = self::options_sql($old_pj, $paperid);
+            } else
+                $old_options = "";
             if ($options !== $old_options) {
                 $result = Dbl::qe("delete from PaperOption where paperId=$paperid and optionId?a", array_keys($pj->parsed_options));
                 if ($options)
