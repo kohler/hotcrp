@@ -442,19 +442,32 @@ class Autoassigner {
         }
     }
 
-    private function assign_mcmf_once(&$papers, $action, $round, $nperpc, $xpapers) {
+    private function assign_mcmf_once(&$papers, $action, $round, $nperpc) {
         global $Conf;
         $m = new MinCostMaxFlow;
         $m->add_progressf(array($this, "mcmf_progress"));
-        $papers = array_filter($papers, function ($ct) { return $ct > 0; });
         $this->ndesired = $this->assign_desired($papers, $nperpc);
         $this->mcmf_max_cost = null;
         $this->set_progress("Preparing assignment optimizer" . $this->mcmf_round_descriptor);
+        // existing assignment counts
+        $ceass = array_fill_keys(array_keys($this->pcm), 0);
+        $peass = array_fill_keys($this->papersel, 0);
+        foreach ($this->eass as $cid => $ps) {
+            foreach ($ps as $pid => $at)
+                if (($at == self::ENEWASSIGN
+                     || ($at >= self::EOTHERASSIGN && $this->balance !== self::BALANCE_NEW))
+                    && isset($peass[$pid])) {
+                    ++$ceass[$cid];
+                    ++$peass[$pid];
+                }
+        }
         // paper nodes
         $nass = 0;
         foreach ($papers as $pid => $ct) {
+            if ($ct <= 0 && $peass[$pid] <= 0)
+                continue;
             $m->add_node("p$pid", "p");
-            $m->add_edge("p$pid", ".sink", $xpapers ? $xpapers[$pid] : $ct, 0);
+            $m->add_edge("p$pid", ".sink", $peass[$pid] + $ct, 0, $peass[$pid]);
             $nass += $ct;
         }
         // user nodes
@@ -469,6 +482,8 @@ class Autoassigner {
                 for ($l = $this->load[$cid]; $l < $maxload; ++$l)
                     $m->add_edge(".source", "u$cid", 1, self::COSTPERPAPER * ($l - $minload));
             }
+            if ($ceass[$cid])
+                $m->add_edge(".source", "u$cid", $ceass[$cid], 0, $ceass[$cid]);
         }
         // cost determination
         $cost = array();
@@ -494,27 +509,26 @@ class Autoassigner {
         }
         // paper <-> contact map
         $bpdone = array();
-        foreach ($papers as $pid => $ct)
+        foreach ($papers as $pid => $ct) {
+            if ($ct <= 0 && $peass[$pid] <= 0)
+                continue;
             foreach ($this->pcm as $cid => $p) {
-                if (!$this->eass[$cid][$pid]) {
-                    $emincap = 0;
-                    $ecost = $cost[$cid][$pid];
-                } else if ($this->eass[$cid][$pid] == self::EOLDASSIGN && $xpapers) {
-                    $emincap = 1;
-                    $ecost = 0;
-                    $m->add_edge(".source", "u$cid", 1, 0, 1);
-                } else
+                $eass = $this->eass[$cid][$pid];
+                if ($eass == self::ENOASSIGN
+                    || ($eass && $eass < self::ENEWASSIGN && $this->balance == self::BALANCE_NEW)
+                    || (!$eass && $ct <= 0))
                     continue;
                 if (isset($bpclass[$cid])) {
-                    $x = "b{$pid}." . $bpclass[$cid];
-                    if (!$m->node_exists($x)) {
-                        $m->add_node($x, "b");
-                        $m->add_edge($x, "p$pid", 1, 0);
+                    $dst = "b{$pid}." . $bpclass[$cid];
+                    if (!$m->node_exists($dst)) {
+                        $m->add_node($dst, "b");
+                        $m->add_edge($dst, "p$pid", 1, 0);
                     }
                 } else
-                    $x = "p$pid";
-                $m->add_edge("u$cid", $x, 1, $ecost, $emincap);
+                    $dst = "p$pid";
+                $m->add_edge("u$cid", $dst, 1, $cost[$cid][$pid], $eass ? 1 : 0);
             }
+        }
         // run MCMF
         $this->mcmf = $m;
         $m->shuffle();
@@ -541,11 +555,11 @@ class Autoassigner {
         return $nassigned;
     }
 
-    private function assign_mcmf(&$papers, $action, $round, $nperpc, $xpapers) {
+    private function assign_mcmf(&$papers, $action, $round, $nperpc) {
         $this->mcmf_round_descriptor = "";
         $this->mcmf_optimizing_for = "Optimizing assignment for preferences and balance";
         $mcmf_round = 1;
-        while ($this->assign_mcmf_once($papers, $action, $round, $nperpc, $xpapers)) {
+        while ($this->assign_mcmf_once($papers, $action, $round, $nperpc)) {
             $nmissing = 0;
             foreach ($papers as $pid => $ct)
                 if ($ct > 0)
@@ -562,13 +576,13 @@ class Autoassigner {
         }
     }
 
-    private function assign_method(&$papers, $action, $round, $nperpc, $xpapers = null) {
+    private function assign_method(&$papers, $action, $round, $nperpc) {
         if ($this->method == self::METHOD_RANDOM)
             $this->assign_randomly($papers, $action, $round, $nperpc);
         else if ($this->method == self::METHOD_STUPID)
             $this->assign_stupidly($papers, $action, $round, $nperpc);
         else
-            $this->assign_mcmf($papers, $action, $round, $nperpc, $xpapers);
+            $this->assign_mcmf($papers, $action, $round, $nperpc);
     }
 
 
@@ -642,16 +656,13 @@ class Autoassigner {
             $this->balance_reviews($reviewtype);
         $this->preferences_review($reviewtype);
         $papers = array_fill_keys($this->papersel, $nass);
-        $xpapers = $papers;
         $result = Dbl::qe("select paperId, count(reviewId) from PaperReview where reviewType={$reviewtype} group by paperId");
         while (($row = edb_row($result)))
-            if (isset($papers[$row[0]])) {
+            if (isset($papers[$row[0]]))
                 $papers[$row[0]] = max($nass - $row[1], 0);
-                $xpapers[$row[0]] = max($nass, $row[1]);
-            }
         Dbl::free($result);
         list($action, $round) = $this->analyze_reviewtype($reviewtype, $round);
-        $this->assign_method($papers, $action, $round, null, $xpapers);
+        $this->assign_method($papers, $action, $round, null);
         $this->check_missing_assignments($papers, "rev");
     }
 
