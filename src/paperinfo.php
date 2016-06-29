@@ -794,7 +794,7 @@ class PaperInfo {
         if (empty($this->$ck))
             return array();
         $ka = explode(",", $this->$ck);
-        $va = json_decode("[" . $this->$k . "]", true);
+        $va = json_decode("[" . $this->$k . "]", true); // json_decode produces int values
         return count($ka) == count($va) ? array_combine($ka, $va) : false;
     }
 
