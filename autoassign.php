@@ -614,9 +614,9 @@ echo "</tbody></table></div>\n";
 
 // Load balancing
 echo "<h3>Load balancing</h3>";
-doRadio('balance', 'new', "Spread new assignments equally among selected PC members");
+doRadio('balance', 'new', "New assignments—spread new assignments equally among selected PC members");
 echo "<br />";
-doRadio('balance', 'all', "Spread assignments so that selected PC members have roughly equal overall load");
+doRadio('balance', 'all', "All assignments—spread assignments so that selected PC members have roughly equal overall load");
 
 
 // Method

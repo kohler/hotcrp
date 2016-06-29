@@ -4,9 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Autoassigner {
-    const BALANCE_NEW = 0;
-    const BALANCE_ALL = 1;
-
     private $pcm;
     private $badpairs = array();
     private $papersel;
@@ -18,6 +15,7 @@ class Autoassigner {
     private $pref_groups;
     private $method = self::METHOD_MCMF;
     private $balance = self::BALANCE_NEW;
+    private $review_gadget = self::REVIEW_GADGET_DEFAULT;
     private $progressf = array();
     private $mcmf;
     private $mcmf_round_descriptor; // for use in MCMF progress
@@ -30,6 +28,12 @@ class Autoassigner {
     const METHOD_RANDOM = 1;
     const METHOD_STUPID = 2;
 
+    const BALANCE_NEW = 0;
+    const BALANCE_ALL = 1;
+
+    const REVIEW_GADGET_DEFAULT = 0;
+    const REVIEW_GADGET_EXPERTISE = 1;
+
     const ENOASSIGN = 1;
     const EOTHERASSIGN = 2; // order matters
     const EOLDASSIGN = 3;
@@ -40,6 +44,8 @@ class Autoassigner {
     public function __construct($papersel) {
         $this->select_pc(array_keys(pcMembers()));
         $this->papersel = $papersel;
+        if (opt("autoassignReviewGadget") === "expertise")
+            $this->review_gadget = self::REVIEW_GADGET_EXPERTISE;
     }
 
     public function select_pc($pcids) {
@@ -72,6 +78,10 @@ class Autoassigner {
 
     public function set_method($method) {
         $this->method = $method;
+    }
+
+    public function set_review_gadget($review_gadget) {
+        $this->review_gadget = $review_gadget;
     }
 
     public function add_progressf($progressf) {
@@ -464,10 +474,20 @@ class Autoassigner {
         // paper nodes
         $nass = 0;
         foreach ($papers as $pid => $ct) {
-            if ($ct <= 0 && $peass[$pid] <= 0)
+            if (($tct = $peass[$pid] + $ct) <= 0)
                 continue;
             $m->add_node("p$pid", "p");
-            $m->add_edge("p$pid", ".sink", $peass[$pid] + $ct, 0, $peass[$pid]);
+            $m->add_edge("p$pid", ".sink", $tct, 0, $peass[$pid]);
+            if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE) {
+                $m->add_node("p{$pid}x", "px");
+                $m->add_node("p{$pid}y", "py");
+                $m->add_node("p{$pid}xy", "pxy");
+                $m->add_edge("p{$pid}x", "p{$pid}xy", 1, -200);
+                $m->add_edge("p{$pid}x", "p{$pid}y", $tct, 0);
+                $m->add_edge("p{$pid}y", "p{$pid}xy", 2, -140);
+                $m->add_edge("p{$pid}y", "p$pid", $tct, 0);
+                $m->add_edge("p{$pid}xy", "p$pid", 2, 0);
+            }
             $nass += $ct;
         }
         // user nodes
@@ -524,6 +544,14 @@ class Autoassigner {
                         $m->add_node($dst, "b");
                         $m->add_edge($dst, "p$pid", 1, 0);
                     }
+                } else if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE) {
+                    $exp = $this->prefinfo[$cid][$pid][1];
+                    if ($exp > 0)
+                        $dst = "p{$pid}x";
+                    else if ($exp == 0)
+                        $dst = "p{$pid}y";
+                    else
+                        $dst = "p$pid";
                 } else
                     $dst = "p$pid";
                 $m->add_edge("u$cid", $dst, 1, $cost[$cid][$pid], $eass ? 1 : 0);
