@@ -153,57 +153,39 @@ class Autoassigner {
         $time = microtime(true);
         $this->reset_prefs();
 
-        // first load topics
-        $topicIds = PaperInfo::make_topic_map($this->papersel);
+        // first load refusals
+        $result = Dbl::qe("select paperId, contactId from PaperReviewRefused where paperId ?a", $this->papersel);
+        while (($row = edb_row($result)))
+            $this->eass[(int) $row[1]][(int) $row[0]] = self::ENOASSIGN;
 
-        $query = "select Paper.paperId, ? contactId,
-            coalesce(PaperConflict.conflictType, 0) as conflictType,
-            coalesce(PaperReviewPreference.preference, 0) as preference,
-            PaperReviewPreference.expertise,
-            coalesce(PaperReview.reviewType, 0) as myReviewType,
-            coalesce(PaperReview.reviewSubmitted, 0) as myReviewSubmitted,
-            Paper.outcome,
-            coalesce(PRR.contactId, 0) as refused,
-            Paper.managerContactId
-        from Paper
-        left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=?)
-        left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=?)
-        left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=?)
-        left join PaperReviewRefused PRR on (PRR.paperId=Paper.paperId and PRR.contactId=?)
-        where Paper.paperId ?a
-        group by Paper.paperId";
-
+        // then load preferences
+        $query = $Conf->paperQuery(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "assignments" => true, "tags" => $Conf->check_track_sensitivity(Track::ASSREV)]);
+        $result = Dbl::qe_raw($query);
         $nmade = 0;
-        foreach ($this->pcm as $cid => $p) {
-            $result = Dbl::qe($query, $cid, $cid, $cid, $cid, $cid, $this->papersel);
-            $prefa = &$this->prefs[$cid];
-            $eassa = &$this->eass[$cid];
-
-            while (($row = PaperInfo::fetch($result, true))) {
-                $row->topicIds = get($topicIds, $row->paperId);
+        while (($row = PaperInfo::fetch($result, null))) {
+            $pid = $row->paperId;
+            foreach ($this->pcm as $cid => $p) {
                 $topic_interest_score = $row->topic_interest_score($p);
-                if (($exp = $row->expertise) !== null)
-                    $exp = (int) $exp;
-                $this->prefinfo[$row->contactId][$row->paperId] = array($row->preference, $exp, $topic_interest_score);
-                if ($row->myReviewType == $reviewtype)
-                    $eassa[$row->paperId] = self::EOLDASSIGN;
-                else if ($row->myReviewType > 0)
-                    $eassa[$row->paperId] = self::EOTHERASSIGN;
-                else if ($row->conflictType > 0 || $row->refused > 0
+                $px = $row->reviewer_preference($p);
+                $rt = $row->review_type($p);
+                $this->prefinfo[$cid][$pid] = [$px[0], $px[1], $topic_interest_score];
+                if ($rt == $reviewtype)
+                    $this->eass[$cid][$pid] = self::EOLDASSIGN;
+                else if ($rt)
+                    $this->eass[$cid][$pid] = self::EOTHERASSIGN;
+                else if ($row->conflict_type($p)
                          || !$p->can_accept_review_assignment($row))
-                    $eassa[$row->paperId] = self::ENOASSIGN;
-                if ($row->preference)
-                    $prefa[$row->paperId] = max($row->preference, -1000);
+                    $this->eass[$cid][$pid] = self::ENOASSIGN;
+                if ($px[0])
+                    $this->prefs[$cid][$pid] = max($px[0], -1000);
                 else
-                    $prefa[$row->paperId] = $topic_interest_score / 100;
+                    $this->prefs[$cid][$pid] = $topic_interest_score / 100;
             }
-
-            Dbl::free($result);
             ++$nmade;
-            if ($nmade % 4 == 0)
-                $this->set_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->pcm) + 0.5)));
-            unset($prefa, $eassa);
+            if ($nmade % 16 == 0)
+                $this->set_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->papersel) + 0.5)));
         }
+        Dbl::free($result);
         $this->make_pref_groups();
 
         // need to populate review assignments for badpairs not in `pcm`
