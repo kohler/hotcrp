@@ -239,8 +239,22 @@ class PaperInfo {
             $this->_contact_info = array();
             $this->_contact_info_rights_version = Contact::$rights_version;
         }
-        if (!array_key_exists($cid, $this->_contact_info))
-            PaperContactInfo::load_into($this->_contact_info, $this->paperId, $cid, $rev_tokens);
+        if (!array_key_exists($cid, $this->_contact_info)) {
+            if (!$rev_tokens && property_exists($this, "allReviewNeedsSubmit")) {
+                $ci = new PaperContactInfo;
+                $ci->contactId = $cid;
+                $ci->paperId = $this->paperId;
+                if (($c = get($this->conflicts(), $cid)))
+                    $ci->conflict_type = $c->conflictType;
+                $ci->review_type = $this->review_type($cid);
+                $rs = $this->review_cid_int_array(false, "reviewSubmitted", "allReviewSubmitted");
+                $ci->review_submitted = get($rs, $cid, 0);
+                $rs = $this->review_cid_int_array(false, "reviewNeedsSubmit", "allReviewNeedsSubmit");
+                $ci->review_needs_submit = get($rs, $cid, 1);
+                $this->_contact_info[$cid] = $ci;
+            } else
+                PaperContactInfo::load_into($this->_contact_info, $this->paperId, $cid, $rev_tokens);
+        }
         return $this->_contact_info[$cid];
     }
 
