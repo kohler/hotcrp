@@ -774,10 +774,11 @@ class PaperInfo {
 
     private function review_cid_int_array($restriction, $basek, $k) {
         $ck = $restriction ? "reviewContactIds" : "allReviewContactIds";
-        if (property_exists($this, $ck) && !$this->$ck)
-            return array();
-        if (!property_exists($this, $k) || !property_exists($this, $ck))
+        if (!property_exists($this, $ck)
+            || (!empty($this->$ck) && !property_exists($this, $k)))
             $this->load_score_array($restriction, [$basek, $k, "contactId", $ck]);
+        if (empty($this->$ck))
+            return array();
         $ka = explode(",", $this->$ck);
         $va = json_decode("[" . $this->$k . "]", true);
         return count($ka) == count($va) ? array_combine($ka, $va) : false;
