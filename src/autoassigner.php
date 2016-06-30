@@ -3,6 +3,16 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
+class AutoassignerCosts implements JsonSerializable {
+    public $assignment = 100;
+    public $preference = 60;
+    public $expertise_x = -200;
+    public $expertise_y = -140;
+    public function jsonSerialize() {
+        return get_object_vars($this);
+    }
+}
+
 class Autoassigner {
     private $pcm;
     private $badpairs = array();
@@ -16,6 +26,7 @@ class Autoassigner {
     private $method = self::METHOD_MCMF;
     private $balance = self::BALANCE_NEW;
     private $review_gadget = self::REVIEW_GADGET_DEFAULT;
+    public $costs;
     private $progressf = array();
     private $mcmf;
     private $mcmf_round_descriptor; // for use in MCMF progress
@@ -39,13 +50,10 @@ class Autoassigner {
     const EOLDASSIGN = 3;
     const ENEWASSIGN = 4;
 
-    const COSTPERPAPER = 100;
-
     public function __construct($papersel) {
         $this->select_pc(array_keys(pcMembers()));
         $this->papersel = $papersel;
-        if (opt("autoassignReviewGadget") === "expertise")
-            $this->review_gadget = self::REVIEW_GADGET_EXPERTISE;
+        $this->costs = new AutoassignerCosts;
     }
 
     public function select_pc($pcids) {
@@ -482,9 +490,9 @@ class Autoassigner {
                 $m->add_node("p{$pid}x", "px");
                 $m->add_node("p{$pid}y", "py");
                 $m->add_node("p{$pid}xy", "pxy");
-                $m->add_edge("p{$pid}x", "p{$pid}xy", 1, -200);
+                $m->add_edge("p{$pid}x", "p{$pid}xy", 1, $this->costs->expertise_x);
                 $m->add_edge("p{$pid}x", "p{$pid}y", $tct, 0);
-                $m->add_edge("p{$pid}y", "p{$pid}xy", 2, -140);
+                $m->add_edge("p{$pid}y", "p{$pid}xy", 2, $this->costs->expertise_y);
                 $m->add_edge("p{$pid}y", "p$pid", $tct, 0);
                 $m->add_edge("p{$pid}xy", "p$pid", 2, 0);
             }
@@ -500,7 +508,7 @@ class Autoassigner {
                 $m->add_edge(".source", "u$cid", $nperpc, 0);
             else {
                 for ($l = $this->load[$cid]; $l < $maxload; ++$l)
-                    $m->add_edge(".source", "u$cid", 1, self::COSTPERPAPER * ($l - $minload));
+                    $m->add_edge(".source", "u$cid", 1, $this->costs->assignment * ($l - $minload));
             }
             if ($ceass[$cid])
                 $m->add_edge(".source", "u$cid", $ceass[$cid], 0, $ceass[$cid]);
@@ -510,7 +518,7 @@ class Autoassigner {
         foreach ($this->pcm as $cid => $p) {
             $ppg = $this->pref_groups[$cid];
             foreach ($ppg as $pgi => $pg) {
-                $adjusted_pgi = (int) ($pgi * 64 / count($ppg));
+                $adjusted_pgi = (int) ($pgi * $this->costs->preference / count($ppg));
                 foreach ($pg->pids as $pid)
                     $cost[$cid][$pid] = $adjusted_pgi;
             }

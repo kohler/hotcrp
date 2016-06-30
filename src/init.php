@@ -105,6 +105,7 @@ set_path_variables();
 class SiteLoader {
     static $map = [
         "AssignmentSet" => "src/assigners.php",
+        "AutoassignerCosts" => "src/autoassigner.php",
         "BanalSettings" => "src/settings/s_subform.php",
         "CapabilityManager" => "src/capability.php",
         "ColumnErrors" => "lib/column.php",

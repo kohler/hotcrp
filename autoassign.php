@@ -148,6 +148,19 @@ class AutoassignerInterface {
     private $live;
     public $ok = false;
 
+    static public function current_costs($qreq) {
+        $costs = new AutoassignerCosts;
+        if (($x = opt("autoassignCosts"))
+            && ($x = json_decode($x))
+            && is_object($x))
+            $costs = $x;
+        foreach (get_object_vars($costs) as $k => $v)
+            if ($qreq && isset($qreq["{$k}_cost"])
+                && ($v = cvtint($qreq["{$k}_cost"], null)) !== null)
+                $costs->$k = $v;
+        return $costs;
+    }
+
     public function check() {
         global $Error, $Qreq;
 
@@ -336,6 +349,17 @@ class AutoassignerInterface {
             $autoassigner->set_method(Autoassigner::METHOD_RANDOM);
         else
             $autoassigner->set_method(Autoassigner::METHOD_MCMF);
+        if (opt("autoassignReviewGadget") === "expertise")
+            $autoassigner->set_review_gadget(Autoassigner::REVIEW_GADGET_EXPERTISE);
+        // save costs
+        $autoassigner->costs = self::current_costs($Qreq);
+        $costs_json = json_encode($autoassigner->costs);
+        if ($costs_json !== opt("autoassignCosts")) {
+            if ($costs_json === json_encode(new AutoassignerCosts))
+                $Conf->save_setting("opt.autoassignCosts", null);
+            else
+                $Conf->save_setting("opt.autoassignCosts", 1, $costs_json);
+        }
         $autoassigner->add_progressf(array($this, "progress"));
         $this->live = true;
         echo '<div id="propass" class="propass">';
@@ -416,7 +440,7 @@ function divClass($name, $classes = null) {
         return '<div>';
 }
 
-echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE))),
+echo Ht::form(hoturl_post("autoassign", array("profile" => $Qreq->profile, "seed" => $Qreq->seed, "XDEBUG_PROFILE" => $Qreq->XDEBUG_PROFILE)), ["id" => "autoassignform"]),
     "<div class='helpside'><div class='helpinside'>
 Assignment methods:
 <ul><li><a href='", hoturl("autoassign"), "' class='q'><strong>Automatic</strong></a></li>
@@ -430,18 +454,19 @@ Types of PC review:
   <dt>" . review_type_icon(REVIEW_SECONDARY) . " Secondary</dt><dd>Mandatory, may be delegated to external reviewers</dd>
   <dt>" . review_type_icon(REVIEW_PC) . " Optional</dt><dd>May be declined</dd></dl>
 </div></div>\n";
+echo Ht::unstash_script("hiliter_children(\"#autoassignform\")");
 
 // paper selection
 echo divClass("pap", "aahc"), "<h3>Paper selection</h3>";
 if (!isset($Qreq->q)) // XXX redundant
     $Qreq->q = join(" ", $SSel->selection());
-echo Ht::entry_h("q", $Qreq->q,
-                 array("id" => "autoassignq", "placeholder" => "(All)",
-                       "size" => 40, "title" => "Enter paper numbers or search terms",
-                       "class" => "hotcrp_searchbox",
-                       "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
+echo Ht::entry("q", $Qreq->q,
+               array("id" => "autoassignq", "placeholder" => "(All)",
+                     "size" => 40, "title" => "Enter paper numbers or search terms",
+                     "class" => "hotcrp_searchbox",
+                     "onfocus" => 'autosub("requery",this)')), " &nbsp;in &nbsp;";
 if (count($tOpt) > 1)
-    echo Ht::select("t", $tOpt, $Qreq->t, array("onchange" => "hiliter(\"requery\")"));
+    echo Ht::select("t", $tOpt, $Qreq->t);
 else
     echo join("", $tOpt);
 echo " &nbsp; ", Ht::submit("requery", "List", ["id" => "requery", "class" => "btn btn-alertable"]);
@@ -624,6 +649,16 @@ echo "<h3>Assignment method</h3>";
 doRadio('method', 'mcmf', "Globally optimal assignment");
 echo "<br />";
 doRadio('method', 'random', "Random good assignment");
+if (opt("autoassignReviewGadget") === "expertise") {
+    echo "<div><strong>Costs:</strong> ";
+    $costs = AutoassignerInterface::current_costs($Qreq);
+    foreach (get_object_vars($costs) as $k => $v)
+        echo '<span style="display:inline-block;margin-right:2em">',
+            Ht::label($k, "{$k}_cost"),
+            "&nbsp;", Ht::entry("{$k}_cost", $v, ["size" => 4]),
+            '</span>';
+    echo "</div>\n";
+}
 
 
 // Create assignment
