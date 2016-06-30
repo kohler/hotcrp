@@ -146,6 +146,7 @@ class SiteLoader {
         "tagreport" => ["PaperApi::tagreport_api", self::API_GET],
         "trackerstatus" => ["MeetingTracker::trackerstatus_api", self::API_GET], // hotcrp-comet entrypoint
         "votereport" => ["PaperApi::votereport_api", self::API_GET_PAPER],
+        "whoami" => ["PaperApi::whoami_api", self::API_GET]
     ];
     static public function call_api($fn, $user, $qreq, $prow) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow

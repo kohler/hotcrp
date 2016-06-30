@@ -336,4 +336,8 @@ class PaperApi {
         $status = $cf->check_document($prow, $doc);
         json_exit(["ok" => $status != CheckFormat::STATUS_ERROR, "status" => $status, "response" => $cf->document_report($prow, $doc)]);
     }
+
+    static function whoami_api($user, $qreq, $prow) {
+        json_exit(["ok" => true, "email" => $user->email]);
+    }
 }
