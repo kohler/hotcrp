@@ -701,7 +701,7 @@ class PaperStatus {
 
     static private function options_sql($pj, $paperid) {
         $q = [];
-        foreach (get($pj, "parsed_options", []) as $id => $ovs)
+        foreach ($pj->parsed_options as $id => $ovs)
             foreach ($ovs as $ov) {
                 if (is_int($ov))
                     $q[] = "($paperid,$id,$ov,null)";
@@ -972,7 +972,7 @@ class PaperStatus {
         // update PaperOption
         if (get($pj, "options")) {
             $options = convert_to_utf8(self::options_sql($pj, $paperid));
-            if ($old_pj) {
+            if ($old_pj && isset($old_pj->options)) {
                 $this->check_options($old_pj);
                 $old_options = self::options_sql($old_pj, $paperid);
             } else
