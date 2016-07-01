@@ -2860,7 +2860,7 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_pc
             || ($rights->allow_pc_broad && $Conf->tag_seeall)
-            || ($rights->allow_administer || TagInfo::has_sitewide());
+            || (($this->privChair || $rights->allow_administer) && TagInfo::has_sitewide());
     }
 
     function can_view_most_tags(PaperInfo $prow = null, $forceShow = null) {
