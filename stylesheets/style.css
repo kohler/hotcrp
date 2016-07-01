@@ -146,7 +146,7 @@ a.editor {
 	margin: -2px 0 -2px 0;
 	padding: 2px 0 2px 19px;
 }
-a img {
+a > img {
 	border: none;
 }
 span.sep {
