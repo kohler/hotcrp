@@ -9,16 +9,16 @@ class MeetingTracker {
         $tracker = $Conf->setting_json("tracker");
         if ($tracker && (!$tracker->trackerid || $tracker->update_at >= $Now - 150))
             return $tracker;
-        else {
-            $p = $tracker ? $tracker->position_at : 0;
-            return (object) ["trackerid" => false, "position_at" => $p];
-        }
+        else if ($tracker)
+            return (object) ["trackerid" => false, "position_at" => $tracker->position_at + 0.1];
+        else
+            return (object) ["trackerid" => false, "position_at" => 0];
     }
 
     static private function next_position_at() {
         global $Conf;
         $tracker = $Conf->setting_json("tracker");
-        return max(microtime(true), $tracker ? $tracker->position_at + 0.1 : 0);
+        return max(microtime(true), $tracker ? $tracker->position_at + 0.2 : 0);
     }
 
     static function clear() {
