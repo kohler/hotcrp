@@ -2924,8 +2924,7 @@ class PaperSearch {
                 return false;
             if ($t->type === "tag"
                 && $this->contact->privChair
-                && $row->managerContactId > 0
-                && $row->paperTags) {
+                && $row->managerContactId > 0) {
                 $fieldname = $t->link;
                 $row->$fieldname = $t->value->evaluate($this->contact, $row->viewable_tags($this->contact)) ? 1 : 0;
             }
