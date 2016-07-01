@@ -2903,9 +2903,6 @@ class PaperSearch {
         return $t->value->wordcountexpr->test($this->_reviewWordCounts[$rrow->reviewId]);
     }
 
-    private function _clauseTermCheckTags($t, $row) {
-    }
-
     private function _clauseTermCheckFlags($t, $row) {
         $flags = $t->flags;
         if (($flags & self::F_MANAGER)
