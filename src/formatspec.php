@@ -23,7 +23,7 @@ class FormatSpec {
         if ($x && is_string($x)) {
             if (($gt = strpos($x, ">")) !== false)
                 $x = substr($x, 0, $gt);
-            $args = explode(";", $x);
+            $x = explode(";", $x);
             $this->merge1("papersize", get($x, 0, ""));
             $this->merge1("pagelimit", get($x, 1, ""));
             $this->merge1("columns", get($x, 2));
