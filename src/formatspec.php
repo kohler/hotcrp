@@ -17,34 +17,46 @@ class FormatSpec {
         $this->merge($str);
     }
 
-    public function merge($str) {
-        if (is_string($str) && substr($str, 0, 1) === "{")
-            $str = json_decode($str);
-        if (!$str)
-            /* do nothing */;
-        else if (!is_string($str)) {
-            foreach ($str as $k => $v)
-                $this->$k = $v;
-            if (isset($this->bodyleading) && !isset($this->bodylineheight))
-                $this->bodylineheight = $this->bodyleading;
-        } else {
-            if (($gt = strpos($str, ">")) !== false)
-                $str = substr($str, 0, $gt);
-            $x = explode(";", $str);
-            $this->papersize = [];
-            foreach (explode(" OR ", get($x, 0, "")) as $d)
-                if (($dx = self::parse_dimen($d, 2)))
-                    $this->papersize[] = $dx;
-            if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', get($x, 1, ""), $m))
-                $this->pagelimit = isset($m[2]) && $m[2] !== "" ? [$m[1], $m[2]] : [0, $m[1]];
-            $this->columns = cvtint(get($x, 2), null);
-            $this->textblock = self::parse_dimen(get($x, 3), 2);
-            $this->bodyfontsize = self::parse_range(get($x, 4));
-            $this->bodylineheight = self::parse_range(get($x, 5));
+    public function merge($x) {
+        if (is_string($x) && substr($x, 0, 1) === "{")
+            $x = json_decode($x);
+        if ($x && is_string($x)) {
+            if (($gt = strpos($x, ">")) !== false)
+                $x = substr($x, 0, $gt);
+            $args = explode(";", $x);
+            $this->merge1("papersize", get($x, 0, ""));
+            $this->merge1("pagelimit", get($x, 1, ""));
+            $this->merge1("columns", get($x, 2));
+            $this->merge1("textblock", get($x, 3));
+            $this->merge1("bodyfontsize", get($x, 4));
+            $this->merge1("bodylineheight", get($x, 5));
+        } else if ($x && (is_object($x) || is_array($x))) {
+            foreach ($x as $k => $v)
+                $this->merge1($k, $v);
         }
         $this->_is_banal_empty = empty($this->papersize) && !$this->pagelimit
             && !$this->columns && !$this->textblock && !$this->bodyfontsize
             && !$this->bodylineheight;
+    }
+    private function merge1($k, $v) {
+        if ($k === "bodyleading")
+            $k = "bodylineheight";
+        if ($k === "papersize" && (is_string($v) || is_numeric($v))) {
+            $this->papersize = [];
+            foreach (explode(" OR ", $v) as $d)
+                if (($dx = self::parse_dimen($d, 2)))
+                    $this->papersize[] = $dx;
+        } else if ($k === "pagelimit" && (is_string($v) || is_numeric($v))) {
+            if (preg_match('/\A(\d+)(?:\s*(?:-|–)\s*(\d+))?\z/', $v, $m))
+                $this->pagelimit = isset($m[2]) && $m[2] !== "" ? [$m[1], $m[2]] : [0, $m[1]];
+        } else if ($k === "columns" && is_string($v))
+            $this->columns = cvtint($v, null);
+        else if ($k === "textblock" && is_string($v))
+            $this->textblock = self::parse_dimen($v, 2);
+        else if (($k === "bodyfontsize" || $k === "bodylineheight") && (is_string($v) || is_numeric($v)))
+            $this->$k = self::parse_range($v);
+        else
+            $this->$k = $v;
     }
 
     public function is_empty() {

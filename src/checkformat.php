@@ -213,20 +213,6 @@ class CheckFormat implements FormatChecker {
         }
     }
 
-    static public function document_spec($dtype) {
-        global $Conf;
-        $suffix = "";
-        if ($dtype)
-            $suffix = $dtype < 0 ? "_m" . -$dtype : "_" . $dtype;
-        $spec = "";
-        if ($Conf->setting("sub_banal$suffix"))
-            $spec = $Conf->setting_data("sub_banal$suffix", "");
-        $fspec = new FormatSpec($spec);
-        if (($xspec = opt("sub_banal$suffix")))
-            $fspec->merge($xspec);
-        return $fspec;
-    }
-
     public function clear() {
         $this->errf = $this->metadata_updates = [];
         $this->status = self::STATUS_OK;
@@ -296,8 +282,11 @@ class CheckFormat implements FormatChecker {
     }
 
     public function spec($dtype) {
-        if (!array_key_exists($dtype, $this->dt_specs))
-            $this->dt_specs[$dtype] = self::document_spec($dtype);
+        if (!array_key_exists($dtype, $this->dt_specs)) {
+            $opt = PaperOption::find_document($dtype);
+            $spec = $opt ? $opt->format_spec() : null;
+            $this->dt_specs[$dtype] = $spec ? : new FormatSpec;
+        }
         return $this->dt_specs[$dtype];
     }
 

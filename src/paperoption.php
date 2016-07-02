@@ -540,6 +540,10 @@ class PaperOption {
     function unparse_page_html($row, PaperOptionValue $ov) {
         return "";
     }
+
+    function format_spec() {
+        return false;
+    }
 }
 
 class CheckboxPaperOption extends PaperOption {
@@ -721,6 +725,20 @@ class DocumentPaperOption extends PaperOption {
         foreach ($ov->documents() as $d)
             return [$d->link_html(htmlspecialchars($this->name), DocumentInfo::L_SMALL), true];
         return "";
+    }
+
+    function format_spec() {
+        global $Conf;
+        $suffix = "";
+        if ($this->id)
+            $suffix = $this->id < 0 ? "_m" . -$this->id : "_" . $this->id;
+        $spec = "";
+        if ($Conf->setting("sub_banal$suffix"))
+            $spec = $Conf->setting_data("sub_banal$suffix", "");
+        $fspec = new FormatSpec($spec);
+        if (($xspec = opt("sub_banal$suffix")))
+            $fspec->merge($xspec);
+        return $fspec;
     }
 }
 
