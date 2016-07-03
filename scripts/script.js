@@ -5156,6 +5156,14 @@ function addattachment(oid) {
     e.childNodes[0].click();
 }
 
+function document_upload() {
+    var oname = this.getAttribute("data-option"), accept = this.getAttribute("data-accept");
+    var file = $('<input type="file" name="' + oname + '" id="' + oname + (accept ? '" accept="' + accept : "") + '" size="30" />').insertAfter(this);
+    $(this).remove();
+    file[0].click();
+    return false;
+}
+
 function dosubmitstripselector(type) {
     return Miniajax.submit(type + "form", function (rv) {
         var sel, p;
