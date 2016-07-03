@@ -651,6 +651,12 @@ span.expander > span.in0 {
 .aabr .aabutsep {
 	float: right;
 }
+.btnp > .btn {
+	margin-left: 0.75em;
+}
+.btnp > .btn:first-child {
+	margin-left: 0;
+}
 
 /* Action area */
 .aa, .aax {
