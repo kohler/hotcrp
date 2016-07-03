@@ -18,9 +18,9 @@ class PaperOptionValue {
         $this->prow = $prow;
         $this->id = $o->id;
         $this->option = $o;
-        $this->assign($values, $data_array, false);
+        $this->assign($values, $data_array);
     }
-    private function assign($values, $data_array, $recurse) {
+    private function assign($values, $data_array) {
         $this->_values = $values;
         $this->_data_array = $data_array;
         if (count($this->_values) > 1 && $this->option->has_attachments()
@@ -89,10 +89,20 @@ class PaperOptionValue {
             else
                 $allopt = $this->prow->options();
             foreach ($allopt as $oid => $option)
-                $option->assign($odata["v"][$oid], $odata["d"][$oid], true);
+                $option->assign($odata["v"][$oid], $odata["d"][$oid]);
             if ($this->_data_array === null)
-                $this->assign($odata["v"][$this->id], $odata["d"][$this->id], true);
+                $this->assign($odata["v"][$this->id], $odata["d"][$this->id]);
         }
+    }
+    public function invalidate() {
+        $result = Dbl::qe("select value, `data` from PaperOption where paperId=? and optionId=?", $this->prow->paperId, $this->id);
+        $values = $data_array = [];
+        while ($result && ($row = $result->fetch_row())) {
+            $values[] = (int) $row[0];
+            $data_array[] = $row[1];
+        }
+        Dbl::free($result);
+        $this->assign($values, $data_array);
     }
 }
 
