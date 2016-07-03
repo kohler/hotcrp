@@ -194,38 +194,30 @@ class DocumentInfo implements JsonSerializable {
         return $this->infoJson;
     }
 
-    public function update_metadata($delta) {
+    public function update_metadata($delta, $quiet = false) {
         global $Conf;
         if ($this->paperStorageId <= 1)
             return false;
-        while (1) {
-            $old_str = null;
-            if (isset($this->infoJson_str) && $this->infoJson_str !== "")
-                $old_str = $this->infoJson_str;
-            $metadata = null;
-            if (is_string($old_str))
-                $metadata = json_decode($old_str);
-            $metadata = is_object($metadata) ? $metadata : (object) [];
-            foreach ($delta as $k => $v)
-                if ($v === null)
-                    unset($metadata->$v);
-                else
-                    $metadata->$k = $v;
-            $metadata_str = count(get_object_vars($metadata)) ? json_encode($metadata) : null;
-            if ($old_str === $metadata_str) // already done
-                return true;
-            else if ($metadata_str !== null && strlen($metadata_str) > 32768) {
-                error_log(caller_landmark() . ": " . $Conf->opt->dbName . ": update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
-                return false;
-            }
-            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson?e", $metadata_str, $this->paperStorageId, $old_str);
-            if ($result->affected_rows != 0)
-                break;
-            $this->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId);
-        }
-        $this->infoJson_str = $metadata_str;
-        $this->infoJson = $metadata;
-        return true;
+        $length_ok = true;
+        $this->infoJson_str = Dbl::compare_and_swap($Conf->dblink,
+            "select infoJson from PaperStorage where paperStorageId=?", [$this->paperStorageId],
+            function ($old) use ($delta, &$length_ok) {
+                $j = is_string($old) ? json_decode($old) : null;
+                $j = is_object($j) ? $j : (object) [];
+                foreach ($delta as $k => $v)
+                    if ($v === null)
+                        unset($j->$k);
+                    else
+                        $j->$k = $v;
+                $new = count(get_object_vars($j)) ? json_encode($j) : null;
+                $length_ok = $new === null || strlen($new) <= 32768;
+                return $length_ok ? $new : $old;
+            },
+            "update PaperStorage set infoJson=?{desired} where paperStorageId=? and infoJson?{expected}e", [$this->paperStorageId]);
+        $this->infoJson = is_string($this->infoJson_str) ? json_decode($this->infoJson_str) : null;
+        if (!$length_ok && !$quiet)
+            error_log(caller_landmark() . ": " . $Conf->opt->dbName . ": update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
+        return $length_ok;
     }
 
     public function npages() {

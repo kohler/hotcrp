@@ -67,6 +67,24 @@ xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
             3);
 xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 3);
 
+// DocumentInfo::update_metadata test
+$paper1 = $Conf->paperRow(1, Contact::find_by_email("chair@_.com"));
+$doc = $paper1->document(DTYPE_SUBMISSION);
+xassert(!!$doc);
+xassert_eqq($doc->metadata(), null);
+xassert($doc->update_metadata(["hello" => 1]));
+xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+            '{"hello":1}');
+xassert($doc->update_metadata(["hello" => 2, "foo" => "bar"]));
+xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+            '{"hello":2,"foo":"bar"}');
+xassert($doc->update_metadata(["hello" => null]));
+xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+            '{"foo":"bar"}');
+xassert(!$doc->update_metadata(["too_long" => str_repeat("!", 32768)], true));
+xassert_eqq(Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $doc->paperStorageId),
+            '{"foo":"bar"}');
+
 // Csv::split_lines tests
 xassert_array_eqq(CsvParser::split_lines(""),
                   array());
