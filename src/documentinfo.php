@@ -202,14 +202,8 @@ class DocumentInfo implements JsonSerializable {
         $this->infoJson_str = Dbl::compare_and_swap($Conf->dblink,
             "select infoJson from PaperStorage where paperStorageId=?", [$this->paperStorageId],
             function ($old) use ($delta, &$length_ok) {
-                $j = is_string($old) ? json_decode($old) : null;
-                $j = is_object($j) ? $j : (object) [];
-                foreach ($delta as $k => $v)
-                    if ($v === null)
-                        unset($j->$k);
-                    else
-                        $j->$k = $v;
-                $new = count(get_object_vars($j)) ? json_encode($j) : null;
+                $j = json_object_replace($old ? json_decode($old) : null, $delta, true);
+                $new = $j ? json_encode($j) : null;
                 $length_ok = $new === null || strlen($new) <= 32768;
                 return $length_ok ? $new : $old;
             },
