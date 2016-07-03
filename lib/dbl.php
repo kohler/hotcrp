@@ -488,6 +488,22 @@ class Dbl {
         return $x;
     }
 
+    static function compare_and_swap($dblink, $value_query, $value_query_args,
+                                     $callback, $update_query, $update_query_args) {
+        while (1) {
+            $result = self::qe_apply($dblink, $value_query, $value_query_args);
+            $value = self::fetch_value($result);
+            $new_value = call_user_func($callback, $value);
+            if ($new_value === $value)
+                return $new_value;
+            $update_query_args["expected"] = $value;
+            $update_query_args["desired"] = $new_value;
+            $result = self::qe_apply($dblink, $update_query, $update_query_args);
+            if ($result->affected_rows)
+                return $new_value;
+        }
+    }
+
     static function log_queries($limit) {
         if (!$limit)
             self::$log_queries = false;

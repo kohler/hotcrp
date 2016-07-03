@@ -51,6 +51,22 @@ xassert_eqq(Dbl::format_query("select a?e, b?e, c?e, d?e", null, 1, 2.1, "e"),
 xassert_eqq(Dbl::format_query("select a?E, b?E, c?E, d?E", null, 1, 2.1, "e"),
             "select a IS NOT NULL, b!=1, c!=2.1, d!='e'");
 
+// Dbl::compare_and_swap test
+Dbl::qe("insert into Settings set name='cmpxchg', value=1");
+xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 1);
+xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
+                                  "select value from Settings where name=?", ["cmpxchg"],
+                                  function ($x) { return $x + 1; },
+                                  "update Settings set value=?{desired} where name=? and value=?{expected}", ["cmpxchg"]),
+            2);
+xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 2);
+xassert_eqq(Dbl::compare_and_swap(Dbl::$default_dblink,
+                                  "select value from Settings where name=?", ["cmpxchg"],
+                                  function ($x) { return $x + 1; },
+                                  "update Settings set value?{desired}e where name=? and value?{expected}e", ["cmpxchg"]),
+            3);
+xassert_eqq(Dbl::fetch_ivalue("select value from Settings where name='cmpxchg'"), 3);
+
 // Csv::split_lines tests
 xassert_array_eqq(CsvParser::split_lines(""),
                   array());
