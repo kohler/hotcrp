@@ -204,10 +204,18 @@ class Dbl {
             $usedargs[$thisarg] = true;
             // argument format
             $arg = get($argv, $thisarg);
-            if ($nextch === "a" || $nextch === "A") {
+            if ($nextch === "e" || $nextch === "E") {
+                if ($arg === null)
+                    $arg = ($nextch === "e" ? " IS NULL" : " IS NOT NULL");
+                else if (is_int($arg) || is_float($arg))
+                    $arg = ($nextch === "e" ? "=" : "!=") . $arg;
+                else
+                    $arg = ($nextch === "e" ? "='" : "!='") . $dblink->real_escape_string($arg) . "'";
+                ++$nextpos;
+            } else if ($nextch === "a" || $nextch === "A") {
                 if ($arg === null)
                     $arg = array();
-                else if (is_int($arg) || is_string($arg))
+                else if (is_int($arg) || is_float($arg) || is_string($arg))
                     $arg = array($arg);
                 foreach ($arg as $x)
                     if (!is_int($x) && !is_float($x)) {
@@ -236,7 +244,7 @@ class Dbl {
             } else {
                 if ($arg === null)
                     $arg = "NULL";
-                else if (!is_int($arg))
+                else if (!is_int($arg) && !is_float($arg))
                     $arg = "'" . $dblink->real_escape_string($arg) . "'";
             }
             // combine

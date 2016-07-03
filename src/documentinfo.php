@@ -218,8 +218,7 @@ class DocumentInfo implements JsonSerializable {
                 error_log(caller_landmark() . ": " . $Conf->opt->dbName . ": update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
                 return false;
             }
-            $ijq = isset($old_str) ? "=" : " is ";
-            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson{$ijq}?", $metadata_str, $this->paperStorageId, $old_str);
+            $result = Dbl::qe("update PaperStorage set infoJson=? where paperStorageId=? and infoJson?e", $metadata_str, $this->paperStorageId, $old_str);
             if ($result->affected_rows != 0)
                 break;
             $this->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId);

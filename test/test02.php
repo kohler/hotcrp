@@ -46,6 +46,10 @@ xassert_eqq(Dbl::format_query_apply("select ?{2}, ?{1}, ?, ?s, ?s, ?s, ?",
 xassert_eqq(Dbl::format_query_apply("select ?{2}, ?{1}, ?{ab}, ?{2}s, ?{1}s, ?{ab}s, ?",
                                     array(1, "a", "ab" => "Woah", "Leftover")),
             "select 'a', 1, 'Woah', a, 1, Woah, 'Leftover'");
+xassert_eqq(Dbl::format_query("select a?e, b?e, c?e, d?e", null, 1, 2.1, "e"),
+            "select a IS NULL, b=1, c=2.1, d='e'");
+xassert_eqq(Dbl::format_query("select a?E, b?E, c?E, d?E", null, 1, 2.1, "e"),
+            "select a IS NOT NULL, b!=1, c!=2.1, d!='e'");
 
 // Csv::split_lines tests
 xassert_array_eqq(CsvParser::split_lines(""),
