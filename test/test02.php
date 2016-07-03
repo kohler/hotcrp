@@ -130,6 +130,12 @@ xassert_eqq(json_decode("[1-2]"), null);
 xassert_eqq(Json::decode("[1,2,3-4,5,6-10,11]"), null);
 xassert_eqq(json_decode("[1,2,3-4,5,6-10,11]"), null);
 
+xassert_eqq(json_encode(json_object_replace(null, ["a" => 1])), '{"a":1}');
+xassert_eqq(json_encode(json_object_replace(["a" => 1], ["a" => 2])), '{"a":2}');
+xassert_eqq(json_encode(json_object_replace((object) ["a" => 1], ["a" => 2])), '{"a":2}');
+xassert_eqq(json_encode(json_object_replace((object) ["a" => 1], ["a" => null])), '{}');
+xassert_eqq(json_encode(json_object_replace((object) ["a" => 1], ["a" => null], true)), 'null');
+
 // SessionList tests
 xassert_eqq(json_encode(SessionList::decode_ids("[1-2]")), "[1,2]");
 xassert_eqq(json_encode(SessionList::decode_ids("[1,2,3-4,5,6-10,11]")), "[1,2,3,4,5,6,7,8,9,10,11]");

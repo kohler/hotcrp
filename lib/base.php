@@ -295,8 +295,16 @@ function array_to_object_recursive($a) {
         return $a;
 }
 
+function object_replace($a, $b) {
+    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v)
+        if ($v === null)
+            unset($a->$k);
+        else
+            $a->$k = $v;
+}
+
 function object_replace_recursive($a, $b) {
-    foreach (get_object_vars($b) as $k => $v)
+    foreach (is_object($b) ? get_object_vars($b) : $b as $k => $v)
         if ($v === null)
             unset($a->$k);
         else if (!property_exists($a, $k)
@@ -305,6 +313,20 @@ function object_replace_recursive($a, $b) {
             $a->$k = $v;
         else
             object_replace_recursive($a->$k, $v);
+}
+
+function json_object_replace($j, $updates, $nullable = false) {
+    if ($j === null)
+        $j = (object) [];
+    else if (is_array($j))
+        $j = (object) $j;
+    object_replace($j, $updates);
+    if ($nullable) {
+        $x = get_object_vars($j);
+        if (empty($x))
+            $j = null;
+    }
+    return $j;
 }
 
 
