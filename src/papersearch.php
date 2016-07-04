@@ -2193,7 +2193,7 @@ class PaperSearch {
 
         while ($str !== "") {
             list($opstr, $nextstr) = self::_searchPopKeyword($str);
-            $op = $opstr ? SearchOperator::$list[$opstr] : null;
+            $op = $opstr ? get(SearchOperator::$list, $opstr) : null;
             if ($opstr && !$op && ($colon = strpos($opstr, ":"))
                 && ($op = SearchOperator::$list[substr($opstr, 0, $colon)])) {
                 $op = clone $op;
