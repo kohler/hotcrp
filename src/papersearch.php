@@ -8,10 +8,11 @@ class SearchOperator {
     public $unary;
     public $precedence;
     public $opinfo;
-    function __construct($what, $unary, $precedence) {
+    function __construct($what, $unary, $precedence, $opinfo = null) {
         $this->op = $what;
         $this->unary = $unary;
         $this->precedence = $precedence;
+        $this->opinfo = $opinfo;
     }
 
     static public $list;
@@ -28,7 +29,7 @@ SearchOperator::$list =
               "XAND" => new SearchOperator("and2", false, 3),
               "XOR" => new SearchOperator("or", false, 3),
               "THEN" => new SearchOperator("then", false, 2),
-              "HIGHLIGHT" => new SearchOperator("highlight", false, 1),
+              "HIGHLIGHT" => new SearchOperator("highlight", false, 1, ""),
               ")" => null);
 
 
@@ -43,7 +44,7 @@ class SearchTerm {
     function __construct($t, $f = 0, $v = null, $other = null) {
         if ($t instanceof SearchOperator) {
             $this->type = $t->op;
-            if ($t->opinfo)
+            if (isset($t->opinfo))
                 $this->set_float("opinfo", $t->opinfo);
         } else
             $this->type = $t;
