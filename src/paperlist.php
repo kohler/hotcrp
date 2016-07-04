@@ -696,7 +696,7 @@ class PaperList {
                 $trclass .= " conflictmark";
         }
         if (($highlightclass = get($this->search->highlightmap, $row->paperId)))
-            $trclass .= " {$highlightclass}mark";
+            $trclass .= " {$highlightclass[0]}highlightmark";
         $rstate->colorindex = 1 - $rstate->colorindex;
         $rstate->last_trclass = $trclass;
         $this->row_attr = [];

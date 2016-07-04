@@ -3379,13 +3379,12 @@ class PaperSearch {
                 $this->_matches[] = $row->paperId;
                 if ($this->thenmap !== null)
                     $this->thenmap[$row->paperId] = $x;
-                if ($need_then)
+                if ($need_then) {
                     for ($j = $qe->nthen; $j < count($qe->value); ++$j)
                         if ($this->_clauseTermCheck($qe->value[$j], $row)
-                            && ($qe->highlights[$j - $qe->nthen] & (1 << $x))) {
-                            $this->highlightmap[$row->paperId] = $qe->highlight_types[$j - $qe->nthen] . "highlight";
-                            break;
-                        }
+                            && ($qe->highlights[$j - $qe->nthen] & (1 << $x)))
+                            $this->highlightmap[$row->paperId][] = $qe->highlight_types[$j - $qe->nthen];
+                }
                 if ($order_anno_tag) {
                     if ($row->has_viewable_tag($order_anno_tag->tag, $this->contact, true))
                         $tag_order[] = [$row->paperId, $row->tag_value($order_anno_tag->tag)];
