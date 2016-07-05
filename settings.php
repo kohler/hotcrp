@@ -226,6 +226,7 @@ class SettingValues {
     private $parsers = array();
     public $save_callbacks = array();
     public $need_lock = array();
+    public $changes = array();
 
     public $req = array();
     public $req_files = array();
@@ -948,7 +949,7 @@ function do_setting_update($sv) {
         $sv->save("clickthrough_submit", null);
 
     // make settings
-    $changedn = [];
+    $sv->changes = [];
     if (!$sv->has_errors()
         && (count($sv->savedv) || count($sv->save_callbacks))) {
         $tables = "Settings write";
@@ -985,7 +986,7 @@ function do_setting_update($sv) {
                 ? !isset($dbsettings[$n])
                 : isset($dbsettings[$n]) && (int) $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1])
                 continue;
-            $changedn[] = $n;
+            $sv->changes[] = $n;
             if ($v !== null) {
                 $aq[] = "(?, ?, ?)";
                 array_push($av, $n, $v[0], $v[1]);
@@ -1002,8 +1003,8 @@ function do_setting_update($sv) {
         }
 
         $Conf->qe_raw("unlock tables");
-        if (count($changedn))
-            $sv->user->log_activity("Updated settings " . join(", ", $changedn));
+        if (!empty($sv->changes))
+            $sv->user->log_activity("Updated settings " . join(", ", $sv->changes));
         $Conf->load_settings();
 
         // contactdb may need to hear about changes to shortName
@@ -1016,7 +1017,7 @@ function do_setting_update($sv) {
     ReviewForm::clear_cache();
     if (!$sv->has_errors()) {
         $Conf->save_session("settings_highlight", $sv->error_fields());
-        if (count($changedn))
+        if (!empty($sv->changes))
             $Conf->confirmMsg("Changes saved.");
         else
             $Conf->warnMsg("No changes.");
