@@ -20,12 +20,11 @@ class PaperOptionValue {
         $this->option = $o;
         $this->assign($values, $data_array);
     }
-    private function assign($values, $data_array) {
+    public function assign($values, $data_array) {
         $this->_values = $values;
         $this->_data_array = $data_array;
-        if (count($this->_values) > 1 && $this->option->has_attachments()
-            && $this->_data_array !== null)
-            array_multisort($this->_data_array, SORT_NUMERIC, $this->_values);
+        if (count($this->_values) > 1 && $this->_data_array !== null)
+            $this->option->sort_values($this->_values, $this->_data_array);
         if (count($this->_values) == 1 || !$this->option->takes_multiple()) {
             $this->value = get($this->_values, 0);
             if (!empty($this->_data_array))
@@ -65,6 +64,12 @@ class PaperOptionValue {
             && ($content = Filer::content($doc)))
             return $content;
         return false;
+    }
+    public function document_by_id($docid) {
+        foreach ($this->documents() as $doc)
+            if ($doc->paperStorageId == $docid)
+                return $doc;
+        return null;
     }
     public function value_count() {
         return count($this->_values);
@@ -441,6 +446,9 @@ class PaperOption {
 
     function takes_multiple() {
         return false;
+    }
+
+    function sort_values(&$values, &$data_array) {
     }
 
     function display_name() {
@@ -883,6 +891,10 @@ class AttachmentsPaperOption extends PaperOption {
 
     function takes_multiple() {
         return true;
+    }
+
+    function sort_values(&$values, &$data_array) {
+        array_multisort($data_array, SORT_NUMERIC, $values);
     }
 
     function example_searches() {
