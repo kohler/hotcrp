@@ -214,6 +214,10 @@ class DocumentInfo implements JsonSerializable {
         return $length_ok;
     }
 
+    public function load_to_filestore() {
+        return $this->docclass->load_to_filestore($this);
+    }
+
     public function npages() {
         if ($this->mimetype && $this->mimetype != "application/pdf")
             return false;
