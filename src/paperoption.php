@@ -38,6 +38,7 @@ class PaperOptionValue {
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
+            $this->option->validate_documents($this);
             foreach ($this->sorted_values() as $docid)
                 if ($docid > 1 && ($d = $this->prow->document($this->id, $docid))) {
                     $d->unique_filename = $d->filename;
@@ -429,6 +430,9 @@ class PaperOption {
 
     function has_attachments() {
         return false;
+    }
+
+    function validate_documents(PaperOptionValue $ov) {
     }
 
     function mimetypes() {
