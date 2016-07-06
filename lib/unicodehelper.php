@@ -213,4 +213,10 @@ class UnicodeHelper {
         else
             return $pfx;
     }
+
+    public static function demojibake($str) {
+        return preg_replace_callback('/\xC3[\x80-\x8F]\xC2[\x80-\xBF]/', function ($m) {
+            return chr(ord(substr($m[0], 1, 1)) + 0x40) . substr($m[0], 3, 1);
+        }, $str);
+    }
 }

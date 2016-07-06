@@ -187,6 +187,13 @@ xassert_eqq(UnicodeHelper::utf8_glyphlen("aaaaaaaa"), 8);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("áááááááá"), 8);
 xassert_eqq(UnicodeHelper::utf8_glyphlen("a̓a̓a̓a̓a̓a̓a̓a̓"), 8);
 
+// mojibake
+xassert_eqq(UnicodeHelper::demojibake("å"), "å");
+xassert_eqq(UnicodeHelper::demojibake("Â£"), "£");
+xassert_eqq(UnicodeHelper::demojibake("Â£"), "£");
+xassert_eqq(UnicodeHelper::demojibake("LÃ¡szlÃ³ MolnÃ¡r"), "László Molnár");
+xassert_eqq(UnicodeHelper::demojibake("László Molnár"), "László Molnár");
+
 xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 10),
             "+ This is\n- a thing\n- to be\n- wrapped.\n");
 xassert_eqq(prefix_word_wrap("+ ", "This is a thing to be wrapped.", "- ", 9),
