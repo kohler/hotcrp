@@ -113,7 +113,8 @@ class CheckFormat implements FormatChecker {
             foreach ($bj->pages as $i => $pg)
                 if (($pp = cvtint(get($pg, "columns", $ncol))) > 0
                     && $pp != $spec->columns
-                    && defval($pg, "pagetype", "body") == "body")
+                    && defval($pg, "pagetype", "body") == "body"
+                    && $spec->is_checkable($i + 1, "columns"))
                     $px[] = $i + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0))
                 $this->msg_format("columns", "Wrong number of columns: expected " . plural($spec->columns, "column") . ", different on " . pluralx($px, "page") . " " . numrangejoin($px) . ".");
@@ -128,7 +129,8 @@ class CheckFormat implements FormatChecker {
             $docmarg = get($bj, "margin");
             foreach ($bj->pages as $i => $pg)
                 if (($psiz = defval($pg, "papersize", $docpsiz)) && is_array($psiz)
-                    && ($marg = defval($pg, "margin", $docmarg)) && is_array($marg)) {
+                    && ($marg = defval($pg, "margin", $docmarg)) && is_array($marg)
+                    && $spec->is_checkable($i + 1, "textblock")) {
                     $pwidth = $psiz[1] - $marg[1] - $marg[3];
                     $pheight = $psiz[0] - $marg[0] - $marg[2];
                     if ($pwidth - $spec->textblock[0] >= 9) {
@@ -164,7 +166,8 @@ class CheckFormat implements FormatChecker {
             $maxval = 0;
             $bfs = get($bj, "bodyfontsize");
             foreach ($bj->pages as $i => $pg)
-                if (get($pg, "pagetype", "body") == "body") {
+                if (get($pg, "pagetype", "body") == "body"
+                    && $spec->is_checkable($i + 1, "bodyfontsize")) {
                     $pp = cvtnum(get($pg, "bodyfontsize", $bfs));
                     ++$bodypages;
                     if ($pp > 0 && $pp < $spec->bodyfontsize[0] - $spec->bodyfontsize[2]) {
@@ -194,7 +197,8 @@ class CheckFormat implements FormatChecker {
             $maxval = 0;
             $l = get($bj, "leading");
             foreach ($bj->pages as $i => $pg)
-                if (get($pg, "pagetype", "body") == "body") {
+                if (get($pg, "pagetype", "body") == "body"
+                    && $spec->is_checkable($i + 1, "bodylineheight")) {
                     $pp = cvtnum(get($pg, "leading", $l));
                     if ($pp > 0 && $pp < $spec->bodylineheight[0] - $spec->bodylineheight[2]) {
                         $lopx[] = $i + 1;

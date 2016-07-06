@@ -10,6 +10,7 @@ class FormatSpec {
     public $textblock;      // [WIDTH, HEIGHT]
     public $bodyfontsize;   // [MIN, MAX, GRACE]
     public $bodylineheight; // [MIN, MAX, GRACE]
+    public $quietpages;     // {ERRORTYPE => IGNOREARRAY}
     public $checkers;
     private $_is_banal_empty;
 
@@ -65,6 +66,20 @@ class FormatSpec {
 
     public function is_banal_empty() {
         return $this->_is_banal_empty;
+    }
+
+    public function is_checkable($pageno, $k) {
+        if (!$this->quietpages || !isset($this->quietpages->$k))
+            return true;
+        $pages = $this->quietpages->$k;
+        if (is_object($pages) || is_associative_array($pages))
+            return !get($pages, $pageno, false);
+        else if (is_array($pages))
+            return !in_array($pageno, $pages);
+        else if (is_int($pages))
+            return $pages != $pageno;
+        else
+            return is_bool($pages) ? !$pages : true;
     }
 
     public function unparse_key($k) {
