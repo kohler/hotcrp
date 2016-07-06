@@ -21,6 +21,7 @@ class PaperOptionValue {
         $this->assign($values, $data_array);
     }
     public function assign($values, $data_array) {
+        $old_values = $this->_values;
         $this->_values = $values;
         $this->_data_array = $data_array;
         if (count($this->_values) > 1 && $this->_data_array !== null)
@@ -30,6 +31,8 @@ class PaperOptionValue {
             if (!empty($this->_data_array))
                 $this->_data = $this->_data_array[0];
         }
+        if ($this->_documents && $this->_values != $old_values)
+            $this->_documents = null;
     }
     public function documents() {
         assert($this->prow || empty($this->_values));
