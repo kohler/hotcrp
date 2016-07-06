@@ -265,8 +265,7 @@ class Dbl {
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
-    static private function do_query($args, $flags) {
-        list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
+    static private function do_query_with($dblink, $qstr, $argv, $flags) {
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
         if ($qstr)
@@ -277,16 +276,14 @@ class Dbl {
         }
     }
 
+    static private function do_query($args, $flags) {
+        list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
+        return self::do_query_with($dblink, $qstr, $argv, $flags);
+    }
+
     static function do_query_on($dblink, $args, $flags) {
         list($ignored_dblink, $qstr, $argv) = self::query_args($args, $flags, true);
-        if (!($flags & self::F_RAW))
-            $qstr = self::format_query_args($dblink, $qstr, $argv);
-        if ($qstr)
-            return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
-        else {
-            error_log(self::landmark() . ": empty query");
-            return false;
-        }
+        return self::do_query_with($dblink, $qstr, $argv, $flags);
     }
 
     static public function do_result($dblink, $flags, $qstr, $result) {
