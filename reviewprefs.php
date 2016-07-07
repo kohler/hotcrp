@@ -188,6 +188,11 @@ else if ($Qreq->fn === "uploadpref")
     Conf::msg_error("Select a preferences file to upload.");
 
 
+// Prepare search
+$Qreq->t = "rable";
+$Qreq->urlbase = hoturl_site_relative_raw("reviewprefs", "reviewer=$reviewer");
+$Qreq->q = get($Qreq, "q", "");
+
 // Search actions
 if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()) {
     include("search.php");
@@ -196,9 +201,9 @@ if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()) {
 
 
 // set options to view
-if (isset($_REQUEST["redisplay"])) {
+if (isset($Qreq->redisplay)) {
     $pfd = " ";
-    foreach ($_REQUEST as $k => $v)
+    foreach ($Qreq as $k => $v)
         if (substr($k, 0, 4) == "show" && $v)
             $pfd .= substr($k, 4) . " ";
     $Conf->save_session("pfdisplay", $pfd);
@@ -213,11 +218,8 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 
 // search
-$search = new PaperSearch($Me, array("t" => "rable",
-                                     "urlbase" => hoturl_site_relative_raw("reviewprefs", "reviewer=$reviewer"),
-                                     "q" => defval($_REQUEST, "q", "")),
-                          $reviewer);
-$pl = new PaperList($search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "foldtype" => "pf", "reviewer" => $reviewer_contact], make_qreq());
+$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer);
+$pl = new PaperList($search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "foldtype" => "pf", "reviewer" => $reviewer_contact], $Qreq);
 $pl_text = $pl->table_html("editReviewPreference",
                 array("class" => "pltable_full",
                       "table_id" => "foldpl",
@@ -257,7 +259,7 @@ if ($Me->privChair) {
         "<div class='g'></div></td></tr>\n";
 }
 
-echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input type='text' size='32' name='q' value=\"", htmlspecialchars(defval($_REQUEST, "q", "")), "\" /><span class='sep'></span></td>",
+echo "<tr><td class='lxcaption'><strong>Search:</strong></td><td class='lentry'><input type='text' size='32' name='q' value=\"", htmlspecialchars($Qreq->q), "\" /><span class='sep'></span></td>",
     "<td>", Ht::submit("redisplay", "Redisplay"), "</td>",
     "</tr>\n";
 
@@ -301,7 +303,7 @@ echo "</td></tr></table>\n";
 
 
 // main form
-echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . (defval($_REQUEST, "q") ? "&amp;q=" . urlencode($_REQUEST["q"]) : "")), array("class" => "assignpc", "onsubmit" => "return plist_onsubmit.call(this)", "id" => "sel")),
+echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . ($Qreq->q ? "&amp;q=" . urlencode($Qreq->q) : "")), array("class" => "assignpc", "onsubmit" => "return plist_onsubmit.call(this)", "id" => "sel")),
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1),
     "<div class='pltable_full_ctr'>\n",
