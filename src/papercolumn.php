@@ -1334,9 +1334,9 @@ class Option_PaperColumn extends PaperColumn {
             $this->view = Column::VIEW_ROW;
         $this->minimal = true;
         $this->className = "pl_option";
-        if ($opt && $opt->type == "checkbox" && !$is_row)
+        if ($opt && $opt->type == "checkbox" && !$isrow)
             $this->className .= " plc";
-        else if ($opt && $opt->type == "numeric" && !$is_row)
+        else if ($opt && $opt->type == "numeric" && !$isrow)
             $this->className .= " plrd";
         $this->opt = $opt;
     }
