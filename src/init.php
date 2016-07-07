@@ -175,7 +175,6 @@ class SiteLoader {
                     Conf::msg_error(htmlspecialchars($x));
                 else if (($x = get($j, "error_html")))
                     Conf::msg_error($x);
-                error_log($qreq->redirect);
                 Navigation::redirect_site($qreq->redirect);
             }
         } else
