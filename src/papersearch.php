@@ -1749,9 +1749,9 @@ class PaperSearch {
         $lword = strtolower($word);
         $lword = get(self::$_keywords, $lword) ? : $lword;
         if ($lword === "paper" || $lword === "sub" || $lword === "submission")
-            $qt[] = new SearchTerm("pf", 0, array("paperStorageId", "!=0"));
+            $qt[] = new SearchTerm("pf", 0, array("paperStorageId", ">1"));
         else if ($lword === "final" || $lword === "finalcopy")
-            $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", "!=0"));
+            $qt[] = new SearchTerm("pf", 0, array("finalPaperStorageId", ">1"));
         else if ($lword === "ab")
             $qt[] = new SearchTerm("pf", 0, array("abstract", "!=''"));
         else if (preg_match('/\A(?:(?:draft-?)?\w*resp(?:onse)?|\w*resp(?:onse)(?:-?draft)?|cmt|aucmt|anycmt)\z/', $lword))
