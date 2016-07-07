@@ -1321,18 +1321,22 @@ class ScorePaperColumn extends PaperColumn {
     }
 }
 
-class OptionPaperColumn extends PaperColumn {
+class Option_PaperColumn extends PaperColumn {
     private $opt;
-    public function __construct($opt) {
-        parent::__construct($opt ? $opt->abbr : null, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
+    public function __construct($opt, $isrow = false) {
+        if ($opt && $isrow)
+            $name = $opt->abbr . "-row";
+        else
+            $name = $opt ? $opt->abbr : null;
+        parent::__construct($name, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("comparator" => "option_compare"));
-        if ($opt && $opt instanceof TextPaperOption)
+        if (($opt && $opt instanceof TextPaperOption) || $isrow)
             $this->view = Column::VIEW_ROW;
         $this->minimal = true;
         $this->className = "pl_option";
-        if ($opt && $opt->type == "checkbox")
+        if ($opt && $opt->type == "checkbox" && !$is_row)
             $this->className .= " plc";
-        else if ($opt && $opt->type == "numeric")
+        else if ($opt && $opt->type == "numeric" && !$is_row)
             $this->className .= " plrd";
         $this->opt = $opt;
     }
@@ -1340,25 +1344,32 @@ class OptionPaperColumn extends PaperColumn {
         $reg = array();
         foreach (PaperOption::user_option_list($user) as $opt)
             if ($opt->display() >= 0)
-                $reg[] = self::_make_column($opt);
+                $reg[] = self::_make_column($opt, false);
         return $reg;
     }
-    private static function _make_column($opt) {
-        $s = parent::lookup_local($opt->abbr);
-        $s = $s ? : PaperColumn::register(new OptionPaperColumn($opt));
+    private static function _make_column($opt, $isrow) {
+        $s = parent::lookup_local($opt->abbr . ($isrow ? "-row" : ""));
+        $s = $s ? : PaperColumn::register(new Option_PaperColumn($opt, $isrow));
         return $s;
     }
     public function make_column($name, $errors) {
         $p = strpos($name, ":") ? : -1;
-        $opts = PaperOption::search(substr($name, $p + 1));
+        $name = substr($name, $p + 1);
+        $isrow = false;
+        $opts = PaperOption::search($name);
+        if (empty($opts) && str_ends_with($name, "-row")) {
+            $isrow = true;
+            $name = substr($name, 0, strlen($name) - 4);
+            $opts = PaperOption::search($name);
+        }
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
             if ($opt->display() >= 0)
-                return self::_make_column($opt);
-            self::make_column_error($errors, "Option “" . htmlspecialchars(substr($name, $p + 1)) . "” can’t be displayed.");
+                return self::_make_column($opt, $isrow);
+            self::make_column_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.");
         } else if ($p > 0)
-            self::make_column_error($errors, "No such option “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 1);
+            self::make_column_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
         return null;
     }
     public function prepare(PaperList $pl, $visible) {
@@ -1728,12 +1739,12 @@ function initialize_paper_columns() {
     PaperColumn::register(new FoldAllPaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
-    PaperColumn::register_factory("opt:", new OptionPaperColumn(null));
+    PaperColumn::register_factory("opt:", new Option_PaperColumn(null));
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
 
     if (PaperOption::count_option_list())
-        PaperColumn::register_factory("", new OptionPaperColumn(null));
+        PaperColumn::register_factory("", new Option_PaperColumn(null));
 
     foreach (ReviewForm::all_fields() as $f)
         if ($f->has_options) {
