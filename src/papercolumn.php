@@ -1399,7 +1399,7 @@ class Option_PaperColumn extends PaperColumn {
         if (($ok = $pl->contact->can_view_paper_option($row, $this->opt, false))
             || ($pl->contact->allow_administer($row)
                 && $pl->contact->can_view_paper_option($row, $this->opt, true))) {
-            $t = $this->opt->unparse_column_html($pl, $row);
+            $t = $this->opt->unparse_column_html($pl, $row, $this->view == self::VIEW_ROW);
             if (!$ok && $t !== "") {
                 if ($this->view == Column::VIEW_ROW)
                     $t = '<div class="fx5">' . $t . '</div>';
