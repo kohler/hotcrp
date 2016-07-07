@@ -2136,6 +2136,10 @@ div.pst span.hint {
 #foldlead_d, #foldshepherd_d, #folddecision_d, #foldmanager_d {
 	width: 99%;
 }
+.archiveexpansion {
+	font-size: smaller;
+	color: #777777;
+}
 
 /* suggestions */
 .suggesttable {

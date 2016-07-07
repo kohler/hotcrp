@@ -4434,6 +4434,23 @@ return plinfo_tags;
 })();
 
 
+// archive expansion
+function expand_archive() {
+    var $j = $(this).closest(".expandarchive");
+    fold($j[0]);
+    if (!$j.find(".archiveexpansion").length) {
+        $j.append(' <span class="archiveexpansion fx"></span>');
+        $.ajax(ajax_link_errors({
+            url: hoturl_add($j.find("a").filter(":not(.qq)").attr("href"), "fn=consolidatedlisting"),
+            type: "GET", dataType: "json", success: function (data) {
+                if (data.ok && data.result)
+                    $j.find(".archiveexpansion").text("(" + data.result + ")");
+            }
+        }));
+    }
+    return false;
+}
+
 // popup dialogs
 function popup_near(elt, anchor) {
     var parent_offset = {left: 0, top: 0};

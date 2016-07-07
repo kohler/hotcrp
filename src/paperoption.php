@@ -967,10 +967,17 @@ class AttachmentsPaperOption extends PaperOption {
     }
 
     private function unparse_html($row, PaperOptionValue $ov, $flags) {
-        $docs = [];
-        foreach ($ov->documents() as $d)
-            $docs[] = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
-        return join("<br />", $docs);
+        $docs = "";
+        foreach ($ov->documents() as $d) {
+            $link = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
+            if ($d->docclass->is_archive($d)) {
+                $link = '<div class="expandarchive foldc"><a href="#" class="qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</div>";
+                Ht::stash_script('$(function(){$(".expandarchive").click(expand_archive)})', "expand_archive");
+            } else
+                $link = "<div>$link</div>";
+            $docs .= $link;
+        }
+        return $docs;
     }
 
     function unparse_column_html(PaperList $pl, $row) {

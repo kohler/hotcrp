@@ -12,10 +12,14 @@ require_once("src/initweb.php");
 function document_error($status, $msg) {
     global $Conf;
     header("HTTP/1.1 $status");
-    $Conf->header("Download", null, actionBar());
-    $msg && Conf::msg_error($msg);
-    $Conf->footer();
-    exit;
+    if (isset($_GET["fn"]))
+        json_exit(["ok" => false, "error" => $msg ? : "Internal error."]);
+    else {
+        $Conf->header("Download", null, actionBar());
+        $msg && Conf::msg_error($msg);
+        $Conf->footer();
+        exit;
+    }
 }
 
 // Determine the intended paper
@@ -121,6 +125,20 @@ function document_download() {
     // pass through filters
     foreach ($filters as $filter)
         $doc = $filter->apply($doc, $prow) ? : $doc;
+
+    // check for contents request
+    if (isset($_GET["fn"]) && ($_GET["fn"] == "listing" || $_GET["fn"] == "consolidatedlisting")) {
+        if (!$doc->docclass->is_archive($doc))
+            json_exit(["ok" => false, "error" => "That file is not an archive."]);
+        else if (($listing = $doc->docclass->archive_listing($doc)) === false)
+            json_exit(["ok" => false, "error" => isset($doc->error) ? $doc->error_text : "Internal error."]);
+        else {
+            $listing = $doc->docclass->clean_archive_listing($listing);
+            if ($_GET["fn"] == "consolidatedlisting")
+                $listing = $doc->docclass->consolidate_archive_listing($listing);
+            json_exit(["ok" => true, "result" => $listing]);
+        }
+    }
 
     // check for If-Not-Modified
     if ($doc->sha1) {
