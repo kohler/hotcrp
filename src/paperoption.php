@@ -966,15 +966,17 @@ class AttachmentsPaperOption extends PaperOption {
         return $result;
     }
 
-    private function unparse_html($row, PaperOptionValue $ov, $flags) {
+    private function unparse_html($row, PaperOptionValue $ov, $flags, $tag) {
         $docs = "";
         foreach ($ov->documents() as $d) {
             $link = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
             if ($d->docclass->is_archive($d)) {
-                $link = '<div class="expandarchive foldc"><a href="#" class="qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</div>";
+                $link = '<' . $tag . ' class="expandarchive foldc"><a href="#" class="qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</$tag>";
                 Ht::stash_script('$(function(){$(".expandarchive").click(expand_archive)})', "expand_archive");
-            } else
+            } else if ($tag == "div")
                 $link = "<div>$link</div>";
+            if ($docs !== "" && $tag == "span")
+                $docs .= "; ";
             $docs .= $link;
         }
         return $docs;
@@ -982,11 +984,11 @@ class AttachmentsPaperOption extends PaperOption {
 
     function unparse_column_html(PaperList $pl, $row, $isrow) {
         $ov = $row->option($this->id);
-        return $ov ? $this->unparse_html($row, $ov, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) : "";
+        return $ov ? $this->unparse_html($row, $ov, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE, $isrow ? "span" : "div") : "";
     }
 
     function unparse_page_html($row, PaperOptionValue $ov) {
-        return $this->unparse_html($row, $ov, DocumentInfo::L_SMALL);
+        return $this->unparse_html($row, $ov, DocumentInfo::L_SMALL, "div");
     }
 }
 
