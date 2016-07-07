@@ -135,7 +135,7 @@ function document_download() {
         else {
             $listing = $doc->docclass->clean_archive_listing($listing);
             if ($_GET["fn"] == "consolidatedlisting")
-                $listing = $doc->docclass->consolidate_archive_listing($listing);
+                $listing = join(", ", $doc->docclass->consolidate_archive_listing($listing));
             json_exit(["ok" => true, "result" => $listing]);
         }
     }
