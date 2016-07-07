@@ -264,7 +264,7 @@ class Navigation {
     }
 
     public static function redirect_site($site_url) {
-        self::redirect(self::siteurl($site_url));
+        self::redirect(self::site_absolute() . $site_url);
     }
 
     public static function redirect_http_to_https($allow_http_if_localhost = false) {
