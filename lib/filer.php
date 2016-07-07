@@ -760,6 +760,53 @@ class Filer {
             error_log("$cmd problem: status $status, stderr $err");
         return explode("\n", rtrim($out));
     }
+
+    public function clean_archive_listing($listing) {
+        $etcetera = false;
+        $listing = array_filter($listing, function ($x) use (&$etcetera) {
+            if (str_ends_with($x, "/"))
+                return false;
+            else if (preg_match('@(?:\A|/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|\A…\z)(?:/|\z)@', $x)) {
+                $etcetera = true;
+                return false;
+            } else
+                return true;
+        });
+        natcasesort($listing);
+        $listing = array_values($listing);
+        if ($etcetera)
+            $listing[] = "…";
+        return $listing;
+    }
+
+    public function consolidate_archive_listing($listing) {
+        $new_listing = [];
+        $etcetera = empty($listing) || $listing[count($listing) - 1] !== "…" ? 0 : 1;
+        for ($i = 0; $i < count($listing) - $etcetera; ) {
+            if (($slash = strpos($listing[$i], "/")) !== false) {
+                $prefix = substr($listing[$i], 0, $slash + 1);
+                for ($j = $i + 1; $j < count($listing) && str_starts_with($listing[$j], $prefix); ++$j)
+                    /* nada */;
+                if ($j > $i + 1) {
+                    $xlisting = [];
+                    for ($k = $i; $k < $j; ++$k)
+                        $xlisting[] = substr($listing[$k], $slash + 1);
+                    $xlisting = $this->consolidate_archive_listing($xlisting);
+                    if (count($xlisting) == 1)
+                        $new_listing[] = $prefix . $xlisting[0];
+                    else
+                        $new_listing[] = $prefix . "{" . join(", ", $xlisting) . "}";
+                    $i = $j;
+                    continue;
+                }
+            }
+            $new_listing[] = $listing[$i];
+            ++$i;
+        }
+        if ($etcetera)
+            $new_listing[] = "…";
+        return $new_listing;
+    }
 }
 
 class Filer_Dbstore {
