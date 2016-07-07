@@ -710,7 +710,7 @@ class PaperInfo {
             else
                 error_log("asked for nonexistent $dtype document, cannot find it (option " . var_export($oa, true) . ")");
         }
-        if ($did <= 0)
+        if ($did <= 1)
             return null;
 
         if ($this->_document_array !== null && isset($this->_document_array[$did]))
