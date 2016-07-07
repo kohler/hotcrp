@@ -195,8 +195,10 @@ $Qreq->q = get($Qreq, "q", "");
 
 // Search actions
 if ($Qreq->fn === "get" && $SSel && !$SSel->is_empty()) {
-    include("search.php");
-    exit;
+    SearchAction::load();
+    $subfn = $Qreq[$Qreq->fn . "fn"];
+    if (SearchAction::has_function($Qreq->fn, $subfn))
+        SearchAction::call($Qreq->fn, $subfn, $Me, $Qreq, $SSel);
 }
 
 
