@@ -976,7 +976,7 @@ class AttachmentsPaperOption extends PaperOption {
             } else if ($tag == "div")
                 $link = "<div>$link</div>";
             if ($docs !== "" && $tag == "span")
-                $docs .= "; ";
+                $docs .= ";&nbsp; ";
             $docs .= $link;
         }
         return $docs;
