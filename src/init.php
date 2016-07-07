@@ -133,6 +133,7 @@ class SiteLoader {
     const API_GET = 1;
     const API_PAPER = 2;
     const API_GET_PAPER = 3 /* == API_GET | API_PAPER */;
+    const API_REDIRECTABLE = 4;
     static $api_map = [
         "alltags" => ["PaperApi::alltags_api", self::API_GET],
         "checkformat" => ["PaperApi::checkformat_api", self::API_GET_PAPER],
@@ -149,18 +150,36 @@ class SiteLoader {
         "votereport" => ["PaperApi::votereport_api", self::API_GET_PAPER],
         "whoami" => ["PaperApi::whoami_api", self::API_GET]
     ];
-    static public function call_api($fn, $user, $qreq, $prow) {
-        // XXX precondition: $user->can_view_paper($prow) || !$prow
-        if (isset(SiteLoader::$api_map[$fn])) {
-            $uf = SiteLoader::$api_map[$fn];
-            if (!($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
-                json_exit(["ok" => false, "error" => "Missing credentials."]);
-            if (($uf[1] & SiteLoader::API_PAPER) && !$prow)
-                json_exit(["ok" => false, "error" => "No such paper."]);
+    static private function call_api($uf, $user, $qreq, $prow) {
+        if ($uf && !($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
+            json_exit(["ok" => false, "error" => "Missing credentials."]);
+        if ($uf && ($uf[1] & SiteLoader::API_PAPER) && !$prow)
+            json_exit(["ok" => false, "error" => "No such paper."]);
+        if ($uf)
             call_user_func($uf[0], $user, $qreq, $prow);
-            return true;
-        }
-        return false;
+        json_exit(["ok" => false, "error" => "Internal error."]);
+    }
+    static public function call_api_exit($fn, $user, $qreq, $prow) {
+        // XXX precondition: $user->can_view_paper($prow) || !$prow
+        $uf = get(SiteLoader::$api_map, $fn);
+        if ($uf && ($uf[1] & self::API_REDIRECTABLE) && $qreq->redirect
+            && preg_match('@\A(?![a-z]+:|/).+@', $qreq->redirect)) {
+            try {
+                JsonResultException::$capturing = true;
+                self::call_api($uf, $user, $qreq, $prow);
+            } catch (JsonResultException $ex) {
+                $j = $ex->result;
+                if (!get($j, "ok") && !get($j, "error"))
+                    Conf::msg_error("Internal error.");
+                else if (($x = get($j, "error")))
+                    Conf::msg_error(htmlspecialchars($x));
+                else if (($x = get($j, "error_html")))
+                    Conf::msg_error($x);
+                error_log($qreq->redirect);
+                Navigation::redirect_site($qreq->redirect);
+            }
+        } else
+            self::call_api($uf, $user, $qreq, $prow);
     }
 }
 

@@ -53,10 +53,8 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 }
 
 // requests
-if (isset(SiteLoader::$api_map[$qreq->fn])) {
-    SiteLoader::call_api($qreq->fn, $Me, $qreq, $Conf->paper);
-    json_exit(["ok" => false, "error" => "Internal error."]);
-}
+if (isset(SiteLoader::$api_map[$qreq->fn]))
+    SiteLoader::call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
 
 if ($qreq->fn === "jserror") {
     $url = $qreq->url;

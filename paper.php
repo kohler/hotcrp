@@ -86,8 +86,7 @@ if (isset($_REQUEST["setfollow"]) && $prow && check_post()) {
 if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
     && isset($_GET["fn"]) && isset(SiteLoader::$api_map[$_GET["fn"]])) {
     $Qreq = make_qreq();
-    SiteLoader::call_api($Qreq->fn, $Me, $Qreq, $prow);
-    json_exit(["ok" => false, "error" => "Internal error."]);
+    SiteLoader::call_api_exit($Qreq->fn, $Me, $Qreq, $prow);
 }
 
 
