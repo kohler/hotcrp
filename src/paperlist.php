@@ -106,6 +106,7 @@ class PaperList {
 
     private $sortable;
     private $foldable;
+    private $unfold_all = false;
     private $listNumber;
     private $_paper_link_page;
     private $_paper_link_mode;
@@ -672,6 +673,7 @@ class PaperList {
         if ($fname === "authors")
             $fname = "au";
         return $fname
+            && !$this->unfold_all
             && !$this->qreq["show$fname"]
             && ($this->viewmap->$fname === false
                 || ($this->viewmap->$fname === null
@@ -1222,9 +1224,10 @@ class PaperList {
         $this->table_type = $listname;
 
         // get column list, check sort
-        if (isset($options["field_list"]))
+        if (isset($options["field_list"])) {
             $field_list = $options["field_list"];
-        else
+            $this->unfold_all = true;
+        } else
             $field_list = $this->_list_columns($listname);
         if (!$field_list) {
             Conf::msg_error("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
