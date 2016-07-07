@@ -31,6 +31,8 @@ class GetRevpref_SearchAction extends SearchAction {
         $texts = array();
         while (($prow = PaperInfo::fetch($result, $Rev))) {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
+            if ($Rev->contactId != $user->contactId)
+                $item["email"] = $Rev->email;
             if ($prow->conflictType > 0)
                 $item["preference"] = "conflict";
             else
@@ -46,7 +48,8 @@ class GetRevpref_SearchAction extends SearchAction {
             }
             $texts[$prow->paperId][] = $item;
         }
-        return new Csv_SearchResult("revprefs", ["paper", "title", "preference"], $ssel->reorder($texts), true);
+        $fields = array_merge(["paper", "title"], $Rev->contactId != $user->contactId ? ["email"] : [], ["preference"]);
+        return new Csv_SearchResult("revprefs", $fields, $ssel->reorder($texts), true);
     }
 }
 
