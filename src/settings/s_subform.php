@@ -318,9 +318,9 @@ function render(SettingValues $sv) {
     echo '</div>';
 
     $sv->set_oldv("sub_nopapers", opt_yes_no_optional("noPapers"));
-    echo '<div>Is a PDF upload required to mark a submission as ready for review?&nbsp; ';
-    echo Ht::select("sub_nopapers", array(0 => "PDF upload required", 2 => "PDF upload optional", 1 => "No PDF upload"), $sv->curv("sub_nopapers"), ["id" => "sub_nopapers", "onchange" => "sub_nopapers_change()"]);
-    echo '<div class="hint fx3">Submissions can always be registered without a PDF upload.</div></div>';
+    echo '<div>Is a PDF required to mark a submission as ready for review?&nbsp; ';
+    echo Ht::select("sub_nopapers", array(0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"), $sv->curv("sub_nopapers"), ["id" => "sub_nopapers", "onchange" => "sub_nopapers_change()"]);
+    echo '<div class="hint fx3">Submissions can always be registered without a PDF.</div></div>';
 
     if (is_executable("src/banal")) {
         echo '<div class="g fx2">';
