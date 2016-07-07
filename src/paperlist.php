@@ -1224,15 +1224,15 @@ class PaperList {
         $this->table_type = $listname;
 
         // get column list, check sort
-        if (isset($options["field_list"])) {
+        if (isset($options["field_list"]))
             $field_list = $options["field_list"];
-            $this->unfold_all = true;
-        } else
+        else
             $field_list = $this->_list_columns($listname);
         if (!$field_list) {
             Conf::msg_error("There is no paper list query named “" . htmlspecialchars($listname) . "”.");
             return null;
         }
+        $this->unfold_all = get($options, "unfold_all");
         $field_list = $this->_columns($field_list, true);
         $rows = $this->_rows($field_list);
         if ($rows === null)
