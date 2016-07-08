@@ -15,30 +15,35 @@ class ZipDocument_File {
 }
 
 class ZipDocument {
+    public $filename;
+    public $filestore;
+    public $sha1; // NB: might be of _filestore, not of content!
+
     private $tmpdir_ = null;
     private $files;
     public $warnings;
     private $recurse;
-    private $downloadname;
     private $mimetype;
     private $headers;
     private $start_time;
-    private $filestore;
+    private $_filestore;
 
-    function __construct($downloadname, $mimetype = "application/zip") {
-        $this->downloadname = $downloadname;
+    function __construct($filename, $mimetype = "application/zip") {
+        $this->filename = $filename;
         $this->mimetype = $mimetype;
         $this->clean();
     }
 
     function clean() {
+        $this->filestore = false;
+        $this->sha1 = false;
         $this->tmpdir_ = null;
         $this->files = array();
         $this->warnings = array();
         $this->recurse = false;
         $this->headers = false;
         $this->start_time = time();
-        $this->filestore = array();
+        $this->_filestore = array();
     }
 
     private function tmpdir() {
@@ -82,9 +87,9 @@ class ZipDocument {
         }
 
         // add document to filestore list
-        if (is_array($this->filestore) && isset($doc->filestore)
+        if (is_array($this->_filestore) && isset($doc->filestore)
             && ($sha1 = Filer::binary_sha1($doc)) !== null) {
-            $this->filestore[] = new ZipDocument_File($filename, $doc->filestore, $sha1);
+            $this->_filestore[] = new ZipDocument_File($filename, $doc->filestore, $sha1);
             return self::_add_done($doc, true);
         }
 
@@ -154,8 +159,8 @@ class ZipDocument {
     }
 
     private function _add_filestore() {
-        if (($filestore = $this->filestore) !== null) {
-            $this->filestore = null;
+        if (($filestore = $this->_filestore) !== null) {
+            $this->_filestore = null;
             foreach ($filestore as $f)
                 if (!$this->_add($f, $f->filename, false))
                     return false;
@@ -173,23 +178,24 @@ class ZipDocument {
 
     public function download_headers() {
         if (!$this->headers) {
-            header("Content-Disposition: attachment; filename=" . mime_quote_string($this->downloadname));
+            header("Content-Disposition: attachment; filename=" . mime_quote_string($this->filename));
             header("Content-Type: " . $this->mimetype);
             $this->headers = true;
         }
     }
 
-    private function create() {
+    public function create() {
         global $Now;
         if (!($tmpdir = $this->tmpdir()))
             return set_error_html("Could not create temporary directory.");
 
         // maybe cache zipfile in docstore
-        $zip_filename = "$tmpdir/_hotcrp.zip";
-        if (!empty($this->filestore) && opt("docstore")
+        $this->filestore = "$tmpdir/_hotcrp.zip";
+        $this->sha1 = false;
+        if (!empty($this->_filestore) && opt("docstore")
             && opt("docstoreAccelRedirect")) {
             // calculate sha1 for zipfile contents
-            $sorted_filestore = $this->filestore;
+            $sorted_filestore = $this->_filestore;
             usort($sorted_filestore, function ($a, $b) {
                 return strcmp($a->filename, $b->filename);
             });
@@ -202,12 +208,13 @@ class ZipDocument {
             // look for zipfile
             $zfn = opt("docstore") . "/tmp/" . $zipfile_sha1 . ".zip";
             if (Filer::prepare_filestore(opt("docstore"), $zfn)) {
-                if (file_exists($zfn)) {
+                $this->sha1 = Filer::binary_sha1($zipfile_sha1);
+                $this->filestore = $zfn;
+                if (file_exists($this->filestore)) {
                     if (($mtime = @filemtime($zfn)) < $Now - 21600)
-                        @touch($zfn);
-                    return $zfn;
+                        @touch($this->filestore);
+                    return $this->filestore;
                 }
-                $zip_filename = $zfn;
             }
         }
 
@@ -219,12 +226,17 @@ class ZipDocument {
             $this->add(join("\n", $this->warnings) . "\n", "README-warnings.txt");
         $opts = ($this->recurse ? "-rq" : "-q");
         set_time_limit(60);
-        $out = system("cd $tmpdir; $zipcmd $opts '$zip_filename' '" . join("' '", array_keys($this->files)) . "' 2>&1", $status);
+        $out = system("cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files))) . " 2>&1", $status);
+        if ($status == 0 && file_exists($this->filestore)) {
+            if ($this->sha1 === false)
+                $this->sha1 = sha1(file_get_contents($this->filestore), true);
+            return $this->filestore;
+        }
+        $this->filestore = false;
         if ($status != 0)
             return set_error_html("<code>zip</code> returned an error.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-        if (!file_exists($zip_filename))
+        else
             return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
-        return $zip_filename;
     }
 
     public function download() {
