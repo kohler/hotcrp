@@ -44,7 +44,7 @@ class TagMapItem {
     }
 }
 
-class TagMap implements ArrayAccess, IteratorAggregate {
+class TagMap implements IteratorAggregate {
     public $has_vote = false;
     public $has_approval = false;
     public $has_sitewide = false;
@@ -53,10 +53,7 @@ class TagMap implements ArrayAccess, IteratorAggregate {
     public $has_order_anno = false;
     private $storage = array();
     private $sorted = false;
-    public function offsetExists($offset) {
-        return isset($this->storage[strtolower($offset)]);
-    }
-    public function offsetGet($offset) {
+    public function make($offset) {
         $loffset = strtolower($offset);
         if (!isset($this->storage[$loffset])) {
             $n = new TagMapItem($offset);
@@ -66,10 +63,6 @@ class TagMap implements ArrayAccess, IteratorAggregate {
             $this->sorted = false;
         }
         return $this->storage[$loffset];
-    }
-    public function offsetSet($offset, $value) {
-    }
-    public function offsetUnset($offset) {
     }
     private function sort() {
         ksort($this->storage);
@@ -142,52 +135,45 @@ class TagInfo {
             return in_array($base, $taglist);
     }
 
+    private static function split_tlist($tl) {
+        return array_map("TagInfo::split_index", self::split($tl));
+    }
+
     private static function make_tagmap() {
         global $Conf;
         self::$tagmap = $map = new TagMap;
         if (!$Conf)
             return $map;
         $ct = $Conf->setting_data("tag_chair", "");
-        foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t !== "" && !$map[self::base($t)]->chair)
-                $map[self::base($t)]->chair = true;
+        foreach (self::split_tlist($ct) as $ti)
+            $map->make($ti[0])->chair = true;
         foreach ($Conf->track_tags() as $t)
-            if (!$map[self::base($t)]->chair)
-                $map[self::base($t)]->chair = true;
+            $map->make(self::base($t))->chair = true;
         $ct = $Conf->setting_data("tag_sitewide", "");
-        foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t !== "" && !$map[self::base($t)]->sitewide)
-                $map[self::base($t)]->sitewide = $map->has_sitewide = true;
+        foreach (self::split_tlist($ct) as $ti)
+            $map->make($ti[0])->sitewide = $map->has_sitewide = true;
         $vt = $Conf->setting_data("tag_vote", "");
-        if ($vt !== "")
-            foreach (preg_split('/\s+/', $vt) as $t)
-                if ($t !== "") {
-                    list($b, $v) = self::split_index($t);
-                    $map[$b]->vote = ($v ? $v : 1);
-                    $map->has_vote = true;
-                }
+        foreach (self::split_tlist($vt) as $ti) {
+            $map->make($ti[0])->vote = ($ti[1] ? : 1);
+            $map->has_vote = true;
+        }
         $vt = $Conf->setting_data("tag_approval", "");
-        if ($vt !== "")
-            foreach (preg_split('/\s+/', $vt) as $t)
-                if ($t !== "") {
-                    list($b, $v) = self::split_index($t);
-                    $map[$b]->approval = $map->has_approval = true;
-                }
+        foreach (self::split_tlist($vt) as $ti)
+            $map->make($ti[0])->approval = $map->has_approval = true;
         $rt = $Conf->setting_data("tag_rank", "");
-        if ($rt !== "")
-            foreach (preg_split('/\s+/', $rt) as $t)
-                $map[self::base($t)]->rank = $map->has_rank = true;
+        foreach (self::split_tlist($rt) as $t)
+            $map->make($ti[0])->rank = $map->has_rank = true;
         $ct = $Conf->setting_data("tag_color", "");
         if ($ct !== "")
             foreach (explode(" ", $ct) as $k)
                 if ($k !== "" && ($p = strpos($k, "=")) !== false)
-                    arrayappend($map[substr($k, 0, $p)]->colors,
+                    arrayappend($map->make(substr($k, 0, $p))->colors,
                                 self::canonical_color(substr($k, $p + 1)));
         $bt = $Conf->setting_data("tag_badge", "");
         if ($bt !== "")
             foreach (explode(" ", $bt) as $k)
                 if ($k !== "" && ($p = strpos($k, "=")) !== false) {
-                    arrayappend($map[substr($k, 0, $p)]->badges,
+                    arrayappend($map->make(substr($k, 0, $p))->badges,
                                 self::canonical_color(substr($k, $p + 1)));
                     $map->has_badge = true;
                 }
@@ -195,7 +181,7 @@ class TagInfo {
         if ($xt !== "" && ($xt = json_decode($xt)))
             foreach (get_object_vars($xt) as $t => $v)
                 if (is_object($v)) {
-                    $map[$t]->order_anno = $v;
+                    $map->make($t)->order_anno = $v;
                     $map->has_order_anno;
                 }
         return $map;
@@ -212,7 +198,7 @@ class TagInfo {
 
     public static function make_defined_tag($tag) {
         $dt = self::defined_tags();
-        return $dt[self::base($tag)];
+        return $dt->make(self::base($tag));
     }
 
     public static function invalidate_defined_tags() {
