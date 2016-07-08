@@ -62,12 +62,12 @@ class PaperApi {
         $ret = (object) ["ok" => $user->can_view_tags($prow), "warnings" => [], "messages" => []];
         if (!$ret->ok)
             return $ret;
-        if (($vt = TagInfo::vote_tags())) {
+        if (($vt = TagInfo::defined_tags_with("vote"))) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();
-            foreach ($vt as $tag => $v) {
-                $qv[] = $myprefix . $tag;
-                $myvotes[strtolower($tag)] = 0;
+            foreach ($vt as $lbase => $t) {
+                $qv[] = $myprefix . $lbase;
+                $myvotes[$lbase] = 0;
             }
             $result = Dbl::qe("select tag, sum(tagIndex) from PaperTag where tag ?a group by tag", $qv);
             while (($row = edb_row($result))) {
@@ -76,13 +76,12 @@ class PaperApi {
             }
             Dbl::free($result);
             $vlo = $vhi = array();
-            foreach ($vt as $tag => $vlim) {
-                $lbase = strtolower($tag);
-                if ($myvotes[$lbase] < $vlim)
-                    $vlo[] = '<a class="q" href="' . hoturl("search", "q=editsort:-%23~$tag") . '">~' . $tag . '</a>#' . ($vlim - $myvotes[$lbase]);
-                else if ($myvotes[$lbase] > $vlim
-                         && (!$prow || $prow->has_tag($myprefix . $tag)))
-                    $vhi[] = '<span class="nw"><a class="q" href="' . hoturl("search", "q=sort:-%23~$tag+edit:%23~$tag") . '">~' . $tag . '</a> (' . ($myvotes[$lbase] - $vlim) . " over)</span>";
+            foreach ($vt as $lbase => $t) {
+                if ($myvotes[$lbase] < $t->vote)
+                    $vlo[] = '<a class="q" href="' . hoturl("search", "q=editsort:-%23~{$t->tag}") . '">~' . $t->tag . '</a>#' . ($t->vote - $myvotes[$lbase]);
+                else if ($myvotes[$lbase] > $t->vote
+                         && (!$prow || $prow->has_tag($myprefix . $lbase)))
+                    $vhi[] = '<span class="nw"><a class="q" href="' . hoturl("search", "q=sort:-%23~{$t->tag}+edit:%23~{$t->tag}") . '">~' . $t->tag . '</a> (' . ($myvotes[$lbase] - $t->vote) . " over)</span>";
             }
             if (count($vlo))
                 $ret->messages[] = 'Remaining <a class="q" href="' . hoturl("help", "t=votetags") . '">votes</a>: ' . join(", ", $vlo);

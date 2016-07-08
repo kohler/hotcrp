@@ -455,20 +455,16 @@ function searchQuickref() {
     _searchQuickrefRow("", "search1 HIGHLIGHT search2", "search for “search1”, but <span class=\"taghl highlightmark\">highlight</span> papers in that list that match “search2” (also try HIGHLIGHT:pink, HIGHLIGHT:green, HIGHLIGHT:blue)");
 }
 
-
-function _currentVoteTags() {
-    if (TagInfo::has_vote()) {
-        $votetags = " (currently ";
-        foreach (TagInfo::vote_tags() as $tag => $v)
-            $votetags .= "“<a href=\"" . hoturl("search", "q=rorder:$tag") . "\">$tag</a>”, ";
-        return substr($votetags, 0, strlen($votetags) - 2) . ")";
-    } else
-        return "";
+function _current_tag_list($property) {
+    $ct = TagInfo::defined_tags_with($property);
+    return empty($ct) ? "" : " (currently "
+            . join(", ", array_map(function ($t) { return "“" . Ht::link($t->tag, hoturl("search", "q=%23{$t->tag}")) . "”"; }, $ct))
+            . ")";
 }
 
 function _singleVoteTag() {
-    $vt = TagInfo::vote_tags();
-    return count($vt) ? key($vt) : "vote";
+    $vt = TagInfo::defined_tags_with("vote");
+    return empty($vt) ? "vote" : current($vt)->tag;
 }
 
 function tags() {
@@ -477,22 +473,16 @@ function tags() {
     // get current tag settings
     $chairtags = "";
     $votetags = "";
+    $votetag1 = "vote";
     $conflictmsg1 = "";
     $conflictmsg2 = "";
     $conflictmsg3 = "";
     $setting = "";
 
     if ($Me->isPC) {
-        $ct = array_keys(TagInfo::chair_tags());
-        if (count($ct)) {
-            sort($ct);
-            $chairtags = " (currently ";
-            foreach ($ct as $c)
-                $chairtags .= "“<a href=\"" . hoturl("search", "q=%23$c") . "\">$c</a>”, ";
-            $chairtags = substr($chairtags, 0, strlen($chairtags) - 2) . ")";
-        }
-
-        $votetags = _currentVoteTags();
+        $chairtags = _current_tag_list("chair");
+        $votetags = _current_tag_list("vote");
+        $votetag1 = _singleVoteTag();
 
         if ($Me->privChair)
             $setting = "  (<a href='" . hoturl("settings", "group=tags") . "'>Change this setting</a>)";
@@ -644,11 +634,11 @@ high-ranked paper, but it’s usually better to trust the PC.)</li>
  (Since PC members can see whether a paper is tagged “#pcpaper”, you may want to delay defining the tag until just before the meeting.)</li>
 
 <li><strong>Vote for papers.</strong>
- The chair can define special voting tags$votetags$setting.
+ The chair can define special allotment voting tags$votetags$setting.
  Each PC member is assigned an allotment of votes to distribute among papers.
- For instance, if “#v” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~v#5”.
- The system automatically sums PC members’ votes into the public “#v” tag.
- To search for papers by vote count, search for “<a href='" . hoturl("search", "t=s&amp;q=rorder:v") . "'>rorder:v</a>”. (<a href='" . hoturl("help", "t=votetags") . "'>Learn more</a>)</li>
+ For instance, if “#{$votetag1}” were a voting tag with an allotment of 10, then a PC member could assign 5 votes to a paper by adding the twiddle tag “#~{$votetag1}#5”.
+ The system automatically sums PC members’ votes into the public “#{$votetag1}” tag.
+ To search for papers by vote count, search for “<a href='" . hoturl("search", "t=s&amp;q=rorder:$votetag1") . "'>rorder:{$votetag1}</a>”. (<a href='" . hoturl("help", "t=votetags") . "'>Learn more</a>)</li>
 
 <li><strong>Rank papers.</strong>
  Each PC member can set tags indicating their preference ranking for papers.
@@ -896,7 +886,7 @@ The PC’s aggregated vote totals might help determine
 which papers to discuss.</p>
 
 <p>HotCRP supports voting through the <a href='" . hoturl("help", "t=tags") . "'>tags system</a>.
-The chair can <a href='" . hoturl("settings", "group=tags") . "'>define a set of voting tags</a> and allotments" . _currentVoteTags() . ".
+The chair can <a href='" . hoturl("settings", "group=tags") . "'>define a set of voting tags</a> and allotments" . _current_tag_list("vote") . ".
 PC members vote by assigning the corresponding twiddle tags;
 the aggregated PC vote is visible in the public tag.</p>
 

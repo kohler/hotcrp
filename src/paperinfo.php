@@ -438,17 +438,16 @@ class PaperInfo {
         $tags = $this->viewable_tags($user);
         if ($tags !== "") {
             $privChair = $user->allow_administer($this);
-            $dt = TagInfo::defined_tags();
             $etags = array();
-            foreach (explode(" ", $tags) as $t)
-                if (!($t === ""
-                      || (($v = $dt->check(TagInfo::base($t)))
-                          && ($v->vote
-                              || $v->approval
+            foreach (explode(" ", $tags) as $tag)
+                if (!($tag === ""
+                      || (($t = TagInfo::defined_tag($tag))
+                          && ($t->vote
+                              || $t->approval
                               || (!$privChair
-                                  && (!$user->privChair || !$v->sitewide)
-                                  && ($v->chair || $v->rank))))))
-                    $etags[] = $t;
+                                  && (!$user->privChair || !$t->sitewide)
+                                  && ($t->chair || $t->rank))))))
+                    $etags[] = $tag;
             $tags = join(" ", $etags);
         }
         return $tags;

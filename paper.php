@@ -114,8 +114,8 @@ if (isset($_REQUEST["withdraw"]) && !$newPaper && check_post()) {
         // remove voting tags so people don't have phantom votes
         if (TagInfo::has_vote()) {
             $q = array();
-            foreach (TagInfo::vote_tags() as $t => $v)
-                $q[] = "tag='" . sqlq($t) . "' or tag like '%~" . sqlq_for_like($t) . "'";
+            foreach (TagInfo::defined_tags_with("vote") as $t)
+                $q[] = "tag='" . sqlq($t->tag) . "' or tag like '%~" . sqlq_for_like($t->tag) . "'";
             Dbl::qe_raw("delete from PaperTag where paperId=$prow->paperId and (" . join(" or ", $q) . ")");
         }
 

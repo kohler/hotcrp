@@ -1781,14 +1781,14 @@ class PaperTable {
             $this->papstripManager($Me->privChair);
         $this->papstripTags();
         $this->npapstrip_tag_entry = 0;
-        foreach (TagInfo::defined_tags() as $ltag => $dt)
+        foreach (TagInfo::defined_tags() as $ltag => $t)
             if ($Me->can_change_tag($prow, "~$ltag", null, 0)) {
-                if ($dt->approval)
-                    $this->papstripApproval($dt->tag);
-                else if ($dt->vote)
-                    $this->papstripVote($dt->tag, $dt->vote);
-                else if ($dt->rank)
-                    $this->papstripRank($dt->tag);
+                if ($t->approval)
+                    $this->papstripApproval($t->tag);
+                else if ($t->vote)
+                    $this->papstripVote($t->tag, $t->vote);
+                else if ($t->rank)
+                    $this->papstripRank($t->tag);
             }
         if ($this->npapstrip_tag_entry)
             echo "</div>";

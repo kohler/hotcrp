@@ -1055,7 +1055,7 @@ class TagListPaperColumn extends PaperColumn {
     public function annotate_field_js(PaperList $pl, &$fjs) {
         $fjs["highlight_tags"] = $pl->search->highlight_tags();
         if (TagInfo::has_votish())
-            $fjs["votish_tags"] = array_keys(TagInfo::vote_tags() + TagInfo::approval_tags());
+            $fjs["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, TagInfo::defined_tags_with("votish")));
     }
     public function header($pl, $ordinal) {
         return "Tags";
@@ -1764,9 +1764,9 @@ function initialize_paper_columns() {
     $tagger = new Tagger;
     if ($Conf && (TagInfo::has_vote() || TagInfo::has_approval() || TagInfo::has_rank())) {
         $vt = array();
-        foreach (TagInfo::defined_tags() as $v)
-            if ($v->vote || $v->approval || $v->rank)
-                $vt[] = $v->tag;
+        foreach (TagInfo::defined_tags() as $t)
+            if ($t->vote || $t->approval || $t->rank)
+                $vt[] = $t->tag;
         foreach ($vt as $n)
             TagReportPaperColumn::register(new TagReportPaperColumn($n));
     }

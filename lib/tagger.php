@@ -10,6 +10,7 @@
 class TagMapItem {
     public $tag;
     public $chair = false;
+    public $votish = false;
     public $vote = false;
     public $approval = false;
     public $sitewide = false;
@@ -45,6 +46,8 @@ class TagMapItem {
 }
 
 class TagMap implements IteratorAggregate {
+    public $has_chair = true;
+    public $has_votish = false;
     public $has_vote = false;
     public $has_approval = false;
     public $has_sitewide = false;
@@ -53,16 +56,19 @@ class TagMap implements IteratorAggregate {
     public $has_order_anno = false;
     private $storage = array();
     private $sorted = false;
-    public function make($offset) {
-        $loffset = strtolower($offset);
-        if (!isset($this->storage[$loffset])) {
-            $n = new TagMapItem($offset);
-            if (!TagInfo::basic_check($loffset))
+    public function check($tag) {
+        return get($this->storage, strtolower($tag));
+    }
+    public function make($tag) {
+        $ltag = strtolower($tag);
+        if (!isset($this->storage[$ltag])) {
+            $n = new TagMapItem($tag);
+            if (!TagInfo::basic_check($ltag))
                 return $n;
-            $this->storage[$loffset] = $n;
+            $this->storage[$ltag] = $n;
             $this->sorted = false;
         }
-        return $this->storage[$loffset];
+        return $this->storage[$ltag];
     }
     private function sort() {
         ksort($this->storage);
@@ -72,16 +78,19 @@ class TagMap implements IteratorAggregate {
         $this->sorted || $this->sort();
         return new ArrayIterator($this->storage);
     }
-    public function tag_array($property) {
-        $a = array();
+    public function filter($property) {
+        $k = "has_{$property}";
+        if (!$this->$k)
+            return [];
         $this->sorted || $this->sort();
-        foreach ($this->storage as $v)
-            if ($v->$property)
-                $a[$v->tag] = $v->$property;
-        return $a;
+        return array_filter($this->storage, function ($t) use ($property) { return $t->$property; });
     }
-    public function check($offset) {
-        return get($this->storage, strtolower($offset));
+    public function check_property($tag, $property) {
+        $k = "has_{$property}";
+        return $this->$k
+            && ($t = $this->check(TagInfo::base($tag)))
+            && $t->$property
+            ? $t : null;
     }
 }
 
@@ -93,6 +102,7 @@ class TagInfo {
     private static $tagmap = null;
     private static $colorre = null;
     private static $badgere = null;
+    private static $sitewidere_part = null;
 
     private static $multicolor_map = [];
 
@@ -154,12 +164,15 @@ class TagInfo {
             $map->make($ti[0])->sitewide = $map->has_sitewide = true;
         $vt = $Conf->setting_data("tag_vote", "");
         foreach (self::split_tlist($vt) as $ti) {
-            $map->make($ti[0])->vote = ($ti[1] ? : 1);
-            $map->has_vote = true;
+            $t = $map->make($ti[0]);
+            $t->vote = ($ti[1] ? : 1);
+            $t->votish = $map->has_vote = $map->has_votish = true;
         }
         $vt = $Conf->setting_data("tag_approval", "");
-        foreach (self::split_tlist($vt) as $ti)
-            $map->make($ti[0])->approval = $map->has_approval = true;
+        foreach (self::split_tlist($vt) as $ti) {
+            $t = $map->make($ti[0]);
+            $t->approval = $t->votish = $map->has_approval = $map->has_votish = true;
+        }
         $rt = $Conf->setting_data("tag_rank", "");
         foreach (self::split_tlist($rt) as $t)
             $map->make($ti[0])->rank = $map->has_rank = true;
@@ -191,6 +204,10 @@ class TagInfo {
         return self::$tagmap ? self::$tagmap : self::make_tagmap();
     }
 
+    public static function defined_tags_with($property) {
+        return self::defined_tags()->filter($property);
+    }
+
     public static function defined_tag($tag) {
         $dt = self::defined_tags();
         return $dt->check(self::base($tag));
@@ -202,7 +219,7 @@ class TagInfo {
     }
 
     public static function invalidate_defined_tags() {
-        self::$tagmap = self::$colorre = null;
+        self::$tagmap = self::$colorre = self::$badgere = self::$sitewidere_part = null;
     }
 
     public static function has_sitewide() {
@@ -218,7 +235,7 @@ class TagInfo {
     }
 
     public static function has_votish() {
-        return self::defined_tags()->has_vote || self::defined_tags()->has_approval;
+        return self::defined_tags()->has_votish;
     }
 
     public static function has_rank() {
@@ -236,78 +253,53 @@ class TagInfo {
     public static function is_chair($tag) {
         if ($tag[0] === "~")
             return $tag[1] === "~";
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
-        return $t && $t->chair;
-    }
-
-    public static function chair_tags() {
-        return self::defined_tags()->tag_array("chair");
+        else
+            return !!self::defined_tags()->check_property($tag, "chair");
     }
 
     public static function is_sitewide($tag) {
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
-        return $t && $t->sitewide;
+        return !!self::defined_tags()->check_property($tag, "sitewide");
     }
 
-    public static function sitewide_tags() {
-        return self::defined_tags()->tag_array("sitewide");
+    public static function sitewide_regex_part() {
+        if (self::$sitewidere_part === null) {
+            $x = ["\\&"];
+            foreach (self::defined_tags()->filter("sitewide") as $t)
+                $x[] = preg_quote($t->tag) . "[ #=]";
+            self::$sitewidere_part = join("|", $x);
+        }
+        return self::$sitewidere_part;
     }
 
     public static function is_votish($tag) {
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
-        return $t && ($t->vote || $t->approval);
+        return !!self::defined_tags()->check_property($tag, "votish");
     }
 
     public static function is_vote($tag) {
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
-        return $t && $t->vote;
-    }
-
-    public static function vote_tags() {
-        $dt = self::defined_tags();
-        return $dt->has_vote ? $dt->tag_array("vote") : array();
+        return !!self::defined_tags()->check_property($tag, "vote");
     }
 
     public static function vote_setting($tag) {
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
+        $t = self::defined_tags()->check_property($tag, "vote");
         return $t && $t->vote > 0 ? $t->vote : 0;
     }
 
     public static function is_approval($tag) {
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
-        return $t && $t->approval;
-    }
-
-    public static function approval_tags() {
-        $dt = self::defined_tags();
-        return $dt->has_approval ? $dt->tag_array("approval") : array();
+        return !!self::defined_tags()->check_property($tag, "approval");
     }
 
     public static function votish_base($tag) {
         $dt = self::defined_tags();
-        if ((!$dt->has_vote && !$dt->has_approval)
+        if (!$dt->has_votish
             || ($twiddle = strpos($tag, "~")) === false)
             return false;
         $tbase = substr(self::base($tag), $twiddle + 1);
         $t = $dt->check($tbase);
-        return $t && ($t->vote || $t->approval) ? $tbase : false;
+        return $t && $t->votish ? $tbase : false;
     }
 
     public static function is_rank($tag) {
-        $dt = self::defined_tags();
-        $t = $dt->check(self::base($tag));
-        return $t && $t->rank;
-    }
-
-    public static function rank_tags() {
-        $dt = self::defined_tags();
-        return $dt->has_rank ? $dt->tag_array("rank") : array();
+        return !!self::defined_tags()->check_property($tag, "rank");
     }
 
     public static function unparse_anno_json($anno) {
@@ -528,11 +520,8 @@ class Tagger {
     }
 
     static public function strip_nonsitewide($tags, Contact $user) {
-        $x = ["\\&"];
-        foreach (TagInfo::sitewide_tags() as $t => $tinfo)
-            $x[] = preg_quote($t) . "[ #=]";
         $re = "{ (?:(?!" . $user->contactId . "~)\\d+~|~+|(?!"
-            . join("|", $x) . ")\\S)\\S*}i";
+            . TagInfo::sitewide_regex_part() . ")\\S)\\S*}i";
         return trim(preg_replace($re, "", " $tags "));
     }
 

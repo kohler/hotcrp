@@ -73,24 +73,27 @@ class SettingRenderer_Tags extends SettingRenderer {
 
 function render(SettingValues $sv) {
     global $Conf;
+    $dt_renderer = function ($tl) {
+        return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
+    };
 
     // Tags
     $tagger = new Tagger;
     echo "<h3 class=\"settings\">Tags</h3>\n";
     echo "<table><tbody class=\"secondary-settings\">";
-    $sv->set_oldv("tag_chair", join(" ", array_keys(TagInfo::chair_tags())));
+    $sv->set_oldv("tag_chair", $dt_renderer(TagInfo::defined_tags_with("chair")));
     $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-autogrow"]);
 
-    $sv->set_oldv("tag_sitewide", join(" ", array_keys(TagInfo::sitewide_tags())));
+    $sv->set_oldv("tag_sitewide", $dt_renderer(TagInfo::defined_tags_with("sitewide")));
     if ($sv->newv("tag_sitewide") || $Conf->has_any_manager())
         $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-autogrow"]);
 
-    $sv->set_oldv("tag_approval", join(" ", array_keys(TagInfo::approval_tags())));
+    $sv->set_oldv("tag_approval", $dt_renderer(TagInfo::defined_tags_with("approval")));
     $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
 
     $x = [];
-    foreach (TagInfo::vote_tags() as $n => $v)
-        $x[] = "$n#$v";
+    foreach (TagInfo::defined_tags_with("vote") as $t)
+        $x[] = "{$t->tag}#{$t->vote}";
     $sv->set_oldv("tag_vote", join(" ", $x));
     $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
 
