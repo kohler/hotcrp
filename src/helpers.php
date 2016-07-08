@@ -741,10 +741,12 @@ function plural($n, $what) {
 }
 
 function ordinal($n) {
-    if ($n >= 1 && $n <= 3)
-        return $n . ($n == 1 ? "st" : ($n == 2 ? "nd" : "rd"));
-    else
-        return $n . "th";
+    $x = $n;
+    if ($x > 100)
+        $x = $x % 100;
+    if ($x > 20)
+        $x = $x % 10;
+    return $n . ($x < 1 || $x > 3 ? "th" : ($x == 1 ? "st" : ($x == 2 ? "nd" : "rd")));
 }
 
 function tabLength($text, $all) {
