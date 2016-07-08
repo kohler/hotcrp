@@ -248,6 +248,15 @@ class TagInfo {
                     $map->make($t)->order_anno = $v;
                     $map->has_order_anno = true;
                 }
+        if (($od = opt("definedTags")))
+            foreach (is_string($od) ? [$od] : $od as $ods)
+                foreach (json_decode($ods) as $tag => $data) {
+                    $t = $map->make($tag);
+                    if (get($data, "chair"))
+                        $t->chair = $map->has_chair = true;
+                    if (get($data, "sitewide"))
+                        $t->sitewide = $map->has_sitewide = true;
+                }
         return $map;
     }
 
