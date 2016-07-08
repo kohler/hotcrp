@@ -235,6 +235,12 @@ function xassert_assign($who, $override, $what) {
     xassert($assignset->execute());
 }
 
+function xassert_assign_fail($who, $override, $what) {
+    $assignset = new AssignmentSet($who, $override);
+    $assignset->parse($what);
+    xassert(!$assignset->execute());
+}
+
 function call_api($fn, $user, $qreq, $prow) {
     if (!($qreq instanceof Qobject))
         $qreq = new Qobject($qreq);

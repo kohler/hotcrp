@@ -9,6 +9,8 @@
 
 class TagMapItem {
     public $tag;
+    public $pattern = false;
+    public $pattern_instance = false;
     public $chair = false;
     public $votish = false;
     public $vote = false;
@@ -21,6 +23,15 @@ class TagMapItem {
     public $badges = null;
     public function __construct($tag) {
         $this->tag = $tag;
+    }
+    public function merge(TagMapItem $t) {
+        foreach (["chair", "votish", "vote", "approval", "sitewide", "rank"] as $property)
+            if ($t->$property)
+                $this->$property = $t->$property;
+        if ($t->colors)
+            $this->colors = array_unique(array_merge($this->colors ? : [], $t->colors));
+        if ($t->badges)
+            $this->badges = array_unique(array_merge($this->badges ? : [], $t->badges));
     }
     public function tag_regex() {
         $t = preg_quote($this->tag);
@@ -50,6 +61,7 @@ class TagMapItem {
 }
 
 class TagMap implements IteratorAggregate {
+    public $has_pattern = false;
     public $has_chair = true;
     public $has_votish = false;
     public $has_vote = false;
@@ -61,19 +73,51 @@ class TagMap implements IteratorAggregate {
     public $has_order_anno = false;
     private $storage = array();
     private $sorted = false;
+    private $pattern_re = null;
+    private $pattern_storage = [];
     public function check($tag) {
-        return get($this->storage, strtolower($tag));
+        $ltag = strtolower($tag);
+        $t = get($this->storage, $ltag);
+        if (!$t && $this->has_pattern) {
+            if (!$this->pattern_re) {
+                $a = [];
+                foreach ($this->pattern_storage as $p)
+                    $a[] = strtolower($p->tag_regex());
+                $this->pattern_re = "{\A(?:" . join("|", $a) . ")\z}";
+            }
+            if (preg_match($this->pattern_re, $ltag))
+                foreach ($this->pattern_storage as $p)
+                    if (preg_match($p->pattern, $ltag)) {
+                        if (!$t) {
+                            $t = clone $p;
+                            $t->tag = $tag;
+                            $t->pattern = false;
+                            $t->pattern_instance = true;
+                            $this->storage[$ltag] = $t;
+                            $this->sorted = false;
+                        } else
+                            $t->merge($p);
+                    }
+        }
+        return $t;
     }
     public function make($tag) {
         $ltag = strtolower($tag);
-        if (!isset($this->storage[$ltag])) {
-            $n = new TagMapItem($tag);
-            if (!TagInfo::basic_check($ltag))
-                return $n;
-            $this->storage[$ltag] = $n;
-            $this->sorted = false;
+        $t = get($this->storage, $ltag);
+        if (!$t) {
+            $t = new TagMapItem($tag);
+            if (TagInfo::basic_check($ltag)) {
+                $this->storage[$ltag] = $t;
+                if (strpos($ltag, "*") !== false) {
+                    $t->pattern = "{\A" . strtolower(str_replace("\\*", ".*", $t->tag_regex())) . "\z}";
+                    $this->has_pattern = true;
+                    $this->pattern_storage[] = $t;
+                    $this->pattern_re = null;
+                }
+                $this->sorted = false;
+            }
         }
-        return $this->storage[$ltag];
+        return $t;
     }
     private function sort() {
         ksort($this->storage);

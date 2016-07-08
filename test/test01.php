@@ -357,6 +357,43 @@ $paper8 = $Conf->paperRow(8, $user_chair);
 xassert_eqq($paper8->tag_value("fart"), 4.0);
 xassert(strpos($paper8->all_tags_text(), " fArt#") !== false);
 
+// defined tags: chair
+xassert_assign($user_varghese, false, "paper,tag\n1,chairtest\n");
+assert_search_papers($user_varghese, "#chairtest", "1");
+xassert_assign($user_varghese, false, "paper,tag\n1,chairtest#clear\n");
+assert_search_papers($user_varghese, "#chairtest", "");
+
+$Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest"));
+TagInfo::invalidate_defined_tags();
+xassert_assign($Admin, true, "paper,tag\n1,chairtest\n");
+assert_search_papers($user_chair, "#chairtest", "1");
+assert_search_papers($user_varghese, "#chairtest", "1");
+xassert_assign_fail($user_varghese, false, "paper,tag\n1,chairtest#clear\n");
+assert_search_papers($user_varghese, "#chairtest", "1");
+
+// pattern tags: chair
+xassert_assign($user_varghese, false, "paper,tag\n1,chairtest1\n");
+assert_search_papers($user_varghese, "#chairtest1", "1");
+xassert_assign($user_varghese, false, "paper,tag\n1,chairtest1#clear\n");
+assert_search_papers($user_varghese, "#chairtest1", "");
+
+$Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest*"));
+TagInfo::invalidate_defined_tags();
+xassert(TagInfo::defined_tags()->has_pattern);
+$ct = TagInfo::defined_tag("chairtest0");
+xassert(!!$ct);
+xassert_assign($Admin, true, "paper,tag\n1,chairtest1\n");
+assert_search_papers($user_chair, "#chairtest1", "1");
+assert_search_papers($user_varghese, "#chairtest1", "1");
+xassert_assign_fail($user_varghese, false, "paper,tag\n1,chairtest1#clear\n");
+assert_search_papers($user_varghese, "#chairtest1", "1");
+
+// pattern tag merging
+$Conf->save_setting("tag_approval", 1, "chair*");
+TagInfo::invalidate_defined_tags();
+$ct = TagInfo::defined_tag("chairtest0");
+xassert($ct && $ct->chair && $ct->approval);
+
 // round searches
 assert_search_papers($user_chair, "re:huitema", "8 10 13");
 assert_search_papers($user_chair, "re:huitema round:R1", "13");

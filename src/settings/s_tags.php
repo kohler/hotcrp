@@ -74,7 +74,8 @@ class SettingRenderer_Tags extends SettingRenderer {
 function render(SettingValues $sv) {
     global $Conf;
     $dt_renderer = function ($tl) {
-        return join(" ", array_map(function ($t) { return $t->tag; }, $tl));
+        return join(" ", array_map(function ($t) { return $t->tag; },
+                                   array_filter($tl, function ($t) { return !$t->pattern_instance; })));
     };
 
     // Tags
