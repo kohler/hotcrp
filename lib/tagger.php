@@ -22,6 +22,10 @@ class TagMapItem {
     public function __construct($tag) {
         $this->tag = $tag;
     }
+    public function tag_regex() {
+        $t = preg_quote($this->tag);
+        return $this->pattern ? str_replace("\\*", ".*", $t) : $t;
+    }
     public function order_anno_list() {
         if ($this->order_anno_list == false) {
             $this->order_anno_list = Dbl::fetch_objects("select * from PaperTagAnno where tag=?", $this->tag);
@@ -52,7 +56,8 @@ class TagMap implements IteratorAggregate {
     public $has_approval = false;
     public $has_sitewide = false;
     public $has_rank = false;
-    public $has_badge = false;
+    public $has_colors = false;
+    public $has_badges = false;
     public $has_order_anno = false;
     private $storage = array();
     private $sorted = false;
@@ -179,23 +184,25 @@ class TagInfo {
         $ct = $Conf->setting_data("tag_color", "");
         if ($ct !== "")
             foreach (explode(" ", $ct) as $k)
-                if ($k !== "" && ($p = strpos($k, "=")) !== false)
+                if ($k !== "" && ($p = strpos($k, "=")) !== false) {
                     arrayappend($map->make(substr($k, 0, $p))->colors,
                                 self::canonical_color(substr($k, $p + 1)));
+                    $map->has_colors = true;
+                }
         $bt = $Conf->setting_data("tag_badge", "");
         if ($bt !== "")
             foreach (explode(" ", $bt) as $k)
                 if ($k !== "" && ($p = strpos($k, "=")) !== false) {
                     arrayappend($map->make(substr($k, 0, $p))->badges,
                                 self::canonical_color(substr($k, $p + 1)));
-                    $map->has_badge = true;
+                    $map->has_badges = true;
                 }
         $xt = $Conf->setting_data("tag_order_anno", "");
         if ($xt !== "" && ($xt = json_decode($xt)))
             foreach (get_object_vars($xt) as $t => $v)
                 if (is_object($v)) {
                     $map->make($t)->order_anno = $v;
-                    $map->has_order_anno;
+                    $map->has_order_anno = true;
                 }
         return $map;
     }
@@ -243,7 +250,7 @@ class TagInfo {
     }
 
     public static function has_badges() {
-        return self::defined_tags()->has_badge;
+        return self::defined_tags()->has_badges;
     }
 
     public static function has_order_anno() {
@@ -264,8 +271,8 @@ class TagInfo {
     public static function sitewide_regex_part() {
         if (self::$sitewidere_part === null) {
             $x = ["\\&"];
-            foreach (self::defined_tags()->filter("sitewide") as $t)
-                $x[] = preg_quote($t->tag) . "[ #=]";
+            foreach (self::defined_tags_with("sitewide") as $t)
+                $x[] = $t->tag_regex() . "[ #=]";
             self::$sitewidere_part = join("|", $x);
         }
         return self::$sitewidere_part;
@@ -348,9 +355,8 @@ class TagInfo {
     public static function color_regex() {
         if (!self::$colorre) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(" . self::BASIC_COLORS_PLUS;
-            foreach (self::defined_tags() as $v)
-                if ($v->colors)
-                    $re .= "|" . $v->tag;
+            foreach (self::defined_tags_with("colors") as $v)
+                $re .= "|" . $v->tag_regex();
             self::$colorre = $re . ")(?=\\z|[# ])}i";
         }
         return self::$colorre;
@@ -399,9 +405,8 @@ class TagInfo {
     public static function badge_regex() {
         if (!self::$badgere) {
             $re = "{(?:\\A| )(?:\\d*~|~~|)(";
-            foreach (self::defined_tags() as $v)
-                if ($v->badges)
-                    $re .= "|" . $v->tag;
+            foreach (self::defined_tags_with("badges") as $t)
+                $re .= "|" . $t->tag_regex();
             self::$badgere = $re . ")(?:#[\\d.]+)?(?=\\z| )}i";
         }
         return self::$badgere;

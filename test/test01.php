@@ -240,6 +240,7 @@ xassert($user_wilma->can_view_review($paper1, $review2, false));
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
+TagInfo::invalidate_defined_tags();
 $paper17 = $Conf->paperRow(17, $user_jon);
 xassert(!$Conf->check_tracks($paper17, $user_jon, Track::ASSREV));
 xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper17));
