@@ -79,18 +79,25 @@ function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
         $indentlen = strlen($indent);
 
     $out = "";
-    while ($text !== "" && ctype_space($text[0])) {
-        $out .= $text[0];
-        $text = substr($text, 1);
-    }
+    if ($prefix !== false) {
+        while ($text !== "" && ctype_space($text[0])) {
+            $out .= $text[0];
+            $text = substr($text, 1);
+        }
+    } else if (($line = UnicodeHelper::utf8_line_break($text, $totWidth)) !== false)
+        $out .= $line . "\n";
 
     while (($line = UnicodeHelper::utf8_line_break($text, $totWidth - $indentlen)) !== false)
         $out .= $indent . preg_replace('/^\pZ+/u', '', $line) . "\n";
-    if (strlen($prefix) <= $indentlen) {
+
+    if ($prefix === false)
+        /* skip */;
+    else if (strlen($prefix) <= $indentlen) {
         $prefix = str_pad($prefix, $indentlen, " ", STR_PAD_LEFT);
         $out = $prefix . substr($out, $indentlen);
     } else
         $out = $prefix . "\n" . $out;
+
     if (!str_ends_with($out, "\n"))
         $out .= "\n";
     return $out;
