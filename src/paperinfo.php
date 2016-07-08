@@ -740,6 +740,11 @@ class PaperInfo {
         return $did > 0 ? get($this->_document_array, $did) : null;
     }
 
+    public function npages() {
+        $dtype = $this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
+        return $this->document($dtype)->npages();
+    }
+
     public function num_reviews_submitted() {
         if (!property_exists($this, "reviewCount"))
             $this->reviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
