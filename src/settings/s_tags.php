@@ -212,12 +212,12 @@ class Tag_SettingParser extends SettingParser {
     }
     public function parse(SettingValues $sv, Si $si) {
         if ($si->name == "tag_chair" && isset($sv->req["tag_chair"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
             $sv->update($si->name, join(" ", $ts));
         }
 
         if ($si->name == "tag_sitewide" && isset($sv->req["tag_sitewide"])) {
-            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false);
+            $ts = $this->parse_list($sv, $si, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false);
             $sv->update($si->name, join(" ", $ts));
         }
 
@@ -248,7 +248,7 @@ class Tag_SettingParser extends SettingParser {
                 if (isset($sv->req["tag_color_$k"])) {
                     $xsi = new Si("tag_color_$k", ["name" => ucfirst($k) . " style tag"]);
                     $any_set = true;
-                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
             if ($any_set)
@@ -262,7 +262,7 @@ class Tag_SettingParser extends SettingParser {
                 if (isset($sv->req["tag_badge_$k"])) {
                     $xsi = new Si("tag_badge_$k", ["name" => ucfirst($k) . " badge style tag"]);
                     $any_set = true;
-                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE, false) as $t)
+                    foreach ($this->parse_list($sv, $xsi, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE | Tagger::ALLOWSTAR, false) as $t)
                         $ts[] = $t . "=" . $k;
                 }
             if ($any_set)
@@ -287,8 +287,9 @@ class Tag_SettingParser extends SettingParser {
                     continue;
                 $base = substr($t, 0, strpos($t, "#"));
                 $allotment = substr($t, strlen($base) + 1);
+                $sqlbase = sqlq_for_like($base);
 
-                $result = Dbl::q("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($base) . "'");
+                $result = Dbl::q("select paperId, tag, tagIndex from PaperTag where tag like '%~{$sqlbase}'");
                 $pvals = array();
                 $cvals = array();
                 $negative = false;
@@ -307,7 +308,7 @@ class Tag_SettingParser extends SettingParser {
                     if ($what > $allotment)
                         $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
 
-                $q = ($negative ? " or (tag like '%~" . sqlq_for_like($base) . "' and tagIndex<0)" : "");
+                $q = ($negative ? " or (tag like '%~{$sqlbase}' and tagIndex<0)" : "");
                 $Conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
 
                 $q = array();
