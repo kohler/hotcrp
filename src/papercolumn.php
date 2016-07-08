@@ -1064,17 +1064,21 @@ class TagListPaperColumn extends PaperColumn {
         return !$pl->contact->can_view_tags($row, true);
     }
     public function content($pl, $row, $rowidx) {
+        $wrap_conflict = false;
         $viewable = $row->viewable_tags($pl->contact);
         if ($viewable === "" && $row->paperTags && $pl->contact->allow_administer($row)) {
+            $wrap_conflict = true;
             $viewable = $row->viewable_tags($pl->contact, true);
-            $pl->conflict_fold = $viewable !== "";
         }
         $pl->row_attr["data-tags"] = trim($viewable);
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
         if ($viewable !== "" || $this->editable) {
             $pl->need_render = true;
-            return '<span class="need-tags"></span>';
+            if ($wrap_conflict)
+                return '<div class="fx5"><span class="need-tags"></span></div>';
+            else
+                return '<span class="need-tags"></span>';
         } else
             return "";
     }

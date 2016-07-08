@@ -99,7 +99,6 @@ class PaperList {
     private $_xreviewer = false;
     public $tbody_attr;
     public $row_attr;
-    public $conflict_fold;
     public $review_list;
     public $table_type;
     public $need_render;
@@ -714,15 +713,12 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $this->conflict_fold = false;
                 $c = $empty ? "" : $fdef->content($this, $row, $rowidx);
                 if ($c !== "")
                     $fdef->has_content = true;
                 $tm .= "<td class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
                     $tm .= " fx$fdef->foldable";
-                if ($this->conflict_fold)
-                    $tm .= " fx5";
                 $tm .= "\">" . $c . "</td>";
             }
         }
@@ -738,7 +734,6 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
-                $this->conflict_fold = false;
                 $c = $empty ? "" : $fdef->content($this, $row, $rowidx);
                 if ($c !== "") {
                     $fdef->has_content = true;
@@ -760,8 +755,6 @@ class PaperList {
                     }
                 } else if ($fdef->foldable)
                     $tt .= " fx" . $fdef->foldable;
-                if ($this->conflict_fold)
-                    $tt .= " fx5";
                 $tt .= "\">" . $c . "</div>";
             }
         }
