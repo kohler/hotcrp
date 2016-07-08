@@ -470,7 +470,7 @@ class SettingValues {
     }
     public function echo_checkbox_row($name, $text, $onchange = null) {
         $x = $this->curv($name);
-        echo '<tr><td class="nw">',
+        echo '<tr><td class="nb">',
             Ht::hidden("has_$name", 1),
             Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
             "&nbsp;</td><td>",
@@ -483,7 +483,7 @@ class SettingValues {
             $x = 0;
         echo "<table style=\"margin-top:0.25em\">\n";
         foreach ($varr as $k => $text) {
-            echo '<tr><td class="nw">',
+            echo '<tr><td class="nb">',
                 Ht::radio($name, $k, $k == $x, $this->sjs($name, array("id" => "{$name}_{$k}"))),
                 "&nbsp;</td><td>";
             if (is_array($text))
@@ -520,7 +520,7 @@ class SettingValues {
             $after_entry = $js["after_entry"];
             unset($js["after_entry"]);
         }
-        echo '<tr><td class="lcaption nw">', $this->label($name, $description),
+        echo '<tr><td class="lcaption nb">', $this->label($name, $description),
             '</td><td class="lentry">', $this->render_entry($name, $js);
         if ($after_entry)
             echo $after_entry;
