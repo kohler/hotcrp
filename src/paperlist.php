@@ -99,6 +99,7 @@ class PaperList {
     private $_xreviewer = false;
     public $tbody_attr;
     public $row_attr;
+    public $conflict_fold;
     public $review_list;
     public $table_type;
     public $need_render;
@@ -713,16 +714,16 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
+                $this->conflict_fold = false;
+                $c = $empty ? "" : $fdef->content($this, $row, $rowidx);
+                if ($c !== "")
+                    $fdef->has_content = true;
                 $tm .= "<td class=\"pl " . $fdef->className;
                 if ($fdef->foldable)
                     $tm .= " fx$fdef->foldable";
-                $tm .= "\">";
-                if (!$empty
-                    && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    $tm .= $c;
-                    $fdef->has_content = true;
-                }
-                $tm .= "</td>";
+                if ($this->conflict_fold)
+                    $tm .= " fx5";
+                $tm .= "\">" . $c . "</td>";
             }
         }
 
@@ -737,6 +738,17 @@ class PaperList {
                 if (!$empty)
                     $fdef->has_content = true;
             } else {
+                $this->conflict_fold = false;
+                $c = $empty ? "" : $fdef->content($this, $row, $rowidx);
+                if ($c !== "") {
+                    $fdef->has_content = true;
+                    if (($ch = $fdef->header($this, -1))) {
+                        if ($c[0] !== "<"
+                            || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
+                            $cm = [null, "", $c];
+                        $c = $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
+                    }
+                }
                 $tt .= "<div class=\"" . $fdef->className;
                 if ($is_authors) {
                     $tt .= " fx1";
@@ -748,20 +760,9 @@ class PaperList {
                     }
                 } else if ($fdef->foldable)
                     $tt .= " fx" . $fdef->foldable;
-                $tt .= "\">";
-                if (!$empty
-                    && ($c = $fdef->content($this, $row, $rowidx)) !== "") {
-                    $ch = $fdef->header($this, -1);
-                    if ($ch) {
-                        if ($c[0] !== "<"
-                            || !preg_match('/\A((?:<(?:div|p).*?>)*)([\s\S]*)\z/', $c, $cm))
-                            $cm = [null, "", $c];
-                        $tt .= $cm[1] . '<em class="plx">' . $ch . ':</em> ' . $cm[2];
-                    } else
-                        $tt .= $c;
-                    $fdef->has_content = true;
-                }
-                $tt .= "</div>";
+                if ($this->conflict_fold)
+                    $tt .= " fx5";
+                $tt .= "\">" . $c . "</div>";
             }
         }
 

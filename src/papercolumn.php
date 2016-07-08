@@ -1065,12 +1065,16 @@ class TagListPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $viewable = $row->viewable_tags($pl->contact);
+        if ($viewable === "" && $row->paperTags && $pl->contact->allow_administer($row)) {
+            $viewable = $row->viewable_tags($pl->contact, true);
+            $pl->conflict_fold = $viewable !== "";
+        }
         $pl->row_attr["data-tags"] = trim($viewable);
         if ($this->editable)
             $pl->row_attr["data-tags-editable"] = 1;
         if ($viewable !== "" || $this->editable) {
             $pl->need_render = true;
-            return "<span class=\"need-tags\"></span>";
+            return '<span class="need-tags"></span>';
         } else
             return "";
     }
