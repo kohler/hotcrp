@@ -26,6 +26,7 @@ class Si {
     public $disabled = false;
     public $invalid_value = null;
     public $default_value = null;
+    public $autogrow = false;
     public $ifnonempty;
     public $message_default;
     public $date_backup;
@@ -57,7 +58,7 @@ class Si {
         $this->store($name, "short_description", $j, "name", "is_string");
         foreach (["short_description", "type", "storage", "parser", "ifnonempty", "message_default", "placeholder", "invalid_value", "date_backup"] as $k)
             $this->store($name, $k, $j, $k, "is_string");
-        foreach (["internal", "optional", "novalue", "disabled", "extensible"] as $k)
+        foreach (["internal", "optional", "novalue", "disabled", "extensible", "autogrow"] as $k)
             $this->store($name, $k, $j, $k, "is_bool");
         $this->store($name, "size", $j, "size", "is_int");
         $this->store($name, "values", $j, "values", "is_array");
@@ -502,6 +503,8 @@ class SettingValues {
                 $js["size"] = $si->size;
             if ($si->placeholder)
                 $js["placeholder"] = $si->placeholder;
+            if ($si->autogrow)
+                $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
             if ($si->is_date())
                 $v = $this->si_render_date_value($v, $si);
             else if ($si->type === "grace")

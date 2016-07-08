@@ -83,20 +83,20 @@ function render(SettingValues $sv) {
     echo "<h3 class=\"settings\">Tags</h3>\n";
     echo "<table><tbody class=\"secondary-settings\">";
     $sv->set_oldv("tag_chair", $dt_renderer(TagInfo::defined_tags_with("chair")));
-    $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.", ["class" => "need-autogrow"]);
+    $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.");
 
     $sv->set_oldv("tag_sitewide", $dt_renderer(TagInfo::defined_tags_with("sitewide")));
     if ($sv->newv("tag_sitewide") || $Conf->has_any_manager())
-        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.", ["class" => "need-autogrow"]);
+        $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.");
 
     $sv->set_oldv("tag_approval", $dt_renderer(TagInfo::defined_tags_with("approval")));
-    $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
+    $sv->echo_entry_row("tag_approval", "Approval voting tags", "<a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
 
     $x = [];
     foreach (TagInfo::defined_tags_with("vote") as $t)
         $x[] = "{$t->tag}#{$t->vote}";
     $sv->set_oldv("tag_vote", join(" ", $x));
-    $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>", ["class" => "need-autogrow"]);
+    $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
 
     $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
     $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
@@ -118,7 +118,7 @@ function render(SettingValues $sv) {
             $v = join(" ", $tag_colors[$k]);
         else
             $v = "";
-        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' /></td></tr>"; /* MAINSIZE */
+        $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' class=\"need-autogrow\"/></td></tr>"; /* MAINSIZE */
     }
 
     preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_badge", ""), $m,
