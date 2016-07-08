@@ -45,13 +45,12 @@ class TagMapItem {
 }
 
 class TagMap implements ArrayAccess, IteratorAggregate {
-    public $nchair = 0;
-    public $nvote = 0;
-    public $napproval = 0;
-    public $nsitewide = 0;
-    public $nrank = 0;
-    public $nbadge = 0;
-    public $norder_anno = 0;
+    public $has_vote = false;
+    public $has_approval = false;
+    public $has_sitewide = false;
+    public $has_rank = false;
+    public $has_badge = false;
+    public $has_order_anno = false;
     private $storage = array();
     private $sorted = false;
     public function offsetExists($offset) {
@@ -150,43 +149,34 @@ class TagInfo {
             return $map;
         $ct = $Conf->setting_data("tag_chair", "");
         foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t !== "" && !$map[self::base($t)]->chair) {
+            if ($t !== "" && !$map[self::base($t)]->chair)
                 $map[self::base($t)]->chair = true;
-                ++$map->nchair;
-            }
         foreach ($Conf->track_tags() as $t)
-            if (!$map[self::base($t)]->chair) {
+            if (!$map[self::base($t)]->chair)
                 $map[self::base($t)]->chair = true;
-                ++$map->nchair;
-            }
         $ct = $Conf->setting_data("tag_sitewide", "");
         foreach (preg_split('/\s+/', $ct) as $t)
-            if ($t !== "" && !$map[self::base($t)]->sitewide) {
-                $map[self::base($t)]->sitewide = true;
-                ++$map->nsitewide;
-            }
+            if ($t !== "" && !$map[self::base($t)]->sitewide)
+                $map[self::base($t)]->sitewide = $map->has_sitewide = true;
         $vt = $Conf->setting_data("tag_vote", "");
         if ($vt !== "")
             foreach (preg_split('/\s+/', $vt) as $t)
                 if ($t !== "") {
                     list($b, $v) = self::split_index($t);
                     $map[$b]->vote = ($v ? $v : 1);
-                    ++$map->nvote;
+                    $map->has_vote = true;
                 }
         $vt = $Conf->setting_data("tag_approval", "");
         if ($vt !== "")
             foreach (preg_split('/\s+/', $vt) as $t)
                 if ($t !== "") {
                     list($b, $v) = self::split_index($t);
-                    $map[$b]->approval = true;
-                    ++$map->napproval;
+                    $map[$b]->approval = $map->has_approval = true;
                 }
         $rt = $Conf->setting_data("tag_rank", "");
         if ($rt !== "")
-            foreach (preg_split('/\s+/', $rt) as $t) {
-                $map[self::base($t)]->rank = true;
-                ++$map->nrank;
-            }
+            foreach (preg_split('/\s+/', $rt) as $t)
+                $map[self::base($t)]->rank = $map->has_rank = true;
         $ct = $Conf->setting_data("tag_color", "");
         if ($ct !== "")
             foreach (explode(" ", $ct) as $k)
@@ -199,14 +189,14 @@ class TagInfo {
                 if ($k !== "" && ($p = strpos($k, "=")) !== false) {
                     arrayappend($map[substr($k, 0, $p)]->badges,
                                 self::canonical_color(substr($k, $p + 1)));
-                    ++$map->nbadge;
+                    $map->has_badge = true;
                 }
         $xt = $Conf->setting_data("tag_order_anno", "");
         if ($xt !== "" && ($xt = json_decode($xt)))
             foreach (get_object_vars($xt) as $t => $v)
                 if (is_object($v)) {
                     $map[$t]->order_anno = $v;
-                    ++$map->norder_anno;
+                    $map->has_order_anno;
                 }
         return $map;
     }
@@ -230,31 +220,31 @@ class TagInfo {
     }
 
     public static function has_sitewide() {
-        return !!self::defined_tags()->nsitewide;
+        return self::defined_tags()->has_sitewide;
     }
 
     public static function has_vote() {
-        return !!self::defined_tags()->nvote;
+        return self::defined_tags()->has_vote;
     }
 
     public static function has_approval() {
-        return !!self::defined_tags()->napproval;
+        return self::defined_tags()->has_approval;
     }
 
     public static function has_votish() {
-        return self::defined_tags()->nvote || self::defined_tags()->napproval;
+        return self::defined_tags()->has_vote || self::defined_tags()->has_approval;
     }
 
     public static function has_rank() {
-        return !!self::defined_tags()->nrank;
+        return self::defined_tags()->has_rank;
     }
 
     public static function has_badges() {
-        return !!self::defined_tags()->nbadge;
+        return self::defined_tags()->has_badge;
     }
 
     public static function has_order_anno() {
-        return !!self::defined_tags()->norder_anno;
+        return self::defined_tags()->has_order_anno;
     }
 
     public static function is_chair($tag) {
@@ -293,7 +283,7 @@ class TagInfo {
 
     public static function vote_tags() {
         $dt = self::defined_tags();
-        return $dt->nvote ? $dt->tag_array("vote") : array();
+        return $dt->has_vote ? $dt->tag_array("vote") : array();
     }
 
     public static function vote_setting($tag) {
@@ -310,12 +300,12 @@ class TagInfo {
 
     public static function approval_tags() {
         $dt = self::defined_tags();
-        return $dt->napproval ? $dt->tag_array("approval") : array();
+        return $dt->has_approval ? $dt->tag_array("approval") : array();
     }
 
     public static function votish_base($tag) {
         $dt = self::defined_tags();
-        if ((!$dt->nvote && !$dt->napproval)
+        if ((!$dt->has_vote && !$dt->has_approval)
             || ($twiddle = strpos($tag, "~")) === false)
             return false;
         $tbase = substr(self::base($tag), $twiddle + 1);
@@ -331,7 +321,7 @@ class TagInfo {
 
     public static function rank_tags() {
         $dt = self::defined_tags();
-        return $dt->nrank ? $dt->tag_array("rank") : array();
+        return $dt->has_rank ? $dt->tag_array("rank") : array();
     }
 
     public static function unparse_anno_json($anno) {
