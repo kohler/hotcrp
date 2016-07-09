@@ -199,7 +199,8 @@ class PaperStatus {
 
         $options = array();
         foreach (PaperOption::option_list() as $o) {
-            if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
+            if (($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
+                && (!$o->final || $prow->outcome > 0))
                 continue;
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
             $oj = $o->unparse_json($ov, $this, $contact);
