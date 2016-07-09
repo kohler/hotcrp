@@ -6,11 +6,14 @@
 class Mimetype {
     const TXT = 1;
     const PDF = 2;
+    const PDF_TYPE = "application/pdf";
     const PS = 3;
     const PPT = 4;
     const JSON = 8;
     const JPG = 9;
+    const JPG_TYPE = "image/jpeg";
     const PNG = 10;
+    const PNG_TYPE = "image/png";
     const MAX_BUILTIN = 10;
 
     public $mimetypeid;
@@ -118,34 +121,34 @@ class Mimetype {
         return $x;
     }
 
-    static function sniff($content) {
+    static function sniff_type($content) {
         if (strncmp("%PDF-", $content, 5) == 0)
-            return self::$tmap[self::PDF];
+            return self::PDF_TYPE;
         else if (strncmp("%!PS-", $content, 5) == 0)
-            return self::$tmap[self::PS];
+            return self::$tmap[self::PS]->mimetype;
         else if (substr($content, 512, 4) == "\x00\x6E\x1E\xF0")
-            return self::$tmap[self::PPT];
+            return self::$tmap[self::PPT]->mimetype;
         else if (substr($content, 0, 4) == "\xFF\xD8\xFF\xD8"
                  || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE0" && substr($content, 6, 6) == "JFIF\x00\x01")
                  || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE1" && substr($content, 6, 6) == "Exif\x00\x00"))
-            return self::$tmap[self::JPG];
+            return self::$tmap[self::JPG]->mimetype;
         else if (substr($content, 0, 8) == "\x89PNG\r\n\x1A\x0A")
-            return self::$tmap[self::PNG];
+            return self::$tmap[self::PNG]->mimetype;
         else
             return null;
     }
 }
 
 Mimetype::make(Mimetype::TXT, "text/plain", ".txt", "text", true);
-Mimetype::make(Mimetype::PDF, "application/pdf", ".pdf", "PDF", true);
+Mimetype::make(Mimetype::PDF, Mimetype::PDF_TYPE, ".pdf", "PDF", true);
 Mimetype::make(Mimetype::PS, "application/postscript", ".ps", "PostScript");
 Mimetype::make(Mimetype::PPT, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
 Mimetype::make(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
 Mimetype::make(6, "video/mp4", ".mp4");
 Mimetype::make(7, "video/x-msvideo", ".avi");
 Mimetype::make(Mimetype::JSON, "application/json", ".json", "JSON");
-Mimetype::make(Mimetype::JPG, "image/jpeg", ".jpg", "JPEG");
-Mimetype::make(Mimetype::PNG, "image/png", ".png", "PNG");
+Mimetype::make(Mimetype::JPG, Mimetype::JPG_TYPE, ".jpg", "JPEG");
+Mimetype::make(Mimetype::PNG, Mimetype::PNG_TYPE, ".png", "PNG");
 
 Mimetype::make_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
 Mimetype::make_synonym("application/powerpoint", "application/vnd.ms-powerpoint");

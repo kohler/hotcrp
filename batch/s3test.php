@@ -34,10 +34,11 @@ foreach ($arg["_"] as $fn) {
         $ok = 2;
     } else {
         $doc = (object) array("sha1" => sha1($content, true));
-        if (!($extensions && preg_match('/(\.\w+)\z/', $fn, $m)
-              && ($doc->mimetype = Mimetype::lookup_extension($m[1])))
-            && ($m = Mimetype::sniff($content)))
-            $doc->mimetype = $m->mimetype;
+        if ($extensions && preg_match('/(\.\w+)\z/', $fn, $m)
+            && ($mtx = Mimetype::lookup_extension($m[1])))
+            $doc->mimetype = $mtx->mimetype;
+        else if (($mt = Mimetype::sniff_type($content)))
+            $doc->mimetype = $mt;
         $s3fn = HotCRPDocument::s3_filename($doc);
         if (!$s3doc->check($s3fn)) {
             if (!$quiet)

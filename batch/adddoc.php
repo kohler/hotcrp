@@ -5,13 +5,13 @@ require_once("$ConfSitePATH/lib/getopt.php");
 
 $arg = getopt_rest($argv, "hn:m:p:d:f:", array("help", "name:", "mimetype:", "paper:", "dtype:", "filename:", "no-file-storage"));
 if (!isset($arg["d"]))
-    $arg["d"] = @$arg["dtype"] ? $arg["dtype"] : "0";
+    $arg["d"] = get($arg, "dtype") ? : "0";
 if (!isset($arg["p"]))
-    $arg["p"] = @$arg["paper"] ? $arg["paper"] : "0";
+    $arg["p"] = get($arg, "paper") ? : "0";
 if (!isset($arg["f"]))
-    $arg["f"] = @$arg["filename"];
+    $arg["f"] = get($arg, "filename");
 if (!isset($arg["m"]))
-    $arg["m"] = @$arg["mimetype"];
+    $arg["m"] = get($arg, "mimetype");
 if (isset($arg["h"]) || isset($arg["help"])
     || !is_numeric($arg["d"])
     || !is_numeric($arg["p"])
@@ -39,12 +39,12 @@ if (isset($arg["no-file-storage"]))
     $docclass->set_no_file_storage();
 $docinfo = (object) array("paperId" => (int) $arg["p"]);
 $doc = (object) array("content" => $content, "documentType" => (int) $arg["d"]);
-if (@$arg["f"])
+if (get($arg, "f"))
     $doc->filename = $arg["f"];
-if (@$arg["m"])
+if (get($arg, "m"))
     $doc->mimetype = $arg["m"];
-else if (($m = Mimetype::sniff($doc->content)))
-    $doc->mimetype = $m->mimetype;
+else if (($mt = Mimetype::sniff_type($doc->content)))
+    $doc->mimetype = $mt;
 else
     $doc->mimetype = "application/octet-stream";
 $docclass->store($doc, $docinfo);
