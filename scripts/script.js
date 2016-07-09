@@ -4956,8 +4956,13 @@ function make_callback(dofold, type) {
                 for (var k in values)
                     if (k.substr(0, 5) == "attr." && p in values[k])
                         pidattr(p, k.substr(5), values[k][p]);
-                if (values[htmlk] && p in values[htmlk])
-                    set(f, pidfield(p, f, index)[0], values[htmlk][p]);
+                if (values[htmlk] && p in values[htmlk]) {
+                    var $elt = pidfield(p, f, index);
+                    if (!$elt.length)
+                        log_jserror("bad pidfield " + JSON.stringify([p, f.name, index]));
+                    else
+                        set(f, $elt[0], values[htmlk][p]);
+                }
                 ++n;
             }
         render_needed();
