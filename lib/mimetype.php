@@ -6,15 +6,19 @@
 class Mimetype {
     const TXT = 1;
     const PDF = 2;
-    const PDF_TYPE = "application/pdf";
     const PS = 3;
     const PPT = 4;
     const JSON = 8;
     const JPG = 9;
-    const JPG_TYPE = "image/jpeg";
     const PNG = 10;
-    const PNG_TYPE = "image/png";
     const MAX_BUILTIN = 10;
+
+    const PDF_TYPE = "application/pdf";
+    const JPG_TYPE = "image/jpeg";
+    const PNG_TYPE = "image/png";
+    const TAR_TYPE = "application/x-tar";
+    const ZIP_TYPE = "application/zip";
+    const RAR_TYPE = "application/x-rar-compressed";
 
     public $mimetypeid;
     public $mimetype;
@@ -128,12 +132,22 @@ class Mimetype {
             return self::$tmap[self::PS]->mimetype;
         else if (substr($content, 512, 4) == "\x00\x6E\x1E\xF0")
             return self::$tmap[self::PPT]->mimetype;
-        else if (substr($content, 0, 4) == "\xFF\xD8\xFF\xD8"
-                 || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE0" && substr($content, 6, 6) == "JFIF\x00\x01")
-                 || (substr($content, 0, 4) == "\xFF\xD8\xFF\xE1" && substr($content, 6, 6) == "Exif\x00\x00"))
-            return self::$tmap[self::JPG]->mimetype;
-        else if (substr($content, 0, 8) == "\x89PNG\r\n\x1A\x0A")
-            return self::$tmap[self::PNG]->mimetype;
+        else if (strncmp($content, "\xFF\xD8\xFF\xD8", 4) == 0
+                 || (strncmp($content, "\xFF\xD8\xFF\xE0", 4) == 0 && substr($content, 6, 6) == "JFIF\x00\x01")
+                 || (strncmp($content, "\xFF\xD8\xFF\xE1", 4) == 0 && substr($content, 6, 6) == "Exif\x00\x00"))
+            return self::JPG_TYPE;
+        else if (strncmp($content, "\x89PNG\r\n\x1A\x0A", 8) == 0)
+            return self::PNG_TYPE;
+        else if (strncmp($content, "ustar\x0000", 8) == 0
+                 || strncmp($content, "ustar  \x00", 8) == 0)
+            return self::TAR_TYPE;
+        else if (strncmp($content, "PK\x03\x04", 4) == 0
+                 || strncmp($content, "PK\x05\x06", 4) == 0
+                 || strncmp($content, "PK\x07\x08", 4) == 0)
+            return self::ZIP_TYPE;
+        else if (strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
+                 || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0)
+            return self::RAR_TYPE;
         else
             return null;
     }
