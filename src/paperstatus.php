@@ -197,19 +197,17 @@ class PaperStatus {
             $pj->final_submitted_at = (int) $prow->timeFinalSubmitted;
         }
 
-        if (count($prow->options())) {
-            $options = array();
-            foreach (PaperOption::option_list() as $o) {
-                if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
-                    continue;
-                $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
-                $oj = $o->unparse_json($ov, $this, $contact);
-                if ($oj !== null)
-                    $options[$this->export_ids ? $o->id : $o->abbr] = $oj;
-            }
-            if (!empty($options))
-                $pj->options = (object) $options;
+        $options = array();
+        foreach (PaperOption::option_list() as $o) {
+            if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
+                continue;
+            $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
+            $oj = $o->unparse_json($ov, $this, $contact);
+            if ($oj !== null)
+                $options[$this->export_ids ? $o->id : $o->abbr] = $oj;
         }
+        if (!empty($options))
+            $pj->options = (object) $options;
 
         if ($can_view_authors) {
             $pcconflicts = array();
