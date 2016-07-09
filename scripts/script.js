@@ -4934,8 +4934,11 @@ function add_row(f) {
     f.missing = false;
 }
 
-function set(f, elt, text) {
-    if (text == null || text == "")
+function set(f, $j, text) {
+    var elt = $j[0];
+    if (!elt)
+        /* skip */;
+    else if (text == null || text == "")
         elt.innerHTML = "";
     else {
         if (elt.className == "")
@@ -4960,8 +4963,7 @@ function make_callback(dofold, type) {
                     var $elt = pidfield(p, f, index);
                     if (!$elt.length)
                         log_jserror("bad pidfield " + JSON.stringify([p, f.name, index]));
-                    else
-                        set(f, $elt[0], values[htmlk][p]);
+                    set(f, $elt, values[htmlk][p]);
                 }
                 ++n;
             }
@@ -4986,7 +4988,7 @@ function show_loading(f) {
         if (f.loadable) {
             var index = field_index(f);
             for (var p in pidmap())
-                set(f, pidfield(p, f, index)[0], "Loading");
+                set(f, pidfield(p, f, index), "Loading");
         }
     };
 }
