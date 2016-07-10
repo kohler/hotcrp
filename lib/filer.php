@@ -282,11 +282,6 @@ class Filer_UploadJson implements JsonSerializable {
 class Filer {
     static public $tempdir;
 
-    // override these to tell Filer how to behave
-    function mimetypes($doc = null, $docinfo = null) {
-        // Return the acceptable mimetypes for $doc.
-        return [];
-    }
     function validate_content($doc) {
         // load() callback. Return `true` if content of $doc is up to date and
         // need not be checked by load_content.
@@ -310,6 +305,10 @@ class Filer {
     }
     function store_other($doc, $docinfo) {
         // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
+    }
+    function validate_upload($doc, $docinfo) {
+        // upload() callback. Return false if $doc should not be stored.
+        return true;
     }
 
     // main accessors
@@ -583,17 +582,6 @@ class Filer {
     }
 
     // upload
-    static function file_upload_json($upload) {
-        if (is_string($upload) && $upload)
-            $upload = $_FILES[$upload];
-        if (!$upload || !is_array($upload) || !fileUploaded($upload)
-            || !isset($upload["tmp_name"]))
-            return set_error_html($doc, "Upload error. Please try again.");
-        $doc = new Filer_UploadJson($upload);
-        if ($doc->content === false || strlen($doc->content) == 0)
-            return set_error_html($doc, "The uploaded file was empty. Please try again.");
-        return $doc;
-    }
     function upload($doc, $docinfo) {
         global $Conf;
         if (!is_object($doc)) {
@@ -605,31 +593,25 @@ class Filer {
         if (get($doc, "error"))
             return false;
 
-        // Check if paper one of the allowed mimetypes.
+        // Clean up mimetype and timestamp.
         if (!isset($doc->mimetype) && isset($doc->type) && is_string($doc->type))
             $doc->mimetype = $doc->type;
+        if (isset($doc->content)
+            && (!get($doc, "mimetype")
+                || Mimetype::is_sniffable($doc->mimetype)
+                || Mimetype::is_sniff_type_reliable($doc->content)))
+            $doc->mimetype = Mimetype::sniff_type($doc->content);
         if (!get($doc, "mimetype"))
             $doc->mimetype = "application/octet-stream";
-        // Sniff content since MacOS browsers supply bad mimetypes.
-        if (($mt = Mimetype::sniff_type(self::content($doc))))
-            $doc->mimetype = $mt;
         if (($m = Mimetype::lookup($doc->mimetype)))
             $doc->mimetypeid = $m->mimetypeid;
-
-        $mimetypes = $this->mimetypes($doc, $docinfo);
-        for ($i = 0; $i < count($mimetypes); ++$i)
-            if ($mimetypes[$i]->mimetype === $doc->mimetype)
-                break;
-        if ($i >= count($mimetypes) && count($mimetypes) && !$doc->filterType) {
-            $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
-            $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
-            set_error_html($doc, $e);
-            return false;
-        }
-
         if (!get($doc, "timestamp"))
             $doc->timestamp = time();
-        return $this->store($doc, $docinfo);
+
+        if ($this->validate_upload($doc, $docinfo))
+            return $this->store($doc, $docinfo);
+        else
+            return false;
     }
 
     // SHA-1 helpers

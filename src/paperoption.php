@@ -40,7 +40,7 @@ class PaperOptionValue {
         if ($this->_documents === null) {
             $this->_documents = $by_unique_filename = array();
             $docclass = null;
-            $this->option->validate_documents($this);
+            $this->option->refresh_documents($this);
             foreach ($this->sorted_values() as $docid)
                 if ($docid > 1 && ($d = $this->prow->document($this->id, $docid))) {
                     $d->unique_filename = $d->filename;
@@ -440,11 +440,7 @@ class PaperOption {
         return false;
     }
 
-    function validate_documents(PaperOptionValue $ov) {
-    }
-
-    function mimetypes() {
-        return null;
+    function refresh_documents(PaperOptionValue $ov) {
     }
 
     function takes_multiple() {
@@ -548,6 +544,10 @@ class PaperOption {
 
     function parse_request($opt_pj, $qreq, Contact $user, $pj) {
         return null;
+    }
+
+    function validate_document($doc, $docinfo) {
+        return true;
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {
@@ -720,6 +720,19 @@ class DocumentPaperOption extends PaperOption {
             return null;
         else
             return $opt_pj;
+    }
+
+    function validate_document($doc, $docinfo) {
+        $mimetypes = $this->mimetypes();
+        if (empty($mimetypes))
+            return true;
+        for ($i = 0; $i < count($mimetypes); ++$i)
+            if ($mimetypes[$i]->mimetype === $doc->mimetype)
+                return true;
+        $e = "I only accept " . htmlspecialchars(Mimetype::description($mimetypes)) . " files.";
+        $e .= " (Your file has MIME type “" . htmlspecialchars($doc->mimetype) . "” and starts with “" . htmlspecialchars(substr($doc->content, 0, 5)) . "”.)<br />Please convert your file to a supported type and try again.";
+        set_error_html($doc, $e);
+        return false;
     }
 
     function unparse_json(PaperOptionValue $ov, PaperStatus $ps, Contact $user = null) {

@@ -91,8 +91,7 @@ class DocumentInfo implements JsonSerializable {
             return null;
         $args = ["paperId" => $paperId,
                  "documentType" => $documentType,
-                 "timestamp" => time(),
-                 "mimetype" => Mimetype::type(get($upload, "type", "application/octet-stream"))];
+                 "timestamp" => time()];
         if (isset($upload["name"]) && strlen($upload["name"]) <= 255
             && is_valid_utf8($upload["name"]))
             $args["filename"] = $upload["name"];
@@ -103,6 +102,12 @@ class DocumentInfo implements JsonSerializable {
             $args["error_html"] = "Uploaded file$fnhtml was empty, not saving.";
         else
             $args["content"] = $content;
+        if (get($upload, "type"))
+            $args["mimetype"] = Mimetype::type(get($upload, "type"));
+        if (!isset($args["mimetype"])
+            || Mimetype::is_sniffable($args["mimetype"])
+            || Mimetype::is_sniff_type_reliable($content))
+            $args["mimetype"] = Mimetype::sniff_type($content) ? : "application/octet-stream";
         return new DocumentInfo($args);
     }
 

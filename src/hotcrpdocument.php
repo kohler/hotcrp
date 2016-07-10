@@ -98,13 +98,13 @@ class HotCRPDocument extends Filer {
         return $fn;
     }
 
-    public function mimetypes($doc = null, $docinfo = null) {
-        if ($this->dtype > 0 && !$this->option)
-            return null;
-        else if ($this->option)
-            return $this->option->mimetypes();
-        else
-            return [Mimetype::lookup(Mimetype::PDF)];
+    public function validate_upload($doc, $docinfo) {
+        if (get($doc, "filterType"))
+            return true;
+        else {
+            $opt = $this->option ? : PaperOption::find_document($this->dtype);
+            return !$opt || $opt->validate_document($doc, $docinfo);
+        }
     }
 
     public static function s3_document() {

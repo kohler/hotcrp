@@ -14,6 +14,8 @@ class Mimetype {
     const MAX_BUILTIN = 10;
 
     const PDF_TYPE = "application/pdf";
+    const PS_TYPE = "application/postscript";
+    const PPT_TYPE = "application/vnd.ms-powerpoint";
     const JPG_TYPE = "image/jpeg";
     const PNG_TYPE = "image/png";
     const TAR_TYPE = "application/x-tar";
@@ -27,6 +29,10 @@ class Mimetype {
     public $inline;
 
     private static $tmap = array();
+    private static $sniffable = [
+        self::PDF_TYPE => true, self::PPT_TYPE => true,
+        self::JPG_TYPE => true, self::PNG_TYPE => true, self::RAR_TYPE => true
+    ];
 
     static function make($id, $type, $extension, $description = null, $inline = false) {
         $m = new Mimetype;
@@ -141,22 +147,33 @@ class Mimetype {
         else if (strncmp($content, "ustar\x0000", 8) == 0
                  || strncmp($content, "ustar  \x00", 8) == 0)
             return self::TAR_TYPE;
-        else if (strncmp($content, "PK\x03\x04", 4) == 0
-                 || strncmp($content, "PK\x05\x06", 4) == 0
-                 || strncmp($content, "PK\x07\x08", 4) == 0)
-            return self::ZIP_TYPE;
         else if (strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
                  || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0)
             return self::RAR_TYPE;
         else
             return null;
     }
+
+    static function is_sniff_type_reliable($content) {
+        return strncmp("%PDF-", $content, 5) == 0
+            || substr($content, 512, 4) == "\x00\x6E\x1E\xF0"
+            || strncmp($content, "\xFF\xD8\xFF\xD8", 4) == 0
+            || (strncmp($content, "\xFF\xD8\xFF\xE0", 4) == 0 && substr($content, 6, 6) == "JFIF\x00\x01")
+            || (strncmp($content, "\xFF\xD8\xFF\xE1", 4) == 0 && substr($content, 6, 6) == "Exif\x00\x00")
+            || strncmp($content, "\x89PNG\r\n\x1A\x0A", 8) == 0
+            || strncmp($content, "Rar!\x1A\x07\x00", 7) == 0
+            || strncmp($content, "Rar!\x1A\x07\x01\x00", 8) == 0;
+    }
+
+    static function is_sniffable($type) {
+        return isset(self::$sniffable[self::type($type)]);
+    }
 }
 
 Mimetype::make(Mimetype::TXT, "text/plain", ".txt", "text", true);
 Mimetype::make(Mimetype::PDF, Mimetype::PDF_TYPE, ".pdf", "PDF", true);
-Mimetype::make(Mimetype::PS, "application/postscript", ".ps", "PostScript");
-Mimetype::make(Mimetype::PPT, "application/vnd.ms-powerpoint", ".ppt", "PowerPoint");
+Mimetype::make(Mimetype::PS, Mimetype::PS_TYPE, ".ps", "PostScript");
+Mimetype::make(Mimetype::PPT, Mimetype::PPT_TYPE, ".ppt", "PowerPoint");
 Mimetype::make(5, "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".pptx", "PowerPoint");
 Mimetype::make(6, "video/mp4", ".mp4");
 Mimetype::make(7, "video/x-msvideo", ".avi");
@@ -164,7 +181,7 @@ Mimetype::make(Mimetype::JSON, "application/json", ".json", "JSON");
 Mimetype::make(Mimetype::JPG, Mimetype::JPG_TYPE, ".jpg", "JPEG");
 Mimetype::make(Mimetype::PNG, Mimetype::PNG_TYPE, ".png", "PNG");
 
-Mimetype::make_synonym("application/mspowerpoint", "application/vnd.ms-powerpoint");
-Mimetype::make_synonym("application/powerpoint", "application/vnd.ms-powerpoint");
-Mimetype::make_synonym("application/x-mspowerpoint", "application/vnd.ms-powerpoint");
-Mimetype::make_synonym(".jpeg", "image/jpeg");
+Mimetype::make_synonym("application/mspowerpoint", Mimetype::PPT_TYPE);
+Mimetype::make_synonym("application/powerpoint", Mimetype::PPT_TYPE);
+Mimetype::make_synonym("application/x-mspowerpoint", Mimetype::PPT_TYPE);
+Mimetype::make_synonym(".jpeg", Mimetype::JPG_TYPE);

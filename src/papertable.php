@@ -469,14 +469,16 @@ class PaperTable {
             && $documentType == DTYPE_SUBMISSION)
             return;
 
-        $accepts = $docclass->mimetypes();
-        if (count($accepts)) {
-            $field = $docx->id <= 0 ? $docx->abbr : "opt$docx->id";
-            echo $this->editable_papt($field, htmlspecialchars($docx->name) . ' <span class="papfnh">(' . htmlspecialchars(Mimetype::description($accepts)) . ", max " . ini_get("upload_max_filesize") . "B)</span>");
-            if ($docx->description)
-                echo '<div class="paphint">', $docx->description, "</div>";
-            echo $this->messages_for($field);
-        }
+        $accepts = $docx->mimetypes();
+        $field = $docx->id <= 0 ? $docx->abbr : "opt$docx->id";
+        $msgs = [];
+        if (($accepts = $docx->mimetypes()))
+            $msgs[] = htmlspecialchars(Mimetype::description($accepts));
+        $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
+        echo $this->editable_papt($field, htmlspecialchars($docx->name) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
+        if ($docx->description)
+            echo '<div class="paphint">', $docx->description, "</div>";
+        echo $this->messages_for($field);
         echo '<div class="papev">';
         if ($optionType)
             echo Ht::hidden("has_opt$docx->id", 1);
@@ -511,30 +513,28 @@ class PaperTable {
 
         // uploader
         $uploader = "";
-        if (count($accepts)) {
-            if ($doc) {
-                echo '<div class="g" id="removable_', $inputid, '">';
-                $uploader .= 'Replace:&nbsp; ';
-            }
-            $uploader .= "<input id='$inputid' type='file' name='$inputid'";
-            if (count($accepts) == 1)
-                $uploader .= " accept='" . $accepts[0]->mimetype . "'";
-            $uploader .= ' size="30"';
-            if ($documentType == DTYPE_SUBMISSION || ($flags & self::ENABLESUBMIT)) {
-                $uploader .= ' onchange="false';
-                if ($documentType == DTYPE_SUBMISSION)
-                    $uploader .= ";fold('isready',0);paperform_checkready()";
-                if ($flags & self::ENABLESUBMIT)
-                    $uploader .= ";form.submitpaper.disabled=false";
-                $uploader .= '"';
-            }
-            $uploader .= " />";
-            if ($doc && $optionType)
-                $uploader .= " <span class='barsep'>·</span> "
-                    . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
-            if ($doc)
-                $uploader .= "</div>";
+        if ($doc) {
+            echo '<div class="g" id="removable_', $inputid, '">';
+            $uploader .= 'Replace:&nbsp; ';
         }
+        $uploader .= "<input id='$inputid' type='file' name='$inputid'";
+        if (count($accepts) == 1)
+            $uploader .= " accept='" . $accepts[0]->mimetype . "'";
+        $uploader .= ' size="30"';
+        if ($documentType == DTYPE_SUBMISSION || ($flags & self::ENABLESUBMIT)) {
+            $uploader .= ' onchange="false';
+            if ($documentType == DTYPE_SUBMISSION)
+                $uploader .= ";fold('isready',0);paperform_checkready()";
+            if ($flags & self::ENABLESUBMIT)
+                $uploader .= ";form.submitpaper.disabled=false";
+            $uploader .= '"';
+        }
+        $uploader .= " />";
+        if ($doc && $optionType)
+            $uploader .= " <span class='barsep'>·</span> "
+                . "<a id='remover_$inputid' href='#remover_$inputid' onclick='return doremovedocument(this)'>Delete</a>";
+        if ($doc)
+            $uploader .= "</div>";
 
         if ($has_cf) {
             echo '<div id="foldcheckformat', $documentType, '" class="',
