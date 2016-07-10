@@ -44,25 +44,25 @@ xassert_eqq($paper1c->submission->sha1, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38
 $ps = new PaperStatus(null);
 
 $paper2a = $ps->paper_json(2);
-$ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"hello\\n\",\"type\":\"application/pdf\"}}"));
+$ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
 
 $paper2b = $ps->paper_json(2);
-xassert_eqq($paper2b->submission->sha1, "f572d396fae9206628714fb2ce00f72e94f2258f");
+xassert_eqq($paper2b->submission->sha1, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
 
-$ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"goodbye\\n\",\"type\":\"application/pdf\"}}"));
+$ps->save_paper_json(json_decode("{\"id\":2,\"final\":{\"content\":\"%PDF-goodbye\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
 
 $paper2 = $ps->paper_json(2);
-xassert_eqq($paper2->submission->sha1, "f572d396fae9206628714fb2ce00f72e94f2258f");
-xassert_eqq($paper2->final->sha1, "e7d9b82b45d5833c9dada13f2379e7b66c823434");
+xassert_eqq($paper2->submission->sha1, "24aaabecc9fac961d52ae62f620a47f04facc2ce");
+xassert_eqq($paper2->final->sha1, "e04c778a0af702582bb0e9345fab6540acb28e45");
 
-$ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"again hello\\n\",\"type\":\"application/pdf\"}}"));
+$ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-again hello\\n\",\"type\":\"application/pdf\"}}"));
 xassert(!$ps->has_error());
 
 $paper2 = $ps->paper_json(2);
-xassert_eqq($paper2->submission->sha1, "a933bc1661997cd0c5ac3597e454744383576246");
-xassert_eqq($paper2->final->sha1, "e7d9b82b45d5833c9dada13f2379e7b66c823434");
-xassert_eqq(bin2hex($ps->paper_row()->sha1), "e7d9b82b45d5833c9dada13f2379e7b66c823434");
+xassert_eqq($paper2->submission->sha1, "30240fac8417b80709c72156b7f7f7ad95b34a2b");
+xassert_eqq($paper2->final->sha1, "e04c778a0af702582bb0e9345fab6540acb28e45");
+xassert_eqq(bin2hex($ps->paper_row()->sha1), "e04c778a0af702582bb0e9345fab6540acb28e45");
 
 xassert_exit();
