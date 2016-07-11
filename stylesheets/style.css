@@ -160,6 +160,7 @@ span.lgsep {
 }
 span.nb {
 	display: inline-block; /* why? */
+	text-indent: 0;
 }
 .childfold {
 	cursor: pointer;
