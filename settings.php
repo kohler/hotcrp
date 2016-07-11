@@ -700,6 +700,8 @@ function choose_setting_group() {
     $Group = req("group");
     if (!$Group && preg_match(',\A/\w+\z,', Navigation::path()))
         $Group = substr(Navigation::path(), 1);
+    if (!$Group && isset($_SESSION["sg"])) // NB not conf-specific session, global
+        $Group = $_SESSION["sg"];
     if (isset(SettingGroup::$map[$Group]))
         $Group = SettingGroup::$map[$Group];
     if (!isset(SettingGroup::$all[$Group])) {
@@ -713,6 +715,7 @@ function choose_setting_group() {
     return $Group;
 }
 $Group = $_REQUEST["group"] = $_GET["group"] = choose_setting_group();
+$_SESSION["sg"] = $Group;
 
 // maybe set $Opt["contactName"] and $Opt["contactEmail"]
 Contact::site_contact();
