@@ -1195,6 +1195,7 @@ function add_tooltip() {
         j.on("focus", tooltip_enter).on("blur", tooltip_leave);
     else
         j.hover(tooltip_enter, tooltip_leave);
+    j.removeClass("need-tooltip");
 }
 
 jQuery(function () { jQuery(".hottooltip, .need-tooltip").each(add_tooltip); });
