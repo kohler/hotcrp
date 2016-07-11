@@ -609,8 +609,8 @@ class PaperTable {
         return '<tr><td class="rxcaption">' . $n . '.</td><td class="lentry">'
             . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow eauname" . $this->error_class("auname$n"))) . ' '
             . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow eauemail" . $this->error_class("auemail$n"))) . ' '
-            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n"))) . "</td>"
-            . '<td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
+            . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n")))
+            . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn hottooltip" data-hottooltip="Move up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn hottooltip" data-hottooltip="Move down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn hottooltip" data-hottooltip="Delete" onclick="return author_change(this,Infinity)" tabindex="-1">✖</a></span></td></tr>';
     }
 
     private function echo_editable_authors() {

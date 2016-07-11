@@ -53,7 +53,7 @@ function formulas_qrow($i, $q, $s, $errf) {
     $klass = ($errf ? "setting_error " : "") . "hotcrp_searchbox";
     $t = '<tr><td class="lentry">' . Ht::entry("q$i", $q, array("size" => 40, "placeholder" => "(All)", "class" => $klass));
     $t .= " <span style=\"padding-left:1em\">Style:</span> &nbsp;" . Ht::select("s$i", array("plain" => "plain", "by-tag" => "by tag", "redtag" => "red", "orangetag" => "orange", "yellowtag" => "yellow", "greentag" => "green", "bluetag" => "blue", "purpletag" => "purple", "graytag" => "gray"), $s !== "" ? $s : "by-tag");
-    $t .= '</td><td class="nw"><a href="#" class="qx row_up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx row_down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx row_kill" onclick="return author_change(this,Infinity)" tabindex="-1">x</a></td></tr>';
+    $t .= ' <span class="nb btnbox aumovebox" style="margin-left:1em"><a href="#" class="qx btn" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn" onclick="return author_change(this,Infinity)" tabindex="-1">✖</a></span></td></tr>';
     return $t;
 }
 
