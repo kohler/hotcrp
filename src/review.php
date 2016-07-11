@@ -176,8 +176,8 @@ class ReviewField {
     }
 
     public function web_abbreviation() {
-        return '<span class="hottooltip" data-hottooltip="' . $this->name_html
-            . '" data-hottooltip-dir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
+        return '<span class="need-tooltip" data-tooltip="' . $this->name_html
+            . '" data-tooltip-dir="b">' . htmlspecialchars($this->abbreviation) . "</span>";
     }
 
     static function make_abbreviation($name, $abbrdetail, $abbrtype) {

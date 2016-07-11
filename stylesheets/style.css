@@ -569,9 +569,6 @@ span.expander > span.in0 {
 .tbtn-on {
 	background: #cc4444;
 }
-.tbtn.hottooltip, .tbtn-on.hottooltip, .closebtn {
-	cursor: pointer;
-}
 .closebtn {
         display: inline-block;
         padding: 2px 4px;
@@ -652,10 +649,10 @@ span.expander > span.in0 {
 .aabr .aabutsep {
 	float: right;
 }
-.btnp > .btn {
+.btnp > .btn, .btnp > .btnbox {
 	margin-left: 0.75em;
 }
-.btnp > .btn:first-child {
+.btnp > .btn:first-child, .btnp > .btnbox:first-child {
 	margin-left: 0;
 }
 .btnbox > .btn {
@@ -2251,9 +2248,6 @@ div.pst span.hint {
 }
 .bubble.suggest > .bubcontent {
 	margin: 0;
-}
-.hottooltip {
-	cursor: default;
 }
 .bubble.tooltip > .bubcontent {
 	max-width: 560px;

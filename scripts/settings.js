@@ -281,11 +281,11 @@ var revfield_template = '<div id="revfield_$" class="settings_revfield f-contain
   </div>\
   <div class="f-i errloc_description_$">\
     <div class="f-c">Description</div>\
-    <textarea name="description_$" id="description_$" class="reviewtext hottooltip" rows="6" data-hottooltip-content-selector="#review_form_caption_description" data-hottooltip-dir="l" data-hottooltip-type="focus"></textarea>\
+    <textarea name="description_$" id="description_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_description" data-tooltip-dir="l" data-tooltip-type="focus"></textarea>\
   </div>\
   <div class="f-i errloc_options_$ reviewrow_options">\
     <div class="f-c">Options</div>\
-    <textarea name="options_$" id="options_$" class="reviewtext hottooltip" rows="6" data-hottooltip-content-selector="#review_form_caption_options" data-hottooltip-dir="l" data-hottooltip-type="focus"></textarea>\
+    <textarea name="options_$" id="options_$" class="reviewtext need-tooltip" rows="6" data-tooltip-content-selector="#review_form_caption_options" data-tooltip-dir="l" data-tooltip-type="focus"></textarea>\
   </div>\
 </div><hr class="c" /></div>';
 
@@ -429,7 +429,7 @@ function append_field(fid, pos) {
     $f.appendTo("#reviewform_container");
 
     fill_field(fid, original[fid]);
-    $f.find(".hottooltip").each(add_tooltip);
+    $f.find(".need-tooltip").each(add_tooltip);
 }
 
 function rfs(fieldmapj, originalj, samplesj, errf, request) {

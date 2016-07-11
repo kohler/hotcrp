@@ -1003,7 +1003,7 @@ return function (content, bubopt) {
             if (typeof epos === "string" || epos.tagName || epos.jquery) {
                 epos = $(epos);
                 if (dirspec == null)
-                    dirspec = epos.attr("data-hottooltip-dir");
+                    dirspec = epos.attr("data-tooltip-dir");
                 epos = epos.geometry(true);
             }
             for (i = 0; i < 4; ++i)
@@ -1141,11 +1141,11 @@ function tooltip(info) {
     };
 
     if (info.dir == null)
-        info.dir = j.attr("data-hottooltip-dir") || "v";
+        info.dir = j.attr("data-tooltip-dir") || "v";
     if (info.type == null)
-        info.type = j.attr("data-hottooltip-type");
+        info.type = j.attr("data-tooltip-type");
     if (info.near == null)
-        info.near = j.attr("data-hottooltip-near");
+        info.near = j.attr("data-tooltip-near");
     if (info.near)
         info.near = jqnear(info.near)[0];
 
@@ -1162,12 +1162,12 @@ function tooltip(info) {
         }
     }
 
-    if (content == null && j[0].hasAttribute("data-hottooltip"))
-        content = j.attr("data-hottooltip");
-    if (content == null && j[0].hasAttribute("data-hottooltip-content-selector"))
-        content = jqnear(j.attr("data-hottooltip-content-selector")).html();
-    if (content == null && j[0].hasAttribute("data-hottooltip-content-promise"))
-        geval.call(this, j[0].getAttribute("data-hottooltip-content-promise")).then(complete);
+    if (content == null && j[0].hasAttribute("data-tooltip"))
+        content = j.attr("data-tooltip");
+    if (content == null && j[0].hasAttribute("data-tooltip-content-selector"))
+        content = jqnear(j.attr("data-tooltip-content-selector")).html();
+    if (content == null && j[0].hasAttribute("data-tooltip-content-promise"))
+        geval.call(this, j[0].getAttribute("data-tooltip-content-promise")).then(complete);
     else
         complete(content);
     info.done = true;
@@ -1191,13 +1191,13 @@ function tooltip_erase() {
 
 function add_tooltip() {
     var j = jQuery(this);
-    if (j.attr("data-hottooltip-type") == "focus")
+    if (j.attr("data-tooltip-type") == "focus")
         j.on("focus", tooltip_enter).on("blur", tooltip_leave);
     else
         j.hover(tooltip_enter, tooltip_leave);
 }
 
-jQuery(function () { jQuery(".hottooltip").each(add_tooltip); });
+jQuery(function () { jQuery(".hottooltip, .need-tooltip").each(add_tooltip); });
 
 
 // temporary text
@@ -1414,8 +1414,8 @@ function tracker_html(mytracker) {
     var t = "";
     if (dl.is_admin) {
         var dt = '<div class="tooltipmenu"><div><a class="ttmenu" href="' + hoturl_html("buzzer") + '" target="_blank">Discussion status page</a></div></div>';
-        t += '<div class="hottooltip" id="trackerlogo" data-hottooltip="' + escape_entities(dt) + '"></div>';
-        t += '<div style="float:right"><a class="closebtn hottooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-hottooltip="Stop meeting tracker">x</a></div>';
+        t += '<div class="need-tooltip" id="trackerlogo" data-tooltip="' + escape_entities(dt) + '"></div>';
+        t += '<div style="float:right"><a class="closebtn need-tooltip" href="#" onclick="return hotcrp_deadlines.tracker(-1)" data-tooltip="Stop meeting tracker">x</a></div>';
     } else
         t += '<div id="trackerlogo"></div>';
     if (dl.tracker && dl.tracker.position_at)
@@ -1440,11 +1440,11 @@ function display_tracker() {
     // tracker button
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
-            e.className = "tbtn-on hottooltip";
-            e.setAttribute("data-hottooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
+            e.className = "tbtn-on need-tooltip";
+            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
         } else {
-            e.className = "tbtn hottooltip";
-            e.setAttribute("data-hottooltip", "Start meeting tracker");
+            e.className = "tbtn need-tooltip";
+            e.setAttribute("data-tooltip", "Start meeting tracker");
         }
     }
 
@@ -1486,7 +1486,7 @@ function display_tracker() {
         else
             mne.className = "match";
         mne.innerHTML = "<div class=\"trackerholder\">" + t + "</div>";
-        $(mne).find(".hottooltip").each(add_tooltip);
+        $(mne).find(".need-tooltip").each(add_tooltip);
         if (tracker_has_format)
             render_text.on_page();
         mnspace.style.height = mne.offsetHeight + "px";
@@ -4373,7 +4373,7 @@ function edit_anno(locator) {
         hc.push('<tr><td class="lcaption nw">Description</td><td class="lentry"><input name="heading_' + annoid + '" type="text" placeholder="none" size="32" tabindex="1000" /></td></tr>');
         hc.push('<tr><td class="lcaption nw">Start value</td><td class="lentry"><input name="tagval_' + annoid + '" type="text" size="5" tabindex="1000" />', '</td></tr>');
         if (anno.annoid)
-            hc.push(' <a class="closebtn deletegroup-link hottooltip" href="#" style="display:inline-block;margin-left:0.5em" data-hottooltip="Delete group">x</a>');
+            hc.push(' <a class="closebtn deletegroup-link need-tooltip" href="#" style="display:inline-block;margin-left:0.5em" data-tooltip="Delete group">x</a>');
         hc.pop_n(2);
     }
     function show_dialog(rv) {
@@ -4397,7 +4397,7 @@ function edit_anno(locator) {
             $d.find("input[name='tagval_" + annos[i].annoid + "']").val(unparse_tagvalue(annos[i].tagval));
         }
         $d.on("click", "button", onclick).on("click", "a.deletegroup-link", ondeleteclick);
-        $d.find(".hottooltip").each(add_tooltip);
+        $d.find(".need-tooltip").each(add_tooltip);
         $d.click(function (evt) {
             evt.target == $d[0] && close();
         });
@@ -4847,7 +4847,7 @@ function edittags_callback(rv) {
     if (!rv.ok || !rv.pid || !(div = pidfield(rv.pid, fields.tags)))
         return;
     $(div).html('<em class="plx">Tags:</em> '
-                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" data-hottooltip-dir="v"></textarea>'
+                + '<textarea name="tags ' + rv.pid + '" style="vertical-align:top;max-width:70%;margin-bottom:2px" cols="120" rows="1" data-tooltip-dir="v"></textarea>'
                 + ' &nbsp;<button name="tagsave ' + rv.pid + '" type="button">Save</button>'
                 + ' &nbsp;<button name="tagcancel ' + rv.pid + '" type="button">Cancel</button>');
     $(div).find("textarea").val(rv.tags_edit_text).on("keydown", make_onkeypress_enter(edittags_click)).autogrow();

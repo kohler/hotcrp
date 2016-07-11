@@ -332,7 +332,7 @@ class ReviewStatusPaperColumn extends PaperColumn {
         return ($av < $bv ? 1 : ($av == $bv ? 0 : -1));
     }
     public function header($pl, $ordinal) {
-        return '<span class="hottooltip" data-hottooltip="# completed reviews / # assigned reviews" data-hottooltip-dir="b">#&nbsp;Reviews</span>';
+        return '<span class="need-tooltip" data-tooltip="# completed reviews / # assigned reviews" data-tooltip-dir="b">#&nbsp;Reviews</span>';
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_review_assignment($row, null, null);
@@ -1505,7 +1505,7 @@ class FormulaPaperColumn extends PaperColumn {
         $x = $this->formula->column_header();
         if ($this->formula->headingTitle
             && $this->formula->headingTitle != $x)
-            return "<span class=\"hottooltip\" data-hottooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
+            return "<span class=\"need-tooltip\" data-tooltip=\"" . htmlspecialchars($this->formula->headingTitle) . "\">" . htmlspecialchars($x) . "</span>";
         else
             return htmlspecialchars($x);
     }

@@ -858,8 +858,6 @@ class PaperList {
             $tooltip = "Sort by search term order";
             $t = "#";
         }
-        if ($tooltip && strpos($t, "hottooltip") !== false)
-            $tooltip = "";
 
         $s0 = get($this->sorters, 0);
         if ($s0 && $s0->thenmap === null
@@ -877,7 +875,7 @@ class PaperList {
             $sort_url = false;
 
         if ($sort_url && $tooltip)
-            $t = '<a class="' . $sort_class . ' hottooltip" rel="nofollow" data-hottooltip="' . $tooltip . '" data-hottooltip-dir="b" href="' . $sort_url . '">' . $t . '</a>';
+            $t = '<a class="' . $sort_class . ' need-tooltip" rel="nofollow" data-tooltip="' . $tooltip . '" data-tooltip-dir="b" href="' . $sort_url . '">' . $t . '</a>';
         else if ($sort_url)
             $t = '<a class="' . $sort_class . '" rel="nofollow" href="' . $sort_url . '">' . $t . '</a>';
         return $t;

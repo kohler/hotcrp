@@ -310,8 +310,8 @@ class PaperTable {
         $c .= "</span>";
         if ($editfolder) {
             $c .= "<span class=\"pstedit fn\">"
-                . "<a class=\"xx hottooltip\" href=\"" . selfHref(array("atab" => $what))
-                . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-hottooltip=\"Edit\">"
+                . "<a class=\"xx need-tooltip\" href=\"" . selfHref(array("atab" => $what))
+                . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
                 . Ht::img("edit.png", "[Edit]", "bmabs")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
@@ -347,18 +347,21 @@ class PaperTable {
             '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
     }
 
-    static public function pdf_stamps_html($data) {
+    static public function pdf_stamps_html($data, $options = null) {
         global $Conf;
+        $tooltip = !$options || !get($options, "notooltip");
 
         $t = array();
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
-            $t[] = "<span class='nw hottooltip' data-hottooltip='Time of most recent update'>" . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->unparse_time_full($tm) . "</span>";
+            $t[] = ($tooltip ? '<span class="nb need-tooltip" data-tooltip="Time of most recent update">' : '<span class="nb">')
+                . Ht::img("_.gif", "Updated", array("class" => "timestamp12")) . " " . $Conf->unparse_time_full($tm) . "</span>";
         $sha1 = defval($data, "sha1");
         if ($sha1)
-            $t[] = "<span class='nw hottooltip' data-hottooltip='SHA-1 checksum'>" . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
-        if (count($t) > 0)
-            return "<span class='hint'>" . join(" <span class='barsep'>·</span> ", $t) . "</span>";
+            $t[] = ($tooltip ? '<span class="nb need-tooltip" data-tooltip="SHA-1 checksum">' : '<span class="nb">')
+                . Ht::img("_.gif", "SHA-1", array("class" => "checksum12")) . " " . bin2hex($sha1) . "</span>";
+        if (!empty($t))
+            return '<span class="hint">' . join(" <span class='barsep'>·</span> ", $t) . "</span>";
         else
             return "";
     }
@@ -610,7 +613,7 @@ class PaperTable {
             . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow eauname" . $this->error_class("auname$n"))) . ' '
             . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow eauemail" . $this->error_class("auemail$n"))) . ' '
             . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n")))
-            . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn hottooltip" data-hottooltip="Move up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn hottooltip" data-hottooltip="Move down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn hottooltip" data-hottooltip="Delete" onclick="return author_change(this,Infinity)" tabindex="-1">✖</a></span></td></tr>';
+            . '<span class="nb btnbox aumovebox"><a href="#" class="qx btn need-tooltip" data-tooltip="Move up" onclick="return author_change(this,-1)" tabindex="-1">&#x25b2;</a><a href="#" class="qx btn need-tooltip" data-tooltip="Move down" onclick="return author_change(this,1)" tabindex="-1">&#x25bc;</a><a href="#" class="qx btn need-tooltip" data-tooltip="Delete" onclick="return author_change(this,Infinity)" tabindex="-1">✖</a></span></td></tr>';
     }
 
     private function echo_editable_authors() {
@@ -1418,8 +1421,8 @@ class PaperTable {
         $class = "hotcrp_tag_hideempty floatright";
         $extradiv = "";
         if ($type === "vote" || $type === "approval") {
-            $class .= " hottooltip";
-            $extradiv = ' data-hottooltip-dir="h" data-hottooltip-content-promise="votereport(\'' . $tag . '\')"';
+            $class .= " need-tooltip";
+            $extradiv = ' data-tooltip-dir="h" data-tooltip-content-promise="votereport(\'' . $tag . '\')"';
         }
         return '<div class="' . $class . '" style="display:' . ($totval ? "block" : "none")
             . '"' . $extradiv
