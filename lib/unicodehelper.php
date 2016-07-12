@@ -227,7 +227,7 @@ class UnicodeHelper {
     }
 
     public static function remove_f_ligatures($str) {
-        return preg_replace_callback('/ﬀ|ﬁ|ﬂ|ﬃ|ﬄ/', function ($m) {
+        return preg_replace_callback("/\xEF\xAC[\x80-\x84]/", function ($m) {
             return UnicodeHelper::$f_ligature_map[$m[0]];
         }, $str);
     }
