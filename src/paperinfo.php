@@ -705,7 +705,7 @@ class PaperInfo {
             else if ($dtype == DTYPE_FINAL)
                 $did = $this->finalPaperStorageId;
             else if (($oa = $this->option($dtype)) && $oa->option->is_document())
-                $did = $oa->value;
+                return $oa->document(0);
             else
                 error_log("asked for nonexistent $dtype document, cannot find it (option " . var_export($oa, true) . ")");
         }
