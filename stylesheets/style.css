@@ -595,6 +595,11 @@ span.expander > span.in0 {
 	border: 1px solid #cccccc;
 	background-image: linear-gradient(#eeeeee, #dddddd);
 }
+.btn:disabled, .btn:disabled:hover {
+	color: rgba(102, 102, 102, 0.5);
+	border-color: #d5d5d5;
+	background: rgba(229, 229, 229, 0.5);
+}
 .btn:active {
 	border: 1px solid #aaaaaa;
 	background-image: linear-gradient(#c3c3c3, #d3d3d3);
