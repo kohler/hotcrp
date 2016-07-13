@@ -33,6 +33,7 @@ class PaperOptionValue {
         }
         if ($this->_documents && $this->_values != $old_values)
             $this->_documents = null;
+        $this->anno = null;
     }
     public function documents() {
         assert($this->prow || empty($this->_values));
