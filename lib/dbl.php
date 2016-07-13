@@ -150,8 +150,13 @@ class Dbl {
     }
 
     static private function query_args($args, $flags, $log_location) {
-        $argpos = is_object($args[0]) ? 1 : 0;
-        $dblink = $argpos ? $args[0] : self::$default_dblink;
+        $argpos = 0;
+        $dblink = self::$default_dblink;
+        if (is_object($args[0])) {
+            $argpos = 1;
+            $dblink = $args[0];
+        } else if ($args[0] === null && count($args) > 1)
+            $argpos = 1;
         if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
             || (($flags & self::F_APPLY) && count($args) > $argpos + 2))
             trigger_error(self::landmark() . ": wrong number of arguments");
