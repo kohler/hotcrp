@@ -3281,9 +3281,13 @@ class PaperSearch {
             $sqi->add_reviewer_columns();
 
         // check for annotated order
-        $order_anno_tag = null;
-        if ($qe->type !== "then"
-            && ($sort = $qe->get_float("sort"))
+        $order_anno_tag = $sole_qe = null;
+        if ($qe->type !== "then")
+            $sole_qe = $qe;
+        else if ($qe->nthen == 1)
+            $sole_qe = $qe->value[0];
+        if ($sole_qe
+            && ($sort = $sole_qe->get_float("sort"))
             && ($tag = self::_check_sort_order_anno($sort))) {
             $dt = TagInfo::make_defined_tag($tag);
             if (count($dt->order_anno_list()))
@@ -3409,12 +3413,12 @@ class PaperSearch {
             for ($i = 0; $i < $qe->nthen; ++$i)
                 $this->_add_sorters($qe->value[$i], $this->thenmap ? $i : null);
         $this->groupmap = [];
-        if ($qe->type === "then") {
+        if (!$sole_qe) {
             for ($i = 0; $i < $qe->nthen; ++$i) {
                 $h = $qe->value[$i]->get_float("heading");
                 $this->groupmap[$i] = (object) ["heading" => $h, "annoFormat" => 0];
             }
-        } else if (($h = $qe->get_float("heading")))
+        } else if (($h = $sole_qe->get_float("heading")))
             $this->groupmap[0] = (object) ["heading" => $h, "annoFormat" => 0];
         else if ($order_anno_tag) {
             $this->_assign_order_anno($order_anno_tag, $tag_order);
