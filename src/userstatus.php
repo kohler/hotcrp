@@ -321,7 +321,7 @@ class UserStatus {
                 if ($index === false || get($old_tags, $tag) == $index)
                     unset($old_tags[$tag]);
             }
-            foreach ($this->make_tags_array($cj->add_tags, "add_tags") as $t) {
+            foreach ($this->make_tags_array(get($cj, "add_tags"), "add_tags") as $t) {
                 list($tag, $index) = TagInfo::split_index($t);
                 $old_tags[$tag] = $index;
             }
