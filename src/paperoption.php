@@ -133,6 +133,7 @@ class PaperOption {
     public $display_space;
     public $selector;
     private $form_priority;
+    private $require_setting;
 
     static private $jlist = null;
     static private $jmap = [];
@@ -193,6 +194,7 @@ class PaperOption {
             $disp = "topics";
         $this->display = get(self::$display_map, $disp, self::DISP_DEFAULT);
         $this->form_priority = get_i($args, "form_priority");
+        $this->require_setting = get($args, "require_setting");
 
         if (($x = get($args, "display_space")))
             $this->display_space = (int) $x;
@@ -219,12 +221,24 @@ class PaperOption {
             return $a->id - $b->id;
     }
 
+    static private function check_require_setting($require_setting) {
+        global $Conf;
+        return str_starts_with($require_setting, "opt.")
+            ? !!opt(substr($require_setting, 4))
+            : !!$Conf->setting($require_setting);
+    }
+
     static public function _add_json($oj, $fixed) {
+        global $Conf;
         if (is_string($oj->id) && is_numeric($oj->id))
             $oj->id = intval($oj->id);
         if (is_int($oj->id) && !isset(self::$jlist[$oj->id])
             && ($oj->id >= self::MINFIXEDID) === $fixed
             && isset($oj->name) && is_string($oj->name)) {
+            // ignore option if require_setting not satisfied
+            if (isset($oj->require_setting) && is_string($oj->require_setting)
+                && !self::check_require_setting($oj->require_setting))
+                return true;
             if (!isset($oj->abbr) || $oj->abbr == "")
                 $oj->abbr = self::abbreviate($oj->name, $oj->id);
             self::$jlist[$oj->id] = $oj;
@@ -259,8 +273,12 @@ class PaperOption {
         if (array_key_exists($id, self::$jmap))
             $o = self::$jmap[$id];
         else {
-            $oj = get(self::option_json_list(), $id);
-            $o = self::$jmap[$id] = $oj ? PaperOption::make($oj) : null;
+            $o = null;
+            if (($oj = get(self::option_json_list(), $id)))
+                $o = PaperOption::make($oj);
+            if ($o && $o->require_setting && !self::check_require_setting($o->require_setting))
+                $o = null;
+            self::$jmap[$id] = $o;
         }
         if (!$o && $force)
             $o = self::$jmap[$id] = new UnknownPaperOption($id);
