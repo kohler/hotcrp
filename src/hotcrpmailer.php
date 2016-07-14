@@ -305,6 +305,10 @@ class HotCRPMailer extends Mailer {
                 return $this->get_comments($t);
         }
 
+        if (substr($what, 0, 2) == "%#" && substr($what, $len - 1) == "%") {
+            $what = "%TAGVALUE(" . substr($what, 2, $len - 3) . ")%";
+            $len = strlen($what);
+        }
         if ($len > 12 && substr($what, 0, 10) == "%TAGVALUE("
             && substr($what, $len - 2) == ")%") {
             if (($t = $this->tagger()->check(substr($what, 10, $len - 12), Tagger::NOVALUE | Tagger::NOPRIVATE))) {
@@ -313,6 +317,7 @@ class HotCRPMailer extends Mailer {
                     $result = Dbl::qe("select paperId, tagIndex from PaperTag where tag=?", $t);
                     while (($row = edb_row($result)))
                         $this->_tags[$t][$row[0]] = $row[1];
+                    Dbl::free($result);
                 }
                 $tv = defval($this->_tags[$t], $this->row->paperId);
                 if ($isbool)

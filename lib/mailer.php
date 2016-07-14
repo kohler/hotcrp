@@ -289,7 +289,7 @@ class Mailer {
         $text = "";
         $ifstack = array();
 
-        while (preg_match('/\A(.*?)%(IF|ELSE?IF|ELSE|ENDIF)((?:\(\w+(?:\(\w+\))*\))?)%(.*)\z/s', $rest, $m)) {
+        while (preg_match('/\A(.*?)%(IF|ELSE?IF|ELSE|ENDIF)((?:\(#?[-a-zA-Z0-9!@_:.\/]+(?:\([-a-zA-Z0-9!@_:.\/]*+\))*\))?)%(.*)\z/s', $rest, $m)) {
             $text .= $m[1];
             $rest = $m[4];
 
@@ -313,7 +313,7 @@ class Mailer {
 
     private function _lineexpand($line, $info, $indent, $width) {
         $text = "";
-        while (preg_match('/^(.*?)(%\w+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
+        while (preg_match('/^(.*?)(%#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\))%)(.*)$/s', $line, $m)) {
             $text .= $m[1] . $this->expandvar($m[2], false);
             $line = $m[3];
         }

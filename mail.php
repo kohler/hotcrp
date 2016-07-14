@@ -614,53 +614,56 @@ echo "<div class='aa' style='clear:both'>\n",
 
 <div id='mailref'>Keywords enclosed in percent signs, such as <code>%NAME%</code> or <code>%REVIEWDEADLINE%</code>, are expanded for each mail.  Use the following syntax:
 <div class='g'></div>
-<table>
-<tr><td class='plholder'><table>
-<tr><td class='lxcaption'><code>%URL%</code></td>
-    <td class='llentry'>Site URL.</td></tr>
-<tr><td class='lxcaption'><code>%LOGINURL%</code></td>
-    <td class='llentry'>URL for recipient to log in to the site.</td></tr>
-<tr><td class='lxcaption'><code>%NUMSUBMITTED%</code></td>
-    <td class='llentry'>Number of papers submitted.</td></tr>
-<tr><td class='lxcaption'><code>%NUMACCEPTED%</code></td>
-    <td class='llentry'>Number of papers accepted.</td></tr>
-<tr><td class='lxcaption'><code>%NAME%</code></td>
-    <td class='llentry'>Full name of recipient.</td></tr>
-<tr><td class='lxcaption'><code>%FIRST%</code>, <code>%LAST%</code></td>
-    <td class='llentry'>First and last names, if any, of recipient.</td></tr>
-<tr><td class='lxcaption'><code>%EMAIL%</code></td>
-    <td class='llentry'>Email address of recipient.</td></tr>
-<tr><td class='lxcaption'><code>%REVIEWDEADLINE%</code></td>
-    <td class='llentry'>Reviewing deadline appropriate for recipient.</td></tr>
-</table></td><td class='plholder'><table>
-<tr><td class='lxcaption'><code>%NUMBER%</code></td>
-    <td class='llentry'>Paper number relevant for mail.</td></tr>
-<tr><td class='lxcaption'><code>%TITLE%</code></td>
-    <td class='llentry'>Paper title.</td></tr>
-<tr><td class='lxcaption'><code>%TITLEHINT%</code></td>
-    <td class='llentry'>First couple words of paper title (useful for mail subject).</td></tr>
-<tr><td class='lxcaption'><code>%OPT(AUTHORS)%</code></td>
-    <td class='llentry'>Paper authors (if recipient is allowed to see the authors).</td></tr>
-<tr><td><div class='g'></div></td></tr>
-<tr><td class='lxcaption'><code>%REVIEWS%</code></td>
-    <td class='llentry'>Pretty-printed paper reviews.</td></tr>
-<tr><td class='lxcaption'><code>%COMMENTS%</code></td>
-    <td class='llentry'>Pretty-printed paper comments, if any.</td></tr>
-<tr><td class='lxcaption'><code>%COMMENTS(TAG)%</code></td>
-    <td class='llentry'>Comments tagged #TAG, if any.</td></tr>
-<tr><td><div class='g'></div></td></tr>
-<tr><td class='lxcaption'><code>%IF(SHEPHERD)%...%ENDIF%</code></td>
-    <td class='llentry'>Include text only if a shepherd is assigned.</td></tr>
-<tr><td class='lxcaption'><code>%SHEPHERD%</code></td>
-    <td class='llentry'>Shepherd name and email, if any.</td></tr>
-<tr><td class='lxcaption'><code>%SHEPHERDNAME%</code></td>
-    <td class='llentry'>Shepherd name, if any.</td></tr>
-<tr><td class='lxcaption'><code>%SHEPHERDEMAIL%</code></td>
-    <td class='llentry'>Shepherd email, if any.</td></tr>
-<tr><td class='lxcaption'><code>%TAGVALUE(t)%</code></td>
-    <td class='llentry'>Value of paper’s tag <code>t</code>.</td></tr>
-</table></td></tr>
-</table></div>
+<div class=\"ctable\">
+<dl class=\"ctelt\" style=\"padding-bottom:12px\">
+<dt><code>%URL%</code></dt>
+    <dd>Site URL.</dd>
+<dt><code>%LOGINURL%</code></dt>
+    <dd>URL for recipient to log in to the site.</dd>
+<dt><code>%NUMSUBMITTED%</code></dt>
+    <dd>Number of papers submitted.</dd>
+<dt><code>%NUMACCEPTED%</code></dt>
+    <dd>Number of papers accepted.</dd>
+<dt><code>%NAME%</code></dt>
+    <dd>Full name of recipient.</dd>
+<dt><code>%FIRST%</code>, <code>%LAST%</code></dt>
+    <dd>First and last names, if any, of recipient.</dd>
+<dt><code>%EMAIL%</code></dt>
+    <dd>Email address of recipient.</dd>
+<dt><code>%REVIEWDEADLINE%</code></dt>
+    <dd>Reviewing deadline appropriate for recipient.</dd>
+</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+<dt><code>%NUMBER%</code></dt>
+    <dd>Paper number relevant for mail.</dd>
+<dt><code>%TITLE%</code></dt>
+    <dd>Paper title.</dd>
+<dt><code>%TITLEHINT%</code></dt>
+    <dd>First couple words of paper title (useful for mail subject).</dd>
+<dt><code>%OPT(AUTHORS)%</code></dt>
+    <dd>Paper authors (if recipient is allowed to see the authors).</dd>
+</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+<dt><code>%REVIEWS%</code></dt>
+    <dd>Pretty-printed paper reviews.</dd>
+<dt><code>%COMMENTS%</code></dt>
+    <dd>Pretty-printed paper comments, if any.</dd>
+<dt><code>%COMMENTS(<i>tag</i>)%</code></dt>
+    <dd>Comments tagged #<code><i>tag</i></code>, if any.</dd>
+</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+<dt><code>%IF(SHEPHERD)%...%ENDIF%</code></dt>
+    <dd>Include text if a shepherd is assigned.</dd>
+<dt><code>%SHEPHERD%</code></dt>
+    <dd>Shepherd name and email, if any.</dd>
+<dt><code>%SHEPHERDNAME%</code></dt>
+    <dd>Shepherd name, if any.</dd>
+<dt><code>%SHEPHERDEMAIL%</code></dt>
+    <dd>Shepherd email, if any.</dd>
+</dl><dl class=\"ctelt\" style=\"padding-bottom:12px\">
+<dt><code>%IF(#<i>tag</i>)%...%ENDIF%</code></dt>
+    <dd>Include text if paper has tag <code><i>tag</i></code>.</dd>
+<dt><code>%TAGVALUE(<i>tag</i>)%</code></dt>
+    <dd>Value of paper’s <code><i>tag</i></code>.</dd>
+</dl>
+</div></div>
 
 </div></form>\n";
 
