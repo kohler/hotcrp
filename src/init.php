@@ -133,7 +133,6 @@ class SiteLoader {
     const API_GET = 1;
     const API_PAPER = 2;
     const API_GET_PAPER = 3 /* == API_GET | API_PAPER */;
-    const API_REDIRECTABLE = 4;
     static $api_map = [
         "alltags" => ["PaperApi::alltags_api", self::API_GET],
         "checkformat" => ["PaperApi::checkformat_api", self::API_GET_PAPER],
