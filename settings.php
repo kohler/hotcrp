@@ -533,6 +533,22 @@ class SettingValues {
             echo '<br /><span class="hint">', $hint, "</span>";
         echo "</td></tr>\n";
     }
+    public function echo_entry_pair($name, $description, $hint = null, $js = []) {
+        $after_entry = null;
+        if (isset($js["after_entry"])) {
+            $after_entry = $js["after_entry"];
+            unset($js["after_entry"]);
+        }
+        echo '<div class="f-i"><div class="f-c">', $this->label($name, $description),
+            '</div><div class="f-e">', $this->render_entry($name, $js);
+        if ($after_entry)
+            echo $after_entry;
+        if (($si = $this->si($name)) && ($thint = $this->type_hint($si->type)))
+            $hint = ($hint ? $hint . "<br />" : "") . $thint;
+        if ($hint)
+            echo '<br /><span class="hint">', $hint, "</span>";
+        echo "</div></div>\n";
+    }
     private function echo_message_base($name, $description, $hint, $class) {
         global $Conf;
         $si = $this->si($name);
