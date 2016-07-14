@@ -150,19 +150,44 @@ class SiteLoader {
         "votereport" => ["PaperApi::votereport_api", self::API_GET_PAPER],
         "whoami" => ["PaperApi::whoami_api", self::API_GET]
     ];
+    static private $api_map_populated = false;
     static private function call_api($uf, $user, $qreq, $prow) {
-        if ($uf && !($uf[1] & SiteLoader::API_GET) && !check_post($qreq))
-            json_exit(["ok" => false, "error" => "Missing credentials."]);
-        if ($uf && ($uf[1] & SiteLoader::API_PAPER) && !$prow)
-            json_exit(["ok" => false, "error" => "No such paper."]);
-        if ($uf)
-            call_user_func($uf[0], $user, $qreq, $prow);
+        if ($uf) {
+            if (!check_post($qreq)
+                && !(is_array($uf) ? $uf[1] & self::API_GET : get($uf, "get")))
+                json_exit(["ok" => false, "error" => "Missing credentials."]);
+            if (!$prow
+                && (is_array($uf) ? $uf[1] & self::API_PAPER : get($uf, "paper")))
+                json_exit(["ok" => false, "error" => "No such paper."]);
+            $fn = is_array($uf) ? $uf[0] : $uf->callback;
+            call_user_func($fn, $user, $qreq, $prow, $uf);
+        }
         json_exit(["ok" => false, "error" => "Internal error."]);
+    }
+    static public function _add_json($fj) {
+        if (is_string($fj->fn) && !isset(self::$api_map[$fj->fn])
+            && isset($fj->callback)) {
+            self::$api_map[$fj->fn] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    static public function has_api($fn) {
+        if (isset(self::$api_map[$fn]))
+            return true;
+        if (!self::$api_map_populated && ($olist = opt("apiFunctions"))) {
+            expand_json_includes_callback($olist, "SiteLoader::_add_json");
+            self::$api_map_populated = true;
+            return isset(self::$api_map[$fn]);
+        } else
+            return false;
     }
     static public function call_api_exit($fn, $user, $qreq, $prow) {
         // XXX precondition: $user->can_view_paper($prow) || !$prow
         $uf = get(SiteLoader::$api_map, $fn);
-        if ($uf && ($uf[1] & self::API_REDIRECTABLE) && $qreq->redirect
+        if (!$uf && self::has_api($fn))
+            $uf = get(SiteLoader::$api_map, $fn);
+        if (is_object($uf) && get($uf, "redirect") && $qreq->redirect
             && preg_match('@\A(?![a-z]+:|/).+@', $qreq->redirect)) {
             try {
                 JsonResultException::$capturing = true;
@@ -290,7 +315,7 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
             }
         }
         if (is_object($entry) && !isset($entry->id) && !isset($entry->factory)
-            && !isset($entry->factory_class))
+            && !isset($entry->factory_class) && !isset($entry->callback))
             $entry = get_object_vars($entry);
         foreach (is_array($entry) ? $entry : [$entry] as $obj)
             if (!is_object($obj) || !call_user_func($callback, $obj, $extra_arg))
