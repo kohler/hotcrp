@@ -549,20 +549,46 @@ class SettingValues {
             echo '<br /><span class="hint">', $hint, "</span>";
         echo "</div></div>\n";
     }
+    public function render_select($name, $values, $js = []) {
+        $v = $this->curv($name);
+        $t = "";
+        if (($si = $this->si($name)) && $si->parser)
+            $t = Ht::hidden("has_$name", 1);
+        return Ht::select($name, $values, $v, $this->sjs($name, $js)) . $t;
+    }
+    public function render_textarea($name, $js = []) {
+        $v = $this->curv($name);
+        $t = "";
+        $rows = 10;
+        if (($si = $this->si($name))) {
+            if ($si->size)
+                $rows = $si->size;
+            if ($si->placeholder)
+                $js["placeholder"] = $si->placeholder;
+            if ($si->autogrow)
+                $js["class"] = ltrim(get($js, "class", "") . " need-autogrow");
+            if ($si->parser)
+                $t = Ht::hidden("has_$name", 1);
+        }
+        if (!isset($js["rows"]))
+            $js["rows"] = $rows;
+        if (!isset($js["cols"]))
+            $js["cols"] = 80;
+        return Ht::textarea($name, $v, $this->sjs($name, $js)) . $t;
+    }
     private function echo_message_base($name, $description, $hint, $class) {
         global $Conf;
         $si = $this->si($name);
-        $rows = ($si ? $si->size : 0) ? : 10;
-        $default = $Conf->message_default_html($name);
-        $current = $this->curv($name, $default);
+        $si->default_value = $Conf->message_default_html($name);
+        $current = $this->curv($name);
         $description = '<a class="q" href="#" onclick="return foldup(this,event)">'
             . expander(null, 0) . $description . '</a>';
-        echo '<div class="fold', ($current == $default ? "c" : "o"), '" data-fold="true">',
+        echo '<div class="fold', ($current == $si->default_value ? "c" : "o"), '" data-fold="true">',
             '<div class="', $class, ' childfold" onclick="return foldup(this,event)">',
             $this->label($name, $description),
             ' <span class="f-cx fx">(HTML allowed)</span></div>',
             $hint,
-            Ht::textarea($name, $current, $this->sjs($name, array("class" => "fx", "rows" => $rows, "cols" => 80))),
+            $this->render_textarea($name, ["class" => "fx"]),
             '</div><div class="g"></div>', "\n";
     }
     public function echo_message($name, $description, $hint = "") {

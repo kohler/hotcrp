@@ -313,14 +313,14 @@ function render(SettingValues $sv) {
 
     echo '<div id="foldpdfupload" class="fold2o fold3o">';
     $sv->set_oldv("sub_noabstract", opt_yes_no_optional("noAbstract"));
-    echo '<div>Is an abstract required for each submission?&nbsp; ';
-    echo Ht::select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"], $sv->curv("sub_noabstract"));
-    echo '</div>';
+    echo '<div>Is an abstract required for each submission?&nbsp; ',
+        $sv->render_select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"]),
+        '</div>';
 
     $sv->set_oldv("sub_nopapers", opt_yes_no_optional("noPapers"));
-    echo '<div>Is a PDF required to mark a submission as ready for review?&nbsp; ';
-    echo Ht::select("sub_nopapers", array(0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"), $sv->curv("sub_nopapers"), ["id" => "sub_nopapers", "onchange" => "sub_nopapers_change()"]);
-    echo '<div class="hint fx3">Submissions can always be registered without a PDF.</div></div>';
+    echo '<div>Is a PDF required to mark a submission as ready for review?&nbsp; ',
+        $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"], ["onchange" => "sub_nopapers_change()"]),
+        '<div class="hint fx3">Submissions can always be registered without a PDF.</div></div>';
 
     if (is_executable("src/banal")) {
         echo '<div class="g fx2">';
