@@ -144,41 +144,58 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
 
 
 // Parse paper preferences
+function upload_error($csv, $printFilename, $error) {
+    return '<span class="lineno">' . $printFilename . ':' . $csv->lineno() . ':</span> ' . $error;
+}
+
 function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     global $Conf;
     if (($text = file_get_contents($filename)) === false)
         return Conf::msg_error("Cannot read uploaded file.");
     $printFilename = htmlspecialchars($printFilename);
     $text = cleannl($text);
-    $lineno = 0;
+    $text = preg_replace('/^==-== /m', '#', $text);
+    $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+    $csv->set_comment_chars("#");
+    $line = $csv->next();
+    if ($line && array_search("paper", $line) !== false)
+        $csv->set_header($line);
+    else {
+        if (count($line) >= 2 && ctype_digit($line[0])) {
+            if (preg_match('/\A\s*\d+\s*[XYZ]?\s*\z/i', $line[1]))
+                $csv->set_header(["paper", "preference"]);
+            else
+                $csv->set_header(["paper", "title", "preference"]);
+        } else
+            $errors[] = upload_error($csv, $printFilename, "this doesn’t appear to be a valid preference file");
+        $csv->unshift($line);
+    }
+
     $successes = 0;
     $errors = array();
     $new_qreq = new Qobject;
-    foreach (explode("\n", $text) as $line) {
-        $line = trim($line);
-        $lineno++;
-
-        if ($line == "" || $line[0] == "#" || substr($line, 0, 6) == "==-== ")
-            /* do nothing */;
-        else if (preg_match('/^(\d+)\s*[\t,]\s*([^\s,]+)\s*([\t,]|$)/', $line, $m)) {
-            if (parse_preference($m[2])) {
-                $new_qreq["revpref$m[1]"] = $m[2];
-                $successes++;
-            } else if (strcasecmp($m[2], "conflict") != 0)
-                $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> bad review preference, should be integer";
-        } else if (preg_match('/^\s*paper(?:id)?\s*[\t,]\s*preference/i', $line))
-            /* header; no error */;
-        else if (count($errors) < 20)
-            $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> syntax error, expected <code>paper,preference[,title]</code>";
-        else {
-            $errors[] = "<span class='lineno'>$printFilename:$lineno:</span> too many syntax errors, giving up";
-            break;
+    while (($line = $csv->next())) {
+        if (isset($line["paper"]) && isset($line["preference"])) {
+            $paper = trim($line["paper"]);
+            if ($paper != "" && ctype_digit($paper) && parse_preference($line["preference"]))
+                $new_qreq["revpref" . $line["paper"]] = $line["preference"];
+            else if (!ctype_digit($line["paper"]))
+                $errors[] = upload_error($csv, $printFilename, "“" . htmlspecialchars($paper) . "” is not a valid paper");
+            else
+                $errors[] = upload_error($csv, $printFilename, "bad review preference “" . htmlspecialchars(trim($line["preference"])) . "”, should be an integer and an optional expertise marker (X, Y, Z)");
+        } else if (!empty($line)) {
+            if (count($errors) < 20)
+                $errors[] = upload_error($csv, $printFilename, "syntax error, expected <code>paper,title,preference</code>");
+            else {
+                $errors[] = upload_error($csv, $printFilename, "too many syntax errors, giving up");
+                break;
+            }
         }
     }
 
     if (count($errors) > 0)
-        Conf::msg_error("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p></div>");
-    if ($successes > 0)
+        Conf::msg_error("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p> None of your preferences were saved; please fix these errors and try again.</div>");
+    else if (count($new_qreq) > 0)
         savePreferences($new_qreq);
 }
 if ($Qreq->fn === "uploadpref" && fileUploaded($_FILES["uploadedFile"])
