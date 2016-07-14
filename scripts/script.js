@@ -519,7 +519,7 @@ var key_map = {"Spacebar": " ", "Esc": "Escape"},
         "PageDown": true,
         "Escape": true,
         "Enter": true
-    }
+    };
 function event_key(evt) {
     var x;
     if ((x = evt.key) != null)
