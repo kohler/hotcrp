@@ -672,14 +672,16 @@ class ReviewerMatchFexpr extends ReviewFexpr {
     private $istag;
     private static $tagmap = array();
     public function __construct($arg) {
+        global $Conf;
         $this->arg = $arg;
-        $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && pcTags($arg));
+        $this->istag = $arg[0] === "#" || ($arg[0] !== "\"" && $Conf->pc_tag_exists($arg));
         $this->format_ = self::FBOOL;
     }
     public function view_score(Contact $contact) {
         return $this->istag ? VIEWSCORE_PC : parent::view_score($contact);
     }
     public function compile(FormulaCompiler $state) {
+        global $Conf;
         $state->datatype |= self::ASUBREV;
         $state->queryOptions["reviewIdentities"] = true;
         $flags = 0;
@@ -689,7 +691,7 @@ class ReviewerMatchFexpr extends ReviewFexpr {
             $arg = str_replace("\"", "", $arg);
         }
         if (!($flags & ContactSearch::F_QUOTED)
-            && ($arg[0] === "#" || pcTags($arg))
+            && ($arg[0] === "#" || $Conf->pc_tag_exists($arg))
             && $state->contact->can_view_reviewer_tags()) {
             $cvt = $state->define_gvar('can_view_reviewer_tags', '$contact->can_view_reviewer_tags($prow)');
             $tag = ($arg[0] === "#" ? substr($arg, 1) : $arg);

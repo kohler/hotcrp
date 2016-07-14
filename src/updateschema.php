@@ -1014,6 +1014,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && Dbl::ql("update Paper p join PaperStorage ps on (p.paperStorageId>1 and p.finalPaperStorageId<=0 and p.paperStorageId=ps.paperStorageId) set p.sha1=ps.sha1, p.timestamp=ps.timestamp, p.mimetype=ps.mimetype, p.size=ps.size where p.sha1!=ps.sha1 or p.timestamp!=ps.timestamp or p.mimetype!=ps.mimetype or p.size!=ps.size")
         && Dbl::ql("update Paper p join PaperStorage ps on (p.finalPaperStorageId>0 and p.finalPaperStorageId=ps.paperStorageId) set p.sha1=ps.sha1, p.timestamp=ps.timestamp, p.mimetype=ps.mimetype, p.size=ps.size where p.sha1!=ps.sha1 or p.timestamp!=ps.timestamp or p.mimetype!=ps.mimetype or p.size!=ps.size"))
         $Conf->update_schema_version(141);
+    if ($Conf->sversion == 141
+        && Dbl::ql("delete from Settings where name='pc'"))
+        $Conf->update_schema_version(142);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

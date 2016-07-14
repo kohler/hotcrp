@@ -1094,49 +1094,13 @@ function decisionSelector($curOutcome = 0, $id = null, $extra = "") {
 }
 
 function pcMembers() {
-    global $Conf, $PcMembersCache;
-    if (!@$PcMembersCache
-        || $Conf->setting("pc") <= 0
-        || $PcMembersCache[0] < $Conf->setting("pc")
-        || $PcMembersCache[1] != opt("sortByLastName")) {
-        $pc = array();
-        $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
-        $by_name_text = array();
-        $pctags = array("pc" => "pc");
-        while ($result && ($row = Contact::fetch($result))) {
-            $pc[$row->contactId] = $row;
-            if ($row->firstName || $row->lastName) {
-                $name_text = Text::name_text($row);
-                if (isset($by_name_text[$name_text]))
-                    $row->nameAmbiguous = $by_name_text[$name_text]->nameAmbiguous = true;
-                $by_name_text[$name_text] = $row;
-            }
-            if ($row->contactTags)
-                foreach (explode(" ", $row->contactTags) as $t) {
-                    list($tag, $value) = TagInfo::split_index($t);
-                    if ($tag)
-                        $pctags[strtolower($tag)] = $tag;
-                }
-        }
-        uasort($pc, "Contact::compare");
-        ksort($pctags);
-        $order = 0;
-        foreach ($pc as $row) {
-            $row->sort_position = $order;
-            ++$order;
-        }
-        $PcMembersCache = array($Conf->setting("pc"), opt("sortByLastName"), $pc, $pctags);
-    }
-    return $PcMembersCache[2];
+    global $Conf;
+    return $Conf->pc_members();
 }
 
-function pcTags($tag = null) {
-    global $PcMembersCache;
-    pcMembers();
-    if ($tag === null)
-        return $PcMembersCache[3];
-    else
-        return isset($PcMembersCache[3][strtolower($tag)]);
+function pcTags() {
+    global $Conf;
+    return $Conf->pc_tags();
 }
 
 function pcByEmail($email) {

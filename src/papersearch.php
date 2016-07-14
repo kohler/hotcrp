@@ -620,6 +620,7 @@ class ContactSearch {
             return false;
     }
     private function check_pc_tag() {
+        global $Conf;
         $need = $neg = false;
         $x = strtolower($this->text);
         if (substr($x, 0, 1) === "-") {
@@ -631,8 +632,7 @@ class ContactSearch {
             $x = substr($x, 1);
         }
 
-        $pctags = pcTags();
-        if (isset($pctags[$x])) {
+        if ($Conf->pc_tag_exists($x)) {
             $a = array();
             foreach (pcMembers() as $cid => $pc)
                 if ($pc->has_tag($x))
@@ -1069,12 +1069,12 @@ class PaperSearch {
     }
 
     private function _searchAuthors($word, &$qt, $keyword, $quoted) {
+        global $Conf;
         $lword = strtolower($word);
         if ($keyword && !$quoted && $lword === "me")
             $this->_searchField(array($this->cid), "au_cid", $qt);
         else if ($keyword && !$quoted && $this->amPC
-                 && ($lword === "pc"
-                     || (($pctags = pcTags()) && isset($pctags[$lword])))) {
+                 && ($lword === "pc" || $Conf->pc_tag_exists($lword))) {
             $cids = self::_pcContactIdsWithTag($lword);
             $this->_searchField($cids, "au_cid", $qt);
         } else
@@ -1379,7 +1379,7 @@ class PaperSearch {
                 $qt[] = new SearchTerm("f");
                 return;
             } else if (count($tags) !== 1 || $tags[0] === "none" || $tags[0] === "any"
-                       || !pcTags($tags[0]))
+                       || !$Conf->pc_tag_exists($tags[0]))
                 return;
         }
         $contacts = ($m[0] === "" ? null : $this->_reviewerMatcher($m[0], $quoted, false));

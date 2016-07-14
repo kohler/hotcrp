@@ -50,6 +50,9 @@ class Conf {
     private $_track_review_sensitivity = false;
     private $_decisions = null;
     private $_topic_separator_cache = null;
+    private $_pc_members_cache = null;
+    private $_pc_members_cache_by_last = null;
+    private $_pc_tags_cache = null;
     public $dsn = null;
 
     public $paper = null; // current paper row
@@ -124,7 +127,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 141) {
+        if ($this->sversion < 142) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -133,7 +136,7 @@ class Conf {
         if ($this->sversion < 73)
             self::msg_error("Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
 
-        // invalidate caches after loading from backup
+        // invalidate all caches after loading from backup
         if (isset($this->settings["frombackup"])
             && $this->invalidateCaches()) {
             $this->qe_raw("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
@@ -804,6 +807,55 @@ class Conf {
     }
 
 
+    function pc_members() {
+        $by_last = opt("sortByLastName");
+        if ($this->_pc_members_cache === null
+            || $this->_pc_members_cache_by_last != opt("sortByLastName")) {
+            $pc = array();
+            $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
+            $by_name_text = array();
+            $this->_pc_tags_cache = ["pc" => "pc"];
+            while ($result && ($row = Contact::fetch($result))) {
+                $pc[$row->contactId] = $row;
+                if ($row->firstName || $row->lastName) {
+                    $name_text = Text::name_text($row);
+                    if (isset($by_name_text[$name_text]))
+                        $row->nameAmbiguous = $by_name_text[$name_text]->nameAmbiguous = true;
+                    $by_name_text[$name_text] = $row;
+                }
+                if ($row->contactTags)
+                    foreach (explode(" ", $row->contactTags) as $t) {
+                        list($tag, $value) = TagInfo::split_index($t);
+                        if ($tag)
+                            $this->_pc_tags_cache[strtolower($tag)] = $tag;
+                    }
+            }
+            uasort($pc, "Contact::compare");
+            $order = 0;
+            foreach ($pc as $row) {
+                $row->sort_position = $order;
+                ++$order;
+            }
+            $this->_pc_members_cache = $pc;
+            $this->_pc_members_cache_by_last = $by_last;
+            ksort($this->_pc_tags_cache);
+        }
+        return $this->_pc_members_cache;
+    }
+
+    function pc_tags() {
+        if ($this->_pc_tags_cache === null)
+            $this->pc_members();
+        return $this->_pc_tags_cache;
+    }
+
+    function pc_tag_exists($tag) {
+        if ($this->_pc_tags_cache === null)
+            $this->pc_members();
+        return isset($this->_pc_tags_cache[strtolower($tag)]);
+    }
+
+
     function session($name, $defval = null) {
         if (isset($_SESSION[$this->dsn][$name]))
             return $_SESSION[$this->dsn][$name];
@@ -1030,15 +1082,8 @@ class Conf {
         $inserts = array();
         $removes = array();
         $time = time();
-        if ($caches ? isset($caches["pc"]) : $this->setting("pc") > 0) {
-            if (!$caches || $caches["pc"]) {
-                $inserts[] = "('pc',$time)";
-                $this->settings["pc"] = $time;
-            } else {
-                $removes[] = "'pc'";
-                unset($this->settings["pc"]);
-            }
-        }
+        if (!$caches || isset($caches["pc"]))
+            $this->_pc_members_cache = $this->_pc_tags_cache = null;
         if (!$caches || isset($caches["paperOption"]))
             PaperOption::invalidate_option_list();
         if (!$caches || isset($caches["rf"])) {
