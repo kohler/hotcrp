@@ -1017,6 +1017,9 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($Conf->sversion == 141
         && Dbl::ql("delete from Settings where name='pc'"))
         $Conf->update_schema_version(142);
+    if ($Conf->sversion == 142
+        && Dbl::ql("alter table PaperReview add `reviewAuthorModified` int(1) DEFAULT NULL"))
+        $Conf->update_schema_version(143);
 
     Dbl::ql("delete from Settings where name='__schema_lock'");
 }

@@ -340,6 +340,8 @@ class ReviewField {
 }
 
 class ReviewForm {
+    const NOTIFICATION_DELAY = 10800;
+
     public $fmap = array();
     public $forder;
     public $fieldName;
@@ -788,10 +790,16 @@ class ReviewForm {
         }
 
         // notification
-        $notification_bound = $now - 10800;
+        $notification_bound = $now - self::NOTIFICATION_DELAY;
         $notify = $notify_author = false;
+        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome && $Conf->timeAuthorViewDecision())
+            $diff_view_score = VIEWSCORE_AUTHOR;
         if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
             $q[] = "reviewModified=" . $now;
+            if ($diff_view_score >= VIEWSCORE_AUTHOR)
+                $q[] = "reviewAuthorModified=" . $now;
+            else if ($rrow && !$rrow->reviewAuthorModified && $rrow->reviewModified !== null)
+                $q[] = "reviewAuthorModified=" . $rrow->reviewModified;
             // do not notify on updates within 3 hours
             if ($submit && $diff_view_score > VIEWSCORE_ADMINONLY) {
                 if (!$rrow || !$rrow->reviewNotified
@@ -977,6 +985,21 @@ class ReviewForm {
         }
     }
 
+    private static function rrow_modified_time($prow, $rrow, $contact, $revViewScore) {
+        if (!$prow || !$rrow || !$contact->can_view_review_time($prow, $rrow))
+            return 0;
+        else if ($revViewScore >= VIEWSCORE_AUTHORDEC - 1) {
+            if ($rrow->reviewAuthorModified !== null)
+                return $rrow->reviewAuthorModified;
+            else if (!$rrow->reviewAuthorNotified
+                     || $rrow->reviewModified - $rrow->reviewAuthorNotified <= self::NOTIFICATION_DELAY)
+                return $rrow->reviewModified;
+            else
+                return $rrow->reviewAuthorNotified;
+        } else
+            return $rrow->reviewModified;
+    }
+
     function textForm($prow, $rrow, $contact, $req = null) {
         global $Conf;
 
@@ -1009,8 +1032,9 @@ class ReviewForm {
             else
                 $x .= "==+== Reviewer: " . Text::user_text($contact) . "\n";
         }
-        if ($rrow && $rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow))
-            $x .= "==-== Updated " . $Conf->printableTime($rrow->reviewModified) . "\n";
+        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        if ($time > 1)
+            $x .= "==-== Updated " . $Conf->printableTime($time) . "\n";
 
         if ($prow)
             $x .= "\n==+== Paper #$prow->paperId\n"
@@ -1110,7 +1134,8 @@ $blind\n";
         if (get($rrow, "reviewOrdinal"))
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= center_word_wrap($n);
-        if ($rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow)) {
+        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        if ($time > 1) {
             $n = "Updated " . $Conf->printableTime($rrow->reviewModified);
             $x .= center_word_wrap($n);
         }
@@ -1643,6 +1668,8 @@ $blind\n";
     function unparse_review_json($prow, $rrow, $contact, $include_displayed_at = false) {
         global $Conf;
         self::check_review_author_seen($prow, $rrow, $contact);
+        $revViewScore = $contact->view_score_bound($prow, $rrow);
+
         $rj = array("pid" => $prow->paperId, "rid" => $rrow->reviewId);
         if ($rrow->reviewOrdinal)
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
@@ -1669,9 +1696,10 @@ $blind\n";
         }
         if ($showtoken)
             $rj["author_token"] = encode_token((int) $rrow->reviewToken);
-        if ($rrow->reviewModified > 1 && $contact->can_view_review_time($prow, $rrow)) {
-            $rj["modified_at"] = (int) $rrow->reviewModified;
-            $rj["modified_at_text"] = $Conf->printableTime($rrow->reviewModified);
+        $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
+        if ($time > 1) {
+            $rj["modified_at"] = (int) $time;
+            $rj["modified_at_text"] = $Conf->printableTime($time);
         }
         if ($include_displayed_at)
             // XXX exposes information, should hide before export
@@ -1687,7 +1715,6 @@ $blind\n";
 
         // review text
         // (field UIDs always are uppercase so can't conflict)
-        $revViewScore = $contact->view_score_bound($prow, $rrow);
         foreach ($this->forder as $fid => $f)
             if ($f->view_score > $revViewScore
                 && (!$f->round_mask || $f->is_round_visible($rrow))) {

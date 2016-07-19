@@ -264,6 +264,7 @@ CREATE TABLE `PaperReview` (
   `timeRequestNotified` int(11) NOT NULL DEFAULT '0',
   `reviewBlind` tinyint(1) NOT NULL DEFAULT '1',
   `reviewModified` int(1) DEFAULT NULL,
+  `reviewAuthorModified` int(1) DEFAULT NULL,
   `reviewSubmitted` int(1) DEFAULT NULL,
   `reviewNotified` int(1) DEFAULT NULL,
   `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0',
@@ -502,7 +503,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 141);
+insert into Settings (name, value) values ('allowPaperOption', 143);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
