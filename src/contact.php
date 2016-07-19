@@ -2106,6 +2106,9 @@ class Contact {
     }
 
     function can_view_shepherd(PaperInfo $prow, $forceShow = null) {
+        // XXX Allow shepherd view when outcome == 0 && can_view_decision.
+        // This is a mediocre choice, but people like to reuse the shepherd field
+        // for other purposes, and I might hear complaints.
         return $this->act_pc($prow, $forceShow)
             || ($this->can_view_decision($prow, $forceShow)
                 && $this->can_view_review($prow, null, $forceShow));
@@ -2163,7 +2166,8 @@ class Contact {
                     || ($oview == "nonblind"
                         && $this->can_view_authors($prow, $forceShow)))
                 && (!$opt->final
-                    || $this->can_view_decision($prow, $forceShow)));
+                    || ($prow->outcome > 0
+                        && $this->can_view_decision($prow, $forceShow))));
     }
 
     function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {

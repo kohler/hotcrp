@@ -270,7 +270,10 @@ class StatusPaperColumn extends PaperColumn {
     public function sort_prepare($pl, &$rows, $sorter) {
         $force = $pl->search->limitName != "a" && $pl->contact->privChair;
         foreach ($rows as $row)
-            $row->_status_sort_info = ($pl->contact->can_view_decision($row, $force) ? $row->outcome : -10000);
+            if ($row->outcome && $pl->contact->can_view_decision($row, $force))
+                $row->_status_sort_info = $row->outcome;
+            else
+                $row->_status_sort_info = -10000;
     }
     public function status_compare($a, $b) {
         $x = $b->_status_sort_info - $a->_status_sort_info;
