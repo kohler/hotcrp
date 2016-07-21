@@ -200,7 +200,7 @@ class LoginHelper {
         global $Conf, $ConfSitePATH;
         // check for bogus configurations
         if (!function_exists("ldap_connect") || !function_exists("ldap_bind"))
-            return Conf::msg_error("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP.  Logins will fail until this error is fixed.");
+            return Conf::msg_error("Internal error: <code>\$Opt[\"ldapLogin\"]</code> is set, but this PHP installation doesn’t support LDAP. Logins will fail until this error is fixed.");
 
         // the body is elsewhere because we need LDAP constants, which might[?]
         // cause errors absent LDAP support
@@ -213,7 +213,7 @@ class LoginHelper {
         if (strpos($_REQUEST["email"], "@") !== false
             || strpos($_REQUEST["email"], "%40") === false)
             return false;
-        error_log("double-encoded request: " . json_encode($_REQUEST));
+        // error_log("double-encoded request: " . json_encode($_REQUEST));
         foreach ($_REQUEST as $k => &$v)
             $v = rawurldecode($v);
         return true;
