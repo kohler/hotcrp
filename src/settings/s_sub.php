@@ -17,6 +17,9 @@ function render(SettingValues $sv) {
                                Conf::BLIND_OPTIONAL => "Depends—authors decide whether to expose their names"));
 
     echo "<div class='g'></div>\n<table>\n";
+    // maybe sub_reg was overridden
+    if (($sub_reg = $Conf->setting("__sub_reg")) !== null)
+        $sv->set_oldv("sub_reg", $sub_reg);
     $sv->echo_entry_row("sub_reg", "Registration deadline");
     $sv->echo_entry_row("sub_sub", "Submission deadline");
     $sv->echo_entry_row("sub_grace", 'Grace period');

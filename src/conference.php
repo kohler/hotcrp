@@ -200,6 +200,11 @@ class Conf {
             $this->settings["pc_seeblindrev"] = 1;
             $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
         }
+        if (($sub_update = get($this->settings, "sub_update", -1)) > 0
+            && ($sub_reg = get($this->settings, "sub_reg", -1)) < $sub_update) {
+            $this->settings["sub_reg"] = $sub_update;
+            $this->settings["__sub_reg"] = $sub_reg;
+        }
 
         // rounds
         $this->rounds = array("");
