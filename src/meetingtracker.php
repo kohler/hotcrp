@@ -21,6 +21,15 @@ class MeetingTracker {
         return max(microtime(true), $tracker ? $tracker->update_at + 0.2 : 0);
     }
 
+    static function is_paper_tracked(PaperInfo $prow) {
+        global $Conf;
+        if ($Conf->setting("tracker")) {
+            $tracker = $Conf->setting_json("tracker");
+            return $tracker->trackerid && array_search($prow->paperId, $tracker->ids) !== false;
+        } else
+            return false;
+    }
+
     static function clear() {
         global $Conf;
         if ($Conf->setting("tracker")) {

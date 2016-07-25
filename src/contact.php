@@ -2141,11 +2141,15 @@ class Contact {
     }
 
     function can_view_conflicts(PaperInfo $prow, $forceShow = null) {
+        global $Conf;
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_administer
             || $rights->act_author_view
             || (($rights->allow_pc_broad || $rights->potential_reviewer)
-                && $this->can_view_authors($prow, $forceShow));
+                && $this->can_view_authors($prow, $forceShow))
+            || ($Conf->setting("tracker")
+                && MeetingTracker::is_paper_tracked($prow)
+                && $this->can_view_tracker());
     }
 
     function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
