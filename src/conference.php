@@ -1520,7 +1520,9 @@ class Conf {
     }
 
     public function download_documents($docs, $attachment) {
-        if (count($docs) == 1 && $docs[0]->paperStorageId <= 1) {
+        if (count($docs) == 1
+            && $docs[0]->paperStorageId <= 1
+            && (!isset($docs[0]->content) || $docs[0]->content === "")) {
             self::msg_error("Paper #" . $docs[0]->paperId . " hasn’t been uploaded yet.");
             return false;
         }
