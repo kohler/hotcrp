@@ -5,12 +5,15 @@
 
 class ZipDocument_File {
     public $filename;
-    public $filestore;
     public $sha1;
-    function __construct($filename, $filestore, $sha1) {
+    public $filestore;
+    public $content;
+    function __construct($doc, $filename, $sha1) {
         $this->filename = $filename;
-        $this->filestore = $filestore;
         $this->sha1 = $sha1;
+        $this->filestore = get($doc, "filestore");
+        if (!isset($this->filestore))
+            $this->content = get($doc, "content");
     }
 }
 
@@ -27,6 +30,7 @@ class ZipDocument {
     private $headers;
     private $start_time;
     private $_filestore;
+    private $_filestore_length;
 
     function __construct($filename, $mimetype = "application/zip") {
         $this->filename = $filename;
@@ -44,6 +48,7 @@ class ZipDocument {
         $this->headers = false;
         $this->start_time = time();
         $this->_filestore = array();
+        $this->_filestore_length = 0;
     }
 
     private function tmpdir() {
@@ -87,9 +92,14 @@ class ZipDocument {
         }
 
         // add document to filestore list
-        if (is_array($this->_filestore) && isset($doc->filestore)
-            && ($sha1 = Filer::binary_sha1($doc)) !== null) {
-            $this->_filestore[] = new ZipDocument_File($filename, $doc->filestore, $sha1);
+        if (is_array($this->_filestore)
+            && ($sha1 = Filer::binary_sha1($doc)) !== null
+            && (isset($doc->filestore)
+                || (isset($doc->content) && $doc->content !== ""
+                    && strlen($doc->content) + $this->_filestore_length <= 4000000))) {
+            $this->_filestore[] = new ZipDocument_File($doc, $filename, $sha1);
+            if (!isset($doc->filestore))
+                $this->_filestore_length += strlen($doc->content);
             return self::_add_done($doc, true);
         }
 
