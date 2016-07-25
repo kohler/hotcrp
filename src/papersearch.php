@@ -1595,7 +1595,7 @@ class PaperSearch {
             && $m[1] !== "any" && $m[1] !== "none"
             && ($m[2] !== "" || $m[3] !== "")) {
             $tagword = $m[1];
-            $value->index1 = new CountMatcher($m[3] . $m[4]);
+            $value->index1 = new CountMatcher(($m[3] ? : "=") . $m[4]);
         } else
             $tagword = $word;
 
