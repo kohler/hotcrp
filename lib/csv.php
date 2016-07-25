@@ -282,7 +282,7 @@ class CsvGenerator {
         return $selected;
     }
 
-    private function _addline($text) {
+    function add_string($text) {
         $this->lines[] = $text;
         $this->lines_length += strlen($text);
     }
@@ -290,7 +290,7 @@ class CsvGenerator {
     function add($row) {
         if (is_string($row)) {
             error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $this->_addline($row);
+            $this->add_string($row);
             return;
         }
         reset($row);
@@ -308,18 +308,18 @@ class CsvGenerator {
                     foreach ($srow as &$x)
                         $x = self::quote($x);
                 }
-                $this->_addline(join(",", $srow) . $this->lf);
+                $this->add_string(join(",", $srow) . $this->lf);
             } else if ($this->type == self::TYPE_TAB)
-                $this->_addline(join("\t", $srow) . $this->lf);
+                $this->add_string(join("\t", $srow) . $this->lf);
             else
-                $this->_addline(join("|", $srow) . $this->lf);
+                $this->add_string(join("|", $srow) . $this->lf);
             if ($this->comment && $this->selection && ($cmt = get($row, "__postcomment__"))) {
                 preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $cmt, $m);
                 if ($m[1][count($m[1]) - 1] === "")
                     array_pop($m[1]);
                 foreach ($m[1] as $x)
-                    $this->_addline($this->comment . $x . $this->lf);
-                $this->_addline($this->lf);
+                    $this->add_string($this->comment . $x . $this->lf);
+                $this->add_string($this->lf);
             }
         }
     }

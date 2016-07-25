@@ -1002,7 +1002,7 @@ function downloadText($text, $filename, $inline = false) {
     $csvg = new CsvGenerator(CsvGenerator::TYPE_TAB);
     $csvg->download_headers($Conf->download_prefix . $filename . $csvg->extension(), !$inline);
     if ($text !== false) {
-        $csvg->add($text);
+        $csvg->add_string($text);
         $csvg->download();
         exit;
     }
