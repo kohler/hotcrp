@@ -228,8 +228,13 @@ class ZipDocument {
         set_time_limit(60);
         $out = system("cd $tmpdir; $zipcmd $opts " . escapeshellarg($this->filestore) . " " . join(" ", array_map("escapeshellarg", array_keys($this->files))) . " 2>&1", $status);
         if ($status == 0 && file_exists($this->filestore)) {
-            if ($this->sha1 === false)
-                $this->sha1 = sha1(file_get_contents($this->filestore), true);
+            // XXX do we really need the sha1?
+            if ($this->sha1 === false) {
+                // avoid file_get_contents in case the file doesn't fit in memory
+                $hctx = hash_init("sha1");
+                hash_update_file($hctx, $this->filestore);
+                $this->sha1 = hash_final($hctx, true);
+            }
             return $this->filestore;
         }
         $this->filestore = false;
