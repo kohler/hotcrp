@@ -1587,11 +1587,11 @@ class PaperSearch {
         }
 
         $value = new TagSearchMatcher;
-        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?\d+)(?:\.\.\.?|-)(-?\d+)\z/', $word, $m)) {
+        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-)(-?(?:\.\d+|\d+\.?\d*))\z/', $word, $m)) {
             $tagword = $m[1];
             $value->index1 = new CountMatcher(">=$m[2]");
             $value->index2 = new CountMatcher("<=$m[3]");
-        } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?\d+)\z/', $word, $m)
+        } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?(?:\.\d+|\d+\.?\d*))\z/', $word, $m)
             && $m[1] !== "any" && $m[1] !== "none"
             && ($m[2] !== "" || $m[3] !== "")) {
             $tagword = $m[1];
