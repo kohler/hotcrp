@@ -223,6 +223,7 @@ class CsvGenerator {
     private $type;
     private $flags;
     private $lines = array();
+    private $lines_length = 0;
     public $headerline = "";
     private $selection = null;
     private $lf = "\n";
@@ -281,9 +282,15 @@ class CsvGenerator {
         return $selected;
     }
 
+    private function _addline($text) {
+        $this->lines[] = $text;
+        $this->lines_length += strlen($text);
+    }
+
     function add($row) {
         if (is_string($row)) {
-            $this->lines[] = $row;
+            error_log("unexpected CsvGenerator::add(string): " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $this->_addline($row);
             return;
         }
         reset($row);
@@ -301,18 +308,18 @@ class CsvGenerator {
                     foreach ($srow as &$x)
                         $x = self::quote($x);
                 }
-                $this->lines[] = join(",", $srow) . $this->lf;
+                $this->_addline(join(",", $srow) . $this->lf);
             } else if ($this->type == self::TYPE_TAB)
-                $this->lines[] = join("\t", $srow) . $this->lf;
+                $this->_addline(join("\t", $srow) . $this->lf);
             else
-                $this->lines[] = join("|", $srow) . $this->lf;
+                $this->_addline(join("|", $srow) . $this->lf);
             if ($this->comment && $this->selection && ($cmt = get($row, "__postcomment__"))) {
                 preg_match_all('/([^\r\n]*)(?:\r\n?|\n|\z)/', $cmt, $m);
                 if ($m[1][count($m[1]) - 1] === "")
                     array_pop($m[1]);
                 foreach ($m[1] as $x)
-                    $this->lines[] = $this->comment . $x . $this->lf;
-                $this->lines[] = $this->lf;
+                    $this->_addline($this->comment . $x . $this->lf);
+                $this->_addline($this->lf);
             }
         }
     }
@@ -326,6 +333,7 @@ class CsvGenerator {
             $this->selection = array_keys($header);
         $this->headerline = $this->lines[0];
         $this->lines = [];
+        $this->lines_length = 0;
     }
 
     function set_selection($selection) {
@@ -359,9 +367,14 @@ class CsvGenerator {
 
     function download() {
         global $zlib_output_compression;
-        $text = $this->headerline . join("", $this->lines);
         if (!$zlib_output_compression)
-            header("Content-Length: " . strlen($text));
-        echo $text;
+            header("Content-Length: " . (strlen($this->headerline) + $this->lines_length));
+        echo $this->headerline;
+        // try to avoid out-of-memory
+        if ($this->lines_length <= 10000000)
+            echo join("", $this->lines);
+        else
+            foreach ($this->lines as $line)
+                echo $line;
     }
 }
