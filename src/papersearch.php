@@ -294,9 +294,9 @@ class CountMatcher {
 
     function __construct($countexpr) {
         $this->_countexpr = $countexpr;
-        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?\d+)\z/', $countexpr, $m)) {
+        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $countexpr, $m)) {
             $this->allowed = self::$opmap[$m[1]];
-            $this->compar = (int) $m[2];
+            $this->compar = (float) $m[2];
         } else
             error_log(caller_landmark() . ": bogus countexpr $countexpr");
     }
