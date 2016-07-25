@@ -9,22 +9,23 @@ class MeetingTracker {
         $tracker = $Conf->setting_json("tracker");
         if ($tracker && (!$tracker->trackerid || $tracker->update_at >= $Now - 150))
             return $tracker;
-        else if ($tracker)
-            return (object) ["trackerid" => false, "position_at" => $tracker->position_at + 0.1];
-        else
-            return (object) ["trackerid" => false, "position_at" => 0];
+        else {
+            $when = $tracker ? $tracker->update_at + 0.1 : 0;
+            return (object) ["trackerid" => false, "position_at" => $when, "update_at" => $when];
+        }
     }
 
     static private function next_position_at() {
         global $Conf;
         $tracker = $Conf->setting_json("tracker");
-        return max(microtime(true), $tracker ? $tracker->position_at + 0.2 : 0);
+        return max(microtime(true), $tracker ? $tracker->update_at + 0.2 : 0);
     }
 
     static function clear() {
         global $Conf;
         if ($Conf->setting("tracker")) {
-            $t = ["trackerid" => false, "position_at" => self::next_position_at()];
+            $when = self::next_position_at();
+            $t = ["trackerid" => false, "position_at" => $when, "update_at" => $when];
             $Conf->save_setting("tracker", 0, (object) $t);
             self::contact_tracker_comet();
         }
