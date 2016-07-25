@@ -1442,7 +1442,7 @@ function display_tracker() {
     if ((e = $$("trackerconnectbtn"))) {
         if (mytracker) {
             e.className = "tbtn-on need-tooltip";
-            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div></div>");
+            e.setAttribute("data-tooltip", "<div class=\"tooltipmenu\"><div><a class=\"ttmenu\" href=\"" + hoturl_html("buzzer") + "\" target=\"_blank\">Discussion status page</a></div><div><a class=\"ttmenu\" href=\"#\" onclick=\"return hotcrp_deadlines.tracker(-1)\">Stop meeting tracker</a></div></div>");
         } else {
             e.className = "tbtn need-tooltip";
             e.setAttribute("data-tooltip", "Start meeting tracker");
