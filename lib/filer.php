@@ -90,6 +90,8 @@ class ZipDocument {
                 return false;
             }
         }
+        if (isset($doc->content) && !isset($doc->sha1))
+            $doc->sha1 = sha1($doc->content, true);
 
         // add document to filestore list
         if (is_array($this->_filestore)
