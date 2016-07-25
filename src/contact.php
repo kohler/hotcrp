@@ -2143,11 +2143,14 @@ class Contact {
     function can_view_conflicts(PaperInfo $prow, $forceShow = null) {
         global $Conf;
         $rights = $this->rights($prow, $forceShow);
-        return $rights->allow_administer
-            || $rights->act_author_view
-            || (($rights->allow_pc_broad || $rights->potential_reviewer)
-                && $this->can_view_authors($prow, $forceShow))
-            || ($Conf->setting("tracker")
+        if ($rights->allow_administer || $rights->act_author_view)
+            return true;
+        if (!$rights->allow_pc_broad && !$rights->potential_reviewer)
+            return false;
+        $pccv = $Conf->setting("sub_pcconfvis");
+        return $pccv == 2
+            || (!$pccv && $this->can_view_authors($prow, $forceShow))
+            || (!$pccv && $Conf->setting("tracker")
                 && MeetingTracker::is_paper_tracked($prow)
                 && $this->can_view_tracker());
     }

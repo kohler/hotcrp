@@ -314,6 +314,10 @@
         "name": "Collect PC conflict types",
         "type": "checkbox"
     },
+    "sub_pcconfvis": {
+        "name": "PC conflict visibility",
+        "type": "radio", "values": [0, 1, 2], "default_value": 0
+    },
     "sub_reg": {
         "name": "Submission registration deadline",
         "type": "date", "date_backup": "sub_sub"

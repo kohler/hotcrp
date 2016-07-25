@@ -313,14 +313,16 @@ function render(SettingValues $sv) {
 
     echo '<div id="foldpdfupload" class="fold2o fold3o">';
     $sv->set_oldv("sub_noabstract", opt_yes_no_optional("noAbstract"));
-    echo '<div>Is an abstract required for each submission?&nbsp; ',
+    echo '<div>', $sv->label("sub_noabstract", "Is an abstract required for each submission?"),
+        '&nbsp; ',
         $sv->render_select("sub_noabstract", [0 => "Abstract required", 2 => "Abstract optional", 1 => "No abstract"]),
         '</div>';
 
     $sv->set_oldv("sub_nopapers", opt_yes_no_optional("noPapers"));
-    echo '<div>Is a PDF required to mark a submission as ready for review?&nbsp; ',
+    echo '<div>', $sv->label("sub_nopapers", "Is a PDF required to mark a submission as ready for review?"),
+        '&nbsp; ',
         $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"], ["onchange" => "sub_nopapers_change()"]),
-        '<div class="hint fx3">Submissions can always be registered without a PDF.</div></div>';
+        '<div class="hint fx3">Submission registration never requires a PDF.</div></div>';
 
     if (is_executable("src/banal")) {
         echo '<div class="g fx2">';
@@ -346,6 +348,10 @@ function render(SettingValues $sv) {
     $sv->echo_checkbox_row("sub_collab", "Collect authors’ other collaborators as text");
     echo "</table>\n";
 
+    echo '<div class="g">', $sv->label("sub_pcconfhide", "When can reviewers see conflict information?"),
+        '&nbsp; ',
+        $sv->render_select("sub_pcconfvis", [1 => "Never", 0 => "When authors or tracker are visible", 2 => "Always"]),
+        '</div>';
 
     echo "<h3 class=\"settings\">Options and attachments</h3>\n";
     echo "<p class=\"settingtext\">Options and attachments are additional data entered by authors at submission time. Option names should be brief (“PC paper,” “Best Student Paper,” “Supplemental material”). The optional description can explain further and may use XHTML. Add options one at a time.</p>\n";
