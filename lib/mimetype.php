@@ -47,8 +47,10 @@ class Mimetype {
     static function register($m) {
         $m->mimetypeid = (int) $m->mimetypeid;
         $m->inline = !!$m->inline;
-        self::$tmap[$m->mimetype] = self::$tmap[$m->mimetypeid] = $m;
-        if ($m->extension)
+        self::$tmap[$m->mimetype] = $m;
+        if ($m->mimetypeid)
+            self::$tmap[$m->mimetypeid] = $m;
+        if ($m->extension && !isset(self::$tmap[$m->extension]))
             self::$tmap[$m->extension] = $m;
         return $m;
     }
