@@ -314,7 +314,7 @@ class CountMatcher {
             return ($compar & 1) != 0;
     }
     static function compare_string($x, $compar_y) {
-        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?\d+)\z/', $compar_y, $m))
+        if (preg_match('/\A([=!<>]=?|≠|≤|≥)\s*(-?(?:\.\d+|\d+\.?\d*))\z/', $compar_y, $m))
             return self::compare($x, $m[1], $m[2]);
         else
             return false;
