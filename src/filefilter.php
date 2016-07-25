@@ -11,7 +11,8 @@ class FileFilter {
     static private $filter_by_id;
 
     static public function _add_json($fj) {
-        if (is_object($fj) && isset($fj->id) && is_int($fj->id)
+        if (is_object($fj)
+            && (!isset($fj->id) || is_int($fj->id))
             && isset($fj->name) && is_string($fj->name)
             && $fj->name !== "" && ctype_alnum($fj->name)) {
             $ff = null;
@@ -20,9 +21,10 @@ class FileFilter {
             else if (($factory = get($fj, "factory")))
                 $ff = call_user_func($factory, $fj);
             if ($ff) {
-                $ff->id = $fj->id;
+                $ff->id = get($fj, "id");
                 $ff->name = $fj->name;
-                self::$filter_by_id[$fj->id] = $ff;
+                if ($ff->id !== null)
+                    self::$filter_by_id[$ff->id] = $ff;
                 self::$filter_by_name[$fj->name] = $ff;
                 return true;
             }
@@ -41,9 +43,9 @@ class FileFilter {
         self::load();
         return get(self::$filter_by_name, $name);
     }
-    static public function all() {
+    static public function all_by_name() {
         self::load();
-        return self::$filter_by_id;
+        return self::$filter_by_name;
     }
     static public function apply_named($doc, PaperInfo $prow, $name) {
         if (($filter = self::find_by_name($name))
@@ -53,9 +55,12 @@ class FileFilter {
     }
 
     public function find_filtered($doc) {
-        $result = Dbl::qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
-        $fdoc = DocumentInfo::fetch($result);
-        Dbl::free($result);
+        if ($this->id) {
+            $result = Dbl::qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
+            $fdoc = DocumentInfo::fetch($result);
+            Dbl::free($result);
+        } else
+            $fdoc = null;
         if ($fdoc) {
             $fdoc->filters_applied = $doc->filters_applied;
             $fdoc->filters_applied[] = $this;

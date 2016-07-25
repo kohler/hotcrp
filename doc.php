@@ -67,7 +67,7 @@ function document_download() {
             if ($documentType !== null)
                 break;
             $filter = null;
-            foreach (FileFilter::all() as $ff)
+            foreach (FileFilter::all_by_name() as $ff)
                 if (str_ends_with($dtname, "-" . $ff->name) || $dtname === $ff->name) {
                     $filter = $ff;
                     break;
