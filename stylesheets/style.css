@@ -643,16 +643,15 @@ span.expander > span.in0 {
 	margin: 0 1em 0 0;
 	text-align: center;
 }
-.aabr .aabut {
+.aabr > .aabut {
 	float: right;
 	margin: 0 0 0 1em;
 }
-.aabutsep {
-	float: left;
-	padding: 0 0.5em;
+.aabut.aabutsp {
+	margin: 0 2em 0 0;
 }
-.aabr .aabutsep {
-	float: right;
+.aabr > .aabut.aabutsp {
+	margin: 0 0 0 2em;
 }
 .btnp > .btn, .btnp > .btnbox {
 	margin-left: 0.75em;

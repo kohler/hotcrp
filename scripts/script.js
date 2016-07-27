@@ -2725,7 +2725,7 @@ function edit_allowed(cj) {
 }
 
 function render_editing(hc, cj) {
-    var bnote = "", fmtnote, x;
+    var bnote = "", fmtnote, i, x, actions = [];
     ++idctr;
     if (!edit_allowed(cj))
         bnote = '<br><span class="hint">(admin only)</span>';
@@ -2765,29 +2765,29 @@ function render_editing(hc, cj) {
         hc.pop_n(2);
 
         // actions
-        hc.push('<div class="aab aabr" style="margin-bottom:0">', '</div>');
-        hc.push('<div class="aabut"><button type="button" name="submit" class="btn btn-default">Save</button>' + bnote + '</div>');
+        actions.push('<button type="button" name="submit" class="btn btn-default">Save</button>' + bnote);
     } else {
         // actions
         // XXX allow_administer
         hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
-        hc.push('<div class="aab aabr" style="margin-bottom:0">', '</div>');
         if (cj.is_new || cj.draft)
-            hc.push('<div class="aabut"><button type="button" name="savedraft" class="btn">Save draft</button>' + bnote + '</div>');
-        hc.push('<div class="aabut"><button type="button" name="submit" class="btn btn-default">Submit</button>' + bnote + '</div>');
+            actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
+        actions.push('<button type="button" name="submit" class="btn btn-default">Submit</button>' + bnote);
     }
     if (render_text.format_can_preview(cj.format))
-        hc.push('<div class="aabut"><button type="button" name="preview" class="btn">Preview</button></div>');
-    hc.push('<div class="aabut"><button type="button" name="cancel" class="btn">Cancel</button></div>');
+        actions.push('<button type="button" name="preview" class="btn">Preview</button>');
+    actions.push('<button type="button" name="cancel" class="btn">Cancel</button>');
     if (!cj.is_new) {
-        hc.push('<div class="aabutsep">&nbsp;</div>');
         x = cj.response ? "Delete response" : "Delete comment";
-        hc.push('<div class="aabut"><button type="button" name="delete" class="btn">' + x + '</button></div>');
+        actions.push("", '<button type="button" name="delete" class="btn">' + x + '</button>');
     }
-    if (cj.response && resp_rounds[cj.response].words > 0) {
-        hc.push('<div class="aabutsep">&nbsp;</div>');
-        hc.push('<div class="aabut"><div class="words"></div></div>');
-    }
+    if (cj.response && resp_rounds[cj.response].words > 0)
+        actions.push("", '<div class="words"></div>');
+    hc.push('<div class="aab aabr" style="margin-bottom:0">', '</div>');
+    for (i = 0; i < actions.length; ++i)
+        if (actions[i] !== "")
+            hc.push('<div class="aabut' + (actions[i+1] === "" ? " aabutsp" : "") + '">' + actions[i] + '</div>');
+    hc.pop();
 }
 
 function visibility_change() {
