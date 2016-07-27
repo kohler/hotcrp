@@ -22,12 +22,9 @@ class MeetingTracker {
     }
 
     static function is_paper_tracked(PaperInfo $prow) {
-        global $Conf;
-        if ($Conf->setting("tracker")) {
-            $tracker = $Conf->setting_json("tracker");
-            return $tracker->trackerid && array_search($prow->paperId, $tracker->ids) !== false;
-        } else
-            return false;
+        $tracker = self::lookup();
+        return $tracker && $tracker->trackerid
+            && array_search($prow->paperId, $tracker->ids) !== false;
     }
 
     static function clear() {
