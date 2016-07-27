@@ -291,18 +291,24 @@ class Ht {
     }
 
     static function actions($actions, $js = array(), $extra_text = "") {
-        if (!count($actions))
+        if (empty($actions))
             return "";
+        $actions = array_values($actions);
         $js = $js ? : array();
         if (!isset($js["class"]))
             $js["class"] = "aab";
         $t = "<div" . self::extra($js) . ">";
-        foreach ($actions as $a) {
-            $t .= '<div class="aabut">';
+        foreach ($actions as $i => $a) {
+            if ($a === "")
+                continue;
+            $t .= '<div class="aabut';
+            if ($i + 1 < count($actions) && $actions[$i + 1] === "")
+                $t .= ' aabutsp';
+            $t .= '">';
             if (is_array($a)) {
                 $t .= $a[0];
                 if (count($a) > 1)
-                    $t .= '<br><span class="hint">' . $a[1] . '</span>';
+                    $t .= '<br /><span class="hint">' . $a[1] . '</span>';
             } else
                 $t .= $a;
             $t .= '</div>';

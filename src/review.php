@@ -1449,17 +1449,15 @@ $blind\n";
         }
     }
 
-    private function _review_buttons($prow, $rrow, $type, $reviewPostLink) {
+    private function _echo_review_actions($prow, $rrow, $type, $reviewPostLink) {
         global $Conf, $Me;
         $buttons = array();
 
         // refuse?
         if ($type == "top" && $rrow && !$rrow->reviewModified
             && $rrow->reviewType < REVIEW_SECONDARY) {
-            $buttons[] = Ht::submit("accept", "Accept review", array("class" => "b"));
-            $buttons[] = Ht::button("Decline review",
-                                    array("class" => "b",
-                                          "onclick" => "popup(this,'ref',0)"));
+            $buttons[] = Ht::submit("accept", "Accept review", ["class" => "btn"]);
+            $buttons[] = Ht::button("Decline review", ["class" => "btn", "onclick" => "popup(this,'ref',0)"]);
             // Also see $_REQUEST["refuse"] case in review.php.
             Ht::stash_html("<div id='popup_ref' class='popupc'>"
     . Ht::form_div($reviewPostLink)
@@ -1480,21 +1478,21 @@ $blind\n";
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
             if (!$submitted) {
-                $buttons[] = array(Ht::js_button("Submit review", "override_deadlines(this)", array("class" => "bb", "data-override-text" => $override_text, "data-override-submit" => "submitreview")), "(admin only)");
-                $buttons[] = array(Ht::js_button("Save as draft", "override_deadlines(this)", array("data-override-text" => $override_text, "data-override-submit" => "savedraft")), "(admin only)");
+                $buttons[] = array(Ht::js_button("Submit review", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save as draft", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $override_text, "data-override-submit" => "savedraft"]), "(admin only)");
             } else
-                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", array("class" => "bb", "data-override-text" => $override_text, "data-override-submit" => "submitreview")), "(admin only)");
+                $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
         } else if (!$submitted) {
-            $buttons[] = Ht::submit("submitreview", "Submit review", array("class" => "bb"));
-            $buttons[] = Ht::submit("savedraft", "Save as draft");
+            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn btn-default"]);
+            $buttons[] = Ht::submit("savedraft", "Save as draft", ["class" => "btn"]);
         } else
-            $buttons[] = Ht::submit("submitreview", "Save changes", array("class" => "bb"));
+            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn btn-default"]);
 
         if ($rrow && $type == "bottom" && $Me->allow_administer($prow)) {
             $buttons[] = "";
             if ($submitted)
-                $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)");
-            $buttons[] = array(Ht::js_button("Delete review", "popup(this,'d',0)"), "(admin only)");
+                $buttons[] = array(Ht::submit("unsubmitreview", "Unsubmit review", ["class" => "btn"]), "(admin only)");
+            $buttons[] = array(Ht::js_button("Delete review", "popup(this,'d',0)", ["class" => "btn"]), "(admin only)");
             Ht::stash_html("<div id='popup_d' class='popupc'>
   <p>Be careful: This will permanently delete all information about this
   review assignment from the database and <strong>cannot be
@@ -1505,7 +1503,7 @@ $blind\n";
     . "</div></form></div>");
         }
 
-        return $buttons;
+        echo Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-$type:0"]);
     }
 
     function show($prow, $rrows, $rrow, &$options) {
@@ -1635,10 +1633,8 @@ $blind\n";
         }
 
         // top save changes
-        if ($Me->timeReview($prow, $rrow) || $admin) {
-            $buttons = $this->_review_buttons($prow, $rrow, "top", $reviewPostLink);
-            echo Ht::actions($buttons, array("class" => "aa", "style" => "margin-top:0"));
-        }
+        if ($Me->timeReview($prow, $rrow) || $admin)
+            $this->_echo_review_actions($prow, $rrow, "top", $reviewPostLink);
 
         // blind?
         if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL) {
@@ -1655,8 +1651,7 @@ $blind\n";
 
         // review actions
         if ($Me->timeReview($prow, $rrow) || $admin) {
-            $buttons = $this->_review_buttons($prow, $rrow, "bottom", $reviewPostLink);
-            echo Ht::actions($buttons, array("class" => "aa", "style" => "margin-bottom:0"));
+            $this->_echo_review_actions($prow, $rrow, "bottom", $reviewPostLink);
             if ($rrow && $rrow->reviewSubmitted && !$admin)
                 echo '<div class="hint">Only administrators can remove or unsubmit the review at this point.</div>';
         }
