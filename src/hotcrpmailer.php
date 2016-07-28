@@ -74,7 +74,7 @@ class HotCRPMailer extends Mailer {
             && $this->rrow
             && $Conf->is_review_blind($this->rrow)
             && !get($this->permissionContact, "privChair")
-            && (!isset($this->permissionContact->can_view_review_identity)
+            && (!($this->permissionContact instanceof Contact)
                 || !$this->permissionContact->can_view_review_identity($this->row, $this->rrow, false))) {
             if ($isbool)
                 return false;
