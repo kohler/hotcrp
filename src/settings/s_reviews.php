@@ -150,6 +150,7 @@ function render(SettingValues $sv) {
     echo "<div class='g'></div>";
     $sv->echo_checkbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
     $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
+    //$sv->echo_checkbox("extrev_approve", "External reviews must be approved by their requesters");
 
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);

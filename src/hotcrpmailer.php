@@ -261,6 +261,12 @@ class HotCRPMailer extends Mailer {
             return $this->row->paperId;
         if ($what == "%REVIEWNUMBER%")
             return $this->reviewNumber;
+        if ($what == "%REVIEWID%") {
+            if ($isbool && !$this->rrow)
+                return false;
+            else
+                return $this->rrow ? $this->rrow->reviewId : "";
+        }
         if ($what == "%AUTHOR%" || $what == "%AUTHORS%") {
             if (!$this->permissionContact->is_site_contact
                 && !$this->row->has_author($this->permissionContact)

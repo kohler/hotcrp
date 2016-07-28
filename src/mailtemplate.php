@@ -291,6 +291,42 @@ Contact %ADMIN% with any questions or concerns.
 
 %REVIEWS%\n"),
 
+     "reviewapprovalrequest" =>
+     array("subject" => "[%CONFSHORTNAME%] Review approval requested for paper #%NUMBER% %TITLEHINT%",
+           "body" => "Greetings,
+
+%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been submitted for approval. You can approve the review at the link below.
+
+ Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+   Review by: %OPT(REVIEWAUTHOR)%
+
+Contact %ADMIN% with any questions or concerns.
+
+%SIGNATURE%
+
+%REVIEWS%\n"),
+
+     "reviewapprovalupdate" =>
+     array("subject" => "[%CONFSHORTNAME%] Review approval requested for paper #%NUMBER% %TITLEHINT%",
+           "body" => "Greetings,
+
+%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been resubmitted for approval. You can approve the review at the link below.
+
+ Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
+       Title: %TITLE%
+     Authors: %OPT(AUTHORS)%
+   Review by: %OPT(REVIEWAUTHOR)%
+
+You can approve the review at the link above.
+
+Contact %ADMIN% with any questions or concerns.
+
+%SIGNATURE%
+
+%REVIEWS%\n"),
+
      "acceptnotify" =>
      array("mailtool_name" => "Accept notification",
            "mailtool_priority" => 10,

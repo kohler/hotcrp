@@ -345,8 +345,11 @@ class ReviewForm {
     public $fmap = array();
     public $forder;
     public $fieldName;
-    private $mailer_info;
-    private $mailer_preps;
+    private $_mailer_template;
+    private $_mailer_always_combine;
+    private $_mailer_diff_view_score;
+    private $_mailer_info;
+    private $_mailer_preps;
 
     static public $revtype_names = ["None", "External", "PC", "Secondary", "Primary"];
 
@@ -672,13 +675,14 @@ class ReviewForm {
     }
 
     function review_watch_callback($prow, $minic) {
-        if ($minic->can_view_review($prow, $this->mailer_info["diff_view_score"], false)
-            && ($p = HotCRPMailer::prepare_to($minic, $this->mailer_info["template"], $prow, $this->mailer_info))) {
+        if ($minic->can_view_review($prow, $this->_mailer_diff_view_score, false)
+            && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))) {
             // Don't combine preparations unless you can see all submitted
             // reviewer identities
-            if (!$minic->can_view_review_identity($prow, null, false))
+            if (!$this->_mailer_always_combine
+                && !$minic->can_view_review_identity($prow, null, false))
                 $p->unique_preparation = true;
-            $this->mailer_preps[] = $p;
+            $this->_mailer_preps[] = $p;
         }
     }
 
@@ -694,8 +698,14 @@ class ReviewForm {
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
         global $Conf;
-        $newsubmit = get($req, "ready") && !get($req, "unready")
-            && (!$rrow || !$rrow->reviewSubmitted);
+        $newsubmit = $approval_requested = false;
+        if (get($req, "ready") && !get($req, "unready")
+            && (!$rrow || !$rrow->reviewSubmitted)) {
+            if ($contact->isPC || !$Conf->setting("extrev_approve"))
+                $newsubmit = true;
+            else
+                $approval_requested = true;
+        }
         $submit = $newsubmit || ($rrow && $rrow->reviewSubmitted);
         $admin = $contact->allow_administer($prow);
 
@@ -758,6 +768,8 @@ class ReviewForm {
                 $q[] = "timeDisplayed=$now";
             }
         }
+        if ($approval_requested)
+            $q[] = "timeApprovalRequested=$now";
 
         // check whether used a review token
         $usedReviewToken = $contact->review_token_cid($prow, $rrow);
@@ -848,29 +860,36 @@ class ReviewForm {
         }
 
         // potentially email chair, reviewers, and authors
-        if ($submit)
+        $this->_mailer_preps = [];
+        $submitter = $contact;
+        if ($contactId != $submitter->contactId)
+            $submitter = Contact::find_by_id($contactId);
+        if ($submit || $approval_requested || $rrow->timeApprovalRequested)
             $rrow = $Conf->reviewRow(["reviewId" => $reviewId]);
+        $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
+                               "check_function" => "HotCRPMailer::check_can_view_review"];
+        if ($submit)
+            $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
+        $this->_mailer_diff_view_score = $diff_view_score;
         if ($submit && ($notify || $notify_author) && $rrow) {
-            $tmpl = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
-            $submitter = $contact;
-            if ($contactId != $submitter->contactId)
-                $submitter = Contact::find_by_id($contactId);
-
-            // construct mail
-            $this->mailer_info = array("template" => $tmpl,
-                    "rrow" => $rrow,
-                    "reviewer_contact" => $submitter,
-                    "reviewNumber" => $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal),
-                    "check_function" => "HotCRPMailer::check_can_view_review",
-                    "diff_view_score" => $diff_view_score);
-            $this->mailer_preps = array();
+            $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
+            $this->_mailer_always_combine = false;
             if ($Conf->timeEmailChairAboutReview())
-                HotCRPMailer::send_manager($tmpl, $prow, $this->mailer_info);
+                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
-            if (count($this->mailer_preps))
-                HotCRPMailer::send_combined_preparations($this->mailer_preps);
-            unset($this->mailer_info, $this->mailer_preps);
+        } else if ($rrow && !$submit && ($approval_requested || $rrow->timeApprovalRequested)) {
+            $this->_mailer_template = $approval_requested ? "@reviewapprovalrequest" : "@reviewapprovalupdate";
+            $this->_mailer_always_combine = true;
+            if ($Conf->timeEmailChairAboutReview())
+                HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
+            if ($rrow->requestedBy && ($requester = Contact::find_by_id($rrow->requestedBy))) {
+                $this->review_watch_callback($prow, $requester);
+                $this->review_watch_callback($prow, $submitter);
+            }
         }
+        if (!empty($this->_mailer_preps))
+            HotCRPMailer::send_combined_preparations($this->_mailer_preps);
+        unset($this->_mailer_info, $this->_mailer_preps);
 
         // if external, forgive the requestor from finishing their review
         if ($rrow && $rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy && $submit)
@@ -1692,6 +1711,8 @@ $blind\n";
             $rj["submitted"] = true;
         else if (!$rrow->reviewOrdinal)
             $rj["draft"] = true;
+        if (!$rrow->reviewSubmitted && $rrow->timeApprovalRequested)
+            $rj["needs_approval"] = true;
         if ($contact->can_review($prow, $rrow))
             $rj["editable"] = true;
 

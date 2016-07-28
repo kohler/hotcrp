@@ -18,6 +18,10 @@
     "decisions": {
         "parser": "Decision_SettingParser"
     },
+    "extrev_approve": {
+        "name": "External reviews must be approved by their requesters",
+        "type": "checkbox"
+    },
     "extrev_chairreq": {
         "name": "PC chair must approve proposed external reviewers",
         "type": "checkbox"
