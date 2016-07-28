@@ -919,6 +919,8 @@ class ReviewForm {
                 $tf["unchanged"][] = $what;
             if ($notify_author)
                 $tf["authorNotified"][] = $what;
+            if (!$submit && ($approval_requested || $rrow->timeApprovalRequested))
+                $tf["approvalRequested"][] = $what;
         }
 
         return $result;
@@ -1392,34 +1394,36 @@ $blind\n";
     function textFormMessages(&$tf) {
         global $Conf;
 
-        if (isset($tf["err"]) && count($tf["err"]) > 0) {
+        if (!empty($tf["err"])) {
             $Conf->msg(defval($tf, 'anyErrors') ? "merror" : "warning",
                        "There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
         }
 
         $confirm = array();
         $single = get($tf, "singlePaper");
-        if (isset($tf["confirm"]) && count($tf["confirm"]) > 0)
+        if (!empty($tf["confirm"]))
             $confirm = array_merge($confirm, $tf["confirm"]);
-        if (isset($tf["newlySubmitted"]) && count($tf["newlySubmitted"]) > 0)
+        if (!empty($tf["newlySubmitted"]))
             $confirm[] = self::_paperCommaJoin("Review*| ", $tf["newlySubmitted"], $single) . " submitted.";
-        if (isset($tf["updated"]) && count($tf["updated"]) > 0)
+        if (!empty($tf["updated"]))
             $confirm[] = self::_paperCommaJoin("Review*| ", $tf["updated"], $single) . " updated.";
-        if (isset($tf["savedDraft"]) && count($tf["savedDraft"]) > 0) {
-            if ($single)
+        if (!empty($tf["savedDraft"])) {
+            if ($single && !empty($tf["approvalRequested"]))
+                $confirm[] = "Review submitted for approval.";
+            else if ($single)
                 $confirm[] = "Draft review saved. However, this version is marked as not ready for others to see. Please finish the review and submit again.";
             else
                 $confirm[] = self::_paperCommaJoin("Draft review*| for paper* ", $tf["savedDraft"], $single) . " saved.";
         }
         $nconfirm = count($confirm);
-        if (isset($tf["authorNotified"]) && count($tf["authorNotified"]) > 0)
+        if (!empty($tf["authorNotified"]))
             $confirm[] = self::_paperCommaJoin("Notified authors| about updated review*| ", $tf["authorNotified"], $single) . ".";
-        if (isset($tf["unchanged"]) && count($tf["unchanged"]) > 0)
+        if (!empty($tf["unchanged"]))
             $confirm[] = self::_paperCommaJoin("Review*| ", $tf["unchanged"], $single) . " unchanged.";
-        if (isset($tf["ignoredBlank"]) && count($tf["ignoredBlank"]) > 0)
+        if (!empty($tf["ignoredBlank"]))
             $confirm[] = self::_paperCommaJoin("Ignored blank review form*| ", $tf["ignoredBlank"], $single) . ".";
         // self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
-        if (count($confirm))
+        if (!empty($confirm))
             $Conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
     }
 
@@ -1514,6 +1518,11 @@ $blind\n";
 
         $submitted = $rrow && $rrow->reviewSubmitted;
         $disabled = !$Me->can_clickthrough("review");
+        $submit_text = "Submit review";
+        if ($rrow && !$submitted
+            && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy
+            && $Me->contactId == $rrow->contactId) /* XXX */
+            $submit_text = "Submit for approval";
         if (!$Conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
@@ -1524,7 +1533,7 @@ $blind\n";
                 $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
         } else if (!$submitted) {
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
-            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn btn-default", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("submitreview", $submit_text, ["class" => "btn btn-default", "disabled" => $disabled]);
             $buttons[] = Ht::submit("savedraft", "Save as draft", ["class" => "btn", "disabled" => $disabled]);
         } else
             // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
