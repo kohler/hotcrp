@@ -1521,8 +1521,12 @@ $blind\n";
         $submit_text = "Submit review";
         if ($rrow && !$submitted
             && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy
-            && $Me->contactId == $rrow->contactId) /* XXX */
-            $submit_text = "Submit for approval";
+            && $Conf->setting("extrev_approve")) {
+            if ($Me->contactId == $rrow->contactId) /* XXX */
+                $submit_text = "Submit for approval";
+            else if ($rrow->timeApprovalRequested)
+                $submit_text = "Approve review";
+        }
         if (!$Conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");

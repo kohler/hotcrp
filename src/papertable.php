@@ -2421,7 +2421,7 @@ class PaperTable {
         while ($rrid !== "" && $rrid[0] === "0")
             $rrid = substr($rrid, 1);
 
-        $this->rrow = $myrrow = null;
+        $this->rrow = $myrrow = $approval_rrow = null;
         foreach ($this->viewable_rrows as $rrow) {
             if ($rrid !== ""
                 && (strcmp($rrow->reviewId, $rrid) == 0
@@ -2431,9 +2431,18 @@ class PaperTable {
             if ($rrow->contactId == $Me->contactId
                 || (!$myrrow && $Me->is_my_review($rrow)))
                 $myrrow = $rrow;
+            if ($rrow->requestedBy == $Me->contactId
+                && !$rrow->reviewSubmitted
+                && $rrow->timeApprovalRequested)
+                $approval_rrow = $rrow;
         }
 
-        $this->editrrow = $this->rrow ? : $myrrow;
+        if ($this->rrow)
+            $this->editrrow = $this->rrow;
+        else if (!$approval_rrow || ($myrrow && $myrrow->reviewModified))
+            $this->editrrow = $myrrow;
+        else
+            $this->editrrow = $approval_rrow;
 
         if ($want_review && $Me->can_review($this->prow, $this->editrrow, false))
             $this->mode = "re";

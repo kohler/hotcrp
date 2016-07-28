@@ -65,8 +65,11 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
     foreach ($rrows as $rr) {
         $highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
         $foundRrow += $highlight;
-        if ($Me->is_my_review($rr))
+        $want_my_scores = $want_scores;
+        if ($Me->is_my_review($rr)) {
+            $want_my_scores = true;
             $foundMyReview++;
+        }
         $canView = $Me->can_view_review($prow, $rr, null);
 
         // skip unsubmitted reviews
@@ -174,7 +177,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
         // scores
         $scores = array();
-        if ($want_scores && $canView) {
+        if ($want_my_scores && $canView) {
             $view_score = $Me->view_score_bound($prow, $rr);
             $rf = ReviewForm::get();
             foreach ($rf->forder as $fid => $f) {
