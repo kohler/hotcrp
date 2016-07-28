@@ -1449,15 +1449,11 @@ $blind\n";
         }
     }
 
-    private function _echo_review_actions($prow, $rrow, $type, $reviewPostLink) {
-        global $Conf, $Me;
-        $buttons = array();
-
-        // refuse?
-        if ($type == "top" && $rrow && !$rrow->reviewModified
-            && $rrow->reviewType < REVIEW_SECONDARY) {
-            $buttons[] = Ht::submit("accept", "Accept review", ["class" => "btn"]);
-            $buttons[] = Ht::button("Decline review", ["class" => "btn", "onclick" => "popup(this,'ref',0)"]);
+    private function _echo_accept_decline($prow, $rrow, $reviewPostLink) {
+        if ($rrow && !$rrow->reviewModified && $rrow->reviewType < REVIEW_SECONDARY) {
+            $buttons = [];
+            $buttons[] = Ht::submit("accept", "Accept", ["class" => "btn btn-highlight"]);
+            $buttons[] = Ht::button("Decline", ["class" => "btn", "onclick" => "popup(this,'ref',0)"]);
             // Also see $_REQUEST["refuse"] case in review.php.
             Ht::stash_html("<div id='popup_ref' class='popupc'>"
     . Ht::form_div($reviewPostLink)
@@ -1470,8 +1466,20 @@ $blind\n";
     . Ht::submit("Decline review", ["class" => "popup-btn"])
     . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "popup-btn"])
     . "</div></div></form></div>", "declinereviewform");
-            $buttons[] = "";
+            if ($rrow->requestedBy && ($requester = Contact::find_by_id($rrow->requestedBy)))
+                $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
+            else
+                $req = 'Please take a moment to accept or decline our review request.';
+            echo '<div class="revcard_bodyinsert">',
+                Ht::actions($buttons, ["class" => "aab aabr aabig", "style" => "margin-top:0"],
+                            '<div style="padding-top:5px">' . $req . '</div>'),
+                "</div>\n";
         }
+    }
+
+    private function _echo_review_actions($prow, $rrow, $type, $reviewPostLink) {
+        global $Conf, $Me;
+        $buttons = array();
 
         $submitted = $rrow && $rrow->reviewSubmitted;
         $disabled = !$Me->can_clickthrough("review");
@@ -1636,8 +1644,10 @@ $blind\n";
         }
 
         // top save changes
-        if ($Me->timeReview($prow, $rrow) || $admin)
+        if ($Me->timeReview($prow, $rrow) || $admin) {
+            $this->_echo_accept_decline($prow, $rrow, $reviewPostLink);
             $this->_echo_review_actions($prow, $rrow, "top", $reviewPostLink);
+        }
 
         // blind?
         if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL) {
