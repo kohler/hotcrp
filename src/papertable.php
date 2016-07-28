@@ -1867,7 +1867,7 @@ class PaperTable {
         global $Conf, $Now;
         $data = $Conf->message_html("clickthrough_$ctype");
         echo Ht::form(hoturl_post("profile"), ["onsubmit" => "return handle_clickthrough(this)", "data-clickthrough-enable" => ".editrevform input[name=submitreview], .editrevform input[name=savedraft]"]), "<div class='aahc'>", $data;
-        $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "btn btnbig btn-default")));
+        $buttons = array(Ht::submit("clickthrough_accept", "Agree", array("class" => "btn btnbig btn-highlight")));
         echo "<div class='g'></div>",
             Ht::hidden("clickthrough", $ctype),
             Ht::hidden("clickthrough_sha1", sha1($data)),
@@ -1876,7 +1876,7 @@ class PaperTable {
     }
 
     static public function echo_review_clickthrough() {
-        echo '<div class="revcard clickthrough"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">You must agree to these terms before you can save reviews.<hr />';
+        echo '<div class="revcard clickthrough"><div class="revcard_head"><h3>Reviewing terms</h3></div><div class="revcard_body">', Ht::xmsg("error", "You must agree to these terms before you can save reviews.");
         self::_echo_clickthrough("review");
         echo "</form></div></div>";
     }

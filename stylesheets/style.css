@@ -2626,11 +2626,14 @@ body#offline .revcard {
 .cmtt .floatright {
 	padding-left: 0.5em;
 }
-.revcard_body .xmsg, .cmtg .xmsg {
+.cmtg .xmsg {
 	margin: 3px -12px 6px;
 	padding: 5px 12px;
 	font-size: smaller;
 	border: 0;
+}
+.revcard_body .xmsg {
+	margin: 3px -12px 6px;
 }
 .revcard_body .xinfo, .cmtg .xinfo {
 	background: #eeeeff;
@@ -2647,11 +2650,14 @@ body#offline .revcard {
 	background: linear-gradient(to bottom, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%),
 		linear-gradient(to top, rgba(255,255,221,0), #ffffdd 4px, #ffffdd 51%, transparent 51%);
 }
-.pedcard_body .xmerror, .pedcard_body .xwarning, .pedcard_body .xinfo {
+.pedcard_body .xmsg, .revcard_body .xmsg {
 	margin: 8px -12px;
 	padding: 0;
 	border-left: 0 none;
 	border-right: 0 none;
+}
+.pedcard_body > .xmsg:first-child, .revcard_body > .xmsg:first-child {
+	margin-top: 0;
 }
 .pedcard_body .xinfo {
 	background: #f8f4ff;
@@ -2676,7 +2682,7 @@ body#offline .revcard {
 	background: #ffff00;
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YwMCIgLz48cG9seWxpbmUgcG9pbnRzPSItNiwxMiw2LDAsMTIsMCwwLDEyIiBmaWxsPSIjNDAwMDAwIiAvPjxwb2x5bGluZSBwb2ludHM9IjYsMTIsMTgsMCwyNCwwLDEyLDEyIiBmaWxsPSIjNDAwMDAwIiAvPjwvc3ZnPg==);
 }
-.pedcard_body .xmsgc {
+.pedcard_body .xmsgc, .revcard_body .xmsgc {
 	padding: 8px 12px;
 	font-size: 90%;
 }
