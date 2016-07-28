@@ -17,6 +17,7 @@ class HotCRPMailer extends Mailer {
 
     protected $row = null;
     protected $rrow = null;
+    protected $rrow_unsubmitted = false;
     protected $reviewNumber = "";
     protected $comment_row = null;
     protected $newrev_since = false;
@@ -48,6 +49,8 @@ class HotCRPMailer extends Mailer {
         $this->row = $row;
         foreach (array("rrow", "reviewNumber", "comment_row", "newrev_since") as $k)
             $this->$k = get($rest, $k);
+        if (get($rest, "rrow_unsubmitted"))
+            $this->rrow_unsubmitted = true;
         if ($this->reviewNumber === null)
             $this->reviewNumber = "";
         if (get($rest, "no_send"))
@@ -111,14 +114,13 @@ class HotCRPMailer extends Mailer {
 
         $text = "";
         $rf = ReviewForm::get();
-        foreach ($rrows as $row)
-            if ($row->reviewSubmitted
-                && $this->permissionContact->can_view_review($this->row, $row, false))
-                $text .= $rf->pretty_text($this->row, $row, $this->permissionContact, $this->no_send) . "\n";
+        foreach ($rrows as $rrow)
+            if (($rrow->reviewSubmitted || ($rrow == $this->rrow && $this->rrow_unsubmitted))
+                && $this->permissionContact->can_view_review($this->row, $rrow, false))
+                $text .= $rf->pretty_text($this->row, $rrow, $this->permissionContact, $this->no_send) . "\n";
 
         $Conf->au_seerev = $au_seerev;
-        if ($text === "" && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE
-            && count($rrows))
+        if ($text === "" && $au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE && !empty($rrows))
             $text = "[Reviews are hidden since you have incomplete reviews of your own.]\n";
         return $text;
     }

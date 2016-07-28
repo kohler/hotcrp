@@ -675,12 +675,13 @@ class ReviewForm {
     }
 
     function review_watch_callback($prow, $minic) {
-        if ($minic->can_view_review($prow, $this->_mailer_diff_view_score, false)
+        $rrow = $this->_mailer_info["rrow"];
+        if ($minic->can_view_review($prow, $rrow, false, $this->_mailer_diff_view_score)
             && ($p = HotCRPMailer::prepare_to($minic, $this->_mailer_template, $prow, $this->_mailer_info))) {
             // Don't combine preparations unless you can see all submitted
             // reviewer identities
             if (!$this->_mailer_always_combine
-                && !$minic->can_view_review_identity($prow, null, false))
+                && !$minic->can_view_review_identity($prow, $rrow, false))
                 $p->unique_preparation = true;
             $this->_mailer_preps[] = $p;
         }
@@ -694,6 +695,14 @@ class ReviewForm {
                 && $f->include_word_count())
                 $wc += count_words($rrow->$field);
         return $wc;
+    }
+
+    private static function contact_by_id($cid) {
+        $pc = pcMembers();
+        if (isset($pc[$cid]))
+            return $pc[$cid];
+        else
+            return Contact::find_by_id($cid);
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
@@ -806,8 +815,9 @@ class ReviewForm {
         $notify = $notify_author = false;
         if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome && $Conf->timeAuthorViewDecision())
             $diff_view_score = VIEWSCORE_AUTHOR;
-        if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
+        if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE)
             $q[] = "reviewModified=" . $now;
+        if (!$rrow || $diff_view_score > VIEWSCORE_FALSE) {
             if ($diff_view_score >= VIEWSCORE_AUTHOR)
                 $q[] = "reviewAuthorModified=" . $now;
             else if ($rrow && !$rrow->reviewAuthorModified && $rrow->reviewModified !== null)
@@ -863,26 +873,28 @@ class ReviewForm {
         $this->_mailer_preps = [];
         $submitter = $contact;
         if ($contactId != $submitter->contactId)
-            $submitter = Contact::find_by_id($contactId);
+            $submitter = self::contact_by_id($contactId);
         if ($submit || $approval_requested || $rrow->timeApprovalRequested)
             $rrow = $Conf->reviewRow(["reviewId" => $reviewId]);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
         if ($submit)
             $this->_mailer_info["reviewNumber"] = $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
-        $this->_mailer_diff_view_score = $diff_view_score;
         if ($submit && ($notify || $notify_author) && $rrow) {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
+            $this->_mailer_diff_view_score = $diff_view_score;
             if ($Conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
         } else if ($rrow && !$submit && ($approval_requested || $rrow->timeApprovalRequested)) {
             $this->_mailer_template = $approval_requested ? "@reviewapprovalrequest" : "@reviewapprovalupdate";
             $this->_mailer_always_combine = true;
+            $this->_mailer_diff_view_score = null;
+            $this->_mailer_info["rrow_unsubmitted"] = true;
             if ($Conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            if ($rrow->requestedBy && ($requester = Contact::find_by_id($rrow->requestedBy))) {
+            if ($rrow->requestedBy && ($requester = self::contact_by_id($rrow->requestedBy))) {
                 $this->review_watch_callback($prow, $requester);
                 $this->review_watch_callback($prow, $submitter);
             }
@@ -1485,7 +1497,7 @@ $blind\n";
     . Ht::submit("Decline review", ["class" => "popup-btn"])
     . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "popup-btn"])
     . "</div></div></form></div>", "declinereviewform");
-            if ($rrow->requestedBy && ($requester = Contact::find_by_id($rrow->requestedBy)))
+            if ($rrow->requestedBy && ($requester = self::contact_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
             else
                 $req = 'Please take a moment to accept or decline our review request.';

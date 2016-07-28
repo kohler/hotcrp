@@ -2246,12 +2246,12 @@ class Contact {
             || ($this->is_author() && $Conf->au_seerev != 0);
     }
 
-    public function can_view_review(PaperInfo $prow, $rrow, $forceShow) {
+    public function can_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
         global $Conf;
         if (is_int($rrow)) {
             $viewscore = $rrow;
             $rrow = null;
-        } else
+        } else if ($viewscore === null)
             $viewscore = VIEWSCORE_AUTHOR;
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $rights = $this->rights($prow, $forceShow);
@@ -2287,9 +2287,9 @@ class Contact {
                     && ($Conf->setting("extrev_view") >= 1 || $pc_trackok)));
     }
 
-    function perm_view_review(PaperInfo $prow, $rrow, $forceShow) {
+    function perm_view_review(PaperInfo $prow, $rrow, $forceShow, $viewscore = null) {
         global $Conf;
-        if ($this->can_view_review($prow, $rrow, $forceShow))
+        if ($this->can_view_review($prow, $rrow, $forceShow, $viewscore))
             return null;
         $rrowSubmitted = (!$rrow || $rrow->reviewSubmitted > 0);
         $pc_seeallrev = $Conf->setting("pc_seeallrev");
