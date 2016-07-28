@@ -1474,6 +1474,7 @@ $blind\n";
         }
 
         $submitted = $rrow && $rrow->reviewSubmitted;
+        $disabled = !$Me->can_clickthrough("review");
         if (!$Conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
@@ -1483,10 +1484,12 @@ $blind\n";
             } else
                 $buttons[] = array(Ht::js_button("Save changes", "override_deadlines(this)", ["class" => "btn btn-default", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)");
         } else if (!$submitted) {
-            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn btn-default"]);
-            $buttons[] = Ht::submit("savedraft", "Save as draft", ["class" => "btn"]);
+            // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
+            $buttons[] = Ht::submit("submitreview", "Submit review", ["class" => "btn btn-default", "disabled" => $disabled]);
+            $buttons[] = Ht::submit("savedraft", "Save as draft", ["class" => "btn", "disabled" => $disabled]);
         } else
-            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn btn-default"]);
+            // NB see `PaperTable::_echo_clickthrough` data-clickthrough-enable
+            $buttons[] = Ht::submit("submitreview", "Save changes", ["class" => "btn btn-default", "disabled" => $disabled]);
 
         if ($rrow && $type == "bottom" && $Me->allow_administer($prow)) {
             $buttons[] = "";

@@ -2155,9 +2155,10 @@ function handle_clickthrough(form) {
                 jQuery(form).serialize() + "&clickthrough_accept=1&ajax=1",
                 function (data, status, jqxhr) {
                     if (data && data.ok) {
-                        var jq = jQuery(form).closest(".clickthrough");
-                        jQuery("#clickthrough_show").show();
-                        jq.remove();
+                        $("#clickthrough_show").show();
+                        var ce = form.getAttribute("data-clickthrough-enable");
+                        ce && $(ce).prop("disabled", false);
+                        $(form).closest(".clickthrough").remove();
                     } else
                         alert((data && data.error) || "You can’t continue until you accept these terms.");
                 });

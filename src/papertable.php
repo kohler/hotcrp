@@ -1866,13 +1866,13 @@ class PaperTable {
     static private function _echo_clickthrough($ctype) {
         global $Conf, $Now;
         $data = $Conf->message_html("clickthrough_$ctype");
-        echo Ht::form(hoturl_post("profile"), array("onsubmit" => "return handle_clickthrough(this)")), "<div class='aahc'>", $data;
-        $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "bb")));
+        echo Ht::form(hoturl_post("profile"), ["onsubmit" => "return handle_clickthrough(this)", "data-clickthrough-enable" => ".editrevform input[name=submitreview], .editrevform input[name=savedraft]"]), "<div class='aahc'>", $data;
+        $buttons = array(Ht::submit("clickthrough_accept", "Accept", array("class" => "btn btnbig btn-default")));
         echo "<div class='g'></div>",
             Ht::hidden("clickthrough", $ctype),
             Ht::hidden("clickthrough_sha1", sha1($data)),
             Ht::hidden("clickthrough_time", $Now),
-            Ht::actions($buttons), "</div></form>";
+            Ht::actions($buttons, ["class" => "aab aabig aabr"]), "</div></form>";
     }
 
     static public function echo_review_clickthrough() {
