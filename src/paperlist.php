@@ -58,6 +58,9 @@ class PaperListReviewAnalysis {
         else if ($this->row->reviewType == REVIEW_SECONDARY
                  && $this->row->reviewNeedsSubmit <= 0)
             return "Delegated";
+        else if ($this->row->reviewType == REVIEW_EXTERNAL
+                 && $this->row->timeApprovalRequested)
+            return "Awaiting&nbsp;approval";
         else if ($this->row->reviewModified > 1)
             return "In&nbsp;progress";
         else if ($this->row->reviewModified > 0)
@@ -388,7 +391,7 @@ class PaperList {
             $by_pid = array();
             foreach ($rows as $row)
                 $by_pid[$row->paperId] = $row;
-            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $this->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
+            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, timeApprovalRequested, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $this->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
                 if ($this->contact->allow_administer($prow)
@@ -606,7 +609,7 @@ class PaperList {
         $this->review_list = array();
         if (isset($this->qopts["reviewList"]) && !empty($rows)) {
             $result = Dbl::qe("select Paper.paperId, reviewId, reviewType,
-                reviewSubmitted, reviewModified, reviewNeedsSubmit, reviewRound,
+                reviewSubmitted, reviewModified, timeApprovalRequested, reviewNeedsSubmit, reviewRound,
                 reviewOrdinal, timeRequested,
                 PaperReview.contactId, lastName, firstName, email
                 from Paper

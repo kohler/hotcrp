@@ -1742,7 +1742,7 @@ class Conf {
         else {
             // see also papercolumn.php
             array_push($cols, "PaperReview.reviewType, PaperReview.reviewId",
-                       "PaperReview.reviewModified, PaperReview.reviewSubmitted",
+                       "PaperReview.reviewModified, PaperReview.reviewSubmitted, PaperReview.timeApprovalRequested",
                        "PaperReview.reviewNeedsSubmit, PaperReview.reviewOrdinal",
                        "PaperReview.reviewBlind, PaperReview.reviewToken, PaperReview.timeRequested",
                        "PaperReview.contactId as reviewContactId, PaperReview.requestedBy",

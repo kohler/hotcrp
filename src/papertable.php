@@ -15,6 +15,7 @@ class PaperTable {
     var $rrow = null;
     var $editrrow = null;
     var $mode;
+    private $prefer_approvable = false;
     private $allreviewslink;
     private $edit_status = null;
 
@@ -76,6 +77,10 @@ class PaperTable {
             $mode = "edit";
         else if ($mode === "view" || $mode === "r")
             $mode = "p";
+        else if ($mode === "rea") {
+            $mode = "re";
+            $this->prefer_approvable = true;
+        }
         if ($mode && isset($ms[$mode]))
             $this->mode = $mode;
         else
@@ -2421,7 +2426,7 @@ class PaperTable {
         while ($rrid !== "" && $rrid[0] === "0")
             $rrid = substr($rrid, 1);
 
-        $this->rrow = $myrrow = $approval_rrow = null;
+        $this->rrow = $myrrow = $approvable_rrow = null;
         foreach ($this->viewable_rrows as $rrow) {
             if ($rrid !== ""
                 && (strcmp($rrow->reviewId, $rrid) == 0
@@ -2434,15 +2439,15 @@ class PaperTable {
             if ($rrow->requestedBy == $Me->contactId
                 && !$rrow->reviewSubmitted
                 && $rrow->timeApprovalRequested)
-                $approval_rrow = $rrow;
+                $approvable_rrow = $rrow;
         }
 
         if ($this->rrow)
             $this->editrrow = $this->rrow;
-        else if (!$approval_rrow || ($myrrow && $myrrow->reviewModified))
+        else if (!$approvable_rrow || ($myrrow && $myrrow->reviewModified && !$this->prefer_approvable))
             $this->editrrow = $myrrow;
         else
-            $this->editrrow = $approval_rrow;
+            $this->editrrow = $approvable_rrow;
 
         if ($want_review && $Me->can_review($this->prow, $this->editrrow, false))
             $this->mode = "re";

@@ -401,6 +401,11 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         echo $sep, foldbutton("re"), "<a href=\"", hoturl("search", "q=re%3Ame"), "\" title='Search in your reviews (more display and download options)'><strong>Your Reviews</strong></a>";
         $sep = $xsep;
     }
+    if ($Me->is_requester() && $Conf->setting("extrev_approve") && $Conf->setting("pcrev_editdelegate")) {
+        $search = new PaperSearch($Me, "ext:approvable");
+        if ($search->paperList())
+            echo $sep, '<a href="', hoturl("paper", ["m" => "rea", "p" => "ext:approvable"]), '"><strong>Approve external reviews</strong></a>';
+    }
     if ($Me->isPC && $Conf->has_any_lead_or_shepherd()
         && $Me->is_discussion_lead()) {
         echo $sep, '<a href="', hoturl("search", "q=lead%3Ame"), '" class="nw">Your discussion leads</a>';

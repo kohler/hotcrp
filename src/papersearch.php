@@ -452,6 +452,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     const COMPLETE = 1;
     const INCOMPLETE = 2;
     const INPROGRESS = 4;
+    const APPROVABLE = 8;
 
     public $review_type = 0;
     public $completeness = 0;
@@ -478,6 +479,8 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 $name .= "Incomplete";
             if ($this->completeness & self::INPROGRESS)
                 $name .= "Inprogress";
+            if ($this->completeness & self::APPROVABLE)
+                $name .= "Approvable";
             return $name;
         } else
             return false;
@@ -1184,12 +1187,15 @@ class PaperSearch {
             } else if (preg_match('/\A(pri|primary|sec|secondary|ext|external)' . $tailre, $qword, $m)) {
                 $rt = ReviewSearchMatcher::parse_review_type($m[1]);
                 $qword = $m[2];
-            } else if (preg_match('/\A(complete|done|incomplete|in-?progress)' . $tailre, $qword, $m)) {
+            } else if (preg_match('/\A(complete|done|incomplete|in-?progress|draft|approvable)' . $tailre, $qword, $m)) {
                 if ($m[1] === "complete" || $m[1] === "done")
                     $completeness |= ReviewSearchMatcher::COMPLETE;
                 else if ($m[1] === "incomplete")
                     $completeness |= ReviewSearchMatcher::INCOMPLETE;
-                else
+                else if ($m[1] === "approvable") {
+                    $completeness |= ReviewSearchMatcher::APPROVABLE;
+                    $rt = REVIEW_EXTERNAL;
+                } else
                     $completeness |= ReviewSearchMatcher::INPROGRESS;
                 $qword = $m[2];
             } else if (preg_match('/\A(?:au)?words((?:[=!<>]=?|≠|≤|≥)\d+)(?:\z|:)(.*)\z/', $qword, $m)) {
@@ -1766,6 +1772,8 @@ class PaperSearch {
             $qt[] = new SearchTerm("pf", self::F_XVIEW, array("shepherdContactId", "!=0"));
         else if ($lword === "dec" || $lword === "decision")
             $this->_search_status("yes", $qt, false, false);
+        else if ($lword === "approvable")
+            $this->_search_reviewer("approvable>0", "ext", $qt);
         else if (preg_match('/\A[\w-]+\z/', $lword) && $this->_search_options("$lword:yes", $qt, false))
             /* OK */;
         else {
@@ -2669,6 +2677,12 @@ class PaperSearch {
                 $cwhere[] = "reviewNeedsSubmit!=0";
             if ($rsm->completeness & ReviewSearchMatcher::INPROGRESS)
                 $cwhere[] = "(reviewSubmitted is null and reviewModified>0)";
+            if ($rsm->completeness & ReviewSearchMatcher::APPROVABLE) {
+                if ($this->privChair)
+                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0)";
+                else
+                    $cwhere[] = "(reviewSubmitted is null and timeApprovalRequested>0 and requestedBy={$this->cid})";
+            }
             if (count($cwhere))
                 $where[] = "(" . join(" or ", $cwhere) . ")";
             if ($rsm->round !== null) {
@@ -3753,6 +3767,9 @@ class PaperSearch {
             array_push($res, "has:re", "has:cre", "has:ire", "has:pre", "has:comment", "has:aucomment");
         if ($this->contact->is_reviewer())
             array_push($res, "has:primary", "has:secondary", "has:external");
+        if ($this->amPC && $Conf->setting("extrev_approve") && $Conf->setting("pcrev_editdelegate")
+            && $this->contact->is_requester())
+            array_push($res, "has:approvable");
         foreach ($Conf->resp_round_list() as $i => $rname) {
             if (!in_array("has:response", $res))
                 $res[] = "has:response";
