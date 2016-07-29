@@ -29,7 +29,8 @@ function render(SettingValues $sv) {
 
     // Authors' response
     echo '<div class="g"></div><table id="foldauresp" class="fold2o">';
-    $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", "void fold('auresp',!this.checked,2)");
+    $sv->echo_checkbox_row('resp_active', "<b>Collect authors’ responses to the reviews<span class='fx2'>:</span></b>", "resp_active_change()");
+    Ht::stash_script('function resp_active_change() { fold("auresp",!$$("cbresp_active").checked,2); } $(resp_active_change);');
     echo '<tr class="fx2"><td></td><td><div id="auresparea">',
         Ht::hidden("has_resp_rounds", 1);
 
@@ -71,7 +72,6 @@ function render(SettingValues $sv) {
     echo '</div><div style="padding-top:1em">',
         '<button type="button" onclick="settings_add_resp_round()">Add response round</button>',
         '</div></td></tr></table>';
-    Ht::stash_script("fold('auresp',!\$\$('cbresp_active').checked,2)");
 
     echo "<h3 class=\"settings g\">Decisions</h3>\n";
 

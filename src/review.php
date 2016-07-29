@@ -705,12 +705,21 @@ class ReviewForm {
             return Contact::find_by_id($cid);
     }
 
+    private static function review_needs_approval($rrow) {
+        global $Conf;
+        return $rrow && !$rrow->reviewSubmitted
+            && $rrow->reviewType == REVIEW_EXTERNAL
+            && $rrow->requestedBy
+            && $Conf->setting("extrev_approve")
+            && $Conf->setting("pcrev_editdelegate");
+    }
+
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
         global $Conf;
         $newsubmit = $approval_requested = false;
         if (get($req, "ready") && !get($req, "unready")
             && (!$rrow || !$rrow->reviewSubmitted)) {
-            if ($contact->isPC || !$Conf->setting("extrev_approve"))
+            if ($contact->isPC || !self::review_needs_approval($rrow))
                 $newsubmit = true;
             else
                 $approval_requested = true;
@@ -1519,9 +1528,7 @@ $blind\n";
         $submitted = $rrow && $rrow->reviewSubmitted;
         $disabled = !$Me->can_clickthrough("review");
         $submit_text = "Submit review";
-        if ($rrow && !$submitted
-            && $rrow->reviewType == REVIEW_EXTERNAL && $rrow->requestedBy
-            && $Conf->setting("extrev_approve")) {
+        if (self::review_needs_approval($rrow)) {
             if ($Me->contactId == $rrow->contactId) /* XXX */
                 $submit_text = "Submit for approval";
             else if ($rrow->timeApprovalRequested)

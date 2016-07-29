@@ -147,10 +147,13 @@ function render(SettingValues $sv) {
     // External reviews
     echo "<h3 class=\"settings g\">External reviews</h3>\n";
 
-    echo "<div class='g'></div>";
-    $sv->echo_checkbox("extrev_chairreq", "PC chair must approve proposed external reviewers");
-    $sv->echo_checkbox("pcrev_editdelegate", "PC members can edit external reviews they requested");
-    //$sv->echo_checkbox("extrev_approve", "External reviews must be approved by their requesters");
+    echo '<table id="foldpcrev_editdelegate" class="fold2o"><tbody>';
+    $sv->echo_checkbox_row("extrev_chairreq", "PC chair must approve proposed external reviewers");
+    $sv->echo_checkbox_row("pcrev_editdelegate", "PC members can edit external reviews they requested", "pcrev_editdelegate_change()");
+    Ht::stash_script('function pcrev_editdelegate_change() { fold("pcrev_editdelegate",!$$("cbpcrev_editdelegate").checked,2); } $(pcrev_editdelegate_change)');
+    echo '<tr class="fx2"><td></td><td>';
+    $sv->echo_checkbox("extrev_approve", "External reviews must be approved by their requesters");
+    echo '</tr></tbody></table>';
 
     echo "<div class='g'></div>\n";
     $t = expandMailTemplate("requestreview", false);
