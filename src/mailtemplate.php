@@ -295,7 +295,7 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Review approval requested for paper #%NUMBER% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been submitted for approval. You can approve the review at the link below.
+%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been submitted for approval.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%
@@ -312,7 +312,7 @@ Contact %ADMIN% with any questions or concerns.
      array("subject" => "[%CONFSHORTNAME%] Review approval requested for paper #%NUMBER% %TITLEHINT%",
            "body" => "Greetings,
 
-%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been resubmitted for approval. You can approve the review at the link below.
+%REVIEWAUTHOR%'s review for %CONFNAME% paper #%NUMBER% has been resubmitted for approval.
 
  Review site: %URL(review, p=%NUMBER%&r=%REVIEWID%)%
        Title: %TITLE%

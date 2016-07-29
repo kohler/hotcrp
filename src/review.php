@@ -922,14 +922,14 @@ class ReviewForm {
                 $tf["newlySubmitted"][] = $what;
             else if ($diff_view_score > VIEWSCORE_FALSE && $submit)
                 $tf["updated"][] = $what;
+            else if ($approval_requested || $rrow->timeApprovalRequested)
+                $tf["approvalRequested"][] = $what;
             else if ($diff_view_score > VIEWSCORE_FALSE)
                 $tf["savedDraft"][] = $what;
             else
                 $tf["unchanged"][] = $what;
             if ($notify_author)
                 $tf["authorNotified"][] = $what;
-            if (!$submit && ($approval_requested || $rrow->timeApprovalRequested))
-                $tf["approvalRequested"][] = $what;
         }
 
         return $result;
@@ -1416,10 +1416,10 @@ $blind\n";
             $confirm[] = self::_paperCommaJoin("Review*| ", $tf["newlySubmitted"], $single) . " submitted.";
         if (!empty($tf["updated"]))
             $confirm[] = self::_paperCommaJoin("Review*| ", $tf["updated"], $single) . " updated.";
+        if (!empty($tf["approvalRequested"]))
+            $confirm[] = self::_paperCommaJoin("Review*| ", $tf["approvalRequested"], $single) . " submitted for approval. The requester has been notified.";
         if (!empty($tf["savedDraft"])) {
-            if ($single && !empty($tf["approvalRequested"]))
-                $confirm[] = "Review submitted for approval.";
-            else if ($single)
+            if ($single)
                 $confirm[] = "Draft review saved. However, this version is marked as not ready for others to see. Please finish the review and submit again.";
             else
                 $confirm[] = self::_paperCommaJoin("Draft review*| for paper* ", $tf["savedDraft"], $single) . " saved.";
