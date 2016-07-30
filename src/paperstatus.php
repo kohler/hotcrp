@@ -222,7 +222,8 @@ class PaperStatus {
 
         if ($prow->collaborators && $can_view_authors)
             $pj->collaborators = $prow->collaborators;
-        if (!$prow->collaborators && $can_view_authors && $Conf->setting("sub_collab")) {
+        if (!$prow->collaborators && $can_view_authors && $Conf->setting("sub_collab")
+            && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
             $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
             $this->set_warning_html("collaborators", "Enter the authors’ potential conflicts of interest in the $field field. If none of the authors have conflicts, enter “None”.");
         }
