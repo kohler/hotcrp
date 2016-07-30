@@ -933,7 +933,7 @@ function account_value($sv, $si1) {
                 $v = null;
             $sv->save($si->name, $v);
             if ($si->ifnonempty)
-                $sv->save($si->ifnonempty, $v === null ? null : 1);
+                $sv->save($si->ifnonempty, $v === null || $v === "" ? null : 1);
         }
     }
 }
