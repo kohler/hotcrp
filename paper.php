@@ -153,10 +153,6 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
 
     if (!$saved && !$prow && count($qreq->_FILES))
         $ps->set_error_html("paper", "<strong>Your uploaded files were ignored.</strong>");
-    if (!get($pj, "collaborators") && $Conf->setting("sub_collab")) {
-        $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-        $ps->set_warning_html("collaborators", "Please enter the authors’ potential conflicts in the $field field. If none of the authors have potential conflicts, just enter “None”.");
-    }
 
     if (!$saved) {
         $emsg = $ps->messages();

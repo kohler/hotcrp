@@ -8,6 +8,7 @@ class PaperStatus {
     private $uploaded_documents;
     private $errf;
     private $msgs;
+    private $has_warnings;
     private $has_errors;
     private $no_msgs = false;
     private $no_email = false;
@@ -35,7 +36,7 @@ class PaperStatus {
         $this->uploaded_documents = [];
         $this->errf = [];
         $this->msgs = [];
-        $this->has_errors = false;
+        $this->has_warnings = $this->has_errors = false;
         $this->prow = null;
     }
 
@@ -258,6 +259,7 @@ class PaperStatus {
                 $this->errf[$field] = true;
             if ($html)
                 $this->msgs[] = [$field, $html, $is_error];
+            $this->has_warnings = true;
             if ($is_error && (!$field || !$this->allow_error
                               || array_search($field, $this->allow_error) === false))
                 $this->has_errors = true;
@@ -1021,5 +1023,9 @@ class PaperStatus {
 
     function has_error($field = null) {
         return $field ? isset($this->errf[$field]) : $this->has_errors;
+    }
+
+    function has_messages() {
+        return $this->has_warnings || $this->has_errors;
     }
 }
