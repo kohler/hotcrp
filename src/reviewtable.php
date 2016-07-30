@@ -281,9 +281,12 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         if (($list = SessionList::active()))
             $t .= " has_hotcrp_list\" data-hotcrp-list=\"" . $list->listno;
         $t .= "\">\n";
-        if ($score_header_text)
-            $t .= '<tr><td class="empty" colspan="2"></td>'
-                . $score_header_text . "</tr>\n";
+        if ($score_header_text) {
+            $t .= '<tr><td class="empty" colspan="2"></td>';
+            if ($mode === "assign")
+                $t .= '<td class="empty"></td>';
+            $t .= $score_header_text . "</tr>\n";
+        }
         foreach (array_merge($subrev, $nonsubrev) as $r) {
             $t .= '<tr class="rl' . ($r[0] ? " $r[0]" : "") . '">' . $r[1];
             if (get($r, 2)) {
