@@ -504,7 +504,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
             if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
                 $deadlines[] = "The site is not open for submissions at the moment.";
             else
-                $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for submitting papers has passed.";
+                $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>submission deadline</a> has passed.";
         } else if (!$Conf->timeUpdatePaper()) {
             $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for updating papers has passed, but you can still submit.";
             $time = $Conf->printableTimeSetting("sub_sub", "span", " to submit papers");

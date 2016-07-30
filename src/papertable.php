@@ -625,7 +625,7 @@ class PaperTable {
         global $Conf;
 
         echo $this->editable_papt("authors", "Authors"),
-            "<div class='paphint'>List the authors one per line, including email addresses and affiliations.";
+            "<div class='paphint'>List the authors, including email addresses and affiliations.";
         if ($Conf->submission_blindness() == Conf::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo " Any author with an account on this site can edit the submission.</div>",
@@ -1046,7 +1046,7 @@ class PaperTable {
         conflicts of interest. ", $Conf->message_html("conflictdef"), "
         Be sure to include conflicted <a href='", hoturl("users", "t=pc"), "'>PC members</a>.
         We use this information when assigning PC and external reviews.";
-        echo "  List one conflict per line.  For example: &ldquo;<samp>Jelena Markovic (EPFL)</samp>&rdquo; or, for a whole institution, &ldquo;<samp>EPFL</samp>&rdquo;.</div>",
+        echo " <strong>List one conflict per line.</strong> For example: &ldquo;<samp>Jelena Markovic (EPFL)</samp>&rdquo; or, for a whole institution, &ldquo;<samp>EPFL</samp>&rdquo;.</div>",
             $this->messages_for("collaborators"),
             '<div class="papev">',
             $this->editable_textarea("collaborators"),
@@ -1616,14 +1616,14 @@ class PaperTable {
         $m = "";
         $has_author = $prow->has_author($Me);
         if ($has_author && $prow->outcome < 0 && $Conf->timeAuthorViewDecision())
-            $m .= Ht::xmsg("warning", "This paper was not accepted.");
+            $m .= Ht::xmsg("warning", "The submission was not accepted.");
         else if ($has_author && $prow->timeWithdrawn > 0) {
             if ($Me->can_revive_paper($prow))
-                $m .= Ht::xmsg("warning", "This paper has been withdrawn, but you can still revive it." . $this->deadlineSettingIs("sub_update"));
+                $m .= Ht::xmsg("warning", "The submission has been withdrawn, but you can still revive it." . $this->deadlineSettingIs("sub_update"));
         } else if ($has_author && $prow->timeSubmitted <= 0) {
             if ($Me->can_update_paper($prow)) {
                 if ($Conf->setting("sub_freeze"))
-                    $t = "A final version of this paper must be submitted before it can be reviewed.";
+                    $t = "The submission must be completed before it can be reviewed.";
                 else if ($prow->paperStorageId <= 1 && !opt("noPapers"))
                     $t = "The submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
@@ -1634,28 +1634,28 @@ class PaperTable {
             else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
                 $m .= Ht::xmsg("warning", 'The site is not open for submission updates at the moment.' . $this->_override_message());
             else
-                $m .= Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">deadline</a> for submitting this paper has passed. The paper will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message());
+                $m .= Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message());
         } else if ($has_author && $Me->can_update_paper($prow)) {
             if ($this->mode === "edit")
-                $m .= Ht::xmsg("confirm", 'This submission is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update"));
+                $m .= Ht::xmsg("confirm", 'The submission is ready and will be considered for review. You can still make changes if necessary.' . $this->deadlineSettingIs("sub_update"));
         } else if ($has_author
                    && $prow->outcome > 0
                    && $Conf->timeSubmitFinalPaper()
                    && ($t = $Conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
             $m .= Ht::xmsg("info", $t);
         else if ($has_author) {
-            $override2 = ($this->admin ? " As an administrator, you can update the paper anyway." : "");
+            $override2 = ($this->admin ? " As an administrator, you can update the submission anyway." : "");
             if ($this->mode === "edit") {
                 $t = "";
                 if ($Me->can_withdraw_paper($prow))
                     $t = " or withdraw it from consideration";
-                $m .= Ht::xmsg("info", "This paper is under review and can’t be changed, but you can change its contacts$t.$override2");
+                $m .= Ht::xmsg("info", "The submission is under review and can’t be changed, but you can change its contacts$t.$override2");
             }
         } else if ($prow->outcome > 0 && !$Conf->timeAuthorViewDecision()
                    && $Conf->collectFinalPapers())
-            $m .= Ht::xmsg("info", "This paper was accepted, but authors can’t view paper decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.");
+            $m .= Ht::xmsg("info", "The submission has been accepted, but authors can’t view decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.");
         else
-            $m .= Ht::xmsg("info", "You aren’t a contact for this paper, but as an administrator you can still make changes.");
+            $m .= Ht::xmsg("info", "You aren’t a contact for this submission, but as an administrator you can still make changes.");
         if ($Me->can_update_paper($prow, true) && ($v = $Conf->message_html("submit")))
             $m .= Ht::xmsg("info", $v);
         return $m;
