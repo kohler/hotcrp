@@ -66,7 +66,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         $highlight = ($rrow && $rr->reviewId == $rrow->reviewId);
         $foundRrow += $highlight;
         $want_my_scores = $want_scores;
-        if ($Me->is_my_review($rr)) {
+        if ($Me->is_my_review($rr) && $mode === "re") {
             $want_my_scores = true;
             $foundMyReview++;
         }
