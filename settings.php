@@ -739,22 +739,25 @@ $Sv = SettingValues::make_request($Me);
 
 function choose_setting_group() {
     global $Conf;
-    $Group = req("group");
-    if (!$Group && preg_match(',\A/\w+\z,', Navigation::path()))
-        $Group = substr(Navigation::path(), 1);
-    if (!$Group && isset($_SESSION["sg"])) // NB not conf-specific session, global
-        $Group = $_SESSION["sg"];
-    if (isset(SettingGroup::$map[$Group]))
-        $Group = SettingGroup::$map[$Group];
-    if (!isset(SettingGroup::$all[$Group])) {
+    $req_group = req("group");
+    if (!$req_group && preg_match(',\A/\w+\z,', Navigation::path()))
+        $req_group = substr(Navigation::path(), 1);
+    $want_group = $req_group;
+    if (!$want_group && isset($_SESSION["sg"])) // NB not conf-specific session, global
+        $want_group = $_SESSION["sg"];
+    if (isset(SettingGroup::$map[$want_group]))
+        $want_group = SettingGroup::$map[$want_group];
+    if (!isset(SettingGroup::$all[$want_group])) {
         if ($Conf->timeAuthorViewReviews())
-            $Group = "decisions";
+            $want_group = "decisions";
         else if ($Conf->deadlinesAfter("sub_sub") || $Conf->time_review_open())
-            $Group = "reviews";
+            $want_group = "reviews";
         else
-            $Group = "sub";
+            $want_group = "sub";
     }
-    return $Group;
+    if ($want_group != $req_group && empty($_POST) && !req("post"))
+        redirectSelf(["group" => $want_group]);
+    return $want_group;
 }
 $Group = $_REQUEST["group"] = $_GET["group"] = choose_setting_group();
 $_SESSION["sg"] = $Group;
