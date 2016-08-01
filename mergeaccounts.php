@@ -96,6 +96,8 @@ function crpmerge($MiniMe) {
     // XXX `act as` merging might be useful?
     if (strcasecmp($Me->email, $_SESSION["trueuser"]->email))
         return ($MergeError = "You can’t merge accounts when acting as a different user.");
+    if ($MiniMe->data("locked") || $Me->data("locked"))
+        return ($MergeError = "Attempt to merge a locked account.");
 
     // determine old & new users
     if (@$_REQUEST["prefer"])

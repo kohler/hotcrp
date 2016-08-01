@@ -125,7 +125,7 @@ function pc_request_as_json($cj) {
         $cj->follow->allfinal = true;
     if ($Me->privChair && isset($_REQUEST["contactTags"]))
         $cj->tags = explode(" ", simplify_whitespace($_REQUEST["contactTags"]));
-    if ($Me->privChair ? @$cj->roles->pc : $Me->isPC) {
+    if ($Me->privChair ? get($cj->roles, "pc") : $Me->isPC) {
         $topics = (object) array();
         foreach ($Conf->topic_map() as $id => $t)
             if (isset($_REQUEST["ti$id"]) && is_numeric($_REQUEST["ti$id"]))
@@ -200,7 +200,9 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
 
     // check email
     if ($newProfile || $cj->email != $Acct->email) {
-        if (($new_acct = Contact::find_by_email($cj->email))) {
+        if ($Acct && $Acct->data("locked"))
+            return $user_status->set_error("email", "This account is locked, so you can’t change its email address.");
+        else if (($new_acct = Contact::find_by_email($cj->email))) {
             if ($allow_modification)
                 $cj->id = $new_acct->contactId;
             else {
@@ -381,12 +383,15 @@ else if (isset($_REQUEST["bulkregister"]) && $newProfile
         $UserStatus->send_email = true;
     $saved_user = save_user($cj, $UserStatus, $Acct, false);
     if ($UserStatus->nerrors)
-        Conf::msg_error("<div>" . join("</div><div style='margin-top:0.5em'>", $UserStatus->error_messages()) . "</div>");
+        Conf::msg_error('<div class="mmm">' . join('</div><div class="mmm">', $UserStatus->error_messages()) . "</div>");
     else {
         if ($newProfile)
             $Conf->confirmMsg("Created an account for <a href=\"" . hoturl("profile", "u=" . urlencode($saved_user->email)) . "\">" . Text::user_html_nolink($saved_user) . "</a>. A password has been emailed to that address. You may now create another account.");
         else {
-            $Conf->confirmMsg("Account profile updated.");
+            if ($UserStatus->error_messages())
+                $Conf->confirmMsg('Profile updated. <div class="mmm">' . join('</div><div class="mmm">', $UserStatus->error_messages()) . "</div>");
+            else
+                $Conf->confirmMsg("Profile updated.");
             if ($Acct->contactId == $Me->contactId)
                 $Me->update_trueuser(true);
             else
@@ -448,13 +453,15 @@ function textArrayPapers($pids) {
 
 if (isset($_REQUEST["delete"]) && !Dbl::has_error() && check_post()) {
     if (!$Me->privChair)
-        Conf::msg_error("Only administrators can delete users.");
+        Conf::msg_error("Only administrators can delete accounts.");
     else if ($Acct->contactId == $Me->contactId)
-        Conf::msg_error("You aren’t allowed to delete yourself.");
+        Conf::msg_error("You aren’t allowed to delete your own account.");
     else if ($Acct->has_database_account()) {
         $tracks = databaseTracks($Acct->contactId);
-        if (count($tracks->soleAuthor))
-            Conf::msg_error("This user can’t be deleted since they are sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ".  You will be able to delete the user after deleting those papers or adding additional paper contacts.");
+        if (!empty($tracks->soleAuthor))
+            Conf::msg_error("This account can’t be deleted since it is sole contact for " . pluralx($tracks->soleAuthor, "paper") . " " . textArrayPapers($tracks->soleAuthor) . ". You will be able to delete the account after deleting those papers or adding additional paper contacts.");
+        else if ($Acct->data("locked"))
+            Conf::msg_error("This account is locked and can’t be deleted.");
         else {
             foreach (array("ContactInfo",
                            "PaperComment", "PaperConflict", "PaperReview",
@@ -470,8 +477,8 @@ if (isset($_REQUEST["delete"]) && !Dbl::has_error() && check_post()) {
             if ($Acct->isPC || $Acct->privChair)
                 $Conf->invalidateCaches(array("pc" => 1));
             // done
-            $Conf->confirmMsg("Permanently deleted user " . htmlspecialchars($Acct->email) . ".");
-            $Me->log_activity("Permanently deleted user " . htmlspecialchars($Acct->email) . " ($Acct->contactId)");
+            $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
+            $Me->log_activity("Permanently deleted account " . htmlspecialchars($Acct->email) . " ($Acct->contactId)");
             go(hoturl("users", "t=all"));
         }
     }

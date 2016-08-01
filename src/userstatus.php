@@ -227,6 +227,12 @@ class UserStatus {
                 $cj->collaborators = $old_user->collaborators;
         }
 
+        // Password changes
+        if (isset($cj->new_password) && $old_user && $old_user->data("locked")) {
+            unset($cj->new_password);
+            $this->set_warning("password", "Ignoring request to change locked user’s password.");
+        }
+
         // Preferred email
         if (get($cj, "preferred_email")
             && !isset($this->errf["preferred_email"])
@@ -292,11 +298,15 @@ class UserStatus {
                 if ($v && $k !== "pc" && $k !== "chair" && $k !== "sysadmin"
                     && $k !== "no")
                     $cj->bad_roles[] = $k;
-            if ($this->no_deprivilege_self && $Me && $old_user
-                && $old_user->contactId == $Me->contactId
-                && Contact::parse_roles_json($cj->roles) < $Me->roles) {
+            if ($old_user
+                && (($this->no_deprivilege_self && $Me && $Me->contactId == $old_user->contactId)
+                    || $old_user->data("locked"))
+                && Contact::parse_roles_json($cj->roles) < $old_user->roles) {
                 unset($cj->roles);
-                $this->set_warning("roles", "Ignoring request to drop your privileges.");
+                if ($old_user->data("locked"))
+                    $this->set_warning("roles", "Ignoring request to drop privileges for locked account.");
+                else
+                    $this->set_warning("roles", "Ignoring request to drop your privileges.");
             }
         }
 
