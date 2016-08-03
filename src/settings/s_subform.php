@@ -174,7 +174,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
                     "name" => "(Enter new option)",
                     "description" => "",
                     "type" => "checkbox",
-                    "position" => count(PaperOption::nonfixed_option_list()) + 1,
+                    "position" => count($Conf->paper_opts->nonfixed_option_list()) + 1,
                     "display" => "default"));
             $id = "n";
         }
@@ -228,7 +228,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
             $optvt .= ":final";
 
         $show_final = $Conf->collectFinalPapers();
-        foreach (PaperOption::nonfixed_option_list() as $ox)
+        foreach ($Conf->paper_opts->nonfixed_option_list() as $ox)
             $show_final = $show_final || $ox->final;
 
         $otypes = array();
@@ -266,9 +266,9 @@ class SettingRenderer_SubForm extends SettingRenderer {
         echo "<td class='pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optfp$id", "Form order"), "</div><div class='f-e'>";
         $x = array();
-        // can't use "foreach (PaperOption::nonfixed_option_list())" because caller
+        // can't use "foreach ($Conf->paper_opts->nonfixed_option_list())" because caller
         // uses cursor
-        for ($n = 0; $n < count(PaperOption::nonfixed_option_list()); ++$n)
+        for ($n = 0; $n < count($Conf->paper_opts->nonfixed_option_list()); ++$n)
             $x[$n + 1] = ordinal($n + 1);
         if ($id === "n")
             $x[$n + 1] = ordinal($n + 1);
@@ -358,7 +358,7 @@ function render(SettingValues $sv) {
     echo "<div class='g'></div>\n",
         Ht::hidden("has_options", 1);
     $sep = "";
-    $all_options = array_merge(PaperOption::nonfixed_option_list()); // get our own iterator
+    $all_options = array_merge($Conf->paper_opts->nonfixed_option_list()); // get our own iterator
     foreach ($all_options as $o) {
         echo $sep;
         $this->render_option($sv, $o);
@@ -568,7 +568,8 @@ class Option_SettingParser extends SettingParser {
     }
 
     function parse(SettingValues $sv, Si $si) {
-        $current_opts = PaperOption::nonfixed_option_list();
+        global $Conf;
+        $current_opts = $Conf->paper_opts->nonfixed_option_list();
 
         // convert request to JSON
         $new_opts = array();
@@ -599,7 +600,7 @@ class Option_SettingParser extends SettingParser {
     public function save(SettingValues $sv, Si $si) {
         global $Conf;
         $new_opts = $this->stashed_options;
-        $current_opts = PaperOption::nonfixed_option_list();
+        $current_opts = $Conf->paper_opts->nonfixed_option_list();
         $this->option_clean_form_positions($new_opts, $current_opts);
 
         $newj = (object) array();
@@ -620,7 +621,7 @@ class Option_SettingParser extends SettingParser {
             $Conf->qe_raw("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
 
         // invalidate cached option list
-        PaperOption::invalidate_option_list();
+        $Conf->paper_opts->invalidate_option_list();
     }
 }
 

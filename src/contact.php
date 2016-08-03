@@ -2113,7 +2113,7 @@ class Contact {
     }
 
     function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
-        if (!is_object($opt) && !($opt = PaperOption::find($opt)))
+        if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
             return false;
         $rights = $this->rights($prow, $forceShow);
         if (!$this->can_view_paper($prow, $opt->has_document()))
@@ -2133,10 +2133,17 @@ class Contact {
                         && $this->can_view_decision($prow, $forceShow))));
     }
 
+    function user_option_list() {
+        if ($this->conf->has_any_accepts() && $this->can_view_some_decision())
+            return $this->conf->paper_opts->option_list();
+        else
+            return $this->conf->paper_opts->nonfinal_option_list();
+    }
+
     function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         if ($this->can_view_paper_option($prow, $opt, $forceShow))
             return null;
-        if ((is_object($opt) || ($opt = PaperOption::find($opt)))
+        if ((is_object($opt) || ($opt = $this->conf->paper_opts->find($opt)))
             && ($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
             return $whyNot;
         return array_merge($prow->initial_whynot(), ["permission" => 1]);

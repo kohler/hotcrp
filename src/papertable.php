@@ -560,13 +560,14 @@ class PaperTable {
     }
 
     private function echo_editable_submission() {
+        global $Conf;
         $flags = 0;
         if (!$this->prow || $this->prow->size == 0)
             $flags |= PaperTable::ENABLESUBMIT;
         if ($this->canUploadFinal)
-            $this->echo_editable_document(PaperOption::find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
+            $this->echo_editable_document($Conf->paper_opts->find_document(DTYPE_FINAL), $this->prow ? $this->prow->finalPaperStorageId : 0, $flags);
         else
-            $this->echo_editable_document(PaperOption::find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
+            $this->echo_editable_document($Conf->paper_opts->find_document(DTYPE_SUBMISSION), $this->prow ? $this->prow->paperStorageId : 0, $flags);
         echo "</div>\n\n";
     }
 
@@ -1929,7 +1930,7 @@ class PaperTable {
             $this->add_edit_field(60000, [$this, "echo_editable_pc_conflicts"], "pc_conflicts");
             $this->add_edit_field(61000, [$this, "echo_editable_collaborators"], "collaborators");
         }
-        foreach ($this->canUploadFinal ? PaperOption::option_list() : PaperOption::nonfinal_option_list() as $opt)
+        foreach ($this->canUploadFinal ? $Conf->paper_opts->option_list() : $Conf->paper_opts->nonfinal_option_list() as $opt)
             if (!$this->prow || $Me->can_view_paper_option($this->prow, $opt, true))
                 $this->add_edit_field($opt->form_priority(), $this->make_echo_editable_option($opt), $opt);
         usort($this->edit_fields, function ($a, $b) {

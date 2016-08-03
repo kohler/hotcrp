@@ -286,8 +286,9 @@ class CheckFormat implements FormatChecker {
     }
 
     public function spec($dtype) {
+        global $Conf;
         if (!array_key_exists($dtype, $this->dt_specs)) {
-            $opt = PaperOption::find_document($dtype);
+            $opt = $Conf->paper_opts->find_document($dtype);
             $spec = $opt ? $opt->format_spec() : null;
             $this->dt_specs[$dtype] = $spec ? : new FormatSpec;
         }

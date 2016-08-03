@@ -162,7 +162,7 @@ class DocumentInfo implements JsonSerializable {
 
         $finalsuffix = "";
         if ($this->documentType == DTYPE_FINAL
-            || ($this->documentType > 0 && ($o = PaperOption::find($this->documentType)) && $o->final))
+            || ($this->documentType > 0 && ($o = $Conf->paper_opts->find($this->documentType)) && $o->final))
             $finalsuffix = "f";
 
         if ($this->mimetype == "application/pdf")

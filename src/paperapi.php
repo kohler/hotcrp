@@ -327,7 +327,7 @@ class PaperApi {
 
     static function checkformat_api($user, $qreq, $prow) {
         $dtype = cvtint($qreq->dt, 0);
-        $opt = PaperOption::find_document($dtype);
+        $opt = $user->conf->paper_opts->find_document($dtype);
         if (!$opt || !$user->can_view_paper_option($prow, $opt))
             json_exit(["ok" => false, "error" => "Permission error."]);
         $cf = new CheckFormat;

@@ -13,11 +13,12 @@ class HotCRPDocument extends Filer {
     static private $map = [];
 
     public function __construct($dtype, $option = null) {
+        global $Conf;
         $this->dtype = $dtype;
         if ($this->dtype > 0 && $option)
             $this->option = $option;
         else if ($this->dtype > 0)
-            $this->option = PaperOption::find($dtype);
+            $this->option = $Conf->paper_opts->find($dtype);
     }
 
     static public function get($dtype) {
@@ -35,17 +36,19 @@ class HotCRPDocument extends Filer {
     }
 
     public static function unparse_dtype($dtype) {
+        global $Conf;
         if ($dtype == DTYPE_SUBMISSION)
             return "paper";
         else if ($dtype == DTYPE_FINAL)
             return "final";
-        else if (($o = PaperOption::find($dtype)) && $o->is_document())
+        else if (($o = $Conf->paper_opts->find($dtype)) && $o->is_document())
             return $o->abbr;
         else
             return null;
     }
 
     public static function parse_dtype($dname) {
+        global $Conf;
         if (preg_match('/\A-?\d+\z/', $dname))
             return (int) $dname;
         $dname = strtolower($dname);
@@ -53,7 +56,7 @@ class HotCRPDocument extends Filer {
             return DTYPE_SUBMISSION;
         else if ($dname === "final")
             return DTYPE_FINAL;
-        else if (($o = PaperOption::match($dname)))
+        else if (($o = $Conf->paper_opts->match($dname)))
             return $o->id;
         else
             return null;
@@ -67,7 +70,7 @@ class HotCRPDocument extends Filer {
         else if ($doc->documentType == DTYPE_FINAL)
             $fn .= "final" . $doc->paperId;
         else {
-            $o = PaperOption::find($doc->documentType);
+            $o = $Conf->paper_opts->find($doc->documentType);
             if ($o && $o->nonpaper && $doc->paperId < 0) {
                 $fn .= $o->abbr;
                 $oabbr = "";
@@ -99,10 +102,11 @@ class HotCRPDocument extends Filer {
     }
 
     public function validate_upload($doc, $docinfo) {
+        global $Conf;
         if (get($doc, "filterType"))
             return true;
         else {
-            $opt = $this->option ? : PaperOption::find_document($this->dtype);
+            $opt = $this->option ? : $Conf->paper_opts->find_document($this->dtype);
             return !$opt || $opt->validate_document($doc, $docinfo);
         }
     }

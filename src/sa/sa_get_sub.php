@@ -6,8 +6,8 @@
 class Get_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $xactions = SearchAction::list_subactions("get", $user, $qreq, $pl);
-        foreach (PaperOption::option_ids() as $oid)
-            if ($pl->any["opt$oid"] && ($o = PaperOption::find($oid)) && $o->is_document())
+        foreach ($user->user_option_list() as $o)
+            if ($pl->any["opt{$o->id}"] && $o->is_document())
                 $xactions[] = GetDocument_SearchAction::make_option_action($o);
         usort($xactions, function ($a, $b) { return $a[0] - $b[0]; });
         $sel_opt = array();
@@ -28,7 +28,7 @@ class Get_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         if (substr($qreq->getfn, 0, 4) === "opt-"
-            && ($opts = PaperOption::search(substr($qreq->getfn, 4)))
+            && ($opts = $user->conf->paper_opts->search(substr($qreq->getfn, 4)))
             && count($opts) == 1
             && ($o = current($opts))
             && $user->can_view_some_paper_option($o)) {
@@ -50,7 +50,7 @@ class GetDocument_SearchAction extends SearchAction {
                 "Documents", $opt->id <= 0 ? pluralize($opt->name) : $opt->name];
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $opt = PaperOption::find_document($this->dt);
+        $opt = $user->conf->paper_opts->find_document($this->dt);
         if ($user->can_view_some_paper_option($opt) && (!$opt->final || $pl->any->final))
             $actions[] = self::make_option_action($opt);
     }
@@ -64,7 +64,7 @@ class GetDocument_SearchAction extends SearchAction {
         global $Conf;
         $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
         $downloads = [];
-        $opt = PaperOption::find_document($this->dt);
+        $opt = $user->conf->paper_opts->find_document($this->dt);
         while (($row = PaperInfo::fetch($result, $user)))
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
                 Conf::msg_error(whyNotText($whyNot, "view"));

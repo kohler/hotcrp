@@ -653,7 +653,7 @@ class PaperList {
         }
 
         // set `any->optID`
-        if (($nopts = PaperOption::count_option_list())) {
+        if (($nopts = $Conf->paper_opts->count_option_list())) {
             foreach ($rows as $prow) {
                 foreach ($prow->options() as $o)
                     if (!$this->any["opt$o->id"]

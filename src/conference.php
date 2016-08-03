@@ -36,6 +36,7 @@ class Conf {
     public $tag_au_seerev;
     public $tag_seeall;
     public $opt;
+    public $paper_opts;
 
     private $save_messages = true;
     var $headerPrinted = false;
@@ -90,6 +91,7 @@ class Conf {
             list($this->dblink, $Opt["dbName"]) = Dbl::connect_dsn($this->dsn);
         if (!isset($Opt["confid"]))
             $Opt["confid"] = get($Opt, "dbName");
+        $this->paper_opts = new PaperOptionList($this);
         if ($this->dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler(array($this, "query_error_handler"));
@@ -1082,7 +1084,7 @@ class Conf {
 
         // no empty text options
         $text_options = array();
-        foreach (PaperOption::option_list($this) as $ox)
+        foreach ($this->paper_opts->option_list() as $ox)
             if ($ox->type === "text")
                 $text_options[] = $ox->id;
         if (count($text_options)) {
@@ -1183,7 +1185,7 @@ class Conf {
         if (!$caches || isset($caches["pc"]))
             $this->_pc_members_cache = $this->_pc_tags_cache = null;
         if (!$caches || isset($caches["paperOption"]))
-            PaperOption::invalidate_option_list();
+            $this->paper_opts->invalidate_option_list();
         if (!$caches || isset($caches["rf"])) {
             ReviewForm::clear_cache();
             $this->_defined_rounds = null;
@@ -1545,7 +1547,7 @@ class Conf {
             "select finalPaperStorageId from Paper where finalPaperStorageId>1",
             "select paperStorageId from PaperComment where paperStorageId>1");
         $document_option_ids = array();
-        foreach (PaperOption::option_list() as $id => $o)
+        foreach ($this->paper_opts->option_list() as $id => $o)
             if ($o->has_document())
                 $document_option_ids[] = $id;
         if (count($document_option_ids))
@@ -1810,7 +1812,7 @@ class Conf {
 
         if (get($options, "options")
             && (isset($this->settingTexts["options"]) || isset($this->opt->fixedOptions))
-            && PaperOption::count_option_list())
+            && $this->paper_opts->count_option_list())
             $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
         else if (get($options, "options"))
             $cols[] = "'' as optionIds";

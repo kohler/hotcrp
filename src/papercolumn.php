@@ -903,7 +903,7 @@ class PreferenceListPaperColumn extends PaperColumn {
         $prefs = $row->reviewer_preferences();
         $ts = array();
         if ($prefs || $this->topics)
-            foreach (pcMembers() as $pcid => $pc) {
+            foreach ($row->conf->pc_members() as $pcid => $pc) {
                 if (($pref = get($prefs, $pcid))
                     && ($pref[0] !== 0 || $pref[1] !== null)) {
                     $t = "P" . $pref[0];
@@ -955,7 +955,7 @@ class ReviewerListPaperColumn extends PaperColumn {
         }
         $pcm = null;
         if ($pl->contact->isPC)
-            $pcm = pcMembers();
+            $pcm = $row->conf->pc_members();
         $x = array();
         foreach ($pl->review_list[$row->paperId] as $xrow) {
             $ranal = new PaperListReviewAnalysis($xrow);
@@ -989,7 +989,7 @@ class PCConflictListPaperColumn extends PaperColumn {
     }
     public function content($pl, $row, $rowidx) {
         $y = [];
-        $pcm = pcMembers();
+        $pcm = $row->conf->pc_members();
         foreach ($row->conflicts() as $id => $type)
             if (($pc = get($pcm, $id)))
                 $y[$pc->sort_position] = $pl->contact->reviewer_html_for($pc);
@@ -1352,7 +1352,7 @@ class Option_PaperColumn extends PaperColumn {
     }
     public static function lookup_all(Contact $user) {
         $reg = array();
-        foreach (PaperOption::user_option_list($user) as $opt)
+        foreach ($user->user_option_list() as $opt)
             if ($opt->display() >= 0)
                 $reg[] = self::_make_column($opt, false);
         return $reg;
@@ -1363,14 +1363,15 @@ class Option_PaperColumn extends PaperColumn {
         return $s;
     }
     public function make_column($name, $errors) {
+        global $Conf;
         $p = strpos($name, ":") ? : -1;
         $name = substr($name, $p + 1);
         $isrow = false;
-        $opts = PaperOption::search($name);
+        $opts = $Conf->paper_opts->search($name);
         if (empty($opts) && str_ends_with($name, "-row")) {
             $isrow = true;
             $name = substr($name, 0, strlen($name) - 4);
-            $opts = PaperOption::search($name);
+            $opts = $Conf->paper_opts->search($name);
         }
         if (count($opts) == 1) {
             reset($opts);
@@ -1752,7 +1753,7 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
 
-    if (PaperOption::count_option_list())
+    if ($Conf->paper_opts->count_option_list())
         PaperColumn::register_factory("", new Option_PaperColumn(null));
 
     foreach (ReviewForm::all_fields() as $f)

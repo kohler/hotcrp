@@ -280,7 +280,7 @@ function searchQuickref() {
     _searchQuickrefRow("Topics", "topic:link", "selected topics match “link”");
 
     $oex = array();
-    foreach (PaperOption::option_list() as $o)
+    foreach ($Conf->paper_opts->option_list() as $o)
         $oex = array_merge($oex, $o->example_searches());
     if (count($oex)) {
         $section = "Options";
@@ -288,7 +288,7 @@ function searchQuickref() {
             if ($extype === "has") {
                 $desc = "paper has “" . htmlspecialchars($oex[1]->name) . "” submission option";
                 $oabbr = array();
-                foreach (PaperOption::option_list() as $ox)
+                foreach ($Conf->paper_opts->option_list() as $ox)
                     if ($ox !== $oex[1])
                         $oabbr[] = "“has:" . htmlspecialchars($ox->abbr) . "”";
                 if (count($oabbr))

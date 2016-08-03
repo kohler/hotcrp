@@ -199,7 +199,7 @@ class PaperStatus {
         }
 
         $options = array();
-        foreach (PaperOption::option_list() as $o) {
+        foreach ($Conf->paper_opts->option_list() as $o) {
             if (($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
                 && (!$o->final || $prow->outcome > 0))
                 continue;
@@ -387,11 +387,12 @@ class PaperStatus {
     }
 
     private function normalize_options($pj) {
+        global $Conf;
         // canonicalize option values to use IDs, not abbreviations
         $options = $pj->options;
         $pj->options = (object) array();
         foreach ($options as $id => $oj) {
-            $omatches = PaperOption::search($id);
+            $omatches = $Conf->paper_opts->search($id);
             if (count($omatches) != 1)
                 $pj->bad_options[$id] = true;
             else {
@@ -627,9 +628,10 @@ class PaperStatus {
     }
 
     private function check_options($pj) {
+        global $Conf;
         $pj->parsed_options = array();
         foreach ($pj->options as $oid => $oj) {
-            $o = PaperOption::find($oid);
+            $o = $Conf->paper_opts->find($oid);
             $result = null;
             if ($oj !== null && $oj !== false)
                 $result = $o->parse_json($oj, $this);
@@ -813,9 +815,9 @@ class PaperStatus {
 
         // store documents (options already stored)
         if (isset($pj->submission) && $pj->submission)
-            $this->upload_document($pj->submission, PaperOption::find_document(DTYPE_SUBMISSION));
+            $this->upload_document($pj->submission, $Conf->paper_opts->find_document(DTYPE_SUBMISSION));
         if (isset($pj->final) && $pj->final)
-            $this->upload_document($pj->final, PaperOption::find_document(DTYPE_FINAL));
+            $this->upload_document($pj->final, $Conf->paper_opts->find_document(DTYPE_FINAL));
 
         // create contacts
         foreach (self::contacts_array($pj) as $c) {

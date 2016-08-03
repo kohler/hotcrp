@@ -1651,6 +1651,8 @@ class PaperSearch {
     }
 
     static public function analyze_option_search($word) {
+        global $Conf;
+
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
             if ($m[2][0] === ":" || $m[2][0] === "#")
@@ -1668,9 +1670,9 @@ class PaperSearch {
         $qo = $warn = array();
         $option_failure = false;
         if ($oname === "none" || $oname === "any")
-            $omatches = PaperOption::option_list();
+            $omatches = $Conf->paper_opts->option_list();
         else
-            $omatches = PaperOption::search($oname);
+            $omatches = $Conf->paper_opts->search($oname);
         // Conf::msg_info(Ht::pre_text(var_export($omatches, true)));
         if (count($omatches)) {
             foreach ($omatches as $oid => $o) {
@@ -1719,7 +1721,7 @@ class PaperSearch {
                     continue;
             }
         } else if (($ocompar === "=" || $ocompar === "!=") && $oval === "")
-            foreach (PaperOption::option_list() as $oid => $o)
+            foreach ($Conf->paper_opts->option_list() as $oid => $o)
                 if ($o->has_selector()) {
                     foreach (Text::simple_search($oname, $o->selector) as $xval => $text)
                         $qo[] = new OptionMatcher($o, $ocompar, $xval, "~val~");
@@ -1784,7 +1786,7 @@ class PaperSearch {
                 if ($i)
                     $x[] = "“{$rname}response”";
             }
-            foreach (PaperOption::option_json_list() as $o)
+            foreach ($Conf->paper_opts->option_json_list() as $o)
                 array_push($x, "“" . htmlspecialchars($o->abbr) . "”");
             $this->warn("Unknown “has:” search. I understand " . commajoin($x) . ".");
             $qt[] = new SearchTerm("f");
@@ -3783,7 +3785,7 @@ class PaperSearch {
                 if ($i)
                     $res[] = "has:draft{$rname}response";
             }
-        foreach (PaperOption::user_option_list($this->contact) as $o)
+        foreach ($this->contact->user_option_list() as $o)
             if ($this->contact->can_view_some_paper_option($o))
                 $o->add_search_completion($res);
         if ($this->contact->is_reviewer() && $Conf->has_rounds()

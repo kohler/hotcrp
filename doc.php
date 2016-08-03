@@ -61,7 +61,7 @@ function document_download() {
         $documentType = null;
         while ($dtname !== null && $documentType === null) {
             if ($paperId < 0)
-                $documentType = PaperOption::match_nonpaper($dtname);
+                $documentType = $Conf->paper_opts->match_nonpaper($dtname);
             else
                 $documentType = HotCRPDocument::parse_dtype($dtname ? : $base_dtname);
             if ($documentType !== null)
@@ -90,7 +90,7 @@ function document_download() {
     }
 
     if ($documentType === null
-        || !($o = PaperOption::find_document($documentType))
+        || !($o = $Conf->paper_opts->find_document($documentType))
         || ($attachment_filename && !$o->has_attachments())
         || $o->nonpaper !== ($paperId < 0))
         document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");

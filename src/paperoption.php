@@ -93,7 +93,7 @@ class PaperOptionValue {
     }
     private function _load_data() {
         if ($this->_data_array === null) {
-            $odata = PaperOption::load_optdata($this->prow->paperId);
+            $odata = PaperOption::load_optdata($this->prow);
             if ($this->option instanceof UnknownPaperOption)
                 $allopt = $this->prow->all_options();
             else
@@ -105,7 +105,7 @@ class PaperOptionValue {
         }
     }
     public function invalidate() {
-        $result = Dbl::qe("select value, `data` from PaperOption where paperId=? and optionId=?", $this->prow->paperId, $this->id);
+        $result = $this->prow->conf->qe("select value, `data` from PaperOption where paperId=? and optionId=?", $this->prow->paperId, $this->id);
         $values = $data_array = [];
         while ($result && ($row = $result->fetch_row())) {
             $values[] = (int) $row[0];
@@ -113,6 +113,192 @@ class PaperOptionValue {
         }
         Dbl::free($result);
         $this->assign($values, $data_array);
+    }
+}
+
+class PaperOptionList {
+    private $conf;
+    private $jlist = null;
+    private $jmap = [];
+    private $list = null;
+    private $nonfixed_list = null;
+    private $docmap = [];
+
+    function __construct($conf) {
+        global $Conf;
+        $this->conf = $conf ? : $Conf;
+    }
+
+    private function check_require_setting($require_setting) {
+        return str_starts_with($require_setting, "opt.")
+            ? !!$this->conf->opt(substr($require_setting, 4))
+            : !!$this->conf->setting($require_setting);
+    }
+
+    public function _add_json($oj, $fixed) {
+        if (is_string($oj->id) && is_numeric($oj->id))
+            $oj->id = intval($oj->id);
+        if (is_int($oj->id) && !isset($this->jlist[$oj->id])
+            && ($oj->id >= PaperOption::MINFIXEDID) === $fixed
+            && isset($oj->name) && is_string($oj->name)) {
+            // ignore option if require_setting not satisfied
+            if (isset($oj->require_setting) && is_string($oj->require_setting)
+                && !$this->check_require_setting($oj->require_setting))
+                return true;
+            if (!isset($oj->abbr) || $oj->abbr == "")
+                $oj->abbr = PaperOption::abbreviate($oj->name, $oj->id);
+            $this->jlist[$oj->id] = $oj;
+            return true;
+        } else
+            return false;
+    }
+
+    function option_json_list() {
+        if ($this->jlist === null) {
+            $this->jlist = $this->jmap = [];
+            if (($olist = $this->conf->setting_json("options")))
+                expand_json_includes_callback($olist, [$this, "_add_json"], false);
+            if (($olist = $this->conf->opt("fixedOptions")))
+                expand_json_includes_callback($olist, [$this, "_add_json"], true);
+            uasort($this->jlist, ["PaperOption", "compare"]);
+        }
+        return $this->jlist;
+    }
+
+    function option_ids() {
+        $m = [];
+        foreach ($this->option_json_list() as $id => $oj)
+            if (!get($oj, "nonpaper"))
+                $m[] = $id;
+        return $m;
+    }
+
+    function find($id, $force = false) {
+        if (array_key_exists($id, $this->jmap))
+            $o = $this->jmap[$id];
+        else {
+            $o = null;
+            if (($oj = get($this->option_json_list(), $id)))
+                $o = PaperOption::make($oj);
+            if ($o && $o->require_setting && !$this->check_require_setting($o->require_setting))
+                $o = null;
+            $this->jmap[$id] = $o;
+        }
+        if (!$o && $force)
+            $o = $this->jmap[$id] = new UnknownPaperOption($id);
+        return $o;
+    }
+
+    function option_list() {
+        if ($this->list === null) {
+            $this->list = [];
+            foreach ($this->option_json_list() as $id => $oj)
+                if (!get($oj, "nonpaper")
+                    && ($o = $this->find($id)) && !$o->nonpaper)
+                    $this->list[$id] = $o;
+        }
+        return $this->list;
+    }
+
+    function nonfixed_option_list() {
+        if ($this->nonfixed_list === null) {
+            $this->nonfixed_list = [];
+            foreach ($this->option_json_list() as $id => $oj)
+                if ($id < PaperOption::MINFIXEDID && !get($oj, "nonpaper")
+                    && ($o = $this->find($id)) && !$o->nonpaper)
+                    $this->nonfixed_list[$id] = $o;
+        }
+        return $this->nonfixed_list;
+    }
+
+    function nonfinal_option_list() {
+        $list = [];
+        foreach ($this->option_json_list() as $id => $oj)
+            if (!get($oj, "nonpaper") && !get($oj, "final")
+                && ($o = $this->find($id)) && !$o->nonpaper && !$o->final)
+                $list[$id] = $o;
+        return $list;
+    }
+
+    function invalidate_option_list() {
+        $this->jlist = $this->list = $this->nonfixed_list = null;
+        $this->jmap = $this->docmap = [];
+    }
+
+    function count_option_list() {
+        return count($this->option_json_list());
+    }
+
+    function find_document($id) {
+        if (!array_key_exists($id, $this->docmap)) {
+            if ($id == DTYPE_SUBMISSION)
+                $o = new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0));
+            else if ($id == DTYPE_FINAL)
+                $o = new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0));
+            else
+                $o = $this->find($id);
+            $this->docmap[$id] = $o;
+        }
+        return $this->docmap[$id];
+    }
+
+    function search($name) {
+        $name = strtolower($name);
+        if ($name === (string) DTYPE_SUBMISSION
+            || $name === "paper"
+            || $name === "submission")
+            return array(DTYPE_SUBMISSION => $this->find_document(DTYPE_SUBMISSION));
+        else if ($name === (string) DTYPE_FINAL
+                 || $name === "final")
+            return array(DTYPE_FINAL => $this->find_document(DTYPE_FINAL));
+        if ($name === "" || $name === "none")
+            return array();
+        if ($name === "any")
+            return $this->option_list();
+        if (substr($name, 0, 4) === "opt-")
+            $name = substr($name, 4);
+        $oabbr = array();
+        foreach ($this->option_json_list() as $id => $oj)
+            if ($oj->abbr === $name) {
+                $oabbr = [$id => $oj->abbr];
+                break;
+            } else
+                $oabbr[$id] = $oj->abbr;
+        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
+        $omap = [];
+        foreach ($oabbr as $id => $x)
+            if (($o = $this->find($id)) && !$o->nonpaper)
+                $omap[$id] = $o;
+        return $omap;
+    }
+
+    function match($name) {
+        $omap = $this->search($name);
+        reset($omap);
+        return count($omap) == 1 ? current($omap) : null;
+    }
+
+    function search_nonpaper($name) {
+        $name = strtolower($name);
+        $oabbr = array();
+        foreach ($this->option_json_list() as $id => $oj)
+            if ($oj->abbr === $name) {
+                $oabbr = [$id => $oj->abbr];
+                break;
+            } else
+                $oabbr[$id] = $oj->abbr;
+        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
+        $omap = [];
+        foreach ($oabbr as $id => $x)
+            if (($o = $this->find($id)) && $o->nonpaper)
+                $omap[$id] = $o;
+        return $omap;
+    }
+
+    function match_nonpaper($name) {
+        $omap = $this->search_nonpaper($name);
+        reset($omap);
+        return count($omap) == 1 ? current($omap) : null;
     }
 }
 
@@ -133,13 +319,7 @@ class PaperOption {
     public $display_space;
     public $selector;
     private $form_priority;
-    private $require_setting;
-
-    static private $jlist = null;
-    static private $jmap = [];
-    static private $list = null;
-    static private $nonfixed_list = null;
-    static private $docmap = [];
+    public $require_setting; // public for PaperOptionList
 
     const DISP_TOPICS = 0;
     const DISP_PROMINENT = 1;
@@ -219,191 +399,6 @@ class PaperOption {
             return $ap < $bp ? -1 : 1;
         else
             return $a->id - $b->id;
-    }
-
-    static private function check_require_setting($require_setting) {
-        global $Conf;
-        return str_starts_with($require_setting, "opt.")
-            ? !!opt(substr($require_setting, 4))
-            : !!$Conf->setting($require_setting);
-    }
-
-    static public function _add_json($oj, $fixed) {
-        global $Conf;
-        if (is_string($oj->id) && is_numeric($oj->id))
-            $oj->id = intval($oj->id);
-        if (is_int($oj->id) && !isset(self::$jlist[$oj->id])
-            && ($oj->id >= self::MINFIXEDID) === $fixed
-            && isset($oj->name) && is_string($oj->name)) {
-            // ignore option if require_setting not satisfied
-            if (isset($oj->require_setting) && is_string($oj->require_setting)
-                && !self::check_require_setting($oj->require_setting))
-                return true;
-            if (!isset($oj->abbr) || $oj->abbr == "")
-                $oj->abbr = self::abbreviate($oj->name, $oj->id);
-            self::$jlist[$oj->id] = $oj;
-            return true;
-        } else
-            return false;
-    }
-
-    static function option_json_list(Conf $c = null) {
-        global $Conf;
-        if (self::$jlist === null) {
-            self::$jlist = self::$jmap = [];
-            $c = $c ? : $Conf;
-            if (($olist = $c->setting_json("options")))
-                expand_json_includes_callback($olist, "PaperOption::_add_json", false);
-            if (($olist = opt("fixedOptions")))
-                expand_json_includes_callback($olist, "PaperOption::_add_json", true);
-            uasort(self::$jlist, ["PaperOption", "compare"]);
-        }
-        return self::$jlist;
-    }
-
-    static function option_ids(Conf $c = null) {
-        $m = [];
-        foreach (self::option_json_list($c) as $id => $oj)
-            if (!get($oj, "nonpaper"))
-                $m[] = $id;
-        return $m;
-    }
-
-    static function find($id, $force = false) {
-        if (array_key_exists($id, self::$jmap))
-            $o = self::$jmap[$id];
-        else {
-            $o = null;
-            if (($oj = get(self::option_json_list(), $id)))
-                $o = PaperOption::make($oj);
-            if ($o && $o->require_setting && !self::check_require_setting($o->require_setting))
-                $o = null;
-            self::$jmap[$id] = $o;
-        }
-        if (!$o && $force)
-            $o = self::$jmap[$id] = new UnknownPaperOption($id);
-        return $o;
-    }
-
-    static function option_list(Conf $c = null) {
-        global $Conf;
-        if (self::$list === null) {
-            self::$list = [];
-            foreach (self::option_json_list($c) as $id => $oj)
-                if (!get($oj, "nonpaper")
-                    && ($o = self::find($id)) && !$o->nonpaper)
-                    self::$list[$id] = $o;
-        }
-        return self::$list;
-    }
-
-    static function nonfixed_option_list(Conf $c = null) {
-        if (self::$nonfixed_list === null) {
-            self::$nonfixed_list = [];
-            foreach (self::option_json_list($c) as $id => $oj)
-                if ($id < self::MINFIXEDID && !get($oj, "nonpaper")
-                    && ($o = self::find($id)) && !$o->nonpaper)
-                    self::$nonfixed_list[$id] = $o;
-        }
-        return self::$nonfixed_list;
-    }
-
-    static function nonfinal_option_list() {
-        $list = [];
-        foreach (self::option_json_list() as $id => $oj)
-            if (!get($oj, "nonpaper") && !get($oj, "final")
-                && ($o = self::find($id)) && !$o->nonpaper && !$o->final)
-                $list[$id] = $o;
-        return $list;
-    }
-
-    static function user_option_list(Contact $user) {
-        global $Conf;
-        if ($Conf->has_any_accepts() && $user->can_view_some_decision())
-            return PaperOption::option_list();
-        else
-            return PaperOption::nonfinal_option_list();
-    }
-
-    static function invalidate_option_list() {
-        self::$jlist = self::$list = self::$nonfixed_list = null;
-        self::$jmap = self::$docmap = [];
-    }
-
-    static function count_option_list() {
-        return count(self::option_json_list());
-    }
-
-    static function find_document($id) {
-        if (!array_key_exists($id, self::$docmap)) {
-            if ($id == DTYPE_SUBMISSION)
-                $o = new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0));
-            else if ($id == DTYPE_FINAL)
-                $o = new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0));
-            else
-                $o = self::find($id);
-            self::$docmap[$id] = $o;
-        }
-        return self::$docmap[$id];
-    }
-
-    static function search($name) {
-        $name = strtolower($name);
-        if ($name === (string) DTYPE_SUBMISSION
-            || $name === "paper"
-            || $name === "submission")
-            return array(DTYPE_SUBMISSION => self::find_document(DTYPE_SUBMISSION));
-        else if ($name === (string) DTYPE_FINAL
-                 || $name === "final")
-            return array(DTYPE_FINAL => self::find_document(DTYPE_FINAL));
-        if ($name === "" || $name === "none")
-            return array();
-        if ($name === "any")
-            return self::option_list();
-        if (substr($name, 0, 4) === "opt-")
-            $name = substr($name, 4);
-        $oabbr = array();
-        foreach (self::option_json_list() as $id => $oj)
-            if ($oj->abbr === $name) {
-                $oabbr = [$id => $oj->abbr];
-                break;
-            } else
-                $oabbr[$id] = $oj->abbr;
-        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        $omap = [];
-        foreach ($oabbr as $id => $x)
-            if (($o = self::find($id)) && !$o->nonpaper)
-                $omap[$id] = $o;
-        return $omap;
-    }
-
-    static function match($name) {
-        $omap = self::search($name);
-        reset($omap);
-        return count($omap) == 1 ? current($omap) : null;
-    }
-
-    static function search_nonpaper($name) {
-        $name = strtolower($name);
-        $oabbr = array();
-        foreach (self::option_json_list() as $id => $oj)
-            if ($oj->abbr === $name) {
-                $oabbr = [$id => $oj->abbr];
-                break;
-            } else
-                $oabbr[$id] = $oj->abbr;
-        $oabbr = Text::simple_search($name, $oabbr, Text::SEARCH_CASE_SENSITIVE);
-        $omap = [];
-        foreach ($oabbr as $id => $x)
-            if (($o = self::find($id)) && $o->nonpaper)
-                $omap[$id] = $o;
-        return $omap;
-    }
-
-    static function match_nonpaper($name) {
-        $omap = self::search_nonpaper($name);
-        reset($omap);
-        return count($omap) == 1 ? current($omap) : null;
     }
 
     static function abbreviate($name, $id) {
@@ -504,8 +499,8 @@ class PaperOption {
         array_push($res, "has:{$this->abbr}", "opt:{$this->abbr}");
     }
 
-    public static function load_optdata($pid) {
-        $result = Dbl::qe("select optionId, value, data from PaperOption where paperId=?", $pid);
+    public static function load_optdata(PaperInfo $prow) {
+        $result = $prow->conf->qe("select optionId, value, data from PaperOption where paperId=?", $prow->paperId);
         $optdata = ["v" => [], "d" => []];
         while (($row = edb_row($result))) {
             $optdata["v"][$row[0]][] = (int) $row[1];
@@ -526,11 +521,12 @@ class PaperOption {
             for ($i = 0; $i < count($m[1]); ++$i)
                 $optdata["v"][$m[1][$i]][] = (int) $m[2][$i];
         } else
-            $optdata = self::load_optdata($prow->paperId);
+            $optdata = self::load_optdata($prow);
 
+        $paper_opts = $prow->conf->paper_opts;
         $option_array = array();
         foreach ($optdata["v"] as $oid => $ovalues)
-            if (($o = PaperOption::find($oid, $all)))
+            if (($o = $paper_opts->find($oid, $all)))
                 $option_array[$oid] = new PaperOptionValue($prow, $o, $ovalues, get($optdata["d"], $oid));
         uasort($option_array, function ($a, $b) {
             if ($a->option && $b->option)

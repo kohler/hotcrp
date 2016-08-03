@@ -130,7 +130,7 @@ class Default_PaperSaver extends PaperSaver {
         // Options
         if (!isset($pj->options))
             $pj->options = (object) [];
-        foreach (PaperOption::option_list() as $o)
+        foreach ($Conf->paper_opts->option_list() as $o)
             if ($qreq["has_opt$o->id"]
                 && (!$o->final || $action === "final")) {
                 $okey = $o->abbr;
@@ -173,7 +173,7 @@ class Default_PaperSaver extends PaperSaver {
             $diffs["topics"] = true;
         $pjopt = get($pj, "options", (object) []);
         $opjopt = get($opj, "options", (object) []);
-        foreach (PaperOption::option_list() as $o) {
+        foreach ($Conf->paper_opts->option_list() as $o) {
             $oabbr = $o->abbr;
             if (!get($pjopt, $oabbr) != !get($opjopt, $oabbr)
                 || (get($pjopt, $oabbr)
