@@ -179,13 +179,13 @@ class PaperOptionList {
         else {
             $o = null;
             if (($oj = get($this->option_json_list(), $id)))
-                $o = PaperOption::make($oj);
+                $o = PaperOption::make($oj, $this->conf);
             if ($o && $o->require_setting && !$this->check_require_setting($o->require_setting))
                 $o = null;
             $this->jmap[$id] = $o;
         }
         if (!$o && $force)
-            $o = $this->jmap[$id] = new UnknownPaperOption($id);
+            $o = $this->jmap[$id] = new UnknownPaperOption($id, $this->conf);
         return $o;
     }
 
@@ -232,9 +232,9 @@ class PaperOptionList {
     function find_document($id) {
         if (!array_key_exists($id, $this->docmap)) {
             if ($id == DTYPE_SUBMISSION)
-                $o = new DocumentPaperOption(array("id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0));
+                $o = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf);
             else if ($id == DTYPE_FINAL)
-                $o = new DocumentPaperOption(array("id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0));
+                $o = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
             else
                 $o = $this->find($id);
             $this->docmap[$id] = $o;
@@ -306,6 +306,7 @@ class PaperOption {
     const MINFIXEDID = 1000000;
 
     public $id;
+    public $conf;
     public $name;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
@@ -342,10 +343,12 @@ class PaperOption {
         "document" => "DocumentPaperOption", "attachments" => "AttachmentsPaperOption"
     ];
 
-    function __construct($args) {
+    function __construct($args, $conf) {
+        global $Conf;
         if (is_object($args))
             $args = get_object_vars($args);
         $this->id = (int) $args["id"];
+        $this->conf = $conf ? : $Conf;
         $this->name = $args["name"];
         $this->type = $args["type"];
         $this->abbr = get_s($args, "abbr");
@@ -381,15 +384,15 @@ class PaperOption {
         $this->selector = get($args, "selector");
     }
 
-    static function make($args) {
+    static function make($args, $conf) {
         if (is_object($args))
             $args = get_object_vars($args);
         if (($factory = get($args, "factory")))
-            return call_user_func($factory, $args);
+            return call_user_func($factory, $args, $conf);
         $fclass = get($args, "factory_class");
         $fclass = $fclass ? : get(self::$factory_class_map, get($args, "type"));
         $fclass = $fclass ? : "PaperOption";
-        return new $fclass($args);
+        return new $fclass($args, $conf);
     }
 
     static function compare($a, $b) {
@@ -587,8 +590,8 @@ class PaperOption {
 }
 
 class CheckboxPaperOption extends PaperOption {
-    function __construct($args) {
-        parent::__construct($args);
+    function __construct($args, $conf) {
+        parent::__construct($args, $conf);
     }
 
     function value_compare($av, $bv) {
@@ -627,8 +630,8 @@ class CheckboxPaperOption extends PaperOption {
 }
 
 class SelectorPaperOption extends PaperOption {
-    function __construct($args) {
-        parent::__construct($args);
+    function __construct($args, $conf) {
+        parent::__construct($args, $conf);
     }
 
     function has_selector() {
@@ -696,8 +699,8 @@ class SelectorPaperOption extends PaperOption {
 }
 
 class DocumentPaperOption extends PaperOption {
-    function __construct($args) {
-        parent::__construct($args);
+    function __construct($args, $conf) {
+        parent::__construct($args, $conf);
     }
 
     function is_document() {
@@ -781,23 +784,22 @@ class DocumentPaperOption extends PaperOption {
     }
 
     function format_spec() {
-        global $Conf;
         $suffix = "";
         if ($this->id)
             $suffix = $this->id < 0 ? "_m" . -$this->id : "_" . $this->id;
         $spec = "";
-        if ($Conf->setting("sub_banal$suffix"))
-            $spec = $Conf->setting_data("sub_banal$suffix", "");
+        if ($this->conf->setting("sub_banal$suffix"))
+            $spec = $this->conf->setting_data("sub_banal$suffix", "");
         $fspec = new FormatSpec($spec);
-        if (($xspec = opt("sub_banal$suffix")))
+        if (($xspec = $this->conf->opt("sub_banal$suffix")))
             $fspec->merge($xspec);
         return $fspec;
     }
 }
 
 class NumericPaperOption extends PaperOption {
-    function __construct($args) {
-        parent::__construct($args);
+    function __construct($args, $conf) {
+        parent::__construct($args, $conf);
     }
 
     function example_searches() {
@@ -846,8 +848,8 @@ class NumericPaperOption extends PaperOption {
 }
 
 class TextPaperOption extends PaperOption {
-    function __construct($args) {
-        parent::__construct($args);
+    function __construct($args, $conf) {
+        parent::__construct($args, $conf);
     }
 
     function value_compare($av, $bv) {
@@ -908,8 +910,8 @@ class TextPaperOption extends PaperOption {
 }
 
 class AttachmentsPaperOption extends PaperOption {
-    function __construct($args) {
-        parent::__construct($args);
+    function __construct($args, $conf) {
+        parent::__construct($args, $conf);
     }
 
     function has_document() {
@@ -1021,8 +1023,8 @@ class AttachmentsPaperOption extends PaperOption {
 }
 
 class UnknownPaperOption extends PaperOption {
-    function __construct($id) {
-        parent::__construct(["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"]);
+    function __construct($id, $conf) {
+        parent::__construct(["id" => $id, "name" => "__unknown{$id}__", "type" => "__unknown{$id}__"], $conf);
     }
 
     function takes_multiple() {

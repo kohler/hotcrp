@@ -175,7 +175,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
                     "description" => "",
                     "type" => "checkbox",
                     "position" => count($Conf->paper_opts->nonfixed_option_list()) + 1,
-                    "display" => "default"));
+                    "display" => "default"), $Conf);
             $id = "n";
         }
 
@@ -186,7 +186,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
                     "type" => get($sv->req, "optvt$id", "checkbox"),
                     "visibility" => get($sv->req, "optp$id", ""),
                     "position" => get($sv->req, "optfp$id", 1),
-                    "display" => get($sv->req, "optdt$id")));
+                    "display" => get($sv->req, "optdt$id")), $Conf);
             if ($o->has_selector())
                 $o->selector = explode("\n", rtrim(defval($sv->req, "optv$id", "")));
         }
@@ -534,7 +534,7 @@ class Option_SettingParser extends SettingParser {
         if ($oarg["type"] === "pdf" && $oarg["final"])
             $oarg["display"] = "submission";
 
-        $new_opts[$oarg["id"]] = $o = PaperOption::make($oarg);
+        $new_opts[$oarg["id"]] = $o = PaperOption::make($oarg, $Conf);
         $o->req_id = $id;
         $o->is_new = $id[0] === "n";
     }
