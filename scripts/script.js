@@ -3241,10 +3241,11 @@ function make_selector_shortcut(type) {
             e.className += " psfocus";
             foldup(e, null, {f: false});
             jQuery(e).scrollIntoView();
-            e = find(e);
-            e.focus();
-            e.addEventListener("blur", end, false);
-            e.addEventListener("change", end, false);
+            if ((e = find(e))) {
+                e.focus();
+                e.addEventListener("blur", end, false);
+                e.addEventListener("change", end, false);
+            }
             event_stop(evt);
             return true;
         }
