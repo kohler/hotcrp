@@ -58,9 +58,8 @@ class CheckFormat implements FormatChecker {
     }
 
     public function run_banal($filename) {
-        global $Opt;
-        if (isset($Opt["pdftohtml"]))
-            putenv("PHP_PDFTOHTML=" . $Opt["pdftohtml"]);
+        if (($pdftohtml = opt("pdftohtml")))
+            putenv("PHP_PDFTOHTML=" . $pdftohtml);
         $banal_run = "perl src/banal -no_app -json ";
         if (self::$banal_args)
             $banal_run .= self::$banal_args . " ";
@@ -240,7 +239,7 @@ class CheckFormat implements FormatChecker {
     }
 
     public function check(CheckFormat $cf, FormatSpec $spec, PaperInfo $prow, $doc) {
-        global $Conf, $Opt, $Now;
+        global $Conf, $Now;
         $bj = null;
         if (($m = $doc->metadata()) && isset($m->banal))
             $bj = $m->banal;
@@ -259,7 +258,7 @@ class CheckFormat implements FormatChecker {
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
             $n = ($Conf->setting_data("__banal_count") == $t ? $Conf->setting("__banal_count") + 1 : 1);
-            $limit = get($Opt, "banalLimit", 8);
+            $limit = opt("banalLimit", 8);
             if ($limit > 0 && $n > $limit)
                 return $cf->msg_fail("Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
             if ($limit > 0)
@@ -288,8 +287,8 @@ class CheckFormat implements FormatChecker {
     public function spec($dtype) {
         global $Conf;
         if (!array_key_exists($dtype, $this->dt_specs)) {
-            $opt = $Conf->paper_opts->find_document($dtype);
-            $spec = $opt ? $opt->format_spec() : null;
+            $o = $Conf->paper_opts->find_document($dtype);
+            $spec = $o ? $o->format_spec() : null;
             $this->dt_specs[$dtype] = $spec ? : new FormatSpec;
         }
         return $this->dt_specs[$dtype];
@@ -311,7 +310,7 @@ class CheckFormat implements FormatChecker {
     }
 
     public function check_document(PaperInfo $prow, $doc) {
-        global $Conf, $Opt;
+        global $Conf;
         $this->clear();
         if (!$doc && !isset($this->errf["fail"]))
             return $this->msg_fail("No such document.");

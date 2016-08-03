@@ -250,11 +250,6 @@ class Contact {
         $this->privChair = ($roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) != 0;
     }
 
-    static function external_login() {
-        global $Opt;
-        return get($Opt, "ldapLogin") || get($Opt, "httpAuthLogin");
-    }
-
 
     // initialization
 
@@ -1078,7 +1073,7 @@ class Contact {
             && $cdbu->allow_contactdb_password()) {
             $cu->qv["password"] = $this->password = "";
             $cu->qv["passwordTime"] = $this->passwordTime = $cdbu->passwordTime;
-        } else if (!self::external_login()) {
+        } else if (!$this->conf->external_login()) {
             $cu->qv["password"] = $this->password = self::random_password();
             $cu->qv["passwordTime"] = $this->passwordTime = $Now;
         } else
@@ -1187,7 +1182,6 @@ class Contact {
     }
 
     public static function random_password($length = 14) {
-        assert(!self::external_login());
         return hotcrp_random_password($length);
     }
 
@@ -1314,7 +1308,7 @@ class Contact {
 
     public function check_password($input) {
         global $Now;
-        assert(!self::external_login());
+        assert(!$this->conf->external_login());
         if (($this->contactId && $this->disabled)
             || !self::valid_password($input))
             return false;
@@ -1359,7 +1353,7 @@ class Contact {
 
     public function change_password($old, $new, $flags) {
         global $Now;
-        assert(!self::external_login());
+        assert(!$this->conf->external_login());
         if ($new === null)
             $new = self::random_password();
         assert(self::valid_password($new));

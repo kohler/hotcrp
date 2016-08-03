@@ -8,7 +8,7 @@ if (!isset($_REQUEST["resetcap"])
     && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
     $_REQUEST["resetcap"] = $m[1];
 
-if (Contact::external_login())
+if ($Conf->external_login())
     error_go(false, "This HotCRP installation does not store passwords. Contact your administrator to reset your password.");
 
 if (!isset($_REQUEST["resetcap"]))

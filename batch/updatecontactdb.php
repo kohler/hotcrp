@@ -12,7 +12,7 @@ if (isset($arg["h"]) || isset($arg["help"])
            "Usage: php batch/updatecontactdb.php [-n CONFID] [--papers] [--users] [--collaborators]\n");
     exit($status);
 }
-if (!@$Opt["contactdb_dsn"]) {
+if (!opt("contactdb_dsn")) {
     fwrite(STDERR, "Conference has no contactdb_dsn\n");
     exit(1);
 }

@@ -144,7 +144,7 @@ function web_request_as_json($cj) {
     else
         $cj->id = $Acct->contactId;
 
-    if (!Contact::external_login())
+    if (!$Conf->external_login())
         $cj->email = trim(req_s("uemail", ""));
     else if ($newProfile)
         $cj->email = trim(defval($_REQUEST, "newUsername", ""));
@@ -159,7 +159,7 @@ function web_request_as_json($cj) {
             $cj->$k = $v;
     }
 
-    if (!Contact::external_login() && !$newProfile
+    if (!$Conf->external_login() && !$newProfile
         && $Me->can_change_password($Acct)) {
         if (req("whichpassword") === "t" && req("upasswordt"))
             $pw = $pw2 = @trim($_REQUEST["upasswordt"]);
@@ -213,7 +213,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
                     $msg .= " You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.";
                 return $user_status->set_error("email", $msg);
             }
-        } else if (Contact::external_login()) {
+        } else if ($Conf->external_login()) {
             if ($cj->email === "")
                 return $user_status->set_error("email", "Not a valid username.");
         } else if ($cj->email === "")
@@ -641,7 +641,7 @@ else if ($Me->privChair)
     echo_modes(0);
 
 echo '<div class="f-contain">', "\n\n";
-if (!opt("ldapLogin") && !opt("httpAuthLogin"))
+if (!$Conf->external_login())
     echofield(0, "uemail", "Email", textinput("uemail", contact_value("uemail", "email"), 52, "account_d"));
 else if (!$newProfile) {
     echofield(0, "uemail", "Username", contact_value("uemail", "email"));
@@ -669,8 +669,7 @@ if ($Conf->setting("acct_addr") || $any_address || $Acct->voicePhoneNumber) {
 }
 
 
-if (!$newProfile && !opt("ldapLogin") && !opt("httpAuthLogin")
-    && $Me->can_change_password($Acct)) {
+if (!$newProfile && !$Conf->external_login() && $Me->can_change_password($Acct)) {
     echo '<div id="foldpassword" class="',
         ($UserStatus->has_error("password") ? "fold3o" : "fold3c"),
         '" style="margin-top:20px">';

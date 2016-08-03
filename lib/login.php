@@ -74,7 +74,7 @@ class LoginHelper {
 
     static private function login() {
         global $Conf, $Now, $email_class, $password_class;
-        $external_login = isset($Conf->opt->ldapLogin) || isset($Conf->opt->httpAuthLogin);
+        $external_login = $Conf->external_login();
 
         // In all cases, we need to look up the account information
         // to determine if the user is registered
