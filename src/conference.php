@@ -422,6 +422,79 @@ class Conf {
     }
 
 
+    // database
+
+    function q(/* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), 0);
+    }
+    function q_raw(/* $qstr */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW);
+    }
+    function q_apply(/* $qstr, $args */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY);
+    }
+
+    function ql(/* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
+    }
+    function ql_raw(/* $qstr */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_LOG);
+    }
+    function ql_apply(/* $qstr, $args */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_LOG);
+    }
+
+    function qe(/* $qstr, ... */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR);
+    }
+    function qe_raw(/* $qstr */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW | Dbl::F_ERROR);
+    }
+    function qe_apply(/* $qstr, $args */) {
+        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_APPLY | Dbl::F_ERROR);
+    }
+
+    function fetch_rows(/* $qstr, ... */) {
+        return Dbl::fetch_rows(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    }
+    function fetch_value(/* $qstr, ... */) {
+        return Dbl::fetch_value(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    }
+    function fetch_ivalue(/* $qstr, ... */) {
+        return Dbl::fetch_ivalue(Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR));
+    }
+
+    function db_error_html($getdb = true, $while = "") {
+        $text = "<p>Database error";
+        if ($while)
+            $text .= " $while";
+        if ($getdb)
+            $text .= ": " . htmlspecialchars($this->dblink->error);
+        return $text . "</p>";
+    }
+
+    function db_error_text($getdb = true, $while = "") {
+        $text = "Database error";
+        if ($while)
+            $text .= " $while";
+        if ($getdb)
+            $text .= ": " . $this->dblink->error;
+        return $text;
+    }
+
+    function query_error_handler($dblink, $query) {
+        $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
+        if (PHP_SAPI == "cli")
+            fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
+        else {
+            error_log("$landmark: database error: $dblink->error in $query");
+            self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
+        }
+    }
+
+
+    // name
+
     function full_name() {
         if ($this->short_name && $this->short_name != $this->long_name)
             return $this->long_name . " (" . $this->short_name . ")";
@@ -433,7 +506,7 @@ class Conf {
     function site_contact() {
         $contactEmail = $this->opt("contactEmail");
         if (!$contactEmail || $contactEmail == "you@example.com") {
-            $result = Dbl::ql($this->dblink, "select firstName, lastName, email from ContactInfo where (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
+            $result = $this->ql("select firstName, lastName, email from ContactInfo where (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
             if ($result && ($row = $result->fetch_object())) {
                 $this->set_opt("defaultSiteContact", true);
                 $this->set_opt("contactName", Text::name_text($row));
@@ -647,7 +720,7 @@ class Conf {
                     $i && ($r[$i] = $rname);
                 }
             if (!$dl[0]) {
-                $result = Dbl::qe("select reviewId from PaperReview where reviewRound=0 limit 1");
+                $result = $this->qe("select reviewId from PaperReview where reviewRound=0 limit 1");
                 if (!$result || !$result->num_rows)
                     unset($dl[0]);
                 Dbl::free($result);
@@ -837,7 +910,7 @@ class Conf {
         if ($this->_pc_members_cache === null
             || $this->_pc_members_cache_by_last != opt("sortByLastName")) {
             $pc = array();
-            $result = Dbl::q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
+            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
             while ($result && ($row = Contact::fetch($result))) {
@@ -945,7 +1018,7 @@ class Conf {
         else if ($papersub <= 0 || !$forsubmit)
             // see also settings.php
             $this->q_raw("update Settings set value=(select ifnull(min(paperId),0) from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . ") where name='papersub'");
-        $this->settings["papersub"] = Dbl::fetch_ivalue("select value from Settings where name='papersub'");
+        $this->settings["papersub"] = $this->fetch_ivalue("select value from Settings where name='papersub'");
     }
 
     function update_paperacc_setting($foraccept) {
@@ -953,31 +1026,31 @@ class Conf {
             $this->q_raw("insert into Settings (name, value) values ('paperacc', " . time() . ") on duplicate key update value=value");
         else if (defval($this->settings, "paperacc") <= 0 || !$foraccept)
             $this->q_raw("update Settings set value=(select max(outcome) from Paper where timeSubmitted>0 group by paperId>0) where name='paperacc'");
-        $this->settings["paperacc"] = Dbl::fetch_ivalue("select value from Settings where name='paperacc'");
+        $this->settings["paperacc"] = $this->fetch_ivalue("select value from Settings where name='paperacc'");
     }
 
     function update_rev_tokens_setting($always) {
         if ($always || defval($this->settings, "rev_tokens", 0) < 0) {
             $this->qe_raw("insert into Settings (name, value) select 'rev_tokens', count(reviewId) from PaperReview where reviewToken!=0 on duplicate key update value=values(value)");
-            $this->settings["rev_tokens"] = Dbl::fetch_ivalue("select value from Settings where name='rev_tokens'");
+            $this->settings["rev_tokens"] = $this->fetch_ivalue("select value from Settings where name='rev_tokens'");
         }
     }
 
     function update_paperlead_setting() {
         $this->qe_raw("insert into Settings (name, value) select 'paperlead', count(paperId) from Paper where leadContactId>0 or shepherdContactId>0 limit 1 on duplicate key update value=values(value)");
-        $this->settings["paperlead"] = Dbl::fetch_ivalue("select value from Settings where name='paperlead'");
+        $this->settings["paperlead"] = $this->fetch_ivalue("select value from Settings where name='paperlead'");
     }
 
     function update_papermanager_setting() {
         $this->qe_raw("insert into Settings (name, value) select 'papermanager', count(paperId) from Paper where managerContactId>0 limit 1 on duplicate key update value=values(value)");
-        $this->settings["papermanager"] = Dbl::fetch_ivalue("select value from Settings where name='papermanager'");
+        $this->settings["papermanager"] = $this->fetch_ivalue("select value from Settings where name='papermanager'");
     }
 
 
     static private $invariant_row = null;
 
     private function invariantq($q, $args = []) {
-        $result = Dbl::ql_apply($this->dblink, $q, $args);
+        $result = $this->ql_apply($q, $args);
         if ($result) {
             self::$invariant_row = $result->fetch_row();
             $result->close();
@@ -1093,8 +1166,8 @@ class Conf {
 
     function update_schema_version($n) {
         if (!$n)
-            $n = Dbl::fetch_ivalue("select value from Settings where name='allowPaperOption'");
-        if ($n && Dbl::ql("update Settings set value=$n where name='allowPaperOption'")) {
+            $n = $this->fetch_ivalue("select value from Settings where name='allowPaperOption'");
+        if ($n && $this->ql("update Settings set value=$n where name='allowPaperOption'")) {
             $this->sversion = $this->settings["allowPaperOption"] = $n;
             return true;
         } else
@@ -1121,58 +1194,6 @@ class Conf {
         if (count($removes))
             $ok = $ok && ($this->qe_raw("delete from Settings where name in (" . join(",", $removes) . ")") !== false);
         return $ok;
-    }
-
-    function q(/* $qstr, ... */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), 0);
-    }
-
-    function q_raw(/* $qstr */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_RAW);
-    }
-
-    function ql(/* $qstr, ... */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG);
-    }
-
-    function ql_raw(/* $qstr */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_LOG | Dbl::F_RAW);
-    }
-
-    function qe(/* $qstr, ... */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR);
-    }
-
-    function qe_raw(/* $qstr */) {
-        return Dbl::do_query_on($this->dblink, func_get_args(), Dbl::F_ERROR | Dbl::F_RAW);
-    }
-
-    function db_error_html($getdb = true, $while = "") {
-        $text = "<p>Database error";
-        if ($while)
-            $text .= " $while";
-        if ($getdb)
-            $text .= ": " . htmlspecialchars($this->dblink->error);
-        return $text . "</p>";
-    }
-
-    function db_error_text($getdb = true, $while = "") {
-        $text = "Database error";
-        if ($while)
-            $text .= " $while";
-        if ($getdb)
-            $text .= ": " . $this->dblink->error;
-        return $text;
-    }
-
-    function query_error_handler($dblink, $query) {
-        $landmark = caller_landmark(1, "/^(?:Dbl::|Conf::q|call_user_func)/");
-        if (PHP_SAPI == "cli")
-            fwrite(STDERR, "$landmark: database error: $dblink->error in $query\n");
-        else {
-            error_log("$landmark: database error: $dblink->error in $query");
-            self::msg_error("<p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
-        }
     }
 
 
@@ -1474,7 +1495,7 @@ class Conf {
 
     function count_submitted_accepted() {
         $dlt = max($this->setting("sub_sub"), $this->setting("sub_close"));
-        $result = Dbl::qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
+        $result = $this->qe("select outcome, count(paperId) from Paper where timeSubmitted>0 " . ($dlt ? "or (timeSubmitted=-100 and timeWithdrawn>=$dlt) " : "") . "group by outcome");
         $n = $nyes = 0;
         while (($row = edb_row($result))) {
             $n += $row[1];
@@ -1644,16 +1665,16 @@ class Conf {
             $paperset[] = self::_cvt_numeric_set($options["paperId"]);
         if (isset($options["reviewId"])) {
             if (is_numeric($options["reviewId"])) {
-                $result = Dbl::qe("select paperId from PaperReview where reviewId=" . $options["reviewId"]);
+                $result = $this->qe("select paperId from PaperReview where reviewId=" . $options["reviewId"]);
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else if (preg_match('/^(\d+)([A-Z][A-Z]?)$/i', $options["reviewId"], $m)) {
-                $result = Dbl::qe("select paperId from PaperReview where paperId=$m[1] and reviewOrdinal=" . parseReviewOrdinal($m[2]));
+                $result = $this->qe("select paperId from PaperReview where paperId=$m[1] and reviewOrdinal=" . parseReviewOrdinal($m[2]));
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else
                 $paperset[] = array();
         }
         if (isset($options["commentId"])) {
-            $result = Dbl::qe("select paperId from PaperComment where commentId" . sql_in_numeric_set(self::_cvt_numeric_set($options["commentId"])));
+            $result = $this->qe("select paperId from PaperComment where commentId" . sql_in_numeric_set(self::_cvt_numeric_set($options["commentId"])));
             $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
         }
         if (count($paperset) > 1)
@@ -2702,7 +2723,7 @@ class Conf {
                 $pos = strpos($cid_text, "|");
                 $qs[] = self::format_log_query(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
             }
-            $mresult = Dbl::multi_q_raw(join(";", $qs));
+            $mresult = Dbl::multi_q_raw($this->dblink, join(";", $qs));
             while (($result = $mresult->next()))
                 Dbl::free($result);
             $this->_save_logs = false;
@@ -2727,7 +2748,7 @@ class Conf {
             $ps[] = is_object($p) ? $p->paperId : $p;
 
         if ($this->_save_logs === false)
-            Dbl::q_raw(self::format_log_query($text, $who, $ps));
+            $this->q_raw(self::format_log_query($text, $who, $ps));
         else {
             $key = "$who|$text";
             if (!isset($this->_save_logs[$key]))

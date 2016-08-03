@@ -32,7 +32,7 @@ class PaperContactInfo {
             $this->review_token_cid = null;
     }
 
-    static function load_into(&$cmap, $pid, $cid, $rev_tokens = null) {
+    static function load_into($conf, &$cmap, $pid, $cid, $rev_tokens = null) {
         global $Me;
         $result = null;
         $q = "select conflictType as conflict_type,
@@ -41,7 +41,7 @@ class PaperContactInfo {
                 reviewNeedsSubmit as review_needs_submit,
                 PaperReview.contactId as review_token_cid";
         if (self::$list_rows && !$rev_tokens) {
-            $result = Dbl::qe_raw("$q, $cid contactId, Paper.paperId paperId
+            $result = $conf->qe_raw("$q, $cid contactId, Paper.paperId paperId
                 from Paper
                 left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=$cid)
                 left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$cid)
@@ -62,9 +62,9 @@ class PaperContactInfo {
         }
         if ($cid && !$rev_tokens
             && (!$Me || ($Me->contactId != $cid && $Me->is_manager()))
-            && ($pcm = pcMembers()) && isset($pcm[$cid])) {
+            && ($pcm = $conf->pc_members()) && isset($pcm[$cid])) {
             $cids = array_keys($pcm);
-            $result = Dbl::qe_raw("$q, ContactInfo.contactId
+            $result = $conf->qe_raw("$q, ContactInfo.contactId
                 from (select $pid paperId) P
                 join ContactInfo
                 left join PaperReview on (PaperReview.paperId=$pid and PaperReview.contactId=ContactInfo.contactId)
@@ -78,7 +78,7 @@ class PaperContactInfo {
                 left join PaperReview on (PaperReview.paperId=P.paperId and (PaperReview.contactId=$cid";
                 if ($rev_tokens)
                     $q .= " or PaperReview.reviewToken in (" . join(",", $rev_tokens) . ")";
-                $result = Dbl::qe_raw("$q))
+                $result = $conf->qe_raw("$q))
                     left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=$cid)");
             }
         }
@@ -145,6 +145,7 @@ class PaperInfo_Author {
 
 class PaperInfo {
     public $paperId;
+    public $conf;
     public $title;
     public $authorInformation;
     public $abstract;
@@ -176,6 +177,8 @@ class PaperInfo {
     }
 
     private function merge($p, $contact) {
+        global $Conf;
+        $this->conf = $Conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -253,7 +256,7 @@ class PaperInfo {
                 $ci->review_needs_submit = get($rs, $cid, 1);
                 $this->_contact_info[$cid] = $ci;
             } else
-                PaperContactInfo::load_into($this->_contact_info, $this->paperId, $cid, $rev_tokens);
+                PaperContactInfo::load_into($this->conf, $this->_contact_info, $this->paperId, $cid, $rev_tokens);
         }
         return $this->_contact_info[$cid];
     }
@@ -282,8 +285,7 @@ class PaperInfo {
     }
 
     public function format_of($text, $check_simple = false) {
-        global $Conf;
-        return $Conf->check_format($this->paperFormat, $check_simple ? $text : null);
+        return $this->conf->check_format($this->paperFormat, $check_simple ? $text : null);
     }
 
     public function title_format() {
@@ -367,12 +369,11 @@ class PaperInfo {
     }
 
     public function pc_can_become_reviewer() {
-        global $Conf;
-        if (!$Conf->check_track_review_sensitivity())
-            return pcMembers();
+        if (!$this->conf->check_track_review_sensitivity())
+            return $this->conf->pc_members();
         else {
             $pcm = array();
-            foreach (pcMembers() as $cid => $pc)
+            foreach ($this->conf->pc_members() as $cid => $pc)
                 if ($pc->can_become_reviewer_ignore_conflict($this))
                     $pcm[$cid] = $pc;
             return $pcm;
@@ -380,7 +381,7 @@ class PaperInfo {
     }
 
     public function load_tags() {
-        $result = Dbl::qe_raw("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
+        $result = $this->conf->qe_raw("select group_concat(' ', tag, '#', tagIndex order by tag separator '') from PaperTag where paperId=$this->paperId group by paperId");
         $this->paperTags = "";
         if (($row = edb_row($result)) && $row[0] !== null)
             $this->paperTags = $row[0];
@@ -467,7 +468,7 @@ class PaperInfo {
     }
 
     private function load_topics() {
-        $result = Dbl::qe_raw("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
+        $result = $this->conf->qe_raw("select group_concat(topicId) from PaperTopic where paperId=$this->paperId");
         $row = edb_row($result);
         $this->topicIds = $row ? $row[0] : "";
         Dbl::free($result);
@@ -486,10 +487,9 @@ class PaperInfo {
             else {
                 $this->_topics_array = array();
                 if ($this->topicIds !== "" && $this->topicIds !== null) {
-                    global $Conf;
                     foreach (explode(",", $this->topicIds) as $t)
                         $this->_topics_array[] = (int) $t;
-                    $tomap = $Conf->topic_order_map();
+                    $tomap = $this->conf->topic_order_map();
                     usort($this->_topics_array, function ($a, $b) use ($tomap) {
                         return $tomap[$a] - $tomap[$b];
                     });
@@ -500,15 +500,14 @@ class PaperInfo {
     }
 
     public function unparse_topics_text() {
-        global $Conf;
         $tarr = $this->topics();
         if (!$tarr)
             return "";
         $out = [];
-        $tmap = $Conf->topic_map();
+        $tmap = $this->conf->topic_map();
         foreach ($tarr as $t)
             $out[] = $tmap[$t];
-        return join($Conf->topic_separator(), $out);
+        return join($this->conf->topic_separator(), $out);
     }
 
     private static function render_topic($t, $i, $tmap, &$long) {
@@ -522,9 +521,8 @@ class PaperInfo {
     }
 
     private static function render_topic_list($out, $comma, $long) {
-        global $Conf;
         if ($comma)
-            return join($Conf->topic_separator(), $out);
+            return join($this->conf->topic_separator(), $out);
         else if ($long)
             return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
         else
@@ -532,11 +530,10 @@ class PaperInfo {
     }
 
     public function unparse_topics_html($comma, Contact $interests_user = null) {
-        global $Conf;
         if (!($topics = $this->topics()))
             return "";
         $out = array();
-        $tmap = $Conf->topic_map();
+        $tmap = $this->conf->topic_map();
         $interests = $interests_user ? $interests_user->topic_interest_map() : array();
         $long = false;
         foreach ($topics as $t)
@@ -545,7 +542,6 @@ class PaperInfo {
     }
 
     public static function unparse_topic_list_html($topicIds, $interests, $comma) {
-        global $Conf;
         if (!$topicIds)
             return "";
         if (!is_array($topicIds))
@@ -553,8 +549,8 @@ class PaperInfo {
         if ($interests !== null && !is_array($interests))
             $interests = explode(",", $interests);
         $out = array();
-        $tmap = $Conf->topic_map();
-        $tomap = $Conf->topic_order_map();
+        $tmap = $this->conf->topic_map();
+        $tomap = $this->conf->topic_order_map();
         $long = false;
         for ($i = 0; $i < count($topicIds); $i++)
             $out[$tomap[$topicIds[$i]]] = self::render_topic($topicIds[$i], $interests ? $interests[$i] : 0, $tmap, $long);
@@ -563,7 +559,7 @@ class PaperInfo {
     }
 
     static public function make_topic_map($pids) {
-        $result = Dbl::qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $pids);
+        $result = $this->conf->qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $pids);
         $topic_map = Dbl::fetch_map($result);
         foreach ($topic_map as $pid => &$t) {
             $t = explode(",", $t);
@@ -576,7 +572,7 @@ class PaperInfo {
     public function topic_interest_score($contact) {
         $score = 0;
         if (is_int($contact))
-            $contact = get(pcMembers(), $contact);
+            $contact = get($this->conf->pc_members(), $contact);
         if ($contact) {
             if ($this->_topic_interest_score_array === null)
                 $this->_topic_interest_score_array = array();
@@ -600,9 +596,9 @@ class PaperInfo {
                 foreach (explode(",", $this->allConflictType) as $x)
                     $vals[] = explode(" ", $x);
             } else if (!$email)
-                $vals = Dbl::fetch_rows("select contactId, conflictType from PaperConflict where paperId=$this->paperId");
+                $vals = $this->conf->fetch_rows("select contactId, conflictType from PaperConflict where paperId=$this->paperId");
             else {
-                $vals = Dbl::fetch_rows("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
+                $vals = $this->conf->fetch_rows("select ContactInfo.contactId, conflictType, email from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId");
                 $this->_conflicts_email = true;
             }
             foreach ($vals as $v)
@@ -617,19 +613,19 @@ class PaperInfo {
     }
 
     public function pc_conflicts($email = false) {
-        return array_intersect_key($this->conflicts($email), pcMembers());
+        return array_intersect_key($this->conflicts($email), $this->conf->pc_members());
     }
 
     public function contacts($email = false) {
         $c = array();
-        foreach ($this->conflicts($email) as $id => $conf)
-            if ($conf->conflictType >= CONFLICT_AUTHOR)
-                $c[$id] = $conf;
+        foreach ($this->conflicts($email) as $id => $cflt)
+            if ($cflt->conflictType >= CONFLICT_AUTHOR)
+                $c[$id] = $cflt;
         return $c;
     }
 
     public function named_contacts() {
-        $vals = Dbl::fetch_objects("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR);
+        $vals = Dbl::fetch_objects($this->conf->qe("select ContactInfo.contactId, conflictType, email, firstName, lastName, affiliation from PaperConflict join ContactInfo using (contactId) where paperId=$this->paperId and conflictType>=" . CONFLICT_AUTHOR));
         foreach ($vals as $v) {
             $v->contactId = (int) $v->contactId;
             $v->conflictType = (int) $v->conflictType;
@@ -638,8 +634,7 @@ class PaperInfo {
     }
 
     private function load_reviewer_preferences() {
-        global $Conf;
-        $this->allReviewerPreference = Dbl::fetch_value("select " . $Conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
+        $this->allReviewerPreference = $this->conf->fetch_value("select " . $this->conf->query_all_reviewer_preference() . " from PaperReviewPreference where paperId=$this->paperId");
         $this->_prefs_array = null;
     }
 
@@ -692,7 +687,7 @@ class PaperInfo {
     private function _add_documents($dids) {
         if ($this->_document_array === null)
             $this->_document_array = [];
-        $result = Dbl::qe("select paperStorageId, $this->paperId paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId ?a", $dids);
+        $result = $this->conf->qe("select paperStorageId, $this->paperId paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId ?a", $dids);
         while (($di = DocumentInfo::fetch($result)))
             $this->_document_array[$di->paperStorageId] = $di;
         Dbl::free($result);
@@ -747,13 +742,13 @@ class PaperInfo {
 
     public function num_reviews_submitted() {
         if (!property_exists($this, "reviewCount"))
-            $this->reviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
+            $this->reviewCount = $this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and reviewSubmitted>0");
         return (int) $this->reviewCount;
     }
 
     public function num_reviews_assigned() {
         if (!property_exists($this, "startedReviewCount"))
-            $this->startedReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted>0 or reviewNeedsSubmit>0)");
+            $this->startedReviewCount = $this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted>0 or reviewNeedsSubmit>0)");
         return (int) $this->startedReviewCount;
     }
 
@@ -762,7 +757,7 @@ class PaperInfo {
             if (isset($this->reviewCount) && isset($this->startedReviewCount) && $this->reviewCount === $this->startedReviewCount)
                 $this->inProgressReviewCount = $this->reviewCount;
             else
-                $this->inProgressReviewCount = Dbl::fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted>0 or reviewModified>0)");
+                $this->inProgressReviewCount = $this->conf->fetch_ivalue("select count(*) from PaperReview where paperId=$this->paperId and (reviewSubmitted>0 or reviewModified>0)");
         }
         return (int) $this->inProgressReviewCount;
     }
@@ -778,7 +773,7 @@ class PaperInfo {
         $req = array();
         for ($i = 0; $i < count($args); $i += 2)
             $req[] = "group_concat(" . $args[$i] . " order by reviewId) " . $args[$i + 1];
-        $result = Dbl::qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and " . ($restriction ? "reviewSubmitted>0" : "true"));
+        $result = $this->conf->qe("select " . join(", ", $req) . " from PaperReview where paperId=$this->paperId and " . ($restriction ? "reviewSubmitted>0" : "true"));
         $row = $result ? $result->fetch_assoc() : null;
         foreach ($row ? : array() as $k => $v)
             $this->$k = $v;
@@ -850,14 +845,14 @@ class PaperInfo {
         $a = $this->review_cid_int_array($restriction, $basek, $k);
         if ($a !== false || $count)
             return $a;
-        $result = Dbl::qe("select * from PaperReview where reviewWordCount is null and paperId=$this->paperId");
+        $result = $this->conf->qe("select * from PaperReview where reviewWordCount is null and paperId=$this->paperId");
         $rf = ReviewForm::get();
         $qs = [];
         while (($rrow = edb_orow($result)))
             $qs[] = "update PaperReview set reviewWordCount=" . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
         Dbl::free($result);
         if (count($qs)) {
-            $mresult = Dbl::multi_qe(join(";", $qs));
+            $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
             while (($result = $mresult->next()))
                 Dbl::free($result);
             unset($this->reviewWordCounts, $this->allReviewWordCounts);
@@ -925,7 +920,6 @@ class PaperInfo {
     }
 
     public function can_view_review_identity_of($cid, $contact, $forceShow = null) {
-        global $Conf;
         if ($contact->can_administer($this, $forceShow)
             || $cid == $contact->contactId)
             return true;
@@ -935,7 +929,7 @@ class PaperInfo {
             $need = array("contactId", "reviewContactIds",
                           "requestedBy", "reviewRequestedBys",
                           "reviewType", "reviewTypes");
-            if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL)
+            if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL)
                 array_push($need, "reviewBlind", "reviewBlinds");
             if ($contact->review_tokens())
                 array_push($need, "reviewToken", "reviewTokens");
@@ -964,7 +958,7 @@ class PaperInfo {
     }
 
     public function fetch_comments($where) {
-        $result = Dbl::qe("select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
+        $result = $this->conf->qe("select PaperComment.*, firstName reviewFirstName, lastName reviewLastName, email reviewEmail
             from PaperComment join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
             where $where order by commentId");
         $comments = array();
@@ -986,8 +980,6 @@ class PaperInfo {
 
 
     public function notify($notifytype, $callback, $contact) {
-        global $Conf;
-
         $q = "select ContactInfo.contactId, firstName, lastName, email,
                 password, contactTags, roles, defaultWatch,
                 PaperReview.reviewType myReviewType,
@@ -1007,7 +999,7 @@ class PaperInfo {
             $q .= " or ContactInfo.contactId=" . $this->managerContactId;
         $q .= " order by conflictType";
 
-        $result = Dbl::qe_raw($q);
+        $result = $this->conf->qe_raw($q);
         $watchers = array();
         $lastContactId = 0;
         while ($result && ($row = Contact::fetch($result))) {

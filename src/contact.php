@@ -505,7 +505,7 @@ class Contact {
         if (isset($this->name_for_map_[$key]))
             return $this->name_for_map_[$key];
 
-        $pcm = pcMembers();
+        $pcm = $this->conf->pc_members();
         if (isset($pcm[$cid]))
             $x = $pcm[$cid];
         else if (!is_object($x) || !isset($x->email)
@@ -549,7 +549,7 @@ class Contact {
     }
 
     function ksort_cid_array(&$a) {
-        $pcm = pcMembers();
+        $pcm = $this->conf->pc_members();
         uksort($a, function ($a, $b) use ($pcm) {
             if (isset($pcm[$a]) && isset($pcm[$b]))
                 return $pcm[$a]->sort_position - $pcm[$b]->sort_position;
@@ -684,7 +684,7 @@ class Contact {
 
     function apply_capability_text($text) {
         if (preg_match(',\A([-+]?)0([1-9][0-9]*)(a)(\S+)\z,', $text, $m)
-            && ($result = Dbl::ql("select paperId, capVersion from Paper where paperId=$m[2]"))
+            && ($result = $this->conf->ql("select paperId, capVersion from Paper where paperId=$m[2]"))
             && ($row = edb_orow($result))) {
             $rowcap = $this->conf->capability_text($row, $m[3]);
             $text = substr($text, strlen($m[1]));
@@ -733,7 +733,7 @@ class Contact {
         object_replace_recursive($this->data, array_to_object_recursive($data));
         $new = $this->encode_data();
         if ($old !== $new)
-            Dbl::qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
+            $this->conf->qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
     }
 
     private function data_str() {
@@ -890,7 +890,7 @@ class Contact {
                 . " ContactInfo set "
                 . join("=?, ", array_keys($cu->qv)) . "=?"
                 . ($inserting ? "" : " where contactId=$this->contactId");;
-            if (!($result = Dbl::qe_apply($this->conf->dblink, $q, array_values($cu->qv))))
+            if (!($result = $this->conf->qe_apply($q, array_values($cu->qv))))
                 return $result;
             if ($inserting)
                 $this->contactId = $this->cid = (int) $result->insert_id;
@@ -980,7 +980,7 @@ class Contact {
 
     public function change_email($email) {
         $aupapers = self::email_authored_papers($email, $this);
-        Dbl::ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
+        $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
         if ($this->roles & Contact::ROLE_PCLIKE)
             $this->conf->invalidateCaches(array("pc" => 1));
@@ -1009,7 +1009,7 @@ class Contact {
             $q = array();
             foreach ($aupapers as $pid)
                 $q[] = "($pid, $this->contactId, " . CONFLICT_AUTHOR . ")";
-            Dbl::ql("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
+            $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values " . join(", ", $q) . " on duplicate key update conflictType=greatest(conflictType, " . CONFLICT_AUTHOR . ")");
         }
     }
 
@@ -1017,7 +1017,7 @@ class Contact {
         $old_roles = $this->roles;
         // ensure there's at least one system administrator
         if (!($new_roles & self::ROLE_ADMIN) && ($old_roles & self::ROLE_ADMIN)
-            && !(($result = Dbl::qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
+            && !(($result = $this->conf->qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
                  && edb_nrows($result) > 0))
             $new_roles |= self::ROLE_ADMIN;
         // log role change
@@ -1031,14 +1031,14 @@ class Contact {
                 $this->conf->log("Removed as $type$actor_email", $this);
         // save the roles bits
         if ($old_roles != $new_roles) {
-            Dbl::qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
+            $this->conf->qe("update ContactInfo set roles=$new_roles where contactId=$this->contactId");
             $this->assign_roles($new_roles);
         }
         return $old_roles != $new_roles;
     }
 
     private function load_by_id($cid) {
-        $result = Dbl::q("select ContactInfo.* from ContactInfo where contactId=?", $cid);
+        $result = $this->conf->q("select ContactInfo.* from ContactInfo where contactId=?", $cid);
         if (($row = $result ? $result->fetch_object() : null))
             $this->merge($row);
         Dbl::free($result);
@@ -1444,7 +1444,7 @@ class Contact {
         if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;
             if ($this->contactId && !$this->is_anonymous_user())
-                Dbl::ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
+                Dbl::ql($this->conf->dblink, "update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
             if ($this->contactDbId)
                 Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
         }
@@ -1476,7 +1476,7 @@ class Contact {
             $qr = "";
             if ($this->review_tokens_)
                 $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
-            $result = Dbl::qe("select max(conf.conflictType),
+            $result = $this->conf->qe("select max(conf.conflictType),
                 r.contactId as reviewer
                 from ContactInfo c
                 left join PaperConflict conf on (conf.contactId=c.contactId)
@@ -1539,7 +1539,7 @@ class Contact {
                 $qr = "";
                 if ($this->review_tokens_)
                     $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
-                $result = Dbl::qe("select r.reviewId from PaperReview r
+                $result = $this->conf->qe("select r.reviewId from PaperReview r
                     join Paper p on (p.paperId=r.paperId and p.timeSubmitted>0)
                     where (r.contactId=$this->contactId$qr)
                     and r.reviewNeedsSubmit!=0 limit 1");
@@ -1556,7 +1556,7 @@ class Contact {
         if (!isset($this->is_requester_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = Dbl::qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
+                $result = $this->conf->qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
             $row = edb_row($result);
             $this->is_requester_ = $row && $row[0] > 1;
         }
@@ -1568,7 +1568,7 @@ class Contact {
         if (!isset($this->is_lead_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = Dbl::qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+                $result = $this->conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
             $this->is_lead_ = edb_nrows($result) > 0;
         }
         return $this->is_lead_;
@@ -1579,7 +1579,7 @@ class Contact {
         if (!isset($this->is_explicit_manager_)) {
             $result = null;
             if ($this->contactId > 0 && $this->isPC)
-                $result = Dbl::qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
+                $result = $this->conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
             $this->is_explicit_manager_ = edb_nrows($result) > 0;
             Dbl::free($result);
         }
@@ -1645,9 +1645,9 @@ class Contact {
             return array();
         if (($this->roles & self::ROLE_PCLIKE)
             && $this !== $Me
-            && ($pcm = pcMembers())
+            && ($pcm = $this->conf->pc_members())
             && $this === get($pcm, $this->contactId)) {
-            $result = Dbl::qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
+            $result = $this->conf->qe("select contactId, topicId, interest from TopicInterest where interest!=0 order by contactId");
             foreach ($pcm as $pc)
                 $pc->topic_interest_map_ = array();
             $pc = null;
@@ -1659,7 +1659,7 @@ class Contact {
             }
             Dbl::free($result);
         } else {
-            $result = Dbl::qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
+            $result = $this->conf->qe("select topicId, interest from TopicInterest where contactId={$this->contactId} and interest!=0");
             $this->topic_interest_map_ = Dbl::fetch_iimap($result);
         }
         return $this->topic_interest_map_;
@@ -2847,7 +2847,7 @@ class Contact {
             else
                 $q .= "\nleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=$this->contactId)
                 where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId)";
-            $result = Dbl::qe($q, $this->conf->track_tags());
+            $result = $this->conf->qe($q, $this->conf->track_tags());
             while ($result && ($prow = PaperInfo::fetch($result, $this)))
                 if ((int) $prow->reviewType >= REVIEW_PC
                     || $this->conf->check_tracks($prow, $this, Track::VIEW))
@@ -2868,7 +2868,7 @@ class Contact {
                 where p.timeSubmitted>0 and (pc.conflictType is null or p.managerContactId=$this->contactId or p.managerContactId=0)";
         else
             $q = "select p.paperId from Paper p where p.timeSubmitted>0";
-        $result = Dbl::qe($q);
+        $result = $this->conf->qe($q);
         while (($row = edb_row($result)))
             $pids[] = (int) $row[0];
         Dbl::free($result);
@@ -3196,7 +3196,7 @@ class Contact {
 
     function assign_review($pid, $reviewer_cid, $type, $extra = array()) {
         global $Now;
-        $result = Dbl::qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+        $result = $this->conf->qe("select reviewId, reviewType, reviewRound, reviewModified, reviewToken, requestedBy, reviewSubmitted from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
         $rrow = edb_orow($result);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
@@ -3232,7 +3232,7 @@ class Contact {
         else
             return $reviewId;
 
-        if (!($result = Dbl::qe_raw($q)))
+        if (!($result = $this->conf->qe_raw($q)))
             return false;
 
         if ($q[0] == "d") {
@@ -3248,9 +3248,9 @@ class Contact {
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($q[0] == "i") {
-            Dbl::ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
+            $this->conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
             if (($req_email = get($extra, "requested_email")))
-                Dbl::qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
+                $this->conf->qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
             if ($type < REVIEW_SECONDARY)
                 self::update_review_delegation($pid, $new_requester_cid, 1);
         } else if ($q[0] == "d") {
@@ -3315,9 +3315,9 @@ class Contact {
 
         // make assignments
         if (isset($extra["old_cid"]))
-            $result = Dbl::qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px) . " and {$type}ContactId=?", $revcid, $extra["old_cid"]);
+            $result = $this->conf->qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px) . " and {$type}ContactId=?", $revcid, $extra["old_cid"]);
         else
-            $result = Dbl::qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px), $revcid);
+            $result = $this->conf->qe("update Paper set {$type}ContactId=? where paperId" . sql_in_numeric_set($px), $revcid);
 
         // log, update settings
         if ($result && $result->affected_rows) {
