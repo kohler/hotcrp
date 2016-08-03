@@ -4,20 +4,19 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Multiconference {
-
     static function init() {
         global $Opt;
 
-        $confid = @$Opt["confid"];
+        $confid = get($Opt, "confid");
         if (!$confid && PHP_SAPI == "cli") {
             $cliopt = getopt("n:", array("name:"));
-            if (@$cliopt["n"])
+            if (get($cliopt, "n"))
                 $confid = $cliopt["n"];
-            else if (@$cliopt["name"])
+            else if (get($cliopt, "name"))
                 $confid = $cliopt["name"];
         } else if (!$confid) {
             $base = Navigation::site_absolute(true);
-            if (($multis = @$Opt["multiconferenceAnalyzer"])) {
+            if (($multis = get($Opt, "multiconferenceAnalyzer"))) {
                 foreach (is_array($multis) ? $multis : array($multis) as $multi) {
                     list($match, $replace) = explode(" ", $multi);
                     if (preg_match("`\\A$match`", $base, $m)) {
@@ -31,7 +30,7 @@ class Multiconference {
                 $confid = $m[1];
         }
 
-        if (!@$confid)
+        if (!$confid)
             $confid = "__nonexistent__";
         else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid))
             $confid = "__invalid__";
@@ -39,7 +38,7 @@ class Multiconference {
         foreach (array("dbName", "dbUser", "dbPassword", "dsn") as $k)
             if (isset($Opt[$k]) && is_string($Opt[$k]))
                 $Opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confid, $Opt[$k]);
-        if (!@$Opt["dbName"] && !@$Opt["dsn"])
+        if (!get($Opt, "dbName") && !get($Opt, "dsn"))
             $Opt["dbName"] = $confid;
         $Opt["confid"] = $confid;
     }
@@ -49,15 +48,15 @@ class Multiconference {
 
         if (is_string($errors))
             $errors = array($errors);
-        if (@$Opt["maintenance"])
+        if (get($Opt, "maintenance"))
             $errors = array("The site is down for maintenance. " . (is_string($Opt["maintenance"]) ? $Opt["maintenance"] : "Please check back later."));
 
         if (PHP_SAPI == "cli") {
             fwrite(STDERR, join("\n", $errors) . "\n");
             exit(1);
-        } else if (@$_REQUEST["ajax"]) {
-            header("Content-Type: " . (@$_REQUEST["jsontext"] ? "text/plain" : "application/json"));
-            if (@$Opt["maintenance"])
+        } else if (get($_GET, "ajax")) {
+            header("Content-Type: " . (get($_GET, "jsontext") ? "text/plain" : "application/json"));
+            if (get($Opt, "maintenance"))
                 echo "{\"error\":\"maintenance\"}\n";
             else
                 echo "{\"error\":\"unconfigured installation\"}\n";
@@ -80,19 +79,19 @@ class Multiconference {
     static function fail_bad_options() {
         global $Opt;
         $errors = array();
-        if (@$Opt["multiconference"] && $Opt["confid"] === "__nonexistent__")
+        if (get($Opt, "multiconference") && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
-        else if (@$Opt["multiconference"])
+        else if (get($Opt, "multiconference"))
             $errors[] = "The “" . $Opt["confid"] . "” conference does not exist. Check your URL to make sure you spelled it correctly.";
-        else if (!@$Opt["loaded"])
+        else if (!get($Opt, "loaded"))
             $errors[] = "HotCRP has been installed, but not yet configured. You must run `lib/createdb.sh` to create a database for your conference. See `README.md` for further guidance.";
         else
             $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
-        if (!@$Opt["loaded"] && defined("HOTCRP_OPTIONS"))
+        if (!get($Opt, "loaded") && defined("HOTCRP_OPTIONS"))
             $errors[] = "Error: Unable to load options file `" . HOTCRP_OPTIONS . "`";
-        else if (!@$Opt["loaded"])
+        else if (!get($Opt, "loaded"))
             $errors[] = "Error: Unable to load options file";
-        if (@$Opt["missing"])
+        if (get($Opt, "missing"))
             $errors[] = "Error: Unable to load options from " . commajoin($Opt["missing"]);
         self::fail_message($errors);
     }
@@ -100,9 +99,9 @@ class Multiconference {
     static function fail_bad_database() {
         global $Conf, $Opt;
         $errors = array();
-        if (@$Opt["multiconference"] && $Opt["confid"] === "__nonexistent__")
+        if (get($Opt, "multiconference") && $Opt["confid"] === "__nonexistent__")
             $errors[] = "You haven’t specified a conference and this is a multiconference installation.";
-        else if (@$Opt["multiconference"])
+        else if (get($Opt, "multiconference"))
             $errors[] = "The “" . $Opt["confid"] . "” conference does not exist. Check your URL to make sure you spelled it correctly.";
         else {
             $errors[] = "HotCRP was unable to load. A system administrator must fix this problem.";
@@ -112,5 +111,4 @@ class Multiconference {
         }
         self::fail_message($errors);
     }
-
 }
