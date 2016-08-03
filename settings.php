@@ -763,7 +763,7 @@ $Group = $_REQUEST["group"] = $_GET["group"] = choose_setting_group();
 $_SESSION["sg"] = $Group;
 
 // maybe set $Opt["contactName"] and $Opt["contactEmail"]
-Contact::site_contact();
+$Conf->site_contact();
 
 
 function parseGrace($v) {

@@ -11,7 +11,7 @@ if ($Me->is_empty())
 $Me->set_forceShow(true);
 $Error = array();
 // ensure site contact exists before locking tables
-Contact::site_contact();
+$Conf->site_contact();
 
 
 // header

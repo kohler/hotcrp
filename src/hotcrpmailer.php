@@ -482,7 +482,7 @@ class HotCRPMailer extends Mailer {
         if (!isset($rest["cc"]) && opt("emailCc"))
             $rest["cc"] = opt("emailCc");
         else if (!isset($rest["cc"]))
-            $rest["cc"] = Text::user_email_to(Contact::site_contact());
+            $rest["cc"] = Text::user_email_to($Conf->site_contact());
 
         // must set the current conflict type in $row for each contact
         $contact_info_map = $row->replace_contact_info_map(null);
@@ -512,7 +512,7 @@ class HotCRPMailer extends Mailer {
             && ($c = Contact::find_by_id($row->managerContactId)))
             self::send_to($c, $template, $row, $rest);
         else
-            self::send_to(Contact::site_contact(), $template, $row, $rest);
+            self::send_to($Conf->site_contact(), $template, $row, $rest);
     }
 
 }

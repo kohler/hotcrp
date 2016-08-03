@@ -147,11 +147,11 @@ class Mailer {
         if ($what == "%SIGNATURE%")
             return $Conf->opt->emailSignature ? : "- " . $Conf->short_name . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
-            return $this->expand_user(Contact::site_contact(), "CONTACT");
+            return $this->expand_user($Conf->site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")
-            return $this->expand_user(Contact::site_contact(), "NAME");
+            return $this->expand_user($Conf->site_contact(), "NAME");
         if ($what == "%ADMINEMAIL%" || $what == "%SITEEMAIL%")
-            return $this->expand_user(Contact::site_contact(), "EMAIL");
+            return $this->expand_user($Conf->site_contact(), "EMAIL");
         if ($what == "%URL%")
             return $Conf->opt->paperSite;
         else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {

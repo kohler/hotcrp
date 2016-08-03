@@ -430,6 +430,26 @@ class Conf {
     }
 
 
+    function site_contact() {
+        $contactEmail = $this->opt("contactEmail");
+        if (!$contactEmail || $contactEmail == "you@example.com") {
+            $result = Dbl::ql($this->dblink, "select firstName, lastName, email from ContactInfo where (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
+            if ($result && ($row = $result->fetch_object())) {
+                $this->set_opt("defaultSiteContact", true);
+                $this->set_opt("contactName", Text::name_text($row));
+                $this->set_opt("contactEmail", $row->email);
+            }
+            Dbl::free($result);
+        }
+        return new Contact((object) array("fullName" => $this->opt["contactName"],
+                                          "email" => $this->opt["contactEmail"],
+                                          "isChair" => true,
+                                          "isPC" => true,
+                                          "is_site_contact" => true,
+                                          "contactTags" => null), $this);
+    }
+
+
     function decision_map() {
         if ($this->_decisions === null) {
             $this->_decisions = array();
