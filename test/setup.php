@@ -8,7 +8,7 @@ $ConfSitePATH = preg_replace(",/[^/]+/[^/]+$,", "", __FILE__);
 define("HOTCRP_OPTIONS", "$ConfSitePATH/test/options.php");
 define("HOTCRP_TESTHARNESS", true);
 require_once("$ConfSitePATH/src/init.php");
-$Opt["disablePrintEmail"] = true;
+$Conf->set_opt("disablePrintEmail", true);
 
 function die_hard($message) {
     fwrite(STDERR, $message);

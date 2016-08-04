@@ -215,7 +215,7 @@ class DocumentInfo implements JsonSerializable {
             "update PaperStorage set infoJson=?{desired} where paperStorageId=? and infoJson?{expected}e", [$this->paperStorageId]);
         $this->infoJson = is_string($this->infoJson_str) ? json_decode($this->infoJson_str) : null;
         if (!$length_ok && !$quiet)
-            error_log(caller_landmark() . ": " . $Conf->opt->dbName . ": update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
+            error_log(caller_landmark() . ": $Conf->dbName: update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
         return $length_ok;
     }
 

@@ -171,11 +171,10 @@ class Si {
     }
 
     static public function initialize() {
-        global $ConfSitePATH, $Opt;
+        global $ConfSitePATH;
         $fname = "$ConfSitePATH/src/settinginfo.json";
         $info = self::read([], file_get_contents($fname), $fname);
-        if (isset($Opt["settinginfo_include"])
-            && ($settinginfo_include = $Opt["settinginfo_include"])) {
+        if (($settinginfo_include = opt("settinginfo_include"))) {
             if (!is_array($settinginfo_include))
                 $settinginfo_include = array($settinginfo_include);
             foreach ($settinginfo_include as $k => $si) {
@@ -437,13 +436,13 @@ class SettingValues {
             return $this->si_oldv($si, $default_value);
     }
     private function si_oldv($si, $default_value) {
-        global $Conf, $Opt;
+        global $Conf;
         if ($default_value === null)
             $default_value = $si->default_value;
         if (isset($this->explicit_oldv[$si->name]))
             $val = $this->explicit_oldv[$si->name];
         else if ($si->storage_type & Si::SI_OPT)
-            $val = get($Opt, substr($si->storage(), 4), $default_value);
+            $val = $Conf->opt(substr($si->storage(), 4), $default_value);
         else if ($si->storage_type & Si::SI_DATA)
             $val = $Conf->setting_data($si->storage(), $default_value);
         else
@@ -910,8 +909,8 @@ function truthy($x) {
 }
 
 function opt_yes_no_optional($name) {
-    global $Opt;
-    if (($x = get($Opt, $name)) === 1 || $x === true)
+    global $Conf;
+    if (($x = $Conf->opt($name)) === 1 || $x === true)
         return 1;
     if ($x === 2)
         return 2;
@@ -942,7 +941,7 @@ function account_value($sv, $si1) {
 }
 
 function do_setting_update($sv) {
-    global $Conf, $Group, $Now, $Opt, $OptOverride;
+    global $Conf, $Group, $Now;
     // parse settings
     foreach (Si::$all as $si)
         account_value($sv, $si);
@@ -960,12 +959,12 @@ function do_setting_update($sv) {
         }
     if ($sv->has_savedv("sub_sub"))
         $sv->save("sub_update", $sv->savedv("sub_sub"));
-    if (get($Opt, "defaultSiteContact")) {
+    if (opt("defaultSiteContact")) {
         if ($sv->has_savedv("opt.contactName")
-            && get($Opt, "contactName") === $sv->savedv("opt.contactName"))
+            && opt("contactName") === $sv->savedv("opt.contactName"))
             $sv->save("opt.contactName", null);
         if ($sv->has_savedv("opt.contactEmail")
-            && get($Opt, "contactEmail") === $sv->savedv("opt.contactEmail"))
+            && opt("contactEmail") === $sv->savedv("opt.contactEmail"))
             $sv->save("opt.contactEmail", null);
     }
     if ($sv->has_savedv("resp_active") && $sv->savedv("resp_active"))
@@ -1026,12 +1025,13 @@ function do_setting_update($sv) {
         foreach ($sv->savedv as $n => $v) {
             if (substr($n, 0, 4) === "opt." && $v !== null) {
                 $okey = substr($n, 4);
-                $oldv = (array_key_exists($okey, $OptOverride) ? $OptOverride[$okey] : get($Opt, $okey));
-                $Opt[$okey] = ($v[1] === null ? $v[0] : $v[1]);
-                if ($oldv === $Opt[$okey])
+                if (array_key_exists($okey, $Conf->opt_override))
+                    $oldv = $Conf->opt_override[$okey];
+                else
+                    $oldv = $Conf->opt($okey);
+                $newv = ($v[1] === null ? $v[0] : $v[1]);
+                if ($oldv === $newv)
                     $v = null; // delete override value in database
-                else if (!array_key_exists($okey, $OptOverride))
-                    $OptOverride[$okey] = $oldv;
             }
             if ($v === null
                 ? !isset($dbsettings[$n])
@@ -1059,9 +1059,8 @@ function do_setting_update($sv) {
         $Conf->load_settings();
 
         // contactdb may need to hear about changes to shortName
-        if ($sv->has_savedv("opt.shortName")
-            && get($Opt, "contactdb_dsn") && ($cdb = Contact::contactdb()))
-            Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Opt["shortName"], $Opt["dbName"]);
+        if ($sv->has_savedv("opt.shortName") && ($cdb = Contact::contactdb()))
+            Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Conf->short_name, $Conf->dbname);
     }
 
     // update the review form in case it's changed

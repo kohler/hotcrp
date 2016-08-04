@@ -7,7 +7,7 @@ class LoginHelper {
 
     static function logout($explicit) {
         global $Me, $Conf;
-        if (!$Me->is_empty() && $explicit && !isset($Conf->opt->httpAuthLogin))
+        if (!$Me->is_empty() && $explicit && !$Conf->opt("httpAuthLogin"))
             $Conf->confirmMsg("You have been signed out. Thanks for using the system.");
         unset($_SESSION["trueuser"]);
         unset($_SESSION["last_actas"]);
@@ -18,7 +18,7 @@ class LoginHelper {
             $Conf->save_session("capabilities", $capabilities);
         if ($explicit) {
             unset($_SESSION["login_bounce"]);
-            if (isset($Conf->opt->httpAuthLogin)) {
+            if ($Conf->opt("httpAuthLogin")) {
                 $_SESSION["reauth"] = true;
                 go("");
             }
@@ -29,14 +29,14 @@ class LoginHelper {
 
     static function check_http_auth() {
         global $Conf, $Me;
-        assert(isset($Conf->opt->httpAuthLogin));
+        assert($Conf->opt("httpAuthLogin"));
 
         // if user signed out of HTTP authentication, send a reauth request
         if (isset($_SESSION["reauth"])) {
             unset($_SESSION["reauth"]);
             header("HTTP/1.0 401 Unauthorized");
-            if (is_string($Conf->opt->httpAuthLogin))
-                header("WWW-Authenticate: " . $Conf->opt->httpAuthLogin);
+            if (is_string($Conf->opt("httpAuthLogin")))
+                header("WWW-Authenticate: " . $Conf->opt("httpAuthLogin"));
             else
                 header("WWW-Authenticate: Basic realm=\"HotCRP\"");
             exit;
@@ -56,9 +56,9 @@ class LoginHelper {
         $_REQUEST["email"] = $_SERVER["REMOTE_USER"];
         if (validate_email($_REQUEST["email"]))
             $_REQUEST["preferredEmail"] = $_REQUEST["email"];
-        else if (isset($Conf->opt->defaultEmailDomain)
-                 && validate_email($_REQUEST["email"] . "@" . $Conf->opt->defaultEmailDomain))
-            $_REQUEST["preferredEmail"] = $_REQUEST["email"] . "@" . $Conf->opt->defaultEmailDomain;
+        else if (($x = $Conf->opt("defaultEmailDomain"))
+                 && validate_email($_REQUEST["email"] . "@" . $x))
+            $_REQUEST["preferredEmail"] = $_REQUEST["email"] . "@" . $x;
         $_REQUEST["action"] = "login";
         if (!self::check_login()) {
             $Conf->footer();
@@ -81,7 +81,7 @@ class LoginHelper {
         if (!isset($_REQUEST["email"])
             || ($_REQUEST["email"] = trim($_REQUEST["email"])) == "") {
             $email_class = " error";
-            if (isset($Conf->opt->ldapLogin))
+            if ($Conf->opt("ldapLogin"))
                 return Conf::msg_error("Enter your LDAP username.");
             else
                 return Conf::msg_error("Enter your email address.");
@@ -102,7 +102,7 @@ class LoginHelper {
             return Conf::msg_error("You appear to have disabled cookies in your browser, but this site needs to set cookies to function.  Google has <a href='http://www.google.com/cookies.html'>an informative article on how to enable them</a>.");
 
         // do LDAP login before validation, since we might create an account
-        if (isset($Conf->opt->ldapLogin)) {
+        if ($Conf->opt("ldapLogin")) {
             $_REQUEST["action"] = "login";
             if (!self::ldap_login())
                 return null;
@@ -267,7 +267,7 @@ class LoginHelper {
     static private function first_user($user, $msg) {
         global $Conf;
         $msg .= " As the first user, you have been automatically signed in and assigned system administrator privilege.";
-        if (!isset($Conf->opt->ldapLogin) && !isset($Conf->opt->httpAuthLogin))
+        if (!$Conf->external_login())
             $msg .= " Your password is “<samp>" . htmlspecialchars($user->plaintext_password()) . "</samp>”. All later users will have to sign in normally.";
         $user->save_roles(Contact::ROLE_ADMIN, null);
         $Conf->save_setting("setupPhase", null);

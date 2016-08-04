@@ -3,17 +3,6 @@
 // HotCRP is Copyright (c) 2006-2016 Eddie Kohler and Regents of the UC
 // Distributed under an MIT-like license; see LICENSE
 
-// set MAILER_EOL
-global $Opt;
-if (!isset($Opt["postfixMailer"]) && isset($Opt["postfixEOL"]))
-    $Opt["postfixMailer"] = $Opt["postfixEOL"];
-if (!isset($Opt["postfixMailer"]) || !$Opt["postfixMailer"])
-    define("MAILER_EOL", "\r\n");
-else if ($Opt["postfixMailer"] === true)
-    define("MAILER_EOL", PHP_EOL);
-else
-    define("MAILER_EOL", $Opt["postfixMailer"]);
-
 class MailPreparation {
     public $subject = "";
     public $body = "";
@@ -48,6 +37,8 @@ class Mailer {
 
     protected $_unexpanded = array();
 
+    static private $eol = null;
+
     function __construct($recipient = null, $settings = array()) {
         $this->reset($recipient, $settings);
     }
@@ -61,6 +52,21 @@ class Mailer {
             $this->width = 75;
         else if (!$this->width)
             $this->width = 10000000;
+    }
+
+    static function eol() {
+        global $Conf;
+        if (self::$eol === null) {
+            if (($x = $Conf->opt("postfixMailer")) === null)
+                $x = $Conf->opt("postfixEOL");
+            if (!$x)
+                self::$eol = "\r\n";
+            else if ($x === true || !is_string($x))
+                self::$eol = PHP_EOL;
+            else
+                self::$eol = $x;
+        }
+        return self::$eol;
     }
 
 
@@ -145,7 +151,7 @@ class Mailer {
         if ($what == "%CONFLONGNAME%")
             return $Conf->long_name;
         if ($what == "%SIGNATURE%")
-            return $Conf->opt->emailSignature ? : "- " . $Conf->short_name . " Submissions";
+            return $Conf->opt("emailSignature") ? : "- " . $Conf->short_name . " Submissions";
         if ($what == "%ADMIN%" || $what == "%SITECONTACT%")
             return $this->expand_user($Conf->site_contact(), "CONTACT");
         if ($what == "%ADMINNAME%")
@@ -153,7 +159,7 @@ class Mailer {
         if ($what == "%ADMINEMAIL%" || $what == "%SITEEMAIL%")
             return $this->expand_user($Conf->site_contact(), "EMAIL");
         if ($what == "%URL%")
-            return $Conf->opt->paperSite;
+            return $Conf->opt("paperSite");
         else if ($len > 7 && substr($what, 0, 5) == "%URL(" && substr($what, $len - 2) == ")%") {
             $a = preg_split('/\s*,\s*/', substr($what, 5, $len - 7));
             for ($i = 0; $i < count($a); ++$i) {
@@ -174,8 +180,8 @@ class Mailer {
         }
 
         if ($what == "%LOGINNOTICE%") {
-            if ($Conf->opt->disableCapabilities)
-                return $this->expand(get($Conf->opt, "mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
+            if ($Conf->opt("disableCapabilities"))
+                return $this->expand($Conf->opt("mailtool_loginNotice", " To sign in, either click the link below or paste it into your web browser's location field.\n\n%LOGINURL%"), $isbool);
             else
                 return "";
         }
@@ -195,7 +201,7 @@ class Mailer {
             return $result;
 
         // exit if no recipient
-        $external_password = isset($Conf->opt->ldapLogin) || isset($Conf->opt->httpAuthLogin);
+        $external_password = $Conf->external_login();
         if (!$this->recipient) {
             if ($isbool && $what == "%PASSWORD%" && $external_password)
                 return false;
@@ -214,13 +220,13 @@ class Mailer {
                     $password = "HIDDEN";
             }
             $loginparts = "";
-            if (!isset($Conf->opt->httpAuthLogin)) {
+            if (!$Conf->opt("httpAuthLogin")) {
                 $loginparts = "email=" . urlencode($this->recipient->email);
                 if ($password)
                     $loginparts .= "&password=" . urlencode($password);
             }
             if ($what == "%LOGINURL%")
-                return $Conf->opt->paperSite . ($loginparts ? "/?" . $loginparts : "/");
+                return $Conf->opt("paperSite") . ($loginparts ? "/?" . $loginparts : "/");
             else if ($what == "%LOGINURLPARTS%")
                 return $loginparts;
             else
@@ -406,7 +412,7 @@ class Mailer {
 
     static function allow_send($email) {
         global $Conf;
-        return $Conf->opt->sendEmail
+        return $Conf->opt("sendEmail")
             && ($at = strpos($email, "@")) !== false
             && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
                 || !preg_match(';\A(?:_.*|example\.(?:com|net|org))\z;i', substr($email, $at + 1)));
@@ -452,21 +458,22 @@ class Mailer {
         $prep->sendable = self::allow_send($recipient->email);
 
         // parse headers
-        if (!$Conf->opt->emailFromHeader)
-            $Conf->opt->emailFromHeader = MimeText::encode_email_header("From: ", $Conf->opt->emailFrom);
-        $prep->headers = array("from" => $Conf->opt->emailFromHeader . MAILER_EOL, "subject" => $subject . MAILER_EOL, "to" => "");
+        if (!$Conf->opt("emailFromHeader"))
+            $Conf->set_opt("emailFromHeader", MimeText::encode_email_header("From: ", $Conf->opt("emailFrom")));
+        $eol = self::eol();
+        $prep->headers = array("from" => $Conf->opt("emailFromHeader") . $eol, "subject" => $subject . $eol, "to" => "");
         foreach (self::$email_fields as $lcfield => $field)
             if (($text = get_s($m, $lcfield)) !== "" && $text !== "<none>") {
                 if (($hdr = MimeText::encode_email_header($field . ": ", $text)))
-                    $prep->headers[$lcfield] = $hdr . MAILER_EOL;
+                    $prep->headers[$lcfield] = $hdr . $eol;
                 else {
                     $prep->errors[$lcfield] = $text;
                     if (!get($rest, "no_error_quit"))
                         Conf::msg_error("$field destination “<samp>" . htmlspecialchars($text) . "</samp>” isn't a valid email list.");
                 }
             }
-        $prep->headers["mime-version"] = "MIME-Version: 1.0" . MAILER_EOL;
-        $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . MAILER_EOL;
+        $prep->headers["mime-version"] = "MIME-Version: 1.0" . $eol;
+        $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8" . $eol;
 
         if ($prep->errors && !get($rest, "no_error_quit"))
             return false;
@@ -492,41 +499,42 @@ class Mailer {
 
     static function send_preparation($prep) {
         global $Conf;
-        if (!isset($Conf->opt->internalMailer))
-            $Conf->opt->internalMailer = strncasecmp(PHP_OS, "WIN", 3) != 0;
+        if ($Conf->opt("internalMailer") === null)
+            $Conf->set_opt("internalMailer", strncasecmp(PHP_OS, "WIN", 3) != 0);
         $headers = $prep->headers;
+        $eol = self::eol();
 
         // create valid To: header
         $to = $prep->to;
         if (is_array($to))
             $to = join(", ", $to);
         $to = MimeText::encode_email_header("To: ", $to);
-        $headers["to"] = $to . MAILER_EOL;
+        $headers["to"] = $to . $eol;
 
         // set sendmail parameters
-        $extra = get_s($Conf->opt, "sendmailParam");
-        if (isset($Conf->opt->emailSender)) {
-            @ini_set("sendmail_from", $Conf->opt->emailSender);
-            if (!isset($Conf->opt->sendmailParam))
-                $extra = "-f" . escapeshellarg($Conf->opt->emailSender);
+        $extra = $Conf->opt("sendmailParam");
+        if (($sender = $Conf->opt("emailSender")) !== null) {
+            @ini_set("sendmail_from", $sender);
+            if ($extra === null)
+                $extra = "-f" . escapeshellarg($sender);
         }
 
-        if ($prep->sendable && $Conf->opt->internalMailer
+        if ($prep->sendable && $Conf->opt("internalMailer")
             && ($sendmail = ini_get("sendmail_path"))) {
             $htext = join("", $headers);
             $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
-            fwrite($f, $htext . MAILER_EOL . $prep->body);
+            fwrite($f, $htext . $eol . $prep->body);
             $status = pclose($f);
             if (pcntl_wifexited($status) && pcntl_wexitstatus($status) == 0)
                 return true;
             else {
-                $Conf->opt->internalMailer = false;
+                $Conf->set_opt("internalMailer", false);
                 error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
             }
         }
 
         if ($prep->sendable) {
-            if (strpos($to, MAILER_EOL) === false) {
+            if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
             } else
@@ -535,14 +543,14 @@ class Mailer {
             $htext = substr(join("", $headers), 0, -2);
             return mail($to, $prep->subject, $prep->body, $htext, $extra);
 
-        } else if (!$Conf->opt->sendEmail
+        } else if (!$Conf->opt("sendEmail")
                    && !preg_match('/\Aanonymous\d*\z/', $to)) {
             unset($headers["mime-version"], $headers["content-type"]);
-            $text = join("", $headers) . MAILER_EOL . $prep->body;
-            if (PHP_SAPI == "cli" && !get($Conf->opt, "disablePrintEmail"))
-                fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
-            else
+            $text = join("", $headers) . $eol . $prep->body;
+            if (PHP_SAPI != "cli")
                 $Conf->infoMsg("<pre>" . htmlspecialchars($text) . "</pre>");
+            else if (!$Conf->opt("disablePrintEmail"))
+                fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             return null;
         }
     }
@@ -573,7 +581,6 @@ class Mailer {
 }
 
 class MimeText {
-
     /// Quote potentially non-ASCII header text a la RFC2047 and/or RFC822.
     static function append(&$result, &$linelen, $str, $utf8) {
         if ($utf8) {
@@ -606,7 +613,7 @@ class MimeText {
             $maxlinelen = ($utf8 ? 76 - 12 : 78);
             if (($linelen + $z > $maxlinelen && $linelen > 30)
                 || ($utf8 && substr($result, strlen($result) - 2) == "?=")) {
-                $result .= MAILER_EOL . " ";
+                $result .= Mailer::eol() . " ";
                 $linelen = 1;
                 while (!$utf8 && $xstr !== "" && ctype_space($xstr[0])) {
                     $xstr = substr($xstr, 1);

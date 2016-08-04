@@ -232,11 +232,10 @@ function update_schema_drop_keys_if_exist($table, $key) {
 }
 
 function updateSchema($Conf) {
-    global $Opt;
     // avoid error message abut timezone, set to $Opt
     // (which might be overridden by database values later)
-    if (function_exists("date_default_timezone_set") && isset($Opt["timezone"]) && $Opt["timezone"])
-        date_default_timezone_set($Opt["timezone"]);
+    if (function_exists("date_default_timezone_set") && $Conf->opt("timezone"))
+        date_default_timezone_set($Conf->opt("timezone"));
     while (($result = Dbl::ql("insert into Settings set name='__schema_lock', value=1 on duplicate key update value=1"))
            && $result->affected_rows == 0)
         time_nanosleep(0, 200000000);

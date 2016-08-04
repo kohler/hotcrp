@@ -28,6 +28,9 @@ class Conf {
     private $_pc_seeall_cache = null;
     private $_pc_see_pdf = null;
 
+    public $dbname;
+    public $dsn = null;
+
     public $short_name;
     public $long_name;
     public $default_format;
@@ -36,6 +39,7 @@ class Conf {
     public $tag_au_seerev;
     public $tag_seeall;
     public $opt;
+    public $opt_override = null;
     public $paper_opts;
 
     private $save_messages = true;
@@ -54,7 +58,7 @@ class Conf {
     private $_pc_members_cache = null;
     private $_pc_members_cache_by_last = null;
     private $_pc_tags_cache = null;
-    public $dsn = null;
+    private $_date_format_initialized = false;
 
     public $paper = null; // current paper row
 
@@ -84,13 +88,13 @@ class Conf {
 
     static public $review_deadlines = array("pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard");
 
-    function __construct($dsn) {
-        global $Opt;
+    function __construct($options, $make_dsn) {
         // unpack dsn, connect to database, load current settings
-        if (($this->dsn = $dsn))
-            list($this->dblink, $Opt["dbName"]) = Dbl::connect_dsn($this->dsn);
-        if (!isset($Opt["confid"]))
-            $Opt["confid"] = get($Opt, "dbName");
+        if ($make_dsn && ($this->dsn = Dbl::make_dsn($options)))
+            list($this->dblink, $options["dbName"]) = Dbl::connect_dsn($this->dsn);
+        if (!isset($options["confid"]))
+            $options["confid"] = get($options, "dbName");
+        $this->opt = $options;
         $this->paper_opts = new PaperOptionList($this);
         if ($this->dblink) {
             Dbl::set_default_dblink($this->dblink);
@@ -107,11 +111,18 @@ class Conf {
     //
 
     function load_settings() {
-        global $Opt, $OptOverride, $Now;
+        global $Now;
 
         // load settings from database
         $this->settings = array();
         $this->settingTexts = array();
+        foreach ($this->opt_override ? : [] as $k => $v) {
+            if ($v === null)
+                unset($this->opt[$k]);
+            else
+                $this->opt[$k] = $v;
+        }
+        $this->opt_override = [];
 
         $result = $this->q_raw("select name, value, data from Settings");
         while ($result && ($row = $result->fetch_row())) {
@@ -120,9 +131,8 @@ class Conf {
                 $this->settingTexts[$row[0]] = $row[2];
             if (substr($row[0], 0, 4) == "opt.") {
                 $okey = substr($row[0], 4);
-                if (!array_key_exists($okey, $OptOverride))
-                    $OptOverride[$okey] = get($Opt, $okey);
-                $Opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
+                $this->opt_override[$okey] = get($this->opt, $okey);
+                $this->opt[$okey] = ($row[2] === null ? (int) $row[1] : $row[2]);
             }
         }
         Dbl::free($result);
@@ -147,26 +157,26 @@ class Conf {
             $this->invalidateCaches(array("rf" => true));
 
         // update options
-        if (isset($Opt["ldapLogin"]) && !$Opt["ldapLogin"])
-            unset($Opt["ldapLogin"]);
-        if (isset($Opt["httpAuthLogin"]) && !$Opt["httpAuthLogin"])
-            unset($Opt["httpAuthLogin"]);
+        if (isset($this->opt["ldapLogin"]) && !$this->opt["ldapLogin"])
+            unset($this->opt["ldapLogin"]);
+        if (isset($this->opt["httpAuthLogin"]) && !$this->opt["httpAuthLogin"])
+            unset($this->opt["httpAuthLogin"]);
 
         // set conferenceKey
-        if (!isset($Opt["conferenceKey"])) {
+        if (!isset($this->opt["conferenceKey"])) {
             if (!isset($this->settingTexts["conf_key"])
                 && ($key = random_bytes(32)) !== false)
                 $this->save_setting("conf_key", 1, $key);
-            $Opt["conferenceKey"] = defval($this->settingTexts, "conf_key", "");
+            $this->opt["conferenceKey"] = get($this->settingTexts, "conf_key", "");
         }
 
         // set capability key
         if (!get($this->settings, "cap_key")
-            && !get($Opt, "disableCapabilities")
+            && !get($this->opt, "disableCapabilities")
             && !(($key = random_bytes(16)) !== false
                  && ($key = base64_encode($key))
                  && $this->save_setting("cap_key", 1, $key)))
-            $Opt["disableCapabilities"] = true;
+            $this->opt["disableCapabilities"] = true;
 
         // GC old capabilities
         if (defval($this->settings, "__capability_gc", 0) < $Now - 86400) {
@@ -182,7 +192,7 @@ class Conf {
     }
 
     private function crosscheck_settings() {
-        global $Opt, $Now;
+        global $Now;
 
         // enforce invariants
         foreach (array("pcrev_any", "extrev_view") as $x)
@@ -227,16 +237,16 @@ class Conf {
 
         // S3 settings
         foreach (array("s3_bucket", "s3_key", "s3_secret") as $k)
-            if (!get($this->settingTexts, $k) && get($Opt, $k))
-                $this->settingTexts[$k] = $Opt[$k];
+            if (!get($this->settingTexts, $k) && ($x = get($this->opt, $k)))
+                $this->settingTexts[$k] = $x;
         if (!get($this->settingTexts, "s3_bucket")
             || !get($this->settingTexts, "s3_key")
             || !get($this->settingTexts, "s3_secret"))
             unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
                   $this->settingTexts["s3_secret"]);
-        if (get($Opt, "dbNoPapers") && !get($Opt, "docstore")
-            && !get($Opt, "filestore") && !get($this->settingTexts, "s3_bucket"))
-            unset($Opt["dbNoPapers"]);
+        if (get($this->opt, "dbNoPapers") && !get($this->opt, "docstore")
+            && !get($this->opt, "filestore") && !get($this->opt, "s3_bucket"))
+            unset($this->opt["dbNoPapers"]);
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
@@ -289,106 +299,108 @@ class Conf {
     }
 
     private function crosscheck_options() {
-        global $Opt, $ConfSitePATH;
+        global $ConfSitePATH;
 
         // set longName, downloadPrefix, etc.
-        $confid = $Opt["confid"];
-        if ((!isset($Opt["longName"]) || $Opt["longName"] == "")
-            && (!isset($Opt["shortName"]) || $Opt["shortName"] == "")) {
-            $Opt["shortNameDefaulted"] = true;
-            $Opt["longName"] = $Opt["shortName"] = $confid;
-        } else if (!isset($Opt["longName"]) || $Opt["longName"] == "")
-            $Opt["longName"] = $Opt["shortName"];
-        else if (!isset($Opt["shortName"]) || $Opt["shortName"] == "")
-            $Opt["shortName"] = $Opt["longName"];
-        if (!isset($Opt["downloadPrefix"]) || $Opt["downloadPrefix"] == "")
-            $Opt["downloadPrefix"] = $confid . "-";
-        $this->short_name = $Opt["shortName"];
-        $this->long_name = $Opt["longName"];
+        $confid = $this->opt["confid"];
+        if ((!isset($this->opt["longName"]) || $this->opt["longName"] == "")
+            && (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "")) {
+            $this->opt["shortNameDefaulted"] = true;
+            $this->opt["longName"] = $this->opt["shortName"] = $confid;
+        } else if (!isset($this->opt["longName"]) || $this->opt["longName"] == "")
+            $this->opt["longName"] = $this->opt["shortName"];
+        else if (!isset($this->opt["shortName"]) || $this->opt["shortName"] == "")
+            $this->opt["shortName"] = $this->opt["longName"];
+        if (!isset($this->opt["downloadPrefix"]) || $this->opt["downloadPrefix"] == "")
+            $this->opt["downloadPrefix"] = $confid . "-";
+        $this->dbname = $this->opt["dbName"];
+        $this->short_name = $this->opt["shortName"];
+        $this->long_name = $this->opt["longName"];
 
         // expand ${confid}, ${confshortname}
         foreach (array("sessionName", "downloadPrefix", "conferenceSite",
                        "paperSite", "defaultPaperSite", "contactName",
                        "contactEmail", "docstore") as $k)
-            if (isset($Opt[$k]) && is_string($Opt[$k])
-                && strpos($Opt[$k], "$") !== false) {
-                $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
-                $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $Opt["shortName"], $Opt[$k]);
+            if (isset($this->opt[$k]) && is_string($this->opt[$k])
+                && strpos($this->opt[$k], "$") !== false) {
+                $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
+                $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $this->short_name, $this->opt[$k]);
             }
-        $this->download_prefix = $Opt["downloadPrefix"];
+        $this->download_prefix = $this->opt["downloadPrefix"];
 
         foreach (array("emailFrom", "emailSender", "emailCc", "emailReplyTo") as $k)
-            if (isset($Opt[$k]) && is_string($Opt[$k])
-                && strpos($Opt[$k], "$") !== false) {
-                $Opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $Opt[$k]);
-                if (strpos($Opt[$k], "confshortname") !== false) {
-                    $v = rfc2822_words_quote($Opt["shortName"]);
-                    if ($v[0] === "\"" && strpos($Opt[$k], "\"") !== false)
+            if (isset($this->opt[$k]) && is_string($this->opt[$k])
+                && strpos($this->opt[$k], "$") !== false) {
+                $this->opt[$k] = preg_replace(',\$\{confid\}|\$confid\b,', $confid, $this->opt[$k]);
+                if (strpos($this->opt[$k], "confshortname") !== false) {
+                    $v = rfc2822_words_quote($this->short_name);
+                    if ($v[0] === "\"" && strpos($this->opt[$k], "\"") !== false)
                         $v = substr($v, 1, strlen($v) - 2);
-                    $Opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $v, $Opt[$k]);
+                    $this->opt[$k] = preg_replace(',\$\{confshortname\}|\$confshortname\b,', $v, $this->opt[$k]);
                 }
             }
 
         // remove final slash from $Opt["paperSite"]
-        if (!isset($Opt["paperSite"]) || $Opt["paperSite"] == "")
-            $Opt["paperSite"] = Navigation::site_absolute();
-        if ($Opt["paperSite"] == "" && isset($Opt["defaultPaperSite"]))
-            $Opt["paperSite"] = $Opt["defaultPaperSite"];
-        $Opt["paperSite"] = preg_replace('|/+\z|', "", $Opt["paperSite"]);
+        if (!isset($this->opt["paperSite"]) || $this->opt["paperSite"] == "")
+            $this->opt["paperSite"] = Navigation::site_absolute();
+        if ($this->opt["paperSite"] == "" && isset($this->opt["defaultPaperSite"]))
+            $this->opt["paperSite"] = $this->opt["defaultPaperSite"];
+        $this->opt["paperSite"] = preg_replace('|/+\z|', "", $this->opt["paperSite"]);
 
         // option name updates (backwards compatibility)
         foreach (array("assetsURL" => "assetsUrl",
                        "jqueryURL" => "jqueryUrl", "jqueryCDN" => "jqueryCdn",
                        "disableCSV" => "disableCsv") as $kold => $knew)
-            if (isset($Opt[$kold]) && !isset($Opt[$knew]))
-                $Opt[$knew] = $Opt[$kold];
+            if (isset($this->opt[$kold]) && !isset($this->opt[$knew]))
+                $this->opt[$knew] = $this->opt[$kold];
 
         // set assetsUrl and scriptAssetsUrl
-        if (!isset($Opt["scriptAssetsUrl"]) && isset($_SERVER["HTTP_USER_AGENT"])
+        if (!isset($this->opt["scriptAssetsUrl"]) && isset($_SERVER["HTTP_USER_AGENT"])
             && strpos($_SERVER["HTTP_USER_AGENT"], "MSIE") !== false)
-            $Opt["scriptAssetsUrl"] = Navigation::siteurl();
-        if (!isset($Opt["assetsUrl"]))
-            $Opt["assetsUrl"] = Navigation::siteurl();
-        if ($Opt["assetsUrl"] !== "" && !str_ends_with($Opt["assetsUrl"], "/"))
-            $Opt["assetsUrl"] .= "/";
-        if (!isset($Opt["scriptAssetsUrl"]))
-            $Opt["scriptAssetsUrl"] = $Opt["assetsUrl"];
-        Ht::$img_base = $Opt["assetsUrl"] . "images/";
+            $this->opt["scriptAssetsUrl"] = Navigation::siteurl();
+        if (!isset($this->opt["assetsUrl"]))
+            $this->opt["assetsUrl"] = Navigation::siteurl();
+        if ($this->opt["assetsUrl"] !== "" && !str_ends_with($this->opt["assetsUrl"], "/"))
+            $this->opt["assetsUrl"] .= "/";
+        if (!isset($this->opt["scriptAssetsUrl"]))
+            $this->opt["scriptAssetsUrl"] = $this->opt["assetsUrl"];
+        Ht::$img_base = $this->opt["assetsUrl"] . "images/";
 
         // set docstore
-        if (get($Opt, "docstore") === true)
-            $Opt["docstore"] = "docs";
-        else if (!get($Opt, "docstore") && get($Opt, "filestore")) { // backwards compat
-            if (($Opt["docstore"] = $Opt["filestore"]) === true)
-                $Opt["docstore"] = "filestore";
-            $Opt["docstoreSubdir"] = get($Opt, "filestoreSubdir");
+        if (get($this->opt, "docstore") === true)
+            $this->opt["docstore"] = "docs";
+        else if (!get($this->opt, "docstore") && get($this->opt, "filestore")) { // backwards compat
+            $this->opt["docstore"] = $this->opt["filestore"];
+            if ($this->opt["docstore"] === true)
+                $this->opt["docstore"] = "filestore";
+            $this->opt["docstoreSubdir"] = get($this->opt, "filestoreSubdir");
         }
-        if (get($Opt, "docstore") && $Opt["docstore"][0] !== "/")
-            $Opt["docstore"] = $ConfSitePATH . "/" . $Opt["docstore"];
+        if (get($this->opt, "docstore") && $this->opt["docstore"][0] !== "/")
+            $this->opt["docstore"] = $ConfSitePATH . "/" . $this->opt["docstore"];
 
         // handle timezone
         if (function_exists("date_default_timezone_set")) {
-            if (isset($Opt["timezone"])) {
-                if (!date_default_timezone_set($Opt["timezone"])) {
-                    self::msg_error("Timezone option “" . htmlspecialchars($Opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
+            if (isset($this->opt["timezone"])) {
+                if (!date_default_timezone_set($this->opt["timezone"])) {
+                    self::msg_error("Timezone option “" . htmlspecialchars($this->opt["timezone"]) . "” is invalid; falling back to “America/New_York”.");
                     date_default_timezone_set("America/New_York");
                 }
             } else if (!ini_get("date.timezone") && !getenv("TZ"))
                 date_default_timezone_set("America/New_York");
         }
+        $this->_date_format_initialized = false;
 
         // set safePasswords
-        if (!get($Opt, "safePasswords")
-            || (is_int($Opt["safePasswords"]) && $Opt["safePasswords"] < 1))
-            $Opt["safePasswords"] = 0;
-        else if ($Opt["safePasswords"] === true)
-            $Opt["safePasswords"] = 1;
-        if (!isset($Opt["contactdb_safePasswords"]))
-            $Opt["contactdb_safePasswords"] = $Opt["safePasswords"];
+        if (!get($this->opt, "safePasswords")
+            || (is_int($this->opt["safePasswords"]) && $this->opt["safePasswords"] < 1))
+            $this->opt["safePasswords"] = 0;
+        else if ($this->opt["safePasswords"] === true)
+            $this->opt["safePasswords"] = 1;
+        if (!isset($this->opt["contactdb_safePasswords"]))
+            $this->opt["contactdb_safePasswords"] = $this->opt["safePasswords"];
 
         // set defaultFormat
-        $this->default_format = (int) get($Opt, "defaultFormat");
-        $this->opt = new Qobject($Opt);
+        $this->default_format = (int) get($this->opt, "defaultFormat");
         self::$gFormatInfo = null;
     }
 
@@ -856,12 +868,13 @@ class Conf {
 
     public function format_info($format) {
         if (self::$gFormatInfo === null) {
-            if (is_array($this->opt->formatInfo))
-                self::$gFormatInfo = $this->opt->formatInfo;
-            else if (is_string($this->opt->formatInfo))
-                self::$gFormatInfo = json_decode($this->opt->formatInfo, true);
-            if (!self::$gFormatInfo)
-                self::$gFormatInfo = array();
+            self::$gFormatInfo = [];
+            if (!isset($this->opt["formatInfo"]))
+                /* OK */;
+            else if (is_array($this->opt["formatInfo"]))
+                self::$gFormatInfo = $this->opt["formatInfo"];
+            else if (is_string($this->opt["formatInfo"]))
+                self::$gFormatInfo = json_decode($this->opt["formatInfo"], true);
         }
         if ($format === null)
             $format = $this->default_format;
@@ -890,7 +903,7 @@ class Conf {
     // users
 
     function external_login() {
-        return isset($this->opt->ldapLogin) || isset($this->opt->httpAuthLogin);
+        return isset($this->opt["ldapLogin"]) || isset($this->opt["httpAuthLogin"]);
     }
 
     function site_contact() {
@@ -1069,23 +1082,23 @@ class Conf {
     function check_invariants() {
         $any = $this->invariantq("select paperId from Paper where " . ($this->can_pc_see_all_submissions() ? "timeWithdrawn<=0" : "timeSubmitted>0") . " limit 1");
         if ($any !== !!get($this->settings, "papersub"))
-            trigger_error($this->opt->dbName . " invariant error: papersub");
+            trigger_error("$this->dbname invariant error: papersub");
 
         $any = $this->invariantq("select paperId from Paper where outcome>0 and timeSubmitted>0 limit 1");
         if ($any !== !!get($this->settings, "paperacc"))
-            trigger_error($this->opt->dbName . " invariant error: paperacc");
+            trigger_error("$this->dbname invariant error: paperacc");
 
         $any = $this->invariantq("select reviewId from PaperReview where reviewToken!=0 limit 1");
         if ($any !== !!get($this->settings, "rev_tokens"))
-            trigger_error($this->opt->dbName . " invariant error: rev_tokens");
+            trigger_error("$this->dbname invariant error: rev_tokens");
 
         $any = $this->invariantq("select paperId from Paper where leadContactId>0 or shepherdContactId>0 limit 1");
         if ($any !== !!get($this->settings, "paperlead"))
-            trigger_error($this->opt->dbName . " invariant error: paperlead");
+            trigger_error("$this->dbname invariant error: paperlead");
 
         $any = $this->invariantq("select paperId from Paper where managerContactId>0 limit 1");
         if ($any !== !!get($this->settings, "papermanager"))
-            trigger_error($this->opt->dbName . " invariant error: papermanager");
+            trigger_error("$this->dbname invariant error: papermanager");
 
         // no empty text options
         $text_options = array();
@@ -1096,13 +1109,13 @@ class Conf {
             $q = Dbl::format_query("select paperId from PaperOption where optionId ?a and data='' limit 1", $text_options);
             $any = $this->invariantq($q);
             if ($any)
-                trigger_error($this->opt->dbName . " invariant error: text option with empty text");
+                trigger_error("$this->dbname invariant error: text option with empty text");
         }
 
         // no funky PaperConflict entries
         $any = $this->invariantq("select paperId from PaperConflict where conflictType<=0 limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: PaperConflict with zero conflictType");
+            trigger_error("$this->dbname invariant error: PaperConflict with zero conflictType");
 
         // reviewNeedsSubmit is defined correctly
         $any = $this->invariantq("select r.paperId, r.reviewId from PaperReview r
@@ -1114,30 +1127,30 @@ class Conf {
             and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
             limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
+            trigger_error("$this->dbname invariant error: bad reviewNeedsSubmit for review #" . self::$invariant_row[0] . "/" . self::$invariant_row[1]);
 
         // anonymous users are disabled
         $any = $this->invariantq("select email from ContactInfo where email regexp '^anonymous[0-9]*\$' and not disabled limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: anonymous user is not disabled");
+            trigger_error("$this->dbname invariant error: anonymous user is not disabled");
 
         // no one has password '*'
         $any = $this->invariantq("select email from ContactInfo where password='*' limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: password '*'");
+            trigger_error("$this->dbname invariant error: password '*'");
 
         // mimetypes match
         $any = $this->invariantq("select paperStorageId from PaperStorage s left join Mimetype m using (mimetypeid) where s.mimetype!=m.mimetype or m.mimetype is null limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: bad mimetypeid");
+            trigger_error("$this->dbname invariant error: bad mimetypeid");
 
         // paper denormalizations match
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.paperStorageId) where p.finalPaperStorageId<=0 and p.paperStorageId>1 and (p.sha1!=ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: bad Paper denormalization, paper #" . self::$invariant_row[0]);
+            trigger_error("$this->dbname invariant error: bad Paper denormalization, paper #" . self::$invariant_row[0]);
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.sha1 != ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any)
-            trigger_error($this->opt->dbName . " invariant error: bad Paper final denormalization, paper #" . self::$invariant_row[0]);
+            trigger_error("$this->dbname invariant error: bad Paper final denormalization, paper #" . self::$invariant_row[0]);
     }
 
 
@@ -1207,43 +1220,45 @@ class Conf {
     // times
 
     private function _dateFormat($type) {
-        if (!isset($this->opt->_dateFormatInitialized)) {
-            if (!isset($this->opt->time24hour) && isset($this->opt->time24Hour))
-                $this->opt->time24hour = $this->opt->time24Hour;
-            if (!isset($this->opt->dateFormatLong) && isset($this->opt->dateFormat))
-                $this->opt->dateFormatLong = $this->opt->dateFormat;
-            if (!isset($this->opt->dateFormat))
-                $this->opt->dateFormat = $this->opt->time24hour ? "j M Y H:i:s" : "j M Y g:i:sa";
-            if (!isset($this->opt->dateFormatLong))
-                $this->opt->dateFormatLong = "l " . $this->opt->dateFormat;
-            if (!isset($this->opt->dateFormatObscure))
-                $this->opt->dateFormatObscure = "j M Y";
-            if (!isset($this->opt->timestampFormat))
-                $this->opt->timestampFormat = $this->opt->dateFormat;
-            if (!isset($this->opt->dateFormatSimplifier))
-                $this->opt->dateFormatSimplifier = $this->opt->time24hour ? "/:00(?!:)/" : "/:00(?::00|)(?= ?[ap]m)/";
-            $this->opt->_dateFormatInitialized = true;
+        if (!$this->_date_format_initialized) {
+            if (!isset($this->opt["time24hour"]) && isset($this->opt["time24Hour"]))
+                $this->opt["time24hour"] = $this->opt["time24Hour"];
+            if (!isset($this->opt["dateFormatLong"]) && isset($this->opt["dateFormat"]))
+                $this->opt["dateFormatLong"] = $this->opt["dateFormat"];
+            if (!isset($this->opt["dateFormat"]))
+                $this->opt["dateFormat"] = get($this->opt, "time24hour") ? "j M Y H:i:s" : "j M Y g:i:sa";
+            if (!isset($this->opt["dateFormatLong"]))
+                $this->opt["dateFormatLong"] = "l " . $this->opt["dateFormat"];
+            if (!isset($this->opt["dateFormatObscure"]))
+                $this->opt["dateFormatObscure"] = "j M Y";
+            if (!isset($this->opt["timestampFormat"]))
+                $this->opt["timestampFormat"] = $this->opt["dateFormat"];
+            if (!isset($this->opt["dateFormatSimplifier"]))
+                $this->opt["dateFormatSimplifier"] = get($this->opt, "time24hour") ? "/:00(?!:)/" : "/:00(?::00|)(?= ?[ap]m)/";
+            if (!isset($this->opt["dateFormatTimezone"]))
+                $this->opt["dateFormatTimezone"] = null;
+            $this->_date_format_initialized = true;
         }
         if ($type == "timestamp")
-            return $this->opt->timestampFormat;
+            return $this->opt["timestampFormat"];
         else if ($type == "obscure")
-            return $this->opt->dateFormatObscure;
+            return $this->opt["dateFormatObscure"];
         else if ($type)
-            return $this->opt->dateFormatLong;
+            return $this->opt["dateFormatLong"];
         else
-            return $this->opt->dateFormat;
+            return $this->opt["dateFormat"];
     }
 
     function parseableTime($value, $include_zone) {
         $f = $this->_dateFormat(false);
         $d = date($f, $value);
-        if ($this->opt->dateFormatSimplifier)
-            $d = preg_replace($this->opt->dateFormatSimplifier, "", $d);
+        if ($this->opt["dateFormatSimplifier"])
+            $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
         if ($include_zone) {
-            if ($this->opt->dateFormatTimezone === null)
+            if ($this->opt["dateFormatTimezone"] === null)
                 $d .= " " . date("T", $value);
-            else if ($this->opt->dateFormatTimezone)
-                $d .= " " . $this->opt->dateFormatTimezone;
+            else if ($this->opt["dateFormatTimezone"])
+                $d .= " " . $this->opt["dateFormatTimezone"];
         }
         return $d;
     }
@@ -1251,7 +1266,7 @@ class Conf {
         global $Now;
         if ($reference === null)
             $reference = $Now;
-        if (!isset($this->opt->dateFormatTimezoneRemover)
+        if (!isset($this->opt["dateFormatTimezoneRemover"])
             && function_exists("timezone_abbreviations_list")) {
             $mytz = date_default_timezone_get();
             $x = array();
@@ -1262,11 +1277,11 @@ class Conf {
             }
             if (count($x) == 0)
                 $x[] = preg_quote(date("T", $reference));
-            $this->opt->dateFormatTimezoneRemover =
+            $this->opt["dateFormatTimezoneRemover"] =
                 "/(?:\\s|\\A)(?:" . join("|", $x) . ")(?:\\s|\\z)/i";
         }
-        if ($this->opt->dateFormatTimezoneRemover)
-            $d = preg_replace($this->opt->dateFormatTimezoneRemover, " ", $d);
+        if ($this->opt["dateFormatTimezoneRemover"])
+            $d = preg_replace($this->opt["dateFormatTimezoneRemover"], " ", $d);
         $d = preg_replace('/\butc([-+])/i', 'GMT$1', $d);
         return strtotime($d, $reference);
     }
@@ -1275,13 +1290,13 @@ class Conf {
         if ($value <= 0)
             return "N/A";
         $t = date($this->_dateFormat($type), $value);
-        if ($this->opt->dateFormatSimplifier)
-            $t = preg_replace($this->opt->dateFormatSimplifier, "", $t);
+        if ($this->opt["dateFormatSimplifier"])
+            $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         if ($type !== "obscure") {
-            if ($this->opt->dateFormatTimezone === null)
+            if ($this->opt["dateFormatTimezone"] === null)
                 $t .= " " . date("T", $value);
-            else if ($this->opt->dateFormatTimezone)
-                $t .= " " . $this->opt->dateFormatTimezone;
+            else if ($this->opt["dateFormatTimezone"])
+                $t .= " " . $this->opt["dateFormatTimezone"];
         }
         if ($preadjust)
             $t .= $preadjust;
@@ -1534,12 +1549,12 @@ class Conf {
     function set_siteurl($base) {
         $old_siteurl = Navigation::siteurl();
         $base = Navigation::set_siteurl($base);
-        if ($this->opt->assetsUrl === $old_siteurl) {
-            $this->opt->assetsUrl = $base;
-            Ht::$img_base = $this->opt->assetsUrl . "images/";
+        if ($this->opt["assetsUrl"] === $old_siteurl) {
+            $this->opt["assetsUrl"] = $base;
+            Ht::$img_base = $this->opt["assetsUrl"] . "images/";
         }
-        if ($this->opt->scriptAssetsUrl === $old_siteurl)
-            $this->opt->scriptAssetsUrl = $base;
+        if ($this->opt["scriptAssetsUrl"] === $old_siteurl)
+            $this->opt["scriptAssetsUrl"] = $base;
     }
 
 
@@ -1816,7 +1831,7 @@ class Conf {
             $cols[] = "(select group_concat(topicId) from PaperTopic where PaperTopic.paperId=Paper.paperId) topicIds";
 
         if (get($options, "options")
-            && (isset($this->settingTexts["options"]) || isset($this->opt->fixedOptions))
+            && (isset($this->settingTexts["options"]) || isset($this->opt["fixedOptions"]))
             && $this->paper_opts->count_option_list())
             $cols[] = "(select group_concat(PaperOption.optionId, '#', value) from PaperOption where paperId=Paper.paperId) optionIds";
         else if (get($options, "options"))
@@ -2347,7 +2362,7 @@ class Conf {
         $t = '<link rel="stylesheet" type="text/css" href="';
         if (str_starts_with($url, "stylesheets/")
             || !preg_match(',\A(?:https?:|/),i', $url))
-            $t .= $this->opt->assetsUrl;
+            $t .= $this->opt["assetsUrl"];
         $t .= $url;
         if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
             $t .= "?mtime=$mtime";
@@ -2362,12 +2377,12 @@ class Conf {
             $post = "";
             if (($mtime = @filemtime("$ConfSitePATH/$url")) !== false)
                 $post = "mtime=$mtime";
-            if ($this->opt->strictJavascript && !$no_strict)
-                $url = $this->opt->scriptAssetsUrl . "cacheable.php?file=" . urlencode($url)
+            if (get($this->opt, "strictJavascript") && !$no_strict)
+                $url = $this->opt["scriptAssetsUrl"] . "cacheable.php?file=" . urlencode($url)
                     . "&strictjs=1" . ($post ? "&$post" : "");
             else
-                $url = $this->opt->scriptAssetsUrl . $url . ($post ? "?$post" : "");
-            if ($this->opt->scriptAssetsUrl === Navigation::siteurl())
+                $url = $this->opt["scriptAssetsUrl"] . $url . ($post ? "?$post" : "");
+            if ($this->opt["scriptAssetsUrl"] === Navigation::siteurl())
                 return Ht::script_file($url);
         }
         return Ht::script_file($url, array("crossorigin" => "anonymous"));
@@ -2385,23 +2400,22 @@ class Conf {
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />
 <meta name=\"google\" content=\"notranslate\" />\n";
 
-        if ($this->opt->fontScript)
-            echo $this->opt->fontScript;
+        echo $this->opt("fontScript", "");
 
         echo $this->make_css_link("stylesheets/style.css"), "\n";
-        if ($this->opt->mobileStylesheet) {
+        if ($this->opt("mobileStylesheet")) {
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">', "\n";
             echo $this->make_css_link("stylesheets/mobile.css", "screen and (max-width: 768px)"), "\n";
         }
-        if ($this->opt->stylesheets)
-            foreach (mkarray($this->opt->stylesheets) as $css)
-                echo $this->make_css_link($css), "\n";
+        foreach (mkarray($this->opt("stylesheets", [])) as $css)
+            echo $this->make_css_link($css), "\n";
 
         // favicon
-        if (($favicon = isset($this->opt->favicon) ? $this->opt->favicon : "images/review24.png")) {
+        $favicon = $this->opt("favicon", "images/review24.png");
+        if ($favicon) {
             if (strpos($favicon, "://") === false && $favicon[0] != "/") {
-                if ($this->opt->assetsUrl && substr($favicon, 0, 7) === "images/")
-                    $favicon = $this->opt->assetsUrl . $favicon;
+                if ($this->opt["assetsUrl"] && substr($favicon, 0, 7) === "images/")
+                    $favicon = $this->opt["assetsUrl"] . $favicon;
                 else
                     $favicon = Navigation::siteurl() . $favicon;
             }
@@ -2428,9 +2442,9 @@ class Conf {
 
         // jQuery
         $stash = Ht::unstash();
-        if (isset($this->opt->jqueryUrl))
-            $jquery = $this->opt->jqueryUrl;
-        else if ($this->opt->jqueryCdn)
+        if (isset($this->opt["jqueryUrl"]))
+            $jquery = $this->opt["jqueryUrl"];
+        else if ($this->opt("jqueryCdn"))
             $jquery = "//code.jquery.com/jquery-1.12.3.min.js";
         else
             $jquery = "scripts/jquery-1.12.3.min.js";
@@ -2444,7 +2458,7 @@ class Conf {
             Ht::stash_script("hotcrp_list=" . json_encode(["num" => $list->listno, "id" => $list->listid]) . ";");
         if (($urldefaults = hoturl_defaults()))
             Ht::stash_script("siteurl_defaults=" . json_encode($urldefaults) . ";");
-        Ht::stash_script("assetsurl=" . json_encode($this->opt->assetsUrl) . ";");
+        Ht::stash_script("assetsurl=" . json_encode($this->opt["assetsUrl"]) . ";");
         $huser = (object) array();
         if ($Me && $Me->email)
             $huser->email = $Me->email;
@@ -2464,13 +2478,12 @@ class Conf {
             Ht::stash_script("hotcrp_want_override_conflict=true");
 
         // script.js
-        if (!$this->opt->noDefaultScript)
+        if (!$this->opt("noDefaultScript"))
             Ht::stash_html($this->make_script_file("scripts/script.js") . "\n");
 
         // other scripts
-        if ($this->opt->scripts)
-            foreach ($this->opt->scripts as $file)
-                Ht::stash_html($this->make_script_file($file) . "\n");
+        foreach ($this->opt("scripts", []) as $file)
+            Ht::stash_html($this->make_script_file($file) . "\n");
 
         if ($stash)
             Ht::stash_html($stash);
@@ -2508,7 +2521,7 @@ class Conf {
         echo ">\n";
 
         // initial load (JS's timezone offsets are negative of PHP's)
-        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . ($this->opt->time24hour ? 1 : 0) . ")");
+        Ht::stash_script("hotcrp_load.time(" . (-date("Z", $Now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");
 
         // deadlines settings
         if ($Me)
@@ -2564,9 +2577,9 @@ class Conf {
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
             $profile_html .= '<a href="' . hoturl("help", $x) . '">Help</a>';
-            if (!$Me->has_email() && !$this->opt->httpAuthLogin)
+            if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
                 $profile_html .= $xsep . '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
-            if (!$Me->is_empty() || $this->opt->httpAuthLogin)
+            if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
                 $profile_html .= $xsep . '<a href="' . hoturl_post("index", "signout=1") . '">Sign&nbsp;out</a>';
         }
 
@@ -2575,7 +2588,7 @@ class Conf {
         if (!$title_div && $actionBar)
             $title_div = '<hr class="c" />';
 
-        $renderf = $this->opt->headerRenderer;
+        $renderf = $this->opt("headerRenderer");
         if (!$renderf)
             $renderf = "Conf::echo_header";
         if (is_array($renderf)) {
@@ -2587,8 +2600,8 @@ class Conf {
         echo "  <hr class=\"c\" /></div>\n";
 
         echo "<div id=\"initialmsgs\">\n";
-        if ($this->opt->maintenance)
-            echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($this->opt->maintenance) ? $this->opt->maintenance : "Please check back later."), "</div>";
+        if (($x = $this->opt("maintenance")))
+            echo "<div class=\"merror\"><strong>The site is down for maintenance.</strong> ", (is_string($x) ? $x : "Please check back later."), "</div>";
         $this->save_messages = false;
         if (($msgs = $this->session("msgs")) && count($msgs)) {
             $this->save_session("msgs", null);
@@ -2608,8 +2621,8 @@ class Conf {
         if ($Me && $Me->privChair
             && (!isset($_SESSION["updatecheck"])
                 || $_SESSION["updatecheck"] + 20 <= $Now)
-            && (!isset($this->opt->updatesSite) || $this->opt->updatesSite)) {
-            $m = isset($this->opt->updatesSite) ? $this->opt->updatesSite : "//hotcrp.lcdf.org/updates";
+            && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
+            $m = isset($this->opt["updatesSite"]) ? $this->opt["updatesSite"] : "//hotcrp.lcdf.org/updates";
             $m .= (strpos($m, "?") === false ? "?" : "&")
                 . "addr=" . urlencode($_SERVER["SERVER_ADDR"])
                 . "&base=" . urlencode(Navigation::siteurl())
@@ -2636,9 +2649,9 @@ class Conf {
         global $Me, $ConfSitePATH;
         echo "</div>\n", // class='body'
             "<div id='footer'>\n  <div id='footer_crp'>",
-            (string) $this->opt->extraFooter,
+            $this->opt("extraFooter", ""),
             "<a href='http://read.seas.harvard.edu/~kohler/hotcrp/'>HotCRP</a>";
-        if (!$this->opt->noFooterVersion) {
+        if (!$this->opt("noFooterVersion")) {
             if ($Me && $Me->privChair) {
                 echo " v", HOTCRP_VERSION;
                 if (is_dir("$ConfSitePATH/.git")) {
@@ -2657,7 +2670,7 @@ class Conf {
     public function stash_hotcrp_pc(Contact $user) {
         if (!Ht::mark_stash("hotcrp_pc"))
             return;
-        $sortbylast = $this->opt->sortByLastName;
+        $sortbylast = $this->opt("sortByLastName");
         $hpcj = $list = [];
         foreach (pcMembers() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];

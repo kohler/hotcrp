@@ -72,8 +72,8 @@ class MeetingTracker {
     static function contact_tracker_comet($pids = null) {
         global $Conf, $Now;
 
-        $comet_dir = $Conf->opt->trackerCometUpdateDirectory;
-        $comet_url = $Conf->opt->trackerCometSite;
+        $comet_dir = $Conf->opt("trackerCometUpdateDirectory");
+        $comet_url = $Conf->opt("trackerCometSite");
         if (!$comet_dir && !$comet_url)
             return;
 
@@ -217,7 +217,7 @@ class MeetingTracker {
                                  "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
-        if ($Conf->opt->trackerHideConflicts)
+        if ($Conf->opt("trackerHideConflicts"))
             $status->hide_conflicts = true;
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);

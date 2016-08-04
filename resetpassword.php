@@ -4,19 +4,19 @@
 // Distributed under an MIT-like license; see LICENSE
 
 require_once("src/initweb.php");
-if (!isset($_REQUEST["resetcap"])
-    && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
-    $_REQUEST["resetcap"] = $m[1];
 
 if ($Conf->external_login())
-    error_go(false, "This HotCRP installation does not store passwords. Contact your administrator to reset your password.");
+    error_go(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
 
-if (!isset($_REQUEST["resetcap"]))
+$resetcap = req("resetcap");
+if ($resetcap === null && preg_match(',\A/(U?1[-\w]+)(?:/|\z),i', Navigation::path(), $m))
+    $resetcap = $m[1];
+if (!$resetcap)
     error_go(false, "You didn’t enter the full password reset link into your browser. Make sure you include the reset code (the string of letters, numbers, and other characters at the end).");
 
-$iscdb = substr($_REQUEST["resetcap"], 0, 1) === "U";
-$capmgr = $Conf->capability_manager($_REQUEST["resetcap"]);
-$capdata = $capmgr->check($_REQUEST["resetcap"]);
+$iscdb = substr($resetcap, 0, 1) === "U";
+$capmgr = $Conf->capability_manager($resetcap);
+$capdata = $capmgr->check($resetcap);
 if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
     error_go(false, "That password reset code has expired, or you didn’t enter it correctly.");
 
@@ -26,9 +26,6 @@ else
     $Acct = Contact::find_by_id($capdata->contactId);
 if (!$Acct)
     error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
-
-if (opt("ldapLogin") || opt("httpAuthLogin"))
-    error_go(false, "Password reset links aren’t used for this conference. Contact your system administrator if you’ve forgotten your password.");
 
 // don't show information about the current user, if there is one
 $Me = new Contact;
@@ -50,7 +47,7 @@ if (isset($_POST["go"]) && check_post()) {
         $Acct->change_password(null, $_POST["password"], $flags);
         if (!$iscdb || !($log_acct = Contact::find_by_email($Acct->email)))
             $log_acct = $Acct;
-        $log_acct->log_activity("Password reset via " . substr($_REQUEST["resetcap"], 0, 8) . "...");
+        $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");
         $capmgr->delete($capdata);
         $Conf->save_session("password_reset", (object) array("time" => $Now, "email" => $Acct->email, "password" => $_POST["password"]));
@@ -77,7 +74,7 @@ echo "</div>
 <div class='homegrp' id='homereset'>\n",
     Ht::form(hoturl_post("resetpassword")),
     '<div class="f-contain">',
-    Ht::hidden("resetcap", $_REQUEST["resetcap"]),
+    Ht::hidden("resetcap", $resetcap),
     Ht::hidden("autopassword", $_POST["autopassword"]),
     "<p>Use this form to reset your password. You may want to use the random password we’ve chosen.</p>";
 echo '<table style="margin-bottom:2em">',

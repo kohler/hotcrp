@@ -4,8 +4,12 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class Multiconference {
+    static private $original_opt = null;
+
     static function init() {
         global $Opt;
+        assert(self::$original_opt === null);
+        self::$original_opt = $Opt;
 
         $confid = get($Opt, "confid");
         if (!$confid && PHP_SAPI == "cli") {
@@ -35,12 +39,16 @@ class Multiconference {
         else if (!preg_match(',\A[-a-zA-Z0-9_][-a-zA-Z0-9_.]*\z,', $confid))
             $confid = "__invalid__";
 
+        self::assign_confid($Opt, $confid);
+    }
+
+    static function assign_confid(&$opt, $confid) {
         foreach (array("dbName", "dbUser", "dbPassword", "dsn") as $k)
-            if (isset($Opt[$k]) && is_string($Opt[$k]))
-                $Opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confid, $Opt[$k]);
-        if (!get($Opt, "dbName") && !get($Opt, "dsn"))
-            $Opt["dbName"] = $confid;
-        $Opt["confid"] = $confid;
+            if (isset($opt[$k]) && is_string($opt[$k]))
+                $opt[$k] = preg_replace(',\*|\$\{conf(?:id|name)\}|\$conf(?:id|name)\b,', $confid, $opt[$k]);
+        if (!get($opt, "dbName") && !get($opt, "dsn"))
+            $opt["dbName"] = $confid;
+        $opt["confid"] = $confid;
     }
 
     static function fail_message($errors) {
@@ -62,7 +70,7 @@ class Multiconference {
                 echo "{\"error\":\"unconfigured installation\"}\n";
         } else {
             if (!$Conf)
-                $Conf = Conf::$g = new Conf(false);
+                $Conf = Conf::$g = new Conf($Opt, false);
             if ($Opt["shortName"] == "__invalid__")
                 $Opt["shortName"] = "HotCRP";
             $Me = null;

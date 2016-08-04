@@ -323,11 +323,9 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
     }
 }
 
-global $Opt, $OptOverride;
+global $Opt;
 if (!$Opt)
     $Opt = array();
-if (!$OptOverride)
-    $OptOverride = array();
 if (!get($Opt, "loaded")) {
     if (defined("HOTCRP_OPTIONS")) {
         if ((@include HOTCRP_OPTIONS) !== false)
@@ -365,6 +363,6 @@ set_memory_limit();
 // Create the conference
 global $Conf;
 if (!$Conf)
-    $Conf = Conf::$g = new Conf(Dbl::make_dsn($Opt));
+    $Conf = Conf::$g = new Conf($Opt, true);
 if (!$Conf->dblink)
     Multiconference::fail_bad_database();

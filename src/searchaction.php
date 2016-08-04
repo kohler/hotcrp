@@ -45,8 +45,8 @@ class SearchAction {
             self::$loaded = true;
             foreach (expand_includes("src/sa/*.php") as $f)
                 include $f;
-            if (isset($Conf->opt->searchaction_include) && $Conf->opt->searchaction_include)
-                read_included_options($Conf->opt->searchaction_include);
+            if (($includes = $Conf->opt("searchaction_include")))
+                read_included_options($includes);
         }
     }
 

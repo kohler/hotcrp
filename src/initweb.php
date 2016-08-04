@@ -15,8 +15,8 @@ if (array_search(Navigation::page(),
     go();
 
 // Check for redirect to https
-if (@$Opt["redirectToHttps"])
-    Navigation::redirect_http_to_https(@$Opt["allowLocalHttp"]);
+if (get($Opt, "redirectToHttps"))
+    Navigation::redirect_http_to_https(get($Opt, "allowLocalHttp"));
 
 // Check and fix zlib output compression
 global $zlib_output_compression;
