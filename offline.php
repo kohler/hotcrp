@@ -16,7 +16,7 @@ if (defval($_REQUEST, "post") && !count($_POST))
 
 // download blank review form action
 if (isset($_REQUEST["downloadForm"])) {
-    $text = ReviewForm::textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
+    $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $Me, null) . "\n";
     downloadText($text, "review");
 }
 

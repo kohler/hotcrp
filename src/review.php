@@ -959,7 +959,7 @@ class ReviewForm {
     }
 
 
-    static function textFormHeader($type) {
+    function textFormHeader($type) {
         $x = "==+== " . $this->conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
         $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:

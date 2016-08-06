@@ -235,7 +235,7 @@ function downloadForm($editable) {
         return Conf::msg_error(whyNotText($whyNot ? : array("fail" => 1), "review"));
     }
     if ($editable)
-        $text = ReviewForm::textFormHeader(count($rrows) > 1) . $text;
+        $text = $rf->textFormHeader(count($rrows) > 1) . $text;
     $filename = (count($rrows) > 1 ? "reviews" : "review") . "-" . $prow->paperId;
     if (count($rrows) == 1 && $rrows[0]->reviewSubmitted)
         $filename .= unparseReviewOrdinal($rrows[0]->reviewOrdinal);

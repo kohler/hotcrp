@@ -52,7 +52,7 @@ class GetReviewBase_SearchAction extends SearchAction {
             $rfname .= key($texts);
 
         if ($this->isform)
-            $header = ReviewForm::textFormHeader(count($texts) > 1 && !$this->iszip);
+            $header = $Conf->review_form()->textFormHeader(count($texts) > 1 && !$this->iszip);
         else
             $header = "";
 
