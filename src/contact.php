@@ -467,7 +467,7 @@ class Contact {
         if (($cap_req = req("cap"))) {
             foreach (preg_split(',\s+,', $cap_req) as $cap)
                 $this->apply_capability_text($cap);
-            unset($_REQUEST["cap"], $_GET["cap"], $_PUT["cap"]);
+            unset($_REQUEST["cap"], $_GET["cap"], $_POST["cap"]);
         }
 
         // Support capability testing
@@ -479,7 +479,7 @@ class Contact {
                 $c = ($mm[3] == "a" ? self::CAP_AUTHORVIEW : 0);
                 $this->change_capability((int) $mm[2], $c, $mm[1] !== "-");
             }
-            unset($_REQUEST["testcap"], $_GET["testcap"], $_PUT["testcap"]);
+            unset($_REQUEST["testcap"], $_GET["testcap"], $_POST["testcap"]);
         }
     }
 
