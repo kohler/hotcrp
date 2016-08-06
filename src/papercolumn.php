@@ -1229,15 +1229,17 @@ class ScorePaperColumn extends PaperColumn {
         $this->score = $score;
     }
     public static function lookup_all() {
+        global $Conf;
         $reg = array();
-        foreach (ReviewForm::all_fields() as $f)
+        foreach ($Conf->all_review_fields() as $f)
             if (($c = self::_make_column($f->id)))
                 $reg[$f->display_order] = $c;
         ksort($reg);
         return $reg;
     }
     private static function _make_column($name) {
-        if (($f = ReviewForm::field_search($name))
+        global $Conf;
+        if (($f = $Conf->review_field_search($name))
             && $f->has_options && $f->display_order !== false) {
             $c = parent::lookup_local($f->id);
             $c = $c ? : PaperColumn::register(new ScorePaperColumn($f->id));
@@ -1249,9 +1251,10 @@ class ScorePaperColumn extends PaperColumn {
         return self::_make_column($name);
     }
     public function prepare(PaperList $pl, $visible) {
+        global $Conf;
         if (!$pl->scoresOk)
             return false;
-        $this->form_field = ReviewForm::field($this->score);
+        $this->form_field = $Conf->review_field($this->score);
         if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
             return false;
         if ($visible) {
@@ -1295,7 +1298,8 @@ class ScorePaperColumn extends PaperColumn {
         return $this->form_field->web_abbreviation();
     }
     public function completion_name() {
-        if ($this->score && ($ff = ReviewForm::field($this->score)))
+        global $Conf;
+        if ($this->score && ($ff = $Conf->review_field($this->score)))
             return $ff->abbreviation;
         else
             return null;
@@ -1756,7 +1760,7 @@ function initialize_paper_columns() {
     if ($Conf->paper_opts->count_option_list())
         PaperColumn::register_factory("", new Option_PaperColumn(null));
 
-    foreach (ReviewForm::all_fields() as $f)
+    foreach ($Conf->all_review_fields() as $f)
         if ($f->has_options) {
             PaperColumn::register_factory("", new ScorePaperColumn(null));
             break;

@@ -270,8 +270,9 @@ function fetch_review($pid, $contact) {
 }
 
 function save_review($pid, $contact, $revreq) {
+    global $Conf;
     $pid = is_object($pid) ? $pid->paperId : $pid;
-    $rf = ReviewForm::get();
+    $rf = $Conf->review_form();
     $rf->save_review($revreq, fetch_review($pid, $contact), fetch_paper($pid, $contact), $contact);
     return fetch_review($pid, $contact);
 }

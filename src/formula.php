@@ -1285,7 +1285,7 @@ class Formula {
             $t = $m[2];
             if (($quoted = $field[0] === "\""))
                 $field = substr($field, 1, strlen($field) - 2);
-            if (($f = ReviewForm::field_search($field))
+            if (($f = $Conf->review_field_search($field))
                 && $f->has_options)
                 $e = new ScoreFexpr($f);
             else if (!$quoted)

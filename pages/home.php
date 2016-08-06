@@ -299,7 +299,7 @@ function reviewTokenGroup($non_reviews) {
 // Review assignment
 if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     echo ($nhome_hr ? $home_hr : ""), "<div class='homegrp' id='homerev'>\n";
-    $all_review_fields = ReviewForm::all_fields();
+    $all_review_fields = $Conf->all_review_fields();
     $merit_field = get($all_review_fields, "overAllMerit");
     $merit_noptions = $merit_field ? count($merit_field->options) : 0;
 

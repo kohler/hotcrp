@@ -114,7 +114,7 @@ if ($qreq->fn === "events" && $Me->is_reviewer()) {
     $entries = $Conf->reviewerActivity($Me, $from, 10);
     $when = $from;
     $rows = array();
-    $rf = ReviewForm::get();
+    $rf = $Conf->review_form();
     foreach ($entries as $which => $xr)
         if ($xr->isComment) {
             $rows[] = CommentInfo::unparse_flow_entry($xr, $Me, "");

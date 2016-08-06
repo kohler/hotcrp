@@ -2116,7 +2116,7 @@ class PaperSearch {
 
         // Finally, look for a review field.
         if ($keyword && !isset(self::$_keywords[$keyword]) && count($qt) == 0) {
-            if (($field = ReviewForm::field_search($keyword)))
+            if (($field = $Conf->review_field_search($keyword)))
                 $this->_search_review_field($word, $field, $qt, $quoted);
             else if (!$this->_search_options("$keyword:$word", $qt, false)
                      && $report_error)

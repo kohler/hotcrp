@@ -58,6 +58,7 @@ class Conf {
     private $_pc_members_cache = null;
     private $_pc_members_cache_by_last = null;
     private $_pc_tags_cache = null;
+    private $_review_form_cache = null;
     private $_date_format_initialized = false;
 
     public $paper = null; // current paper row
@@ -618,6 +619,25 @@ class Conf {
         return is_object($x) ? $x : null;
     }
 
+    function review_form() {
+        if (!$this->_review_form_cache)
+            $this->_review_form_cache = new ReviewForm($this->review_form_json(), $this);
+        return $this->_review_form_cache;
+    }
+
+    function all_review_fields() {
+        return $this->review_form()->all_fields();
+    }
+
+    function review_field($fid) {
+        return $this->review_form()->field($fid);
+    }
+
+    function review_field_search($text) {
+        return $this->review_form()->field_search($text);
+    }
+
+
 
     function has_tracks() {
         return $this->tracks !== null;
@@ -688,7 +708,6 @@ class Conf {
     function check_track_review_sensitivity() {
         return $this->_track_review_sensitivity;
     }
-
 
 
     function has_rounds() {
@@ -1204,10 +1223,8 @@ class Conf {
             $this->_pc_members_cache = $this->_pc_tags_cache = null;
         if (!$caches || isset($caches["paperOption"]))
             $this->paper_opts->invalidate_option_list();
-        if (!$caches || isset($caches["rf"])) {
-            ReviewForm::clear_cache();
-            $this->_defined_rounds = null;
-        }
+        if (!$caches || isset($caches["rf"]))
+            $this->_review_form_cache = $this->_defined_rounds = null;
         $ok = true;
         if (count($inserts))
             $ok = $ok && ($this->qe_raw("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);
@@ -1819,7 +1836,7 @@ class Conf {
         if ($reviewerQuery || $scoresQuery) {
             $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
             $cols[] = ($this->sversion >= 105 ? "PaperReview.reviewFormat" : "null") . " as reviewFormat";
-            foreach (ReviewForm::all_fields() as $f)
+            foreach ($this->all_review_fields() as $f)
                 if ($reviewerQuery || $f->has_options)
                     $cols[] = "PaperReview.$f->id as $f->id";
         }

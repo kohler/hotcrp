@@ -191,7 +191,7 @@ function update_schema_transfer_country($Conf) {
 }
 
 function update_schema_review_word_counts($Conf) {
-    $rf = new ReviewForm($Conf->review_form_json());
+    $rf = new ReviewForm($Conf->review_form_json(), $Conf);
     do {
         $q = array();
         $result = Dbl::ql("select * from PaperReview where reviewWordCount is null limit 32");

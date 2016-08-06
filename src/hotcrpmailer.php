@@ -113,7 +113,7 @@ class HotCRPMailer extends Mailer {
             $Conf->au_seerev = Conf::AUSEEREV_YES;
 
         $text = "";
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         foreach ($rrows as $rrow)
             if (($rrow->reviewSubmitted || ($rrow == $this->rrow && $this->rrow_unsubmitted))
                 && $this->permissionContact->can_view_review($this->row, $rrow, false))
@@ -507,6 +507,7 @@ class HotCRPMailer extends Mailer {
     }
 
     static function send_manager($template, $row, $rest = array()) {
+        global $Conf;
         $rest["combination_type"] = 2;
         if ($row && $row->managerContactId
             && ($c = Contact::find_by_id($row->managerContactId)))

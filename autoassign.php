@@ -109,7 +109,7 @@ if (($x = $Conf->sanitize_round_name($Qreq->rev_roundtag)) !== false)
 
 // score selector
 $scoreselector = array("+overAllMerit" => "", "-overAllMerit" => "");
-foreach (ReviewForm::all_fields() as $f)
+foreach ($Conf->all_review_fields() as $f)
     if ($f->has_options) {
         $scoreselector["+" . $f->id] = "high $f->name_html scores";
         $scoreselector["-" . $f->id] = "low $f->name_html scores";

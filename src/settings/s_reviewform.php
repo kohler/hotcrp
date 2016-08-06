@@ -71,7 +71,7 @@ class ReviewForm_SettingParser extends SettingParser {
     2. Medium quality
     3. High quality</pre>";
 
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         foreach ($rf->fmap as $fid => $f) {
             $fj = (object) array();
 
@@ -135,7 +135,7 @@ class ReviewForm_SettingParser extends SettingParser {
     public function save(SettingValues $sv, Si $si) {
         global $Conf;
         if ($sv->update("review_form", json_encode($this->nrfj))) {
-            $rf = ReviewForm::get();
+            $rf = $Conf->review_form();
             $scoreModified = array();
             foreach ($this->nrfj as $fid => $fj)
                 if (get($fj, "position") && get($fj, "options")) {
@@ -161,7 +161,7 @@ class ReviewForm_SettingRenderer extends SettingRenderer {
 function render(SettingValues $sv) {
     global $Conf, $ConfSitePATH;
 
-    $rf = ReviewForm::get();
+    $rf = $Conf->review_form();
     $fmap = array();
     foreach ($rf->fmap as $fid => $f)
         $fmap[$fid] = $f->has_options;

@@ -259,7 +259,7 @@ function savesearch() {
             $acceptable["au"] = $acceptable["aufull"] = $acceptable["collab"] = 1;
         if ($Me->privChair && !$Conf->subBlindNever())
             $acceptable["anonau"] = 1;
-        foreach (ReviewForm::all_fields() as $f)
+        foreach ($Conf->all_review_fields() as $f)
             $acceptable[$f->id] = 1;
         foreach (FormulaPaperColumn::$list as $x)
             $acceptable["formula" . $x->formulaId] = 1;
@@ -447,7 +447,7 @@ if ($pl) {
 
     // Scores group
     if ($pl->scoresOk == "present") {
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         if ($Me->is_reviewer() && $Qreq->t != "a")
             $revViewScore = $Me->permissive_view_score_bound();
         else

@@ -1063,8 +1063,6 @@ function do_setting_update($sv) {
             Dbl::ql($cdb, "update Conferences set shortName=? where dbName=?", $Conf->short_name, $Conf->dbname);
     }
 
-    // update the review form in case it's changed
-    ReviewForm::clear_cache();
     if (!$sv->has_errors()) {
         $Conf->save_session("settings_highlight", $sv->error_fields());
         if (!empty($sv->changes))

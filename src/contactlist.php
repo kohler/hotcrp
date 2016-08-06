@@ -89,7 +89,7 @@ class ContactList {
             $this->have_folds["tags"] = true;
         if ($fieldId == self::FIELD_COLLABORATORS)
             $this->have_folds["collab"] = true;
-        if (($f = ReviewForm::field($fieldId))) {
+        if (($f = $Conf->review_field($fieldId))) {
             // XXX scoresOk
             $revViewScore = $this->contact->aggregated_view_score_bound();
             if ($f->view_score <= $revViewScore
@@ -192,7 +192,7 @@ class ContactList {
             usort($rows, array($this, "_sortPapers"));
             break;
         default:
-            if (($f = ReviewForm::field($this->sortField))) {
+            if (($f = $Conf->review_field($this->sortField))) {
                 $fieldId = $this->sortField;
                 $scoreMax = $this->scoreMax[$fieldId];
                 $scoresort = $Conf->session("scoresort", "A");
@@ -216,6 +216,7 @@ class ContactList {
     }
 
     function header($fieldId, $ordinal, $row = null) {
+        global $Conf;
         switch ($fieldId) {
         case self::FIELD_NAME:
             return "Name";
@@ -249,7 +250,7 @@ class ContactList {
         case self::FIELD_COLLABORATORS:
             return "Collaborators";
         default:
-            if (($f = ReviewForm::field($fieldId)))
+            if (($f = $Conf->review_field($fieldId)))
                 return $f->web_abbreviation();
             else
                 return "&lt;$fieldId&gt;?";
@@ -409,7 +410,7 @@ class ContactList {
             }
             return join("; ", $t);
         default:
-            $f = ReviewForm::field($fieldId);
+            $f = $Conf->review_field($fieldId);
             if (!$f)
                 return "";
             if (!($row->roles & Contact::ROLE_PC)
@@ -427,7 +428,7 @@ class ContactList {
     function addScores($a) {
         global $Conf;
         if ($this->contact->isPC) {
-            foreach (ReviewForm::all_fields() as $f)
+            foreach ($Conf->all_review_fields() as $f)
                 if ($f->has_options
                     && strpos(displayOptionsSet("uldisplay"), " {$f->id} ") !== false)
                     array_push($a, $f->id);

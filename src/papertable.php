@@ -2114,7 +2114,7 @@ class PaperTable {
                 "&nbsp;<u>", ucfirst(join(" and ", $viewable)),
                 " in plain text</u></a></div></div>\n";
 
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
 
         $rcjs = [];
@@ -2255,7 +2255,7 @@ class PaperTable {
         if ($opt["edit"] && !$Me->can_clickthrough("review"))
             self::echo_review_clickthrough();
 
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         $rf->set_can_view_ratings($prow, $this->all_rrows, $Me);
         $rf->show($prow, $this->all_rrows, $this->editrrow, $opt);
     }
@@ -2420,7 +2420,7 @@ class PaperTable {
                     $round_mask |= 1 << (int) $rrow->reviewRound;
                 $min_view_score = min($min_view_score, $Me->view_score_bound($this->prow, $rrow));
             }
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         Ht::stash_script("review_form.set_form(" . json_encode($rf->unparse_json($round_mask, $min_view_score)) . ")");
         if ($Me->can_view_review_ratings())
             Ht::stash_script("review_form.set_ratings(" . json_encode($rf->unparse_ratings_json()) . ")");

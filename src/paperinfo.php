@@ -848,7 +848,7 @@ class PaperInfo {
         if ($a !== false || $count)
             return $a;
         $result = $this->conf->qe("select * from PaperReview where reviewWordCount is null and paperId=$this->paperId");
-        $rf = ReviewForm::get();
+        $rf = $this->conf->review_form();
         $qs = [];
         while (($rrow = edb_orow($result)))
             $qs[] = "update PaperReview set reviewWordCount=" . $rf->word_count($rrow) . " where reviewId=" . $rrow->reviewId;
@@ -903,13 +903,13 @@ class PaperInfo {
     }
 
     public function may_have_viewable_scores($field, $contact, $forceShow) {
-        $field = is_object($field) ? $field : ReviewForm::field($field);
+        $field = is_object($field) ? $field : $this->conf->review_field($field);
         return $contact->can_view_review($this, $field->view_score, $forceShow)
             || $this->review_type($contact);
     }
 
     public function viewable_scores($field, $contact, $forceShow) {
-        $field = is_object($field) ? $field : ReviewForm::field($field);
+        $field = is_object($field) ? $field : $this->conf->review_field($field);
         $view = $contact->can_view_review($this, $field->view_score, $forceShow);
         if ($view || $this->review_type($contact)) {
             $s = $this->scores($field->id);

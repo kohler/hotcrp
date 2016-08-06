@@ -234,7 +234,7 @@ class Autoassigner {
         $time = microtime(true);
         $this->reset_prefs();
 
-        $all_fields = ReviewForm::all_fields();
+        $all_fields = $Conf->all_review_fields();
         $scoredir = 1;
         if ($scoreinfo === "x")
             $score = "1";

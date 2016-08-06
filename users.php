@@ -264,7 +264,7 @@ if (isset($_REQUEST["redisplay"])) {
     $Conf->save_session("uldisplay", "");
     foreach (ContactList::$folds as $key)
         displayOptionsSet("uldisplay", $key, defval($_REQUEST, "show$key", 0));
-    foreach (ReviewForm::all_fields() as $f)
+    foreach ($Conf->all_review_fields() as $f)
         if ($f->has_options)
             displayOptionsSet("uldisplay", $f->id, defval($_REQUEST, "show{$f->id}", 0));
 }
@@ -322,7 +322,7 @@ if (count($tOpt) > 1) {
     if (isset($pl->scoreMax)) {
         echo "<td class='pad'>";
         $revViewScore = $Me->aggregated_view_score_bound();
-        foreach (ReviewForm::all_fields() as $f)
+        foreach ($Conf->all_review_fields() as $f)
             if ($f->view_score > $revViewScore && $f->has_options) {
                 $checked = strpos(displayOptionsSet("uldisplay"), $f->id) !== false;
                 echo Ht::checkbox("show{$f->id}", 1, $checked),

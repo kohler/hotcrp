@@ -60,7 +60,7 @@ function formulas_qrow($i, $q, $s, $errf) {
 if ($Graph == "formula") {
     // derive a sample graph
     if (!isset($_REQUEST["fx"]) || !isset($_REQUEST["fy"])) {
-        $all_review_fields = ReviewForm::all_fields();
+        $all_review_fields = $Conf->all_review_fields();
         $field1 = @$all_review_fields["overAllMerit"];
         $field2 = null;
         foreach ($all_review_fields as $f)

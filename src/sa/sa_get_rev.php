@@ -90,7 +90,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         if ($ssel->is_empty()) {
             // blank form
             $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $user, null) . "\n";
@@ -138,7 +138,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $texts = array();
         $errors = array();
         $user->set_forceShow(true);
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         while (($row = PaperInfo::fetch($result, $user))) {
             if (($whyNot = $user->perm_view_review($row, null, null)))
                 $errors[whyNotText($whyNot, "view review")] = true;
@@ -172,7 +172,7 @@ class GetScores_SearchAction extends SearchAction {
         $errors = array();
         $texts = $any_scores = array();
         $any_decision = $any_reviewer_identity = false;
-        $rf = ReviewForm::get();
+        $rf = $Conf->review_form();
         $bad_pid = -1;
         while (($row = PaperInfo::fetch($result, $user))) {
             if (!$row->reviewSubmitted || $row->paperId == $bad_pid)

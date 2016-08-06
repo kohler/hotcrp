@@ -14,6 +14,7 @@ class ReviewField {
     const VALUE_REV_NUM = 2;
 
     public $id;
+    public $conf;
     public $uid;
     public $name;
     public $name_html;
@@ -47,9 +48,10 @@ class ReviewField {
         VIEWSCORE_AUTHOR => "au"
     ];
 
-    public function __construct($id, $has_options) {
+    public function __construct($id, $has_options, $conf) {
         $this->id = $id;
         $this->has_options = $has_options;
+        $this->conf = $conf;
     }
 
     public function assign($j) {
@@ -100,7 +102,6 @@ class ReviewField {
     }
 
     public function unparse_json() {
-        global $Conf;
         $j = (object) array("name" => $this->name);
         if ($this->description)
             $j->description = $this->description;
@@ -124,7 +125,7 @@ class ReviewField {
         }
         if ($this->round_mask) {
             $j->round_list = array();
-            foreach ($Conf->round_list() as $i => $round_name)
+            foreach ($this->conf->round_list() as $i => $round_name)
                 if ($this->round_mask & (1 << $i))
                     $j->round_list[] = $i ? $round_name : "unnamed";
         }
@@ -143,8 +144,7 @@ class ReviewField {
     }
 
     public function is_round_visible($rrow) {
-        global $Conf;
-        $round = $rrow ? $rrow->reviewRound : $Conf->current_round();
+        $round = $rrow ? $rrow->reviewRound : $this->conf->current_round();
         return !$this->round_mask
             || $round === null
             || ($this->round_mask & (1 << $round))
@@ -276,7 +276,6 @@ class ReviewField {
     }
 
     public function unparse_graph($v, $style, $myscore) {
-        global $Conf;
         assert($this->has_options);
         $max = count($this->options);
 
@@ -342,6 +341,7 @@ class ReviewField {
 class ReviewForm {
     const NOTIFICATION_DELAY = 10800;
 
+    public $conf;
     public $fmap = array();
     public $forder;
     public $fieldName;
@@ -362,7 +362,6 @@ class ReviewForm {
                                         -4 => "too narrow",
                                         -2 => "not constructive",
                                         -3 => "not correct");
-    static private $cache = null;
     static private $review_author_seen = null;
 
     static public function fmap_compare($a, $b) {
@@ -374,17 +373,20 @@ class ReviewForm {
             return strcmp($a->id, $b->id);
     }
 
-    public function __construct($rfj) {
+    public function __construct($rfj, $conf) {
+        global $Conf;
+        $this->conf = $conf ? : $Conf;
+
         // prototype fields
         foreach (array("paperSummary", "commentsToAuthor", "commentsToPC",
                        "commentsToAddress", "weaknessOfPaper",
                        "strengthOfPaper", "textField7", "textField8") as $fid)
-            $this->fmap[$fid] = new ReviewField($fid, false);
+            $this->fmap[$fid] = new ReviewField($fid, false, $this->conf);
         foreach (array("potential", "fixability", "overAllMerit",
                        "reviewerQualification", "novelty", "technicalMerit",
                        "interestToCommunity", "longevity", "grammar",
                        "likelyPresentation", "suitableForShort") as $fid)
-            $this->fmap[$fid] = new ReviewField($fid, true);
+            $this->fmap[$fid] = new ReviewField($fid, true, $this->conf);
 
         // parse JSON
         if (!$rfj)
@@ -435,36 +437,27 @@ class ReviewForm {
 
     static public function get() {
         global $Conf;
-        if (!self::$cache)
-            self::$cache = new ReviewForm($Conf->review_form_json());
-        return self::$cache;
+        return $Conf->review_form();
     }
 
-    static public function clear_cache() {
-        self::$cache = null;
+    public function all_fields() {
+        return $this->forder;
     }
 
-    static public function all_fields() {
-        $rf = self::get();
-        return $rf->forder;
-    }
-
-    static public function field($fid) {
-        $rf = self::get();
-        $f = get($rf->fmap, $fid);
+    public function field($fid) {
+        $f = get($this->fmap, $fid);
         return $f && $f->displayed ? $f : null;
     }
 
-    static public function field_search($name) {
-        $rf = self::get();
-        $f = get($rf->fmap, $name);
+    public function field_search($name) {
+        $f = get($this->fmap, $name);
         if ($f && $f->displayed)
             return $f;
         $a = preg_split("/([^a-zA-Z0-9])/", $name, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
         for ($i = 0; $i < count($a); ++$i)
             $a[$i] = preg_quote($a[$i], "/");
         $field = null;
-        foreach ($rf->forder as $f) {
+        foreach ($this->forder as $f) {
             if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
                 return $f;
             for ($i = 0; $i < count($a); ++$i)
@@ -502,24 +495,8 @@ class ReviewForm {
         return $rt;
     }
 
-    static public function reviewArchiveFields() {
-        global $Conf;
-        $rf = self::get();
-        $x = "reviewId, paperId, contactId, reviewType, requestedBy,
-                reviewModified, reviewSubmitted, reviewNeedsSubmit, "
-            . join(", ", array_keys($rf->fmap))
-            . ", reviewRound, reviewNotified, timeRequested, timeRequestNotified,
-            reviewToken, reviewAuthorNotified";
-        if ($Conf->sversion >= 92)
-            $x .= ", reviewAuthorSeen";
-        if ($Conf->sversion >= 98)
-            $x .= ", reviewWordCount";
-        return $x;
-    }
-
-    private static function format_description($rrow, $text) {
-        global $Conf;
-        if (($f = $Conf->format_info($rrow ? $rrow->reviewFormat : null))) {
+    private function format_description($rrow, $text) {
+        if (($f = $this->conf->format_info($rrow ? $rrow->reviewFormat : null))) {
             if ($text && ($t = get($f, "description_text")))
                 return $t;
             $t = get($f, "description");
@@ -531,8 +508,8 @@ class ReviewForm {
     }
 
     private function webFormRows($contact, $prow, $rrow, $useRequest = false) {
-        global $ReviewFormError, $Conf;
-        $format_description = self::format_description($rrow, false);
+        global $ReviewFormError;
+        $format_description = $this->format_description($rrow, false);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
         echo '<div class="rve">';
         foreach ($this->forder as $field => $f) {
@@ -605,7 +582,7 @@ class ReviewForm {
     }
 
     function checkRequestFields(&$req, $rrow, &$tf = null) {
-        global $ReviewFormError, $Conf;
+        global $ReviewFormError;
         $submit = defval($req, "ready", false);
         unset($req["unready"]);
         $nokfields = 0;
@@ -705,21 +682,19 @@ class ReviewForm {
             return Contact::find_by_id($cid);
     }
 
-    private static function review_needs_approval($rrow) {
-        global $Conf;
+    private function review_needs_approval($rrow) {
         return $rrow && !$rrow->reviewSubmitted
             && $rrow->reviewType == REVIEW_EXTERNAL
             && $rrow->requestedBy
-            && $Conf->setting("extrev_approve")
-            && $Conf->setting("pcrev_editdelegate");
+            && $this->conf->setting("extrev_approve")
+            && $this->conf->setting("pcrev_editdelegate");
     }
 
     function save_review($req, $rrow, $prow, $contact, &$tf = null) {
-        global $Conf;
         $newsubmit = $approval_requested = false;
         if (get($req, "ready") && !get($req, "unready")
             && (!$rrow || !$rrow->reviewSubmitted)) {
-            if ($contact->isPC || !self::review_needs_approval($rrow))
+            if ($contact->isPC || !$this->review_needs_approval($rrow))
                 $newsubmit = true;
             else
                 $approval_requested = true;
@@ -771,13 +746,13 @@ class ReviewForm {
             $q[] = "reviewSubmitted=$now, reviewNeedsSubmit=0";
             if (!$rrow || !$rrow->reviewOrdinal) {
                 $table_suffix = "";
-                if ($Conf->au_seerev == Conf::AUSEEREV_TAGS)
+                if ($this->conf->au_seerev == Conf::AUSEEREV_TAGS)
                     $table_suffix = ", PaperTag read";
-                $result = $Conf->qe_raw("lock tables PaperReview write" . $table_suffix);
+                $result = $this->conf->qe_raw("lock tables PaperReview write" . $table_suffix);
                 if (!$result)
                     return $result;
                 $locked = true;
-                $result = $Conf->qe_raw("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId");
+                $result = $this->conf->qe_raw("select coalesce(max(reviewOrdinal), 0) from PaperReview where paperId=$prow->paperId group by paperId");
                 if ($result) {
                     $crow = edb_row($result);
                     $q[] = "reviewOrdinal=coalesce(reviewOrdinal, " . ($crow[0] + 1) . ")";
@@ -793,7 +768,7 @@ class ReviewForm {
         $usedReviewToken = $contact->review_token_cid($prow, $rrow);
 
         // blind? reviewer type? edit version?
-        $reviewBlind = $Conf->is_review_blind(!!get($req, "blind"));
+        $reviewBlind = $this->conf->is_review_blind(!!get($req, "blind"));
         if ($rrow && $reviewBlind != $rrow->reviewBlind)
             $diff_view_score = max($diff_view_score, VIEWSCORE_ADMINONLY);
         $q[] = "reviewBlind=" . ($reviewBlind ? 1 : 0);
@@ -805,9 +780,9 @@ class ReviewForm {
             && isset($req["version"]) && ctype_digit($req["version"])
             && $req["version"] > defval($rrow, "reviewEditVersion"))
             $q[] = "reviewEditVersion=" . ($req["version"] + 0);
-        if ($diff_view_score > VIEWSCORE_FALSE && $Conf->sversion >= 98)
+        if ($diff_view_score > VIEWSCORE_FALSE && $this->conf->sversion >= 98)
             $q[] = "reviewWordCount=" . $wc;
-        if (isset($req["reviewFormat"]) && $Conf->sversion >= 104
+        if (isset($req["reviewFormat"]) && $this->conf->sversion >= 104
             && opt("formatInfo")) {
             $fmt = null;
             foreach (opt("formatInfo") as $k => $f)
@@ -822,7 +797,7 @@ class ReviewForm {
         // notification
         $notification_bound = $now - self::NOTIFICATION_DELAY;
         $notify = $notify_author = false;
-        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome && $Conf->timeAuthorViewDecision())
+        if ($diff_view_score == VIEWSCORE_AUTHORDEC && $prow->outcome && $this->conf->timeAuthorViewDecision())
             $diff_view_score = VIEWSCORE_AUTHOR;
         if (!$rrow || !$rrow->reviewModified || $diff_view_score > VIEWSCORE_FALSE)
             $q[] = "reviewModified=" . $now;
@@ -846,18 +821,18 @@ class ReviewForm {
 
         // actually affect database
         if ($rrow) {
-            $result = $Conf->qe_raw("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId");
+            $result = $this->conf->qe_raw("update PaperReview set " . join(", ", $q) . " where reviewId=$rrow->reviewId");
             $reviewId = $rrow->reviewId;
             $contactId = $rrow->contactId;
         } else {
-            $result = $Conf->qe_raw("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, reviewRound=" . $Conf->current_round() . ", " . join(", ", $q));
+            $result = $this->conf->qe_raw("insert into PaperReview set paperId=$prow->paperId, contactId=$contact->contactId, reviewType=" . REVIEW_PC . ", requestedBy=$contact->contactId, reviewRound=" . $this->conf->current_round() . ", " . join(", ", $q));
             $reviewId = $result ? $result->insert_id : null;
             $contactId = $contact->contactId;
         }
 
         // unlock tables even if problem
         if ($locked)
-            $Conf->qe_raw("unlock tables");
+            $this->conf->qe_raw("unlock tables");
         if (!$result)
             return $result;
 
@@ -884,7 +859,7 @@ class ReviewForm {
         if ($contactId != $submitter->contactId)
             $submitter = self::contact_by_id($contactId);
         if ($submit || $approval_requested || $rrow->timeApprovalRequested)
-            $rrow = $Conf->reviewRow(["reviewId" => $reviewId]);
+            $rrow = $this->conf->reviewRow(["reviewId" => $reviewId]);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
         if ($submit)
@@ -893,7 +868,7 @@ class ReviewForm {
             $this->_mailer_template = $newsubmit ? "@reviewsubmit" : "@reviewupdate";
             $this->_mailer_always_combine = false;
             $this->_mailer_diff_view_score = $diff_view_score;
-            if ($Conf->timeEmailChairAboutReview())
+            if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             $prow->notify(WATCHTYPE_REVIEW, array($this, "review_watch_callback"), $contact);
         } else if ($rrow && !$submit && ($approval_requested || $rrow->timeApprovalRequested)) {
@@ -901,7 +876,7 @@ class ReviewForm {
             $this->_mailer_always_combine = true;
             $this->_mailer_diff_view_score = null;
             $this->_mailer_info["rrow_unsubmitted"] = true;
-            if ($Conf->timeEmailChairAboutReview())
+            if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
             if ($rrow->requestedBy && ($requester = self::contact_by_id($rrow->requestedBy))) {
                 $this->review_watch_callback($prow, $requester);
@@ -914,7 +889,7 @@ class ReviewForm {
 
         // if external, forgive the requestor from finishing their review
         if ($rrow && $rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy && $submit)
-            $Conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId=$prow->paperId and contactId=$rrow->requestedBy and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
 
         if ($tf !== null) {
             $what = "#$prow->paperId" . ($rrow && $rrow->reviewSubmitted ? unparseReviewOrdinal($rrow->reviewOrdinal) : "");
@@ -943,8 +918,6 @@ class ReviewForm {
     }
 
     function check_save_review($req, &$tf, $contact) {
-        global $Conf;
-
         // look up reviewer
         $Reviewer = $contact;
         if (isset($req["reviewerEmail"])
@@ -953,11 +926,11 @@ class ReviewForm {
             return $this->reviewer_error($req, $tf, $contact->privChair ? "No such user." : null);
 
         // look up paper & review rows, check review permission
-        if (!($prow = $Conf->paperRow($req["paperId"], $contact, $whyNot)))
+        if (!($prow = $this->conf->paperRow($req["paperId"], $contact, $whyNot)))
             return $this->tfError($tf, true, whyNotText($whyNot, "review"));
         $rrow_args = ["paperId" => $prow->paperId, "first" => true,
             "contactId" => $Reviewer->contactId, "rev_tokens" => $contact->review_tokens()];
-        $rrow = $Conf->reviewRow($rrow_args);
+        $rrow = $this->conf->reviewRow($rrow_args);
         $new_rrid = false;
         if ($contact !== $Reviewer && !$rrow) {
             if (!$contact->can_create_review_from($prow, $Reviewer))
@@ -965,7 +938,7 @@ class ReviewForm {
             $new_rrid = $contact->assign_review($prow->paperId, $Reviewer->contactId, $Reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
             if (!$new_rrid)
                 return $this->tfError($tf, true, "Internal error while creating review.");
-            $rrow = $Conf->reviewRow($rrow_args);
+            $rrow = $this->conf->reviewRow($rrow_args);
         }
         if (($whyNot = $contact->perm_submit_review($prow, $rrow))) {
             if ($contact === $Reviewer || $contact->can_view_review_identity($prow, $rrow))
@@ -987,8 +960,7 @@ class ReviewForm {
 
 
     static function textFormHeader($type) {
-        global $Conf;
-        $x = "==+== " . $Conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
+        $x = "==+== " . $this->conf->short_name . " Paper Review Form" . ($type === true ? "s" : "") . "\n";
         $x .= "==-== DO NOT CHANGE LINES THAT START WITH \"==+==\" UNLESS DIRECTED!
 ==-== For further guidance, or to upload this file when you are done, go to:
 ==-== " . hoturl_absolute_raw("offline") . "\n\n";
@@ -1043,8 +1015,6 @@ class ReviewForm {
     }
 
     function textForm($prow, $rrow, $contact, $req = null) {
-        global $Conf;
-
         $rrow_contactId = 0;
         if (isset($rrow) && isset($rrow->reviewContactId))
             $rrow_contactId = $rrow->reviewContactId;
@@ -1076,7 +1046,7 @@ class ReviewForm {
         }
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1)
-            $x .= "==-== Updated " . $Conf->printableTime($time) . "\n";
+            $x .= "==-== Updated " . $this->conf->printableTime($time) . "\n";
 
         if ($prow)
             $x .= "\n==+== Paper #$prow->paperId\n"
@@ -1090,12 +1060,12 @@ class ReviewForm {
 ==-== Enter \"Ready\" if the review is ready for others to see:
 
 Ready\n";
-            if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL) {
+            if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
                 $blind = "Anonymous";
                 if ($rrow && !$rrow->reviewBlind)
                     $blind = "Open";
                 $x .= "\n==+== Review Anonymity
-==-== " . $Conf->short_name . " allows either anonymous or open review.
+==-== " . $this->conf->short_name . " allows either anonymous or open review.
 ==-== Enter \"Open\" if you want to expose your name to authors:
 
 $blind\n";
@@ -1104,7 +1074,7 @@ $blind\n";
 
         $i = 0;
         $numericMessage = 0;
-        $format_description = self::format_description($rrow, true);
+        $format_description = $this->format_description($rrow, true);
         foreach ($this->forder as $field => $f) {
             $i++;
             if ($f->view_score <= $revViewScore
@@ -1164,7 +1134,6 @@ $blind\n";
     }
 
     function pretty_text($prow, $rrow, $contact, $no_update_review_author_seen = false) {
-        global $Conf;
         assert($prow !== null && $rrow !== null);
 
         $rrow_contactId = get($rrow, "reviewContactId") ? : (get($rrow, "contactId") ? : 0);
@@ -1172,13 +1141,13 @@ $blind\n";
         self::check_review_author_seen($prow, $rrow, $contact, $no_update_review_author_seen);
 
         $x = "===========================================================================\n";
-        $n = $Conf->short_name . " Review";
+        $n = $this->conf->short_name . " Review";
         if (get($rrow, "reviewOrdinal"))
             $n .= " #" . $prow->paperId . unparseReviewOrdinal($rrow->reviewOrdinal);
         $x .= center_word_wrap($n);
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1) {
-            $n = "Updated " . $Conf->printableTime($rrow->reviewModified);
+            $n = "Updated " . $this->conf->printableTime($rrow->reviewModified);
             $x .= center_word_wrap($n);
         }
         $x .= "---------------------------------------------------------------------------\n";
@@ -1250,7 +1219,6 @@ $blind\n";
     }
 
     function parseTextForm(&$tf) {
-        global $Conf;
         $text = $tf['text'];
         $lineno = $tf['lineno'];
         $tf['firstLineno'] = $lineno + 1;
@@ -1276,9 +1244,9 @@ $blind\n";
 
                 $anyDirectives++;
                 if (preg_match('{\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z}', $line, $m)
-                    && $m[1] != $Conf->short_name) {
+                    && $m[1] != $this->conf->short_name) {
                     $this->garbageMessage($tf, $lineno, $garbage);
-                    self::tfError($tf, true, "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($Conf->short_name) . " " . $m[2] . "</code>” and upload again.)", $lineno);
+                    self::tfError($tf, true, "Ignoring review form, which appears to be for a different conference.<br />(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", $lineno);
                     return null;
                 } else if (preg_match('/^==\+== Begin Review/i', $line)) {
                     if ($nfields > 0)
@@ -1329,7 +1297,7 @@ $blind\n";
                         $nfields++;
                     } else {
                         $this->garbageMessage($tf, $lineno, $garbage);
-                        self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . htmlspecialchars($Conf->short_name) . " reviews.  Ignoring this section.", $lineno);
+                        self::tfError($tf, true, "Review field &ldquo;" . htmlentities($fname) . "&rdquo; is not used for " . htmlspecialchars($this->conf->short_name) . " reviews.  Ignoring this section.", $lineno);
                         $field = null;
                     }
                     $mode = 1;
@@ -1401,10 +1369,8 @@ $blind\n";
     }
 
     function textFormMessages(&$tf) {
-        global $Conf;
-
         if (!empty($tf["err"])) {
-            $Conf->msg(defval($tf, 'anyErrors') ? "merror" : "warning",
+            $this->conf->msg(defval($tf, 'anyErrors') ? "merror" : "warning",
                        "There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
         }
 
@@ -1433,7 +1399,7 @@ $blind\n";
             $confirm[] = self::_paperCommaJoin("Ignored blank review form*| ", $tf["ignoredBlank"], $single) . ".";
         // self::tfError($tf, false, "Ignored blank " . pluralx(count($tf["ignoredBlank"]), "review form") . " for " . self::_paperCommaJoin("review form* for paper*", $tf["ignoredBlank"]) . ".");
         if (!empty($confirm))
-            $Conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
+            $this->conf->msg($nconfirm ? "confirm" : "warning", "<div class='parseerr'><p>" . join("</p>\n<p>", $confirm) . "</p></div>");
     }
 
     function webGuidanceRows($revViewScore, $extraclass="") {
@@ -1466,14 +1432,13 @@ $blind\n";
     }
 
     public function set_can_view_ratings($prow, $rrows, $contact) {
-        global $Conf;
         $my_rrow = null;
         foreach ($rrows as $rrow)
             if (!isset($rrow->allRatings) || $rrow->allRatings === "")
                 $rrow->canViewRatings = false;
             else if ($rrow->contactId != $contact->contactId
                      || $contact->can_administer($prow)
-                     || $Conf->timePCViewAllReviews()
+                     || $this->conf->timePCViewAllReviews()
                      || strpos($rrow->allRatings, ",") !== false)
                 $rrow->canViewRatings = true;
             else
@@ -1482,7 +1447,7 @@ $blind\n";
             // Do not show rating counts if rater identity is unambiguous.
             // See also PaperSearch::_clauseTermSetRating.
             $nsubraters = 0;
-            $rateset = $Conf->setting("rev_ratings");
+            $rateset = $this->conf->setting("rev_ratings");
             foreach ($rrows as $rrow)
                 if ($rrow->reviewNeedsSubmit == 0
                     && $rrow->contactId != $contact->contactId
@@ -1522,19 +1487,19 @@ $blind\n";
     }
 
     private function _echo_review_actions($prow, $rrow, $type, $reviewPostLink) {
-        global $Conf, $Me;
+        global $Me;
         $buttons = array();
 
         $submitted = $rrow && $rrow->reviewSubmitted;
         $disabled = !$Me->can_clickthrough("review");
         $submit_text = "Submit review";
-        if (self::review_needs_approval($rrow)) {
+        if ($this->review_needs_approval($rrow)) {
             if ($Me->contactId == $rrow->contactId) /* XXX */
                 $submit_text = "Submit for approval";
             else if ($rrow->timeApprovalRequested)
                 $submit_text = "Approve review";
         }
-        if (!$Conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
+        if (!$this->conf->time_review($rrow, $Me->act_pc($prow, true), true)) {
             $whyNot = array("deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"));
             $override_text = whyNotText($whyNot, "review");
             if (!$submitted) {
@@ -1569,7 +1534,7 @@ $blind\n";
     }
 
     function show($prow, $rrows, $rrow, &$options) {
-        global $Conf, $Me, $useRequest;
+        global $Me, $useRequest;
 
         if (!$options)
             $options = array();
@@ -1625,7 +1590,7 @@ $blind\n";
             $type = review_type_icon($rrow->reviewType);
             if ($rrow->reviewRound > 0 && $Me->can_view_review_round($prow, $rrow, null))
                 $type .= "&nbsp;<span class=\"revround\" title=\"Review round\">"
-                    . htmlspecialchars($Conf->round_name($rrow->reviewRound, true))
+                    . htmlspecialchars($this->conf->round_name($rrow->reviewRound, true))
                     . "</span>";
         }
         if ($rrow && $Me->can_view_review_identity($prow, $rrow, null)
@@ -1642,7 +1607,7 @@ $blind\n";
             $sep = $xsep;
         }
         if ($rrow && $rrow->reviewModified > 1 && $Me->can_view_review_time($prow, $rrow)) {
-            echo $sep, "Updated ", $Conf->printableTime($rrow->reviewModified);
+            echo $sep, "Updated ", $this->conf->printableTime($rrow->reviewModified);
             $sep = $xsep;
         }
         if ($sep != $open)
@@ -1701,12 +1666,12 @@ $blind\n";
         }
 
         // blind?
-        if ($Conf->review_blindness() == Conf::BLIND_OPTIONAL) {
+        if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
             echo '<div class="revet"><span class="revfn">',
                 Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
-                '<div class="revhint">', htmlspecialchars($Conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
+                '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
                 '<div class="g"></div>', "\n";
         }
 
@@ -1725,7 +1690,6 @@ $blind\n";
     }
 
     function unparse_review_json($prow, $rrow, $contact, $include_displayed_at = false) {
-        global $Conf;
         self::check_review_author_seen($prow, $rrow, $contact);
         $revViewScore = $contact->view_score_bound($prow, $rrow);
 
@@ -1734,7 +1698,7 @@ $blind\n";
             $rj["ordinal"] = unparseReviewOrdinal($rrow->reviewOrdinal);
         if ($contact->can_view_review_round($prow, $rrow, null)) {
             $rj["rtype"] = (int) $rrow->reviewType;
-            if (($round = $Conf->round_name($rrow->reviewRound)))
+            if (($round = $this->conf->round_name($rrow->reviewRound)))
                 $rj["round"] = $round;
         }
         if ($rrow->reviewBlind)
@@ -1760,7 +1724,7 @@ $blind\n";
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;
-            $rj["modified_at_text"] = $Conf->printableTime($time);
+            $rj["modified_at_text"] = $this->conf->printableTime($time);
         }
         if ($include_displayed_at)
             // XXX exposes information, should hide before export
@@ -1785,7 +1749,7 @@ $blind\n";
                     $rj[$f->uid] = $rrow->$fid;
             }
         if (($fmt = $rrow->reviewFormat) === null)
-            $fmt = $Conf->default_format;
+            $fmt = $this->conf->default_format;
         if ($fmt)
             $rj["format"] = $fmt;
 
@@ -1795,7 +1759,6 @@ $blind\n";
 
     function reviewFlowEntry($contact, $rrow, $trclass) {
         // See also CommentInfo::unparse_flow_entry
-        global $Conf;
         $barsep = " <span class='barsep'>·</span> ";
         $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . "'";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
@@ -1808,9 +1771,9 @@ $blind\n";
         $t .= "</a>";
         if ($rrow->reviewModified > 1) {
             if ($contact->can_view_review_time($rrow, $rrow))
-                $time = $Conf->parseableTime($rrow->reviewModified, false);
+                $time = $this->conf->parseableTime($rrow->reviewModified, false);
             else
-                $time = $Conf->unparse_time_obscure($Conf->obscure_time($rrow->reviewModified));
+                $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($rrow->reviewModified));
             $t .= $barsep . $time;
         }
         if ($contact->can_view_review_identity($rrow, $rrow, false))
