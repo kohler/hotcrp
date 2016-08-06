@@ -130,8 +130,8 @@ class FormulaGraph {
             $s = get($this->query_styles, $q);
             if ($s && $s !== "plain")
                 $d->className = $s;
-            else if ($s && get($query_color_classes, $style))
-                $d->className = $query_color_classes[$style];
+            else if ($s && get($query_color_classes, $s))
+                $d->className = $query_color_classes[$s];
             if (get($this->queries, $q))
                 $d->label = $this->queries[$q];
         }
