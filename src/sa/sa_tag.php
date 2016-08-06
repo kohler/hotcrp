@@ -112,6 +112,7 @@ class Tag_SearchAction extends SearchAction {
         }
         $success = $assignset->execute();
 
+        assert(!$Conf->headerPrinted);
         if (!$Conf->headerPrinted && $qreq->ajax)
             $Conf->ajaxExit(array("ok" => $success));
         else if (!$Conf->headerPrinted && $success) {
