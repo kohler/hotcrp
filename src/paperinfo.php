@@ -520,9 +520,9 @@ class PaperInfo {
         return $s . '">' . htmlspecialchars($tname) . '</span>';
     }
 
-    private static function render_topic_list($out, $comma, $long) {
+    private static function render_topic_list($out, $comma, $long, $conf) {
         if ($comma)
-            return join($this->conf->topic_separator(), $out);
+            return join($conf->topic_separator(), $out);
         else if ($long)
             return '<p class="od">' . join('</p><p class="od">', $out) . '</p>';
         else
@@ -538,7 +538,7 @@ class PaperInfo {
         $long = false;
         foreach ($topics as $t)
             $out[] = self::render_topic($t, get($interests, $t), $tmap, $long);
-        return self::render_topic_list($out, $comma, $long);
+        return self::render_topic_list($out, $comma, $long, $this->conf);
     }
 
     public static function unparse_topic_list_html($topicIds, $interests, $comma) {
@@ -556,7 +556,7 @@ class PaperInfo {
         for ($i = 0; $i < count($topicIds); $i++)
             $out[$tomap[$topicIds[$i]]] = self::render_topic($topicIds[$i], $interests ? $interests[$i] : 0, $tmap, $long);
         ksort($out);
-        return self::render_topic_list($out, $comma, $long);
+        return self::render_topic_list($out, $comma, $long, $Conf);
     }
 
     static public function make_topic_map($pids) {
