@@ -542,6 +542,7 @@ class PaperInfo {
     }
 
     public static function unparse_topic_list_html($topicIds, $interests, $comma) {
+        global $Conf;
         if (!$topicIds)
             return "";
         if (!is_array($topicIds))
@@ -549,8 +550,8 @@ class PaperInfo {
         if ($interests !== null && !is_array($interests))
             $interests = explode(",", $interests);
         $out = array();
-        $tmap = $this->conf->topic_map();
-        $tomap = $this->conf->topic_order_map();
+        $tmap = $Conf->topic_map();
+        $tomap = $Conf->topic_order_map();
         $long = false;
         for ($i = 0; $i < count($topicIds); $i++)
             $out[$tomap[$topicIds[$i]]] = self::render_topic($topicIds[$i], $interests ? $interests[$i] : 0, $tmap, $long);
@@ -559,7 +560,8 @@ class PaperInfo {
     }
 
     static public function make_topic_map($pids) {
-        $result = $this->conf->qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $pids);
+        global $Conf;
+        $result = $Conf->qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $pids);
         $topic_map = Dbl::fetch_map($result);
         foreach ($topic_map as $pid => &$t) {
             $t = explode(",", $t);
