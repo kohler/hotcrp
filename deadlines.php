@@ -63,14 +63,14 @@ if (get($dl, "rev") && get($dl->rev, "open")) {
     $dlbyround = array();
     foreach ($Conf->defined_round_list() as $i => $round_name) {
         $isuf = $i ? "_$i" : "";
-        $es = +setting("extrev_soft$isuf");
-        $eh = +setting("extrev_hard$isuf");
+        $es = +$Conf->setting("extrev_soft$isuf");
+        $eh = +$Conf->setting("extrev_hard$isuf");
         $ps = $ph = -1;
 
         $thisdl = [];
         if ($Me->isPC) {
-            $ps = +setting("pcrev_soft$isuf");
-            $ph = +setting("pcrev_hard$isuf");
+            $ps = +$Conf->setting("pcrev_soft$isuf");
+            $ph = +$Conf->setting("pcrev_hard$isuf");
             if ($ph && ($ph < $Now || $ps < $Now))
                 $thisdl[] = "PH" . $ph;
             else if ($ps)

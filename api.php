@@ -37,7 +37,7 @@ if ($qreq->base !== null)
     $Conf->set_siteurl($qreq->base);
 if (!$Me->has_database_account()
     && ($key = $Me->capability("tracker_kiosk"))) {
-    $kiosks = setting_json("__tracker_kiosk") ? : (object) array();
+    $kiosks = $Conf->setting_json("__tracker_kiosk") ? : (object) array();
     if (isset($kiosks->$key) && $kiosks->$key->update_at >= $Now - 172800) {
         if ($kiosks->$key->update_at < $Now - 3600) {
             $kiosks->$key->update_at = $Now;

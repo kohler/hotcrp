@@ -783,9 +783,9 @@ class ReviewForm {
         if ($diff_view_score > VIEWSCORE_FALSE && $this->conf->sversion >= 98)
             $q[] = "reviewWordCount=" . $wc;
         if (isset($req["reviewFormat"]) && $this->conf->sversion >= 104
-            && opt("formatInfo")) {
+            && $this->conf->opt("formatInfo")) {
             $fmt = null;
-            foreach (opt("formatInfo") as $k => $f)
+            foreach ($this->conf->opt("formatInfo") as $k => $f)
                 if (get($f, "name") && strcasecmp($f["name"], $req["reviewFormat"]) == 0)
                     $fmt = (int) $k;
             if (!$fmt && $req["reviewFormat"]

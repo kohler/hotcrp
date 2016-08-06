@@ -2847,16 +2847,3 @@ class Conf {
         return Message::default_html($this->message_name($name));
     }
 }
-
-
-function setting($name, $defval = false) {
-    return Conf::$g->setting($name, $defval);
-}
-
-function setting_data($name, $defval = false) {
-    return Conf::$g->setting_data($name, $defval);
-}
-
-function setting_json($name, $defval = false) {
-    return Conf::$g->setting_json($name, $defval);
-}

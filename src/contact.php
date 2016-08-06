@@ -2987,10 +2987,10 @@ class Contact {
         $graces = [];
 
         // submissions
-        $sub_reg = setting("sub_reg");
-        $sub_update = setting("sub_update");
-        $sub_sub = setting("sub_sub");
-        $dl->sub->open = +setting("sub_open") > 0;
+        $sub_reg = $this->conf->setting("sub_reg");
+        $sub_update = $this->conf->setting("sub_update");
+        $sub_sub = $this->conf->setting("sub_sub");
+        $dl->sub->open = +$this->conf->setting("sub_open") > 0;
         $dl->sub->sub = +$sub_sub;
         if ($dl->sub->open)
             $graces[] = [$dl->sub, "sub_grace"];
@@ -3008,29 +3008,29 @@ class Contact {
             $dl->sub->blind = "until-review";
 
         // responses
-        if (+setting("resp_active") > 0) {
+        if (+$this->conf->setting("resp_active") > 0) {
             $dlresps = [];
             foreach ($this->conf->resp_round_list() as $i => $rname) {
                 $isuf = $i ? "_$i" : "";
                 $dlresps[$rname] = $dlresp = (object) [
-                    "open" => +setting("resp_open$isuf"),
-                    "done" => +setting("resp_done$isuf")
+                    "open" => +$this->conf->setting("resp_open$isuf"),
+                    "done" => +$this->conf->setting("resp_done$isuf")
                 ];
                 if ($dlresp->open)
                     $graces[] = [$dlresp, "resp_grace$isuf"];
             }
-            if (count($dlresps))
+            if (!empty($dlresps))
                 $dl->resps = $dlresps;
         }
 
         // final copy deadlines
-        if (+setting("final_open") > 0) {
+        if (+$this->conf->setting("final_open") > 0) {
             $dl->final = (object) array("open" => true);
-            $final_soft = +setting("final_soft");
+            $final_soft = +$this->conf->setting("final_soft");
             if ($final_soft > $Now)
                 $dl->final->done = $final_soft;
             else {
-                $dl->final->done = +setting("final_done");
+                $dl->final->done = +$this->conf->setting("final_done");
                 $dl->final->ishard = true;
             }
             $graces[] = [$dl->final, "final_grace"];
@@ -3039,7 +3039,7 @@ class Contact {
         // reviewer deadlines
         $revtypes = array();
         if ($this->is_reviewer()
-            && ($rev_open = +setting("rev_open")) > 0
+            && ($rev_open = +$this->conf->setting("rev_open")) > 0
             && $rev_open <= $Now)
             $dl->rev->open = true;
         if (get($dl->rev, "open")) {
@@ -3047,8 +3047,8 @@ class Contact {
             $k = $this->isPC ? "pcrev" : "extrev";
             foreach ($this->conf->defined_round_list() as $i => $round_name) {
                 $isuf = $i ? "_$i" : "";
-                $s = +setting("{$k}_soft$isuf");
-                $h = +setting("{$k}_hard$isuf");
+                $s = +$this->conf->setting("{$k}_soft$isuf");
+                $h = +$this->conf->setting("{$k}_hard$isuf");
                 $dl->revs[$round_name] = $dlround = (object) ["open" => true];
                 if ($h && ($h < $Now || $s < $Now)) {
                     $dlround->done = $h;
@@ -3067,7 +3067,7 @@ class Contact {
         // grace periods: give a minute's notice of an impending grace
         // period
         foreach ($graces as $g) {
-            if (($grace = setting($g[1])))
+            if (($grace = $this->conf->setting($g[1])))
                 foreach (array("reg", "update", "sub", "done") as $k)
                     if (get($g[0], $k) && $g[0]->$k + 60 < $Now
                         && $g[0]->$k + $grace >= $Now) {
