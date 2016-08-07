@@ -37,10 +37,10 @@ if ($users) {
 }
 
 if ($papers) {
-    $result = Dbl::ql(Contact::contactdb(), "select confid from Conferences where `dbname`=?", $Opt["dbName"]);
+    $result = Dbl::ql(Contact::contactdb(), "select confid from Conferences where `dbname`=?", $Conf->dbname);
     $row = Dbl::fetch_first_row($result);
     if (!$row) {
-        fwrite(STDERR, "Conference is not recored in contactdb\n");
+        fwrite(STDERR, "Conference is not recorded in contactdb\n");
         exit(1);
     }
     $confid = $row[0];
