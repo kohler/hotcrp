@@ -4,27 +4,21 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class HotCRPDocument extends Filer {
+    private $conf;
     private $dtype;
     private $option = null;
     private $no_database = false;
     private $no_filestore = false;
     static private $_s3_document = false;
     static private $_docstore = null;
-    static private $map = [];
 
-    public function __construct($dtype, $option = null) {
-        global $Conf;
+    public function __construct(Conf $conf, $dtype, $option = null) {
+        $this->conf = $conf;
         $this->dtype = $dtype;
         if ($this->dtype > 0 && $option)
             $this->option = $option;
-        else if ($this->dtype > 0)
-            $this->option = $Conf->paper_opts->find($dtype);
-    }
-
-    static public function get($dtype) {
-        if (!isset(self::$map[$dtype]))
-            self::$map[$dtype] = new HotCRPDocument($dtype);
-        return self::$map[$dtype];
+        else
+            $this->option = $this->conf->paper_opts->find_document($dtype);
     }
 
     public function set_no_database_storage() {
@@ -102,13 +96,10 @@ class HotCRPDocument extends Filer {
     }
 
     public function validate_upload($doc, $docinfo) {
-        global $Conf;
-        if (get($doc, "filterType"))
+        if ($this->option && !get($doc, "filterType"))
+            return $this->option->validate_document($doc, $docinfo);
+        else
             return true;
-        else {
-            $opt = $this->option ? : $Conf->paper_opts->find_document($this->dtype);
-            return !$opt || $opt->validate_document($doc, $docinfo);
-        }
     }
 
     public static function s3_document() {
@@ -178,7 +169,6 @@ class HotCRPDocument extends Filer {
     }
 
     public function dbstore($doc, $docinfo) {
-        global $Conf;
         if ($this->no_database)
             return null;
         if (!isset($doc->paperId))
@@ -190,9 +180,9 @@ class HotCRPDocument extends Filer {
                          "sha1" => $doc->sha1,
                          "documentType" => $doc->documentType);
         $columns["mimetype"] = $doc->mimetype;
-        if ($Conf->sversion >= 136 && ($m = Mimetype::lookup($doc->mimetype)))
+        if ($this->conf->sversion >= 136 && ($m = Mimetype::lookup($doc->mimetype)))
             $columns["mimetypeid"] = $m->mimetypeid;
-        if (!opt("dbNoPapers"))
+        if (!$this->conf->opt("dbNoPapers"))
             $columns["paper"] = $doc->content;
         if (get($doc, "filename"))
             $columns["filename"] = $doc->filename;
@@ -203,20 +193,18 @@ class HotCRPDocument extends Filer {
             $columns["infoJson"] = json_encode($infoJson);
         else if (is_object(get($doc, "metadata")))
             $columns["infoJson"] = json_encode($doc->metadata);
-        if ($Conf->sversion >= 74 && get($doc, "size"))
+        if (get($doc, "size"))
             $columns["size"] = $doc->size;
-        if ($Conf->sversion >= 82) {
-            if (get($doc, "filterType"))
-                $columns["filterType"] = $doc->filterType;
-            else if (get($doc, "filter"))
-                $columns["filterType"] = $doc->filter;
-            if (get($doc, "originalStorageId"))
-                $columns["originalStorageId"] = $doc->originalStorageId;
-            else if (get($doc, "original_id"))
-                $columns["originalStorageId"] = $doc->original_id;
-        }
+        if (get($doc, "filterType"))
+            $columns["filterType"] = $doc->filterType;
+        else if (get($doc, "filter"))
+            $columns["filterType"] = $doc->filter;
+        if (get($doc, "originalStorageId"))
+            $columns["originalStorageId"] = $doc->originalStorageId;
+        else if (get($doc, "original_id"))
+            $columns["originalStorageId"] = $doc->original_id;
         return new Filer_Dbstore("PaperStorage", "paperStorageId", $columns,
-                                 opt("dbNoPapers") ? null : "paper");
+                                 $this->conf->opt("dbNoPapers") ? null : "paper");
     }
 
     public function filestore_pattern($doc) {
@@ -224,7 +212,7 @@ class HotCRPDocument extends Filer {
         if ($this->no_filestore)
             return false;
         if (self::$_docstore === null) {
-            $fdir = opt("docstore");
+            $fdir = $this->conf->opt("docstore");
             if (!$fdir)
                 return (self::$_docstore = false);
 
@@ -244,9 +232,9 @@ class HotCRPDocument extends Filer {
         $ok = false;
 
         $result = null;
-        if (!opt("dbNoPapers")
+        if (!$this->conf->opt("dbNoPapers")
             && get_i($doc, "paperStorageId") > 1)
-            $result = Dbl::q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
+            $result = $this->conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
         if (!$result || !($row = edb_row($result)) || $row[0] === null)
             $doc->content = "";
         else if ($row[1] == 1) {

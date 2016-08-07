@@ -32,6 +32,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     private function merge($p) {
+        global $Conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -51,7 +52,7 @@ class DocumentInfo implements JsonSerializable {
             $this->infoJson = null;
         $this->filterType = $this->filterType ? (int) $this->filterType : null;
         $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
-        $this->docclass = HotCRPDocument::get($this->documentType);
+        $this->docclass = $Conf->docclass($this->documentType);
         if (isset($this->paper) && !isset($this->content))
             $this->content = $this->paper;
         if ($this->error_html)
@@ -137,6 +138,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     public function save() {
+        global $Conf;
         // look for an existing document with same sha1; otherwise upload
         if (($sha1 = $this->compute_sha1()) !== false) {
             $this->sha1 = $sha1;
@@ -144,7 +146,7 @@ class DocumentInfo implements JsonSerializable {
                 return true;
         }
         if (!$this->docclass)
-            $this->docclass = HotCRPDocument::get($this->documentType);
+            $this->docclass = $Conf->docclass($this->documentType);
         return $this->docclass->upload($this, (object) ["paperId" => $this->paperId]);
     }
 

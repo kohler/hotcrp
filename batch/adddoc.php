@@ -33,7 +33,7 @@ if ($content === false) {
     exit(1);
 }
 
-$docclass = new HotCRPDocument((int) $arg["d"]);
+$docclass = $Conf->docclass((int) $arg["d"]);
 $docclass->set_no_database_storage();
 if (isset($arg["no-file-storage"]))
     $docclass->set_no_file_storage();

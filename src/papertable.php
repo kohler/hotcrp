@@ -465,7 +465,7 @@ class PaperTable {
         global $Conf, $Me;
 
         $prow = $this->prow;
-        $docclass = new HotCRPDocument($docx->id, $docx);
+        $docclass = $Conf->docclass($docx->id);
         $documentType = $docx->id;
         $optionType = $docx->type;
         $main_submission = ($documentType == DTYPE_SUBMISSION || $documentType == DTYPE_FINAL);

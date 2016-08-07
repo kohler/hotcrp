@@ -60,6 +60,7 @@ class Conf {
     private $_pc_tags_cache = null;
     private $_review_form_cache = null;
     private $_date_format_initialized = false;
+    private $_docclass_cache = [];
 
     public $paper = null; // current paper row
 
@@ -517,6 +518,13 @@ class Conf {
             return $this->long_name . " (" . $this->short_name . ")";
         else
             return $this->long_name;
+    }
+
+
+    function docclass($dtype) {
+        if (!isset($this->_docclass_cache[$dtype]))
+            $this->_docclass_cache[$dtype] = new HotCRPDocument($this, $dtype);
+        return $this->_docclass_cache[$dtype];
     }
 
 
@@ -1219,8 +1227,10 @@ class Conf {
         if (!self::$no_invalidate_caches) {
             if (!$caches || isset($caches["pc"]))
                 $this->_pc_members_cache = $this->_pc_tags_cache = null;
-            if (!$caches || isset($caches["paperOption"]))
+            if (!$caches || isset($caches["paperOption"])) {
                 $this->paper_opts->invalidate_option_list();
+                $this->_docclass_cache = [];
+            }
             if (!$caches || isset($caches["rf"]))
                 $this->_review_form_cache = $this->_defined_rounds = null;
         }

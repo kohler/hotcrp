@@ -334,7 +334,7 @@ class PaperStatus {
         }
 
         // if no sha1 match, upload
-        $docclass = new HotCRPDocument($o->id);
+        $docclass = $Conf->docclass($o->id);
         $newdocj = clone $docj;
         if ($docclass->upload($newdocj, (object) ["paperId" => $this->paperid])
             && get($newdocj, "paperStorageId") > 1) {
