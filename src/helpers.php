@@ -764,18 +764,9 @@ function tabLength($text, $all) {
 }
 
 function ini_get_bytes($varname, $value = null) {
-    // from PHP manual
-    $val = trim($value ? : ini_get($varname));
-    $last = strtolower($val[strlen($val)-1]);
-    switch ($last) {
-    case 'g':
-        $val *= 1024; // fallthru
-    case 'm':
-        $val *= 1024; // fallthru
-    case 'k':
-        $val *= 1024;
-    }
-    return $val;
+    $val = trim($value !== null ? $value : ini_get($varname));
+    $last = strlen($val) ? strtolower($val[strlen($val) - 1]) : ".";
+    return $val * (1 << (+strpos(".kmg", $last) * 10));
 }
 
 function whyNotText($whyNot, $action) {

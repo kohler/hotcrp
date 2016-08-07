@@ -266,4 +266,10 @@ xassert_eqq($ns->make_absolute("after/path"), "http://butt.com/fart/barf/after/p
 xassert_eqq($ns->make_absolute("../after/path"), "http://butt.com/fart/after/path");
 xassert_eqq($ns->make_absolute("?confusion=20"), "http://butt.com/fart/barf/?confusion=20");
 
+// other helpers
+xassert_eqq(ini_get_bytes(null, "1"), 1);
+xassert_eqq(ini_get_bytes(null, "1 M"), 1 * (1 << 20));
+xassert_eqq(ini_get_bytes(null, "1.2k"), 1.2 * (1 << 10));
+xassert_eqq(ini_get_bytes(null, "20G"), 20 * (1 << 30));
+
 xassert_exit();
