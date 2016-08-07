@@ -430,7 +430,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
     }
 
     if ($myrow && $Conf->setting("rev_ratings") != REV_RATINGS_NONE) {
-        $badratings = PaperSearch::unusableRatings($Me->privChair, $Me->contactId);
+        $badratings = PaperSearch::unusableRatings($Me);
         $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
         $result = Dbl::qe_raw("select rating, count(PaperReview.reviewId) from PaperReview join ReviewRating on (PaperReview.contactId=$Me->contactId and PaperReview.reviewId=ReviewRating.reviewId$qx) group by rating order by rating desc");
         if (edb_nrows($result)) {

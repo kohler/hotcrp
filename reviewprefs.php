@@ -237,7 +237,7 @@ $Conf->infoMsg($Conf->message_html("revprefdescription"));
 
 
 // search
-$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer);
+$search = new PaperSearch($Me, ["t" => $Qreq->t, "urlbase" => $Qreq->urlbase, "q" => $Qreq->q], $reviewer_contact);
 $pl = new PaperList($search, ["sort" => true, "list" => true, "row_id_pattern" => "p#", "foldtype" => "pf", "reviewer" => $reviewer_contact], $Qreq);
 $pl_text = $pl->table_html("editReviewPreference",
                 array("class" => "pltable_full",

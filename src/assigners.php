@@ -1017,7 +1017,7 @@ class TagAssigner extends Assigner {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->contact->contactId)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->contact)->ids;
             if (count($twiddlecids) == 0)
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) > 1)
@@ -1074,7 +1074,7 @@ class TagAssigner extends Assigner {
         // resolve twiddle portion
         if ($m[1] && $m[1] != "~~" && !ctype_digit(substr($m[1], 0, strlen($m[1]) - 1))) {
             $c = substr($m[1], 0, strlen($m[1]) - 1);
-            $twiddlecids = ContactSearch::make_pc($c, $state->contact->contactId)->ids;
+            $twiddlecids = ContactSearch::make_pc($c, $state->contact)->ids;
             if (count($twiddlecids) == 0)
                 return "“" . htmlspecialchars($c) . "” doesn’t match a PC member.";
             else if (count($twiddlecids) == 1)
@@ -1495,7 +1495,7 @@ class AssignmentSet {
             return array((object) array("roles" => 0, "contactId" => null, "email" => $special, "sorter" => ""));
         }
         if ($special && !$first && (!$lemail || !$last)) {
-            $ret = ContactSearch::make_special($special, $this->contact->contactId);
+            $ret = ContactSearch::make_special($special, $this->contact);
             if ($ret->ids !== false)
                 return $ret->contacts();
         }
@@ -1526,7 +1526,7 @@ class AssignmentSet {
                 $text = "$last$first";
             if ($email)
                 $text .= " <$email>";
-            $ret = ContactSearch::make_cset($text, $this->contact->cid, $cset);
+            $ret = ContactSearch::make_cset($text, $this->contact, $cset);
             if (count($ret->ids) == 1)
                 return $ret->contacts();
             else if (count($ret->ids) == 0)
@@ -1847,9 +1847,7 @@ class AssignmentSet {
         foreach ($this->unparse_columns as $k => $v)
             $query_order .= " show:$k";
         $query_order .= " show:autoassignment";
-        $search = new PaperSearch($this->contact,
-                                  array("t" => defval($_REQUEST, "t", "s"),
-                                        "q" => $query_order));
+        $search = new PaperSearch($this->contact, ["t" => get($_REQUEST, "t", "s"), "q" => $query_order]);
         $plist = new PaperList($search);
         echo $plist->table_html("reviewers", ["nofooter" => 1, "class" => "pltable_full", "table_id" => "foldpl"]);
 

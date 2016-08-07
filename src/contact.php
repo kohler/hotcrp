@@ -93,7 +93,7 @@ class Contact {
     static private $active_forceShow = false;
 
 
-    public function __construct($trueuser = null, $conf = null) {
+    public function __construct($trueuser = null, Conf $conf = null) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
         if ($trueuser)
@@ -102,14 +102,15 @@ class Contact {
             $this->db_load();
     }
 
-    public static function fetch($result) {
+    public static function fetch($result, Conf $conf = null) {
         global $Conf;
-        $acct = $result ? $result->fetch_object("Contact") : null;
-        if ($acct && !is_int($acct->contactId)) {
-            $acct->conf = $Conf;
-            $acct->db_load();
+        $conf = $conf ? : $Conf;
+        $user = $result ? $result->fetch_object("Contact", [null, $conf]) : null;
+        if ($user && !is_int($user->contactId)) {
+            $user->conf = $conf;
+            $user->db_load();
         }
-        return $acct;
+        return $user;
     }
 
     private function merge($user) {
@@ -1040,9 +1041,11 @@ class Contact {
         return !!$row;
     }
 
-    static function find_by_id($cid) {
-        $result = Dbl::qe("select ContactInfo.* from ContactInfo where contactId=?", $cid);
-        $c = self::fetch($result);
+    static function find_by_id($cid, Conf $conf = null) {
+        global $Conf;
+        $conf = $conf ? : $Conf;
+        $result = $conf->qe("select ContactInfo.* from ContactInfo where contactId=?", $cid);
+        $c = self::fetch($result, $conf);
         Dbl::free($result);
         return $c;
     }

@@ -384,14 +384,14 @@ class PaperList {
     public function prepare_xreviewer($rows) {
         // PaperSearch is responsible for access control checking use of
         // `reviewerContact`, but we are careful anyway.
-        if ($this->search->reviewer_cid()
-            && $this->search->reviewer_cid() != $this->contact->contactId
+        if (($xreviewer = $this->search->reviewer())
+            && $xreviewer->contactId != $this->contact->contactId
             && !empty($rows)
             && !$this->_xreviewer) {
             $by_pid = array();
             foreach ($rows as $row)
                 $by_pid[$row->paperId] = $row;
-            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, timeApprovalRequested, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $this->search->reviewer_cid() . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $this->search->reviewer_cid() . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
+            $result = Dbl::qe_raw("select Paper.paperId, reviewType, reviewId, reviewModified, reviewSubmitted, timeApprovalRequested, reviewNeedsSubmit, reviewOrdinal, reviewBlind, PaperReview.contactId reviewContactId, requestedBy, reviewToken, reviewRound, conflictType from Paper left join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.contactId=" . $xreviewer->contactId . ") left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=" . $xreviewer->contactId . ") where Paper.paperId in (" . join(",", array_keys($by_pid)) . ") and (PaperReview.contactId is not null or PaperConflict.contactId is not null)");
             while (($xrow = edb_orow($result))) {
                 $prow = $by_pid[$xrow->paperId];
                 if ($this->contact->allow_administer($prow)
@@ -401,7 +401,7 @@ class PaperList {
                         && !$xrow->reviewType))
                     $prow->_xreviewer = $xrow;
             }
-            $this->_xreviewer = $this->search->reviewer();
+            $this->_xreviewer = $xreviewer;
         }
         return $this->_xreviewer;
     }

@@ -562,7 +562,7 @@ class ContactList {
             if (!$this->contact->privChair)
                 $pq .= "\n\t\tleft join PaperConflict pc on (pc.paperId=p.paperId and pc.contactId=" . $this->contact->contactId . ")";
             if (isset($queryOptions["revratings"])) {
-                $badratings = PaperSearch::unusableRatings($this->contact->privChair, $this->contact->contactId);
+                $badratings = PaperSearch::unusableRatings($this->contact);
                 $pq .= "\n\t\tleft join ReviewRating rr on (rr.reviewId=r.reviewId";
                 if (count($badratings) > 0)
                     $pq .= " and not (rr.reviewId in (" . join(",", $badratings) . "))";
