@@ -9,8 +9,6 @@ class HotCRPDocument extends Filer {
     private $option = null;
     private $no_database = false;
     private $no_filestore = false;
-    static private $_s3_document = false;
-    static private $_docstore = null;
 
     public function __construct(Conf $conf, $dtype, $option = null) {
         $this->conf = $conf;
@@ -102,28 +100,6 @@ class HotCRPDocument extends Filer {
             return true;
     }
 
-    public static function s3_document() {
-        global $Conf, $Now;
-        if (self::$_s3_document === false) {
-            if ($Conf->setting_data("s3_bucket")) {
-                $opt = array("bucket" => $Conf->setting_data("s3_bucket"),
-                             "key" => $Conf->setting_data("s3_key"),
-                             "secret" => $Conf->setting_data("s3_secret"),
-                             "scope" => $Conf->setting_data("__s3_scope"),
-                             "signing_key" => $Conf->setting_data("__s3_signing_key"));
-                self::$_s3_document = new S3Document($opt);
-                list($scope, $signing_key) = self::$_s3_document->scope_and_signing_key($Now);
-                if ($opt["scope"] !== $scope
-                    || $opt["signing_key"] !== $signing_key) {
-                    $Conf->save_setting("__s3_scope", 1, $scope);
-                    $Conf->save_setting("__s3_signing_key", 1, $signing_key);
-                }
-            } else
-                self::$_s3_document = null;
-        }
-        return self::$_s3_document;
-    }
-
     public static function s3_filename($doc) {
         if (($sha1 = Filer::text_sha1($doc)) !== false)
             return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
@@ -133,7 +109,7 @@ class HotCRPDocument extends Filer {
     }
 
     public function s3_check($doc) {
-        return ($s3 = self::s3_document())
+        return ($s3 = $this->conf->s3_docstore())
             && $s3->check(self::s3_filename($doc));
     }
 
@@ -145,9 +121,9 @@ class HotCRPDocument extends Filer {
                       . ", has checksum " . sha1($doc->content));
             return false;
         }
-        $s3 = self::s3_document();
+        $s3 = $this->conf->s3_docstore();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
-        $meta = array("conf" => opt("dbName"),
+        $meta = array("conf" => $this->conf->opt("dbName"),
                       "pid" => isset($doc->paperId) ? (int) $doc->paperId : (int) $docinfo->paperId,
                       "dtype" => (int) $dtype);
         if (get($doc, "filter")) {
@@ -164,7 +140,7 @@ class HotCRPDocument extends Filer {
     }
 
     public function store_other($doc, $docinfo) {
-        if (($s3 = self::s3_document()))
+        if (($s3 = $this->conf->s3_docstore()))
             $this->s3_store($doc, $docinfo, true);
     }
 
@@ -208,23 +184,7 @@ class HotCRPDocument extends Filer {
     }
 
     public function filestore_pattern($doc) {
-        global $ConfSitePATH;
-        if ($this->no_filestore)
-            return false;
-        if (self::$_docstore === null) {
-            $fdir = $this->conf->opt("docstore");
-            if (!$fdir)
-                return (self::$_docstore = false);
-
-            $fpath = $fdir;
-            $use_subdir = opt("docstoreSubdir", false);
-            if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
-                $fpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
-            $fpath .= "/%h%x";
-
-            self::$_docstore = array($fdir, $fpath);
-        }
-        return self::$_docstore;
+        return $this->no_filestore ? false : $this->conf->docstore();
     }
 
     public function load_content($doc) {
@@ -245,7 +205,7 @@ class HotCRPDocument extends Filer {
             $ok = true;
         }
 
-        if (!$ok && ($s3 = self::s3_document())
+        if (!$ok && ($s3 = $this->conf->s3_docstore())
             && ($filename = self::s3_filename($doc))) {
             $filename = self::s3_filename($doc);
             $content = $s3->load($filename);

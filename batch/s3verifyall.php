@@ -13,7 +13,7 @@ if (!$Conf->setting_data("s3_bucket")) {
     exit(1);
 }
 
-$s3doc = HotCRPDocument::s3_document();
+$s3doc = $Conf->s3_docstore();
 
 $args = array("marker" => null, "max-keys" => 100);
 $xml = null;

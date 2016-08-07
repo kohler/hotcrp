@@ -18,7 +18,7 @@ if (!$Conf->setting_data("s3_bucket")) {
 if (count($arg["_"]) == 0)
     $arg["_"] = array("-");
 
-$s3doc = HotCRPDocument::s3_document();
+$s3doc = $Conf->s3_docstore();
 $ok = 0;
 
 foreach ($arg["_"] as $fn) {

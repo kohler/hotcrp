@@ -34,6 +34,11 @@ class S3Document {
         $this->fixed_time = get($opt, "fixed_time");
     }
 
+    function check_key_secret_bucket($key, $secret, $bucket) {
+        return $this->s3_key === $key && $this->s3_secret === $secret
+            && $this->s3_bucket === $bucket;
+    }
+
     private function check_scope($time) {
         return $this->s3_scope
             && preg_match(',\A\d\d\d\d\d\d\d\d/([^/]*)/s3/aws4_request\z,',

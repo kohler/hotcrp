@@ -61,6 +61,8 @@ class Conf {
     private $_review_form_cache = null;
     private $_date_format_initialized = false;
     private $_docclass_cache = [];
+    private $_docstore = false;
+    private $_s3_document = false;
 
     public $paper = null; // current paper row
 
@@ -249,8 +251,12 @@ class Conf {
             unset($this->settingTexts["s3_bucket"], $this->settingTexts["s3_key"],
                   $this->settingTexts["s3_secret"]);
         if (get($this->opt, "dbNoPapers") && !get($this->opt, "docstore")
-            && !get($this->opt, "filestore") && !get($this->opt, "s3_bucket"))
+            && !get($this->opt, "filestore") && !get($this->settingTexts, "s3_bucket"))
             unset($this->opt["dbNoPapers"]);
+        if ($this->_s3_document
+            && (!isset($this->settingTexts["s3_bucket"])
+                || !$this->_s3_document->check_key_secret_bucket($this->settingTexts["s3_key"], $this->settingTexts["s3_secret"], $this->settingTexts["s3_bucket"])))
+            $this->_s3_document = false;
 
         // tracks settings
         $this->tracks = $this->_track_tags = null;
@@ -381,6 +387,14 @@ class Conf {
         }
         if (get($this->opt, "docstore") && $this->opt["docstore"][0] !== "/")
             $this->opt["docstore"] = $ConfSitePATH . "/" . $this->opt["docstore"];
+        $this->_docstore = false;
+        if (($fdir = get($this->opt, "docstore"))) {
+            $fpath = $fdir;
+            $use_subdir = get($this->opt, "docstoreSubdir");
+            if ($use_subdir && ($use_subdir === true || $use_subdir > 0))
+                $fpath .= "/%" . ($use_subdir === true ? 2 : $use_subdir) . "h";
+            $this->_docstore = [$fdir, $fpath . "/%h%x"];
+        }
 
         // handle timezone
         if (function_exists("date_default_timezone_set")) {
@@ -525,6 +539,31 @@ class Conf {
         if (!isset($this->_docclass_cache[$dtype]))
             $this->_docclass_cache[$dtype] = new HotCRPDocument($this, $dtype);
         return $this->_docclass_cache[$dtype];
+    }
+
+    function docstore() {
+        return $this->_docstore;
+    }
+
+    function s3_docstore() {
+        global $Now;
+        if ($this->_s3_document === false) {
+            if ($this->setting_data("s3_bucket")) {
+                $opts = ["bucket" => $this->setting_data("s3_bucket"),
+                         "key" => $this->setting_data("s3_key"),
+                         "secret" => $this->setting_data("s3_secret"),
+                         "scope" => $this->setting_data("__s3_scope"),
+                         "signing_key" => $this->setting_data("__s3_signing_key")];
+                $this->_s3_document = new S3Document($opts);
+                list($scope, $signing_key) = $this->_s3_document->scope_and_signing_key($Now);
+                if ($opts["scope"] !== $scope || $opts["signing_key"] !== $signing_key) {
+                    $this->save_setting("__s3_scope", 1, $scope);
+                    $this->save_setting("__s3_signing_key", 1, $signing_key);
+                }
+            } else
+                $this->_s3_document = null;
+        }
+        return $this->_s3_document;
     }
 
 
