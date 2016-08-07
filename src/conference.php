@@ -97,9 +97,11 @@ class Conf {
             $options["confid"] = get($options, "dbName");
         $this->opt = $options;
         $this->paper_opts = new PaperOptionList($this);
-        if ($this->dblink) {
+        if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
             Dbl::set_error_handler(array($this, "query_error_handler"));
+        }
+        if ($this->dblink) {
             Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|call_user_func)/";
             $this->load_settings();
         } else
@@ -1125,7 +1127,7 @@ class Conf {
             if ($ox->type === "text")
                 $text_options[] = $ox->id;
         if (count($text_options)) {
-            $q = Dbl::format_query("select paperId from PaperOption where optionId ?a and data='' limit 1", $text_options);
+            $q = Dbl::format_query($this->dblink, "select paperId from PaperOption where optionId ?a and data='' limit 1", $text_options);
             $any = $this->invariantq($q);
             if ($any)
                 trigger_error("$this->dbname invariant error: text option with empty text");

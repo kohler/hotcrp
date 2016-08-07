@@ -51,6 +51,18 @@ class Multiconference {
         $opt["confid"] = $confid;
     }
 
+    static function load_confid($confid) {
+        global $Opt;
+        $save_opt = $Opt;
+        $Opt = self::$original_opt;
+        self::assign_confid($Opt, $confid);
+        if (get($Opt, "include"))
+            read_included_options($Opt["include"]);
+        $newconf = get($Opt, "missing") ? null : new Conf($Opt, true);
+        $Opt = $save_opt;
+        return $newconf;
+    }
+
     static function fail_message($errors) {
         global $Conf, $Me, $Opt;
 
