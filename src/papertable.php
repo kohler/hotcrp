@@ -241,14 +241,14 @@ class PaperTable {
         echo "</div>";
     }
 
-    public function has_error($f) {
+    public function has_problem($f) {
         if ($f === "authorInformation")
             $f = "authors";
-        return $this->edit_status && $this->edit_status->has_error($f);
+        return $this->edit_status && $this->edit_status->has_problem($f);
     }
 
     public function error_class($f) {
-        return $this->has_error($f) ? " error" : "";
+        return $this->has_problem($f) ? " error" : "";
     }
 
     private function editable_papt($what, $name, $extra = array()) {
@@ -261,8 +261,9 @@ class PaperTable {
 
     public function messages_for($field) {
         if ($this->edit_status && ($ms = $this->edit_status->messages_for($field, true))) {
-            $is_error = array_reduce($ms, function ($c, $m) { return $c || $m[2]; }, false);
-            return Ht::xmsg($is_error ? "error" : "warning", '<div class="multimessage"><div class="mmm">' . join("</div>\n<div class=\"mmm\">", array_map(function ($m) { return $m[1]; }, $ms)) . '</div></div>');
+            $status = array_reduce($ms, function ($c, $m) { return max($c, $m[2]); }, 0);
+            $statusmap = ["xinfo", "warning", "error"];
+            return Ht::xmsg($statusmap[$status], '<div class="multimessage"><div class="mmm">' . join("</div>\n<div class=\"mmm\">", array_map(function ($m) { return $m[1]; }, $ms)) . '</div></div>');
         } else
             return "";
     }
@@ -766,7 +767,7 @@ class PaperTable {
 
         // header with folding
         echo '<div class="pg">',
-            '<div class="pavt childfold', ($this->has_error("authors") ? " error" : ""),
+            '<div class="pavt childfold', $this->error_class("authors"),
             '" onclick="return aufoldup(event)">',
             '<span class="pavfn">';
         if (!$viewable || $this->allFolded)
@@ -935,7 +936,7 @@ class PaperTable {
         $paperId = $this->prow->paperId;
         list($aulist, $contacts) = $this->_analyze_authors();
 
-        $cerror = $this->has_error("contactAuthor") || $this->has_error("contacts");
+        $cerror = $this->has_problem("contactAuthor") || $this->has_problem("contacts");
         $open = $cerror || $always_unfold
             || ($this->useRequest && $this->qreq->setcontacts == 2);
         echo Ht::hidden("setcontacts", $open ? 2 : 1, array("id" => "setcontacts")),
@@ -1328,7 +1329,7 @@ class PaperTable {
         $viewable = $this->prow->viewable_tags($Me);
 
         $tx = $tagger->unparse_and_link($viewable, $tags, false);
-        $unfolded = $is_editable && ($this->has_error("tags") || $this->qreq->atab === "tags");
+        $unfolded = $is_editable && ($this->has_problem("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
         $color = $this->prow->conf->tags()->color_classes($viewable);

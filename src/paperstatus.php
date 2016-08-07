@@ -246,22 +246,27 @@ class PaperStatus {
 
 
     public function set_error_html($field, $html) {
-        $this->msg($field, $html, true);
+        $this->msg($field, $html, 2);
     }
 
     public function set_warning_html($field, $html) {
-        $this->msg($field, $html, false);
+        $this->msg($field, $html, 1);
     }
 
-    public function msg($field, $html, $is_error) {
+    public function set_info_html($field, $html) {
+        $this->msg($field, $html, 0);
+    }
+
+    public function msg($field, $html, $status) {
         if (!$this->no_msgs) {
             if ($field)
-                $this->errf[$field] = true;
+                $this->errf[$field] = max(get($this->errf, $field, 0), $status);
             if ($html)
-                $this->msgs[] = [$field, $html, $is_error];
-            $this->has_warnings = true;
-            if ($is_error && (!$field || !$this->allow_error
-                              || array_search($field, $this->allow_error) === false))
+                $this->msgs[] = [$field, $html, $status];
+            if ($status == 1)
+                $this->has_warnings = true;
+            if ($status == 2 && (!$field || !$this->allow_error
+                                 || array_search($field, $this->allow_error) === false))
                 $this->has_errors = true;
         }
     }
@@ -1019,12 +1024,12 @@ class PaperStatus {
         return $include_fields || empty($m) ? $m : array_map(function ($m) { return $m[1]; }, $m);
     }
 
-    function error_fields() {
-        return $this->errf;
+    function has_error() {
+        return $this->has_errors;
     }
 
-    function has_error($field = null) {
-        return $field ? isset($this->errf[$field]) : $this->has_errors;
+    function has_problem($field) {
+        return get($this->errf, $field, 0) > 0;
     }
 
     function has_messages() {
