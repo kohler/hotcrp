@@ -56,8 +56,8 @@ class FileFilter {
 
     public function find_filtered($doc) {
         if ($this->id) {
-            $result = Dbl::qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
-            $fdoc = DocumentInfo::fetch($result);
+            $result = $doc->conf->qe("select PaperStorage.* from FilteredDocument join PaperStorage on (PaperStorage.paperStorageId=FilteredDocument.outDocId) where inDocId=? and FilteredDocument.filterType=?", $doc->paperStorageId, $this->id);
+            $fdoc = DocumentInfo::fetch($result, $doc->conf);
             Dbl::free($result);
         } else
             $fdoc = null;

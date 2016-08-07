@@ -31,7 +31,7 @@ foreach ($sids as $sid) {
         compression, sha1, documentType, filename, infoJson,
         paper is null as paper_null
         from PaperStorage where paperStorageId=$sid");
-    $doc = DocumentInfo::fetch($result);
+    $doc = DocumentInfo::fetch($result, $Conf);
     Dbl::free($result);
     if ($doc->paper_null && !$doc->docclass->filestore_check($doc))
         continue;

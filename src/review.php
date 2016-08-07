@@ -674,8 +674,8 @@ class ReviewForm {
         return $wc;
     }
 
-    private static function contact_by_id($cid) {
-        $pc = pcMembers();
+    private function contact_by_id($cid) {
+        $pc = $this->conf->pc_members();
         if (isset($pc[$cid]))
             return $pc[$cid];
         else
@@ -857,7 +857,7 @@ class ReviewForm {
         $this->_mailer_preps = [];
         $submitter = $contact;
         if ($contactId != $submitter->contactId)
-            $submitter = self::contact_by_id($contactId);
+            $submitter = $this->contact_by_id($contactId);
         if ($submit || $approval_requested || $rrow->timeApprovalRequested)
             $rrow = $this->conf->reviewRow(["reviewId" => $reviewId]);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
@@ -878,7 +878,7 @@ class ReviewForm {
             $this->_mailer_info["rrow_unsubmitted"] = true;
             if ($this->conf->timeEmailChairAboutReview())
                 HotCRPMailer::send_manager($this->_mailer_template, $prow, $this->_mailer_info);
-            if ($rrow->requestedBy && ($requester = self::contact_by_id($rrow->requestedBy))) {
+            if ($rrow->requestedBy && ($requester = $this->contact_by_id($rrow->requestedBy))) {
                 $this->review_watch_callback($prow, $requester);
                 $this->review_watch_callback($prow, $submitter);
             }
@@ -1475,7 +1475,7 @@ $blind\n";
     . Ht::submit("Decline review", ["class" => "popup-btn"])
     . Ht::js_button("Cancel", "popup(null,'ref',1)", ["class" => "popup-btn"])
     . "</div></div></form></div>", "declinereviewform");
-            if ($rrow->requestedBy && ($requester = self::contact_by_id($rrow->requestedBy)))
+            if ($rrow->requestedBy && ($requester = $this->contact_by_id($rrow->requestedBy)))
                 $req = 'Please take a moment to accept or decline ' . Text::name_html($requester) . '’s review request.';
             else
                 $req = 'Please take a moment to accept or decline our review request.';

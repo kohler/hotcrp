@@ -4,6 +4,7 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class DocumentInfo implements JsonSerializable {
+    public $conf;
     public $paperStorageId = 0;
     public $paperId = 0;
     public $documentType = 0;
@@ -27,12 +28,13 @@ class DocumentInfo implements JsonSerializable {
     public $error;
     public $error_html;
 
-    public function __construct($p = null) {
-        $this->merge($p);
+    function __construct($p = null, $conf = null) {
+        $this->merge($p, $conf);
     }
 
-    private function merge($p) {
+    private function merge($p, $conf) {
         global $Conf;
+        $this->conf = $conf ? : $Conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -52,7 +54,7 @@ class DocumentInfo implements JsonSerializable {
             $this->infoJson = null;
         $this->filterType = $this->filterType ? (int) $this->filterType : null;
         $this->originalStorageId = $this->originalStorageId ? (int) $this->originalStorageId : null;
-        $this->docclass = $Conf->docclass($this->documentType);
+        $this->docclass = $this->conf->docclass($this->documentType);
         if (isset($this->paper) && !isset($this->content))
             $this->content = $this->paper;
         if ($this->error_html)
@@ -66,22 +68,15 @@ class DocumentInfo implements JsonSerializable {
             && $this->sha1 == ""
             && $this->docclass->load_content($this)) {
             $this->sha1 = sha1($this->content, true);
-            Dbl::q("update PaperStorage set sha1=? where paperStorageId=?", $this->sha1, $this->paperStorageId);
+            $this->conf->q("update PaperStorage set sha1=? where paperStorageId=?", $this->sha1, $this->paperStorageId);
         }
     }
 
-    static public function fetch($result) {
-        $di = $result ? $result->fetch_object("DocumentInfo") : null;
+    static public function fetch($result, $conf) {
+        $di = $result ? $result->fetch_object("DocumentInfo", [null, $conf]) : null;
         if ($di && !is_int($di->paperStorageId))
-            $di->merge(null);
+            $di->merge(null, $conf);
         return $di;
-    }
-
-    static public function id_by_sha1($paperId, $dtype, $sha1) {
-        if (($sha1 = Filer::binary_sha1($sha1)) !== false)
-            return Dbl::fetch_ivalue("select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $paperId, $dtype, $sha1) ? : false;
-        else
-            return false;
     }
 
     static public function make_file_upload($paperId, $documentType, $upload) {
@@ -138,15 +133,17 @@ class DocumentInfo implements JsonSerializable {
     }
 
     public function save() {
-        global $Conf;
         // look for an existing document with same sha1; otherwise upload
         if (($sha1 = $this->compute_sha1()) !== false) {
             $this->sha1 = $sha1;
-            if (($this->paperStorageId = self::id_by_sha1($this->paperId, $this->documentType, $sha1)))
+            $id = Dbl::fetch_ivalue($this->conf->dblink, "select paperStorageId from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $sha1);
+            if ($id) {
+                $this->paperStorageId = $id;
                 return true;
+            }
         }
         if (!$this->docclass)
-            $this->docclass = $Conf->docclass($this->documentType);
+            $this->docclass = $this->conf->docclass($this->documentType);
         return $this->docclass->upload($this, (object) ["paperId" => $this->paperId]);
     }
 
@@ -158,13 +155,12 @@ class DocumentInfo implements JsonSerializable {
 
     const L_SMALL = 1;
     const L_NOSIZE = 2;
-    public function link_html($html = "", $flags = 0, $filters = null) {
-        global $Conf;
+    function link_html($html = "", $flags = 0, $filters = null) {
         $p = $this->url($filters);
 
         $finalsuffix = "";
         if ($this->documentType == DTYPE_FINAL
-            || ($this->documentType > 0 && ($o = $Conf->paper_opts->find($this->documentType)) && $o->final))
+            || ($this->documentType > 0 && ($o = $this->conf->paper_opts->find($this->documentType)) && $o->final))
             $finalsuffix = "f";
 
         if ($this->mimetype == "application/pdf")
@@ -193,20 +189,19 @@ class DocumentInfo implements JsonSerializable {
         return $x . "</a>";
     }
 
-    public function metadata() {
+    function metadata() {
         if ($this->is_partial && !isset($this->infoJson) && !isset($this->infoJson_str)) {
-            $this->infoJson_str = Dbl::fetch_value("select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId) ? : "";
+            $this->infoJson_str = Dbl::fetch_value($this->conf->dblink, "select infoJson from PaperStorage where paperStorageId=?", $this->paperStorageId) ? : "";
             $this->infoJson = json_decode($this->infoJson_str);
         }
         return $this->infoJson;
     }
 
-    public function update_metadata($delta, $quiet = false) {
-        global $Conf;
+    function update_metadata($delta, $quiet = false) {
         if ($this->paperStorageId <= 1)
             return false;
         $length_ok = true;
-        $this->infoJson_str = Dbl::compare_and_swap($Conf->dblink,
+        $this->infoJson_str = Dbl::compare_and_swap($this->conf->dblink,
             "select infoJson from PaperStorage where paperStorageId=?", [$this->paperStorageId],
             function ($old) use ($delta, &$length_ok) {
                 $j = json_object_replace($old ? json_decode($old) : null, $delta, true);
@@ -217,7 +212,7 @@ class DocumentInfo implements JsonSerializable {
             "update PaperStorage set infoJson=?{desired} where paperStorageId=? and infoJson?{expected}e", [$this->paperStorageId]);
         $this->infoJson = is_string($this->infoJson_str) ? json_decode($this->infoJson_str) : null;
         if (!$length_ok && !$quiet)
-            error_log(caller_landmark() . ": $Conf->dbName: update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
+            error_log(caller_landmark() . ": {$this->conf->dbname}: update_metadata(paper $this->paperId, dt $this->documentType): delta too long, delta " . json_encode($delta));
         return $length_ok;
     }
 
@@ -249,7 +244,7 @@ class DocumentInfo implements JsonSerializable {
                 $x[$k] = substr($v, 0, 50) . "…";
             else if ($k === "sha1" && is_string($v))
                 $x[$k] = Filer::text_sha1($v);
-            else if ($k !== "docclass" && $k !== "infoJson_str" && $v !== null)
+            else if ($k !== "conf" && $k !== "docclass" && $k !== "infoJson_str" && $v !== null)
                 $x[$k] = $v;
         return $x;
     }

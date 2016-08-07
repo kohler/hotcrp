@@ -16,7 +16,7 @@ $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
         from PaperStorage where paperStorageId not in (" . join(",", $storageIds) . ")
         and paper is not null and paperStorageId>1 order by timestamp");
 $killable = array();
-while (($doc = DocumentInfo::fetch($result)))
+while (($doc = DocumentInfo::fetch($result, $Conf)))
     $killable[$doc->paperStorageId] = "[" . $Conf->unparse_time_log($doc->timestamp)
         . "] " . HotCRPDocument::filename($doc) . " ($doc->paperStorageId)";
 

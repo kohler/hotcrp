@@ -559,18 +559,6 @@ class PaperInfo {
         return self::render_topic_list($out, $comma, $long, $Conf);
     }
 
-    static public function make_topic_map($pids) {
-        global $Conf;
-        $result = $Conf->qe("select paperId, group_concat(topicId) as topicIds from PaperTopic where paperId ?a group by paperId", $pids);
-        $topic_map = Dbl::fetch_map($result);
-        foreach ($topic_map as $pid => &$t) {
-            $t = explode(",", $t);
-            foreach ($t as &$x)
-                $x = (int) $x;
-        }
-        return $topic_map;
-    }
-
     public function topic_interest_score($contact) {
         $score = 0;
         if (is_int($contact))
@@ -690,7 +678,7 @@ class PaperInfo {
         if ($this->_document_array === null)
             $this->_document_array = [];
         $result = $this->conf->qe("select paperStorageId, $this->paperId paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId ?a", $dids);
-        while (($di = DocumentInfo::fetch($result)))
+        while (($di = DocumentInfo::fetch($result, $this->conf)))
             $this->_document_array[$di->paperStorageId] = $di;
         Dbl::free($result);
     }
