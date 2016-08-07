@@ -51,6 +51,7 @@ class Conf {
     private $rounds = null;
     private $_defined_rounds = null;
     private $tracks = null;
+    private $_taginfo = null;
     private $_track_tags = null;
     private $_track_review_sensitivity = false;
     private $_decisions = null;
@@ -688,6 +689,14 @@ class Conf {
 
 
 
+    function tags() {
+        if (!$this->_taginfo)
+            $this->_taginfo = TagMap::make($this);
+        return $this->_taginfo;
+    }
+
+
+
     function has_tracks() {
         return $this->tracks !== null;
     }
@@ -1272,6 +1281,8 @@ class Conf {
             }
             if (!$caches || isset($caches["rf"]))
                 $this->_review_form_cache = $this->_defined_rounds = null;
+            if (!$caches || isset($caches["taginfo"]))
+                $this->_taginfo = null;
         }
     }
 

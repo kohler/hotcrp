@@ -423,7 +423,7 @@ if ($pl) {
         displayOptionCheckbox("tags", 1, "Tags", $opt);
         if ($Me->privChair) {
             $opt["indent"] = true;
-            foreach (TagInfo::defined_tags() as $t)
+            foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
                     displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "#~" . $t->tag . " tags", $opt);
         }

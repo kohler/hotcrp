@@ -1636,7 +1636,7 @@ class PaperSearch {
             return new SearchTerm("f");
         $any = $word === "any" || $word === "none";
         $value = new TagSearchMatcher;
-        foreach (TagInfo::color_tags($any ? null : $word) as $tag) {
+        foreach ($Conf->tags()->filter_color($any ? null : $word) as $tag) {
             array_push($value->tags, $tag, "{$this->cid}~$tag");
             if ($this->privChair)
                 $value->tags[] = "~~$tag";
@@ -3305,7 +3305,7 @@ class PaperSearch {
         if ($sole_qe
             && ($sort = $sole_qe->get_float("sort"))
             && ($tag = self::_check_sort_order_anno($sort))) {
-            $dt = TagInfo::make_defined_tag($tag);
+            $dt = $Conf->tags()->add(TagInfo::base($tag));
             if (count($dt->order_anno_list()))
                 $order_anno_tag = $dt;
         }
@@ -3329,7 +3329,7 @@ class PaperSearch {
             || $order_anno_tag
             || ($this->contact->privChair
                 && $Conf->has_any_manager()
-                && TagInfo::has_sitewide()))
+                && $Conf->tags()->has_sitewide))
             $sqi->add_column("paperTags", "(select group_concat(' ', tag, '#', tagIndex separator '') from PaperTag where PaperTag.paperId=Paper.paperId)");
         if (get($this->_query_options, "scores")
             || get($this->_query_options, "reviewTypes")

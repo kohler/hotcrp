@@ -61,6 +61,7 @@ class TagMapItem {
 }
 
 class TagMap implements IteratorAggregate {
+    public $conf;
     public $has_pattern = false;
     public $has_chair = true;
     public $has_votish = false;
@@ -75,7 +76,17 @@ class TagMap implements IteratorAggregate {
     private $sorted = false;
     private $pattern_re = null;
     private $pattern_storage = [];
-    public function check($tag) {
+    private $color_re = null;
+    private $badge_re = null;
+    private $sitewide_re_part = null;
+
+    private static $multicolor_map = [];
+
+    function __construct($conf = null) {
+        global $Conf;
+        $this->conf = $conf ? : $Conf;
+    }
+    function check($tag) {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
         if (!$t && $this->has_pattern) {
@@ -101,7 +112,10 @@ class TagMap implements IteratorAggregate {
         }
         return $t;
     }
-    public function make($tag) {
+    function check_base($tag) {
+        return $this->check(TagInfo::base($tag));
+    }
+    function add($tag) {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
         if (!$t) {
@@ -123,23 +137,202 @@ class TagMap implements IteratorAggregate {
         ksort($this->storage);
         $this->sorted = true;
     }
-    public function getIterator() {
+    function getIterator() {
         $this->sorted || $this->sort();
         return new ArrayIterator($this->storage);
     }
-    public function filter($property) {
+    function filter($property) {
         $k = "has_{$property}";
         if (!$this->$k)
             return [];
         $this->sorted || $this->sort();
         return array_filter($this->storage, function ($t) use ($property) { return $t->$property; });
     }
-    public function check_property($tag, $property) {
+    function check_property($tag, $property) {
         $k = "has_{$property}";
         return $this->$k
             && ($t = $this->check(TagInfo::base($tag)))
             && $t->$property
             ? $t : null;
+    }
+
+
+    function is_chair($tag) {
+        if ($tag[0] === "~")
+            return $tag[1] === "~";
+        else
+            return !!$this->check_property($tag, "chair");
+    }
+    function is_sitewide($tag) {
+        return !!$this->check_property($tag, "sitewide");
+    }
+    function is_votish($tag) {
+        return !!$this->check_property($tag, "votish");
+    }
+    function is_vote($tag) {
+        return !!$this->check_property($tag, "vote");
+    }
+    function is_approval($tag) {
+        return !!$this->check_property($tag, "approval");
+    }
+    function votish_base($tag) {
+        if (!$this->has_votish
+            || ($twiddle = strpos($tag, "~")) === false)
+            return false;
+        $tbase = substr(TagInfo::base($tag), $twiddle + 1);
+        $t = $this->check($tbase);
+        return $t && $t->votish ? $tbase : false;
+    }
+    function is_rank($tag) {
+        return !!$this->check_property($tag, "rank");
+    }
+
+    function sitewide_regex_part() {
+        if ($this->sitewide_re_part === null) {
+            $x = ["\\&"];
+            foreach ($this->filter("sitewide") as $t)
+                $x[] = $t->tag_regex() . "[ #=]";
+            $this->sitewide_re_part = join("|", $x);
+        }
+        return $this->sitewide_re_part;
+    }
+
+    function color_regex() {
+        if (!$this->color_re) {
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . TagInfo::BASIC_COLORS_PLUS;
+            foreach ($this->filter("colors") as $t)
+                $re .= "|" . $t->tag_regex();
+            $this->color_re = $re . ")(?=\\z|[# ])}i";
+        }
+        return $this->color_re;
+    }
+
+    function color_classes($tags, $color_type_bit = 1) {
+        if (is_array($tags))
+            $tags = join(" ", $tags);
+        if (!$tags || $tags === " ")
+            return "";
+        if (!preg_match_all($this->color_regex(), $tags, $m))
+            return false;
+        $classes = array();
+        foreach ($m[1] as $tag)
+            if (($t = $this->check($tag)) && $t->colors) {
+                foreach ($t->colors as $k)
+                    $classes[] = $k . "tag";
+            } else
+                $classes[] = TagInfo::canonical_color($tag) . "tag";
+        if ($color_type_bit > 1)
+            $classes = array_filter($classes, "TagInfo::classes_have_colors");
+        if (count($classes) > 1) {
+            sort($classes);
+            $classes = array_unique($classes);
+        }
+        $key = join(" ", $classes);
+        // This seems out of place---it's redundant if we're going to
+        // generate JSON, for example---but it is convenient.
+        if (count($classes) > 1) {
+            $m = (int) get(self::$multicolor_map, $key);
+            if (!($m & $color_type_bit)) {
+                if ($color_type_bit == 1)
+                    Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
+                self::$multicolor_map[$key] = $m | $color_type_bit;
+            }
+        }
+        return $key;
+    }
+
+    function filter_color($color = null) {
+        $a = array();
+        if ($color) {
+            $canonical = TagInfo::canonical_color($color);
+            $a[] = $canonical;
+            if ($canonical === "purple")
+                $a[] = "violet";
+            else if ($canonical === "gray")
+                $a[] = "grey";
+            foreach ($this as $v)
+                foreach ($v->colors ? : [] as $c)
+                    if ($c === $canonical)
+                        $a[] = $v->tag;
+        } else {
+            $a = explode("|", TagInfo::BASIC_COLORS);
+            foreach ($this as $v)
+                if ($v->colors)
+                    $a[] = $v->tag;
+        }
+        return $a;
+    }
+
+    function badge_regex() {
+        if (!$this->badge_re) {
+            $re = "{(?:\\A| )(?:\\d*~|~~|)(";
+            foreach ($this->filter("badges") as $t)
+                $re .= "|" . $t->tag_regex();
+            $this->badge_re = $re . ")(?:#[\\d.]+)?(?=\\z| )}i";
+        }
+        return $this->badge_re;
+    }
+
+
+    static function make($conf) {
+        $map = new TagMap($conf);
+        if (!$conf)
+            return $map;
+        $ct = $conf->setting_data("tag_chair", "");
+        foreach (TagInfo::split_tlist($ct) as $ti)
+            $map->add($ti[0])->chair = true;
+        foreach ($conf->track_tags() as $t)
+            $map->add(TagInfo::base($t))->chair = true;
+        $ct = $conf->setting_data("tag_sitewide", "");
+        foreach (TagInfo::split_tlist($ct) as $ti)
+            $map->add($ti[0])->sitewide = $map->has_sitewide = true;
+        $vt = $conf->setting_data("tag_vote", "");
+        foreach (TagInfo::split_tlist($vt) as $ti) {
+            $t = $map->add($ti[0]);
+            $t->vote = ($ti[1] ? : 1);
+            $t->votish = $map->has_vote = $map->has_votish = true;
+        }
+        $vt = $conf->setting_data("tag_approval", "");
+        foreach (TagInfo::split_tlist($vt) as $ti) {
+            $t = $map->add($ti[0]);
+            $t->approval = $t->votish = $map->has_approval = $map->has_votish = true;
+        }
+        $rt = $conf->setting_data("tag_rank", "");
+        foreach (TagInfo::split_tlist($rt) as $t)
+            $map->add($ti[0])->rank = $map->has_rank = true;
+        $ct = $conf->setting_data("tag_color", "");
+        if ($ct !== "")
+            foreach (explode(" ", $ct) as $k)
+                if ($k !== "" && ($p = strpos($k, "=")) !== false) {
+                    arrayappend($map->add(substr($k, 0, $p))->colors,
+                                TagInfo::canonical_color(substr($k, $p + 1)));
+                    $map->has_colors = true;
+                }
+        $bt = $conf->setting_data("tag_badge", "");
+        if ($bt !== "")
+            foreach (explode(" ", $bt) as $k)
+                if ($k !== "" && ($p = strpos($k, "=")) !== false) {
+                    arrayappend($map->add(substr($k, 0, $p))->badges,
+                                TagInfo::canonical_color(substr($k, $p + 1)));
+                    $map->has_badges = true;
+                }
+        $xt = $conf->setting_data("tag_order_anno", "");
+        if ($xt !== "" && ($xt = json_decode($xt)))
+            foreach (get_object_vars($xt) as $t => $v)
+                if (is_object($v)) {
+                    $map->add($t)->order_anno = $v;
+                    $map->has_order_anno = true;
+                }
+        if (($od = $conf->opt("definedTags")))
+            foreach (is_string($od) ? [$od] : $od as $ods)
+                foreach (json_decode($ods) as $tag => $data) {
+                    $t = $map->add($tag);
+                    if (get($data, "chair"))
+                        $t->chair = $map->has_chair = true;
+                    if (get($data, "sitewide"))
+                        $t->sitewide = $map->has_sitewide = true;
+                }
+        return $map;
     }
 }
 
@@ -151,9 +344,6 @@ class TagInfo {
     private static $tagmap = null;
     private static $colorre = null;
     private static $badgere = null;
-    private static $sitewidere_part = null;
-
-    private static $multicolor_map = [];
 
     public static function base($tag) {
         if ($tag && (($pos = strpos($tag, "#")) > 0
@@ -194,172 +384,8 @@ class TagInfo {
             return in_array($base, $taglist);
     }
 
-    private static function split_tlist($tl) {
+    public static function split_tlist($tl) {
         return array_map("TagInfo::split_index", self::split($tl));
-    }
-
-    private static function make_tagmap() {
-        global $Conf;
-        self::$tagmap = $map = new TagMap;
-        if (!$Conf)
-            return $map;
-        $ct = $Conf->setting_data("tag_chair", "");
-        foreach (self::split_tlist($ct) as $ti)
-            $map->make($ti[0])->chair = true;
-        foreach ($Conf->track_tags() as $t)
-            $map->make(self::base($t))->chair = true;
-        $ct = $Conf->setting_data("tag_sitewide", "");
-        foreach (self::split_tlist($ct) as $ti)
-            $map->make($ti[0])->sitewide = $map->has_sitewide = true;
-        $vt = $Conf->setting_data("tag_vote", "");
-        foreach (self::split_tlist($vt) as $ti) {
-            $t = $map->make($ti[0]);
-            $t->vote = ($ti[1] ? : 1);
-            $t->votish = $map->has_vote = $map->has_votish = true;
-        }
-        $vt = $Conf->setting_data("tag_approval", "");
-        foreach (self::split_tlist($vt) as $ti) {
-            $t = $map->make($ti[0]);
-            $t->approval = $t->votish = $map->has_approval = $map->has_votish = true;
-        }
-        $rt = $Conf->setting_data("tag_rank", "");
-        foreach (self::split_tlist($rt) as $t)
-            $map->make($ti[0])->rank = $map->has_rank = true;
-        $ct = $Conf->setting_data("tag_color", "");
-        if ($ct !== "")
-            foreach (explode(" ", $ct) as $k)
-                if ($k !== "" && ($p = strpos($k, "=")) !== false) {
-                    arrayappend($map->make(substr($k, 0, $p))->colors,
-                                self::canonical_color(substr($k, $p + 1)));
-                    $map->has_colors = true;
-                }
-        $bt = $Conf->setting_data("tag_badge", "");
-        if ($bt !== "")
-            foreach (explode(" ", $bt) as $k)
-                if ($k !== "" && ($p = strpos($k, "=")) !== false) {
-                    arrayappend($map->make(substr($k, 0, $p))->badges,
-                                self::canonical_color(substr($k, $p + 1)));
-                    $map->has_badges = true;
-                }
-        $xt = $Conf->setting_data("tag_order_anno", "");
-        if ($xt !== "" && ($xt = json_decode($xt)))
-            foreach (get_object_vars($xt) as $t => $v)
-                if (is_object($v)) {
-                    $map->make($t)->order_anno = $v;
-                    $map->has_order_anno = true;
-                }
-        if (($od = opt("definedTags")))
-            foreach (is_string($od) ? [$od] : $od as $ods)
-                foreach (json_decode($ods) as $tag => $data) {
-                    $t = $map->make($tag);
-                    if (get($data, "chair"))
-                        $t->chair = $map->has_chair = true;
-                    if (get($data, "sitewide"))
-                        $t->sitewide = $map->has_sitewide = true;
-                }
-        return $map;
-    }
-
-    public static function defined_tags() {
-        return self::$tagmap ? self::$tagmap : self::make_tagmap();
-    }
-
-    public static function defined_tags_with($property) {
-        return self::defined_tags()->filter($property);
-    }
-
-    public static function defined_tag($tag) {
-        $dt = self::defined_tags();
-        return $dt->check(self::base($tag));
-    }
-
-    public static function make_defined_tag($tag) {
-        $dt = self::defined_tags();
-        return $dt->make(self::base($tag));
-    }
-
-    public static function invalidate_defined_tags() {
-        self::$tagmap = self::$colorre = self::$badgere = self::$sitewidere_part = null;
-    }
-
-    public static function has_sitewide() {
-        return self::defined_tags()->has_sitewide;
-    }
-
-    public static function has_vote() {
-        return self::defined_tags()->has_vote;
-    }
-
-    public static function has_approval() {
-        return self::defined_tags()->has_approval;
-    }
-
-    public static function has_votish() {
-        return self::defined_tags()->has_votish;
-    }
-
-    public static function has_rank() {
-        return self::defined_tags()->has_rank;
-    }
-
-    public static function has_badges() {
-        return self::defined_tags()->has_badges;
-    }
-
-    public static function has_order_anno() {
-        return self::defined_tags()->has_order_anno;
-    }
-
-    public static function is_chair($tag) {
-        if ($tag[0] === "~")
-            return $tag[1] === "~";
-        else
-            return !!self::defined_tags()->check_property($tag, "chair");
-    }
-
-    public static function is_sitewide($tag) {
-        return !!self::defined_tags()->check_property($tag, "sitewide");
-    }
-
-    public static function sitewide_regex_part() {
-        if (self::$sitewidere_part === null) {
-            $x = ["\\&"];
-            foreach (self::defined_tags_with("sitewide") as $t)
-                $x[] = $t->tag_regex() . "[ #=]";
-            self::$sitewidere_part = join("|", $x);
-        }
-        return self::$sitewidere_part;
-    }
-
-    public static function is_votish($tag) {
-        return !!self::defined_tags()->check_property($tag, "votish");
-    }
-
-    public static function is_vote($tag) {
-        return !!self::defined_tags()->check_property($tag, "vote");
-    }
-
-    public static function vote_setting($tag) {
-        $t = self::defined_tags()->check_property($tag, "vote");
-        return $t && $t->vote > 0 ? $t->vote : 0;
-    }
-
-    public static function is_approval($tag) {
-        return !!self::defined_tags()->check_property($tag, "approval");
-    }
-
-    public static function votish_base($tag) {
-        $dt = self::defined_tags();
-        if (!$dt->has_votish
-            || ($twiddle = strpos($tag, "~")) === false)
-            return false;
-        $tbase = substr(self::base($tag), $twiddle + 1);
-        $t = $dt->check($tbase);
-        return $t && $t->votish ? $tbase : false;
-    }
-
-    public static function is_rank($tag) {
-        return !!self::defined_tags()->check_property($tag, "rank");
     }
 
     public static function unparse_anno_json($anno) {
@@ -383,86 +409,8 @@ class TagInfo {
             return $tag;
     }
 
-    public static function color_tags($color = null) {
-        $a = array();
-        if ($color) {
-            $canonical = self::canonical_color($color);
-            $a[] = $canonical;
-            if ($canonical === "purple")
-                $a[] = "violet";
-            else if ($canonical === "gray")
-                $a[] = "grey";
-            foreach (self::defined_tags() as $v)
-                foreach ($v->colors ? : array() as $c)
-                    if ($c === $canonical)
-                        $a[] = $v->tag;
-        } else {
-            $a = explode("|", self::BASIC_COLORS);
-            foreach (self::defined_tags() as $v)
-                if ($v->colors)
-                    $a[] = $v->tag;
-        }
-        return $a;
-    }
-
-    public static function color_regex() {
-        if (!self::$colorre) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(" . self::BASIC_COLORS_PLUS;
-            foreach (self::defined_tags_with("colors") as $v)
-                $re .= "|" . $v->tag_regex();
-            self::$colorre = $re . ")(?=\\z|[# ])}i";
-        }
-        return self::$colorre;
-    }
-
-    public static function color_classes($tags, $color_type_bit = 1) {
-        if (is_array($tags))
-            $tags = join(" ", $tags);
-        if (!$tags || $tags === " ")
-            return "";
-        if (!preg_match_all(self::color_regex(), $tags, $m))
-            return false;
-        $dt = self::defined_tags();
-        $classes = array();
-        foreach ($m[1] as $tag)
-            if (($t = $dt->check($tag)) && $t->colors) {
-                foreach ($t->colors as $k)
-                    $classes[] = $k . "tag";
-            } else
-                $classes[] = self::canonical_color($tag) . "tag";
-        if ($color_type_bit > 1)
-            $classes = array_filter($classes, "TagInfo::classes_have_colors");
-        if (count($classes) > 1) {
-            sort($classes);
-            $classes = array_unique($classes);
-        }
-        $key = join(" ", $classes);
-        // This seems out of place---it's redundant if we're going to
-        // generate JSON, for example---but it is convenient.
-        if (count($classes) > 1) {
-            $m = (int) get(self::$multicolor_map, $key);
-            if (!($m & $color_type_bit)) {
-                if ($color_type_bit == 1)
-                    Ht::stash_script("make_pattern_fill(" . json_encode($key) . ")");
-                self::$multicolor_map[$key] = $m | $color_type_bit;
-            }
-        }
-        return $key;
-    }
-
     public static function classes_have_colors($classes) {
         return preg_match('_\b(?:\A|\s)(?:red|orange|yellow|green|blue|purple|gray|white)tag(?:\z|\s)_', $classes);
-    }
-
-
-    public static function badge_regex() {
-        if (!self::$badgere) {
-            $re = "{(?:\\A| )(?:\\d*~|~~|)(";
-            foreach (self::defined_tags_with("badges") as $t)
-                $re .= "|" . $t->tag_regex();
-            self::$badgere = $re . ")(?:#[\\d.]+)?(?=\\z| )}i";
-        }
-        return self::$badgere;
     }
 
 
@@ -579,7 +527,7 @@ class Tagger {
 
     static public function strip_nonsitewide($tags, Contact $user) {
         $re = "{ (?:(?!" . $user->contactId . "~)\\d+~|~+|(?!"
-            . TagInfo::sitewide_regex_part() . ")\\S)\\S*}i";
+            . $user->conf->tags()->sitewide_regex_part() . ")\\S)\\S*}i";
         return trim(preg_replace($re, "", " $tags "));
     }
 
@@ -601,13 +549,14 @@ class Tagger {
     }
 
     public function unparse_badges_html($tags) {
+        global $Conf;
         if (is_array($tags))
             $tags = join(" ", $tags);
-        if (!$tags || $tags === " " || !TagInfo::has_badges())
+        if (!$tags || $tags === " ")
             return "";
-        if (!preg_match_all(TagInfo::badge_regex(), $tags, $m, PREG_SET_ORDER))
-            return false;
-        $dt = TagInfo::defined_tags();
+        $dt = $Conf->tags();
+        if (!$dt->has_badges || !preg_match_all($dt->badge_regex(), $tags, $m, PREG_SET_ORDER))
+            return "";
         $x = "";
         foreach ($m as $mx)
             if (($t = $dt->check($mx[1])) && $t->badges) {
@@ -639,6 +588,7 @@ class Tagger {
     }
 
     public function link($tag) {
+        global $Conf;
         if (ctype_digit($tag[0])) {
             $x = strlen($this->_contactId);
             if (substr($tag, 0, $x) != $this->_contactId || $tag[$x] !== "~")
@@ -646,9 +596,9 @@ class Tagger {
             $tag = substr($tag, $x);
         }
         $base = TagInfo::base($tag);
-        if (TagInfo::has_votish()
-            && (TagInfo::is_votish($base)
-                || ($base[0] === "~" && TagInfo::is_vote(substr($base, 1)))))
+        if ($Conf->tags()->has_votish
+            && ($Conf->tags()->is_votish($base)
+                || ($base[0] === "~" && $Conf->tags()->is_vote(substr($base, 1)))))
             $q = "#$base showsort:-#$base";
         else if ($base === $tag)
             $q = "#$base";

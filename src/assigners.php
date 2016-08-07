@@ -971,6 +971,7 @@ class TagAssigner extends Assigner {
             return "You can’t view that tag for paper #$pid.";
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
+        global $Conf;
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
 
@@ -1003,7 +1004,7 @@ class TagAssigner extends Assigner {
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
-        if (!$m[1] && TagInfo::is_votish($m[2]))
+        if (!$m[1] && $Conf->tags()->is_votish($m[2]))
             return false;
 
         // add and remove use different paths
@@ -1047,8 +1048,8 @@ class TagAssigner extends Assigner {
         if ($index === null
             && ($x = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $ltag))))
             $index = $x[0]["_index"];
-        $vtag = TagInfo::votish_base($tag);
-        if ($vtag && TagInfo::is_vote($vtag) && !$index)
+        $vtag = $Conf->tags()->votish_base($tag);
+        if ($vtag && $Conf->tags()->is_vote($vtag) && !$index)
             $state->remove(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
         else
             $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
@@ -1067,6 +1068,7 @@ class TagAssigner extends Assigner {
         return $fin->next_index($this->isadd == self::NEXTSEQ);
     }
     private function apply_remove($pid, $contact, AssignmentState $state, $m) {
+        global $Conf;
         $prow = $state->prow($pid);
 
         // resolve twiddle portion
@@ -1122,16 +1124,17 @@ class TagAssigner extends Assigner {
                 && ($search_ltag
                     || $state->contact->can_change_tag($prow, $x["ltag"], $x["_index"], null, $state->override))) {
                 $state->remove($x);
-                if (($v = TagInfo::votish_base($x["ltag"])))
+                if (($v = $Conf->tags()->votish_base($x["ltag"])))
                     $vote_adjustments[$v] = true;
             }
         foreach ($vote_adjustments as $vtag => $v)
             $this->account_votes($pid, $vtag, $state);
     }
     private function account_votes($pid, $vtag, $state) {
+        global $Conf;
         $res = $state->query(array("type" => "tag", "pid" => $pid));
         $tag_re = '{\A\d+~' . preg_quote($vtag) . '\z}i';
-        $is_vote = TagInfo::is_vote($vtag);
+        $is_vote = $Conf->tags()->is_vote($vtag);
         $total = 0;
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))

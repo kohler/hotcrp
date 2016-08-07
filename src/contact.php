@@ -647,7 +647,7 @@ class Contact {
     }
 
     function viewable_color_classes(Contact $user) {
-        return TagInfo::color_classes($this->viewable_tags($user));
+        return $this->conf->tags()->color_classes($this->viewable_tags($user));
     }
 
     function capability($pid) {
@@ -2800,7 +2800,8 @@ class Contact {
         $rights = $this->rights($prow, $forceShow);
         return $rights->allow_pc
             || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-            || (($this->privChair || $rights->allow_administer) && TagInfo::has_sitewide());
+            || (($this->privChair || $rights->allow_administer)
+                && $this->conf->tags()->has_sitewide);
     }
 
     function can_view_most_tags(PaperInfo $prow = null, $forceShow = null) {
@@ -2817,13 +2818,13 @@ class Contact {
         $twiddle = strpos($tag, "~");
         return ($rights->allow_pc
                 || ($rights->allow_pc_broad && $this->conf->tag_seeall)
-                || ($this->privChair && TagInfo::is_sitewide($tag)))
+                || ($this->privChair && $this->conf->tags()->is_sitewide($tag)))
             && ($rights->allow_administer
                 || $twiddle === false
                 || ($twiddle === 0 && $tag[1] !== "~")
                 || ($twiddle > 0
                     && (substr($tag, 0, $twiddle) == $this->contactId
-                        || TagInfo::is_votish(substr($tag, $twiddle + 1)))));
+                        || $this->conf->tags()->is_votish(substr($tag, $twiddle + 1)))));
     }
 
     function can_view_peruser_tags(PaperInfo $prow, $tag, $forceShow = null) {
@@ -2832,7 +2833,7 @@ class Contact {
 
     function can_view_any_peruser_tags($tag) {
         return $this->privChair
-            || ($this->isPC && TagInfo::is_votish($tag));
+            || ($this->isPC && $this->conf->tags()->is_votish($tag));
     }
 
     function list_submitted_papers_with_viewable_tags() {
@@ -2883,8 +2884,8 @@ class Contact {
         if (!($rights->allow_pc
               && ($rights->can_administer || $this->conf->timePCViewPaper($prow, false)))) {
             if ($this->privChair
-                && TagInfo::has_sitewide()
-                && (!$tag || (($t = TagInfo::defined_tag($tag)) && $t->sitewide)))
+                && $this->conf->tags()->has_sitewide
+                && (!$tag || $this->conf->tags()->is_sitewide(TagInfo::base($tag))))
                 return true;
             return false;
         }
@@ -2898,10 +2899,10 @@ class Contact {
             && !$rights->can_administer)
             return false;
         if ($twiddle !== false) {
-            $t = TagInfo::defined_tag(substr($tag, $twiddle + 1));
+            $t = $this->conf->tags()->check(substr($tag, $twiddle + 1));
             return !($t && $t->vote && $index < 0);
         } else {
-            $t = TagInfo::defined_tag($tag);
+            $t = $this->conf->tags()->check($tag);
             return !$t
                 || (($rights->can_administer
                      || ($this->privChair && $t->sitewide)
@@ -2936,7 +2937,7 @@ class Contact {
             else if ($twiddle !== false)
                 $whyNot["voteTagNegative"] = true;
             else {
-                $t = TagInfo::defined_tag($tag);
+                $t = $this->conf->tags()->check($tag);
                 if ($t && $t->vote)
                     $whyNot["voteTag"] = true;
                 else
@@ -2961,7 +2962,7 @@ class Contact {
         $twiddle = strpos($tag, "~");
         return $this->privChair
             || ($this->isPC
-                && !TagInfo::is_chair($tag)
+                && !$this->conf->tags()->is_chair($tag)
                 && ($twiddle === false
                     || ($twiddle === 0 && $tag[1] !== "~")
                     || ($twiddle > 0 && substr($tag, 0, $twiddle) == $this->contactId)));

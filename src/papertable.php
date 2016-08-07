@@ -158,7 +158,7 @@ class PaperTable {
             $viewable_tags = $prow->viewable_tags($Me);
             if ($viewable_tags || $Me->can_view_tags($prow)) {
                 $t .= ' has_hotcrp_tag_classes';
-                if (($color = TagInfo::color_classes($viewable_tags)))
+                if (($color = $prow->conf->tags()->color_classes($viewable_tags)))
                     $t .= ' ' . $color;
             }
             $t .= '"><a class="q" href="' . hoturl("paper", array("p" => $prow->paperId, "ls" => null))
@@ -181,7 +181,7 @@ class PaperTable {
                 $t .= htmlspecialchars($prow->title);
 
             $t .= '</span></span></a>';
-            if ($viewable_tags && TagInfo::has_badges()) {
+            if ($viewable_tags && $Conf->tags()->has_badges) {
                 $tagger = new Tagger;
                 $t .= $tagger->unparse_badges_html($viewable_tags);
             }
@@ -1063,7 +1063,7 @@ class PaperTable {
 
             if ($this->prow && ($viewable = $this->prow->viewable_tags($Me))) {
                 $tagger = new Tagger;
-                $color = TagInfo::color_classes($viewable);
+                $color = $this->prow->conf->tags()->color_classes($viewable);
                 echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">',
                     '<span class="psfn">Tags:</span> ',
                     $tagger->unparse_and_link($viewable, $this->prow->all_tags_text(), false),
@@ -1331,7 +1331,7 @@ class PaperTable {
         $unfolded = $is_editable && ($this->has_error("tags") || $this->qreq->atab === "tags");
 
         $this->_papstripBegin("tags", !$unfolded, ["data-onunfold" => "save_tags.load_report()"]);
-        $color = TagInfo::color_classes($viewable);
+        $color = $this->prow->conf->tags()->color_classes($viewable);
         echo '<div class="', trim("has_hotcrp_tag_classes pscopen $color"), '">';
 
         if ($is_editable)
@@ -1792,7 +1792,7 @@ class PaperTable {
             $this->papstripManager($Me->privChair);
         $this->papstripTags();
         $this->npapstrip_tag_entry = 0;
-        foreach (TagInfo::defined_tags() as $ltag => $t)
+        foreach ($Conf->tags() as $ltag => $t)
             if ($Me->can_change_tag($prow, "~$ltag", null, 0)) {
                 if ($t->approval)
                     $this->papstripApproval($t->tag);

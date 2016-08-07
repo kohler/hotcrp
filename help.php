@@ -317,7 +317,7 @@ function searchQuickref() {
 
     $cx = null;
     $cm = array();
-    foreach (TagInfo::defined_tags() as $t)
+    foreach ($Conf->tags() as $t)
         foreach ($t->colors ? : array() as $c) {
             $cx = $cx ? : $c;
             if ($cx === $c)
@@ -456,14 +456,16 @@ function searchQuickref() {
 }
 
 function _current_tag_list($property) {
-    $ct = TagInfo::defined_tags_with($property);
+    global $Conf;
+    $ct = $Conf->tags()->filter($property);
     return empty($ct) ? "" : " (currently "
             . join(", ", array_map(function ($t) { return "“" . Ht::link($t->tag, hoturl("search", "q=%23{$t->tag}")) . "”"; }, $ct))
             . ")";
 }
 
 function _singleVoteTag() {
-    $vt = TagInfo::defined_tags_with("vote");
+    global $Conf;
+    $vt = $Conf->tags()->filter("vote");
     return empty($vt) ? "vote" : current($vt)->tag;
 }
 

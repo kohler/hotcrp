@@ -221,8 +221,9 @@ class TitlePaperColumn extends PaperColumn {
                             array("minimal" => true, "comparator" => "title_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
+        global $Conf;
         $this->has_badges = $pl->contact->can_view_tags(null)
-            && TagInfo::has_badges();
+            && $Conf->tags()->has_badges;
         if ($this->has_badges)
             $pl->qopts["tags"] = 1;
         $this->highlight = get($pl->search->matchPreg, "title");
@@ -1055,9 +1056,10 @@ class TagListPaperColumn extends PaperColumn {
         return true;
     }
     public function annotate_field_js(PaperList $pl, &$fjs) {
+        global $Conf;
         $fjs["highlight_tags"] = $pl->search->highlight_tags();
-        if (TagInfo::has_votish())
-            $fjs["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, TagInfo::defined_tags_with("votish")));
+        if ($Conf->tags()->has_votish)
+            $fjs["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $Conf->tags()->filter("votish")));
     }
     public function header($pl, $ordinal) {
         return "Tags";
@@ -1585,11 +1587,12 @@ class TagReportPaperColumn extends PaperColumn {
         self::$registered[] = $fdef;
     }
     public function prepare(PaperList $pl, $visible) {
+        global $Conf;
         if (!$pl->contact->can_view_any_peruser_tags($this->tag))
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
-        $dt = TagInfo::defined_tag($this->tag);
+        $dt = $Conf->tags()->check($this->tag);
         if (!$dt || $dt->rank || (!$dt->vote && !$dt->approval))
             $this->viewtype = 0;
         else
@@ -1776,9 +1779,10 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("", new FormulaPaperColumn("", null));
 
     $tagger = new Tagger;
-    if ($Conf && (TagInfo::has_vote() || TagInfo::has_approval() || TagInfo::has_rank())) {
+    $tags = $Conf ? $Conf->tags() : null;
+    if ($tags && ($tags->has_vote || $tags->has_approval || $tags->has_rank)) {
         $vt = array();
-        foreach (TagInfo::defined_tags() as $t)
+        foreach ($tags as $t)
             if ($t->vote || $t->approval || $t->rank)
                 $vt[] = $t->tag;
         foreach ($vt as $n)

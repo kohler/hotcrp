@@ -126,6 +126,7 @@ class SiteLoader {
         "ReviewForm" => "src/review.php",
         "ReviewSearchMatcher" => "src/papersearch.php",
         "TagInfo" => "lib/tagger.php",
+        "TagMap" => "lib/tagger.php",
         "TextPaperOption" => "src/paperoption.php",
         "XlsxGenerator" => "lib/xlsx.php",
         "ZipDocument" => "lib/filer.php"

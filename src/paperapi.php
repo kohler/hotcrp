@@ -59,10 +59,11 @@ class PaperApi {
     }
 
     static function tagreport($user, $prow) {
+        global $Conf;
         $ret = (object) ["ok" => $user->can_view_tags($prow), "warnings" => [], "messages" => []];
         if (!$ret->ok)
             return $ret;
-        if (($vt = TagInfo::defined_tags_with("vote"))) {
+        if (($vt = $Conf->tags()->filter("vote"))) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();
             foreach ($vt as $lbase => $t) {
@@ -165,7 +166,7 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $tagger->error_html]);
         $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
               "anno" => []];
-        $dt = TagInfo::make_defined_tag($tag);
+        $dt = $Conf->tags()->add(TagInfo::base($tag));
         foreach ($dt->order_anno_list() as $oa)
             if ($oa->annoId !== null)
                 $j["anno"][] = TagInfo::unparse_anno_json($oa);
@@ -235,6 +236,7 @@ class PaperApi {
     }
 
     static function votereport_api($user, $qreq, $prow) {
+        global $Conf;
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
             json_exit(["ok" => false, "error" => $tagger->error_html]);
@@ -242,7 +244,7 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "Permission error."]);
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);
-        $is_approval = TagInfo::is_approval($tag);
+        $is_approval = $Conf->tags()->is_approval($tag);
         $min_vote = $is_approval ? 0 : 0.001;
         for ($i = 0; $i != count($m[0]); ++$i)
             if ($m[2][$i] >= $min_vote)

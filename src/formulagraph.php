@@ -90,7 +90,7 @@ class FormulaGraph {
     }
 
     private function _cdf_data($result) {
-        global $Me;
+        global $Conf, $Me;
         $data = [];
         $query_color_classes = [];
 
@@ -108,7 +108,7 @@ class FormulaGraph {
                 if (get($query_color_classes, $q) !== "") {
                     $c = "";
                     if ($prow->paperTags)
-                        $c = TagInfo::color_classes($prow->viewable_tags($Me), 2);
+                        $c = $Conf->tags()->color_classes($prow->viewable_tags($Me), 2);
                     if ($c !== "" && (get($query_color_classes, $q) ? : $c) !== $c)
                         $c = "";
                     $query_color_classes[$q] = $c;
@@ -140,9 +140,10 @@ class FormulaGraph {
     }
 
     private function _prepare_reviewer_color(Contact $user) {
+        global $Conf;
         $this->reviewer_color = array();
         foreach (pcMembers() as $p)
-            $this->reviewer_color[$p->contactId] = TagInfo::color_classes($p->viewable_tags($user));
+            $this->reviewer_color[$p->contactId] = $Conf->tags()->color_classes($p->viewable_tags($user));
     }
 
     private function _paper_style(PaperInfo $prow) {
@@ -152,7 +153,7 @@ class FormulaGraph {
         if (!$s && $this->reviewer_color && $Me->can_view_reviewer_tags($prow))
             return self::REVIEWER_COLOR;
         else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($Me)))
-            return trim(TagInfo::color_classes($c));
+            return trim($prow->conf->tags()->color_classes($c));
         else if ($s === "plain")
             return "";
         else

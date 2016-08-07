@@ -240,7 +240,7 @@ xassert($user_wilma->can_view_review($paper1, $review2, false));
 // set up some tags and tracks
 AssignmentSet::run($user_chair, "paper,tag\n3 9 13 17,green\n", true);
 $Conf->save_setting("tracks", 1, "{\"green\":{\"assrev\":\"-red\"}}");
-TagInfo::invalidate_defined_tags();
+$Conf->invalidate_caches(["taginfo" => true]);
 $paper17 = $Conf->paperRow(17, $user_jon);
 xassert(!$Conf->check_tracks($paper17, $user_jon, Track::ASSREV));
 xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper17));
@@ -364,7 +364,7 @@ xassert_assign($user_varghese, false, "paper,tag\n1,chairtest#clear\n");
 assert_search_papers($user_varghese, "#chairtest", "");
 
 $Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest"));
-TagInfo::invalidate_defined_tags();
+$Conf->invalidate_caches(["taginfo" => true]);
 xassert_assign($Admin, true, "paper,tag\n1,chairtest\n");
 assert_search_papers($user_chair, "#chairtest", "1");
 assert_search_papers($user_varghese, "#chairtest", "1");
@@ -378,9 +378,9 @@ xassert_assign($user_varghese, false, "paper,tag\n1,chairtest1#clear\n");
 assert_search_papers($user_varghese, "#chairtest1", "");
 
 $Conf->save_setting("tag_chair", 1, trim($Conf->setting_data("tag_chair") . " chairtest*"));
-TagInfo::invalidate_defined_tags();
-xassert(TagInfo::defined_tags()->has_pattern);
-$ct = TagInfo::defined_tag("chairtest0");
+$Conf->invalidate_caches(["taginfo" => true]);
+xassert($Conf->tags()->has_pattern);
+$ct = $Conf->tags()->check("chairtest0");
 xassert(!!$ct);
 xassert_assign($Admin, true, "paper,tag\n1,chairtest1\n");
 assert_search_papers($user_chair, "#chairtest1", "1");
@@ -390,8 +390,8 @@ assert_search_papers($user_varghese, "#chairtest1", "1");
 
 // pattern tag merging
 $Conf->save_setting("tag_approval", 1, "chair*");
-TagInfo::invalidate_defined_tags();
-$ct = TagInfo::defined_tag("chairtest0");
+$Conf->invalidate_caches(["taginfo" => true]);
+$ct = $Conf->tags()->check("chairtest0");
 xassert($ct && $ct->chair && $ct->approval);
 
 // round searches

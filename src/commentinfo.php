@@ -155,7 +155,7 @@ class CommentInfo {
             && $contact->can_view_comment_tags($this->prow, $this, null)) {
             if (($tags = $this->viewable_tags($contact)))
                 $cj->tags = TagInfo::split($tags);
-            if ($tags && ($cc = TagInfo::color_classes($tags)))
+            if ($tags && ($cc = $Conf->tags()->color_classes($tags)))
                 $cj->color_classes = $cc;
         }
 

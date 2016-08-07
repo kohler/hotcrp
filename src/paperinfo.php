@@ -442,7 +442,7 @@ class PaperInfo {
             $etags = array();
             foreach (explode(" ", $tags) as $tag)
                 if (!($tag === ""
-                      || (($t = TagInfo::defined_tag($tag))
+                      || (($t = $this->conf->tags()->check_base($tag))
                           && ($t->vote
                               || $t->approval
                               || (!$privChair
@@ -464,7 +464,7 @@ class PaperInfo {
         $pj->tags = TagInfo::split($viewable);
         $pj->tags_edit_text = $tagger->unparse($editable);
         $pj->tags_view_html = $tags_view_html;
-        $pj->color_classes = TagInfo::color_classes($viewable);
+        $pj->color_classes = $this->conf->tags()->color_classes($viewable);
     }
 
     private function load_topics() {
