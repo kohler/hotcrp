@@ -346,18 +346,10 @@ if (get($Opt, "dbLogQueries"))
 
 
 // Allow lots of memory
-function set_memory_limit() {
-    global $Opt;
-    if (!get($Opt, "memoryLimit")) {
-        $suf = array("" => 1, "k" => 1<<10, "m" => 1<<20, "g" => 1<<30);
-        if (preg_match(',\A(\d+)\s*([kmg]?)\z,', strtolower(ini_get("memory_limit")), $m)
-            && $m[1] * $suf[$m[2]] < (128<<20))
-            $Opt["memoryLimit"] = "128M";
-    }
-    if (get($Opt, "memoryLimit"))
-        ini_set("memory_limit", $Opt["memoryLimit"]);
-}
-set_memory_limit();
+if (!get($Opt, "memoryLimit") && ini_get_bytes("memory_limit") < (128 << 20))
+    $Opt["memoryLimit"] = "128M";
+if (get($Opt, "memoryLimit"))
+    ini_set("memory_limit", $Opt["memoryLimit"]);
 
 
 // Create the conference
