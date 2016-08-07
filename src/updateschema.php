@@ -996,7 +996,7 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $Conf->ql("alter table PaperStorage drop key `mimetype`")
         && $Conf->ql("alter table PaperStorage add key `byPaper` (`paperId`,`documentType`,`timestamp`,`paperStorageId`)"))
         $Conf->update_schema_version(137);
-    if ($Conf->sversion == 137 && update_schema_builtin_mimetypes())
+    if ($Conf->sversion == 137 && update_schema_builtin_mimetypes($Conf))
         $Conf->update_schema_version(138);
     if (($Conf->sversion == 138 || $Conf->sversion == 139)
         && $Conf->ql("DROP TABLE IF EXISTS `FilteredDocument`")
