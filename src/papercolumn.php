@@ -1101,7 +1101,7 @@ class TagPaperColumn extends PaperColumn {
         $this->is_value = $is_value;
     }
     public function make_column($name, $errors) {
-        $p = strpos($name, ":") ? : strpos($name, "#");
+        $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
     public function make_editable() {
