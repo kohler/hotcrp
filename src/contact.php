@@ -289,7 +289,7 @@ class Contact {
         // Handle invalidate-caches requests
         if (req("invalidatecaches") && $this->privChair) {
             unset($_GET["invalidatecaches"], $_POST["invalidatecaches"], $_REQUEST["invalidatecaches"]);
-            $this->conf->invalidateCaches();
+            $this->conf->invalidate_caches();
         }
 
         // If validatorContact is set, use it
@@ -953,7 +953,7 @@ class Contact {
 
         // Beware PC cache
         if (($roles | $old_roles) & Contact::ROLE_PCLIKE)
-            $this->conf->invalidateCaches(array("pc" => 1));
+            $this->conf->invalidate_caches(["pc" => 1]);
 
         // Mark creation and activity
         if ($inserting) {
@@ -978,7 +978,7 @@ class Contact {
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
         if ($this->roles & Contact::ROLE_PCLIKE)
-            $this->conf->invalidateCaches(array("pc" => 1));
+            $this->conf->invalidate_caches(["pc" => 1]);
         $this->email = $email;
     }
 

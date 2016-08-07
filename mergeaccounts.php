@@ -85,7 +85,7 @@ function crpmerge_database($old_user, $new_user) {
 
     // Update PC settings if we need to
     if ($old_user->isPC)
-        $Conf->invalidateCaches(array("pc" => 1));
+        $Conf->invalidate_caches(["pc" => 1]);
 }
 
 function crpmerge($MiniMe) {

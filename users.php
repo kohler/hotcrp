@@ -245,7 +245,7 @@ function do_tags() {
     }
     Dbl::qe("unlock tables");
     Conf::$no_invalidate_caches = false;
-    $Conf->invalidateCaches(["pc" => true]);
+    $Conf->invalidate_caches(["pc" => true]);
     // report
     if (!count($errors)) {
         $Conf->confirmMsg("Tags saved.");

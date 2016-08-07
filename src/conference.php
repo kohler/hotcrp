@@ -153,11 +153,11 @@ class Conf {
 
         // invalidate all caches after loading from backup
         if (isset($this->settings["frombackup"])
-            && $this->invalidateCaches()) {
+            && $this->invalidate_caches()) {
             $this->qe_raw("delete from Settings where name='frombackup' and value=" . $this->settings["frombackup"]);
             unset($this->settings["frombackup"]);
         } else
-            $this->invalidateCaches(array("rf" => true));
+            $this->invalidate_caches(["rf" => true]);
 
         // update options
         if (isset($this->opt["ldapLogin"]) && !$this->opt["ldapLogin"])
@@ -1215,24 +1215,15 @@ class Conf {
             return false;
     }
 
-    function invalidateCaches($caches = null) {
-        if (self::$no_invalidate_caches)
-            return;
-        $inserts = array();
-        $removes = array();
-        $time = time();
-        if (!$caches || isset($caches["pc"]))
-            $this->_pc_members_cache = $this->_pc_tags_cache = null;
-        if (!$caches || isset($caches["paperOption"]))
-            $this->paper_opts->invalidate_option_list();
-        if (!$caches || isset($caches["rf"]))
-            $this->_review_form_cache = $this->_defined_rounds = null;
-        $ok = true;
-        if (count($inserts))
-            $ok = $ok && ($this->qe_raw("insert into Settings (name, value) values " . join(",", $inserts) . " on duplicate key update value=values(value)") !== false);
-        if (count($removes))
-            $ok = $ok && ($this->qe_raw("delete from Settings where name in (" . join(",", $removes) . ")") !== false);
-        return $ok;
+    function invalidate_caches($caches = null) {
+        if (!self::$no_invalidate_caches) {
+            if (!$caches || isset($caches["pc"]))
+                $this->_pc_members_cache = $this->_pc_tags_cache = null;
+            if (!$caches || isset($caches["paperOption"]))
+                $this->paper_opts->invalidate_option_list();
+            if (!$caches || isset($caches["rf"]))
+                $this->_review_form_cache = $this->_defined_rounds = null;
+        }
     }
 
 

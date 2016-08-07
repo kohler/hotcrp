@@ -475,7 +475,7 @@ if (isset($_REQUEST["delete"]) && !Dbl::has_error() && check_post()) {
             $assigner->execute();
             // clear caches
             if ($Acct->isPC || $Acct->privChair)
-                $Conf->invalidateCaches(array("pc" => 1));
+                $Conf->invalidate_caches(["pc" => 1]);
             // done
             $Conf->confirmMsg("Permanently deleted account " . htmlspecialchars($Acct->email) . ".");
             $Me->log_activity("Permanently deleted account " . htmlspecialchars($Acct->email) . " ($Acct->contactId)");

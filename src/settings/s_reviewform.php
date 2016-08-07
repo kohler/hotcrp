@@ -150,7 +150,7 @@ class ReviewForm_SettingParser extends SettingParser {
             }
             if (count($scoreModified))
                 $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
-            $Conf->invalidateCaches(array("rf" => true));
+            $Conf->invalidate_caches(["rf" => true]);
             // reset all word counts in case author visibility changed
             Dbl::qe("update PaperReview set reviewWordCount=null");
         }
