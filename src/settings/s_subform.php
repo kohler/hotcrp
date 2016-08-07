@@ -319,7 +319,7 @@ function render(SettingValues $sv) {
         '</div>';
 
     $sv->set_oldv("sub_nopapers", opt_yes_no_optional("noPapers"));
-    echo '<div>', $sv->label("sub_nopapers", "Is a PDF required to mark a submission as ready for review?"),
+    echo '<div>', $sv->label("sub_nopapers", "Can a submission be reviewed without a PDF?"),
         '&nbsp; ',
         $sv->render_select("sub_nopapers", [0 => "PDF required", 2 => "PDF optional", 1 => "No PDF allowed"], ["onchange" => "sub_nopapers_change()"]),
         '<div class="hint fx3">Submission registration never requires a PDF.</div></div>';
