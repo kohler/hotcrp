@@ -430,7 +430,7 @@ class Filer {
             $vs[] = $dbinfo->columns[$idcol];
         } else
             $q = "insert into $dbinfo->table set " . join(",", $ks);
-        if (!($result = Dbl::query_apply($q, $vs))) {
+        if (!($result = Dbl::query_apply($dbinfo->dblink, $q, $vs))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }
@@ -821,12 +821,14 @@ class Filer {
 }
 
 class Filer_Dbstore {
+    public $dblink;
     public $table;
     public $id_column;
     public $columns;
     public $check_contents;
 
-    public function __construct($table, $id_column, $columns, $check_contents = null) {
+    public function __construct($dblink, $table, $id_column, $columns, $check_contents = null) {
+        $this->dblink = $dblink;
         $this->table = $table;
         $this->id_column = $id_column;
         $this->columns = $columns;

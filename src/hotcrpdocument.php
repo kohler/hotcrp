@@ -179,7 +179,7 @@ class HotCRPDocument extends Filer {
             $columns["originalStorageId"] = $doc->originalStorageId;
         else if (get($doc, "original_id"))
             $columns["originalStorageId"] = $doc->original_id;
-        return new Filer_Dbstore("PaperStorage", "paperStorageId", $columns,
+        return new Filer_Dbstore($this->conf->dblink, "PaperStorage", "paperStorageId", $columns,
                                  $this->conf->opt("dbNoPapers") ? null : "paper");
     }
 
@@ -204,6 +204,7 @@ class HotCRPDocument extends Filer {
             $doc->content = $row[0];
             $ok = true;
         }
+        Dbl::free($result);
 
         if (!$ok && ($s3 = $this->conf->s3_docstore())
             && ($filename = self::s3_filename($doc))) {
