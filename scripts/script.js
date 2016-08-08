@@ -4938,7 +4938,7 @@ function add_row(f) {
 }
 
 function set(f, $j, text) {
-    var elt = $j[0];
+    var elt = $j[0], m;
     if (!elt)
         /* skip */;
     else if (text == null || text == "")
@@ -4946,8 +4946,12 @@ function set(f, $j, text) {
     else {
         if (elt.className == "")
             elt.className = "fx" + foldmap[which][f.name];
-        if (f.title && (!f.column || text == "Loading"))
-            text = '<em class="plx">' + f.title + ':</em> ' + text;
+        if (f.title && (!f.column || text == "Loading")) {
+            if (text.charAt(0) == "<" && (m = /^(<(?:div|p)[^>]*>)([\s\S]*)$/.exec(text)))
+                text = m[1] + '<em class="plx">' + f.title + ':</em> ' + m[2];
+            else
+                text = '<em class="plx">' + f.title + ':</em> ' + text;
+        }
         elt.innerHTML = text;
     }
 }
