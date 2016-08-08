@@ -2116,6 +2116,8 @@ class Contact {
         if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
         $oview = $opt->visibility;
+        if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
+            return false;
         return $rights->act_author_view
             || (($rights->allow_administer
                  || $rights->review_type
@@ -2124,10 +2126,7 @@ class Contact {
                     || !$oview
                     || $oview == "rev"
                     || ($oview == "nonblind"
-                        && $this->can_view_authors($prow, $forceShow)))
-                && (!$opt->final
-                    || ($prow->outcome > 0
-                        && $this->can_view_decision($prow, $forceShow))));
+                        && $this->can_view_authors($prow, $forceShow))));
     }
 
     function user_option_list() {
