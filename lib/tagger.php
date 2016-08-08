@@ -9,6 +9,7 @@
 
 class TagMapItem {
     public $tag;
+    public $conf;
     public $pattern = false;
     public $pattern_instance = false;
     public $chair = false;
@@ -21,8 +22,9 @@ class TagMapItem {
     private $order_anno_list = false;
     public $colors = null;
     public $badges = null;
-    public function __construct($tag) {
+    public function __construct($tag, Conf $conf) {
         $this->tag = $tag;
+        $this->conf = $conf;
     }
     public function merge(TagMapItem $t) {
         foreach (["chair", "votish", "vote", "approval", "sitewide", "rank"] as $property)
@@ -39,7 +41,7 @@ class TagMapItem {
     }
     public function order_anno_list() {
         if ($this->order_anno_list == false) {
-            $this->order_anno_list = Dbl::fetch_objects("select * from PaperTagAnno where tag=?", $this->tag);
+            $this->order_anno_list = Dbl::fetch_objects($this->conf->dblink, "select * from PaperTagAnno where tag=?", $this->tag);
             $this->order_anno_list[] = (object) ["tag" => $this->tag, "tagIndex" => TAG_INDEXBOUND, "heading" => "Untagged", "annoId" => null, "annoFormat" => 0];
             usort($this->order_anno_list, function ($a, $b) {
                 if ($a->tagIndex != $b->tagIndex)
@@ -119,7 +121,7 @@ class TagMap implements IteratorAggregate {
         $ltag = strtolower($tag);
         $t = get($this->storage, $ltag);
         if (!$t) {
-            $t = new TagMapItem($tag);
+            $t = new TagMapItem($tag, $this->conf);
             if (TagInfo::basic_check($ltag)) {
                 $this->storage[$ltag] = $t;
                 if (strpos($ltag, "*") !== false) {
