@@ -940,6 +940,8 @@ class PaperList {
                 $args["q"] = $this->search->q;
             if ($this->search->qt)
                 $args["qt"] = $this->search->qt;
+            if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
+                $args["reviewer"] = $this->_reviewer->email;
             $args["t"] = $this->search->limitName;
             $args["pap"] = join(" ", $rstate->ids);
             Ht::stash_script("plinfo.needload(" . json_encode($args) . ");"

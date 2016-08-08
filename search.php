@@ -85,8 +85,13 @@ if ($Qreq->fn == "load" && $Qreq->field
         $full = (int) $Qreq->aufull;
         displayOptionsSet("pldisplay", "aufull", $full);
     }
-    $Search = new PaperSearch($Me, $Qreq);
-    $pl = new PaperList($Search);
+    $reviewer = null;
+    if ($Qreq->reviewer && $Me->privChair && $Me->email !== $Qreq->reviewer) {
+        $reviewer = Contact::find_by_email($Qreq->reviewer);
+        unset($Qreq->reviewer);
+    }
+    $Search = new PaperSearch($Me, $Qreq, $reviewer);
+    $pl = new PaperList($Search, ["reviewer" => $reviewer]);
     $response = $pl->ajaxColumn($Qreq->field);
     $response["ok"] = (count($response) > 0);
     $Conf->ajaxExit($response);
