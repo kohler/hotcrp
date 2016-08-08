@@ -340,15 +340,15 @@ class PaperStatus {
 
         // if no sha1 match, upload
         $docclass = $Conf->docclass($o->id);
-        $newdocj = clone $docj;
-        if ($docclass->upload($newdocj, (object) ["paperId" => $this->paperid])
-            && get($newdocj, "paperStorageId") > 1) {
+        $newdoc = new DocumentInfo($docj);
+        if ($docclass->upload($newdoc, (object) ["paperId" => $this->paperid])
+            && $newdoc->paperStorageId > 1) {
             foreach (array("size", "sha1", "mimetype", "timestamp") as $k)
-                $docj->$k = $newdocj->$k;
-            $this->uploaded_documents[] = $docj->docid = $newdocj->paperStorageId;
+                $docj->$k = $newdoc->$k;
+            $this->uploaded_documents[] = $docj->docid = $newdoc->paperStorageId;
         } else {
             $docj->docid = 1;
-            $this->set_option_error_html($o, $newdocj ? $newdocj->error_html : "Empty document.");
+            $this->set_option_error_html($o, $newdoc ? $newdoc->error_html : "Empty document.");
         }
     }
 
