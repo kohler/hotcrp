@@ -288,27 +288,13 @@ class PaperList {
 
     function _contentDownload($row) {
         global $Conf;
-        if ($row->finalPaperStorageId != 0) {
-            $finalsuffix = "f";
-            $finaltitle = "Final version";
-            $row->documentType = DTYPE_FINAL;
-        } else {
-            $finalsuffix = "";
-            $finaltitle = null;
-            $row->documentType = DTYPE_SUBMISSION;
-        }
         if ($row->size == 0 || !$this->contact->can_view_pdf($row))
             return "";
-        if ($row->documentType == DTYPE_FINAL)
+        $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
+        if ($dtype == DTYPE_FINAL)
             $this->any->final = true;
         $this->any->paper = true;
-        $t = "&nbsp;<a href=\"" . HotCRPDocument::url($row) . "\">";
-        if ($row->mimetype == "application/pdf")
-            return $t . Ht::img("pdf$finalsuffix.png", "[PDF]", array("title" => $finaltitle)) . "</a>";
-        else if ($row->mimetype == "application/postscript")
-            return $t . Ht::img("postscript$finalsuffix.png", "[PS]", array("title" => $finaltitle)) . "</a>";
-        else
-            return $t . Ht::img("generic$finalsuffix.png", "[Download]", array("title" => $finaltitle)) . "</a>";
+        return "&nbsp;" . $row->document($dtype)->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
     }
 
     function _paperLink($row) {

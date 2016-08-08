@@ -1104,8 +1104,8 @@ img.placthook {
 }
 img.sdlimg {
 	position: relative;
-	bottom: -4px;
-	margin-top: -4px;
+	bottom: -3px;
+	margin-top: -3px;
 }
 img.elimg {
 	position: relative;
@@ -1680,9 +1680,6 @@ span.pl_rownum {
 }
 table.pltable_full > tbody > tr > td.pl_title {
 	width: 100%;
-}
-td.pl_title img {
-	vertical-align: text-bottom;
 }
 div.pl_autoassignment > h6 {
 	font-weight: bold;

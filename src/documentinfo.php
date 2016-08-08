@@ -155,13 +155,17 @@ class DocumentInfo implements JsonSerializable {
 
     const L_SMALL = 1;
     const L_NOSIZE = 2;
+    const L_FINALTITLE = 4;
     function link_html($html = "", $flags = 0, $filters = null) {
         $p = $this->url($filters);
 
         $finalsuffix = "";
+        $title = null;
         if ($this->documentType == DTYPE_FINAL
             || ($this->documentType > 0 && ($o = $this->conf->paper_opts->find($this->documentType)) && $o->final))
             $finalsuffix = "f";
+        if ($this->documentType == DTYPE_FINAL && ($flags & self::L_FINALTITLE))
+            $title = "Final version";
 
         if ($this->mimetype == "application/pdf")
             list($img, $alt) = ["pdf", "[PDF]"];
@@ -175,7 +179,7 @@ class DocumentInfo implements JsonSerializable {
 
         $small = ($flags & self::L_SMALL) != 0;
         $x = '<a href="' . $p . '" class="q">'
-            . Ht::img($img . $finalsuffix . ($small ? "" : "24") . ".png", $alt, $small ? "sdlimg" : "dlimg");
+            . Ht::img($img . $finalsuffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html)
             $x .= "&nbsp;" . $html;
         if (isset($this->size) && $this->size > 0 && !($flags && self::L_NOSIZE)) {
