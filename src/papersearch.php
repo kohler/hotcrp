@@ -1077,7 +1077,7 @@ class PaperSearch {
             $this->_searchField(array($this->cid), "au_cid", $qt);
         else if ($keyword && !$quoted && $this->amPC
                  && ($lword === "pc" || $this->conf->pc_tag_exists($lword))) {
-            $cids = self::_pcContactIdsWithTag($lword);
+            $cids = $this->_pcContactIdsWithTag($lword);
             $this->_searchField($cids, "au_cid", $qt);
         } else
             $this->_searchField($word, "au", $qt);
@@ -1109,7 +1109,7 @@ class PaperSearch {
             return null;
     }
 
-    private static function _pcContactIdsWithTag($tag) {
+    private function _pcContactIdsWithTag($tag) {
         if ($tag === "pc")
             return array_keys($this->conf->pc_members());
         $a = array();
@@ -1234,7 +1234,7 @@ class PaperSearch {
         $qt[] = new SearchTerm("re", self::F_XVIEW, $value);
     }
 
-    static public function matching_decisions($word, $quoted = null) {
+    static public function matching_decisions(Conf $conf, $word, $quoted = null) {
         if ($quoted === null && ($quoted = ($word && $word[0] === '"')))
             $word = str_replace('"', '', $word);
         $lword = strtolower($word);
@@ -1249,10 +1249,10 @@ class PaperSearch {
                 return "!=0";
         }
         $flags = $quoted ? Text::SEARCH_ONLY_EXACT : Text::SEARCH_UNPRIVILEGE_EXACT;
-        return array_keys(Text::simple_search($word, $this->conf->decision_map(), $flags));
+        return array_keys(Text::simple_search($word, $conf->decision_map(), $flags));
     }
 
-    static public function status_field_matcher($word, $quoted = null) {
+    static public function status_field_matcher(Conf $conf, $word, $quoted = null) {
         if (strcasecmp($word, "withdrawn") == 0 || strcasecmp($word, "withdraw") == 0 || strcasecmp($word, "with") == 0)
             return ["timeWithdrawn", ">0"];
         else if (strcasecmp($word, "submitted") == 0 || strcasecmp($word, "submit") == 0 || strcasecmp($word, "sub") == 0)
@@ -1262,14 +1262,14 @@ class PaperSearch {
         else if (strcasecmp($word, "active") == 0)
             return ["timeWithdrawn", "<=0"];
         else
-            return ["outcome", self::matching_decisions($word, $quoted)];
+            return ["outcome", self::matching_decisions($conf, $word, $quoted)];
     }
 
     private function _search_status($word, &$qt, $quoted, $allow_status) {
         if ($allow_status)
-            $fval = self::status_field_matcher($word, $quoted);
+            $fval = self::status_field_matcher($this->conf, $word, $quoted);
         else
-            $fval = ["outcome", self::matching_decisions($word, $quoted)];
+            $fval = ["outcome", self::matching_decisions($this->conf, $word, $quoted)];
         if (is_array($fval[1]) && count($fval[1]) == 0) {
             $this->warn("“" . htmlspecialchars($word) . "” doesn’t match a " . ($allow_status ? "decision or status." : "decision."));
             $fval[1][] = -10000000;
@@ -1417,7 +1417,7 @@ class PaperSearch {
                 else {
                     $score = $m[3];
                     if ($f->option_letter) {
-                        if (!opt("smartScoreCompare") || $noswitch) {
+                        if (!$this->conf->opt("smartScoreCompare") || $noswitch) {
                             // switch meaning of inequality
                             if ($m[2][0] === "<")
                                 $m[2] = ">" . substr($m[2], 1);
@@ -1642,7 +1642,7 @@ class PaperSearch {
         $qt[] = $qe;
     }
 
-    static public function analyze_option_search($word) {
+    static public function analyze_option_search(Conf $conf, $word) {
         if (preg_match('/\A(.*?)([:#](?:[=!<>]=?|≠|≤|≥|)|[=!<>]=?|≠|≤|≥)(.*)\z/', $word, $m)) {
             $oname = $m[1];
             if ($m[2][0] === ":" || $m[2][0] === "#")
@@ -1660,11 +1660,11 @@ class PaperSearch {
         $qo = $warn = array();
         $option_failure = false;
         if ($oname === "none" || $oname === "any")
-            $omatches = $this->conf->paper_opts->option_list();
+            $omatches = $conf->paper_opts->option_list();
         else
-            $omatches = $this->conf->paper_opts->search($oname);
+            $omatches = $conf->paper_opts->search($oname);
         // Conf::msg_info(Ht::pre_text(var_export($omatches, true)));
-        if (count($omatches)) {
+        if (!empty($omatches)) {
             foreach ($omatches as $oid => $o) {
                 // selectors handle “yes”, “”, and “no” specially
                 if ($o->has_selector()) {
@@ -1711,7 +1711,7 @@ class PaperSearch {
                     continue;
             }
         } else if (($ocompar === "=" || $ocompar === "!=") && $oval === "")
-            foreach ($this->conf->paper_opts->option_list() as $oid => $o)
+            foreach ($conf->paper_opts->option_list() as $oid => $o)
                 if ($o->has_selector()) {
                     foreach (Text::simple_search($oname, $o->selector) as $xval => $text)
                         $qo[] = new OptionMatcher($o, $ocompar, $xval, "~val~");
@@ -1721,7 +1721,7 @@ class PaperSearch {
     }
 
     function _search_options($word, &$qt, $report_error) {
-        $os = self::analyze_option_search($word);
+        $os = self::analyze_option_search($this->conf, $word);
         foreach ($os->warn as $w)
             $this->warn($w);
         if (!count($os->os)) {

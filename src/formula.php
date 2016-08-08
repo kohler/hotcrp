@@ -1185,7 +1185,7 @@ class Formula {
             $e = $op == "!" ? new NegateFexpr($e) : new Fexpr($op, $e);
         } else if (preg_match('/\Aopt(?:ion)?:\s*(.*)\z/s', $t, $m)) {
             $rest = self::_pop_argument($m[1]);
-            $os = PaperSearch::analyze_option_search($rest[1]);
+            $os = PaperSearch::analyze_option_search($Conf, $rest[1]);
             foreach ($os->warn as $w)
                 $this->_error_html[] = $w;
             if (!count($os->os) && !count($os->warn))
@@ -1225,13 +1225,13 @@ class Formula {
             $e = new PidFexpr;
             $t = $m[1];
         } else if (preg_match('/\A(?:dec|decision):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
-            $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($m[1])]);
+            $e = $this->field_search_fexpr(["outcome", PaperSearch::matching_decisions($Conf, $m[1])]);
             $t = $m[2];
         } else if (preg_match('/\A(?:dec|decision)\b(.*)\z/si', $t, $m)) {
             $e = new DecisionFexpr;
             $t = $m[1];
         } else if (preg_match('/\A(?:is|status):\s*' . self::ARGUMENT_REGEX . '(.*)\z/si', $t, $m)) {
-            $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($m[1]));
+            $e = $this->field_search_fexpr(PaperSearch::status_field_matcher($Conf, $m[1]));
             $t = $m[2];
         } else if (preg_match('/\A(?:tag(?:\s*:\s*|\s+)|#)(' . TAG_REGEX . ')(.*)\z/is', $t, $m)
                    || preg_match('/\Atag\s*\(\s*(' . TAG_REGEX . ')\s*\)(.*)\z/is', $t, $m)) {
