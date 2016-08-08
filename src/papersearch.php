@@ -2621,7 +2621,7 @@ class PaperSearch {
         from PaperReview as MPR
         left join (select paperId, count(reviewId) as numReviews from PaperReview where $npr_constraint and reviewNeedsSubmit=0 group by paperId) as NPR on (NPR.paperId=MPR.paperId)
         left join (select paperId, count(rating) as numRatings from PaperReview join ReviewRating using (reviewId) group by paperId) as NRR on (NRR.paperId=MPR.paperId)
-        where MPR.contactId=$contactId
+        where MPR.contactId={$user->contactId}
         and numReviews<=2
         and numRatings<=2");
         return Dbl::fetch_first_columns($result);
