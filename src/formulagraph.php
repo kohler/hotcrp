@@ -12,6 +12,8 @@ class FormulaGraph {
 
     const REVIEWER_COLOR = 1;
 
+    public $conf;
+    public $user;
     public $type = 0;
     public $fx;
     public $fy;
@@ -26,22 +28,25 @@ class FormulaGraph {
     public $errf = array();
 
     public function __construct($fx, $fy) {
+        global $Conf, $Me;
+        $this->conf = $Conf;
+        $this->user = $Me;
         $fx = simplify_whitespace($fx);
         $fy = simplify_whitespace($fy);
         if (strcasecmp($fx, "query") == 0 || strcasecmp($fx, "search") == 0) {
-            $this->fx = new Formula("0", true);
+            $this->fx = new Formula($this->user, "0", true);
             $this->fx_query = true;
         } else
-            $this->fx = new Formula($fx, true);
+            $this->fx = new Formula($this->user, $fx, true);
         if (strcasecmp($fy, "cdf") == 0) {
             $this->type = self::CDF;
-            $this->fy = new Formula("0", true);
+            $this->fy = new Formula($this->user, "0", true);
         } else if (preg_match('/\A(?:count|bar|bars|barchart)\z/i', $fy)) {
             $this->type = self::BARCHART;
-            $this->fy = new Formula("sum(1)", true);
+            $this->fy = new Formula($this->user, "sum(1)", true);
         } else if (preg_match('/\A(?:stack|frac|fraction)\z/i', $fy)) {
             $this->type = self::FBARCHART;
-            $this->fy = new Formula("sum(1)", true);
+            $this->fy = new Formula($this->user, "sum(1)", true);
         } else {
             if (preg_match('/\A(?:box|boxplot)\s+(.*)\z/i', $fy, $m)) {
                 $this->type = self::BOXPLOT;
@@ -53,7 +58,7 @@ class FormulaGraph {
                 $this->type = self::SCATTER;
                 $fy = $m[1];
             }
-            $this->fy = new Formula($fy, true);
+            $this->fy = new Formula($this->user, $fy, true);
             if (!$this->type)
                 $this->type = $this->fy->datatypes() ? self::SCATTER : self::BARCHART;
         }
@@ -68,18 +73,17 @@ class FormulaGraph {
         } else if (($this->type & self::BARCHART) && !$this->fy->can_combine()) {
             $this->error_html[] = "Y axis formula “" . htmlspecialchars($fy) . "” is unsuitable for bar charts, use an aggregate function like “sum(" . htmlspecialchars($fy) . ")”.";
             $this->errf["fy"] = true;
-            $this->fy = new Formula("sum(0)", true);
+            $this->fy = new Formula($this->user, "sum(0)", true);
         }
     }
 
     public function add_query($q, $style, $fieldname = false) {
-        global $Me;
         $qn = count($this->queries);
         $this->queries[] = $q;
         if ($style === "by-tag" || $style === "default")
             $style = "";
         $this->query_styles[] = $style;
-        $psearch = new PaperSearch($Me, array("q" => $q));
+        $psearch = new PaperSearch($this->user, array("q" => $q));
         foreach ($psearch->paperList() as $pid)
             $this->papermap[$pid][] = $qn;
         if (count($psearch->warnings)) {
@@ -90,31 +94,30 @@ class FormulaGraph {
     }
 
     private function _cdf_data($result) {
-        global $Conf, $Me;
         $data = [];
         $query_color_classes = [];
 
-        $fxf = $this->fx->compile_function($Me);
+        $fxf = $this->fx->compile_function();
         $reviewf = null;
         if ($this->fx->needs_review())
-            $reviewf = Formula::compile_indexes_function($Me, $this->fx->datatypes);
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes);
 
-        while (($prow = PaperInfo::fetch($result, $Me))) {
-            if (!$Me->can_view_paper($prow))
+        while (($prow = PaperInfo::fetch($result, $this->user))) {
+            if (!$this->user->can_view_paper($prow))
                 continue;
-            $revs = $reviewf ? $reviewf($prow, $Me) : [null];
+            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             $queries = get($this->papermap, $prow->paperId);
             foreach ($queries as $q)
                 if (get($query_color_classes, $q) !== "") {
                     $c = "";
                     if ($prow->paperTags)
-                        $c = $Conf->tags()->color_classes($prow->viewable_tags($Me), 2);
+                        $c = $this->conf->tags()->color_classes($prow->viewable_tags($this->user), 2);
                     if ($c !== "" && (get($query_color_classes, $q) ? : $c) !== $c)
                         $c = "";
                     $query_color_classes[$q] = $c;
                 }
             foreach ($revs as $rcid)
-                if (($x = $fxf($prow, $rcid, $Me)) !== null) {
+                if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
                     if ($this->fx_query) {
                         foreach ($queries as $q)
                             $data[0][] = $q;
@@ -140,19 +143,17 @@ class FormulaGraph {
     }
 
     private function _prepare_reviewer_color(Contact $user) {
-        global $Conf;
         $this->reviewer_color = array();
-        foreach (pcMembers() as $p)
-            $this->reviewer_color[$p->contactId] = $Conf->tags()->color_classes($p->viewable_tags($user));
+        foreach ($this->conf->pc_members() as $p)
+            $this->reviewer_color[$p->contactId] = $this->conf->tags()->color_classes($p->viewable_tags($user));
     }
 
     private function _paper_style(PaperInfo $prow) {
-        global $Me;
         $qnum = $this->papermap[$prow->paperId][0];
         $s = get($this->query_styles, (int) $qnum);
-        if (!$s && $this->reviewer_color && $Me->can_view_reviewer_tags($prow))
+        if (!$s && $this->reviewer_color && $this->user->can_view_reviewer_tags($prow))
             return self::REVIEWER_COLOR;
-        else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($Me)))
+        else if (!$s && $prow->paperTags && ($c = $prow->viewable_tags($this->user)))
             return trim($prow->conf->tags()->color_classes($c));
         else if ($s === "plain")
             return "";
@@ -161,26 +162,25 @@ class FormulaGraph {
     }
 
     private function _scatter_data($result) {
-        global $Me;
         $data = [];
         if ($this->fx->result_format() === Fexpr::FREVIEWER && ($this->type & self::BOXPLOT))
-            $this->_prepare_reviewer_color($Me);
+            $this->_prepare_reviewer_color($this->user);
 
-        $fxf = $this->fx->compile_function($Me);
-        $fyf = $this->fy->compile_function($Me);
+        $fxf = $this->fx->compile_function();
+        $fyf = $this->fy->compile_function();
         $reviewf = null;
         if ($this->fx->needs_review() || $this->fy->needs_review())
-            $reviewf = Formula::compile_indexes_function($Me, $this->fx->datatypes | $this->fy->datatypes);
+            $reviewf = Formula::compile_indexes_function($this->user, $this->fx->datatypes | $this->fy->datatypes);
 
-        while (($prow = PaperInfo::fetch($result, $Me))) {
-            if (!$Me->can_view_paper($prow))
+        while (($prow = PaperInfo::fetch($result, $this->user))) {
+            if (!$this->user->can_view_paper($prow))
                 continue;
             $s = $ps = $this->_paper_style($prow);
             $d = [0, 0, 0];
-            $revs = $reviewf ? $reviewf($prow, $Me) : [null];
+            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
-                $d[0] = $fxf($prow, $rcid, $Me);
-                $d[1] = $fyf($prow, $rcid, $Me);
+                $d[0] = $fxf($prow, $rcid, $this->user);
+                $d[1] = $fyf($prow, $rcid, $this->user);
                 if ($d[0] === null || $d[1] === null)
                     continue;
                 $d[2] = $prow->paperId;
@@ -211,29 +211,28 @@ class FormulaGraph {
     }
 
     private function _combine_data($result) {
-        global $Me;
         $data = [];
         if ($this->fx->result_format() === Fexpr::FREVIEWER)
-            $this->_prepare_reviewer_color($Me);
+            $this->_prepare_reviewer_color($this->user);
 
-        $fxf = $this->fx->compile_function($Me);
-        list($fytrack, $fycombine) = $this->fy->compile_combine_functions($Me);
+        $fxf = $this->fx->compile_function();
+        list($fytrack, $fycombine) = $this->fy->compile_combine_functions();
         $reviewf = null;
         if ($this->fx->needs_review() || $this->fy->datatypes)
-            $reviewf = Formula::compile_indexes_function($Me, ($this->fx->needs_review() ? $this->fx->datatypes : 0) | $this->fy->datatypes);
+            $reviewf = Formula::compile_indexes_function($this->user, ($this->fx->needs_review() ? $this->fx->datatypes : 0) | $this->fy->datatypes);
 
-        while (($prow = PaperInfo::fetch($result, $Me))) {
-            if (!$Me->can_view_paper($prow))
+        while (($prow = PaperInfo::fetch($result, $this->user))) {
+            if (!$this->user->can_view_paper($prow))
                 continue;
             $queries = $this->papermap[$prow->paperId];
             $s = $ps = $this->_paper_style($prow);
-            $revs = $reviewf ? $reviewf($prow, $Me) : [null];
+            $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             foreach ($revs as $rcid) {
-                if (($x = $fxf($prow, $rcid, $Me)) === null)
+                if (($x = $fxf($prow, $rcid, $this->user)) === null)
                     continue;
                 if ($ps === self::REVIEWER_COLOR)
                     $s = get($this->reviewer_color, $d[0]) ? : "";
-                $d = [$x, $fytrack($prow, $rcid, $Me), $prow->paperId, $s];
+                $d = [$x, $fytrack($prow, $rcid, $this->user), $prow->paperId, $s];
                 if ($rcid && ($o = $prow->review_ordinal($rcid)))
                     $d[2] .= unparseReviewOrdinal($o);
                 foreach ($queries as $q) {
@@ -345,13 +344,12 @@ class FormulaGraph {
     }
 
     private function _revround_reformat(&$data) {
-        global $Conf;
         if (!($axes = $this->_valuemap_axes(Fexpr::FROUND))
             || !($rs = $this->_valuemap_collect($data, $axes)))
             return;
         $i = 0;
         $m = [];
-        foreach ($Conf->defined_round_list() as $n => $rname)
+        foreach ($this->conf->defined_round_list() as $n => $rname)
             if (get($rs, $n)) {
                 $this->remapped_rounds[++$i] = $rname;
                 $m[$n] = $i;
@@ -360,15 +358,14 @@ class FormulaGraph {
     }
 
     public function data() {
-        global $Conf, $Me;
         // load data
         $paperIds = array_keys($this->papermap);
         $queryOptions = array("paperId" => $paperIds, "tags" => true);
-        $this->fx->add_query_options($queryOptions, $Me);
-        $this->fy->add_query_options($queryOptions, $Me);
+        $this->fx->add_query_options($queryOptions);
+        $this->fy->add_query_options($queryOptions);
         if ($this->fx->needs_review() || $this->fy->needs_review())
             $queryOptions["reviewOrdinals"] = true;
-        $result = Dbl::qe_raw($Conf->paperQuery($Me, $queryOptions));
+        $result = Dbl::qe_raw($this->conf->dblink, $this->conf->paperQuery($this->user, $queryOptions));
 
         if ($this->type == self::CDF)
             $data = $this->_cdf_data($result);
@@ -384,7 +381,6 @@ class FormulaGraph {
     }
 
     public function axis_info_settings($axis) {
-        global $Conf, $Me;
         $f = $axis == "x" ? $this->fx : $this->fy;
         $t = array();
         $counttype = $this->fx->needs_review() ? "reviews" : "papers";
@@ -411,10 +407,10 @@ class FormulaGraph {
         } else if ($format === Fexpr::FREVIEWER) {
             $x = [];
             foreach ($this->reviewers as $r) {
-                $rd = ["text" => $Me->name_text_for($r),
+                $rd = ["text" => $this->user->name_text_for($r),
                        "search" => "re:" . $r->email];
-                if ($Me->can_view_reviewer_tags()
-                    && ($colors = $r->viewable_color_classes($Me)))
+                if ($this->user->can_view_reviewer_tags()
+                    && ($colors = $r->viewable_color_classes($this->user)))
                     $rd["color_classes"] = $colors;
                 $x[$r->sort_position] = $rd;
             }
@@ -422,7 +418,7 @@ class FormulaGraph {
                     . json_encode($x) . ")" . $rticks;
         } else if ($format === Fexpr::FDECISION)
             $t[] = "ticks:hotcrp_graphs.named_integer_ticks("
-                    . json_encode($Conf->decision_map()) . ")" . $rticks;
+                    . json_encode($this->conf->decision_map()) . ")" . $rticks;
         else if ($format === Fexpr::FBOOL)
             $t[] = "ticks:hotcrp_graphs.named_integer_ticks({0:\"no\",1:\"yes\"})" . $rticks;
         else if ($format instanceof PaperOption && $format->has_selector())

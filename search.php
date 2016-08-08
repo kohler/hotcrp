@@ -193,7 +193,7 @@ function saveformulas() {
         else if ($expr == "")
             $ok = Conf::msg_error("Please enter a definition for your new formula.");
         else {
-            $formula = new Formula($expr);
+            $formula = new Formula($Me, $expr);
             if (!$formula->check())
                 $ok = Conf::msg_error($formula->error_html());
             else {

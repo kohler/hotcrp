@@ -1452,12 +1452,13 @@ class FormulaPaperColumn extends PaperColumn {
         self::$registered[] = $fdef;
     }
     public function make_column($name, $errors) {
+        global $Conf, $Me;
         foreach (self::$registered as $col)
             if (strcasecmp($col->formula->name, $name) == 0)
                 return $col;
         if (substr($name, 0, 4) === "edit")
             return null;
-        $formula = new Formula($name);
+        $formula = new Formula($Me, $name);
         if (!$formula->check()) {
             if ($errors && strpos($name, "(") !== false)
                 self::make_column_error($errors, $formula->error_html(), 1);
@@ -1480,14 +1481,14 @@ class FormulaPaperColumn extends PaperColumn {
         if (!$this->formula && $visible === PaperColumn::PREP_COMPLETION)
             return true;
         if (!$pl->scoresOk
-            || !$this->formula->check()
+            || !$this->formula->check($pl->contact)
             || !($pl->search->limitName == "a"
                  ? $pl->contact->can_view_formula_as_author($this->formula)
                  : $pl->contact->can_view_formula($this->formula)))
             return false;
-        $this->formula_function = $this->formula->compile_function($pl->contact);
+        $this->formula_function = $this->formula->compile_function();
         if ($visible)
-            $this->formula->add_query_options($pl->qopts, $pl->contact);
+            $this->formula->add_query_options($pl->qopts);
         return true;
     }
     public function realize(PaperList $pl) {
@@ -1533,18 +1534,18 @@ class FormulaPaperColumn extends PaperColumn {
         }
         assert(!!$this->statistics);
     }
-    private function unparse($s, $user) {
-        $t = $this->formula->unparse_html($s, $user);
+    private function unparse($s) {
+        $t = $this->formula->unparse_html($s);
         if ($this->any_real && is_float($t))
             $t = sprintf("%.2f", $t);
         return $t;
     }
     public function content($pl, $row, $rowidx) {
         $formulaf = $this->formula_function;
-        $t = $this->unparse($this->results[$row->paperId], $pl->contact);
+        $t = $this->unparse($this->results[$row->paperId]);
         if ($row->conflictType > 0 && $pl->contact->allow_administer($row)) {
             $ss = $formulaf($row, null, $pl->contact, null, true);
-            $tt = $this->unparse($ss, $pl->contact);
+            $tt = $this->unparse($ss);
             if ($tt !== $t) {
                 $this->statistics->add($ss);
                 return '<span class="fn5">' . $t . '</span><span class="fx5">' . $tt . '</span>';
@@ -1557,7 +1558,7 @@ class FormulaPaperColumn extends PaperColumn {
     public function text($pl, $row) {
         $formulaf = $this->formula_function;
         $s = $formulaf($row, null, $pl->contact);
-        return $this->formula->unparse_text($s, $pl->contact);
+        return $this->formula->unparse_text($s);
     }
     public function has_statistics() {
         return $this->statistics && $this->statistics->count();
@@ -1565,7 +1566,7 @@ class FormulaPaperColumn extends PaperColumn {
     public function statistic($pl, $what) {
         if ($what == ScoreInfo::SUM && !$this->formula->result_format_is_real())
             return "";
-        return $this->formula->unparse_html($this->statistics->statistic($what), $pl->contact);
+        return $this->formula->unparse_html($this->statistics->statistic($what));
     }
 }
 
@@ -1716,7 +1717,7 @@ class FoldAllPaperColumn extends PaperColumn {
 }
 
 function initialize_paper_columns() {
-    global $Conf;
+    global $Conf, $Me;
 
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "className" => "pl_sel")));
@@ -1771,7 +1772,7 @@ function initialize_paper_columns() {
 
     if ($Conf && $Conf->setting("formulas")) {
         $result = Dbl::q("select * from Formula order by lower(name)");
-        while ($result && ($row = Formula::fetch($result))) {
+        while ($result && ($row = Formula::fetch($Me, $result))) {
             $fid = $row->formulaId;
             FormulaPaperColumn::register(new FormulaPaperColumn("formula$fid", $row));
         }

@@ -2742,7 +2742,7 @@ class Conf {
             return;
         $sortbylast = $this->opt("sortByLastName");
         $hpcj = $list = [];
-        foreach (pcMembers() as $pcm) {
+        foreach ($this->pc_members() as $pcm) {
             $hpcj[$pcm->contactId] = $j = (object) ["name" => $user->name_html_for($pcm), "email" => $pcm->email];
             if (($color_classes = $user->reviewer_color_classes_for($pcm)))
                 $j->color_classes = $color_classes;

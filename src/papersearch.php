@@ -1533,13 +1533,12 @@ class PaperSearch {
     }
 
     private function _search_formula($word, &$qt, $quoted) {
+        $result = $formula = null;
         if (preg_match('/\A[^(){}\[\]]+\z/', $word) && !$quoted
-            && ($result = $this->conf->qe("select * from Formula where name=?", $word))
-            && ($row = $result->fetch_object())) {
-            $formula = new Formula($row);
-            Dbl::free($result);
-        } else
-            $formula = new Formula($word);
+            && ($result = $this->conf->qe("select * from Formula where name=?", $word)))
+            $formula = Formula::fetch($this->contact, $result);
+        Dbl::free($result);
+        $formula = $formula ? : new Formula($this->contact, $word);
         if ($formula->check())
             $qt[] = new SearchTerm("formula", self::F_XVIEW, $formula);
         else {
@@ -2852,9 +2851,9 @@ class PaperSearch {
         } else if ($tt === "formula") {
             $q = array("true");
             $this->_clauseTermSetFlags($t, $sqi, $q);
-            $t->value->add_query_options($this->_query_options, $this->contact);
+            $t->value->add_query_options($this->_query_options);
             if (!$t->link)
-                $t->link = $t->value->compile_function($this->contact);
+                $t->link = $t->value->compile_function();
             $f[] = "(" . join(" and ", $q) . ")";
         } else if ($tt === "not") {
             $ff = array();
