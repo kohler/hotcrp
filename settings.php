@@ -249,7 +249,10 @@ class SettingValues {
         return count($this->errmsg);
     }
     public function has_error($field) {
-        return isset($this->errf[$field]);
+        return get($this->errf, $field, 0) > 1;
+    }
+    public function has_problem($field) {
+        return get($this->errf, $field, 0) > 0;
     }
     static private function check_error_field($field, &$html) {
         if ($field instanceof Si) {
@@ -309,7 +312,7 @@ class SettingValues {
     public function label($name, $html, $label_id = null) {
         $name1 = is_array($name) ? $name[0] : $name;
         foreach (is_array($name) ? $name : array($name) as $n)
-            if ($this->has_error($n)) {
+            if ($this->has_problem($n)) {
                 $html = '<span class="setting_error">' . $html . '</span>';
                 break;
             }
@@ -328,7 +331,7 @@ class SettingValues {
             $x["disabled"] = true;
         foreach ($extra as $k => $v)
             $x[$k] = $v;
-        if ($this->has_error($name))
+        if ($this->has_problem($name))
             $x["class"] = trim("setting_error " . (get($x, "class") ? : ""));
         return $x;
     }
