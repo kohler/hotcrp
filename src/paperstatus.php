@@ -1032,7 +1032,7 @@ class PaperStatus {
         return get($this->errf, $field, 0) > 0;
     }
 
-    function has_messages() {
+    function has_problems() {
         return $this->has_warnings || $this->has_errors;
     }
 }

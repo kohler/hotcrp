@@ -1653,7 +1653,8 @@ class PaperTable {
             $m .= Ht::xmsg("info", "You aren’t a contact for this submission, but as an administrator you can still make changes.");
         if ($Me->can_update_paper($prow, true) && ($v = $Conf->message_html("submit")))
             $m .= Ht::xmsg("info", $v);
-        if ($this->edit_status && $this->edit_status->has_messages())
+        if ($this->edit_status && $this->edit_status->has_problems()
+            && ($this->edit_status->has_problem("contacts") || $this->editable))
             $m .= Ht::xmsg("warning", "There are problems with the submission. Please scroll through the form and fix them as appropriate.");
         return $m;
     }
