@@ -178,7 +178,10 @@ class PaperInfo {
 
     private function merge($p, $contact) {
         global $Conf;
-        $this->conf = $Conf;
+        if ($contact instanceof Contact)
+            $this->conf = $contact->conf;
+        else
+            $this->conf = $Conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -704,7 +707,7 @@ class PaperInfo {
              || ($dtype == DTYPE_FINAL && $did == $this->finalPaperStorageId))
             && !$full) {
             $infoJson = get($this, $dtype == DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson");
-            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true]);
+            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true], $this->conf);
         }
 
         if ($this->_document_array === null) {
