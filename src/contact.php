@@ -2181,11 +2181,10 @@ class Contact {
     }
 
     public static function can_some_author_view_submitted_review(PaperInfo $prow) {
-        global $Conf; /* XXX */
-        if ($Conf->au_seerev == Conf::AUSEEREV_TAGS)
-            return $prow->has_any_tag($Conf->tag_au_seerev);
+        if ($prow->conf->au_seerev == Conf::AUSEEREV_TAGS)
+            return $prow->has_any_tag($prow->conf->tag_au_seerev);
         else
-            return $Conf->au_seerev != 0;
+            return $prow->conf->au_seerev != 0;
     }
 
     private function can_view_submitted_review_as_author(PaperInfo $prow) {
