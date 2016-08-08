@@ -408,15 +408,8 @@ class PaperTable {
                     }
                 }
 
-            if ($prow->finalPaperStorageId > 1
-                && $prow->paperStorageId > 1) {
-                $doc = (object) array("paperId" => $prow->paperId,
-                                      "mimetype" => null,
-                                      "documentType" => DTYPE_SUBMISSION);
-                $pdfs[] = "<small><a class='u' href=\""
-                    . HotCRPDocument::url($doc)
-                    . "\">Submission version</a></small>";
-            }
+            if ($prow->finalPaperStorageId > 1 && $prow->paperStorageId > 1)
+                $pdfs[] = "<small>" . $prow->document(DTYPE_SUBMISSION)->link_html("Submission version", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE) . "</small>";
 
             foreach ($pdfs as $p)
                 $out[] = '<p class="xd">' . $p . '</p>';
