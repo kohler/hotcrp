@@ -1001,7 +1001,7 @@ class AttachmentsPaperOption extends PaperOption {
         foreach ($ov->documents() as $d) {
             $link = $d->link_html(htmlspecialchars($d->unique_filename), $flags);
             if ($d->docclass->is_archive($d)) {
-                $link = '<' . $tag . ' class="expandarchive foldc"><a href="#" class="qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</$tag>";
+                $link = '<' . $tag . ' class="foldc"><a href="#" class="expandarchive qq">' . expander(null, 0) . "</a>&nbsp;" . $link . "</$tag>";
                 Ht::stash_script('$(function(){$(".expandarchive").click(expand_archive)})', "expand_archive");
             } else if ($tag == "div")
                 $link = "<div>$link</div>";
