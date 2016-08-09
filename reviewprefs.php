@@ -39,7 +39,7 @@ if ($incorrect_reviewer)
 if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
 // backwards compat
-if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "setpref"])) {
+if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "setpref", "saveprefs"])) {
     if (isset($Qreq->get)) {
         $Qreq->fn = "get";
         $Qreq->getfn = $Qreq->get;
@@ -54,7 +54,7 @@ if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "uploadpref", "setpref"]))
         unset($Qreq->fn);
 }
 if (!isset($Qreq->fn) && isset($Qreq->default))
-    $Qreq->update = 1;
+    $Qreq->fn = "saveprefs";
 
 if ($Qreq->fn === "get"
     && ($Qreq->getfn === "revpref" || $Qreq->getfn === "revprefx")
@@ -63,7 +63,7 @@ if ($Qreq->fn === "get"
 
 
 // Update preferences
-function savePreferences($Qreq) {
+function savePreferences($Qreq, $reset_p) {
     global $Conf, $Me, $reviewer, $incorrect_reviewer;
     if ($incorrect_reviewer) {
         Conf::msg_error("Preferences not saved.");
@@ -112,11 +112,13 @@ function savePreferences($Qreq) {
 
     if (!Dbl::has_error()) {
         $Conf->confirmMsg("Preferences saved.");
+        if ($reset_p)
+            unset($_REQUEST["p"], $_GET["p"], $_POST["p"], $_REQUEST["pap"], $_GET["pap"], $_POST["pap"]);
         redirectSelf();
     }
 }
-if ($Qreq->update && check_post())
-    savePreferences($Qreq);
+if ($Qreq->fn === "saveprefs" && check_post())
+    savePreferences($Qreq, true);
 
 
 // Select papers
@@ -138,7 +140,7 @@ if ($Qreq->fn === "setpref" && $SSel && !$SSel->is_empty() && check_post()) {
         $new_qreq = new Qobject;
         foreach ($SSel->selection() as $p)
             $new_qreq["revpref$p"] = $Qreq->pref;
-        savePreferences($new_qreq);
+        savePreferences($new_qreq, false);
     }
 }
 
@@ -196,7 +198,7 @@ function parseUploadedPreferences($filename, $printFilename, $reviewer) {
     if (count($errors) > 0)
         Conf::msg_error("There were some errors while parsing the uploaded preferences file. <div class='parseerr'><p>" . join("</p>\n<p>", $errors) . "</p> None of your preferences were saved; please fix these errors and try again.</div>");
     else if (count($new_qreq) > 0)
-        savePreferences($new_qreq);
+        savePreferences($new_qreq, true);
 }
 if ($Qreq->fn === "uploadpref" && fileUploaded($_FILES["uploadedFile"])
     && check_post())
@@ -243,7 +245,7 @@ $pl_text = $pl->table_html("editReviewPreference",
                 array("class" => "pltable_full",
                       "table_id" => "foldpl",
                       "attributes" => array("data-fold-session" => "pfdisplay.$"),
-                      "footer_extra" => "<div id='plactr'>" . Ht::submit("update", "Save changes", array("class" => "hb")) . "</div>",
+                      "footer_extra" => "<div id='plactr'>" . Ht::submit("fn", "Save changes", ["class" => "btn", "onclick" => "return plist_submit.call(this)", "data-plist-submit-all" => "always", "value" => "saveprefs"]) . "</div>",
                       "list_properties" => ["revprefs" => true]));
 
 
@@ -326,7 +328,7 @@ echo Ht::form_div(hoturl_post("reviewprefs", "reviewer=$reviewer" . ($Qreq->q ? 
     Ht::hidden("defaultact", "", array("id" => "defaultact")),
     Ht::hidden_default_submit("default", 1),
     "<div class='pltable_full_ctr'>\n",
-    '<noscript><div style="text-align:center">', Ht::submit("update", "Save changes"), '</div></noscript>',
+    '<noscript><div style="text-align:center">', Ht::submit("fn", "Save changes", ["value" => "saveprefs"]), '</div></noscript>',
     $pl_text,
     "</div></div></form>\n";
 
