@@ -362,11 +362,12 @@ function caller_landmark($position = 1, $skipfunction_re = null) {
 
 // pcntl helpers
 
-if (!function_exists("pcntl_wifexited")) {
-    function pcntl_wifexited($status) {
-        return ($status & 0x7f) == 0;
+if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
+    function pcntl_wifexitedsuccess($status) {
+        return pcntl_wifexited($status) && pcntl_wexitstatus($status) == 0;
     }
-    function pcntl_wexitstatus($status) {
-        return ($status & 0xff00) >> 8;
+} else {
+    function pcntl_wifexitedsuccess($status) {
+        return ($status & 0x7f) == 0 && (($status & 0xff00) >> 8) == 0;
     }
 }

@@ -525,7 +525,7 @@ class Mailer {
             $f = popen($extra ? "$sendmail $extra" : $sendmail, "wb");
             fwrite($f, $htext . $eol . $prep->body);
             $status = pclose($f);
-            if (pcntl_wifexited($status) && pcntl_wexitstatus($status) == 0)
+            if (pcntl_wifexitedsuccess($status))
                 return true;
             else {
                 $Conf->set_opt("internalMailer", false);
