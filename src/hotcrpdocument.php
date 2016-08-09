@@ -202,26 +202,27 @@ class HotCRPDocument extends Filer {
         return $this->no_filestore ? false : $this->conf->docstore();
     }
 
+    private function load_content_db($doc) {
+        $result = $this->conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
+        $ok = false;
+        if ($result && ($row = $result->fetch_row()) && $row[0] !== null) {
+            $doc->content = ($row[1] == 1 ? gzinflate($row[0]) : $row[0]);
+            $ok = true;
+        }
+        Dbl::free($result);
+        return $ok;
+    }
+
     public function load_content($doc) {
         global $Conf;
         if (!($doc instanceof DocumentInfo))
             error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         $ok = false;
+        $doc->content = "";
 
-        $result = null;
-        if (!$this->conf->opt("dbNoPapers")
-            && get_i($doc, "paperStorageId") > 1)
-            $result = $this->conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
-        if (!$result || !($row = edb_row($result)) || $row[0] === null)
-            $doc->content = "";
-        else if ($row[1] == 1) {
-            $doc->content = gzinflate($row[0]);
-            $ok = true;
-        } else {
-            $doc->content = $row[0];
-            $ok = true;
-        }
-        Dbl::free($result);
+        $dbNoPapers = $this->conf->opt("dbNoPapers");
+        if (!$dbNoPapers && $doc->paperStorageId > 1)
+            $ok = $this->load_content_db($doc);
 
         if (!$ok && ($s3 = $this->conf->s3_docstore())
             && ($filename = self::s3_filename($doc))) {
@@ -233,6 +234,9 @@ class HotCRPDocument extends Filer {
             } else if ($s3->status != 200)
                 error_log("S3 error: GET $filename: $s3->status $s3->status_text " . json_encode($s3->response_headers));
         }
+
+        if (!$ok && $dbNoPapers && $doc->paperStorageId > 1) // ignore dbNoPapers second time through
+            $ok = $this->load_content_db($doc);
 
         if (!$ok) {
             $num = get($doc, "paperId") ? " #$doc->paperId" : "";
