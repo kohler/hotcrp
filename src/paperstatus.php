@@ -370,8 +370,12 @@ class PaperStatus {
             $aux->last = simplify_whitespace($aux->lastName);
             $aux->email = simplify_whitespace($aux->email);
             $aux->affiliation = simplify_whitespace($aux->affiliation);
-        } else
-            $aux = $au;
+        } else {
+            $aux = clone $au;
+            foreach (["first", "last", "email", "affiliation"] as $k)
+                if (!isset($aux->$k))
+                    $aux->$k = "";
+        }
         // borrow from old author information
         if ($aux->email && $aux->first === "" && $aux->last === ""
             && ($old_au = get($old_au_by_email, strtolower($aux->email)))) {
