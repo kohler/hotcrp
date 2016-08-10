@@ -68,7 +68,8 @@ function convert_to_utf8($str) {
 }
 
 function simplify_whitespace($x) {
-    return trim(preg_replace('/(?:\s|\xC2\xA0)+/', " ", $x));
+    // Replace ALL invisible Unicode space-type characters with true spaces
+    return trim(preg_replace('/(?:\s|\xC2\xA0|\xE2\x80[\x80-\x8A\xAF]|\xE2\x81\x9F|\xE3\x80\x80)+/', " ", $x));
 }
 
 function prefix_word_wrap($prefix, $text, $indent = 18, $totWidth = 75) {
