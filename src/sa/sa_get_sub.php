@@ -55,7 +55,7 @@ class GetDocument_SearchAction extends SearchAction {
             $actions[] = self::make_option_action($opt);
     }
     static function error_document(PaperOption $opt, PaperInfo $row) {
-        $x = (object) ["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $opt->name . " missing."];
+        $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $opt->name . " missing."], $row->conf);
         if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
             $x->mimetype = $mimetypes[0]->mimetype;
         return $x;
