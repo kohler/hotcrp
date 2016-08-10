@@ -51,6 +51,7 @@ class Text {
                                          "with" => true, "is" => true);
 
     static function analyze_von($lastName) {
+        // see also split_name
         if (preg_match('@\A(v[oa]n|d[eu])\s+(.*)\z@s', $lastName, $m))
             return array($m[1], $m[2]);
         else
@@ -221,6 +222,8 @@ class Text {
         return htmlspecialchars($x);
     }
 
+    const SUFFIX_REGEX = 'Jr\.?|Sr\.?|Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Junior|Senior|Esquire|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th|1\dth';
+
     static function split_name($name, $with_email = false) {
         $name = simplify_whitespace($name);
         $ret = array("", "");
@@ -237,20 +240,36 @@ class Text {
                 list($name, $ret[2]) = array($m[2], $m[1]);
         }
 
-        if (($p1 = strrpos($name, ",")) !== false) {
-            $first = trim(substr($name, $p1 + 1));
-            if (!preg_match('@^(Esq\.?|Ph\.?D\.?|M\.?[SD]\.?|Esquire|Junior|Senior|Jr.?|Sr.?|I+|IV|VI*|IX|XI*|2n?d|3r?d|[4-9]th)$@i', $first)) {
-                list($ret[0], $ret[1]) = array($first, trim(substr($name, 0, $p1)));
+        // parenthetical comment on name attaches to first or last whole
+        $paren = "";
+        if ($name !== "" && $name[strlen($name) - 1] === ")"
+            && preg_match('{\A(.*?)(\s*\(.*?\))\z}', $name, $m)) {
+            $name = $m[1];
+            $paren = $m[2];
+        }
+
+        // `last, first`
+        $suffix = "";
+        while (($comma = strrpos($name, ",")) !== false) {
+            $first = ltrim(substr($name, $comma + 1));
+            if (!preg_match('{\A(?:' . self::SUFFIX_REGEX . ')\z}i', $first)) {
+                $ret[0] = $first . $paren;
+                $ret[1] = trim(substr($name, 0, $comma)) . $suffix;
                 return $ret;
             }
+            $suffix = substr($name, $comma) . $suffix . $paren;
+            $paren = "";
+            $name = rtrim(substr($name, 0, $comma));
         }
-        if (preg_match('@[^\s,]+(\s+Jr\.?|\s+Sr\.?|\s+i+|\s+iv|\s+vi*|\s+ix|\s+xi*|\s+2n?d|\s+3r?d|\s+[4-9]th|\s+Ph\.?D\.?|\s+M\.?[SD]\.?)?(,.*)?\s*$@i', $name, $m)) {
-            $ret[0] = trim(substr($name, 0, strlen($name) - strlen($m[0])));
-            $ret[1] = trim($m[0]);
+
+        if (preg_match('{[^\s,]+(?:\s+(?:' . self::SUFFIX_REGEX . '))?(?:,.*)?\z}i', $name, $m)) {
+            $ret[0] = rtrim(substr($name, 0, strlen($name) - strlen($m[0])));
+            $ret[1] = ltrim($m[0]) . $suffix . $paren;
+            // see also split_von
             if (preg_match('@^(\S.*?)\s+(v[oa]n|d[eu])$@i', $ret[0], $m))
                 list($ret[0], $ret[1]) = array($m[1], $m[2] . " " . $ret[1]);
         } else
-            $ret[1] = trim($name);
+            $ret[1] = $name . $suffix . $paren;
         return $ret;
     }
 
@@ -263,11 +282,10 @@ class Text {
     }
 
     static function split_last_suffix($last) {
-        if (preg_match('%\A(.*?\S)(?:\s+|\s*,\s*)(Jr\.?|Sr\.?|I+|IV|V|VI*|IX|XI*|2n?d|3r?d|[4-9]th)\z%i', $last, $m)) {
-            if ($m[2] === "Jr" || $m[2] === "Sr")
-                return [$m[1], $m[2] . "."];
-            else
-                return [$m[1], $m[2]];
+        if (preg_match('{\A(.*?\S)(?:\s+|\s*,\s*)(' . self::SUFFIX_REGEX . ')\z}i', $last, $m)) {
+            if (preg_match('{\A(?:jr|sr|esq)\z}i', $m[2]))
+                $m[2] .= ".";
+            return [$m[1], $m[2]];
         } else
             return [$last, ""];
     }

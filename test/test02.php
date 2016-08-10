@@ -272,4 +272,26 @@ xassert_eqq(ini_get_bytes(null, "1 M"), 1 * (1 << 20));
 xassert_eqq(ini_get_bytes(null, "1.2k"), 1.2 * (1 << 10));
 xassert_eqq(ini_get_bytes(null, "20G"), 20 * (1 << 30));
 
+// name splitting
+xassert_eqq(get(Text::split_name("Bob Kennedy"), 0), "Bob");
+xassert_eqq(get(Text::split_name("Bob Kennedy"), 1), "Kennedy");
+xassert_eqq(get(Text::split_name("Bob Kennedy (Butt Pants)"), 0), "Bob");
+xassert_eqq(get(Text::split_name("Bob Kennedy (Butt Pants)"), 1), "Kennedy (Butt Pants)");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Esq."), 0), "Bob");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Esq."), 1), "Kennedy, Esq.");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Esq. (Butt Pants)"), 0), "Bob");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Esq. (Butt Pants)"), 1), "Kennedy, Esq. (Butt Pants)");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Jr., Esq."), 0), "Bob");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Jr., Esq."), 1), "Kennedy, Jr., Esq.");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Jr., Esq. (Butt Pants)"), 0), "Bob");
+xassert_eqq(get(Text::split_name("Bob Kennedy, Jr., Esq. (Butt Pants)"), 1), "Kennedy, Jr., Esq. (Butt Pants)");
+xassert_eqq(get(Text::split_name("Kennedy, Bob, Jr., Esq."), 0), "Bob");
+xassert_eqq(get(Text::split_name("Kennedy, Bob, Jr., Esq."), 1), "Kennedy, Jr., Esq.");
+xassert_eqq(get(Text::split_name("Kennedy, Bob, Jr., Esq. (Butt Pants)"), 0), "Bob");
+xassert_eqq(get(Text::split_name("Kennedy, Bob, Jr., Esq. (Butt Pants)"), 1), "Kennedy, Jr., Esq. (Butt Pants)");
+xassert_eqq(get(Text::split_name("Kennedy, Bob"), 0), "Bob");
+xassert_eqq(get(Text::split_name("Kennedy, Bob"), 1), "Kennedy");
+xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 0), "Bob (Butt Pants)");
+xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 1), "Kennedy");
+
 xassert_exit();
