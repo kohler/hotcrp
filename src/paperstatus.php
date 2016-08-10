@@ -158,15 +158,15 @@ class PaperStatus {
             }
 
             $other_contacts = array();
-            foreach ($contacts as $conf)
-                if ($conf->conflictType >= CONFLICT_AUTHOR) {
-                    $aux = (object) array("email" => $conf->email);
-                    if ($conf->firstName)
-                        $aux->first = $conf->firstName;
-                    if ($conf->lastName)
-                        $aux->last = $conf->lastName;
-                    if ($conf->affiliation)
-                        $aux->affiliation = $conf->affiliation;
+            foreach ($contacts as $cflt)
+                if ($cflt->conflictType >= CONFLICT_AUTHOR) {
+                    $aux = (object) array("email" => $cflt->email);
+                    if ($cflt->firstName)
+                        $aux->first = $cflt->firstName;
+                    if ($cflt->lastName)
+                        $aux->last = $cflt->lastName;
+                    if ($cflt->affiliation)
+                        $aux->affiliation = $cflt->affiliation;
                     $other_contacts[] = $aux;
                 }
             if (!empty($other_contacts))
@@ -212,9 +212,9 @@ class PaperStatus {
 
         if ($can_view_authors) {
             $pcconflicts = array();
-            foreach ($prow->pc_conflicts(true) as $id => $conf) {
-                if (($ctname = get(Conflict::$type_names, $conf->conflictType)))
-                    $pcconflicts[$conf->email] = $ctname;
+            foreach ($prow->pc_conflicts(true) as $id => $cflt) {
+                if (($ctname = get(Conflict::$type_names, $cflt->conflictType)))
+                    $pcconflicts[$cflt->email] = $ctname;
             }
             if (!empty($pcconflicts))
                 $pj->pc_conflicts = (object) $pcconflicts;
@@ -351,14 +351,49 @@ class PaperStatus {
         }
     }
 
-    private function normalize_string($pj, $k, $simplify) {
-        if (isset($pj->$k))
-            if (is_string($pj->$k))
-                $pj->$k = $simplify ? simplify_whitespace($pj->$k) : trim($pj->$k);
-            else {
-                $this->set_error_html($k, "Format error [$k]");
-                unset($pj, $k);
-            }
+    private function normalize_string($pj, $k, $simplify, $preserve) {
+        if (isset($pj->$k) && is_string($pj->$k)) {
+            if (!$preserve && $simplify)
+                $pj->$k = simplify_whitespace($pj->$k);
+            else if (!$preserve)
+                $pj->$k = trim($pj->$k);
+        } else if (isset($pj->$k)) {
+            $this->set_error_html($k, "Format error [$k]");
+            unset($pj, $k);
+        }
+    }
+
+    private function normalize_author($pj, $au, &$au_by_email, $old_au_by_email, $preserve) {
+        if (!$preserve) {
+            $aux = Text::analyze_name($au);
+            $aux->first = simplify_whitespace($aux->firstName);
+            $aux->last = simplify_whitespace($aux->lastName);
+            $aux->email = simplify_whitespace($aux->email);
+            $aux->affiliation = simplify_whitespace($aux->affiliation);
+        } else
+            $aux = $au;
+        // borrow from old author information
+        if ($aux->email && $aux->first === "" && $aux->last === ""
+            && ($old_au = get($old_au_by_email, strtolower($aux->email)))) {
+            $aux->first = get($old_au, "first", "");
+            $aux->last = get($old_au, "last", "");
+            if ($aux->affiliation === "")
+                $aux->affiliation = get($old_au, "affiliation", "");
+        }
+        if ($aux->first !== "" || $aux->last !== ""
+            || $aux->email !== "" || $aux->affiliation !== "")
+            $pj->authors[] = $aux;
+        else
+            $pj->bad_authors[] = $aux;
+        $aux->index = count($pj->authors) + count($pj->bad_authors);
+        if (is_object($au) && isset($au->contact))
+            $aux->contact = !!$au->contact;
+        if ($aux->email) {
+            $lemail = strtolower($aux->email);
+            $au_by_email[$lemail] = $aux;
+            if (!validate_email($lemail) && !isset($old_au_by_email[$lemail]))
+                $pj->bad_email_authors[$k] = $aux;
+        }
     }
 
     private function normalize_topics($pj) {
@@ -447,14 +482,14 @@ class PaperStatus {
                 || strcasecmp($lemail, $Me->email) == 0);
     }
 
-    private function normalize($pj, $old_pj) {
+    private function normalize($pj, $old_pj, $preserve) {
         // Errors prevent saving
         global $Conf, $Now;
 
         // Title, abstract
-        $this->normalize_string($pj, "title", true);
-        $this->normalize_string($pj, "abstract", false);
-        $this->normalize_string($pj, "collaborators", false);
+        $this->normalize_string($pj, "title", true, $preserve);
+        $this->normalize_string($pj, "abstract", false, $preserve);
+        $this->normalize_string($pj, "collaborators", false, $preserve);
         if (isset($pj->collaborators)) {
             $collab = [];
             foreach (preg_split('/[\r\n]+/', $pj->collaborators) as $line)
@@ -484,35 +519,9 @@ class PaperStatus {
             $curau = is_array($pj->authors) ? $pj->authors : array();
             $pj->authors = array();
             foreach ($curau as $k => $au)
-                if (is_string($au) || is_object($au)) {
-                    $aux = Text::analyze_name($au);
-                    $aux->first = simplify_whitespace($aux->firstName);
-                    $aux->last = simplify_whitespace($aux->lastName);
-                    $aux->email = simplify_whitespace($aux->email);
-                    $aux->affiliation = simplify_whitespace($aux->affiliation);
-                    // borrow from old author information
-                    if ($aux->email && $aux->first === "" && $aux->last === ""
-                        && ($old_au = get($old_au_by_email, strtolower($aux->email)))) {
-                        $aux->first = get($old_au, "first", "");
-                        $aux->last = get($old_au, "last", "");
-                        if ($aux->affiliation === "")
-                            $aux->affiliation = get($old_au, "affiliation", "");
-                    }
-                    if ($aux->first !== "" || $aux->last !== ""
-                        || $aux->email !== "" || $aux->affiliation !== "")
-                        $pj->authors[] = $aux;
-                    else
-                        $pj->bad_authors[] = $aux;
-                    $aux->index = count($pj->authors) + count($pj->bad_authors);
-                    if (is_object($au) && isset($au->contact))
-                        $aux->contact = !!$au->contact;
-                    if ($aux->email) {
-                        $lemail = strtolower($aux->email);
-                        $au_by_email[$lemail] = $aux;
-                        if (!validate_email($lemail) && !isset($old_au_by_email[$lemail]))
-                            $pj->bad_email_authors[$k] = $aux;
-                    }
-                } else
+                if (is_string($au) || is_object($au))
+                    $this->normalize_author($pj, $au, $au_by_email, $old_au_by_email, $preserve);
+                else
                     $this->set_error_html("authors", "Format error [authors]");
         }
 
@@ -810,9 +819,9 @@ class PaperStatus {
             return false;
         }
 
-        $this->normalize($pj, $old_pj);
+        $this->normalize($pj, $old_pj, false);
         if ($old_pj)
-            $this->normalize($old_pj, null);
+            $this->normalize($old_pj, null, true);
         if ($this->has_errors)
             return false;
         $this->check_invariants($pj, $old_pj);
