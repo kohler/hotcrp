@@ -63,6 +63,7 @@ class Conf {
     private $_date_format_initialized = false;
     private $_docclass_cache = [];
     private $_docstore = false;
+    private $_defined_formulas = null;
     private $_s3_document = false;
 
     public $paper = null; // current paper row
@@ -565,6 +566,24 @@ class Conf {
                 $this->_s3_document = null;
         }
         return $this->_s3_document;
+    }
+
+
+    function defined_formula_map(Contact $user) {
+        if ($this->_defined_formulas !== null && !empty($this->_defined_formulas)) {
+            reset($this->_defined_formulas);
+            if (current($this->_defined_formulas)->user !== $user)
+                $this->_defined_formulas = null;
+        }
+        if ($this->_defined_formulas === null) {
+            $this->_defined_formulas = [];
+            if ($this->setting("formulas")) {
+                $result = $this->q("select * from Formula order by lower(name)");
+                while ($result && ($f = Formula::fetch($user, $result)))
+                    $this->_defined_formulas[$f->formulaId] = $f;
+            }
+        }
+        return $this->_defined_formulas;
     }
 
 

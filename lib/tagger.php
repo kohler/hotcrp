@@ -150,6 +150,10 @@ class TagMap implements IteratorAggregate {
         $this->sorted || $this->sort();
         return array_filter($this->storage, function ($t) use ($property) { return $t->$property; });
     }
+    function filter_by($f) {
+        $this->sorted || $this->sort();
+        return array_filter($this->storage, $f);
+    }
     function check_property($tag, $property) {
         $k = "has_{$property}";
         return $this->$k

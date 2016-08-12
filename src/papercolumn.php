@@ -1220,27 +1220,22 @@ class ScorePaperColumn extends PaperColumn {
         $this->className = "pl_score";
         $this->score = $score;
     }
-    public static function lookup_all() {
-        global $Conf;
-        $reg = array();
-        foreach ($Conf->all_review_fields() as $f)
-            if (($c = self::_make_column($f->id)))
-                $reg[$f->display_order] = $c;
+    public static function all_column_names(Conf $conf) {
+        $reg = [];
+        foreach ($conf->all_review_fields() as $f)
+            if ($f->has_options && $f->display_order !== false)
+                $reg[$f->display_order] = $f->id;
         ksort($reg);
-        return $reg;
+        return array_values($reg);
     }
-    private static function _make_column($name) {
-        global $Conf;
-        if (($f = $Conf->review_field_search($name))
+    public function make_column(Contact $user, $name, $errors) {
+        if (($f = $user->conf->review_field_search($name))
             && $f->has_options && $f->display_order !== false) {
             $c = parent::lookup_local($f->id);
             $c = $c ? : PaperColumn::register(new ScorePaperColumn($f->id));
             return $c;
         } else
             return null;
-    }
-    public function make_column(Contact $user, $name, $errors) {
-        return self::_make_column($name);
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->scoresOk)
@@ -1296,7 +1291,7 @@ class ScorePaperColumn extends PaperColumn {
             return null;
     }
     public function completion_instances(Contact $user) {
-        return self::lookup_all();
+        return array_map(function ($name) use ($user) { return $this->make_column($user, $name, null); }, self::all_column_names($user->conf));
     }
     public function content_empty($pl, $row) {
         // Do not use viewable_scores to determine content emptiness, since
@@ -1345,21 +1340,18 @@ class Option_PaperColumn extends PaperColumn {
             $this->className .= " plrd";
         $this->opt = $opt;
     }
-    public static function lookup_all(Contact $user) {
-        $reg = array();
-        foreach ($user->user_option_list() as $opt)
-            if ($opt->display() >= 0)
-                $reg[] = self::_make_column($opt, false);
-        return $reg;
-    }
     private static function _make_column($opt, $isrow) {
         $s = parent::lookup_local($opt->abbr . ($isrow ? "-row" : ""));
         $s = $s ? : PaperColumn::register(new Option_PaperColumn($opt, $isrow));
         return $s;
     }
     public function make_column(Contact $user, $name, $errors) {
-        $p = strpos($name, ":") ? : -1;
-        $name = substr($name, $p + 1);
+        $has_colon = false;
+        if (str_starts_with($name, "opt:")) {
+            $name = substr($name, 4);
+            $has_colon = true;
+        } else if (strpos($name, ":") !== false)
+            return null;
         $isrow = false;
         $opts = $user->conf->paper_opts->search($name);
         if (empty($opts) && str_ends_with($name, "-row")) {
@@ -1373,7 +1365,7 @@ class Option_PaperColumn extends PaperColumn {
             if ($opt->display() >= 0)
                 return self::_make_column($opt, $isrow);
             self::make_column_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.");
-        } else if ($p > 0)
+        } else if ($has_colon)
             self::make_column_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
         return null;
     }
@@ -1394,7 +1386,11 @@ class Option_PaperColumn extends PaperColumn {
         return $this->opt ? $this->opt->abbr : null;
     }
     public function completion_instances(Contact $user) {
-        return self::lookup_all($user);
+        $reg = array();
+        foreach ($user->user_option_list() as $opt)
+            if ($opt->display() >= 0)
+                $reg[] = self::_make_column($opt, false);
+        return $reg;
     }
     public function content_empty($pl, $row) {
         return !$pl->contact->can_view_paper_option($row, $this->opt, true);
@@ -1417,32 +1413,27 @@ class Option_PaperColumn extends PaperColumn {
 }
 
 class FormulaPaperColumn extends PaperColumn {
-    private static $registered = array();
-    public static $list = array(); // Used by search.php
     public $formula;
     private $formula_function;
     public $statistics;
     private $results;
     private $any_real;
+    static private $nregistered;
     public function __construct($name, $formula) {
         parent::__construct(strtolower($name), Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("minimal" => true, "comparator" => "formula_compare"));
         $this->className = "pl_formula";
         $this->formula = $formula;
-        if ($formula && $formula->formulaId)
-            self::$list[$formula->formulaId] = $formula;
     }
-    public static function lookup_all() {
-        return self::$registered;
-    }
-    public static function register($fdef) {
-        PaperColumn::register($fdef);
-        self::$registered[] = $fdef;
+    public static function all_column_names(Contact $user) {
+        return array_map(function ($id) { return "formula$id"; }, array_keys($user->conf->defined_formula_map($user)));
     }
     public function make_column(Contact $user, $name, $errors) {
-        foreach (self::$registered as $col)
-            if (strcasecmp($col->formula->name, $name) == 0)
-                return $col;
+        $dfm = $user->conf->defined_formula_map($user);
+        $starts_with_formula = str_starts_with($name, "formula");
+        foreach ($dfm as $f)
+            if (strcasecmp($f->name, $name) == 0 || ($starts_with_formula && $name === "formula{$f->formulaId}"))
+                return new FormulaPaperColumn("formula{$f->formulaId}", $f);
         if (substr($name, 0, 4) === "edit")
             return null;
         $formula = new Formula($user, $name);
@@ -1451,9 +1442,8 @@ class FormulaPaperColumn extends PaperColumn {
                 self::make_column_error($errors, $formula->error_html(), 1);
             return null;
         }
-        $fdef = new FormulaPaperColumn("formulax" . (count(self::$registered) + 1), $formula);
-        self::register($fdef);
-        return $fdef;
+        ++self::$nregistered;
+        return new FormulaPaperColumn("formulax" . self::$nregistered, $formula);
     }
     public function completion_name() {
         if ($this->formula && $this->formula->name) {
@@ -1558,21 +1548,30 @@ class FormulaPaperColumn extends PaperColumn {
 }
 
 class TagReportPaperColumn extends PaperColumn {
-    private static $registered = array();
     private $tag;
     private $viewtype;
     public function __construct($tag) {
-        parent::__construct("tagrep_" . preg_replace('/\W+/', '_', $tag),
-                            Column::VIEW_ROW | Column::FOLDABLE);
+        parent::__construct($tag ? "tagrep:$tag" : null, Column::VIEW_ROW | Column::FOLDABLE);
         $this->className = "pl_tagrep";
         $this->tag = $tag;
     }
-    public static function lookup_all() {
-        return self::$registered;
+    public function make_column(Contact $user, $name, $errors) {
+        if ($user->can_view_most_tags()) {
+            $tag = substr($name, 7);
+            $t = $user->conf->tags()->check($tag);
+            if ($t && ($t->vote || $t->approval || $t->rank))
+                return new TagReportPaperColumn($tag);
+        }
+        return null;
     }
-    public static function register($fdef) {
-        PaperColumn::register($fdef);
-        self::$registered[] = $fdef;
+    public static function all_column_names(Contact $user) {
+        if ($user->can_view_most_tags()
+            && ($tagset = $user->conf->tags())
+            && ($tagset->has_vote || $tagset->has_approval || $tagset->has_rank))
+            return array_map(function ($t) { return "tagrep:{$t->tag}"; },
+                             $tagset->filter_by(function ($t) { return $t->vote || $t->approval || $t->rank; }));
+        else
+            return [];
     }
     public function prepare(PaperList $pl, $visible) {
         if (!$pl->contact->can_view_any_peruser_tags($this->tag))
@@ -1745,35 +1744,10 @@ function initialize_paper_columns() {
     PaperColumn::register_factory("opt:", new Option_PaperColumn(null));
     PaperColumn::register_factory("#", new TagPaperColumn(null, null, null));
     PaperColumn::register_factory("pref:", new PreferencePaperColumn(null, false));
-
-    if ($Conf->paper_opts->count_option_list())
-        PaperColumn::register_factory("", new Option_PaperColumn(null));
-
-    foreach ($Conf->all_review_fields() as $f)
-        if ($f->has_options) {
-            PaperColumn::register_factory("", new ScorePaperColumn(null));
-            break;
-        }
-
-    if ($Conf && $Conf->setting("formulas")) {
-        $result = Dbl::q("select * from Formula order by lower(name)");
-        while ($result && ($row = Formula::fetch($Me, $result))) {
-            $fid = $row->formulaId;
-            FormulaPaperColumn::register(new FormulaPaperColumn("formula$fid", $row));
-        }
-    }
+    PaperColumn::register_factory("tagrep:", new TagReportPaperColumn(null));
     PaperColumn::register_factory("", new FormulaPaperColumn("", null));
-
-    $tagger = new Tagger($Me);
-    $tags = $Conf ? $Conf->tags() : null;
-    if ($tags && ($tags->has_vote || $tags->has_approval || $tags->has_rank)) {
-        $vt = array();
-        foreach ($tags as $t)
-            if ($t->vote || $t->approval || $t->rank)
-                $vt[] = $t->tag;
-        foreach ($vt as $n)
-            TagReportPaperColumn::register(new TagReportPaperColumn($n));
-    }
+    PaperColumn::register_factory("", new Option_PaperColumn(null));
+    PaperColumn::register_factory("", new ScorePaperColumn(null));
 }
 
 initialize_paper_columns();

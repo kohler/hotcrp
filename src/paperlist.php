@@ -533,14 +533,18 @@ class PaperList {
             $nf = array();
             if ($fid == "scores") {
                 if ($this->scoresOk) {
-                    $nf = ScorePaperColumn::lookup_all();
+                    foreach (ScorePaperColumn::all_column_names($this->conf) as $name)
+                        $nf[] = $this->find_column($name);
                     $this->scoresOk = "present";
                 }
             } else if ($fid == "formulas") {
-                if ($this->scoresOk)
-                    $nf = FormulaPaperColumn::lookup_all();
+                if ($this->scoresOk) {
+                    foreach (FormulaPaperColumn::all_column_names($this->contact) as $name)
+                        $nf[] = $this->find_column($name);
+                }
             } else if ($fid == "tagreports") {
-                $nf = TagReportPaperColumn::lookup_all();
+                foreach (TagReportPaperColumn::all_column_names($this->contact) as $name)
+                    $nf[] = $this->find_column($name);
             } else if (($f = $this->find_column($fid)))
                 $nf[] = $f;
             foreach ($nf as $f)
@@ -1426,7 +1430,7 @@ class PaperList {
         $this->sorters = array();
 
         // get rows
-        $field_list = $this->_prepare_columns(array($fdef));
+        $field_list = $this->_columns($fname, false);
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;

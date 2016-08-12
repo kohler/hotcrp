@@ -149,7 +149,8 @@ if (isset($Qreq->savedisplayoptions) && $Me->privChair) {
 
 // save formula
 function visible_formulas() {
-    return array_filter(FormulaPaperColumn::$list, function ($f) {
+    global $Conf, $Me;
+    return array_filter($Conf->defined_formula_map($Me), function ($f) {
         global $Me, $Qreq;
         return $Qreq->t == "a"
             ? $Me->can_view_formula_as_author($f)
@@ -266,8 +267,8 @@ function savesearch() {
             $acceptable["anonau"] = 1;
         foreach ($Conf->all_review_fields() as $f)
             $acceptable[$f->id] = 1;
-        foreach (FormulaPaperColumn::$list as $x)
-            $acceptable["formula" . $x->formulaId] = 1;
+        foreach ($Conf->defined_formula_map($Me) as $f)
+            $acceptable["formula" . $f->formulaId] = 1;
         $display = array();
         foreach (preg_split('/\s+/', $Conf->session("pldisplay")) as $x)
             if (isset($acceptable[$x]))
@@ -430,7 +431,7 @@ if ($pl) {
             $opt["indent"] = true;
             foreach ($Conf->tags() as $t)
                 if ($t->vote || $t->approval || $t->rank)
-                    displayOptionCheckbox("tagrep_" . preg_replace('/\W+/', '_', $t->tag), 1, "#~" . $t->tag . " tags", $opt);
+                    displayOptionCheckbox("tagrep:{$t->tag}", 1, "#~" . $t->tag . " tags", $opt);
         }
     }
 
