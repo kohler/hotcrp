@@ -1042,7 +1042,8 @@ class PaperList {
 
     private function _prepare_sort() {
         $this->default_sort_column = $this->find_column("id");
-        $this->sorters[0]->field = null;
+        if (!empty($this->sorters))
+            $this->sorters[0]->field = null;
 
         if ($this->search->sorters) {
             foreach ($this->search->sorters as $sorter) {
@@ -1068,7 +1069,7 @@ class PaperList {
                 array_shift($this->sorters);
         }
 
-        if (get($this->sorters[0], "field"))
+        if (empty($this->sorters) || get($this->sorters[0], "field"))
             /* all set */;
         else if ($this->sorters[0]->type
                  && ($c = $this->find_column($this->sorters[0]->type))
@@ -1076,7 +1077,8 @@ class PaperList {
             $this->sorters[0]->field = $c->realize($this);
         else
             $this->sorters[0]->field = $this->default_sort_column;
-        $this->sorters[0]->type = $this->sorters[0]->field->name;
+        if (!empty($this->sorters))
+            $this->sorters[0]->type = $this->sorters[0]->field->name;
 
         // set defaults
         foreach ($this->sorters as $s) {
@@ -1088,7 +1090,7 @@ class PaperList {
     }
 
     private function _prepare_columns($field_list) {
-        $field_list2 = array();
+        $field_list2 = [];
         $this->tbody_attr = [];
         foreach ($field_list as $fdef)
             if ($fdef) {
