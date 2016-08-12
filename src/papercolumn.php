@@ -51,7 +51,7 @@ class PaperColumn extends Column {
         return $f;
     }
 
-    public static function lookup($name, $errors = null) {
+    public static function lookup(Contact $user, $name, $errors = null) {
         $lname = strtolower($name);
         if (isset(self::$synonyms[$lname]))
             $lname = self::$synonyms[$lname];
@@ -59,11 +59,11 @@ class PaperColumn extends Column {
             return self::$by_name[$lname];
         foreach (self::$factories as $f)
             if (str_starts_with($lname, $f[0])
-                && ($x = $f[1]->make_column($name, $errors)))
+                && ($x = $f[1]->make_column($user, $name, $errors)))
                 return $x;
         if (($colon = strpos($lname, ":")) > 0
             && ($syn = get(self::$synonyms, substr($lname, 0, $colon))))
-            return self::lookup($syn . substr($lname, $colon));
+            return self::lookup($user, $syn . substr($lname, $colon));
         if (self::$j_by_name === null) {
             self::$j_by_name = self::$j_factories = [];
             if (($jlist = opt("paperColumns")))
@@ -74,7 +74,7 @@ class PaperColumn extends Column {
         foreach (self::$j_factories as $fj)
             if (str_starts_with($lname, strtolower($fj->prefix))
                 && ($fx = self::_expand_json($fj))
-                && ($x = $fx->make_column($name, $errors)))
+                && ($x = $fx->make_column($user, $name, $errors)))
                 return $x;
         return null;
     }
@@ -563,7 +563,7 @@ class ReviewerTypePaperColumn extends PaperColumn {
             $xrow = $row;
         $ranal = null;
         if ($xrow->reviewType) {
-            $ranal = new PaperListReviewAnalysis($xrow);
+            $ranal = $pl->make_review_analysis($xrow, $row);
             if ($ranal->needsSubmit)
                 $pl->any->need_review = true;
             $t = $ranal->icon_html(true);
@@ -604,7 +604,7 @@ class ReviewSubmittedPaperColumn extends PaperColumn {
     public function content($pl, $row, $rowidx) {
         if (!$row->reviewId)
             return "";
-        $ranal = new PaperListReviewAnalysis($row);
+        $ranal = $pl->make_review_analysis($row, $row);
         if ($ranal->needsSubmit)
             $pl->any->need_review = true;
         return $ranal->status_html();
@@ -755,14 +755,13 @@ class PreferencePaperColumn extends PaperColumn {
         $this->editable = $editable;
         $this->contact = $contact;
     }
-    public function make_column($name, $errors) {
-        global $Me;
+    public function make_column(Contact $user, $name, $errors) {
         $p = strpos($name, ":");
-        $cids = ContactSearch::make_pc(substr($name, $p + 1), $Me)->ids;
-        if (count($cids) == 0)
+        $cids = ContactSearch::make_pc(substr($name, $p + 1), $user)->ids;
+        if (empty($cids))
             self::make_column_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 2);
         else if (count($cids) == 1) {
-            $pcm = pcMembers();
+            $pcm = $user->conf->pc_members();
             return parent::register(new PreferencePaperColumn($name, $this->editable, $pcm[$cids[0]]));
         } else
             self::make_column_error($errors, "“" . htmlspecialchars(substr($name, $p + 1)) . "” matches more than one PC member.", 2);
@@ -952,7 +951,7 @@ class ReviewerListPaperColumn extends PaperColumn {
             $pcm = $row->conf->pc_members();
         $x = array();
         foreach ($pl->review_list[$row->paperId] as $xrow) {
-            $ranal = new PaperListReviewAnalysis($xrow);
+            $ranal = $pl->make_review_analysis($xrow, $row);
             $n = $pl->contact->reviewer_html_for($xrow) . "&nbsp;" . $ranal->icon_html(false);
             if ($prefs || $topics) {
                 $pref = get($prefs, $xrow->contactId);
@@ -1092,7 +1091,7 @@ class TagPaperColumn extends PaperColumn {
         $this->dtag = $tag;
         $this->is_value = $is_value;
     }
-    public function make_column($name, $errors) {
+    public function make_column(Contact $user, $name, $errors) {
         $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
         return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
     }
@@ -1240,7 +1239,7 @@ class ScorePaperColumn extends PaperColumn {
         } else
             return null;
     }
-    public function make_column($name, $errors) {
+    public function make_column(Contact $user, $name, $errors) {
         return self::_make_column($name);
     }
     public function prepare(PaperList $pl, $visible) {
@@ -1358,16 +1357,15 @@ class Option_PaperColumn extends PaperColumn {
         $s = $s ? : PaperColumn::register(new Option_PaperColumn($opt, $isrow));
         return $s;
     }
-    public function make_column($name, $errors) {
-        global $Conf;
+    public function make_column(Contact $user, $name, $errors) {
         $p = strpos($name, ":") ? : -1;
         $name = substr($name, $p + 1);
         $isrow = false;
-        $opts = $Conf->paper_opts->search($name);
+        $opts = $user->conf->paper_opts->search($name);
         if (empty($opts) && str_ends_with($name, "-row")) {
             $isrow = true;
             $name = substr($name, 0, strlen($name) - 4);
-            $opts = $Conf->paper_opts->search($name);
+            $opts = $user->conf->paper_opts->search($name);
         }
         if (count($opts) == 1) {
             reset($opts);
@@ -1441,14 +1439,13 @@ class FormulaPaperColumn extends PaperColumn {
         PaperColumn::register($fdef);
         self::$registered[] = $fdef;
     }
-    public function make_column($name, $errors) {
-        global $Conf, $Me;
+    public function make_column(Contact $user, $name, $errors) {
         foreach (self::$registered as $col)
             if (strcasecmp($col->formula->name, $name) == 0)
                 return $col;
         if (substr($name, 0, 4) === "edit")
             return null;
-        $formula = new Formula($Me, $name);
+        $formula = new Formula($user, $name);
         if (!$formula->check()) {
             if ($errors && strpos($name, "(") !== false)
                 self::make_column_error($errors, $formula->error_html(), 1);
@@ -1767,7 +1764,7 @@ function initialize_paper_columns() {
     }
     PaperColumn::register_factory("", new FormulaPaperColumn("", null));
 
-    $tagger = new Tagger;
+    $tagger = new Tagger($Me);
     $tags = $Conf ? $Conf->tags() : null;
     if ($tags && ($tags->has_vote || $tags->has_approval || $tags->has_rank)) {
         $vt = array();

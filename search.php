@@ -16,7 +16,7 @@ if (isset($Qreq->default) && $Qreq->defaultact)
     $Qreq->fn = $Qreq->defaultact;
 // backwards compat
 if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "decide", "sendmail"])) {
-    if (isset($Qreq->get) && $Qreq->ajax && ($fdef = PaperColumn::lookup($Qreq->get)) && $fdef->foldable) {
+    if (isset($Qreq->get) && $Qreq->ajax && ($fdef = PaperColumn::lookup($Me, $Qreq->get)) && $fdef->foldable) {
         $Qreq->fn = "load";
         $Qreq->field = $Qreq->get;
     } else if (isset($Qreq->get)) {
@@ -79,7 +79,7 @@ if (!$SSel) { /* we might be included by reviewprefs.php */
 
 // Ajax field loading: abstract, tags, collaborators, ...
 if ($Qreq->fn == "load" && $Qreq->field
-    && ($fdef = PaperColumn::lookup($Qreq->field))
+    && ($fdef = PaperColumn::lookup($Me, $Qreq->field))
     && $fdef->foldable) {
     if ($Qreq->field == "authors") {
         $full = (int) $Qreq->aufull;
