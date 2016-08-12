@@ -267,11 +267,11 @@ if ($reviewer > 0) {
             $interest[$row[1] > 0 ? 1 : 0][$row[0]] = $row[1];
     if (count($interest[1]))
         $col[0][] = "<div class='f-c'>High interest topics</div><div class='f-e'>"
-            . PaperInfo::unparse_topic_list_html(array_keys($interest[1]), array_values($interest[1]), true)
+            . PaperInfo::unparse_topic_list_html($Conf, array_keys($interest[1]), array_values($interest[1]), true)
             . "</div>";
     if (count($interest[0]))
         $col[0][] = "<div class='f-c'>Low interest topics</div><div class='f-e'>"
-            . PaperInfo::unparse_topic_list_html(array_keys($interest[0]), array_values($interest[0]), true)
+            . PaperInfo::unparse_topic_list_html($Conf, array_keys($interest[0]), array_values($interest[0]), true)
             . "</div>";
 
     // Table

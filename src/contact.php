@@ -1339,11 +1339,11 @@ class Contact {
             && ($localok = $this->check_hashed_password($input, $hash, $this->email))) {
             if ($this->check_password_encryption($hash, false)) {
                 $hash = $this->hash_password($input, false);
-                Dbl::ql($this->conf->dblink, "update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
+                $this->conf->ql("update ContactInfo set password=? where contactId=?", $hash, $this->contactId);
                 $this->password = $hash;
             }
             if ($this->passwordUseTime <= $update_use_time) {
-                Dbl::ql($this->conf->dblink, "update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
+                $this->conf->ql("update ContactInfo set passwordUseTime=? where contactId=?", $Now, $this->contactId);
                 $this->passwordUseTime = $Now;
             }
         }
@@ -1378,7 +1378,7 @@ class Contact {
             if ($this->contactId && $this->password) {
                 $this->password = "";
                 $this->passwordTime = $cdbu->passwordTime;
-                Dbl::ql($this->conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+                $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
             }
         } else if ($this->contactId
                    && (!$old || $this->check_hashed_password($old, $this->password, $this->email))) {
@@ -1389,7 +1389,7 @@ class Contact {
             $this->password = $hash;
             if (!$old || $old !== $new)
                 $this->passwordTime = $Now;
-            Dbl::ql($this->conf->dblink, "update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
+            $this->conf->ql("update ContactInfo set password=?, passwordTime=? where contactId=?", $this->password, $this->passwordTime, $this->contactId);
         }
     }
 
@@ -1441,7 +1441,7 @@ class Contact {
         if (!$this->activity_at || $this->activity_at < $Now) {
             $this->activity_at = $Now;
             if ($this->contactId && !$this->is_anonymous_user())
-                Dbl::ql($this->conf->dblink, "update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
+                $this->conf->ql("update ContactInfo set lastLogin=$Now where contactId=$this->contactId");
             if ($this->contactDbId)
                 Dbl::ql(self::contactdb(), "update ContactInfo set activity_at=$Now where contactDbId=$this->contactDbId");
         }

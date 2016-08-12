@@ -321,7 +321,7 @@ class ContactList {
                     $nti[] = $v;
                 }
             if (count($nt))
-                return PaperInfo::unparse_topic_list_html($nt, $nti, true);
+                return PaperInfo::unparse_topic_list_html($Conf, $nt, $nti, true);
             else
                 return "";
         case self::FIELD_REVIEWS:

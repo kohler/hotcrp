@@ -523,7 +523,7 @@ class PaperInfo {
         return $s . '">' . htmlspecialchars($tname) . '</span>';
     }
 
-    private static function render_topic_list($out, $comma, $long, $conf) {
+    private static function render_topic_list(Conf $conf, $out, $comma, $long) {
         if ($comma)
             return join($conf->topic_separator(), $out);
         else if ($long)
@@ -541,11 +541,10 @@ class PaperInfo {
         $long = false;
         foreach ($topics as $t)
             $out[] = self::render_topic($t, get($interests, $t), $tmap, $long);
-        return self::render_topic_list($out, $comma, $long, $this->conf);
+        return self::render_topic_list($this->conf, $out, $comma, $long);
     }
 
-    public static function unparse_topic_list_html($topicIds, $interests, $comma) {
-        global $Conf;
+    public static function unparse_topic_list_html(Conf $conf, $topicIds, $interests, $comma) {
         if (!$topicIds)
             return "";
         if (!is_array($topicIds))
@@ -553,13 +552,13 @@ class PaperInfo {
         if ($interests !== null && !is_array($interests))
             $interests = explode(",", $interests);
         $out = array();
-        $tmap = $Conf->topic_map();
-        $tomap = $Conf->topic_order_map();
+        $tmap = $conf->topic_map();
+        $tomap = $conf->topic_order_map();
         $long = false;
         for ($i = 0; $i < count($topicIds); $i++)
             $out[$tomap[$topicIds[$i]]] = self::render_topic($topicIds[$i], $interests ? $interests[$i] : 0, $tmap, $long);
         ksort($out);
-        return self::render_topic_list($out, $comma, $long, $Conf);
+        return self::render_topic_list($conf, $out, $comma, $long);
     }
 
     public function topic_interest_score($contact) {

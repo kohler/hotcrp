@@ -8,7 +8,6 @@ function go($url = false) {
 }
 
 function error_go($url, $message) {
-    global $Conf;
     if ($url === false)
         $url = hoturl("index");
     Conf::msg_error($message);

@@ -37,13 +37,15 @@ class AssignmentItem implements ArrayAccess {
 class AssignmentState {
     private $st = array();
     private $types = array();
+    public $conf;
     public $contact;
     public $override;
     public $lineno = null;
     public $defaults = array();
     public $prows = array();
     public $finishers = array();
-    public function __construct($contact, $override) {
+    public function __construct(Contact $contact, $override) {
+        $this->conf = $contact->conf;
         $this->contact = $contact;
         $this->override = $override;
     }
@@ -160,15 +162,14 @@ class AssignmentState {
         return $p;
     }
     public function fetch_prows($pids) {
-        global $Conf;
         $pids = is_array($pids) ? $pids : array($pids);
         $fetch_pids = array();
         foreach ($pids as $p)
             if (!isset($this->prows[$p]))
                 $fetch_pids[] = $p;
         if (count($fetch_pids)) {
-            $q = $Conf->paperQuery($this->contact, array("paperId" => $fetch_pids, "tags" => $Conf->has_tracks()));
-            $result = Dbl::qe_raw($q);
+            $q = $this->conf->paperQuery($this->contact, array("paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()));
+            $result = $this->conf->qe_raw($q);
             while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
                 $this->prows[$prow->paperId] = $prow;
             Dbl::free($result);
@@ -177,13 +178,17 @@ class AssignmentState {
 }
 
 class AssignerContacts {
+    private $conf;
     private $by_id = array();
     private $by_lemail = array();
     private $has_pc = false;
     static private $next_fake_id = -10;
     static public $query = "ContactInfo.contactId, firstName, lastName, unaccentedName, email, roles, contactTags";
-    static public function make_none($email = null) {
-        return new Contact(array("contactId" => 0, "roles" => 0, "email" => $email, "sorter" => ""));
+    public function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
+    private function make_none($email = null) {
+        return new Contact(["contactId" => 0, "roles" => 0, "email" => $email, "sorter" => ""], $this->conf);
     }
     private function store($c) {
         if ($c && $c->contactId)
@@ -193,46 +198,46 @@ class AssignerContacts {
         return $c;
     }
     private function store_pc() {
-        foreach (pcMembers() as $p)
+        foreach ($this->conf->pc_members() as $p)
             $this->store($p);
         return ($this->has_pc = true);
     }
     public function make_id($cid) {
         global $Me;
         if (!$cid)
-            return self::make_none();
+            return $this->make_none();
         if (($c = get($this->by_id, $cid)))
             return $c;
-        if ($Me && $Me->contactId > 0 && $cid == $Me->contactId)
+        if ($Me && $Me->contactId > 0 && $cid == $Me->contactId && $Me->conf === $this->conf)
             return $this->store($Me);
         if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_id, $cid)))
             return $c;
-        $result = Dbl::qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
-        $c = Contact::fetch($result);
+        $result = $this->conf->qe("select " . self::$query . " from ContactInfo where contactId=?", $cid);
+        $c = Contact::fetch($result, $this->conf);
         if (!$c)
-            $c = new Contact(array("contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => ""));
+            $c = new Contact(["contactId" => $cid, "roles" => 0, "email" => "unknown contact $cid", "sorter" => ""], $this->conf);
         Dbl::free($result);
         return $this->store($c);
     }
     public function lookup_lemail($lemail) {
         global $Me;
         if (!$lemail)
-            return self::make_none();
+            return $this->make_none();
         if (($c = get($this->by_lemail, $lemail)))
             return $c;
-        if ($Me && $Me->contactId > 0 && strcasecmp($lemail, $Me->email) == 0)
+        if ($Me && $Me->contactId > 0 && strcasecmp($lemail, $Me->email) == 0 && $Me->conf === $this->conf)
             return $this->store($Me);
         if (!$this->has_pc && $this->store_pc() && ($c = get($this->by_lemail, $lemail)))
             return $c;
-        $result = Dbl::qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
-        $c = Contact::fetch($result);
+        $result = $this->conf->qe("select " . self::$query . " from ContactInfo where email=?", $lemail);
+        $c = Contact::fetch($result, $this->conf);
         Dbl::free($result);
         return $this->store($c);
     }
     public function make_email($email) {
         $c = $this->lookup_lemail(strtolower($email));
         if (!$c) {
-            $c = new Contact(array("contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email));
+            $c = new Contact(["contactId" => self::$next_fake_id, "roles" => 0, "email" => $email, "sorter" => $email], $this->conf);
             self::$next_fake_id -= 1;
             $c = $this->store($c);
         }
@@ -243,7 +248,7 @@ class AssignerContacts {
         $cx = $this->lookup_lemail($lemail);
         if (!$cx || $cx->contactId < 0) {
             // XXX assume that never fails:
-            $cx = Contact::create(array("email" => $c->email, "firstName" => get($c, "firstName"), "lastName" => get($c, "lastName")));
+            $cx = Contact::create(["email" => $c->email, "firstName" => get($c, "firstName"), "lastName" => get($c, "lastName")], $this->conf);
             $cx = $this->store($cx);
         }
         return $cx;
@@ -266,10 +271,14 @@ class AssignmentCount {
 }
 
 class AssignmentCountSet {
+    public $conf;
     public $bypc = [];
     public $rev = false;
     public $lead = false;
     public $shepherd = false;
+    public function __construct(Conf $conf) {
+        $this->conf = $conf;
+    }
     public function get($offset) {
         return get($this->bypc, $offset) ? : new AssignmentCount;
     }
@@ -279,7 +288,7 @@ class AssignmentCountSet {
         return $this->bypc[$offset];
     }
     public function load_rev() {
-        $result = Dbl::qe("select u.contactId, group_concat(r.reviewType separator '')
+        $result = $this->conf->qe("select u.contactId, group_concat(r.reviewType separator '')
                 from ContactInfo u
                 left join PaperReview r on (r.contactId=u.contactId)
                 left join Paper p on (p.paperId=r.paperId)
@@ -294,7 +303,7 @@ class AssignmentCountSet {
         Dbl::free($result);
     }
     private function load_paperpc($type) {
-        $result = Dbl::qe("select {$type}ContactId, count(paperId)
+        $result = $this->conf->qe("select {$type}ContactId, count(paperId)
                 from Paper where timeWithdrawn<=0 and timeSubmitted>0
                 group by {$type}ContactId");
         while (($row = edb_row($result))) {
@@ -468,8 +477,7 @@ class ReviewAssigner_Data {
         }
         return [$a0, $a1, $require_match];
     }
-    public function __construct($req, $state, $rtype) {
-        global $Conf;
+    public function __construct($req, AssignmentState $state, $rtype) {
         list($targ0, $targ1, $tmatch) = self::separate("reviewtype", $req, $state, $rtype);
         if ($targ0 !== null && $targ0 !== "" && $tmatch
             && ($this->oldtype = self::parse_type($targ0)) === false)
@@ -482,10 +490,10 @@ class ReviewAssigner_Data {
 
         list($rarg0, $rarg1, $rmatch) = self::separate("round", $req, $state, $this->newtype);
         if ($rarg0 !== null && $rarg0 !== "" && $rmatch
-            && ($this->oldround = $Conf->sanitize_round_name($rarg0)) === false)
+            && ($this->oldround = $state->conf->sanitize_round_name($rarg0)) === false)
             $this->error = Conf::round_name_error($rarg0);
         if ($rarg1 !== null && $rarg1 !== "" && $this->newtype != 0
-            && ($this->newround = $Conf->sanitize_round_name($rarg1)) === false)
+            && ($this->newround = $state->conf->sanitize_round_name($rarg1)) === false)
             $this->error = Conf::round_name_error($rarg1);
         if ($this->oldtype === null && $rtype > 0 && $rmatch)
             $this->oldtype = $rtype;
@@ -493,7 +501,7 @@ class ReviewAssigner_Data {
 
         $this->creator = !$tmatch && !$rmatch && $this->newtype != 0;
     }
-    public static function make(&$req, $state, $rtype) {
+    public static function make(&$req, AssignmentState $state, $rtype) {
         if (!isset($req["_review_data"]) || !is_object($req["_review_data"]))
             $req["_review_data"] = new ReviewAssigner_Data($req, $state, $rtype);
         return $req["_review_data"];
@@ -541,11 +549,10 @@ class ReviewAssigner extends Assigner {
             || (($rdata = ReviewAssigner_Data::make($req, $state, $this->rtype))
                 && !$rdata->creator());
     }
-    static function load_review_state($state) {
-        global $Conf;
-        $result = Dbl::qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
+    static function load_review_state(AssignmentState $state) {
+        $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewSubmitted from PaperReview");
         while (($row = edb_row($result))) {
-            $round = $Conf->round_name($row[3], false);
+            $round = $state->conf->round_name($row[3], false);
             $state->load(array("type" => "review", "pid" => +$row[0], "cid" => +$row[1],
                                "_rtype" => +$row[2], "_round" => $round,
                                "_rsubmitted" => $row[4] > 0 ? 1 : 0));
@@ -556,7 +563,7 @@ class ReviewAssigner extends Assigner {
         if ($state->mark_type("review", ["pid", "cid"]))
             self::load_review_state($state);
     }
-    private function make_filter($fkey, $key, $value, &$req, $state) {
+    private function make_filter($fkey, $key, $value, &$req, AssignmentState $state) {
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
         if ($rdata->creator())
             return null;
@@ -572,8 +579,6 @@ class ReviewAssigner extends Assigner {
         return $this->make_filter("cid", "pid", $pid, $req, $state);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        global $Conf;
-
         $rdata = ReviewAssigner_Data::make($req, $state, $this->rtype);
         if ($rdata->error)
             return $rdata->error;
@@ -590,7 +595,7 @@ class ReviewAssigner extends Assigner {
                 $revmatch["_round"] = $rdata->newround;
                 $matches[] = $revmatch;
             }
-            $pcm = pcMembers();
+            $pcm = $state->conf->pc_members();
             foreach ($matches as $m) {
                 if (!$m["_rtype"] || $rdata->newtype > 0)
                     $m["_rtype"] = $rdata->newtype;
@@ -671,19 +676,17 @@ class ReviewAssigner extends Assigner {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        global $Conf;
         $extra = array();
         if ($this->round && $this->rtype)
-            $extra["round_number"] = $Conf->round_number($this->round, true);
+            $extra["round_number"] = $aset->conf->round_number($this->round, true);
         $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
             Contact::unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
     }
     function cleanup(AssignmentSet $aset) {
-        global $Conf;
         if ($this->notify) {
             $reviewer = Contact::find_by_id($this->cid);
-            $prow = $Conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
+            $prow = $aset->conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
             HotCRPMailer::send_to($reviewer, $this->notify, $prow);
         }
     }
@@ -713,13 +716,11 @@ class UnsubmitReviewAssigner extends Assigner {
         return $state->make_filter("cid", ["type" => "review", "pid" => $pid, "_rsubmitted" => 1]);
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        global $Conf;
-
         // parse round and reviewtype arguments
         $rarg0 = trim(get_s($req, "round"));
         $oldround = null;
         if ($rarg0 !== "" && strcasecmp($rarg0, "any") != 0
-            && ($oldround = $Conf->sanitize_round_name($rarg0)) === false)
+            && ($oldround = $state->conf->sanitize_round_name($rarg0)) === false)
             return Conf::round_name_error($rarg0);
         $targ0 = trim(get_s($req, "reviewtype"));
         $oldtype = null;
@@ -754,7 +755,7 @@ class LeadAssigner extends Assigner {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid"]))
             return;
-        $result = Dbl::qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
+        $result = $state->conf->qe("select paperId, " . $this->type . "ContactId from Paper where " . $this->type . "ContactId!=0");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "_cid" => +$row[1]));
         Dbl::free($result);
@@ -838,7 +839,7 @@ class ConflictAssigner extends Assigner {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("conflict", ["pid", "cid"]))
             return;
-        $result = Dbl::qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
+        $result = $state->conf->qe("select paperId, contactId, conflictType from PaperConflict where conflictType>0");
         while (($row = edb_row($result)))
             $state->load(array("type" => "conflict", "pid" => +$row[0], "cid" => +$row[1], "_ctype" => +$row[2]));
         Dbl::free($result);
@@ -881,9 +882,9 @@ class ConflictAssigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         if ($this->ctype)
-            Dbl::qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
+            $aset->conf->qe("insert into PaperConflict (paperId, contactId, conflictType) values ($this->pid,$this->cid,$this->ctype) on duplicate key update conflictType=values(conflictType)");
         else
-            Dbl::qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
+            $aset->conf->qe("delete from PaperConflict where paperId=$this->pid and contactId=$this->cid");
     }
 }
 
@@ -959,7 +960,7 @@ class TagAssigner extends Assigner {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type("tag", ["pid", "ltag"]))
             return;
-        $result = Dbl::qe("select paperId, tag, tagIndex from PaperTag");
+        $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag");
         while (($row = edb_row($result)))
             $state->load(array("type" => "tag", "pid" => +$row[0], "ltag" => strtolower($row[1]), "_tag" => $row[1], "_index" => +$row[2]));
         Dbl::free($result);
@@ -971,7 +972,6 @@ class TagAssigner extends Assigner {
             return "You can’t view that tag for paper #$pid.";
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
-        global $Conf;
         if (!($tag = get($req, "tag")))
             return "Tag missing.";
 
@@ -1004,7 +1004,7 @@ class TagAssigner extends Assigner {
         if ($m[1] == "~" || strcasecmp($m[1], "me~") == 0)
             $m[1] = ($contact && $contact->contactId ? : $state->contact->contactId) . "~";
         // ignore attempts to change vote tags
-        if (!$m[1] && $Conf->tags()->is_votish($m[2]))
+        if (!$m[1] && $state->conf->tags()->is_votish($m[2]))
             return false;
 
         // add and remove use different paths
@@ -1048,8 +1048,8 @@ class TagAssigner extends Assigner {
         if ($index === null
             && ($x = $state->query(array("type" => "tag", "pid" => $pid, "ltag" => $ltag))))
             $index = $x[0]["_index"];
-        $vtag = $Conf->tags()->votish_base($tag);
-        if ($vtag && $Conf->tags()->is_vote($vtag) && !$index)
+        $vtag = $state->conf->tags()->votish_base($tag);
+        if ($vtag && $state->conf->tags()->is_vote($vtag) && !$index)
             $state->remove(array("type" => "tag", "pid" => $pid, "ltag" => $ltag));
         else
             $state->add(array("type" => "tag", "pid" => $pid, "ltag" => $ltag,
@@ -1068,7 +1068,6 @@ class TagAssigner extends Assigner {
         return $fin->next_index($this->isadd == self::NEXTSEQ);
     }
     private function apply_remove($pid, $contact, AssignmentState $state, $m) {
-        global $Conf;
         $prow = $state->prow($pid);
 
         // resolve twiddle portion
@@ -1124,17 +1123,16 @@ class TagAssigner extends Assigner {
                 && ($search_ltag
                     || $state->contact->can_change_tag($prow, $x["ltag"], $x["_index"], null, $state->override))) {
                 $state->remove($x);
-                if (($v = $Conf->tags()->votish_base($x["ltag"])))
+                if (($v = $state->conf->tags()->votish_base($x["ltag"])))
                     $vote_adjustments[$v] = true;
             }
         foreach ($vote_adjustments as $vtag => $v)
             $this->account_votes($pid, $vtag, $state);
     }
-    private function account_votes($pid, $vtag, $state) {
-        global $Conf;
+    private function account_votes($pid, $vtag, AssignmentState $state) {
         $res = $state->query(array("type" => "tag", "pid" => $pid));
         $tag_re = '{\A\d+~' . preg_quote($vtag) . '\z}i';
-        $is_vote = $Conf->tags()->is_vote($vtag);
+        $is_vote = $state->conf->tags()->is_vote($vtag);
         $total = 0;
         foreach ($res as $x)
             if (preg_match($tag_re, $x["ltag"]))
@@ -1189,9 +1187,9 @@ class TagAssigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         if ($this->index === null)
-            Dbl::qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
+            $aset->conf->qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
         else
-            Dbl::qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
+            $aset->conf->qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=values(tagIndex)", $this->pid, $this->tag, $this->index);
         $aset->contact->log_activity("Tag " . ($this->index === null ? "remove" : "set") . ": $this->tag", $this->pid);
     }
     function notify_tracker() {
@@ -1213,7 +1211,7 @@ class PreferenceAssigner extends Assigner {
     function load_state(AssignmentState $state) {
         if (!$state->mark_type($this->type, ["pid", "cid"]))
             return;
-        $result = Dbl::qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
+        $result = $state->conf->qe("select paperId, contactId, preference, expertise from PaperReviewPreference");
         while (($row = edb_row($result)))
             $state->load(array("type" => $this->type, "pid" => +$row[0], "cid" => +$row[1], "_pref" => +$row[2], "_exp" => +$row[3]));
         Dbl::free($result);
@@ -1271,9 +1269,9 @@ class PreferenceAssigner extends Assigner {
     }
     function execute(AssignmentSet $aset) {
         if (!$this->pref && $this->exp === null)
-            Dbl::qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
+            $aset->conf->qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
         else
-            Dbl::qe("insert into PaperReviewPreference
+            $aset->conf->qe("insert into PaperReviewPreference
                 set paperId=?, contactId=?, preference=?, expertise=?
                 on duplicate key update preference=values(preference), expertise=values(expertise)",
                     $this->pid, $this->cid, $this->pref, $this->exp);
@@ -1318,6 +1316,7 @@ Assigner::register("pref", new PreferenceAssigner(0, null, 0, null));
 Assigner::register("revpref", new PreferenceAssigner(0, null, 0, null));
 
 class AssignmentSet {
+    public $conf;
     public $contact;
     public $filename;
     private $assigners = array();
@@ -1333,12 +1332,13 @@ class AssignmentSet {
     private $unparse_columns = array();
     private $assignment_type = null;
 
-    function __construct($contact, $override = null) {
+    function __construct(Contact $contact, $override = null) {
+        $this->conf = $contact->conf;
         $this->contact = $contact;
         if ($override === null)
             $override = $this->contact->is_admin_force();
         $this->astate = new AssignmentState($contact, $override);
-        $this->cmap = new AssignerContacts;
+        $this->cmap = new AssignerContacts($this->conf);
     }
 
     public function contact() {
@@ -1413,7 +1413,6 @@ class AssignmentSet {
     }
 
     public function report_errors() {
-        global $Conf;
         if (count($this->errors_))
             Conf::msg_error('Assignment errors: <div class="parseerr"><p>' . join("</p>\n<p>", $this->errors_html(true)) . '</p></div> Please correct these errors and try again.');
     }
@@ -1422,16 +1421,9 @@ class AssignmentSet {
         return Text::user_html_nolink(get($req, "firstName"), get($req, "lastName"), get($req, "email"));
     }
 
-    private static function contacts_by($what) {
-        $cb = array();
-        foreach (edb_orows(Dbl::qe("select " . AssignerContacts::$query . " from ContactInfo")) as $c)
-            $cb[$c->$what] = $c;
-        return $cb;
-    }
-
     private function set_my_conflicts() {
         $this->my_conflicts = array();
-        $result = Dbl::qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
+        $result = $this->conf->qe("select Paper.paperId, managerContactId from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId) where conflictType>0 and PaperConflict.contactId=" . $this->contact->contactId);
         while (($row = edb_row($result)))
             $this->my_conflicts[$row[0]] = ($row[1] ? $row[1] : true);
         Dbl::free($result);
@@ -1446,10 +1438,10 @@ class AssignmentSet {
     private function reviewer_set() {
         if ($this->reviewer_set === false) {
             $this->reviewer_set = array();
-            foreach (pcMembers() as $p)
+            foreach ($this->conf->pc_members() as $p)
                 $this->reviewer_set[$p->contactId] = $p;
-            $result = Dbl::qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 group by ContactInfo.contactId");
-            while ($result && ($row = Contact::fetch($result)))
+            $result = $this->conf->qe("select " . AssignerContacts::$query . " from ContactInfo join PaperReview using (contactId) where (roles&" . Contact::ROLE_PC . ")=0 group by ContactInfo.contactId");
+            while ($result && ($row = Contact::fetch($result, $this->conf)))
                 $this->reviewer_set[$row->contactId] = $row;
             Dbl::free($result);
         }
@@ -1515,7 +1507,7 @@ class AssignmentSet {
         // check PC list
         $cset = $assigner->contact_set($req, $this->astate);
         if ($cset === "pc")
-            $cset = pcMembers();
+            $cset = $this->conf->pc_members();
         else if ($cset === "reviewers")
             $cset = $this->reviewer_set();
         if ($cset) {
@@ -1606,7 +1598,6 @@ class AssignmentSet {
     }
 
     function parse($text, $filename = null, $defaults = null, $alertf = null) {
-        global $Conf;
         $this->filename = $filename;
         $this->astate->defaults = $defaults ? : array();
 
@@ -1851,17 +1842,17 @@ class AssignmentSet {
         $plist = new PaperList($search);
         echo $plist->table_html("reviewers", ["nofooter" => 1, "class" => "pltable_full", "table_id" => "foldpl"]);
 
-        $deltarev = new AssignmentCountSet;
+        $deltarev = new AssignmentCountSet($this->conf);
         foreach ($this->assigners as $assigner)
             $assigner->account($deltarev);
-        if (count(array_intersect_key($deltarev->bypc, pcMembers()))) {
+        if (count(array_intersect_key($deltarev->bypc, $this->conf->pc_members()))) {
             $summary = [];
             $tagger = new Tagger($this->contact);
-            $nrev = new AssignmentCountSet;
+            $nrev = new AssignmentCountSet($this->conf);
             $deltarev->rev && $nrev->load_rev();
             $deltarev->lead && $nrev->load_lead();
             $deltarev->shepherd && $nrev->load_shepherd();
-            foreach (pcMembers() as $p)
+            foreach ($this->conf->pc_members() as $p)
                 if ($deltarev->get($p->contactId)->ass) {
                     $t = '<div class="ctelt"><div class="ctelti';
                     if (($k = $p->viewable_color_classes($this->contact)))
@@ -1903,12 +1894,12 @@ class AssignmentSet {
     }
 
     function execute($verbose = false) {
-        global $Conf, $Now;
+        global $Now;
         if (count($this->errors_) || !count($this->assigners)) {
             if ($verbose && count($this->errors_))
                 $this->report_errors();
             else if ($verbose)
-                $Conf->warnMsg("Nothing to assign.");
+                $this->conf->warnMsg("Nothing to assign.");
             return count($this->errors_) == 0; // true means no errors
         }
 
@@ -1917,7 +1908,7 @@ class AssignmentSet {
 
         // create new contacts outside the lock
         $locks = array("ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read");
-        $Conf->save_logs(true);
+        $this->conf->save_logs(true);
         foreach ($this->assigners as $assigner) {
             if ($assigner->contact && $assigner->contact->contactId < 0) {
                 $assigner->contact = $this->cmap->register_contact($assigner->contact);
@@ -1930,25 +1921,25 @@ class AssignmentSet {
         $tables = array();
         foreach ($locks as $t => $type)
             $tables[] = "$t $type";
-        Dbl::qe("lock tables " . join(", ", $tables));
+        $this->conf->qe("lock tables " . join(", ", $tables));
 
         foreach ($this->assigners as $assigner)
             $assigner->execute($this);
 
-        Dbl::qe("unlock tables");
-        $Conf->save_logs(false);
+        $this->conf->qe("unlock tables");
+        $this->conf->save_logs(false);
 
         // confirmation message
         if ($verbose) {
-            if ($Conf->setting("pcrev_assigntime") == $Now)
-                $Conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
+            if ($this->conf->setting("pcrev_assigntime") == $Now)
+                $this->conf->confirmMsg("Assignments saved! You may want to <a href=\"" . hoturl("mail", "template=newpcrev") . "\">send mail about the new assignments</a>.");
             else
-                $Conf->confirmMsg("Assignments saved!");
+                $this->conf->confirmMsg("Assignments saved!");
         }
 
         // clean up
-        $Conf->update_rev_tokens_setting(false);
-        $Conf->update_paperlead_setting();
+        $this->conf->update_rev_tokens_setting(false);
+        $this->conf->update_paperlead_setting();
 
         $pids = array();
         foreach ($this->assigners as $assigner) {

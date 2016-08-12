@@ -4,6 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class CommentInfo {
+    public $conf;
+    public $prow;
     public $commentId = 0;
     public $paperId;
     public $timeModified;
@@ -24,12 +26,13 @@ class CommentInfo {
     static private $visibility_map = array(COMMENTTYPE_ADMINONLY => "admin", COMMENTTYPE_PCONLY => "pc", COMMENTTYPE_REVIEWER => "rev", COMMENTTYPE_AUTHOR => "au");
 
 
-    function __construct($x = null, $prow = null) {
+    function __construct($x, PaperInfo $prow) {
         $this->merge(is_object($x) ? $x : null, $prow);
     }
 
-    private function merge($x, $prow) {
-        global $Conf;
+    private function merge($x, PaperInfo $prow) {
+        $this->conf = $prow->conf;
+        $this->prow = $prow;
         if ($x)
             foreach ($x as $k => $v)
                 $this->$k = $v;
@@ -37,12 +40,11 @@ class CommentInfo {
         $this->paperId = (int) $this->paperId;
         $this->commentType = (int) $this->commentType;
         $this->commentRound = (int) $this->commentRound;
-        if ($Conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
+        if ($prow->conf->sversion < 107 && $this->commentType >= COMMENTTYPE_AUTHOR)
             $this->authorOrdinal = $this->ordinal;
-        $this->prow = $prow;
     }
 
-    static public function fetch($result, $prow) {
+    static public function fetch($result, PaperInfo $prow) {
         $cinfo = $result ? $result->fetch_object("CommentInfo", [null, $prow]) : null;
         if ($cinfo && !is_int($cinfo->commentId))
             $cinfo->merge(null, $prow);
@@ -123,7 +125,6 @@ class CommentInfo {
     }
 
     public function unparse_json($contact, $include_displayed_at = false) {
-        global $Conf;
         if ($this->commentId && !$contact->can_view_comment($this->prow, $this, null))
             return false;
 
@@ -133,7 +134,7 @@ class CommentInfo {
                 return false;
             $cj = (object) array("pid" => $this->prow->paperId, "is_new" => true, "editable" => true);
             if ($this->commentType & COMMENTTYPE_RESPONSE)
-                $cj->response = $Conf->resp_round_name($this->commentRound);
+                $cj->response = $this->conf->resp_round_name($this->commentRound);
             return $cj;
         }
 
@@ -146,7 +147,7 @@ class CommentInfo {
         if ($this->commentType & COMMENTTYPE_DRAFT)
             $cj->draft = true;
         if ($this->commentType & COMMENTTYPE_RESPONSE)
-            $cj->response = $Conf->resp_round_name($this->commentRound);
+            $cj->response = $this->conf->resp_round_name($this->commentRound);
         if ($contact->can_comment($this->prow, $this))
             $cj->editable = true;
 
@@ -155,7 +156,7 @@ class CommentInfo {
             && $contact->can_view_comment_tags($this->prow, $this, null)) {
             if (($tags = $this->viewable_tags($contact)))
                 $cj->tags = TagInfo::split($tags);
-            if ($tags && ($cc = $Conf->tags()->color_classes($tags)))
+            if ($tags && ($cc = $this->conf->tags()->color_classes($tags)))
                 $cj->color_classes = $cc;
         }
 
@@ -171,10 +172,10 @@ class CommentInfo {
         }
         if ($this->timeModified > 0 && $idable_override) {
             $cj->modified_at = (int) $this->timeModified;
-            $cj->modified_at_text = $Conf->printableTime($cj->modified_at);
+            $cj->modified_at_text = $this->conf->printableTime($cj->modified_at);
         } else if ($this->timeModified > 0) {
-            $cj->modified_at = $Conf->obscure_time($this->timeModified);
-            $cj->modified_at_text = $Conf->unparse_time_obscure($cj->modified_at);
+            $cj->modified_at = $this->conf->obscure_time($this->timeModified);
+            $cj->modified_at_text = $this->conf->unparse_time_obscure($cj->modified_at);
             $cj->modified_at_obscured = true;
         }
         if ($include_displayed_at)
@@ -189,18 +190,17 @@ class CommentInfo {
 
         // format
         if (($fmt = $this->commentFormat) === null)
-            $fmt = $Conf->default_format;
+            $fmt = $this->conf->default_format;
         if ($fmt)
             $cj->format = (int) $fmt;
         return $cj;
     }
 
     public function unparse_text($contact, $no_title = false) {
-        global $Conf;
         $x = "===========================================================================\n";
         if (!($this->commentType & COMMENTTYPE_RESPONSE))
             $n = "Comment";
-        else if (($rname = $Conf->resp_round_text($this->commentRound)))
+        else if (($rname = $this->conf->resp_round_text($this->commentRound)))
             $n = "$rname Response";
         else
             $n = "Response";
@@ -252,9 +252,8 @@ class CommentInfo {
 
 
     private function save_ordinal($cmtid, $ctype, $Table, $LinkTable, $LinkColumn) {
-        global $Conf;
         $okey = "ordinal";
-        if ($ctype >= COMMENTTYPE_AUTHOR && $Conf->sversion >= 107)
+        if ($ctype >= COMMENTTYPE_AUTHOR && $this->conf->sversion >= 107)
             $okey = "authorOrdinal";
         $q = "update $Table, (select coalesce(max($Table.$okey),0) maxOrdinal
     from $LinkTable
@@ -266,7 +265,7 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
     }
 
     public function save($req, $contact) {
-        global $Conf, $Now;
+        global $Now;
         if (is_array($req))
             $req = (object) $req;
         $Table = $this->prow->comment_table_name();
@@ -289,13 +288,13 @@ set $okey=(t.maxOrdinal+1) where commentId=$cmtid";
             $ctype = $this->commentType;
         else // $req->visibility == "r" || $req->visibility == "rev"
             $ctype = COMMENTTYPE_REVIEWER;
-        if ($is_response ? $this->prow->blind : $Conf->is_review_blind(!!get($req, "blind")))
+        if ($is_response ? $this->prow->blind : $this->conf->is_review_blind(!!get($req, "blind")))
             $ctype |= COMMENTTYPE_BLIND;
 
         // tags
         if ($is_response) {
             $ctags = " response ";
-            if (($rname = $Conf->resp_round_name($this->commentRound)) != "1")
+            if (($rname = $this->conf->resp_round_name($this->commentRound)) != "1")
                 $ctags .= "{$rname}response ";
         } else if (get($req, "tags")
                    && preg_match_all(',\S+,', $req->tags, $m)) {
