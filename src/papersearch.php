@@ -794,7 +794,7 @@ class PaperSearch {
     const F_XVIEW = 0x20000;
 
     public $conf;
-    var $contact;
+    public $contact;
     public $cid;
     private $contactId;         // for backward compatibility
     var $privChair;

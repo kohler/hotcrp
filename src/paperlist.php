@@ -91,9 +91,10 @@ class PaperList {
     public $display;
 
     // columns access
+    public $conf;
+    public $contact;
     public $columns = array();
     public $sorters = array();
-    public $contact;
     public $scoresOk = false;
     public $search;
     public $tagger;
@@ -134,6 +135,7 @@ class PaperList {
     function __construct($search, $args = array(), Qobject $qreq = null) {
         global $Conf;
         $this->search = $search;
+        $this->conf = $this->search->conf;
         $this->contact = $this->search->contact;
         $qreq = $qreq ? : new Qobject;
         $this->qreq = $qreq;

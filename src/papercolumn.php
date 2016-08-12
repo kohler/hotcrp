@@ -221,9 +221,8 @@ class TitlePaperColumn extends PaperColumn {
                             array("minimal" => true, "comparator" => "title_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         $this->has_badges = $pl->contact->can_view_tags(null)
-            && $Conf->tags()->has_badges;
+            && $pl->conf->tags()->has_badges;
         if ($this->has_badges)
             $pl->qopts["tags"] = 1;
         $this->highlight = get($pl->search->matchPreg, "title");
@@ -310,12 +309,11 @@ class ReviewStatusPaperColumn extends PaperColumn {
                             array("comparator" => "review_status_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if ($pl->contact->privChair)
             $pl->qopts["startedReviewCount"] = true;
         else if ($pl->contact->is_reviewer())
             $pl->qopts["startedReviewCount"] = $pl->qopts["inProgressReviewCount"] = true;
-        else if ($Conf->timeAuthorViewReviews())
+        else if ($pl->conf->timeAuthorViewReviews())
             $pl->qopts["inProgressReviewCount"] = true;
         else
             return false;
@@ -447,8 +445,7 @@ class CollabPaperColumn extends PaperColumn {
         parent::__construct("collab", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
-        return !!$Conf->setting("sub_collab") && $pl->contact->can_view_some_authors();
+        return !!$pl->conf->setting("sub_collab") && $pl->contact->can_view_some_authors();
     }
     public function header($pl, $ordinal) {
         return "Collaborators";
@@ -503,8 +500,7 @@ class TopicListPaperColumn extends PaperColumn {
         parent::__construct("topics", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
-        if (!$Conf->has_topics())
+        if (!$pl->conf->has_topics())
             return false;
         if ($visible)
             $pl->qopts["topics"] = 1;
@@ -723,8 +719,7 @@ class TopicScorePaperColumn extends PaperColumn {
                             array("comparator" => "topic_score_compare"));
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
-        if (!$Conf->has_topics() || !$pl->contact->isPC)
+        if (!$pl->conf->has_topics() || !$pl->contact->isPC)
             return false;
         if ($visible) {
             $this->contact = $pl->reviewer_contact();
@@ -855,9 +850,9 @@ class PreferencePaperColumn extends PaperColumn {
             return $ptext;
     }
     public function content($pl, $row, $rowidx) {
-        $conflicted = $this->is_direct ? $row->reviewerConflictType > 0
+        $has_cflt = $this->is_direct ? $row->reviewerConflictType > 0
             : $row->has_conflict($this->contact);
-        if ($conflicted && !$pl->contact->allow_administer($row))
+        if ($has_cflt && !$pl->contact->allow_administer($row))
             return isset($pl->columns["revtype"]) ? "" : review_type_icon(-1);
         else if (!$this->editable)
             return $this->show_content($pl, $row, false);
@@ -866,7 +861,7 @@ class PreferencePaperColumn extends PaperColumn {
             $iname = "revpref" . $row->paperId;
             if (!$this->is_direct)
                 $iname .= "u" . $this->contact->contactId;
-            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($conflicted && !$this->is_direct ? "&nbsp;" . review_type_icon(-1) : "");
+            return '<input name="' . $iname . '" class="revpref" value="' . ($ptext !== "0" ? $ptext : "") . '" type="text" size="4" tabindex="2" placeholder="0" />' . ($has_cflt && !$this->is_direct ? "&nbsp;" . review_type_icon(-1) : "");
         }
     }
     public function text($pl, $row) {
@@ -881,8 +876,7 @@ class PreferenceListPaperColumn extends PaperColumn {
         parent::__construct($name, Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
-        if ($this->topics && !$Conf->has_topics())
+        if ($this->topics && !$pl->conf->has_topics())
             $this->topics = false;
         if (!$pl->contact->is_manager())
             return false;
@@ -891,7 +885,7 @@ class PreferenceListPaperColumn extends PaperColumn {
             if ($this->topics)
                 $pl->qopts["topics"] = 1;
         }
-        $Conf->stash_hotcrp_pc($pl->contact);
+        $pl->conf->stash_hotcrp_pc($pl->contact);
         return true;
     }
     public function header($pl, $ordinal) {
@@ -931,10 +925,9 @@ class ReviewerListPaperColumn extends PaperColumn {
         parent::__construct("reviewers", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if (!$pl->contact->can_view_some_review_identity(null))
             return false;
-        $this->topics = $Conf->has_topics();
+        $this->topics = $pl->conf->has_topics();
         if ($visible) {
             $pl->qopts["reviewList"] = 1;
             if ($pl->contact->privChair)
@@ -1056,10 +1049,9 @@ class TagListPaperColumn extends PaperColumn {
         return true;
     }
     public function annotate_field_js(PaperList $pl, &$fjs) {
-        global $Conf;
         $fjs["highlight_tags"] = $pl->search->highlight_tags();
-        if ($Conf->tags()->has_votish)
-            $fjs["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $Conf->tags()->filter("votish")));
+        if ($pl->conf->tags()->has_votish)
+            $fjs["votish_tags"] = array_values(array_map(function ($t) { return $t->tag; }, $pl->conf->tags()->filter("votish")));
     }
     public function header($pl, $ordinal) {
         return "Tags";
@@ -1132,10 +1124,9 @@ class TagPaperColumn extends PaperColumn {
         return $this->dtag ? "#$this->dtag" : "#<tag>";
     }
     public function sort_prepare($pl, &$rows, $sorter) {
-        global $Conf;
         $sorter->sortf = $sortf = "_tag_sort_info." . self::$sortf_ctr;
         ++self::$sortf_ctr;
-        $careful = !$pl->contact->privChair && !$Conf->tag_seeall;
+        $careful = !$pl->contact->privChair && !$pl->conf->tag_seeall;
         $unviewable = $empty = $sorter->reverse ? -(TAG_INDEXBOUND - 1) : TAG_INDEXBOUND - 1;
         if ($this->editable)
             $empty = $sorter->reverse ? -TAG_INDEXBOUND : TAG_INDEXBOUND;
@@ -1253,10 +1244,9 @@ class ScorePaperColumn extends PaperColumn {
         return self::_make_column($name);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if (!$pl->scoresOk)
             return false;
-        $this->form_field = $Conf->review_field($this->score);
+        $this->form_field = $pl->conf->review_field($this->score);
         if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
             return false;
         if ($visible) {
@@ -1588,12 +1578,11 @@ class TagReportPaperColumn extends PaperColumn {
         self::$registered[] = $fdef;
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         if (!$pl->contact->can_view_any_peruser_tags($this->tag))
             return false;
         if ($visible)
             $pl->qopts["tags"] = 1;
-        $dt = $Conf->tags()->check($this->tag);
+        $dt = $pl->conf->tags()->check($this->tag);
         if (!$dt || $dt->rank || (!$dt->vote && !$dt->approval))
             $this->viewtype = 0;
         else
@@ -1687,9 +1676,8 @@ class ShepherdPaperColumn extends PaperColumn {
         parent::__construct("shepherd", Column::VIEW_ROW | Column::FOLDABLE | Column::COMPLETABLE);
     }
     public function prepare(PaperList $pl, $visible) {
-        global $Conf;
         return $pl->contact->isPC
-            || ($Conf->has_any_accepts() && $Conf->timeAuthorViewDecision());
+            || ($pl->conf->has_any_accepts() && $pl->conf->timeAuthorViewDecision());
     }
     public function header($pl, $ordinal) {
         return "Shepherd";
