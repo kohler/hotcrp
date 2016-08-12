@@ -4,17 +4,16 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperApi {
-    static function setdecision_api($user, $qreq, $prow) {
-        global $Conf;
+    static function setdecision_api(Contact $user, $qreq, $prow) {
         if (!$user->can_set_decision($prow))
             json_exit(["ok" => false, "error" => "You can’t set the decision for paper #$prow->paperId."]);
         $dnum = cvtint($qreq->decision);
-        $decs = $Conf->decision_map();
+        $decs = $user->conf->decision_map();
         if (!isset($decs[$dnum]))
             json_exit(["ok" => false, "error" => "Bad decision value."]);
-        $result = Dbl::qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
+        $result = $user->conf->qe_raw("update Paper set outcome=$dnum where paperId=$prow->paperId");
         if ($result && ($dnum > 0 || $prow->outcome > 0))
-            $Conf->update_paperacc_setting($dnum > 0);
+            $user->conf->update_paperacc_setting($dnum > 0);
         Dbl::free($result);
         if ($result)
             json_exit(["ok" => true, "result" => htmlspecialchars($decs[$dnum])]);
@@ -46,31 +45,30 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "You don’t have permission to set the $type for paper #{$prow->paperId}."]);
     }
 
-    static function setlead_api($user, $qreq, $prow) {
+    static function setlead_api(Contact $user, $qreq, $prow) {
         return self::set_paper_pc_api($user, $qreq, $prow, "lead");
     }
 
-    static function setshepherd_api($user, $qreq, $prow) {
+    static function setshepherd_api(Contact $user, $qreq, $prow) {
         return self::set_paper_pc_api($user, $qreq, $prow, "shepherd");
     }
 
-    static function setmanager_api($user, $qreq, $prow) {
+    static function setmanager_api(Contact $user, $qreq, $prow) {
         return self::set_paper_pc_api($user, $qreq, $prow, "manager");
     }
 
-    static function tagreport($user, $prow) {
-        global $Conf;
+    static function tagreport(Contact $user, $prow) {
         $ret = (object) ["ok" => $user->can_view_tags($prow), "warnings" => [], "messages" => []];
         if (!$ret->ok)
             return $ret;
-        if (($vt = $Conf->tags()->filter("vote"))) {
+        if (($vt = $user->conf->tags()->filter("vote"))) {
             $myprefix = $user->contactId . "~";
             $qv = $myvotes = array();
             foreach ($vt as $lbase => $t) {
                 $qv[] = $myprefix . $lbase;
                 $myvotes[$lbase] = 0;
             }
-            $result = Dbl::qe("select tag, sum(tagIndex) from PaperTag where tag ?a group by tag", $qv);
+            $result = $user->conf->qe("select tag, sum(tagIndex) from PaperTag where tag ?a group by tag", $qv);
             while (($row = edb_row($result))) {
                 $lbase = strtolower(substr($row[0], strlen($myprefix)));
                 $myvotes[$lbase] += +$row[1];
@@ -92,8 +90,7 @@ class PaperApi {
         return $ret;
     }
 
-    static function tagreport_api($user, $qreq, $prow) {
-        global $Conf;
+    static function tagreport_api(Contact $user, $qreq, $prow) {
         $treport = self::tagreport($user, $prow);
         $response = "";
         if (count($treport->warnings))
@@ -103,8 +100,7 @@ class PaperApi {
         json_exit(["ok" => $treport->ok, "response" => $response], true);
     }
 
-    static function settags_api($user, $qreq, $prow) {
-        global $Conf;
+    static function settags_api(Contact $user, $qreq, $prow) {
         if ($qreq->cancelsettags)
             json_exit(["ok" => true]);
         if ($prow && !$user->can_view_paper($prow))
@@ -143,13 +139,13 @@ class PaperApi {
             $prow->load_tags();
             $treport = self::tagreport($user, $prow);
             if ($treport->warnings)
-                $Conf->warnMsg(join("<br>", $treport->warnings));
+                $user->conf->warnMsg(join("<br>", $treport->warnings));
             $taginfo = (object) ["ok" => true, "pid" => $prow->paperId];
             $prow->add_tag_info_json($taginfo, $user);
             json_exit($taginfo, true);
         } else if ($ok) {
             $p = [];
-            $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => array_keys($pids), "tags" => true]));
+            $result = $user->conf->qe_raw($user->conf->paperQuery($user, ["paperId" => array_keys($pids), "tags" => true]));
             while (($prow = PaperInfo::fetch($result, $user))) {
                 $p[$prow->paperId] = (object) [];
                 $prow->add_tag_info_json($p[$prow->paperId], $user);
@@ -159,14 +155,13 @@ class PaperApi {
             json_exit(["ok" => false, "error" => $error], true);
     }
 
-    static function taganno_api($user, $qreq, $prow) {
-        global $Conf;
+    static function taganno_api(Contact $user, $qreq, $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
             json_exit(["ok" => false, "error" => $tagger->error_html]);
         $j = ["ok" => true, "tag" => $tag, "editable" => $user->can_change_tag_anno($tag),
               "anno" => []];
-        $dt = $Conf->tags()->add(TagInfo::base($tag));
+        $dt = $user->conf->tags()->add(TagInfo::base($tag));
         foreach ($dt->order_anno_list() as $oa)
             if ($oa->annoId !== null)
                 $j["anno"][] = TagInfo::unparse_anno_json($oa);
@@ -174,7 +169,6 @@ class PaperApi {
     }
 
     static function settaganno_api($user, $qreq, $prow) {
-        global $Conf;
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
             json_exit(["ok" => false, "error" => $tagger->error_html]);
@@ -184,7 +178,7 @@ class PaperApi {
             || (!is_object($reqanno) && !is_array($reqanno)))
             json_exit(["ok" => false, "error" => "Bad request."]);
         $q = $qv = $errors = $errf = $inserts = [];
-        $next_annoid = Dbl::fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
+        $next_annoid = $user->conf->fetch_value("select greatest(coalesce(max(annoId),0),0)+1 from PaperTagAnno where tag=?", $tag);
         // parse updates
         foreach (is_object($reqanno) ? [$reqanno] : $reqanno as $anno) {
             if (!isset($anno->annoid)
@@ -227,7 +221,7 @@ class PaperApi {
             json_exit(["ok" => false, "error" => join("<br />", $errors), "errf" => $errf]);
         // apply changes
         if (!empty($q)) {
-            $mresult = Dbl::multi_qe_apply(join(";", $q), $qv);
+            $mresult = Dbl::multi_qe_apply($user->conf, join(";", $q), $qv);
             while (($result = $mresult->next()))
                 Dbl::free($result);
         }
@@ -235,8 +229,7 @@ class PaperApi {
         self::taganno_api($user, $qreq, $prow);
     }
 
-    static function votereport_api($user, $qreq, $prow) {
-        global $Conf;
+    static function votereport_api(Contact $user, $qreq, $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE)))
             json_exit(["ok" => false, "error" => $tagger->error_html]);
@@ -244,7 +237,7 @@ class PaperApi {
             json_exit(["ok" => false, "error" => "Permission error."]);
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);
-        $is_approval = $Conf->tags()->is_approval($tag);
+        $is_approval = $user->conf->tags()->is_approval($tag);
         $min_vote = $is_approval ? 0 : 0.001;
         for ($i = 0; $i != count($m[0]); ++$i)
             if ($m[2][$i] >= $min_vote)
@@ -262,27 +255,26 @@ class PaperApi {
             json_exit(["ok" => true, "result" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>']);
     }
 
-    static function alltags_api($user, $qreq, $prow) {
-        global $Conf;
+    static function alltags_api(Contact $user, $qreq, $prow) {
         if (!$user->isPC)
             json_exit(["ok" => false]);
 
-        $need_paper = $conflict_where = false;
+        $need_paper = $cflt_where = false;
         $where = $args = array();
 
         if ($user->allow_administer(null)) {
             $need_paper = true;
-            if ($Conf->has_any_manager() && !$Conf->tag_seeall)
-                $conflict_where = "(p.managerContactId=0 or p.managerContactId=$user->contactId or pc.conflictType is null)";
-        } else if ($Conf->check_track_sensitivity(Track::VIEW)) {
+            if ($user->conf->has_any_manager() && !$user->conf->tag_seeall)
+                $cflt_where = "(p.managerContactId=0 or p.managerContactId=$user->contactId or pc.conflictType is null)";
+        } else if ($user->conf->check_track_sensitivity(Track::VIEW)) {
             $where[] = "t.paperId ?a";
             $args[] = $user->list_submitted_papers_with_viewable_tags();
         } else {
             $need_paper = true;
-            if ($Conf->has_any_manager() && !$Conf->tag_seeall)
-                $conflict_where = "(p.managerContactId=$user->contactId or pc.conflictType is null)";
+            if ($user->conf->has_any_manager() && !$user->conf->tag_seeall)
+                $cflt_where = "(p.managerContactId=$user->contactId or pc.conflictType is null)";
             else if (!$Conf->tag_seeall)
-                $conflict_where = "pc.conflictType is null";
+                $cflt_where = "pc.conflictType is null";
         }
 
         $q = "select distinct tag from PaperTag t";
@@ -290,14 +282,14 @@ class PaperApi {
             $q .= " join Paper p on (p.paperId=t.paperId)";
             $where[] = "p.timeSubmitted>0";
         }
-        if ($conflict_where) {
+        if ($cflt_where) {
             $q .= " left join PaperConflict pc on (pc.paperId=t.paperId and pc.contactId=$user->contactId)";
-            $where[] = $conflict_where;
+            $where[] = $cflt_where;
         }
         $q .= " where " . join(" and ", $where);
 
         $tags = array();
-        $result = Dbl::qe_apply($q, $args);
+        $result = $user->conf->qe_apply($q, $args);
         while (($row = edb_row($result))) {
             $twiddle = strpos($row[0], "~");
             if ($twiddle === false
@@ -310,8 +302,7 @@ class PaperApi {
         json_exit(["ok" => true, "tags" => $tags]);
     }
 
-    static function setpref_api($user, $qreq, $prow) {
-        global $Conf;
+    static function setpref_api(Contact $user, $qreq, $prow) {
         $cid = $user->contactId;
         if ($user->allow_administer($prow) && $qreq->reviewer
             && ($x = cvtint($qreq->reviewer)) > 0)
@@ -327,7 +318,7 @@ class PaperApi {
         json_exit($j);
     }
 
-    static function checkformat_api($user, $qreq, $prow) {
+    static function checkformat_api(Contact $user, $qreq, $prow) {
         $dtype = cvtint($qreq->dt, 0);
         $opt = $user->conf->paper_opts->find_document($dtype);
         if (!$opt || !$user->can_view_paper_option($prow, $opt))
@@ -338,7 +329,7 @@ class PaperApi {
         json_exit(["ok" => $status != CheckFormat::STATUS_ERROR, "status" => $status, "response" => $cf->document_report($prow, $doc)]);
     }
 
-    static function whoami_api($user, $qreq, $prow) {
+    static function whoami_api(Contact $user, $qreq, $prow) {
         json_exit(["ok" => true, "email" => $user->email]);
     }
 }
