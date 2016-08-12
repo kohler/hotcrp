@@ -466,9 +466,8 @@ class PaperTable {
 
         $filetypes = array();
         $accepts = array();
-        if ($main_submission
-            && (opt("noPapers") === 1 || opt("noPapers") === true)
-            && $documentType == DTYPE_SUBMISSION)
+        if ($documentType == DTYPE_SUBMISSION
+            && (opt("noPapers") === 1 || opt("noPapers") === true))
             return;
 
         $accepts = $docx->mimetypes();
