@@ -1428,6 +1428,7 @@ class PaperList {
         $rows = $this->_rows($field_list);
         if ($rows === null)
             return null;
+        $fdef = $field_list[0];
 
         // output field data
         $data = array();
