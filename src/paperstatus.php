@@ -954,7 +954,7 @@ class PaperStatus {
                 $q[] = "mimetype='" . sqlq($new_joindoc->mimetype) . "'";
                 $q[] = "sha1='" . sqlq(Filer::binary_sha1($new_joindoc->sha1)) . "'";
                 $q[] = "timestamp=" . $new_joindoc->timestamp;
-            } else if (!$old_joindoc)
+            } else if (!$paperid || ($new_joindoc && !$old_joindoc))
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
 
             if ($paperid) {
