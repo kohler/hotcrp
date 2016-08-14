@@ -207,9 +207,14 @@ class PaperList {
     }
 
     private function find_column($name, $errors = null) {
-        if (!array_key_exists($name, $this->_columns_by_name))
-            $this->_columns_by_name[$name] = PaperColumn::lookup($this->contact, $name, $errors);
-        return $this->_columns_by_name[$name];
+        if (array_key_exists($name, $this->_columns_by_name))
+            return $this->_columns_by_name[$name];
+        $column = PaperColumn::lookup($this->contact, $name, $errors);
+        if ($column && isset($this->_columns_by_name[$column->name]))
+            $column = $this->_columns_by_name[$column->name];
+        else
+            $this->_columns_by_name[$column ? $column->name : $name] = $column;
+        return $column;
     }
 
     private function _sort($rows, $duplicates) {

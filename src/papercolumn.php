@@ -756,15 +756,15 @@ class PreferencePaperColumn extends PaperColumn {
         $this->contact = $contact;
     }
     public function make_column(Contact $user, $name, $errors) {
-        $p = strpos($name, ":");
-        $cids = ContactSearch::make_pc(substr($name, $p + 1), $user)->ids;
+        $colon = strpos($name, ":");
+        $cids = ContactSearch::make_pc(substr($name, $colon + 1), $user)->ids;
         if (empty($cids))
-            self::make_column_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $p + 1)) . "”.", 2);
+            self::make_column_error($errors, "No PC member matches “" . htmlspecialchars(substr($name, $colon + 1)) . "”.", 2);
         else if (count($cids) == 1) {
             $pcm = $user->conf->pc_members();
-            return parent::register(new PreferencePaperColumn($name, $this->editable, $pcm[$cids[0]]));
+            return new PreferencePaperColumn(substr($name, 0, $colon + 1) . $pcm[$cids[0]]->email, $this->editable, $pcm[$cids[0]]);
         } else
-            self::make_column_error($errors, "“" . htmlspecialchars(substr($name, $p + 1)) . "” matches more than one PC member.", 2);
+            self::make_column_error($errors, "“" . htmlspecialchars(substr($name, $colon + 1)) . "” matches more than one PC member.", 2);
         return null;
     }
     public function make_editable() {
@@ -1093,7 +1093,7 @@ class TagPaperColumn extends PaperColumn {
     }
     public function make_column(Contact $user, $name, $errors) {
         $p = str_starts_with($name, "#") ? 0 : strpos($name, ":");
-        return parent::register(new TagPaperColumn($name, substr($name, $p + 1), $this->is_value));
+        return new TagPaperColumn($name, substr($name, $p + 1), $this->is_value);
     }
     public function make_editable() {
         return new EditTagPaperColumn($this->name, $this->dtag, $this->is_value);
@@ -1213,12 +1213,14 @@ class ScorePaperColumn extends PaperColumn {
     public $max_score;
     private $form_field;
     private $xreviewer;
-    public function __construct($score) {
+    public function __construct(ReviewField $form_field = null) {
+        $score = $form_field ? $form_field->id : null;
         parent::__construct($score, Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
                             array("comparator" => "score_compare"));
         $this->minimal = true;
         $this->className = "pl_score";
         $this->score = $score;
+        $this->form_field = $form_field;
     }
     public static function all_column_names(Conf $conf) {
         $reg = [];
@@ -1230,18 +1232,13 @@ class ScorePaperColumn extends PaperColumn {
     }
     public function make_column(Contact $user, $name, $errors) {
         if (($f = $user->conf->review_field_search($name))
-            && $f->has_options && $f->display_order !== false) {
-            $c = parent::lookup_local($f->id);
-            $c = $c ? : PaperColumn::register(new ScorePaperColumn($f->id));
-            return $c;
-        } else
-            return null;
+            && $f->has_options && $f->display_order !== false)
+            return new ScorePaperColumn($f);
+        return null;
     }
     public function prepare(PaperList $pl, $visible) {
-        if (!$pl->scoresOk)
-            return false;
-        $this->form_field = $pl->conf->review_field($this->score);
-        if ($this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
+        if (!$pl->scoresOk
+            || $this->form_field->view_score <= $pl->contact->permissive_view_score_bound())
             return false;
         if ($visible) {
             $pl->qopts["scores"][$this->score] = true;
@@ -1284,11 +1281,7 @@ class ScorePaperColumn extends PaperColumn {
         return $this->form_field->web_abbreviation();
     }
     public function completion_name() {
-        global $Conf;
-        if ($this->score && ($ff = $Conf->review_field($this->score)))
-            return $ff->abbreviation;
-        else
-            return null;
+        return $this->form_field ? $this->form_field->abbreviation : null;
     }
     public function completion_instances(Contact $user) {
         return array_map(function ($name) use ($user) { return $this->make_column($user, $name, null); }, self::all_column_names($user->conf));
@@ -1340,11 +1333,6 @@ class Option_PaperColumn extends PaperColumn {
             $this->className .= " plrd";
         $this->opt = $opt;
     }
-    private static function _make_column($opt, $isrow) {
-        $s = parent::lookup_local($opt->abbr . ($isrow ? "-row" : ""));
-        $s = $s ? : PaperColumn::register(new Option_PaperColumn($opt, $isrow));
-        return $s;
-    }
     public function make_column(Contact $user, $name, $errors) {
         $has_colon = false;
         if (str_starts_with($name, "opt:")) {
@@ -1363,7 +1351,7 @@ class Option_PaperColumn extends PaperColumn {
             reset($opts);
             $opt = current($opts);
             if ($opt->display() >= 0)
-                return self::_make_column($opt, $isrow);
+                return new Option_PaperColumn($opt, $isrow);
             self::make_column_error($errors, "Option “" . htmlspecialchars($name) . "” can’t be displayed.");
         } else if ($has_colon)
             self::make_column_error($errors, "No such option “" . htmlspecialchars($name) . "”.", 1);
@@ -1389,7 +1377,7 @@ class Option_PaperColumn extends PaperColumn {
         $reg = array();
         foreach ($user->user_option_list() as $opt)
             if ($opt->display() >= 0)
-                $reg[] = self::_make_column($opt, false);
+                $reg[] = new Option_PaperColumn($opt, false);
         return $reg;
     }
     public function content_empty($pl, $row) {
