@@ -157,9 +157,9 @@ class BanalSettings {
             if ($suffix === "" && !$sv->oldv("sub_banal_m1")
                 && !isset($sv->req["has_sub_banal_m1"]))
                 $sv->save("sub_banal_data_m1", $cfs->unparse());
-        }
-
-        return false;
+            return true;
+        } else
+            return false;
     }
 }
 
@@ -632,6 +632,16 @@ class Banal_SettingParser extends SettingParser {
             return BanalSettings::parse(substr($si->name, 9), $sv, true);
         else
             return false;
+    }
+    public function save(SettingValues $sv, Si $si) {
+        global $Now;
+        if (substr($si->name, 0, 9) === "sub_banal") {
+            $suffix = substr($si->name, 9);
+            if ($sv->newv("sub_banal$suffix")
+                && ($sv->oldv("sub_banal_data$suffix") !== $sv->newv("sub_banal_data$suffix")
+                    || !$sv->oldv("sub_banal$suffix")))
+                $sv->save("sub_banal$suffix", $Now);
+        }
     }
 }
 
