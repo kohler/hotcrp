@@ -175,6 +175,7 @@ CREATE TABLE `Paper` (
   `size` int(11) NOT NULL DEFAULT '0',
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `timestamp` int(11) NOT NULL DEFAULT '0',
+  `pdfFormatStatus` int(11) NOT NULL DEFAULT '0',
   `withdrawReason` varbinary(1024) DEFAULT NULL,
   `paperFormat` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`paperId`),
@@ -504,7 +505,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 144);
+insert into Settings (name, value) values ('allowPaperOption', 145);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
