@@ -428,7 +428,7 @@ class Conf {
         return isset($this->settings[$name]);
     }
 
-    function setting($name, $defval = false) {
+    function setting($name, $defval = null) {
         return get($this->settings, $name, $defval);
     }
 
@@ -441,7 +441,7 @@ class Conf {
         return (is_string($x) ? json_decode($x) : $x);
     }
 
-    function opt($name, $defval = false) {
+    function opt($name, $defval = null) {
         return get($this->opt, $name, $defval);
     }
 
