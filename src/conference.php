@@ -438,7 +438,7 @@ class Conf {
 
     function setting_json($name, $defval = false) {
         $x = get($this->settingTexts, $name, $defval);
-        return (is_string($x) ? json_decode($x) : $x);
+        return is_string($x) ? json_decode($x) : $x;
     }
 
     function opt($name, $defval = null) {
