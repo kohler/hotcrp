@@ -590,7 +590,7 @@ echo ")</td></tr>\n<tr><td></td><td>";
 
 $summary = [];
 $tagger = new Tagger($Me);
-$nrev = new AssignmentCountSet;
+$nrev = new AssignmentCountSet($Conf);
 $nrev->load_rev();
 foreach (pcMembers() as $p) {
     $t = '<div class="ctelt"><div class="ctelti';
