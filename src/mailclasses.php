@@ -108,6 +108,7 @@ class MailRecipients {
         $this->defsel_nm("uncmyextrev", "Your requested reviewers with incomplete reviews");
 
         $this->sel["pc_group"] = array("optgroup", "Program committee");
+        $selcount = count($this->sel);
         if ($contact->is_manager()) {
             if ($any_lead || $type == "lead")
                 $this->defsel("lead", "Discussion leads");
@@ -118,7 +119,10 @@ class MailRecipients {
         foreach (pcTags() as $t)
             if ($t != "pc")
                 $this->defsel_nm("pc:$t", "PC members tagged “{$t}”");
-        $this->sel["pc_group_end"] = array("optgroup");
+        if (count($this->sel) == $selcount + 1)
+            unset($this->sel["pc_group"]);
+        else
+            $this->sel["pc_group_end"] = array("optgroup");
 
         if ($contact->privChair)
             $this->defsel("all", "All users");
