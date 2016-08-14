@@ -57,7 +57,7 @@ class Mailer {
     static function eol() {
         global $Conf;
         if (self::$eol === null) {
-            if (($x = $Conf->opt("postfixMailer")) === null)
+            if (($x = $Conf->opt("postfixMailer", null)) === null)
                 $x = $Conf->opt("postfixEOL");
             if (!$x)
                 self::$eol = "\r\n";
@@ -499,7 +499,7 @@ class Mailer {
 
     static function send_preparation($prep) {
         global $Conf;
-        if ($Conf->opt("internalMailer") === null)
+        if ($Conf->opt("internalMailer", null) === null)
             $Conf->set_opt("internalMailer", strncasecmp(PHP_OS, "WIN", 3) != 0);
         $headers = $prep->headers;
         $eol = self::eol();
@@ -513,7 +513,7 @@ class Mailer {
 
         // set sendmail parameters
         $extra = $Conf->opt("sendmailParam");
-        if (($sender = $Conf->opt("emailSender")) !== null) {
+        if (($sender = $Conf->opt("emailSender", null)) !== null) {
             @ini_set("sendmail_from", $sender);
             if ($extra === null)
                 $extra = "-f" . escapeshellarg($sender);
