@@ -1701,8 +1701,6 @@ class FoldAllPaperColumn extends PaperColumn {
 }
 
 function initialize_paper_columns() {
-    global $Conf, $Me;
-
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "className" => "pl_sel")));
     PaperColumn::register(new SelectorPaperColumn("selconf", array("className" => "pl_confselector")));
