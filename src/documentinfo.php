@@ -5,6 +5,7 @@
 
 class DocumentInfo implements JsonSerializable {
     public $conf;
+    public $prow;
     public $paperStorageId = 0;
     public $paperId = 0;
     public $documentType = 0;
@@ -28,13 +29,14 @@ class DocumentInfo implements JsonSerializable {
     public $error;
     public $error_html;
 
-    function __construct($p = null, $conf = null) {
-        $this->merge($p, $conf);
+    function __construct($p = null, Conf $conf = null, PaperInfo $prow = null) {
+        $this->merge($p, $conf, $prow);
     }
 
-    private function merge($p, $conf) {
+    private function merge($p, Conf $conf = null, PaperInfo $prow = null) {
         global $Conf;
         $this->conf = $conf ? : $Conf;
+        $this->prow = $prow;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -63,7 +65,7 @@ class DocumentInfo implements JsonSerializable {
         // set sha1 if content is available
         if ($this->content && $this->sha1 == "")
             $this->sha1 = sha1($this->content, true);
-        // set sha1 in database if needed ()
+        // set sha1 in database if needed (backwards compat)
         if ($this->paperStorageId > 1
             && $this->sha1 == ""
             && $this->docclass->load_content($this)) {
@@ -72,10 +74,10 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
-    static public function fetch($result, $conf) {
-        $di = $result ? $result->fetch_object("DocumentInfo", [null, $conf]) : null;
+    static public function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
+        $di = $result ? $result->fetch_object("DocumentInfo", [null, $conf, $prow]) : null;
         if ($di && !is_int($di->paperStorageId))
-            $di->merge(null, $conf);
+            $di->merge(null, $conf, $prow);
         return $di;
     }
 
@@ -156,16 +158,31 @@ class DocumentInfo implements JsonSerializable {
     const L_SMALL = 1;
     const L_NOSIZE = 2;
     const L_FINALTITLE = 4;
+    const L_REQUIREFORMAT = 8;
     function link_html($html = "", $flags = 0, $filters = null) {
         $p = $this->url($filters);
 
-        $finalsuffix = "";
+        $suffix = "";
         $title = null;
         if ($this->documentType == DTYPE_FINAL
             || ($this->documentType > 0 && ($o = $this->conf->paper_opts->find($this->documentType)) && $o->final))
-            $finalsuffix = "f";
+            $suffix = "f";
         if ($this->documentType == DTYPE_FINAL && ($flags & self::L_FINALTITLE))
             $title = "Final version";
+
+        assert(!($flags & self::L_REQUIREFORMAT) || !!$this->prow);
+        if (($this->documentType == DTYPE_SUBMISSION || $this->documentType == DTYPE_FINAL)
+            && ($specwhen = $this->conf->setting("sub_banal" . ($this->documentType ? "_m1" : "")))
+            && $this->prow) {
+            if ($this->prow->is_joindoc($this) && abs($this->prow->pdfFormatStatus) == $specwhen) {
+                if ($this->prow->pdfFormatStatus < 0)
+                    $suffix .= "x";
+            } else {
+                $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
+                if ($cf->check_document($this->prow, $this) == CheckFormat::STATUS_ERROR)
+                    $suffix .= "x";
+            }
+        }
 
         if ($this->mimetype == "application/pdf")
             list($img, $alt) = ["pdf", "[PDF]"];
@@ -179,7 +196,7 @@ class DocumentInfo implements JsonSerializable {
 
         $small = ($flags & self::L_SMALL) != 0;
         $x = '<a href="' . $p . '" class="q">'
-            . Ht::img($img . $finalsuffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
+            . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html)
             $x .= "&nbsp;" . $html;
         if (isset($this->size) && $this->size > 0 && !($flags && self::L_NOSIZE)) {

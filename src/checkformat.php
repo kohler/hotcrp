@@ -286,12 +286,12 @@ class CheckFormat implements FormatChecker {
             // constrain the number of concurrent banal executions to banalLimit
             // (counter resets every 2 seconds)
             $t = (int) (time() / 2);
-            $n = ($Conf->setting_data("__banal_count") == $t ? $Conf->setting("__banal_count") + 1 : 1);
+            $n = ($doc->conf->setting_data("__banal_count") == $t ? $doc->conf->setting("__banal_count") + 1 : 1);
             $limit = opt("banalLimit", 8);
             if ($limit > 0 && $n > $limit)
                 return $cf->msg_fail("Server too busy to check paper formats at the moment.  This is a transient error; feel free to try again.");
             if ($limit > 0)
-                Dbl::q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
+                $doc->conf->q("insert into Settings (name,value,data) values ('__banal_count',$n,'$t') on duplicate key update value=$n, data='$t'");
 
             $bj = $cf->run_banal($doc->filestore);
             if ($bj && is_object($bj) && isset($bj->pages)) {
@@ -300,7 +300,7 @@ class CheckFormat implements FormatChecker {
             }
 
             if ($limit > 0)
-                Dbl::q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
+                $doc->conf->q("update Settings set value=value-1 where name='__banal_count' and data='$t'");
         }
 
         if ($bj)
@@ -369,7 +369,8 @@ class CheckFormat implements FormatChecker {
             $doc->update_metadata($this->metadata_updates);
         // record check status in `Paper` table
         if ($prow->is_joindoc($doc)
-            && ($specdate = $Conf->setting($doc->documentType == DTYPE_SUBMISSION ? "sub_banal" : "sub_banal_m1"))) {
+            && ($specdate = $doc->conf->setting($doc->documentType == DTYPE_SUBMISSION ? "sub_banal" : "sub_banal_m1")) > 0
+            && $this->status != self::STATUS_FAIL) {
             if ($this->status == self::STATUS_OK)
                 $x = $specdate;
             else if ($this->status == self::STATUS_ERROR)

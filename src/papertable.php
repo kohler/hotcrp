@@ -386,8 +386,8 @@ class PaperTable {
 
             $dprefix = "";
             $dtype = $prow->finalPaperStorageId > 1 ? DTYPE_FINAL : DTYPE_SUBMISSION;
-            if (($data = $prow->document($dtype)) && $data->paperStorageId > 1) {
-                if (($stamps = self::pdf_stamps_html($data)))
+            if (($doc = $prow->document($dtype)) && $doc->paperStorageId > 1) {
+                if (($stamps = self::pdf_stamps_html($doc)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 if ($dtype == DTYPE_FINAL)
                     $dname = "Final version";
@@ -395,7 +395,7 @@ class PaperTable {
                     $dname = "Submission";
                 else
                     $dname = "Current version";
-                $pdfs[] = $dprefix . $data->link_html('<span class="pavfn">' . $dname . '</span>') . $stamps;
+                $pdfs[] = $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps;
             }
 
             foreach ($prow ? $prow->options() : [] as $id => $ov)

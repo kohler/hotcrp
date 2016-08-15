@@ -680,7 +680,7 @@ class PaperInfo {
         if ($this->_document_array === null)
             $this->_document_array = [];
         $result = $this->conf->qe("select paperStorageId, $this->paperId paperId, timestamp, mimetype, mimetypeid, sha1, documentType, filename, infoJson, size, filterType, originalStorageId from PaperStorage where paperStorageId ?a", $dids);
-        while (($di = DocumentInfo::fetch($result, $this->conf)))
+        while (($di = DocumentInfo::fetch($result, $this->conf, $this)))
             $this->_document_array[$di->paperStorageId] = $di;
         Dbl::free($result);
     }
@@ -704,7 +704,7 @@ class PaperInfo {
              || ($dtype == DTYPE_FINAL && $did == $this->finalPaperStorageId))
             && !$full) {
             $infoJson = get($this, $dtype == DTYPE_SUBMISSION ? "paper_infoJson" : "final_infoJson");
-            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true], $this->conf);
+            return new DocumentInfo(["paperStorageId" => $did, "paperId" => $this->paperId, "documentType" => $dtype, "timestamp" => get($this, "timestamp"), "mimetype" => $this->mimetype, "sha1" => $this->sha1, "size" => get($this, "size"), "infoJson" => $infoJson, "is_partial" => true], $this->conf, $this);
         }
 
         if ($this->_document_array === null) {
