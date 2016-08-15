@@ -1637,7 +1637,14 @@ class PaperTable {
                    && $Conf->timeSubmitFinalPaper()
                    && ($t = $Conf->message_html("finalsubmit", array("deadline" => $this->deadlineSettingIs("final_soft")))))
             $m .= Ht::xmsg("info", $t);
-        else if ($has_author) {
+        else if ($has_author
+                 && $prow->outcome > 0
+                 && $Conf->timeAuthorViewDecision()
+                 && $Conf->collectFinalPapers()) {
+            $override2 = ($this->admin ? " As an administrator, you can update the submission anyway." : "");
+            if ($this->mode === "edit")
+                $m .= Ht::xmsg("warning", "The deadline for updating final versions has passed. You can still update contact information, however.$override2");
+        } else if ($has_author) {
             $override2 = ($this->admin ? " As an administrator, you can update the submission anyway." : "");
             if ($this->mode === "edit") {
                 $t = "";
@@ -1645,7 +1652,8 @@ class PaperTable {
                     $t = " or withdraw it from consideration";
                 $m .= Ht::xmsg("info", "The submission is under review and can’t be changed, but you can change its contacts$t.$override2");
             }
-        } else if ($prow->outcome > 0 && !$Conf->timeAuthorViewDecision()
+        } else if ($prow->outcome > 0
+                   && !$Conf->timeAuthorViewDecision()
                    && $Conf->collectFinalPapers())
             $m .= Ht::xmsg("info", "The submission has been accepted, but authors can’t view decisions yet. Once decisions are visible, the system will allow accepted authors to upload final versions.");
         else
