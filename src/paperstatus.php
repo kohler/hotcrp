@@ -396,7 +396,7 @@ class PaperStatus {
             $lemail = strtolower($aux->email);
             $au_by_email[$lemail] = $aux;
             if (!validate_email($lemail) && !isset($old_au_by_email[$lemail]))
-                $pj->bad_email_authors[$k] = $aux;
+                $pj->bad_email_authors[] = $aux;
         }
     }
 
