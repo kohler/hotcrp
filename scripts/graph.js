@@ -18,24 +18,23 @@ function svg_path_number_of_items(s) {
 function make_svg_path_parser(s) {
     if (s instanceof SVGPathElement)
         s = s.getAttribute("d");
-    var i = 0, e = s.length, next_cmd;
+    var i = 0, e = s.length, next_cmd, numre = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[Ee][-+]?\d+)?/;
     return function () {
-        var a = null, j, ch;
+        var a = null, m, ch;
         while (i < e) {
             ch = s.charAt(i);
-            if (ch == "," || ch <= " ")
+            if (ch <= " " || ch == ",")
                 ++i;
             else if (ch >= "+" && ch <= "9") {
                 if (!a && next_cmd)
                     a = [next_cmd];
                 else if (!a || a.length == PATHSEG_ARGMAP[a[0]] + 1)
                     break;
-                for (j = i, ++i;
-                     i < e && (((ch = s.charAt(i)) >= "+" && ch <= "9" && ch !== ",")
-                               || ch === "e" || ch === "E");
-                     ++i)
-                    /* skip */;
-                a.push(+s.substring(j, i));
+                if ((m = numre.exec(s.substring(i)))) {
+                    a.push(+m[0]);
+                    i += m[0].length;
+                } else
+                    break;
             } else if (ch >= "A" && ch <= "z" && !a) {
                 a = [ch];
                 next_cmd = ch;
