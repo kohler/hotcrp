@@ -1208,15 +1208,20 @@ function chair() {
 
 <ol>
 
-<li><p>Consider looking through <a
-  href='" . hoturl("search", "q=&amp;t=all") . "'>all papers</a> for
+<li><p>Consider checking <a
+  href='" . hoturl("search", "q=&amp;t=all") . "'>the papers</a> for
   anomalies.  Withdraw and/or delete duplicates or update details on the <a
   href='" . hoturl("paper") . "'>paper pages</a> (via “Edit paper”).
   Also consider contacting the authors of <a
   href='" . hoturl("search", "q=status:unsub&amp;t=all") . "'>papers that
   were never officially submitted</a>, especially if a PDF document was
-  uploaded (you can tell from the icon in the search list).  Sometimes a
+  uploaded; sometimes a
   user will uncheck “The paper is ready for review” by mistake.</p></li>
+
+<li><p><strong>Check for formatting violations (optional).</strong> <a href='" . hoturl("search", "q=") . "'>Search</a>
+  &gt; Download &gt; Format check will download a summary report. Serious errors
+  are also shown on paper pages (problematic PDFs are distinguished by an
+  “X”).</p></li>
 
 <li><p><strong><a href='" . hoturl("settings", "group=reviewform") . "'>Prepare the
   review form.</a></strong> Take a look at the templates to get
