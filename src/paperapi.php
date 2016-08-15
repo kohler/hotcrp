@@ -273,7 +273,7 @@ class PaperApi {
             $need_paper = true;
             if ($user->conf->has_any_manager() && !$user->conf->tag_seeall)
                 $cflt_where = "(p.managerContactId=$user->contactId or pc.conflictType is null)";
-            else if (!$Conf->tag_seeall)
+            else if (!$user->conf->tag_seeall)
                 $cflt_where = "pc.conflictType is null";
         }
 
