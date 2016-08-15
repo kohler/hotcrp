@@ -227,6 +227,10 @@ images/pdf.png
 images/pdf24.png
 images/pdff.png
 images/pdff24.png
+images/pdffx.png
+images/pdffx24.png
+images/pdfx.png
+images/pdfx24.png
 images/postscript.png
 images/postscript24.png
 images/postscriptf.png
