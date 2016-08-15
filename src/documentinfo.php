@@ -161,9 +161,10 @@ class DocumentInfo implements JsonSerializable {
     const L_REQUIREFORMAT = 8;
     function link_html($html = "", $flags = 0, $filters = null) {
         $p = $this->url($filters);
-
-        $suffix = "";
+        $suffix = $info = "";
         $title = null;
+        $small = ($flags & self::L_SMALL) != 0;
+
         if ($this->documentType == DTYPE_FINAL
             || ($this->documentType > 0 && ($o = $this->conf->paper_opts->find($this->documentType)) && $o->final))
             $suffix = "f";
@@ -174,13 +175,18 @@ class DocumentInfo implements JsonSerializable {
         if (($this->documentType == DTYPE_SUBMISSION || $this->documentType == DTYPE_FINAL)
             && ($specwhen = $this->conf->setting("sub_banal" . ($this->documentType ? "_m1" : "")))
             && $this->prow) {
-            if ($this->prow->is_joindoc($this) && abs($this->prow->pdfFormatStatus) == $specwhen) {
-                if ($this->prow->pdfFormatStatus < 0)
-                    $suffix .= "x";
-            } else {
+            $specstatus = 0;
+            if ($this->prow->is_joindoc($this))
+                $specstatus = $this->prow->pdfFormatStatus;
+            if ($specstatus == -$specwhen && $small)
+                $suffix .= "x";
+            else if ($specstatus != $specwhen) {
                 $cf = new CheckFormat($flags & self::L_REQUIREFORMAT ? CheckFormat::RUN_PREFER_NO : CheckFormat::RUN_NO);
-                if ($cf->check_document($this->prow, $this) == CheckFormat::STATUS_ERROR)
+                if ($cf->check_document($this->prow, $this) == CheckFormat::STATUS_ERROR) {
                     $suffix .= "x";
+                    if (!$small)
+                        $info = '<span class="need-tooltip" style="font-weight:bold" data-tooltip="' . htmlspecialchars(join("<br />", $cf->messages())) . '">ⓘ</span>';
+                }
             }
         }
 
@@ -194,7 +200,6 @@ class DocumentInfo implements JsonSerializable {
             $alt = "[" . ($m && $m->description ? : $this->mimetype) . "]";
         }
 
-        $small = ($flags & self::L_SMALL) != 0;
         $x = '<a href="' . $p . '" class="q">'
             . Ht::img($img . $suffix . ($small ? "" : "24") . ".png", $alt, ["class" => $small ? "sdlimg" : "dlimg", "title" => $title]);
         if ($html)
@@ -207,7 +212,7 @@ class DocumentInfo implements JsonSerializable {
                 $x .= max(round($this->size / 102.4), 1) / 10;
             $x .= "kB" . ($html ? ")" : "") . "</span>";
         }
-        return $x . "</a>";
+        return $x . "</a>" . ($info ? "&nbsp;$info" : "");
     }
 
     function metadata() {
