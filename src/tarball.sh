@@ -203,7 +203,6 @@ images/assign24.png
 images/bendulft.png
 images/buzzer.mp3
 images/check.png
-images/checksum12.png
 images/comment24.png
 images/cross.png
 images/edit.png
@@ -240,7 +239,6 @@ images/sortdown.png
 images/sortup.png
 images/sprite.png
 images/stophand45.png
-images/timestamp12.png
 images/txt.png
 images/txt24.png
 images/view18.png

@@ -1317,18 +1317,6 @@ img.next {
 	background-position: -10px 0;
 }
 
-.checksum12, .timestamp12 {
-	background-image: url(../images/sprite.png?2);
-	width: 12px;
-	height: 12px;
-}
-.checksum12 {
-	background-position: -28px -11px;
-}
-.timestamp12 {
-	background-position: -40px -11px;
-}
-
 .ti_interest {
 	padding-right: 1px;
 	white-space: nowrap;
