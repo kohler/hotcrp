@@ -361,12 +361,12 @@ class PaperTable {
         $tm = defval($data, "timestamp", defval($data, "timeSubmitted", 0));
         if ($tm > 0)
             $t[] = ($tooltip ? '<span class="nb need-tooltip" data-tooltip="Time of most recent update">' : '<span class="nb">')
-                . '<svg width="12" height="12" viewBox="0 0 96 96"><path style="fill:#333" d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64z"/><path style="fill:#333" d="M48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z"/></svg>'
+                . '<svg width="12" height="12" viewBox="0 0 96 96" style="vertical-align:-2px"><path style="fill:#333" d="M48 6a42 42 0 1 1 0 84 42 42 0 1 1 0-84zm0 10a32 32 0 1 0 0 64 32 32 0 1 0 0-64z"/><path style="fill:#333" d="M48 19A5 5 0 0 0 43 24V46c0 2.352.37 4.44 1.464 5.536l12 12c4.714 4.908 12-2.36 7-7L53 46V24A5 5 0 0 0 43 24z"/></svg>'
                 . " " . $Conf->unparse_time_full($tm) . "</span>";
         $sha1 = defval($data, "sha1");
         if ($sha1)
             $t[] = ($tooltip ? '<span class="nb need-tooltip" data-tooltip="SHA-1 checksum">' : '<span class="nb">')
-                . '<svg width="12" height="12" viewBox="0 0 48 48"><path style="fill:#333" d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19z"/><path style="fill:#333" d="M15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg>'
+                . '<svg width="12" height="12" viewBox="0 0 48 48" style="vertical-align:-2px"><path style="fill:#333" d="M19 32l-8-8-7 7 14 14 26-26-6-6-19 19z"/><path style="fill:#333" d="M15 3V10H8v5h7v7h5v-7H27V10h-7V3h-5z"/></svg>'
                 . " " . bin2hex($sha1) . "</span>";
         if (!empty($t))
             return '<span class="hint">' . join(" <span class='barsep'>·</span> ", $t) . "</span>";
