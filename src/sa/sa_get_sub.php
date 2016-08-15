@@ -102,7 +102,8 @@ class GetCheckFormat_SearchAction extends SearchAction {
                 $dtype = $prow->finalPaperStorageId ? DTYPE_FINAL : DTYPE_SUBMISSION;
                 if (($doc = $cf->fetch_document($prow, $dtype))
                     && $cf->check_document($prow, $doc)) {
-                    $format = empty($cf->errf) ? "ok" : join(",", array_keys($cf->errf));
+                    $errf = $cf->error_fields();
+                    $format = empty($errf) ? "ok" : join(",", array_keys($errf));
                     $pages = $cf->pages;
                 } else
                     $format = "error";

@@ -501,7 +501,7 @@ class PaperTable {
                 "<td class='nw'>", $doc->link_html(), "</td><td>";
             if (($stamps = self::pdf_stamps_html($doc)))
                 echo "<span class='sep'></span>", $stamps;
-            if ($has_cf && ($this->cf->status == CheckFormat::STATUS_ERROR || $this->cf->need_run))
+            if ($has_cf && ($this->cf->failed() || $this->cf->need_run))
                 echo "<span class='sep'></span><a href='#' onclick='return docheckformat.call(this, $documentType)'>Check format</a>";
             else if ($has_cf) {
                 if ($this->cf->status == CheckFormat::STATUS_OK)
@@ -538,10 +538,10 @@ class PaperTable {
             $uploader .= "</div>";
 
         if ($has_cf) {
+            $cf_open = $this->cf->status && !$this->cf->failed();
             echo '<div id="foldcheckformat', $documentType, '" class="',
-                $this->cf->status == CheckFormat::STATUS_PROBLEM ? "foldo" : "foldc",
-                '" data-docid="', $doc->paperStorageId, '">';
-            if ($this->cf->status == CheckFormat::STATUS_PROBLEM)
+                $cf_open ? "foldo" : "foldc", '" data-docid="', $doc->paperStorageId, '">';
+            if ($cf_open)
                 echo $this->cf->document_report($prow, $doc);
             echo '</div>';
         }

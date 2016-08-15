@@ -272,8 +272,8 @@ class SettingValues {
     }
     public function set_warning($field, $html = false) {
         $fname = self::check_error_field($field, $html);
-        if ($fname && !isset($this->errf[$fname]))
-            $this->errf[$fname] = 1;
+        if ($fname)
+            $this->errf[$fname] = max(get($this->errf, $fname, 0), 1);
         if ($html !== false)
             $this->warnmsg[] = $html;
         return false;

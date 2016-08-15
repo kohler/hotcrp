@@ -724,6 +724,14 @@ class PaperInfo {
             $this->_add_documents([$did]);
         return $did > 0 ? get($this->_document_array, $did) : null;
     }
+    public function is_joindoc(DocumentInfo $doc) {
+        return $doc->paperStorageId > 1
+            && (($doc->paperStorageId == $this->paperStorageId
+                 && $this->finalPaperStorageId <= 0
+                 && $doc->documentType == DTYPE_SUBMISSION)
+                || ($doc->paperStorageId == $this->finalPaperStorageId
+                    && $doc->documentType == DTYPE_FINAL));
+    }
 
     public function npages() {
         $dtype = $this->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
