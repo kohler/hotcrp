@@ -517,7 +517,7 @@ visible only to PC chairs.</p>");
 <div class='psc psc1'>
  <div class='pst'>
   <span class='psfn'>Tags</span>
-  <span class='pstedit'><a class='xx'><span style='display:inline-block;position:relative;width:15px'>" . Ht::img("edit.png", "[Edit]", "bmabs") . "</span>&nbsp;<u class='x'>Edit</u></a></span>
+  <span class='pstedit'><a class='xx'><span style='display:inline-block;position:relative;width:16px'>" . Ht::img("edit48.png", "[Edit]", "editimg") . "</span>&nbsp;<u class='x'>Edit</u></a></span>
   <hr class='c' /></div>
 <div class='psv'><div class='taghl'>#earlyaccept</div></div></div>
 </div></div></div><hr class='c' />
@@ -535,7 +535,7 @@ visible only to their creators; each PC member has an independent set.
 Tags are not case sensitive.</p>");
 
     _subhead("<a name='changing'>Changing tags</a>", "
-<p>To change a paper’s tags, go to the paper page and select the Tags box’s " . Ht::img("edit.png", "[Edit]") . "&nbsp;Edit
+<p>To change a paper’s tags, go to the paper page and select the Tags box’s " . Ht::img("edit48.png", "[Edit]", ["width" => 16, "height" => 16]) . "&nbsp;Edit
 link. Then enter one or more alphanumeric tags separated by spaces.</p>
 
 <p>" . Ht::img("extagsset.png", "[Tag entry on review screen]") . "</p>

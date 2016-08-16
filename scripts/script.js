@@ -2568,7 +2568,7 @@ function add_review(rrow) {
     hc.push('<div class="floatright">', '</div>');
     if (rrow.editable)
         hc.push('<a href="' + hoturl_html("review", rlink) + '" class="xx">'
-                + '<img class="b" src="' + assetsurl + 'images/edit.png" alt="[Edit]" />'
+                + '<img class="b" src="' + assetsurl + 'images/edit48.png" alt="[Edit]" width="16" height="16" />'
                 + '&nbsp;<u>Edit</u></a><br />');
     hc.push_pop('<a href="' + hoturl_html("review", rlink + "&text=1") + '" class="xx">'
                 + '<img class="b" src="' + assetsurl + 'images/txt.png" alt="[Text]" />'

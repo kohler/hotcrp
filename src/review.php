@@ -1762,7 +1762,7 @@ $blind\n";
         $barsep = " <span class='barsep'>·</span> ";
         $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . "'";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
-            . Ht::img("review24.png", "[Review]", "dlimg")
+            . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td><td class='pl_activityid pnum'>"
             . $a . ">#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
             . $a . " class=\"ptitle\">" . htmlspecialchars($rrow->shortTitle);

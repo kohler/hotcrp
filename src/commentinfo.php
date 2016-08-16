@@ -228,7 +228,7 @@ class CommentInfo {
         global $Conf;
         $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#" . self::unparse_html_id($crow)) . "\"";
         $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
-            . Ht::img("comment24.png", "[Comment]", "dlimg")
+            . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_activityid pnum">'
             . $a . ">#$crow->paperId</a></td><td class='pl_activitymain'><small>"
             . $a . " class=\"ptitle\">" . htmlspecialchars($crow->shortTitle);

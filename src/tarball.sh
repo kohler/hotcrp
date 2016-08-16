@@ -197,17 +197,13 @@ extra/hotcrp.vim
 
 images/.htaccess
 images/_.gif
-images/allreviews24.png
-images/assign18.png
-images/assign24.png
+images/assign48.png
 images/bendulft.png
 images/buzzer.mp3
 images/check.png
-images/comment24.png
+images/comment48.png
 images/cross.png
-images/edit.png
-images/edit18.png
-images/edit24.png
+images/edit48.png
 images/exassignone.png
 images/exsearchaction.png
 images/extagssearch.png
@@ -237,16 +233,15 @@ images/postscriptf.png
 images/postscriptf24.png
 images/prev.png
 images/quicksearchex.png
-images/review18.png
 images/review24.png
+images/review48.png
 images/sortdown.png
 images/sortup.png
 images/sprite.png
 images/stophand45.png
 images/txt.png
 images/txt24.png
-images/view18.png
-images/view24.png
+images/view48.png
 images/viewas.png
 
 scripts/.htaccess

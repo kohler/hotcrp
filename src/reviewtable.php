@@ -370,6 +370,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     }
 
     $t = "";
+    $dlimgjs = ["class" => "dlimg", "width" => 24, "height" => 24];
 
     // see all reviews
     $allreviewslink = false;
@@ -377,7 +378,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         && ($mode !== "p" || $rrow)) {
         $allreviewslink = true;
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId") . '" class="xx">'
-            . Ht::img("view24.png", "[All reviews]", "dlimg") . "&nbsp;<u>All reviews</u></a>";
+            . Ht::img("view48.png", "[All reviews]", $dlimgjs) . "&nbsp;<u>All reviews</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
@@ -385,7 +386,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode !== "edit" && $prow->conflictType >= CONFLICT_AUTHOR
         && !$Me->can_administer($prow)) {
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx">'
-            . Ht::img("edit24.png", "[Edit paper]", "dlimg") . "&nbsp;<u><strong>Edit paper</strong></u></a>";
+            . Ht::img("edit48.png", "[Edit paper]", $dlimgjs) . "&nbsp;<u><strong>Edit paper</strong></u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
@@ -396,13 +397,13 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         $myrlink = unparseReviewOrdinal($myrr);
         $a = '<a href="' . hoturl("review", "p=$prow->paperId&r=$myrlink") . '" class="xx">';
         if ($Me->can_review($prow, $myrr))
-            $x = $a . Ht::img("review24.png", "[Edit review]", "dlimg") . "&nbsp;<u><b>Edit your review</b></u></a>";
+            $x = $a . Ht::img("review48.png", "[Edit review]", $dlimgjs) . "&nbsp;<u><b>Edit your review</b></u></a>";
         else
-            $x = $a . Ht::img("review24.png", "[Your review]", "dlimg") . "&nbsp;<u><b>Your review</b></u></a>";
+            $x = $a . Ht::img("review48.png", "[Your review]", $dlimgjs) . "&nbsp;<u><b>Your review</b></u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     } else if (!$myrr && !$rrow && $Me->can_review($prow, null)) {
         $x = '<a href="' . hoturl("review", "p=$prow->paperId&amp;m=re") . '" class="xx">'
-            . Ht::img("review24.png", "[Write review]", "dlimg") . "&nbsp;<u><b>Write review</b></u></a>";
+            . Ht::img("review48.png", "[Write review]", $dlimgjs) . "&nbsp;<u><b>Write review</b></u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
@@ -410,7 +411,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode !== "assign" && $mode !== "edit"
         && $Me->can_request_review($prow, true)) {
         $x = '<a href="' . hoturl("assign", "p=$prow->paperId") . '" class="xx">'
-            . Ht::img("assign24.png", "[Assign]", "dlimg") . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
+            . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($admin ? "Assign reviews" : "External reviews") . "</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
@@ -418,7 +419,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     $nocmt = preg_match('/\A(?:assign|contact|edit|re)\z/', $mode);
     if (!$allreviewslink && !$nocmt && $Me->can_comment($prow, null)) {
         $x = '<a href="#cnew" onclick="return papercomment.edit_new()" class="xx">'
-            . Ht::img("comment24.png", "[Add comment]", "dlimg") . "&nbsp;<u>Add comment</u></a>";
+            . Ht::img("comment48.png", "[Add comment]", $dlimgjs) . "&nbsp;<u>Add comment</u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
         $any_comments = true;
     }
@@ -438,7 +439,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                             $what = "Edit draft";
                     }
             $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_response(' . json_encode($rname) . ')\' class="xx">'
-                . Ht::img("comment24.png", "[$what response]", "dlimg") . "&nbsp;"
+                . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
                 . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $what . ($i ? " $rname" : "") . ' response</u></a>';
             $t .= ($t === "" ? "" : $xsep) . $x;

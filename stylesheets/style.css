@@ -140,8 +140,9 @@ span.barsep {
 	opacity: 0.8;
 	padding: 0 0.5em;
 }
-a.editor {
-	background: url(../images/edit.png) 0px 50% no-repeat;
+.editor {
+	background: url(../images/edit48.png) 0px 50% no-repeat;
+	background-size: 16px 16px;
 	display: inline-block;
 	margin: -2px 0 -2px 0;
 	padding: 2px 0 2px 19px;
@@ -1469,9 +1470,16 @@ img.bm {
 	position: relative;
 	bottom: 1px;
 }
-img.bmabs {
+.papmodeimg {
+	vertical-align: -5px;
+	width: 18px;
+	height: 18px;
+}
+.editimg {
 	position: absolute;
 	bottom: -2px;
+	width: 16px;
+	height: 16px;
 }
 .pl_lastvisit, .pl_time {
 	padding-right: 1.25em;

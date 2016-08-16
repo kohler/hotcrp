@@ -319,7 +319,7 @@ class PaperTable {
                 . "<a class=\"xx need-tooltip\" href=\"" . selfHref(array("atab" => $what))
                 . "\" onclick=\"return foldup(this,event$foldnumarg)\" data-tooltip=\"Edit\">"
                 . "<span class=\"psteditimg\">"
-                . Ht::img("edit.png", "[Edit]", "bmabs")
+                . Ht::img("edit48.png", "[Edit]", "editimg")
                 . "</span>&nbsp;<u class=\"x\">Edit</u></a></span>";
         }
         if (isset($extra["float"]))
@@ -1833,7 +1833,7 @@ class PaperTable {
         global $Conf;
         return '<div class="' . ($highlight ? "papmodex" : "papmode")
             . '"><a href="' . $link . '" class="xx">'
-            . Ht::img($image, "[$text]", "b")
+            . Ht::img($image, "[$text]", "papmodeimg")
             . "&nbsp;<u" . ($highlight ? ' class="x"' : "") . ">" . $text
             . "</u></a></div>\n";
     }
@@ -1858,16 +1858,16 @@ class PaperTable {
             $highlight = ($this->mode !== "assign" && $this->mode !== "edit"
                           && $this->mode !== "contact" && $this->mode !== "re");
             $a = ""; // ($this->mode === "edit" || $this->mode === "re" ? "&amp;m=p" : "");
-            $t .= $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a"), "view18.png", $highlight);
+            $t .= $this->_paptabTabLink("Main", hoturl("paper", "p=$prow->paperId$a"), "view48.png", $highlight);
 
             if ($canEdit)
-                $t .= $this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=edit"), "edit18.png", $this->mode === "edit");
+                $t .= $this->_paptabTabLink("Edit", hoturl("paper", "p=$prow->paperId&amp;m=edit"), "edit48.png", $this->mode === "edit");
 
             if ($canReview)
-                $t .= $this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re"), "review18.png", $this->mode === "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
+                $t .= $this->_paptabTabLink("Review", hoturl("review", "p=$prow->paperId&amp;m=re"), "review48.png", $this->mode === "re" && (!$this->editrrow || $this->editrrow->contactId == $Me->contactId));
 
             if ($canAssign)
-                $t .= $this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign18.png", $this->mode === "assign");
+                $t .= $this->_paptabTabLink("Assign", hoturl("assign", "p=$prow->paperId"), "assign48.png", $this->mode === "assign");
 
             $t .= "</div>";
         }
