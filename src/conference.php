@@ -101,6 +101,7 @@ class Conf {
         if (!isset($options["confid"]))
             $options["confid"] = get($options, "dbName");
         $this->opt = $options;
+        $this->dbname = $options["dbName"];
         $this->paper_opts = new PaperOptionList($this);
         if ($this->dblink && !Dbl::$default_dblink) {
             Dbl::set_default_dblink($this->dblink);
