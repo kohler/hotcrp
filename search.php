@@ -35,9 +35,9 @@ if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "
         $Qreq->fn = "decide";
     else if (isset($Qreq->sendmail))
         $Qreq->fn = "sendmail";
-    else {
+    else if (isset($Qreq->fn)) {
         SearchAction::load();
-        if (!SearchAction::has_function($Qreq->fn))
+        if (!SearchAction::has_function($Qreq->fn, $Qreq[$Qreq->fn . "fn"]))
             unset($Qreq->fn);
     }
 }
