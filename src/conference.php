@@ -326,7 +326,6 @@ class Conf {
             $this->opt["shortName"] = $this->opt["longName"];
         if (!isset($this->opt["downloadPrefix"]) || $this->opt["downloadPrefix"] == "")
             $this->opt["downloadPrefix"] = $confid . "-";
-        $this->dbname = $this->opt["dbName"];
         $this->short_name = $this->opt["shortName"];
         $this->long_name = $this->opt["longName"];
 
