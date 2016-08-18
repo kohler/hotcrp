@@ -703,6 +703,9 @@ span.expander > span.in0 {
 .marksuccess {
 	color: #00bb00;
 }
+.markwarning {
+	color: #b38f00;
+}
 .markfailure {
 	color: #ff0000;
 }
