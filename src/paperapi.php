@@ -221,7 +221,7 @@ class PaperApi {
             json_exit(["ok" => false, "error" => join("<br />", $errors), "errf" => $errf]);
         // apply changes
         if (!empty($q)) {
-            $mresult = Dbl::multi_qe_apply($user->conf, join(";", $q), $qv);
+            $mresult = Dbl::multi_qe_apply($user->conf->dblink, join(";", $q), $qv);
             while (($result = $mresult->next()))
                 Dbl::free($result);
         }
