@@ -990,7 +990,7 @@ sub report_json ($) {
     printf "  \"args\": %s,\n", json_quote(join(" ", @switches)) if @switches;
 
     my $dx = {"pw" => {}, "ph" => {}, "tw" => {}, "th" => {}, "mt" => {}, "ml" => {}};
-    my $px = {};
+    my $px = {}, $nummargin = 10000;
     for my $i (1 .. $doc->{npages}) {
         my $page = $doc->{pages}->{$i};
         my($pbb, $tbb) = ($page->{pagespec}->{paperbb}, $page->{pagespec}->{textbb});
@@ -1009,13 +1009,15 @@ sub report_json ($) {
         while (($k, $v) = each %$pd) {
             $dx->{$k}->{$v} += 1;
         }
+        my($pnummargin) = POSIX::floor($pd->{ph} - $page->{pagedata}->{lowest_number} * $p2h_to_points);
+        $nummargin = $pnummargin if $pnummargin < $pd->{ph} - $tb && $pnummargin < $nummargin;
     }
     my($pw, $ph) = (modevalkey($dx->{pw}), modevalkey($dx->{ph}));
     my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
     my($mt, $ml) = (modevalkey($dx->{mt}), modevalkey($dx->{ml}));
 
-    my ($doc_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $ph, $pw;
-    my ($doc_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $mt, $pw - ($ml + $tw), $ph - ($mt + $th), $ml;
+    my ($doc_ps) = sprintf "\"papersize\": [%.0f,%.0f]", $ph, $pw;
+    my ($doc_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $mt, $pw - ($ml + $tw), $ph - ($mt + $th), $ml;
     my ($doc_bfs);
     if (p2h_font_bug($doc)) {
         $doc_bfs = "\"bodyfontsize\": null";
@@ -1024,7 +1026,9 @@ sub report_json ($) {
     }
     my ($doc_l) = sprintf "\"leading\": %g", $doc->{pagespec}->{lead};
     my ($doc_c) = sprintf "\"columns\": %d", $doc->{pages}->{1}->{pagespec}->{ncols};
-    print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n  \"pages\": [";
+    print "  $doc_ps,\n  $doc_margin,\n  $doc_bfs,\n  $doc_l,\n  $doc_c,\n";
+    printf "  \"nummargin\": %.0f,\n", $nummargin if $nummargin < 10000;
+    print "  \"pages\": [";
     $sep = "\n";
 
     my %pages;
@@ -1039,9 +1043,9 @@ sub report_json ($) {
         }
 
         my($pd) = $px->{$i};
-        my($page_ps) = sprintf "\"papersize\": [%.0f, %.0f]", $pd->{ph}, $pd->{pw};
+        my($page_ps) = sprintf "\"papersize\": [%.0f,%.0f]", $pd->{ph}, $pd->{pw};
         push @val, $page_ps if $page_ps ne $doc_ps;
-        my($page_margin) = sprintf "\"margin\": [%.0f, %.0f, %.0f, %.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
+        my($page_margin) = sprintf "\"margin\": [%.0f,%.0f,%.0f,%.0f]", $pd->{mt}, $pd->{pw} - ($pd->{ml} + $pd->{tw}), $pd->{ph} - ($pd->{mt} + $pd->{th}), $pd->{ml};
         push @val, $page_margin if $page_margin ne $doc_margin;
         my($page_bfs) = sprintf "\"bodyfontsize\": %g", $page->{pagespec}->{bodyfont};
         push @val, $page_bfs if $page_bfs ne $doc_bfs;
@@ -1053,7 +1057,7 @@ sub report_json ($) {
         push @val, sprintf "\"pagetype\": %s", json_quote($page->{pagespec}->{type})
             if $page->{pagespec}->{type} ne "body";
 
-        print $sep, "    {\n      ", join(",\n      ", @val), "\n    }";
+        print $sep, "    {", join(", ", @val), "}";
         $sep = ",\n";
     }
     print "\n  ]\n}\n";
@@ -1412,6 +1416,7 @@ sub parse_p2h_text ($$) {
     $segs_byfont = {};
 
     $prevheight = 0;
+    $lowest_number = 0;
 
     while (1) {
 #       next if (check_p2h_error ($line));
@@ -1462,6 +1467,12 @@ sub parse_p2h_text ($$) {
         $segs_byfont{$seginfo[4]} = $byfont;
         update_segdata ($page, $segs_all, \@seginfo);
 
+        # page number detection
+        if ($line =~ /<text[^>]*>[- ,.\/0-9]+<\/text>/) {
+            my($bottom) = $seginfo[0] + $seginfo[3];
+            $lowest_number = $bottom if $bottom > $lowest_number;
+        }
+
         # embedded newlines will split <text>...</text> across multiple lines
         if ($line !~ /<\/text>/) {
             while ($line = <$FILE>) {
@@ -1477,6 +1488,7 @@ sub parse_p2h_text ($$) {
     $page->{pagedata}->{nsegs} = $nsegs;
     $page->{pagedata}->{segdata} = $segs_all;
     $page->{pagedata}->{segdata_byfont} = $segs_byfont;
+    $page->{pagedata}->{lowest_number} = $lowest_number;
 
     calc_page_body_font ($page);
     calc_page_leading ($page);
