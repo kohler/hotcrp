@@ -1688,6 +1688,45 @@ class FoldAllPaperColumn extends PaperColumn {
     }
 }
 
+class PageCount_PaperColumn extends PaperColumn {
+    public function __construct() {
+        parent::__construct("pagecount", Column::VIEW_COLUMN | Column::FOLDABLE | Column::COMPLETABLE,
+                            ["className" => "plr", "minimal" => true, "comparator" => "page_count_compare"]);
+    }
+    public function prepare(PaperList $pl, $visible) {
+        return $pl->contact->can_view_some_pdf();
+    }
+    public function page_count(Contact $user, PaperInfo $row) {
+        if (!$user->can_view_pdf($row))
+            return null;
+        $dtype = $row->finalPaperStorageId <= 0 ? DTYPE_SUBMISSION : DTYPE_FINAL;
+        $doc = $row->document($dtype);
+        return $doc ? $doc->npages() : null;
+    }
+    public function sort_prepare($pl, &$rows, $sorter) {
+        foreach ($rows as $row)
+            $row->_page_count_sort_info = $this->page_count($pl->contact, $row);
+    }
+    public function page_count_compare($a, $b) {
+        $ac = $a->_page_count_sort_info;
+        $bc = $b->_page_count_sort_info;
+        if ($ac === null || $bc === null)
+            return $ac === $bc ? 0 : ($ac === null ? -1 : 1);
+        else
+            return $ac == $bc ? 0 : ($ac < $bc ? -1 : 1);
+    }
+    public function header($pl, $ordinal) {
+        return "Page count";
+    }
+    public function content_empty($pl, $row) {
+        return !$pl->contact->can_view_pdf($row);
+    }
+    public function content($pl, $row, $rowidx) {
+        $pc = $this->page_count($pl->contact, $row);
+        return $pc === null ? "" : $pc;
+    }
+}
+
 function initialize_paper_columns() {
     PaperColumn::register(new SelectorPaperColumn("sel", array("minimal" => true)));
     PaperColumn::register(new SelectorPaperColumn("selon", array("minimal" => true, "className" => "pl_sel")));
@@ -1725,6 +1764,7 @@ function initialize_paper_columns() {
     PaperColumn::register(new ConflictMatchPaperColumn("collabmatch", "collaborators"));
     PaperColumn::register(new TimestampPaperColumn);
     PaperColumn::register(new FoldAllPaperColumn);
+    PaperColumn::register(new PageCount_PaperColumn);
     PaperColumn::register_factory("tag:", new TagPaperColumn(null, null, false));
     PaperColumn::register_factory("tagval:", new TagPaperColumn(null, null, true));
     PaperColumn::register_factory("opt:", new Option_PaperColumn(null));
