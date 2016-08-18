@@ -858,7 +858,7 @@ class ReviewForm {
         $submitter = $contact;
         if ($contactId != $submitter->contactId)
             $submitter = $this->contact_by_id($contactId);
-        if ($submit || $approval_requested || $rrow->timeApprovalRequested)
+        if ($submit || $approval_requested || ($rrow && $rrow->timeApprovalRequested))
             $rrow = $this->conf->reviewRow(["reviewId" => $reviewId]);
         $this->_mailer_info = ["rrow" => $rrow, "reviewer_contact" => $submitter,
                                "check_function" => "HotCRPMailer::check_can_view_review"];
@@ -897,7 +897,7 @@ class ReviewForm {
                 $tf["newlySubmitted"][] = $what;
             else if ($diff_view_score > VIEWSCORE_FALSE && $submit)
                 $tf["updated"][] = $what;
-            else if ($approval_requested || $rrow->timeApprovalRequested)
+            else if ($approval_requested || ($rrow && $rrow->timeApprovalRequested))
                 $tf["approvalRequested"][] = $what;
             else if ($diff_view_score > VIEWSCORE_FALSE)
                 $tf["savedDraft"][] = $what;
