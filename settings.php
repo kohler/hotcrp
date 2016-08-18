@@ -216,6 +216,7 @@ class SettingRenderer {
 }
 
 class SettingValues {
+    public $conf;
     public $user;
     private $errf = array();
     private $errmsg = array();
@@ -236,6 +237,7 @@ class SettingValues {
     private $req_has = array();
 
     public function __construct($user) {
+        $this->conf = $user->conf;
         $this->user = $user;
     }
 
