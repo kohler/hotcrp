@@ -92,6 +92,11 @@ class CheckFormat implements FormatChecker {
             return self::STATUS_PROBLEM;
     }
 
+    static public function banal_page_is_body($pg) {
+        return defval($pg, "pagetype", "body") == "body"
+            && (!isset($pg->d) || $pg->d >= 16000 || !isset($pg->columns) || $pg->columns <= 2);
+    }
+
     private function check_banal_json($bj, $spec) {
         if (!$bj || !isset($bj->pages) || !isset($bj->papersize)
             || !is_array($bj->pages) || !is_array($bj->papersize)
@@ -123,7 +128,7 @@ class CheckFormat implements FormatChecker {
         }
         $this->pages = count($bj->pages);
         $this->body_pages = count(array_filter($bj->pages, function ($pg) {
-            return get($pg, "pagetype", "body") == "body";
+            return CheckFormat::banal_page_is_body($pg);
         }));
 
         // number of columns
@@ -133,7 +138,7 @@ class CheckFormat implements FormatChecker {
             foreach ($bj->pages as $i => $pg)
                 if (($pp = cvtint(get($pg, "columns", $ncol))) > 0
                     && $pp != $spec->columns
-                    && defval($pg, "pagetype", "body") == "body"
+                    && self::banal_page_is_body($pg)
                     && $spec->is_checkable($i + 1, "columns"))
                     $px[] = $i + 1;
             if (count($px) > ($maxpages ? max(0, $maxpages * 0.75) : 0))
@@ -190,7 +195,7 @@ class CheckFormat implements FormatChecker {
             $nbadsize = 0;
             $bfs = get($bj, "bodyfontsize");
             foreach ($bj->pages as $i => $pg)
-                if (get($pg, "pagetype", "body") == "body"
+                if (self::banal_page_is_body($pg)
                     && $spec->is_checkable($i + 1, "bodyfontsize")) {
                     $pp = cvtnum(get($pg, "bodyfontsize", $bfs));
                     if ($pp > 0 && $pp < $spec->bodyfontsize[0] - $spec->bodyfontsize[2]) {
@@ -223,7 +228,7 @@ class CheckFormat implements FormatChecker {
             $nbadsize = 0;
             $l = get($bj, "leading");
             foreach ($bj->pages as $i => $pg)
-                if (get($pg, "pagetype", "body") == "body"
+                if (self::banal_page_is_body($pg)
                     && $spec->is_checkable($i + 1, "bodylineheight")) {
                     $pp = cvtnum(get($pg, "leading", $l));
                     if ($pp > 0 && $pp < $spec->bodylineheight[0] - $spec->bodylineheight[2]) {
