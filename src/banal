@@ -29,6 +29,7 @@ use Data::Dumper;
 use File::Basename;
 use File::Temp;
 use POSIX;
+use List::Util qw(min max);
 my($FILE, $banal_text_fudge);
 
 sub usage {
@@ -225,10 +226,10 @@ sub bb_equal ($$) {
 sub bb_merge ($$) {
     my ($a, $b) = @_;
 
-    $b->{top} = $a->{top} if ($a->{top} < $b->{top});
-    $b->{left} = $a->{left} if ($a->{left} < $b->{left});
-    $b->{height} = $a->{height} if ($a->{height} > $b->{height});
-    $b->{width} = $a->{width} if ($a->{width} > $b->{width});
+    $b->{top} = min $a->{top}, $b->{top};
+    $b->{left} = min $a->{left}, $b->{left};
+    $b->{height} = max $a->{height}, $b->{height};
+    $b->{width} = max $a->{width}, $b->{width};
 }
 
 sub calc_page_body_font ($) {
@@ -658,11 +659,14 @@ sub calc_page_leading ($) {
 
 sub calc_page_columns ($) {
     my ($page) = @_;
-    my ($pagew);
     my ($segs, $maxw, $colw, $ncols);
 
     # use estimated width of text region as base
-    $pagew = $page->{pagespec}->{textbb}->{width};
+    my $pagew = $page->{pagespec}->{textbb}->{width};
+    my $leftmargin = $page->{pagespec}->{textbb}->{left};
+    my $paperw = $page->{pagespec}->{paperbb}->{width};
+    my $expected_pagew = $paperw - 2 * min($leftmargin, $paperw - $pagew - $leftmargin);
+    $pagew = $expected_pagew if $pagew < 0.9 * $expected_pagew;
 
     # use the maximum width segment in the body font to estimate
     # column width
@@ -866,15 +870,10 @@ sub calc_doc_text_region ($) {
         next if ($page->{density} < $banal_min_density);
 
         $page = $doc->{pages}->{$i};
-        $maxw = $page->{pagespec}->{textbb}->{width} if
-            ($page->{pagespec}->{textbb}->{width} > $maxw);
-        $maxh = $page->{pagespec}->{textbb}->{height} if
-            ($page->{pagespec}->{textbb}->{height} > $maxh);
-        $minl = $page->{pagespec}->{textbb}->{left} if
-            ($page->{pagespec}->{textbb}->{left} < $minl);
-        $mint = $page->{pagespec}->{textbb}->{top} if
-            ($page->{pagespec}->{textbb}->{top} < $mint);
-
+        $maxw = max $maxw, $page->{pagespec}->{textbb}->{width};
+        $maxh = max $maxh, $page->{pagespec}->{textbb}->{height};
+        $minl = min $minl, $page->{pagespec}->{textbb}->{left};
+        $mint = min $mint, $page->{pagespec}->{textbb}->{top};
     }
     $doc->{textbb}->{width} = $maxw;
     $doc->{textbb}->{height} = $maxh;
@@ -1010,7 +1009,7 @@ sub report_json ($) {
             $dx->{$k}->{$v} += 1;
         }
         my($pnummargin) = POSIX::floor($pd->{ph} - $page->{pagedata}->{lowest_number} * $p2h_to_points);
-        $nummargin = $pnummargin if $pnummargin < $pd->{ph} - $tb && $pnummargin < $nummargin;
+        $nummargin = min($pnummargin, $nummargin) if $pnummargin < $pd->{ph} - $tb;
     }
     my($pw, $ph) = (modevalkey($dx->{pw}), modevalkey($dx->{ph}));
     my($tw, $th) = (modevalkey($dx->{tw}), modevalkey($dx->{th}));
@@ -1470,7 +1469,7 @@ sub parse_p2h_text ($$) {
         # page number detection
         if ($line =~ /<text[^>]*>[- ,.\/]*[0-9][- ,.\/0-9]*<\/text>/) {
             my($bottom) = $seginfo[0] + $seginfo[3];
-            $lowest_number = $bottom if $bottom > $lowest_number;
+            $lowest_number = max $lowest_number, $bottom;
         }
 
         # embedded newlines will split <text>...</text> across multiple lines
