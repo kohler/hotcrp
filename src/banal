@@ -1468,7 +1468,7 @@ sub parse_p2h_text ($$) {
         update_segdata ($page, $segs_all, \@seginfo);
 
         # page number detection
-        if ($line =~ /<text[^>]*>[- ,.\/0-9]+<\/text>/) {
+        if ($line =~ /<text[^>]*>[- ,.\/]*[0-9][- ,.\/0-9]*<\/text>/) {
             my($bottom) = $seginfo[0] + $seginfo[3];
             $lowest_number = $bottom if $bottom > $lowest_number;
         }
