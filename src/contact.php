@@ -100,6 +100,8 @@ class Contact {
             $this->merge($trueuser);
         else if ($this->contactId || $this->contactDbId)
             $this->db_load();
+        else if ($this->conf->opt("disableNonPC"))
+            $this->disabled = true;
     }
 
     public static function fetch($result, Conf $conf = null) {
