@@ -665,7 +665,7 @@ sub calc_page_columns ($) {
     my $pagew = $page->{pagespec}->{textbb}->{width};
     my $leftmargin = $page->{pagespec}->{textbb}->{left};
     my $paperw = $page->{pagespec}->{paperbb}->{width};
-    my $expected_pagew = $paperw - 2 * min($leftmargin, $paperw - $pagew - $leftmargin);
+    my $expected_pagew = $paperw - 2 * max(min($leftmargin, $paperw - $pagew - $leftmargin), 0);
     $pagew = $expected_pagew if $pagew < 0.9 * $expected_pagew;
 
     # use the maximum width segment in the body font to estimate
