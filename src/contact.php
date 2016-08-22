@@ -178,6 +178,8 @@ class Contact {
                 $roles |= self::ROLE_CHAIR;
             $this->assign_roles($roles);
         }
+        if (!$this->isPC && $this->conf->opt("disableNonPC"))
+            $this->disabled = true;
         if (isset($user->has_review))
             $this->has_review_ = $user->has_review;
         if (isset($user->has_outstanding_review))
@@ -206,6 +208,8 @@ class Contact {
             $this->data = array_to_object_recursive($this->data);
         if (isset($this->roles))
             $this->assign_roles((int) $this->roles);
+        if (!$this->isPC && $this->conf->opt("disableNonPC"))
+            $this->disabled = true;
     }
 
     // begin changing contactId to cid
