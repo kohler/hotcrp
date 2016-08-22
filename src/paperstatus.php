@@ -670,7 +670,7 @@ class PaperStatus {
             || (get($pj, "title") === null && (!$old_pj || !$old_pj->title)))
             $this->set_error_html("title", "Each paper must have a title.");
         if (get($pj, "abstract") === ""
-            || (get($pj, "abstract") === null && (!$old_pj || !$old_pj->abstract))) {
+            || (get($pj, "abstract") === null && (!$old_pj || !get($old_pj, "abstract")))) {
             if (!opt("noAbstract"))
                 $this->set_error_html("abstract", "Each paper must have an abstract.");
         }
