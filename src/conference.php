@@ -2642,7 +2642,7 @@ class Conf {
         if ($Me && !$Me->is_empty()) {
             // profile link
             $xsep = ' <span class="barsep">·</span> ';
-            if ($Me->has_email()) {
+            if ($Me->has_email() && !$Me->disabled) {
                 $profile_html .= '<a class="q" href="' . hoturl("profile") . '"><strong>'
                     . htmlspecialchars($Me->email)
                     . '</strong></a> &nbsp; <a href="' . hoturl("profile") . '">Profile</a>'
@@ -2660,12 +2660,13 @@ class Conf {
                     $profile_html .= "<a href=\"" . selfHref(array("actas" => $actas)) . "\">"
                         . ($Me->privChair ? htmlspecialchars($actas) : "Admin")
                         . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
-                        . "</a>" . $xsep;
+                        . "</a>";
             }
 
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
-            $profile_html .= '<a href="' . hoturl("help", $x) . '">Help</a>';
+            if (!$Me->disabled)
+                $profile_html .= $xsep . '<a href="' . hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
                 $profile_html .= $xsep . '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
             if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))

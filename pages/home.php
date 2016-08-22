@@ -41,6 +41,15 @@ else if ((isset($_REQUEST["signin"]) || isset($_REQUEST["signout"]))
 if ($Me->is_empty() || isset($_REQUEST["signin"]))
     $_SESSION["testsession"] = true;
 
+// disabled users
+if ($Me->disabled) {
+    $Conf->header("Account disabled", "home", false);
+    echo Conf::msg_info("Your account on this site has been disabled by an administrator. Please contact the site administrators with questions.");
+    echo "<hr class=\"c\" />\n";
+    $Conf->footer();
+    exit;
+}
+
 // perhaps redirect through account
 function need_profile_redirect($user) {
     global $Conf;

@@ -9,7 +9,7 @@ require_once("src/initweb.php");
 // *** that hides the link when there are no deadlines to show.         ***
 
 $dl = $Me->my_deadlines();
-if (get($_REQUEST, "ajax")) {
+if (req("ajax")) {
     $dl->ok = true;
     $Conf->ajaxExit($dl);
 }

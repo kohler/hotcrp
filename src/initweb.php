@@ -57,6 +57,14 @@ function initialize_user() {
         $Me = new Contact($trueuser);
     $Me = $Me->activate();
 
+    // redirect if disabled
+    if ($Me->disabled) {
+        if (Navigation::page() === "api")
+            json_exit(["ok" => false, "error" => "Your account is disabled."]);
+        else if (Navigation::page() !== "index")
+            Navigation::redirect_site(hoturl_site_relative("index"));
+    }
+
     // if bounced through login, add post data
     if (isset($_SESSION["login_bounce"]) && !$Me->is_empty()) {
         $lb = $_SESSION["login_bounce"];
