@@ -176,7 +176,8 @@ class PaperStatus {
         if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL)
             $pj->nonblind = !(isset($pj->paperBlind) ? $prow->paperBlind : $prow->blind);
 
-        $pj->abstract = $prow->abstract;
+        if ($prow->abstract !== "" || !$Conf->opt("noAbstract"))
+            $pj->abstract = $prow->abstract;
 
         $topics = array();
         foreach (array_intersect_key($Conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
