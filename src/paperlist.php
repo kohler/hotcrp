@@ -585,14 +585,11 @@ class PaperList {
         if (!$field_list)
             return null;
 
-        // prepare query text
+        // make query, fetch rows
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
         if (empty($this->qopts["scores"]))
             unset($this->qopts["scores"]);
-        $pq = $this->conf->paperQuery($this->contact, $this->qopts);
-
-        // make query, fetch rows
-        $result = $this->conf->qe_raw($pq);
+        $result = $this->conf->paper_result($this->contact, $this->qopts);
         if (!$result)
             return null;
         $rows = $pids = array();

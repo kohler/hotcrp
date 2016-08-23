@@ -67,7 +67,7 @@ function saveAssignments($qreq, $reviewer) {
     if (!count($qreq->assrev))
         return;
 
-    $result = Dbl::qe_raw($Conf->paperQuery($Me, array("paperId" => array_keys($qreq->assrev), "reviewer" => $reviewer)));
+    $result = $Conf->paper_result($Me, array("paperId" => array_keys($qreq->assrev), "reviewer" => $reviewer));
 
     $lastPaperId = -1;
     $del = $ins = "";

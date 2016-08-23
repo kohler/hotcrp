@@ -2068,6 +2068,10 @@ class Conf {
         return $ret;
     }
 
+    function paper_result($contact, $options = []) {
+        return $this->qe_raw($this->paperQuery($contact, $options));
+    }
+
     function review_rows($q, $contact) {
         $result = $this->qe_raw($q);
         $rrows = array();

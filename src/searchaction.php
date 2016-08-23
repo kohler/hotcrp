@@ -123,7 +123,7 @@ class SearchAction {
         $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
         $any_round = false;
         $texts = array();
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $selection, "assignments" => 1)));
+        $result = $Conf->paper_result($user, array("paperId" => $selection, "assignments" => 1));
         while (($prow = PaperInfo::fetch($result, $user)))
             if (!$user->allow_administer($prow)) {
                 $texts[] = array();

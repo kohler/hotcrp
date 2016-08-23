@@ -177,8 +177,7 @@ class Autoassigner {
             $this->eass[(int) $row[1]][(int) $row[0]] = self::ENOASSIGN;
 
         // then load preferences
-        $query = $Conf->paperQuery(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "assignments" => true, "tags" => $Conf->check_track_sensitivity(Track::ASSREV)]);
-        $result = Dbl::qe_raw($query);
+        $result = $Conf->paper_result(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "assignments" => true, "tags" => $Conf->check_track_sensitivity(Track::ASSREV)]);
         $nmade = 0;
         while (($row = PaperInfo::fetch($result, null))) {
             $pid = $row->paperId;

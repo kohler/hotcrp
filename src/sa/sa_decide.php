@@ -18,7 +18,7 @@ class Decide_SearchAction extends SearchAction {
         $decision_map = $Conf->decision_map();
         if ($o === null || !isset($decision_map[$o]))
             return Conf::msg_error("Bad decision value.");
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection())));
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection()));
         $success = $fails = array();
         while (($prow = PaperInfo::fetch($result, $user)))
             if ($user->can_set_decision($prow, true))

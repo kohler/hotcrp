@@ -145,7 +145,7 @@ class PaperApi {
             json_exit($taginfo, true);
         } else if ($ok) {
             $p = [];
-            $result = $user->conf->qe_raw($user->conf->paperQuery($user, ["paperId" => array_keys($pids), "tags" => true]));
+            $result = $user->conf->paper_result($user, ["paperId" => array_keys($pids), "tags" => true]);
             while (($prow = PaperInfo::fetch($result, $user))) {
                 $p[$prow->paperId] = (object) [];
                 $prow->add_tag_info_json($p[$prow->paperId], $user);

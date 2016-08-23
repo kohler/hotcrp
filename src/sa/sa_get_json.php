@@ -23,8 +23,7 @@ class GetJson_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $q = $Conf->paperQuery($user, ["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
-        $result = Dbl::qe_raw($q);
+        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $pj = [];
         $ps = new PaperStatus($user, ["forceShow" => true, "hide_docids" => true]);
         if ($this->iszip) {

@@ -26,8 +26,7 @@ class GetRevpref_SearchAction extends SearchAction {
         if (!$Rev->isPC)
             return self::EPERM;
 
-        $q = $Conf->paperQuery($Rev, array("paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1));
-        $result = Dbl::qe_raw($q);
+        $result = $Conf->paper_result($Rev, array("paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1));
         $texts = array();
         while (($prow = PaperInfo::fetch($result, $Rev))) {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
@@ -62,8 +61,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $q = $Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
-        $result = Dbl::qe_raw($q);
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
         $texts = array();
         $pcm = pcMembers();
         $has_conflict = $has_expertise = $has_topic_score = false;

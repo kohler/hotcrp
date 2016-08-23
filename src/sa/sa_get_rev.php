@@ -98,7 +98,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
             return;
         }
 
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "myReviewsOpt" => 1)));
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "myReviewsOpt" => 1));
         $texts = array();
         $errors = array();
         while (($row = PaperInfo::fetch($result, $user))) {
@@ -134,22 +134,23 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1)));
-        $texts = array();
-        $errors = array();
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1));
+        $texts = $errors = $prows = [];
         $user->set_forceShow(true);
         $rf = $Conf->review_form();
         while (($row = PaperInfo::fetch($result, $user))) {
+            if (!isset($prows[$row->paperId]))
+                $prows[$row->paperId] = $row;
             if (($whyNot = $user->perm_view_review($row, null, null)))
                 $errors[whyNotText($whyNot, "view review")] = true;
             else if ($row->reviewSubmitted)
                 defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $user) . "\n");
         }
 
-        $crows = $Conf->comment_rows($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allComments" => 1, "reviewerName" => 1)), $user);
+        $crows = $Conf->comment_rows($Conf->comment_query("paperId" . sql_in_numeric_set($ssel->selection())), $user);
         foreach ($crows as $row)
-            if ($user->can_view_comment($row, $row, null)) {
-                $crow = new CommentInfo($row, $row);
+            if ($user->can_view_comment($prows[$row->paperId], $row, null)) {
+                $crow = new CommentInfo($row, $prows[$row->paperId]);
                 defappend($texts[$row->paperId], $crow->unparse_text($user) . "\n");
             }
 
@@ -166,7 +167,7 @@ class GetScores_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1)));
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1));
 
         // compose scores; NB chair is always forceShow
         $errors = array();
@@ -227,7 +228,7 @@ class GetVotes_SearchAction extends SearchAction {
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
             $showtag = trim($qreq->tag); // no "23~" prefix
-            $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag)));
+            $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag));
             $texts = array();
             while (($prow = PaperInfo::fetch($result, $user)))
                 if ($user->can_view_tags($prow, true))
@@ -250,7 +251,7 @@ class GetRank_SearchAction extends SearchAction {
             return self::EPERM;
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
-            $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId")));
+            $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
             $real = "";
             $null = "\n";
             while (($prow = PaperInfo::fetch($result, $user)))
@@ -300,7 +301,7 @@ class GetLead_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $type = $this->islead ? "lead" : "shepherd";
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "reviewerName" => $type)));
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "reviewerName" => $type));
         $texts = array();
         while (($row = PaperInfo::fetch($result, $user)))
             if ($row->reviewEmail

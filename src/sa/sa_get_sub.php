@@ -62,7 +62,7 @@ class GetDocument_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
+        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection()]);
         $downloads = [];
         $opt = $user->conf->paper_opts->find_document($this->dt);
         while (($row = PaperInfo::fetch($result, $user)))
@@ -88,7 +88,7 @@ class GetCheckFormat_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection()]));
+        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection()]);
         $papers = [];
         while (($prow = PaperInfo::fetch($result, $user)))
             if ($user->can_view_pdf($prow))
@@ -123,7 +123,7 @@ class GetAbstract_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "topics" => 1)));
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
         while ($prow = PaperInfo::fetch($result, $user)) {
             if (($whyNot = $user->perm_view_paper($prow)))
@@ -172,7 +172,7 @@ class GetAuthors_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $contact_map = self::contact_map($ssel);
-        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
+        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]);
         $texts = array();
         $want_contacttype = false;
         while (($prow = PaperInfo::fetch($result, $user))) {
@@ -215,7 +215,7 @@ class GetContacts_SearchAction extends SearchAction {
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
         $contact_map = GetAuthors_SearchAction::contact_map($ssel);
-        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
+        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]);
         while (($prow = PaperInfo::fetch($result, $user)))
             if ($user->can_administer($prow, true))
                 foreach ($prow->contacts() as $cid => $c) {
@@ -240,7 +240,7 @@ class GetPcconflicts_SearchAction extends SearchAction {
         $allConflictTypes[CONFLICT_CHAIRMARK] = "Chair-confirmed";
         $allConflictTypes[CONFLICT_AUTHOR] = "Author";
         $allConflictTypes[CONFLICT_CONTACTAUTHOR] = "Contact";
-        $result = Dbl::qe_raw($Conf->paperQuery($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]));
+        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection(), "allConflictType" => 1]);
         $pcm = pcMembers();
         $texts = array();
         while (($prow = PaperInfo::fetch($result, $user)))
@@ -268,7 +268,7 @@ class GetTopics_SearchAction extends SearchAction {
     }
     function run(Contact $user, $qreq, $ssel) {
         global $Conf;
-        $result = Dbl::qe_raw($Conf->paperQuery($user, array("paperId" => $ssel->selection(), "topics" => 1)));
+        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "topics" => 1));
         $texts = array();
         $tmap = $Conf->topic_map();
         while (($row = PaperInfo::fetch($result, $user)))
