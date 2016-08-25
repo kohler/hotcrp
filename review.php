@@ -114,7 +114,7 @@ if (isset($_REQUEST["unsubmitreview"]) && $paperTable->editrrow
     && $paperTable->editrrow->reviewSubmitted && $Me->can_administer($prow)
     && check_post()) {
     Dbl::qe_raw("lock tables PaperReview write");
-    $result = Contact::unsubmit_review_row($paperTable->editrrow);
+    $result = $Me->unsubmit_review_row($paperTable->editrrow);
     Dbl::qe_raw("unlock tables");
     if ($result) {
         $Me->log_activity("$editRrowLogname unsubmitted", $prow);
@@ -179,7 +179,7 @@ if (isset($_REQUEST["deletereview"]) && check_post()
 
             // perhaps a delegatee needs to redelegate
             if ($paperTable->editrrow->reviewType < REVIEW_SECONDARY && $paperTable->editrrow->requestedBy > 0)
-                Contact::update_review_delegation($paperTable->editrrow->paperId, $paperTable->editrrow->requestedBy, -1);
+                $Me->update_review_delegation($paperTable->editrrow->paperId, $paperTable->editrrow->requestedBy, -1);
 
             unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);
             unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
@@ -268,12 +268,12 @@ function refuseReview() {
 
     // now the requester must potentially complete their review
     if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0)
-        Contact::update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
+        $Me->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
 
     Dbl::qe_raw("unlock tables");
 
     // send confirmation email
-    $Requester = Contact::find_by_id($rrow->requestedBy);
+    $Requester = $Conf->user_by_id($rrow->requestedBy);
     $reqprow = $Conf->paperRow($prow->paperId, $rrow->requestedBy);
     HotCRPMailer::send_to($Requester, "@refusereviewrequest", $reqprow,
                           array("reviewer_contact" => $rrow,

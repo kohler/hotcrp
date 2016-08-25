@@ -510,7 +510,7 @@ class HotCRPMailer extends Mailer {
         global $Conf;
         $rest["combination_type"] = 2;
         if ($row && $row->managerContactId
-            && ($c = Contact::find_by_id($row->managerContactId)))
+            && ($c = $Conf->user_by_id($row->managerContactId)))
             self::send_to($c, $template, $row, $rest);
         else
             self::send_to($Conf->site_contact(), $template, $row, $rest);

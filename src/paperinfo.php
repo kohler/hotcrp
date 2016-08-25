@@ -172,16 +172,21 @@ class PaperInfo {
     private $_conflicts;
     private $_conflicts_email;
 
-    function __construct($p = null, $contact = null) {
-        $this->merge($p, $contact);
+    function __construct($p = null, $contact = null, Conf $conf = null) {
+        $this->merge($p, $contact, $conf);
     }
 
-    private function merge($p, $contact) {
+    private function merge($p, $contact, $conf) {
         global $Conf;
-        if ($contact instanceof Contact)
-            $this->conf = $contact->conf;
-        else
-            $this->conf = $Conf;
+        if ($contact && !($contact instanceof Contact))
+            error_log("Bad PaperInfo::fetch: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        if ($contact && $contact instanceof Contact)
+            $conf = $contact->conf;
+        else if (!$conf) {
+            error_log("Bad PaperInfo::fetch: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $conf = $Conf;
+        }
+        $this->conf = $conf;
         if ($p)
             foreach ($p as $k => $v)
                 $this->$k = $v;
@@ -201,10 +206,10 @@ class PaperInfo {
                 $this->$k = "";
     }
 
-    static public function fetch($result, $contact) {
-        $prow = $result ? $result->fetch_object("PaperInfo", [null, $contact]) : null;
+    static public function fetch($result, $contact, Conf $conf = null) {
+        $prow = $result ? $result->fetch_object("PaperInfo", [null, $contact, $conf]) : null;
         if ($prow && !is_int($prow->paperId))
-            $prow->merge(null, $contact);
+            $prow->merge(null, $contact, $conf);
         return $prow;
     }
 

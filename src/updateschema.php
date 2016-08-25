@@ -140,7 +140,7 @@ function update_schema_create_options($conf) {
 function update_schema_transfer_address($conf) {
     $result = $conf->ql("select * from ContactAddress");
     while (($row = edb_orow($result)))
-        if (($c = Contact::find_by_id($row->contactId))) {
+        if (($c = $conf->user_by_id($row->contactId))) {
             $x = (object) array();
             if ($row->addressLine1 || $row->addressLine2)
                 $x->address = array();

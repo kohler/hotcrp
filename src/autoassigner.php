@@ -179,7 +179,7 @@ class Autoassigner {
         // then load preferences
         $result = $this->conf->paper_result(null, ["paperId" => $this->papersel, "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "assignments" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
         $nmade = 0;
-        while (($row = PaperInfo::fetch($result, null))) {
+        while (($row = PaperInfo::fetch($result, null, $this->conf))) {
             $pid = $row->paperId;
             foreach ($this->pcm as $cid => $p) {
                 $topic_interest_score = $row->topic_interest_score($p);

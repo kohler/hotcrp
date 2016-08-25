@@ -111,7 +111,7 @@ class LoginHelper {
         // look up user in our database
         if (strpos($_REQUEST["email"], "@") === false)
             self::unquote_double_quoted_request();
-        $user = Contact::find_by_email($_REQUEST["email"]);
+        $user = $Conf->user_by_email($_REQUEST["email"]);
 
         // look up or create user in contact database
         $cdb_user = null;
@@ -133,7 +133,7 @@ class LoginHelper {
         if (!$user && $external_login) {
             $reg = Contact::safe_registration($_REQUEST);
             $reg->no_validate_email = true;
-            if (!($user = Contact::create($reg)))
+            if (!($user = Contact::create($Conf, $reg)))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
             if ($Conf->setting("setupPhase", false))
                 return self::first_user($user, $msg);
@@ -238,7 +238,7 @@ class LoginHelper {
 
         // create database account
         if (!$user || !$user->has_database_account()) {
-            if (!($user = Contact::create(Contact::safe_registration($_REQUEST))))
+            if (!($user = Contact::create($Conf, Contact::safe_registration($_REQUEST))))
                 return Conf::msg_error($Conf->db_error_html(true, "while adding your account"));
         }
 

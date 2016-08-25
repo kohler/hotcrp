@@ -679,7 +679,7 @@ class ReviewForm {
         if (isset($pc[$cid]))
             return $pc[$cid];
         else
-            return Contact::find_by_id($cid);
+            return $this->conf->user_by_id($cid);
     }
 
     private function review_needs_approval($rrow) {
@@ -922,7 +922,7 @@ class ReviewForm {
         $Reviewer = $contact;
         if (isset($req["reviewerEmail"])
             && strcasecmp($req["reviewerEmail"], $contact->email) != 0
-            && !($Reviewer = Contact::find_by_email($req["reviewerEmail"])))
+            && !($Reviewer = $this->conf->user_by_email($req["reviewerEmail"])))
             return $this->reviewer_error($req, $tf, $contact->privChair ? "No such user." : null);
 
         // look up paper & review rows, check review permission

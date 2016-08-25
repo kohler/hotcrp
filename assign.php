@@ -242,7 +242,7 @@ function requestReviewChecks($themHtml, $reqId) {
 function requestReview($email) {
     global $Conf, $Me, $Error, $prow;
 
-    $Them = Contact::create(array("name" => @$_REQUEST["name"], "email" => $email));
+    $Them = Contact::create($Conf, ["name" => @$_REQUEST["name"], "email" => $email]);
     if (!$Them) {
         if (trim($email) === "" || !validate_email($email)) {
             Conf::msg_error("“" . htmlspecialchars(trim($email)) . "” is not a valid email address.");
@@ -309,7 +309,7 @@ function proposeReview($email, $round) {
     $email = trim($email);
     $name = trim($_REQUEST["name"]);
     $reason = trim($_REQUEST["reason"]);
-    $reqId = Contact::id_by_email($email);
+    $reqId = $Conf->user_id_by_email($email);
 
     $Conf->qe_raw("lock tables PaperReview write, PaperReviewRefused write, ReviewRequest write, ContactInfo read, PaperConflict read");
     // NB caller unlocks tables on error
@@ -426,9 +426,9 @@ if (isset($_REQUEST["deny"]) && $Me->allow_administer($prow) && check_post()
     // member, who can see less.
     $result = $Conf->qe("select requestedBy from ReviewRequest where paperId=$prow->paperId and email=?", $email);
     if (($row = edb_row($result))) {
-        $Requester = Contact::find_by_id($row[0]);
+        $Requester = $Conf->user_by_id($row[0]);
         $Conf->qe("delete from ReviewRequest where paperId=$prow->paperId and email=?", $email);
-        if (($reqId = Contact::id_by_email($email)) > 0)
+        if (($reqId = $Conf->user_id_by_email($email)) > 0)
             $Conf->qe("insert into PaperReviewRefused (paperId, contactId, requestedBy, reason) values ($prow->paperId, $reqId, $Requester->contactId, 'request denied by chair')");
 
         // send anticonfirmation email

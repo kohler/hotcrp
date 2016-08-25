@@ -12,18 +12,18 @@ $Conf->save_setting("sub_update", $Now + 10);
 $Conf->save_setting("sub_sub", $Now + 10);
 
 // load users
-$user_chair = Contact::find_by_email("chair@_.com");
-$user_estrin = Contact::find_by_email("estrin@usc.edu"); // pc
-$user_kohler = Contact::find_by_email("kohler@seas.harvard.edu"); // none
-$user_marina = Contact::find_by_email("marina@poema.ru"); // pc
-$user_van = Contact::find_by_email("van@ee.lbl.gov"); // none
-$user_mgbaker = Contact::find_by_email("mgbaker@cs.stanford.edu"); // pc
-$user_shenker = Contact::find_by_email("shenker@parc.xerox.com"); // pc, chair
-$user_jon = Contact::find_by_email("jon@cs.ucl.ac.uk"); // pc, red
-$user_varghese = Contact::find_by_email("varghese@ccrc.wustl.edu"); // pc
-$user_wilma = Contact::find_by_email("ojuelegba@gmail.com"); // pc
-$user_mjh = Contact::find_by_email("mjh@isi.edu"); // pc
-$user_pdruschel = Contact::find_by_email("pdruschel@cs.rice.edu"); // pc
+$user_chair = $Conf->user_by_email("chair@_.com");
+$user_estrin = $Conf->user_by_email("estrin@usc.edu"); // pc
+$user_kohler = $Conf->user_by_email("kohler@seas.harvard.edu"); // none
+$user_marina = $Conf->user_by_email("marina@poema.ru"); // pc
+$user_van = $Conf->user_by_email("van@ee.lbl.gov"); // none
+$user_mgbaker = $Conf->user_by_email("mgbaker@cs.stanford.edu"); // pc
+$user_shenker = $Conf->user_by_email("shenker@parc.xerox.com"); // pc, chair
+$user_jon = $Conf->user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+$user_varghese = $Conf->user_by_email("varghese@ccrc.wustl.edu"); // pc
+$user_wilma = $Conf->user_by_email("ojuelegba@gmail.com"); // pc
+$user_mjh = $Conf->user_by_email("mjh@isi.edu"); // pc
+$user_pdruschel = $Conf->user_by_email("pdruschel@cs.rice.edu"); // pc
 $user_nobody = new Contact;
 
 // users are different
@@ -472,7 +472,7 @@ $review2d = fetch_review(2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);
 xassert($review2d->reviewNeedsSubmit == 1);
 xassert(!$user_mgbaker->can_view_review($paper2, $review2a, false));
-$user_external = Contact::create(["email" => "external@_.com", "name" => "External Reviewer"]);
+$user_external = Contact::create($Conf, ["email" => "external@_.com", "name" => "External Reviewer"]);
 $user_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
 $review2d = fetch_review(2, $user_mgbaker);
 xassert(!$review2d->reviewSubmitted);

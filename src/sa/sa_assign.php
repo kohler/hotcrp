@@ -35,7 +35,7 @@ class Assign_SearchAction extends SearchAction {
         $mpc = (string) $qreq->markpc;
         $pc = null;
         if ($mpc != "" && $mpc != "0")
-            $pc = Contact::find_by_email($mpc);
+            $pc = $user->conf->user_by_email($mpc);
 
         if ($mt == "auto") {
             $t = (in_array($qreq->t, array("acc", "s")) ? $qreq->t : "all");

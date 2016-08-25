@@ -37,7 +37,7 @@ function fix_one_delegation() {
     while (($row = edb_orow($result))) {
         if ($row->contactId == $req_cid
             && preg_match('/\ALogged proposal for (\S+) to review/', $row->action, $m)
-            && ($xid = Contact::id_by_email($m[1])))
+            && ($xid = $Conf->user_id_by_email($m[1])))
             $proposals[$xid] = true;
         else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
                  && ($pc = $Conf->pc_member_by_email($m[1]))

@@ -14,12 +14,12 @@ function change_email_by_capability() {
         || !($capdata->data = json_decode($capdata->data))
         || !@$capdata->data->uemail)
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
-    $Acct = Contact::find_by_id($capdata->contactId);
+    $Acct = $Conf->user_by_id($capdata->contactId);
     if (!$Acct)
         error_go(false, "No such account.");
 
     $email = $capdata->data->uemail;
-    if (Contact::id_by_email($email))
+    if ($Conf->user_id_by_email($email))
         error_go(false, "Email address “" . htmlspecialchars($email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
 
     $Acct->change_email($email);
@@ -57,9 +57,9 @@ if ($Me->privChair && req("u")) {
         $Acct = new Contact;
         $newProfile = true;
     } else if (($id = cvtint(req("u"))) > 0)
-        $Acct = Contact::find_by_id($id);
+        $Acct = $Conf->user_by_id($id);
     else
-        $Acct = Contact::find_by_email(req("u"));
+        $Acct = $Conf->user_by_email(req("u"));
 }
 
 // Redirect if requested user isn't loaded user.
@@ -202,7 +202,7 @@ function save_user($cj, $user_status, $Acct, $allow_modification) {
     if ($newProfile || $cj->email != $Acct->email) {
         if ($Acct && $Acct->data("locked"))
             return $user_status->set_error("email", "This account is locked, so you can’t change its email address.");
-        else if (($new_acct = Contact::find_by_email($cj->email))) {
+        else if (($new_acct = $Conf->user_by_email($cj->email))) {
             if ($allow_modification)
                 $cj->id = $new_acct->contactId;
             else {

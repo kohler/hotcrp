@@ -38,7 +38,7 @@ function crpmerge_database($old_user, $new_user) {
     // paper authorship
     $result = $Conf->qe_raw("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($old_user->email) . "\t%'"));
     $qs = array();
-    while (($row = PaperInfo::fetch($result, null))) {
+    while (($row = PaperInfo::fetch($result, null, $Conf))) {
         foreach ($row->author_list() as $au)
             if (strcasecmp($au->email, $old_user->email) == 0)
                 $au->email = $new_user->email;
@@ -138,7 +138,7 @@ if (isset($_REQUEST["merge"]) && check_post()) {
     else if (!$_REQUEST["password"])
         $MergeError = "Enter the password of the account to merge.";
     else {
-        $MiniMe = Contact::find_by_email($_REQUEST["email"]);
+        $MiniMe = $Conf->user_by_email($_REQUEST["email"]);
         if (!$MiniMe)
             $MergeError = "No account for " . htmlspecialchars($_REQUEST["email"]) . " exists.  Did you enter the correct email address?";
         else if (!$MiniMe->check_password($_REQUEST["password"]))

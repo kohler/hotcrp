@@ -1021,6 +1021,30 @@ class Conf {
                                           "contactTags" => null), $this);
     }
 
+    function user_by_id($id) {
+        $result = $this->qe("select ContactInfo.* from ContactInfo where contactId=?", $id);
+        $acct = Contact::fetch($result, $this);
+        Dbl::free($result);
+        return $acct;
+    }
+
+    function user_by_email($email) {
+        $acct = null;
+        if (($email = trim((string) $email)) !== "") {
+            $result = $this->qe("select * from ContactInfo where email=?", $email);
+            $acct = Contact::fetch($result, $this);
+            Dbl::free($result);
+        }
+        return $acct;
+    }
+
+    function user_id_by_email($email) {
+        $result = $this->qe("select contactId from ContactInfo where email=?", trim($email));
+        $row = edb_row($result);
+        Dbl::free($result);
+        return $row ? (int) $row[0] : false;
+    }
+
     function pc_members() {
         $by_last = opt("sortByLastName");
         if ($this->_pc_members_cache === null

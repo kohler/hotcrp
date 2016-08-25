@@ -743,7 +743,7 @@ class ContactSearch {
                 else if ($Me->contactId == $cid && $Me->conf === $this->conf)
                     $this->contacts[] = $Me;
                 else
-                    $this->contacts[] = Contact::find_by_id($cid, $this->conf);
+                    $this->contacts[] = $this->conf->user_by_id($cid);
         }
         return $this->contacts;
     }
@@ -2483,7 +2483,7 @@ class PaperSearch {
             if ($this->_reviewer === false
                 && ($v = $qe->value->contact_set())
                 && count($v) == 1)
-                $this->_reviewer = Contact::find_by_id($v[0], $this->conf);
+                $this->_reviewer = $this->conf->user_by_id($v[0]);
             else
                 $this->_reviewer = null;
         }
@@ -3362,7 +3362,7 @@ class PaperSearch {
         $this->highlightmap = array();
         if ($need_filter) {
             $tag_order = [];
-            while (($row = PaperInfo::fetch($result, $this->cid))) {
+            while (($row = PaperInfo::fetch($result, $this->contact))) {
                 if (!$this->contact->can_view_paper($row)
                     || ($limit === "rable"
                         && !$limitcontact->can_accept_review_assignment_ignore_conflict($row)))

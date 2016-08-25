@@ -65,7 +65,7 @@ function save_comment($text, $is_response, $roundnum) {
     if ((!$crow || $crow->contactId != $Me->contactId)
         && ($cid = $Me->review_token_cid($prow))
         && (!$crow || $crow->contactId == $cid))
-        $user = Contact::find_by_id($cid);
+        $user = $Conf->user_by_id($cid);
 
     $req = array("visibility" => @$_REQUEST["visibility"],
                  "submit" => $is_response && @$_REQUEST["submitresponse"],

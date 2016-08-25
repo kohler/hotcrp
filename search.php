@@ -87,7 +87,7 @@ if ($Qreq->fn == "load" && $Qreq->field
     }
     $reviewer = null;
     if ($Qreq->reviewer && $Me->privChair && $Me->email !== $Qreq->reviewer) {
-        $reviewer = Contact::find_by_email($Qreq->reviewer);
+        $reviewer = $Conf->user_by_email($Qreq->reviewer);
         unset($Qreq->reviewer);
     }
     $Search = new PaperSearch($Me, $Qreq, $reviewer);

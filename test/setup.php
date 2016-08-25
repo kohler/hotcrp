@@ -32,8 +32,8 @@ if (($cdb = Contact::contactdb())) {
 }
 
 // Create initial administrator user.
-$Admin = Contact::create(array("email" => "chair@_.com", "name" => "Jane Chair",
-                               "password" => "testchair"));
+$Admin = Contact::create($Conf, ["email" => "chair@_.com", "name" => "Jane Chair",
+                                 "password" => "testchair"]);
 $Admin->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $Admin);
 
 // Load data.

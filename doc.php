@@ -96,7 +96,7 @@ function document_download() {
         document_error("404 Not Found", "Unknown document “" . htmlspecialchars($orig_s) . "”.");
 
     if ($o->nonpaper) {
-        $prow = new PaperInfo(["paperId" => -2]);
+        $prow = new PaperInfo(["paperId" => -2], null, $Conf);
         if (($o->visibility === "admin" && !$Me->privChair)
             || ($o->visibility !== "all" && !$Me->isPC))
             document_error("403 Forbidden", "You don’t have permission to view this document.");

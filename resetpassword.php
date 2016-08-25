@@ -23,7 +23,7 @@ if (!$capdata || $capdata->capabilityType != CAPTYPE_RESETPASSWORD)
 if ($iscdb)
     $Acct = Contact::contactdb_find_by_id($capdata->contactId);
 else
-    $Acct = Contact::find_by_id($capdata->contactId);
+    $Acct = $Conf->user_by_id($capdata->contactId);
 if (!$Acct)
     error_go(false, "That password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
 
@@ -45,7 +45,7 @@ if (isset($_POST["go"]) && check_post()) {
         if ($_POST["password"] === @$_POST["autopassword"])
             $flags |= Contact::CHANGE_PASSWORD_PLAINTEXT;
         $Acct->change_password(null, $_POST["password"], $flags);
-        if (!$iscdb || !($log_acct = Contact::find_by_email($Acct->email)))
+        if (!$iscdb || !($log_acct = $Conf->user_by_email($Acct->email)))
             $log_acct = $Acct;
         $log_acct->log_activity("Password reset via " . substr($resetcap, 0, 8) . "...");
         $Conf->confirmMsg("Your password has been changed. You may now sign in to the conference site.");

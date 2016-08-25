@@ -19,7 +19,7 @@ class GetRevpref_SearchAction extends SearchAction {
         // maybe download preferences for someone else
         $Rev = $user;
         if (($cid = cvtint($qreq->reviewer)) > 0 && $user->privChair) {
-            if (!($Rev = Contact::find_by_id($cid)))
+            if (!($Rev = $user->conf->user_by_id($cid)))
                 return Conf::msg_error("No such reviewer");
         }
         if (!$Rev->isPC)

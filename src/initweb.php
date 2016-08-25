@@ -52,7 +52,7 @@ function initialize_user() {
     $Me = null;
     $trueuser = get($_SESSION, "trueuser");
     if ($trueuser && $trueuser->email)
-        $Me = Contact::find_by_email($trueuser->email);
+        $Me = $Conf->user_by_email($trueuser->email);
     if (!$Me)
         $Me = new Contact($trueuser);
     $Me = $Me->activate();

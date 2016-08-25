@@ -269,9 +269,10 @@ class Contact {
         // Handle actas requests
         $actas = req("actas");
         if ($actas && $trueuser) {
-            if (is_numeric($actas))
-                $actasemail = self::email_by_id($actas);
-            else if ($actas === "admin")
+            if (is_numeric($actas)) {
+                $acct = $this->conf->user_by_id($actas);
+                $actasemail = $acct ? $acct->email : null;
+            } else if ($actas === "admin")
                 $actasemail = $trueuser->email;
             else
                 $actasemail = $actas;
@@ -280,9 +281,9 @@ class Contact {
                 && strcasecmp($actasemail, $this->email) != 0
                 && (strcasecmp($actasemail, $trueuser->email) == 0
                     || $this->privChair
-                    || (($truecontact = self::find_by_email($trueuser->email))
+                    || (($truecontact = $this->conf->user_by_email($trueuser->email))
                         && $truecontact->privChair))
-                && ($actascontact = self::find_by_email($actasemail))) {
+                && ($actascontact = $this->conf->user_by_email($actasemail))) {
                 if ($actascontact->email !== $trueuser->email) {
                     hoturl_defaults(array("actas" => $actascontact->email));
                     $_SESSION["last_actas"] = $actascontact->email;
@@ -303,7 +304,7 @@ class Contact {
         if ($this->contactId <= 0 && req("validator")
             && ($vc = $this->conf->opt("validatorContact"))) {
             unset($_GET["validator"], $_POST["validator"], $_REQUEST["validator"]);
-            if (($newc = self::find_by_email($vc))) {
+            if (($newc = $this->conf->user_by_email($vc))) {
                 $this->activated_ = false;
                 return $newc->activate();
             }
@@ -330,7 +331,7 @@ class Contact {
             && !$this->has_database_account()
             && $this->conf->session("trueuser_author_check", 0) + 600 < $Now) {
             $this->conf->save_session("trueuser_author_check", $Now);
-            $aupapers = self::email_authored_papers($trueuser->email, $trueuser);
+            $aupapers = self::email_authored_papers($this->conf, $trueuser->email, $trueuser);
             if (count($aupapers))
                 return $this->activate_database_account();
         }
@@ -366,7 +367,7 @@ class Contact {
             if (strcasecmp($reg->email, $this->email) != 0)
                 $reg = (object) array();
             $reg->email = $this->email;
-            if (($c = Contact::create($reg))) {
+            if (($c = Contact::create($this->conf, $reg))) {
                 $this->load_by_id($c->contactId);
                 $this->activate();
             }
@@ -512,7 +513,7 @@ class Contact {
             $x = $pcm[$cid];
         else if (!is_object($x) || !isset($x->email)
                  || !isset($x->firstName) || !isset($x->lastName)) {
-            $x = self::find_by_id($cid);
+            $x = $this->conf->user_by_id($cid);
             $this->contact_sorter_map_[$cid] = $x->sorter;
         }
 
@@ -560,7 +561,7 @@ class Contact {
             else if (isset($this->contact_sorter_map_[$a]))
                 $as = $this->contact_sorter_map_[$a];
             else {
-                $x = Contact::find_by_id($a);
+                $x = $this->conf->user_by_id($a);
                 $as = $this->contact_sorter_map_[$a] = $x->sorter;
             }
             if (isset($pcm[$b]))
@@ -568,7 +569,7 @@ class Contact {
             else if (isset($this->contact_sorter_map_[$b]))
                 $bs = $this->contact_sorter_map_[$b];
             else {
-                $x = Contact::find_by_id($b);
+                $x = $this->conf->user_by_id($b);
                 $bs = $this->contact_sorter_map_[$b] = $x->sorter;
             }
             return strcasecmp($as, $bs);
@@ -812,7 +813,7 @@ class Contact {
 
         $aupapers = null;
         if ($different_email)
-            $aupapers = self::email_authored_papers($cj->email, $cj);
+            $aupapers = self::email_authored_papers($this->conf, $cj->email, $cj);
 
         // check whether this user is changing themselves
         $changing_other = false;
@@ -981,7 +982,7 @@ class Contact {
     }
 
     public function change_email($email) {
-        $aupapers = self::email_authored_papers($email, $this);
+        $aupapers = self::email_authored_papers($this->conf, $email, $this);
         $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
         $this->save_authored_papers($aupapers);
         if ($this->roles & Contact::ROLE_PCLIKE)
@@ -989,10 +990,10 @@ class Contact {
         $this->email = $email;
     }
 
-    static function email_authored_papers($email, $reg) {
+    static function email_authored_papers(Conf $conf, $email, $reg) {
         $aupapers = array();
-        $result = Dbl::q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($email) . "\t%'"));
-        while (($row = PaperInfo::fetch($result, null)))
+        $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t" . sqlq_for_like($email) . "\t%'"));
+        while (($row = PaperInfo::fetch($result, null, $conf)))
             foreach ($row->author_list() as $au)
                 if (strcasecmp($au->email, $email) == 0) {
                     $aupapers[] = $row->paperId;
@@ -1047,15 +1048,6 @@ class Contact {
         return !!$row;
     }
 
-    static function find_by_id($cid, Conf $conf = null) {
-        global $Conf;
-        $conf = $conf ? : $Conf;
-        $result = $conf->qe("select ContactInfo.* from ContactInfo where contactId=?", $cid);
-        $c = self::fetch($result, $conf);
-        Dbl::free($result);
-        return $c;
-    }
-
     static function safe_registration($reg) {
         $safereg = (object) array();
         foreach (array("email", "firstName", "lastName", "name",
@@ -1064,16 +1056,6 @@ class Contact {
             if (isset($reg[$k]))
                 $safereg->$k = $reg[$k];
         return $safereg;
-    }
-
-    static function find_by_email($email) {
-        $acct = null;
-        if (($email = trim((string) $email)) !== "") {
-            $result = Dbl::qe("select * from ContactInfo where email=?", $email);
-            $acct = self::fetch($result);
-            Dbl::free($result);
-        }
-        return $acct;
     }
 
     private function _create_password($cdbu, Contact_Update $cu) {
@@ -1089,8 +1071,8 @@ class Contact {
             $cu->qv["password"] = $this->password = "";
     }
 
-    static function create($reg, $send = false) {
-        global $Conf, $Me, $Now;
+    static function create(Conf $conf, $reg, $send = false) {
+        global $Me, $Now;
         if (is_array($reg))
             $reg = (object) $reg;
         assert(is_string($reg->email));
@@ -1098,7 +1080,7 @@ class Contact {
         assert($email !== "");
 
         // look up account first
-        if (($acct = self::find_by_email($email)))
+        if (($acct = $conf->user_by_email($email)))
             return $acct;
 
         // validate email, check contactdb
@@ -1122,27 +1104,13 @@ class Contact {
         if ($acct->save_json($cj, null, $send)) {
             if ($Me && $Me->privChair) {
                 $type = $acct->disabled ? "disabled " : "";
-                $Conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");
+                $conf->infoMsg("Created {$type}account for <a href=\"" . hoturl("profile", "u=" . urlencode($acct->email)) . "\">" . Text::user_html_nolink($acct) . "</a>.");
             }
             return $acct;
         } else {
-            $Conf->log("Account $email creation failure", $Me);
+            $conf->log("Account $email creation failure", $Me);
             return null;
         }
-    }
-
-    static function id_by_email($email) {
-        $result = Dbl::qe("select contactId from ContactInfo where email=?", trim($email));
-        $row = edb_row($result);
-        Dbl::free($result);
-        return $row ? (int) $row[0] : false;
-    }
-
-    static function email_by_id($id) {
-        $result = Dbl::qe("select email from ContactInfo where contactId=" . (int) $id);
-        $row = edb_row($result);
-        Dbl::free($result);
-        return $row ? $row[0] : false;
     }
 
 
@@ -2312,13 +2280,14 @@ class Contact {
     }
 
     function can_view_some_review_identity($forceShow = null) {
-        $prow = new PaperInfo
-            (array("conflictType" => 0, "managerContactId" => 0,
-                   "myReviewType" => ($this->is_reviewer() ? 1 : 0),
-                   "myReviewSubmitted" => 1,
-                   "myReviewNeedsSubmit" => 0,
-                   "paperId" => 1, "timeSubmitted" => 1,
-                   "paperBlind" => false, "outcome" => 1), $this);
+        $prow = new PaperInfo([
+            "conflictType" => 0, "managerContactId" => 0,
+            "myReviewType" => ($this->is_reviewer() ? 1 : 0),
+            "myReviewSubmitted" => 1,
+            "myReviewNeedsSubmit" => 0,
+            "paperId" => 1, "timeSubmitted" => 1,
+            "paperBlind" => false, "outcome" => 1
+        ], $this);
         return $this->can_view_review_identity($prow, null, $forceShow);
     }
 
@@ -3200,10 +3169,10 @@ class Contact {
     }
 
 
-    private static function unassigned_review_token() {
+    private function unassigned_review_token() {
         while (1) {
             $token = mt_rand(1, 2000000000);
-            $result = Dbl::qe("select reviewId from PaperReview where reviewToken=$token");
+            $result = $this->conf->qe("select reviewId from PaperReview where reviewToken=$token");
             if (edb_nrows($result) == 0)
                 return ", reviewToken=$token";
         }
@@ -3232,7 +3201,7 @@ class Contact {
             if (get($extra, "mark_notify"))
                 $qa .= ", timeRequestNotified=$Now";
             if (get($extra, "token"))
-                $qa .= self::unassigned_review_token();
+                $qa .= $this->unassigned_review_token();
             $new_requester_cid = $this->contactId;
             if (($new_requester = get($extra, "requester_contact")))
                 $new_requester_cid = $new_requester->contactId;
@@ -3267,14 +3236,14 @@ class Contact {
             if (($req_email = get($extra, "requested_email")))
                 $this->conf->qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
             if ($type < REVIEW_SECONDARY)
-                self::update_review_delegation($pid, $new_requester_cid, 1);
+                $this->update_review_delegation($pid, $new_requester_cid, 1);
         } else if ($q[0] == "d") {
             if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0)
-                self::update_review_delegation($pid, $rrow->requestedBy, -1);
+                $this->update_review_delegation($pid, $rrow->requestedBy, -1);
         } else {
             if ($type == REVIEW_SECONDARY && $rrow->reviewType != REVIEW_SECONDARY
                 && !$rrow->reviewSubmitted)
-                self::update_review_delegation($pid, $reviewer_cid, 0);
+                $this->update_review_delegation($pid, $reviewer_cid, 0);
         }
 
         // Mark rev_tokens setting for future update by update_rev_tokens_setting
@@ -3287,29 +3256,29 @@ class Contact {
         return $reviewId;
     }
 
-    static function update_review_delegation($pid, $cid, $direction) {
+    function update_review_delegation($pid, $cid, $direction) {
         if ($direction > 0) {
-            Dbl::qe_raw("update PaperReview set reviewNeedsSubmit=-1 where paperId=$pid and reviewType=" . REVIEW_SECONDARY . " and contactId=$cid and reviewSubmitted is null and reviewNeedsSubmit=1");
+            $this->conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
         } else if ($direction <= 0) {
-            $row = Dbl::fetch_first_row("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid");
+            $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId=$cid and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid and reviewSubmitted is not null), sum(reviewType<" . REVIEW_SECONDARY . " and requestedBy=$cid) from PaperReview where paperId=$pid"));
             if ($row && $row[0]) {
                 $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
                 if ($direction == 0 || $rns != 0)
-                    Dbl::qe("update PaperReview set reviewNeedsSubmit=$rns where paperId=$pid and contactId=$cid and reviewSubmitted is null");
+                    $this->conf->qe("update PaperReview set reviewNeedsSubmit=? where paperId=? and contactId=? and reviewSubmitted is null", $rns, $pid, $cid);
             }
         }
     }
 
-    static function unsubmit_review_row($rrow) {
+    function unsubmit_review_row($rrow) {
         $needsSubmit = 1;
         if ($rrow->reviewType == REVIEW_SECONDARY) {
-            $row = Dbl::fetch_first_row("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=$rrow->paperId and requestedBy=$rrow->contactId and reviewType<" . REVIEW_SECONDARY);
+            $row = Dbl::fetch_first_row($this->conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=? and requestedBy=? and reviewType<" . REVIEW_SECONDARY, $rrow->paperId, $rrow->contactId));
             if ($row && $row[0])
                 $needsSubmit = 0;
             else if ($row && $row[1])
                 $needsSubmit = -1;
         }
-        return Dbl::qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=$needsSubmit where reviewId=$rrow->reviewId");
+        return $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=? where reviewId=?", $needsSubmit, $rrow->reviewId);
     }
 
     function assign_paper_pc($pids, $type, $reviewer, $extra = array()) {

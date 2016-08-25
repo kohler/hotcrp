@@ -168,8 +168,8 @@ class PaperList {
         }
         if (isset($args["reviewer"]) && ($r = $args["reviewer"])) {
             if (!is_object($r)) {
-                error_log(caller_landmark() . ": warning: 'reviewer' not an object");
-                $r = Contact::find_by_id($r);
+                error_log(caller_landmark() . ": XXX warning: 'reviewer' not an object"); // BACKWARD COMPAT
+                $r = $this->conf->user_by_id($r);
             }
             $this->_reviewer = $r;
         }

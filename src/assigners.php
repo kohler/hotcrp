@@ -247,7 +247,7 @@ class AssignerContacts {
         $cx = $this->lookup_lemail($lemail);
         if (!$cx || $cx->contactId < 0) {
             // XXX assume that never fails:
-            $cx = Contact::create(["email" => $c->email, "firstName" => get($c, "firstName"), "lastName" => get($c, "lastName")], $this->conf);
+            $cx = Contact::create($this->conf, ["email" => $c->email, "firstName" => get($c, "firstName"), "lastName" => get($c, "lastName")]);
             $cx = $this->store($cx);
         }
         return $cx;
@@ -631,7 +631,7 @@ class ReviewAssigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("reviewers");
-        $t = $aset->contact()->reviewer_html_for($this->contact) . ' ';
+        $t = $aset->contact->reviewer_html_for($this->contact) . ' ';
         if ($this->rtype) {
             if ($this->unsubmit)
                 $t = 'unsubmit ' . $t;
@@ -680,11 +680,11 @@ class ReviewAssigner extends Assigner {
             $extra["round_number"] = $aset->conf->round_number($this->round, true);
         $reviewId = $aset->contact->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId)
-            Contact::unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
+            $aset->contact->unsubmit_review_row((object) ["paperId" => $this->pid, "contactId" => $this->cid, "reviewType" => $this->rtype, "reviewId" => $reviewId]);
     }
     function cleanup(AssignmentSet $aset) {
         if ($this->notify) {
-            $reviewer = Contact::find_by_id($this->cid);
+            $reviewer = $aset->conf->user_by_id($this->cid);
             $prow = $aset->conf->paperRow(array("paperId" => $this->pid, "reviewer" => $this->cid), $reviewer);
             HotCRPMailer::send_to($reviewer, $this->notify, $prow);
         }
@@ -778,7 +778,7 @@ class LeadAssigner extends Assigner {
             $aset->show_column("reviewers");
         if (!$this->cid)
             return "remove $this->type";
-        $t = $aset->contact()->reviewer_html_for($this->contact);
+        $t = $aset->contact->reviewer_html_for($this->contact);
         if ($this->isadd && $this->type === "lead")
             $t .= " " . review_lead_icon();
         else if ($this->isadd && $this->type === "shepherd")
@@ -859,7 +859,7 @@ class ConflictAssigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $aset->show_column("pcconf");
-        $t = $aset->contact()->reviewer_html_for($this->contact) . ' ';
+        $t = $aset->contact->reviewer_html_for($this->contact) . ' ';
         if ($this->ctype)
             $t .= review_type_icon(-1);
         else
@@ -1252,7 +1252,7 @@ class PreferenceAssigner extends Assigner {
         if (!$this->cid)
             return "remove all preferences";
         $aset->show_column("allpref");
-        return $aset->contact()->reviewer_html_for($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
+        return $aset->contact->reviewer_html_for($this->contact) . " " . unparse_preference_span(array($this->pref, $this->exp), true);
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         if (!$this->pref && $this->exp === null)

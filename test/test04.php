@@ -12,7 +12,8 @@ $Opt = array("contactdb_dsn" => "mysql://hotcrp_testdb:m5LuaN23j26g@localhost/ho
 require_once("$ConfSitePATH/test/setup.php");
 
 function user($email) {
-    return Contact::find_by_email($email);
+    global $Conf;
+    return $Conf->user_by_email($email);
 }
 
 function password($email, $iscdb = false) {
@@ -30,7 +31,7 @@ function save_password($email, $encoded_password, $iscdb = false) {
     ++$Now;
 }
 
-$user_chair = Contact::find_by_email("chair@_.com");
+$user_chair = $Conf->user_by_email("chair@_.com");
 $marina = "marina@poema.ru";
 
 $Conf->set_opt("safePasswords", 0);

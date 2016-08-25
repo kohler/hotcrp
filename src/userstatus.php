@@ -200,7 +200,7 @@ class UserStatus {
 
         // ID
         if (get($cj, "id") === "new") {
-            if (get($cj, "email") && Contact::id_by_email($cj->email)) {
+            if (get($cj, "email") && $Conf->user_id_by_email($cj->email)) {
                 $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use.");
                 $this->errf["email_inuse"] = true;
             }
@@ -211,7 +211,7 @@ class UserStatus {
                 $this->set_error("id", "Format error [id]");
             if ($old_user && get($cj, "email")
                 && strtolower($old_user->email) !== strtolower($cj->email)
-                && Contact::id_by_email($cj->email))
+                && $Conf->user_id_by_email($cj->email))
                 $this->set_error("email", "Email address “" . htmlspecialchars($cj->email) . "” is already in use. You may want to <a href=\"" . hoturl("mergeaccounts") . "\">merge these accounts</a>.");
         }
 
@@ -393,9 +393,9 @@ class UserStatus {
         self::normalize_name($cj);
 
         if (!$old_user && is_int(get($cj, "id")) && $cj->id)
-            $old_user = Contact::find_by_id($cj->id);
+            $old_user = $Conf->user_by_id($cj->id);
         else if (!$old_user && is_string(get($cj, "email")) && $cj->email)
-            $old_user = Contact::find_by_email($cj->email);
+            $old_user = $Conf->user_by_email($cj->email);
         if (!get($cj, "id"))
             $cj->id = $old_user ? $old_user->contactId : "new";
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {

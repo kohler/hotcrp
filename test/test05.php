@@ -12,7 +12,7 @@ $Conf->save_setting("sub_update", $Now + 100);
 $Conf->save_setting("sub_sub", $Now + 100);
 
 // load users
-$user_estrin = Contact::find_by_email("estrin@usc.edu"); // pc
+$user_estrin = $Conf->user_by_email("estrin@usc.edu"); // pc
 $user_nobody = new Contact;
 
 $ps = new PaperStatus($Conf, $user_estrin);

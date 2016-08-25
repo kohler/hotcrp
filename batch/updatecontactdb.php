@@ -30,7 +30,7 @@ if ($users) {
             or PaperReview.reviewId is not null
         group by ContactInfo.contactId");
     while (($row = edb_row($result))) {
-        $contact = Contact::find_by_id($row[0]);
+        $contact = $Conf->user_by_id($row[0]);
         $contact->contactdb_update();
     }
     Dbl::free($result);
