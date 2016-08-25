@@ -2091,7 +2091,7 @@ class Conf {
             else if ($result->num_rows == 0)
                 $whyNot["noPaper"] = 1;
             else
-                $ret = PaperInfo::fetch($result, $contact);
+                $ret = PaperInfo::fetch($result, $contact, $this);
 
             Dbl::free($result);
         }
@@ -2106,7 +2106,7 @@ class Conf {
     function review_rows($q, $contact) {
         $result = $this->qe_raw($q);
         $rrows = array();
-        while (($row = PaperInfo::fetch($result, $contact)))
+        while (($row = PaperInfo::fetch($result, $contact, $this)))
             $rrows[$row->reviewId] = $row;
         Dbl::free($result);
         return $rrows;
