@@ -428,9 +428,8 @@ class PaperStatus {
             $this->set_error_html("topics", "Format error [topics]");
     }
 
-    private function normalize_options($pj) {
+    private function normalize_options($pj, $options) {
         // canonicalize option values to use IDs, not abbreviations
-        $options = $pj->options;
         $pj->options = (object) array();
         foreach ($options as $id => $oj) {
             $omatches = $this->conf->paper_opts->search($id);
@@ -557,13 +556,17 @@ class PaperStatus {
 
         // Options
         $pj->bad_options = array();
-        if (get($pj, "options") && is_object($pj->options))
-            $this->normalize_options($pj);
-        else if (get($pj, "options") === false)
-            $pj->options = (object) array();
-        else if (get($pj, "options") !== null) {
-            $this->set_error_html("options", "Format error [options]");
-            unset($pj->options);
+        if (get($pj, "options") !== null) {
+            if (is_associative_array($pj->options) || is_object($pj->options))
+                $this->normalize_options($pj, $pj->options);
+            else if (is_array($pj->options) && count($pj->options) == 1 && is_object($pj->options[0]))
+                $this->normalize_options($pj, $pj->options[0]);
+            else if ($pj->options === false)
+                $pj->options = (object) array();
+            else {
+                $this->set_error_html("options", "Format error [options]");
+                unset($pj->options);
+            }
         }
 
         // PC conflicts
