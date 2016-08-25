@@ -544,8 +544,10 @@ class PaperStatus {
         if (isset($pj->nonblind)) {
             if (($x = friendly_boolean($pj->nonblind)) !== null)
                 $pj->nonblind = $x;
-            else
+            else {
                 $this->set_error_html("nonblind", "Format error [nonblind]");
+                unset($pj->nonblind);
+            }
         }
 
         // Topics
@@ -559,8 +561,10 @@ class PaperStatus {
             $this->normalize_options($pj);
         else if (get($pj, "options") === false)
             $pj->options = (object) array();
-        else if (get($pj, "options") !== null)
+        else if (get($pj, "options") !== null) {
             $this->set_error_html("options", "Format error [options]");
+            unset($pj->options);
+        }
 
         // PC conflicts
         $pj->bad_pc_conflicts = (object) array();
@@ -569,8 +573,10 @@ class PaperStatus {
             $this->normalize_pc_conflicts($pj);
         else if (get($pj, "pc_conflicts") === false)
             $pj->pc_conflicts = (object) array();
-        else if (get($pj, "pc_conflicts") !== null)
+        else if (get($pj, "pc_conflicts") !== null) {
             $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
+            unset($pj->pc_conflicts);
+        }
 
         // Old contacts (to avoid validate_email errors on unchanged contacts)
         $old_contacts = array();
