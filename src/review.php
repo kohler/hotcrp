@@ -567,17 +567,20 @@ class ReviewForm {
     }
 
     function tfError(&$tf, $isError, $text, $field = null) {
-        $e = htmlspecialchars($tf['filename']) . ":";
-        if (is_int($field))
-            $e .= $field;
-        else if ($field === null || !isset($tf['fieldLineno'][$field]))
-            $e .= $tf['firstLineno'];
-        else
-            $e .= $tf['fieldLineno'][$field];
+        $e = "";
+        if (isset($tf["filename"])) {
+            $e .= htmlspecialchars($tf["filename"]) . ":";
+            if (is_int($field))
+                $e .= $field;
+            else if ($field === null || !isset($tf["fieldLineno"][$field]))
+                $e .= $tf["firstLineno"];
+            else
+                $e .= $tf["fieldLineno"][$field];
+        }
         if (defval($tf, 'paperId'))
             $e .= " (paper #" . $tf['paperId'] . ")";
         $tf[$isError ? 'anyErrors' : 'anyWarnings'] = true;
-        $tf['err'][] = "<span class='lineno'>" . $e . ":</span> " . $text;
+        $tf['err'][] = ($e ? "<span class='lineno'>" . $e . ":</span> " : "") . $text;
         return false;
     }
 
