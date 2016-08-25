@@ -116,7 +116,7 @@ class MailRecipients {
                 $this->defsel("shepherd", "Shepherds");
         }
         $this->defsel_nm("pc", "Program committee");
-        foreach (pcTags() as $t)
+        foreach ($Conf->pc_tags() as $t)
             if ($t != "pc")
                 $this->defsel_nm("pc:$t", "PC members tagged “{$t}”");
         if (count($this->sel) == $selcount + 1)

@@ -16,7 +16,6 @@ class GetRevpref_SearchAction extends SearchAction {
             $actions[] = [$this->extended ? -99 : -100, $this->subname, null, $this->extended ? "Preference file with abstracts" : "Preference file"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
         // maybe download preferences for someone else
         $Rev = $user;
         if (($cid = cvtint($qreq->reviewer)) > 0 && $user->privChair) {
@@ -26,7 +25,7 @@ class GetRevpref_SearchAction extends SearchAction {
         if (!$Rev->isPC)
             return self::EPERM;
 
-        $result = $Conf->paper_result($Rev, array("paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1));
+        $result = $user->conf->paper_result($Rev, array("paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1));
         $texts = array();
         while (($prow = PaperInfo::fetch($result, $Rev))) {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
@@ -60,10 +59,9 @@ class GetAllRevpref_SearchAction extends SearchAction {
         $actions[] = [2060, $this->subname, "Review assignments", "PC review preferences"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
-        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
+        $result = $user->conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
         $texts = array();
-        $pcm = pcMembers();
+        $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;
         while (($prow = PaperInfo::fetch($result, $user))) {
             if (!$user->can_administer($prow, true))
@@ -71,15 +69,15 @@ class GetAllRevpref_SearchAction extends SearchAction {
             $conflicts = $prow->conflicts();
             foreach ($pcm as $cid => $p) {
                 $pref = $prow->reviewer_preference($p);
-                $conf = get($conflicts, $cid);
+                $cflt = get($conflicts, $cid);
                 $tv = $prow->topicIds ? $prow->topic_interest_score($p) : 0;
-                if ($pref || $conf || $tv) {
+                if ($pref || $cflt || $tv) {
                     $texts[$prow->paperId][] = array("paper" => $prow->paperId, "title" => $prow->title, "first" => $p->firstName, "last" => $p->lastName, "email" => $p->email,
                                 "preference" => $pref[0] ? : "",
                                 "expertise" => unparse_expertise($pref[1]),
                                 "topic_score" => $tv ? : "",
-                                "conflict" => ($conf ? "conflict" : ""));
-                    $has_conflict = $has_conflict || $conf;
+                                "conflict" => ($cflt ? "conflict" : ""));
+                    $has_conflict = $has_conflict || $cflt;
                     $has_expertise = $has_expertise || $pref[1] !== null;
                     $has_topic_score = $has_topic_score || $tv;
                 }

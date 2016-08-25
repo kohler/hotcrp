@@ -49,7 +49,6 @@ class Tag_SearchAction extends SearchAction {
             ["id" => "foldplacttags", "class" => "foldc fold99c", "content" => $t]];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
         $papers = $ssel->selection();
 
         $act = $qreq->tagfn;
@@ -112,12 +111,12 @@ class Tag_SearchAction extends SearchAction {
         }
         $success = $assignset->execute();
 
-        assert(!$Conf->headerPrinted);
-        if (!$Conf->headerPrinted && $qreq->ajax)
-            $Conf->ajaxExit(array("ok" => $success));
-        else if (!$Conf->headerPrinted && $success) {
+        assert(!$user->conf->headerPrinted);
+        if (!$user->conf->headerPrinted && $qreq->ajax)
+            $user->conf->ajaxExit(array("ok" => $success));
+        else if (!$user->conf->headerPrinted && $success) {
             if (!$errors)
-                $Conf->confirmMsg("Tags saved.");
+                $user->conf->confirmMsg("Tags saved.");
             $args = array("atab" => "tag");
             foreach (array("tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless") as $arg)
                 if (isset($qreq[$arg]))

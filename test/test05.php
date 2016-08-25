@@ -15,7 +15,7 @@ $Conf->save_setting("sub_sub", $Now + 100);
 $user_estrin = Contact::find_by_email("estrin@usc.edu"); // pc
 $user_nobody = new Contact;
 
-$ps = new PaperStatus($user_estrin);
+$ps = new PaperStatus($Conf, $user_estrin);
 
 $paper1a = $ps->paper_json(1);
 xassert_eqq($paper1a->title, "Scalable Timers for Soft State Protocols");
@@ -41,7 +41,7 @@ xassert(!$ps->has_error());
 $paper1c = $ps->paper_json(1);
 xassert_eqq($paper1c->submission->sha1, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
 
-$ps = new PaperStatus(null);
+$ps = new PaperStatus($Conf);
 
 $paper2a = $ps->paper_json(2);
 $ps->save_paper_json(json_decode("{\"id\":2,\"submission\":{\"content\":\"%PDF-hello\\n\",\"type\":\"application/pdf\"}}"));

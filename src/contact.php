@@ -3087,7 +3087,7 @@ class Contact {
         // add meeting tracker
         if (($this->isPC || $this->tracker_kiosk_state)
             && $this->can_view_tracker()) {
-            $tracker = MeetingTracker::lookup();
+            $tracker = MeetingTracker::lookup($this->conf);
             if ($tracker->trackerid
                 && ($tinfo = MeetingTracker::info_for($this))) {
                 $dl->tracker = $tinfo;
@@ -3164,6 +3164,12 @@ class Contact {
         return false;
     }
 
+
+    // papers
+
+    function paper_result($options) {
+        return $this->conf->paper_result($this, $options);
+    }
 
     function paper_status_info($row, $forceShow = null) {
         if ($row->timeWithdrawn > 0)

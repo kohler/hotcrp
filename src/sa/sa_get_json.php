@@ -22,12 +22,11 @@ class GetJson_SearchAction extends SearchAction {
         $actions[] = [1090 + $this->iszip, $this->subname, "Paper information", $this->iszip ? "JSON with attachments" : "JSON"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
-        $result = $Conf->paper_result($user, ["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "topics" => true, "options" => true]);
         $pj = [];
-        $ps = new PaperStatus($user, ["forceShow" => true, "hide_docids" => true]);
+        $ps = new PaperStatus($user->conf, $user, ["forceShow" => true, "hide_docids" => true]);
         if ($this->iszip) {
-            $this->zipdoc = new ZipDocument($Conf->download_prefix . "data.zip");
+            $this->zipdoc = new ZipDocument($user->conf->download_prefix . "data.zip");
             $ps->add_document_callback([$this, "document_callback"]);
         }
         while (($prow = PaperInfo::fetch($result, $user)))
@@ -41,9 +40,9 @@ class GetJson_SearchAction extends SearchAction {
         $pj = array_values($ssel->reorder($pj));
         if (count($pj) == 1) {
             $pj = $pj[0];
-            $pj_filename = $Conf->download_prefix . "paper" . $ssel->selection_at(0) . "-data.json";
+            $pj_filename = $user->conf->download_prefix . "paper" . $ssel->selection_at(0) . "-data.json";
         } else
-            $pj_filename = $Conf->download_prefix . "data.json";
+            $pj_filename = $user->conf->download_prefix . "data.json";
         if ($this->iszip) {
             $this->zipdoc->add(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
             $this->zipdoc->download();

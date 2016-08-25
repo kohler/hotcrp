@@ -1089,18 +1089,6 @@ function pcMembers() {
     return $Conf->pc_members();
 }
 
-function pcTags() {
-    global $Conf;
-    return $Conf->pc_tags();
-}
-
-function pcByEmail($email) {
-    foreach (pcMembers() as $id => $row)
-        if (strcasecmp($row->email, $email) == 0)
-            return $row;
-    return null;
-}
-
 function pc_members_selector_options($include_none) {
     $sel = array();
     if ($include_none)

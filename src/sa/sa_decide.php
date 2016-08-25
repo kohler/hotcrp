@@ -13,12 +13,11 @@ class Decide_SearchAction extends SearchAction {
                 . " &nbsp;" . Ht::submit("fn", "Go", ["value" => "decide", "onclick" => "return plist_submit.call(this)"])];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
         $o = cvtint($qreq->decision);
-        $decision_map = $Conf->decision_map();
+        $decision_map = $user->conf->decision_map();
         if ($o === null || !isset($decision_map[$o]))
             return Conf::msg_error("Bad decision value.");
-        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection()));
+        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $success = $fails = array();
         while (($prow = PaperInfo::fetch($result, $user)))
             if ($user->can_set_decision($prow, true))
@@ -28,8 +27,8 @@ class Decide_SearchAction extends SearchAction {
         if (count($fails))
             Conf::msg_error("You cannot set paper decisions for " . pluralx($fails, "paper") . " " . commajoin($fails) . ".");
         if (count($success)) {
-            Dbl::qe("update Paper set outcome=$o where paperId ?a", $success);
-            $Conf->update_paperacc_setting($o > 0);
+            $user->conf->qe("update Paper set outcome=$o where paperId ?a", $success);
+            $user->conf->update_paperacc_setting($o > 0);
             redirectSelf(array("atab" => "decide", "decision" => $o));
         }
     }

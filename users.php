@@ -15,7 +15,7 @@ else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
 // list type
 $tOpt = array();
 $tOpt["pc"] = "Program committee";
-if ($Me->isPC && count($pctags = pcTags())) {
+if ($Me->isPC && count($pctags = $Conf->pc_tags())) {
     foreach ($pctags as $t)
         if ($t != "pc")
             $tOpt["#$t"] = "#$t program committee";

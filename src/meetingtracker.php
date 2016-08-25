@@ -4,9 +4,9 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class MeetingTracker {
-    static function lookup() {
-        global $Conf, $Now;
-        $tracker = $Conf->setting_json("tracker");
+    static function lookup(Conf $conf) {
+        global $Now;
+        $tracker = $conf->setting_json("tracker");
         if ($tracker && (!$tracker->trackerid || $tracker->update_at >= $Now - 150))
             return $tracker;
         else {
@@ -22,7 +22,7 @@ class MeetingTracker {
     }
 
     static function is_paper_tracked(PaperInfo $prow) {
-        $tracker = self::lookup();
+        $tracker = self::lookup($prow->conf);
         return $tracker && $tracker->trackerid
             && array_search($prow->paperId, $tracker->ids) !== false;
     }
@@ -33,7 +33,7 @@ class MeetingTracker {
             $when = self::next_position_at();
             $t = ["trackerid" => false, "position_at" => $when, "update_at" => $when];
             $Conf->save_setting("tracker", 0, (object) $t);
-            self::contact_tracker_comet();
+            self::contact_tracker_comet($Conf);
         }
         return null;
     }
@@ -55,7 +55,7 @@ class MeetingTracker {
                                   "owner" => $Me->contactId,
                                   "sessionid" => session_id(),
                                   "position" => $position);
-        $old_tracker = self::lookup();
+        $old_tracker = self::lookup($Conf);
         if ($old_tracker->trackerid == $tracker->trackerid) {
             $tracker->start_at = $old_tracker->start_at;
             if ($old_tracker->listid == $tracker->listid
@@ -65,25 +65,25 @@ class MeetingTracker {
         if (!$tracker->position_at)
             $tracker->position_at = self::next_position_at();
         $Conf->save_setting("tracker", 1, $tracker);
-        self::contact_tracker_comet();
+        self::contact_tracker_comet($Conf);
         return $tracker;
     }
 
-    static function contact_tracker_comet($pids = null) {
-        global $Conf, $Now;
+    static function contact_tracker_comet(Conf $conf, $pids = null) {
+        global $Now;
 
-        $comet_dir = $Conf->opt("trackerCometUpdateDirectory");
-        $comet_url = $Conf->opt("trackerCometSite");
+        $comet_dir = $conf->opt("trackerCometUpdateDirectory");
+        $comet_url = $conf->opt("trackerCometSite");
         if (!$comet_dir && !$comet_url)
             return;
 
         // calculate status
-        $conference = Navigation::site_absolute();
-        $tracker = self::lookup();
+        $url = Navigation::site_absolute();
+        $tracker = self::lookup($conf);
 
         // first drop notification json in trackerCometUpdateDirectory
         if ($comet_dir) {
-            $j = array("ok" => true, "conference" => $conference,
+            $j = array("ok" => true, "conference" => $url,
                        "tracker_status" => self::tracker_status($tracker),
                        "tracker_status_at" => $tracker->position_at);
             if ($pids)
@@ -110,7 +110,7 @@ class MeetingTracker {
             return;
 
         if (!preg_match(',\Ahttps?:,', $comet_url)) {
-            preg_match(',\A(.*:)(//[^/]*),', $conference, $m);
+            preg_match(',\A(.*:)(//[^/]*),', $url, $m);
             if ($comet_url[0] !== "/")
                 $comet_url = "/" . $comet_url;
             if (preg_match(',\A//,', $comet_url))
@@ -126,7 +126,7 @@ class MeetingTracker {
                                                      "ignore_errors" => true,
                                                      "content" => "",
                                                      "timeout" => 1.0)));
-        $comet_url .= "update?conference=" . urlencode($conference)
+        $comet_url .= "update?conference=" . urlencode($url)
             . "&tracker_status=" . urlencode(self::tracker_status($tracker))
             . "&tracker_status_at=" . $tracker->position_at;
         if ($pids)
@@ -143,9 +143,7 @@ class MeetingTracker {
         fclose($stream);
     }
 
-    static private function status_papers($status, $tracker, $acct) {
-        global $Conf;
-
+    static private function status_papers($status, $tracker, Contact $acct) {
         $pids = array_slice($tracker->ids, $tracker->position, 3);
 
         $pc_conflicts = $acct->privChair || $acct->tracker_kiosk_state;
@@ -153,10 +151,10 @@ class MeetingTracker {
         if ($pc_conflicts) {
             $col = ", allconfs.conflictIds";
             $j = "left join (select paperId, group_concat(contactId) conflictIds from PaperConflict where paperId in (" . join(",", $pids) . ") group by paperId) allconfs on (allconfs.paperId=p.paperId)\n\t\t";
-            $pcm = pcMembers();
+            $pcm = $acct->conf->pc_members();
         }
 
-        $result = $Conf->qe_raw("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
+        $result = $acct->conf->qe_raw("select p.paperId, p.title, p.paperFormat, p.leadContactId, p.managerContactId, r.reviewType, conf.conflictType{$col}
             from Paper p
             left join PaperReview r on (r.paperId=p.paperId and " . ($acct->contactId ? "r.contactId=$acct->contactId" : "false") . ")
             left join PaperConflict conf on (conf.paperId=p.paperId and " . ($acct->contactId ? "conf.contactId=$acct->contactId" : "false") . ")
@@ -199,12 +197,12 @@ class MeetingTracker {
             $status->papers[] = $papers[$pid];
     }
 
-    static function info_for($acct) {
-        global $Conf, $Now;
-        $tracker = self::lookup();
+    static function info_for(Contact $acct) {
+        global $Now;
+        $tracker = self::lookup($acct->conf);
         if (!$tracker->trackerid || !$acct->can_view_tracker())
             return false;
-        if (($status = $Conf->session("tracker"))
+        if (($status = $acct->conf->session("tracker"))
             && $status->trackerid == $tracker->trackerid
             && $status->position == $tracker->position
             && $status->calculated_at >= $Now - 30
@@ -217,12 +215,12 @@ class MeetingTracker {
                                  "position_at" => $tracker->position_at,
                                  "url" => $tracker->url,
                                  "calculated_at" => $Now);
-        if ($Conf->opt("trackerHideConflicts"))
+        if ($acct->conf->opt("trackerHideConflicts"))
             $status->hide_conflicts = true;
         if ($status->position !== false)
             self::status_papers($status, $tracker, $acct);
         if (!$acct->is_actas_user())
-            $Conf->save_session("tracker", $status);
+            $acct->conf->save_session("tracker", $status);
         return $status;
     }
 
@@ -234,14 +232,15 @@ class MeetingTracker {
     }
 
     static function trackerstatus_api($user = null, $qreq = null, $prow = null) {
-        $tracker = self::lookup();
+        global $Conf;
+        $tracker = self::lookup($Conf);
         json_exit(["ok" => true,
                    "tracker_status" => self::tracker_status($tracker),
                    "tracker_status_at" => $tracker->position_at]);
     }
 
-    static function track_api($qreq, $user) {
-        if (!$user->privChair || !check_post())
+    static function track_api($qreq, Contact $user) {
+        if (!$user->privChair || !check_post($qreq))
             json_exit(array("ok" => false));
         // argument: IDENTIFIER LISTNUM [POSITION] -OR- stop
         if ($qreq->track === "stop") {
@@ -250,7 +249,7 @@ class MeetingTracker {
         }
         // check tracker_start_at to ignore concurrent updates
         if (($start_at = $qreq->tracker_start_at)
-            && ($tracker = self::lookup())) {
+            && ($tracker = self::lookup($user->conf))) {
             $time = $tracker->position_at;
             if (isset($tracker->start_at))
                 $time = $tracker->start_at;

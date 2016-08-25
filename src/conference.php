@@ -1057,6 +1057,13 @@ class Conf {
         return $this->_pc_members_cache;
     }
 
+    function pc_member_by_email($email) {
+        foreach ($this->pc_members() as $p)
+            if (strcasecmp($p->email, $email) == 0)
+                return $p;
+        return null;
+    }
+
     function pc_tags() {
         if ($this->_pc_tags_cache === null)
             $this->pc_members();

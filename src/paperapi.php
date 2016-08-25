@@ -28,7 +28,7 @@ class PaperApi {
         if ($value === "0" || $value === 0 || $value === "none")
             $pc = 0;
         else if (is_string($value))
-            $pc = pcByEmail($value);
+            $pc = $user->conf->pc_member_by_email($value);
         if (!$pc && $pc !== 0)
             json_exit(["ok" => false, "error" => "No such PC member “" . htmlspecialchars($value) . "”."]);
 
@@ -145,7 +145,7 @@ class PaperApi {
             json_exit($taginfo, true);
         } else if ($ok) {
             $p = [];
-            $result = $user->conf->paper_result($user, ["paperId" => array_keys($pids), "tags" => true]);
+            $result = $user->paper_result(["paperId" => array_keys($pids), "tags" => true]);
             while (($prow = PaperInfo::fetch($result, $user))) {
                 $p[$prow->paperId] = (object) [];
                 $prow->add_tag_info_json($p[$prow->paperId], $user);

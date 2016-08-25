@@ -4,7 +4,8 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class PaperStatus {
-    private $contact = null;
+    private $conf;
+    private $contact;
     private $uploaded_documents;
     private $errf;
     private $msgs;
@@ -22,7 +23,8 @@ class PaperStatus {
     private $paperid;
     private $document_callbacks = array();
 
-    function __construct($contact, $options = array()) {
+    function __construct(Conf $conf, Contact $contact = null, $options = array()) {
+        $this->conf = $conf;
         $this->contact = $contact;
         foreach (array("no_email", "allow_error",
                        "forceShow", "export_ids", "hide_docids",
@@ -53,7 +55,6 @@ class PaperStatus {
     }
 
     public function document_to_json($dtype, $docid) {
-        global $Conf;
         if (!is_object($docid))
             $drow = $this->prow ? $this->prow->document($dtype, $docid) : null;
         else {
@@ -93,9 +94,8 @@ class PaperStatus {
     }
 
     function paper_json($prow, $args = array()) {
-        global $Conf;
         if (is_int($prow))
-            $prow = $Conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->contact);
+            $prow = $this->conf->paperRow(["paperId" => $prow, "topics" => true, "options" => true], $this->contact);
         $contact = $this->contact;
         if (get($args, "forceShow"))
             $contact = null;
@@ -134,8 +134,8 @@ class PaperStatus {
             || $contact->can_view_authors($prow, $this->forceShow);
         if ($can_view_authors) {
             $contacts = array();
-            foreach ($prow->named_contacts() as $conf)
-                $contacts[strtolower($conf->email)] = $conf;
+            foreach ($prow->named_contacts() as $cflt)
+                $contacts[strtolower($cflt->email)] = $cflt;
 
             $pj->authors = array();
             foreach ($prow->author_list() as $au) {
@@ -149,8 +149,8 @@ class PaperStatus {
                 if ($au->affiliation)
                     $aux->affiliation = $au->affiliation;
                 $lemail = strtolower((string) $au->email);
-                if ($lemail && ($conf = get($contacts, $lemail))
-                    && $conf->conflictType >= CONFLICT_AUTHOR) {
+                if ($lemail && ($cflt = get($contacts, $lemail))
+                    && $cflt->conflictType >= CONFLICT_AUTHOR) {
                     $aux->contact = true;
                     unset($contacts[$lemail]);
                 }
@@ -173,14 +173,14 @@ class PaperStatus {
                 $pj->contacts = $other_contacts;
         }
 
-        if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL)
+        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
             $pj->nonblind = !(isset($pj->paperBlind) ? $prow->paperBlind : $prow->blind);
 
-        if ($prow->abstract !== "" || !$Conf->opt("noAbstract"))
+        if ($prow->abstract !== "" || !$this->conf->opt("noAbstract"))
             $pj->abstract = $prow->abstract;
 
         $topics = array();
-        foreach (array_intersect_key($Conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
+        foreach (array_intersect_key($this->conf->topic_map(), array_flip($prow->topics())) as $tid => $tname)
             $topics[$this->export_ids ? $tid : $tname] = true;
         if (!empty($topics))
             $pj->topics = (object) $topics;
@@ -200,7 +200,7 @@ class PaperStatus {
         }
 
         $options = array();
-        foreach ($Conf->paper_opts->option_list() as $o) {
+        foreach ($this->conf->paper_opts->option_list() as $o) {
             if ($contact && !$contact->can_view_paper_option($prow, $o, $this->forceShow))
                 continue;
             $ov = $prow->option($o->id) ? : new PaperOptionValue($prow, $o);
@@ -223,9 +223,9 @@ class PaperStatus {
 
         if ($prow->collaborators && $can_view_authors)
             $pj->collaborators = $prow->collaborators;
-        if (!$prow->collaborators && $can_view_authors && $Conf->setting("sub_collab")
+        if (!$prow->collaborators && $can_view_authors && $this->conf->setting("sub_collab")
             && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
-            $field = ($Conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
+            $field = ($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
             $this->set_warning_html("collaborators", "Enter the authors’ potential conflicts of interest in the $field field. If none of the authors have conflicts, enter “None”.");
         }
 
@@ -289,7 +289,6 @@ class PaperStatus {
     }
 
     public function upload_document($docj, PaperOption $o) {
-        global $Conf;
         if (get($docj, "error") || get($docj, "error_html")) {
             $this->set_option_error_html($o, get($docj, "error_html", "Upload error."));
             $docj->docid = 1;
@@ -339,7 +338,7 @@ class PaperStatus {
         }
 
         // if no sha1 match, upload
-        $docclass = $Conf->docclass($o->id);
+        $docclass = $this->conf->docclass($o->id);
         $newdoc = new DocumentInfo($docj);
         if ($docclass->upload($newdoc, (object) ["paperId" => $this->paperid])
             && $newdoc->paperStorageId > 1) {
@@ -402,7 +401,6 @@ class PaperStatus {
     }
 
     private function normalize_topics($pj) {
-        global $Conf;
         $topics = $pj->topics;
         unset($pj->topics);
         if (is_array($topics)) {
@@ -415,7 +413,7 @@ class PaperStatus {
             $topics = $new_topics;
         }
         if (is_object($topics)) {
-            $topic_map = $Conf->topic_map();
+            $topic_map = $this->conf->topic_map();
             $pj->topics = (object) array();
             foreach ($topics as $k => $v)
                 if (!$v)
@@ -431,12 +429,11 @@ class PaperStatus {
     }
 
     private function normalize_options($pj) {
-        global $Conf;
         // canonicalize option values to use IDs, not abbreviations
         $options = $pj->options;
         $pj->options = (object) array();
         foreach ($options as $id => $oj) {
-            $omatches = $Conf->paper_opts->search($id);
+            $omatches = $this->conf->paper_opts->search($id);
             if (count($omatches) != 1)
                 $pj->bad_options[$id] = true;
             else {
@@ -462,7 +459,7 @@ class PaperStatus {
                 continue;
             if ($ct === "conflict")
                 $ct = true;
-            if (!($pccid = pcByEmail($email)))
+            if (!($pccid = $this->conf->pc_member_by_email($email)))
                 $pj->bad_pc_conflicts->$email = true;
             else if (!is_int($ct) && !is_string($ct) && $ct !== true)
                 $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
@@ -489,7 +486,7 @@ class PaperStatus {
 
     private function normalize($pj, $old_pj, $preserve) {
         // Errors prevent saving
-        global $Conf, $Now;
+        global $Now;
 
         // Title, abstract
         $this->normalize_string($pj, "title", true, $preserve);
@@ -536,7 +533,7 @@ class PaperStatus {
                 if (is_numeric($pj->$k))
                     $pj->$k = (int) $pj->$k;
                 else if (is_string($pj->$k))
-                    $pj->$k = $Conf->parse_time($pj->$k, $Now);
+                    $pj->$k = $this->conf->parse_time($pj->$k, $Now);
                 else
                     $pj->$k = false;
                 if ($pj->$k === false || $pj->$k < 0)
@@ -582,8 +579,8 @@ class PaperStatus {
                 if (get($au, "contact"))
                     $old_contacts[strtolower($au->email)] = true;
         if ($old_pj && get($old_pj, "contacts"))
-            foreach ($old_pj->contacts as $conf)
-                $old_contacts[strtolower($conf->email)] = true;
+            foreach ($old_pj->contacts as $cflt)
+                $old_contacts[strtolower($cflt->email)] = true;
 
         // verify emails on authors marked as contacts
         $pj->bad_contacts = array();
@@ -646,10 +643,9 @@ class PaperStatus {
     }
 
     private function check_options($pj) {
-        global $Conf;
         $pj->parsed_options = array();
         foreach ($pj->options as $oid => $oj) {
-            $o = $Conf->paper_opts->find($oid);
+            $o = $this->conf->paper_opts->find($oid);
             $result = null;
             if ($oj !== null && $oj !== false)
                 $result = $o->parse_json($oj, $this);
@@ -796,7 +792,7 @@ class PaperStatus {
     }
 
     function save_paper_json($pj) {
-        global $Conf, $Now;
+        global $Now;
         assert(!$this->hide_docids);
 
         $paperid = get($pj, "pid", get($pj, "id", null));
@@ -816,7 +812,7 @@ class PaperStatus {
         $this->prow = $old_pj = null;
         $this->paperid = $paperid ? : -1;
         if ($paperid)
-            $this->prow = $Conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->contact);
+            $this->prow = $this->conf->paperRow(["paperId" => $paperid, "topics" => true, "options" => true], $this->contact);
         if ($this->prow)
             $old_pj = $this->paper_json($this->prow, ["forceShow" => true]);
         if ($pj && $old_pj && $paperid != $old_pj->pid) {
@@ -833,9 +829,9 @@ class PaperStatus {
 
         // store documents (options already stored)
         if (isset($pj->submission) && $pj->submission)
-            $this->upload_document($pj->submission, $Conf->paper_opts->find_document(DTYPE_SUBMISSION));
+            $this->upload_document($pj->submission, $this->conf->paper_opts->find_document(DTYPE_SUBMISSION));
         if (isset($pj->final) && $pj->final)
-            $this->upload_document($pj->final, $Conf->paper_opts->find_document(DTYPE_FINAL));
+            $this->upload_document($pj->final, $this->conf->paper_opts->find_document(DTYPE_FINAL));
 
         // create contacts
         foreach (self::contacts_array($pj) as $c) {
@@ -865,7 +861,7 @@ class PaperStatus {
                 $q[] = "authorInformation='" . sqlq($autext) . "'";
         }
 
-        if ($Conf->submission_blindness() == Conf::BLIND_OPTIONAL
+        if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && (!$old_pj || (get($pj, "nonblind") !== null
                              && !$pj->nonblind != !$old_pj->nonblind)))
             $q[] = "blind=" . (get($pj, "nonblind") ? 0 : 1);
@@ -928,9 +924,9 @@ class PaperStatus {
         }
 
         if (!empty($q)) {
-            if ($Conf->submission_blindness() == Conf::BLIND_NEVER)
+            if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
                 $q[] = "blind=0";
-            else if ($Conf->submission_blindness() != Conf::BLIND_OPTIONAL)
+            else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL)
                 $q[] = "blind=1";
 
             if ($old_pj && isset($old_pj->final))
@@ -955,11 +951,11 @@ class PaperStatus {
                 $q[] = "mimetype='" . sqlq($new_joindoc->mimetype) . "'";
                 $q[] = "sha1='" . sqlq(Filer::binary_sha1($new_joindoc->sha1)) . "'";
                 $q[] = "timestamp=" . $new_joindoc->timestamp;
-                if ($Conf->sversion >= 145)
+                if ($this->conf->sversion >= 145)
                     $q[] = "pdfFormatStatus=0";
             } else if (!$paperid || ($new_joindoc && !$old_joindoc)) {
                 $q[] = "size=0,mimetype='',sha1='',timestamp=0";
-                if ($Conf->sversion >= 145)
+                if ($this->conf->sversion >= 145)
                     $q[] = "pdfFormatStatus=0";
             }
 
@@ -982,7 +978,7 @@ class PaperStatus {
             $is_submitted = !get($pj, "withdrawn") && get($pj, "submitted");
             $was_submitted = $old_pj && !get($old_pj, "withdrawn") && get($old_pj, "submitted");
             if ($is_submitted != $was_submitted)
-                $Conf->update_papersub_setting($is_submitted);
+                $this->conf->update_papersub_setting($is_submitted);
         }
 
         // update PaperTopics

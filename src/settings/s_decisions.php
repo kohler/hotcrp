@@ -5,23 +5,21 @@
 
 class SettingRenderer_Decisions extends SettingRenderer {
 function render(SettingValues $sv) {
-    global $Conf;
-
     echo "<h3 class=\"settings\">Review sharing and responses</h3>\n";
     echo "Can <b>authors see reviews and author-visible comments</b> for their papers?<br />";
-    if ($Conf->setting("resp_active"))
+    if ($sv->conf->setting("resp_active"))
         $no_text = "No, unless responses are open";
     else
         $no_text = "No";
-    if (!$Conf->setting("au_seerev", 0)
-        && $Conf->timeAuthorViewReviews())
+    if (!$sv->conf->setting("au_seerev", 0)
+        && $sv->conf->timeAuthorViewReviews())
         $no_text .= '<div class="hint">Authors are currently able to see reviews since responses are open.</div>';
     $opts = array(Conf::AUSEEREV_NO => $no_text,
                   Conf::AUSEEREV_YES => "Yes");
     if ($sv->newv("au_seerev") == Conf::AUSEEREV_UNLESSINCOMPLETE
-        && !opt("allow_auseerev_unlessincomplete"))
-        $Conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
-    if (opt("allow_auseerev_unlessincomplete"))
+        && !$sv->conf->opt("allow_auseerev_unlessincomplete"))
+        $sv->conf->save_setting("opt.allow_auseerev_unlessincomplete", 1);
+    if ($sv->conf->opt("allow_auseerev_unlessincomplete"))
         $opts[Conf::AUSEEREV_UNLESSINCOMPLETE] = "Yes, after completing any assigned reviews for other papers";
     $opts[Conf::AUSEEREV_TAGS] = "Yes, for papers with any of these tags:&nbsp; " . $sv->render_entry("tag_au_seerev", ["onfocus" => "$('#au_seerev_" . Conf::AUSEEREV_TAGS . "').click()"]);
     $sv->echo_radio_table("au_seerev", $opts);
@@ -40,7 +38,7 @@ function render(SettingValues $sv) {
         for ($i = 1; isset($sv->req["resp_roundname_$i"]); ++$i)
             $rrounds[$i] = $sv->req["resp_roundname_$i"];
     } else
-        $rrounds = $Conf->resp_round_list();
+        $rrounds = $sv->conf->resp_round_list();
     $rrounds["n"] = "";
     foreach ($rrounds as $i => $rname) {
         $isuf = $i ? "_$i" : "";
@@ -59,7 +57,7 @@ function render(SettingValues $sv) {
         echo '"><table><tbody class="secondary-settings">';
         $sv->echo_entry_row("resp_roundname$isuf", "Response name");
         if ($sv->curv("resp_open$isuf") === 1 && ($x = $sv->curv("resp_done$isuf")))
-            $Conf->settings["resp_open$isuf"] = $x - 7 * 86400;
+            $sv->conf->settings["resp_open$isuf"] = $x - 7 * 86400;
         $sv->echo_entry_row("resp_open$isuf", "Start time");
         $sv->echo_entry_row("resp_done$isuf", "Hard deadline");
         $sv->echo_entry_row("resp_grace$isuf", "Grace period");
@@ -83,12 +81,12 @@ function render(SettingValues $sv) {
 
     echo "<div class='g'></div>\n";
     echo "<table>\n";
-    $decs = $Conf->decision_map();
+    $decs = $sv->conf->decision_map();
     krsort($decs);
 
     // count papers per decision
     $decs_pcount = array();
-    $result = $Conf->qe_raw("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
+    $result = $sv->conf->qe_raw("select outcome, count(*) from Paper where timeSubmitted>0 group by outcome");
     while (($row = edb_row($result)))
         $decs_pcount[$row[0]] = $row[1];
 
@@ -152,7 +150,7 @@ function render(SettingValues $sv) {
 }
 
     function crosscheck(SettingValues $sv) {
-        global $Conf, $Now;
+        global $Now;
 
         if ($sv->has_interest("final_open")
             && $sv->newv("final_open")
@@ -220,14 +218,13 @@ class Decision_SettingParser extends SettingParser {
     }
 
     public function save(SettingValues $sv, Si $si) {
-        global $Conf;
         // mark all used decisions
-        $decs = $Conf->decision_map();
+        $decs = $sv->conf->decision_map();
         $update = false;
         foreach ($sv->req as $k => $v)
             if (str_starts_with($k, "dec") && ($k = cvtint(substr($k, 3), 0))) {
                 if ($v == "") {
-                    $Conf->qe_raw("update Paper set outcome=0 where outcome=$k");
+                    $sv->conf->qe_raw("update Paper set outcome=0 where outcome=$k");
                     unset($decs[$k]);
                     $update = true;
                 } else if ($v != $decs[$k]) {
@@ -251,10 +248,9 @@ class Decision_SettingParser extends SettingParser {
 
 class RespRound_SettingParser extends SettingParser {
     function parse(SettingValues $sv, Si $si) {
-        global $Conf;
         if (!$sv->newv("resp_active"))
             return false;
-        $old_roundnames = $Conf->resp_round_list();
+        $old_roundnames = $sv->conf->resp_round_list();
         $roundnames = array(1);
         $roundnames_set = array();
 

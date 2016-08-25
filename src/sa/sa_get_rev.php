@@ -23,8 +23,7 @@ class GetReviewBase_SearchAction extends SearchAction {
         $this->isform = $isform;
         $this->iszip = $iszip;
     }
-    protected function finish($ssel, $texts, $errors) {
-        global $Conf;
+    protected function finish(Contact $user, $ssel, $texts, $errors) {
         $texts = $ssel->reorder($texts);
         if (empty($texts)) {
             if (empty($errors))
@@ -52,7 +51,7 @@ class GetReviewBase_SearchAction extends SearchAction {
             $rfname .= key($texts);
 
         if ($this->isform)
-            $header = $Conf->review_form()->textFormHeader(count($texts) > 1 && !$this->iszip);
+            $header = $user->conf->review_form()->textFormHeader(count($texts) > 1 && !$this->iszip);
         else
             $header = "";
 
@@ -67,10 +66,10 @@ class GetReviewBase_SearchAction extends SearchAction {
             $text .= join("", $texts);
             downloadText($text, $rfname);
         } else {
-            $zip = new ZipDocument($Conf->download_prefix . "reviews.zip");
+            $zip = new ZipDocument($user->conf->download_prefix . "reviews.zip");
             $zip->warnings = $warnings;
             foreach ($texts as $pid => $text)
-                $zip->add($header . $text, $Conf->download_prefix . $rfname . $pid . ".txt");
+                $zip->add($header . $text, $user->conf->download_prefix . $rfname . $pid . ".txt");
             $result = $zip->download();
             if (!$result->error)
                 exit;
@@ -89,8 +88,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
         $actions[] = [2000 + $this->iszip, $this->subname, "Review assignments", "Review forms" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
-        $rf = $Conf->review_form();
+        $rf = $user->conf->review_form();
         if ($ssel->is_empty()) {
             // blank form
             $text = $rf->textFormHeader("blank") . $rf->textForm(null, null, $user, null) . "\n";
@@ -98,7 +96,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
             return;
         }
 
-        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "myReviewsOpt" => 1));
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "myReviewsOpt" => 1]);
         $texts = array();
         $errors = array();
         while (($row = PaperInfo::fetch($result, $user))) {
@@ -118,7 +116,7 @@ class GetReviewForm_SearchAction extends GetReviewBase_SearchAction {
             }
         }
 
-        $this->finish($ssel, $texts, $errors);
+        $this->finish($user, $ssel, $texts, $errors);
     }
 }
 
@@ -133,11 +131,10 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $actions[] = [3060 + $this->iszip, $this->subname, "Reviews", "Reviews" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
-        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1));
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
         $texts = $errors = $prows = [];
         $user->set_forceShow(true);
-        $rf = $Conf->review_form();
+        $rf = $user->conf->review_form();
         while (($row = PaperInfo::fetch($result, $user))) {
             if (!isset($prows[$row->paperId]))
                 $prows[$row->paperId] = $row;
@@ -147,14 +144,14 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
                 defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $user) . "\n");
         }
 
-        $crows = $Conf->comment_rows($Conf->comment_query("paperId" . sql_in_numeric_set($ssel->selection())), $user);
+        $crows = $user->conf->comment_rows($user->conf->comment_query("paperId" . sql_in_numeric_set($ssel->selection())), $user);
         foreach ($crows as $row)
             if ($user->can_view_comment($prows[$row->paperId], $row, null)) {
                 $crow = new CommentInfo($row, $prows[$row->paperId]);
                 defappend($texts[$row->paperId], $crow->unparse_text($user) . "\n");
             }
 
-        $this->finish($ssel, $texts, $errors);
+        $this->finish($user, $ssel, $texts, $errors);
     }
 }
 
@@ -166,14 +163,13 @@ class GetScores_SearchAction extends SearchAction {
         $actions[] = [3070, $this->subname, "Reviews", "Scores"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
-        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1));
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviewScores" => 1, "reviewerName" => 1]);
 
         // compose scores; NB chair is always forceShow
         $errors = array();
         $texts = $any_scores = array();
         $any_decision = $any_reviewer_identity = false;
-        $rf = $Conf->review_form();
+        $rf = $user->conf->review_form();
         $bad_pid = -1;
         while (($row = PaperInfo::fetch($result, $user))) {
             if (!$row->reviewSubmitted || $row->paperId == $bad_pid)
@@ -184,7 +180,7 @@ class GetScores_SearchAction extends SearchAction {
             } else {
                 $a = array("paper" => $row->paperId, "title" => $row->title);
                 if ($row->outcome && $user->can_view_decision($row, true))
-                    $a["decision"] = $any_decision = $Conf->decision_name($row->outcome);
+                    $a["decision"] = $any_decision = $user->conf->decision_name($row->outcome);
                 $view_bound = $user->view_score_bound($row, $row, true);
                 $this_scores = false;
                 foreach ($rf->forder as $field => $f)
@@ -224,11 +220,10 @@ class GetVotes_SearchAction extends SearchAction {
         return $user->isPC;
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
             $showtag = trim($qreq->tag); // no "23~" prefix
-            $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag));
+            $result = $user->paper_result(["paperId" => $ssel->selection(), "tagIndex" => $tag]);
             $texts = array();
             while (($prow = PaperInfo::fetch($result, $user)))
                 if ($user->can_view_tags($prow, true))
@@ -241,17 +236,15 @@ class GetVotes_SearchAction extends SearchAction {
 
 class GetRank_SearchAction extends SearchAction {
     function allow(Contact $user) {
-        global $Conf;
-        return $Conf->setting("tag_rank") && $user->is_reviewer();
+        return $user->conf->setting("tag_rank") && $user->is_reviewer();
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
-        $settingrank = $Conf->setting("tag_rank") && $qreq->tag == "~" . $Conf->setting_data("tag_rank");
+        $settingrank = $user->conf->setting("tag_rank") && $qreq->tag == "~" . $user->conf->setting_data("tag_rank");
         if (!$user->isPC && !($user->is_reviewer() && $settingrank))
             return self::EPERM;
         $tagger = new Tagger($user);
         if (($tag = $tagger->check($qreq->tag, Tagger::NOVALUE | Tagger::NOCHAIR))) {
-            $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"));
+            $result = $user->paper_result(["paperId" => $ssel->selection(), "tagIndex" => $tag, "order" => "order by tagIndex, PaperReview.overAllMerit desc, Paper.paperId"]);
             $real = "";
             $null = "\n";
             while (($prow = PaperInfo::fetch($result, $user)))
@@ -294,14 +287,12 @@ class GetLead_SearchAction extends SearchAction {
         return $user->isPC;
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        global $Conf;
-        if ($Conf->has_any_lead_or_shepherd())
+        if ($user->conf->has_any_lead_or_shepherd())
             $actions[] = [3091 - $this->islead, $this->subname, "Reviews", $this->islead ? "Discussion leads" : "Shepherds"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        global $Conf;
         $type = $this->islead ? "lead" : "shepherd";
-        $result = $Conf->paper_result($user, array("paperId" => $ssel->selection(), "reviewerName" => $type));
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "reviewerName" => $type]);
         $texts = array();
         while (($row = PaperInfo::fetch($result, $user)))
             if ($row->reviewEmail

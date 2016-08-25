@@ -40,7 +40,7 @@ function fix_one_delegation() {
             && ($xid = Contact::id_by_email($m[1])))
             $proposals[$xid] = true;
         else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
-                 && ($pc = pcByEmail($m[1]))
+                 && ($pc = $Conf->pc_member_by_email($m[1]))
                  && $pc->can_administer($prow))
             $confirmations[$row->contactId] = $pc->contactId;
     }

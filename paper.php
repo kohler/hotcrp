@@ -281,7 +281,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
                  || opt("noPapers")))
         $action = "submit";
 
-    $ps = new PaperStatus($Me);
+    $ps = new PaperStatus($Conf, $Me);
     $opj = $prow ? $ps->paper_json($prow) : null;
     $pj = PaperStatus::clone_json($opj);
     PaperSaver::apply_all($Me, $pj, $opj, $Qreq, $action);
@@ -321,7 +321,7 @@ if (($Qreq->update || $Qreq->submitfinal) && check_post($Qreq)) {
 
 if ($Qreq->updatecontacts && check_post($Qreq) && $prow) {
     if ($Me->can_administer($prow) || $Me->act_author_view($prow)) {
-        $ps = new PaperStatus($Me);
+        $ps = new PaperStatus($Conf, $Me);
         $opj = $ps->paper_json($prow);
         $pj = PaperStatus::clone_json($opj);
         PaperSaver::replace_contacts($pj, $Qreq);
@@ -392,7 +392,7 @@ $paperTable->initialize($editable, $editable && $useRequest);
 if ($ps && $paperTable->mode === "edit")
     $paperTable->set_edit_status($ps);
 else if ($prow && $paperTable->mode === "edit") {
-    $ps = new PaperStatus($Me, ["forceShow" => true]);
+    $ps = new PaperStatus($Conf, $Me, ["forceShow" => true]);
     $ps->paper_json($prow, ["msgs" => true]);
     $paperTable->set_edit_status($ps);
 }

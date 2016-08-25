@@ -181,7 +181,7 @@ $user_estrin = user("estrin@usc.edu");
 $user_floyd = user("floyd@EE.lbl.gov");
 $user_van = user("van@ee.lbl.gov");
 
-$ps = new PaperStatus(null);
+$ps = new PaperStatus($Conf);
 $ps->save_paper_json((object) [
     "id" => 1,
     "authors" => ["puneet@catarina.usc.edu", $user_estrin->email,

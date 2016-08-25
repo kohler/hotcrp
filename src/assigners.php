@@ -1946,8 +1946,8 @@ class AssignmentSet {
             if ($assigner->pid > 0 && $assigner->notify_tracker())
                 $pids[$assigner->pid] = true;
         }
-        if (count($pids) && opt("trackerCometSite"))
-            MeetingTracker::contact_tracker_comet(array_keys($pids));
+        if (count($pids) && $this->conf->opt("trackerCometSite"))
+            MeetingTracker::contact_tracker_comet($this->conf, array_keys($pids));
 
         return true;
     }

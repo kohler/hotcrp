@@ -43,7 +43,6 @@ class SettingRenderer_Tags extends SettingRenderer {
     }
 
     private function do_track($sv, $trackname, $tnum) {
-        global $Conf;
         echo "<div id=\"trackgroup$tnum\"",
             ($tnum ? "" : " style=\"display:none\""),
             "><table style=\"margin-bottom:0.5em\">";
@@ -55,13 +54,13 @@ class SettingRenderer_Tags extends SettingRenderer {
                 Ht::entry("name_track$tnum", $trackname, $sv->sjs("name_track$tnum", array("placeholder" => "(tag)"))), ":";
         echo "</td></tr>\n";
 
-        $t = $Conf->setting_json("tracks");
+        $t = $sv->conf->setting_json("tracks");
         $t = $t && $trackname !== "" ? get($t, $trackname) : null;
         $this->do_track_permission($sv, "view", "Who can see these papers?", $tnum, $t);
         $this->do_track_permission($sv, "viewpdf", ["Who can see PDFs?", "Assigned reviewers can always see PDFs."], $tnum, $t);
         $this->do_track_permission($sv, "viewrev", "Who can see reviews?", $tnum, $t);
         $hint = "";
-        if ($Conf->setting("pc_seeblindrev"))
+        if ($sv->conf->setting("pc_seeblindrev"))
             $hint = "Regardless of this setting, PC members can’t see reviewer names until they’ve completed a review for the same paper (<a href=\"" . hoturl("settings", "group=reviews") . "\">Settings &gt; Reviews &gt; Visibility</a>).";
         $this->do_track_permission($sv, "viewrevid", ["Who can see reviewer names?", $hint], $tnum, $t);
         $this->do_track_permission($sv, "assrev", "Who can be assigned a review?", $tnum, $t);
@@ -72,7 +71,6 @@ class SettingRenderer_Tags extends SettingRenderer {
     }
 
 function render(SettingValues $sv) {
-    global $Conf;
     $dt_renderer = function ($tl) {
         return join(" ", array_map(function ($t) { return $t->tag; },
                                    array_filter($tl, function ($t) { return !$t->pattern_instance; })));
@@ -80,14 +78,14 @@ function render(SettingValues $sv) {
 
     // Tags
     $tagger = new Tagger;
-    $tagmap = $Conf->tags();
+    $tagmap = $sv->conf->tags();
     echo "<h3 class=\"settings\">Tags</h3>\n";
     echo "<table><tbody class=\"secondary-settings\">";
     $sv->set_oldv("tag_chair", $dt_renderer($tagmap->filter("chair")));
     $sv->echo_entry_row("tag_chair", "Chair-only tags", "PC members can view these tags, but only administrators can change them.");
 
     $sv->set_oldv("tag_sitewide", $dt_renderer($tagmap->filter("sitewide")));
-    if ($sv->newv("tag_sitewide") || $Conf->has_any_manager())
+    if ($sv->newv("tag_sitewide") || $sv->conf->has_any_manager())
         $sv->echo_entry_row("tag_sitewide", "Site-wide tags", "Administrators can view and change these tags for every paper.");
 
     $sv->set_oldv("tag_approval", $dt_renderer($tagmap->filter("approval")));
@@ -99,14 +97,14 @@ function render(SettingValues $sv) {
     $sv->set_oldv("tag_vote", join(" ", $x));
     $sv->echo_entry_row("tag_vote", "Allotment voting tags", "“vote#10” declares an allotment of 10 votes per PC member. <span class=\"barsep\">·</span> <a href=\"" . hoturl("help", "t=votetags") . "\">What is this?</a>");
 
-    $sv->set_oldv("tag_rank", $Conf->setting_data("tag_rank", ""));
+    $sv->set_oldv("tag_rank", $sv->conf->setting_data("tag_rank", ""));
     $sv->echo_entry_row("tag_rank", "Ranking tag", "The <a href='" . hoturl("offline") . "'>offline reviewing page</a> will expose support for uploading rankings by this tag. <span class='barsep'>·</span> <a href='" . hoturl("help", "t=ranking") . "'>What is this?</a>");
     echo "</tbody></table>";
 
     echo "<div class='g'></div>\n";
     $sv->echo_checkbox('tag_seeall', "PC can see tags for conflicted papers");
 
-    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_color", ""), $m,
+    preg_match_all('_(\S+)=(\S+)_', $sv->conf->setting_data("tag_color", ""), $m,
                    PREG_SET_ORDER);
     $tag_colors = array();
     foreach ($m as $x)
@@ -122,7 +120,7 @@ function render(SettingValues $sv) {
         $tag_colors_rows[] = "<tr class='k0 ${k}tag'><td class='lxcaption'></td><td class='lxcaption taghl'>$k</td><td class='lentry' style='font-size: 10.5pt'><input type='text' name='tag_color_$k' value=\"" . htmlspecialchars($v) . "\" size='40' class=\"need-autogrow\"/></td></tr>"; /* MAINSIZE */
     }
 
-    preg_match_all('_(\S+)=(\S+)_', $Conf->setting_data("tag_badge", ""), $m,
+    preg_match_all('_(\S+)=(\S+)_', $sv->conf->setting_data("tag_badge", ""), $m,
                    PREG_SET_ORDER);
     $tag_badges = array();
     foreach ($m as $x)
@@ -153,7 +151,7 @@ function render(SettingValues $sv) {
         "<div class=\"smg\"></div>\n";
     $this->do_track($sv, "", 0);
     $tracknum = 2;
-    $trackj = $Conf->setting_json("tracks") ? : (object) array();
+    $trackj = $sv->conf->setting_json("tracks") ? : (object) array();
     // existing tracks
     foreach ($trackj as $trackname => $x)
         if ($trackname !== "_") {
@@ -279,10 +277,9 @@ class Tag_SettingParser extends SettingParser {
     }
 
     public function save(SettingValues $sv, Si $si) {
-        global $Conf;
         if ($si->name == "tag_vote" && $sv->has_savedv("tag_vote")) {
             // check allotments
-            $pcm = pcMembers();
+            $pcm = $sv->conf->pc_members();
             foreach (preg_split('/\s+/', $sv->savedv("tag_vote")) as $t) {
                 if ($t === "")
                     continue;
@@ -310,22 +307,22 @@ class Tag_SettingParser extends SettingParser {
                         $sv->set_error("tag_vote", Text::user_html($pcm[$who]) . " already has more than $allotment votes for tag “{$base}”.");
 
                 $q = ($negative ? " or (tag like '%~{$sqlbase}' and tagIndex<0)" : "");
-                $Conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
+                $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($base) . "'$q");
 
                 $q = array();
                 foreach ($pvals as $pid => $what)
                     $q[] = "($pid, '" . sqlq($base) . "', $what)";
                 if (count($q) > 0)
-                    $Conf->qe_raw("insert into PaperTag values " . join(", ", $q));
+                    $sv->conf->qe_raw("insert into PaperTag values " . join(", ", $q));
             }
         }
 
         if ($si->name == "tag_approval" && $sv->has_savedv("tag_approval")) {
-            $pcm = pcMembers();
+            $pcm = $sv->conf->pc_members();
             foreach (preg_split('/\s+/', $sv->savedv("tag_approval")) as $t) {
                 if ($t === "")
                     continue;
-                $result = $Conf->q_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
+                $result = $sv->conf->q_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~" . sqlq_for_like($t) . "'");
                 $pvals = array();
                 $negative = false;
                 while (($row = edb_row($result))) {
@@ -338,17 +335,17 @@ class Tag_SettingParser extends SettingParser {
                 }
 
                 $q = ($negative ? " or (tag like '%~" . sqlq_for_like($t) . "' and tagIndex<0)" : "");
-                $Conf->qe_raw("delete from PaperTag where tag='" . sqlq($t) . "'$q");
+                $sv->conf->qe_raw("delete from PaperTag where tag='" . sqlq($t) . "'$q");
 
                 $q = array();
                 foreach ($pvals as $pid => $what)
                     $q[] = "($pid, '" . sqlq($t) . "', $what)";
                 if (count($q) > 0)
-                    $Conf->qe_raw("insert into PaperTag values " . join(", ", $q));
+                    $sv->conf->qe_raw("insert into PaperTag values " . join(", ", $q));
             }
         }
 
-        $Conf->invalidate_caches(["taginfo" => true]);
+        $sv->conf->invalidate_caches(["taginfo" => true]);
     }
 }
 

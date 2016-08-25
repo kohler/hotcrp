@@ -228,7 +228,7 @@ function _searchQuickrefRow($caption, $search, $explanation, $other = null) {
 function meaningful_pc_tag() {
     global $Me;
     if ($Me->isPC)
-        foreach (pcTags() as $tag)
+        foreach ($Me->conf->pc_tags() as $tag)
             if ($tag !== "pc")
                 return $tag;
     return false;

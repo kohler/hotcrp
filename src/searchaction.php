@@ -116,14 +116,13 @@ class SearchAction {
     }
 
 
-    static function pcassignments_csv_data($user, $selection) {
-        global $Conf;
-        $pcm = pcMembers();
-        $round_list = $Conf->round_list();
+    static function pcassignments_csv_data(Contact $user, $selection) {
+        $pcm = $user->conf->pc_members();
+        $round_list = $user->conf->round_list();
         $reviewnames = array(REVIEW_PC => "pcreview", REVIEW_SECONDARY => "secondary", REVIEW_PRIMARY => "primary");
         $any_round = false;
         $texts = array();
-        $result = $Conf->paper_result($user, array("paperId" => $selection, "assignments" => 1));
+        $result = $user->paper_result(["paperId" => $selection, "assignments" => 1]);
         while (($prow = PaperInfo::fetch($result, $user)))
             if (!$user->allow_administer($prow)) {
                 $texts[] = array();

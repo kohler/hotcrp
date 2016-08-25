@@ -331,7 +331,7 @@ class AutoassignerInterface {
         // prepare autoassigner
         if ($Qreq->seed && is_numeric($Qreq->seed))
             srand((int) $Qreq->seed);
-        $this->autoassigner = $autoassigner = new Autoassigner($SSel->selection());
+        $this->autoassigner = $autoassigner = new Autoassigner($Conf, $SSel->selection());
         if ($Qreq->pctyp === "sel") {
             $n = $autoassigner->select_pc(array_keys($pcsel));
             if ($n == 0) {
@@ -568,7 +568,7 @@ echo "<tr><td class=\"nw\">";
 doRadio('pctyp', 'sel', '');
 echo "</td><td>", Ht::label("Use selected PC members:", "pctyp_sel"), " &nbsp; (select ";
 $pctyp_sel = array(array("all", 1, "all"), array("none", 0, "none"));
-$pctags = pcTags();
+$pctags = $Conf->pc_tags();
 if (count($pctags)) {
     $tagsjson = array();
     foreach (pcMembers() as $pc)
