@@ -28,7 +28,7 @@ if (isset($_REQUEST["uploadForm"])
     $tf = $rf->beginTextForm($_FILES["uploadedFile"]["tmp_name"],
                              $_FILES["uploadedFile"]["name"]);
     while (($req = $rf->parseTextForm($tf, req("override"))))
-        $rf->check_save_review($req, $tf, $Me);
+        $rf->check_save_review($Me, $req, $tf);
     $rf->textFormMessages($tf);
     // Uploading forms may have completed the reviewer's task; recheck roles.
     Contact::update_rights();

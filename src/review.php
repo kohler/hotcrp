@@ -917,31 +917,31 @@ class ReviewForm {
         return $this->tfError($tf, true, $msg . "<br /><span class=\"hint\">You may be mistakenly submitting a review form intended for someone else. Remove the form’s “Reviewer:” line to enter your own review.</span>", "reviewerEmail");
     }
 
-    function check_save_review($req, &$tf, $contact) {
+    function check_save_review(Contact $user, $req, &$tf, Contact $reviewer = null) {
         // look up reviewer
-        $Reviewer = $contact;
+        $reviewer = $reviewer ? : $user;
         if (isset($req["reviewerEmail"])
-            && strcasecmp($req["reviewerEmail"], $contact->email) != 0
-            && !($Reviewer = $this->conf->user_by_email($req["reviewerEmail"])))
-            return $this->reviewer_error($req, $tf, $contact->privChair ? "No such user." : null);
+            && strcasecmp($req["reviewerEmail"], $user->email) != 0
+            && !($reviewer = $this->conf->user_by_email($req["reviewerEmail"])))
+            return $this->reviewer_error($req, $tf, $user->privChair ? "No such user." : null);
 
         // look up paper & review rows, check review permission
-        if (!($prow = $this->conf->paperRow($req["paperId"], $contact, $whyNot)))
+        if (!($prow = $this->conf->paperRow($req["paperId"], $user, $whyNot)))
             return $this->tfError($tf, true, whyNotText($whyNot, "review"));
         $rrow_args = ["paperId" => $prow->paperId, "first" => true,
-            "contactId" => $Reviewer->contactId, "rev_tokens" => $contact->review_tokens()];
+            "contactId" => $reviewer->contactId, "rev_tokens" => $user->review_tokens()];
         $rrow = $this->conf->reviewRow($rrow_args);
         $new_rrid = false;
-        if ($contact !== $Reviewer && !$rrow) {
-            if (!$contact->can_create_review_from($prow, $Reviewer))
+        if ($user !== $reviewer && !$rrow) {
+            if (!$user->can_create_review_from($prow, $reviewer))
                 return $this->reviewer_error($req, $tf);
-            $new_rrid = $contact->assign_review($prow->paperId, $Reviewer->contactId, $Reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
+            $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
             if (!$new_rrid)
                 return $this->tfError($tf, true, "Internal error while creating review.");
             $rrow = $this->conf->reviewRow($rrow_args);
         }
-        if (($whyNot = $contact->perm_submit_review($prow, $rrow))) {
-            if ($contact === $Reviewer || $contact->can_view_review_identity($prow, $rrow))
+        if (($whyNot = $user->perm_submit_review($prow, $rrow))) {
+            if ($user === $reviewer || $user->can_view_review_identity($prow, $rrow))
                 return $this->tfError($tf, true, whyNotText($whyNot, "review"));
             else
                 return $this->reviewer_error($req, $tf);
@@ -949,11 +949,11 @@ class ReviewForm {
 
         // actually check review and save
         if ($this->checkRequestFields($req, $rrow, $tf)) {
-            $this->save_review($req, $rrow, $prow, $contact, $tf);
+            $this->save_review($req, $rrow, $prow, $user, $tf);
             return true;
         } else {
             if ($new_rrid)
-                $contact->assign_review($prow->paperId, $Reviewer->contactId, 0);
+                $user->assign_review($prow->paperId, $reviewer->contactId, 0);
             return false;
         }
     }
@@ -1211,6 +1211,10 @@ $blind\n";
         unset($garbage);
     }
 
+    static function blank_text_form() {
+        return ["err" => [], "confirm" => []];
+    }
+
     function beginTextForm($filename, $printFilename) {
         if (($contents = file_get_contents($filename)) === false)
             return null;
@@ -1349,6 +1353,56 @@ $blind\n";
             return null;
         else
             return $req;
+    }
+
+    function parse_json($j) {
+        if (!is_object($j) && !is_array($j))
+            return false;
+        $req = [];
+
+        // XXX validate more
+        $first = $last = null;
+        foreach ($j as $k => $v) {
+            if ($k === "round") {
+                if ($v === null || is_string($v))
+                    $req["round"] = $v;
+            } else if ($k === "blind") {
+                if (is_bool($v))
+                    $req["blind"] = $v ? 1 : 0;
+            } else if ($k === "submitted") {
+                if (is_bool($v))
+                    $req["ready"] = $v ? 1 : 0;
+            } else if ($k === "draft") {
+                if (is_bool($v))
+                    $req["ready"] = $v ? 0 : 1;
+            } else if ($k === "name" || $k === "reviewer_name") {
+                if (is_string($v))
+                    $req["reviewerName"] = $v;
+            } else if ($k === "email" || $k === "reviewer_email") {
+                if (is_string($v))
+                    $req["reviewerEmail"] = $v;
+            } else if ($k === "first" || $k === "firstName") {
+                if (is_string($v))
+                    $first = $v;
+            } else if ($k === "last" || $k === "lastName") {
+                if (is_string($v))
+                    $last = $v;
+            } else if ($k === "format") {
+                if (is_int($v))
+                    $req["reviewFormat"] = $v;
+            } else if ($k === "version") {
+                if (is_int($v))
+                    $req["version"] = $v;
+            } else if (($f = $this->field_search($k))) {
+                if ((is_string($v) || is_int($v) || $v === null)
+                    && !isset($req[$f->id]))
+                    $req[$f->id] = $v;
+            }
+        }
+        if (!isset($req["reviewerName"]) && ($first || $last))
+            $req["reviewerName"] = ($first && $last ? "$last, $first" : ($last ? : $first));
+
+        return empty($req) ? null : $req;
     }
 
     private static function _paperCommaJoin($pl, $a, $single) {
