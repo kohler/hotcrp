@@ -2676,12 +2676,11 @@ class Conf {
         $profile_html = "";
         if ($Me && !$Me->is_empty()) {
             // profile link
-            $xsep = ' <span class="barsep">·</span> ';
+            $profile_parts = [];
             if ($Me->has_email() && !$Me->disabled) {
-                $profile_html .= '<a class="q" href="' . hoturl("profile") . '"><strong>'
+                $profile_parts[] = '<a class="q" href="' . hoturl("profile") . '"><strong>'
                     . htmlspecialchars($Me->email)
-                    . '</strong></a> &nbsp; <a href="' . hoturl("profile") . '">Profile</a>'
-                    . $xsep;
+                    . '</strong></a> &nbsp; <a href="' . hoturl("profile") . '">Profile</a>';
             }
 
             // "act as" link
@@ -2692,7 +2691,7 @@ class Conf {
                 if (!$Me->privChair || strcasecmp($Me->email, $actas) == 0)
                     $actas = $_SESSION["trueuser"]->email;
                 if (strcasecmp($Me->email, $actas) != 0)
-                    $profile_html .= "<a href=\"" . selfHref(array("actas" => $actas)) . "\">"
+                    $profile_parts[] = "<a href=\"" . selfHref(array("actas" => $actas)) . "\">"
                         . ($Me->privChair ? htmlspecialchars($actas) : "Admin")
                         . "&nbsp;" . Ht::img("viewas.png", "Act as " . htmlspecialchars($actas))
                         . "</a>";
@@ -2701,11 +2700,14 @@ class Conf {
             // help, sign out
             $x = ($id == "search" ? "t=$id" : ($id == "settings" ? "t=chair" : ""));
             if (!$Me->disabled)
-                $profile_html .= $xsep . '<a href="' . hoturl("help", $x) . '">Help</a>';
+                $profile_parts[] = '<a href="' . hoturl("help", $x) . '">Help</a>';
             if (!$Me->has_email() && !isset($this->opt["httpAuthLogin"]))
-                $profile_html .= $xsep . '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
+                $profile_parts[] = '<a href="' . hoturl("index", "signin=1") . '">Sign&nbsp;in</a>';
             if (!$Me->is_empty() || isset($this->opt["httpAuthLogin"]))
-                $profile_html .= $xsep . '<a href="' . hoturl_post("index", "signout=1") . '">Sign&nbsp;out</a>';
+                $profile_parts[] = '<a href="' . hoturl_post("index", "signout=1") . '">Sign&nbsp;out</a>';
+
+            if (!empty($profile_parts))
+                $profile_html .= join(' <span class="barsep">·</span> ', $profile_parts);
         }
 
         if (!$title_div && $title)
