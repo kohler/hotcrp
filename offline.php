@@ -27,7 +27,7 @@ if (isset($_REQUEST["uploadForm"])
     && check_post()) {
     $tf = $rf->beginTextForm($_FILES["uploadedFile"]["tmp_name"],
                              $_FILES["uploadedFile"]["name"]);
-    while (($req = $rf->parseTextForm($tf)))
+    while (($req = $rf->parseTextForm($tf, req("override"))))
         $rf->check_save_review($req, $tf, $Me);
     $rf->textFormMessages($tf);
     // Uploading forms may have completed the reviewer's task; recheck roles.

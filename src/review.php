@@ -648,7 +648,7 @@ class ReviewForm {
                 Conf::msg_warning($w);
             $req["unready"] = true;
         }
-        return ($nokfields > 0);
+        return $nokfields > 0;
     }
 
     function review_watch_callback($prow, $minic) {
@@ -1218,14 +1218,14 @@ $blind\n";
                      'lineno' => 0, 'err' => array(), 'confirm' => array());
     }
 
-    function parseTextForm(&$tf) {
+    function parseTextForm(&$tf, $override) {
         $text = $tf['text'];
         $lineno = $tf['lineno'];
         $tf['firstLineno'] = $lineno + 1;
         $tf['fieldLineno'] = array();
         $req = array();
-        if (isset($_REQUEST["override"]))
-            $req["override"] = $_REQUEST["override"];
+        if ($override !== null)
+            $req["override"] = $override;
 
         $mode = 0;
         $nfields = 0;
@@ -1344,7 +1344,7 @@ $blind\n";
         }
 
         if ($nfields == 0 && $text) // try again
-            return $this->parseTextForm($tf);
+            return $this->parseTextForm($tf, $override);
         else if ($nfields == 0)
             return null;
         else

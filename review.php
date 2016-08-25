@@ -88,7 +88,7 @@ if (isset($_REQUEST["uploadForm"])
     // parse form, store reviews
     $tf = $rf->beginTextForm($_FILES['uploadedFile']['tmp_name'], $_FILES['uploadedFile']['name']);
 
-    if (!($req = $rf->parseTextForm($tf)))
+    if (!($req = $rf->parseTextForm($tf, req("override"))))
         /* error already reported */;
     else if (isset($req['paperId']) && $req['paperId'] != $prow->paperId)
         $rf->tfError($tf, true, "This review form is for paper #" . $req['paperId'] . ", not paper #$prow->paperId; did you mean to upload it here?  I have ignored the form.");
@@ -100,7 +100,7 @@ if (isset($_REQUEST["uploadForm"])
             $rf->save_review($req, $paperTable->editrrow, $prow, $Me, $tf);
     }
 
-    if (count($tf['err']) == 0 && $rf->parseTextForm($tf))
+    if (count($tf['err']) == 0 && $rf->parseTextForm($tf, req("override")))
         $rf->tfError($tf, false, "Only the first review form in the file was parsed.  <a href='" . hoturl("offline") . "'>Upload multiple-review files here.</a>");
 
     $rf->textFormMessages($tf);
