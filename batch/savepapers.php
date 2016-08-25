@@ -8,7 +8,14 @@ $arg = getopt_rest($argv, "hn:qr", ["help", "name:", "quiet", "disable", "disabl
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
-    fwrite(STDOUT, "Usage: php batch/savepapers.php [-n CONFID] [--disable-users] FILE\n");
+    fwrite(STDOUT, "Usage: php batch/savepapers.php [-n CONFID] [OPTIONS] FILE
+
+Options include:
+  --quiet          Don't print progress information
+  --disable-users  Newly created users are disabled
+  --match-title    Match papers by title if no `pid`
+  --ignore-pid     Ignore `pid` elements in JSON
+  --reviews        Save JSON reviews\n");
     exit(0);
 }
 
