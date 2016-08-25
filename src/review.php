@@ -1716,11 +1716,11 @@ $blind\n";
         $showtoken = $contact->review_token_cid($prow, $rrow);
         if ($contact->can_view_review_identity($prow, $rrow, null)
             && (!$showtoken || !Contact::is_anonymous_email($rrow->email))) {
-            $rj["author"] = Text::user_html($rrow);
-            $rj["author_email"] = $rrow->email;
+            $rj["reviewer"] = Text::user_html($rrow);
+            $rj["reviewer_email"] = $rrow->email;
         }
         if ($showtoken)
-            $rj["author_token"] = encode_token((int) $rrow->reviewToken);
+            $rj["reviewer_token"] = encode_token((int) $rrow->reviewToken);
         $time = self::rrow_modified_time($prow, $rrow, $contact, $revViewScore);
         if ($time > 1) {
             $rj["modified_at"] = (int) $time;

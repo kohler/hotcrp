@@ -2586,12 +2586,12 @@ function add_review(rrow) {
         if (rrow.round)
             rtype_text += '&nbsp;<span class="revround">' + escape_entities(rrow.round) + '</span>';
     }
-    if (rrow.token)
-        revinfo.push('Review token ' + rrow.token + rtype_text);
-    else if (rrow.author && rrow.blind)
-        revinfo.push('[' + rrow.author + ']' + rtype_text);
-    else if (rrow.author)
-        revinfo.push(rrow.author + rtype_text);
+    if (rrow.reviewer_token)
+        revinfo.push('Review token ' + rrow.reviewer_token + rtype_text);
+    else if (rrow.reviewer && rrow.blind)
+        revinfo.push('[' + rrow.reviewer + ']' + rtype_text);
+    else if (rrow.reviewer)
+        revinfo.push(rrow.reviewer + rtype_text);
     else if (rtype_text)
         revinfo.push(rtype_text.substr(7));
     if (rrow.modified_at)
