@@ -3,7 +3,8 @@ $ConfSitePATH = preg_replace(',/batch/[^/]+,', '', __FILE__);
 require_once("$ConfSitePATH/src/init.php");
 require_once("$ConfSitePATH/lib/getopt.php");
 
-$arg = getopt_rest($argv, "hn:qr", ["help", "name:", "quiet", "disable", "disable-users", "reviews"]);
+$arg = getopt_rest($argv, "hn:qr", ["help", "name:", "quiet", "disable", "disable-users",
+                                    "reviews", "match-title", "ignore-pid"]);
 if (isset($arg["h"]) || isset($arg["help"])
     || count($arg["_"]) > 1
     || (count($arg["_"]) && $arg["_"][0] !== "-" && $arg["_"][0][0] === "-")) {
@@ -15,6 +16,8 @@ $file = count($arg["_"]) ? $arg["_"][0] : "-";
 $quiet = isset($arg["q"]) || isset($arg["quiet"]);
 $disable_users = isset($arg["disable"]) || isset($arg["disable-users"]);
 $reviews = isset($arg["r"]) || isset($arg["reviews"]);
+$match_title = isset($arg["match-title"]);
+$ignore_pid = isset($arg["ignore-pid"]);
 $site_contact = $Conf->site_contact();
 
 if ($file === "-")
@@ -36,6 +39,13 @@ if (is_object($jp))
 $index = 0;
 foreach ($jp as $j) {
     ++$index;
+    if ($ignore_pid)
+        unset($j->pid, $j->id);
+    if (!isset($j->pid) && !isset($j->id) && isset($j->title) && is_string($j->title)) {
+        $pids = Dbl::fetch_first_columns("select paperId from Paper where title=?", simplify_whitespace($j->title));
+        if (count($pids) == 1)
+            $j->pid = (int) $pids[0];
+    }
     if (isset($j->pid) && is_int($j->pid) && $j->pid > 0)
         $prefix = "#$j->pid: ";
     else if (!isset($j->pid) && isset($j->id) && is_int($j->id) && $j->id > 0)
