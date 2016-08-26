@@ -1414,6 +1414,8 @@ $blind\n";
         }
         if (!isset($req["reviewerName"]) && ($first || $last))
             $req["reviewerName"] = ($first && $last ? "$last, $first" : ($last ? : $first));
+        if (!isset($req["ready"]))
+            $req["ready"] = 1;
 
         return empty($req) ? null : $req;
     }
