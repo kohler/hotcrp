@@ -124,6 +124,7 @@ CREATE TABLE `MailLog` (
   `replyto` blob,
   `subject` blob,
   `emailBody` blob,
+  `fromNonChair` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`mailId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -505,7 +506,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 145);
+insert into Settings (name, value) values ('allowPaperOption', 146);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

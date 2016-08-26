@@ -354,14 +354,11 @@ class MailSender {
         $recipients = defval($_REQUEST, "recipients", "");
 
         if ($this->sending) {
-            $q = "recipients='" . sqlq($recipients)
-                . "', cc='" . sqlq($_REQUEST["cc"])
-                . "', replyto='" . sqlq($_REQUEST["replyto"])
-                . "', subject='" . sqlq($_REQUEST["subject"])
-                . "', emailBody='" . sqlq($_REQUEST["emailBody"]) . "'";
-            if ($Conf->sversion >= 79)
-                $q .= ", q='" . sqlq($_REQUEST["q"]) . "', t='" . sqlq($_REQUEST["t"]) . "'";
-            if (($log_result = Dbl::query_raw("insert into MailLog set $q")))
+            $q = "recipients=?, cc=?, replyto=?, subject=?, emailBody=?, q=?, t=?";
+            $qv = [$recipients, $_REQUEST["cc"], $_REQUEST["replyto"], $_REQUEST["subject"], $_REQUEST["emailBody"], $_REQUEST["q"], $_REQUEST["t"]];
+            if ($Conf->sversion >= 146 && !$Me->privChair)
+                $q .= ", fromNonChair=1";
+            if (($log_result = $Conf->qe_apply("insert into MailLog set $q", $qv)))
                 $this->mailid_text = " #" . $log_result->insert_id;
             $Me->log_activity("Sending mail$this->mailid_text \"$subject\"");
         } else
@@ -593,14 +590,16 @@ echo "  <tr><td class='mhnp nw'>Subject:</td><td class='mhdp'>",
 
 
 if ($Me->privChair) {
-    $result = $Conf->qe_raw("select * from MailLog order by mailId desc limit 18");
+    $result = $Conf->qe_raw("select mailId, subject, emailBody from MailLog where fromNonChair=0 order by mailId desc limit 200");
     if (edb_nrows($result)) {
-        echo "<div style='padding-top:12px'>",
+        echo "<div style='padding-top:12px;max-height:24em;overflow-y:auto'>",
             "<strong>Recent mails:</strong>\n";
+        $i = 1;
         while (($row = edb_orow($result))) {
             echo "<div class='mhdd'><div style='position:relative;overflow:hidden'>",
-                "<div style='position:absolute;white-space:nowrap'><a class='q' href=\"", hoturl("mail", "fromlog=" . $row->mailId), "\">", htmlspecialchars($row->subject), " &ndash; <span class='dim'>", htmlspecialchars($row->emailBody), "</span></a></div>",
+                "<div style='position:absolute;white-space:nowrap'><span style='min-width:2em;text-align:right;display:inline-block' class='dim'>$i.</span> <a class='q' href=\"", hoturl("mail", "fromlog=" . $row->mailId), "\">", htmlspecialchars($row->subject), " &ndash; <span class='dim'>", htmlspecialchars(UnicodeHelper::utf8_prefix($row->emailBody, 100)), "</span></a></div>",
                 "<br /></div></div>\n";
+            ++$i;
         }
         echo "</div>\n\n";
     }
