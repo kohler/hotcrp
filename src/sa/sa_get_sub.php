@@ -51,7 +51,11 @@ class GetDocument_SearchAction extends SearchAction {
     }
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
         $opt = $user->conf->paper_opts->find_document($this->dt);
-        if ($user->can_view_some_paper_option($opt) && (!$opt->final || $pl->any->final))
+        if ($this->dt <= 0)
+            $any_name = $this->dt == DTYPE_FINAL ? "final" : "paper";
+        else
+            $any_name = "opt" . $opt->id;
+        if ($user->can_view_some_paper_option($opt) && $pl->any->$any_name)
             $actions[] = self::make_option_action($opt);
     }
     static function error_document(PaperOption $opt, PaperInfo $row) {
@@ -82,7 +86,7 @@ class GetDocument_SearchAction extends SearchAction {
 
 class GetCheckFormat_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if ($user->is_manager())
+        if ($user->is_manager() && $pl->any->paper)
             $actions[] = [999, $this->subname, "Documents", "Format check"];
     }
     function run(Contact $user, $qreq, $ssel) {
