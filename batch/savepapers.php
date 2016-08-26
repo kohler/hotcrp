@@ -84,7 +84,8 @@ foreach ($jp as $j) {
                 && isset($rreq["reviewerEmail"])
                 && validate_email($rreq["reviewerEmail"])) {
                 $rreq["paperId"] = $pid;
-                $user = Contact::create($Conf, ["name" => get($rreq, "reviewerName"), "email" => $rreq["reviewerEmail"]]);
+                $user_req = Text::analyze_name(["name" => get($rreq, "reviewerName"), "email" => $rreq["reviewerEmail"], "affiliation" => get($rreq, "reviewerAffiliation")]);
+                $user = Contact::create($Conf, $user_req);
                 $rform->check_save_review($site_contact, $rreq, $tf, $user);
             }
         foreach ($tf["err"] as $te)

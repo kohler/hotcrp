@@ -460,11 +460,13 @@ class ReviewForm {
             $a[$i] = preg_quote($a[$i], "/");
         $field = null;
         foreach ($this->forder as $f) {
-            if (count($a) == 1 && strcasecmp($a[0], $f->abbreviation) == 0)
+            if (count($a) == 1
+                && (strcasecmp($a[0], $f->abbreviation) == 0
+                    || strcasecmp($a[0], $f->name) == 0))
                 return $f;
             for ($i = 0; $i < count($a); ++$i)
                 if ($a[$i] != "-" && $a[$i] != "\\-" && $a[$i] != "_"
-                    && !preg_match("{\\b$a[$i]}i", $f->name))
+                    && !preg_match("{\\b" . $a[$i] . "}i", $f->name))
                     break;
             if ($i == count($a))
                 $field = ($field === null ? $f : false);
@@ -594,13 +596,13 @@ class ReviewForm {
         foreach ($this->forder as $field => $f) {
             if (!isset($req[$field]) && !$submit)
                 continue;
-            $fval = defval($req, $field, ($rrow ? $rrow->$field : ""));
             if (!isset($req[$field])) {
                 if ($f->round_mask && !$f->is_round_visible($rrow))
                     continue;
                 if ($f->view_score >= VIEWSCORE_PC)
                     $missing[] = $f->name;
             }
+            $fval = get($req, $field, ($rrow ? $rrow->$field : ""));
             if ($f->has_options) {
                 $fval = trim($fval);
                 if ($f->parse_is_empty($fval)) {
@@ -934,13 +936,16 @@ class ReviewForm {
         if (!($prow = $this->conf->paperRow($req["paperId"], $user, $whyNot)))
             return $this->tfError($tf, true, whyNotText($whyNot, "review"));
         $rrow_args = ["paperId" => $prow->paperId, "first" => true,
-            "contactId" => $reviewer->contactId, "rev_tokens" => $user->review_tokens()];
+                      "contactId" => $reviewer->contactId, "rev_tokens" => $user->review_tokens()];
         $rrow = $this->conf->reviewRow($rrow_args);
         $new_rrid = false;
         if ($user !== $reviewer && !$rrow) {
             if (!$user->can_create_review_from($prow, $reviewer))
                 return $this->reviewer_error($req, $tf);
-            $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL);
+            $extra = [];
+            if (isset($req["round"]))
+                $extra["round_number"] = $this->conf->round_number($req["round"], false);
+            $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, $extra);
             if (!$new_rrid)
                 return $this->tfError($tf, true, "Internal error while creating review.");
             $rrow = $this->conf->reviewRow($rrow_args);
@@ -1386,6 +1391,9 @@ $blind\n";
             } else if ($k === "email" || $k === "reviewer_email") {
                 if (is_string($v))
                     $req["reviewerEmail"] = $v;
+            } else if ($k === "affiliation" || $k === "reviewer_affiliation") {
+                if (is_string($v))
+                    $req["reviewerAffiliation"] = $v;
             } else if ($k === "first" || $k === "firstName") {
                 if (is_string($v))
                     $first = $v;
