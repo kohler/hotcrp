@@ -127,6 +127,7 @@ class PaperList {
     public $count;
     public $ids;
     public $any;
+    private $_any_option_checks;
     public $error_html = array();
 
     static public $include_stash = true;
@@ -678,8 +679,28 @@ class PaperList {
     }
 
     private function _row_text($rstate, $row, $fieldDef) {
-        $rowidx = count($rstate->ids);
         $rstate->ids[] = (int) $row->paperId;
+        for ($i = 0; $i < count($this->_any_option_checks); ) {
+            $opt = $this->_any_option_checks[$i];
+            $got = false;
+            if ($this->contact->can_view_paper_option($row, $opt)) {
+                if ($opt->id == DTYPE_SUBMISSION)
+                    $got = $row->paperStorageId > 1;
+                else if ($opt->id == DTYPE_FINAL)
+                    $got = $row->finalPaperStorageId > 1;
+                else
+                    $got = ($ov = $row->option($opt->id)) && $ov->value > 1;
+            }
+            if ($got) {
+                $this->any[$opt->id <= 0 ? $opt->abbr : "opt" . $opt->id] = true;
+                array_splice($this->_any_option_checks, $i, 1);
+            } else
+                ++$i;
+        }
+        if ($row->abstract)
+            $this->any->abstract = true;
+
+        $rowidx = count($rstate->ids);
         $trclass = "k" . $rstate->colorindex;
         if (get($row, "paperTags")
             && ($viewable = $row->viewable_tags($this->contact, true))
@@ -1269,6 +1290,11 @@ class PaperList {
 
         // create render state
         $rstate = new PaperListRenderState($ncol, $titlecol, $skipcallout);
+        $this->_any_option_checks = [$this->conf->paper_opts->find_document(DTYPE_SUBMISSION),
+                                     $this->conf->paper_opts->find_document(DTYPE_FINAL)];
+        foreach ($this->contact->user_option_list() as $o)
+            if ($o->is_document())
+                $this->_any_option_checks[] = $o;
 
         // collect row data
         $body = array();

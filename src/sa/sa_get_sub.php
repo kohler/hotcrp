@@ -86,7 +86,7 @@ class GetDocument_SearchAction extends SearchAction {
 
 class GetCheckFormat_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        if ($user->is_manager() && $pl->any->paper)
+        if ($user->is_manager() && ($pl->any->paper || $pl->any->final))
             $actions[] = [999, $this->subname, "Documents", "Format check"];
     }
     function run(Contact $user, $qreq, $ssel) {
@@ -121,7 +121,8 @@ class GetCheckFormat_SearchAction extends SearchAction {
 
 class GetAbstract_SearchAction extends SearchAction {
     function list_actions(Contact $user, $qreq, PaperList $pl, &$actions) {
-        $actions[] = [1000, $this->subname, "Paper information", "Abstracts"];
+        if ($pl->any->abstract)
+            $actions[] = [1000, $this->subname, "Paper information", "Abstracts"];
     }
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(array("paperId" => $ssel->selection(), "topics" => 1));
