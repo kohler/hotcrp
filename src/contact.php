@@ -1646,12 +1646,13 @@ class Contact {
         // check first whether administration is allowed
         if (!isset($ci->allow_administer)) {
             $ci->allow_administer = false;
-            if ($this->contactId > 0
-                && (!$prow->managerContactId
-                    || $prow->managerContactId == $this->contactId
-                    || !$ci->conflict_type)
-                && ($this->privChair
-                    || $prow->managerContactId == $this->contactId))
+            if (($this->contactId > 0
+                 && (!$prow->managerContactId
+                     || $prow->managerContactId == $this->contactId
+                     || !$ci->conflict_type)
+                 && ($this->privChair
+                     || $prow->managerContactId == $this->contactId))
+                || $this->is_site_contact)
                 $ci->allow_administer = true;
         }
 
