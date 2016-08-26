@@ -893,6 +893,7 @@ class TextPaperOption extends PaperOption {
         if (($format = $row->format_of($d))) {
             if ($pl)
                 $pl->need_render = true;
+            Ht::stash_script('$(render_text.on_page)', 'render_on_page');
             return '<div class="need-format" data-format="' . $format
                 . ($pl ? '.plx' : '.abs') . '">' . htmlspecialchars($d) . '</div>';
         } else
