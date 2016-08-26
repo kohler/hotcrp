@@ -125,7 +125,7 @@ class ReviewForm_SettingParser extends SettingParser {
 
             $xf = clone $f;
             $xf->assign($fj);
-            $this->nrfj->$fid = $xf->unparse_json();
+            $this->nrfj->$fid = $xf->unparse_json(true);
         }
 
         $sv->need_lock["PaperReview"] = true;
