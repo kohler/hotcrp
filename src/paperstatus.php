@@ -895,18 +895,29 @@ class PaperStatus {
             }
         }
 
-        if (get($pj, "withdrawn") !== null
-            || get($pj, "submitted") !== null
-            || get($pj, "draft") !== null) {
-            if (get($pj, "submitted") !== null)
-                $submitted = $pj->submitted;
-            else if (get($pj, "draft") !== null)
-                $submitted = !$pj->draft;
+        $pj_withdrawn = get($pj, "withdrawn");
+        $pj_submitted = get($pj, "submitted");
+        $pj_draft = get($pj, "draft");
+        if ($pj_withdrawn === null && $pj_submitted === null && $pj_draft === null) {
+            $pj_status = get($pj, "status");
+            if ($pj_status === "submitted")
+                $pj_submitted = true;
+            else if ($pj_status === "withdrawn")
+                $pj_withdrawn = true;
+            else if ($pj_status === "draft")
+                $pj_draft = true;
+        }
+
+        if ($pj_withdrawn !== null || $pj_submitted !== null || $pj_draft !== null) {
+            if ($pj_submitted !== null)
+                $submitted = $pj_submitted;
+            else if ($pj_draft !== null)
+                $submitted = !$pj_draft;
             else if ($old_pj)
                 $submitted = get($old_pj, "submitted_at") > 0;
             else
                 $submitted = false;
-            if (get($pj, "withdrawn")) {
+            if ($pj_withdrawn) {
                 if (!$old_pj || !get($old_pj, "withdrawn")) {
                     $q[] = "timeWithdrawn=" . (get($pj, "withdrawn_at") ? : $Now);
                     $q[] = "timeSubmitted=" . ($submitted ? -100 : 0);
