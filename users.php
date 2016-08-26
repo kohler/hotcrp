@@ -14,7 +14,8 @@ else if (isset($_REQUEST["getgo"]) && isset($_REQUEST["getaction"]))
 
 // list type
 $tOpt = array();
-$tOpt["pc"] = "Program committee";
+if ($Me->isPC || !opt("privatePC"))
+    $tOpt["pc"] = "Program committee";
 if ($Me->isPC && count($pctags = $Conf->pc_tags())) {
     foreach ($pctags as $t)
         if ($t != "pc")
@@ -41,6 +42,8 @@ if ($Me->privChair) {
     $tOpt["auuns"] = "Contact authors of non-submitted papers";
     $tOpt["all"] = "All users";
 }
+if (empty($tOpt))
+    $Me->escape();
 if (isset($_REQUEST["t"]) && !isset($tOpt[$_REQUEST["t"]])) {
     if (str_starts_with($_REQUEST["t"], "pc:")
         && isset($tOpt["#" . substr($_REQUEST["t"], 3)]))

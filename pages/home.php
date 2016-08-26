@@ -130,15 +130,14 @@ if ($Me->privChair)
 
 
 // Sidebar
-echo "<div class='homeside'>";
+echo '<div class="homeside">';
 
-echo "<noscript><div class='homeinside'>",
-    "<strong>HotCRP requires Javascript.</strong> ",
+echo '<noscript><div class="homeinside"><strong>HotCRP requires Javascript.</strong> ',
     "Many features will work without Javascript, but not all.<br />",
-    "<a style='font-size:smaller' href='http://read.seas.harvard.edu/~kohler/hotcrp/'>Report bad compatibility problems</a></div></noscript>";
+    '<a style="font-size:smaller" href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>';
 
 // Conference management and information sidebar
-echo '<div class="homeinside">';
+$inside_links = [];
 if ($Me->is_manager()) {
     $links = array();
     if ($Me->privChair) {
@@ -149,25 +148,28 @@ if ($Me->is_manager()) {
     $links[] = '<a href="' . hoturl("mail") . '">Mail</a>';
     if ($Me->privChair)
         $links[] = '<a href="' . hoturl("log") . '">Action log</a>';
-    echo "<h4>Administration</h4>\n  <ul style=\"margin-bottom:0.75em\">\n    <li>",
-        join("</li>\n    <li>", $links), "</li>\n  </ul>\n";
+    $inside_links[] = '<h4>Administration</h4><ul style="margin-bottom:0.75em">'
+        . '<li>' . join('</li><li>', $links) . '</li></ul>';
 }
 
 // Conference info sidebar
-echo "<h4>Conference information</h4>
-  <ul>\n";
-// Any deadlines set?
+$links = [];
 $sep = "";
 if ($Me->has_reportable_deadline())
-    echo '    <li><a href="', hoturl("deadlines"), '">Deadlines</a></li>', "\n";
-echo "    <li><a href='", hoturl("users", "t=pc"), "'>Program committee</a></li>\n";
-if (opt('conferenceSite') && opt('conferenceSite') != opt('paperSite'))
-    echo "    <li><a href='", opt('conferenceSite'), "'>Conference site</a></li>\n";
+    $links[] = '<li><a href="' . hoturl("deadlines") . '">Deadlines</a></li>';
+if ($Me->isPC || !opt("privatePC"))
+    $links[] = '<li><a href="' . hoturl("users", "t=pc") . '">Program committee</a></li>';
+if (opt("conferenceSite") && opt("conferenceSite") != opt("paperSite"))
+    $links[] = '<li><a href="' . opt("conferenceSite") . '">Conference site</a></li>';
 if ($Conf->timeAuthorViewDecision()) {
     list($n, $nyes) = $Conf->count_submitted_accepted();
-    echo "    <li>", plural($nyes, "paper"), " were accepted out of ", $n, " submitted.</li>\n";
+    $links[] = '<li>' . plural($nyes, "paper") . ' accepted out of ' . $n . ' submitted.</li>';
 }
-echo "  </ul>\n</div>\n";
+if (!empty($links))
+    $inside_links[] = '<h4>Conference information</h4><ul>' . join('', $links) . '</ul>';
+
+if (!empty($inside_links))
+    echo '<div class="homeinside">', join('', $inside_links), '</div>';
 
 echo "</div>\n\n";
 // End sidebar
