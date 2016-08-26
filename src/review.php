@@ -623,7 +623,7 @@ class ReviewForm {
             return 0;
         }
         if (isset($req["reviewerEmail"]) && $rrow
-            && $rrow->email != $req["reviewerEmail"]
+            && strcasecmp($rrow->email, $req["reviewerEmail"]) != 0
             && (!isset($req["reviewerName"]) || $req["reviewerName"] != trim("$rrow->firstName $rrow->lastName"))) {
             self::tfError($tf, true, "This review form claims to be written by " . htmlspecialchars($req["reviewerEmail"]) . " rather than the review&rsquo;s owner, " . Text::user_html($rrow) . ".  If you want to upload it anyway, remove the &ldquo;<code>==+==&nbsp;Reviewer</code>&rdquo; line from the form and try again.", "reviewerEmail");
             return 0;
