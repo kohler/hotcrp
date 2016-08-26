@@ -5,7 +5,6 @@
 
 class BanalSettings {
     static public function render($suffix, $sv) {
-        global $Conf;
         $cfs = new FormatSpec($sv->curv("sub_banal_data$suffix"));
         foreach (["papersize", "pagelimit", "columns", "textblock", "bodyfontsize", "bodylineheight"] as $k) {
             $val = $cfs->unparse_key($k);
@@ -55,7 +54,7 @@ class BanalSettings {
         }
     }
     static public function parse($suffix, $sv, $check) {
-        global $Conf, $ConfSitePATH;
+        global $ConfSitePATH;
         if (!isset($sv->req["sub_banal$suffix"])) {
             $sv->save("sub_banal$suffix", 0);
             return false;
@@ -167,8 +166,6 @@ class BanalSettings {
 
 class SettingRenderer_SubForm extends SettingRenderer {
     private function render_option(SettingValues $sv, $o) {
-        global $Conf;
-
         if ($o)
             $id = $o->id;
         else {
@@ -176,8 +173,8 @@ class SettingRenderer_SubForm extends SettingRenderer {
                     "name" => "(Enter new option)",
                     "description" => "",
                     "type" => "checkbox",
-                    "position" => count($Conf->paper_opts->nonfixed_option_list()) + 1,
-                    "display" => "default"), $Conf);
+                    "position" => count($sv->conf->paper_opts->nonfixed_option_list()) + 1,
+                    "display" => "default"), $sv->conf);
             $id = "n";
         }
 
@@ -188,7 +185,7 @@ class SettingRenderer_SubForm extends SettingRenderer {
                     "type" => get($sv->req, "optvt$id", "checkbox"),
                     "visibility" => get($sv->req, "optp$id", ""),
                     "position" => get($sv->req, "optfp$id", 1),
-                    "display" => get($sv->req, "optdt$id")), $Conf);
+                    "display" => get($sv->req, "optdt$id")), $sv->conf);
             if ($o->has_selector())
                 $o->selector = explode("\n", rtrim(defval($sv->req, "optv$id", "")));
         }
@@ -229,8 +226,8 @@ class SettingRenderer_SubForm extends SettingRenderer {
         if ($o->final)
             $optvt .= ":final";
 
-        $show_final = $Conf->collectFinalPapers();
-        foreach ($Conf->paper_opts->nonfixed_option_list() as $ox)
+        $show_final = $sv->conf->collectFinalPapers();
+        foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
             $show_final = $show_final || $ox->final;
 
         $otypes = array();
@@ -268,9 +265,9 @@ class SettingRenderer_SubForm extends SettingRenderer {
         echo "<td class='pad'><div class='f-i'><div class='f-c'>",
             $sv->label("optfp$id", "Form order"), "</div><div class='f-e'>";
         $x = array();
-        // can't use "foreach ($Conf->paper_opts->nonfixed_option_list())" because caller
+        // can't use "foreach ($sv->conf->paper_opts->nonfixed_option_list())" because caller
         // uses cursor
-        for ($n = 0; $n < count($Conf->paper_opts->nonfixed_option_list()); ++$n)
+        for ($n = 0; $n < count($sv->conf->paper_opts->nonfixed_option_list()); ++$n)
             $x[$n + 1] = ordinal($n + 1);
         if ($id === "n")
             $x[$n + 1] = ordinal($n + 1);
@@ -309,8 +306,6 @@ class SettingRenderer_SubForm extends SettingRenderer {
     }
 
 function render(SettingValues $sv) {
-    global $Conf;
-
     echo "<h3 class=\"settings\">Abstract and PDF</h3>\n";
 
     echo '<div id="foldpdfupload" class="fold2o fold3o">';
@@ -341,11 +336,11 @@ function render(SettingValues $sv) {
     $sv->echo_checkbox_row("sub_pcconf", "Collect authors’ PC conflicts",
                            "void fold('pcconf',!this.checked)");
     echo "<tr class='fx'><td></td><td>";
-    $conf = array();
+    $cflt = array();
     foreach (Conflict::$type_descriptions as $n => $d)
         if ($n)
-            $conf[] = "“{$d}”";
-    $sv->echo_checkbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($conf, "or") . ")");
+            $cflt[] = "“{$d}”";
+    $sv->echo_checkbox("sub_pcconfsel", "Require conflict descriptions (" . commajoin($cflt, "or") . ")");
     echo "</td></tr>\n";
     $sv->echo_checkbox_row("sub_collab", "Collect authors’ other collaborators as text");
     echo "</table>\n";
@@ -360,7 +355,7 @@ function render(SettingValues $sv) {
     echo "<div class='g'></div>\n",
         Ht::hidden("has_options", 1);
     $sep = "";
-    $all_options = array_merge($Conf->paper_opts->nonfixed_option_list()); // get our own iterator
+    $all_options = array_merge($sv->conf->paper_opts->nonfixed_option_list()); // get our own iterator
     foreach ($all_options as $o) {
         echo $sep;
         $this->render_option($sv, $o);
@@ -373,8 +368,8 @@ function render(SettingValues $sv) {
 
     // Topics
     // load topic interests
-    $qinterest = $Conf->query_topic_interest();
-    $result = $Conf->q_raw("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
+    $qinterest = $sv->conf->query_topic_interest();
+    $result = $sv->conf->q_raw("select topicId, if($qinterest>0,1,0), count(*) from TopicInterest where $qinterest!=0 group by topicId, $qinterest>0");
     $interests = array();
     $ninterests = 0;
     while (($row = edb_row($result))) {
@@ -390,7 +385,7 @@ function render(SettingValues $sv) {
         "<table id='newtoptable' class='", ($ninterests ? "foldo" : "foldc"), "'>";
     echo "<tr><th colspan='2'></th><th class='fx'><small>Low</small></th><th class='fx'><small>High</small></th></tr>";
     $td1 = '<td class="lcaption">Current</td>';
-    foreach ($Conf->topic_map() as $tid => $tname) {
+    foreach ($sv->conf->topic_map() as $tid => $tname) {
         if ($sv->use_req() && isset($sv->req["top$tid"]))
             $tname = $sv->req["top$tid"];
         echo '<tr>', $td1, '<td class="lentry">',
@@ -444,8 +439,7 @@ class Topic_SettingParser extends SettingParser {
     }
 
     public function save(SettingValues $sv, Si $si) {
-        global $Conf;
-        $tmap = $Conf->topic_map();
+        $tmap = $sv->conf->topic_map();
         foreach ($sv->req as $k => $v)
             if ($k === "topnew") {
                 $news = array();
@@ -453,19 +447,19 @@ class Topic_SettingParser extends SettingParser {
                     if (($n = simplify_whitespace($n)) !== "")
                         $news[] = "('" . sqlq($n) . "')";
                 if (count($news))
-                    $Conf->qe_raw("insert into TopicArea (topicName) values " . join(",", $news));
+                    $sv->conf->qe_raw("insert into TopicArea (topicName) values " . join(",", $news));
             } else if (strlen($k) > 3 && substr($k, 0, 3) === "top"
                        && ctype_digit(substr($k, 3))) {
                 $k = (int) substr($k, 3);
                 $v = simplify_whitespace($v);
                 if ($v == "") {
-                    $Conf->qe_raw("delete from TopicArea where topicId=$k");
-                    $Conf->qe_raw("delete from PaperTopic where topicId=$k");
-                    $Conf->qe_raw("delete from TopicInterest where topicId=$k");
+                    $sv->conf->qe_raw("delete from TopicArea where topicId=$k");
+                    $sv->conf->qe_raw("delete from PaperTopic where topicId=$k");
+                    $sv->conf->qe_raw("delete from TopicInterest where topicId=$k");
                 } else if (isset($tmap[$k]) && $v != $tmap[$k] && !ctype_digit($v))
-                    $Conf->qe_raw("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
+                    $sv->conf->qe_raw("update TopicArea set topicName='" . sqlq($v) . "' where topicId=$k");
             }
-        $Conf->invalidate_topics();
+        $sv->conf->invalidate_topics();
     }
 }
 
@@ -474,8 +468,6 @@ class Option_SettingParser extends SettingParser {
     private $stashed_options = false;
 
     function option_request_to_json($sv, &$new_opts, $id, $current_opts) {
-        global $Conf;
-
         $name = simplify_whitespace(defval($sv->req, "optn$id", ""));
         if (!isset($sv->req["optn$id"]) && $id[0] !== "n") {
             if (get($current_opts, $id))
@@ -488,7 +480,7 @@ class Option_SettingParser extends SettingParser {
 
         $oarg = ["name" => $name, "id" => (int) $id, "final" => false];
         if ($id[0] === "n") {
-            $nextid = max($Conf->setting("next_optionid", 1), 1);
+            $nextid = max($sv->conf->setting("next_optionid", 1), 1);
             foreach ($new_opts as $haveid => $o)
                 $nextid = max($nextid, $haveid + 1);
             foreach ($current_opts as $haveid => $o)
@@ -536,7 +528,7 @@ class Option_SettingParser extends SettingParser {
         if ($oarg["type"] === "pdf" && $oarg["final"])
             $oarg["display"] = "submission";
 
-        $new_opts[$oarg["id"]] = $o = PaperOption::make($oarg, $Conf);
+        $new_opts[$oarg["id"]] = $o = PaperOption::make($oarg, $sv->conf);
         $o->req_id = $id;
         $o->is_new = $id[0] === "n";
     }
@@ -570,8 +562,7 @@ class Option_SettingParser extends SettingParser {
     }
 
     function parse(SettingValues $sv, Si $si) {
-        global $Conf;
-        $current_opts = $Conf->paper_opts->nonfixed_option_list();
+        $current_opts = $sv->conf->paper_opts->nonfixed_option_list();
 
         // convert request to JSON
         $new_opts = array();
@@ -600,14 +591,13 @@ class Option_SettingParser extends SettingParser {
     }
 
     public function save(SettingValues $sv, Si $si) {
-        global $Conf;
         $new_opts = $this->stashed_options;
-        $current_opts = $Conf->paper_opts->nonfixed_option_list();
+        $current_opts = $sv->conf->paper_opts->nonfixed_option_list();
         $this->option_clean_form_positions($new_opts, $current_opts);
 
         $newj = (object) array();
         uasort($new_opts, array("PaperOption", "compare"));
-        $nextid = max($Conf->setting("next_optionid", 1), $Conf->setting("options", 1));
+        $nextid = max($sv->conf->setting("next_optionid", 1), $sv->conf->setting("options", 1));
         foreach ($new_opts as $id => $o) {
             $newj->$id = $o->unparse();
             $nextid = max($nextid, $id + 1);
@@ -620,10 +610,10 @@ class Option_SettingParser extends SettingParser {
             if (!get($new_opts, $id))
                 $deleted_ids[] = $id;
         if (count($deleted_ids))
-            $Conf->qe_raw("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
+            $sv->conf->qe_raw("delete from PaperOption where optionId in (" . join(",", $deleted_ids) . ")");
 
         // invalidate cached option list
-        $Conf->invalidate_caches(["paperOption" => true]);
+        $sv->conf->invalidate_caches(["paperOption" => true]);
     }
 }
 

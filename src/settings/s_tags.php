@@ -287,7 +287,7 @@ class Tag_SettingParser extends SettingParser {
                 $allotment = substr($t, strlen($base) + 1);
                 $sqlbase = sqlq_for_like($base);
 
-                $result = Dbl::q("select paperId, tag, tagIndex from PaperTag where tag like '%~{$sqlbase}'");
+                $result = $sv->conf->q("select paperId, tag, tagIndex from PaperTag where tag like '%~{$sqlbase}'");
                 $pvals = array();
                 $cvals = array();
                 $negative = false;

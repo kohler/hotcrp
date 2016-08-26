@@ -5,8 +5,6 @@
 
 class SettingRenderer_Submissions extends SettingRenderer {
 function render(SettingValues $sv) {
-    global $Conf;
-
     $sv->echo_checkbox('sub_open', '<b>Open site for submissions</b>');
 
     echo "<div class='g'></div>\n";
@@ -18,7 +16,7 @@ function render(SettingValues $sv) {
 
     echo "<div class='g'></div>\n<table>\n";
     // maybe sub_reg was overridden
-    if (($sub_reg = $Conf->setting("__sub_reg", false)) !== false)
+    if (($sub_reg = $sv->conf->setting("__sub_reg", false)) !== false)
         $sv->set_oldv("sub_reg", $sub_reg);
     $sv->echo_entry_row("sub_reg", "Registration deadline");
     $sv->echo_entry_row("sub_sub", "Submission deadline");

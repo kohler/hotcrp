@@ -5,8 +5,6 @@
 
 class SettingRenderer_Basics extends SettingRenderer {
 function render(SettingValues $sv) {
-    global $Conf;
-
     echo '<div class="f-c">', $sv->label("opt.shortName", "Conference abbreviation"), "</div>\n";
     $sv->echo_entry("opt.shortName");
     echo '<div class="f-h">Examples: “HotOS XIV”, “NSDI \'14”</div>';

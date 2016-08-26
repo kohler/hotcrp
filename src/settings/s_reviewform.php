@@ -9,7 +9,6 @@ class ReviewForm_SettingParser extends SettingParser {
     public static $setting_prefixes = ["shortName_", "description_", "order_", "authorView_", "options_", "option_class_prefix_"];
 
     private function check_options($sv, $fid, $fj) {
-        global $Conf;
         if (!isset($sv->req["options_$fid"])) {
             $fj->options = array();
             return get($fj, "position") ? false : true;
@@ -65,13 +64,12 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     public function parse(SettingValues $sv, Si $si) {
-        global $Conf;
         $this->nrfj = (object) array();
         $option_error = "Review fields with options must have at least two choices, numbered sequentially from 1 (higher numbers are better) or lettered with consecutive uppercase letters (lower letters are better). Example: <pre>1. Low quality
     2. Medium quality
     3. High quality</pre>";
 
-        $rf = $Conf->review_form();
+        $rf = $sv->conf->review_form();
         foreach ($rf->fmap as $fid => $f) {
             $fj = (object) array();
 
@@ -121,7 +119,7 @@ class ReviewForm_SettingParser extends SettingParser {
             $fj->round_mask = 0;
             if (($rlist = get($sv->req, "round_list_$fid")))
                 foreach (explode(" ", trim($rlist)) as $round_name)
-                    $fj->round_mask |= 1 << $Conf->round_number($round_name, false);
+                    $fj->round_mask |= 1 << $sv->conf->round_number($round_name, false);
 
             $xf = clone $f;
             $xf->assign($fj);
@@ -133,13 +131,12 @@ class ReviewForm_SettingParser extends SettingParser {
     }
 
     public function save(SettingValues $sv, Si $si) {
-        global $Conf;
         if ($sv->update("review_form", json_encode($this->nrfj))) {
-            $rf = $Conf->review_form();
+            $rf = $sv->conf->review_form();
             $scoreModified = array();
             foreach ($this->nrfj as $fid => $fj)
                 if (get($fj, "position") && get($fj, "options")) {
-                    $result = Dbl::qe_raw("update PaperReview set $fid=0 where $fid>" . count($fj->options));
+                    $result = $sv->conf->qe_raw("update PaperReview set $fid=0 where $fid>" . count($fj->options));
                     if ($result && $result->affected_rows > 0)
                         $scoreModified[] = htmlspecialchars($fj->name);
                     Dbl::free($result);
@@ -150,18 +147,18 @@ class ReviewForm_SettingParser extends SettingParser {
             }
             if (count($scoreModified))
                 $sv->set_warning(null, "Your changes invalidated some existing review scores.  The invalid scores have been reset to “Unknown”.  The relevant fields were: " . join(", ", $scoreModified) . ".");
-            $Conf->invalidate_caches(["rf" => true]);
+            $sv->conf->invalidate_caches(["rf" => true]);
             // reset all word counts in case author visibility changed
-            Dbl::qe("update PaperReview set reviewWordCount=null");
+            $sv->conf->qe("update PaperReview set reviewWordCount=null");
         }
     }
 }
 
 class ReviewForm_SettingRenderer extends SettingRenderer {
 function render(SettingValues $sv) {
-    global $Conf, $ConfSitePATH;
+    global $ConfSitePATH;
 
-    $rf = $Conf->review_form();
+    $rf = $sv->conf->review_form();
     $fmap = array();
     foreach ($rf->fmap as $fid => $f)
         $fmap[$fid] = $f->has_options;

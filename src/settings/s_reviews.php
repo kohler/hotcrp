@@ -5,7 +5,6 @@
 
 class SettingRenderer_Reviews extends SettingRenderer {
     private function echo_round($sv, $rnum, $nameval, $review_count, $deletable) {
-        global $Conf;
         $rname = "roundname_$rnum";
         if ($sv->use_req() && $rnum !== '$')
             $nameval = (string) get($sv->req, $rname);
@@ -19,7 +18,7 @@ class SettingRenderer_Reviews extends SettingRenderer {
             $sv->render_entry($rname);
         echo '<div class="inb" style="min-width:7em;margin-left:2em">';
         if ($rnum !== '$' && $review_count)
-            echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $Conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
+            echo '<a href="', hoturl("search", "q=" . urlencode("round:" . ($rnum ? $sv->conf->round_name($rnum, false) : "none"))), '">(', plural($review_count, "review"), ')</a>';
         echo '</div>';
         if ($deletable)
             echo '<div class="inb" style="padding-left:2em">',
@@ -32,8 +31,8 @@ class SettingRenderer_Reviews extends SettingRenderer {
 
         // deadlines
         $entrysuf = $rnum ? "_$rnum" : "";
-        if ($rnum === '$' && count($Conf->round_list()))
-            $dlsuf = "_" . (count($Conf->round_list()) - 1);
+        if ($rnum === '$' && count($sv->conf->round_list()))
+            $dlsuf = "_" . (count($sv->conf->round_list()) - 1);
         else if ($rnum !== '$' && $rnum)
             $dlsuf = "_" . $rnum;
         else
@@ -60,8 +59,6 @@ class SettingRenderer_Reviews extends SettingRenderer {
     }
 
 function render(SettingValues $sv) {
-    global $Conf;
-
     $sv->echo_checkbox("rev_open", "<b>Open site for reviewing</b>");
     $sv->echo_checkbox("cmt_always", "Allow comments even if reviewing is closed");
 
@@ -82,7 +79,7 @@ function render(SettingValues $sv) {
     echo "<h3 id=\"rounds\" class=\"settings g\">Deadlines &amp; rounds</h3>\n";
     echo '<p class="hint">Reviews are due by the deadline, but <em>cannot be modified</em> after the hard deadline. Most conferences don’t use hard deadlines for reviews.<br />', ($sv->type_hint("date") ? : ""), '</p>';
 
-    $rounds = $Conf->round_list();
+    $rounds = $sv->conf->round_list();
     if ($sv->use_req()) {
         for ($i = 1; isset($sv->req["roundname_$i"]); ++$i)
             $rounds[$i] = get($sv->req, "deleteround_$i") ? ";" : trim(get_s($sv->req, "roundname_$i"));
@@ -90,22 +87,22 @@ function render(SettingValues $sv) {
 
     // prepare round selector
     $round_value = trim($sv->curv("rev_roundtag"));
-    $current_round_value = $Conf->setting_data("rev_roundtag", "");
+    $current_round_value = $sv->conf->setting_data("rev_roundtag", "");
     if (preg_match('/\A(?:|\(none\)|\(no name\)|default|unnamed|#0)\z/i', $round_value))
         $round_value = "#0";
-    else if (($round_number = $Conf->round_number($round_value, false))
-             || ($round_number = $Conf->round_number($current_round_value, false)))
+    else if (($round_number = $sv->conf->round_number($round_value, false))
+             || ($round_number = $sv->conf->round_number($current_round_value, false)))
         $round_value = "#" . $round_number;
     else
         $round_value = $selector[$current_round_value] = $current_round_value;
 
-    $round_map = edb_map(Dbl::ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
+    $round_map = edb_map($sv->conf->ql("select reviewRound, count(*) from PaperReview group by reviewRound"));
 
     $print_round0 = true;
     if ($round_value !== "#0" && $round_value !== ""
         && $current_round_value !== ""
         && (!$sv->use_req() || isset($sv->req["roundname_0"]))
-        && !$Conf->round0_defined())
+        && !$sv->conf->round0_defined())
         $print_round0 = false;
 
     $selector = array();
@@ -135,7 +132,7 @@ function render(SettingValues $sv) {
     echo '</div><div class="g"></div>';
     echo Ht::js_button("Add round", "review_round_settings.add();hiliter(this)"),
         ' &nbsp; <span class="hint"><a href="', hoturl("help", "t=revround"), '">What is this?</a></span>',
-        Ht::hidden("oldroundcount", count($Conf->round_list())),
+        Ht::hidden("oldroundcount", count($sv->conf->round_list())),
         Ht::hidden("has_rev_roundtag", 1);
     for ($i = 1; $i < count($rounds); ++$i)
         if ($rounds[$i] === ";")
@@ -193,9 +190,9 @@ function render(SettingValues $sv) {
 }
 
     function crosscheck(SettingValues $sv) {
-        global $Conf, $Now;
+        global $Now;
         $errored = false;
-        foreach ($Conf->round_list() as $i => $rname) {
+        foreach ($sv->conf->round_list() as $i => $rname) {
             $suffix = $i ? "_$i" : "";
             foreach (Conf::$review_deadlines as $deadline)
                 if ($sv->has_interest($deadline . $suffix)
@@ -223,7 +220,6 @@ class Round_SettingParser extends SettingParser {
     private $rev_round_changes = array();
 
     function parse(SettingValues $sv, Si $si) {
-        global $Conf;
         if (!isset($sv->req["rev_roundtag"])) {
             $sv->save("rev_roundtag", null);
             return false;
@@ -239,7 +235,7 @@ class Round_SettingParser extends SettingParser {
                 $rname = "";
             if ((get($sv->req, "deleteround_$i") || $rname === "") && $i) {
                 $roundnames[] = ";";
-                if (Dbl::fetch_ivalue("select reviewId from PaperReview where reviewRound=$i limit 1"))
+                if ($sv->conf->fetch_ivalue("select reviewId from PaperReview where reviewRound=$i limit 1"))
                     $this->rev_round_changes[] = array($i, 0);
                 if ($round_deleted === null && !isset($sv->req["roundname_0"])
                     && $i < $sv->req["oldroundcount"])
@@ -266,7 +262,7 @@ class Round_SettingParser extends SettingParser {
             array_unshift($this->rev_round_changes, array(0, $roundnames_set[strtolower($roundname0)]));
 
         // round deadlines
-        foreach ($Conf->round_list() as $i => $rname) {
+        foreach ($sv->conf->round_list() as $i => $rname) {
             $suffix = $i ? "_$i" : "";
             foreach (Conf::$review_deadlines as $k)
                 $sv->save($k . $suffix, null);
@@ -338,10 +334,9 @@ class Round_SettingParser extends SettingParser {
             return false;
     }
     public function save(SettingValues $sv, Si $si) {
-        global $Conf;
         // remove references to deleted rounds
         foreach ($this->rev_round_changes as $x)
-            $Conf->qe_raw("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
+            $sv->conf->qe_raw("update PaperReview set reviewRound=$x[1] where reviewRound=$x[0]");
     }
 }
 
