@@ -46,7 +46,7 @@ h2.paptitle {
 .paptab_abstract {
 	padding-right: 0;
 }
-.paptab_authors {
+.paptab + .paptab {
 	padding-top: 1em;
 }
 .papcard, .pedcard, .notecard, .revcard, .cmtcard {

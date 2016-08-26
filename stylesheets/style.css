@@ -2299,12 +2299,10 @@ div.pst span.hint {
 	padding-right: 1.5em;
 	word-wrap: break-word;
 }
-.paptab .pavt {
-	font-size: smaller;
-}
 .pavt {
 	margin: 0 -5px;
 	padding: 0.25em 5px;
+	font-size: smaller;
 }
 .papfn, .pavfn, .psfn, .revfn {
 	font-weight: bold;

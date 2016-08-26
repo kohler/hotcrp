@@ -585,7 +585,7 @@ class PaperTable {
         global $Conf;
         $text = $this->entryData("abstract");
         if (trim($text) === "" && opt("noAbstract"))
-            return;
+            return false;
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
             $extra = ["fold" => "paper", "foldnum" => 6,
@@ -607,6 +607,7 @@ class PaperTable {
         echo "</div></div></div></div>\n";
         if ($extra)
             echo Ht::unstash_script("render_text.on_page()");
+        return true;
     }
 
     private function editable_authors_tr($n, $name, $email, $aff) {
@@ -1992,12 +1993,14 @@ class PaperTable {
             echo '<p class="xd"><span class="pstat ', $status_info[0], '">',
                 htmlspecialchars($status_info[1]), "</span></p>";
             $this->paptabDownload();
-            $this->paptabAbstract();
-            echo '<div class="paptab"><div class="paptab_authors">';
+            if ($this->paptabAbstract())
+                echo '<div class="paptab">';
+            else
+                echo '<div class="paptab1">';
             $this->paptabAuthors(!$this->editable && $this->mode === "edit"
                                  && $prow->timeSubmitted > 0);
             $this->paptabTopicsOptions($Me->can_administer($prow));
-            echo '</div></div>';
+            echo '</div>';
         }
         $this->echoDivExit();
 
