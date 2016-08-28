@@ -207,7 +207,8 @@ class Autoassigner {
 
         // need to populate review assignments for badpairs not in `pcm`
         foreach ($this->badpairs as $cid => $x)
-            if (!isset($this->pcm[$cid])) {
+            if (!isset($this->eass[$cid])) {
+                $this->eass[$cid] = array_fill_keys($this->papersel, 0);
                 $result = $this->conf->qe("select paperId from PaperReview where contactId=? and paperId ?a", $cid, $this->papersel);
                 while (($row = edb_row($result)))
                     $this->eass[$cid][$row[0]] = max($this->eass[$cid][$row[0]], self::ENOASSIGN);
