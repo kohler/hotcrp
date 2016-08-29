@@ -274,7 +274,7 @@ function refuseReview() {
 
     // send confirmation email
     $Requester = $Conf->user_by_id($rrow->requestedBy);
-    $reqprow = $Conf->paperRow($prow->paperId, $rrow->requestedBy);
+    $reqprow = $Conf->paperRow($prow->paperId, $Requester);
     HotCRPMailer::send_to($Requester, "@refusereviewrequest", $reqprow,
                           array("reviewer_contact" => $rrow,
                                 "reason" => $reason));
