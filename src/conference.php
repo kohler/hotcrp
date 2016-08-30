@@ -1101,6 +1101,8 @@ class Conf {
     }
 
 
+    // session data
+
     function session($name, $defval = null) {
         if (isset($_SESSION[$this->dsn][$name]))
             return $_SESSION[$this->dsn][$name];

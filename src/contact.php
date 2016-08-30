@@ -233,14 +233,16 @@ class Contact {
     }
 
     static public function set_sorter($c) {
-        if (opt("sortByLastName")) {
+        $sort_by_last = opt("sortByLastName");
+        if (!$sort_by_last && isset($c->unaccentedName)) {
+            $c->sorter = trim("$c->unaccentedName $c->email");
+            return;
+        }
+        if ($sort_by_last) {
             if (($m = Text::analyze_von($c->lastName)))
                 $c->sorter = trim("$m[1] $c->firstName $m[0] $c->email");
             else
                 $c->sorter = trim("$c->lastName $c->firstName $c->email");
-        } else if (isset($c->unaccentedName)) {
-            $c->sorter = trim("$c->unaccentedName $c->email");
-            return;
         } else
             $c->sorter = trim("$c->firstName $c->lastName $c->email");
         if (preg_match('/[\x80-\xFF]/', $c->sorter))
@@ -736,7 +738,7 @@ class Contact {
         object_replace_recursive($this->data, array_to_object_recursive($data));
         $new = $this->encode_data();
         if ($old !== $new)
-            $this->conf->qe("update ContactInfo set data=? where contactId=$this->contactId", $new);
+            $this->conf->qe("update ContactInfo set data=? where contactId=?", $new, $this->contactId);
     }
 
     private function data_str() {
@@ -749,7 +751,7 @@ class Contact {
     }
 
     function escape() {
-        if (get($_REQUEST, "ajax")) {
+        if (req("ajax")) {
             if ($this->is_empty())
                 $this->conf->ajaxExit(array("ok" => 0, "loggedout" => 1));
             else
@@ -761,8 +763,8 @@ class Contact {
             $x = array();
             if (Navigation::path())
                 $x["__PATH__"] = preg_replace(",^/+,", "", Navigation::path());
-            if (get($_REQUEST, "anchor"))
-                $x["anchor"] = $_REQUEST["anchor"];
+            if (req("anchor"))
+                $x["anchor"] = req("anchor");
             $url = selfHref($x, array("raw" => true, "site_relative" => true));
             $_SESSION["login_bounce"] = array($this->conf->dsn, $url, Navigation::page(), $_POST);
             if (check_post())

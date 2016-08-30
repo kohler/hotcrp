@@ -232,7 +232,7 @@ function update_schema_drop_keys_if_exist($conf, $table, $key) {
 }
 
 function updateSchema($conf) {
-    // avoid error message abut timezone, set to $Opt
+    // avoid error message about timezone, set to $Opt
     // (which might be overridden by database values later)
     if (function_exists("date_default_timezone_set") && $conf->opt("timezone"))
         date_default_timezone_set($conf->opt("timezone"));
