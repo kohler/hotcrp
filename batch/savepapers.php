@@ -36,8 +36,12 @@ if ($content === false) {
     exit(1);
 }
 
-if (($jp = json_decode($content)) === false) {
-    fwrite(STDERR, "$file: bad JSON (" . json_last_error_msg() . ")\n");
+if (($jp = json_decode($content)) === null) {
+    Json::decode($content); // our JSON decoder provides error positions
+    fwrite(STDERR, "$file: invalid JSON: " . Json::last_error_msg() . "\n");
+    exit(1);
+} else if (!is_object($jp) && !is_array($jp)) {
+    fwrite(STDERR, "$file: invalid JSON, expected array of objects\n");
     exit(1);
 }
 
