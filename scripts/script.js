@@ -1633,7 +1633,7 @@ function comet_tracker() {
             return;
         comet_sent_at = null;
         if (status == "success" && xhr.status == 200 && data && data.ok
-            && ((dl.tracker_status || "off") == (data.tracker_status || "off")
+            && (dl.tracker_status == data.tracker_status
                 || !data.tracker_status_at || !dl.tracker_status_at
                 || dl.tracker_status_at <= data.tracker_status_at)) {
             // successful status
