@@ -966,7 +966,7 @@ table#foldtag_color th {
 	padding-left: 16px;
 	padding-right: 16px;
 }
-.helppagetext, div.profiletext, .settingstext {
+.helppagetext, .profiletext, .settingstext {
 	max-width: 640px;
 	line-height: 1.25;
 }

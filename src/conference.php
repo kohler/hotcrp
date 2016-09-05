@@ -1284,22 +1284,18 @@ class Conf {
 
 
     function save_setting($name, $value, $data = null) {
-        $qname = $this->dblink->escape_string($name);
         $change = false;
         if ($value === null && $data === null) {
-            if ($this->qe_raw("delete from Settings where name='$qname'")) {
+            if ($this->qe("delete from Settings where name=?", $name)) {
                 unset($this->settings[$name]);
                 unset($this->settingTexts[$name]);
                 $change = true;
             }
         } else {
-            if ($data === null)
-                $dval = "null";
-            else if (is_string($data))
-                $dval = "'" . $this->dblink->escape_string($data) . "'";
-            else
-                $dval = "'" . $this->dblink->escape_string(json_encode($data)) . "'";
-            if ($this->qe_raw("insert into Settings (name, value, data) values ('$qname', $value, $dval) on duplicate key update value=values(value), data=values(data)")) {
+            $dval = $data;
+            if (is_array($dval) || is_object($dval))
+                $dval = json_encode($dval);
+            if ($this->qe("insert into Settings (name, value, data) values (?, ?, ?) on duplicate key update value=values(value), data=values(data)", $name, $value, $dval)) {
                 $this->settings[$name] = $value;
                 $this->settingTexts[$name] = $data;
                 $change = true;
@@ -1316,7 +1312,7 @@ class Conf {
     function update_schema_version($n) {
         if (!$n)
             $n = $this->fetch_ivalue("select value from Settings where name='allowPaperOption'");
-        if ($n && $this->ql("update Settings set value=$n where name='allowPaperOption'")) {
+        if ($n && $this->ql("update Settings set value=? where name='allowPaperOption'", $n)) {
             $this->sversion = $this->settings["allowPaperOption"] = $n;
             return true;
         } else
