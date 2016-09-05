@@ -16,9 +16,9 @@ class MeetingTracker {
     }
 
     static private function next_position_at() {
-        global $Conf;
+        global $Conf, $Now;
         $tracker = $Conf->setting_json("tracker");
-        return max(microtime(true), $tracker ? $tracker->update_at + 0.2 : 0);
+        return max($Now, $tracker ? $tracker->update_at + 0.2 : 0);
     }
 
     static function is_paper_tracked(PaperInfo $prow) {
@@ -63,7 +63,7 @@ class MeetingTracker {
                 $tracker->position_at = $old_tracker->position_at;
         }
         if (!$tracker->position_at)
-            $tracker->position_at = self::next_position_at();
+            $tracker->position_at = $tracker->update_at = self::next_position_at();
         $Conf->save_setting("tracker", 1, $tracker);
         self::contact_tracker_comet($Conf);
         return $tracker;
