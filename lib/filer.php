@@ -777,7 +777,7 @@ class Filer {
         $listing = array_filter($listing, function ($x) use (&$etcetera) {
             if (str_ends_with($x, "/"))
                 return false;
-            else if (preg_match('@(?:\A|/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|\A…\z)(?:/|\z)@', $x)) {
+            else if (preg_match('@(?:\A|/)(?:\A__MACOSX|\._.*|\.DS_Store|\.svn|\.git|.*~\z|\A…\z)(?:/|\z)@', $x)) {
                 $etcetera = true;
                 return false;
             } else
