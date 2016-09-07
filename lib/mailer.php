@@ -397,9 +397,9 @@ class Mailer {
         global $Conf, $mailTemplates;
         $m = $mailTemplates[$templateName];
         if (!$default && $Conf) {
-            if (($t = $Conf->setting_data("mailsubj_" . $templateName)) !== false)
+            if (($t = $Conf->setting_data("mailsubj_" . $templateName, false)) !== false)
                 $m["subject"] = $t;
-            if (($t = $Conf->setting_data("mailbody_" . $templateName)) !== false)
+            if (($t = $Conf->setting_data("mailbody_" . $templateName, false)) !== false)
                 $m["body"] = $t;
         }
         return $m;
