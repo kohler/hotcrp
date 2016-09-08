@@ -135,7 +135,7 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $user->set_forceShow(true);
         $errors = $prows = [];
         while (($row = PaperInfo::fetch($result, $user)))
-            if (($whyNot = $user->perm_view_paper($prow)))
+            if (($whyNot = $user->perm_view_paper($row)))
                 $errors[whyNotText($whyNot, "view")] = true;
             else
                 $prows[$row->paperId] = $row;
