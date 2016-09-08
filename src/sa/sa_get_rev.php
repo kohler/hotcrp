@@ -131,25 +131,35 @@ class GetReviews_SearchAction extends GetReviewBase_SearchAction {
         $actions[] = [3060 + $this->iszip, $this->subname, "Reviews", "Reviews" . ($this->iszip ? " (zip)" : "")];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
-        $texts = $errors = $prows = [];
+        $result = $user->paper_result(["paperId" => $ssel->selection()]);
         $user->set_forceShow(true);
+        $errors = $prows = [];
+        while (($row = PaperInfo::fetch($result, $user)))
+            if (($whyNot = $user->perm_view_paper($prow)))
+                $errors[whyNotText($whyNot, "view")] = true;
+            else
+                $prows[$row->paperId] = $row;
+
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviews" => 1, "reviewerName" => 1]);
+        $texts = [];
         $rf = $user->conf->review_form();
         while (($row = PaperInfo::fetch($result, $user))) {
             if (!isset($prows[$row->paperId]))
-                $prows[$row->paperId] = $row;
-            if (($whyNot = $user->perm_view_review($row, null, null)))
+                /* skip */;
+            else if (($whyNot = $user->perm_view_review($row, null, null)))
                 $errors[whyNotText($whyNot, "view review")] = true;
             else if ($row->reviewSubmitted)
                 defappend($texts[$row->paperId], $rf->pretty_text($row, $row, $user) . "\n");
         }
 
         $crows = $user->conf->comment_rows($user->conf->comment_query("paperId" . sql_in_numeric_set($ssel->selection())), $user);
-        foreach ($crows as $row)
-            if ($user->can_view_comment($prows[$row->paperId], $row, null)) {
+        foreach ($crows as $row) {
+            if (isset($prows[$row->paperId])
+                && $user->can_view_comment($prows[$row->paperId], $row, null)) {
                 $crow = new CommentInfo($row, $prows[$row->paperId]);
                 defappend($texts[$row->paperId], $crow->unparse_text($user) . "\n");
             }
+        }
 
         $this->finish($user, $ssel, $texts, $errors);
     }
