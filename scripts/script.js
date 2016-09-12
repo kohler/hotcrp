@@ -1660,7 +1660,7 @@ function comet_tracker() {
     $.ajax({
         url: hoturl_add(dl.tracker_site + "poll",
                         "conference=" + encodeURIComponent(hoturl_absolute_base())
-                        + "&poll=" + encodeURIComponent(dl.tracker_status || "off")
+                        + "&poll=" + encodeURIComponent(dl.tracker_status)
                         + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
                         + "&timeout=" + timeout),
         timeout: timeout + 2000, dataType: "json",
@@ -1676,6 +1676,7 @@ function load(dlx, is_initial) {
         window.hotcrp_status = dl = dlx;
     if (!dl.load)
         dl.load = now_sec();
+    dl.tracker_status = dl.tracker_status || "off";
     has_tracker = !!dl.tracker;
     if (dl.tracker
         || (dl.tracker_status_at && dl.load - dl.tracker_status_at < 259200))
