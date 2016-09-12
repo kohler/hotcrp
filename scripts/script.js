@@ -5316,13 +5316,14 @@ function set_cookie(ls) {
     }
 }
 function is_paper_site(href) {
-    return /^(?:paper|review)(?:|.php)\//.test(href.substring(siteurl.length));
+    return /^(?:paper|review)(?:|\.php)\//.test(href.substring(siteurl.length));
 }
 function add_list() {
-    var j = $(this), href = j.attr("href"), $hl, ls;
+    var $self = $(this), $hl, ls,
+        href = this.getAttribute(this.tagName === "FORM" ? "action" : "href");
     if (href && href.substring(0, siteurl.length) === siteurl
         && is_paper_site(href)
-        && ($hl = j.closest(".has_hotcrp_list")).length
+        && ($hl = $self.closest(".has_hotcrp_list")).length
         && (ls = $hl.attr("data-hotcrp-list")))
         set_cookie(ls);
     return true;
