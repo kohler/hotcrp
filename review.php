@@ -32,7 +32,7 @@ $rf = $Conf->review_form();
 // header
 function confHeader() {
     global $paperTable;
-    PaperTable::do_header($paperTable, "review", @$_REQUEST["mode"]);
+    PaperTable::do_header($paperTable, "review", req("mode"));
 }
 
 function errorMsgExit($msg) {
@@ -151,13 +151,14 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
 
 // update review action
 if (isset($_REQUEST["update"]) && check_post()) {
+    $tf = array("singlePaper" => true);
     if (($whyNot = $Me->perm_submit_review($prow, $paperTable->editrrow)))
         Conf::msg_error(whyNotText($whyNot, "review"));
-    else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow)) {
-        $tf = array("singlePaper" => true);
+    else if ($rf->checkRequestFields($_REQUEST, $paperTable->editrrow, $tf)) {
         if ($rf->save_review($_REQUEST, $paperTable->editrrow, $prow, $Me, $tf)) {
             $rf->textFormMessages($tf);
-            redirectSelf();             // normally does not return
+            if (!get($tf, "anyErrors") && !get($tf, "anyWarnings"))
+                redirectSelf();             // normally does not return
             loadRows();
         }
     }
@@ -184,7 +185,8 @@ if (isset($_REQUEST["deletereview"]) && check_post()
             unset($_REQUEST["reviewId"], $_GET["reviewId"], $_POST["reviewId"]);
             unset($_REQUEST["r"], $_GET["r"], $_POST["r"]);
             $_REQUEST["paperId"] = $_GET["paperId"] = $paperTable->editrrow->paperId;
-            go(hoturl("paper", array("p" => $_GET["paperId"], "ls" => @$_REQUEST["ls"])));
+            SessionList::set_requested(req("ls"));
+            go(hoturl("paper", ["p" => $_GET["paperId"]]));
         }
         redirectSelf();         // normally does not return
         loadRows();
@@ -344,7 +346,7 @@ $editAny = $Me->can_review($prow, null);
 if (!$viewAny && !$editAny) {
     if (($whyNotPaper = $Me->perm_view_paper($prow)))
         errorMsgExit(whyNotText($whyNotPaper, "view"));
-    if (!isset($_REQUEST["reviewId"]) && !isset($_REQUEST["ls"])) {
+    if (req("reviewId") === null && req("ls") === null) {
         Conf::msg_error("You can’t see the reviews for this paper. "
                         . whyNotText($Me->perm_view_review($prow, null, null), "review"));
         go(hoturl("paper", "p=$prow->paperId"));
@@ -354,8 +356,10 @@ if (!$viewAny && !$editAny) {
 
 // mode
 $paperTable->fixReviewMode();
-if ($paperTable->mode == "edit")
-    go(hoturl("paper", array("p" => $prow->paperId, "ls" => @$_REQUEST["ls"])));
+if ($paperTable->mode == "edit") {
+    SessionList::set_requested(req("ls"));
+    go(hoturl("paper", ["p" => $prow->paperId]));
+}
 
 
 // paper table

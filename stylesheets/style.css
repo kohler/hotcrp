@@ -1065,7 +1065,7 @@ td.lentry.error input, div.error input, input.error, textarea.error {
 	background-color: #ffeeee;
 	font-weight: normal;
 }
-div.error > div.f-c, .papet.error > .papfn {
+div.error > div.f-c, .papet.error > .papfn, .revet.error > .revfn {
 	color: #ff0000;
 }
 input.error,

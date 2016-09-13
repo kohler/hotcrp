@@ -522,8 +522,8 @@ class ReviewForm {
                 continue;
 
             $fval = "";
-            if ($useRequest && isset($_REQUEST[$field]))
-                $fval = $_REQUEST[$field];
+            if ($useRequest)
+                $fval = (string) req($field);
             else if ($rrow)
                 $fval = $f->unparse_value($rrow->$field);
 
@@ -588,7 +588,7 @@ class ReviewForm {
         return false;
     }
 
-    function checkRequestFields(&$req, $rrow, &$tf = null) {
+    function checkRequestFields(&$req, $rrow, &$tf) {
         global $ReviewFormError;
         $submit = defval($req, "ready", false);
         unset($req["unready"]);
@@ -1439,8 +1439,18 @@ $blind\n";
 
     function textFormMessages(&$tf) {
         if (!empty($tf["err"])) {
-            $this->conf->msg(defval($tf, 'anyErrors') ? "merror" : "warning",
-                       "There were " . (defval($tf, 'anyErrors') && defval($tf, 'anyWarnings') ? "errors and warnings" : (defval($tf, 'anyErrors') ? "errors" : "warnings")) . " while parsing the uploaded reviews file. <div class='parseerr'><p>" . join("</p>\n<p>", $tf['err']) . "</p></div>");
+            $anyErrors = get($tf, "anyErrors");
+            $anyWarnings = get($tf, "anyWarnings");
+            $message = "";
+            if (!get($tf, "singlePaper")) {
+                if ($anyErrors && $anyWarnings)
+                    $message = "There were errors and warnings while parsing the uploaded review file. ";
+                else if ($anyErrors)
+                    $message = "There were errors while parsing the uploaded review file. ";
+                else
+                    $message = "There were warnings while parsing the uploaded review file. ";
+            }
+            $this->conf->msg($anyErrors ? "merror" : "warning", $message . '<div class="parseerr"><p>' . join("</p>\n<p>", $tf['err']) . "</p></div>");
         }
 
         $confirm = array();
@@ -1699,7 +1709,7 @@ $blind\n";
     </tr></table></div>\n";
 
         // ready?
-        $ready = ($useRequest ? defval($_REQUEST, "ready") : !($rrow && $rrow->reviewModified > 1 && !$rrow->reviewSubmitted));
+        $ready = ($useRequest ? req("ready") : !($rrow && $rrow->reviewModified > 1 && !$rrow->reviewSubmitted));
 
         // review card
         echo '<div class="revcard_body">';
@@ -1737,7 +1747,7 @@ $blind\n";
         // blind?
         if ($this->conf->review_blindness() == Conf::BLIND_OPTIONAL) {
             echo '<div class="revet"><span class="revfn">',
-                Ht::checkbox_h("blind", 1, ($useRequest ? defval($_REQUEST, 'blind') : (!$rrow || $rrow->reviewBlind))),
+                Ht::checkbox_h("blind", 1, ($useRequest ? req("blind") : (!$rrow || $rrow->reviewBlind))),
                 "&nbsp;", Ht::label("Anonymous review"),
                 "</span><hr class=\"c\" /></div>\n",
                 '<div class="revhint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or open review.  Check this box to submit your review anonymously (the authors won’t know who wrote the review).</div>\n",
