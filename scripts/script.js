@@ -2719,6 +2719,10 @@ function comment_identity_time(cj) {
 
 
 function edit_allowed(cj) {
+    if (!hotcrp_status || !hotcrp_status.perm || !hotcrp_status.perm[hotcrp_paperid]) {
+        log_jserror("comment.edit_allowed failure: " + JSON.stringify(hotcrp_status) + ", paper " + JSON.stringify(hotcrp_paperid));
+        return true;
+    }
     var p = hotcrp_status.perm[hotcrp_paperid];
     if (cj.response)
         return p.can_responds && p.can_responds[cj.response] === true;
