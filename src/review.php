@@ -1387,19 +1387,19 @@ $blind\n";
                     $req["ready"] = $v ? 0 : 1;
             } else if ($k === "name" || $k === "reviewer_name") {
                 if (is_string($v))
-                    $req["reviewerName"] = $v;
+                    $req["reviewerName"] = simplify_whitespace($v);
             } else if ($k === "email" || $k === "reviewer_email") {
                 if (is_string($v))
-                    $req["reviewerEmail"] = $v;
+                    $req["reviewerEmail"] = trim($v);
             } else if ($k === "affiliation" || $k === "reviewer_affiliation") {
                 if (is_string($v))
                     $req["reviewerAffiliation"] = $v;
             } else if ($k === "first" || $k === "firstName") {
                 if (is_string($v))
-                    $first = $v;
+                    $first = simplify_whitespace($v);
             } else if ($k === "last" || $k === "lastName") {
                 if (is_string($v))
-                    $last = $v;
+                    $last = simplify_whitespace($v);
             } else if ($k === "format") {
                 if (is_int($v))
                     $req["reviewFormat"] = $v;
