@@ -2018,6 +2018,13 @@ class Contact {
             || ($this->isPC && $this->conf->timePCViewSomePaper(true));
     }
 
+    function can_view_document_history(PaperInfo $prow) {
+        if ($this->privChair)
+            return true;
+        $rights = $this->rights($prow, "any");
+        return $rights->act_author || $rights->can_administer;
+    }
+
     function can_view_paper_manager(PaperInfo $prow = null) {
         if ($this->privChair)
             return true;

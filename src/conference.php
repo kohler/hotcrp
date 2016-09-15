@@ -1280,6 +1280,11 @@ class Conf {
         $any = $this->invariantq("select p.paperId from Paper p join PaperStorage ps on (ps.paperStorageId=p.finalPaperStorageId) where p.finalPaperStorageId>1 and (p.sha1 != ps.sha1 or p.size!=ps.size or p.mimetype!=ps.mimetype or p.timestamp!=ps.timestamp) limit 1");
         if ($any)
             trigger_error("$this->dbname invariant error: bad Paper final denormalization, paper #" . self::$invariant_row[0]);
+
+        // filterType is never zero
+        $any = $this->invariantq("select paperStorageId from PaperStorage where filterType=0 limit 1");
+        if ($any)
+            trigger_error("$this->dbname invariant error: bad PaperStorage filterType, id #" . self::$invariant_row[0]);
     }
 
 
