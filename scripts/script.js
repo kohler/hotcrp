@@ -2789,14 +2789,14 @@ function render_editing(hc, cj) {
         hc.pop_n(2);
 
         // actions
-        actions.push('<button type="button" name="submit" class="btn btn-default">Save</button>' + bnote);
+        actions.push('<button type="button" name="bsubmit" class="btn btn-default">Save</button>' + bnote);
     } else {
         // actions
         // XXX allow_administer
         hc.push('<input type="hidden" name="response" value="' + cj.response + '" />');
         if (cj.is_new || cj.draft)
             actions.push('<button type="button" name="savedraft" class="btn">Save draft</button>' + bnote);
-        actions.push('<button type="button" name="submit" class="btn btn-default">Submit</button>' + bnote);
+        actions.push('<button type="button" name="bsubmit" class="btn btn-default">Submit</button>' + bnote);
     }
     if (render_text.format_can_preview(cj.format))
         actions.push('<button type="button" name="preview" class="btn">Preview</button>');
@@ -2856,7 +2856,7 @@ function activate_editing(j, cj) {
     j.find("select[name=visibility]").val(cj.visibility || "rev");
     if ((elt = j.find("input[name=blind]")[0]) && (!cj.visibility || cj.blind))
         elt.checked = true;
-    j.find("button[name=submit]").click(submit_editor);
+    j.find("button[name=bsubmit]").click(submit_editor);
     j.find("form").on("submit", submit_editor);
     j.find("button[name=cancel]").click(cancel_editor);
     j.find("button[name=delete]").click(delete_editor);
@@ -4521,13 +4521,13 @@ function override_deadlines(elt, callback) {
                      + (ejq.attr("data-override-text") || "")
                      + " Are you sure you want to override the deadline?</p>"
                      + '<form><div class="popup-actions">'
-                     + '<button type="button" name="submit" class="popup-btn">Save changes</button>'
+                     + '<button type="button" name="bsubmit" class="popup-btn">Save changes</button>'
                      + '<button type="button" name="cancel" class="popup-btn">Cancel</button>'
                      + '</div></form></div></div>');
     djq.find("button[name=cancel]").on("click", function () {
         djq.remove();
     });
-    djq.find("button[name=submit]").on("click", function () {
+    djq.find("button[name=bsubmit]").on("click", function () {
         if (callback)
             callback();
         else {
