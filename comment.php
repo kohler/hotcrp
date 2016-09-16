@@ -68,7 +68,7 @@ function save_comment($text, $is_response, $roundnum) {
         $user = $Conf->user_by_id($cid);
 
     $req = array("visibility" => req("visibility"),
-                 "submit" => $is_response && req("submitresponse"),
+                 "submit" => $is_response && !req("draft"),
                  "text" => $text,
                  "tags" => req("commenttags"),
                  "blind" => req("blind"));
@@ -125,9 +125,9 @@ function handle_response() {
     if ($rnum === false && $rname)
         return Conf::msg_error("No such response round “" . htmlspecialchars($rname) . "”.");
     $rnum = (int) $rnum;
-    if ($crow && @(int) $crow->commentRound !== $rnum) {
+    if ($crow && (int) get($crow, "commentRound") !== $rnum) {
         $Conf->warnMsg("Attempt to change response round ignored.");
-        $rnum = @+$crow->commentRound;
+        $rnum = (int) get($crow, "commentRound");
     }
 
     if (!($xcrow = $crow))
@@ -143,11 +143,14 @@ function handle_response() {
     save_comment($text, true, $rnum);
 }
 
+if (req("savedraftresponse"))
+    $_POST["draft"] = $_REQUEST["draft"] = 1;
+if (req("savedraftresponse") || req("submitresponse"))
+    $_GET["submitcomment"] = $_REQUEST["submitcomment"] = 1;
 
 if (!check_post())
     /* do nothing */;
-else if ((req("submitcomment") || req("submitresponse") || req("savedraftresponse"))
-         && req("response")) {
+else if (req("submitcomment") && req("response")) {
     handle_response();
     if (req("ajax"))
         $Conf->ajaxExit(array("ok" => false));

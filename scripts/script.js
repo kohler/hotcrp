@@ -2881,20 +2881,22 @@ function beforeunload() {
 }
 
 function save_editor(elt, action, really) {
-    var $c = $cmt(elt);
+    var $c = $cmt(elt), $f = $c.find("form");
     if (!edit_allowed($c.c) && !really) {
         override_deadlines(elt, function () {
             save_editor(elt, action, true);
         });
         return;
     }
-    var ctype = $c.c.response ? "response=" + $c.c.response : "comment=1";
+    $f.find("input[name=draft]").remove();
+    if (action === "savedraft")
+        $f.children("div").append('<input type="hidden" name="draft" value="1" />');
     var url = hoturl_post("comment", "p=" + hotcrp_paperid
                           + ($c.c.cid ? "&c=" + $c.c.cid : "")
                           + "&ajax=1&"
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
-                          + action + ctype);
+                          + (action === "delete" ? "deletecomment=1" : "submitcomment=1"));
     $c.find("button").prop("disabled", true);
     function callback(data, textStatus, jqxhr) {
         if (!data.ok) {
@@ -2919,7 +2921,7 @@ function save_editor(elt, action, really) {
         } else
             $c.closest(".cmtg").html(data.msg);
     }
-    $.post(url, $c.find("form").serialize(), callback);
+    $.post(url, $f.serialize(), callback);
 }
 
 function submit_editor(evt) {
