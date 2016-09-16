@@ -2689,6 +2689,23 @@ var cmts = {}, has_unload = false;
 var idctr = 0, resp_rounds = {};
 var detwiddle = new RegExp("^" + (hotcrp_user.cid ? hotcrp_user.cid : "") + "~");
 
+function $cmt(e) {
+    var $c = $(e).closest(".cmtg");
+    if (!$c.length)
+        $c = $(e).closest(".cmtcard").find(".cmtg");
+    $c.c = cmts[$c.closest(".cmtid")[0].id];
+    return $c;
+}
+
+function cj_cid(cj) {
+    if (cj.response)
+        return (cj.response == 1 ? "" : cj.response) + "response";
+    else if (cj.is_new)
+        return "cnew";
+    else
+        return "c" + (cj.ordinal || "x" + cj.cid);
+}
+
 function comment_identity_time(cj) {
     var t = [], res = [], x, i, tag;
     if (cj.ordinal)
@@ -2819,15 +2836,15 @@ function make_update_words(jq, wlimit) {
 }
 
 function make_preview() {
-    var x = analyze(this), taj = x.j.find("textarea[name=comment]"),
+    var $c = $cmt(this), taj = $c.find("textarea[name=comment]"),
         previewon = taj.is(":visible"), t;
     if (previewon) {
-        t = render_text(x.cj.format, taj.val());
-        x.j.find(".cmtpreview").html('<div class="format' + (t.format || 0) + '">' + t.content + '</div>');
+        t = render_text($c.c.format, taj.val());
+        $c.find(".cmtpreview").html('<div class="format' + (t.format || 0) + '">' + t.content + '</div>');
     }
-    x.j.find(".cmtnopreview").toggle(!previewon);
-    x.j.find(".cmtpreview").toggle(previewon);
-    x.j.find("button[name=preview]").html(previewon ? "Edit" : "Preview");
+    $c.find(".cmtnopreview").toggle(!previewon);
+    $c.find(".cmtpreview").toggle(previewon);
+    $c.find("button[name=preview]").html(previewon ? "Edit" : "Preview");
 }
 
 function activate_editing(j, cj) {
@@ -2853,62 +2870,56 @@ function activate_editing(j, cj) {
     hiliter_children(j);
 }
 
-function analyze(e) {
-    var j = $(e).closest(".cmtg");
-    if (!j.length)
-        j = $(e).closest(".cmtcard").find(".cmtg");
-    return {j: j, cj: cmts[j.closest(".cmtid")[0].id]};
-}
-
 function beforeunload() {
-    var i, $cs = $(".cmtg textarea[name='comment']"), x, text, text2;
-    for (i = 0; i != $cs.length; ++i) {
-        x = analyze($cs[i]);
+    var i, $cs = $(".cmtg textarea[name='comment']"), $c, text;
+    for (i = 0; i != $cs.length && has_unload; ++i) {
+        $c = $cmt($cs[i]);
         text = $($cs[i]).val().replace(/\s+$/, "");
-        text2 = (x.cj && x.cj.text) || "";
-        if (!text_eq(text, (x.cj && x.cj.text) || ""))
+        if (!text_eq(text, ($c.c && $c.c.text) || ""))
             return "Your comment edits have not been saved. If you leave this page now, they will be lost.";
     }
 }
 
 function save_editor(elt, action, really) {
-    var x = analyze(elt);
-    if (!edit_allowed(x.cj) && !really) {
+    var $c = $cmt(elt);
+    if (!edit_allowed($c.c) && !really) {
         override_deadlines(elt, function () {
             save_editor(elt, action, true);
         });
         return;
     }
-    var ctype = x.cj.response ? "response=" + x.cj.response : "comment=1";
-    if (x.cj.cid)
-        ctype += "&c=" + x.cj.cid;
-    var url = hoturl_post("comment", "p=" + hotcrp_paperid + "&ajax=1&"
+    var ctype = $c.c.response ? "response=" + $c.c.response : "comment=1";
+    var url = hoturl_post("comment", "p=" + hotcrp_paperid
+                          + ($c.c.cid ? "&c=" + $c.c.cid : "")
+                          + "&ajax=1&"
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + action + ctype);
-    x.j.find("button").prop("disabled", true);
+    $c.find("button").prop("disabled", true);
     function callback(data, textStatus, jqxhr) {
-        var editing_response = x.cj.response && edit_allowed(x.cj),
-            cid = cj_cid(x.cj), data_cid;
-        if (data.ok && !data.cmt && !x.cj.is_new)
-            delete cmts[cid];
-        if (editing_response && data.ok && !data.cmt)
-            data.cmt = {is_new: true, response: x.cj.response, editable: true, draft: true, cid: cid};
-        if (data.ok && data.cmt && cid !== (data_cid = cj_cid(data.cmt))) {
-            x.j.closest(".cmtid")[0].id = data_cid;
-            if (cid !== "cnew")
-                delete cmts[cid];
-            else if (cmts.cnew)
-                papercomment.add(cmts.cnew);
+        if (!data.ok) {
+            $c.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
+            return;
         }
-        if (!data.ok)
-            x.j.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
-        else if (data.cmt)
-            render_cmt(x.j, data.cmt, editing_response, data.msg);
-        else
-            x.j.closest(".cmtg").html(data.msg);
+        var cid = cj_cid($c.c), editing_response = $c.c.response && edit_allowed($c.c);
+        if (!data.cmt && !$c.c.is_new)
+            delete cmts[cid];
+        if (!data.cmt && editing_response)
+            data.cmt = {is_new: true, response: $c.c.response, editable: true, draft: true, cid: cid};
+        if (data.cmt) {
+            var data_cid = cj_cid(data.cmt);
+            if (cid !== data_cid) {
+                $c.closest(".cmtid")[0].id = data_cid;
+                if (cid !== "cnew")
+                    delete cmts[cid];
+                else if (cmts.cnew)
+                    papercomment.add(cmts.cnew);
+            }
+            render_cmt($c, data.cmt, editing_response, data.msg);
+        } else
+            $c.closest(".cmtg").html(data.msg);
     }
-    $.post(url, x.j.find("form").serialize(), callback);
+    $.post(url, $c.find("form").serialize(), callback);
 }
 
 function submit_editor(evt) {
@@ -2926,17 +2937,8 @@ function delete_editor() {
 }
 
 function cancel_editor() {
-    var x = analyze(this);
-    render_cmt(x.j, x.cj, false);
-}
-
-function cj_cid(cj) {
-    if (cj.response)
-        return (cj.response == 1 ? "" : cj.response) + "response";
-    else if (cj.is_new)
-        return "cnew";
-    else
-        return "c" + (cj.ordinal || "x" + cj.cid);
+    var $c = $cmt(this);
+    render_cmt($c, $c.c, false);
 }
 
 function render_cmt(j, cj, editing, msg) {
@@ -3066,14 +3068,6 @@ function add(cj, editing) {
     render_cmt(j, cj, editing);
 }
 
-function make_editor() {
-    var x = analyze(this);
-    if (!x.j.find("textarea[name='comment']").length)
-        render_cmt(x.j, x.cj, true);
-    location.hash = "#" + cj_cid(x.cj);
-    return finish_make_editor(x.j);
-}
-
 function add_editing(respround) {
     var cid = "cnew", j;
     if (respround)
@@ -3084,12 +3078,15 @@ function add_editing(respround) {
     return make_editor.call($$(cid));
 }
 
-function finish_make_editor(j) {
-    j.scrollIntoView();
-    var te = j.find("textarea[name='comment']")[0];
+function make_editor() {
+    var $c = $cmt(this);
+    if (!$c.find("textarea[name='comment']").length)
+        render_cmt($c, $c.c, true);
+    location.hash = "#" + cj_cid($c.c);
+    $c.scrollIntoView();
+    var te = $c.find("textarea[name='comment']")[0];
     te.focus();
-    if (te.setSelectionRange)
-        te.setSelectionRange(te.value.length, te.value.length);
+    te.setSelectionRange && te.setSelectionRange(te.value.length, te.value.length);
     has_unload || $(window).on("beforeunload.papercomment", beforeunload);
     has_unload = true;
     return false;
