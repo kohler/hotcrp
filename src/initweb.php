@@ -70,9 +70,9 @@ function initialize_user() {
         $lb = $_SESSION["login_bounce"];
         if ($lb[0] == $Conf->dsn && $lb[2] !== "index" && $lb[2] == Navigation::page()) {
             foreach ($lb[3] as $k => $v)
-                if (!isset($_REQUEST[$k]))
+                if (!isset($_GET[$k]))
                     $_REQUEST[$k] = $_GET[$k] = $v;
-            $_REQUEST["after_login"] = 1;
+            $_REQUEST["after_login"] = $_GET["after_login"] = 1;
         }
         unset($_SESSION["login_bounce"]);
     }

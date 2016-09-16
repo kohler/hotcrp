@@ -13,9 +13,9 @@ if ($Me->is_empty())
 // header
 function exit_to_paper() {
     global $prow;
-    go(hoturl("paper", array("p" => $prow ? $prow->paperId : @$_REQUEST["p"],
-                             "c" => @$_REQUEST["c"],
-                             "ls" => @$_REQUEST["ls"])));
+    go(hoturl("paper", array("p" => $prow ? $prow->paperId : req("p"),
+                             "c" => req("c"), "response" => req("response"),
+                             "ls" => req("ls"))));
 }
 
 
@@ -29,7 +29,7 @@ function loadRows() {
     $paperTable->resolveReview(false);
     $paperTable->resolveComments();
 
-    $cid = defval($_REQUEST, "commentId", "xxx");
+    $cid = defval($_GET, "commentId", "xxx");
     $crow = null;
     foreach ($paperTable->crows as $row) {
         if ($row->commentId == $cid
@@ -67,11 +67,11 @@ function save_comment($text, $is_response, $roundnum) {
         && (!$crow || $crow->contactId == $cid))
         $user = $Conf->user_by_id($cid);
 
-    $req = array("visibility" => @$_REQUEST["visibility"],
-                 "submit" => $is_response && @$_REQUEST["submitresponse"],
+    $req = array("visibility" => req("visibility"),
+                 "submit" => $is_response && req("submitresponse"),
                  "text" => $text,
-                 "tags" => @$_REQUEST["commenttags"],
-                 "blind" => @$_REQUEST["blind"]);
+                 "tags" => req("commenttags"),
+                 "blind" => req("blind"));
     if ($is_response && !$crow)
         $cinfo = new CommentInfo((object) array("commentType" => COMMENTTYPE_RESPONSE,
                                                 "commentRound" => $roundnum), $prow);
@@ -120,7 +120,7 @@ function save_comment($text, $is_response, $roundnum) {
 
 function handle_response() {
     global $Conf, $Me, $prow, $crow;
-    $rname = @trim($_REQUEST["response"]);
+    $rname = trim((string) req("response"));
     $rnum = $Conf->resp_round_number($rname);
     if ($rnum === false && $rname)
         return Conf::msg_error("No such response round “" . htmlspecialchars($rname) . "”.");
@@ -136,7 +136,7 @@ function handle_response() {
     if (($whyNot = $Me->perm_respond($prow, $xcrow, true)))
         return Conf::msg_error(whyNotText($whyNot, "respond to reviews for"));
 
-    $text = @rtrim($_REQUEST["comment"]);
+    $text = rtrim((string) req("comment"));
     if ($text === "" && !$crow)
         return Conf::msg_error("Enter a response.");
 
@@ -146,32 +146,30 @@ function handle_response() {
 
 if (!check_post())
     /* do nothing */;
-else if ((@$_REQUEST["submitcomment"] || @$_REQUEST["submitresponse"] || @$_REQUEST["savedraftresponse"])
-         && @$_REQUEST["response"]) {
+else if ((req("submitcomment") || req("submitresponse") || req("savedraftresponse"))
+         && req("response")) {
     handle_response();
-    if (@$_REQUEST["ajax"])
+    if (req("ajax"))
         $Conf->ajaxExit(array("ok" => false));
-} else if (@$_REQUEST["submitcomment"]) {
-    $text = @rtrim($_REQUEST["comment"]);
+} else if (req("submitcomment")) {
+    $text = rtrim((string) req("comment"));
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         Conf::msg_error(whyNotText($whyNot, "comment on"));
     else if ($text === "" && !$crow)
         Conf::msg_error("Enter a comment.");
     else
         save_comment($text, false, 0);
-    if (@$_REQUEST["ajax"])
+    if (req("ajax"))
         $Conf->ajaxExit(array("ok" => false));
-} else if ((@$_REQUEST["deletecomment"] || @$_REQUEST["deleteresponse"]) && $crow) {
+} else if ((req("deletecomment") || req("deleteresponse")) && $crow) {
     if (($whyNot = $Me->perm_submit_comment($prow, $crow)))
         Conf::msg_error(whyNotText($whyNot, "comment on"));
     else
         save_comment("", ($crow->commentType & COMMENTTYPE_RESPONSE) != 0, $crow->commentRound);
-    if (@$_REQUEST["ajax"])
+    if (req("ajax"))
         $Conf->ajaxExit(array("ok" => false));
-} else if (@$_REQUEST["cancel"] && $crow)
+} else if (req("cancel") && $crow)
     $_REQUEST["noedit"] = $_GET["noedit"] = $_POST["noedit"] = 1;
 
 
-go(hoturl("paper", array("p" => $prow->paperId,
-                         "c" => @$_REQUEST["c"],
-                         "ls" => @$_REQUEST["ls"])));
+exit_to_paper();
