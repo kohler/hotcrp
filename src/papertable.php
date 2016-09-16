@@ -2474,6 +2474,10 @@ class PaperTable {
         }
     }
 
+    function viewable_comments() {
+        return $this->mycrows;
+    }
+
     function fixReviewMode() {
         global $Conf, $Me;
         $prow = $this->prow;

@@ -753,9 +753,9 @@ class Contact {
     function escape() {
         if (req("ajax")) {
             if ($this->is_empty())
-                $this->conf->ajaxExit(array("ok" => 0, "loggedout" => 1));
+                $this->conf->ajaxExit(["ok" => false, "error" => "You have been logged out.", "loggedout" => true]);
             else
-                $this->conf->ajaxExit(array("ok" => 0, "error" => "You don’t have permission to access that page."));
+                $this->conf->ajaxExit(["ok" => false, "error" => "You don’t have permission to access that page."]);
         }
 
         if ($this->is_empty()) {
@@ -766,7 +766,7 @@ class Contact {
             if (req("anchor"))
                 $x["anchor"] = req("anchor");
             $url = selfHref($x, array("raw" => true, "site_relative" => true));
-            $_SESSION["login_bounce"] = array($this->conf->dsn, $url, Navigation::page(), $_POST);
+            $_SESSION["login_bounce"] = [$this->conf->dsn, $url, Navigation::page(), $_POST];
             if (check_post())
                 error_go(false, "You’ve been logged out due to inactivity, so your changes have not been saved. After logging in, you may submit them again.");
             else

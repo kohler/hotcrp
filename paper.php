@@ -413,6 +413,24 @@ else {
         $paperTable->paptabEndWithReviewMessage();
         $paperTable->paptabComments();
     }
+    // restore comment across logout bounce
+    if (req("editcomment")) {
+        $j = null;
+        if (($cid = req("c"))) {
+            foreach ($paperTable->viewable_comments() as $crow)
+                if ($crow->commentId == $cid)
+                    $j = $crow->unparse_json($Me, true);
+        }
+        if (!$j)
+            $j = (object) ["is_new" => true, "response" => req("response"), "editable" => true];
+        $j->text = req("comment");
+        $j->visibility = req("visibility");
+        $tags = trim((string) req("commenttags"));
+        $j->tags = $tags === "" ? [] : preg_split('/\s+/', $tags);
+        $j->blind = !!req("blind");
+        $j->draft = !!req("draft");
+        Ht::stash_script("papercomment.edit(" . json_encode($j) . ")");
+    }
 }
 
 $Conf->footer();

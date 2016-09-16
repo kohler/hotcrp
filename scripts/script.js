@@ -2737,10 +2737,9 @@ function comment_identity_time(cj) {
 
 
 function edit_allowed(cj) {
-    if (!hotcrp_status || !hotcrp_status.perm || !hotcrp_status.perm[hotcrp_paperid]) {
-        log_jserror("comment.edit_allowed failure: " + JSON.stringify(hotcrp_status) + ", paper " + JSON.stringify(hotcrp_paperid));
+    if (!hotcrp_status || !hotcrp_status.perm || !hotcrp_status.perm[hotcrp_paperid])
+        // Probably the user has been logged out.
         return true;
-    }
     var p = hotcrp_status.perm[hotcrp_paperid];
     if (cj.response)
         return p.can_responds && p.can_responds[cj.response] === true;
@@ -2891,15 +2890,20 @@ function save_editor(elt, action, really) {
     $f.find("input[name=draft]").remove();
     if (action === "savedraft")
         $f.children("div").append('<input type="hidden" name="draft" value="1" />');
-    var url = hoturl_post("comment", "p=" + hotcrp_paperid
-                          + ($c.c.cid ? "&c=" + $c.c.cid : "")
-                          + "&ajax=1&"
+    var arg = "p=" + hotcrp_paperid + ($c.c.cid ? "&c=" + $c.c.cid : "");
+    var url = hoturl_post("comment", arg + "&ajax=1&"
                           + (really ? "override=1&" : "")
                           + (hotcrp_want_override_conflict ? "forceShow=1&" : "")
                           + (action === "delete" ? "deletecomment=1" : "submitcomment=1"));
     $c.find("button").prop("disabled", true);
     function callback(data, textStatus, jqxhr) {
         if (!data.ok) {
+            if (data.loggedout) {
+                has_unload = false;
+                $f[0].method = "POST";
+                $f[0].action = hoturl_post("paper", arg + "&editcomment=1");
+                $f[0].submit();
+            }
             $c.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
             return;
         }
@@ -3011,7 +3015,7 @@ function render_cmt(j, cj, editing, msg) {
     if (editing)
         activate_editing(j, cj);
     else {
-        (cj.response ? chead.parent() : j).find("a.cmteditor").click(make_editor);
+        (cj.response ? chead.parent() : j).find("a.cmteditor").click(edit_this);
         render_cmt_text(j.find(".cmttext"), cj, chead);
     }
 
@@ -3070,21 +3074,18 @@ function add(cj, editing) {
     render_cmt(j, cj, editing);
 }
 
-function add_editing(respround) {
-    var cid = "cnew", j;
-    if (respround)
-        cid = ((respround || 1) == 1 ? "" : respround) + "response";
-    if (!$$(cid) && respround)
-        add({is_new: true, response: respround, editable: true}, true);
-    $$(cid) || log_jserror("bad add_editing " + cid);
-    return make_editor.call($$(cid));
+function edit_this() {
+    return edit($cmt(this).c);
 }
 
-function make_editor() {
-    var $c = $cmt(this);
+function edit(cj) {
+    var cid = cj_cid(cj);
+    if (!$$(cid) && cj.response)
+        add(cj, true);
+    var $c = $cmt($$(cid));
     if (!$c.find("textarea[name='comment']").length)
-        render_cmt($c, $c.c, true);
-    location.hash = "#" + cj_cid($c.c);
+        render_cmt($c, cj, true);
+    location.hash = "#" + cid;
     $c.scrollIntoView();
     var te = $c.find("textarea[name='comment']")[0];
     te.focus();
@@ -3097,8 +3098,13 @@ function make_editor() {
 return {
     add: add,
     set_resp_round: function (rname, rinfo) { resp_rounds[rname] = rinfo; },
-    edit_response: function (respround) { return add_editing(respround); },
-    edit_new: function () { return add_editing(false); }
+    edit: edit,
+    edit_new: function () {
+        return edit({is_new: true, editable: true});
+    },
+    edit_response: function (respround) {
+        return edit({is_new: true, response: respround, editable: true});
+    }
 };
 })(jQuery);
 

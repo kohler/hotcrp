@@ -226,7 +226,7 @@ function selfHref($extra = array(), $options = null) {
             $_REQUEST[$v] = $_REQUEST[$k];
 
     $param = "";
-    foreach (array("p", "r", "c", "m", "u", "g", "fx", "fy", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer") as $what)
+    foreach (array("p", "r", "c", "m", "u", "g", "fx", "fy", "mode", "forceShow", "validator", "ls", "list", "t", "q", "qa", "qo", "qx", "qt", "tab", "atab", "group", "sort", "monreq", "noedit", "contact", "reviewer", "editcomment") as $what)
         if (isset($_REQUEST[$what]) && !array_key_exists($what, $extra)
             && !is_array($_REQUEST[$what]))
             $param .= "&$what=" . urlencode($_REQUEST[$what]);
