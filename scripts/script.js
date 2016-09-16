@@ -1676,6 +1676,7 @@ function load(dlx, is_initial) {
         window.hotcrp_status = dl = dlx;
     if (!dl.load)
         dl.load = now_sec();
+    dl.rev = dl.rev || {};
     dl.tracker_status = dl.tracker_status || "off";
     has_tracker = !!dl.tracker;
     if (dl.tracker

@@ -2964,13 +2964,12 @@ class Contact {
     function my_deadlines($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         global $Now;
-        $dl = (object) array("now" => $Now,
-                             "sub" => (object) array(),
-                             "rev" => (object) array());
+        $dl = (object) ["now" => $Now, "email" => $this->email];
         if ($this->privChair)
             $dl->is_admin = true;
         if ($this->is_author())
             $dl->is_author = true;
+        $dl->sub = (object) [];
         $graces = [];
 
         // submissions
@@ -3028,8 +3027,8 @@ class Contact {
         if ($this->is_reviewer()
             && ($rev_open = +$this->conf->setting("rev_open")) > 0
             && $rev_open <= $Now)
-            $dl->rev->open = true;
-        if (get($dl->rev, "open")) {
+            $dl->rev = (object) ["open" => true];
+        if (get($dl, "rev")) {
             $dl->revs = [];
             $k = $this->isPC ? "pcrev" : "extrev";
             foreach ($this->conf->defined_round_list() as $i => $round_name) {
