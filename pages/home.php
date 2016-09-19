@@ -492,11 +492,11 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     $startable = $Conf->timeStartPaper();
     if ($startable && !$Me->has_email())
-        echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to register papers.</small>";
+        echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start submissions.</small>";
     else if ($startable || $Me->privChair) {
-        echo "<strong><a href='", hoturl("paper", "p=new"), "'>Start new paper</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
+        echo "<strong><a href='", hoturl("paper", "p=new"), "'>New submission</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
         if ($Me->privChair)
-            echo "<br />\n<span class='hint'>As an administrator, you can start a paper regardless of deadlines and on behalf of others.</span>";
+            echo "<br />\n<span class='hint'>As an administrator, you can start a submission regardless of deadlines and on behalf of others.</span>";
     }
 
     $plist = null;
@@ -517,7 +517,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
             else
                 $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>submission deadline</a> has passed.";
         } else if (!$Conf->timeUpdatePaper()) {
-            $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for updating papers has passed, but you can still submit.";
+            $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>update deadline</a> has passed, but you can still submit.";
             $time = $Conf->printableTimeSetting("sub_sub", "span", " to submit papers");
             if ($time != "N/A")
                 $deadlines[] = "You have until $time.";
@@ -529,7 +529,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
     }
     if (!$startable && !count($deadlines)) {
         if ($Conf->deadlinesAfter("sub_open"))
-            $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for registering new papers has passed.";
+            $deadlines[] = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for registering submissions has passed.";
         else
             $deadlines[] = "The site is not open for submissions at the moment.";
     }

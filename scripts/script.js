@@ -1298,11 +1298,11 @@ function display_main(is_initial) {
     dlname = "";
     dltime = 0;
     if (dl.sub.open) {
-        x = {reg: "registration", update: "update", sub: "submission"};
+        x = {reg: "Registration", update: "Update", sub: "Submission"};
         for (subtype in x)
             if (+dl.now <= +dl.sub[subtype] ? now - 120 <= +dl.sub[subtype]
                 : dl.sub[subtype + "_ingrace"]) {
-                dlname = "Paper " + x[subtype] + " deadline";
+                dlname = x[subtype] + " deadline";
                 dltime = +dl.sub[subtype];
                 break;
             }

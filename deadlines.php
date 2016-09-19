@@ -37,15 +37,15 @@ function printDeadline($time, $phrase, $description) {
 
 // If you change these, also change Contact::has_reportable_deadline().
 if (get($dl->sub, "reg"))
-    printDeadline($dl->sub->reg, "Paper registration deadline",
+    printDeadline($dl->sub->reg, "Registration deadline",
                   "You can register new papers until this deadline.");
 
 if (get($dl->sub, "update"))
-    printDeadline($dl->sub->update, "Paper update deadline",
+    printDeadline($dl->sub->update, "Update deadline",
                   "You can upload new versions of your paper and change other paper information until this deadline.");
 
 if (get($dl->sub, "sub"))
-    printDeadline($dl->sub->sub, "Paper submission deadline",
+    printDeadline($dl->sub->sub, "Submission deadline",
                   "Papers must be submitted by this deadline to be reviewed.");
 
 if (get($dl, "resps"))
