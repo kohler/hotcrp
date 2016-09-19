@@ -102,6 +102,7 @@ lib/dbl.php
 lib/filer.php
 lib/getopt.php
 lib/ht.php
+lib/intlmsgset.php
 lib/json.php
 lib/ldaplogin.php
 lib/login.php

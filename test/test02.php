@@ -294,4 +294,22 @@ xassert_eqq(get(Text::split_name("Kennedy, Bob"), 1), "Kennedy");
 xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 0), "Bob (Butt Pants)");
 xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 1), "Kennedy");
 
+// i18n messages
+$ms = new IntlMsgSet;
+$ms->add("Hello", "Bonjour");
+$ms->add("%d friend", "%d amis", ["$1 ≠ 1"]);
+$ms->add("%d friend", "%d ami");
+$ms->add("ax", "a");
+$ms->add("ax", "b");
+$ms->add("bx", "a", 2);
+$ms->add("bx", "b");
+$ms->set("FOO", 100);
+xassert_eqq($ms->x("Hello"), "Bonjour");
+xassert_eqq($ms->x("%d friend", 1), "1 ami");
+xassert_eqq($ms->x("%d friend", 0), "0 amis");
+xassert_eqq($ms->x("%d friend", 2), "2 amis");
+xassert_eqq($ms->x("%FOO\$s friend"), "100 friend");
+xassert_eqq($ms->x("ax"), "b");
+xassert_eqq($ms->x("bx"), "a");
+
 xassert_exit();
