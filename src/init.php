@@ -110,7 +110,6 @@ class SiteLoader {
         "CapabilityManager" => "src/capability.php",
         "ColumnErrors" => "lib/column.php",
         "ContactSearch" => "src/papersearch.php",
-        "CountMatcher" => "src/papersearch.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "FormatChecker" => "src/formatspec.php",

@@ -93,6 +93,7 @@ lib/backupdb.sh
 lib/base.php
 lib/cleanhtml.php
 lib/column.php
+lib/countmatcher.php
 lib/countries.php
 lib/createdb.sh
 lib/csv.php
