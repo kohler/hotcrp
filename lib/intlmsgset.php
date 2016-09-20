@@ -34,44 +34,53 @@ class IntlMsgSet {
     private $ims = [];
     private $defs = [];
 
-    function add($m) {
+    function add($m, $context = null) {
         $im = new IntlMsg;
         if (is_string($m)) {
+            $i = 0;
             $args = func_get_args();
             $nargs = count($args);
-            if ($nargs >= 3 && is_string($args[2])) {
-                $im->context = $args[0];
-                $id = $args[1];
-                $im->otext = $args[2];
-                $i = 3;
-            } else {
-                $id = $args[0];
-                $im->otext = $args[1];
-                $i = 2;
-            }
-            if ($i < $nargs && (is_int($args[$i]) || is_float($args[$i]))) {
-                $im->priority = $args[$i];
-                ++$i;
-            }
-            if ($i < $nargs && is_array($args[$i])) {
-                $im->require = $args[$i];
-                ++$i;
-            }
+            $m = [];
+            if ($nargs >= 3 && is_string($args[2]))
+                $m["context"] = $args[$i++];
+            $m["itext"] = $args[$i++];
+            $m["otext"] = $args[$i++];
+            if ($i < $nargs && (is_int($args[$i]) || is_float($args[$i])))
+                $m["priority"] = $args[$i++];
+            if ($i < $nargs && is_array($args[$i]))
+                $m["require"] = $args[$i++];
             assert($i == $nargs);
-        } else {
-            if (is_object($m))
-                $m = (array) $m;
-            if (isset($m["context"]))
-                $im->context = $m["context"];
-            $im->otext = isset($m["otext"]) ? $m["otext"] : $m["itext"];
-            if (isset($m["require"]) && is_array($m["require"]))
-                $im->require = $m["require"];
-            if (isset($m["priority"]) && is_float($m["priority"]))
-                $im->priority = $m["priority"];
-            $id = isset($m["id"]) ? $m["id"] : $m["itext"];
         }
+        if (is_object($m))
+            $m = (array) $m;
+        $xcontext = $context;
+        if (isset($m["context"]))
+            $xcontext = ((string) $xcontext === "" ? "" : $xcontext . "/") . $m["context"];
+        if (isset($m["members"]) && is_array($m["members"])) {
+            foreach ($m["members"] as $mm)
+                $this->add($mm, $xcontext);
+            return true;
+        }
+        if (!isset($m["itext"]) || !is_string($m["itext"]))
+            return false;
+        $im = new IntlMsg;
+        $im->context = $xcontext;
+        $im->otext = isset($m["otext"]) ? $m["otext"] : $m["itext"];
+        if (isset($m["require"]) && is_array($m["require"]))
+            $im->require = $m["require"];
+        if (isset($m["priority"]) && (is_float($m["priority"]) || is_int($m["priority"])))
+            $im->priority = $m["priority"];
+        $id = isset($m["id"]) ? $m["id"] : $m["itext"];
         $im->next = get($this->ims, $id);
         $this->ims[$id] = $im;
+        return true;
+    }
+
+    function _add_json($fj) {
+        if (is_object($fj))
+            return $this->add($fj);
+        else
+            return false;
     }
 
     function set($name, $value) {
@@ -86,7 +95,7 @@ class IntlMsgSet {
         $match = null;
         $matchnreq = 0;
         for ($im = get($this->ims, $itext); $im; $im = $im->next) {
-            if ($context === null && $im->context !== $context)
+            if ($context !== null && $im->context !== $context)
                 continue;
             $nreq = $im->require ? $im->check_require($this, $args) : 0;
             if ($nreq !== false
