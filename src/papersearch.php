@@ -3551,7 +3551,7 @@ class PaperSearch {
 
 
     static function search_types($user) {
-        $tOpt = array();
+        $tOpt = [];
         if ($user->isPC && $user->conf->can_pc_see_all_submissions())
             $tOpt["act"] = "Active papers";
         if ($user->isPC)
@@ -3578,6 +3578,8 @@ class PaperSearch {
             $tOpt["manager"] = "Papers you administer";
         if ($user->is_author())
             $tOpt["a"] = "Your submissions";
+        foreach ($tOpt as &$itext)
+            $itext = $user->conf->_c("search_type", $itext);
         return $tOpt;
     }
 
@@ -3594,6 +3596,8 @@ class PaperSearch {
             $tOpt["all"] = "All papers";
         } else
             $tOpt = array("manager" => "Papers you administer");
+        foreach ($tOpt as &$itext)
+            $itext = $user->conf->_c("search_type", $itext);
         return $tOpt;
     }
 

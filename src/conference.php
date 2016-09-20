@@ -65,6 +65,7 @@ class Conf {
     private $_docstore = false;
     private $_defined_formulas = null;
     private $_s3_document = false;
+    private $_ims = null;
 
     public $paper = null; // current paper row
 
@@ -2958,5 +2959,28 @@ class Conf {
 
     public function message_default_html($name) {
         return Message::default_html($this->message_name($name));
+    }
+
+
+    private function ims() {
+        if (!$this->_ims) {
+            $this->_ims = new IntlMsgSet;
+            $m = ["?src/msgs.json"];
+            if (($lang = $this->opt("lang")))
+                $m[] = "?src/msgs.$lang.json";
+            expand_json_includes_callback($m, [$this->_ims, "_add_json"], null, true);
+            if (($mlist = $this->opt("msgs_include")))
+                expand_json_includes_callback($mlist, [$this->_ims, "_add_json"], ["lang" => $lang], true);
+            error_log(json_encode([$m, $mlist]));
+        }
+        return $this->_ims;
+    }
+
+    function _($itext) {
+        return call_user_func_array([$this->ims(), "x"], func_get_args());
+    }
+
+    function _c($context, $itext) {
+        return call_user_func_array([$this->ims(), "xc"], func_get_args());
     }
 }
