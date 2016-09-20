@@ -311,5 +311,7 @@ xassert_eqq($ms->x("%d friend", 2), "2 amis");
 xassert_eqq($ms->x("%FOO\$s friend"), "100 friend");
 xassert_eqq($ms->x("ax"), "b");
 xassert_eqq($ms->x("bx"), "a");
+xassert_eqq($ms->x("%FOO% friend"), "100 friend");
+xassert_eqq($ms->x("%xOOB%x friend", 10, 11), "aOOBb friend");
 
 xassert_exit();

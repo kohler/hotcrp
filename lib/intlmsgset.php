@@ -103,12 +103,19 @@ class IntlMsgSet {
     private function expand($args) {
         $pos = 0;
         while (($pos = strpos($args[0], "%", $pos)) !== false) {
-            if (preg_match('/\A(?!\d+)\w+(?=\$)/', substr($args[0], $pos + 1), $m)) {
-                $args[] = get($this->defs, $m[0], "");
-                $args[0] = substr($args[0], 0, $pos + 1) . (count($args) - 1)
-                    . substr($args[0], $pos + 1 + strlen($m[0]));
-            }
-            $pos += 2;
+            if (preg_match('/\A(?!\d+)\w+(?=[$%])/', substr($args[0], $pos + 1), $m)
+                && isset($this->defs[$m[0]])) {
+                $args[] = $this->defs[$m[0]];
+                $t = substr($args[0], 0, $pos + 1) . (count($args) - 1);
+                $pos += 1 + strlen($m[0]);
+                if ($args[0][$pos] == "%") {
+                    $t .= "\$s";
+                    ++$pos;
+                }
+                $args[0] = $t . substr($args[0], $pos);
+                $pos = strlen($t);
+            } else
+                $pos += 2;
         }
         return call_user_func_array("sprintf", $args);
     }
