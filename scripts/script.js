@@ -4503,6 +4503,8 @@ function popup(anchor, which, dofold, populate) {
     var elt, form, elts, populates, i, xelt, type;
     if (typeof which === "string") {
         elt = $$("popup_" + which);
+        if (!elt)
+            log_jserror("no popup " + which);
         anchor = anchor || $$("popupanchor_" + which);
     }
 
