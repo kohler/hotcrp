@@ -230,28 +230,17 @@ class SettingRenderer_SubForm extends SettingRenderer {
         foreach ($sv->conf->paper_opts->nonfixed_option_list() as $ox)
             $show_final = $show_final || $ox->final;
 
+        $otlist = $sv->conf->paper_opts->list_subform_options($o);
+
         $otypes = array();
         if ($show_final)
             $otypes["xxx1"] = array("optgroup", "Options for submissions");
-        $otypes["checkbox"] = "Checkbox";
-        $otypes["selector"] = "Selector";
-        $otypes["radio"] = "Radio buttons";
-        $otypes["numeric"] = "Numeric";
-        $otypes["text"] = "Text";
-        if ($o->type == "text" && $o->display_space > 3 && $o->display_space != 5)
-            $otypes[$optvt] = "Multiline text";
-        else
-            $otypes["text:ds_5"] = "Multiline text";
-        $otypes["pdf"] = "PDF";
-        $otypes["slides"] = "Slides";
-        $otypes["video"] = "Video";
-        $otypes["attachments"] = "Attachments";
+        foreach ($otlist as $ot)
+            $otypes[$ot[1]] = $ot[2];
         if ($show_final) {
-            $otypes["xxx2"] = array("optgroup", "Options for accepted papers");
-            $otypes["pdf:final"] = "Alternate final version";
-            $otypes["slides:final"] = "Final slides";
-            $otypes["video:final"] = "Final video";
-            $otypes["attachments:final"] = "Final attachments";
+            $otypes["xxx2"] = array("optgroup", "Options for final versions");
+            foreach ($otlist as $ot)
+                $otypes[$ot[1] . ":final"] = $ot[2] . " (final version)";
         }
         echo Ht::select("optvt$id", $otypes, $optvt, array("onchange" => "do_option_type(this)", "id" => "optvt$id")),
             "</div></div></td>\n";

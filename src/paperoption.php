@@ -300,6 +300,18 @@ class PaperOptionList {
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
     }
+
+    function list_subform_options(PaperOption $o = null) {
+        $factory_classes = array_flip(PaperOption::factory_classes());
+        foreach ($this->option_json_list() as $x)
+            if (isset($x->factory_class))
+                $factory_classes[$x->factory_class] = true;
+        $options = [];
+        foreach ($factory_classes as $f => $x)
+            $f::list_subform_options($options, $o);
+        usort($options, function ($a, $b) { return $a[0] - $b[0]; });
+        return $options;
+    }
 }
 
 class PaperOption {
@@ -457,11 +469,18 @@ class PaperOption {
         return false;
     }
 
-    function refresh_documents(PaperOptionValue $ov) {
-    }
-
     function takes_multiple() {
         return false;
+    }
+
+    static function list_subform_options(&$options, PaperOption $o = null) {
+    }
+
+    static function factory_classes() {
+        return array_values(array_unique(self::$factory_class_map));
+    }
+
+    function refresh_documents(PaperOptionValue $ov) {
     }
 
     function sort_values(&$values, &$data_array) {
@@ -594,6 +613,10 @@ class CheckboxPaperOption extends PaperOption {
         parent::__construct($args, $conf);
     }
 
+    static function list_subform_options(&$options, PaperOption $o = null) {
+        $options[] = [100, "checkbox", "Checkbox"];
+    }
+
     function value_compare($av, $bv) {
         return ($bv && $bv->value ? 1 : 0) - ($av && $av->value ? 1 : 0);
     }
@@ -632,6 +655,11 @@ class CheckboxPaperOption extends PaperOption {
 class SelectorPaperOption extends PaperOption {
     function __construct($args, $conf) {
         parent::__construct($args, $conf);
+    }
+
+    static function list_subform_options(&$options, PaperOption $o = null) {
+        $options[] = [200, "selector", "Selector"];
+        $options[] = [300, "radio", "Radio buttons"];
     }
 
     function has_selector() {
@@ -701,6 +729,13 @@ class SelectorPaperOption extends PaperOption {
 class DocumentPaperOption extends PaperOption {
     function __construct($args, $conf) {
         parent::__construct($args, $conf);
+    }
+
+    static function list_subform_options(&$options, PaperOption $o = null) {
+        $options[] = [600, "pdf", "PDF"];
+        $options[] = [610, "slides", "Slides"];
+        $options[] = [620, "video", "Video"];
+        $options[] = [699, "document", "File upload"];
     }
 
     function is_document() {
@@ -802,6 +837,10 @@ class NumericPaperOption extends PaperOption {
         parent::__construct($args, $conf);
     }
 
+    static function list_subform_options(&$options, PaperOption $o = null) {
+        $options[] = [400, "numeric", "Numeric"];
+    }
+
     function example_searches() {
         $x = parent::example_searches();
         $x["numeric"] = array("{$this->abbr}:>100", $this);
@@ -850,6 +889,14 @@ class NumericPaperOption extends PaperOption {
 class TextPaperOption extends PaperOption {
     function __construct($args, $conf) {
         parent::__construct($args, $conf);
+    }
+
+    static function list_subform_options(&$options, PaperOption $o = null) {
+        $options[] = [500, "text", "Text"];
+        $mtype = "text:ds_5";
+        if ($o && $o->display_space > 3)
+            $mtype = "text:ds_" . $o->display_space;
+        $options[] = [550, $mtype, "Multiline text"];
     }
 
     function value_compare($av, $bv) {
@@ -913,6 +960,10 @@ class TextPaperOption extends PaperOption {
 class AttachmentsPaperOption extends PaperOption {
     function __construct($args, $conf) {
         parent::__construct($args, $conf);
+    }
+
+    static function list_subform_options(&$options, PaperOption $o = null) {
+        $options[] = [700, "attachments", "Attachments"];
     }
 
     function has_document() {
