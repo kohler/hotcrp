@@ -153,6 +153,7 @@ src/mailclasses.php
 src/mailtemplate.php
 src/meetingtracker.php
 src/messages.csv
+src/msgs.json
 src/multiconference.php
 src/paperactions.php
 src/paperapi.php

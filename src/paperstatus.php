@@ -680,12 +680,15 @@ class PaperStatus {
             $this->set_error_html("title", $this->_("Each submission must have a title."));
         if (get($pj, "abstract") === ""
             || (get($pj, "abstract") === null && (!$old_pj || !get($old_pj, "abstract")))) {
-            if (!opt("noAbstract"))
+            if (!$this->conf->opt("noAbstract"))
                 $this->set_error_html("abstract", $this->_("Each submission must have an abstract."));
         }
         if ((is_array(get($pj, "authors")) && empty($pj->authors))
             || (get($pj, "authors") === null && (!$old_pj || empty($old_pj->authors))))
             $this->set_error_html("authors", $this->_("Each submission must have at least one author."));
+        $max_authors = $this->conf->opt("maxAuthors");
+        if ($max_authors > 0 && is_array(get($pj, "authors")) && count($pj->authors) > $max_authors)
+            $this->set_error_html("authors", $this->_("Each submission can have at most %d authors.", $max_authors));
         if (!empty($pj->bad_authors))
             $this->set_error_html("authors", $this->_("Some authors ignored."));
         foreach ($pj->bad_email_authors as $k => $aux) {

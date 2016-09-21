@@ -2214,10 +2214,12 @@ function author_change(e, delta) {
         return false;
     }
 
-    var trs = $tbody.children();
+    var trs = $tbody.children(), max_rows = +$tbody.attr("data-max-rows");
     while (trs.length < Math.max(1, +$tbody.attr("data-min-rows"))
            || any_interesting(trs[trs.length - 1])
            || delta > 0) {
+        if (max_rows > 0 && trs.length >= max_rows)
+            break;
         var $newtr = $($tbody.attr("data-row-template")).appendTo($tbody);
         $newtr.find("input[placeholder]").each(mktemptext);
         $newtr.find(".hotcrp_searchbox").each(make_taghelp_q);

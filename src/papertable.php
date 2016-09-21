@@ -610,8 +610,11 @@ class PaperTable {
         return true;
     }
 
-    private function editable_authors_tr($n, $name, $email, $aff) {
-        return '<tr><td class="rxcaption">' . $n . '.</td><td class="lentry">'
+    private function editable_authors_tr($n, $name, $email, $aff, $max_authors) {
+        $t = '<tr>';
+        if ($max_authors != 1)
+            $t .= '<td class="rxcaption">' . $n . '.</td>';
+        return $t . '<td class="lentry">'
             . Ht::entry("auname$n", $name, array("size" => "35", "onchange" => "author_change(this)", "placeholder" => "Name", "class" => "need-autogrow eauname" . $this->error_class("auname$n"))) . ' '
             . Ht::entry("auemail$n", $email, array("size" => "30", "onchange" => "author_change(this)", "placeholder" => "Email", "class" => "need-autogrow eauemail" . $this->error_class("auemail$n"))) . ' '
             . Ht::entry("auaff$n", $aff, array("size" => "32", "onchange" => "author_change(this)", "placeholder" => "Affiliation", "class" => "need-autogrow eauaff" . $this->error_class("auaff$n")))
@@ -620,21 +623,24 @@ class PaperTable {
 
     private function echo_editable_authors() {
         global $Conf;
+        $max_authors = (int) $Conf->opt("maxAuthors");
+        $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
-        echo $this->editable_papt("authors", "Authors"),
+        echo $this->editable_papt("authors", $max_authors == 1 ? "Author" : "Authors"),
             "<div class='paphint'>List the authors, including email addresses and affiliations.";
         if ($Conf->submission_blindness() == Conf::BLIND_ALWAYS)
             echo " Submission is blind, so reviewers will not be able to see author information.";
         echo " Any author with an account on this site can edit the submission.</div>",
             $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable">',
-            '<tbody data-last-row-blank="true" data-min-rows="5" data-row-template="',
-            htmlspecialchars($this->editable_authors_tr('$', "", "", "")), '">';
+            '<tbody data-last-row-blank="true" data-min-rows="', $min_authors, '" ',
+            ($max_authors > 0 ? 'data-max-rows="' . $max_authors . '" ' : ''),
+            'data-row-template="', htmlspecialchars($this->editable_authors_tr('$', "", "", "", $max_authors)), '">';
 
         $blankAu = array("", "", "", "");
         if ($this->useRequest) {
             for ($n = 1; $this->qreq["auname$n"] || $this->qreq["auemail$n"] || $this->qreq["auaff$n"]; ++$n)
-                echo $this->editable_authors_tr($n, (string) $this->qreq["auname$n"], (string) $this->qreq["auemail$n"], (string) $this->qreq["auaff$n"]);
+                echo $this->editable_authors_tr($n, (string) $this->qreq["auname$n"], (string) $this->qreq["auemail$n"], (string) $this->qreq["auaff$n"], $max_authors);
         } else {
             $aulist = $this->prow ? $this->prow->author_list() : array();
             for ($n = 1; $n <= count($aulist); ++$n) {
@@ -643,12 +649,14 @@ class PaperTable {
                     $auname = $au->lastName . ", " . $au->firstName;
                 else
                     $auname = $au->name();
-                echo $this->editable_authors_tr($n, $auname, $au->email, $au->affiliation);
+                echo $this->editable_authors_tr($n, $auname, $au->email, $au->affiliation, $max_authors);
             }
         }
-        do {
-            echo $this->editable_authors_tr($n, "", "", "");
-        } while (++$n <= 5);
+        if ($max_authors <= 0 || $n <= $max_authors)
+            do {
+                echo $this->editable_authors_tr($n, "", "", "", $max_authors);
+                ++$n;
+            } while ($n <= $min_authors);
         echo "</tbody></table></div></div>\n\n";
     }
 

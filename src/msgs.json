@@ -1,0 +1,5 @@
+[
+    {"itext": "Each submission can have at most %d authors.",
+     "otext": "Each submission can have at most %d author.",
+     "require": ["$1=1"]}
+]
