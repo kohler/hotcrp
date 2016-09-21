@@ -132,8 +132,8 @@ if ($Me->privChair)
 // Sidebar
 echo '<div class="homeside">';
 
-echo '<noscript><div class="homeinside"><strong>HotCRP requires Javascript.</strong> ',
-    "Many features will work without Javascript, but not all.<br />",
+echo '<noscript><div class="homeinside"><strong>This site requires JavaScript.</strong> ',
+    "Many features will work without JavaScript, but not all.<br />",
     '<a style="font-size:smaller" href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>';
 
 // Conference management and information sidebar
