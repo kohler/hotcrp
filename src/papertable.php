@@ -1019,7 +1019,7 @@ class PaperTable {
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox("blind", 1, $blind)
                                   . "&nbsp;" . Ht::label("Anonymous submission")),
-            '<div class="paphint">', htmlspecialchars($Conf->short_name), " allows either anonymous or named submission.  Check this box to submit anonymously (reviewers won’t be shown the author list).  Make sure you also remove your name from the paper itself!</div>\n",
+            '<div class="paphint">', htmlspecialchars($Conf->short_name), " allows either anonymous or named submission. Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!</div>\n",
             $this->messages_for("blind"),
             "</div>\n\n";
     }
@@ -1180,7 +1180,7 @@ class PaperTable {
         }
 
         echo $this->editable_papt("pcconf", "PC conflicts"),
-            "<div class='paphint'>Select the PC members who have conflicts of interest with this paper. ", $Conf->message_html("conflictdef"), "</div>\n",
+            "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $Conf->message_html("conflictdef"), "</div>\n",
             $this->messages_for("pcconf"),
             '<div class="papev">',
             Ht::hidden("has_pcconf", 1),
@@ -1599,7 +1599,7 @@ class PaperTable {
         if ($startDeadline && !$Conf->setting("sub_freeze"))
             $t2 = "You can make changes until the deadline, but thereafter incomplete submissions will not be considered.";
         else if (!$Conf->opt("noPapers"))
-            $t2 = "You don’t have to upload the paper right away, but incomplete submissions will not be considered.";
+            $t2 = "You don’t have to upload the PDF right away, but incomplete submissions will not be considered.";
         else
             $t2 = "Incomplete submissions will not be considered.";
         $t2 = $Conf->_($t2);
@@ -1631,7 +1631,7 @@ class PaperTable {
                     $t = "This submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
                 $m .= Ht::xmsg("warning", $t . $this->deadlineSettingIs("sub_update"));
             } else if ($Me->can_finalize_paper($prow))
-                $m .= Ht::xmsg("warning", 'Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message());
+                $m .= Ht::xmsg("warning", 'The submission is not ready for review. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message());
             else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
                 $m .= Ht::xmsg("warning", 'The site is not open for updates at the moment.' . $this->_override_message());
             else
@@ -1682,11 +1682,11 @@ class PaperTable {
         if ($prow && $prow->timeWithdrawn > 0) {
             $revivable = $Conf->timeFinalizePaper($prow);
             if ($revivable)
-                $b = Ht::submit("revive", "Revive paper", ["class" => "btn"]);
+                $b = Ht::submit("revive", "Revive submission", ["class" => "btn"]);
             else {
-                $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn papers has passed.";
+                $b = "The <a href='" . hoturl("deadlines") . "'>deadline</a> for reviving withdrawn submissions has passed.";
                 if ($this->admin)
-                    $b = array(Ht::js_button("Revive paper", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
+                    $b = array(Ht::js_button("Revive submission", "override_deadlines(this)", ["class" => "btn", "data-override-text" => $b, "data-override-submit" => "revive"]), "(admin only)");
             }
             return array($b);
         }
@@ -1711,7 +1711,7 @@ class PaperTable {
             else
                 $whyNot = null;
             // produce button
-            $save_name = $this->is_ready() ? "Save submission" : "Save draft";
+            $save_name = $this->is_ready() ? "Save and resubmit" : "Save draft";
             if (!$whyNot)
                 $buttons[] = array(Ht::submit($updater, $save_name, ["class" => "btn btn-default btn-savepaper"]), "");
             else if ($this->admin)
@@ -1726,9 +1726,9 @@ class PaperTable {
         if (!$prow || !$Me->can_withdraw_paper($prow, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
-            $b = Ht::submit("withdraw", "Withdraw paper", ["class" => "btn"]);
+            $b = Ht::submit("withdraw", "Withdraw submission", ["class" => "btn"]);
         else {
-            $b = Ht::button("Withdraw paper", ["class" => "btn", "onclick" => "popup(this,'w',0,true)"]);
+            $b = Ht::button("Withdraw submission", ["class" => "btn", "onclick" => "popup(this,'w',0,true)"]);
             $admins = "";
             if ((!$this->admin || $prow->has_author($Me))
                 && !$Conf->timeFinalizePaper($prow))
@@ -1738,7 +1738,7 @@ class PaperTable {
                 $override = "<div>" . Ht::checkbox("override", array("id" => "dialog_override")) . "&nbsp;"
                     . Ht::label("Override deadlines") . "</div>";
             Ht::stash_html("<div class='popupbg'><div id='popup_w' class='popupc'>
-  <p>Are you sure you want to withdraw this paper from consideration and/or
+  <p>Are you sure you want to withdraw this submission from consideration and/or
   publication? $admins</p>\n"
     . Ht::form_div(hoturl_post("paper", "p=" . $prow->paperId . "&amp;m=edit"))
     . Ht::textarea("reason", null,
@@ -1748,7 +1748,7 @@ class PaperTable {
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . "<div class='popup-actions'>"
-    . Ht::submit("withdraw", "Withdraw paper", ["class" => "popup-btn"])
+    . Ht::submit("withdraw", "Withdraw submission", ["class" => "popup-btn"])
     . Ht::js_button("Cancel", "popup(null,'w',1)", ["class" => "popup-btn"])
     . "</div></div></form></div></div>", "popup_w");
         }
@@ -1778,7 +1778,7 @@ class PaperTable {
             $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
             Ht::stash_html("<div class='popupbg'><div id='popup_delp' class='popupc'>"
     . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
-    . "<p>Be careful: This will permanently delete all information about this paper from the database and <strong>cannot be undone</strong>.</p>\n"
+    . "<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . "<div class='popup-actions'>"
@@ -1978,6 +1978,8 @@ class PaperTable {
         if ($prow && $prow->paperStorageId > 1 && $prow->timeSubmitted > 0
             && !$Conf->setting('sub_freeze'))
             $form_js["onsubmit"] = "return docheckpaperstillready()";
+        if ($prow && $prow->timeSubmitted > 0)
+            $form_js["data-submitted"] = $prow->timeSubmitted;
         $form = Ht::form(hoturl_post("paper", "p=" . ($prow ? $prow->paperId : "new") . "&amp;m=edit"), $form_js);
 
         $this->echoDivEnter();
@@ -2016,7 +2018,7 @@ class PaperTable {
             echo "</form>";
         } else if (!$this->editable && $Me->act_author_view($prow) && !$Me->contactId) {
             echo '<hr class="papcard_sep" />',
-                "To edit this paper, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
+                "To edit this submission, <a href=\"", hoturl("index"), "\">sign in using your email and password</a>.";
         }
 
         Ht::stash_script("shortcut().add()");
@@ -2050,8 +2052,7 @@ class PaperTable {
         global $Conf;
         $a = "<a href=\"" . selfHref(array("forceShow" => 0)) . "\">";
         return $a . Ht::img("override24.png", "[Override]", "dlimg")
-            . "</a>&nbsp;You have used administrator privileges to view and edit "
-            . "reviews for this paper. (" . $a . "Unprivileged view</a>)";
+            . "</a>&nbsp;You have used administrator privileges to view and edit reviews for this submission. (" . $a . "Unprivileged view</a>)";
     }
 
     public static function sort_rc_json($a, $b) {
@@ -2100,7 +2101,7 @@ class PaperTable {
             $this->_paptabSepContaining($this->_privilegeMessage());
         else if ($Me->contactId == $prow->managerContactId && !$Me->privChair
                  && $Me->contactId > 0)
-            $this->_paptabSepContaining("You are this paper’s administrator.");
+            $this->_paptabSepContaining("You are this submission’s administrator.");
 
         $empty = $this->_paptabReviewLinks(true, null, "<div class='hint'>There are no reviews or comments for you to view.</div>");
         if ($empty)
@@ -2201,7 +2202,7 @@ class PaperTable {
         $m = array();
         if ($this->all_rrows
             && ($whyNot = $Me->perm_view_review($this->prow, null, null)))
-            $m[] = "You can’t see the reviews for this paper. " . whyNotText($whyNot, "review");
+            $m[] = "You can’t see the reviews for this submission. " . whyNotText($whyNot, "review");
         if ($this->prow && $this->prow->reviewType && !$Conf->time_review_open()) {
             if ($this->rrow)
                 $m[] = "You can’t edit your review because the site is not open for reviewing.";
@@ -2224,7 +2225,7 @@ class PaperTable {
         $whyNot = $Me->perm_view_review($prow, null, false);
         $msgs = array();
         if (!$this->rrow && $this->prow->reviewType <= 0)
-            $msgs[] = "You haven’t been assigned to review this paper, but you can review it anyway.";
+            $msgs[] = "You haven’t been assigned to review this submission, but you can review it anyway.";
         if ($whyNot && $Me->is_admin_force()) {
             $msgs[] = $this->_privilegeMessage();
         } else if ($whyNot && isset($whyNot["reviewNotComplete"])

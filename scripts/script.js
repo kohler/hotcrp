@@ -2239,10 +2239,23 @@ function author_change(e, delta) {
     return false;
 }
 
-function paperform_checkready() {
-    var $j = $("#paperisready:visible:checked");
-    var t = $j.length ? "Save submission" : "Save draft";
-    $("#paperform").find(".btn-savepaper").html(t);
+function paperform_checkready(ischecked) {
+    var t, $j = $("#paperisready"), is, was = $("#paperform").attr("data-submitted");
+    if ($j.is(":visible"))
+        is = $j.is(":checked");
+    else
+        is = was;
+    if (!is)
+        t = "Save draft";
+    else if (was)
+        t = "Save and resubmit";
+    else
+        t = "Save and submit";
+    var $b = $("#paperform").find(".btn-savepaper");
+    if ($b[0].tagName == "INPUT")
+        $b.val(t);
+    else
+        $b.html(t);
 }
 
 
