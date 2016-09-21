@@ -156,7 +156,7 @@ function update_paper(PaperStatus $ps, $pj, $opj, $qreq, $action, $diffs) {
 
     if (!$saved) {
         $emsg = $ps->messages();
-        Conf::msg_error("There were errors in saving your paper. Please fix them and try again." . (count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
+        Conf::msg_error(space_join($Conf->_("There were errors in saving your paper."), $Conf->_("Please fix them and try again."), count($emsg) ? "<ul><li>" . join("</li><li>", $emsg) . "</li></ul>" : ""));
         return false;
     }
 

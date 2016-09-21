@@ -30,6 +30,18 @@ function cleannl($text) {
     return $text;
 }
 
+function space_join(/* $str_or_array, ... */) {
+    $t = "";
+    foreach (func_get_args() as $arg)
+        if (is_array($arg)) {
+            foreach ($arg as $x)
+                if ($x !== "" && $x !== false && $x !== null)
+                    $t .= ($t === "" ? "" : " ") . $x;
+        } else if ($arg !== "" && $arg !== false && $arg !== null)
+            $t .= ($t === "" ? "" : " ") . $arg;
+    return $t;
+}
+
 function is_valid_utf8($str) {
     return !!preg_match('//u', $str);
 }

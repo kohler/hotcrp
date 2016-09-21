@@ -716,19 +716,20 @@ echo "</div>\n"; // f-contain
 
 
 echo '<h3 class="profile">Email notification</h3>';
+$follow = isset($formcj->follow) ? $formcj->follow : (object) [];
 if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
-    echo "<table><tr><td>Send mail on: &nbsp;</td>",
-        "<td>", Ht::checkbox_h("watchcomment", 1, !!@($formcj->follow->reviews)), "&nbsp;",
-        Ht::label("Reviews and comments for authored or reviewed papers"), "</td></tr>",
-        "<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, !!@($formcj->follow->allreviews)), "&nbsp;",
-        Ht::label("Reviews and comments for <i>any</i> paper"), "</td></tr>";
+    echo "<table><tr><td>Send mail for: &nbsp;</td>",
+        "<td>", Ht::checkbox_h("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
+        Ht::label($Conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
+        "<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, !!get($follow, "allreviews")), "&nbsp;",
+        Ht::label($Conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
     if ($Me->privChair)
-        echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, !!@($formcj->follow->allfinal)), "&nbsp;",
-            Ht::label("Updates to final versions"), "</td></tr>";
+        echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, !!get($follow, "allfinal")), "&nbsp;",
+            Ht::label($Conf->_("Updates to final versions")), "</td></tr>";
     echo "</table>";
 } else
-    echo Ht::checkbox_h("watchcomment", 1, !!@($formcj->follow->reviews)), "&nbsp;",
-        Ht::label("Send mail on new comments for authored or reviewed papers");
+    echo Ht::checkbox_h("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
+        Ht::label($Conf->_("Send mail for new comments on authored or reviewed papers"));
 
 
 if ($newProfile || $Acct->contactId != $Me->contactId || $Me->privChair) {

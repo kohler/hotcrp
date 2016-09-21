@@ -189,7 +189,7 @@ Welcome to the ', htmlspecialchars($Conf->full_name()), " submissions site.";
     echo '</div>';
 }
 if (!$Me->has_email() || isset($_REQUEST["signin"])) {
-    echo "<div class=\"homegrp\">Sign in to submit or review papers.</div>";
+    echo '<div class="homegrp">', $Conf->_("Sign in to submit or review papers."), '</div>';
     $passwordFocus = ($email_class == "" && $password_class != "");
     echo '<hr class="home" />
 <div class="homegrp foldo" id="homeacct">',
@@ -492,7 +492,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
 
     $startable = $Conf->timeStartPaper();
     if ($startable && !$Me->has_email())
-        echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start submissions.</small>";
+        echo "<span class='deadline'>", $Conf->printableDeadlineSetting("sub_reg", "span"), "</span><br />\n<small>You must sign in to start a submission.</small>";
     else if ($startable || $Me->privChair) {
         echo "<strong><a href='", hoturl("paper", "p=new"), "'>New submission</a></strong> <span class='deadline'>(", $Conf->printableDeadlineSetting("sub_reg", "span"), ")</span>";
         if ($Me->privChair)
@@ -536,7 +536,7 @@ if ($Me->is_author() || $Conf->timeStartPaper() > 0 || $Me->privChair
     if ($plist && $Conf->timeSubmitFinalPaper() && $plist->any->accepted) {
         $time = $Conf->printableTimeSetting("final_soft");
         if ($Conf->deadlinesAfter("final_soft") && $plist->any->need_final)
-            $deadlines[] = "<strong class='overdue'>Final versions are overdue.</strong>  They were requested by $time.";
+            $deadlines[] = "<strong class='overdue'>Final versions are overdue.</strong> They were requested by $time.";
         else if ($time != "N/A")
             $deadlines[] = "Submit final versions of your accepted papers by $time.";
     }

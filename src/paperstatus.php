@@ -54,7 +54,11 @@ class PaperStatus {
         return $this->prow;
     }
 
-    public function document_to_json($dtype, $docid) {
+    private function _() {
+        return call_user_func_array([$this->conf->ims(), "x"], func_get_args());
+    }
+
+    function document_to_json($dtype, $docid) {
         if (!is_object($docid))
             $drow = $this->prow ? $this->prow->document($dtype, $docid) : null;
         else {
@@ -225,8 +229,8 @@ class PaperStatus {
             $pj->collaborators = $prow->collaborators;
         if (!$prow->collaborators && $can_view_authors && $this->conf->setting("sub_collab")
             && ($prow->outcome <= 0 || ($contact && !$contact->can_view_decision($prow)))) {
-            $field = ($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
-            $this->set_warning_html("collaborators", "Enter the authors’ potential conflicts of interest in the $field field. If none of the authors have conflicts, enter “None”.");
+            $field = $this->_($this->conf->setting("sub_pcconf") ? "Other conflicts" : "Potential conflicts");
+            $this->set_warning_html("collaborators", $this->_("Enter the authors’ potential conflicts of interest in the %s field. If none of the authors have conflicts, enter “None”.", $field));
         }
 
         $this->no_msgs = $was_no_msgs;
@@ -673,32 +677,32 @@ class PaperStatus {
         // Errors don't prevent saving
         if (get($pj, "title") === ""
             || (get($pj, "title") === null && (!$old_pj || !$old_pj->title)))
-            $this->set_error_html("title", "Each paper must have a title.");
+            $this->set_error_html("title", $this->_("Each submission must have a title."));
         if (get($pj, "abstract") === ""
             || (get($pj, "abstract") === null && (!$old_pj || !get($old_pj, "abstract")))) {
             if (!opt("noAbstract"))
-                $this->set_error_html("abstract", "Each paper must have an abstract.");
+                $this->set_error_html("abstract", $this->_("Each submission must have an abstract."));
         }
         if ((is_array(get($pj, "authors")) && empty($pj->authors))
             || (get($pj, "authors") === null && (!$old_pj || empty($old_pj->authors))))
-            $this->set_error_html("authors", "Each paper must have at least one author.");
+            $this->set_error_html("authors", $this->_("Each submission must have at least one author."));
         if (!empty($pj->bad_authors))
-            $this->set_error_html("authors", "Some authors ignored.");
+            $this->set_error_html("authors", $this->_("Some authors ignored."));
         foreach ($pj->bad_email_authors as $k => $aux) {
             $this->set_error_html("authors", null);
-            $this->set_error_html("auemail" . ($k + 1), "“" . htmlspecialchars($aux->email) . "” is not a valid email address.");
+            $this->set_error_html("auemail" . ($k + 1), $this->_("“%s” is not a valid email address.", htmlspecialchars($aux->email)));
         }
         $ncontacts = 0;
         foreach ($this->conflicts_array($pj, $old_pj) as $c)
             if ($c >= CONFLICT_CONTACTAUTHOR)
                 ++$ncontacts;
         if (!$ncontacts && $old_pj && self::contacts_array($old_pj))
-            $this->set_error_html("contacts", "Each paper must have at least one contact.");
+            $this->set_error_html("contacts", $this->_("Each submission must have at least one contact."));
         foreach ($pj->bad_contacts as $reg)
             if (!isset($reg->email))
-                $this->set_error_html("contacts", "Contact " . Text::user_html($reg) . " has no associated email.");
+                $this->set_error_html("contacts", $this->_("Contact %s has no associated email.", Text::user_html($reg)));
             else
-                $this->set_error_html("contacts", "Contact email " . htmlspecialchars($reg->email) . " is invalid.");
+                $this->set_error_html("contacts", $this->_("Contact email %s is invalid.", htmlspecialchars($reg->email)));
         if (get($pj, "options"))
             $this->check_options($pj);
         if (!empty($pj->bad_topics))
@@ -814,7 +818,7 @@ class PaperStatus {
         }
 
         if (get($pj, "error") || get($pj, "error_html")) {
-            $this->set_error_html("error", "Refusing to save paper with error");
+            $this->set_error_html("error", $this->_("Refusing to save submission with error"));
             return false;
         }
 
@@ -825,7 +829,7 @@ class PaperStatus {
         if ($this->prow)
             $old_pj = $this->paper_json($this->prow, ["forceShow" => true]);
         if ($pj && $old_pj && $paperid != $old_pj->pid) {
-            $this->set_error_html("pid", "Saving paper with different ID");
+            $this->set_error_html("pid", $this->_("Saving submission with different ID"));
             return false;
         }
 
@@ -848,7 +852,7 @@ class PaperStatus {
             $c->disabled = !!$this->disable_users;
             if (!Contact::create($this->conf, $c, !$this->no_email)
                 && get($c, "contact"))
-                $this->set_error_html("contacts", "Could not create an account for contact " . Text::user_html($c) . ".");
+                $this->set_error_html("contacts", $this->_("Could not create an account for contact %s.", Text::user_html($c)));
         }
 
         // catch errors
@@ -989,7 +993,7 @@ class PaperStatus {
                 $result = $this->conf->qe_raw("insert into Paper set " . join(",", $q));
                 if (!$result
                     || !($paperid = $pj->pid = $result->insert_id))
-                    return $this->set_error_html(false, "Could not create paper.");
+                    return $this->set_error_html(false, $this->_("Could not create paper."));
                 if (!empty($this->uploaded_documents))
                     $this->conf->qe_raw("update PaperStorage set paperId=$paperid where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
             }

@@ -1568,9 +1568,9 @@ class PaperTable {
         if ($deadline === "N/A")
             return "";
         else if (time() < $Conf->setting($dname))
-            return "  The deadline is $deadline.";
+            return " The deadline is $deadline.";
         else
-            return "  The deadline was $deadline.";
+            return " The deadline was $deadline.";
     }
 
     private function _override_message() {
@@ -1586,20 +1586,24 @@ class PaperTable {
         $msg = "";
         if (!$Conf->timeStartPaper()) {
             if ($Conf->setting("sub_open") <= 0)
-                $msg = "You can’t register new papers because the conference site has not been opened for submissions." . $this->_override_message();
+                $msg = "The conference site has not been opened for submissions." . $this->_override_message();
             else
-                $msg = 'You can’t register new papers since the <a href="' . hoturl("deadlines") . '">deadline</a> has passed.' . $startDeadline . $this->_override_message();
+                $msg = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $startDeadline . $this->_override_message();
             if (!$this->admin) {
                 $this->quit = true;
                 return '<div class="merror">' . $msg . '</div>';
             }
             $msg = Ht::xmsg("info", $msg);
         }
+        $t1 = $Conf->_("Enter information about your paper.");
         if ($startDeadline && !$Conf->setting("sub_freeze"))
-            $t = "You can make changes until the deadline, but thereafter";
+            $t2 = "You can make changes until the deadline, but thereafter incomplete submissions will not be considered.";
+        else if (!$Conf->opt("noPapers"))
+            $t2 = "You don’t have to upload the paper right away, but incomplete submissions will not be considered.";
         else
-            $t = "You don’t have to upload the paper right away, but";
-        $msg .= Ht::xmsg("info", "Enter information about your paper. $t incomplete submissions will not be considered.$startDeadline");
+            $t2 = "Incomplete submissions will not be considered.";
+        $t2 = $Conf->_($t2);
+        $msg .= Ht::xmsg("info", space_join($t1, $t2, $startDeadline));
         if (($v = $Conf->message_html("submit")))
             $msg .= Ht::xmsg("info", $v);
         return $msg;
@@ -1620,16 +1624,16 @@ class PaperTable {
         } else if ($has_author && $prow->timeSubmitted <= 0) {
             if ($Me->can_update_paper($prow)) {
                 if ($Conf->setting("sub_freeze"))
-                    $t = "The submission must be completed before it can be reviewed.";
+                    $t = "This submission must be completed before it can be reviewed.";
                 else if ($prow->paperStorageId <= 1 && !opt("noPapers"))
-                    $t = "The submission is not ready for review and will not be considered as is, but you can still make changes.";
+                    $t = "This submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
-                    $t = "The submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
+                    $t = "This submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
                 $m .= Ht::xmsg("warning", $t . $this->deadlineSettingIs("sub_update"));
             } else if ($Me->can_finalize_paper($prow))
                 $m .= Ht::xmsg("warning", 'Unless the paper is submitted, it will not be reviewed. You cannot make any changes as the <a href="' . hoturl("deadlines") . '">deadline</a> has passed, but the current version can be still be submitted.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message());
             else if ($Conf->deadlinesBetween("", "sub_sub", "sub_grace"))
-                $m .= Ht::xmsg("warning", 'The site is not open for submission updates at the moment.' . $this->_override_message());
+                $m .= Ht::xmsg("warning", 'The site is not open for updates at the moment.' . $this->_override_message());
             else
                 $m .= Ht::xmsg("warning", 'The <a href="' . hoturl("deadlines") . '">submission deadline</a> has passed and the submission will not be reviewed.' . $this->deadlineSettingIs("sub_sub") . $this->_override_message());
         } else if ($has_author && $Me->can_update_paper($prow)) {

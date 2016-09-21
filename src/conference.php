@@ -2962,7 +2962,7 @@ class Conf {
     }
 
 
-    private function ims() {
+    function ims() {
         if (!$this->_ims) {
             $this->_ims = new IntlMsgSet;
             $m = ["?src/msgs.json"];
@@ -2971,7 +2971,6 @@ class Conf {
             expand_json_includes_callback($m, [$this->_ims, "_add_json"], null, true);
             if (($mlist = $this->opt("msgs_include")))
                 expand_json_includes_callback($mlist, [$this->_ims, "_add_json"], ["lang" => $lang], true);
-            error_log(json_encode([$m, $mlist]));
         }
         return $this->_ims;
     }
