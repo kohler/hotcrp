@@ -34,53 +34,65 @@ class IntlMsgSet {
     private $ims = [];
     private $defs = [];
 
-    function add($m, $context = null) {
-        $im = new IntlMsg;
-        if (is_string($m)) {
-            $i = 0;
-            $args = func_get_args();
-            $nargs = count($args);
-            $m = [];
-            if ($nargs >= 3 && is_string($args[2]))
-                $m["context"] = $args[$i++];
-            $m["itext"] = $args[$i++];
-            $m["otext"] = $args[$i++];
-            if ($i < $nargs && (is_int($args[$i]) || is_float($args[$i])))
-                $m["priority"] = $args[$i++];
-            if ($i < $nargs && is_array($args[$i]))
-                $m["require"] = $args[$i++];
-            assert($i == $nargs);
-        }
-        if (is_object($m))
-            $m = (array) $m;
-        $xcontext = $context;
-        if (isset($m["context"]))
-            $xcontext = ((string) $xcontext === "" ? "" : $xcontext . "/") . $m["context"];
-        if (isset($m["members"]) && is_array($m["members"])) {
-            foreach ($m["members"] as $mm)
-                $this->add($mm, $xcontext);
-            return true;
-        }
-        if (!isset($m["itext"]) || !is_string($m["itext"]))
-            return false;
-        $im = new IntlMsg;
-        $im->context = $xcontext;
-        $im->otext = isset($m["otext"]) ? $m["otext"] : $m["itext"];
-        if (isset($m["require"]) && is_array($m["require"]))
-            $im->require = $m["require"];
-        if (isset($m["priority"]) && (is_float($m["priority"]) || is_int($m["priority"])))
-            $im->priority = $m["priority"];
-        $id = isset($m["id"]) ? $m["id"] : $m["itext"];
-        $im->next = get($this->ims, $id);
-        $this->ims[$id] = $im;
-        return true;
+    function add($m, $ctx = null) {
+        if (is_string($m))
+            return $this->addj(func_get_args(), null);
+        else
+            return $this->addj($m, $ctx);
     }
 
-    function _add_json($fj) {
-        if (is_object($fj))
-            return $this->add($fj);
-        else
+    function addj($m, $ctx = null) {
+        if (is_associative_array($m))
+            $m = (object) $m;
+        if (is_object($m) && isset($m->members) && is_array($m->members)) {
+            if (isset($m->context) && is_string($m->context))
+                $ctx = ((string) $ctx === "" ? "" : $ctx . "/") . $m->context;
+            foreach ($m->members as $mm)
+                $this->addj($mm, $ctx);
+            return true;
+        }
+        $im = new IntlMsg;
+        if (is_array($m)) {
+            $i = 0;
+            $n = count($m);
+            if ($n >= 3 && is_string($m[2]))
+                $im->context = $m[$i++];
+            if ($n < 2 || !is_string($m[$i]) || !is_string($m[$i+1]))
+                return false;
+            $itext = $m[$i++];
+            $im->otext = $m[$i++];
+            if ($i < $n && (is_int($m[$i]) || is_float($m[$i])))
+                $im->priority = $m[$i++];
+            if ($i < $n && is_array($m[$i]))
+                $im->require = $m[$i++];
+            if ($i != $n)
+                return false;
+        } else if (is_object($m)) {
+            if (isset($m->context) && is_string($m->context))
+                $im->context = $m->context;
+            if (isset($m->id) && is_string($m->id))
+                $itext = $m->id;
+            else if (isset($m->itext) && is_string($m->itext))
+                $itext = $m->itext;
+            else
+                return false;
+            if (isset($m->otext) && is_string($m->otext))
+                $im->otext = $m->otext;
+            else if (isset($m->itext) && is_string($m->itext))
+                $im->otext = $m->itext;
+            else
+                return false;
+            if (isset($m->priority) && (is_float($m->priority) || is_int($m->priority)))
+                $im->priority = $m->priority;
+            if (isset($m->require) && is_array($m->require))
+                $im->require = $m->require;
+        } else
             return false;
+        if ($ctx)
+            $im->context = $ctx . ($im->context ? "/" . $im->context : "");
+        $im->next = get($this->ims, $itext);
+        $this->ims[$itext] = $im;
+        return true;
     }
 
     function set($name, $value) {

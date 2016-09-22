@@ -332,7 +332,7 @@ function expand_json_includes_callback($includelist, $callback, $extra_arg = nul
             && !isset($entry->id) && !isset($entry->factory) && !isset($entry->factory_class) && !isset($entry->callback))
             $entry = get_object_vars($entry);
         foreach (is_array($entry) ? $entry : [$entry] as $obj)
-            if (!is_object($obj) || !call_user_func($callback, $obj, $extra_arg))
+            if ((!is_object($obj) && !$no_validate) || !call_user_func($callback, $obj, $extra_arg))
                 error_log("$landmark: Invalid expansion " . json_encode($obj) . ".");
     }
 }

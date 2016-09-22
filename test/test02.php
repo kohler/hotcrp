@@ -297,7 +297,7 @@ xassert_eqq(get(Text::split_name("Kennedy, Bob (Butt Pants)"), 1), "Kennedy");
 // i18n messages
 $ms = new IntlMsgSet;
 $ms->add("Hello", "Bonjour");
-$ms->add("%d friend", "%d amis", ["$1 ≠ 1"]);
+$ms->add(["%d friend", "%d amis", ["$1 ≠ 1"]]);
 $ms->add("%d friend", "%d ami");
 $ms->add("ax", "a");
 $ms->add("ax", "b");

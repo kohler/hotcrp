@@ -2968,9 +2968,9 @@ class Conf {
             $m = ["?src/msgs.json"];
             if (($lang = $this->opt("lang")))
                 $m[] = "?src/msgs.$lang.json";
-            expand_json_includes_callback($m, [$this->_ims, "_add_json"], null, true);
+            expand_json_includes_callback($m, [$this->_ims, "addj"], null, true);
             if (($mlist = $this->opt("msgs_include")))
-                expand_json_includes_callback($mlist, [$this->_ims, "_add_json"], ["lang" => $lang], true);
+                expand_json_includes_callback($mlist, [$this->_ims, "addj"], ["lang" => $lang], true);
         }
         return $this->_ims;
     }
