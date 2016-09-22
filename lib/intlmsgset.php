@@ -10,6 +10,12 @@ class IntlMsg {
     public $priority = 0.0;
     public $next;
 
+    private function arg(IntlMsgSet $ms, $args, $which) {
+        if (ctype_digit($which))
+            return get($args, +$which);
+        else
+            return $ms->get($which);
+    }
     function check_require(IntlMsgSet $ms, $args) {
         if (!$this->require)
             return 0;
@@ -17,12 +23,14 @@ class IntlMsg {
         foreach ($this->require as $req)
             if (preg_match('/\A\s*\$(\w+)\s*(|[=!<>]=?|≠|≤|≥)\s*(|[-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $req, $m)
                 && ($m[2] === "") === ($m[3] === "")) {
-                if (ctype_digit($m[1]))
-                    $arg = get($args, +$m[1]);
-                else
-                    $arg = $ms->get($m[1]);
+                $arg = $this->arg($ms, $args, $m[1]);
                 if ((string) $arg === ""
                     || ($m[2] !== "" && !CountMatcher::compare((float) $arg, $m[2], (float) $m[3])))
+                    return false;
+                ++$nreq;
+            } else if (preg_match('/\A\s*!\s*\$(\w+)\s*\z/', $req, $m)) {
+                $arg = $this->arg($ms, $args, $m[1]);
+                if ((string) $arg !== "" && $arg !== 0)
                     return false;
                 ++$nreq;
             }

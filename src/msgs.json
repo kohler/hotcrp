@@ -1,8 +1,10 @@
 [
-    {"itext": "Each submission can have at most %d authors.",
-     "otext": "Each submission can have at most %d author.",
-     "require": ["$1=1"]},
-    {"itext": "%d papers accepted out of %d submitted.",
-     "otext": "%d paper accepted out of %d submitted.",
-     "require": ["$1=1"]}
+    ["Each submission can have at most %d authors.", "Each submission can have at most %d author.", ["$1=1"]],
+    ["%d papers accepted out of %d submitted.", "%d paper accepted out of %d submitted.", ["$1=1"]],
+    ["%s review deadline", "Review deadline", ["!$1"]],
+    ["%s reviews are requested by this deadline.", "Reviews are requested by this deadline.", ["!$1"]],
+    ["%s review hard deadline", "Review hard deadline", ["!$1"]],
+    ["%s reviews must be submitted by this deadline.", "Reviews must be submitted by this deadline.", ["!$1"]],
+    ["%s external review deadline", "External review deadline", ["!$1"]],
+    ["%s external review hard deadline", "External review hard deadline", ["!$1"]]
 ]

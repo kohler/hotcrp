@@ -18,15 +18,10 @@ if (req("ajax")) {
 // header and script
 $Conf->header("Deadlines", "deadlines", actionBar());
 
-echo "<p>These deadlines determine when various conference
-submission and review functions can be accessed.";
-
 if ($Me->privChair)
-    echo " As PC chair, you can also <a href='", hoturl("settings"), "'>change the deadlines</a>.";
+    echo "<p>As PC chair, you can <a href='", hoturl("settings"), "'>change the deadlines</a>.</p>\n";
 
-echo "</p>
-
-<dl>\n";
+echo "<dl>\n";
 
 
 function printDeadline($time, $phrase, $description) {
@@ -37,26 +32,26 @@ function printDeadline($time, $phrase, $description) {
 
 // If you change these, also change Contact::has_reportable_deadline().
 if (get($dl->sub, "reg"))
-    printDeadline($dl->sub->reg, "Registration deadline",
-                  "You can register new papers until this deadline.");
+    printDeadline($dl->sub->reg, $Conf->_("Registration deadline"),
+                  $Conf->_("You can register new submissions until this deadline."));
 
 if (get($dl->sub, "update"))
-    printDeadline($dl->sub->update, "Update deadline",
-                  "You can upload new versions of your paper and change other paper information until this deadline.");
+    printDeadline($dl->sub->update, $Conf->_("Update deadline"),
+                  $Conf->_("You can update submissions and upload new versions until this deadline."));
 
 if (get($dl->sub, "sub"))
-    printDeadline($dl->sub->sub, "Submission deadline",
-                  "Papers must be submitted by this deadline to be reviewed.");
+    printDeadline($dl->sub->sub, $Conf->_("Submission deadline"),
+                  $Conf->_("Papers must be submitted by this deadline to be reviewed."));
 
 if (get($dl, "resps"))
     foreach ($dl->resps as $rname => $dlr)
         if (get($dlr, "open") && $dlr->open <= $Now && get($dlr, "done")) {
             if ($rname == 1)
-                printDeadline($dlr->done, "Response deadline",
-                              "You can submit responses to the reviews until this deadline.");
+                printDeadline($dlr->done, $Conf->_("Response deadline"),
+                              $Conf->_("You can submit responses to the reviews until this deadline."));
             else
-                printDeadline($dlr->done, "$rname response deadline",
-                              "You can submit $rname responses to the reviews until this deadline.");
+                printDeadline($dlr->done, $Conf->_("%s response deadline", $rname),
+                              $Conf->_("You can submit %s responses to the reviews until this deadline.", $rname));
         }
 
 if (get($dl, "rev") && get($dl->rev, "open")) {
@@ -95,22 +90,22 @@ if (get($dl, "rev") && get($dl->rev, "open")) {
         if ($dltext === "")
             continue;
         $suffix = $roundname === "" ? "" : "_$roundname";
-        $noround = $roundname === "" || $dlroundunify;
-        $reviewstext = $noround ? "Reviews" : "$roundname reviews";
+        if ($dlroundunify)
+            $roundname = "";
         foreach (explode(" ", $dltext) as $dldesc) {
             list($dt, $dv) = array(substr($dldesc, 0, 2), +substr($dldesc, 2));
             if ($dt === "PS")
-                printDeadline($dv, ($noround ? "Review" : "$roundname review") . " deadline",
-                              "$reviewstext are requested by this deadline.");
+                printDeadline($dv, $Conf->_("%s review deadline", $roundname),
+                              $Conf->_("%s reviews are requested by this deadline.", $roundname));
             else if ($dt === "PH")
-                printDeadline($dv, ($noround ? "Review" : "$roundname review") . " hard deadline",
-                              "$reviewstext must be submitted by this deadline.");
+                printDeadline($dv, $Conf->_("%s review hard deadline", $roundname),
+                              $Conf->_("%s reviews must be submitted by this deadline.", $roundname));
             else if ($dt === "ES")
-                printDeadline($dv, ($noround ? "External" : "$roundname external") . " review deadline",
-                              "$reviewstext are requested by this deadline.");
+                printDeadline($dv, $Conf->_("%s external review deadline", $roundname),
+                              $Conf->_("%s reviews are requested by this deadline.", $roundname));
             else if ($dt === "EH")
-                printDeadline($dv, ($noround ? "External" : "$roundname external") . " review hard deadline",
-                              "$reviewstext must be submitted by this deadline.");
+                printDeadline($dv, $Conf->_("%s external review hard deadline", $roundname),
+                              $Conf->_("%s reviews must be submitted by this deadline.", $roundname));
         }
         if ($dlroundunify)
             break;
