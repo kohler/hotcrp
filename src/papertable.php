@@ -150,10 +150,10 @@ class PaperTable {
             if (($pid = req("paperId")) && ctype_digit($pid))
                 $title = "#$pid";
             else
-                $title = "Submission";
+                $title = $Conf->_c("paper_title", "Submission");
             $t .= '">' . $title;
         } else if (!$prow) {
-            $title = "New submission";
+            $title = $Conf->_c("paper_title", "New submission");
             $t .= '">' . $title;
         } else {
             $title = "#" . $prow->paperId;
@@ -348,9 +348,21 @@ class PaperTable {
         return $table_type === "col" ? nl2br($text) : $text;
     }
 
+    private function field_name($name) {
+        return $this->conf->_c("paper_edit_field", $name);
+    }
+
+    private function field_hint($name, $itext = "") {
+        $t = $this->conf->_ci("paper_edit_description", $name, $itext);
+        if ($t !== "")
+            return '<div class="paphint">' . $t . '</div>';
+        return "";
+    }
+
     private function echo_editable_title() {
-        echo $this->editable_papt("title", "Title"),
+        echo $this->editable_papt("title", $this->field_name("Title")),
             $this->messages_for("title"),
+            $this->field_hint("Title"),
             '<div class="papev">', $this->editable_textarea("title"), "</div></div>\n\n";
     }
 
@@ -448,10 +460,10 @@ class PaperTable {
             "'><table class='fx'><tr><td class='nw'>",
             Ht::checkbox("submitpaper", 1, $checked, ["id" => "paperisready", "onchange" => "paperform_checkready()"]), "&nbsp;";
         if ($this->conf->setting('sub_freeze'))
-            echo "</td><td>", Ht::label("<strong>The submission is complete.</strong>"),
+            echo "</td><td>", Ht::label("<strong>" . $this->conf->_("The submission is complete.") . "</strong>"),
                 "</td></tr><tr><td></td><td><small>You must complete your submission before the deadline or it will not be reviewed. Completed submissions are frozen and cannot be changed further.</small>";
         else
-            echo Ht::label("<strong>The submission is ready for review.</strong>");
+            echo Ht::label("<strong>" . $this->conf->_("The submission is ready for review.") . "</strong>");
         echo "</td></tr></table></div>\n";
         Ht::stash_script("$(function(){var x=\$\$(\"paperUpload\");if(x&&x.value)fold(\"isready\",0);paperform_checkready()})");
     }
@@ -477,9 +489,8 @@ class PaperTable {
         if (($accepts = $docx->mimetypes()))
             $msgs[] = htmlspecialchars(Mimetype::description($accepts));
         $msgs[] = "max " . ini_get("upload_max_filesize") . "B";
-        echo $this->editable_papt($field, htmlspecialchars($docx->name) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
-        if ($docx->description)
-            echo '<div class="paphint">', $docx->description, "</div>";
+        echo $this->editable_papt($field, $this->field_name(htmlspecialchars($docx->name)) . ' <span class="papfnh">(' . join(", ", $msgs) . ")</span>");
+        echo $this->field_hint(htmlspecialchars($docx->name), $docx->description);
         echo $this->messages_for($field);
         echo '<div class="papev">';
         if ($optionType)
@@ -565,10 +576,11 @@ class PaperTable {
     }
 
     private function echo_editable_abstract() {
-        $title = "Abstract";
+        $title = $this->field_name("Abstract");
         if (opt("noAbstract") === 2)
             $title .= ' <span class="papfnh">(optional)</span>';
         echo $this->editable_papt("abstract", $title),
+            $this->field_hint("Abstract"),
             $this->messages_for("abstract"),
             '<div class="papev abstract">';
         if (($f = $this->conf->format_info($this->prow ? $this->prow->paperFormat : null))
@@ -621,11 +633,12 @@ class PaperTable {
         $max_authors = (int) $this->conf->opt("maxAuthors");
         $min_authors = $max_authors > 0 ? min(5, $max_authors) : 5;
 
-        echo $this->editable_papt("authors", $max_authors == 1 ? "Author" : "Authors"),
-            "<div class='paphint'>List the authors, including email addresses and affiliations.";
+        echo $this->editable_papt("authors", $this->conf->_c("paper_edit_field", "Authors", $max_authors));
+        $hint = "List the authors, including email addresses and affiliations.";
         if ($this->conf->submission_blindness() == Conf::BLIND_ALWAYS)
-            echo " Submission is blind, so reviewers will not be able to see author information.";
-        echo " Any author with an account on this site can edit the submission.</div>",
+            $hint .= " Submission is blind, so reviewers will not be able to see author information.";
+        $hint .= " Any author with an account on this site can edit the submission.";
+        echo $this->field_hint("Authors", $hint),
             $this->messages_for("authors"),
             '<div class="papev"><table id="auedittable" class="auedittable">',
             '<tbody data-last-row-blank="true" data-min-rows="', $min_authors, '" ',
@@ -911,8 +924,8 @@ class PaperTable {
 
     private function echo_editable_new_contact_author() {
         global $Me;
-        echo $this->editable_papt("contactAuthor", "Contact"),
-            '<div class="paphint">You can add more contacts after you register the submission.</div>',
+        echo $this->editable_papt("contactAuthor", $this->field_name("Contact")),
+            $this->field_hint("Contact", "You can add more contacts after you register the submission."),
             '<div class="papev">';
         $name = $this->useRequest ? trim((string) $this->qreq->newcontact_name) : "";
         $email = $this->useRequest ? trim((string) $this->qreq->newcontact_email) : "";
@@ -942,10 +955,14 @@ class PaperTable {
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
             '><span class="papfn"><a class="qq" href="#" ',
             "onclick=\"\$\$('setcontacts').value=2;return foldup(this,event)\"",
-            ' title="Edit contacts">', expander(true), 'Contacts</a></span></div>',
+            ' title="Edit contacts">', expander(true),
+            $this->field_name("Contacts"),
+            '</a></span></div>',
             '<div class="papet fx0',
             ($cerror ? " error" : ""),
-            '"><span class="papfn">Contacts</span></div>';
+            '"><span class="papfn">',
+            $this->field_name("Contacts"),
+            '</span></div>';
 
         // Non-editable version
         echo '<div class="papev fn0">';
@@ -966,7 +983,7 @@ class PaperTable {
 
         // Editable version
         echo '<div class="paphint fx0">',
-            'Contacts are HotCRP users who can edit paper information and view reviews. Paper authors with HotCRP accounts are always contacts, but you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.',
+            'Contacts are HotCRP users who can edit the submission and view reviews. Authors with HotCRP accounts are always contacts, but you can add additional contacts who aren’t in the author list or create accounts for authors who haven’t yet logged in.',
             '</div>';
         echo '<div class="papev fx0">';
         echo '<table>';
@@ -1018,8 +1035,8 @@ class PaperTable {
         $blind = ($this->useRequest ? !!$this->qreq->blind : (!$this->prow || $this->prow->blind));
         assert(!!$this->editable);
         echo $this->editable_papt("blind", Ht::checkbox("blind", 1, $blind)
-                                  . "&nbsp;" . Ht::label("Anonymous submission")),
-            '<div class="paphint">', htmlspecialchars($this->conf->short_name), " allows either anonymous or named submission. Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!</div>\n",
+                                  . "&nbsp;" . Ht::label($this->field_name("Anonymous submission"))),
+            $this->field_hint("Anonymous submission", "Check this box to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"),
             $this->messages_for("blind"),
             "</div>\n\n";
     }
@@ -1030,7 +1047,7 @@ class PaperTable {
         $sub_pcconf = $this->conf->setting("sub_pcconf");
         assert(!!$this->editable);
 
-        echo $this->editable_papt("collaborators", ($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
+        echo $this->editable_papt("collaborators", $this->field_name($sub_pcconf ? "Other conflicts" : "Potential conflicts")),
             "<div class='paphint'>";
         if ($this->conf->setting("sub_pcconf"))
             echo "List <em>other</em> people and institutions with which
@@ -1107,8 +1124,8 @@ class PaperTable {
         assert(!!$this->editable);
         $topicMode = (int) $this->useRequest;
         if (($topicTable = topicTable($this->prow, $topicMode))) {
-            echo $this->editable_papt("topics", "Topics"),
-                '<div class="paphint">Select any topics that apply to your paper.</div>',
+            echo $this->editable_papt("topics", $this->field_name("Topics")),
+                $this->field_hint("Topics", "Select any topics that apply to your paper."),
                 $this->messages_for("topics"),
                 '<div class="papev">',
                 Ht::hidden("has_topics", 1),
@@ -1118,10 +1135,9 @@ class PaperTable {
     }
 
     public function echo_editable_option_papt(PaperOption $o, $label = null) {
-        echo $this->editable_papt("opt$o->id", $label ? : htmlspecialchars($o->name),
+        echo $this->editable_papt("opt$o->id", $label ? : $this->field_name(htmlspecialchars($o->name)),
                                   ["id" => "opt{$o->id}_div"]);
-        if ($o->description)
-            echo '<div class="paphint">', $o->description, "</div>";
+        echo $this->field_hint(htmlspecialchars($o->name), $o->description);
         echo $this->messages_for("opt$o->id"), Ht::hidden("has_opt$o->id", 1);
     }
 
@@ -1176,7 +1192,7 @@ class PaperTable {
             }
         }
 
-        echo $this->editable_papt("pcconf", "PC conflicts"),
+        echo $this->editable_papt("pcconf", $this->field_name("PC conflicts")),
             "<div class='paphint'>Select the PC members who have conflicts of interest with this submission. ", $this->conf->message_html("conflictdef"), "</div>\n",
             $this->messages_for("pcconf"),
             '<div class="papev">',

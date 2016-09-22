@@ -2982,4 +2982,12 @@ class Conf {
     function _c($context, $itext) {
         return call_user_func_array([$this->ims(), "xc"], func_get_args());
     }
+
+    function _i($id, $itext) {
+        return call_user_func_array([$this->ims(), "xi"], func_get_args());
+    }
+
+    function _ci($context, $id, $itext) {
+        return call_user_func_array([$this->ims(), "xci"], func_get_args());
+    }
 }

@@ -6,5 +6,7 @@
     ["%s review hard deadline", "Review hard deadline", ["!$1"]],
     ["%s reviews must be submitted by this deadline.", "Reviews must be submitted by this deadline.", ["!$1"]],
     ["%s external review deadline", "External review deadline", ["!$1"]],
-    ["%s external review hard deadline", "External review hard deadline", ["!$1"]]
+    ["%s external review hard deadline", "External review hard deadline", ["!$1"]],
+
+    ["paper_edit_field", "Authors", "Author", ["$1=1"]]
 ]

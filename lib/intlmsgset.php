@@ -119,11 +119,12 @@ class IntlMsgSet {
         $match = null;
         $matchnreq = 0;
         for ($im = get($this->ims, $itext); $im; $im = $im->next) {
-            if ($context !== null && $im->context !== $context)
+            if ($context !== null && $im->context !== null && $im->context !== $context)
                 continue;
             $nreq = $im->require ? $im->check_require($this, $args) : 0;
             if ($nreq !== false
                 && (!$match
+                    || ($im->context === $context && $match->context !== $context)
                     || ($im->priority > $match->priority)
                     || ($im->priority == $match->priority && $nreq > $matchnreq))) {
                 $match = $im;
@@ -155,18 +156,28 @@ class IntlMsgSet {
 
     function x($itext) {
         $args = func_get_args();
-        $im = $this->find(null, $itext, $args);
-        if ($im)
+        if (($im = $this->find(null, $itext, $args)))
             $args[0] = $im->otext;
         return $this->expand($args);
     }
 
     function xc($context, $itext) {
         $args = array_slice(func_get_args(), 1);
-        $im = $this->find($context, $itext, $args);
-        if (!$im)
-            $im = $this->find(null, $itext, $args);
-        if ($im)
+        if (($im = $this->find($context, $itext, $args)))
+            $args[0] = $im->otext;
+        return $this->expand($args);
+    }
+
+    function xi($id, $itext) {
+        $args = array_slice(func_get_args(), 1);
+        if (($im = $this->find(null, $id, $args)))
+            $args[0] = $im->otext;
+        return $this->expand($args);
+    }
+
+    function xci($context, $id, $itext) {
+        $args = array_slice(func_get_args(), 2);
+        if (($im = $this->find($context, $id, $args)))
             $args[0] = $im->otext;
         return $this->expand($args);
     }
