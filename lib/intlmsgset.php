@@ -95,6 +95,10 @@ class IntlMsgSet {
         return true;
     }
 
+    function _addj_callback($m) {
+        return $this->addj($m);
+    }
+
     function set($name, $value) {
         $this->defs[$name] = $value;
     }
