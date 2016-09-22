@@ -75,10 +75,10 @@ class ScoreInfo {
     }
 
     public function counts($max = 0) {
-        $counts = $max ? array_fill(1, $max, 0) : array();
+        $counts = $max ? array_fill(0, $max + 1, 0) : array();
         foreach ($this->_scores as $i) {
-            while ($i > count($counts))
-                $counts[count($counts) + 1] = 0;
+            while ($i >= count($counts))
+                $counts[] = 0;
             ++$counts[$i];
         }
         return $counts;
@@ -110,7 +110,7 @@ class ScoreInfo {
         $cts = $this->counts();
         $s = array();
         $last = 0;
-        for ($i = count($cts); $i > 0; --$i)
+        for ($i = count($cts) - 1; $i > 0; --$i)
             if ($cts[$i]) {
                 $s[] = sprintf("%c%03d", 48 + $i, $cts[$i]);
                 $last = $i - 1;
