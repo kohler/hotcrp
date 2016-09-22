@@ -1,5 +1,8 @@
 [
     {"itext": "Each submission can have at most %d authors.",
      "otext": "Each submission can have at most %d author.",
+     "require": ["$1=1"]},
+    {"itext": "%d papers accepted out of %d submitted.",
+     "otext": "%d paper accepted out of %d submitted.",
      "require": ["$1=1"]}
 ]

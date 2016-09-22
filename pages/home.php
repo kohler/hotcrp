@@ -163,10 +163,10 @@ if (opt("conferenceSite") && opt("conferenceSite") != opt("paperSite"))
     $links[] = '<li><a href="' . opt("conferenceSite") . '">Conference site</a></li>';
 if ($Conf->timeAuthorViewDecision()) {
     list($n, $nyes) = $Conf->count_submitted_accepted();
-    $links[] = '<li>' . plural($nyes, "paper") . ' accepted out of ' . $n . ' submitted.</li>';
+    $links[] = '<li>' . $Conf->_("%d papers accepted out of %d submitted.", $nyes, $n) . '</li>';
 }
 if (!empty($links))
-    $inside_links[] = '<h4>Conference information</h4><ul>' . join('', $links) . '</ul>';
+    $inside_links[] = '<h4>' . $Conf->_("Conference information") . '</h4><ul>' . join('', $links) . '</ul>';
 
 if (!empty($inside_links))
     echo '<div class="homeinside">', join('', $inside_links), '</div>';
