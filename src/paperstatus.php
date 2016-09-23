@@ -22,6 +22,8 @@ class PaperStatus {
     private $prow;
     private $paperid;
     private $document_callbacks = array();
+    private $qf;
+    private $qv;
 
     function __construct(Conf $conf, Contact $contact = null, $options = array()) {
         $this->conf = $conf;
@@ -555,12 +557,12 @@ class PaperStatus {
 
         // Topics
         $pj->bad_topics = array();
-        if (get($pj, "topics") !== null)
+        if (isset($pj->topics))
             $this->normalize_topics($pj);
 
         // Options
         $pj->bad_options = array();
-        if (get($pj, "options") !== null) {
+        if (isset($pj->options)) {
             if (is_associative_array($pj->options) || is_object($pj->options))
                 $this->normalize_options($pj, $pj->options);
             else if (is_array($pj->options) && count($pj->options) == 1 && is_object($pj->options[0]))
@@ -580,7 +582,7 @@ class PaperStatus {
             $this->normalize_pc_conflicts($pj);
         else if (get($pj, "pc_conflicts") === false)
             $pj->pc_conflicts = (object) array();
-        else if (get($pj, "pc_conflicts") !== null) {
+        else if (isset($pj->pc_conflicts)) {
             $this->set_error_html("pc_conflicts", "Format error [PC conflicts]");
             unset($pj->pc_conflicts);
         }
@@ -733,17 +735,17 @@ class PaperStatus {
         return join(",", $x);
     }
 
-    static private function options_sql($pj, $paperid) {
+    private function options_sql($pj, $paperid) {
         $q = [];
         foreach ($pj->parsed_options as $id => $ovs)
             foreach ($ovs as $ov) {
                 if (is_int($ov))
                     $q[] = "($paperid,$id,$ov,null)";
                 else
-                    $q[] = Dbl::format_query("($paperid,$id,?,?)", $ov[0], get($ov, 1));
+                    $q[] = Dbl::format_query($this->conf->dblink, "($paperid,$id,?,?)", $ov[0], get($ov, 1));
             }
         sort($q);
-        return join(",", $q);
+        return join(", ", $q);
     }
 
     static private function contacts_array($pj) {
@@ -765,14 +767,14 @@ class PaperStatus {
     function conflicts_array($pj, $old_pj) {
         $x = array();
 
-        if ($pj && get($pj, "pc_conflicts") !== null)
+        if ($pj && isset($pj->pc_conflicts))
             $c = $pj->pc_conflicts;
         else
             $c = ($old_pj ? get($old_pj, "pc_conflicts") : null) ? : array();
         foreach ((array) $c as $email => $type)
             $x[strtolower($email)] = $type;
 
-        if ($pj && get($pj, "authors") !== null)
+        if ($pj && isset($pj->authors))
             $c = $pj->authors;
         else
             $c = $old_pj ? $old_pj->authors : array();
@@ -782,7 +784,7 @@ class PaperStatus {
                 $x[$lemail] = get($au, "contact") ? CONFLICT_CONTACTAUTHOR : CONFLICT_AUTHOR;
             }
 
-        if ($pj && get($pj, "contacts") !== null)
+        if ($pj && isset($pj->contacts))
             $c = $pj->contacts;
         else
             $c = $old_pj ? (get($old_pj, "contacts") ? : []) : [];
@@ -805,6 +807,11 @@ class PaperStatus {
 
         ksort($x);
         return $x;
+    }
+
+    private function addf($f, $v) {
+        $this->qf[] = "$f=?";
+        $this->qv[] = $v;
     }
 
     function save_paper_json($pj) {
@@ -863,41 +870,40 @@ class PaperStatus {
             return false;
 
         // update Paper table
-        $q = array();
+        $this->qf = $this->qv = [];
         foreach (array("title", "abstract", "collaborators") as $k) {
             $v = convert_to_utf8((string) get($pj, $k));
-            if (!$old_pj || (get($pj, $k) !== null && $v !== (string) get($old_pj, $k)))
-                $q[] = "$k='" . sqlq($v) . "'";
+            if (!$old_pj || (isset($pj->$k) && $v !== (string) get($old_pj, $k)))
+                $this->addf($k, $v);
         }
 
-        if (!$old_pj || get($pj, "authors") !== null) {
+        if (!$old_pj || isset($pj->authors)) {
             $autext = convert_to_utf8(self::author_information($pj));
             $old_autext = self::author_information($old_pj);
             if ($autext !== $old_autext || !$old_pj)
-                $q[] = "authorInformation='" . sqlq($autext) . "'";
+                $this->addf("authorInformation", $autext);
         }
 
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
-            && (!$old_pj || (get($pj, "nonblind") !== null
-                             && !$pj->nonblind != !$old_pj->nonblind)))
-            $q[] = "blind=" . (get($pj, "nonblind") ? 0 : 1);
+            && (!$old_pj || (isset($pj->nonblind) && !$pj->nonblind != !$old_pj->nonblind)))
+            $this->addf("blind", get($pj, "nonblind") ? 0 : 1);
 
         $newPaperStorageId = null;
-        if (!$old_pj || get($pj, "submission") !== null) {
+        if (!$old_pj || isset($pj->submission)) {
             $new_id = get($pj, "submission") ? $pj->submission->docid : 1;
             $old_id = $old_pj && get($old_pj, "submission") ? $old_pj->submission->docid : 1;
             if (!$old_pj || $new_id != $old_id) {
-                $q[] = "paperStorageId=$new_id";
+                $this->addf("paperStorageId", $new_id);
                 $newPaperStorageId = $new_id;
             }
         }
 
         $newFinalPaperStorageId = null;
-        if (!$old_pj || get($pj, "final") !== null) {
+        if (!$old_pj || isset($pj->final)) {
             $new_id = get($pj, "final") ? $pj->final->docid : 0;
             $old_id = $old_pj && get($old_pj, "final") ? $old_pj->final->docid : 0;
             if (!$old_pj || $new_id != $old_id) {
-                $q[] = "finalPaperStorageId=$new_id";
+                $this->addf("finalPaperStorageId", $new_id);
                 $newFinalPaperStorageId = $new_id;
             }
         }
@@ -926,35 +932,35 @@ class PaperStatus {
                 $submitted = false;
             if ($pj_withdrawn) {
                 if (!$old_pj || !get($old_pj, "withdrawn")) {
-                    $q[] = "timeWithdrawn=" . (get($pj, "withdrawn_at") ? : $Now);
-                    $q[] = "timeSubmitted=" . ($submitted ? -100 : 0);
+                    $this->addf("timeWithdrawn", get($pj, "withdrawn_at") ? : $Now);
+                    $this->addf("timeSubmitted", $submitted ? -100 : 0);
                 } else if ((get($old_pj, "submitted_at") > 0) !== $submitted)
-                    $q[] = "timeSubmitted=" . ($submitted ? -100 : 0);
+                    $this->addf("timeSubmitted", $submitted ? -100 : 0);
             } else if ($submitted) {
                 if (!$old_pj || !get($old_pj, "submitted"))
-                    $q[] = "timeSubmitted=" . (get($pj, "submitted_at") ? : $Now);
+                    $this->addf("timeSubmitted", get($pj, "submitted_at") ? : $Now);
                 if ($old_pj && get($old_pj, "withdrawn"))
-                    $q[] = "timeWithdrawn=0";
+                    $this->addf("timeWithdrawn", 0);
             } else if ($old_pj && (get($old_pj, "withdrawn") || get($old_pj, "submitted"))) {
-                $q[] = "timeSubmitted=0";
-                $q[] = "timeWithdrawn=0";
+                $this->addf("timeSubmitted", 0);
+                $this->addf("timeWithdrawn", 0);
             }
         }
 
-        if (get($pj, "final_submitted") !== null) {
+        if (isset($pj->final_submitted)) {
             if ($pj->final_submitted)
                 $time = get($pj, "final_submitted_at") ? : $Now;
             else
                 $time = 0;
             if (!$old_pj || get($old_pj, "final_submitted_at") != $time)
-                $q[] = "timeFinalSubmitted=$time";
+                $this->addf("timeFinalSubmitted", $time);
         }
 
-        if (!empty($q)) {
+        if (!empty($this->qf)) {
             if ($this->conf->submission_blindness() == Conf::BLIND_NEVER)
-                $q[] = "blind=0";
+                $this->addf("blind", 0);
             else if ($this->conf->submission_blindness() != Conf::BLIND_OPTIONAL)
-                $q[] = "blind=1";
+                $this->addf("blind", 1);
 
             if ($old_pj && isset($old_pj->final))
                 $old_joindoc = $old_pj->final;
@@ -974,31 +980,35 @@ class PaperStatus {
                 $new_joindoc = null;
             if ($new_joindoc
                 && (!$old_joindoc || $old_joindoc->docid != $new_joindoc->docid)) {
-                $q[] = "size=" . $new_joindoc->size;
-                $q[] = "mimetype='" . sqlq($new_joindoc->mimetype) . "'";
-                $q[] = "sha1='" . sqlq(Filer::binary_sha1($new_joindoc->sha1)) . "'";
-                $q[] = "timestamp=" . $new_joindoc->timestamp;
+                $this->addf("size", $new_joindoc->size);
+                $this->addf("mimetype", $new_joindoc->mimetype);
+                $this->addf("sha1", Filer::binary_sha1($new_joindoc->sha1));
+                $this->addf("timestamp", $new_joindoc->timestamp);
                 if ($this->conf->sversion >= 145)
-                    $q[] = "pdfFormatStatus=0";
+                    $this->addf("pdfFormatStatus", 0);
             } else if (!$paperid || ($new_joindoc && !$old_joindoc)) {
-                $q[] = "size=0,mimetype='',sha1='',timestamp=0";
+                $this->addf("size", 0);
+                $this->addf("mimetype", "");
+                $this->addf("sha1", "");
+                $this->addf("timestamp", 0);
                 if ($this->conf->sversion >= 145)
-                    $q[] = "pdfFormatStatus=0";
+                    $this->addf("pdfFormatStatus", 0);
             }
 
             if ($paperid) {
-                $result = $this->conf->qe_raw("update Paper set " . join(",", $q) . " where paperId=$paperid");
+                $this->qv[] = $paperid;
+                $result = $this->conf->qe_apply("update Paper set " . join(", ", $this->qf) . " where paperId=?", $this->qv);
                 if ($result
                     && $result->affected_rows === 0
-                    && edb_nrows($this->conf->qe_raw("select paperId from Paper where paperId=$paperid")) === 0)
-                    $result = $this->conf->qe_raw("insert into Paper set paperId=$paperid, " . join(",", $q));
+                    && edb_nrows($this->conf->qe("select paperId from Paper where paperId=?", $paperid)) === 0)
+                    $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf) . ", paperId=?", $this->qv);
             } else {
-                $result = $this->conf->qe_raw("insert into Paper set " . join(",", $q));
+                $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $this->qf), $this->qv);
                 if (!$result
                     || !($paperid = $pj->pid = $result->insert_id))
                     return $this->set_error_html(false, $this->_("Could not create paper."));
                 if (!empty($this->uploaded_documents))
-                    $this->conf->qe_raw("update PaperStorage set paperId=$paperid where paperStorageId in (" . join(",", $this->uploaded_documents) . ")");
+                    $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $paperid, $this->uploaded_documents);
             }
 
             // maybe update `papersub` settings
@@ -1015,20 +1025,20 @@ class PaperStatus {
             if ($topics !== $old_topics) {
                 $this->conf->qe_raw("delete from PaperTopic where paperId=$paperid");
                 if ($topics)
-                    $this->conf->qe_raw("insert into PaperTopic (topicId,paperId) values $topics");
+                    $this->conf->qe_raw("insert into PaperTopic (topicId, paperId) values $topics");
             }
         }
 
         // update PaperOption
         if (get($pj, "options")) {
-            $options = convert_to_utf8(self::options_sql($pj, $paperid));
+            $options = convert_to_utf8($this->options_sql($pj, $paperid));
             if ($old_pj && isset($old_pj->options)) {
                 $this->check_options($old_pj);
-                $old_options = self::options_sql($old_pj, $paperid);
+                $old_options = $this->options_sql($old_pj, $paperid);
             } else
                 $old_options = "";
             if ($options !== $old_options) {
-                $this->conf->qe("delete from PaperOption where paperId=$paperid and optionId?a", array_keys($pj->parsed_options));
+                $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $paperid, array_keys($pj->parsed_options));
                 if ($options)
                     $this->conf->qe_raw("insert into PaperOption (paperId,optionId,value,data) values $options");
             }
@@ -1039,16 +1049,13 @@ class PaperStatus {
         $old_conflict = $this->conflicts_array($old_pj, null);
         if (join(",", array_keys($conflict)) !== join(",", array_keys($old_conflict))
             || join(",", array_values($conflict)) !== join(",", array_values($old_conflict))) {
-            $q = array();
-            foreach ($conflict as $email => $type)
-                $q[] = "'" . sqlq($email) . "'";
             $ins = array();
-            if (!empty($q)) {
-                $result = $this->conf->qe_raw("select contactId, email from ContactInfo where email in (" . join(",", $q) . ")");
+            if (!empty($conflict)) {
+                $result = $this->conf->qe("select contactId, email from ContactInfo where email?a", array_keys($conflict));
                 while (($row = edb_row($result)))
                     $ins[] = "($paperid,$row[0]," . $conflict[strtolower($row[1])] . ")";
             }
-            $this->conf->qe_raw("delete from PaperConflict where paperId=$paperid");
+            $this->conf->qe("delete from PaperConflict where paperId=?", $paperid);
             if (!empty($ins))
                 $this->conf->qe_raw("insert into PaperConflict (paperId,contactId,conflictType) values " . join(",", $ins));
         }
