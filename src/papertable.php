@@ -1125,7 +1125,7 @@ class PaperTable {
         $topicMode = (int) $this->useRequest;
         if (($topicTable = topicTable($this->prow, $topicMode))) {
             echo $this->editable_papt("topics", $this->field_name("Topics")),
-                $this->field_hint("Topics", "Select any topics that apply to your paper."),
+                $this->field_hint("Topics", "Select any topics that apply to your submission."),
                 $this->messages_for("topics"),
                 '<div class="papev">',
                 Ht::hidden("has_topics", 1),
@@ -1735,9 +1735,9 @@ class PaperTable {
         if (!$prow || !$Me->can_withdraw_paper($prow, true))
             $b = null;
         else if ($prow->timeSubmitted <= 0)
-            $b = Ht::submit("withdraw", "Withdraw submission", ["class" => "btn"]);
+            $b = Ht::submit("withdraw", "Withdraw", ["class" => "btn"]);
         else {
-            $b = Ht::button("Withdraw submission", ["class" => "btn", "onclick" => "popup(this,'w',0,true)"]);
+            $b = Ht::button("Withdraw", ["class" => "btn", "onclick" => "popup(this,'w',0,true)"]);
             $admins = "";
             if ((!$this->admin || $prow->has_author($Me))
                 && !$this->conf->timeFinalizePaper($prow))
@@ -1757,7 +1757,7 @@ class PaperTable {
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . "<div class='popup-actions'>"
-    . Ht::submit("withdraw", "Withdraw submission", ["class" => "popup-btn"])
+    . Ht::submit("withdraw", "Withdraw", ["class" => "popup-btn"])
     . Ht::js_button("Cancel", "popup(null,'w',1)", ["class" => "popup-btn"])
     . "</div></div></form></div></div>", "popup_w");
         }
@@ -1782,14 +1782,14 @@ class PaperTable {
         $buttons = $this->_collectActionButtons();
 
         if ($this->admin && $this->prow) {
-            $buttons[] = array(Ht::js_button("Delete paper", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
+            $buttons[] = array(Ht::js_button("Delete", "popup(this,'delp',0,true)", ["class" => "btn"]), "(admin only)");
             Ht::stash_html("<div class='popupbg'><div id='popup_delp' class='popupc'>"
     . Ht::form_div(hoturl_post("paper", "p={$this->prow->paperId}&amp;m=edit"))
     . "<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>\n"
     . Ht::hidden("doemail", 1, array("class" => "popup_populate"))
     . Ht::hidden("emailNote", "", array("class" => "popup_populate"))
     . "<div class='popup-actions'>"
-    . Ht::submit("delete", "Delete paper", ["class" => "popup-btn dangerous"])
+    . Ht::submit("delete", "Delete", ["class" => "popup-btn dangerous"])
     . Ht::js_button("Cancel", "popup(null,'delp',1)", ["class" => "popup-btn"])
     . "</div></div></form></div></div>", "popup_delp");
         }
