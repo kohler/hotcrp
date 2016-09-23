@@ -162,6 +162,7 @@ CREATE TABLE `Paper` (
   `timeSubmitted` int(11) NOT NULL DEFAULT '0',
   `timeWithdrawn` int(11) NOT NULL DEFAULT '0',
   `timeFinalSubmitted` int(11) NOT NULL DEFAULT '0',
+  `timeModified` int(11) NOT NULL DEFAULT '0',
   `paperStorageId` int(11) NOT NULL DEFAULT '0',
   # `sha1` copied from PaperStorage to reduce joins
   `sha1` varbinary(20) NOT NULL DEFAULT '',
@@ -506,7 +507,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 146);
+insert into Settings (name, value) values ('allowPaperOption', 147);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

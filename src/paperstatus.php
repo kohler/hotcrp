@@ -995,6 +995,8 @@ class PaperStatus {
                     $this->addf("pdfFormatStatus", 0);
             }
 
+            $this->addf("timeModified", $Now);
+
             if ($paperid) {
                 $this->qv[] = $paperid;
                 $result = $this->conf->qe_apply("update Paper set " . join(", ", $this->qf) . " where paperId=?", $this->qv);
