@@ -769,7 +769,7 @@ function ini_get_bytes($varname, $value = null) {
     return $val * (1 << (+strpos(".kmg", $last) * 10));
 }
 
-function whyNotText($whyNot, $action) {
+function whyNotText($whyNot, $action, $suggest_redirection = false) {
     global $Conf, $Now;
     $conf = get($whyNot, "conf") ? : $Conf;
     if (!is_array($whyNot))
@@ -889,7 +889,7 @@ function whyNotText($whyNot, $action) {
         $ms[] = $conf->_("(As an administrator, you can override your conflict.)");
     else if (isset($whyNot["forceShow"]))
         $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">Override conflict</a>)", selfHref(array("forceShow" => 1)));
-    if (!empty($ms) && $action == "view")
+    if (!empty($ms) && $suggest_redirection)
         $ms[] = $conf->_("Enter a submission number above, or <a href=\"%s\">list the submissions you can view</a>.", hoturl("search", "q="));
     return join(" ", $ms);
 }

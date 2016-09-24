@@ -67,7 +67,7 @@ function loadRows() {
     global $prow, $Conf;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, "view"));
+        errorMsgExit(whyNotText($whyNot, "view", true));
 }
 $prow = null;
 if (!$newPaper)
