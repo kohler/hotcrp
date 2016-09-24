@@ -147,6 +147,71 @@ function render(SettingValues $sv) {
         "<p class=\"settingtext\">To collect <em>multiple</em> final versions, such as one in 9pt and one in 11pt, add “Alternate final version” options via <a href='", hoturl("settings", "group=opt"), "'>Settings &gt; Submission options</a>.</p>",
         "</div>\n\n";
     Ht::stash_script("foldup(\$\$('cbfinal_open'),null,{f:\"c\"})");
+    
+    //Share with Open Academic
+    echo "<h3 class=\"settings g\">Share with search engines</h3>\n";
+    echo "<p><b>Click the button to share final decisions with search engines as the official source</b></p>";
+    echo Ht::submit("share", "Share with search engines");
+
+    //wakes up Azure API
+    $opts = array('http'=> array());
+    $context = stream_context_create($opts);
+    $post_result = file_get_contents('https://openacademicapi.azurewebsites.net/api/papers', false, $context);
+   
+    if (isset($_REQUEST["share"])) {
+		$share = array();
+		$share["provider"] = "HotCRP";
+		$share["setId"] = "";
+		$share["venue"] = $Conf->long_name;
+		$share["shortVenue"] = $Conf-> short_name;
+		$share["confSite"] = $Conf-> opt["conferenceSite"];
+	
+		$papers = array();
+		$result = $Conf->q_raw("SELECT paperID, title, authorInformation, abstract FROM Paper WHERE outcome > 0");
+    	while (($row = edb_row($result))) {
+			$curr_p = [];
+			$curr_p['paperId'] = $row[0];
+			$curr_p['title'] = $row[1];
+			$curr_p['abstract'] = $row[3];
+			
+			//parse the authorInformation into an array
+			$authors = [];
+			$mul_authorRow = explode("\n", $row[2]);
+			
+			//the last element in the array is null, do not want the null
+			$mul_authorRow = array_slice($mul_authorRow, 0, count($mul_authorRow) - 1);
+			
+			foreach ($mul_authorRow as $sing_authorRow) {
+				$authorInfo = explode("\t", $sing_authorRow);
+				$curr_author = [];
+				//combine first name and last name to full name
+				$curr_author['name'] = $authorInfo[0]." ". $authorInfo[1];
+				if (strlen($authorInfo[2]) == 0) {
+				   $curr_author['srcId'] = $authorInfo[2];
+				} else {
+				   $curr_author['srcId'] = sha1($authorInfo[2]);
+				}
+				$curr_author['affiliation'] = $authorInfo[3];
+				$curr_author['order'] = 0;
+				array_push($authors, $curr_author);
+			}
+			$curr_p['authors'] = $authors;
+			array_push($papers, $curr_p);
+    	}
+		$share["papers"] = $papers;
+
+		//sends HTTP POST REQUEST
+		$opts = array('http'=> array('method'=> 'POST', 'header'=> 'Content-type: application/json', 'content'=> json_encode($share)));
+		$context = stream_context_create($opts);
+		$post_result = file_get_contents('https://openacademicapi.azurewebsites.net/api/papers', false, $context);
+	
+		//error-handling, when sending fails
+		if ($post_result === false) {
+			Conf::msg_error("Sharing with search engine fails.");
+		} else {
+			Ht::stash_script("share_success()");
+		}
+    }
 }
 
     function crosscheck(SettingValues $sv) {
