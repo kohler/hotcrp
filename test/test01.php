@@ -298,7 +298,7 @@ assert_search_papers($user_chair, "#any~vote", "1");
 $assignset = new AssignmentSet($Admin, false);
 $assignset->parse("paper,action,email
 1,pri,estrin@usc.edu\n");
-xassert_eqq(join("\n", $assignset->errors_text()), "Deborah Estrin <estrin@usc.edu> has a conflict with paper #1.");
+xassert_eqq(join("\n", $assignset->errors_text()), "Deborah Estrin <estrin@usc.edu> has a conflict with submission #1.");
 $assignset->execute();
 assert_query("select email from PaperReview r join ContactInfo c on (c.contactId=r.contactId) where paperId=1 order by email", "mgbaker@cs.stanford.edu\nmjh@isi.edu\nvarghese@ccrc.wustl.edu");
 
@@ -307,7 +307,7 @@ $assignset = new AssignmentSet($user_estrin, false);
 $assignset->parse("paper,tag
 1,fart
 2,fart\n");
-xassert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with paper #1.");
+xassert_eqq(join("\n", $assignset->errors_text()), "You have a conflict with submission #1.");
 
 xassert_assign($user_estrin, false, "paper,tag\n2,fart\n");
 assert_search_papers($user_chair, "#fart", "2");

@@ -771,123 +771,125 @@ function ini_get_bytes($varname, $value = null) {
 
 function whyNotText($whyNot, $action) {
     global $Conf, $Now;
+    $conf = get($whyNot, "conf") ? : $Conf;
     if (!is_array($whyNot))
         $whyNot = array($whyNot => 1);
     $paperId = (isset($whyNot['paperId']) ? $whyNot['paperId'] : -1);
     $reviewId = (isset($whyNot['reviewId']) ? $whyNot['reviewId'] : -1);
     $thisPaper = ($paperId < 0 ? "this paper" : "paper #$paperId");
-    $text = '';
-    if (isset($whyNot['invalidId'])) {
-        $x = $whyNot['invalidId'] . "Id";
-        $xid = (isset($whyNot[$x]) ? " \"" . $whyNot[$x] . "\"" : "");
-        $text .= "Invalid " . $whyNot['invalidId'] . " number" . htmlspecialchars($xid) . ". ";
+    $ms = [];
+    if (isset($whyNot["invalidId"])) {
+        $x = $whyNot["invalidId"] . "Id";
+        if (isset($whyNot[$x]))
+            $ms[] = $conf->_("Invalid " . $whyNot["invalidId"] . " number “%s”.", htmlspecialchars($whyNot[$x]));
+        else
+            $ms[] = $conf->_("Invalid " . $whyNot["invalidId"] . " number.");
     }
-    if (isset($whyNot['noPaper']))
-        $text .= "No such paper" . ($paperId < 0 ? "" : " #$paperId") . ". ";
-    if (isset($whyNot['noReview']))
-        $text .= "No such review" . ($reviewId < 0 ? "" : " #$reviewId") . ". ";
+    if (isset($whyNot["noPaper"]))
+        $ms[] = $conf->_("No such submission #%d.", $paperId);
+    if (isset($whyNot["noReview"]))
+        $ms[] = $conf->_("No such review #%s.", $reviewId);
     if (isset($whyNot["dbError"]))
-        $text .= $whyNot["dbError"] . " ";
+        $ms[] = $whyNot["dbError"];
     if (isset($whyNot["permission"]))
-        $text .= "You don’t have permission to $action $thisPaper. ";
+        $ms[] = $conf->_("You don’t have permission to $action submission #%d.", $paperId);
     if (isset($whyNot["signin"]))
-        $text .= "You must sign in to $action $thisPaper. ";
+        $ms[] = $conf->_("You must sign in to $action submission #%d.", $paperId);
     if (isset($whyNot["withdrawn"]))
-        $text .= ucfirst($thisPaper) . " has been withdrawn. ";
-    if (isset($whyNot['notWithdrawn']))
-        $text .= ucfirst($thisPaper) . " has not been withdrawn. ";
-    if (isset($whyNot['notSubmitted']))
-        $text .= ucfirst($thisPaper) . " is not submitted. ";
+        $ms[] = $conf->_("Submission #%d has been withdrawn.", $paperId);
+    if (isset($whyNot["notWithdrawn"]))
+        $ms[] = $conf->_("Submission #%d is not withdrawn.", $paperId);
+    if (isset($whyNot["notSubmitted"]))
+        $ms[] = $conf->_("Submission #%d is only a draft.", $paperId);
     if (isset($whyNot["rejected"]))
-        $text .= ucfirst($thisPaper) . " was not accepted for publication. ";
+        $ms[] = $conf->_("Submission #%d was not accepted for publication.", $paperId);
     if (isset($whyNot["decided"]))
-        $text .= "The review process for $thisPaper has completed. ";
+        $ms[] = $conf->_("The review process for submission #%d has completed.", $paperId);
     if (isset($whyNot['updateSubmitted']))
-        $text .= ucfirst($thisPaper) . " has already been submitted and can no longer be updated. ";
-    if (isset($whyNot['notUploaded']))
-        $text .= ucfirst($thisPaper) . " can’t be submitted because you haven’t yet uploaded the paper itself. Upload the paper and try again. ";
-    if (isset($whyNot['reviewNotSubmitted']))
-        $text .= "This review is not yet ready for others to see. ";
-    if (isset($whyNot['reviewNotComplete']))
-        $text .= "Your own review for $thisPaper is not complete, so you can’t view other people’s reviews. ";
-    if (isset($whyNot['responseNotReady']))
-        $text .= "The authors’ response for $thisPaper is not yet ready for reviewers to view. ";
-    if (isset($whyNot['reviewsOutstanding']))
-        $text .= "You will get access to the reviews once you complete <a href=\"" . hoturl("search", "q=&amp;t=r") . "\">your assigned reviews for other papers</a>.  If you can’t complete your reviews, please let the conference organizers know via the “Refuse review” links. ";
-    if (isset($whyNot['reviewNotAssigned']))
-        $text .= "You are not assigned to review $thisPaper. ";
+        $ms[] = $conf->_("Submission #%d can no longer be updated.", $paperId);
+    if (isset($whyNot["notUploaded"]))
+        $ms[] = $conf->_("A PDF upload is required to submit.");
+    if (isset($whyNot["reviewNotSubmitted"]))
+        $ms[] = $conf->_("This review is not yet ready for others to see.");
+    if (isset($whyNot["reviewNotComplete"]))
+        $ms[] = $conf->_("Your own review for #%d is not complete, so you can’t view other people’s reviews.", $paperId);
+    if (isset($whyNot["responseNotReady"]))
+        $ms[] = $conf->_("The authors’ response is not yet ready for reviewers to view.");
+    if (isset($whyNot["reviewsOutstanding"]))
+        $ms[] = $conf->_("You will get access to the reviews once you complete <a href=\"%s\">your assigned reviews</a>. If you can’t complete your reviews, please let the organizers know via the “Refuse review” links.", hoturl("search", "q=&amp;t=r"));
+    if (isset($whyNot["reviewNotAssigned"]))
+        $ms[] = $conf->_("You are not assigned to review submission #%d.", $paperId);
     if (isset($whyNot['deadline'])) {
         $dname = $whyNot['deadline'];
         if ($dname[0] == "s")
-            $start = $Conf->setting("sub_open", -1);
+            $start = $conf->setting("sub_open", -1);
         else if ($dname[0] == "p" || $dname[0] == "e")
-            $start = $Conf->setting("rev_open", -1);
+            $start = $conf->setting("rev_open", -1);
         else
             $start = 1;
-        $end = $Conf->setting($dname, -1);
+        $end = $conf->setting($dname, -1);
         if ($start <= 0 || $start == $end)
-            $text .= "You can’t $action $thisPaper yet. ";
+            $ms[] = $conf->_("You can’t $action submission #%d yet.", $paperId);
         else if ($start > 0 && $Now < $start)
-            $text .= "You can’t $action $thisPaper until " . $Conf->printableTime($start, "span") . ". ";
+            $ms[] = $conf->_("You can’t $action submission #%d until %s.", $paperId, $conf->printableTime($start, "span"));
         else if ($end > 0 && $Now > $end) {
             if ($dname == "sub_reg")
-                $text .= "The paper registration deadline has passed. ";
+                $ms[] = $conf->_("The registration deadline has passed.");
             else if ($dname == "sub_update")
-                $text .= "The deadline to update papers has passed. ";
+                $ms[] = $conf->_("The update deadline has passed.");
             else if ($dname == "sub_sub")
-                $text .= "The paper submission deadline has passed. ";
+                $ms[] = $conf->_("The submission deadline has passed.");
             else if ($dname == "extrev_hard")
-                $text .= "The external review deadline has passed. ";
+                $ms[] = $conf->_("The external review deadline has passed.");
             else if ($dname == "pcrev_hard")
-                $text .= "The PC review deadline has passed. ";
+                $ms[] = $conf->_("The PC review deadline has passed.");
             else if ($dname == "final_done")
-                $text .= "The deadline to update final versions has passed. ";
+                $ms[] = $conf->_("The deadline to update final versions has passed.");
             else
-                $text .= "The deadline to $action $thisPaper has passed. ";
-            $text .= "It was " . $Conf->printableTime($end, "span") . ". ";
+                $ms[] = $conf->_("The deadline to $action submission #%d has passed.", $paperId);
+            $ms[] = $conf->_("It was %s.", $conf->printableTime($end, "span"));
         } else if ($dname == "au_seerev") {
-            if ($Conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
-                $text .= "Authors who are also reviewers can’t see reviews for their papers while they still have <a href='" . hoturl("search", "t=rout&amp;q=") . "'>incomplete reviews</a> of their own. ";
+            if ($conf->au_seerev == Conf::AUSEEREV_UNLESSINCOMPLETE)
+                $ms[] = $conf->_("Authors who are also reviewers can’t see reviews for their papers while they still have <a href=\"%s\">incomplete reviews</a> of their own.", hoturl("search", "t=rout&amp;q="));
             else
-                $text .= "Authors can’t view paper reviews at the moment. ";
+                $ms[] = $conf->_("Authors can’t view reviews at the moment.");
         } else
-            $text .= "You can’t $action $thisPaper at the moment. ";
-        $text .= "(<a class='nw' href='" . hoturl("deadlines") . "'>View deadlines</a>) ";
+            $ms[] = $conf->_("You can’t $action submission #%d at the moment.", $paperId);
     }
     if (isset($whyNot["override"]))
-        $text .= "“Override deadlines” can override this restriction. ";
+        $ms[] = $conf->_("“Override deadlines” can override this restriction.");
     if (isset($whyNot['blindSubmission']))
-        $text .= "Submission to this conference is blind. ";
+        $ms[] = $conf->_("Submission to this conference is blind.");
     if (isset($whyNot['author']))
-        $text .= "You aren’t a contact for $thisPaper. ";
+        $ms[] = $conf->_("You aren’t a contact for submission #%d.", $paperId);
     if (isset($whyNot['conflict']))
-        $text .= "You have a conflict with $thisPaper. ";
+        $ms[] = $conf->_("You have a conflict with submission #%d.", $paperId);
     if (isset($whyNot['externalReviewer']))
-        $text .= "External reviewers may not view other reviews for the papers they review. ";
+        $ms[] = $conf->_("External reviewers cannot view other reviews.");
     if (isset($whyNot['differentReviewer']))
-        $text .= "You didn’t write this review, so you can’t change it. ";
+        $ms[] = $conf->_("You didn’t write this review, so you can’t change it.");
     if (isset($whyNot['reviewToken']))
-        $text .= "If you know a valid review token, enter it above to edit that review. ";
+        $ms[] = $conf->_("If you know a valid review token, enter it above to edit that review.");
     if (isset($whyNot["clickthrough"]))
-        $text .= "You can’t do that until you agree to the current terms. ";
+        $ms[] = $conf->_("You can’t do that until you agree to the terms.");
     if (isset($whyNot["otherTwiddleTag"]))
-        $text .= "Tag “#" . htmlspecialchars($whyNot["tag"]) . "” doesn’t belong to you. ";
+        $ms[] = $conf->_("Tag “#%s” doesn’t belong to you.", htmlspecialchars($whyNot["tag"]));
     if (isset($whyNot["chairTag"]))
-        $text .= "Tag “#" . htmlspecialchars($whyNot["tag"]) . "” can only be set by administrators. ";
+        $ms[] = $conf->_("Tag “#%s” can only be changed by administrators.", htmlspecialchars($whyNot["tag"]));
     if (isset($whyNot["voteTag"]))
-        $text .= "The voting tag “#" . htmlspecialchars($whyNot["tag"]) . "” shouldn’t be changed directly. To vote for this paper, change the “#~" . htmlspecialchars($whyNot["tag"]) . "” tag. ";
+        $ms[] = $conf->_("The voting tag “#%s” shouldn’t be changed directly. To vote for this paper, change the “#~%1\$s” tag.", htmlspecialchars($whyNot["tag"]));
     if (isset($whyNot["voteTagNegative"]))
-        $text .= "Negative votes aren’t allowed. ";
+        $ms[] = $conf->_("Negative votes aren’t allowed.");
     // finish it off
     if (isset($whyNot["chairMode"]))
-        $text .= "(<a class='nw' href=\"" . selfHref(array("forceShow" => 1)) . "\">" . ucfirst($action) . " the paper anyway</a>) ";
+        $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">" . ucfirst($action) . " anyway</a>)", selfHref(["forceShow" => 1]));
     if (isset($whyNot["forceShow"]) && $whyNot["forceShow"] === true)
-        $text .= "(As an administrator, you can override your conflict.) ";
+        $ms[] = $conf->_("(As an administrator, you can override your conflict.)");
     else if (isset($whyNot["forceShow"]))
-        $text .= "(<a class='nw' href=\"". selfHref(array("forceShow" => 1)) . "\">Override conflict</a>) ";
-    if ($text && $action == "view")
-        $text .= "Enter a paper number above, or <a href='" . hoturl("search", "q=") . "'>list the papers you can view</a>. ";
-    return rtrim($text);
+        $ms[] = $conf->_("(<a class=\"nw\" href=\"%s\">Override conflict</a>)", selfHref(array("forceShow" => 1)));
+    if (!empty($ms) && $action == "view")
+        $ms[] = $conf->_("Enter a submission number above, or <a href=\"%s\">list the submissions you can view</a>.", hoturl("search", "q="));
+    return join(" ", $ms);
 }
 
 function whyNotHtmlToText($e) {

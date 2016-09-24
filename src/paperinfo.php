@@ -226,7 +226,7 @@ class PaperInfo {
     }
 
     public function initial_whynot() {
-        return ["fail" => true, "paperId" => $this->paperId];
+        return ["fail" => true, "paperId" => $this->paperId, "conf" => $this->conf];
     }
 
 
