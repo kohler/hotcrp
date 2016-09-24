@@ -232,9 +232,9 @@ class PaperOptionList {
     function find_document($id) {
         if (!array_key_exists($id, $this->docmap)) {
             if ($id == DTYPE_SUBMISSION)
-                $o = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf);
+                $o = new DocumentPaperOption(["id" => DTYPE_SUBMISSION, "name" => "Submission", "message_name" => "submission", "abbr" => "paper", "type" => null, "position" => 0], $this->conf);
             else if ($id == DTYPE_FINAL)
-                $o = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
+                $o = new DocumentPaperOption(["id" => DTYPE_FINAL, "name" => "Final version", "message_name" => "final version", "abbr" => "final", "type" => null, "final" => true, "position" => 0], $this->conf);
             else
                 $o = $this->find($id);
             $this->docmap[$id] = $o;
@@ -320,6 +320,7 @@ class PaperOption {
     public $id;
     public $conf;
     public $name;
+    public $message_name;
     public $type; // checkbox, selector, radio, numeric, text,
                   // pdf, slides, video, attachments, ...
     public $abbr;
@@ -362,6 +363,7 @@ class PaperOption {
         $this->id = (int) $args["id"];
         $this->conf = $conf ? : $Conf;
         $this->name = $args["name"];
+        $this->message_name = get($args, "message_name", $this->name);
         $this->type = $args["type"];
         $this->abbr = get_s($args, "abbr");
         if ($this->abbr == "")

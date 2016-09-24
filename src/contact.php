@@ -1999,7 +1999,7 @@ class Contact {
                 && !$this->conf->timePCViewPaper($prow, $pdf))
                 $whyNot["deadline"] = $explained = "sub_sub";
             if (!$explained)
-                $whyNot["permissionPdf"] = 1;
+                $whyNot["pdfPermission"] = 1;
         }
         return $whyNot;
     }
@@ -2097,9 +2097,9 @@ class Contact {
     function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
             return false;
-        $rights = $this->rights($prow, $forceShow);
         if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
+        $rights = $this->rights($prow, $forceShow);
         $oview = $opt->visibility;
         if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
             return false;
@@ -2124,10 +2124,23 @@ class Contact {
     function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         if ($this->can_view_paper_option($prow, $opt, $forceShow))
             return null;
-        if ((is_object($opt) || ($opt = $this->conf->paper_opts->find($opt)))
-            && ($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
+        if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
+            return $prow->initial_whynot();
+        if (($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
             return $whyNot;
-        return array_merge($prow->initial_whynot(), ["permission" => 1]);
+        $whyNot = $prow->initial_whynot();
+        $rights = $this->rights($prow, $forceShow);
+        $oview = $opt->visibility;
+        if (!$rights->act_author_view
+            && (($oview == "admin" && !$rights->allow_administer)
+                || ((!$oview || $oview == "rev") && !$rights->allow_administer && !$rights->review_type && !$rights->allow_pc_broad)
+                || ($oview == "nonblind" && !$this->can_view_authors($prow, $forceShow))))
+            $whyNot["optionPermission"] = $opt;
+        else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
+            $whyNot["optionNotAccepted"] = $opt;
+        else
+            $whyNot["optionPermission"] = $opt;
+        return $whyNot;
     }
 
     function can_view_some_paper_option(PaperOption $opt) {

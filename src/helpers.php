@@ -793,8 +793,12 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $whyNot["dbError"];
     if (isset($whyNot["permission"]))
         $ms[] = $conf->_("You don’t have permission to $action submission #%d.", $paperId);
-    if (isset($whyNot["permissionPdf"]))
+    if (isset($whyNot["pdfPermission"]))
         $ms[] = $conf->_("You don’t have permission to view uploaded documents for submission #%d.", $paperId);
+    if (isset($whyNot["optionPermission"]))
+        $ms[] = $conf->_("You don’t have permission to view the %2\$s for submission #%1\$d.", $paperId, $whyNot["optionPermission"]->message_name);
+    if (isset($whyNot["optionNotAccepted"]))
+        $ms[] = $conf->_("Non-accepted submission #%d can have no %s.", $paperId, $whyNot["optionNotAccepted"]->message_name);
     if (isset($whyNot["signin"]))
         $ms[] = $conf->_("You must sign in to $action submission #%d.", $paperId);
     if (isset($whyNot["withdrawn"]))
@@ -807,7 +811,7 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         $ms[] = $conf->_("Submission #%d was not accepted for publication.", $paperId);
     if (isset($whyNot["decided"]))
         $ms[] = $conf->_("The review process for submission #%d has completed.", $paperId);
-    if (isset($whyNot['updateSubmitted']))
+    if (isset($whyNot["updateSubmitted"]))
         $ms[] = $conf->_("Submission #%d can no longer be updated.", $paperId);
     if (isset($whyNot["notUploaded"]))
         $ms[] = $conf->_("A PDF upload is required to submit.");
