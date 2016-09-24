@@ -32,8 +32,10 @@ class PaperContactInfo {
             $this->review_token_cid = null;
     }
 
-    static function load_into($conf, &$cmap, $pid, $cid, $rev_tokens = null) {
+    static function load_into(PaperInfo $prow, &$cmap, $cid, $rev_tokens = null) {
         global $Me;
+        $conf = $prow->conf;
+        $pid = $prow->paperId;
         $result = null;
         $q = "select conflictType as conflict_type,
                 reviewType as review_type,
@@ -61,7 +63,8 @@ class PaperContactInfo {
                 return;
         }
         if ($cid && !$rev_tokens
-            && (!$Me || ($Me->contactId != $cid && $Me->is_manager()))
+            && (!$Me || ($Me->contactId != $cid
+                         && ($Me->privChair || $Me->contactId == $prow->managerContactId)))
             && ($pcm = $conf->pc_members()) && isset($pcm[$cid])) {
             $cids = array_keys($pcm);
             $result = $conf->qe_raw("$q, ContactInfo.contactId
@@ -264,7 +267,7 @@ class PaperInfo {
                 $ci->review_needs_submit = get($rs, $cid, 1);
                 $this->_contact_info[$cid] = $ci;
             } else
-                PaperContactInfo::load_into($this->conf, $this->_contact_info, $this->paperId, $cid, $rev_tokens);
+                PaperContactInfo::load_into($this, $this->_contact_info, $cid, $rev_tokens);
         }
         return $this->_contact_info[$cid];
     }
