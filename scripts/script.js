@@ -2131,7 +2131,7 @@ return {
             $$("ass" + which).className = "pctbname pctbname" + elt.value;
             folder.firstChild.className = "rt" + elt.value;
             folder.firstChild.innerHTML = '<span class="rti">' +
-                (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3] + "</span>";
+                (["&minus;", "A", "C", "", "E", "P", "2", "1"])[+elt.value + 3] + "</span>";
             hiliter(folder.firstChild);
         }
         if (folder && elt !== 0)
