@@ -1984,22 +1984,23 @@ class Contact {
         if ($this->can_view_paper($prow, $pdf))
             return null;
         $rights = $this->rights($prow, "any");
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author_view
             && !$rights->review_type
             && !$rights->allow_pc_broad)
-            return array("permission" => 1);
-        $whyNot = $prow->initial_whynot();
-        if ($prow->timeWithdrawn > 0)
-            $whyNot["withdrawn"] = 1;
-        else if ($prow->timeSubmitted <= 0)
-            $whyNot["notSubmitted"] = 1;
-        if ($rights->allow_pc_broad
-            && !$this->conf->timePCViewPaper($prow, $pdf))
-            $whyNot["deadline"] = "sub_sub";
-        if ((!$rights->allow_pc_broad
-             && !$rights->review_type)
-            || count($whyNot) == 1)
             $whyNot["permission"] = 1;
+        else {
+            $explained = 0;
+            if ($prow->timeWithdrawn > 0)
+                $whyNot["withdrawn"] = $explained = 1;
+            else if ($prow->timeSubmitted <= 0)
+                $whyNot["notSubmitted"] = $explained = 1;
+            if ($rights->allow_pc_broad
+                && !$this->conf->timePCViewPaper($prow, $pdf))
+                $whyNot["deadline"] = $explained = "sub_sub";
+            if (!$explained)
+                $whyNot["permissionPdf"] = 1;
+        }
         return $whyNot;
     }
 

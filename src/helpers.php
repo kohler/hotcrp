@@ -793,6 +793,8 @@ function whyNotText($whyNot, $action) {
         $ms[] = $whyNot["dbError"];
     if (isset($whyNot["permission"]))
         $ms[] = $conf->_("You don’t have permission to $action submission #%d.", $paperId);
+    if (isset($whyNot["permissionPdf"]))
+        $ms[] = $conf->_("You don’t have permission to view uploaded documents for submission #%d.", $paperId);
     if (isset($whyNot["signin"]))
         $ms[] = $conf->_("You must sign in to $action submission #%d.", $paperId);
     if (isset($whyNot["withdrawn"]))
