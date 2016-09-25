@@ -324,6 +324,33 @@ span.hastitle {
 	border-bottom: 1px dotted #777777;
 }
 
+/* loader */
+@keyframes spinner {
+	to {transform: rotate(360deg);}
+}
+.spinner {
+	display: inline-block;
+	margin-left: 0.5em;
+	min-width: 1em;
+	min-height: 1em;
+	position: relative;
+	bottom: -0.3em;
+}
+.spinner:before {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 0.8em;
+	height: 0.8em;
+	margin-top: -0.7em;
+	margin-left: -0.7em;
+	border-radius: 50%;
+	border-top: 2px solid #000000;
+	border-right: 2px solid transparent;
+	animation: spinner .6s linear infinite;
+	content: '';
+}
+
 /* multimessage */
 .mmm {
 	margin-top: 0.5em;
