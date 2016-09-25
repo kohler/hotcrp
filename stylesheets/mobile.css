@@ -12,7 +12,7 @@
 table.vbar {
 	margin-right: 12px;
 }
-div.body {
+div#body {
 	margin: 0 12px;
 }
 div#initialmsgs {
@@ -76,6 +76,10 @@ h2.paptitle {
 input, textarea {
 	max-width: 100%;
 }
-.pltable {
+table.pltable {
 	font-size: smaller;
+}
+.reviewersdiv {
+	font-size: smaller;
+	overflow-x: scroll;
 }

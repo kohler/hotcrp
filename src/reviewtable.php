@@ -275,7 +275,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         if ($want_requested_by)
             array_unshift($score_header, '<th class="revsl">Requester</th>');
         $score_header_text = join("", $score_header);
-        $t = "<table class=\"reviewers";
+        $t = "<div class=\"reviewersdiv\"><table class=\"reviewers";
         if ($score_header_text)
             $t .= " reviewers_scores";
         if (($list = SessionList::active()))
@@ -301,7 +301,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         }
         if ($score_header_text)
             Ht::stash_script("review_form.score_tooltips($(\"table.reviewers_scores\"))", "score_tooltips");
-        return $t . "</table>\n" . $notetxt;
+        return $t . "</table></div>\n" . $notetxt;
     } else
         return $notetxt;
 }

@@ -425,7 +425,6 @@ span.hastitle {
  	display: none;
 }
 
-
 /* topics */
 .topic-2, .topic-1 {
 	color: gray;
@@ -448,18 +447,6 @@ span.hastitle {
 }
 .dim {
 	color: #777777;
-}
-
-
-table.center {
-	margin-left: auto;
-	margin-right: auto;
-}
-table.pltable {
-	line-height: 1.25;
-}
-body#revpref table.pltable, body#accounts table.pltable {
-	margin: 0 auto;
 }
 
 
@@ -1526,6 +1513,9 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 }
 
 /* paper list tables geometry */
+table.pltable {
+	line-height: 1.25;
+}
 .pltable_full_ctr {
 	padding: 0.75em 0;
 }
