@@ -1551,7 +1551,8 @@ class Contact {
         $this->check_rights_version();
         if (!isset($this->is_explicit_manager_)) {
             $result = null;
-            if ($this->contactId > 0 && $this->isPC)
+            if ($this->contactId > 0 && $this->isPC
+                && $this->conf->has_any_manager())
                 $result = $this->conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
             $this->is_explicit_manager_ = edb_nrows($result) > 0;
             Dbl::free($result);
