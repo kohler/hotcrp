@@ -440,7 +440,7 @@ class PaperTable {
     }
 
     private function is_ready() {
-        return $this->is_ready_checked() && ($this->prow || opt("noPapers"));
+        return $this->is_ready_checked() && ($this->prow || $this->conf->opt("noPapers"));
     }
 
     private function is_ready_checked() {
@@ -450,13 +450,15 @@ class PaperTable {
             return true;
         else
             return !$this->conf->setting("sub_freeze")
-                && (!$this->prow || (!opt("noPapers") && $this->prow->paperStorageId <= 1));
+                && (!$this->prow
+                    || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1));
     }
 
     private function echo_editable_complete() {
         $checked = $this->is_ready_checked();
         echo "<div id='foldisready' class='",
-            (($this->prow && $this->prow->paperStorageId > 1) || opt("noPapers") ? "foldo" : "foldc"),
+            (($this->prow && $this->prow->paperStorageId > 1)
+             || $this->conf->opt("noPapers") ? "foldo" : "foldc"),
             "'><table class='fx'><tr><td class='nw'>",
             Ht::checkbox("submitpaper", 1, $checked, ["id" => "paperisready", "onchange" => "paperform_checkready()"]), "&nbsp;";
         if ($this->conf->setting('sub_freeze'))
@@ -480,7 +482,7 @@ class PaperTable {
         $filetypes = array();
         $accepts = array();
         if ($documentType == DTYPE_SUBMISSION
-            && (opt("noPapers") === 1 || opt("noPapers") === true))
+            && ($this->conf->opt("noPapers") === 1 || $this->conf->opt("noPapers") === true))
             return;
 
         $accepts = $docx->mimetypes();
@@ -577,7 +579,7 @@ class PaperTable {
 
     private function echo_editable_abstract() {
         $title = $this->field_name("Abstract");
-        if (opt("noAbstract") === 2)
+        if ($this->conf->opt("noAbstract") === 2)
             $title .= ' <span class="papfnh">(optional)</span>';
         echo $this->editable_papt("abstract", $title),
             $this->field_hint("Abstract"),
@@ -592,7 +594,7 @@ class PaperTable {
 
     private function paptabAbstract() {
         $text = $this->entryData("abstract");
-        if (trim($text) === "" && opt("noAbstract"))
+        if (trim($text) === "" && $this->conf->opt("noAbstract"))
             return false;
         $extra = [];
         if ($this->allFolded && $this->abstract_foldable($text))
@@ -1634,7 +1636,7 @@ class PaperTable {
             if ($Me->can_update_paper($prow)) {
                 if ($this->conf->setting("sub_freeze"))
                     $t = "This submission must be completed before it can be reviewed.";
-                else if ($prow->paperStorageId <= 1 && !opt("noPapers"))
+                else if ($prow->paperStorageId <= 1 && !$this->conf->opt("noPapers"))
                     $t = "This submission is not ready for review and will not be considered as is, but you can still make changes.";
                 else
                     $t = "This submission is not ready for review and will not be considered as is, but you can still mark it ready for review and make other changes if appropriate.";
@@ -1938,7 +1940,7 @@ class PaperTable {
         if ($this->conf->submission_blindness() == Conf::BLIND_OPTIONAL
             && $this->editable !== "f")
             $this->add_edit_field(20100, [$this, "echo_editable_anonymity"], "anonymity");
-        if (($x = opt("noAbstract")) !== 1 && $x !== true)
+        if (($x = $this->conf->opt("noAbstract")) !== 1 && $x !== true)
             $this->add_edit_field(30000, [$this, "echo_editable_abstract"], "abstract");
         $this->add_edit_field(40000, [$this, "echo_editable_topics"], "topics");
         if ($this->editable !== "f" || $this->admin) {

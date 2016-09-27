@@ -114,9 +114,8 @@ function log_jserror(errormsg, error, noconsole) {
         errormsg.colno = error.columnNumber;
     if (error && error.stack)
         errormsg.stack = error.stack;
-    $.ajax({
-        url: hoturl("api", "fn=jserror"), global: false,
-        type: "POST", cache: false, data: errormsg
+    $.ajax(hoturl("api", "fn=jserror"), {
+        global: false, method: "POST", cache: false, data: errormsg
     });
     if (error && !noconsole && typeof console === "object" && console.error)
         console.error(errormsg.error);
@@ -153,21 +152,26 @@ $(document).ajaxError(function (event, jqxhr, settings, httperror) {
         log_jserror(settings.url + " API failure: status " + jqxhr.status + ", " + httperror);
 });
 
-function ajax_link_errors(settings) {
-    var f = settings.success;
+$.ajaxPrefilter(function (options, originalOptions, jqxhr) {
+    if (options.global === false)
+        return;
+    var f = options.success;
     function onerror(jqxhr, status, errormsg) {
         f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
     }
-    if (!settings.error)
-        settings.error = onerror;
-    else if ($.isArray(settings.error))
-        settings.error.push(onerror);
+    if (!options.error)
+        options.error = onerror;
+    else if ($.isArray(options.error))
+        options.error.push(onerror);
     else
-        settings.error = [settings.error, onerror];
-    if (!settings.timeout)
-        settings.timeout = 8000;
-    return settings;
-}
+        options.error = [options.error, onerror];
+    if (options.timeout == null)
+        options.timeout = 10000;
+    if (options.method == null)
+        options.method = "POST";
+    if (options.dataType == null)
+        options.dataType = "json";
+});
 
 
 // geometry
@@ -1301,6 +1305,8 @@ function display_main(is_initial) {
 
     dlname = "";
     dltime = 0;
+    if (!dl.sub)
+        log_jserror("bad dl " + JSON.stringify(dl));
     if (dl.sub.open) {
         x = {reg: "Registration", update: "Update", sub: "Submission"};
         for (subtype in x)
@@ -1505,10 +1511,7 @@ function tracker(start) {
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
-        $.ajax({
-            url: hoturl_post("api", "fn=track&track=stop"),
-            type: "POST", success: load_success, timeout: 10000
-        });
+        $.ajax(hoturl_post("api", "fn=track&track=stop"), {success: load_success});
         if (tracker_refresher) {
             clearInterval(tracker_refresher);
             tracker_refresher = null;
@@ -1530,10 +1533,7 @@ function tracker(start) {
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         if (trackerstate[2])
             req += "&tracker_start_at=" + trackerstate[2];
-        $.ajax({
-            url: hoturl_post("api", "fn=track&track=" + req),
-            type: "POST", success: load_success, timeout: 10000
-        });
+        $.ajax(hoturl_post("api", "fn=track&track=" + req), {success: load_success});
         if (!tracker_refresher)
             tracker_refresher = setInterval(tracker, 25000);
         wstorage(true, "hotcrp-tracking", trackerstate);
@@ -1661,15 +1661,13 @@ function comet_tracker() {
         success(null, status, xhr);
     }
 
-    $.ajax({
-        url: hoturl_add(dl.tracker_site + "poll",
-                        "conference=" + encodeURIComponent(hoturl_absolute_base())
-                        + "&poll=" + encodeURIComponent(dl.tracker_status)
-                        + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
-                        + "&timeout=" + timeout),
-        timeout: timeout + 2000, dataType: "json",
-        success: success, complete: complete
-    });
+    $.ajax(hoturl_add(dl.tracker_site + "poll",
+                      "conference=" + encodeURIComponent(hoturl_absolute_base())
+                      + "&poll=" + encodeURIComponent(dl.tracker_status)
+                      + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
+                      + "&timeout=" + timeout), {
+            method: "GET", timeout: timeout + 2000, success: success, complete: complete
+        });
     return true;
 }
 
@@ -1737,10 +1735,8 @@ function reload() {
     if (hotcrp_deadlines)
         options.p = hotcrp_paperid;
     options.fn = "status";
-    $.ajax({
-        url: hoturl("api", options),
-        timeout: 30000, dataType: "json",
-        success: reload_success, error: reload_error
+    $.ajax(hoturl("api", options), {
+        method: "GET", timeout: 30000, success: reload_success, error: reload_error
     });
 }
 
@@ -2135,7 +2131,7 @@ return {
             $$("ass" + which).className = "pctbname pctbname" + elt.value;
             folder.firstChild.className = "rt" + elt.value;
             folder.firstChild.innerHTML = '<span class="rti">' +
-                (["&minus;", "A", "X", "", "R", "R", "2", "1"])[+elt.value + 3] + "</span>";
+                (["&minus;", "A", "C", "", "E", "P", "2", "1"])[+elt.value + 3] + "</span>";
             hiliter(folder.firstChild);
         }
         if (folder && elt !== 0)
@@ -3216,9 +3212,8 @@ function make_pseditor(type, url) {
     }
     function change() {
         var saveval = jQuery(edite).val();
-        $.ajax({
-            url: hoturl_post("api", url), type: "POST", cache: false,
-            data: jQuery(folde).find("form").serialize(), dataType: "json",
+        $.ajax(hoturl_post("api", url), {
+            data: jQuery(folde).find("form").serialize(),
             success: function (data) {
                 if (data.ok) {
                     done(true);
@@ -3232,9 +3227,6 @@ function make_pseditor(type, url) {
                     }
                 } else
                     done(false, data.error);
-            },
-            error: function (jqxhr, status, errormsg) {
-                done(false, jqxhr_error_message(jqxhr, status, errormsg));
             }
         });
         edite.disabled = true;
@@ -3714,9 +3706,7 @@ function add_revpref_ajax(selector, reviewer) {
             cid = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
-        $.ajax({
-            url: hoturl_post("api", "fn=setpref&p=" + pid),
-            type: "POST", dataType: "json",
+        $.ajax(hoturl_post("api", "fn=setpref&p=" + pid), {
             data: {pref: self.value, reviewer: cid},
             success: function (rv) {
                 setajaxcheck(self, rv);
@@ -3849,10 +3839,8 @@ function tag_save() {
         setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
         return;
     }
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
-        type: "POST", success: make_tag_save_callback(this)
-    }));
+    $.ajax(hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
+           {success: make_tag_save_callback(this)});
 }
 
 function PaperRow(l, r, index) {
@@ -4281,17 +4269,15 @@ function commit_drag(si, di) {
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
     if (saves.length)
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settags", forceShow: 1}),
-            type: "POST", dataType: "json", data: {tagassignment: saves.join(",")},
+        $.ajax(hoturl_post("api", {fn: "settags", forceShow: 1}), {
+            data: {tagassignment: saves.join(",")},
             success: make_tag_save_callback(rowanal[si].entry)
-        }));
+        });
     if (annosaves.length)
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}),
-            type: "POST", dataType: "json", data: {anno: JSON.stringify(annosaves)},
+        $.ajax(hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}), {
+            data: {anno: JSON.stringify(annosaves)},
             success: taganno_success
-        }));
+        });
 }
 
 function tag_mousedown(evt) {
@@ -4372,11 +4358,9 @@ function edit_anno(locator) {
                 if (heading != "" || tagval != 0)
                     anno.push({annoid: "new", heading: heading, tagval: tagval});
             }
-            $.ajax(ajax_link_errors({
-                url: hoturl_post("api", {fn: "settaganno", tag: mytag}),
-                type: "POST", dataType: "json", data: {anno: JSON.stringify(anno)},
-                success: make_onsave($d)
-            }));
+            $.ajax(hoturl_post("api", {fn: "settaganno", tag: mytag}), {
+                data: {anno: JSON.stringify(anno)}, success: make_onsave($d)
+            });
         }
         return false;
     }
@@ -4437,10 +4421,7 @@ function edit_anno(locator) {
         $d.appendTo($(document.body));
         popup_near($d[0].childNodes[0], window);
     }
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "taganno", tag: mytag}),
-        type: "POST", success: show_dialog
-    }));
+    $.ajax(hoturl_post("api", {fn: "taganno", tag: mytag}), {success: show_dialog});
 }
 
 function plinfo_tags(selector) {
@@ -4473,13 +4454,12 @@ function expand_archive() {
     fold($j[0]);
     if (!$j.find(".archiveexpansion").length) {
         $j.append('<span class="archiveexpansion fx"></span>');
-        $.ajax(ajax_link_errors({
-            url: hoturl_add($j.find("a").filter(":not(.qq)").attr("href"), "fn=consolidatedlisting"),
-            type: "GET", dataType: "json", success: function (data) {
+        $.ajax(hoturl_add($j.find("a").filter(":not(.qq)").attr("href"), "fn=consolidatedlisting"), {
+            method: "GET", success: function (data) {
                 if (data.ok && data.result)
                     $j.find(".archiveexpansion").text(" (" + data.result + ")");
             }
-        }));
+        });
     }
     return false;
 }
@@ -4870,10 +4850,7 @@ function render_row_tags(div) {
 }
 
 function edittags_link_onclick() {
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}),
-        type: "POST", success: edittags_callback
-    }));
+    $.ajax(hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}), {success: edittags_callback});
     return false;
 }
 
@@ -4894,16 +4871,14 @@ function edittags_click() {
     var div = this.parentNode, pid = pidnear(div);
     $(div).find("textarea").trigger("hide");
     if (this.tagName !== "BUTTON" || this.name.charAt(3) == "s") {
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settags", p: pid,
-                                     tags: $(div).find("textarea").val(), forceShow: 1}),
-            type: "POST", success: function (rv) {
+        $.ajax(hoturl_post("api", {fn: "settags", p: pid, tags: $(div).find("textarea").val(), forceShow: 1}), {
+            success: function (rv) {
                 if (rv.ok)
                     plinfo.set_tags(pid, rv.tags, rv.color_classes);
                 else
                     setajaxcheck($(div).find("textarea"), rv);
             }
-        }));
+        });
     } else
         render_row_tags(this.parentNode);
 }
@@ -5062,18 +5037,14 @@ function plinfo(type, dofold) {
 
         // initiate load
         delete loadargs.aufull;
-        loadargs.fn = "load";
+        loadargs.fn = "fieldhtml";
         if (type == "aufull" || type == "au" || type == "anonau") {
-            loadargs.field = "authors";
+            loadargs.f = "authors";
             if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
                 loadargs.aufull = 1;
         } else
-            loadargs.field = type;
-        $.ajax({
-            url: hoturl_post("search", loadargs),
-            type: "POST", timeout: 10000, dataType: "json",
-            success: make_callback(dofold, type)
-        });
+            loadargs.f = type;
+        $.ajax(hoturl_post("api", loadargs), {success: make_callback(dofold, type)});
     }
 
     return false;
@@ -5198,16 +5169,14 @@ function docheckformat(dt) {    // NB must return void
     var running = setTimeout(function () {
         $j.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
     }, 1000);
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", "fn=checkformat&p=" + hotcrp_paperid),
-        type: "POST", dataType: "json", timeout: 20000,
-        data: {dt: dt, docid: $j.attr("docid")},
+    $.ajax(hoturl_post("api", "fn=checkformat&p=" + hotcrp_paperid), {
+        timeout: 20000, data: {dt: dt, docid: $j.attr("docid")},
         success: function (data) {
             clearTimeout(running);
             if (data.ok)
                 $j.html(data.response);
         }
-    }));
+    });
     return false;
 }
 
@@ -5269,10 +5238,8 @@ function save_tags() {
         if (msg)
             $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + msg + '</div><div class="xmsg1"></div></div>');
     }
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
-        type: "POST", dataType: "json", timeout: 4000,
-        data: $("#tagform").serialize(),
+    $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), {
+        timeout: 4000, data: $("#tagform").serialize(),
         success: function (data) {
             if (data.ok) {
                 fold("tags", true);
@@ -5280,13 +5247,12 @@ function save_tags() {
             }
             done(data.ok ? "" : data.error);
         }
-    }));
+    });
     return false;
 }
 save_tags.load_report = function () {
-    $.ajax({
-        url: hoturl("api", "fn=tagreport&p=" + hotcrp_paperid),
-        success: function (data) {
+    $.ajax(hoturl("api", "fn=tagreport&p=" + hotcrp_paperid), {
+        method: "GET", success: function (data) {
             data.ok && $("#tagreportformresult").html(data.response || "");
         }
     });
@@ -5411,9 +5377,7 @@ function save_tag_index(e) {
             make_bubble(message, "errorbubble").dir("l").near(ji.length ? ji[0] : e).removeOn(j.find("input"), "input");
         }
     }
-    $.ajax({
-        url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
-        type: "POST", cache: false,
+    $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), {
         data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
         success: function (data) {
             if (data.ok) {
@@ -5424,9 +5388,6 @@ function save_tag_index(e) {
                 e.focus();
                 done(false, data.error);
             }
-        },
-        error: function (jqxhr, status, errormsg) {
-            done(false, jqxhr_error_message(jqxhr, status, errormsg));
         }
     });
     return false;
@@ -5767,9 +5728,8 @@ var unfold_events = (function ($) {
 var events = null, events_at = 0;
 
 function load_more_events() {
-    $.ajax({
-        url: hoturl("api", "fn=events" + (events_at ? "&from=" + events_at : "")),
-        type: "GET", cache: false, dataType: "json",
+    $.ajax(hoturl("api", "fn=events" + (events_at ? "&from=" + events_at : "")), {
+        method: "GET", cache: false,
         success: function (data) {
             if (data.ok) {
                 events = (events || []).concat(data.rows);

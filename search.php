@@ -78,25 +78,10 @@ if (!$SSel) { /* we might be included by reviewprefs.php */
 }
 
 // Ajax field loading: abstract, tags, collaborators, ...
-if ($Qreq->fn == "load" && $Qreq->field
-    && ($fdef = PaperColumn::lookup($Me, $Qreq->field))
-    && $fdef->foldable) {
-    if ($Qreq->field == "authors") {
-        $full = (int) $Qreq->aufull;
-        displayOptionsSet("pldisplay", "aufull", $full);
-    }
-    $reviewer = null;
-    if ($Qreq->reviewer && $Me->privChair && $Me->email !== $Qreq->reviewer) {
-        $reviewer = $Conf->user_by_email($Qreq->reviewer);
-        unset($Qreq->reviewer);
-    }
-    $Search = new PaperSearch($Me, $Qreq, $reviewer);
-    $pl = new PaperList($Search, ["reviewer" => $reviewer]);
-    $response = $pl->ajaxColumn($Qreq->field);
-    $response["ok"] = (count($response) > 0);
-    $Conf->ajaxExit($response);
-} else if ($Qreq->fn == "load")
-    $Conf->ajaxExit(["ok" => false, "error" => "No such field."]);
+if ($Qreq->fn == "load") { // obsolete
+    $Qreq->f = $Qreq->field;
+    PaperApi::fieldhtml_api($Me, $Qreq, null);
+}
 
 // look for search action
 if ($Qreq->fn) {

@@ -12,14 +12,6 @@ body {
 	margin: 0;
 }
 
-/* box-sizing */
-html {
-	box-sizing: border-box;
-}
-*, *:before, *:after {
-	box-sizing: inherit;
-}
-
 /* header */
 #header {
 	background-repeat: repeat-x;
@@ -255,13 +247,13 @@ div#footer_crp {
 }
 
 
-/* infoboxes */
+/* messages */
 div.info, div.warning, div.confirm, div.merror {
 	background: #eeeeff url(../images/info45.png) 10px 10px no-repeat;
-	padding: 0.5em 0.5em 0.5em 65px;
+	padding: 8px 0.5em 8px 65px;
 	border: 1px solid #ccccee;
 	margin: 0.5em 0;
-	min-height: 65px;
+	min-height: 47px;
 }
 div.help {
 	padding: 0.5em;
@@ -330,6 +322,33 @@ span.merror {
 }
 span.hastitle {
 	border-bottom: 1px dotted #777777;
+}
+
+/* loader */
+@keyframes spinner {
+	to {transform: rotate(360deg);}
+}
+.spinner {
+	display: inline-block;
+	margin-left: 0.5em;
+	min-width: 1em;
+	min-height: 1em;
+	position: relative;
+	bottom: -0.3em;
+}
+.spinner:before {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 0.8em;
+	height: 0.8em;
+	margin-top: -0.7em;
+	margin-left: -0.7em;
+	border-radius: 50%;
+	border-top: 2px solid #000000;
+	border-right: 2px solid transparent;
+	animation: spinner .6s linear infinite;
+	content: '';
 }
 
 /* multimessage */
@@ -425,7 +444,6 @@ span.hastitle {
  	display: none;
 }
 
-
 /* topics */
 .topic-2, .topic-1 {
 	color: gray;
@@ -448,18 +466,6 @@ span.hastitle {
 }
 .dim {
 	color: #777777;
-}
-
-
-table.center {
-	margin-left: auto;
-	margin-right: auto;
-}
-table.pltable {
-	line-height: 1.25;
-}
-body#revpref table.pltable, body#accounts table.pltable {
-	margin: 0 auto;
 }
 
 
@@ -1271,8 +1277,8 @@ tr.pt_conflict_ass > td.entry, tr.propass > td.entry {
 .rt4, .rt4n, .rt3, .rt3n, .rt2, .rt2n, .rt1, .rt1n, .rt0, .rt-1, .rt-2, .rt-3,
 .rtlead, .rtshep {
 	display: inline-block;
-	width: 0.95em;
-	height: 0.95em;
+	width: 0.75em;
+	height: 0.75em;
         border-width: 1px;
         position: relative;
 	bottom: -0.125em;
@@ -1526,6 +1532,9 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 }
 
 /* paper list tables geometry */
+table.pltable {
+	line-height: 1.25;
+}
 .pltable_full_ctr {
 	padding: 0.75em 0;
 }

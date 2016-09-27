@@ -1551,7 +1551,8 @@ class Contact {
         $this->check_rights_version();
         if (!isset($this->is_explicit_manager_)) {
             $result = null;
-            if ($this->contactId > 0 && $this->isPC)
+            if ($this->contactId > 0 && $this->isPC
+                && $this->conf->has_any_manager())
                 $result = $this->conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
             $this->is_explicit_manager_ = edb_nrows($result) > 0;
             Dbl::free($result);
@@ -1984,22 +1985,23 @@ class Contact {
         if ($this->can_view_paper($prow, $pdf))
             return null;
         $rights = $this->rights($prow, "any");
+        $whyNot = $prow->initial_whynot();
         if (!$rights->allow_author_view
             && !$rights->review_type
             && !$rights->allow_pc_broad)
-            return array("permission" => 1);
-        $whyNot = $prow->initial_whynot();
-        if ($prow->timeWithdrawn > 0)
-            $whyNot["withdrawn"] = 1;
-        else if ($prow->timeSubmitted <= 0)
-            $whyNot["notSubmitted"] = 1;
-        if ($rights->allow_pc_broad
-            && !$this->conf->timePCViewPaper($prow, $pdf))
-            $whyNot["deadline"] = "sub_sub";
-        if ((!$rights->allow_pc_broad
-             && !$rights->review_type)
-            || count($whyNot) == 1)
             $whyNot["permission"] = 1;
+        else {
+            $explained = 0;
+            if ($prow->timeWithdrawn > 0)
+                $whyNot["withdrawn"] = $explained = 1;
+            else if ($prow->timeSubmitted <= 0)
+                $whyNot["notSubmitted"] = $explained = 1;
+            if ($rights->allow_pc_broad
+                && !$this->conf->timePCViewPaper($prow, $pdf))
+                $whyNot["deadline"] = $explained = "sub_sub";
+            if (!$explained)
+                $whyNot["pdfPermission"] = 1;
+        }
         return $whyNot;
     }
 
@@ -2096,9 +2098,9 @@ class Contact {
     function can_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
             return false;
-        $rights = $this->rights($prow, $forceShow);
         if (!$this->can_view_paper($prow, $opt->has_document()))
             return false;
+        $rights = $this->rights($prow, $forceShow);
         $oview = $opt->visibility;
         if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
             return false;
@@ -2123,10 +2125,23 @@ class Contact {
     function perm_view_paper_option(PaperInfo $prow, $opt, $forceShow = null) {
         if ($this->can_view_paper_option($prow, $opt, $forceShow))
             return null;
-        if ((is_object($opt) || ($opt = $this->conf->paper_opts->find($opt)))
-            && ($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
+        if (!is_object($opt) && !($opt = $this->conf->paper_opts->find($opt)))
+            return $prow->initial_whynot();
+        if (($whyNot = $this->perm_view_paper($prow, $opt->has_document())))
             return $whyNot;
-        return array_merge($prow->initial_whynot(), ["permission" => 1]);
+        $whyNot = $prow->initial_whynot();
+        $rights = $this->rights($prow, $forceShow);
+        $oview = $opt->visibility;
+        if (!$rights->act_author_view
+            && (($oview == "admin" && !$rights->allow_administer)
+                || ((!$oview || $oview == "rev") && !$rights->allow_administer && !$rights->review_type && !$rights->allow_pc_broad)
+                || ($oview == "nonblind" && !$this->can_view_authors($prow, $forceShow))))
+            $whyNot["optionPermission"] = $opt;
+        else if ($opt->final && ($prow->outcome <= 0 || !$this->can_view_decision($prow, $forceShow)))
+            $whyNot["optionNotAccepted"] = $opt;
+        else
+            $whyNot["optionPermission"] = $opt;
+        return $whyNot;
     }
 
     function can_view_some_paper_option(PaperOption $opt) {
@@ -2143,6 +2158,8 @@ class Contact {
     function is_my_review($rrow) {
         if (!$rrow)
             return false;
+        if (!isset($rrow->reviewContactId) && !isset($rrow->contactId))
+            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         if (isset($rrow->reviewContactId))
             $rrow_cid = $rrow->reviewContactId;
         else

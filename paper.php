@@ -67,7 +67,7 @@ function loadRows() {
     global $prow, $Conf;
     $Conf->paper = $prow = PaperTable::paperRow($whyNot);
     if (!$prow)
-        errorMsgExit(whyNotText($whyNot, "view"));
+        errorMsgExit(whyNotText($whyNot, "view", true));
 }
 $prow = null;
 if (!$newPaper)
@@ -84,9 +84,9 @@ if (isset($_REQUEST["setfollow"]) && $prow && check_post()) {
     loadRows();
 }
 if ($prow && isset($_GET["m"]) && $_GET["m"] === "api"
-    && isset($_GET["fn"]) && SiteLoader::has_api($_GET["fn"])) {
+    && isset($_GET["fn"]) && $conf->has_api($_GET["fn"])) {
     $Qreq = make_qreq();
-    SiteLoader::call_api_exit($Qreq->fn, $Me, $Qreq, $prow);
+    $Conf->call_api_exit($Qreq->fn, $Me, $Qreq, $prow);
 }
 
 

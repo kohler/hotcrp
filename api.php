@@ -53,8 +53,8 @@ if ($qreq->p && ctype_digit($qreq->p)) {
 }
 
 // requests
-if (SiteLoader::has_api($qreq->fn))
-    SiteLoader::call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
+if ($Conf->has_api($qreq->fn))
+    $Conf->call_api_exit($qreq->fn, $Me, $qreq, $Conf->paper);
 
 if ($qreq->fn === "jserror") {
     $url = $qreq->url;

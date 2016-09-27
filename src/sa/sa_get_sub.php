@@ -58,28 +58,32 @@ class GetDocument_SearchAction extends SearchAction {
         if ($user->can_view_some_paper_option($opt) && $pl->any->$any_name)
             $actions[] = self::make_option_action($opt);
     }
-    static function error_document(PaperOption $opt, PaperInfo $row) {
-        $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $opt->name . " missing."], $row->conf);
+    static function error_document(PaperOption $opt, PaperInfo $row, $error_html = "") {
+        if (!$error_html)
+            $error_html = $row->conf->_("Submission #%d has no %s.", $row->paperId, $opt->message_name);
+        $x = new DocumentInfo(["documentType" => $opt->id, "paperId" => $row->paperId, "error" => true, "error_html" => $error_html], $row->conf);
         if (($mimetypes = $opt->mimetypes()) && count($mimetypes) == 1)
             $x->mimetype = $mimetypes[0]->mimetype;
         return $x;
     }
     function run(Contact $user, $qreq, $ssel) {
         $result = $user->paper_result(["paperId" => $ssel->selection()]);
-        $downloads = [];
+        $downloads = $errors = [];
         $opt = $user->conf->paper_opts->find_document($this->dt);
         while (($row = PaperInfo::fetch($result, $user)))
             if (($whyNot = $user->perm_view_paper_option($row, $opt, true)))
-                Conf::msg_error(whyNotText($whyNot, "view"));
+                $errors[] = self::error_document($opt, $row, whyNotText($whyNot, "view"));
             else if (($doc = $row->document($opt->id)))
                 $downloads[] = $doc;
             else
-                $downloads[] = self::error_document($opt, $row);
+                $errors[] = self::error_document($opt, $row);
         if (count($downloads)) {
             session_write_close(); // it can take a while to generate the download
+            $downloads = array_merge($downloads, $errors);
             if ($user->conf->download_documents($downloads, true))
                 exit;
-        }
+        } else if (count($errors))
+            Conf::msg_error("Nothing to download.<br />" . join("<br />", array_map(function ($ed) { return $ed->error_html; }, $errors)));
         // XXX how to return errors?
     }
 }

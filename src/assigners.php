@@ -966,9 +966,9 @@ class TagAssigner extends Assigner {
     }
     private function cannot_view_error(AssignmentState $state, $pid, $tag) {
         if ($state->prow($pid)->conflict_type($state->contact))
-            return "You have a conflict with paper #$pid.";
+            return "You have a conflict with submission #$pid.";
         else
-            return "You can’t view that tag for paper #$pid.";
+            return "You can’t view that tag for submission #$pid.";
     }
     function apply($pid, $contact, &$req, AssignmentState $state) {
         if (!($tag = get($req, "tag")))
@@ -1725,7 +1725,7 @@ class AssignmentSet {
                          && !$this->astate->override
                          && $prow->has_conflict($contact)
                          && !$assigner->allow_conflict($prow, $contact, $req, $this->astate))
-                    $this->error(Text::user_html_nolink($contact) . " has a conflict with paper #$p.");
+                    $this->error(Text::user_html_nolink($contact) . " has a conflict with submission #$p.");
                 else if (($err = $assigner->apply($p, $contact, $req, $this->astate)))
                     $this->error($err);
                 else

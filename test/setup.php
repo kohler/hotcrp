@@ -244,12 +244,12 @@ function xassert_assign_fail($who, $override, $what) {
 function call_api($fn, $user, $qreq, $prow) {
     if (!($qreq instanceof Qobject))
         $qreq = new Qobject($qreq);
-    xassert(isset(SiteLoader::$api_map[$fn]));
-    $uf = SiteLoader::$api_map[$fn];
+    $uf = $user->conf->api($fn);
+    xassert($uf);
     JsonResultException::$capturing = true;
     $result = null;
     try {
-        call_user_func($uf[0], $user, $qreq, $prow);
+        call_user_func($uf->callback, $user, $qreq, $prow, $uf);
     } catch (JsonResultException $jre) {
         $result = new Qobject($jre->result);
     }
