@@ -2158,6 +2158,8 @@ class Contact {
     function is_my_review($rrow) {
         if (!$rrow)
             return false;
+        if (!isset($rrow->reviewContactId) && !isset($rrow->contactId))
+            error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         if (isset($rrow->reviewContactId))
             $rrow_cid = $rrow->reviewContactId;
         else

@@ -66,11 +66,12 @@ class Conf {
     private $_defined_formulas = null;
     private $_s3_document = false;
     private $_ims = null;
+    private $_api_map = null;
+    private $_format_info = null;
 
     public $paper = null; // current paper row
 
     static public $g;
-    static private $gFormatInfo;
     static public $no_invalidate_caches = false;
 
     const BLIND_NEVER = 0;
@@ -422,7 +423,10 @@ class Conf {
 
         // set defaultFormat
         $this->default_format = (int) get($this->opt, "defaultFormat");
-        self::$gFormatInfo = null;
+        $this->_format_info = null;
+
+        // other caches
+        $this->_api_map = null;
     }
 
     function has_setting($name) {
@@ -963,19 +967,19 @@ class Conf {
     }
 
 
-    public function format_info($format) {
-        if (self::$gFormatInfo === null) {
-            self::$gFormatInfo = [];
+    function format_info($format) {
+        if ($this->_format_info === null) {
+            $this->_format_info = [];
             if (!isset($this->opt["formatInfo"]))
                 /* OK */;
             else if (is_array($this->opt["formatInfo"]))
-                self::$gFormatInfo = $this->opt["formatInfo"];
+                $this->_format_info = $this->opt["formatInfo"];
             else if (is_string($this->opt["formatInfo"]))
-                self::$gFormatInfo = json_decode($this->opt["formatInfo"], true);
+                $this->_format_info = json_decode($this->opt["formatInfo"], true);
         }
         if ($format === null)
             $format = $this->default_format;
-        return get(self::$gFormatInfo, $format);
+        return get($this->_format_info, $format);
     }
 
     public function check_format($format, $text = null) {
@@ -2919,9 +2923,7 @@ class Conf {
     }
 
 
-    //
-    // Miscellaneous
-    //
+    // capabilities
 
     public function capability_manager($for = null) {
         if ($for && substr($for, 0, 1) === "U") {
@@ -2933,6 +2935,8 @@ class Conf {
             return new CapabilityManager($this->dblink, "");
     }
 
+
+    // messages
 
     public function message_name($name) {
         if (str_starts_with($name, "msg."))
@@ -2989,5 +2993,84 @@ class Conf {
 
     function _ci($context, $id, $itext) {
         return call_user_func_array([$this->ims(), "xci"], func_get_args());
+    }
+
+
+    // API
+
+    private function call_api($uf, $user, $qreq, $prow) {
+        if ($uf) {
+            if (!check_post($qreq) && !get($uf, "get"))
+                json_exit(["ok" => false, "error" => "Missing credentials."]);
+            if (!$prow && get($uf, "paper"))
+                json_exit(["ok" => false, "error" => "No such paper."]);
+            call_user_func($uf->callback, $user, $qreq, $prow, $uf);
+        }
+        json_exit(["ok" => false, "error" => "Internal error."]);
+    }
+    function _add_json($fj) {
+        if (is_string($fj->fn) && !isset($this->_api_map[$fj->fn])
+            && isset($fj->callback)) {
+            $this->_api_map[$fj->fn] = $fj;
+            return true;
+        } else
+            return false;
+    }
+    private function fill_api_map() {
+        $this->_api_map = [
+            "alltags" => "1PaperApi::alltags_api",
+            "checkformat" => "3PaperApi::checkformat_api",
+            "setdecision" => "2PaperApi::setdecision_api",
+            "setlead" => "2PaperApi::setlead_api",
+            "setmanager" => "2PaperApi::setmanager_api",
+            "setpref" => "2PaperApi::setpref_api",
+            "setshepherd" => "2PaperApi::setshepherd_api",
+            "settaganno" => "0PaperApi::settaganno_api",
+            "settags" => "0PaperApi::settags_api",
+            "taganno" => "1PaperApi::taganno_api",
+            "trackerstatus" => "1MeetingTracker::trackerstatus_api", // hotcrp-comet entrypoint
+            "votereport" => "3PaperApi::votereport_api",
+            "whoami" => "1PaperApi::whoami_api"
+        ];
+        if (($olist = $this->opt("apiFunctions")))
+            expand_json_includes_callback($olist, [$this, "_add_json"]);
+    }
+    function has_api($fn) {
+        if ($this->_api_map === null)
+            $this->fill_api_map();
+        return isset($this->_api_map[$fn]);
+    }
+    function api($fn) {
+        if ($this->_api_map === null)
+            $this->fill_api_map();
+        $uf = get($this->_api_map, $fn);
+        if ($uf && is_string($uf)) {
+            $dig = (int) $uf[0];
+            $this->_api_map[$fn] = $uf = (object) [
+                "callback" => substr($uf, 1), "get" => !!($dig & 1), "paper" => !!($dig & 2)
+            ];
+        }
+        return $uf;
+    }
+    function call_api_exit($fn, $user, $qreq, $prow) {
+        // XXX precondition: $user->can_view_paper($prow) || !$prow
+        $uf = $this->api($fn);
+        if ($uf && get($uf, "redirect") && $qreq->redirect
+            && preg_match('@\A(?![a-z]+:|/).+@', $qreq->redirect)) {
+            try {
+                JsonResultException::$capturing = true;
+                $this->call_api($uf, $user, $qreq, $prow);
+            } catch (JsonResultException $ex) {
+                $j = $ex->result;
+                if (!get($j, "ok") && !get($j, "error"))
+                    Conf::msg_error("Internal error.");
+                else if (($x = get($j, "error")))
+                    Conf::msg_error(htmlspecialchars($x));
+                else if (($x = get($j, "error_html")))
+                    Conf::msg_error($x);
+                Navigation::redirect_site($qreq->redirect);
+            }
+        } else
+            $this->call_api($uf, $user, $qreq, $prow);
     }
 }
