@@ -946,15 +946,9 @@ class PaperList {
         if ($this->viewmap->table_id) {
             if (!empty($jsmap))
                 Ht::stash_script("foldmap.pl={" . join(",", $jsmap) . "};");
-            $args = array();
-            if ($this->search->q)
-                $args["q"] = $this->search->q;
-            if ($this->search->qt)
-                $args["qt"] = $this->search->qt;
+            $args = ["q" => join(" ", $rstate->ids), "t" => $this->search->limitName];
             if ($this->_reviewer && $this->_reviewer->email !== $this->contact->email)
                 $args["reviewer"] = $this->_reviewer->email;
-            $args["t"] = $this->search->limitName;
-            $args["pap"] = join(" ", $rstate->ids);
             Ht::stash_script("plinfo.needload(" . json_encode($args) . ");"
                              . "plinfo.set_fields(" . json_encode($jscol) . ");");
         }

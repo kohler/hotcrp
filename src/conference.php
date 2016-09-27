@@ -3020,6 +3020,7 @@ class Conf {
         $this->_api_map = [
             "alltags" => "1PaperApi::alltags_api",
             "checkformat" => "3PaperApi::checkformat_api",
+            "fieldhtml" => "1PaperApi::fieldhtml_api",
             "setdecision" => "2PaperApi::setdecision_api",
             "setlead" => "2PaperApi::setlead_api",
             "setmanager" => "2PaperApi::setmanager_api",

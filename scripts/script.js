@@ -5031,16 +5031,14 @@ function plinfo(type, dofold) {
 
         // initiate load
         delete loadargs.aufull;
-        loadargs.fn = "load";
+        loadargs.fn = "fieldhtml";
         if (type == "aufull" || type == "au" || type == "anonau") {
-            loadargs.field = "authors";
+            loadargs.f = "authors";
             if (type == "aufull" ? !dofold : (elt = $$("showaufull")) && elt.checked)
                 loadargs.aufull = 1;
         } else
-            loadargs.field = type;
-        $.ajax(hoturl_post("search", loadargs), {
-            success: make_callback(dofold, type)
-        });
+            loadargs.f = type;
+        $.ajax(hoturl_post("api", loadargs), {success: make_callback(dofold, type)});
     }
 
     return false;
