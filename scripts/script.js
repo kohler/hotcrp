@@ -110,9 +110,8 @@ function log_jserror(errormsg, error, noconsole) {
         errormsg.colno = error.columnNumber;
     if (error && error.stack)
         errormsg.stack = error.stack;
-    $.ajax({
-        url: hoturl("api", "fn=jserror"), global: false,
-        type: "POST", cache: false, data: errormsg
+    $.ajax(hoturl("api", "fn=jserror"), {
+        global: false, type: "POST", cache: false, data: errormsg
     });
     if (error && !noconsole && typeof console === "object" && console.error)
         console.error(errormsg.error);
@@ -1501,8 +1500,7 @@ function tracker(start) {
     if (window.global_tooltip)
         window.global_tooltip.erase();
     if (start < 0) {
-        $.ajax({
-            url: hoturl_post("api", "fn=track&track=stop"),
+        $.ajax(hoturl_post("api", "fn=track&track=stop"), {
             type: "POST", success: load_success, timeout: 10000
         });
         if (tracker_refresher) {
@@ -1526,8 +1524,7 @@ function tracker(start) {
             req += "%20" + hotcrp_paperid + "&p=" + hotcrp_paperid;
         if (trackerstate[2])
             req += "&tracker_start_at=" + trackerstate[2];
-        $.ajax({
-            url: hoturl_post("api", "fn=track&track=" + req),
+        $.ajax(hoturl_post("api", "fn=track&track=" + req), {
             type: "POST", success: load_success, timeout: 10000
         });
         if (!tracker_refresher)
@@ -1657,15 +1654,14 @@ function comet_tracker() {
         success(null, status, xhr);
     }
 
-    $.ajax({
-        url: hoturl_add(dl.tracker_site + "poll",
-                        "conference=" + encodeURIComponent(hoturl_absolute_base())
-                        + "&poll=" + encodeURIComponent(dl.tracker_status)
-                        + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
-                        + "&timeout=" + timeout),
-        timeout: timeout + 2000, dataType: "json",
-        success: success, complete: complete
-    });
+    $.ajax(hoturl_add(dl.tracker_site + "poll",
+                      "conference=" + encodeURIComponent(hoturl_absolute_base())
+                      + "&poll=" + encodeURIComponent(dl.tracker_status)
+                      + "&tracker_status_at=" + encodeURIComponent(dl.tracker_status_at || 0)
+                      + "&timeout=" + timeout), {
+            timeout: timeout + 2000, dataType: "json",
+            success: success, complete: complete
+        });
     return true;
 }
 
@@ -1733,8 +1729,7 @@ function reload() {
     if (hotcrp_deadlines)
         options.p = hotcrp_paperid;
     options.fn = "status";
-    $.ajax({
-        url: hoturl("api", options),
+    $.ajax(hoturl("api", options), {
         timeout: 30000, dataType: "json",
         success: reload_success, error: reload_error
     });
@@ -3212,8 +3207,8 @@ function make_pseditor(type, url) {
     }
     function change() {
         var saveval = jQuery(edite).val();
-        $.ajax({
-            url: hoturl_post("api", url), type: "POST", cache: false,
+        $.ajax(hoturl_post("api", url), {
+            type: "POST", cache: false,
             data: jQuery(folde).find("form").serialize(), dataType: "json",
             success: function (data) {
                 if (data.ok) {
@@ -3710,8 +3705,7 @@ function add_revpref_ajax(selector, reviewer) {
             cid = pid.substr(pos + 1);
             pid = pid.substr(0, pos);
         }
-        $.ajax({
-            url: hoturl_post("api", "fn=setpref&p=" + pid),
+        $.ajax(hoturl_post("api", "fn=setpref&p=" + pid), {
             type: "POST", dataType: "json",
             data: {pref: self.value, reviewer: cid},
             success: function (rv) {
@@ -3845,8 +3839,7 @@ function tag_save() {
         setajaxcheck(this, {ok: false, error: "Value must be a number (or empty to remove the tag)."});
         return;
     }
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}),
+    $.ajax(hoturl_post("api", {fn: "settags", p: m[2], addtags: ch, forceShow: 1}), ajax_link_errors({
         type: "POST", success: make_tag_save_callback(this)
     }));
 }
@@ -4277,14 +4270,12 @@ function commit_drag(si, di) {
         } else if (rowanal[i].annoid)
             annosaves.push({annoid: rowanal[i].annoid, tagval: unparse_tagvalue(rowanal[i].newvalue)});
     if (saves.length)
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settags", forceShow: 1}),
+        $.ajax(hoturl_post("api", {fn: "settags", forceShow: 1}), ajax_link_errors({
             type: "POST", dataType: "json", data: {tagassignment: saves.join(",")},
             success: make_tag_save_callback(rowanal[si].entry)
         }));
     if (annosaves.length)
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}),
+        $.ajax(hoturl_post("api", {fn: "settaganno", tag: dragtag, forceShow: 1}), ajax_link_errors({
             type: "POST", dataType: "json", data: {anno: JSON.stringify(annosaves)},
             success: taganno_success
         }));
@@ -4368,8 +4359,7 @@ function edit_anno(locator) {
                 if (heading != "" || tagval != 0)
                     anno.push({annoid: "new", heading: heading, tagval: tagval});
             }
-            $.ajax(ajax_link_errors({
-                url: hoturl_post("api", {fn: "settaganno", tag: mytag}),
+            $.ajax(hoturl_post("api", {fn: "settaganno", tag: mytag}), ajax_link_errors({
                 type: "POST", dataType: "json", data: {anno: JSON.stringify(anno)},
                 success: make_onsave($d)
             }));
@@ -4433,8 +4423,7 @@ function edit_anno(locator) {
         $d.appendTo($(document.body));
         popup_near($d[0].childNodes[0], window);
     }
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "taganno", tag: mytag}),
+    $.ajax(hoturl_post("api", {fn: "taganno", tag: mytag}), ajax_link_errors({
         type: "POST", success: show_dialog
     }));
 }
@@ -4469,8 +4458,7 @@ function expand_archive() {
     fold($j[0]);
     if (!$j.find(".archiveexpansion").length) {
         $j.append('<span class="archiveexpansion fx"></span>');
-        $.ajax(ajax_link_errors({
-            url: hoturl_add($j.find("a").filter(":not(.qq)").attr("href"), "fn=consolidatedlisting"),
+        $.ajax(hoturl_add($j.find("a").filter(":not(.qq)").attr("href"), "fn=consolidatedlisting"), ajax_link_errors({
             type: "GET", dataType: "json", success: function (data) {
                 if (data.ok && data.result)
                     $j.find(".archiveexpansion").text(" (" + data.result + ")");
@@ -4866,8 +4854,7 @@ function render_row_tags(div) {
 }
 
 function edittags_link_onclick() {
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}),
+    $.ajax(hoturl_post("api", {fn: "settags", p: pidnear(this), forceShow: 1}), ajax_link_errors({
         type: "POST", success: edittags_callback
     }));
     return false;
@@ -4890,9 +4877,7 @@ function edittags_click() {
     var div = this.parentNode, pid = pidnear(div);
     $(div).find("textarea").trigger("hide");
     if (this.tagName !== "BUTTON" || this.name.charAt(3) == "s") {
-        $.ajax(ajax_link_errors({
-            url: hoturl_post("api", {fn: "settags", p: pid,
-                                     tags: $(div).find("textarea").val(), forceShow: 1}),
+        $.ajax(hoturl_post("api", {fn: "settags", p: pid, tags: $(div).find("textarea").val(), forceShow: 1}), ajax_link_errors({
             type: "POST", success: function (rv) {
                 if (rv.ok)
                     plinfo.set_tags(pid, rv.tags, rv.color_classes);
@@ -5065,8 +5050,7 @@ function plinfo(type, dofold) {
                 loadargs.aufull = 1;
         } else
             loadargs.field = type;
-        $.ajax({
-            url: hoturl_post("search", loadargs),
+        $.ajax(hoturl_post("search", loadargs), {
             type: "POST", timeout: 10000, dataType: "json",
             success: make_callback(dofold, type)
         });
@@ -5194,8 +5178,7 @@ function docheckformat(dt) {    // NB must return void
     var running = setTimeout(function () {
         $j.html('<div class="xmsg xinfo"><div class="xmsg0"></div><div class="xmsgc">Checking format (this can take a while)...</div><div class="xmsg1"></div></div>');
     }, 1000);
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", "fn=checkformat&p=" + hotcrp_paperid),
+    $.ajax(hoturl_post("api", "fn=checkformat&p=" + hotcrp_paperid), ajax_link_errors({
         type: "POST", dataType: "json", timeout: 20000,
         data: {dt: dt, docid: $j.attr("docid")},
         success: function (data) {
@@ -5265,8 +5248,7 @@ function save_tags() {
         if (msg)
             $("#papstriptagsedit").prepend('<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + msg + '</div><div class="xmsg1"></div></div>');
     }
-    $.ajax(ajax_link_errors({
-        url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
+    $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), ajax_link_errors({
         type: "POST", dataType: "json", timeout: 4000,
         data: $("#tagform").serialize(),
         success: function (data) {
@@ -5280,8 +5262,7 @@ function save_tags() {
     return false;
 }
 save_tags.load_report = function () {
-    $.ajax({
-        url: hoturl("api", "fn=tagreport&p=" + hotcrp_paperid),
+    $.ajax(hoturl("api", "fn=tagreport&p=" + hotcrp_paperid), {
         success: function (data) {
             data.ok && $("#tagreportformresult").html(data.response || "");
         }
@@ -5407,8 +5388,7 @@ function save_tag_index(e) {
             make_bubble(message, "errorbubble").dir("l").near(ji.length ? ji[0] : e).removeOn(j.find("input"), "input");
         }
     }
-    $.ajax({
-        url: hoturl_post("api", "fn=settags&p=" + hotcrp_paperid),
+    $.ajax(hoturl_post("api", "fn=settags&p=" + hotcrp_paperid), {
         type: "POST", cache: false,
         data: {"addtags": tag + "#" + (index == "" ? "clear" : index)},
         success: function (data) {
@@ -5763,8 +5743,7 @@ var unfold_events = (function ($) {
 var events = null, events_at = 0;
 
 function load_more_events() {
-    $.ajax({
-        url: hoturl("api", "fn=events" + (events_at ? "&from=" + events_at : "")),
+    $.ajax(hoturl("api", "fn=events" + (events_at ? "&from=" + events_at : "")), {
         type: "GET", cache: false, dataType: "json",
         success: function (data) {
             if (data.ok) {
