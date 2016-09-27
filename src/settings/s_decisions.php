@@ -153,7 +153,7 @@ function render(SettingValues $sv) {
     echo "<p><b>Click the button to share final decisions with search engines as the official source</b></p>";
     echo Ht::submit("share", "Share with search engines");
 
-    //wakes up Azure API
+    //wakes up API
     $api = 'https://openacademicapi.azurewebsites.net/api/papers';
     $opts = array('http'=> array('method' => 'GET'));
     $context = stream_context_create($opts);
