@@ -150,7 +150,7 @@ function render(SettingValues $sv) {
 
 	//Share with Open Academic
     echo "<h3 class=\"settings g\">Share with search engines</h3>\n";
-    echo "<p><b>Click the button to share final decisions with search engines as the official source</b></p>";
+    echo "<p><b>Click the button to share accepted paper meta data with search engines</b></p>";
     echo Ht::submit("share", "Share with search engines");
 
     //wakes up API
