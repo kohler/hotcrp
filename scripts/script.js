@@ -1708,18 +1708,18 @@ function load(dlx, is_initial) {
 }
 
 function reload_success(data) {
-    reload_timeout = null;
-    reload_nerrors = 0;
-    load(data);
-}
-
-function reload_error(xhr, status, err) {
-    ++reload_nerrors;
-    reload_timeout = setTimeout(reload, 10000 * Math.min(reload_nerrors, 60));
+    if (data.ok) {
+        reload_timeout = null;
+        reload_nerrors = 0;
+        load(data);
+    } else {
+        ++reload_nerrors;
+        reload_timeout = setTimeout(reload, 10000 * Math.min(reload_nerrors, 60));
+    }
 }
 
 function load_success(data) {
-    load(data);
+    data.ok && load(data);
 }
 
 function reload() {
@@ -1732,7 +1732,7 @@ function reload() {
         options.p = hotcrp_paperid;
     options.fn = "status";
     $.ajax(hoturl("api", options), {
-        method: "GET", timeout: 30000, success: reload_success, error: reload_error
+        method: "GET", timeout: 30000, success: reload_success
     });
 }
 
