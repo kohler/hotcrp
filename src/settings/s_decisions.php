@@ -173,6 +173,7 @@ function render(SettingValues $sv) {
         $share["venue"] = $sv->conf-> long_name;
         $share["shortVenue"] = $sv->conf-> short_name;
         $share["confSite"] = $sv->conf-> opt["conferenceSite"];
+        $share["version"] = "1.0";
     
         $papers = array();
         $result = $sv->conf-> q_raw("SELECT paperID, title, authorInformation, abstract FROM Paper WHERE outcome > 0");
