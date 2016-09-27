@@ -1301,6 +1301,8 @@ function display_main(is_initial) {
 
     dlname = "";
     dltime = 0;
+    if (!dl.sub)
+        log_jserror("bad dl " + JSON.stringify(dl));
     if (dl.sub.open) {
         x = {reg: "Registration", update: "Update", sub: "Submission"};
         for (subtype in x)
