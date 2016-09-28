@@ -403,11 +403,11 @@ class PaperTable {
                 if (($stamps = self::pdf_stamps_html($doc)))
                     $stamps = "<span class='sep'></span>" . $stamps;
                 if ($dtype == DTYPE_FINAL)
-                    $dname = "Final version";
+                    $dname = $this->conf->_c("paper_pdf_name", "Final version");
                 else if ($prow->timeSubmitted > 0)
-                    $dname = "Submission";
+                    $dname = $this->conf->_c("paper_pdf_name", "Submission");
                 else
-                    $dname = "Current version";
+                    $dname = $this->conf->_c("paper_pdf_name", "Draft submission");
                 $pdfs[] = $dprefix . $doc->link_html('<span class="pavfn">' . $dname . '</span>', DocumentInfo::L_REQUIREFORMAT) . $stamps;
             }
 
