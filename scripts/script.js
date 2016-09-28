@@ -1696,12 +1696,14 @@ function load(dlx, is_initial) {
             /* skip */;
         else if (had_tracker_at && dl.load - had_tracker_at < 10800)
             t = 10000;
-        else if (dlname && (!dltime || dltime - dl.load <= 120))
-            t = 45000;
-        else if (dlname)
-            t = 300000;
-        else
+        else if (!dlname)
             t = 1800000;
+        else if (Math.abs(dltime - dl.load) >= 900)
+            t = 300000;
+        else if (Math.abs(dltime - dl.load) >= 120)
+            t = 90000;
+        else
+            t = 45000;
         if (t)
             reload_timeout = setTimeout(reload, t);
     }
