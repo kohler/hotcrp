@@ -12,26 +12,25 @@ function _review_table_actas($rr) {
         . "</a>";
 }
 
-function _review_table_round_selector($prow, $rr) {
-    global $Conf;
-    $sel = $Conf->round_selector_options($rr->reviewRound);
+function _review_table_round_selector(PaperInfo $prow, $rr) {
+    $sel = $prow->conf->round_selector_options($rr->reviewRound);
     if (count($sel) <= 1) {
         if (get($sel, "unnamed") || count($sel) == 0)
             return "";
         reset($sel);
         return '&nbsp;<span class="revround" title="Review round">'
-            . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
+            . htmlspecialchars($prow->conf->round_name($rr->reviewRound, true))
             . "</span>";
     }
     return '&nbsp;'
         . Ht::form(hoturl_post("assign", "p={$prow->paperId}&amp;r={$rr->reviewId}&amp;setround=1"))
         . '<div class="inline">'
-        . Ht::select("round", $sel, $Conf->round_selector_name($rr->reviewRound),
+        . Ht::select("round", $sel, $prow->conf->round_selector_name($rr->reviewRound),
                      array("onchange" => "save_review_round(this)", "title" => "Set review round"))
         . '</div></form>';
 }
 
-function _retract_review_request_form($prow, $rr) {
+function _retract_review_request_form(PaperInfo $prow, $rr) {
     return '<small>'
         . Ht::form(hoturl_post("assign", "p=$prow->paperId"))
         . '<div class="inline">'
@@ -41,17 +40,17 @@ function _retract_review_request_form($prow, $rr) {
 }
 
 // reviewer information
-function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
-    global $Conf, $Me;
-
+function reviewTable(PaperInfo $prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
+    global $Me;
+    $conf = $prow->conf;
     $subrev = array();
     $nonsubrev = array();
     $foundRrow = $foundMyReview = $notShown = 0;
-    $conflictType = $Me->view_conflict_type($prow);
+    $cflttype = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
     $admin = $Me->can_administer($prow);
-    $hideUnviewable = ($conflictType > 0 && !$admin)
-        || (!$Me->act_pc($prow) && !$Conf->setting("extrev_view"));
+    $hideUnviewable = ($cflttype > 0 && !$admin)
+        || (!$Me->act_pc($prow) && !$conf->setting("extrev_view"));
     $show_colors = $Me->can_view_reviewer_tags($prow);
     $tagger = $show_colors ? new Tagger($Me) : null;
     $xsep = ' <span class="barsep">·</span> ';
@@ -115,7 +114,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         $t .= '</td>';
 
         // primary/secondary glyph
-        if ($conflictType > 0 && !$admin)
+        if ($cflttype > 0 && !$admin)
             $rtype = "";
         else if ($rr->reviewType > 0) {
             $rtype = review_type_icon($rr->reviewType);
@@ -123,7 +122,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                 $rtype .= _review_table_round_selector($prow, $rr);
             else if ($rr->reviewRound > 0 && $Me->can_view_review_round($prow, $rr))
                 $rtype .= '&nbsp;<span class="revround" title="Review round">'
-                    . htmlspecialchars($Conf->round_name($rr->reviewRound, true))
+                    . htmlspecialchars($conf->round_name($rr->reviewRound, true))
                     . "</span>";
         } else
             $rtype = "";
@@ -144,14 +143,14 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             if ($show_colors && (get($rr, "contactRoles") || get($rr, "contactTags"))) {
                 $tags = Contact::roles_all_contact_tags(get($rr, "contactRoles"), get($rr, "contactTags"));
                 $tags = Tagger::strip_nonviewable($tags, $Me);
-                if ($tags && ($color = $Conf->tags()->color_classes($tags)))
+                if ($tags && ($color = $conf->tags()->color_classes($tags)))
                     $tclass = $color;
             }
         }
 
         // requester
         if ($mode === "assign") {
-            if (($conflictType <= 0 || $admin)
+            if (($cflttype <= 0 || $admin)
                 && $rr->reviewType == REVIEW_EXTERNAL
                 && !$showtoken) {
                 $t .= '<td style="font-size:smaller">';
@@ -169,7 +168,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
         // actions
         if ($mode === "assign"
-            && ($conflictType <= 0 || $admin)
+            && ($cflttype <= 0 || $admin)
             && $rr->reviewType == REVIEW_EXTERNAL
             && $rr->reviewModified <= 0
             && ($rr->requestedBy == $Me->contactId || $admin))
@@ -179,7 +178,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
         $scores = array();
         if ($want_my_scores && $canView) {
             $view_score = $Me->view_score_bound($prow, $rr);
-            $rf = $Conf->review_form();
+            $rf = $conf->review_form();
             foreach ($rf->forder as $fid => $f) {
                 if (!$f->has_options || $f->view_score <= $view_score
                     || ($f->round_mask && !$f->is_round_visible($rr)))
@@ -217,7 +216,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
             $t .= "</td>";
 
             // requester
-            if ($conflictType <= 0 || $admin) {
+            if ($cflttype <= 0 || $admin) {
                 $t .= '<td style="font-size:smaller">';
                 if ($rr->requestedBy == $Me->contactId)
                     $t .= "you";
@@ -241,7 +240,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
                     if ($rr->reviewRound == 0)
                         $rname = "unnamed";
                     else
-                        $rname = $Conf->round_name($rr->reviewRound);
+                        $rname = $conf->round_name($rr->reviewRound);
                     if ($rname)
                         $t .= Ht::hidden("round", $rname);
                 }
@@ -260,7 +259,7 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
     // unfinished review notification
     $notetxt = "";
-    if ($conflictType >= CONFLICT_AUTHOR && !$admin && $notShown
+    if ($cflttype >= CONFLICT_AUTHOR && !$admin && $notShown
         && $Me->can_view_review($prow, null, null)) {
         if ($notShown == 1)
             $t = "1 review remains outstanding.";
@@ -308,9 +307,10 @@ function reviewTable($prow, $rrows, $crows, $rrow, $mode, $proposals = null) {
 
 
 // links below review table
-function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
-    global $Conf, $Me;
-    $conflictType = $Me->view_conflict_type($prow);
+function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
+    global $Me;
+    $conf = $prow->conf;
+    $cflttype = $Me->view_conflict_type($prow);
     $allow_admin = $Me->allow_administer($prow);
     $any_comments = false;
     $admin = $Me->can_administer($prow);
@@ -340,7 +340,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                 else
                     $n = "anonymous";
                 if ($cr->commentType & COMMENTTYPE_RESPONSE) {
-                    $rname = $Conf->resp_round_name($cr->commentRound);
+                    $rname = $conf->resp_round_name($cr->commentRound);
                     $n = ($n === "anonymous" ? "" : " ($n)");
                     if (($cr->commentType & COMMENTTYPE_DRAFT) && $rname != "1")
                         $n = "<i>Draft $rname Response</i>$n";
@@ -386,7 +386,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     if ($mode !== "edit" && $prow->conflictType >= CONFLICT_AUTHOR
         && !$Me->can_administer($prow)) {
         $x = '<a href="' . hoturl("paper", "p=$prow->paperId&amp;m=edit") . '" class="xx">'
-            . Ht::img("edit48.png", "[Edit paper]", $dlimgjs) . "&nbsp;<u><strong>Edit paper</strong></u></a>";
+            . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
@@ -427,7 +427,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
     // new response
     if (!$nocmt
         && ($prow->conflictType >= CONFLICT_AUTHOR || $allow_admin)
-        && ($rrounds = $Conf->time_author_respond()))
+        && ($rrounds = $conf->time_author_respond()))
         foreach ($rrounds as $i => $rname) {
             $cid = ($i ? $rname : "") . "response";
             $what = "Add";
@@ -440,7 +440,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
                     }
             $x = '<a href="#' . $cid . '" onclick=\'return papercomment.edit_response(' . json_encode($rname) . ')\' class="xx">'
                 . Ht::img("comment48.png", "[$what response]", $dlimgjs) . "&nbsp;"
-                . ($conflictType >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
+                . ($cflttype >= CONFLICT_AUTHOR ? '<u style="font-weight:bold">' : '<u>')
                 . $what . ($i ? " $rname" : "") . ' response</u></a>';
             $t .= ($t === "" ? "" : $xsep) . $x;
             $any_comments = true;
@@ -452,7 +452,7 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
             . Ht::img("override24.png", "[Override]", "dlimg") . "&nbsp;<u>Override conflict</u></a> to show reviewers and allow editing";
         $t .= ($t === "" ? "" : $xsep) . $x;
     } else if ($Me->privChair && !$allow_admin) {
-        $x = "You can’t override your conflict because this paper has an administrator.";
+        $x = "You can’t override your conflict because this submission has an administrator.";
         $t .= ($t === "" ? "" : $xsep) . $x;
     }
 
@@ -460,9 +460,9 @@ function reviewLinks($prow, $rrows, $crows, $rrow, $mode, &$allreviewslink) {
         CommentInfo::echo_script($prow);
 
     if ($prow->has_author($Me))
-        $t = '<p class="xd">You are an <span class="author">author</span> of this paper.</p>' . $t;
+        $t = '<p class="xd">' . $conf->_('You are an <span class="author">author</span> of this submission.') . '</p>' . $t;
     else if ($prow->has_conflict($Me))
-        $t = '<p class="xd">You have a <span class="conflict">conflict</span> with this paper.</p>' . $t;
+        $t = '<p class="xd">' . $conf->_('You have a <span class="conflict">conflict</span> with this submission.') . '</p>' . $t;
 
     if (($list = SessionList::active()) && ($pret || $t))
         return '<div class="has_hotcrp_list" data-hotcrp-list="' . $list->listno . '">'
