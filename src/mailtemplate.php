@@ -510,8 +510,8 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "registerpaper" =>
-     array("subject" => "[%CONFSHORTNAME%] Registered paper #%NUMBER% %TITLEHINT%",
-           "body" => "Paper #%PAPER% has been registered at the %CONFNAME% submissions site.
+     array("subject" => "[%CONFSHORTNAME%] Registered #%NUMBER% %TITLEHINT%",
+           "body" => "Submission #%PAPER% has been registered at the %CONFNAME% site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -526,8 +526,8 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "updatepaper" =>
-     array("subject" => "[%CONFSHORTNAME%] Updated paper #%NUMBER% %TITLEHINT%",
-           "body" => "Paper #%PAPER% has been updated at the %CONFNAME% submissions site.
+     array("subject" => "[%CONFSHORTNAME%] Updated #%NUMBER% %TITLEHINT%",
+           "body" => "Submission #%PAPER% has been updated at the %CONFNAME% site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -542,8 +542,8 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "submitpaper" =>
-     array("subject" => "[%CONFSHORTNAME%] Submitted paper #%NUMBER% %TITLEHINT%",
-           "body" => "Paper #%PAPER% has been submitted to the %CONFNAME% submissions site.
+     array("subject" => "[%CONFSHORTNAME%] Submitted #%NUMBER% %TITLEHINT%",
+           "body" => "Submission #%PAPER% has been submitted for review at the %CONFNAME% site.
 
        Title: %TITLE%
      Authors: %OPT(AUTHORS)%
@@ -558,7 +558,7 @@ Contact %ADMIN% with any questions or concerns.
 %SIGNATURE%\n"),
 
      "submitfinalpaper" =>
-     array("subject" => "[%CONFSHORTNAME%] Updated final paper #%NUMBER% %TITLEHINT%",
+     array("subject" => "[%CONFSHORTNAME%] Updated final version #%NUMBER% %TITLEHINT%",
            "body" => "The final version for paper #%PAPER% has been updated at the %CONFNAME% submissions site.
 
        Title: %TITLE%
