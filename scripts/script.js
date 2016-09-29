@@ -153,7 +153,7 @@ $.ajaxPrefilter(function (options, originalOptions, jqxhr) {
         return;
     var f = options.success;
     function onerror(jqxhr, status, errormsg) {
-        f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
+        f && f({ok: false, error: jqxhr_error_message(jqxhr, status, errormsg)}, jqxhr, status);
     }
     if (!options.error)
         options.error = onerror;
