@@ -122,9 +122,9 @@ class CsvParser {
                 while (1) {
                     $pos = strpos($line, "\"", $pos + 1);
                     if ($pos === false) {
+                        $pos = $linelen;
                         if ($this->pos == count($this->lines))
                             break;
-                        $pos = $linelen;
                         $line .= $this->lines[$this->pos];
                         ++$this->pos;
                         $linelen = self::linelen($line);
