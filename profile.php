@@ -12,7 +12,7 @@ function change_email_by_capability() {
     $capdata = $capmgr->check($_REQUEST["changeemail"]);
     if (!$capdata || $capdata->capabilityType != CAPTYPE_CHANGEEMAIL
         || !($capdata->data = json_decode($capdata->data))
-        || !@$capdata->data->uemail)
+        || !get($capdata->data, "uemail"))
         error_go(false, "That email change code has expired, or you didn’t enter it correctly.");
     $Acct = $Conf->user_by_id($capdata->contactId);
     if (!$Acct)

@@ -1031,6 +1031,12 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
     if ($conf->sversion == 146
         && $conf->ql("alter table Paper add `timeModified` int(11) NOT NULL DEFAULT '0'"))
         $conf->update_schema_version(147);
+    if ($conf->sversion == 147
+        && $conf->ql("alter table Capability change `capabilityId` `capabilityId` int(11) NOT NULL")
+        && update_schema_drop_keys_if_exist($conf, "Capability", ["capabilityId", "PRIMARY"])
+        && $conf->ql("alter table Capability add primary key (`salt`)")
+        && $conf->ql("alter table Capability drop column `capabilityId`"))
+        $conf->update_schema_version(148);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }

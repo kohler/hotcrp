@@ -4,7 +4,6 @@
 // Distributed under an MIT-like license; see LICENSE
 
 class CapabilityManager {
-
     private $dblink;
     private $prefix;
 
@@ -14,18 +13,18 @@ class CapabilityManager {
     }
 
     public function create($capabilityType, $options = array()) {
-        $contactId = defval($options, "contactId", 0);
-        if (!$contactId && ($user = @$options["user"]))
+        $contactId = get($options, "contactId", 0);
+        if (!$contactId && ($user = get($options, "user")))
             $contactId = $this->prefix === "U" ? $user->contactDbId : $user->contactId;
-        $paperId = defval($options, "paperId", 0);
-        $timeExpires = defval($options, "timeExpires", time() + 259200);
-        $data = defval($options, "data");
+        $paperId = get($options, "paperId", 0);
+        $timeExpires = get($options, "timeExpires", time() + 259200);
+        $data = get($options, "data");
         $capid = false;
 
         for ($tries = 0; !$capid && $tries < 4; ++$tries)
             if (($salt = random_bytes(16)) !== false) {
-                Dbl::ql($this->dblink, "insert into Capability set capabilityType=$capabilityType, contactId=?, paperId=?, timeExpires=?, salt=?, data=?",
-                        $contactId, $paperId, $timeExpires, $salt, $data);
+                Dbl::ql($this->dblink, "insert into Capability set capabilityType=?, contactId=?, paperId=?, timeExpires=?, salt=?, data=?",
+                        $capabilityType, $contactId, $paperId, $timeExpires, $salt, $data);
                 $capid = $this->dblink->insert_id;
             }
 
@@ -52,8 +51,8 @@ class CapabilityManager {
     }
 
     public function delete($capdata) {
+        assert(!$capdata || is_string($capdata->salt));
         if ($capdata)
-            Dbl::ql($this->dblink, "delete from Capability where capabilityId=" . $capdata->capabilityId);
+            Dbl::ql($this->dblink, "delete from Capability where salt=?", $capdata->salt);
     }
-
 }

@@ -24,15 +24,13 @@ CREATE TABLE `ActionLog` (
 
 DROP TABLE IF EXISTS `Capability`;
 CREATE TABLE `Capability` (
-  `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
   `capabilityType` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
   `timeExpires` int(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(4096) DEFAULT NULL,
-  PRIMARY KEY (`capabilityId`),
-  UNIQUE KEY `capabilityId` (`capabilityId`),
+  PRIMARY KEY (`salt`),
   UNIQUE KEY `salt` (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -507,7 +505,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 147);
+insert into Settings (name, value) values ('allowPaperOption', 148);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
