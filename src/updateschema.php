@@ -1037,6 +1037,13 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && $conf->ql("alter table Capability add primary key (`salt`)")
         && $conf->ql("alter table Capability drop column `capabilityId`"))
         $conf->update_schema_version(148);
+    if ($conf->sversion == 148
+        && $conf->ql("alter table ReviewRating add `paperId` int(11) NOT NULL DEFAULT '0'")
+        && $conf->ql("update ReviewRating join PaperReview using (reviewId) set ReviewRating.paperId=PaperReview.paperId")
+        && $conf->ql("alter table ReviewRating change `paperId` `paperId` int(11) NOT NULL")
+        && update_schema_drop_keys_if_exist($conf, "ReviewRating", ["reviewContact", "reviewContactRating"])
+        && $conf->ql("alter table ReviewRating add primary key (`paperId`,`reviewId`,`contactId`)"))
+        $conf->update_schema_version(149);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }

@@ -150,7 +150,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 148) {
+        if ($this->sversion < 149) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -2153,18 +2153,18 @@ class Conf {
         $whyNot = array();
 
         if (!is_array($selector))
-            $selector = array('reviewId' => $selector);
-        if (isset($selector['reviewId'])) {
-            $whyNot['reviewId'] = $selector['reviewId'];
-            if (($reviewId = cvtint($selector['reviewId'])) <= 0) {
-                $whyNot['invalidId'] = 'review';
+            $selector = array("reviewId" => $selector);
+        if (isset($selector["reviewId"])) {
+            $whyNot["reviewId"] = $selector["reviewId"];
+            if (($reviewId = cvtint($selector["reviewId"])) <= 0) {
+                $whyNot["invalidId"] = "review";
                 return null;
             }
         }
-        if (isset($selector['paperId'])) {
-            $whyNot['paperId'] = $selector['paperId'];
-            if (($paperId = cvtint($selector['paperId'])) <= 0) {
-                $whyNot['invalidId'] = 'paper';
+        if (isset($selector["paperId"])) {
+            $whyNot["paperId"] = $selector["paperId"];
+            if (($paperId = cvtint($selector["paperId"])) <= 0) {
+                $whyNot["invalidId"] = "paper";
                 return null;
             }
         }
@@ -2173,51 +2173,62 @@ class Conf {
                 ContactInfo.firstName, ContactInfo.lastName, ContactInfo.email, ContactInfo.roles as contactRoles,
                 ContactInfo.contactTags,
                 ReqCI.firstName as reqFirstName, ReqCI.lastName as reqLastName, ReqCI.email as reqEmail";
+        $qv = [];
         if (isset($selector["ratings"]))
             $q .= ",
-                group_concat(ReviewRating.rating) as allRatings";
-        if (isset($selector["myRating"]))
+                (select group_concat(rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId) allRatings";
+        if (isset($selector["myRating"])) {
             $q .= ",
-                MyRating.rating as myRating";
+                (select rating from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId and contactId=?) myRating";
+            $qv[] = $selector["myRating"];
+        }
         $q .= "\n               from PaperReview
                 join ContactInfo using (contactId)
                 left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
-        if (isset($selector["ratings"]))
-            $q .= "             left join ReviewRating on (ReviewRating.reviewId=PaperReview.reviewId)\n";
-        if (isset($selector["myRating"]))
-            $q .= "             left join ReviewRating as MyRating on (MyRating.reviewId=PaperReview.reviewId and MyRating.contactId=" . $selector["myRating"] . ")\n";
 
         $where = array();
-        $order = array("paperId");
-        if (isset($reviewId))
-            $where[] = "PaperReview.reviewId=$reviewId";
-        if (isset($paperId))
-            $where[] = "PaperReview.paperId=$paperId";
+        if (isset($reviewId)) {
+            $where[] = "PaperReview.reviewId=?";
+            $qv[] = $reviewId;
+        }
+        if (isset($paperId)) {
+            $where[] = "PaperReview.paperId=?";
+            $qv[] = $paperId;
+        }
         $cwhere = array();
-        if (isset($selector["contactId"]))
-            $cwhere[] = "PaperReview.contactId=" . cvtint($selector["contactId"]);
-        if (get($selector, "rev_tokens"))
-            $cwhere[] = "PaperReview.reviewToken in (" . join(",", $selector["rev_tokens"]) . ")";
+        if (isset($selector["contactId"])) {
+            $cwhere[] = "PaperReview.contactId=?";
+            $qv[] = $selector["contactId"];
+        }
+        if (get($selector, "rev_tokens")) {
+            $cwhere[] = "PaperReview.reviewToken?a";
+            $qv[] = $selector["rev_tokens"];
+        }
         if (count($cwhere))
             $where[] = "(" . join(" or ", $cwhere) . ")";
-        if (count($cwhere) > 1)
-            $order[] = "(PaperReview.contactId=" . cvtint($selector["contactId"]) . ") desc";
-        if (isset($selector['reviewOrdinal']))
-            $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=" . cvtint($selector['reviewOrdinal']);
-        else if (isset($selector['submitted']))
+        if (isset($selector["reviewOrdinal"])) {
+            $where[] = "PaperReview.reviewSubmitted>0 and reviewOrdinal=?";
+            $qv[] = $selector["reviewOrdinal"];
+        } else if (isset($selector["submitted"]))
             $where[] = "PaperReview.reviewSubmitted>0";
-        if (!count($where)) {
-            $whyNot['internal'] = 1;
+        if (empty($where)) {
+            $whyNot["internal"] = 1;
             return null;
+        }
+
+        $order = array("PaperReview.paperId");
+        if (count($cwhere) > 1) {
+            $order[] = "(PaperReview.contactId=?) desc";
+            $qv[] = $selector["contactId"];
         }
 
         // this review order is also implemented by PaperList::review_row_compare
         $q = $q . " where " . join(" and ", $where) . " group by PaperReview.reviewId
                 order by " . join(", ", $order) . ", reviewOrdinal, timeRequested, reviewType desc, reviewId";
 
-        $result = $this->q_raw($q);
+        $result = $this->qe_apply($q, $qv);
         if (!$result) {
-            $whyNot['dbError'] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
+            $whyNot["dbError"] = "Database error while fetching review (" . htmlspecialchars($q) . "): " . htmlspecialchars($this->dblink->error);
             return null;
         }
 

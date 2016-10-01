@@ -135,9 +135,11 @@ if (isset($_REQUEST["rating"]) && $paperTable->rrow && check_post()) {
     else if (!isset(ReviewForm::$rating_types[$_REQUEST["rating"]]))
         Conf::msg_error("Invalid rating.");
     else if ($_REQUEST["rating"] == "n")
-        Dbl::qe_raw("delete from ReviewRating where reviewId=" . $paperTable->rrow->reviewId . " and contactId=$Me->contactId");
+        $Conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?",
+                  $paperTable->prow->paperId, $paperTable->rrow->reviewId, $Me->contactId);
     else
-        Dbl::qe_raw("insert into ReviewRating (reviewId, contactId, rating) values (" . $paperTable->rrow->reviewId . ", $Me->contactId, " . $_REQUEST["rating"] . ") on duplicate key update rating=" . $_REQUEST["rating"]);
+        $Conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=?",
+                  $paperTable->prow->paperId, $paperTable->rrow->reviewId, $Me->contactId, $_REQUEST["rating"], $_REQUEST["rating"]);
     if (defval($_REQUEST, "ajax", 0))
         $Conf->ajaxExit(["ok" => !Dbl::has_error(), "result" => "Thanks! Your feedback has been recorded."]);
     if (isset($_REQUEST["allr"])) {

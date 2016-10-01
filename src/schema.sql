@@ -433,11 +433,11 @@ CREATE TABLE `PaperWatch` (
 
 DROP TABLE IF EXISTS `ReviewRating`;
 CREATE TABLE `ReviewRating` (
+  `paperId` int(11) NOT NULL,
   `reviewId` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `rating` tinyint(1) NOT NULL DEFAULT '0',
-  UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
-  UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
+  PRIMARY KEY (`paperId`,`reviewId`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -505,7 +505,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 148);
+insert into Settings (name, value) values ('allowPaperOption', 149);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);
