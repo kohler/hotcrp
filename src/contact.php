@@ -1446,15 +1446,8 @@ class Contact {
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
-            $qr = "";
-            if ($this->review_tokens_)
-                $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
-            $result = $this->conf->qe("select max(conf.conflictType),
-                r.contactId as reviewer
-                from ContactInfo c
-                left join PaperConflict conf on (conf.contactId=c.contactId)
-                left join PaperReview r on (r.contactId=c.contactId$qr)
-                where c.contactId=$this->contactId group by c.contactId");
+            $qr = $this->review_tokens_ ? "" : " or reviewToken?a";
+            $result = $this->conf->qe("select (select max(conflictType) from PaperConflict where contactId=?), (select paperId from PaperReview where contactId=?$qr limit 1)", $this->contactId, $this->contactId, $this->review_tokens_);
         }
         $row = edb_row($result);
         $this->is_author_ = $row && $row[0] >= CONFLICT_AUTHOR;
