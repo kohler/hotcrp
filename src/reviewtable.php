@@ -330,8 +330,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
     // comments
     $pret = "";
     if ($crows && count($crows) > 0 && !$rrow && $mode !== "edit") {
-        $cids = array();
-        $cnames = array();
+        $cids = $cnames = $known_cnames = [];
+        $ellipsis = false;
         $tagger = new Tagger($Me);
         foreach ($crows as $cr)
             if ($Me->can_view_comment($prow, $cr, null)) {
@@ -350,6 +350,8 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                         $n = "<i>$rname Response</i>$n";
                     else
                         $n = "<i>Response</i>$n";
+                    $known_cnames = [];
+                    $ellipsis = false;
                 }
                 $cids[] = $cid = CommentInfo::unparse_html_id($cr);
                 $tclass = "cmtlink";
@@ -361,7 +363,13 @@ function reviewLinks(PaperInfo $prow, $rrows, $crows, $rrow, $mode, &$allreviews
                         $tclass .= " tagcolorspan";
                     $tclass .= " $color taghl";
                 }
-                $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
+                if (!isset($known_cnames[$n]) || $tclass !== "cmtlink") {
+                    $cnames[] = '<a class="' . $tclass . '" href="#' . $cid . '">' . $n . '</a>';
+                    $known_cnames[$n] = true;
+                } else if (!$ellipsis) {
+                    $cnames[] = "…";
+                    $ellipsis = true;
+                }
             }
         if (count($cids) > 0) {
             $pret = '<div class="revnotes"><a href="#' . $cids[0] . '"><strong>' . plural(count($cids), "Comment") . '</strong></a>: <span class="nb">' . join(',</span> <span class="nb">', $cnames) . "</span></div>";
