@@ -1044,6 +1044,16 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && update_schema_drop_keys_if_exist($conf, "ReviewRating", ["reviewContact", "reviewContactRating"])
         && $conf->ql("alter table ReviewRating add primary key (`paperId`,`reviewId`,`contactId`)"))
         $conf->update_schema_version(149);
+    if ($conf->sversion == 149
+        && update_schema_drop_keys_if_exist($conf, "PaperReview", ["PRIMARY"])
+        && $conf->ql("alter table PaperReview add primary key (`paperId`,`reviewId`)"))
+        $conf->update_schema_version(150);
+    if ($conf->sversion == 150
+        && update_schema_drop_keys_if_exist($conf, "PaperComment", ["PRIMARY"])
+        && $conf->ql("alter table PaperComment add primary key (`paperId`,`commentId`)")
+        && update_schema_drop_keys_if_exist($conf, "PaperStorage", ["PRIMARY"])
+        && $conf->ql("alter table PaperStorage add primary key (`paperId`,`paperStorageId`)"))
+        $conf->update_schema_version(151);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }
