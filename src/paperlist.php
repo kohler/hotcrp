@@ -310,22 +310,21 @@ class PaperList {
 
     function _paperLink($row) {
         $pt = $this->_paper_link_page ? : "paper";
-        $pl = "p=" . $row->paperId;
-        $doreview = isset($row->reviewId) && isset($row->reviewFirstName);
-        if (!$doreview && $pt === "review")
+        if ($pt === "finishreview")
+            $pt = $row->reviewNeedsSubmit ? "review" : "paper";
+        if ($pt === "review" && !isset($row->reviewId))
             $pt = "paper";
+        $pl = "p=" . $row->paperId;
         if ($pt === "paper" && $this->_paper_link_mode)
             $pl .= "&amp;m=" . $this->_paper_link_mode;
-        else if ($doreview) {
-            $rord = unparseReviewOrdinal($row);
-            if ($pt == "paper" && $row->reviewSubmitted > 0)
-                $pl .= "#r" . $rord;
-            else {
-                $pl .= "&amp;r=" . $rord;
-                if ($row->reviewSubmitted > 0)
-                    $pl .= "&amp;m=r";
-            }
-        }
+        else if ($pt === "review" && isset($row->reviewId)) {
+            $pl .= "&amp;r=" . unparseReviewOrdinal($row);
+            if ($row->reviewSubmitted > 0)
+                $pl .= "&amp;m=r";
+        } else if ($pt === "paper" && isset($row->reviewId)
+                   && $row->reviewSubmitted > 0
+                   && $row->reviewContactId != $this->contact->contactId)
+            $pl .= "#r" . unparseReviewOrdinal($row);
         return hoturl($pt, $pl);
     }
 
@@ -495,12 +494,13 @@ class PaperList {
         case "act":
             return "sel id title statusfull revtype authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "reviewerHome":
-            $this->_default_linkto("review");
+            $this->_default_linkto("finishreview");
             return "id title revtype status";
         case "r":
         case "lead":
         case "manager":
-            $this->_default_linkto("review");
+            if ($listname == "r")
+                $this->_default_linkto("review");
             return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "rout":
             $this->_default_linkto("review");

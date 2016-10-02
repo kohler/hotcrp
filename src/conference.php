@@ -1797,7 +1797,7 @@ class Conf {
             $reviewerContactId = $options["reviewer"];
         else
             $reviewerContactId = $contactId;
-        if (get($options, "author"))
+        if (get($options, "author") || !$contactId)
             $myPaperReview = null;
         else if ($allReviewerQuery)
             $myPaperReview = "MyPaperReview";
@@ -1845,22 +1845,23 @@ class Conf {
             $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId=$contactId)";
 
         // my review
-        $qr = "";
+        $reviewjoin = "PaperReview.contactId=$contactId";
+        $tokens = false;
         if ($contact && ($tokens = $contact->review_tokens()))
-            $qr = " or PaperReview.reviewToken in (" . join(", ", $tokens) . ")";
+            $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $tokens) . "))";
         if (get($options, "myReviewRequests"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")";
         else if (get($options, "myReviews"))
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "myOutstandingReviews"))
-            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr) and PaperReview.reviewNeedsSubmit!=0)";
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin and PaperReview.reviewNeedsSubmit!=0)";
         else if (get($options, "myReviewsOpt"))
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
         else if (get($options, "allReviews") || get($options, "allReviewScores")) {
             $x = (get($options, "reviewLimitSql") ? " and (" . $options["reviewLimitSql"] . ")" : "");
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId$x)";
-        } else if (!get($options, "author"))
-            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and (PaperReview.contactId=$contactId$qr))";
+        } else if (!get($options, "author") && $contactId)
+            $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
         // started reviews
         if (get($options, "startedReviewCount"))
@@ -1923,9 +1924,7 @@ class Conf {
         }
 
         // fields
-        if (get($options, "author"))
-            $cols[] = "null reviewType, null reviewId, null myReviewType";
-        else {
+        if ($myPaperReview) {
             // see also papercolumn.php
             array_push($cols, "PaperReview.reviewType, PaperReview.reviewId",
                        "PaperReview.reviewModified, PaperReview.reviewSubmitted, PaperReview.timeApprovalRequested",
@@ -1937,7 +1936,8 @@ class Conf {
                        "min($myPaperReview.reviewNeedsSubmit) as myReviewNeedsSubmit",
                        "$myPaperReview.contactId as myReviewContactId",
                        "PaperReview.reviewRound");
-        }
+        } else
+            $cols[] = "null reviewType, null reviewId, null myReviewType";
 
         if ($reviewerQuery || $scoresQuery) {
             $cols[] = "PaperReview.reviewEditVersion as reviewEditVersion";
@@ -2054,7 +2054,7 @@ class Conf {
         else if ($reviewerQuery || $scoresQuery)
             $pq .= "\ngroup by Paper.paperId, PaperReview.reviewId";
         else
-            $pq .= "\ngroup by Paper.paperId";
+            $pq .= "\ngroup by Paper.paperId" . ($tokens ? ", PaperReview.reviewId" : "");
         if (get($options, "order") && $options["order"] != "order by Paper.paperId")
             $pq .= "\n" . $options["order"];
         else {
