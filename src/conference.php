@@ -1847,7 +1847,8 @@ class Conf {
         // my review
         $reviewjoin = "PaperReview.contactId=$contactId";
         $tokens = false;
-        if ($contact && ($tokens = $contact->review_tokens()))
+        if ($contact && ($reviewerQuery || $myPaperReview)
+            && ($tokens = $contact->review_tokens()))
             $reviewjoin = "($reviewjoin or reviewToken in (" . join(",", $tokens) . "))";
         if (get($options, "myReviewRequests"))
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and PaperReview.requestedBy=$contactId and PaperReview.reviewType=" . REVIEW_EXTERNAL . ")";
@@ -1860,7 +1861,7 @@ class Conf {
         else if (get($options, "allReviews") || get($options, "allReviewScores")) {
             $x = (get($options, "reviewLimitSql") ? " and (" . $options["reviewLimitSql"] . ")" : "");
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId$x)";
-        } else if (!get($options, "author") && $contactId)
+        } else if ($myPaperReview)
             $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and $reviewjoin)";
 
         // started reviews
@@ -2051,15 +2052,15 @@ class Conf {
         // grouping and ordering
         if (get($options, "allComments"))
             $pq .= "\ngroup by Paper.paperId, PaperComment.commentId";
-        else if ($reviewerQuery || $scoresQuery)
+        else if ($reviewerQuery || $scoresQuery || $tokens)
             $pq .= "\ngroup by Paper.paperId, PaperReview.reviewId";
         else
-            $pq .= "\ngroup by Paper.paperId" . ($tokens ? ", PaperReview.reviewId" : "");
+            $pq .= "\ngroup by Paper.paperId";
         if (get($options, "order") && $options["order"] != "order by Paper.paperId")
             $pq .= "\n" . $options["order"];
         else {
             $pq .= "\norder by Paper.paperId";
-            if ($reviewerQuery || $scoresQuery)
+            if ($reviewerQuery || $scoresQuery || $tokens)
                 $pq .= ", PaperReview.reviewOrdinal";
             if (isset($options["allComments"]))
                 $pq .= ", PaperComment.commentId";

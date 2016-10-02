@@ -113,6 +113,7 @@ class PaperList {
     private $listNumber;
     private $_paper_link_page;
     private $_paper_link_mode;
+    private $_allow_duplicates;
     private $viewmap;
     private $atab;
     private $_row_id_pattern = null;
@@ -157,6 +158,7 @@ class PaperList {
             $this->_paper_link_page = "paper";
             $this->_paper_link_mode = "edit";
         }
+        $this->_allow_duplicates = false;
         $this->listNumber = 0;
         if (get($args, "list"))
             $this->listNumber = SessionList::allocate($search->listId($this->sortdef()));
@@ -479,6 +481,8 @@ class PaperList {
     private function _default_linkto($page) {
         if (!$this->_paper_link_page)
             $this->_paper_link_page = $page;
+        if ($page === "review" || $page === "finishreview")
+            $this->_allow_duplicates = true;
     }
 
     private function _list_columns($listname) {
@@ -594,10 +598,11 @@ class PaperList {
         if (!$result)
             return null;
         $rows = $pids = array();
-        while (($row = PaperInfo::fetch($result, $this->contact))) {
-            $rows[] = $row;
-            $pids[$row->paperId] = true;
-        }
+        while (($row = PaperInfo::fetch($result, $this->contact)))
+            if ($this->_allow_duplicates || !isset($pids[$row->paperId])) {
+                $rows[] = $row;
+                $pids[$row->paperId] = true;
+            }
         Dbl::free($result);
 
         // prepare review query (see also search > getfn == "reviewers")
