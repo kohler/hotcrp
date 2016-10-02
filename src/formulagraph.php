@@ -365,7 +365,7 @@ class FormulaGraph {
         $this->fy->add_query_options($queryOptions);
         if ($this->fx->needs_review() || $this->fy->needs_review())
             $queryOptions["reviewOrdinals"] = true;
-        $result = $this->conf->paper_result($this->user, $queryOptions);
+        $result = $this->user->paper_result($queryOptions);
 
         if ($this->type == self::CDF)
             $data = $this->_cdf_data($result);

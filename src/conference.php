@@ -1758,7 +1758,7 @@ class Conf {
         return $table . "interest";
     }
 
-    function paperQuery($contact, $options = array()) {
+    private function paperQuery(Contact $contact = null, $options = array()) {
         // Options:
         //   "paperId" => $pid  Only paperId $pid (if array, any of those)
         //   "reviewId" => $rid Only paper reviewed by $rid
@@ -1790,12 +1790,7 @@ class Conf {
         $reviewerQuery = isset($options["myReviews"]) || isset($options["allReviews"]) || isset($options["myReviewRequests"]) || isset($options["myReviewsOpt"]) || isset($options["myOutstandingReviews"]);
         $allReviewerQuery = isset($options["allReviews"]) || isset($options["allReviewScores"]);
         $scoresQuery = !$reviewerQuery && isset($options["allReviewScores"]);
-        if (is_object($contact))
-            $contactId = $contact->contactId;
-        else {
-            $contactId = (int) $contact;
-            $contact = null;
-        }
+        $contactId = $contact ? $contact->contactId : 0;
         if (isset($options["reviewer"]) && is_object($options["reviewer"]))
             $reviewerContactId = $options["reviewer"]->contactId;
         else if (isset($options["reviewer"]))
@@ -2074,7 +2069,7 @@ class Conf {
         return $pq . "\n";
     }
 
-    function paperRow($sel, $contact, &$whyNot = null) {
+    function paperRow($sel, Contact $contact = null, &$whyNot = null) {
         $ret = null;
         $whyNot = array();
 
@@ -2107,8 +2102,8 @@ class Conf {
         return $ret;
     }
 
-    function paper_result($contact, $options = []) {
-        return $this->qe_raw($this->paperQuery($contact, $options));
+    function paper_result(Contact $user = null, $options = []) {
+        return $this->qe_raw($this->paperQuery($user, $options));
     }
 
     function review_rows($q, $contact) {

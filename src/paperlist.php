@@ -590,7 +590,7 @@ class PaperList {
         $this->qopts["scores"] = array_keys($this->qopts["scores"]);
         if (empty($this->qopts["scores"]))
             unset($this->qopts["scores"]);
-        $result = $this->conf->paper_result($this->contact, $this->qopts);
+        $result = $this->contact->paper_result($this->qopts);
         if (!$result)
             return null;
         $rows = $pids = array();

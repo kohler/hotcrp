@@ -25,7 +25,7 @@ class GetRevpref_SearchAction extends SearchAction {
         if (!$Rev->isPC)
             return self::EPERM;
 
-        $result = $user->conf->paper_result($Rev, array("paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1));
+        $result = $Rev->paper_result(["paperId" => $ssel->selection(), "topics" => 1, "reviewerPreference" => 1]);
         $texts = array();
         while (($prow = PaperInfo::fetch($result, $Rev))) {
             $item = ["paper" => $prow->paperId, "title" => $prow->title];
@@ -59,7 +59,7 @@ class GetAllRevpref_SearchAction extends SearchAction {
         $actions[] = [2060, $this->subname, "Review assignments", "PC review preferences"];
     }
     function run(Contact $user, $qreq, $ssel) {
-        $result = $user->conf->paper_result($user, array("paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1));
+        $result = $user->paper_result(["paperId" => $ssel->selection(), "allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]);
         $texts = array();
         $pcm = $user->conf->pc_members();
         $has_conflict = $has_expertise = $has_topic_score = false;

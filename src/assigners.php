@@ -168,7 +168,7 @@ class AssignmentState {
             if (!isset($this->prows[$p]))
                 $fetch_pids[] = $p;
         if (count($fetch_pids)) {
-            $result = $this->conf->paper_result($this->contact, array("paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()));
+            $result = $this->contact->paper_result(["paperId" => $fetch_pids, "tags" => $this->conf->has_tracks()]);
             while ($result && ($prow = PaperInfo::fetch($result, $this->contact)))
                 $this->prows[$prow->paperId] = $prow;
             Dbl::free($result);
