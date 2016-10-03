@@ -1502,16 +1502,12 @@ class Contact {
             // Load from database
             $result = null;
             if ($this->contactId > 0) {
-                $qr = "";
-                $qv = [$this->contactId];
-                if ($this->review_tokens_) {
-                    $qr = " or r.reviewToken?a";
-                    $qv[] = $this->review_tokens_;
-                }
-                $result = $this->conf->qe_apply("select r.reviewId from PaperReview r
+                $qr = $this->review_tokens_ ? " or r.reviewToken?a" : "";
+                $result = $this->conf->qe("select r.reviewId from PaperReview r
                     join Paper p on (p.paperId=r.paperId and p.timeSubmitted>0)
                     where (r.contactId=?$qr)
-                    and r.reviewNeedsSubmit!=0 limit 1", $qv);
+                    and r.reviewNeedsSubmit!=0 limit 1",
+                    $this->contactId, $this->review_tokens_);
             }
             $row = edb_row($result);
             Dbl::free($result);
