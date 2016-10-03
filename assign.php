@@ -155,7 +155,7 @@ function pcAssignments() {
     $round_number = null;
 
     $qv = [$prow->paperId, $prow->paperId];
-    $where = array("(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
+    $where = array("ContactInfo.roles!=0", "(ContactInfo.roles&" . Contact::ROLE_PC . ")!=0");
     if (@$_REQUEST["reviewer"] && isset($pcm[$_REQUEST["reviewer"]])) {
         $where[] = "ContactInfo.contactId=?";
         $qv[] = $_REQUEST["reviewer"];
@@ -506,7 +506,7 @@ if ($Me->can_administer($prow)) {
         left join PaperReviewPreference on (PaperReviewPreference.contactId=ContactInfo.contactId and PaperReviewPreference.paperId=?)
         left join (select PaperReview.contactId, group_concat(reviewType separator '') as allReviews from PaperReview join Paper on (Paper.paperId=PaperReview.paperId and timeWithdrawn<=0) group by PaperReview.contactId) as AllReviews on (AllReviews.contactId=ContactInfo.contactId)
         left join PaperReviewRefused PRR on (PRR.paperId=? and PRR.contactId=ContactInfo.contactId)
-        where (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
+        where ContactInfo.roles!=0 and (ContactInfo.roles&" . Contact::ROLE_PC . ")!=0
         group by ContactInfo.contactId",
         $prow->paperId, $prow->paperId, $prow->paperId, $prow->paperId);
     $pcx = array();

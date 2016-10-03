@@ -150,7 +150,7 @@ class Conf {
 
         // update schema
         $this->sversion = $this->settings["allowPaperOption"];
-        if ($this->sversion < 151) {
+        if ($this->sversion < 152) {
             require_once("updateschema.php");
             $old_nerrors = Dbl::$nerrors;
             updateSchema($this);
@@ -1010,7 +1010,7 @@ class Conf {
     function site_contact() {
         $contactEmail = $this->opt("contactEmail");
         if (!$contactEmail || $contactEmail == "you@example.com") {
-            $result = $this->ql("select firstName, lastName, email from ContactInfo where (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
+            $result = $this->ql("select firstName, lastName, email from ContactInfo where roles!=0 and (roles&" . (Contact::ROLE_CHAIR | Contact::ROLE_ADMIN) . ")!=0 order by (roles&" . Contact::ROLE_CHAIR . ") desc limit 1");
             if ($result && ($row = $result->fetch_object())) {
                 $this->set_opt("defaultSiteContact", true);
                 $this->set_opt("contactName", Text::name_text($row));
@@ -1055,7 +1055,7 @@ class Conf {
         if ($this->_pc_members_cache === null
             || $this->_pc_members_cache_by_last != opt("sortByLastName")) {
             $pc = array();
-            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where (roles&" . Contact::ROLE_PC . ")!=0");
+            $result = $this->q("select firstName, lastName, affiliation, email, contactId, roles, contactTags, disabled from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
             $by_name_text = array();
             $this->_pc_tags_cache = ["pc" => "pc"];
             while ($result && ($row = Contact::fetch($result))) {
@@ -2248,7 +2248,7 @@ class Conf {
     function preferenceConflictQuery($type, $extra) {
         $q = "select PRP.paperId, PRP.contactId, PRP.preference
                 from PaperReviewPreference PRP
-                join ContactInfo c on (c.contactId=PRP.contactId and (c.roles&" . Contact::ROLE_PC . ")!=0)
+                join ContactInfo c on (c.contactId=PRP.contactId and c.roles!=0 and (c.roles&" . Contact::ROLE_PC . ")!=0)
                 join Paper P on (P.paperId=PRP.paperId)
                 left join PaperConflict PC on (PC.paperId=PRP.paperId and PC.contactId=PRP.contactId)
                 where PRP.preference<=-100 and coalesce(PC.conflictType,0)<=0

@@ -2645,7 +2645,7 @@ class PaperSearch {
                 . " from Paper join ContactInfo"
                 . " left join PaperReviewPreference on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId=ContactInfo.contactId)"
                 . " where coalesce(preference,0)" . $rsm->preference_match->countexpr()
-                . " and " . ($rsm->has_contacts() ? $rsm->contact_match_sql("ContactInfo.contactId") : "(roles&" . Contact::ROLE_PC . ")!=0")
+                . " and " . ($rsm->has_contacts() ? $rsm->contact_match_sql("ContactInfo.contactId") : "roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0")
                 . " group by Paper.paperId";
         } else {
             $where = array();

@@ -65,7 +65,7 @@ CREATE TABLE `ContactInfo` (
   `data` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`contactId`),
   UNIQUE KEY `contactId` (`contactId`),
-  UNIQUE KEY `contactIdRoles` (`contactId`,`roles`),
+  UNIQUE KEY `rolesContactId` (`roles`,`contactId`),
   UNIQUE KEY `email` (`email`),
   KEY `fullName` (`lastName`,`firstName`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -505,7 +505,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 151);
+insert into Settings (name, value) values ('allowPaperOption', 152);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

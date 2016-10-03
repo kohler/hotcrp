@@ -446,7 +446,7 @@ class SessionList {
             $searchtype = (defval($opt, "t") === "all" ? "all" : "pc");
             $q = "select contactId from ContactInfo";
             if ($searchtype == "pc")
-                $q .= " where (roles&" . Contact::ROLE_PC . ")!=0";
+                $q .= " where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
             $result = Dbl::ql("$q order by lastName, firstName, email");
             $a = array();
             while (($row = edb_row($result)))

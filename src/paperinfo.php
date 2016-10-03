@@ -72,7 +72,7 @@ class PaperContactInfo {
                 join ContactInfo
                 left join PaperReview on (PaperReview.paperId=$pid and PaperReview.contactId=ContactInfo.contactId)
                 left join PaperConflict on (PaperConflict.paperId=$pid and PaperConflict.contactId=ContactInfo.contactId)
-                where (roles&" . Contact::ROLE_PC . ")!=0");
+                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0");
         } else {
             $cids = [$cid];
             if ($cid) {

@@ -292,7 +292,8 @@ class AssignmentCountSet {
                 left join PaperReview r on (r.contactId=u.contactId)
                 left join Paper p on (p.paperId=r.paperId)
                 where p.timeWithdrawn<=0 and p.timeSubmitted>0
-                and (u.roles&" . Contact::ROLE_PC . ")!=0 group by u.contactId");
+                and u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0
+                group by u.contactId");
         while (($row = edb_row($result))) {
             $ct = $this->ensure($row[0]);
             $ct->rev = strlen($row[1]);

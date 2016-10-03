@@ -1022,7 +1022,7 @@ class Contact {
         $old_roles = $this->roles;
         // ensure there's at least one system administrator
         if (!($new_roles & self::ROLE_ADMIN) && ($old_roles & self::ROLE_ADMIN)
-            && !(($result = $this->conf->qe("select contactId from ContactInfo where (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
+            && !(($result = $this->conf->qe("select contactId from ContactInfo where roles!=0 and (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1"))
                  && edb_nrows($result) > 0))
             $new_roles |= self::ROLE_ADMIN;
         // log role change

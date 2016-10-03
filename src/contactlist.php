@@ -623,11 +623,11 @@ class ContactList {
         if (isset($queryOptions["where"]))
             $mainwhere[] = $queryOptions["where"];
         if ($this->limit == "pc")
-            $mainwhere[] = "(u.roles&" . Contact::ROLE_PC . ")!=0";
+            $mainwhere[] = "u.roles!=0 and (u.roles&" . Contact::ROLE_PC . ")!=0";
         if ($this->limit == "admin")
-            $mainwhere[] = "(u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
+            $mainwhere[] = "u.roles!=0 and (u.roles&" . (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR) . ")!=0";
         if ($this->limit == "pcadmin" || $this->limit == "pcadminx")
-            $mainwhere[] = "(u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
+            $mainwhere[] = "u.roles!=0 and (u.roles&" . Contact::ROLE_PCLIKE . ")!=0";
         if (count($mainwhere))
             $pq .= "\twhere " . join(" and ", $mainwhere) . "\n";
 

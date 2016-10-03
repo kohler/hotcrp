@@ -155,7 +155,7 @@ echo "<table><tr><td><div class='aahc assignpc_pcsel'>",
 $result = $Conf->qe_raw("select ContactInfo.contactId, count(reviewId)
                 from ContactInfo
                 left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewType>=" . REVIEW_SECONDARY . ")
-                where (roles&" . Contact::ROLE_PC . ")!=0
+                where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
                 group by ContactInfo.contactId");
 $rev_count = array();
 while (($row = edb_row($result)))

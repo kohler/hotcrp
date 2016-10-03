@@ -339,7 +339,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
 	group_concat(overAllMerit) scores
 	from ContactInfo
 	left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
-        where (roles&" . Contact::ROLE_PC . ")!=0
+        where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0
 	group by ContactInfo.contactId");
         while (($row = edb_row($result))) {
             ++$npc;
