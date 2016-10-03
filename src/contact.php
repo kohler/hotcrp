@@ -1446,7 +1446,7 @@ class Contact {
         // Load from database
         $result = null;
         if ($this->contactId > 0) {
-            $qr = $this->review_tokens_ ? "" : " or reviewToken?a";
+            $qr = $this->review_tokens_ ? " or reviewToken?a" : "";
             $result = $this->conf->qe("select (select max(conflictType) from PaperConflict where contactId=?), (select paperId from PaperReview where contactId=?$qr limit 1)", $this->contactId, $this->contactId, $this->review_tokens_);
         }
         $row = edb_row($result);
