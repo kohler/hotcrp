@@ -517,6 +517,7 @@ class ContactList {
         global $Conf;
 
         $aulimit = (strlen($this->limit) >= 2 && $this->limit[0] == 'a' && $this->limit[1] == 'u');
+        $rf = ["r.contactId" => true];
         $pq = "select u.contactId,
         firstName, lastName, email, affiliation, roles, contactTags,
         voicePhoneNumber,
@@ -527,9 +528,9 @@ class ContactList {
             $pq .= ",
         count(if(r.reviewNeedsSubmit<=0,r.reviewSubmitted,r.reviewId)) as numReviews,
         count(r.reviewSubmitted) as numReviewsSubmitted";
+            $rf["r.reviewNeedsSubmit"] = $rf["r.reviewSubmitted"] = $rf["r.reviewId"] = true;
             if (isset($queryOptions["revratings"]))
-                $pq .= ",\n     sum(r.numRatings) as numRatings,
-        sum(r.sumRatings) as sumRatings";
+                $pq .= ",\n     sum(r.numRatings) as numRatings, sum(r.sumRatings) as sumRatings";
         }
         if (isset($queryOptions["leads"])) {
             if ($this->contact->privChair)
@@ -544,13 +545,16 @@ class ContactList {
                 $pq .= ",\n    (select count(p.paperId) from Paper p left join PaperConflict c on (c.paperId=p.paperId and c.contactId={$this->contact->contactId}) where shepherdContactId=u.contactId and conflictType is null) numShepherds";
         }
         if (isset($queryOptions['scores']))
-            foreach ($queryOptions['scores'] as $score)
+            foreach ($queryOptions['scores'] as $score) {
                 $pq .= ",\n\tgroup_concat(if(r.reviewSubmitted>0,r.$score,null)) as $score";
-        if (isset($queryOptions["repapers"]))
+                $rf["r.$score"] = $rf["r.reviewSubmitted"] = true;
+            }
+        if (isset($queryOptions["repapers"])) {
             $pq .= ",\n\tgroup_concat(r.paperId) as paperIds,
         group_concat(r.reviewId) as reviewIds,
         group_concat(coalesce(r.reviewOrdinal,0)) as reviewOrdinals";
-        else if (isset($queryOptions["papers"]))
+            $rf["r.paperId"] = $rf["r.reviewId"] = $rf["r.reviewOrdinal"] = true;
+        } else if (isset($queryOptions["papers"]))
             $pq .= ",\n\t(select group_concat(paperId) from PaperConflict where contactId=u.contactId and conflictType>=" . CONFLICT_AUTHOR . ") paperIds";
 
         $pq .= "\n      from ContactInfo u\n";
@@ -558,7 +562,7 @@ class ContactList {
             $j = "left join";
             if ($this->limit == "re" || $this->limit == "req" || $this->limit == "ext" || $this->limit == "resub" || $this->limit == "extsub")
                 $j = "join";
-            $pq .= "    $j (select r.*";
+            $pq .= "    $j (select " . join(", ", array_keys($rf));
             if (isset($queryOptions["revratings"]))
                 $pq .= ", count(rating) as numRatings, sum(if(rating>0,1,0)) as sumRatings";
             $pq .= "\n\t\tfrom PaperReview r
