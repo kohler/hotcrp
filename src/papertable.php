@@ -718,9 +718,7 @@ class PaperTable {
         $aulist = $this->prow->author_list();
 
         // find contact author information, combine with author table
-        $result = $this->conf->qe_raw("select firstName, lastName, email, '' as affiliation, contactId
-                from ContactInfo join PaperConflict using (contactId)
-                where paperId=" . $this->prow->paperId . " and conflictType>=" . CONFLICT_AUTHOR);
+        $result = $this->conf->qe("select firstName, lastName, '' affiliation, email, contactId from ContactInfo where contactId?a", array_keys($this->prow->contacts()));
         $contacts = array();
         while (($row = edb_orow($result))) {
             $match = -1;
