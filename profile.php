@@ -717,13 +717,13 @@ echo "</div>\n"; // f-contain
 
 echo '<h3 class="profile">Email notification</h3>';
 $follow = isset($formcj->follow) ? $formcj->follow : (object) [];
-if ((!$newProfile && $Acct->isPC) || $Me->privChair) {
+if ($newProfile ? $Me->privChair : $Acct->isPC) {
     echo "<table><tr><td>Send mail for: &nbsp;</td>",
         "<td>", Ht::checkbox_h("watchcomment", 1, !!get($follow, "reviews")), "&nbsp;",
         Ht::label($Conf->_("Reviews and comments on authored or reviewed papers")), "</td></tr>",
         "<tr><td></td><td>", Ht::checkbox_h("watchcommentall", 1, !!get($follow, "allreviews")), "&nbsp;",
         Ht::label($Conf->_("Reviews and comments on <i>any</i> paper")), "</td></tr>";
-    if ($Me->privChair)
+    if (!$newProfile && $Acct->privChair)
         echo "<tr><td></td><td>", Ht::checkbox_h("watchfinalall", 1, !!get($follow, "allfinal")), "&nbsp;",
             Ht::label($Conf->_("Updates to final versions")), "</td></tr>";
     echo "</table>";
