@@ -834,9 +834,12 @@ function whyNotText($whyNot, $action, $suggest_redirection = false) {
         else
             $start = 1;
         $end = $conf->setting($dname, -1);
-        if ($start <= 0 || $start == $end)
-            $ms[] = $conf->_("You can’t $action submission #%d yet.", $paperId);
-        else if ($start > 0 && $Now < $start)
+        if ($start <= 0 || $start == $end) {
+            if ($dname[0] == "p" || $dname[0] == "e")
+                $ms[] = $conf->_("You can’t $action submission #%d because the site is not open for reviewing.", $paperId);
+            else
+                $ms[] = $conf->_("You can’t $action submission #%d yet.", $paperId);
+        } else if ($start > 0 && $Now < $start)
             $ms[] = $conf->_("You can’t $action submission #%d until %s.", $paperId, $conf->printableTime($start, "span"));
         else if ($end > 0 && $Now > $end) {
             if ($dname == "sub_reg")
