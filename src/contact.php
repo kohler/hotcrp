@@ -2345,7 +2345,7 @@ class Contact {
             return null;
         $rights = $this->rights($prow);
         $whyNot = $prow->initial_whynot();
-        if ($rights->review_type < REVIEW_PC)
+        if ($rights->review_type < REVIEW_PC && !$rights->allow_administer)
             $whyNot["permission"] = 1;
         else {
             $whyNot["deadline"] = ($rights->allow_pc ? "pcrev_hard" : "extrev_hard");
