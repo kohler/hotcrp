@@ -53,8 +53,8 @@ class Dbl {
     static public $nerrors = 0;
     static public $default_dblink;
     static private $error_handler = "Dbl::default_error_handler";
-    static private $log_queries = false;
-    static private $log_queries_limit = 0;
+    static private $query_log = false;
+    static private $query_log_key = false;
     static public $check_warnings = true;
     static public $landmark_sanitizer = "/^Dbl::/";
 
@@ -163,15 +163,16 @@ class Dbl {
         else if (($flags & self::F_APPLY) && isset($args[$argpos + 1])
                  && !is_array($args[$argpos + 1]))
             trigger_error(self::landmark() . ": argument is not array");
-        if ($log_location && self::$log_queries !== false) {
-            $location = self::landmark();
-            if (!isset(self::$log_queries[$location]))
-                self::$log_queries[$location] = array(substr(simplify_whitespace($args[$argpos]), 0, 80), 0);
-            ++self::$log_queries[$location][1];
-        }
         $q = $args[$argpos];
         if (($flags & self::F_MULTI) && is_array($q))
             $q = join(";", $q);
+        if ($log_location && self::$query_log !== false) {
+            self::$query_log_key = $qx = simplify_whitespace($q);
+            if (isset(self::$query_log[$qx]))
+                ++self::$query_log[$qx][1];
+            else
+                self::$query_log[$qx] = [0, 1, self::landmark()];
+        }
         if (count($args) === $argpos + 1)
             return array($dblink, $q, array());
         else if ($flags & self::F_APPLY)
@@ -273,12 +274,18 @@ class Dbl {
     static private function do_query_with($dblink, $qstr, $argv, $flags) {
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        if ($qstr)
-            return self::do_result($dblink, $flags, $qstr, $dblink->query($qstr));
-        else {
+        if (!$qstr) {
             error_log(self::landmark() . ": empty query");
             return false;
         }
+        if (self::$query_log_key) {
+            $time = microtime(true);
+            $result = $dblink->query($qstr);
+            self::$query_log[self::$query_log_key][0] += microtime(true) - $time;
+            self::$query_log_key = false;
+        } else
+            $result = $dblink->query($qstr);
+        return self::do_result($dblink, $flags, $qstr, $result);
     }
 
     static private function do_query($args, $flags) {
@@ -507,32 +514,31 @@ class Dbl {
     }
 
     static function log_queries($limit) {
+        if (is_float($limit))
+            $limit = $limit >= 1 || ($limit > 0 && mt_rand() < $limit * mt_getrandmax());
         if (!$limit)
-            self::$log_queries = false;
-        else if (self::$log_queries === false) {
+            self::$query_log = false;
+        else if (self::$query_log === false) {
             register_shutdown_function("Dbl::shutdown");
-            self::$log_queries = array();
-            self::$log_queries_limit = $limit;
+            self::$query_log = array();
         }
     }
 
     static function shutdown() {
-        if (self::$log_queries) {
-            uasort(self::$log_queries, function ($a, $b) {
-                return $a[1] - $b[1];
+        if (self::$query_log) {
+            uasort(self::$query_log, function ($a, $b) {
+                return $b[0] < $a[0] ? -1 : $b[0] > $a[0];
             });
-            $msg = true;
-            foreach (self::$log_queries as $where => $what) {
-                if (self::$log_queries_limit > $what[1])
-                    break;
-                if ($msg) {
-                    error_log("Query log for " . Navigation::self());
-                    $msg = false;
-                }
-                error_log("  $where: #$what[1]: $what[0]");
+            $self = Navigation::self();
+            $i = 1;
+            $n = count(self::$query_log);
+            foreach (self::$query_log as $where => $what) {
+                $a = [$what[0], $what[1], $what[2], $where];
+                error_log("query_log: $self #$i/$n: " . json_encode($a));
+                ++$i;
             }
         }
-        self::$log_queries = false;
+        self::$query_log = false;
     }
 
     static function utf8(/* [$dblink,] $qstr */) {
