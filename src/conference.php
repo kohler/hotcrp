@@ -1810,16 +1810,16 @@ class Conf {
             $paperset[] = self::_cvt_numeric_set($options["paperId"]);
         if (isset($options["reviewId"])) {
             if (is_numeric($options["reviewId"])) {
-                $result = $this->qe("select paperId from PaperReview where reviewId=" . $options["reviewId"]);
+                $result = $this->qe("select paperId from PaperReview where reviewId=?", $options["reviewId"]);
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else if (preg_match('/^(\d+)([A-Z][A-Z]?)$/i', $options["reviewId"], $m)) {
-                $result = $this->qe("select paperId from PaperReview where paperId=$m[1] and reviewOrdinal=" . parseReviewOrdinal($m[2]));
+                $result = $this->qe("select paperId from PaperReview where paperId=? and reviewOrdinal=?", $m[1], parseReviewOrdinal($m[2]));
                 $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
             } else
                 $paperset[] = array();
         }
         if (isset($options["commentId"])) {
-            $result = $this->qe("select paperId from PaperComment where commentId" . sql_in_numeric_set(self::_cvt_numeric_set($options["commentId"])));
+            $result = $this->qe("select paperId from PaperComment where commentId?a", self::_cvt_numeric_set($options["commentId"]));
             $paperset[] = self::_cvt_numeric_set(edb_first_columns($result));
         }
         if (count($paperset) > 1)
@@ -2183,13 +2183,13 @@ class Conf {
                 left join ContactInfo as ReqCI on (ReqCI.contactId=PaperReview.requestedBy)\n";
 
         $where = array();
-        if (isset($reviewId)) {
-            $where[] = "PaperReview.reviewId=?";
-            $qv[] = $reviewId;
-        }
         if (isset($paperId)) {
             $where[] = "PaperReview.paperId=?";
             $qv[] = $paperId;
+        }
+        if (isset($reviewId)) {
+            $where[] = "PaperReview.reviewId=?";
+            $qv[] = $reviewId;
         }
         $cwhere = array();
         if (isset($selector["contactId"])) {

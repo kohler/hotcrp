@@ -325,7 +325,7 @@ class PaperStatus {
         // check filter
         if (get($docj, "filter") && is_int($docj->filter)) {
             if (is_int(get($docj, "original_id")))
-                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperStorageId=?", $docj->original_id);
+                $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $docj->original_id);
             else if (is_string(get($docj, "original_sha1")))
                 $result = $this->conf->qe("select paperStorageId, timestamp, sha1 from PaperStorage where paperId=? and sha1=?", $this->paperid, Filer::binary_sha1($docj->original_sha1));
             else if ($o->id == DTYPE_SUBMISSION || $o->id == DTYPE_FINAL)
