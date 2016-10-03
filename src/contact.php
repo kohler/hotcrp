@@ -1503,12 +1503,15 @@ class Contact {
             $result = null;
             if ($this->contactId > 0) {
                 $qr = "";
-                if ($this->review_tokens_)
-                    $qr = " or r.reviewToken in (" . join(",", $this->review_tokens_) . ")";
-                $result = $this->conf->qe("select r.reviewId from PaperReview r
+                $qv = [$this->contactId];
+                if ($this->review_tokens_) {
+                    $qr = " or r.reviewToken?a";
+                    $qv[] = $this->review_tokens_;
+                }
+                $result = $this->conf->qe_apply("select r.reviewId from PaperReview r
                     join Paper p on (p.paperId=r.paperId and p.timeSubmitted>0)
-                    where (r.contactId=$this->contactId$qr)
-                    and r.reviewNeedsSubmit!=0 limit 1");
+                    where (r.contactId=?$qr)
+                    and r.reviewNeedsSubmit!=0 limit 1", $qv);
             }
             $row = edb_row($result);
             Dbl::free($result);
@@ -1534,7 +1537,7 @@ class Contact {
         if (!isset($this->is_lead_)) {
             $result = null;
             if ($this->contactId > 0)
-                $result = $this->conf->qe("select paperId from Paper where leadContactId=$this->contactId limit 1");
+                $result = $this->conf->qe("select paperId from Paper where leadContactId=? limit 1", $this->contactId);
             $this->is_lead_ = edb_nrows($result) > 0;
         }
         return $this->is_lead_;
@@ -1546,7 +1549,7 @@ class Contact {
             $result = null;
             if ($this->contactId > 0 && $this->isPC
                 && $this->conf->has_any_manager())
-                $result = $this->conf->qe("select paperId from Paper where managerContactId=$this->contactId limit 1");
+                $result = $this->conf->qe("select paperId from Paper where managerContactId=? limit 1", $this->contactId);
             $this->is_explicit_manager_ = edb_nrows($result) > 0;
             Dbl::free($result);
         }
