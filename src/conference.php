@@ -110,7 +110,7 @@ class Conf {
             Dbl::set_error_handler(array($this, "query_error_handler"));
         }
         if ($this->dblink) {
-            Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|call_user_func)/";
+            Dbl::$landmark_sanitizer = "/^(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
             $this->load_settings();
         } else
             $this->crosscheck_options();
