@@ -1043,7 +1043,7 @@ class Contact {
     }
 
     private function load_by_id($cid) {
-        $result = $this->conf->q("select ContactInfo.* from ContactInfo where contactId=?", $cid);
+        $result = $this->conf->q("select * from ContactInfo where contactId=?", $cid);
         if (($row = $result ? $result->fetch_object() : null))
             $this->merge($row);
         Dbl::free($result);
