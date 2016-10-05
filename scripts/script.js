@@ -5328,7 +5328,8 @@ function unload_list() {
 }
 function row_click(e) {
     var j = $(e.target);
-    if (j.hasClass("pl_id") || j.hasClass("pl_title"))
+    if (j.hasClass("pl_id") || j.hasClass("pl_title")
+        || j.closest("td").hasClass("pl_rowclick"))
         $(this).find("a.pnum")[0].click();
 }
 function override_conflict(e) {
@@ -5337,7 +5338,7 @@ function override_conflict(e) {
 function prepare() {
     $(document.body).on("click", "a", add_list);
     $(document.body).on("submit", "form", add_list);
-    $(document.body).on("click", "tbody.pltable tr.pl", row_click);
+    $(document.body).on("click", "tbody.pltable > tr.pl", row_click);
     $(document.body).on("click", "span.fn5 > a", override_conflict);
     hotcrp_list && $(window).on("beforeunload", unload_list);
 }
@@ -5743,7 +5744,7 @@ function load_more_events() {
 function render_events(e, rows) {
     var j = $(e).find("tbody");
     if (!j.length) {
-        $(e).append("<table class=\"hotcrp_events_table\"><tbody></tbody></table><div class=\"g\"><button type=\"button\">More</button></div>");
+        $(e).append("<table class=\"hotcrp_events_table\"><tbody class=\"pltable\"></tbody></table><div class=\"g\"><button type=\"button\">More</button></div>");
         $(e).find("button").on("click", load_more_events);
         j = $(e).find("tbody");
     }

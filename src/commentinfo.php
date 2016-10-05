@@ -220,15 +220,16 @@ class CommentInfo {
         return $x . "\n";
     }
 
-    static public function unparse_flow_entry($crow, $contact, $trclass) {
+    static public function unparse_flow_entry(Contact $contact, $crow) {
         // See also ReviewForm::reviewFlowEntry
         global $Conf;
         $a = "<a href=\"" . hoturl("paper", "p=$crow->paperId#" . self::unparse_html_id($crow)) . "\"";
-        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
+        $t = '<tr class="pl"><td class="pl_activityicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . '</a></td><td class="pl_activityid pnum">'
-            . $a . ">#$crow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . " class=\"ptitle\">"
+            . '</a></td><td class="pl_activityid pl_rowclick">'
+            . $a . ' class="pnum">#' . $crow->paperId . '</a></td>'
+            . '<td class="pl_activitymain pl_rowclick"><small>'
+            . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($crow->title, 80))
             . "</a>";
         $idable = $contact->can_view_comment_identity($crow, $crow, false);
@@ -239,9 +240,9 @@ class CommentInfo {
         $t .= ' <span class="barsep">·</span> ' . $time;
         if ($idable)
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
-        return $t . '</small><br /><a class="q" ' . substr($a, 3) . ">"
+        return $t . "</small><br />"
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($crow->commentOverflow ? : $crow->comment, 300))
-            . "</a></td></tr>";
+            . "</td></tr>";
     }
 
 

@@ -1865,15 +1865,16 @@ $blind\n";
     }
 
 
-    function reviewFlowEntry($contact, $rrow, $trclass) {
+    function reviewFlowEntry(Contact $contact, $rrow) {
         // See also CommentInfo::unparse_flow_entry
-        $barsep = " <span class='barsep'>·</span> ";
-        $a = "<a href='" . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . "'";
-        $t = "<tr class='$trclass'><td class='pl_activityicon'>" . $a . ">"
+        $barsep = ' <span class="barsep">·</span> ';
+        $a = '<a href="' . hoturl("paper", "p=$rrow->paperId#r" . unparseReviewOrdinal($rrow)) . '"';
+        $t = '<tr class="pl"><td class="pl_activityicon">' . $a . '>'
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . "</a></td><td class='pl_activityid pnum'>"
-            . $a . ">#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . " class=\"ptitle\">"
+            . '</a></td><td class="pl_activityid pl_rowclick">'
+            . $a . ' class="pnum">#' . $rrow->paperId . '</a></td>'
+            . '<td class="pl_activitymain pl_rowclick"><small>'
+            . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($rrow->title, 80))
             . "</a>";
         if ($rrow->reviewModified > 1) {
@@ -1885,7 +1886,7 @@ $blind\n";
         }
         if ($contact->can_view_review_identity($rrow, $rrow, false))
             $t .= $barsep . "<span class='hint'>review by</span> " . Text::user_html($rrow->reviewFirstName, $rrow->reviewLastName, $rrow->reviewEmail);
-        $t .= "</small><br /><a class='q'" . substr($a, 3) . ">";
+        $t .= "</small><br />";
 
         $revViewScore = $contact->view_score_bound($rrow, $rrow);
         if ($rrow->reviewSubmitted) {
@@ -1901,6 +1902,6 @@ $blind\n";
                 $xbarsep = $barsep;
             }
 
-        return $t . "</a></td></tr>";
+        return $t . "</td></tr>";
     }
 }

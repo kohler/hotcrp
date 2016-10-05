@@ -117,10 +117,10 @@ if ($qreq->fn === "events" && $Me->is_reviewer()) {
     $rf = $Conf->review_form();
     foreach ($entries as $which => $xr)
         if ($xr->isComment) {
-            $rows[] = CommentInfo::unparse_flow_entry($xr, $Me, "");
+            $rows[] = CommentInfo::unparse_flow_entry($Me, $xr);
             $when = $xr->timeModified;
         } else {
-            $rows[] = $rf->reviewFlowEntry($Me, $xr, "");
+            $rows[] = $rf->reviewFlowEntry($Me, $xr);
             $when = $xr->reviewSubmitted;
         }
     json_exit(["ok" => true, "from" => (int) $from, "to" => (int) $when - 1,
