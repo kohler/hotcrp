@@ -2272,13 +2272,8 @@ class Conf {
     }
 
     private function _flowQueryRest() {
-        return "          Paper.title,
-                Paper.timeSubmitted,
-                Paper.timeWithdrawn,
-                Paper.blind as paperBlind,
-                Paper.outcome,
-                Paper.managerContactId,
-                Paper.leadContactId,
+        return "title, timeSubmitted, timeWithdrawn, Paper.blind paperBlind,
+                outcome, managerContactId, leadContactId,
                 ContactInfo.firstName as reviewFirstName,
                 ContactInfo.lastName as reviewLastName,
                 ContactInfo.email as reviewEmail,
@@ -2291,13 +2286,13 @@ class Conf {
 
     private function _commentFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
-        $q = "select PaperComment.*,\n"
+        $q = "select straight_join PaperComment.*,\n"
             . $this->_flowQueryRest()
             . "\t\tfrom PaperComment
                 join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
-                join Paper on (Paper.paperId=PaperComment.paperId)
                 left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
-                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)\n";
+                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)
+                join Paper on (Paper.paperId=PaperComment.paperId)\n";
         $where = $contact->canViewCommentReviewWheres();
         self::_flowQueryWheres($where, "PaperComment", $t0);
         if (count($where))
@@ -2310,13 +2305,13 @@ class Conf {
 
     private function _reviewFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
-        $q = "select PaperReview.*,\n"
+        $q = "select straight_join PaperReview.*,\n"
             . $this->_flowQueryRest()
             . "\t\tfrom PaperReview
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
-                join Paper on (Paper.paperId=PaperReview.paperId)
                 left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$contact->contactId)
-                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperReview.paperId and MyPaperReview.contactId=$contact->contactId)\n";
+                left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperReview.paperId and MyPaperReview.contactId=$contact->contactId)
+                join Paper on (Paper.paperId=PaperReview.paperId)\n";
         $where = $contact->canViewCommentReviewWheres();
         self::_flowQueryWheres($where, "PaperReview", $t0);
         $where[] = "PaperReview.reviewSubmitted>0";
