@@ -2263,12 +2263,15 @@ class Conf {
 
     // Activity
 
-    private static function _flowQueryWheres(&$where, $table, $t0) {
-        $time = $table . ($table == "PaperReview" ? ".reviewSubmitted" : ".timeModified");
+    private static function _flowQueryRestriction($table, $t0, $limit) {
+        $time = ($table == "PaperReview" ? "reviewSubmitted" : "timeModified");
         if (is_array($t0))
-            $where[] = "($time<$t0[0] or ($time=$t0[0] and $table.contactId>$t0[1]) or ($time=$t0[0] and $table.contactId=$t0[1] and $table.paperId>$t0[2]))";
+            $x = "($time<$t0[0] or ($time=$t0[0] and contactId>$t0[1]) or ($time=$t0[0] and contactId=$t0[1] and paperId>$t0[2]))";
         else if ($t0)
-            $where[] = "$time<$t0";
+            $x = "$time<$t0";
+        if ($limit)
+            $x .= " order by $time desc, contactId asc, paperId asc limit $limit";
+        return $x;
     }
 
     private function _flowQueryRest() {
@@ -2286,40 +2289,34 @@ class Conf {
 
     private function _commentFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
+        $xrest = self::_flowQueryRestriction("PaperComment", $t0, $limit);
         $q = "select straight_join PaperComment.*,\n"
             . $this->_flowQueryRest()
-            . "\t\tfrom PaperComment
+            . "\t\tfrom (select paperId, commentId from PaperComment where $xrest) x
+                join PaperComment using (paperId,commentId)
                 join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
                 left join PaperConflict on (PaperConflict.paperId=PaperComment.paperId and PaperConflict.contactId=$contact->contactId)
                 left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperComment.paperId and MyPaperReview.contactId=$contact->contactId)
                 join Paper on (Paper.paperId=PaperComment.paperId)\n";
-        $where = $contact->canViewCommentReviewWheres();
-        self::_flowQueryWheres($where, "PaperComment", $t0);
-        if (count($where))
+        if (($where = $contact->canViewCommentReviewWheres()))
             $q .= " where " . join(" and ", $where);
-        $q .= " order by PaperComment.timeModified desc, PaperComment.contactId asc, PaperComment.paperId asc";
-        if ($limit)
-            $q .= " limit $limit";
-        return $q;
+        return $q . " order by PaperComment.timeModified desc, PaperComment.contactId asc, PaperComment.paperId asc";
     }
 
     private function _reviewFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
+        $xrest = self::_flowQueryRestriction("PaperReview", $t0, $limit);
         $q = "select straight_join PaperReview.*,\n"
             . $this->_flowQueryRest()
-            . "\t\tfrom PaperReview
+            . "\t\tfrom (select paperId, reviewId from PaperReview where reviewSubmitted>0 and $xrest) x
+                join PaperReview using (paperId,reviewId)
                 join ContactInfo on (ContactInfo.contactId=PaperReview.contactId)
                 left join PaperConflict on (PaperConflict.paperId=PaperReview.paperId and PaperConflict.contactId=$contact->contactId)
                 left join PaperReview as MyPaperReview on (MyPaperReview.paperId=PaperReview.paperId and MyPaperReview.contactId=$contact->contactId)
                 join Paper on (Paper.paperId=PaperReview.paperId)\n";
-        $where = $contact->canViewCommentReviewWheres();
-        self::_flowQueryWheres($where, "PaperReview", $t0);
-        $where[] = "PaperReview.reviewSubmitted>0";
-        $q .= " where " . join(" and ", $where);
-        $q .= " order by PaperReview.reviewSubmitted desc, PaperReview.contactId asc, PaperReview.paperId asc";
-        if ($limit)
-            $q .= " limit $limit";
-        return $q;
+        if (($where = $contact->canViewCommentReviewWheres()))
+            $q .= " where " . join(" and ", $where);
+        return $q . " order by PaperReview.reviewSubmitted desc, PaperReview.contactId asc, PaperReview.paperId asc";
     }
 
     static function _activity_compar($a, $b) {
