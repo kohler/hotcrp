@@ -212,9 +212,7 @@ CREATE TABLE `PaperComment` (
   PRIMARY KEY (`paperId`,`commentId`),
   UNIQUE KEY `commentId` (`commentId`),
   KEY `contactId` (`contactId`),
-  KEY `paperId` (`paperId`),
-  KEY `contactPaper` (`contactId`,`paperId`),
-  KEY `timeModified` (`timeModified`)
+  KEY `timeModifiedContact` (`timeModified`,`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -300,7 +298,7 @@ CREATE TABLE `PaperReview` (
   UNIQUE KEY `reviewId` (`reviewId`),
   UNIQUE KEY `contactPaper` (`contactId`,`paperId`),
   KEY `paperId` (`paperId`,`reviewOrdinal`),
-  KEY `reviewSubmitted` (`reviewSubmitted`),
+  KEY `reviewSubmittedContact` (`reviewSubmitted`,`contactId`),
   KEY `reviewNeedsSubmit` (`reviewNeedsSubmit`),
   KEY `reviewType` (`reviewType`),
   KEY `reviewRound` (`reviewRound`),
@@ -505,7 +503,7 @@ CREATE TABLE `TopicInterest` (
 
 
 
-insert into Settings (name, value) values ('allowPaperOption', 152);
+insert into Settings (name, value) values ('allowPaperOption', 153);
 insert into Settings (name, value) values ('setupPhase', 1);
 -- collect PC conflicts from authors by default, but not collaborators
 insert into Settings (name, value) values ('sub_pcconf', 1);

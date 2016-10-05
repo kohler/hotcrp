@@ -1058,6 +1058,12 @@ set ordinal=(t.maxOrdinal+1) where commentId=$row[1]");
         && update_schema_drop_keys_if_exist($conf, "ContactInfo", ["rolesCid", "rolesContactId", "contactIdRoles"])
         && $conf->ql("alter table ContactInfo add key `rolesContactId` (`roles`,`contactId`)"))
         $conf->update_schema_version(152);
+    if ($conf->sversion == 152
+        && update_schema_drop_keys_if_exist($conf, "PaperReview", ["reviewSubmitted"])
+        && update_schema_drop_keys_if_exist($conf, "PaperComment", ["timeModified", "paperId", "contactPaper"])
+        && $conf->ql("alter table PaperComment add key `timeModifiedContact` (`timeModified`,`contactId`)")
+        && $conf->ql("alter table PaperReview add key `reviewSubmittedContact` (`reviewSubmitted`,`contactId`)"))
+        $conf->update_schema_version(153);
 
     $conf->ql("delete from Settings where name='__schema_lock'");
 }
