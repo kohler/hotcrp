@@ -183,10 +183,7 @@ class CommentInfo {
             $cj->displayed_at = (int) $this->timeDisplayed;
 
         // text
-        if ($this->commentOverflow)
-            $cj->text = $this->commentOverflow;
-        else
-            $cj->text = $this->comment;
+        $cj->text = $this->commentOverflow ? : $this->comment;
 
         // format
         if (($fmt = $this->commentFormat) === null)
@@ -231,10 +228,9 @@ class CommentInfo {
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_activityid pnum">'
             . $a . ">#$crow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . " class=\"ptitle\">" . htmlspecialchars($crow->shortTitle);
-        if (strlen($crow->shortTitle) != strlen($crow->title))
-            $t .= "...";
-        $t .= "</a>";
+            . $a . " class=\"ptitle\">"
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($crow->title, 80))
+            . "</a>";
         $idable = $contact->can_view_comment_identity($crow, $crow, false);
         if ($idable || $contact->can_view_comment_time($crow, $crow))
             $time = $Conf->parseableTime($crow->timeModified, false);
@@ -243,11 +239,9 @@ class CommentInfo {
         $t .= ' <span class="barsep">·</span> ' . $time;
         if ($idable)
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . Text::user_html(self::_user($crow));
-        $t .= '</small><br /><a class="q" ' . substr($a, 3)
-            . ">" . htmlspecialchars($crow->shortComment);
-        if (strlen($crow->shortComment) < strlen($crow->comment))
-            $t .= "...";
-        return $t . "</a></td></tr>";
+        return $t . '</small><br /><a class="q" ' . substr($a, 3) . ">"
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($crow->commentOverflow ? : $crow->comment, 300))
+            . "</a></td></tr>";
     }
 
 

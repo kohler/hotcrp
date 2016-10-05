@@ -1873,10 +1873,9 @@ $blind\n";
             . Ht::img("review48.png", "[Review]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . "</a></td><td class='pl_activityid pnum'>"
             . $a . ">#$rrow->paperId</a></td><td class='pl_activitymain'><small>"
-            . $a . " class=\"ptitle\">" . htmlspecialchars($rrow->shortTitle);
-        if (strlen($rrow->shortTitle) != strlen($rrow->title))
-            $t .= "...";
-        $t .= "</a>";
+            . $a . " class=\"ptitle\">"
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($rrow->title, 80))
+            . "</a>";
         if ($rrow->reviewModified > 1) {
             if ($contact->can_view_review_time($rrow, $rrow))
                 $time = $this->conf->parseableTime($rrow->reviewModified, false);

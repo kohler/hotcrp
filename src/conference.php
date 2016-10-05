@@ -2273,7 +2273,6 @@ class Conf {
 
     private function _flowQueryRest() {
         return "          Paper.title,
-                substring(Paper.title from 1 for 80) as shortTitle,
                 Paper.timeSubmitted,
                 Paper.timeWithdrawn,
                 Paper.blind as paperBlind,
@@ -2292,8 +2291,7 @@ class Conf {
 
     private function _commentFlowQuery($contact, $t0, $limit) {
         // XXX review tokens
-        $q = "select PaperComment.*,
-                substring(PaperComment.comment from 1 for 300) as shortComment,\n"
+        $q = "select PaperComment.*,\n"
             . $this->_flowQueryRest()
             . "\t\tfrom PaperComment
                 join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)
