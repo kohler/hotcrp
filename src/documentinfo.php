@@ -62,16 +62,19 @@ class DocumentInfo implements JsonSerializable {
         if ($this->error_html)
             $this->error = true;
 
-        // set sha1 if content is available
-        if ($this->content && $this->sha1 == "")
-            $this->sha1 = sha1($this->content, true);
-        // set sha1 in database if needed (backwards compat)
-        if ($this->paperStorageId > 1
-            && $this->sha1 == ""
+        // set sha1
+        if ($this->sha1 == "" && $this->paperStorageId > 1
             && $this->docclass->load_content($this)) {
+            // store sha1 in database if needed (backwards compat)
             $this->sha1 = sha1($this->content, true);
             $this->conf->q("update PaperStorage set sha1=? where paperId=? and paperStorageId=?", $this->sha1, $this->paperId, $this->paperStorageId);
-        }
+            // we might also need to update the joindoc
+            if ($this->documentType == DTYPE_SUBMISSION)
+                $this->conf->q("update Paper set sha1=? where paperId=? and paperStorageId=? and finalPaperStorageId<=0", $this->sha1, $this->paperId, $this->paperStorageId);
+            else if ($this->documentType == DTYPE_FINAL)
+                $this->conf->q("update Paper set sha1=? where paperId=? and finalPaperStorageId=?", $this->sha1, $this->paperStorageId);
+        } else if ($this->sha1 == "" && $this->content)
+            $this->sha1 = sha1($this->content, true);
     }
 
     static public function fetch($result, Conf $conf = null, PaperInfo $prow = null) {
