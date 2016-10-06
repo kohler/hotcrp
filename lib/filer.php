@@ -418,19 +418,19 @@ class Filer {
         $idcol = $dbinfo->id_column;
         $while = "while storing document in database";
 
-        $a = $ks = $vs = array();
+        $qk = $qv = [];
         foreach ($dbinfo->columns as $k => $v)
             if ($k !== $idcol) {
-                $ks[] = "`$k`=?";
-                $vs[] = substr($v, 0, $N);
+                $qk[] = "`$k`=?";
+                $qv[] = substr($v, 0, $N);
             }
 
         if (isset($dbinfo->columns[$idcol])) {
-            $q = "update $dbinfo->table set " . join(",", $ks) . " where $idcol=?";
-            $vs[] = $dbinfo->columns[$idcol];
+            $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
+            $qv[] = $dbinfo->columns[$idcol];
         } else
-            $q = "insert into $dbinfo->table set " . join(",", $ks);
-        if (!($result = Dbl::query_apply($dbinfo->dblink, $q, $vs))) {
+            $q = "insert into $dbinfo->table set " . join(", ", $qk);
+        if (!($result = Dbl::qe_apply($dbinfo->dblink, $q, $qv))) {
             set_error_html($doc, $Conf->db_error_html(true, $while));
             return;
         }
@@ -446,25 +446,27 @@ class Filer {
         }
 
         for ($pos = $N; true; $pos += $N) {
-            $a = array();
+            $qk = $qv = [];
             foreach ($dbinfo->columns as $k => $v)
-                if (strlen($v) > $pos)
-                    $a[] = "`" . $k . "`=concat(`" . $k . "`,'" . sqlq(substr($v, $pos, $N)) . "')";
-            if (!count($a))
+                if (strlen($v) > $pos) {
+                    $qk[] = "`{$k}`=concat(`{$k}`,?)";
+                    $qv[] = substr($v, $pos, $N);
+                }
+            if (empty($qk))
                 break;
-            if (!$Conf->q_raw("update $dbinfo->table set " . join(",", $a) . " where $idcol=" . $doc->$idcol)) {
+            $q = "update $dbinfo->table set " . join(", ", $qk) . " where $idcol=?";
+            $qv[] = $doc->$idcol;
+            if (!Dbl::qe_apply($dbinfo->dblink, $q, $qv)) {
                 set_error_html($doc, $Conf->db_error_html(true, $while));
                 return;
             }
         }
 
         // check that paper storage succeeded
-        if ($dbinfo->check_contents
-            && (!($result = $Conf->qe_raw("select length($dbinfo->check_contents) from $dbinfo->table where $idcol=" . $doc->$idcol))
-                || !($row = edb_row($result))
-                || $row[0] != strlen(self::content($doc)))) {
-            set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");
-            return;
+        if ($dbinfo->check_contents) {
+            $len = Dbl::fetch_ivalue($dbinfo->dblink, "select length($dbinfo->check_contents) from $dbinfo->table where $idcol=?", $doc->$idcol);
+            if ($len != strlen(self::content($doc)))
+                set_error_html($doc, "Failed to store your document. Usually this is because the file you tried to upload was too big for our system. Please try again.");
         }
     }
 

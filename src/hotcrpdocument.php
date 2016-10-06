@@ -108,7 +108,8 @@ class HotCRPDocument extends Filer {
     public static function s3_filename($doc) {
         if (!($doc instanceof DocumentInfo))
             error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        if (($sha1 = Filer::text_sha1($doc)) !== false)
+        if ($doc->sha1 != ""
+            && ($sha1 = Filer::text_sha1($doc)) !== false)
             return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
                 . Mimetype::extension($doc->mimetype);
         else
@@ -118,13 +119,17 @@ class HotCRPDocument extends Filer {
     public function s3_check($doc) {
         if (!($doc instanceof DocumentInfo))
             error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-        return ($s3 = $this->conf->s3_docstore())
-            && $s3->check(self::s3_filename($doc));
+        $s3 = $this->conf->s3_docstore();
+        return $s3 && $s3->check(self::s3_filename($doc));
     }
 
     public function s3_store($doc, $docinfo, $trust_sha1 = false) {
         if (!($doc instanceof DocumentInfo))
             error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        if (!isset($doc->paperId)) {
+            error_log("HotCRPDocument bad \$doc->paperId: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $doc->paperId = $docinfo->paperId;
+        }
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
         if (!$trust_sha1 && Filer::binary_sha1($doc) !== sha1($doc->content, true)) {
@@ -135,7 +140,7 @@ class HotCRPDocument extends Filer {
         $s3 = $this->conf->s3_docstore();
         $dtype = isset($doc->documentType) ? $doc->documentType : $this->dtype;
         $meta = array("conf" => $this->conf->opt("dbName"),
-                      "pid" => isset($doc->paperId) ? (int) $doc->paperId : (int) $docinfo->paperId,
+                      "pid" => $doc->paperId,
                       "dtype" => (int) $dtype);
         if (get($doc, "filter")) {
             $meta["filtertype"] = (int) $doc->filter;
@@ -160,12 +165,14 @@ class HotCRPDocument extends Filer {
     public function dbstore($doc, $docinfo) {
         if (!($doc instanceof DocumentInfo))
             error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+        if (!isset($doc->paperId)) {
+            error_log("HotCRPDocument bad \$doc->paperId: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+            $doc->paperId = $docinfo->paperId;
+        }
         if ($this->no_database)
             return null;
-        if (!isset($doc->paperId))
-            $doc->paperId = $docinfo->paperId;
         $doc->documentType = $this->dtype;
-        $columns = array("paperId" => $docinfo->paperId,
+        $columns = array("paperId" => $doc->paperId,
                          "timestamp" => $doc->timestamp,
                          "mimetype" => $doc->mimetype,
                          "sha1" => $doc->sha1,
@@ -203,10 +210,10 @@ class HotCRPDocument extends Filer {
     }
 
     private function load_content_db($doc) {
-        $result = $this->conf->q("select paper, compression from PaperStorage where paperStorageId=" . $doc->paperStorageId);
+        $result = $this->conf->q("select paper, compression from PaperStorage where paperStorageId=?", $doc->paperStorageId);
         $ok = false;
         if ($result && ($row = $result->fetch_row()) && $row[0] !== null) {
-            $doc->content = ($row[1] == 1 ? gzinflate($row[0]) : $row[0]);
+            $doc->content = $row[1] == 1 ? gzinflate($row[0]) : $row[0];
             $ok = true;
         }
         Dbl::free($result);
@@ -235,7 +242,8 @@ class HotCRPDocument extends Filer {
                 error_log("S3 error: GET $filename: $s3->status $s3->status_text " . json_encode($s3->response_headers));
         }
 
-        if (!$ok && $dbNoPapers && $doc->paperStorageId > 1) // ignore dbNoPapers second time through
+        // ignore dbNoPapers second time through
+        if (!$ok && $dbNoPapers && $doc->paperStorageId > 1)
             $ok = $this->load_content_db($doc);
 
         if (!$ok) {
