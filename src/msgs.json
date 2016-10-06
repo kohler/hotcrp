@@ -1,5 +1,9 @@
 [
     ["Each submission can have at most %d authors.", "Each submission can have at most %d author.", ["$1=1"]],
+
+    ["You can’t register submission #%d yet.", "You can’t register submissions yet.", ["$1<0"]],
+    ["You can’t register submission #%d until %s.", "You can’t register submissions until %2$s.", ["$1<0"]],
+
     ["%d papers accepted out of %d submitted.", "%d paper accepted out of %d submitted.", ["$1=1"]],
     ["%s review deadline", "Review deadline", ["!$1"]],
     ["%s reviews are requested by this deadline.", "Reviews are requested by this deadline.", ["!$1"]],

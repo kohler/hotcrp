@@ -1591,11 +1591,13 @@ class PaperTable {
     }
 
     private function _edit_message_new_paper() {
+        global $Now;
         $startDeadline = $this->deadlineSettingIs("sub_reg");
         $msg = "";
         if (!$this->conf->timeStartPaper()) {
-            if ($this->conf->setting("sub_open") <= 0)
-                $msg = "The conference site has not been opened for submissions." . $this->_override_message();
+            $sub_open = $this->conf->setting("sub_open");
+            if ($sub_open <= 0 || $sub_open > $Now)
+                $msg = "The conference site is not open for submissions." . $this->_override_message();
             else
                 $msg = 'The <a href="' . hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $startDeadline . $this->_override_message();
             if (!$this->admin) {
