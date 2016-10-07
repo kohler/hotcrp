@@ -231,7 +231,7 @@ class Dbl {
                         unset($y);
                         break;
                     }
-                if (count($arg) === 0) {
+                if (empty($arg)) {
                     // We want `foo IN ()` and `foo NOT IN ()`.
                     // That is, we want `false` and `true`. We compromise. The
                     // statement `foo=NULL` is always NULL -- which is falsy
@@ -254,6 +254,34 @@ class Dbl {
                     ++$nextpos;
                 else
                     $arg = "'" . $arg . "'";
+            } else if ($nextch === "v") {
+                ++$nextpos;
+                if (!is_array($arg) || empty($arg)) {
+                    trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " should be nonempty array");
+                    $arg = "NULL";
+                } else {
+                    $alln = -1;
+                    $vs = [];
+                    foreach ($arg as $x) {
+                        if (!is_array($x))
+                            $x = [$x];
+                        $n = count($x);
+                        if ($alln === -1)
+                            $alln = $n;
+                        if ($alln !== $n && $alln !== -2) {
+                            trigger_error(self::landmark() . ": query '$original_qstr' argument " . (is_int($thisarg) ? $thisarg + 1 : $thisarg) . " has components of different lengths");
+                            $alln = -2;
+                        }
+                        foreach ($x as &$y)
+                            if ($y === null)
+                                $y = "NULL";
+                            else if (!is_int($y) && !is_float($y))
+                                $y = "'" . $dblink->real_escape_string($y) . "'";
+                        unset($y);
+                        $vs[] = "(" . join(",", $x) . ")";
+                    }
+                    $arg = join(", ", $vs);
+                }
             } else {
                 if ($arg === null)
                     $arg = "NULL";

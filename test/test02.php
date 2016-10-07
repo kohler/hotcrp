@@ -50,6 +50,10 @@ xassert_eqq(Dbl::format_query("select a?e, b?e, c?e, d?e", null, 1, 2.1, "e"),
             "select a IS NULL, b=1, c=2.1, d='e'");
 xassert_eqq(Dbl::format_query("select a?E, b?E, c?E, d?E", null, 1, 2.1, "e"),
             "select a IS NOT NULL, b!=1, c!=2.1, d!='e'");
+xassert_eqq(Dbl::format_query("insert ?v", [1, 2, 3]),
+            "insert (1), (2), (3)");
+xassert_eqq(Dbl::format_query("insert ?v", [[1, null], [2, "A"], ["b", 0.1]]),
+            "insert (1,NULL), (2,'A'), ('b',0.1)");
 
 // Dbl::compare_and_swap test
 Dbl::qe("insert into Settings set name='cmpxchg', value=1");
