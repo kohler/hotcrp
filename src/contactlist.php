@@ -586,9 +586,9 @@ class ContactList {
                 join PaperReview on (PaperReview.paperId=ReviewRating.paperId and PaperReview.reviewId=ReviewRating.reviewId)";
             $jwhere = [];
             if (($badratings = PaperSearch::unusableRatings($this->contact)))
-                $jwhere[] = "reviewId not in (" . join(",", $badratings) . ")";
+                $jwhere[] = "ReviewRating.reviewId not in (" . join(",", $badratings) . ")";
             if ($pid_restriction)
-                $jwhere[] = "paperId not in (" . join(",", $cfltpids) . ")";
+                $jwhere[] = "ReviewRating.paperId not in (" . join(",", $cfltpids) . ")";
             if (!empty($jwhere))
                 $pq .= "\n\t\twhere " . join(" and ", $jwhere);
             $pq .= "\n\t\tgroup by PaperReview.contactId) as rr on (rr.contactId=u.contactId)\n";
