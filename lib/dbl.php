@@ -306,6 +306,17 @@ class Dbl {
         return self::format_query_args($dblink, $qstr, $argv);
     }
 
+    static private function call_query($dblink, $qfunc, $qstr) {
+        if (self::$query_log_key) {
+            $time = microtime(true);
+            $result = $dblink->$qfunc($qstr);
+            self::$query_log[self::$query_log_key][0] += microtime(true) - $time;
+            self::$query_log_key = false;
+        } else
+            $result = $dblink->$qfunc($qstr);
+        return $result;
+    }
+
     static private function do_query_with($dblink, $qstr, $argv, $flags) {
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
@@ -313,14 +324,7 @@ class Dbl {
             error_log(self::landmark() . ": empty query");
             return false;
         }
-        if (self::$query_log_key) {
-            $time = microtime(true);
-            $result = $dblink->query($qstr);
-            self::$query_log[self::$query_log_key][0] += microtime(true) - $time;
-            self::$query_log_key = false;
-        } else
-            $result = $dblink->query($qstr);
-        return self::do_result($dblink, $flags, $qstr, $result);
+        return self::do_result($dblink, $flags, $qstr, self::call_query($dblink, "query", $qstr));
     }
 
     static private function do_query($args, $flags) {
@@ -357,7 +361,7 @@ class Dbl {
         list($dblink, $qstr, $argv) = self::query_args($args, $flags, true);
         if (!($flags & self::F_RAW))
             $qstr = self::format_query_args($dblink, $qstr, $argv);
-        return new Dbl_MultiResult($dblink, $flags, $qstr, $dblink->multi_query($qstr));
+        return new Dbl_MultiResult($dblink, $flags, $qstr, self::call_query($dblink, "multi_query", $qstr));
     }
 
     static function query(/* [$dblink,] $qstr, ... */) {
