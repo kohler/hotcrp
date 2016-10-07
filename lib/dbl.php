@@ -247,6 +247,13 @@ class Dbl {
             } else if ($nextch === "s") {
                 $arg = $dblink->real_escape_string($arg);
                 ++$nextpos;
+            } else if ($nextch === "l") {
+                $arg = sqlq_for_like($arg);
+                ++$nextpos;
+                if (substr($qstr, $nextpos + 1, 1) === "s")
+                    ++$nextpos;
+                else
+                    $arg = "'" . $arg . "'";
             } else {
                 if ($arg === null)
                     $arg = "NULL";

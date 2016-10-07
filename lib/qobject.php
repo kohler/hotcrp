@@ -45,6 +45,11 @@ class Qobject implements ArrayAccess, IteratorAggregate, Countable, JsonSerializ
     public function __unset($name) {
         unset($this->$name);
     }
+    public function get($name, $default = null) {
+        if (property_exists($this, $name))
+            $default = $this->$name;
+        return $default;
+    }
     public function count() {
         return count(get_object_vars($this));
     }
