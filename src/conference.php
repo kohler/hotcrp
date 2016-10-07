@@ -2869,18 +2869,18 @@ class Conf {
     // Action recording
     //
 
+    const action_log_query = "insert into ActionLog (ipaddr, contactId, paperId, action) values ?v";
+
     function save_logs($on) {
         if ($on && $this->_save_logs === false)
             $this->_save_logs = array();
         else if (!$on && $this->_save_logs !== false) {
-            $qs = [];
+            $qv = [];
             foreach ($this->_save_logs as $cid_text => $pids) {
                 $pos = strpos($cid_text, "|");
-                $qs[] = self::format_log_query(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
+                $qv[] = self::format_log_values(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
             }
-            $mresult = Dbl::multi_q_raw($this->dblink, join(";", $qs));
-            while (($result = $mresult->next()))
-                Dbl::free($result);
+            $this->qe(self::action_log_query, $qv);
             $this->_save_logs = false;
         }
     }
@@ -2903,7 +2903,7 @@ class Conf {
             $ps[] = is_object($p) ? $p->paperId : $p;
 
         if ($this->_save_logs === false)
-            $this->q_raw(self::format_log_query($text, $who, $ps));
+            $this->qe(self::action_log_query, [self::format_log_values($text, $who, $ps)]);
         else {
             $key = "$who|$text";
             if (!isset($this->_save_logs[$key]))
@@ -2913,13 +2913,13 @@ class Conf {
         }
     }
 
-    private static function format_log_query($text, $who, $pids) {
+    private static function format_log_values($text, $who, $pids) {
         $pid = null;
         if (count($pids) == 1)
             $pid = $pids[0];
         else if (count($pids) > 1)
             $text .= " (papers " . join(", ", $pids) . ")";
-        return Dbl::format_query("insert into ActionLog set ipaddr=?, contactId=?, paperId=?, action=?", get($_SERVER, "REMOTE_ADDR"), (int) $who, $pid, substr($text, 0, 4096));
+        return [get($_SERVER, "REMOTE_ADDR"), (int) $who, $pid, substr($text, 0, 4096)];
     }
 
 
