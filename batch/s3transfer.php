@@ -28,12 +28,11 @@ foreach ($sids as $sid) {
     if ($active !== false && !isset($active[$sid]))
         continue;
     $result = $Conf->qe_raw("select paperStorageId, paperId, timestamp, mimetype,
-        compression, sha1, documentType, filename, infoJson,
-        paper is null as paper_null
+        compression, sha1, documentType, filename, infoJson, paper
         from PaperStorage where paperStorageId=$sid");
     $doc = DocumentInfo::fetch($result, $Conf);
     Dbl::free($result);
-    if ($doc->paper_null && !$doc->docclass->filestore_check($doc))
+    if ($doc->content === null && !$doc->docclass->filestore_check($doc))
         continue;
     $saved = $checked = $doc->docclass->s3_check($doc);
     if (!$saved)
