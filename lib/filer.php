@@ -180,15 +180,15 @@ class ZipDocument {
         return true;
     }
 
-    public function add($doc, $filename = null) {
+    function add($doc, $filename = null) {
         return $this->_add($doc, $filename, true);
     }
 
-    public function add_as($doc, $filename) {
+    function add_as($doc, $filename) {
         return $this->_add($doc, $filename, false);
     }
 
-    public function download_headers() {
+    function download_headers() {
         if (!$this->headers) {
             header("Content-Disposition: attachment; filename=" . mime_quote_string($this->filename));
             header("Content-Type: " . $this->mimetype);
@@ -196,7 +196,7 @@ class ZipDocument {
         }
     }
 
-    public function create() {
+    function create() {
         global $Now;
         if (!($tmpdir = $this->tmpdir()))
             return set_error_html("Could not create temporary directory.");
@@ -256,7 +256,7 @@ class ZipDocument {
             return set_error_html("<code>zip</code> output unreadable or empty.  Its output: <pre>" . htmlspecialchars($out) . "</pre>");
     }
 
-    public function download() {
+    function download() {
         $result = $this->create();
         if (is_string($result)) {
             set_time_limit(180); // large zip files might download slowly
@@ -275,7 +275,7 @@ class Filer_UploadJson implements JsonSerializable {
     public $filename;
     public $mimetype;
     public $timestamp;
-    public function __construct($upload) {
+    function __construct($upload) {
         $this->content = file_get_contents($upload["tmp_name"]);
         if (isset($upload["name"])
             && strlen($upload["name"]) <= 255
@@ -284,7 +284,7 @@ class Filer_UploadJson implements JsonSerializable {
         $this->mimetype = Mimetype::type(get($upload, "type", "application/octet-stream"));
         $this->timestamp = time();
     }
-    public function jsonSerialize() {
+    function jsonSerialize() {
         $x = array();
         foreach (get_object_vars($this) as $k => $v)
             if ($k === "content" && $v !== null) {
@@ -299,31 +299,31 @@ class Filer_UploadJson implements JsonSerializable {
 class Filer {
     static public $tempdir;
 
-    function validate_content($doc) {
+    function validate_content(DocumentInfo $doc) {
         // load() callback. Return `true` if content of $doc is up to date and
         // need not be checked by load_content.
         return true;
     }
-    function load_content($doc) {
+    function load_content(DocumentInfo $doc) {
         // load() callback. Return `true` if content was successfully loaded.
         // On return true, at least one of `$doc->content` and
         // `$doc->filestore` must be set.
         return false;
     }
-    function filestore_pattern($doc) {
+    function filestore_pattern(DocumentInfo $doc) {
         // load()/store() callback. Return the filestore pattern suitable for
         // `$doc`.
         return null;
     }
-    function dbstore($doc, $docinfo) {
+    function dbstore(DocumentInfo $doc, $docinfo) {
         // store() callback. Return a `Filer_Dbstore` object to tell how to
         // store the document in the database.
         return null;
     }
-    function store_other($doc, $docinfo) {
+    function store_other(DocumentInfo $doc, $docinfo) {
         // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
     }
-    function validate_upload($doc, $docinfo) {
+    function validate_upload(DocumentInfo $doc, $docinfo) {
         // upload() callback. Return false if $doc should not be stored.
         return true;
     }
@@ -352,7 +352,7 @@ class Filer {
             return $doc->content = @file_get_contents($filename);
         return false;
     }
-    public function load($doc) {
+    function load(DocumentInfo $doc) {
         // Return true iff `$doc` can be loaded.
         if (!($has_content = self::has_content($doc))
             && ($fsinfo = $this->_filestore($doc))
@@ -363,7 +363,7 @@ class Filer {
         return ($has_content && $this->validate_content($doc))
             || $this->load_content($doc);
     }
-    public function load_to_filestore($doc) {
+    function load_to_filestore(DocumentInfo $doc) {
         if (!$this->load($doc))
             return false;
         if (!isset($doc->filestore)) {
@@ -383,7 +383,7 @@ class Filer {
         }
         return true;
     }
-    public function store($doc, $docinfo) {
+    function store(DocumentInfo $doc, $docinfo) {
         // load content (if unloaded)
         // XXX loading enormous documents into memory...?
         if (!$this->load($doc, $docinfo)
@@ -412,7 +412,7 @@ class Filer {
     }
 
     // dbstore functions
-    function store_database($dbinfo, $doc) {
+    function store_database($dbinfo, DocumentInfo $doc) {
         global $Conf;
         $N = 400000;
         $idcol = $dbinfo->id_column;
@@ -471,7 +471,7 @@ class Filer {
     }
 
     // filestore functions
-    function filestore_check($doc) {
+    function filestore_check(DocumentInfo $doc) {
         $fsinfo = $this->_filestore($doc);
         return $fsinfo && is_readable($fsinfo[1]);
     }
@@ -488,7 +488,7 @@ class Filer {
         }
         return true;
     }
-    function store_filestore($doc, $no_error = false) {
+    function store_filestore(DocumentInfo $doc, $no_error = false) {
         if (!($fsinfo = $this->_filestore($doc)))
             return false;
         list($fsdir, $fspath) = $fsinfo;
@@ -601,7 +601,7 @@ class Filer {
     }
 
     // upload
-    function upload($doc, $docinfo) {
+    function upload(DocumentInfo $doc, $docinfo) {
         global $Conf;
         if (!is_object($doc)) {
             error_log(caller_landmark() . ": Filer::upload called with non-object");
@@ -667,7 +667,7 @@ class Filer {
             error_log(json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
         return (isset($doc->mimetype) ? $doc->mimetype : $doc->mimetypeid);
     }
-    private function _filestore($doc) {
+    private function _filestore(DocumentInfo $doc) {
         if (!($fsinfo = $this->filestore_pattern($doc)))
             return $fsinfo;
         if (get($doc, "error"))
@@ -724,12 +724,12 @@ class Filer {
     }
 
 
-    public function is_archive($doc) {
+    function is_archive(DocumentInfo $doc) {
         return $doc->filename
             && preg_match('/\.(?:zip|tar|tgz|tar\.[gx]?z|tar\.bz2)\z/i', $doc->filename);
     }
 
-    public function archive_listing($doc) {
+    function archive_listing(DocumentInfo $doc) {
         if (!$this->load_to_filestore($doc))
             return false;
         $type = null;
@@ -774,7 +774,7 @@ class Filer {
         return explode("\n", rtrim($out));
     }
 
-    public function clean_archive_listing($listing) {
+    function clean_archive_listing($listing) {
         $etcetera = false;
         $listing = array_filter($listing, function ($x) use (&$etcetera) {
             if (str_ends_with($x, "/"))
@@ -792,7 +792,7 @@ class Filer {
         return $listing;
     }
 
-    public function consolidate_archive_listing($listing) {
+    function consolidate_archive_listing($listing) {
         $new_listing = [];
         $etcetera = empty($listing) || $listing[count($listing) - 1] !== "…" ? 0 : 1;
         for ($i = 0; $i < count($listing) - $etcetera; ) {
@@ -829,7 +829,7 @@ class Filer_Dbstore {
     public $columns;
     public $check_contents;
 
-    public function __construct($dblink, $table, $id_column, $columns, $check_contents = null) {
+    function __construct($dblink, $table, $id_column, $columns, $check_contents = null) {
         $this->dblink = $dblink;
         $this->table = $table;
         $this->id_column = $id_column;

@@ -10,7 +10,7 @@ class HotCRPDocument extends Filer {
     private $no_database = false;
     private $no_filestore = false;
 
-    public function __construct(Conf $conf, $dtype, PaperOption $option = null) {
+    function __construct(Conf $conf, $dtype, PaperOption $option = null) {
         $this->conf = $conf;
         $this->dtype = $dtype;
         if ($this->dtype > 0 && $option)
@@ -19,15 +19,15 @@ class HotCRPDocument extends Filer {
             $this->option = $this->conf->paper_opts->find_document($dtype);
     }
 
-    public function set_no_database_storage() {
+    function set_no_database_storage() {
         $this->no_database = true;
     }
 
-    public function set_no_file_storage() {
+    function set_no_file_storage() {
         $this->no_filestore = true;
     }
 
-    public static function unparse_dtype($dtype) {
+    static function unparse_dtype($dtype) {
         global $Conf;
         if ($dtype == DTYPE_SUBMISSION)
             return "paper";
@@ -39,7 +39,7 @@ class HotCRPDocument extends Filer {
             return null;
     }
 
-    public static function parse_dtype($dname) {
+    static function parse_dtype($dname) {
         global $Conf;
         if (preg_match('/\A-?\d+\z/', $dname))
             return (int) $dname;
@@ -54,18 +54,14 @@ class HotCRPDocument extends Filer {
             return null;
     }
 
-    public static function filename($doc, $filters = null) {
-        global $Conf;
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-
-        $fn = $Conf->download_prefix;
+    static function filename(DocumentInfo $doc, $filters = null) {
+        $fn = $doc->conf->download_prefix;
         if ($doc->documentType == DTYPE_SUBMISSION)
             $fn .= "paper" . $doc->paperId;
         else if ($doc->documentType == DTYPE_FINAL)
             $fn .= "final" . $doc->paperId;
         else {
-            $o = $Conf->paper_opts->find($doc->documentType);
+            $o = $doc->conf->paper_opts->find($doc->documentType);
             if ($o && $o->nonpaper && $doc->paperId < 0) {
                 $fn .= $o->abbr;
                 $oabbr = "";
@@ -96,18 +92,14 @@ class HotCRPDocument extends Filer {
         return $fn;
     }
 
-    public function validate_upload($doc, $docinfo) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function validate_upload(DocumentInfo $doc, $docinfo) {
         if ($this->option && !get($doc, "filterType"))
             return $this->option->validate_document($doc, $docinfo);
         else
             return true;
     }
 
-    public static function s3_filename($doc) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    static function s3_filename(DocumentInfo $doc) {
         if ($doc->sha1 != ""
             && ($sha1 = Filer::text_sha1($doc)) !== false)
             return "doc/" . substr($sha1, 0, 2) . "/" . $sha1
@@ -116,16 +108,12 @@ class HotCRPDocument extends Filer {
             return null;
     }
 
-    public function s3_check($doc) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function s3_check(DocumentInfo $doc) {
         $s3 = $this->conf->s3_docstore();
         return $s3 && $s3->check(self::s3_filename($doc));
     }
 
-    public function s3_store($doc, $docinfo, $trust_sha1 = false) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function s3_store(DocumentInfo $doc, $docinfo, $trust_sha1 = false) {
         if (!isset($doc->paperId)) {
             error_log("HotCRPDocument bad \$doc->paperId: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $doc->paperId = $docinfo->paperId;
@@ -155,16 +143,12 @@ class HotCRPDocument extends Filer {
         return $s3->status == 200;
     }
 
-    public function store_other($doc, $docinfo) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function store_other(DocumentInfo $doc, $docinfo) {
         if (($s3 = $this->conf->s3_docstore()))
             $this->s3_store($doc, $docinfo, true);
     }
 
-    public function dbstore($doc, $docinfo) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function dbstore(DocumentInfo $doc, $docinfo) {
         if (!isset($doc->paperId)) {
             error_log("HotCRPDocument bad \$doc->paperId: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
             $doc->paperId = $docinfo->paperId;
@@ -205,7 +189,7 @@ class HotCRPDocument extends Filer {
                                  $this->conf->opt("dbNoPapers") ? null : "paper");
     }
 
-    public function filestore_pattern($doc) {
+    function filestore_pattern(DocumentInfo $doc) {
         return $this->no_filestore ? false : $this->conf->docstore();
     }
 
@@ -220,10 +204,7 @@ class HotCRPDocument extends Filer {
         return $ok;
     }
 
-    public function load_content($doc) {
-        global $Conf;
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    function load_content(DocumentInfo $doc) {
         $ok = false;
         $doc->content = "";
 
@@ -260,9 +241,7 @@ class HotCRPDocument extends Filer {
         return $ok;
     }
 
-    static function url($doc, $filters = null, $rest = null) {
-        if (!($doc instanceof DocumentInfo))
-            error_log("HotCRPDocument bad \$doc: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
+    static function url(DocumentInfo $doc, $filters = null, $rest = null) {
         assert(property_exists($doc, "mimetype") && isset($doc->documentType));
         if ($doc->mimetype)
             $f = "file=" . rawurlencode(self::filename($doc, $filters));
