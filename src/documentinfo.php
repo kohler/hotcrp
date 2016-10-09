@@ -149,7 +149,7 @@ class DocumentInfo implements JsonSerializable {
         }
         if (!$this->docclass)
             $this->docclass = $this->conf->docclass($this->documentType);
-        return $this->docclass->upload($this, (object) ["paperId" => $this->paperId]);
+        return $this->docclass->upload($this);
     }
 
     public function url($filters = null, $rest = null) {

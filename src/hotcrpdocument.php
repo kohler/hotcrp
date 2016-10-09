@@ -92,9 +92,9 @@ class HotCRPDocument extends Filer {
         return $fn;
     }
 
-    function validate_upload(DocumentInfo $doc, $docinfo) {
+    function validate_upload(DocumentInfo $doc) {
         if ($this->option && !get($doc, "filterType"))
-            return $this->option->validate_document($doc, $docinfo);
+            return $this->option->validate_document($doc);
         else
             return true;
     }
@@ -113,11 +113,7 @@ class HotCRPDocument extends Filer {
         return $s3 && $s3->check(self::s3_filename($doc));
     }
 
-    function s3_store(DocumentInfo $doc, $docinfo, $trust_sha1 = false) {
-        if (!isset($doc->paperId)) {
-            error_log("HotCRPDocument bad \$doc->paperId: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $doc->paperId = $docinfo->paperId;
-        }
+    function s3_store(DocumentInfo $doc, $trust_sha1 = false) {
         if (!isset($doc->content) && !$this->load_content($doc))
             return false;
         if (!$trust_sha1 && Filer::binary_sha1($doc) !== sha1($doc->content, true)) {
@@ -143,16 +139,12 @@ class HotCRPDocument extends Filer {
         return $s3->status == 200;
     }
 
-    function store_other(DocumentInfo $doc, $docinfo) {
+    function store_other(DocumentInfo $doc) {
         if (($s3 = $this->conf->s3_docstore()))
-            $this->s3_store($doc, $docinfo, true);
+            $this->s3_store($doc, true);
     }
 
-    function dbstore(DocumentInfo $doc, $docinfo) {
-        if (!isset($doc->paperId)) {
-            error_log("HotCRPDocument bad \$doc->paperId: " . json_encode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)));
-            $doc->paperId = $docinfo->paperId;
-        }
+    function dbstore(DocumentInfo $doc) {
         if ($this->no_database)
             return null;
         $doc->documentType = $this->dtype;

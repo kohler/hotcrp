@@ -315,15 +315,15 @@ class Filer {
         // `$doc`.
         return null;
     }
-    function dbstore(DocumentInfo $doc, $docinfo) {
+    function dbstore(DocumentInfo $doc) {
         // store() callback. Return a `Filer_Dbstore` object to tell how to
         // store the document in the database.
         return null;
     }
-    function store_other(DocumentInfo $doc, $docinfo) {
+    function store_other(DocumentInfo $doc) {
         // store() callback. Store `$doc` elsewhere (e.g. S3) if appropriate.
     }
-    function validate_upload(DocumentInfo $doc, $docinfo) {
+    function validate_upload(DocumentInfo $doc) {
         // upload() callback. Return false if $doc should not be stored.
         return true;
     }
@@ -383,10 +383,10 @@ class Filer {
         }
         return true;
     }
-    function store(DocumentInfo $doc, $docinfo) {
+    function store(DocumentInfo $doc) {
         // load content (if unloaded)
         // XXX loading enormous documents into memory...?
-        if (!$this->load($doc, $docinfo)
+        if (!$this->load($doc)
             || ($content = self::content($doc)) === null
             || $content === false
             || get($doc, "error"))
@@ -404,10 +404,10 @@ class Filer {
         $doc->size = strlen($content);
         $content = null;
         // actually store
-        if (($dbinfo = $this->dbstore($doc, $docinfo)))
+        if (($dbinfo = $this->dbstore($doc)))
             $this->store_database($dbinfo, $doc);
         $this->store_filestore($doc);
-        $this->store_other($doc, $docinfo);
+        $this->store_other($doc);
         return !get($doc, "error");
     }
 
@@ -601,7 +601,7 @@ class Filer {
     }
 
     // upload
-    function upload(DocumentInfo $doc, $docinfo) {
+    function upload(DocumentInfo $doc) {
         global $Conf;
         if (!is_object($doc)) {
             error_log(caller_landmark() . ": Filer::upload called with non-object");
@@ -627,8 +627,8 @@ class Filer {
         if (!get($doc, "timestamp"))
             $doc->timestamp = time();
 
-        if ($this->validate_upload($doc, $docinfo))
-            return $this->store($doc, $docinfo);
+        if ($this->validate_upload($doc))
+            return $this->store($doc);
         else
             return false;
     }

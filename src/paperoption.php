@@ -585,7 +585,7 @@ class PaperOption {
         return null;
     }
 
-    function validate_document($doc, $docinfo) {
+    function validate_document(DocumentInfo $doc) {
         return true;
     }
 
@@ -777,7 +777,7 @@ class DocumentPaperOption extends PaperOption {
             return $opt_pj;
     }
 
-    function validate_document($doc, $docinfo) {
+    function validate_document(DocumentInfo $doc) {
         $mimetypes = $this->mimetypes();
         if (empty($mimetypes))
             return true;

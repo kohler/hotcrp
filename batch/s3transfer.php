@@ -36,10 +36,10 @@ foreach ($sids as $sid) {
         continue;
     $saved = $checked = $doc->docclass->s3_check($doc);
     if (!$saved)
-        $saved = $doc->docclass->s3_store($doc, $doc);
+        $saved = $doc->docclass->s3_store($doc);
     if (!$saved) {
         sleep(0.5);
-        $saved = $doc->docclass->s3_store($doc, $doc);
+        $saved = $doc->docclass->s3_store($doc);
     }
     $front = "[" . $Conf->unparse_time_log($doc->timestamp) . "] "
         . HotCRPDocument::filename($doc) . " ($sid)";
