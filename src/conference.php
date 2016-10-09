@@ -26,7 +26,7 @@ class Conf {
     private $settingTexts;
     public $sversion;
     private $_pc_seeall_cache = null;
-    private $_pc_see_pdf = null;
+    private $_pc_see_pdf = false;
 
     public $dbname;
     public $dsn = null;
@@ -279,7 +279,9 @@ class Conf {
             && ($so = get($this->settings, "sub_open", 0)) > 0
             && $so < $Now
             && ($ss = get($this->settings, "sub_sub", 0)) > 0
-            && $ss > $Now)
+            && $ss > $Now
+            && (get($this->settings, "pc_seeallpdf", 0) <= 0
+                || !$this->can_pc_see_all_submissions()))
             $this->_pc_see_pdf = false;
 
         $this->au_seerev = get($this->settings, "au_seerev", 0);

@@ -99,7 +99,7 @@ class HotCRPDocument extends Filer {
             return true;
     }
 
-    static function s3_filename(DocumentInfo $doc) {
+    static function s3_filename($doc) {
         if ($doc->sha1 != ""
             && ($sha1 = Filer::text_sha1($doc)) !== false)
             return "doc/" . substr($sha1, 0, 2) . "/" . $sha1

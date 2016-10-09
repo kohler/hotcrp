@@ -465,22 +465,19 @@ class SettingValues {
             return $this->savedv[$s][0];
     }
 
-    public function echo_checkbox($name, $text, $onchange = null) {
+    public function echo_checkbox_only($name, $onchange = null) {
         $x = $this->curv($name);
         echo Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
-            "&nbsp;",
-            $this->label($name, $text, true),
-            "<br />\n";
+            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name")));
+    }
+    public function echo_checkbox($name, $text, $onchange = null) {
+        $this->echo_checkbox_only($name, $onchange);
+        echo "&nbsp;", $this->label($name, $text, true), "<br />\n";
     }
     public function echo_checkbox_row($name, $text, $onchange = null) {
-        $x = $this->curv($name);
-        echo '<tr><td class="nb">',
-            Ht::hidden("has_$name", 1),
-            Ht::checkbox($name, 1, $x !== null && $x > 0, $this->sjs($name, array("onchange" => $onchange, "id" => "cb$name"))),
-            "&nbsp;</td><td>",
-            $this->label($name, $text, true),
-            "</td></tr>\n";
+        echo '<tr><td class="nb">';
+        $this->echo_checkbox_only($name, $onchange);
+        echo '&nbsp;</td><td>', $this->label($name, $text, true), "</td></tr>\n";
     }
     public function echo_radio_table($name, $varr) {
         $x = $this->curv($name);

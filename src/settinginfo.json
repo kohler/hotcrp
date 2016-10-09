@@ -144,12 +144,16 @@
     "outcome_map": {
         "internal": true, "type": "string"
     },
+    "papersub": {
+        "internal": true
+    },
     "pc_seeall": {
         "name": "PC can see all papers",
         "type": "checkbox"
     },
-    "papersub": {
-        "internal": true
+    "pc_seeallpdf": {
+        "name": "PC can see all submitted PDFs",
+        "type": "checkbox"
     },
     "pc_seeallrev": {
         "name": "PC can see all reviews",
