@@ -1020,15 +1020,19 @@ function do_setting_update(SettingValues $sv) {
 
         $dv = $av = array();
         foreach ($sv->savedv as $n => $v) {
-            if (substr($n, 0, 4) === "opt." && $v !== null) {
+            if (substr($n, 0, 4) === "opt.") {
                 $okey = substr($n, 4);
                 if (array_key_exists($okey, $sv->conf->opt_override))
                     $oldv = $sv->conf->opt_override[$okey];
                 else
                     $oldv = $sv->conf->opt($okey);
-                $newv = ($v[1] === null ? $v[0] : $v[1]);
+                $vi = $sv->si($n)->storage_type & Si::SI_DATA ? 1 : 0;
+                $basev = $vi ? "" : 0;
+                $newv = $v === null ? $basev : $v[$vi];
                 if ($oldv === $newv)
                     $v = null; // delete override value in database
+                else if ($v === null && $oldv !== $basev && $oldv !== null)
+                    $v = $vi ? [0, ""] : [0, null];
             }
             if ($v === null
                 ? !isset($dbsettings[$n])
