@@ -504,7 +504,7 @@ class PaperList {
         case "lead":
         case "manager":
             if ($listname == "r")
-                $this->_default_linkto("review");
+                $this->_default_linkto("finishreview");
             return "sel id title revtype revstat status authors collab abstract tags tagreports topics reviewers allpref pcconf lead shepherd scores formulas";
         case "rout":
             $this->_default_linkto("review");
