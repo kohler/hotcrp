@@ -100,7 +100,7 @@ class Si {
             $this->storage_type = self::SI_VALUE;
         if ($this->storage_type & self::SI_OPT) {
             $is_value = !!($this->storage_type & self::SI_VALUE);
-            $oname = substr($this->storage, 4);
+            $oname = substr($this->storage ? : $this->name, 4);
             if (!isset(self::$option_is_value[$oname]))
                 self::$option_is_value[$oname] = $is_value;
             if (self::$option_is_value[$oname] != $is_value)
