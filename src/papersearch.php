@@ -3620,7 +3620,7 @@ class PaperSearch {
             foreach ($tOpt as $k => $v) {
                 if (count($sel_opt) && $k === "a")
                     $sel_opt["xxxa"] = null;
-                if (count($sel_opt) && ($k === "lead" || $k === "r") && !isset($sel_opt["xxxa"]))
+                if (count($sel_opt) > 2 && ($k === "lead" || $k === "r") && !isset($sel_opt["xxxa"]))
                     $sel_opt["xxxb"] = null;
                 $sel_opt[$k] = $v;
             }
