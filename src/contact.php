@@ -1523,7 +1523,7 @@ class Contact {
             if ($this->contactId > 0)
                 $result = $this->conf->qe("select requestedBy from PaperReview where requestedBy=? and contactId!=? limit 1", $this->contactId, $this->contactId);
             $row = edb_row($result);
-            $this->is_requester_ = $row && $row[0] > 1;
+            $this->is_requester_ = $row && $row[0] > 0;
         }
         return $this->is_requester_;
     }
