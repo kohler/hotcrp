@@ -3560,33 +3560,36 @@ class PaperSearch {
     }
 
 
-    static function search_types($user) {
+    static function search_types($user, $reqtype = null) {
         $tOpt = [];
-        if ($user->isPC && $user->conf->can_pc_see_all_submissions())
-            $tOpt["act"] = "Active papers";
-        if ($user->isPC)
+        if ($user->isPC) {
+            if ($user->conf->can_pc_see_all_submissions())
+                $tOpt["act"] = "Active papers";
             $tOpt["s"] = "Submitted papers";
-        if ($user->isPC && $user->conf->timePCViewDecision(false) && $user->conf->has_any_accepts())
-            $tOpt["acc"] = "Accepted papers";
-        if ($user->privChair)
+            if ($user->conf->timePCViewDecision(false) && $user->conf->has_any_accepts())
+                $tOpt["acc"] = "Accepted papers";
+        }
+        if ($user->privChair) {
             $tOpt["all"] = "All papers";
-        if ($user->privChair && !$user->conf->can_pc_see_all_submissions()
-            && req("t") === "act")
-            $tOpt["act"] = "Active papers";
+            if (!$user->conf->can_pc_see_all_submissions() && $reqtype === "act")
+                $tOpt["act"] = "Active papers";
+        }
         if ($user->is_reviewer())
             $tOpt["r"] = "Your reviews";
         if ($user->has_outstanding_review()
-            || ($user->is_reviewer() && req("t") === "rout"))
+            || ($user->is_reviewer() && $reqtype === "rout"))
             $tOpt["rout"] = "Your incomplete reviews";
-        if ($user->isPC)
-            $tOpt["req"] = "Your review requests";
-        if ($user->isPC && $user->conf->has_any_lead_or_shepherd()
-            && $user->is_discussion_lead())
-            $tOpt["lead"] = "Your discussion leads";
-        if ($user->isPC && $user->conf->has_any_manager()
-            && ($user->privChair || $user->is_manager()))
-            $tOpt["manager"] = "Papers you administer";
-        if ($user->is_author())
+        if ($user->isPC) {
+            if ($user->is_requester() || $reqtype === "req")
+                $tOpt["req"] = "Your review requests";
+            if (($user->conf->has_any_lead_or_shepherd() && $user->is_discussion_lead())
+                || $reqtype === "lead")
+                $tOpt["lead"] = "Your discussion leads";
+            if (($user->conf->has_any_manager() && ($user->privChair || $user->is_manager()))
+                || $reqtype === "manager")
+                $tOpt["manager"] = "Papers you administer";
+        }
+        if ($user->is_author() || $reqtype === "a")
             $tOpt["a"] = "Your submissions";
         foreach ($tOpt as &$itext)
             $itext = $user->conf->_c("search_type", $itext);

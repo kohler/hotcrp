@@ -431,7 +431,7 @@ if ($Me->is_reviewer() && ($Me->privChair || $papersub)) {
         $sep = $xsep;
     }
     if ($Me->is_requester()) {
-        echo $sep, '<a href="', hoturl("mail", "monreq=1"), '">Monitor external reviews</a>';
+        echo $sep, '<a href="', hoturl("mail", "monreq=1"), '">Monitor requested reviews</a>';
         $sep = $xsep;
     }
     if ($Conf->setting("rev_tokens")) {

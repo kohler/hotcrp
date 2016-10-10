@@ -44,7 +44,7 @@ if (!isset($Qreq->fn) || !in_array($Qreq->fn, ["get", "load", "tag", "assign", "
 
 
 // paper group
-$tOpt = PaperSearch::search_types($Me);
+$tOpt = PaperSearch::search_types($Me, $Qreq->t);
 if (count($tOpt) == 0) {
     $Conf->header("Search", "search", actionBar());
     Conf::msg_error("You are not allowed to search for papers.");
