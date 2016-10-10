@@ -31,6 +31,8 @@ class Si {
     public $message_default;
     public $date_backup;
 
+    static public $option_is_value = [];
+
     const SI_VALUE = 1;
     const SI_DATA = 2;
     const SI_SLICE = 4;
@@ -96,6 +98,14 @@ class Si {
             $this->storage_type = self::$type_storage[$this->type];
         else
             $this->storage_type = self::SI_VALUE;
+        if ($this->storage_type & self::SI_OPT) {
+            $is_value = !!($this->storage_type & self::SI_VALUE);
+            $oname = substr($this->storage, 4);
+            if (!isset(self::$option_is_value[$oname]))
+                self::$option_is_value[$oname] = $is_value;
+            if (self::$option_is_value[$oname] != $is_value)
+                error_log("$oname: conflicting option_is_value");
+        }
 
         // defaults for size, placeholder
         if (str_ends_with($this->type, "date")) {
@@ -1026,7 +1036,7 @@ function do_setting_update(SettingValues $sv) {
                     $oldv = $sv->conf->opt_override[$okey];
                 else
                     $oldv = $sv->conf->opt($okey);
-                $vi = $sv->si($n)->storage_type & Si::SI_DATA ? 1 : 0;
+                $vi = Si::$option_is_value[$okey] ? 0 : 1;
                 $basev = $vi ? "" : 0;
                 $newv = $v === null ? $basev : $v[$vi];
                 if ($oldv === $newv)
