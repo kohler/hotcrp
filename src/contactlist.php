@@ -554,7 +554,7 @@ class ContactList {
                 $pq .= ", $score";
             }
         if (isset($queryOptions["repapers"])) {
-            $rf[] = "group_concat(paperId) paperIds";
+            $rf[] = "group_concat(r.paperId) paperIds";
             $rf[] = "group_concat(reviewId) reviewIds";
             $rf[] = "group_concat(coalesce(reviewOrdinal,0)) reviewOrdinals";
             $pq .= ", paperIds, reviewIds, reviewOrdinals";
