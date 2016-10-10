@@ -2918,6 +2918,7 @@ function save_editor(elt, action, really) {
                 $f[0].submit();
             }
             $c.find(".cmtmsg").html(data.error ? '<div class="xmsg xmerror"><div class="xmsg0"></div><div class="xmsgc">' + data.error + '</div><div class="xmsg1"</div></div>' : data.msg);
+            $c.find("button").prop("disabled", false);
             return;
         }
         var cid = cj_cid($c.c), editing_response = $c.c.response && edit_allowed($c.c);
