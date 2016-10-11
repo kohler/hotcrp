@@ -2882,7 +2882,8 @@ class Conf {
                 $pos = strpos($cid_text, "|");
                 $qv[] = self::format_log_values(substr($cid_text, $pos + 1), substr($cid_text, 0, $pos), array_keys($pids));
             }
-            $this->qe(self::action_log_query, $qv);
+            if (!empty($qv))
+                $this->qe(self::action_log_query, $qv);
             $this->_save_logs = false;
         }
     }
