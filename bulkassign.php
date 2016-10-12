@@ -133,7 +133,7 @@ if (isset($_GET["upload"]) && check_post()
         $text = convert_to_utf8($text);
         $assignset->parse($text, $filename, $defaults, "keep_browser_alive");
         finish_browser_alive();
-        if ($assignset->has_errors())
+        if ($assignset->has_error())
             $assignset->report_errors();
         else if ($assignset->is_empty())
             $Conf->warnMsg("That assignment file makes no changes.");
